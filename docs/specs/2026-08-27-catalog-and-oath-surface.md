@@ -1,7 +1,7 @@
 **Date:** 2026-08-27
 **Status:** target (freeze)
 **Implementation:** partial
-**Dogfood:** QEMU probe (`image/probe.py`) — hostname apply, undo, confirm-reboot, hostname survives reboot
+**Dogfood:** QEMU probe (`oath-make probe`) — hostname apply, undo, confirm-reboot, hostname survives reboot
 **Gaps:**
 - Generation snapshots nest under `/.oath-gens` on `@` rather than sibling subvols
 - MCP, extra kinds (out of freeze)

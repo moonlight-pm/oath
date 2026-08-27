@@ -18,7 +18,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 2. Do not grow kinds (pkg, dev, net, glibc runtime).
 3. Do not install to a real disk. qcow2 snapshots are not product undo.
 
-**Always allowed:** docs hygiene; tests; `image/build.sh` / `image/run.sh`.
+**Always allowed:** docs hygiene; tests; `cargo run -p oath-make -- build|run|probe`.
 
 ---
 
@@ -27,14 +27,14 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 | | **QEMU appliance** |
 |--|---------------------|
 | Role | Phase 1 serial box |
-| How | `nix-shell` (optional) → `./image/build.sh` → `./image/run.sh` |
+| How | `nix-shell` (optional) → `cargo run -p oath-make -- build` → `probe` / `run` |
 | Notes | Courage test passed 2026-08-27 (hostname apply, undo, confirm-reboot, hostname **survives reboot**). Telemetry: `build/runs/<id>/`. Loop-pack uses `sudo`. |
 
 ```sh
 nix-shell
-./image/build.sh
-./image/probe.py    # scripted courage test + run dir
-./image/run.sh      # interactive serial; also writes build/runs/
+cargo run -p oath-make -- build
+cargo run -p oath-make -- probe
+cargo run -p oath-make -- run
 ```
 
 ---

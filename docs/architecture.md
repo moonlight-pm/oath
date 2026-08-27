@@ -40,10 +40,10 @@ PID 1: mount proc/sys/dev, hostname from `host:local` desired, spawn
 `btrfs` is present; otherwise copies the catalog tree), then converges.
 
 Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
-Host runs live under `build/runs/<id>/` (`image/run.sh`, `image/probe.py`).
+Host runs live under `build/runs/<id>/` (`oath-make run` / `probe`).
 
-Workspace crates: `oath-core`, `oath`, `oath-init`. Image scripts:
-`image/build.sh`, `image/run.sh`. Artifacts in `build/` (gitignored).
+Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-make` (host
+pack/run/probe). Artifacts in `build/` (gitignored).
 
 **Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md)

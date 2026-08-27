@@ -22,7 +22,7 @@ the identity. Replace inward later.
 - [x] Kernel: borrowed vanilla Linux bzImage + modules (virtio, btrfs,
       serial). Not a custom config yet.
 - [x] qcow2 with one btrfs filesystem; live root is subvolume `@`.
-- [x] QEMU wrapper: `image/run.sh` (x86_64, nographic serial, virtio-blk).
+- [x] QEMU via `oath-make run` (x86_64, serial, virtio-blk).
 - [x] PID 1 (`oath-init`): mounts, hostname from `host:local`, `svc:*`,
       reap, halt/reboot syscalls via `oath apply`.
 - [x] `svc:serial` root shell on serial (`serial-login`).
@@ -50,7 +50,7 @@ the identity. Replace inward later.
 
 - [x] Fresh VM: `oath` / INDEX readable.
 - [x] `oath ls` lists `host:local`.
-- [x] Change hostname, `apply`, **reboot**, actual matches (`probe.py` boot2).
+- [x] Change hostname, `apply`, **reboot**, actual matches (`oath-make probe` boot2).
 - [x] `oath undo` restores hostname on the live VM.
 - [x] `oath apply` of `power=reboot` without `--confirm` exits 3.
 - [x] Serial still works after reboot (probe boot2).

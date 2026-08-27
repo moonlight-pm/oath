@@ -4,6 +4,7 @@ members = [
     "crates/oath-core",
     "crates/oath",
     "crates/oath-init",
+    "crates/oath-make",
 ]
 
 [workspace.package]

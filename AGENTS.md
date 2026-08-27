@@ -116,9 +116,10 @@ docs/
 .grok/skills/         oath-session-start, oath-progress-docs
 apocrypha/            gitignored scratch/history — not product
 crates/oath-core      catalog, kinds, apply/undo
-crates/oath           CLI
+crates/oath           CLI (guest)
 crates/oath-init      PID 1 + serial-login
-image/                pack qcow + initramfs, QEMU wrapper, probe.py
+crates/oath-make      host pack / QEMU / probe
+image/                tools.nix only (borrowed prebuilts)
 ```
 
 Do not invent extra kinds until CURRENT says so.

@@ -12,8 +12,8 @@ for packing the disk), btrfs-progs, qemu.
 
 ```sh
 nix-shell          # optional: kernel, qemu, musl cc, busybox, btrfs
-./image/build.sh
-./image/run.sh     # serial on stdio; KVM if /dev/kvm is usable
+cargo run -p oath-make -- build
+cargo run -p oath-make -- run
 ```
 
 You land on a root shell. The catalog is `/oath`. Try `oath` with no
@@ -22,15 +22,18 @@ arguments, then `oath ls`.
 ## Probe (scripted)
 
 ```sh
-./image/probe.py
+cargo run -p oath-make -- probe
 ```
 
 Writes `build/runs/<id>/`: `meta.json`, `serial-boot*.log`, `events.jsonl`
 (`oath-tel` lines), `probe.json`, `REPORT.md`. Uses a qcow overlay so
 the golden image is not mutated.
 
-Interactive `./image/run.sh` also creates a run dir and tees serial to
-`serial.log`.
+`cargo run -p oath-make -- run` is interactive serial and also writes a
+run dir.
+
+Host orchestration is the `oath-make` crate. QEMU, mkfs.btrfs, and a
+loop-mount (sudo) are still external tools.
 
 Guest telemetry is JSON on stderr, prefixed `oath-tel `, and appended
 under `/oath/log/` once the disk is mounted.

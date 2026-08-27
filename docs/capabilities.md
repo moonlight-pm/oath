@@ -22,7 +22,7 @@ Product docs: **shipped only**.
 | oath-cli | `oath` verbs | partial | freeze | QEMU probe | MCP later | limited |
 | snap | generations; apply / undo | partial | freeze | probe (incl. reboot) | nested `/.oath-gens` on `@` | no |
 | svc | Own supervisor | partial | freeze | `svc:serial` | notify socket barely used; no wants-order | no |
-| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `image/run.sh` + `probe.py` | borrowed kernel; sudo to pack disk | [qemu](manual/qemu.md) |
+| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `oath-make run` / `probe` | borrowed kernel; sudo to pack disk | [qemu](manual/qemu.md) |
 | pkg | Package objects | idea | — | — | not Phase 1 | no |
 | net | Network objects | idea | — | — | serial instead | no |
 | dev | Device objects | idea | — | — | not Phase 1 | no |

@@ -67,10 +67,10 @@ they are not the runtime.
 
 ```sh
 cargo test -p oath-core
-nix-shell          # kernel, qemu, musl cc, busybox, btrfs — optional
-./image/build.sh   # needs sudo to loop-mount the disk image
-./image/probe.py   # scripted courage test; writes build/runs/<id>/
-./image/run.sh     # interactive serial; also writes build/runs/
+nix-shell                 # optional: kernel, qemu, musl cc, busybox, btrfs
+cargo run -p oath-make -- build   # sudo to loop-mount the disk
+cargo run -p oath-make -- probe   # courage test; writes build/runs/<id>/
+cargo run -p oath-make -- run     # interactive serial + run dir
 ```
 
 See [`CURRENT.md`](CURRENT.md) and [`docs/manual/qemu.md`](docs/manual/qemu.md).
@@ -79,8 +79,9 @@ See [`CURRENT.md`](CURRENT.md) and [`docs/manual/qemu.md`](docs/manual/qemu.md).
 
 ```
 crates/oath-core   catalog, kinds, apply/undo
-crates/oath        CLI (same verbs as the freeze)
+crates/oath        CLI (guest)
 crates/oath-init   PID 1 + serial login
-image/             assemble qcow + initramfs, QEMU wrapper
+crates/oath-make   host: pack image, QEMU run, probe
+image/             tools.nix (borrowed kernel/busybox/qemu)
 docs/              progress model, freeze, plan
 ```
