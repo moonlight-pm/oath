@@ -111,7 +111,11 @@ how this dies in a git repo.
 
 ---
 
-## Shape of the system (proposed, not frozen)
+## Shape of the system
+
+**Frozen** in
+[../specs/2026-08-27-catalog-and-oath-surface.md](../specs/2026-08-27-catalog-and-oath-surface.md).
+Sketch kept for the argument:
 
 ```text
 /oath/INDEX          ← agent starts here. always.

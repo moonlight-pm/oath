@@ -193,6 +193,7 @@ a **process failure**.
 | Init | We own PID 1 + supervisor. Service config is the catalog. |
 | License | MIT. [`LICENSE`](../LICENSE). |
 | One ontology | When in doubt, add a typed object and a catalog page, not a new config format. |
+| Catalog | `/oath`. Identity `kind:name`. `oath` is the only admin surface. |
 
 ---
 

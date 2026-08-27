@@ -38,7 +38,9 @@ ask the human.
 | [`roadmap.md`](roadmap.md) | Coarse multi-month phases | **Horizon** |
 | [`open-questions.md`](open-questions.md) | Design forks + ask-human decisions | Design forks |
 | [`specs/`](specs/) | Target freezes (dated) | **Target** |
+| [`specs/2026-08-27-catalog-and-oath-surface.md`](specs/2026-08-27-catalog-and-oath-surface.md) | Catalog, objects, `oath` | **Target** (active) |
 | [`plans/`](plans/) | Implementation checklists | Build |
+| [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (active) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator truth | **Product** (shipped only) |
 

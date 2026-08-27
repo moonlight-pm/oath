@@ -74,8 +74,10 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 - **Libc:** musl base; glibc only as a runtime object. Never two libcs in
   one process.
 
-Founding argument (parked, not a freeze):
-[`docs/ideas/2026-08-27-founding-brainstorm.md`](docs/ideas/2026-08-27-founding-brainstorm.md).
+Active freeze:
+[`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md).
+Active plan:
+[`docs/plans/2026-08-27-qemu-skeleton-plan.md`](docs/plans/2026-08-27-qemu-skeleton-plan.md).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).

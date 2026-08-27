@@ -13,16 +13,18 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. Write the first freeze: catalog + object model + `oath` surface.
-   Services are objects; init is the apply engine for `svc`.
-2. Then a QEMU-boot skeleton plan (Phase 1).
-3. Do **not** start a kernel tree, package repo, or installer until that
-   freeze exists.
+1. Phase 1: execute
+   [docs/plans/2026-08-27-qemu-skeleton-plan.md](docs/plans/2026-08-27-qemu-skeleton-plan.md)
+   against freeze
+   [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md).
+2. Proof is the courage test in the freeze (hostname + reboot + undo
+   on serial QEMU).
+3. Do not grow kinds (pkg, dev, net, glibc runtime) in this slice.
 
-**Explicit holds:** implementation of the OS itself.
+**Explicit holds:** none on Phase 1 once work starts. Do not install to
+a real disk. Do not treat qcow2 snapshots as the product undo.
 
-**Always allowed:** docs hygiene; capturing ideas; tightening open-questions
-and this file.
+**Always allowed:** docs hygiene; tests; progress-doc maintenance.
 
 ---
 
@@ -30,7 +32,7 @@ and this file.
 
 | | **this repo** |
 |--|----------------|
-| Role | charter + progress docs; no OS tree |
+| Role | freeze + plan; no OS tree |
 | Endpoint / host | none |
 | Notes | nothing boots; no image; no `oath` binary |
 
@@ -40,56 +42,35 @@ and this file.
 
 Do not re-litigate without an explicit decision.
 
-- **Name:** Oath.
-- **Kind:** a new Linux distribution (Linux kernel, own userspace). Not a
-  kernel project.
-- **Independence:** not a remix of Debian, Arch, NixOS, Alpine, or Ubuntu.
-  Ideas may be borrowed; identity, package story, init, and admin surface
-  are ours.
-- **Principles:** Independence, simplicity, openness, courage.
-- **AI-first:** the sysadmin is an agent. The live system must be
-  discoverable to a model with no Oath training data. Humans own policy;
-  agents operate. Not a chatbot in PID 1.
-- **Progress docs:** the portable practice in
-  [`docs/progress-documentation-practice.md`](docs/progress-documentation-practice.md).
-  One living handoff (`CURRENT.md`).
-- **Init:** we write and own PID 1 + supervisor (Rust). No systemd, no
-  dinit, no throwaway foreign init. Time is not a reason to wrap
-  someone else’s. Service config **is** the catalog — no unit dialect.
-- **License:** MIT. Copyright (c) Joshua Kifer. See [`LICENSE`](LICENSE).
-  Upstream files keep their own licenses.
-- **Dogfood shape:** QEMU headless appliance first. No desktop, no
-  bare-metal installer, in Phase 1. Success is a VM whose catalog an
-  agent can read.
-- **Rollback:** filesystem snapshots as the undo primitive (`oath apply`
-  / generations). Filesystem not locked; btrfs subvolumes are the first
-  candidate. qcow2 snapshots are host debug only.
-- **libc:** musl is the base. glibc may exist as a **runtime object** for
-  payloads that only exist as glibc binaries. Never two libcs in one
-  process. No year-one ABI promise for random foreign binaries.
-- **Packages:** catalog objects, not a language. No foreign archive as
-  identity. Agents never `apt upgrade` the world.
-- **Layout:** the catalog tree is truth. Agents do not edit `/etc` as
-  policy. A compatibility shard (`/bin`, `/usr`, …) exists only to
-  execute what we shipped.
-- **Desired state:** typed documents under the catalog tree, matching a
-  schema, with an apply log that records the filesystem generation.
-  Undo is the snapshot, not a second store.
-- **Agent protocol:** catalog and `oath` are agent-agnostic. A model may
-  be the first *client*; it is not the OS interface. No vendor API in
-  the object schema.
-- **Bootstrap:** tools used to *produce* images are not the runtime.
-  The artifact is an Oath image. Borrowed prebuilts may appear early;
-  replace inward over time.
+- **Name:** Oath. Linux kernel, own userspace. Not a remix. Principles:
+  Independence, simplicity, openness, courage. AI-first: agent
+  sysadmin, humans own policy, no chatbot in PID 1.
+- **Init:** we write PID 1. `svc` objects are its only config.
+- **License:** MIT. Copyright (c) Joshua Kifer. [`LICENSE`](LICENSE).
+- **Catalog:** `/oath`. INDEX first. Identity `kind:name`. JSON
+  documents + JSON Schema 2020-12. Desired ≠ actual files. `oath` is
+  the only admin surface (text + `--json`; MCP later).
+- **v0 kinds:** `host`, `svc`, `snap`. `set` writes desired; `apply`
+  snapshots then converges; `undo` is last apply.
+- **btrfs** generations on the guest. qcow2 snapshots are host debug.
+- **Safety:** `mutate` vs `confirm` (`--confirm`). Halt / wipe /
+  boot-generation (except undo last) are confirm. Agents do not pass
+  `--confirm` unless the owner asked.
+- **Seat:** root on **serial** is the owner. No second Unix user.
+  Apply log records uid + tty.
+- **Dogfood:** x86_64 QEMU, serial console, no desktop, no installer.
+- **libc:** musl base; glibc only as a later runtime object. Never two
+  libcs in one process.
+- **Layout:** catalog is truth. No `/etc` hunting.
+- **Bootstrap:** build tools are not the runtime. Borrowed prebuilts ok
+  early.
 
 ---
 
 ## Pointers
 
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
+- Active freeze: [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md)
+- Active plan: [docs/plans/2026-08-27-qemu-skeleton-plan.md](docs/plans/2026-08-27-qemu-skeleton-plan.md)
 - Open questions: [docs/open-questions.md](docs/open-questions.md)
-- Founding brainstorm: [docs/ideas/2026-08-27-founding-brainstorm.md](docs/ideas/2026-08-27-founding-brainstorm.md)
-- Snapshots / musl hybrid: [docs/ideas/2026-08-27-snapshots-and-libc-hybrid.md](docs/ideas/2026-08-27-snapshots-and-libc-hybrid.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
-- Active plan: none
-- Active freeze: none

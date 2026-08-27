@@ -20,22 +20,19 @@ Prefer capability rows for feature-level progress.
 
 ## Phase 0 — Charter
 
-**Status: active**
+**Status: done**
 
-Founding Decision points D1–D9 are closed (see
-[open-questions.md](open-questions.md)). Write the first freeze: catalog,
-object model, `oath` surface — init’s service objects live there.
-Argument:
-[ideas/2026-08-27-founding-brainstorm.md](ideas/2026-08-27-founding-brainstorm.md),
-[ideas/2026-08-27-snapshots-and-libc-hybrid.md](ideas/2026-08-27-snapshots-and-libc-hybrid.md).
+Founding D1–D9 and catalog technical locks T1–T10 are closed. Freeze:
+[specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md).
 
 ## Phase 1 — Skeleton boot
 
-**Status: next**
+**Status: active**
 
 A QEMU image that boots *our* init and presents the catalog, even if most
-of userspace is still a small borrowed set. Proof: `oath ls` works on a
-running VM.
+of userspace is still a small borrowed set. Plan:
+[plans/2026-08-27-qemu-skeleton-plan.md](plans/2026-08-27-qemu-skeleton-plan.md).
+Proof: courage test in the freeze.
 
 ## Phase 2 — Closed admin loop
 

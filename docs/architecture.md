@@ -21,8 +21,7 @@ guide, and progress-docs skills.
 When a QEMU image, `oath` binary, catalog tree, or supervisor exists, describe
 them here: processes, paths, image layout, how to boot the dogfood.
 
-Intended shape (not as-built — see
-[ideas/2026-08-27-founding-brainstorm.md](ideas/2026-08-27-founding-brainstorm.md)
-and open-questions): Linux kernel + **own PID 1**; live catalog under a
-single tree; one `oath` admin surface; musl base; rollback via FS
-snapshots.
+**Target (not as-built):**
+[specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md)
+— `/oath` catalog, `kind:name` objects, `oath` verbs, own PID 1, musl,
+btrfs generations.

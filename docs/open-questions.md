@@ -6,39 +6,25 @@ Unresolved **design forks**. Not the implementation backlog
 Agents: if work depends on a Decision point, **stop and ask**. Record the
 answer in the decision log and update CURRENT locks.
 
-Founding D1–D9 are **closed**. New forks that would change the first
-freeze belong here.
+Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ---
 
 ## Decision points (ask human)
 
-None open at founding scope. Remaining questions are technical (below)
-and can be answered in a freeze unless they collide with a closed lock.
+None open at founding or catalog-freeze scope.
 
 ---
 
 ## Open technical questions
 
-These are the ones worth settling in (or beside) the first freeze.
-
-- Exact name of the live catalog tree (`/oath` vs `/sys/oath` vs other).
-- Object identity: `kind` + name? a stable id? both?
-- Schema language (JSON Schema, something smaller).
-- Whether `oath` speaks a text CLI, a JSON API, an MCP server, or all
-  three as views of one surface.
-- v0 object kinds (host, svc, generation, net — what is in the courage
-  test, what waits).
-- Snapshot filesystem: btrfs vs bcachefs vs other (principle is locked
-  to FS snapshots; implementation is not).
-- How a glibc runtime object is laid out (sysroot, loader path, how
-  `oath` execs into it) — not Phase 1.
-- How the agent reaches the QEMU appliance (serial, ssh, both).
-- Target architecture for Phase 1 (`x86_64` only?).
-- Who the principal is on the appliance (root-only seat, a named user,
-  the agent as a system identity).
-- Which applies are automatic vs which require the owner.
-- How much of coreutils we replace vs busybox vs our own.
+- Exact btrfs subvolume names and bootloader hook (boot plan
+  implementation, not a product fork).
+- PID 1 notify socket bytes (`/oath/run/…`) — implementation detail;
+  must not become a second config format.
+- How much of coreutils we replace vs busybox vs our own (Phase 1 may
+  borrow busybox).
+- glibc runtime object layout — not Phase 1.
 
 ---
 
@@ -47,59 +33,88 @@ These are the ones worth settling in (or beside) the first freeze.
 ### D1 — First dogfood shape (P0) — locked 2026-08-27
 
 QEMU headless appliance. No desktop. No bare-metal installer in Phase 1.
-Success is a VM whose catalog an agent can read.
+Success is a VM whose catalog an agent can read. **x86_64**, **serial
+console**.
 
 ### D2 — libc and foreign ABI (P0) — locked 2026-08-27
 
-**musl base.** Almost no foreign ABI promise for random binaries. glibc
-may exist as a catalog **runtime** for shipped payloads that only exist
-as glibc. Never mix libcs in one process. Do not rebuild Chromium-scale
-stacks until the base exists.
+**musl base.** glibc may exist later as a catalog runtime object. Never
+mix libcs in one process.
 
 ### D3 — Init / supervisor (P0) — locked 2026-08-27
 
-We **write and own** PID 1 + supervisor in Rust. No systemd. No dinit.
-No throwaway init. Time is not a reason to wrap someone else’s. Service
-configuration **is** the catalog — init has no unit-file dialect.
+Own PID 1 + supervisor in Rust. `svc` objects are the only service
+config.
 
 ### D4 — Package and update model (P0) — locked 2026-08-27
 
-Packages as catalog objects (not a language). No foreign archive as
-identity. Agents never `apt upgrade` the world. **Rollback uses
-filesystem snapshots** (generations): `oath apply` snapshots, mutates,
-records the generation; undo rolls desired and actual together.
-Boot-time rollback can be “pick a generation.” Filesystem not locked;
-**btrfs subvolumes are the first candidate.** qcow2 snapshots are host
-debug only.
+Packages as catalog objects (later). Rollback via **btrfs** subvolume
+generations. qcow2 snapshots are host debug only.
 
 ### D5 — Filesystem layout (P0) — locked 2026-08-27
 
-Catalog tree is truth. Agents are forbidden from editing `/etc` as
-policy. Keep a compatibility shard (`/bin`, `/usr`, …) only as needed to
-execute what we shipped. Do not make FHS the identity.
+Catalog tree is **`/oath`**. Agents do not edit `/etc`. Compatibility
+shard only to execute what we shipped.
 
 ### D6 — Desired-state store (P1) — locked 2026-08-27
 
-A directory of typed documents under the catalog tree, each matching a
-schema, with an apply log that records the filesystem generation. Avoid
-a secret binary database the agent cannot `cat`. Undo is the FS
-snapshot, not a second store.
+Pretty-printed JSON under `/oath/objects/<kind>/<name>/{desired,actual,meta}.json`.
+Apply log JSONL. Undo is the filesystem snapshot.
 
 ### D7 — Agent coupling (P1) — locked 2026-08-27
 
-Protocol and catalog are agent-agnostic. A model may be the first
-*client*, not the interface. No vendor API in the object schema.
+`oath` text + `--json`. MCP later. No vendor API in the schema.
 
 ### D8 — Bootstrap / build host (P1) — locked 2026-08-27
 
-Tools used to produce images are not the installed OS. The artifact is
-an Oath image. Replace borrowed prebuilts inward over time; do not wait
-for a full from-source world before Phase 1.
+Build tools are not the runtime. Borrowed prebuilts ok in Phase 1.
 
 ### D9 — License (P2) — locked 2026-08-27
 
-MIT. Copyright (c) Joshua Kifer. Text in [`LICENSE`](../LICENSE).
-Upstream files keep their licenses. Do not invent a custom license.
+MIT. Copyright (c) Joshua Kifer. [`LICENSE`](../LICENSE).
+
+### T1 — Catalog path — locked 2026-08-27
+
+`/oath`. INDEX at `/oath/INDEX.md`.
+
+### T2 — Object identity — locked 2026-08-27
+
+`kind:name`. No UUIDs in v0.
+
+### T3 — Schema language — locked 2026-08-27
+
+JSON Schema 2020-12 until it hurts. Kind prose in Markdown.
+
+### T4 — `oath` views — locked 2026-08-27
+
+One verb set. Text default, `--json` same facts. MCP later.
+
+### T5 — v0 kinds — locked 2026-08-27
+
+`host`, `svc`, `snap`. No net/pkg/dev in Phase 1. Serial is how the
+agent reaches the VM.
+
+### T6 — Snapshot filesystem — locked 2026-08-27
+
+btrfs for Phase 1.
+
+### T7 — Agent reachability — locked 2026-08-27
+
+QEMU serial. SSH later.
+
+### T8 — Architecture — locked 2026-08-27
+
+`x86_64` only in Phase 1.
+
+### T9 — Principal — locked 2026-08-27
+
+Root on serial is the owner. Agent is not a second Unix user. Log
+uid + tty.
+
+### T10 — Confirm class — locked 2026-08-27
+
+`mutate` vs `confirm`. Halt, wipe, boot-generation (except undo last)
+need `--confirm`. Agents do not pass it unless the owner asked.
 
 ---
 
@@ -107,13 +122,5 @@ Upstream files keep their licenses. Do not invent a custom license.
 
 | Date | ID | Decision | Where recorded |
 |------|-----|----------|----------------|
-| 2026-08-27 | — | Name, kind, principles, AI-first, not-a-remix, progress-docs practice | [CURRENT.md](../CURRENT.md) locked models |
-| 2026-08-27 | D1 | QEMU headless appliance first | CURRENT; this file Closed |
-| 2026-08-27 | D2 | musl base; glibc only as a runtime object | CURRENT; this file Closed |
-| 2026-08-27 | D3 | Own PID 1 + supervisor in Rust. Catalog is the service config. Time is not a factor. | CURRENT; this file Closed |
-| 2026-08-27 | D4 | Packages as objects; rollback via FS snapshot generations; btrfs first candidate | CURRENT; this file Closed |
-| 2026-08-27 | D5 | Catalog tree is truth; no `/etc` hunting | CURRENT; this file Closed |
-| 2026-08-27 | D6 | Typed documents + apply log + FS generation | CURRENT; this file Closed |
-| 2026-08-27 | D7 | Agent-agnostic protocol; model is a client | CURRENT; this file Closed |
-| 2026-08-27 | D8 | Build tools are not the runtime | CURRENT; this file Closed |
-| 2026-08-27 | D9 | MIT, Copyright (c) Joshua Kifer | [`LICENSE`](../LICENSE); CURRENT |
+| 2026-08-27 | D1–D9 | Founding locks | this file Closed; [CURRENT.md](../CURRENT.md) |
+| 2026-08-27 | T1–T10 | Catalog freeze technical locks | this file; [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) |
