@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oath:kind:svc",
+  "title": "svc",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["exec", "wants", "restart", "enabled"],
+  "properties": {
+    "exec": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "argv; absolute path in exec[0]."
+    },
+    "wants": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Other svc ids that should be up first."
+    },
+    "restart": {
+      "type": "string",
+      "enum": ["never", "always", "on-failure"]
+    },
+    "enabled": { "type": "boolean" }
+  }
+}

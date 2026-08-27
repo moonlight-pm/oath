@@ -115,10 +115,13 @@ docs/
   manual/             Operator product docs (shipped only)
 .grok/skills/         oath-session-start, oath-progress-docs
 apocrypha/            gitignored scratch/history — not product
+crates/oath-core      catalog, kinds, apply/undo
+crates/oath           CLI
+crates/oath-init      PID 1 + serial-login
+image/                pack qcow + initramfs, QEMU wrapper
 ```
 
-There is no source tree for the OS yet. Do not invent a crate layout until
-the first freeze says what to build.
+Do not invent extra kinds until CURRENT says so.
 
 ## Workflow
 

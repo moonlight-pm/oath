@@ -1,0 +1,13 @@
+[package]
+name = "oath"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+oath-core = { path = "../oath-core" }
+clap = { version = "4", features = ["derive", "env"] }
+serde_json = "1"
+nix = { version = "0.30", default-features = false, features = ["hostname", "reboot", "fs"] }
+libc = "0.2"

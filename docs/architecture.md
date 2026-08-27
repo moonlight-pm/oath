@@ -15,13 +15,32 @@
 
 ## As-built (2026-08-27)
 
-There is no OS tree yet. This repository contains documentation, agent
-guide, and progress-docs skills.
+QEMU x86_64 appliance. Serial is the console.
 
-When a QEMU image, `oath` binary, catalog tree, or supervisor exists, describe
-them here: processes, paths, image layout, how to boot the dogfood.
+```
+QEMU -kernel bzImage -initrd initrd.gz -drive virtio qcow2
+  kernel (borrowed Linux 6.12) + initramfs
+    /init = oath-init
+    loads virtio_blk + btrfs modules
+    mounts /dev/vda subvol=@ , chroot
+  disk (btrfs, subvol @)
+    /usr/lib/oath/init     PID 1 after pivot
+    /usr/lib/oath/serial-login
+    /bin/oath
+    /bin/busybox (applets, including sh)
+    /bin/btrfs
+    /oath/                 catalog
+    /sbin/init -> ../usr/lib/oath/init
+```
 
-**Target (not as-built):**
+PID 1: mount proc/sys/dev, hostname from `host:local` desired, spawn
+`svc:*`, reap, listen `/oath/run/init.sock`.
+
+`oath apply` snapshots (btrfs subvolume of `/` into `/.oath-gens/N` when
+`btrfs` is present; otherwise copies the catalog tree), then converges.
+
+Workspace crates: `oath-core`, `oath`, `oath-init`. Image scripts:
+`image/build.sh`, `image/run.sh`. Artifacts in `build/` (gitignored).
+
+**Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md)
-— `/oath` catalog, `kind:name` objects, `oath` verbs, own PID 1, musl,
-btrfs generations.

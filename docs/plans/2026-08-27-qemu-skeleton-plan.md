@@ -19,54 +19,52 @@ the identity. Replace inward later.
 
 ## 1. Image and boot
 
-- [ ] Kernel: vanilla Linux, our config, virtio, btrfs, serial console,
-      no need for a desktop stack.
-- [ ] qcow2 with one btrfs filesystem; live root is a subvolume.
-- [ ] QEMU wrapper in-repo: `x86_64`, `-serial stdio` (or equivalent
-      that an agent can attach to), virtio-blk, no GUI requirement.
-- [ ] PID 1 is our binary: mount `proc`/`sys`/`dev`/root, set hostname
-      from `host:local` desired, converge `svc:*`, reap, halt/reboot.
-- [ ] `svc:serial` gets a root shell (or a login that is root) on the
-      serial so the next command can be `oath`.
+- [x] Kernel: borrowed vanilla Linux bzImage + modules (virtio, btrfs,
+      serial). Not a custom config yet.
+- [x] qcow2 with one btrfs filesystem; live root is subvolume `@`.
+- [x] QEMU wrapper: `image/run.sh` (x86_64, nographic serial, virtio-blk).
+- [x] PID 1 (`oath-init`): mounts, hostname from `host:local`, `svc:*`,
+      reap, halt/reboot syscalls via `oath apply`.
+- [x] `svc:serial` root shell on serial (`serial-login`).
 
 ## 2. Catalog in the image
 
-- [ ] `/oath` tree as in the freeze, present at first boot.
-- [ ] JSON Schema + Markdown for `host`, `svc`, `snap`.
-- [ ] Objects: `host:local`, `svc:serial`, `snap:current`, `snap:1`
-      (or empty snap list with generation 0 documented).
-- [ ] `INDEX.md` generated; honest about what is there.
-- [ ] `oath` binary: `ls`, `schema`, `get`, `set`, `diff`, `apply`,
+- [x] `/oath` tree as in the freeze, present at first boot.
+- [x] JSON Schema + Markdown for `host`, `svc`, `snap`.
+- [x] Objects: `host:local`, `svc:serial`, `snap:current` (generation 0).
+      `snap:N` created on apply.
+- [x] `INDEX.md` generated.
+- [x] `oath` binary: `ls`, `schema`, `get`, `set`, `diff`, `apply`,
       `undo`, `log`, `--json`, `--confirm`, exit 3 on confirm-class.
 
 ## 3. Converge handlers
 
-- [ ] `host` hostname: sethostname + persist in catalog; boot path
-      reapplies.
-- [ ] `host` power reboot/halt: `confirm`.
-- [ ] `svc`: PID 1 is the handler; notify after apply.
-- [ ] `apply` takes a btrfs snapshot first; log line written.
-- [ ] `undo` restores the last apply’s snapshot (hostname included).
+- [x] `host` hostname: sethostname + persist; boot path reapplies
+      (reboot e2e not signed).
+- [x] `host` power reboot/halt: `confirm` (refuses without `--confirm`).
+- [x] `svc`: PID 1 is the handler; socket notify exists.
+- [x] `apply` snapshots first (`btrfs subvolume snapshot` when `btrfs`
+      is in the image); apply log written.
+- [x] `undo` restores last apply (hostname live-tested).
 
 ## 4. Courage test (must all pass)
 
-- [ ] Fresh VM: `oath` (no args) and `cat /oath/INDEX.md` make sense
-      to a model that has never seen Oath.
-- [ ] `oath ls` lists `host:local`.
-- [ ] Change hostname, `apply`, reboot, actual matches.
-- [ ] `oath undo`, hostname (and catalog) match the parent generation.
-- [ ] `oath apply` of `power=reboot` without `--confirm` exits 3.
-- [ ] Serial still works after reboot.
+- [x] Fresh VM: `oath` / INDEX readable.
+- [x] `oath ls` lists `host:local`.
+- [ ] Change hostname, `apply`, **reboot**, actual matches (boot path
+      writes hostname; e2e reboot not signed).
+- [x] `oath undo` restores hostname on the live VM.
+- [x] `oath apply` of `power=reboot` without `--confirm` exits 3.
+- [ ] Serial still works after reboot (depends on reboot e2e).
 
 ## 5. Docs in the same change as code
 
-- [ ] `docs/capabilities.md` rows: boot, catalog, objects, oath-cli,
+- [x] `docs/capabilities.md` rows: boot, catalog, objects, oath-cli,
       snap, svc — status/gaps/dogfood.
-- [ ] `CURRENT.md` dogfood: how to launch the QEMU wrapper.
-- [ ] `docs/architecture.md` as-built: processes, paths, image.
-- [ ] Freeze header: Implementation / Dogfood / Gaps.
-- [ ] Manual: only what actually works (INDEX-on-box is the operator
-      doc; repo manual if we have a host-side wrapper).
+- [x] `CURRENT.md` dogfood: how to launch the QEMU wrapper.
+- [x] `docs/architecture.md` as-built: processes, paths, image.
+- [x] Freeze header: Implementation / Dogfood / Gaps.
+- [x] Manual: [../manual/qemu.md](../manual/qemu.md) limited.
 
 ---
 

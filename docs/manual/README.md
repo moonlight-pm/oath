@@ -1,8 +1,10 @@
 # Manual
 
-Operator-facing product docs. **Shipped behavior only.**
+Operator-facing product docs. **Shipped (or honestly limited) only.**
 
-Nothing has shipped. Do not document the roadmap here.
+| Page | Coverage |
+|------|----------|
+| [qemu.md](qemu.md) | Limited: build/run the Phase 1 QEMU appliance |
 
-When `oath` or a bootable image is dogfoodable, start here — and keep the
-live catalog on the machine honest too.
+The live catalog `/oath/INDEX.md` on the appliance is the operator doc
+for `oath` itself.

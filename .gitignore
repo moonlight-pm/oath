@@ -3,6 +3,7 @@
 /.worktrees/
 /result
 /result-*
+/build/
 *.iso
 *.qcow2
 *.img

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oath:kind:host",
+  "title": "host",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hostname", "power"],
+  "properties": {
+    "hostname": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Linux hostname. Source of truth is this object, not /etc/hostname."
+    },
+    "power": {
+      "type": "string",
+      "enum": ["run", "reboot", "halt"],
+      "description": "run is steady state. reboot and halt require --confirm on apply."
+    }
+  }
+}

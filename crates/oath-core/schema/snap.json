@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oath:kind:snap",
+  "title": "snap",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["generation"],
+  "properties": {
+    "generation": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "For snap:current, the last snapshot apply created. For snap:N, that generation's id."
+    },
+    "parent": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Parent generation (snap:N only)."
+    },
+    "time": {
+      "type": "string",
+      "description": "When the snapshot was taken (snap:N only)."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why (snap:N only)."
+    }
+  }
+}

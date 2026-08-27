@@ -1,0 +1,35 @@
+//! Root shell on the QEMU serial. `svc:serial` execs this.
+
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::os::fd::AsRawFd;
+use std::os::unix::process::CommandExt;
+use std::process::Command;
+
+fn main() {
+    let tty = open_tty();
+    if let Some(f) = tty {
+        let fd = f.as_raw_fd();
+        unsafe {
+            libc::dup2(fd, 0);
+            libc::dup2(fd, 1);
+            libc::dup2(fd, 2);
+            libc::setsid();
+            libc::ioctl(0, libc::TIOCSCTTY, 1);
+        }
+        std::mem::forget(f);
+    }
+    let _ = writeln!(std::io::stderr(), "Oath. Root on serial. Try: oath");
+    let err = Command::new("/bin/busybox").args(["sh", "-l"]).exec();
+    eprintln!("exec sh: {err}");
+    std::process::exit(1);
+}
+
+fn open_tty() -> Option<std::fs::File> {
+    for p in ["/dev/console", "/dev/ttyS0", "/dev/hvc0"] {
+        if let Ok(f) = OpenOptions::new().read(true).write(true).open(p) {
+            return Some(f);
+        }
+    }
+    None
+}

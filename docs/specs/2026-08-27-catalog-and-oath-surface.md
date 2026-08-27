@@ -1,8 +1,11 @@
 **Date:** 2026-08-27
 **Status:** target (freeze)
-**Implementation:** not started
-**Dogfood:** none
-**Gaps:** no code, no image, no `oath` binary
+**Implementation:** partial
+**Dogfood:** QEMU serial (`image/run.sh`) — `oath ls`, hostname apply+undo
+**Gaps:**
+- Hostname surviving reboot not e2e-signed
+- Generation snapshots nest under `/.oath-gens` on `@` rather than sibling subvols
+- MCP, extra kinds (out of freeze)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Catalog, objects, and `oath` — target design

@@ -51,6 +51,8 @@ ask the human.
 | `AGENTS.md` | Contributor + agent guide |
 | `CURRENT.md` | Only living session handoff |
 | `LICENSE` | MIT — Copyright (c) Joshua Kifer |
+| `crates/` | `oath-core`, `oath`, `oath-init` |
+| `image/` | QEMU image pack + `run.sh` |
 | `apocrypha/` | Scratch / history — not built, gitignored |
 | `.grok/skills/` | `oath-session-start`, `oath-progress-docs` |
 | `.grok/rules/active-work.md` | **Pointer** to `CURRENT.md` |
