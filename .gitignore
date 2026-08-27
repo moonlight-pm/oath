@@ -1,0 +1,12 @@
+/apocrypha/
+/target/
+/.worktrees/
+/result
+/result-*
+*.iso
+*.qcow2
+*.img
+*.swp
+*~
+.direnv/
+.envrc
