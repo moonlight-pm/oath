@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use oath_core::{seed, Actor, Catalog, Error, ObjectId, DEFAULT_ROOT, EXIT_CONFIRM};
+use oath_core::{seed, tel, Actor, Catalog, Error, ObjectId, DEFAULT_ROOT, EXIT_CONFIRM};
 use serde_json::{json, Map, Value};
 
 mod live;
@@ -88,8 +88,21 @@ fn emit_err(e: &Error) {
 
 fn run() -> oath_core::Result<i32> {
     let cli = Cli::parse();
+    let verb = match &cli.cmd {
+        None => "index",
+        Some(Cmd::Ls { .. }) => "ls",
+        Some(Cmd::Schema { .. }) => "schema",
+        Some(Cmd::Get { .. }) => "get",
+        Some(Cmd::Set { .. }) => "set",
+        Some(Cmd::Diff { .. }) => "diff",
+        Some(Cmd::Apply { .. }) => "apply",
+        Some(Cmd::Undo) => "undo",
+        Some(Cmd::Log) => "log",
+        Some(Cmd::Seed) => "seed",
+    };
+    tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
     let cat = Catalog::open(&cli.root)?;
-    match cli.cmd {
+    let out: oath_core::Result<i32> = match cli.cmd {
         None => {
             let text = cat.index_text()?;
             let short: String = text.lines().take(24).collect::<Vec<_>>().join("\n");
@@ -286,7 +299,16 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
+    };
+    match &out {
+        Ok(code) => tel("oath", "cmd_done", json!({ "verb": verb, "code": code })),
+        Err(e) => tel(
+            "oath",
+            "cmd_err",
+            json!({ "verb": verb, "err": e.to_string(), "code": e.exit_code() }),
+        ),
     }
+    out
 }
 
 fn parse_val(s: &str) -> Value {

@@ -7,6 +7,7 @@ mod id;
 mod index;
 mod kinds;
 mod seed;
+mod tel;
 
 pub use catalog::{diff_values, Catalog, Drift, Object};
 pub use error::{Error, Result};
@@ -14,6 +15,7 @@ pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{Host, HostPower, Meta, Svc, SvcActual, SvcRestart};
 pub use seed::seed;
+pub use tel::tel;
 
 pub const DEFAULT_ROOT: &str = "/oath";
 pub const EXIT_CONFIRM: i32 = 3;

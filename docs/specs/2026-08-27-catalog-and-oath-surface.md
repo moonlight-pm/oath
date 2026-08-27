@@ -1,9 +1,8 @@
 **Date:** 2026-08-27
 **Status:** target (freeze)
 **Implementation:** partial
-**Dogfood:** QEMU serial (`image/run.sh`) — `oath ls`, hostname apply+undo
+**Dogfood:** QEMU probe (`image/probe.py`) — hostname apply, undo, confirm-reboot, hostname survives reboot
 **Gaps:**
-- Hostname surviving reboot not e2e-signed
 - Generation snapshots nest under `/.oath-gens` on `@` rather than sibling subvols
 - MCP, extra kinds (out of freeze)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)

@@ -189,6 +189,23 @@ fn unknown_field_hints_schema() {
 }
 
 #[test]
+fn second_apply_after_undo_uses_new_generation() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "host:local".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("hostname".into(), json!("atlas"));
+    cat.set_fields(&id, fields).unwrap();
+    let r1 = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    let mut fields = Map::new();
+    fields.insert("hostname".into(), json!("beta"));
+    cat.set_fields(&id, fields).unwrap();
+    let r2 = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert!(r2.generation > r1.generation, "{} vs {}", r2.generation, r1.generation);
+}
+
+#[test]
 fn apply_noop_on_in_sync() {
     let (_d, cat) = tmp();
     let r = cat.apply(None, false, &Actor::unknown(), &NullHooks).unwrap();

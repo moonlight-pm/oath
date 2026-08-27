@@ -192,7 +192,7 @@ impl Catalog {
         }
 
         let parent = self.current_generation()?;
-        let generation = parent + 1;
+        let generation = self.next_generation()?;
 
         // Snapshot the last-good tree: for host-like objects, desired
         // currently holds the pending set. Write actual over desired,
@@ -371,6 +371,37 @@ impl Catalog {
         let id = ObjectId::new(KIND_SNAP, "current");
         let obj = self.get(&id)?;
         Ok(obj.actual.get("generation").and_then(|v| v.as_u64()).unwrap_or(0))
+    }
+
+    fn next_generation(&self) -> Result<u64> {
+        let mut max = self.current_generation()?;
+        if let Ok(ids) = self.ls(Some(KIND_SNAP)) {
+            for id in ids {
+                if let Ok(n) = id.name.parse::<u64>() {
+                    max = max.max(n);
+                }
+            }
+        }
+        if let Ok(lines) = self.log_lines() {
+            for rec in lines {
+                if let Some(n) = rec.get("generation").and_then(|v| v.as_u64()) {
+                    max = max.max(n);
+                }
+                if let Some(n) = rec.get("parent_generation").and_then(|v| v.as_u64()) {
+                    max = max.max(n);
+                }
+            }
+        }
+        for dir in [Path::new("/.oath-gens"), self.root.join(".gens").as_path()] {
+            if let Ok(rd) = fs::read_dir(dir) {
+                for e in rd.flatten() {
+                    if let Ok(n) = e.file_name().to_string_lossy().parse::<u64>() {
+                        max = max.max(n);
+                    }
+                }
+            }
+        }
+        Ok(max + 1)
     }
 
     fn record_generation(&self, generation: u64, parent: u64, selected: &[Drift]) -> Result<()> {

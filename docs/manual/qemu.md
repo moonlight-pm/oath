@@ -19,14 +19,30 @@ nix-shell          # optional: kernel, qemu, musl cc, busybox, btrfs
 You land on a root shell. The catalog is `/oath`. Try `oath` with no
 arguments, then `oath ls`.
 
+## Probe (scripted)
+
+```sh
+./image/probe.py
+```
+
+Writes `build/runs/<id>/`: `meta.json`, `serial-boot*.log`, `events.jsonl`
+(`oath-tel` lines), `probe.json`, `REPORT.md`. Uses a qcow overlay so
+the golden image is not mutated.
+
+Interactive `./image/run.sh` also creates a run dir and tees serial to
+`serial.log`.
+
+Guest telemetry is JSON on stderr, prefixed `oath-tel `, and appended
+under `/oath/log/` once the disk is mounted.
+
 ## What works here
 
-- Boot to serial, `oath ls` / `get` / `schema` / `set` / `diff` / `apply` / `undo`
-- Hostname apply and undo on the live VM
-- `oath apply` of `power=reboot` without `--confirm` refuses (exit 3)
+- Boot to serial, `oath` verbs
+- Hostname apply and undo
+- `power=reboot` without `--confirm` refuses (exit 3)
+- Hostname **survives reboot** (probe boot2)
 
 ## Gaps
 
-- Hostname surviving a **reboot** is not an e2e sign-off yet (init does
-  reapply `host:local` on boot).
 - No SSH, no installer, no packages.
+- Generation subvolumes still nest under `/.oath-gens` on `@`.

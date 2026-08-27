@@ -39,6 +39,9 @@ PID 1: mount proc/sys/dev, hostname from `host:local` desired, spawn
 `oath apply` snapshots (btrfs subvolume of `/` into `/.oath-gens/N` when
 `btrfs` is present; otherwise copies the catalog tree), then converges.
 
+Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
+Host runs live under `build/runs/<id>/` (`image/run.sh`, `image/probe.py`).
+
 Workspace crates: `oath-core`, `oath`, `oath-init`. Image scripts:
 `image/build.sh`, `image/run.sh`. Artifacts in `build/` (gitignored).
 

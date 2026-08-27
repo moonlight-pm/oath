@@ -118,7 +118,7 @@ apocrypha/            gitignored scratch/history — not product
 crates/oath-core      catalog, kinds, apply/undo
 crates/oath           CLI
 crates/oath-init      PID 1 + serial-login
-image/                pack qcow + initramfs, QEMU wrapper
+image/                pack qcow + initramfs, QEMU wrapper, probe.py
 ```
 
 Do not invent extra kinds until CURRENT says so.

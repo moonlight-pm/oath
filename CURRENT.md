@@ -13,9 +13,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. Close remaining Phase 1 plan gaps: hostname **reboot** e2e, quieter
-   init, cleaner generation layout (sibling subvols, not nested under
-   `/`).
+1. Phase 1 remainder: quieter init, sibling subvols for generations
+   (not nested under `/`). Courage test including **reboot** passed.
 2. Do not grow kinds (pkg, dev, net, glibc runtime).
 3. Do not install to a real disk. qcow2 snapshots are not product undo.
 
@@ -29,13 +28,13 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Phase 1 serial box |
 | How | `nix-shell` (optional) → `./image/build.sh` → `./image/run.sh` |
-| Notes | `oath ls` / hostname apply+undo work on serial. Reboot survival not e2e-signed. Loop-pack uses `sudo`. Artifacts in `build/` (gitignored). |
+| Notes | Courage test passed 2026-08-27 (hostname apply, undo, confirm-reboot, hostname **survives reboot**). Telemetry: `build/runs/<id>/`. Loop-pack uses `sudo`. |
 
 ```sh
 nix-shell
 ./image/build.sh
-./image/run.sh
-# then: oath
+./image/probe.py    # scripted courage test + run dir
+./image/run.sh      # interactive serial; also writes build/runs/
 ```
 
 ---

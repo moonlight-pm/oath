@@ -12,7 +12,8 @@ use std::time::Duration;
 use nix::mount::{mount, MsFlags};
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::{sethostname, Pid};
-use oath_core::{seed, Catalog, Host, ObjectId, Svc, DEFAULT_ROOT};
+use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, DEFAULT_ROOT};
+use serde_json::json;
 
 const MODULES: &[&str] = &[
     "kernel/drivers/virtio/virtio.ko",
@@ -32,14 +33,20 @@ fn log(msg: &str) {
     let _ = writeln!(std::io::stderr(), "oath-init: {msg}");
 }
 
+fn kver() -> String {
+    fs::read_to_string("/proc/sys/kernel/osrelease").unwrap_or_default().trim().to_string()
+}
+
 fn main() {
     if let Err(e) = real_main() {
         log(&format!("fatal: {e}"));
+        tel("init", "fatal", json!({ "err": e }));
         fallback();
     }
 }
 
 fn real_main() -> Result<(), String> {
+    tel("init", "boot", json!({ "pid": std::process::id(), "kver": kver() }));
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
@@ -47,9 +54,11 @@ fn real_main() -> Result<(), String> {
     if !Path::new("/oath/INDEX.md").exists() {
         load_modules();
         mount_root()?;
+        tel("init", "mounted", json!({ "dev": "/dev/vda", "subvol": "@" }));
     }
 
     let _ = fs::create_dir_all("/oath/run");
+    let _ = fs::create_dir_all("/oath/log");
     let _ = fs::create_dir_all("/.oath-gens");
     let _ = fs::create_dir_all("/tmp");
     let _ = fs::create_dir_all("/root");
@@ -57,6 +66,7 @@ fn real_main() -> Result<(), String> {
     if !Path::new("/oath/INDEX.md").exists() {
         let _ = seed(Path::new(DEFAULT_ROOT));
         log("seeded empty catalog");
+        tel("init", "seeded", json!({}));
     }
 
     apply_host();
@@ -68,11 +78,13 @@ fn real_main() -> Result<(), String> {
     let _ = listener.set_nonblocking(true);
 
     log("ready");
+    tel("init", "ready", json!({ "svcs": kids.len(), "kver": kver() }));
     loop {
         reap(&mut kids);
         if let Ok((mut s, _)) = listener.accept() {
             let mut buf = [0u8; 64];
-            let _ = s.read(&mut buf);
+            let n = s.read(&mut buf).unwrap_or(0);
+            tel("init", "converge", json!({ "bytes": n }));
             kids = start_services();
             let _ = s.write_all(b"ok\n");
         }
@@ -96,10 +108,13 @@ fn load_modules() {
         let p = base.join(m);
         if !p.exists() {
             log(&format!("no module {m}"));
+            tel("init", "module", json!({ "name": m, "ok": false, "err": "missing" }));
             continue;
         }
         let st = Command::new("/bin/busybox").args(["insmod", p.to_str().unwrap()]).status();
-        if !matches!(st, Ok(s) if s.success()) {
+        let ok = matches!(st, Ok(s) if s.success());
+        tel("init", "module", json!({ "name": m, "ok": ok }));
+        if !ok {
             log(&format!("insmod {m} -> {st:?}"));
         }
     }
@@ -133,6 +148,9 @@ fn apply_host() {
     let Ok(host) = serde_json::from_value::<Host>(obj.desired) else { return };
     if sethostname(host.hostname.as_str()).is_err() {
         log("sethostname failed");
+        tel("init", "hostname", json!({ "ok": false, "name": host.hostname }));
+    } else {
+        tel("init", "hostname", json!({ "ok": true, "name": host.hostname }));
     }
     let _ = fs::create_dir_all("/etc");
     let _ = fs::write("/etc/hostname", format!("{}\n", host.hostname));
@@ -164,11 +182,13 @@ fn start_services() -> HashMap<i32, Kid> {
         match spawn(&spec) {
             Ok(pid) => {
                 log(&format!("{} pid {}", id, pid.as_raw()));
+                tel("init", "svc_start", json!({ "id": id.to_string(), "pid": pid.as_raw() }));
                 write_svc_actual(&id, "running", Some(pid.as_raw()), 0);
                 kids.insert(pid.as_raw(), Kid { id: id.to_string(), spec });
             }
             Err(e) => {
                 log(&format!("{id} spawn: {e}"));
+                tel("init", "svc_fail", json!({ "id": id.to_string(), "err": e }));
                 write_svc_actual(&id, "failed", None, 0);
             }
         }
@@ -204,6 +224,7 @@ fn reap(kids: &mut HashMap<i32, Kid>) {
         let raw = pid.as_raw();
         let Some(k) = kids.remove(&raw) else { continue };
         log(&format!("{} reaped", k.id));
+        tel("init", "svc_reap", json!({ "id": k.id, "failed": failed }));
         let restart = match k.spec.restart {
             oath_core::SvcRestart::Never => false,
             oath_core::SvcRestart::Always => true,

@@ -39,8 +39,7 @@ the identity. Replace inward later.
 
 ## 3. Converge handlers
 
-- [x] `host` hostname: sethostname + persist; boot path reapplies
-      (reboot e2e not signed).
+- [x] `host` hostname: sethostname + persist; boot path reapplies.
 - [x] `host` power reboot/halt: `confirm` (refuses without `--confirm`).
 - [x] `svc`: PID 1 is the handler; socket notify exists.
 - [x] `apply` snapshots first (`btrfs subvolume snapshot` when `btrfs`
@@ -51,11 +50,10 @@ the identity. Replace inward later.
 
 - [x] Fresh VM: `oath` / INDEX readable.
 - [x] `oath ls` lists `host:local`.
-- [ ] Change hostname, `apply`, **reboot**, actual matches (boot path
-      writes hostname; e2e reboot not signed).
+- [x] Change hostname, `apply`, **reboot**, actual matches (`probe.py` boot2).
 - [x] `oath undo` restores hostname on the live VM.
 - [x] `oath apply` of `power=reboot` without `--confirm` exits 3.
-- [ ] Serial still works after reboot (depends on reboot e2e).
+- [x] Serial still works after reboot (probe boot2).
 
 ## 5. Docs in the same change as code
 

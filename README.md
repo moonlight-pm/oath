@@ -69,7 +69,8 @@ they are not the runtime.
 cargo test -p oath-core
 nix-shell          # kernel, qemu, musl cc, busybox, btrfs — optional
 ./image/build.sh   # needs sudo to loop-mount the disk image
-./image/run.sh     # serial on stdio
+./image/probe.py   # scripted courage test; writes build/runs/<id>/
+./image/run.sh     # interactive serial; also writes build/runs/
 ```
 
 See [`CURRENT.md`](CURRENT.md) and [`docs/manual/qemu.md`](docs/manual/qemu.md).

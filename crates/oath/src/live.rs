@@ -6,7 +6,8 @@ use std::process::Command;
 
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
-use oath_core::{ApplyHooks, Error, Host, HostPower, Result};
+use oath_core::{tel, ApplyHooks, Error, Host, HostPower, Result};
+use serde_json::json;
 
 pub struct Live {
     pub catalog_root: PathBuf,
@@ -66,12 +67,21 @@ impl ApplyHooks for Live {
                 Command::new("btrfs").args(["subvolume", "snapshot", "-r", "/", &dest_s]).status()
             {
                 if st.success() {
+                    tel(
+                        "oath",
+                        "snapshot",
+                        json!({ "generation": generation, "kind": "btrfs", "path": dest_s }),
+                    );
                     return Ok(());
                 }
             }
-            // No btrfs(8) in the image yet — snapshot the catalog tree only.
         }
         Self::copy_dir(&self.catalog_root, &dest)?;
+        tel(
+            "oath",
+            "snapshot",
+            json!({ "generation": generation, "kind": "copy", "path": dest.display().to_string() }),
+        );
         Ok(())
     }
 
@@ -80,10 +90,20 @@ impl ApplyHooks for Live {
         let catalog_in_snap = dest.join("oath");
         if catalog_in_snap.is_dir() {
             Self::copy_dir(&catalog_in_snap, Path::new("/oath"))?;
+            tel(
+                "oath",
+                "restore",
+                json!({ "generation": generation, "from": catalog_in_snap.display().to_string() }),
+            );
             return Ok(());
         }
         if dest.is_dir() {
             Self::copy_dir(&dest, &self.catalog_root)?;
+            tel(
+                "oath",
+                "restore",
+                json!({ "generation": generation, "from": dest.display().to_string() }),
+            );
             return Ok(());
         }
         Err(Error::Msg(format!("no generation {generation} at {}", dest.display())))
@@ -94,6 +114,7 @@ impl ApplyHooks for Live {
             .map_err(|e| Error::Msg(format!("sethostname: {e}")))?;
         let _ = fs::create_dir_all("/etc");
         let _ = fs::write("/etc/hostname", format!("{}\n", desired.hostname));
+        tel("oath", "hostname", json!({ "name": desired.hostname }));
         Ok(Host { hostname: desired.hostname.clone(), power: HostPower::Run })
     }
 
@@ -110,12 +131,14 @@ impl ApplyHooks for Live {
 
     fn reboot(&self) -> Result<()> {
         sync();
+        tel("oath", "reboot", json!({}));
         reboot(RebootMode::RB_AUTOBOOT).map_err(|e| Error::Msg(format!("reboot: {e}")))?;
         Ok(())
     }
 
     fn halt(&self) -> Result<()> {
         sync();
+        tel("oath", "halt", json!({}));
         reboot(RebootMode::RB_HALT_SYSTEM).map_err(|e| Error::Msg(format!("halt: {e}")))?;
         Ok(())
     }
