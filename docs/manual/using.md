@@ -50,6 +50,9 @@ oath apply
 oath set host:local power=reboot
 oath apply              # refused (exit 3)
 oath apply --confirm    # reboots
+
+oath set host:local power=halt
+oath apply --confirm    # powers off; QEMU should exit
 ```
 
 After a reboot apply, desired `power` is set back to `run` so the box

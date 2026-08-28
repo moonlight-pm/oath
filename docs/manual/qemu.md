@@ -35,7 +35,7 @@ so PID 1 starts it again. That is not leaving QEMU.
 There is no QEMU monitor (`-monitor none`), so **Ctrl-A x** does not work.
 Ctrl-C goes to the guest (`signal=off`).
 
-From the guest, halt:
+From the guest, halt (powers off the VM so QEMU exits):
 
 ```
 oath set host:local power=halt
@@ -44,8 +44,12 @@ oath apply --confirm
 
 `cargo make run` also exits if the guest reboots (`-no-reboot`).
 
-From the host, another terminal: stop `qemu-system-x86_64` (or the
-`cargo make run` process).
+If the guest is already halted and this prompt is dead, QEMU is still
+holding the terminal. From **another** host terminal:
+
+```
+pkill -f qemu-system-x86_64
+```
 
 ## Probe (scripted)
 

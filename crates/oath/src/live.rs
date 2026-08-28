@@ -186,7 +186,9 @@ impl ApplyHooks for Live {
     fn halt(&self) -> Result<()> {
         sync();
         tel("oath", "halt", json!({}));
-        reboot(RebootMode::RB_HALT_SYSTEM).map_err(|e| Error::Msg(format!("halt: {e}")))?;
+        // POWER_OFF, not HALT_SYSTEM: halt leaves QEMU running with stdio
+        // attached (the host serial looks "stuck"). Power-off makes QEMU exit.
+        reboot(RebootMode::RB_POWER_OFF).map_err(|e| Error::Msg(format!("halt: {e}")))?;
         Ok(())
     }
 }

@@ -31,3 +31,10 @@ Reboot (owner asked):
 oath set host:local power=reboot
 oath apply --confirm
 ```
+
+Halt turns the machine off (on QEMU, the host serial returns):
+
+```
+oath set host:local power=halt
+oath apply --confirm
+```
