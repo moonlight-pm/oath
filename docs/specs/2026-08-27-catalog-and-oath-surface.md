@@ -12,8 +12,9 @@
 This is the identity of Oath. Init, packages, devices, and images hang off
 this model. They do not invent a parallel one.
 
-Normative desired shape. Not a changelog. Not an implementation checklist
-(that is [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md)).
+Normative desired shape. Not a changelog. Implementation history:
+[../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md),
+[../plans/2026-08-28-svc-loop-plan.md](../plans/2026-08-28-svc-loop-plan.md).
 
 ---
 

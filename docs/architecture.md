@@ -9,7 +9,7 @@
 | Target design freezes | [specs/](specs/) |
 | Session priority + dogfood | Root [CURRENT.md](../CURRENT.md) |
 | How docs fit together | [progress-model.md](progress-model.md) |
-| Product docs | [manual/](manual/) — **shipped only** |
+| Product docs | [manual/](manual/) — current operator manual |
 
 ---
 

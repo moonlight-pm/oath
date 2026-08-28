@@ -13,10 +13,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. Phase 2 svc loop is **done** (probe: hold stop / undo / persist across
-   reboot). No new kinds yet.
-2. Do not add pkg / net / dev / glibc runtime / installer unless CURRENT
-   is updated.
+1. Waiting. Next program phase is **Phase 3 packages** — not started.
+   Do not begin unless asked.
+2. Do not add net / dev / glibc runtime / installer unless CURRENT is
+   updated.
 3. Do not install to a real disk.
 
 **Always allowed:** docs hygiene; tests; `cargo run -p oath-make -- build|run|probe`.

@@ -43,22 +43,22 @@ compatibility promise.
 
 ## Status
 
-**Phase 1** is in progress: an **x86_64 QEMU** appliance, serial console,
-musl userland, our init, catalog on a btrfs root.
+Phases 0–2 are done: an **x86_64 QEMU** appliance boots our PID 1, the
+catalog, hostname apply/undo/reboot, and `svc:hold` start/stop. Nothing
+is a daily driver. No installer, packages, or desktop.
 
-Nothing is a daily driver. There is no installer, no package set, no
-desktop. See [`CURRENT.md`](CURRENT.md) for what to do next and whether
-anything boots.
+Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
+What next: [`CURRENT.md`](CURRENT.md).
 
 | | |
 |--|--|
 | Living focus | [`CURRENT.md`](CURRENT.md) |
+| Operator manual | [`docs/manual/README.md`](docs/manual/README.md) |
 | Agent / contributor guide | [`AGENTS.md`](AGENTS.md) |
 | Catalog freeze | [`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md) |
-| Phase 1 plan | [`docs/plans/2026-08-27-qemu-skeleton-plan.md`](docs/plans/2026-08-27-qemu-skeleton-plan.md) |
 | Docs map | [`docs/README.md`](docs/README.md) |
 
-## Build (Phase 1)
+## Build
 
 Needs a Rust toolchain with `x86_64-unknown-linux-musl`, and (for the
 image) QEMU, btrfs-progs, a Linux bzImage plus matching modules, and a
@@ -83,5 +83,5 @@ crates/oath        CLI (guest)
 crates/oath-init   PID 1 + serial login
 crates/oath-make   host: pack image, QEMU run, probe
 image/             tools.nix (borrowed kernel/busybox/qemu)
-docs/              progress model, freeze, plan
+docs/              progress model, freeze, operator manual
 ```

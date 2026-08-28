@@ -1,9 +1,9 @@
 # Founding brainstorm — what Oath is
 
-**Status:** idea (parked 2026-08-27). Do not implement from this file.
-Promote into freezes + `CURRENT.md` **Now** after Decision points land.
-**Related:** [open-questions.md](../open-questions.md), root
-[CURRENT.md](../../CURRENT.md).
+**Status:** idea (historical argument, 2026-08-27). Do not implement from
+this file. Founding locks and the catalog freeze superseded it.
+**Related:** [open-questions.md](../open-questions.md), freeze
+[../specs/2026-08-27-catalog-and-oath-surface.md](../specs/2026-08-27-catalog-and-oath-surface.md).
 
 This is the argument, not the spec.
 

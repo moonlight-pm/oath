@@ -45,7 +45,7 @@ means incomplete product work. Full model:
 | As-built map | `docs/architecture.md` | Processes, trees, paths, images |
 | Target design | `docs/specs/*` | Freezes (desired shape) |
 | Horizon | `docs/roadmap.md` | Phase-level program status |
-| Product docs | `docs/manual/` | **Shipped** operator truth only |
+| Product docs | `docs/manual/` | Current operator user manual |
 
 **End of every real product slice (same change as code):**
 
@@ -76,8 +76,7 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 
 Active freeze:
 [`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md).
-Active plan:
-[`docs/plans/2026-08-27-qemu-skeleton-plan.md`](docs/plans/2026-08-27-qemu-skeleton-plan.md).
+Active plan: **none** (Phase 1 and 2 complete).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).
@@ -112,7 +111,7 @@ docs/
   specs/              Target freezes (dated)
   plans/              Implementation checklists
   ideas/              Parked thoughts
-  manual/             Operator product docs (shipped only)
+  manual/             Operator user manual (current behavior)
 .grok/skills/         oath-session-start, oath-progress-docs
 apocrypha/            gitignored scratch/history — not product
 crates/oath-core      catalog, kinds, apply/undo
