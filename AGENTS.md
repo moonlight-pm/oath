@@ -75,8 +75,11 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Active freeze:
-[`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md).
-Active plan: **none** (Phase 1 and 2 complete).
+[`docs/specs/2026-08-28-packages.md`](docs/specs/2026-08-28-packages.md)
+(catalog:
+[`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md)).
+Active plan:
+[`docs/plans/2026-08-28-pkg-canary-plan.md`](docs/plans/2026-08-28-pkg-canary-plan.md).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).
@@ -121,7 +124,8 @@ crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe
 image/                tools.nix only (borrowed prebuilts)
 ```
 
-Do not invent extra kinds until CURRENT says so.
+Do not invent extra kinds until CURRENT says so. Phase 3 may add `pkg`
+only.
 
 ## Workflow
 

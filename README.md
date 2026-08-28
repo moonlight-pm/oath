@@ -44,8 +44,9 @@ compatibility promise.
 ## Status
 
 Phases 0–2 are done: an **x86_64 QEMU** appliance boots our PID 1, the
-catalog, hostname apply/undo/reboot, and `svc:hold` start/stop. Nothing
-is a daily driver. No installer, packages, or desktop.
+catalog, hostname apply/undo/reboot, and `svc:hold` start/stop. Phase 3
+packages are frozen (`pkg:hello` canary) and not yet in the image.
+Nothing is a daily driver. No installer or desktop.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).
@@ -56,6 +57,7 @@ What next: [`CURRENT.md`](CURRENT.md).
 | Operator manual | [`docs/manual/README.md`](docs/manual/README.md) |
 | Agent / contributor guide | [`AGENTS.md`](AGENTS.md) |
 | Catalog freeze | [`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md) |
+| Package freeze | [`docs/specs/2026-08-28-packages.md`](docs/specs/2026-08-28-packages.md) |
 | Docs map | [`docs/README.md`](docs/README.md) |
 
 ## Build

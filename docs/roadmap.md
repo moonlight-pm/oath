@@ -43,10 +43,12 @@ reboot persist. Plan:
 
 ## Phase 3 — Packages and services as objects
 
-**Status: next**
+**Status: active**
 
 Install/remove/query packages through the catalog. Services are objects
-with schema, not unit-file folklore.
+with schema, not unit-file folklore. Freeze:
+[specs/2026-08-28-packages.md](specs/2026-08-28-packages.md). First
+slice: `pkg:hello` canary.
 
 ## Phase 4 — Devices and network
 

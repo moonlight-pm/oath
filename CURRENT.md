@@ -13,10 +13,13 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. Waiting. Next program phase is **Phase 3 packages** — not started.
-   Do not begin unless asked.
-2. Do not add net / dev / glibc runtime / installer unless CURRENT is
-   updated.
+1. **Phase 3 packages** — freeze
+   [docs/specs/2026-08-28-packages.md](docs/specs/2026-08-28-packages.md),
+   plan
+   [docs/plans/2026-08-28-pkg-canary-plan.md](docs/plans/2026-08-28-pkg-canary-plan.md).
+   Implement the `pkg:hello` canary (store + `/bin` symlinks).
+2. Do not wrap busybox. Do not add net / dev / glibc runtime /
+   installer unless CURRENT is updated.
 3. Do not install to a real disk.
 
 **Always allowed:** docs hygiene; tests; `cargo make build|run|probe`.
@@ -46,7 +49,10 @@ Do not re-litigate without an explicit decision.
 
 - Oath: Linux kernel, own userspace, musl base, own PID 1.
 - Catalog `/oath`, ids `kind:name`, `oath` is the only admin surface.
-- v0 kinds `host`, `svc`, `snap`. Sibling `@gen-N` at `/oath/run/fs`.
+- v0 kinds `host`, `svc`, `snap`. Phase 3 adds `pkg` (canary
+  `pkg:hello` only). Sibling `@gen-N` at `/oath/run/fs`.
+- Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
+  no new verbs; no fetch in v0.
 - Services: PID 1 converges enabled/disabled `svc:*`. `svc:serial` is
   the console; `svc:hold` is the start/stop test process.
 - MIT, Copyright (c) Joshua Kifer.
@@ -57,6 +63,8 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md)
-- Plan: [docs/plans/2026-08-28-svc-loop-plan.md](docs/plans/2026-08-28-svc-loop-plan.md) (complete)
-- Roadmap next: Phase 3 packages (not started)
+- Freeze: [docs/specs/2026-08-28-packages.md](docs/specs/2026-08-28-packages.md)
+  (catalog:
+  [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md))
+- Plan: [docs/plans/2026-08-28-pkg-canary-plan.md](docs/plans/2026-08-28-pkg-canary-plan.md)
+- Roadmap: Phase 3 packages (active)

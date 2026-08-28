@@ -8,7 +8,10 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | Freeze | Role |
 |--------|------|
 | [2026-08-27-catalog-and-oath-surface.md](2026-08-27-catalog-and-oath-surface.md) | Catalog, objects, `oath` verbs, v0 kinds, apply/undo |
+| [2026-08-28-packages.md](2026-08-28-packages.md) | Kind `pkg`, store + `/bin` symlinks, canary `pkg:hello` |
 
-Active plan: none. Completed:
+Active plan:
+[../plans/2026-08-28-pkg-canary-plan.md](../plans/2026-08-28-pkg-canary-plan.md).
+Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),
 [../plans/2026-08-28-svc-loop-plan.md](../plans/2026-08-28-svc-loop-plan.md) (Phase 2).

@@ -12,7 +12,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open at founding or catalog-freeze scope.
+None open. Phase 3 store layout (T11–T13) is closed.
 
 ---
 
@@ -116,6 +116,22 @@ uid + tty.
 `mutate` vs `confirm`. Halt, wipe, boot-generation (except undo last)
 need `--confirm`. Agents do not pass it unless the owner asked.
 
+### T11 — Package store — locked 2026-08-28
+
+`/oath/store/pkg/<name>/` is the package tree. `/bin` is a symlink farm
+to that tree. No hard links. No second PATH. No unpack into `/usr`.
+
+### T12 — Package surface — locked 2026-08-28
+
+Kind `pkg`. Same `oath` verbs (`set` / `apply` / `undo`). No `oath
+install`, no apt dialect. v0 field `present`. No fetch, no glibc, no
+from-source in this slice.
+
+### T13 — Phase 3 first package — locked 2026-08-28
+
+Canary `pkg:hello` only. Do not wrap busybox / btrfs / `oath`. `svc`
+`wants` stays a listed gap.
+
 ---
 
 ## Decision log
@@ -124,3 +140,4 @@ need `--confirm`. Agents do not pass it unless the owner asked.
 |------|-----|----------|----------------|
 | 2026-08-27 | D1–D9 | Founding locks | this file Closed; [CURRENT.md](../CURRENT.md) |
 | 2026-08-27 | T1–T10 | Catalog freeze technical locks | this file; [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) |
+| 2026-08-28 | T11–T13 | Package store + canary | this file; [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md) |
