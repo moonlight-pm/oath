@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-08-27)
+## As-built (2026-08-28)
 
 QEMU x86_64 appliance. Serial is the console.
 
@@ -36,8 +36,9 @@ QEMU -kernel bzImage -initrd initrd.gz -drive virtio qcow2
     /sbin/init -> ../usr/lib/oath/init
 ```
 
-PID 1: mount proc/sys/dev, hostname from `host:local` desired, spawn
-`svc:*`, reap, listen `/oath/run/init.sock`.
+PID 1: mount proc/sys/dev, hostname from `host:local`, **converge**
+`svc:*` (start enabled, SIGTERM disabled), reap, listen
+`/oath/run/init.sock`. Seeded services: `svc:serial`, `svc:hold`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores `/oath` from that generation (not

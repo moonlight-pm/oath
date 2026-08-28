@@ -13,11 +13,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. Phase 2: closed **svc** loop — `oath set` / `apply` starts or stops a
-   service, it survives reboot, undo works. Notify socket is the
-   converge path. No new kinds.
-2. Do not add pkg / net / dev / glibc runtime / installer.
-3. Do not install to a real disk. qcow2 snapshots are not product undo.
+1. Phase 2 svc loop is **done** (probe: hold stop / undo / persist across
+   reboot). No new kinds yet.
+2. Do not add pkg / net / dev / glibc runtime / installer unless CURRENT
+   is updated.
+3. Do not install to a real disk.
 
 **Always allowed:** docs hygiene; tests; `cargo run -p oath-make -- build|run|probe`.
 
@@ -27,9 +27,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 | | **QEMU appliance** |
 |--|---------------------|
-| Role | Phase 1 serial box |
-| How | `nix-shell` (optional) → `cargo run -p oath-make -- build` → `probe` / `run` |
-| Notes | Courage test green 2026-08-28 including sibling gens (`/oath/run/fs/@gen-N`) and reboot. Telemetry in `build/runs/<id>/`. |
+| Role | Phase 1+2 serial box |
+| How | `cargo run -p oath-make -- build` then `probe` / `run` |
+| Notes | Hostname + `svc:hold` start/stop/undo/reboot persist. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
 
 ```sh
 nix-shell
@@ -42,21 +42,21 @@ cargo run -p oath-make -- run
 
 ## Locked models
 
-Do not re-litigate without an explicit decision. See previous locks plus
-the catalog freeze. Short form:
+Do not re-litigate without an explicit decision.
 
 - Oath: Linux kernel, own userspace, musl base, own PID 1.
 - Catalog `/oath`, ids `kind:name`, `oath` is the only admin surface.
-- v0 kinds `host`, `svc`, `snap`. btrfs generations. Serial QEMU x86_64.
-- Generations are sibling subvolumes `@gen-N` beside live `@`, viewed
-  at `/oath/run/fs` (btrfs top-level).
+- v0 kinds `host`, `svc`, `snap`. Sibling `@gen-N` at `/oath/run/fs`.
+- Services: PID 1 converges enabled/disabled `svc:*`. `svc:serial` is
+  the console; `svc:hold` is the start/stop test process.
 - MIT, Copyright (c) Joshua Kifer.
 
 ---
 
 ## Pointers
 
+- Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Active freeze: [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md)
-- Active plan: none (Phase 1 plan complete). Next: Phase 2 svc loop.
-- QEMU (limited): [docs/manual/qemu.md](docs/manual/qemu.md)
+- Freeze: [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md)
+- Plan: [docs/plans/2026-08-28-svc-loop-plan.md](docs/plans/2026-08-28-svc-loop-plan.md) (complete)
+- Roadmap next: Phase 3 packages (not started)

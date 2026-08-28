@@ -1,0 +1,42 @@
+# Catalog
+
+The catalog is the source of truth. It lives at `/oath`.
+
+```
+/oath/
+  INDEX.md                 generated. read this first
+  schema/<kind>.json       JSON Schema 2020-12
+  schema/<kind>.md         prompt-sized prose
+  objects/<kind>/<name>/
+    desired.json
+    actual.json
+    meta.json              id, safety, status
+    applied.json           `svc` only — last applied desired
+  log/apply.jsonl
+  run/                     sockets, mounts — not desired state
+    init.sock
+    fs/                    btrfs top-level (subvolid=0)
+```
+
+Desired and actual are separate files. Do not mix is and will-be.
+You may `cat` any of these; `oath get` is the supported way.
+
+If a kind is not under `/oath/schema`, it does not exist.
+
+## Kinds (v0)
+
+| Kind | Ids | Role |
+|------|-----|------|
+| `host` | `host:local` only | Hostname and power (`run` / `reboot` / `halt`) |
+| `svc` | `svc:serial`, `svc:hold` | PID 1’s only config |
+| `snap` | `snap:current`, `snap:N` | Generations |
+
+No package, device, or network kinds yet.
+
+`host` and `snap:current` share schema between desired and actual.
+`svc` actual is runtime (`state`, `pid`, `restarts`); drift is desired
+vs `applied.json`, not vs `actual.json`.
+
+See `oath schema <kind>` on the box for fields, safety, and examples.
+The Markdown there is the same text shipped in this repo under
+`crates/oath-core/schema/`.

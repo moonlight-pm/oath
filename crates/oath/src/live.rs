@@ -7,7 +7,8 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, Result, BTRFS_TOP, LIVE_SUBVOL,
+    gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, ObjectId, Result, BTRFS_TOP,
+    LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -156,6 +157,23 @@ impl ApplyHooks for Live {
             UnixStream::connect(sock).map_err(|e| Error::Msg(format!("init socket: {e}")))?;
         s.write_all(b"converge\n").ok();
         Ok(())
+    }
+
+    fn wait_converge(&self, id: &ObjectId, enabled: bool) -> Result<()> {
+        if id.kind != "svc" {
+            return Ok(());
+        }
+        let want = if enabled { "running" } else { "stopped" };
+        let path = Path::new("/oath/objects/svc").join(&id.name).join("actual.json");
+        for _ in 0..40 {
+            if let Ok(v) = oath_core::read_json::<serde_json::Value>(&path) {
+                if v.get("state").and_then(|s| s.as_str()) == Some(want) {
+                    return Ok(());
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+        Err(Error::hint(format!("{id} did not become {want}"), format!("oath get {id}")))
     }
 
     fn reboot(&self) -> Result<()> {

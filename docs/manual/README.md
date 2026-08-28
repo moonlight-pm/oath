@@ -1,10 +1,24 @@
-# Manual
+# Oath manual
 
-Operator-facing product docs. **Shipped (or honestly limited) only.**
+How the system works **today**. Not a roadmap. If it is not here, do not
+assume Debian, systemd, or another distro.
 
-| Page | Coverage |
-|------|----------|
-| [qemu.md](qemu.md) | Limited: build/run the Phase 1 QEMU appliance |
+Oath is a Linux you administer with `oath`. The live catalog is `/oath`.
+The only dogfood form is an **x86_64 QEMU** appliance on a serial console.
 
-The live catalog `/oath/INDEX.md` on the appliance is the operator doc
-for `oath` itself.
+| Page | What |
+|------|------|
+| [Using `oath`](using.md) | Verbs, INDEX, safety |
+| [Catalog](catalog.md) | Objects, kinds, on-disk tree |
+| [Services](services.md) | PID 1 and `svc:*` |
+| [Generations](generations.md) | Apply, undo, btrfs `@gen-N` |
+| [The appliance](qemu.md) | Build, run, probe, disk layout |
+
+On a running box, start at `/oath/INDEX.md` (or `oath` with no arguments).
+That file is generated from the live catalog and cannot advertise kinds
+that are not there.
+
+## What this is not
+
+No installer, no packages, no network objects, no SSH, no desktop, no
+glibc-as-the-OS. Busybox is a borrowed prebuilt, not the identity.

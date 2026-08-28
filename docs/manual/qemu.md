@@ -1,9 +1,10 @@
-# QEMU appliance (limited)
+# The appliance
 
-**Status:** partial. Serial QEMU only. Not an installer. Not bare metal.
+**Today’s product:** an x86_64 QEMU machine with a serial console. Not
+an installer. Not bare metal. Not a desktop.
 
-Build tools (kernel, busybox, qemu, musl cc) are borrowed for the host
-build. They are not the runtime identity.
+Build tools (kernel, busybox, qemu, musl cc) are borrowed on the **host**.
+They are not the runtime identity.
 
 ## Build and run
 
@@ -16,8 +17,15 @@ cargo run -p oath-make -- build
 cargo run -p oath-make -- run
 ```
 
-You land on a root shell. The catalog is `/oath`. Try `oath` with no
-arguments, then `oath ls`.
+You land on a root shell. Then:
+
+```
+oath
+oath ls
+```
+
+See [using.md](using.md), [catalog.md](catalog.md), [services.md](services.md),
+[generations.md](generations.md).
 
 ## Probe (scripted)
 
@@ -29,23 +37,33 @@ Writes `build/runs/<id>/`: `meta.json`, `serial-boot*.log`, `events.jsonl`
 (`oath-tel` lines), `probe.json`, `REPORT.md`. Uses a qcow overlay so
 the golden image is not mutated.
 
-`cargo run -p oath-make -- run` is interactive serial and also writes a
-run dir.
+`cargo run -p oath-make -- run` also writes a run dir (`serial.log`).
 
 Host orchestration is the `oath-make` crate. QEMU, mkfs.btrfs, and a
 loop-mount (sudo) are still external tools.
 
-Guest telemetry is JSON on stderr, prefixed `oath-tel `, and appended
-under `/oath/log/` once the disk is mounted.
+## What is in the image
 
-## What works here
+- Linux kernel (borrowed) + initramfs (`oath-init` as `/init`)
+- btrfs disk, live subvolume `@`
+- `/usr/lib/oath/init` — PID 1 after switch-root
+- `/bin/oath`, busybox, `btrfs`
+- Catalog at `/oath`
+
+## Telemetry
+
+Guest: JSON on stderr, prefixed `oath-tel `, and `/oath/log/*.jsonl`
+once the disk is mounted.
+
+## What works
 
 - Boot to serial, `oath` verbs
-- Hostname apply and undo
+- Hostname apply, undo, reboot (hostname survives)
 - `power=reboot` without `--confirm` refuses (exit 3)
-- Hostname **survives reboot** (probe boot2)
+- Sibling generations `/oath/run/fs/@gen-N`
+- `svc:hold` start / stop / undo / persist across reboot
 
-## Gaps
+## Limits
 
-- No SSH, no installer, no packages.
-- No boot-generation picker (undo is the supported rewind).
+- No SSH, no installer, no packages, no network objects
+- No boot-generation picker (undo is the supported rewind)

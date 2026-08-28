@@ -10,6 +10,7 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use nix::mount::{mount, MsFlags};
+use nix::sys::signal::{kill, Signal};
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::{sethostname, Pid};
 use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, BTRFS_TOP, DEFAULT_ROOT};
@@ -70,7 +71,8 @@ fn real_main() -> Result<(), String> {
     }
 
     apply_host();
-    let mut kids = start_services();
+    let mut kids: HashMap<i32, Kid> = HashMap::new();
+    converge(&mut kids);
 
     let sock_path = "/oath/run/init.sock";
     let _ = fs::remove_file(sock_path);
@@ -85,7 +87,7 @@ fn real_main() -> Result<(), String> {
             let mut buf = [0u8; 64];
             let n = s.read(&mut buf).unwrap_or(0);
             tel("init", "converge", json!({ "bytes": n }));
-            kids = start_services();
+            converge(&mut kids);
             let _ = s.write_all(b"ok\n");
         }
         std::thread::sleep(Duration::from_millis(200));
@@ -190,34 +192,72 @@ struct Kid {
     spec: Svc,
 }
 
-fn start_services() -> HashMap<i32, Kid> {
-    let mut kids = HashMap::new();
+fn pid_for(kids: &HashMap<i32, Kid>, id: &str) -> Option<i32> {
+    kids.iter().find(|(_, k)| k.id == id).map(|(p, _)| *p)
+}
+
+fn stop_kid(kids: &mut HashMap<i32, Kid>, id: &str) {
+    if let Some(pid) = pid_for(kids, id) {
+        if let Some(k) = kids.remove(&pid) {
+            let _ = kill(Pid::from_raw(pid), Signal::SIGTERM);
+            tel("init", "svc_stop", json!({ "id": k.id, "pid": pid }));
+            let oid: ObjectId = k.id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
+            write_svc_actual(&oid, "stopped", None, 0);
+        }
+    }
+}
+
+fn converge(kids: &mut HashMap<i32, Kid>) {
     let cat = match Catalog::open(DEFAULT_ROOT) {
         Ok(c) => c,
-        Err(_) => return kids,
+        Err(_) => return,
     };
-    let Ok(ids) = cat.ls(Some("svc")) else { return kids };
-    for id in ids {
-        let Ok(obj) = cat.get(&id) else { continue };
-        let Ok(spec) = serde_json::from_value::<Svc>(obj.desired) else { continue };
-        if !spec.enabled || spec.exec.is_empty() {
-            write_svc_actual(&id, "stopped", None, 0);
-            continue;
-        }
-        match spawn(&spec) {
-            Ok(pid) => {
-                tel("init", "svc_start", json!({ "id": id.to_string(), "pid": pid.as_raw() }));
-                write_svc_actual(&id, "running", Some(pid.as_raw()), 0);
-                kids.insert(pid.as_raw(), Kid { id: id.to_string(), spec });
-            }
-            Err(e) => {
-                log(&format!("{id} spawn: {e}"));
-                tel("init", "svc_fail", json!({ "id": id.to_string(), "err": e }));
-                write_svc_actual(&id, "failed", None, 0);
+    let Ok(ids) = cat.ls(Some("svc")) else { return };
+    let mut wanted: HashMap<String, Svc> = HashMap::new();
+    for id in &ids {
+        if let Ok(obj) = cat.get(id) {
+            if let Ok(spec) = serde_json::from_value::<Svc>(obj.desired) {
+                wanted.insert(id.to_string(), spec);
             }
         }
     }
-    kids
+
+    let running: Vec<(i32, String, Svc)> =
+        kids.iter().map(|(p, k)| (*p, k.id.clone(), k.spec.clone())).collect();
+    for (_pid, id, spec) in running {
+        let keep = wanted
+            .get(&id)
+            .map(|s| s.enabled && !s.exec.is_empty() && s.exec == spec.exec)
+            .unwrap_or(false);
+        if !keep {
+            stop_kid(kids, &id);
+        }
+    }
+
+    for (id, spec) in &wanted {
+        let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
+        if !spec.enabled || spec.exec.is_empty() {
+            if pid_for(kids, id).is_none() {
+                write_svc_actual(&oid, "stopped", None, 0);
+            }
+            continue;
+        }
+        if pid_for(kids, id).is_some() {
+            continue;
+        }
+        match spawn(spec) {
+            Ok(pid) => {
+                tel("init", "svc_start", json!({ "id": id, "pid": pid.as_raw() }));
+                write_svc_actual(&oid, "running", Some(pid.as_raw()), 0);
+                kids.insert(pid.as_raw(), Kid { id: id.clone(), spec: spec.clone() });
+            }
+            Err(e) => {
+                log(&format!("{id} spawn: {e}"));
+                tel("init", "svc_fail", json!({ "id": id, "err": e }));
+                write_svc_actual(&oid, "failed", None, 0);
+            }
+        }
+    }
 }
 
 fn spawn(spec: &Svc) -> Result<Pid, String> {

@@ -26,4 +26,11 @@ oath set svc:serial enabled=true
 oath apply svc:serial
 ```
 
-Phase 1 ships `svc:serial` — a root shell on the QEMU serial.
+The appliance ships `svc:serial` (serial root shell) and `svc:hold`
+(`/bin/sleep 86400000`, for start/stop tests). Do not disable serial
+unless you have another console.
+
+```
+oath set svc:hold enabled=false
+oath apply svc:hold
+```

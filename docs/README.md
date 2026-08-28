@@ -2,8 +2,8 @@
 
 Canonical **engineering** documentation for the Oath Linux distribution.
 
-**Operator-facing product docs** live in [`manual/`](manual/) — **shipped
-behavior only**. See [`progress-model.md`](progress-model.md).
+**Operator-facing product docs** live in [`manual/`](manual/) — current
+behavior only, written as a user manual. See [`progress-model.md`](progress-model.md).
 
 ## Session boot (agents and humans)
 
@@ -40,9 +40,10 @@ ask the human.
 | [`specs/`](specs/) | Target freezes (dated) | **Target** |
 | [`specs/2026-08-27-catalog-and-oath-surface.md`](specs/2026-08-27-catalog-and-oath-surface.md) | Catalog, objects, `oath` | **Target** (active) |
 | [`plans/`](plans/) | Implementation checklists | Build |
-| [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (active) |
+| [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
+| [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
-| [`manual/`](manual/) | Operator truth | **Product** (shipped only) |
+| [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 
 ## Related trees (not under `docs/`)
 

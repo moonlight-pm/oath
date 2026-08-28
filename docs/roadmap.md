@@ -35,15 +35,15 @@ reboot) passes. Generations are sibling `@gen-N` subvolumes. Plan:
 
 ## Phase 2 — Closed admin loop
 
-**Status: next**
+**Status: done**
 
-Agent (or human using the same CLI) can discover an object, change it,
-apply, and see it survive reboot. Hostname already does. Next: a `svc`
-start/stop through the catalog, with undo. Snapshots around mutate.
+Hostname and `svc:hold` start/stop through the catalog, with undo and
+reboot persist. Plan:
+[plans/2026-08-28-svc-loop-plan.md](plans/2026-08-28-svc-loop-plan.md).
 
 ## Phase 3 — Packages and services as objects
 
-**Status: planned**
+**Status: next**
 
 Install/remove/query packages through the catalog. Services are objects
 with schema, not unit-file folklore.

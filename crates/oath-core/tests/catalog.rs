@@ -126,6 +126,7 @@ fn seed_lists_host() {
     let ids = cat.ls(None).unwrap();
     assert!(ids.iter().any(|i| i.to_string() == "host:local"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:serial"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:hold"));
     assert!(cat.index_text().unwrap().contains("You are on **Oath**"));
 }
 
@@ -203,6 +204,20 @@ fn second_apply_after_undo_uses_new_generation() {
     cat.set_fields(&id, fields).unwrap();
     let r2 = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
     assert!(r2.generation > r1.generation, "{} vs {}", r2.generation, r1.generation);
+}
+
+#[test]
+fn svc_undo_restores_enabled() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "svc:hold".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("enabled".into(), json!(false));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.desired["enabled"], json!(true));
 }
 
 #[test]

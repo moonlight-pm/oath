@@ -196,18 +196,23 @@ impl Catalog {
         let parent = self.current_generation()?;
         let generation = self.next_generation()?;
 
-        // Snapshot the last-good tree: for host-like objects, desired
-        // currently holds the pending set. Write actual over desired,
-        // snapshot, then put pending desired back so undo restores the
-        // pre-apply hostname (courage test).
+        // Snapshot the last-good tree. Pending `set` values are not last-good:
+        // host → actual; svc → applied.json (last converged desired).
         let mut pending: Vec<(ObjectId, Value)> = Vec::new();
         for d in &selected {
-            if d.id.kind == KIND_SVC {
-                continue;
-            }
             let obj = self.get(&d.id)?;
             pending.push((d.id.clone(), obj.desired.clone()));
-            write_json(&self.obj_dir(&d.id).join("desired.json"), &obj.actual)?;
+            let last_good = if d.id.kind == KIND_SVC {
+                let p = self.obj_dir(&d.id).join("applied.json");
+                if p.is_file() {
+                    read_json(&p)?
+                } else {
+                    obj.desired.clone()
+                }
+            } else {
+                obj.actual.clone()
+            };
+            write_json(&self.obj_dir(&d.id).join("desired.json"), &last_good)?;
         }
         hooks.snapshot(generation)?;
         for (id, des) in &pending {
@@ -246,8 +251,11 @@ impl Catalog {
                 }
                 KIND_SVC => {
                     let obj = self.get(&d.id)?;
+                    let enabled =
+                        obj.desired.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
                     write_json(&self.obj_dir(&d.id).join("applied.json"), &obj.desired)?;
                     hooks.notify_init()?;
+                    hooks.wait_converge(&d.id, enabled)?;
                     self.touch_status(&d.id, "in-sync")?;
                 }
                 KIND_SNAP => {
@@ -297,6 +305,17 @@ impl Catalog {
         let g = json!({ "generation": parent });
         write_json(&self.obj_dir(&cur).join("desired.json"), &g)?;
         write_json(&self.obj_dir(&cur).join("actual.json"), &g)?;
+
+        hooks.notify_init()?;
+        if let Ok(ids) = self.ls(Some(KIND_SVC)) {
+            for id in ids {
+                if let Ok(obj) = self.get(&id) {
+                    let enabled =
+                        obj.desired.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+                    hooks.wait_converge(&id, enabled)?;
+                }
+            }
+        }
 
         let ids = vec![format!("undo:{generation}")];
         self.append_log(actor, parent, generation, &ids, "ok", None)?;

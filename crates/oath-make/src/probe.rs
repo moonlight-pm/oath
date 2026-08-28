@@ -220,6 +220,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath get svc:hold --actual",
+        Some("\"state\": \"running\""),
+        "hold.running",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath set host:local hostname=atlas",
         None,
         "set.atlas",
@@ -251,6 +259,62 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         Duration::from_secs(12),
     )?;
     cmd(&mut vm, &mut steps, "hostname", Some("oath"), "hostname.undone", Duration::from_secs(8))?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set svc:hold enabled=false",
+        None,
+        "hold.disable",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath apply svc:hold",
+        Some("applied generation"),
+        "hold.apply_stop",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get svc:hold --actual",
+        Some("\"state\": \"stopped\""),
+        "hold.stopped",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath undo",
+        Some("undid to generation"),
+        "hold.undo",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get svc:hold --actual",
+        Some("\"state\": \"running\""),
+        "hold.undone",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set svc:hold enabled=false",
+        None,
+        "hold.disable2",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath apply svc:hold",
+        Some("applied generation"),
+        "hold.apply_stop2",
+        Duration::from_secs(12),
+    )?;
     cmd(
         &mut vm,
         &mut steps,
@@ -314,6 +378,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "oath get host:local",
         Some("hostname: \"atlas\""),
         "reboot.get",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "oath get svc:hold --actual",
+        Some("\"state\": \"stopped\""),
+        "reboot.hold_stopped",
         Duration::from_secs(8),
     )?;
     vm2.close();

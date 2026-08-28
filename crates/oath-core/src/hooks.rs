@@ -1,3 +1,4 @@
+use crate::id::ObjectId;
 use crate::kinds::Host;
 use crate::Result;
 
@@ -52,6 +53,10 @@ pub trait ApplyHooks {
     fn notify_init(&self) -> Result<()>;
     fn reboot(&self) -> Result<()>;
     fn halt(&self) -> Result<()>;
+    /// After notify, wait until svc actual matches `enabled`. Default: no-op.
+    fn wait_converge(&self, _id: &ObjectId, _enabled: bool) -> Result<()> {
+        Ok(())
+    }
 }
 
 pub struct NullHooks;

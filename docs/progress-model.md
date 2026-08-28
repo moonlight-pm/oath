@@ -22,7 +22,7 @@ Never mix “is” and “will be” in the same paragraph without an explicit l
 ┌─────────────────────────────────────────────────────────┐
 │  PRODUCT DOCS (operator)     docs/manual/               │
 │  Audience: people and agents running Oath.              │
-│  Voice: “what you can do.” AS-SHIPPED only.             │
+│  Voice: “what you can do.” Current behavior only.       │
 └─────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────┐
@@ -51,7 +51,7 @@ Never mix “is” and “will be” in the same paragraph without an explicit l
 | **Open forks** | [`open-questions.md`](open-questions.md) | A fork opens or closes |
 | **Parked** | [`ideas/`](ideas/) | Thought captured; promote later |
 | **Implementation checklists** | [`plans/`](plans/) | Active slice only; at most one open plan |
-| **Product / operator docs** | [`manual/`](manual/) | **Shipped** (or honestly limited) operator-visible behavior |
+| **Product / operator docs** | [`manual/`](manual/) | Current operator-visible behavior (user manual; keep in lockstep) |
 | **History** | [`../apocrypha/`](../apocrypha/) | Never authoritative |
 
 ### Authority order

@@ -1,7 +1,7 @@
 **Date:** 2026-08-27
 **Status:** target (freeze)
 **Implementation:** partial
-**Dogfood:** QEMU probe (`oath-make probe`) — hostname apply, undo, confirm-reboot, hostname survives reboot
+**Dogfood:** QEMU probe (`oath-make probe`) — hostname + `svc:hold` start/stop/undo/reboot
 **Gaps:**
 - MCP, extra kinds (out of freeze)
 - Boot-generation picker (undo is the supported rewind)

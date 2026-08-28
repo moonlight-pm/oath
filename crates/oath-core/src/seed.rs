@@ -44,6 +44,21 @@ pub fn seed(root: &Path) -> Result<()> {
     write_object(root, &serial, "mutate", &serial_desired, &serial_actual)?;
     write_json(&root.join("objects/svc/serial/applied.json"), &serial_desired)?;
 
+    let hold = ObjectId::new(KIND_SVC, "hold");
+    let hold_desired = json!({
+        "exec": ["/bin/sleep", "86400000"],
+        "wants": [],
+        "restart": "always",
+        "enabled": true
+    });
+    let hold_actual = json!({
+        "state": "stopped",
+        "pid": null,
+        "restarts": 0
+    });
+    write_object(root, &hold, "mutate", &hold_desired, &hold_actual)?;
+    write_json(&root.join("objects/svc/hold/applied.json"), &hold_desired)?;
+
     let cur = ObjectId::new(KIND_SNAP, "current");
     let gen0 = json!({ "generation": 0 });
     write_object(root, &cur, "mutate", &gen0, &gen0)?;
