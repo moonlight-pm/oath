@@ -68,9 +68,9 @@ they are not the runtime.
 ```sh
 cargo test -p oath-core
 nix-shell                 # optional: kernel, qemu, musl cc, busybox, btrfs
-cargo run -p oath-make -- build   # sudo to loop-mount the disk
-cargo run -p oath-make -- probe   # courage test; writes build/runs/<id>/
-cargo run -p oath-make -- run     # interactive serial + run dir
+cargo make build          # sudo to loop-mount the disk
+cargo make probe          # courage test; writes build/runs/<id>/
+cargo make run            # interactive serial + run dir
 ```
 
 See [`CURRENT.md`](CURRENT.md) and [`docs/manual/qemu.md`](docs/manual/qemu.md).
@@ -81,7 +81,7 @@ See [`CURRENT.md`](CURRENT.md) and [`docs/manual/qemu.md`](docs/manual/qemu.md).
 crates/oath-core   catalog, kinds, apply/undo
 crates/oath        CLI (guest)
 crates/oath-init   PID 1 + serial login
-crates/oath-make   host: pack image, QEMU run, probe
+crates/oath-make   host build CLI (`cargo make`): pack image, QEMU run, probe
 image/             tools.nix (borrowed kernel/busybox/qemu)
 docs/              progress model, freeze, operator manual
 ```

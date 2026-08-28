@@ -9,7 +9,12 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "oath-make", about = "Host tool: pack the QEMU image, run it, probe it.")]
+#[command(
+    name = "oath-make",
+    bin_name = "cargo make",
+    about = "Host build CLI: pack the QEMU image, run it, probe it.",
+    arg_required_else_help = true
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,

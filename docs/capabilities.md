@@ -22,7 +22,7 @@ Product docs: [`manual/`](manual/) — current behavior.
 | oath-cli | `oath` verbs | partial | freeze | QEMU probe | MCP later | [using](manual/using.md) |
 | snap | generations; apply / undo | partial | freeze | probe (sibling `@gen-N`, reboot) | boot-generation pick still confirm-only; no bootloader menu | [generations](manual/generations.md) |
 | svc | Own supervisor | partial | freeze | `svc:hold` start/stop/undo/reboot | `wants` order not implemented; do not disable serial | [services](manual/services.md) |
-| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `oath-make run` / `probe` | borrowed kernel; sudo to pack disk | [qemu](manual/qemu.md) |
+| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | borrowed kernel; sudo to pack disk | [qemu](manual/qemu.md) |
 | pkg | Package objects | idea | — | — | not started (Phase 3) | no |
 | net | Network objects | idea | — | — | serial instead; not started | no |
 | dev | Device objects | idea | — | — | not started | no |

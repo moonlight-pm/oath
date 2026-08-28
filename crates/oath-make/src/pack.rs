@@ -181,7 +181,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     copy_file(&tools.kernel, &bz)?;
     eprintln!("image {}", qcow.display());
     eprintln!("kernel {}", bz.display());
-    eprintln!("next: cargo run -p oath-make -- probe");
+    eprintln!("next: cargo make probe");
     Ok(())
 }
 

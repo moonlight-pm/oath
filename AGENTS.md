@@ -117,7 +117,7 @@ apocrypha/            gitignored scratch/history — not product
 crates/oath-core      catalog, kinds, apply/undo
 crates/oath           CLI (guest)
 crates/oath-init      PID 1 + serial-login
-crates/oath-make      host pack / QEMU / probe
+crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe
 image/                tools.nix only (borrowed prebuilts)
 ```
 

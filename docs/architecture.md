@@ -46,10 +46,10 @@ PID 1: mount proc/sys/dev, hostname from `host:local`, **converge**
 not mounted.
 
 Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
-Host runs live under `build/runs/<id>/` (`oath-make run` / `probe`).
+Host runs live under `build/runs/<id>/` (`cargo make run` / `probe`).
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-make` (host
-pack/run/probe). Artifacts in `build/` (gitignored).
+build CLI: `cargo make` pack/run/probe). Artifacts in `build/` (gitignored).
 
 **Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md)

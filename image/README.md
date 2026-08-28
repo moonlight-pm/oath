@@ -6,7 +6,7 @@ Borrowed **build-host** tools (kernel, busybox, qemu, musl cc) come from
 Host orchestration is Rust:
 
 ```
-cargo run -p oath-make -- build
-cargo run -p oath-make -- probe
-cargo run -p oath-make -- run
+cargo make build
+cargo make probe
+cargo make run
 ```

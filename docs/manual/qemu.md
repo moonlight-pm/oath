@@ -13,8 +13,8 @@ for packing the disk), btrfs-progs, qemu.
 
 ```sh
 nix-shell          # optional: kernel, qemu, musl cc, busybox, btrfs
-cargo run -p oath-make -- build
-cargo run -p oath-make -- run
+cargo make build
+cargo make run
 ```
 
 You land on a root shell. Then:
@@ -30,17 +30,17 @@ See [using.md](using.md), [catalog.md](catalog.md), [services.md](services.md),
 ## Probe (scripted)
 
 ```sh
-cargo run -p oath-make -- probe
+cargo make probe
 ```
 
 Writes `build/runs/<id>/`: `meta.json`, `serial-boot*.log`, `events.jsonl`
 (`oath-tel` lines), `probe.json`, `REPORT.md`. Uses a qcow overlay so
 the golden image is not mutated.
 
-`cargo run -p oath-make -- run` also writes a run dir (`serial.log`).
+`cargo make run` also writes a run dir (`serial.log`).
 
-Host orchestration is the `oath-make` crate. QEMU, mkfs.btrfs, and a
-loop-mount (sudo) are still external tools.
+Host orchestration is `cargo make` (crate `oath-make`). QEMU, mkfs.btrfs,
+and a loop-mount (sudo) are still external tools.
 
 ## What is in the image
 

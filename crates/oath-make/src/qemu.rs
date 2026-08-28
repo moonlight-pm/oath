@@ -22,7 +22,7 @@ pub fn load_image(out: &Path) -> Result<Image> {
     let initrd = out.join("initrd.gz");
     for p in [&kernel, &backing, &initrd] {
         if !p.is_file() {
-            bail!("missing {} — run: cargo run -p oath-make -- build", p.display());
+            bail!("missing {} — run: cargo make build", p.display());
         }
     }
     Ok(Image { kernel, initrd, backing })

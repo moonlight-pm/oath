@@ -19,7 +19,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    updated.
 3. Do not install to a real disk.
 
-**Always allowed:** docs hygiene; tests; `cargo run -p oath-make -- build|run|probe`.
+**Always allowed:** docs hygiene; tests; `cargo make build|run|probe`.
 
 ---
 
@@ -28,14 +28,14 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 | | **QEMU appliance** |
 |--|---------------------|
 | Role | Phase 1+2 serial box |
-| How | `cargo run -p oath-make -- build` then `probe` / `run` |
+| How | `cargo make build` then `probe` / `run` |
 | Notes | Hostname + `svc:hold` start/stop/undo/reboot persist. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
 
 ```sh
 nix-shell
-cargo run -p oath-make -- build
-cargo run -p oath-make -- probe
-cargo run -p oath-make -- run
+cargo make build
+cargo make probe
+cargo make run
 ```
 
 ---
