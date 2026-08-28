@@ -106,7 +106,7 @@ pub fn qemu_args(
         "-initrd".into(),
         img.initrd.display().to_string(),
         "-append".into(),
-        "console=ttyS0 panic=10".into(),
+        "console=ttyS0 quiet loglevel=4 panic=10".into(),
         "-drive".into(),
         format!("file={},if=virtio,format=qcow2,cache=writeback", overlay.display()),
         "-d".into(),

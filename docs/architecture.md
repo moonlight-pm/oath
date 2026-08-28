@@ -23,7 +23,10 @@ QEMU -kernel bzImage -initrd initrd.gz -drive virtio qcow2
     /init = oath-init
     loads virtio_blk + btrfs modules
     mounts /dev/vda subvol=@ , chroot
-  disk (btrfs, subvol @)
+    mounts subvolid=0 at /oath/run/fs
+  disk (btrfs)
+    @            live root
+    @gen-N       readonly sibling generations
     /usr/lib/oath/init     PID 1 after pivot
     /usr/lib/oath/serial-login
     /bin/oath
@@ -36,8 +39,10 @@ QEMU -kernel bzImage -initrd initrd.gz -drive virtio qcow2
 PID 1: mount proc/sys/dev, hostname from `host:local` desired, spawn
 `svc:*`, reap, listen `/oath/run/init.sock`.
 
-`oath apply` snapshots (btrfs subvolume of `/` into `/.oath-gens/N` when
-`btrfs` is present; otherwise copies the catalog tree), then converges.
+`oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
+(btrfs top-level). Undo restores `/oath` from that generation (not
+`/oath/run`). Fallback: copy the catalog tree when the top-level is
+not mounted.
 
 Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
 Host runs live under `build/runs/<id>/` (`oath-make run` / `probe`).

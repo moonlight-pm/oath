@@ -1,12 +1,12 @@
 # Plan — Phase 1 QEMU skeleton
 
 **Date:** 2026-08-27
-**Status:** open (active)
+**Status:** complete (2026-08-28)
 **Freeze:** [../specs/2026-08-27-catalog-and-oath-surface.md](../specs/2026-08-27-catalog-and-oath-surface.md)
 **Proof:** courage test in that freeze (hostname survives reboot; undo works)
 
 At most one open plan. This is it. Checkboxes are implementation work.
-CURRENT **Now** points here.
+CURRENT **Now** has moved to Phase 2. This plan is kept as history.
 
 Phase 1 is an **x86_64 QEMU** qcow with **btrfs** root, **serial** as
 the console, musl userland, our PID 1, `/oath` populated, `oath` binary

@@ -7,7 +7,9 @@ use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
 use crate::kinds::{Host, HostPower, Meta};
-use crate::{now_rfc3339, read_json, write_json, KIND_HOST, KIND_SNAP, KIND_SVC};
+use crate::{
+    now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_HOST, KIND_SNAP, KIND_SVC,
+};
 
 #[derive(Clone, Debug)]
 pub struct Catalog {
@@ -392,10 +394,14 @@ impl Catalog {
                 }
             }
         }
-        for dir in [Path::new("/.oath-gens"), self.root.join(".gens").as_path()] {
+        for dir in [Path::new(BTRFS_TOP), self.root.join(".gens").as_path()] {
             if let Ok(rd) = fs::read_dir(dir) {
                 for e in rd.flatten() {
-                    if let Ok(n) = e.file_name().to_string_lossy().parse::<u64>() {
+                    let name = e.file_name();
+                    let name = name.to_string_lossy();
+                    if let Some(n) = parse_gen_subvol(&name) {
+                        max = max.max(n);
+                    } else if let Ok(n) = name.parse::<u64>() {
                         max = max.max(n);
                     }
                 }

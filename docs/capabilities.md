@@ -8,7 +8,7 @@ Product docs: **shipped only**.
 
 **Status vocabulary:** `shipped` · `partial` · `spec’d` · `planned` · `idea`
 
-**As of:** 2026-08-27
+**As of:** 2026-08-28
 
 ---
 
@@ -20,7 +20,7 @@ Product docs: **shipped only**.
 | catalog | Live INDEX + schemas | partial | [freeze](specs/2026-08-27-catalog-and-oath-surface.md) | QEMU probe | INDEX generated; `oath-tel` + `/oath/log` | [qemu](manual/qemu.md) limited |
 | objects | Typed object store | partial | freeze | QEMU | host/svc/snap only | no |
 | oath-cli | `oath` verbs | partial | freeze | QEMU probe | MCP later | limited |
-| snap | generations; apply / undo | partial | freeze | probe (incl. reboot) | nested `/.oath-gens` on `@` | no |
+| snap | generations; apply / undo | partial | freeze | probe (sibling `@gen-N`, reboot) | boot-generation pick still confirm-only; no bootloader menu | no |
 | svc | Own supervisor | partial | freeze | `svc:serial` | notify socket barely used; no wants-order | no |
 | boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `oath-make run` / `probe` | borrowed kernel; sudo to pack disk | [qemu](manual/qemu.md) |
 | pkg | Package objects | idea | — | — | not Phase 1 | no |

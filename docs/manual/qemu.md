@@ -48,4 +48,4 @@ under `/oath/log/` once the disk is mounted.
 ## Gaps
 
 - No SSH, no installer, no packages.
-- Generation subvolumes still nest under `/.oath-gens` on `@`.
+- No boot-generation picker (undo is the supported rewind).

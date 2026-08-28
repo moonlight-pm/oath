@@ -3,8 +3,8 @@
 **Implementation:** partial
 **Dogfood:** QEMU probe (`oath-make probe`) — hostname apply, undo, confirm-reboot, hostname survives reboot
 **Gaps:**
-- Generation snapshots nest under `/.oath-gens` on `@` rather than sibling subvols
 - MCP, extra kinds (out of freeze)
+- Boot-generation picker (undo is the supported rewind)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Catalog, objects, and `oath` — target design

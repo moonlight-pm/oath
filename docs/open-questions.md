@@ -18,8 +18,8 @@ None open at founding or catalog-freeze scope.
 
 ## Open technical questions
 
-- Exact btrfs subvolume names and bootloader hook (boot plan
-  implementation, not a product fork).
+- Bootloader hook to boot `@gen-N` (layout is `@` + `@gen-N` at
+  `/oath/run/fs`; picker not built).
 - PID 1 notify socket bytes (`/oath/run/…`) — implementation detail;
   must not become a second config format.
 - How much of coreutils we replace vs busybox vs our own (Phase 1 may

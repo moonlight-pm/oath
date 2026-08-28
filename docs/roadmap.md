@@ -27,20 +27,19 @@ Founding D1–D9 and catalog technical locks T1–T10 are closed. Freeze:
 
 ## Phase 1 — Skeleton boot
 
-**Status: active**
+**Status: done**
 
-A QEMU image that boots *our* init and presents the catalog, even if most
-of userspace is still a small borrowed set. Plan:
+QEMU boots our PID 1 and catalog. Courage test (hostname apply, undo,
+reboot) passes. Generations are sibling `@gen-N` subvolumes. Plan:
 [plans/2026-08-27-qemu-skeleton-plan.md](plans/2026-08-27-qemu-skeleton-plan.md).
-Proof: courage test in the freeze.
 
 ## Phase 2 — Closed admin loop
 
-**Status: planned**
+**Status: next**
 
 Agent (or human using the same CLI) can discover an object, change it,
-apply, and see it survive reboot. First objects: hostname, a service, a
-network address. Snapshots around mutate.
+apply, and see it survive reboot. Hostname already does. Next: a `svc`
+start/stop through the catalog, with undo. Snapshots around mutate.
 
 ## Phase 3 — Packages and services as objects
 

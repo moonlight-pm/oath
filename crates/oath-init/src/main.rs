@@ -12,7 +12,7 @@ use std::time::Duration;
 use nix::mount::{mount, MsFlags};
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::{sethostname, Pid};
-use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, DEFAULT_ROOT};
+use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, BTRFS_TOP, DEFAULT_ROOT};
 use serde_json::json;
 
 const MODULES: &[&str] = &[
@@ -59,9 +59,9 @@ fn real_main() -> Result<(), String> {
 
     let _ = fs::create_dir_all("/oath/run");
     let _ = fs::create_dir_all("/oath/log");
-    let _ = fs::create_dir_all("/.oath-gens");
     let _ = fs::create_dir_all("/tmp");
     let _ = fs::create_dir_all("/root");
+    mount_toplevel();
 
     if !Path::new("/oath/INDEX.md").exists() {
         let _ = seed(Path::new(DEFAULT_ROOT));
@@ -113,8 +113,8 @@ fn load_modules() {
         }
         let st = Command::new("/bin/busybox").args(["insmod", p.to_str().unwrap()]).status();
         let ok = matches!(st, Ok(s) if s.success());
-        tel("init", "module", json!({ "name": m, "ok": ok }));
         if !ok {
+            tel("init", "module", json!({ "name": m, "ok": false }));
             log(&format!("insmod {m} -> {st:?}"));
         }
     }
@@ -133,6 +133,31 @@ fn mount_root() -> Result<(), String> {
     ensure_mount("sysfs", "/sys", "sysfs");
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
     Ok(())
+}
+
+/// Mount btrfs subvolid=0 so generations can be sibling `@gen-N`, not nested on `@`.
+fn mount_toplevel() {
+    let top = Path::new(BTRFS_TOP);
+    let _ = fs::create_dir_all(top);
+    if top.join("@").is_dir() {
+        tel("init", "fs_top", json!({ "path": BTRFS_TOP, "ok": true, "already": true }));
+        return;
+    }
+    let data = "subvolid=0";
+    let err = mount(Some("/dev/vda"), top, Some("btrfs"), MsFlags::empty(), Some(data));
+    let ok = top.join("@").is_dir();
+    tel(
+        "init",
+        "fs_top",
+        json!({
+            "path": BTRFS_TOP,
+            "ok": ok,
+            "err": err.err().map(|e| e.to_string()),
+        }),
+    );
+    if !ok {
+        log("btrfs top-level mount failed; snapshots will copy");
+    }
 }
 
 fn apply_host() {
@@ -181,7 +206,6 @@ fn start_services() -> HashMap<i32, Kid> {
         }
         match spawn(&spec) {
             Ok(pid) => {
-                log(&format!("{} pid {}", id, pid.as_raw()));
                 tel("init", "svc_start", json!({ "id": id.to_string(), "pid": pid.as_raw() }));
                 write_svc_actual(&id, "running", Some(pid.as_raw()), 0);
                 kids.insert(pid.as_raw(), Kid { id: id.to_string(), spec });
@@ -223,7 +247,6 @@ fn reap(kids: &mut HashMap<i32, Kid>) {
         };
         let raw = pid.as_raw();
         let Some(k) = kids.remove(&raw) else { continue };
-        log(&format!("{} reaped", k.id));
         tel("init", "svc_reap", json!({ "id": k.id, "failed": failed }));
         let restart = match k.spec.restart {
             oath_core::SvcRestart::Never => false,

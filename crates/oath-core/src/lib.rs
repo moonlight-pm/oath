@@ -6,6 +6,7 @@ mod hooks;
 mod id;
 mod index;
 mod kinds;
+mod layout;
 mod seed;
 mod tel;
 
@@ -14,6 +15,7 @@ pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{Host, HostPower, Meta, Svc, SvcActual, SvcRestart};
+pub use layout::{gen_subvol_name, parse_gen_subvol, BTRFS_TOP, LIVE_SUBVOL};
 pub use seed::seed;
 pub use tel::tel;
 

@@ -6,7 +6,9 @@ use std::process::Command;
 
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
-use oath_core::{tel, ApplyHooks, Error, Host, HostPower, Result};
+use oath_core::{
+    gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, Result, BTRFS_TOP, LIVE_SUBVOL,
+};
 use serde_json::json;
 
 pub struct Live {
@@ -14,23 +16,16 @@ pub struct Live {
 }
 
 impl Live {
-    fn gens_dir(&self) -> PathBuf {
-        if self.catalog_root == Path::new("/oath") {
-            PathBuf::from("/.oath-gens")
-        } else {
-            self.catalog_root.join(".gens")
-        }
+    fn sibling_live() -> PathBuf {
+        Path::new(BTRFS_TOP).join(LIVE_SUBVOL)
     }
 
-    fn on_btrfs_root() -> bool {
-        #[cfg(target_os = "linux")]
-        {
-            const BTRFS: u64 = 0x9123_683E;
-            if let Ok(s) = nix::sys::statfs::statfs("/") {
-                return s.filesystem_type().0 == BTRFS;
-            }
-        }
-        false
+    fn sibling_gen(generation: u64) -> PathBuf {
+        Path::new(BTRFS_TOP).join(gen_subvol_name(generation))
+    }
+
+    fn copy_fallback_dir(&self, generation: u64) -> PathBuf {
+        self.catalog_root.join(".gens").join(generation.to_string())
     }
 
     fn copy_dir(src: &Path, dst: &Path) -> Result<()> {
@@ -38,6 +33,23 @@ impl Live {
             let _ = fs::remove_dir_all(dst);
         }
         copy_recursive(src, dst)
+    }
+
+    /// Restore catalog documents without touching `/oath/run` (mounts, socket).
+    fn restore_catalog(src_oath: &Path, dst_oath: &Path) -> Result<()> {
+        for name in ["objects", "schema", "log", "INDEX.md"] {
+            let from = src_oath.join(name);
+            let to = dst_oath.join(name);
+            if from.is_dir() {
+                Self::copy_dir(&from, &to)?;
+            } else if from.is_file() {
+                if let Some(p) = to.parent() {
+                    fs::create_dir_all(p)?;
+                }
+                fs::copy(&from, &to)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -58,24 +70,31 @@ fn copy_recursive(src: &Path, dst: &Path) -> Result<()> {
 
 impl ApplyHooks for Live {
     fn snapshot(&self, generation: u64) -> Result<()> {
-        let gens = self.gens_dir();
-        fs::create_dir_all(&gens)?;
-        let dest = gens.join(generation.to_string());
-        if Self::on_btrfs_root() && self.catalog_root == Path::new("/oath") {
+        let src = Self::sibling_live();
+        let dest = Self::sibling_gen(generation);
+        if src.is_dir() && self.catalog_root == Path::new("/oath") {
+            let src_s = src.to_string_lossy().into_owned();
             let dest_s = dest.to_string_lossy().into_owned();
-            if let Ok(st) =
-                Command::new("btrfs").args(["subvolume", "snapshot", "-r", "/", &dest_s]).status()
+            if let Ok(st) = Command::new("btrfs")
+                .args(["subvolume", "snapshot", "-r", &src_s, &dest_s])
+                .status()
             {
                 if st.success() {
                     tel(
                         "oath",
                         "snapshot",
-                        json!({ "generation": generation, "kind": "btrfs", "path": dest_s }),
+                        json!({
+                            "generation": generation,
+                            "kind": "btrfs-sibling",
+                            "path": dest_s
+                        }),
                     );
                     return Ok(());
                 }
             }
         }
+        let dest = self.copy_fallback_dir(generation);
+        fs::create_dir_all(dest.parent().unwrap_or(Path::new(".")))?;
         Self::copy_dir(&self.catalog_root, &dest)?;
         tel(
             "oath",
@@ -86,10 +105,20 @@ impl ApplyHooks for Live {
     }
 
     fn restore_snapshot(&self, generation: u64) -> Result<()> {
-        let dest = self.gens_dir().join(generation.to_string());
+        let sibling = Self::sibling_gen(generation).join("oath");
+        if sibling.is_dir() {
+            Self::restore_catalog(&sibling, Path::new("/oath"))?;
+            tel(
+                "oath",
+                "restore",
+                json!({ "generation": generation, "from": sibling.display().to_string() }),
+            );
+            return Ok(());
+        }
+        let dest = self.copy_fallback_dir(generation);
         let catalog_in_snap = dest.join("oath");
         if catalog_in_snap.is_dir() {
-            Self::copy_dir(&catalog_in_snap, Path::new("/oath"))?;
+            Self::restore_catalog(&catalog_in_snap, Path::new("/oath"))?;
             tel(
                 "oath",
                 "restore",
@@ -98,7 +127,7 @@ impl ApplyHooks for Live {
             return Ok(());
         }
         if dest.is_dir() {
-            Self::copy_dir(&dest, &self.catalog_root)?;
+            Self::restore_catalog(&dest, &self.catalog_root)?;
             tel(
                 "oath",
                 "restore",

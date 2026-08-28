@@ -207,6 +207,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     };
 
     let mut vm = boot("boot1", &mut steps)?;
+    cmd(&mut vm, &mut steps, "ls /oath/run/fs", Some("@"), "gens.top", Duration::from_secs(8))?;
     cmd(&mut vm, &mut steps, "oath ls", Some("host:local"), "ls.host", Duration::from_secs(8))?;
     cmd(
         &mut vm,
@@ -231,6 +232,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         Some("applied generation"),
         "apply.atlas",
         Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "ls /oath/run/fs",
+        Some("@gen-"),
+        "gens.sibling",
+        Duration::from_secs(8),
     )?;
     cmd(&mut vm, &mut steps, "hostname", Some("atlas"), "hostname.atlas", Duration::from_secs(8))?;
     cmd(
