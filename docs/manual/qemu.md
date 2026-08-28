@@ -27,6 +27,26 @@ oath ls
 See [using.md](using.md), [catalog.md](catalog.md), [services.md](services.md),
 [generations.md](generations.md).
 
+## Leave the VM
+
+Ctrl-D (or `exit`) leaves the **shell**. `svc:serial` is `restart=always`,
+so PID 1 starts it again. That is not leaving QEMU.
+
+There is no QEMU monitor (`-monitor none`), so **Ctrl-A x** does not work.
+Ctrl-C goes to the guest (`signal=off`).
+
+From the guest, halt:
+
+```
+oath set host:local power=halt
+oath apply --confirm
+```
+
+`cargo make run` also exits if the guest reboots (`-no-reboot`).
+
+From the host, another terminal: stop `qemu-system-x86_64` (or the
+`cargo make run` process).
+
 ## Probe (scripted)
 
 ```sh
