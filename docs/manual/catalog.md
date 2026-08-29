@@ -31,9 +31,9 @@ If a kind is not under `/oath/schema`, it does not exist.
 | `host` | `host:local` only | Hostname and power (`run` / `reboot` / `halt`) |
 | `svc` | `svc:serial`, `svc:hold` | PID 1’s only config |
 | `snap` | `snap:current`, `snap:N` | Generations |
-| `pkg` | `pkg:hello` | Store + `/bin` symlink farm |
+| `pkg` | `busybox`, `btrfs`, `oath`, `hello` | Store + `/bin` symlink farm |
 
-No device or network kinds yet. Busybox is not a `pkg` object.
+No device or network kinds yet.
 
 `host` and `snap:current` share schema between desired and actual.
 `svc` actual is runtime (`state`, `pid`, `restarts`); drift is desired

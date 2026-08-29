@@ -7,6 +7,8 @@ use anyhow::{bail, Context, Result};
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
+use oath_core::{converge_with_link_root, write_json};
+
 use crate::cpio;
 use crate::tools::Tools;
 use crate::util::{chmod_exec, copy_file, run, sudo};
@@ -108,23 +110,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     ] {
         fs::create_dir_all(stage.join(d))?;
     }
-    copy_file(&tools.busybox, &stage.join("bin/busybox"))?;
-    chmod_exec(&stage.join("bin/busybox"))?;
-    let list = crate::util::run_out(Command::new(stage.join("bin/busybox")).arg("--list"))?;
-    for a in list.split_whitespace() {
-        let _ = fs::remove_file(stage.join("bin").join(a));
-        symlink("busybox", stage.join("bin").join(a))?;
-    }
-    // pkg:hello owns /bin/hello. Drop a busybox applet of that name if present.
-    let _ = fs::remove_file(stage.join("bin/hello"));
-    if let Some(btrfs) = &tools.btrfs {
-        copy_file(btrfs, &stage.join("bin/btrfs"))?;
-        chmod_exec(&stage.join("bin/btrfs"))?;
-    }
-    copy_file(&bin.join("oath"), &stage.join("bin/oath"))?;
     copy_file(&bin.join("oath-init"), &stage.join("usr/lib/oath/init"))?;
     copy_file(&bin.join("serial-login"), &stage.join("usr/lib/oath/serial-login"))?;
-    chmod_exec(&stage.join("bin/oath"))?;
     chmod_exec(&stage.join("usr/lib/oath/init"))?;
     chmod_exec(&stage.join("usr/lib/oath/serial-login"))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
@@ -136,10 +123,22 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         stage.join("oath").to_str().unwrap(),
         "seed",
     ]))?;
-    let hello = stage.join("oath/store/pkg/hello/bin/hello");
+
+    let oath_root = stage.join("oath");
+    let guest_bin = stage.join("bin");
+    write_busybox_store(&oath_root, &tools.busybox)?;
+    let Some(btrfs) = &tools.btrfs else {
+        bail!("OATH_BTRFS / tools btrfs required (pkg:btrfs)");
+    };
+    write_bin_store(&oath_root, "btrfs", btrfs)?;
+    write_bin_store(&oath_root, "oath", &bin.join("oath"))?;
+    let hello = oath_root.join("store/pkg/hello/bin/hello");
     fs::create_dir_all(hello.parent().unwrap())?;
     fs::write(&hello, "#!/bin/sh\nprintf 'hello\\n'\n")?;
     chmod_exec(&hello)?;
+    link_pkg(&oath_root, &guest_bin, "busybox", false)?;
+    link_pkg(&oath_root, &guest_bin, "btrfs", false)?;
+    link_pkg(&oath_root, &guest_bin, "oath", false)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -188,6 +187,40 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     eprintln!("image {}", qcow.display());
     eprintln!("kernel {}", bz.display());
     eprintln!("next: cargo make probe");
+    Ok(())
+}
+
+fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
+    let dir = oath_root.join("store/pkg/busybox/bin");
+    fs::create_dir_all(&dir)?;
+    copy_file(busybox, &dir.join("busybox"))?;
+    chmod_exec(&dir.join("busybox"))?;
+    let list = crate::util::run_out(Command::new(busybox).arg("--list"))?;
+    for a in list.split_whitespace() {
+        if matches!(a, "busybox" | "hello" | "btrfs" | "oath") {
+            continue;
+        }
+        let dest = dir.join(a);
+        let _ = fs::remove_file(&dest);
+        symlink("busybox", dest)?;
+    }
+    Ok(())
+}
+
+fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {
+    let dest = oath_root.join("store/pkg").join(name).join("bin").join(name);
+    fs::create_dir_all(dest.parent().unwrap())?;
+    copy_file(src, &dest)?;
+    chmod_exec(&dest)?;
+    Ok(())
+}
+
+fn link_pkg(oath_root: &Path, bin_dir: &Path, name: &str, removable: bool) -> Result<()> {
+    let mut actual = converge_with_link_root(oath_root, bin_dir, Path::new("/oath"), name, true)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    actual.removable = removable;
+    write_json(&oath_root.join("objects/pkg").join(name).join("actual.json"), &actual)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(())
 }
 

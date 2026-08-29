@@ -6,15 +6,20 @@ target. There is no `apt` and no `oath install`.
 
 ## What ships
 
-| Id | Default | Notes |
-|----|---------|-------|
-| `pkg:hello` | `present: false` | Canary. Store is on the image; apply links `/bin/hello`. |
+| Id | Default | Removable |
+|----|---------|-----------|
+| `pkg:busybox` | `present: true` | no — applets are this one object |
+| `pkg:btrfs` | `present: true` | no |
+| `pkg:oath` | `present: true` | no |
+| `pkg:hello` | `present: false` | yes — canary |
 
 `/bin/hello` prints `hello`. The symlink target is
 `/oath/store/pkg/hello/bin/hello`. Do not exec from the store; `/bin`
 is how you run what is installed.
 
-Busybox, `btrfs`, and `oath` are **not** package objects yet.
+`present=false` on a non-removable package is **refused** (not
+`--confirm`). PID 1 stays at `/usr/lib/oath/init`; it is not a
+package.
 
 ## Install / remove
 

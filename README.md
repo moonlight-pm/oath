@@ -45,8 +45,8 @@ compatibility promise.
 
 Phases 0–2 are done: an **x86_64 QEMU** appliance boots our PID 1, the
 catalog, hostname apply/undo/reboot, and `svc:hold` start/stop. Phase 3
-canary `pkg:hello` is in the image (store + `/bin` symlink). Nothing is
-a daily driver. No installer or desktop.
+packages: sealed `busybox` / `btrfs` / `oath`, plus canary `pkg:hello`.
+Nothing is a daily driver. No installer or desktop.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).

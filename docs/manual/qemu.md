@@ -71,9 +71,9 @@ and a loop-mount (sudo) are still external tools.
 - Linux kernel (borrowed) + initramfs (`oath-init` as `/init`)
 - btrfs disk, live subvolume `@`
 - `/usr/lib/oath/init` — PID 1 after switch-root
-- `/bin/oath`, busybox, `btrfs`
 - Catalog at `/oath`
-- `/oath/store/pkg/hello/` (canary payload; `/bin/hello` after apply)
+- `/oath/store/pkg/{busybox,btrfs,oath,hello}/`; `/bin` is a symlink farm
+- `/bin/hello` only after `pkg:hello` is present
 
 ## Telemetry
 
@@ -88,6 +88,7 @@ once the disk is mounted.
 - Sibling generations `/oath/run/fs/@gen-N`
 - `svc:hold` start / stop / undo / persist across reboot
 - `pkg:hello` install / remove / undo / persist across reboot
+- `pkg:busybox` / `btrfs` / `oath` present and not removable
 
 ## Limits
 

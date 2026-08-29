@@ -22,5 +22,5 @@ that are not there.
 ## What this is not
 
 No installer, no network objects, no SSH, no desktop, no
-glibc-as-the-OS. One canary package (`pkg:hello`). Busybox is a
-borrowed prebuilt, not a package object.
+glibc-as-the-OS. Packages: sealed `busybox` / `btrfs` / `oath`, plus
+canary `pkg:hello`.

@@ -60,9 +60,15 @@ fn copy_recursive(src: &Path, dst: &Path) -> Result<()> {
         let e = e?;
         let to = dst.join(e.file_name());
         let from = e.path();
-        if from.is_dir() {
+        let meta = from.symlink_metadata()?;
+        if meta.file_type().is_dir() {
             copy_recursive(&from, &to)?;
-        } else if from.is_file() {
+        } else if meta.file_type().is_symlink() {
+            let t = fs::read_link(&from)?;
+            let _ = fs::remove_file(&to);
+            std::os::unix::fs::symlink(&t, &to)
+                .map_err(|err| Error::Msg(format!("symlink {}: {err}", to.display())))?;
+        } else if meta.file_type().is_file() {
             fs::copy(&from, &to)?;
         }
     }

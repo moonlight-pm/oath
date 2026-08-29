@@ -12,7 +12,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. Phase 3 store layout (T11–T13) is closed.
+None open. Phase 3 store layout (T11–T14) is closed.
 
 ---
 
@@ -132,6 +132,12 @@ from-source in this slice.
 Canary `pkg:hello` only. Do not wrap busybox / btrfs / `oath`. `svc`
 `wants` stays a listed gap.
 
+### T14 — Base packages, not removable — locked 2026-08-29
+
+`pkg:busybox`, `pkg:btrfs`, `pkg:oath` are present at seed. Applets
+are one busybox package. `actual.removable=false`: `present=false` is
+refused (not confirm). hello stays removable. `wants` still out.
+
 ---
 
 ## Decision log
@@ -141,3 +147,4 @@ Canary `pkg:hello` only. Do not wrap busybox / btrfs / `oath`. `svc`
 | 2026-08-27 | D1–D9 | Founding locks | this file Closed; [CURRENT.md](../CURRENT.md) |
 | 2026-08-27 | T1–T10 | Catalog freeze technical locks | this file; [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) |
 | 2026-08-28 | T11–T13 | Package store + canary | this file; [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md) |
+| 2026-08-29 | T14 | Base pkgs not removable | this file; [specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md) |

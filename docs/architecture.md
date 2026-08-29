@@ -29,12 +29,9 @@ QEMU -kernel bzImage -initrd initrd.gz -drive virtio qcow2
     @gen-N       readonly sibling generations
     /usr/lib/oath/init     PID 1 after pivot
     /usr/lib/oath/serial-login
-    /bin/oath
-    /bin/busybox (applets, including sh)
-    /bin/btrfs
+    /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /oath/                 catalog
-    /oath/store/pkg/hello/ canary payload
-    /bin/hello -> store    only when pkg:hello present
+    /oath/store/pkg/busybox|btrfs|oath|hello/
     /sbin/init -> ../usr/lib/oath/init
 ```
 
@@ -59,4 +56,5 @@ build CLI: `cargo make` pack/run/probe). Artifacts in `build/` (gitignored).
 
 **Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) ·
-[specs/2026-08-28-packages.md](specs/2026-08-28-packages.md)
+[specs/2026-08-28-packages.md](specs/2026-08-28-packages.md) ·
+[specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md)

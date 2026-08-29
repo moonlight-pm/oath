@@ -17,7 +17,7 @@ pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{Host, HostPower, Meta, Pkg, PkgActual, Svc, SvcActual, SvcRestart};
 pub use layout::{gen_subvol_name, parse_gen_subvol, BTRFS_TOP, LIVE_SUBVOL};
-pub use pkg::converge as converge_pkg;
+pub use pkg::{converge as converge_pkg, converge_with_link_root};
 pub use seed::seed;
 pub use tel::tel;
 

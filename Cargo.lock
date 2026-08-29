@@ -458,6 +458,7 @@ dependencies = [
  "clap",
  "flate2",
  "libc",
+ "oath-core",
  "regex",
  "serde",
  "serde_json",

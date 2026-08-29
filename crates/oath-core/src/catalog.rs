@@ -134,6 +134,12 @@ impl Catalog {
             return Err(Error::hint(format!("{id} is read-only"), "oath schema snap"));
         }
         let mut obj = self.get(id)?;
+        if id.kind == KIND_PKG
+            && fields.get("present") == Some(&Value::Bool(false))
+            && !pkg_removable(&obj.actual)
+        {
+            return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
+        }
         let Some(map) = obj.desired.as_object_mut() else {
             return Err(Error::Msg("desired is not an object".into()));
         };
@@ -271,10 +277,7 @@ impl Catalog {
                     self.touch_status(&d.id, "in-sync")?;
                 }
                 KIND_PKG => {
-                    let pkg: Pkg = serde_json::from_value(self.get(&d.id)?.desired.clone())?;
-                    let actual = hooks.converge_pkg(&d.id, &pkg)?;
-                    write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
-                    self.touch_status(&d.id, "in-sync")?;
+                    self.converge_one_pkg(&d.id, hooks)?;
                 }
                 _ => {
                     return Err(Error::hint(
@@ -314,13 +317,7 @@ impl Catalog {
 
         if let Ok(ids) = self.ls(Some(KIND_PKG)) {
             for id in ids {
-                if let Ok(obj) = self.get(&id) {
-                    if let Ok(pkg) = serde_json::from_value::<Pkg>(obj.desired.clone()) {
-                        let actual = hooks.converge_pkg(&id, &pkg)?;
-                        write_json(&self.obj_dir(&id).join("actual.json"), &actual)?;
-                        self.touch_status(&id, "in-sync")?;
-                    }
-                }
+                self.converge_one_pkg(&id, hooks)?;
             }
         }
 
@@ -376,6 +373,20 @@ impl Catalog {
         } else {
             crate::index::generate(self)
         }
+    }
+
+    fn converge_one_pkg(&self, id: &ObjectId, hooks: &dyn ApplyHooks) -> Result<()> {
+        let obj = self.get(id)?;
+        let pkg: Pkg = serde_json::from_value(obj.desired.clone())?;
+        let removable = pkg_removable(&obj.actual);
+        if !pkg.present && !removable {
+            return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
+        }
+        let mut actual = hooks.converge_pkg(id, &pkg)?;
+        actual.removable = removable;
+        write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
+        self.touch_status(id, "in-sync")?;
+        Ok(())
     }
 
     fn obj_dir(&self, id: &ObjectId) -> PathBuf {
@@ -525,4 +536,8 @@ impl Catalog {
                     .unwrap_or(false)
         }))
     }
+}
+
+fn pkg_removable(actual: &Value) -> bool {
+    actual.get("removable").and_then(|v| v.as_bool()).unwrap_or(true)
 }

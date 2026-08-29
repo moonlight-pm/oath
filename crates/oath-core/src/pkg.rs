@@ -13,13 +13,17 @@ pub fn store_bin(catalog_root: &Path, name: &str) -> PathBuf {
 
 /// Create or remove this package’s `/bin` symlinks. Never clobber a
 /// name that does not already point at this package’s store.
-pub fn converge(
-    catalog_root: &Path,
+///
+/// `link_root` is the prefix written into symlink targets (`/oath` on
+/// the appliance, even when packing from a stage tree).
+pub fn converge_with_link_root(
+    store_root: &Path,
     bin_dir: &Path,
+    link_root: &Path,
     name: &str,
     present: bool,
 ) -> Result<PkgActual> {
-    let store = store_bin(catalog_root, name);
+    let store = store_bin(store_root, name);
     if present && !store.is_dir() {
         return Err(Error::hint(
             format!("no store for pkg:{name}"),
@@ -31,7 +35,7 @@ pub fn converge(
     if present {
         let mut links = Vec::new();
         for n in &names {
-            let target = store_target(catalog_root, name, n);
+            let target = store_target(link_root, name, n);
             let dest = bin_dir.join(n);
             if dest.symlink_metadata().is_ok() {
                 if is_our_link(&dest, &target, &store.join(n)) {
@@ -48,17 +52,26 @@ pub fn converge(
             })?;
             links.push(n.clone());
         }
-        Ok(PkgActual { present: true, links })
+        Ok(PkgActual { present: true, links, removable: true })
     } else {
         for n in &names {
             let dest = bin_dir.join(n);
-            let target = store_target(catalog_root, name, n);
+            let target = store_target(link_root, name, n);
             if dest.symlink_metadata().is_ok() && is_our_link(&dest, &target, &store.join(n)) {
                 fs::remove_file(&dest)?;
             }
         }
-        Ok(PkgActual { present: false, links: Vec::new() })
+        Ok(PkgActual { present: false, links: Vec::new(), removable: true })
     }
+}
+
+pub fn converge(
+    catalog_root: &Path,
+    bin_dir: &Path,
+    name: &str,
+    present: bool,
+) -> Result<PkgActual> {
+    converge_with_link_root(catalog_root, bin_dir, catalog_root, name, present)
 }
 
 fn store_target(catalog_root: &Path, name: &str, file: &str) -> PathBuf {

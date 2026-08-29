@@ -48,7 +48,8 @@ reboot persist. Plan:
 Install/remove/query packages through the catalog. Services are objects
 with schema, not unit-file folklore. Freeze:
 [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md). Canary
-`pkg:hello` is in; wrapping busybox and a real set of packages are not.
+`pkg:hello` plus sealed `busybox` / `btrfs` / `oath` are in. A real
+set of packages, deps, and fetch are not.
 
 ## Phase 4 — Devices and network
 

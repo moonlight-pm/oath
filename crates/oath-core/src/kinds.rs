@@ -79,9 +79,16 @@ pub struct Pkg {
     pub present: bool,
 }
 
+fn default_true() -> bool {
+    true
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PkgActual {
     pub present: bool,
     #[serde(default)]
     pub links: Vec<String>,
+    /// Engine-owned. If false, `present=false` is refused (not confirm).
+    #[serde(default = "default_true")]
+    pub removable: bool,
 }

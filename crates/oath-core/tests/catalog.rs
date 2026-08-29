@@ -114,6 +114,14 @@ impl ApplyHooks for MemHooks {
         Ok(())
     }
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
+        let store = self.root.join("store/pkg").join(&id.name).join("bin");
+        if !store.is_dir() {
+            return Ok(PkgActual {
+                present: desired.present,
+                links: Vec::new(),
+                removable: true,
+            });
+        }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present)
     }
 }
@@ -134,6 +142,9 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "svc:serial"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:hold"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:hello"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:busybox"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:btrfs"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:oath"));
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -296,4 +307,32 @@ fn pkg_collision_refuses() {
         other => panic!("{other:?}"),
     }
     assert_eq!(std::fs::read_to_string(d.path().join("bin/hello")).unwrap(), "busybox-or-other\n");
+}
+
+#[test]
+fn pkg_not_removable_refuses_absent() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:busybox".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(false));
+    let err = cat.set_fields(&id, fields).unwrap_err();
+    match err {
+        Error::Hint { message, .. } => assert!(message.contains("not removable"), "{message}"),
+        other => panic!("{other:?}"),
+    }
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.desired["present"], json!(true));
+
+    write_json_present_false(d.path(), "busybox");
+    let err = cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err();
+    match err {
+        Error::Hint { message, .. } => assert!(message.contains("not removable"), "{message}"),
+        other => panic!("{other:?}"),
+    }
+}
+
+fn write_json_present_false(root: &std::path::Path, name: &str) {
+    let p = root.join("objects/pkg").join(name).join("desired.json");
+    std::fs::write(p, "{\n  \"present\": false\n}\n").unwrap();
 }

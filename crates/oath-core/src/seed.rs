@@ -63,10 +63,10 @@ pub fn seed(root: &Path) -> Result<()> {
     write_object(root, &hold, "mutate", &hold_desired, &hold_actual)?;
     write_json(&root.join("objects/svc/hold/applied.json"), &hold_desired)?;
 
-    let hello = ObjectId::new(KIND_PKG, "hello");
-    let hello_desired = json!({ "present": false });
-    let hello_actual = json!({ "present": false, "links": [] });
-    write_object(root, &hello, "mutate", &hello_desired, &hello_actual)?;
+    seed_pkg(root, "hello", false, true)?;
+    seed_pkg(root, "busybox", true, false)?;
+    seed_pkg(root, "btrfs", true, false)?;
+    seed_pkg(root, "oath", true, false)?;
 
     let cur = ObjectId::new(KIND_SNAP, "current");
     let gen0 = json!({ "generation": 0 });
@@ -89,6 +89,17 @@ fn write(root: &Path, rel: &str, body: &str) {
         b.push('\n');
     }
     let _ = std::fs::write(p, b);
+}
+
+fn seed_pkg(root: &Path, name: &str, present: bool, removable: bool) -> Result<()> {
+    let id = ObjectId::new(KIND_PKG, name);
+    write_object(
+        root,
+        &id,
+        "mutate",
+        &json!({ "present": present }),
+        &json!({ "present": present, "links": [], "removable": removable }),
+    )
 }
 
 fn write_object(

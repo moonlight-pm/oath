@@ -58,7 +58,7 @@ pub trait ApplyHooks {
         Ok(())
     }
     fn converge_pkg(&self, _id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
-        Ok(PkgActual { present: desired.present, links: Vec::new() })
+        Ok(PkgActual { present: desired.present, links: Vec::new(), removable: true })
     }
 }
 

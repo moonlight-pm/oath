@@ -13,8 +13,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Phase 3 canary shipped** (`pkg:hello`). Do not wrap busybox or
-   add more packages unless asked.
+1. **Phase 3 base packages shipped** (`busybox`, `btrfs`, `oath`
+   sealed; `hello` removable). Do not add more packages unless asked.
 2. Do not add net / dev / glibc runtime / installer unless CURRENT is
    updated.
 3. Do not install to a real disk.
@@ -29,7 +29,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Phase 1+2 serial box |
 | How | `cargo make build` then `probe` / `run` |
-| Notes | Hostname + `svc:hold` + `pkg:hello` install/remove/undo/reboot persist. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
+| Notes | Hostname + `svc:hold` + `pkg:hello` + sealed `busybox`/`btrfs`/`oath`. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
 
 ```sh
 nix-shell
@@ -46,10 +46,11 @@ Do not re-litigate without an explicit decision.
 
 - Oath: Linux kernel, own userspace, musl base, own PID 1.
 - Catalog `/oath`, ids `kind:name`, `oath` is the only admin surface.
-- v0 kinds `host`, `svc`, `snap`. Phase 3 adds `pkg` (canary
-  `pkg:hello` only). Sibling `@gen-N` at `/oath/run/fs`.
+- v0 kinds `host`, `svc`, `snap`, `pkg`. Sibling `@gen-N` at
+  `/oath/run/fs`.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
-  no new verbs; no fetch in v0.
+  `busybox`/`btrfs`/`oath` not removable; hello is. No new verbs; no
+  fetch in v0.
 - Services: PID 1 converges enabled/disabled `svc:*`. `svc:serial` is
   the console; `svc:hold` is the start/stop test process.
 - MIT, Copyright (c) Joshua Kifer.
@@ -60,9 +61,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-28-packages.md](docs/specs/2026-08-28-packages.md)
-  (catalog:
-  [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md))
-- Plan: [docs/plans/2026-08-28-pkg-canary-plan.md](docs/plans/2026-08-28-pkg-canary-plan.md)
+- Freeze: [docs/specs/2026-08-29-pkg-base.md](docs/specs/2026-08-29-pkg-base.md)
+  (packages:
+  [docs/specs/2026-08-28-packages.md](docs/specs/2026-08-28-packages.md))
+- Plan: [docs/plans/2026-08-29-pkg-base-plan.md](docs/plans/2026-08-29-pkg-base-plan.md)
   (complete)
-- Roadmap: Phase 3 packages (active; canary done)
+- Roadmap: Phase 3 packages (active; base pkgs done)

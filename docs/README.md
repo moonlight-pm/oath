@@ -39,11 +39,13 @@ ask the human.
 | [`open-questions.md`](open-questions.md) | Design forks + ask-human decisions | Design forks |
 | [`specs/`](specs/) | Target freezes (dated) | **Target** |
 | [`specs/2026-08-27-catalog-and-oath-surface.md`](specs/2026-08-27-catalog-and-oath-surface.md) | Catalog, objects, `oath` | **Target** |
-| [`specs/2026-08-28-packages.md`](specs/2026-08-28-packages.md) | Kind `pkg`, store, canary | **Target** (active) |
+| [`specs/2026-08-28-packages.md`](specs/2026-08-28-packages.md) | Kind `pkg`, store, canary | **Target** |
+| [`specs/2026-08-29-pkg-base.md`](specs/2026-08-29-pkg-base.md) | Sealed busybox / btrfs / oath | **Target** (active) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
 | [`plans/2026-08-28-pkg-canary-plan.md`](plans/2026-08-28-pkg-canary-plan.md) | Phase 3 `pkg:hello` | **Build** (complete) |
+| [`plans/2026-08-29-pkg-base-plan.md`](plans/2026-08-29-pkg-base-plan.md) | Phase 3 base packages | **Build** (complete) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 

@@ -236,6 +236,70 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath ls --kind pkg",
+        Some("pkg:busybox"),
+        "pkg.ls_busybox",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "readlink /bin/oath",
+        Some("/oath/store/pkg/oath/bin/oath"),
+        "pkg.oath_symlink",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "readlink /bin/busybox",
+        Some("/oath/store/pkg/busybox/bin/busybox"),
+        "pkg.busybox_symlink",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "readlink /bin/btrfs",
+        Some("/oath/store/pkg/btrfs/bin/btrfs"),
+        "pkg.btrfs_symlink",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get pkg:busybox --actual",
+        Some("\"removable\": false"),
+        "pkg.busybox_sealed",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set pkg:busybox present=false",
+        Some("not removable"),
+        "pkg.busybox_refuse",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set pkg:oath present=false",
+        Some("not removable"),
+        "pkg.oath_refuse",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set pkg:btrfs present=false",
+        Some("not removable"),
+        "pkg.btrfs_refuse",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath get pkg:hello --actual",
         Some("\"present\": false"),
         "pkg.absent",
