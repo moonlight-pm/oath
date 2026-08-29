@@ -43,7 +43,7 @@ ask the human.
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
-| [`plans/2026-08-28-pkg-canary-plan.md`](plans/2026-08-28-pkg-canary-plan.md) | Phase 3 `pkg:hello` | **Build** (open) |
+| [`plans/2026-08-28-pkg-canary-plan.md`](plans/2026-08-28-pkg-canary-plan.md) | Phase 3 `pkg:hello` | **Build** (complete) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 

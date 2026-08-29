@@ -1,5 +1,5 @@
 use crate::id::ObjectId;
-use crate::kinds::Host;
+use crate::kinds::{Host, Pkg, PkgActual};
 use crate::Result;
 
 #[derive(Clone, Debug)]
@@ -56,6 +56,9 @@ pub trait ApplyHooks {
     /// After notify, wait until svc actual matches `enabled`. Default: no-op.
     fn wait_converge(&self, _id: &ObjectId, _enabled: bool) -> Result<()> {
         Ok(())
+    }
+    fn converge_pkg(&self, _id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
+        Ok(PkgActual { present: desired.present, links: Vec::new() })
     }
 }
 

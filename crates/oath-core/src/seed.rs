@@ -3,7 +3,7 @@ use std::path::Path;
 use serde_json::json;
 
 use crate::kinds::Meta;
-use crate::{write_json, ObjectId, Result, KIND_HOST, KIND_SNAP, KIND_SVC};
+use crate::{write_json, ObjectId, Result, KIND_HOST, KIND_PKG, KIND_SNAP, KIND_SVC};
 
 pub const HOST_SCHEMA: &str = include_str!("../schema/host.json");
 pub const HOST_MD: &str = include_str!("../schema/host.md");
@@ -11,6 +11,8 @@ pub const SVC_SCHEMA: &str = include_str!("../schema/svc.json");
 pub const SVC_MD: &str = include_str!("../schema/svc.md");
 pub const SNAP_SCHEMA: &str = include_str!("../schema/snap.json");
 pub const SNAP_MD: &str = include_str!("../schema/snap.md");
+pub const PKG_SCHEMA: &str = include_str!("../schema/pkg.json");
+pub const PKG_MD: &str = include_str!("../schema/pkg.md");
 
 pub fn seed(root: &Path) -> Result<()> {
     std::fs::create_dir_all(root.join("schema"))?;
@@ -24,6 +26,8 @@ pub fn seed(root: &Path) -> Result<()> {
     write(root, "schema/svc.md", SVC_MD);
     write(root, "schema/snap.json", SNAP_SCHEMA);
     write(root, "schema/snap.md", SNAP_MD);
+    write(root, "schema/pkg.json", PKG_SCHEMA);
+    write(root, "schema/pkg.md", PKG_MD);
 
     let host = ObjectId::new(KIND_HOST, "local");
     let host_val = json!({ "hostname": "oath", "power": "run" });
@@ -58,6 +62,11 @@ pub fn seed(root: &Path) -> Result<()> {
     });
     write_object(root, &hold, "mutate", &hold_desired, &hold_actual)?;
     write_json(&root.join("objects/svc/hold/applied.json"), &hold_desired)?;
+
+    let hello = ObjectId::new(KIND_PKG, "hello");
+    let hello_desired = json!({ "present": false });
+    let hello_actual = json!({ "present": false, "links": [] });
+    write_object(root, &hello, "mutate", &hello_desired, &hello_actual)?;
 
     let cur = ObjectId::new(KIND_SNAP, "current");
     let gen0 = json!({ "generation": 0 });

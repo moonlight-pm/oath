@@ -7,19 +7,16 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-08-28
+**As of:** 2026-08-29
 
 ---
 
 ## Now
 
-1. **Phase 3 packages** — freeze
-   [docs/specs/2026-08-28-packages.md](docs/specs/2026-08-28-packages.md),
-   plan
-   [docs/plans/2026-08-28-pkg-canary-plan.md](docs/plans/2026-08-28-pkg-canary-plan.md).
-   Implement the `pkg:hello` canary (store + `/bin` symlinks).
-2. Do not wrap busybox. Do not add net / dev / glibc runtime /
-   installer unless CURRENT is updated.
+1. **Phase 3 canary shipped** (`pkg:hello`). Do not wrap busybox or
+   add more packages unless asked.
+2. Do not add net / dev / glibc runtime / installer unless CURRENT is
+   updated.
 3. Do not install to a real disk.
 
 **Always allowed:** docs hygiene; tests; `cargo make build|run|probe`.
@@ -32,7 +29,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Phase 1+2 serial box |
 | How | `cargo make build` then `probe` / `run` |
-| Notes | Hostname + `svc:hold` start/stop/undo/reboot persist. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
+| Notes | Hostname + `svc:hold` + `pkg:hello` install/remove/undo/reboot persist. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
 
 ```sh
 nix-shell
@@ -67,4 +64,5 @@ Do not re-litigate without an explicit decision.
   (catalog:
   [docs/specs/2026-08-27-catalog-and-oath-surface.md](docs/specs/2026-08-27-catalog-and-oath-surface.md))
 - Plan: [docs/plans/2026-08-28-pkg-canary-plan.md](docs/plans/2026-08-28-pkg-canary-plan.md)
-- Roadmap: Phase 3 packages (active)
+  (complete)
+- Roadmap: Phase 3 packages (active; canary done)

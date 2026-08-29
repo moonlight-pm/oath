@@ -13,6 +13,7 @@ The catalog is the source of truth. It lives at `/oath`.
     meta.json              id, safety, status
     applied.json           `svc` only — last applied desired
   log/apply.jsonl
+  store/pkg/<name>/        package trees (not desired state; apply links /bin)
   run/                     sockets, mounts — not desired state
     init.sock
     fs/                    btrfs top-level (subvolid=0)
@@ -30,8 +31,9 @@ If a kind is not under `/oath/schema`, it does not exist.
 | `host` | `host:local` only | Hostname and power (`run` / `reboot` / `halt`) |
 | `svc` | `svc:serial`, `svc:hold` | PID 1’s only config |
 | `snap` | `snap:current`, `snap:N` | Generations |
+| `pkg` | `pkg:hello` | Store + `/bin` symlink farm |
 
-No package, device, or network kinds yet.
+No device or network kinds yet. Busybox is not a `pkg` object.
 
 `host` and `snap:current` share schema between desired and actual.
 `svc` actual is runtime (`state`, `pid`, `restarts`); drift is desired

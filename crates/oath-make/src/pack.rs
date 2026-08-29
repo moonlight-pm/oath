@@ -115,6 +115,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         let _ = fs::remove_file(stage.join("bin").join(a));
         symlink("busybox", stage.join("bin").join(a))?;
     }
+    // pkg:hello owns /bin/hello. Drop a busybox applet of that name if present.
+    let _ = fs::remove_file(stage.join("bin/hello"));
     if let Some(btrfs) = &tools.btrfs {
         copy_file(btrfs, &stage.join("bin/btrfs"))?;
         chmod_exec(&stage.join("bin/btrfs"))?;
@@ -134,6 +136,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         stage.join("oath").to_str().unwrap(),
         "seed",
     ]))?;
+    let hello = stage.join("oath/store/pkg/hello/bin/hello");
+    fs::create_dir_all(hello.parent().unwrap())?;
+    fs::write(&hello, "#!/bin/sh\nprintf 'hello\\n'\n")?;
+    chmod_exec(&hello)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");

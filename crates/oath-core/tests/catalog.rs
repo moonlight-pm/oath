@@ -1,8 +1,8 @@
 use std::sync::Mutex;
 
 use oath_core::{
-    seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId, Result,
-    EXIT_CONFIRM,
+    converge_pkg, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId,
+    Pkg, PkgActual, Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
 
@@ -28,6 +28,9 @@ impl MemHooks {
         for e in walkdir(root) {
             let rel = e.strip_prefix(root).unwrap();
             if rel.as_os_str().is_empty() {
+                continue;
+            }
+            if rel.components().next().is_some_and(|c| c.as_os_str() == "bin") {
                 continue;
             }
             if e.is_file() {
@@ -110,6 +113,9 @@ impl ApplyHooks for MemHooks {
     fn halt(&self) -> Result<()> {
         Ok(())
     }
+    fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
+        converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present)
+    }
 }
 
 fn tmp() -> (tempfile::TempDir, Catalog) {
@@ -127,7 +133,16 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "host:local"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:serial"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:hold"));
-    assert!(cat.index_text().unwrap().contains("You are on **Oath**"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:hello"));
+    let idx = cat.index_text().unwrap();
+    assert!(idx.contains("You are on **Oath**"));
+    assert!(idx.contains("`pkg`"));
+}
+
+fn write_hello_store(root: &std::path::Path) {
+    let p = root.join("store/pkg/hello/bin/hello");
+    std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+    std::fs::write(&p, "hello-payload\n").unwrap();
 }
 
 #[test]
@@ -225,4 +240,60 @@ fn apply_noop_on_in_sync() {
     let (_d, cat) = tmp();
     let r = cat.apply(None, false, &Actor::unknown(), &NullHooks).unwrap();
     assert!(r.ids.is_empty());
+}
+
+#[test]
+fn pkg_present_links_and_undo() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(true));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let link = d.path().join("bin/hello");
+    assert!(link.symlink_metadata().unwrap().file_type().is_symlink());
+    let target = std::fs::read_link(&link).unwrap();
+    assert!(target.ends_with("store/pkg/hello/bin/hello"), "{target:?}");
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["present"], json!(true));
+    assert_eq!(obj.actual["links"], json!(["hello"]));
+
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(false));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert!(link.symlink_metadata().is_err());
+    assert!(d.path().join("store/pkg/hello/bin/hello").is_file());
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["present"], json!(false));
+
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert!(link.symlink_metadata().unwrap().file_type().is_symlink());
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.desired["present"], json!(true));
+    assert_eq!(obj.actual["present"], json!(true));
+}
+
+#[test]
+fn pkg_collision_refuses() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    std::fs::create_dir_all(d.path().join("bin")).unwrap();
+    std::fs::write(d.path().join("bin/hello"), "busybox-or-other\n").unwrap();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(true));
+    cat.set_fields(&id, fields).unwrap();
+    let err = cat.apply(Some(vec![id]), false, &Actor::unknown(), &hooks).unwrap_err();
+    match err {
+        Error::Hint { message, hint } => {
+            assert!(message.contains("exists"), "{message}");
+            assert!(hint.contains("schema"));
+        }
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(std::fs::read_to_string(d.path().join("bin/hello")).unwrap(), "busybox-or-other\n");
 }

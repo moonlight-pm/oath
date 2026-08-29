@@ -228,6 +228,62 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath ls --kind pkg",
+        Some("pkg:hello"),
+        "pkg.ls",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get pkg:hello --actual",
+        Some("\"present\": false"),
+        "pkg.absent",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /oath/store/pkg/hello/bin/hello && echo PKG_STORE_OK",
+        Some("PKG_STORE_OK"),
+        "pkg.store",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set pkg:hello present=true",
+        None,
+        "pkg.set_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath apply pkg:hello",
+        Some("applied generation"),
+        "pkg.apply_present",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "readlink /bin/hello",
+        Some("/oath/store/pkg/hello/bin/hello"),
+        "pkg.symlink",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "[ \"$(hello)\" = hello ] && echo PKG_HELLO_OK",
+        Some("PKG_HELLO_OK"),
+        "pkg.run",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath set host:local hostname=atlas",
         None,
         "set.atlas",
@@ -386,6 +442,70 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "oath get svc:hold --actual",
         Some("\"state\": \"stopped\""),
         "reboot.hold_stopped",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "[ \"$(hello)\" = hello ] && echo PKG_HELLO_OK",
+        Some("PKG_HELLO_OK"),
+        "reboot.pkg_hello",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "oath get pkg:hello --actual",
+        Some("\"present\": true"),
+        "reboot.pkg_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "oath set pkg:hello present=false",
+        None,
+        "pkg.set_absent",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "oath apply pkg:hello",
+        Some("applied generation"),
+        "pkg.apply_absent",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "test ! -e /bin/hello && echo PKG_HELLO_GONE",
+        Some("PKG_HELLO_GONE"),
+        "pkg.unlinked",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "test -x /oath/store/pkg/hello/bin/hello && echo PKG_STORE_OK",
+        Some("PKG_STORE_OK"),
+        "pkg.store_kept",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "oath undo",
+        Some("undid to generation"),
+        "pkg.undo",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "[ \"$(hello)\" = hello ] && echo PKG_HELLO_OK",
+        Some("PKG_HELLO_OK"),
+        "pkg.undo_hello",
         Duration::from_secs(8),
     )?;
     vm2.close();

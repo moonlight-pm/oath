@@ -73,3 +73,15 @@ pub struct SvcActual {
     #[serde(default)]
     pub restarts: u32,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Pkg {
+    pub present: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PkgActual {
+    pub present: bool,
+    #[serde(default)]
+    pub links: Vec<String>,
+}

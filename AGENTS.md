@@ -78,8 +78,7 @@ Active freeze:
 [`docs/specs/2026-08-28-packages.md`](docs/specs/2026-08-28-packages.md)
 (catalog:
 [`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md)).
-Active plan:
-[`docs/plans/2026-08-28-pkg-canary-plan.md`](docs/plans/2026-08-28-pkg-canary-plan.md).
+Active plan: **none** (Phase 3 canary complete).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).

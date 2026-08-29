@@ -7,8 +7,8 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, ObjectId, Result, BTRFS_TOP,
-    LIVE_SUBVOL,
+    converge_pkg, gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, ObjectId, Pkg,
+    PkgActual, Result, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -38,7 +38,7 @@ impl Live {
 
     /// Restore catalog documents without touching `/oath/run` (mounts, socket).
     fn restore_catalog(src_oath: &Path, dst_oath: &Path) -> Result<()> {
-        for name in ["objects", "schema", "log", "INDEX.md"] {
+        for name in ["objects", "schema", "log", "INDEX.md", "store"] {
             let from = src_oath.join(name);
             let to = dst_oath.join(name);
             if from.is_dir() {
@@ -190,5 +190,24 @@ impl ApplyHooks for Live {
         // attached (the host serial looks "stuck"). Power-off makes QEMU exit.
         reboot(RebootMode::RB_POWER_OFF).map_err(|e| Error::Msg(format!("halt: {e}")))?;
         Ok(())
+    }
+
+    fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
+        let bin = if self.catalog_root.as_path() == Path::new("/oath") {
+            PathBuf::from("/bin")
+        } else {
+            self.catalog_root.join("bin")
+        };
+        let actual = converge_pkg(&self.catalog_root, &bin, &id.name, desired.present)?;
+        tel(
+            "oath",
+            "pkg",
+            json!({
+                "id": id.to_string(),
+                "present": actual.present,
+                "links": actual.links,
+            }),
+        );
+        Ok(actual)
     }
 }

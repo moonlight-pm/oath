@@ -11,6 +11,7 @@ The only dogfood form is an **x86_64 QEMU** appliance on a serial console.
 | [Using `oath`](using.md) | Verbs, INDEX, safety |
 | [Catalog](catalog.md) | Objects, kinds, on-disk tree |
 | [Services](services.md) | PID 1 and `svc:*` |
+| [Packages](packages.md) | `pkg:hello`, store, `/bin` links |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N` |
 | [The appliance](qemu.md) | Build, run, probe, disk layout |
 
@@ -20,5 +21,6 @@ that are not there.
 
 ## What this is not
 
-No installer, no packages, no network objects, no SSH, no desktop, no
-glibc-as-the-OS. Busybox is a borrowed prebuilt, not the identity.
+No installer, no network objects, no SSH, no desktop, no
+glibc-as-the-OS. One canary package (`pkg:hello`). Busybox is a
+borrowed prebuilt, not a package object.

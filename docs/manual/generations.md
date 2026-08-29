@@ -30,8 +30,9 @@ record (`generation`, `parent`, `time`, `reason`). Do not `set` `snap:N`.
 reused (it is `max(existing)+1`, not `parent+1`).
 
 `oath undo` restores the **catalog** (`objects`, `schema`, `log`,
-`INDEX.md`) from that generation and reapplies hostname. It does **not**
-replace `/oath/run` (mounts and the init socket stay).
+`INDEX.md`, `store/`) from that generation, reapplies hostname, and
+converges `pkg:*` links and `svc:*`. It does **not** replace `/oath/run`
+(mounts and the init socket stay).
 
 Picking an arbitrary old generation as the boot default is **confirm**
 class. There is no bootloader menu yet. `undo` is the supported rewind.

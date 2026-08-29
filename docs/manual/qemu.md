@@ -73,6 +73,7 @@ and a loop-mount (sudo) are still external tools.
 - `/usr/lib/oath/init` — PID 1 after switch-root
 - `/bin/oath`, busybox, `btrfs`
 - Catalog at `/oath`
+- `/oath/store/pkg/hello/` (canary payload; `/bin/hello` after apply)
 
 ## Telemetry
 
@@ -86,8 +87,9 @@ once the disk is mounted.
 - `power=reboot` without `--confirm` refuses (exit 3)
 - Sibling generations `/oath/run/fs/@gen-N`
 - `svc:hold` start / stop / undo / persist across reboot
+- `pkg:hello` install / remove / undo / persist across reboot
 
 ## Limits
 
-- No SSH, no installer, no packages, no network objects
+- No SSH, no installer, no network objects
 - No boot-generation picker (undo is the supported rewind)

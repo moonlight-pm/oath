@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oath:kind:pkg",
+  "title": "pkg",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["present"],
+  "properties": {
+    "present": {
+      "type": "boolean",
+      "description": "If true, files in /oath/store/pkg/<name>/bin/ are symlinked at /bin/<basename>. If false, those links are removed. The store tree stays."
+    }
+  }
+}

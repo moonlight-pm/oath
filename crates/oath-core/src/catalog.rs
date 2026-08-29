@@ -6,9 +6,10 @@ use serde_json::{json, Map, Value};
 use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
-use crate::kinds::{Host, HostPower, Meta};
+use crate::kinds::{Host, HostPower, Meta, Pkg};
 use crate::{
-    now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_HOST, KIND_SNAP, KIND_SVC,
+    now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_HOST, KIND_PKG,
+    KIND_SNAP, KIND_SVC,
 };
 
 #[derive(Clone, Debug)]
@@ -209,6 +210,10 @@ impl Catalog {
                 } else {
                     obj.desired.clone()
                 }
+            } else if d.id.kind == KIND_PKG {
+                json!({
+                    "present": obj.actual.get("present").cloned().unwrap_or(json!(false))
+                })
             } else {
                 obj.actual.clone()
             };
@@ -265,6 +270,12 @@ impl Catalog {
                     )?;
                     self.touch_status(&d.id, "in-sync")?;
                 }
+                KIND_PKG => {
+                    let pkg: Pkg = serde_json::from_value(self.get(&d.id)?.desired.clone())?;
+                    let actual = hooks.converge_pkg(&d.id, &pkg)?;
+                    write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
+                    self.touch_status(&d.id, "in-sync")?;
+                }
                 _ => {
                     return Err(Error::hint(
                         format!("no handler for {}", d.id.kind),
@@ -298,6 +309,18 @@ impl Catalog {
             if let Ok(host) = serde_json::from_value::<Host>(obj.desired.clone()) {
                 let actual = hooks.converge_host(&host)?;
                 write_json(&self.obj_dir(&obj.id).join("actual.json"), &actual)?;
+            }
+        }
+
+        if let Ok(ids) = self.ls(Some(KIND_PKG)) {
+            for id in ids {
+                if let Ok(obj) = self.get(&id) {
+                    if let Ok(pkg) = serde_json::from_value::<Pkg>(obj.desired.clone()) {
+                        let actual = hooks.converge_pkg(&id, &pkg)?;
+                        write_json(&self.obj_dir(&id).join("actual.json"), &actual)?;
+                        self.touch_status(&id, "in-sync")?;
+                    }
+                }
             }
         }
 
