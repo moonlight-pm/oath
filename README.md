@@ -78,6 +78,7 @@ nix-shell                 # optional: kernel, qemu, musl cc, busybox, btrfs
 cargo make build          # sudo to loop-mount the disk
 cargo make probe          # courage test; writes build/runs/<id>/
 cargo make run            # interactive serial + run dir
+cargo make run --build    # pack first (also on up / start)
 cargo make up             # headless; Ctrl-C kills QEMU
 cargo make start && cargo make ssh && cargo make stop
 ```

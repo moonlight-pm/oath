@@ -15,6 +15,7 @@ for packing the disk), btrfs-progs, qemu.
 nix-shell          # optional: kernel, qemu, musl cc, busybox, btrfs
 cargo make build
 cargo make run            # interactive serial; gtk window if DISPLAY is set
+cargo make run --build    # pack first, then run (same flag on up / start)
 cargo make up             # headless; serial in the run log; Ctrl-C kills QEMU
 cargo make start          # same, background
 cargo make ssh            # ssh -p 2222 root@127.0.0.1

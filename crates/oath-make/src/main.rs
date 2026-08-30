@@ -25,11 +25,23 @@ enum Cmd {
     /// Pack initramfs + btrfs qcow (needs sudo for loop-mount).
     Build,
     /// Interactive serial QEMU; writes build/runs/<id>/.
-    Run,
+    Run {
+        /// Pack the image first (sudo for the loop-mount).
+        #[arg(long)]
+        build: bool,
+    },
     /// Headless QEMU in the foreground. Serial in the run log. Ctrl-C kills the VM.
-    Up,
+    Up {
+        /// Pack the image first (sudo for the loop-mount).
+        #[arg(long)]
+        build: bool,
+    },
     /// Headless QEMU in the background. Serial in the run log.
-    Start,
+    Start {
+        /// Pack the image first (sudo for the loop-mount).
+        #[arg(long)]
+        build: bool,
+    },
     /// Stop a VM started with `start`.
     Stop,
     /// SSH to the QEMU guest (`root@127.0.0.1`, port `OATH_SSH_PORT` / 2222).
@@ -54,19 +66,27 @@ fn real() -> Result<()> {
     let root = util::repo_root();
     let out = util::out_dir(&root);
     match cli.cmd {
-        Cmd::Build => {
-            let tools = tools::load(&root)?;
-            pack::build(&root, &out, &tools)?;
-        }
-        Cmd::Run => {
+        Cmd::Build => pack_image(&root, &out)?,
+        Cmd::Run { build } => {
+            if build {
+                pack_image(&root, &out)?;
+            }
             let rc = qemu::run_interactive(&root, &out)?;
             std::process::exit(rc);
         }
-        Cmd::Up => {
+        Cmd::Up { build } => {
+            if build {
+                pack_image(&root, &out)?;
+            }
             let rc = qemu::run_up(&root, &out)?;
             std::process::exit(rc);
         }
-        Cmd::Start => qemu::start(&root, &out)?,
+        Cmd::Start { build } => {
+            if build {
+                pack_image(&root, &out)?;
+            }
+            qemu::start(&root, &out)?;
+        }
         Cmd::Stop => qemu::stop(&out)?,
         Cmd::Ssh { args } => {
             let rc = qemu::ssh(&out, &args)?;
@@ -78,4 +98,9 @@ fn real() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn pack_image(root: &std::path::Path, out: &std::path::Path) -> Result<()> {
+    let tools = tools::load(root)?;
+    pack::build(root, out, &tools)
 }
