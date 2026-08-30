@@ -62,8 +62,9 @@ Hardware inventory as objects. One network model. The agent does not run
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md),
 [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md)
 (`net:net0` + SSH + `dev` inventory + virtio-gpu). DHCP, `OATH_BRIDGE`,
-Unix floor, `svc` wants, and URL fetch exist. Module-as-catalog,
-guest store export, and Wayland do not.
+Unix floor, `svc` wants, and URL fetch exist. Module-as-catalog
+and guest store export do not. Wayland is T21 (River first, not
+packed).
 
 ## Phase 5 — Agent as a system component
 
@@ -83,5 +84,5 @@ Installer, A/B or equivalent base updates, honest rollback.
 - Broad ABI compatibility for random Linux binaries
 - Large binary repository
 - Bare-metal diversity
-- A graphical session (display canary in: virtio-gpu; no throwaway
-  compositor; Wayland/Sola not)
+- A graphical session (display canary in; T21 River-first Sola
+  port spec’d, not packed)

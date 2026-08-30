@@ -13,13 +13,16 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Display canary shipped** (`dev:card0`). Do not add a throwaway
-   compositor or a placeholder `pkg:sola`. Graphical next is the
-   compositor Sola actually uses, as `svc`, only when asked.
-2. **T20 hosting locked**, not implemented: `pkg.url` is the origin;
-   other Oath hosts may serve store bytes. No git store, no `repo` kind.
-3. Do not add glibc runtime / River / Sola / installer unless CURRENT
-   is updated. Do not install to a real disk.
+1. **T21 — Sola on Oath, River first.** Freeze
+   [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md).
+   Plan
+   [docs/plans/2026-08-30-sola-river-plan.md](docs/plans/2026-08-30-sola-river-plan.md).
+   Next mechanical step: GitHub forks (`oath-sola`, `oath-river`,
+   `oath-wlroots`) then submodules under `forks/`.
+2. **T20 hosting locked**, not implemented.
+3. Do not add a throwaway compositor or a placeholder `pkg:sola`.
+   Do not install to a real disk. glibc runtime is allowed **only**
+   as `pkg:glibc` for this payload (never in PID 1).
 
 **Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe` (`--build` on run/up/start).
 
@@ -61,6 +64,9 @@ Do not re-litigate without an explicit decision.
 - Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
   the console; `svc:sshd` is dropbear; `svc:hold` wants serial.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set.
+- Sola on Oath: PID 1 is the only supervisor. First slice is patched
+  **River** as `pkg:river` + `svc:river`. glibc is sealed `pkg:glibc`
+  for that payload. Source forks under `forks/` (build-time).
 - MIT, Copyright (c) Joshua Kifer.
 
 ---
@@ -69,9 +75,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
+- Freeze: [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
+  (T21, not implemented)
+- Plan: [docs/plans/2026-08-30-sola-river-plan.md](docs/plans/2026-08-30-sola-river-plan.md)
+- Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20, not implemented)
-- Display: [docs/specs/2026-08-30-display.md](docs/specs/2026-08-30-display.md)
-  (complete)
-- Plan: **none**
-- Roadmap: display canary in; hosting identity locked; Wayland/Sola later
+- Roadmap: display canary in; River-first Sola port open

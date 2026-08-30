@@ -12,7 +12,8 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T20 hosting is closed (identity only; serve/hash deferred).
+None open. T21 Sola/River-first is closed (implementation not started;
+GitHub remotes for `forks/` not created yet).
 
 ---
 
@@ -24,7 +25,9 @@ None open. T20 hosting is closed (identity only; serve/hash deferred).
   must not become a second config format.
 - How much of coreutils we replace vs busybox vs our own (Phase 1 may
   borrow busybox).
-- glibc runtime object layout — not Phase 1.
+- glibc runtime object layout — v0 locked in T21 as sealed
+  `pkg:glibc` (loader + libs in the store). Not a second libc in
+  PID 1.
 
 ---
 
@@ -174,6 +177,15 @@ serve those bytes; the peer sets `url` and applies. No canonical
 archive, no `repo` kind, no git-as-store. Apply does not clone.
 Serving the store, hashes, and discovery are deferred.
 
+### T21 — Sola on Oath, River first — locked 2026-08-30
+
+Patched River as `pkg:river` + `svc:river`. PID 1 is the only
+supervisor (no nested Sola process manager). glibc is sealed
+`pkg:glibc` for this payload. Build-time source forks under
+`forks/` (submodules of trees we maintain). Fork Sola, River, and
+wlroots; Sola’s nix overlay patches become commits on those forks.
+Full Sola session out of this slice.
+
 ---
 
 ## Decision log
@@ -190,3 +202,4 @@ Serving the store, hashes, and discovery are deferred.
 | 2026-08-30 | T18 | svc wants + pkg url fetch | this file; [specs/2026-08-30-wants-and-fetch.md](specs/2026-08-30-wants-and-fetch.md) |
 | 2026-08-30 | T19 | virtio-gpu display canary | this file; [specs/2026-08-30-display.md](specs/2026-08-30-display.md) |
 | 2026-08-30 | T20 | pkg.url origin; Oath hosts as store | this file; [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) |
+| 2026-08-30 | T21 | Sola on Oath; River first; forks/ | this file; [specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) |

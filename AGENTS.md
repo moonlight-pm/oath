@@ -75,8 +75,9 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Active freeze:
-[`docs/specs/2026-08-30-pkg-hosting.md`](docs/specs/2026-08-30-pkg-hosting.md)
-(T20 identity; not implemented). Active plan: **none**.
+[`docs/specs/2026-08-30-sola.md`](docs/specs/2026-08-30-sola.md)
+(T21; not implemented). Active plan:
+[`docs/plans/2026-08-30-sola-river-plan.md`](docs/plans/2026-08-30-sola-river-plan.md).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).
@@ -119,10 +120,13 @@ crates/oath           CLI (guest)
 crates/oath-init      PID 1 + serial-login
 crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe
 image/                tools.nix only (borrowed prebuilts)
+forks/                maintained source forks (submodules; build-time)
 ```
 
 Do not invent extra kinds until CURRENT says so. `pkg`, `net`, `ssh`,
 and `dev` exist; do not add other kinds unless CURRENT says so.
+Sola/River work uses existing `pkg` + `svc`. glibc is `pkg:glibc`,
+not a new kind.
 
 ## Workflow
 

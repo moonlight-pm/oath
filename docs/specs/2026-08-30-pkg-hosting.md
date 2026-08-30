@@ -40,4 +40,4 @@ freeze is the identity of hosting, not a second index language.
 - Discovering other Oath hosts
 - Package deps, versions, a large binary archive
 - Git as apply or as the payload store
-- Compositor / Sola / glibc runtime
+- Compositor / Sola / glibc runtime (T21)

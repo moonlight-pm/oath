@@ -3,7 +3,8 @@
 Implementation checklists. At most **one** open plan for the active slice.
 Completed plans stay here as history.
 
-**Open:** none. Completed:
+**Open:** [2026-08-30-sola-river-plan.md](2026-08-30-sola-river-plan.md)
+(T21 River first). Completed:
 [2026-08-27-qemu-skeleton-plan.md](2026-08-27-qemu-skeleton-plan.md),
 [2026-08-28-svc-loop-plan.md](2026-08-28-svc-loop-plan.md),
 [2026-08-28-pkg-canary-plan.md](2026-08-28-pkg-canary-plan.md),
