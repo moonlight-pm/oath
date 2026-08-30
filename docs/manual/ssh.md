@@ -19,8 +19,11 @@ oath apply
 QEMU user net (default):
 
 ```
-ssh -p 2222 -i <yourkey> root@127.0.0.1
+cargo make ssh
+cargo make ssh -- -i ~/.ssh/id_ed25519
 ```
+
+That is `ssh -p 2222 root@127.0.0.1` (`OATH_SSH_PORT` overrides 2222).
 
 Port: `OATH_SSH_PORT` (default 2222), forwarded to guest 22.
 

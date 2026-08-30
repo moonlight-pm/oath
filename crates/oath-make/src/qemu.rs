@@ -145,8 +145,34 @@ pub fn qemu_args(
     a
 }
 
-fn ssh_port() -> u16 {
+pub fn ssh_port() -> u16 {
     std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222)
+}
+
+/// OpenSSH to the QEMU user-net hostfwd. Extra args are passed to ssh(1).
+pub fn ssh(out: &Path, extra: &[String]) -> Result<i32> {
+    if running_pid(out)?.is_none() {
+        eprintln!("hint: no vm.pid — cargo make start  (or cargo make up in another terminal)");
+    }
+    let port = ssh_port();
+    let mut cmd = Command::new("ssh");
+    cmd.args([
+        "-p",
+        &port.to_string(),
+        "-o",
+        "StrictHostKeyChecking=no",
+        "-o",
+        "UserKnownHostsFile=/dev/null",
+        "-o",
+        "GlobalKnownHostsFile=/dev/null",
+        "root@127.0.0.1",
+    ])
+    .args(extra)
+    .stdin(Stdio::inherit())
+    .stdout(Stdio::inherit())
+    .stderr(Stdio::inherit());
+    let status = cmd.status().context("ssh")?;
+    Ok(status.code().unwrap_or(1))
 }
 
 fn netdev() -> String {

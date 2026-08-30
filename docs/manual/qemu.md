@@ -17,6 +17,7 @@ cargo make build
 cargo make run            # interactive serial
 cargo make up             # headless; serial in the run log; Ctrl-C kills QEMU
 cargo make start          # same, background
+cargo make ssh            # ssh -p 2222 root@127.0.0.1
 cargo make stop
 ```
 
@@ -30,9 +31,10 @@ oath ls
 See [using.md](using.md), [catalog.md](catalog.md), [services.md](services.md),
 [generations.md](generations.md).
 
-Headless (`up` / `start`) does not attach serial. SSH is
-`ssh -p 2222 root@127.0.0.1` after you have put a pubkey in `ssh:local`.
-Serial output is in `build/runs/<id>/serial.log`.
+Headless (`up` / `start`) does not attach serial. After a pubkey is in
+`ssh:local`, `cargo make ssh` is `ssh -p 2222 root@127.0.0.1` (override
+with `OATH_SSH_PORT`). Extra args: `cargo make ssh -- ls /`. Serial
+output is in `build/runs/<id>/serial.log`.
 
 ## Leave the VM
 

@@ -19,7 +19,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 2. Do not add glibc runtime / installer unless CURRENT is updated.
 3. Do not install to a real disk.
 
-**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|probe`.
+**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe`.
 
 ---
 
