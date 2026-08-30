@@ -14,7 +14,10 @@ for packing the disk), btrfs-progs, qemu.
 ```sh
 nix-shell          # optional: kernel, qemu, musl cc, busybox, btrfs
 cargo make build
-cargo make run
+cargo make run            # interactive serial
+cargo make up             # headless; serial in the run log; Ctrl-C kills QEMU
+cargo make start          # same, background
+cargo make stop
 ```
 
 You land on a root shell. Then:
@@ -27,13 +30,18 @@ oath ls
 See [using.md](using.md), [catalog.md](catalog.md), [services.md](services.md),
 [generations.md](generations.md).
 
+Headless (`up` / `start`) does not attach serial. SSH is
+`ssh -p 2222 root@127.0.0.1` after you have put a pubkey in `ssh:local`.
+Serial output is in `build/runs/<id>/serial.log`.
+
 ## Leave the VM
 
 Ctrl-D (or `exit`) leaves the **shell**. `svc:serial` is `restart=always`,
 so PID 1 starts it again. That is not leaving QEMU.
 
 There is no QEMU monitor (`-monitor none`), so **Ctrl-A x** does not work.
-Ctrl-C goes to the guest (`signal=off`).
+Ctrl-C goes to the guest (`signal=off`). `cargo make up` is the opposite:
+Ctrl-C kills QEMU. `cargo make stop` kills a `start`ed VM.
 
 From the guest, halt (powers off the VM so QEMU exits):
 

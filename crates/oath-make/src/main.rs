@@ -12,7 +12,7 @@ use clap::{Parser, Subcommand};
 #[command(
     name = "oath-make",
     bin_name = "cargo make",
-    about = "Host build CLI: pack the QEMU image, run it, probe it.",
+    about = "Host build CLI: pack the QEMU image, run it, start/stop it.",
     arg_required_else_help = true
 )]
 struct Cli {
@@ -26,6 +26,12 @@ enum Cmd {
     Build,
     /// Interactive serial QEMU; writes build/runs/<id>/.
     Run,
+    /// Headless QEMU in the foreground. Serial in the run log. Ctrl-C kills the VM.
+    Up,
+    /// Headless QEMU in the background. Serial in the run log.
+    Start,
+    /// Stop a VM started with `start`.
+    Stop,
     /// Scripted courage test + telemetry.
     Probe,
 }
@@ -50,6 +56,12 @@ fn real() -> Result<()> {
             let rc = qemu::run_interactive(&root, &out)?;
             std::process::exit(rc);
         }
+        Cmd::Up => {
+            let rc = qemu::run_up(&root, &out)?;
+            std::process::exit(rc);
+        }
+        Cmd::Start => qemu::start(&root, &out)?,
+        Cmd::Stop => qemu::stop(&out)?,
         Cmd::Probe => {
             let rc = probe::probe(&root, &out)?;
             std::process::exit(rc);
