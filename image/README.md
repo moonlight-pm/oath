@@ -8,5 +8,7 @@ Host orchestration is Rust:
 ```
 cargo make build
 cargo make probe
-cargo make run
+cargo make run            # --build packs first (also up / start)
+cargo make up
+cargo make start && cargo make ssh && cargo make stop
 ```

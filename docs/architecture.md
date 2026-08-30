@@ -15,14 +15,14 @@
 
 ## As-built (2026-08-30)
 
-QEMU x86_64 appliance. Serial is the console.
+QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
 ```
 QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
 -device virtio-gpu-pci -display gtk (or none) -drive virtio qcow2
   kernel (borrowed Linux 6.12) + initramfs
     /init = oath-init
-    loads virtio_blk + btrfs modules
+    loads virtio_blk, btrfs, virtio-gpu, virtio_net, …
     mounts /dev/vda subvol=@ , chroot
     mounts subvolid=0 at /oath/run/fs
   disk (btrfs)
@@ -32,7 +32,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /usr/lib/oath/serial-login
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /oath/                 catalog
-    /oath/store/pkg/busybox|btrfs|oath|hello/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /oath/ssh/         dropbear host keys (generated)
@@ -55,10 +55,11 @@ Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
 `/oath/store/pkg/<name>/bin/`. Undo restores `store/` with the catalog
 then converges links.
 
-Host runs live under `build/runs/<id>/` (`cargo make run` / `probe`).
+Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
+`start` / `probe`). `cargo make ssh` is hostfwd 2222.
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-make` (host
-build CLI: `cargo make` pack/run/probe). Artifacts in `build/` (gitignored).
+build CLI: `cargo make`). Artifacts in `build/` (gitignored).
 
 **Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) ·

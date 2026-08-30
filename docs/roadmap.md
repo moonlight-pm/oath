@@ -54,15 +54,15 @@ are not.
 
 ## Phase 4 — Devices and network
 
-**Status: active**
+**Status: partial**
 
 Hardware inventory as objects. One network model. The agent does not run
 `lspci` / `ip` / `udevadm` and guess. Net canary:
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md),
 [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md)
-(`net:net0` + SSH + `dev` inventory). DHCP, `OATH_BRIDGE`, Unix floor,
-`svc` wants, and URL fetch exist. Module-as-catalog and a package
-repo do not.
+(`net:net0` + SSH + `dev` inventory + virtio-gpu). DHCP, `OATH_BRIDGE`,
+Unix floor, `svc` wants, and URL fetch exist. Module-as-catalog, a
+package repo, and Wayland do not.
 
 ## Phase 5 — Agent as a system component
 

@@ -19,7 +19,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 2. Do not add glibc runtime / installer unless CURRENT is updated.
 3. Do not install to a real disk.
 
-**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe`.
+**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe` (`--build` on run/up/start).
 
 ---
 
@@ -28,8 +28,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 | | **QEMU appliance** |
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
-| How | `cargo make build` then `probe` / `run` |
-| Notes | `dev:card0` + gtk window if DISPLAY. Manual: `docs/manual/`. |
+| How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
+| Notes | `dev:card0` + gtk if DISPLAY; host SSH keys injected on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
@@ -53,10 +53,11 @@ Do not re-litigate without an explicit decision.
 - SSH: root, dropbear, **no baked private key**. Host keys under
   `/oath/ssh/`. Owner pubkeys in `ssh:local`. Serial still works.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
-  `busybox`/`btrfs`/`oath`/`dropbear` not removable; hello is. No
-  fetch in v0.
-- Services: PID 1 converges `svc:*`. `svc:serial` is the console;
-  `svc:sshd` is dropbear; `svc:hold` is the start/stop test.
+  `busybox`/`btrfs`/`oath`/`dropbear` not removable; `hello` and
+  `fetchme` are. `pkg.url` wget canary. No package repo.
+- Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
+  the console; `svc:sshd` is dropbear; `svc:hold` wants serial.
+- Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set.
 - MIT, Copyright (c) Joshua Kifer.
 
 ---

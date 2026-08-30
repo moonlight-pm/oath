@@ -31,7 +31,7 @@ An agent that has never seen Oath is supposed to:
 
 If that loop works, this is a distro. A package archive without it is not.
 
-**v0 kinds:** `host`, `svc`, `snap`. Nothing else until that loop is real.
+**Kinds now:** `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`.
 
 ## What this is not
 
@@ -43,11 +43,11 @@ compatibility promise.
 
 ## Status
 
-Phases 0–2 are done: an **x86_64 QEMU** appliance boots our PID 1, the
-catalog, hostname apply/undo/reboot, and `svc:hold` start/stop. Phase 3
-packages: sealed `busybox` / `btrfs` / `oath`, plus canary `pkg:hello`.
-Static `net:net0`; root SSH via catalog keys; `dev:*` inventory.
-Nothing is a daily driver. No installer or desktop.
+Phases 0–2 are done. The **x86_64 QEMU** appliance has PID 1, catalog,
+packages (store + `/bin` links, including `pkg:fetchme` wget), `net:net0`,
+dropbear SSH, `dev:*` (including virtio-gpu `card0`), and a gtk window
+when `DISPLAY` is set. Nothing is a daily driver. No installer, no
+Wayland/Sola.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).

@@ -22,9 +22,9 @@ Product docs: [`manual/`](manual/) — current behavior.
 | oath-cli | `oath` verbs | partial | freeze | QEMU probe | MCP later | [using](manual/using.md) |
 | snap | generations; apply / undo | partial | freeze | probe (sibling `@gen-N`, reboot) | boot-generation pick still confirm-only; no bootloader menu | [generations](manual/generations.md) |
 | svc | Own supervisor | partial | freeze | hold + sshd; wants order | do not disable serial; no Requires-style hard deps | [services](manual/services.md) |
-| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | virtio-gpu + gtk; borrowed kernel | [qemu](manual/qemu.md) |
+| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | borrowed kernel; no Wayland | [qemu](manual/qemu.md) |
 | pkg | Package objects | partial | [freeze](specs/2026-08-30-wants-and-fetch.md) | QEMU probe + fetchme | no repo/deps/versions; URL-on-object fetch only | [packages](manual/packages.md) |
-| net | Network objects | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | QEMU probe ping + SSH | dhcp implemented; LAN bridge opt-in (`OATH_BRIDGE`); no fetch | [network](manual/network.md) |
+| net | Network objects | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | QEMU probe ping + SSH | dhcp implemented; LAN bridge opt-in (`OATH_BRIDGE`) | [network](manual/network.md) |
 | dev | Device objects | partial | [freeze](specs/2026-08-30-display.md) | QEMU probe | vda/net0/ttyS0/card0; no module loader; no udev | [devices](manual/devices.md) |
 | ssh | Root SSH via catalog keys | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | probe login/deny/undo/reboot | dropbear; no baked private key; no second Unix user | [ssh](manual/ssh.md) |
 | agent | Agent runtime as a system component | idea | — | — | serial or SSH client | no |
