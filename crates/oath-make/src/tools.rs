@@ -13,6 +13,8 @@ pub struct Tools {
     pub btrfs: Option<PathBuf>,
     pub dropbear: Option<PathBuf>,
     pub dropbearkey: Option<PathBuf>,
+    pub glibc: Option<PathBuf>,
+    pub river: Option<PathBuf>,
     pub qemu: PathBuf,
     pub qemu_img: PathBuf,
 }
@@ -24,6 +26,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut btrfs = std::env::var_os("OATH_BTRFS").map(PathBuf::from);
     let mut dropbear = std::env::var_os("OATH_DROPBEAR").map(PathBuf::from);
     let mut dropbearkey = std::env::var_os("OATH_DROPBEARKEY").map(PathBuf::from);
+    let mut glibc = std::env::var_os("OATH_GLIBC").map(PathBuf::from);
+    let mut river = std::env::var_os("OATH_RIVER").map(PathBuf::from);
 
     if kernel.is_none() || modules.is_none() || busybox.is_none() {
         eprintln!("loading tools via nix-build image/tools.nix ...");
@@ -46,6 +50,14 @@ pub fn load(root: &Path) -> Result<Tools> {
         dropbearkey = dropbearkey.or_else(|| {
             let p = tools.join("dropbearkey");
             p.is_file().then_some(p)
+        });
+        glibc = glibc.or_else(|| {
+            let p = tools.join("glibc");
+            p.is_dir().then_some(p)
+        });
+        river = river.or_else(|| {
+            let p = tools.join("river");
+            p.is_dir().then_some(p)
         });
         let musl = tools.join("musl-cc");
         if std::env::var_os("CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER").is_none()
@@ -75,6 +87,19 @@ pub fn load(root: &Path) -> Result<Tools> {
     let btrfs = btrfs.filter(|p| p.is_file());
     let dropbear = dropbear.filter(|p| p.is_file());
     let dropbearkey = dropbearkey.filter(|p| p.is_file());
+    let glibc = glibc.filter(|p| p.is_dir());
+    let river = river.filter(|p| p.is_dir());
     let _ = fs::metadata(&qemu)?;
-    Ok(Tools { kernel, modules, busybox, btrfs, dropbear, dropbearkey, qemu, qemu_img })
+    Ok(Tools {
+        kernel,
+        modules,
+        busybox,
+        btrfs,
+        dropbear,
+        dropbearkey,
+        glibc,
+        river,
+        qemu,
+        qemu_img,
+    })
 }

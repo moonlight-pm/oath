@@ -12,6 +12,8 @@ target. There is no `apt` and no `oath install`.
 | `pkg:btrfs` | `present: true` | no |
 | `pkg:oath` | `present: true` | no |
 | `pkg:dropbear` | `present: true` | no |
+| `pkg:glibc` | `present: true` | no — GNU C runtime for River; not loaded by PID 1 |
+| `pkg:river` | `present: true` | yes — patched River; `/bin/river` |
 | `pkg:hello` | `present: false` | yes — canary |
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 

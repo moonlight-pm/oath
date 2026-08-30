@@ -13,12 +13,8 @@ git clone --recurse-submodules https://github.com/moonlight-pm/oath.git
 | Path | Upstream | Our remote | Why it is here |
 |------|----------|------------|----------------|
 | `sola/` | [moonlight-pm/Sola](https://github.com/moonlight-pm/Sola) | `moonlight-pm/oath-sola` (not added yet) | Oath-compat: catalog, `svc:*`, no nested supervisor |
-| `river/` | [river/river](https://codeberg.org/river/river) | `moonlight-pm/oath-river` (not added yet) | River 0.4.x + Sola’s three River patches as commits |
-| `wlroots/` | [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots) | `moonlight-pm/oath-wlroots` (not added yet) | Sola’s screencopy cursor patch as a commit |
-
-Until those remotes exist, the patches still live in the daily-driver
-Sola tree at `nix/patches/`. Do not copy them into Oath as a second
-overlay.
+| `river/` | [riverwm/river](https://github.com/riverwm/river) | [moonlight-pm/oath-river](https://github.com/moonlight-pm/oath-river) | River 0.4.5 + Sola’s three River patches as commits |
+| `wlroots/` | [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots) | [moonlight-pm/oath-wlroots](https://github.com/moonlight-pm/oath-wlroots) | Sola’s screencopy cursor patch as a commit |
 
 **Put a tree here** when we patch it or reshape it for Oath.
 

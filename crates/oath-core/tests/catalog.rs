@@ -150,6 +150,9 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "ssh:local"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sshd"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:dropbear"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:glibc"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:river"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:river"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:vda"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:net0"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:ttyS0"));

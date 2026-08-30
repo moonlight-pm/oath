@@ -83,6 +83,8 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "btrfs", true, false)?;
     seed_pkg(root, "oath", true, false)?;
     seed_pkg(root, "dropbear", true, false)?;
+    seed_pkg(root, "glibc", true, false)?;
+    seed_pkg(root, "river", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),
@@ -113,6 +115,21 @@ pub fn seed(root: &Path) -> Result<()> {
     });
     write_object(root, &sshd, "mutate", &sshd_desired, &sshd_actual)?;
     write_json(&root.join("objects/svc/sshd/applied.json"), &sshd_desired)?;
+
+    let river = ObjectId::new(KIND_SVC, "river");
+    let river_desired = json!({
+        "exec": ["/bin/river"],
+        "wants": [],
+        "restart": "always",
+        "enabled": true
+    });
+    let river_actual = json!({
+        "state": "stopped",
+        "pid": null,
+        "restarts": 0
+    });
+    write_object(root, &river, "mutate", &river_desired, &river_actual)?;
+    write_json(&root.join("objects/svc/river/applied.json"), &river_desired)?;
 
     let ssh = ObjectId::new(KIND_SSH, "local");
     let ssh_desired = json!({ "authorized": [] });

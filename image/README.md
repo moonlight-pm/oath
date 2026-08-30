@@ -1,7 +1,9 @@
 # Image bits
 
 Borrowed **build-host** tools (kernel, busybox, qemu, musl cc) come from
-`tools.nix`. They are not the runtime.
+`tools.nix`. They are not the runtime. Patched River is built from
+`forks/river` + `forks/wlroots` (Sola nixpkgs pin) and relocated into
+`pkg:glibc` + `pkg:river`.
 
 Host orchestration is Rust:
 

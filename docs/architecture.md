@@ -32,18 +32,19 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /usr/lib/oath/serial-login
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
+    river              svc:river (glibc payload; socket /run/user/0)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
 PID 1: mount proc/sys/dev/pts, tmpfs `/tmp` `/dev/shm` `/run`, cgroup2;
 hostname from `host:local`; **converge** `net:net0`, `dev:*`,
 `ssh:local`; then `svc:*`. Socket `/oath/run/init.sock`. Seeded
-services: `svc:serial`, `svc:hold`, `svc:sshd`.
+services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:river`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)

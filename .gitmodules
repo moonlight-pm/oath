@@ -1,0 +1,6 @@
+[submodule "forks/wlroots"]
+	path = forks/wlroots
+	url = https://github.com/moonlight-pm/oath-wlroots.git
+[submodule "forks/river"]
+	path = forks/river
+	url = https://github.com/moonlight-pm/oath-river.git

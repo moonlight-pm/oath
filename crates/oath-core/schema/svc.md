@@ -28,8 +28,9 @@ oath set svc:serial enabled=true
 oath apply svc:serial
 ```
 
-The appliance ships `svc:serial` (serial root shell) and `svc:hold`
-(`/bin/sleep 86400000`, for start/stop tests). Do not disable serial
+The appliance ships `svc:serial` (serial root shell), `svc:hold`
+(`/bin/sleep 86400000`, for start/stop tests), `svc:sshd`, and
+`svc:river` (patched River on `dev:card0`). Do not disable serial
 unless you have another console.
 
 ```

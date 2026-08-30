@@ -47,6 +47,31 @@ pub fn copy_file(src: &Path, dst: &Path) -> Result<()> {
     Ok(())
 }
 
+pub fn copy_tree(src: &Path, dst: &Path) -> Result<()> {
+    if !src.is_dir() {
+        bail!("not a directory: {}", src.display());
+    }
+    fs::create_dir_all(dst)?;
+    for e in fs::read_dir(src).with_context(|| format!("read {}", src.display()))? {
+        let e = e?;
+        let to = dst.join(e.file_name());
+        let ft = e.file_type()?;
+        if ft.is_dir() {
+            copy_tree(&e.path(), &to)?;
+        } else if ft.is_symlink() {
+            let target = fs::read_link(e.path())?;
+            if to.symlink_metadata().is_ok() {
+                fs::remove_file(&to)?;
+            }
+            std::os::unix::fs::symlink(&target, &to)
+                .with_context(|| format!("symlink {} -> {}", to.display(), target.display()))?;
+        } else {
+            copy_file(&e.path(), &to)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn sha256_file(path: &Path) -> Result<String> {
     let mut f = fs::File::open(path)?;
     let mut h = Sha256::new();

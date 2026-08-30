@@ -11,7 +11,7 @@ use oath_core::{converge_with_link_root, write_json};
 
 use crate::cpio;
 use crate::tools::Tools;
-use crate::util::{chmod_exec, copy_file, run, sudo};
+use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
 
 const MODULES: &[&str] = &[
     "kernel/drivers/virtio/virtio.ko.xz",
@@ -156,23 +156,31 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     };
     write_dropbear_store(&oath_root, dropbear, dropbearkey)?;
     write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
+    let Some(glibc) = &tools.glibc else {
+        bail!("OATH_GLIBC / tools glibc required (pkg:glibc)");
+    };
+    let Some(river) = &tools.river else {
+        bail!("OATH_RIVER / tools river required (pkg:river)");
+    };
+    copy_tree(glibc, &oath_root.join("store/pkg/glibc"))?;
+    copy_tree(river, &oath_root.join("store/pkg/river"))?;
+    chmod_exec(&oath_root.join("store/pkg/river/bin/river"))?;
+    if oath_root.join("store/pkg/river/libexec/river").is_file() {
+        chmod_exec(&oath_root.join("store/pkg/river/libexec/river"))?;
+    }
     link_pkg(&oath_root, &guest_bin, "busybox", false)?;
     link_pkg(&oath_root, &guest_bin, "btrfs", false)?;
     link_pkg(&oath_root, &guest_bin, "oath", false)?;
     link_pkg(&oath_root, &guest_bin, "dropbear", false)?;
+    link_pkg(&oath_root, &guest_bin, "glibc", false)?;
+    link_pkg(&oath_root, &guest_bin, "river", false)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
     let qcow = out.join("oath.qcow2");
     let _ = fs::remove_file(&raw);
     let _ = fs::remove_file(&qcow);
-    run(Command::new(&tools.qemu_img).args([
-        "create",
-        "-f",
-        "raw",
-        raw.to_str().unwrap(),
-        "512M",
-    ]))?;
+    run(Command::new(&tools.qemu_img).args(["create", "-f", "raw", raw.to_str().unwrap(), "2G"]))?;
     run(Command::new("mkfs.btrfs").args(["-q", "-L", "oath", raw.to_str().unwrap()]))?;
     let mnt = out.join("mnt");
     let rootfs = out.join("rootfs");

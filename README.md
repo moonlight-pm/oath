@@ -46,8 +46,8 @@ compatibility promise.
 Phases 0–2 are done. The **x86_64 QEMU** appliance has PID 1, catalog,
 packages (store + `/bin` links, including `pkg:fetchme` wget), `net:net0`,
 dropbear SSH, `dev:*` (including virtio-gpu `card0`), and a gtk window
-when `DISPLAY` is set. Nothing is a daily driver. No installer.
-Wayland/Sola is T21 (River first, not packed).
+when `DISPLAY` is set. `svc:river` is the compositor (T21). Nothing is
+a daily driver. No installer. Full Sola session not packed.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).

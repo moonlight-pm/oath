@@ -83,7 +83,7 @@ and a loop-mount (sudo) are still external tools.
 - btrfs disk, live subvolume `@`
 - `/usr/lib/oath/init` — PID 1 after switch-root
 - Catalog at `/oath`
-- `/oath/store/pkg/{busybox,btrfs,oath,hello}/`; `/bin` is a symlink farm
+- `/oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hello}/`; `/bin` is a symlink farm
 - `/bin/hello` only after `pkg:hello` is present
 
 ## Telemetry
@@ -103,10 +103,12 @@ once the disk is mounted.
 - `dev:vda` / `net0` / `ttyS0` inventory; tmpfs + cgroup2
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
+- `svc:river` starts; Wayland socket under `/run/user/0`
 
 ## Limits
 
 - virtio-gpu (`/dev/dri/card0`). gtk window when `DISPLAY` is set
+- `svc:river` (patched River); Wayland socket `/run/user/0/wayland-*`
   (`OATH_DISPLAY=none` to hide). Probe is headless.
 - QEMU user net + virtio-net; `net:net0` is `10.0.2.15/24`
 - SSH hostfwd `127.0.0.1:2222` → guest 22 (`OATH_SSH_PORT`). Optional

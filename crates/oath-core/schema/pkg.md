@@ -8,7 +8,8 @@ symlink farm, not an unpack target. There is no `apt` and no
 
 **When not:** do not `ln` or `rm` in `/bin`. Do not exec from the
 store. Do not fetch; v0 payloads are already on the image. Do not set
-`present=false` on `pkg:busybox`, `pkg:btrfs`, or `pkg:oath`.
+`present=false` on `pkg:busybox`, `pkg:btrfs`, `pkg:oath`,
+`pkg:dropbear`, or `pkg:glibc`.
 
 ## Fields
 
@@ -36,6 +37,9 @@ oath apply
 oath undo
 ```
 
-The appliance ships `pkg:busybox`, `pkg:btrfs`, and `pkg:oath`
-already present (not removable), and `pkg:hello` absent until you
+The appliance ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`,
+`pkg:dropbear`, and `pkg:glibc` already present (not removable),
+`pkg:river` present (removable), and `pkg:hello` absent until you
 apply. `/bin/hello` prints `hello`. Busybox applets are one package.
+`pkg:glibc` is the GNU C runtime for glibc payloads (River). Never
+load it into musl PID 1.

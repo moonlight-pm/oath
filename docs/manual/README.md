@@ -25,7 +25,8 @@ that are not there.
 
 ## What this is not
 
-No installer, no Wayland/Sola, no glibc-as-the-OS. Packages: sealed
-`busybox` / `btrfs` / `oath` / `dropbear`, plus `hello` and `fetchme`.
+No installer, no full Sola session. Packages: sealed `busybox` /
+`btrfs` / `oath` / `dropbear` / `glibc`, plus `river`, `hello`, and
+`fetchme`. `svc:river` is the compositor.
 `net:net0` + root SSH (host keys injected on `up`/`start`). Devices
 include `dev:card0`. `/proc` `/sys` `/dev` plus tmpfs and cgroup2.

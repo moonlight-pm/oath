@@ -13,12 +13,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **T21 — Sola on Oath, River first.** Freeze
-   [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md).
-   Plan
-   [docs/plans/2026-08-30-sola-river-plan.md](docs/plans/2026-08-30-sola-river-plan.md).
-   Next mechanical step: GitHub forks (`oath-sola`, `oath-river`,
-   `oath-wlroots`) then submodules under `forks/`.
+1. **T21 River first is in** (`pkg:glibc`, `pkg:river`, `svc:river`,
+   Wayland socket). Next: `oath-sola` fork when we map Sola apps to
+   `svc:*`. Do not nest Sola’s process manager.
 2. **T20 hosting locked**, not implemented.
 3. Do not add a throwaway compositor or a placeholder `pkg:sola`.
    Do not install to a real disk. glibc runtime is allowed **only**

@@ -397,6 +397,46 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath get pkg:glibc --actual",
+        Some("\"present\": true"),
+        "pkg.glibc_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set pkg:glibc present=false",
+        Some("not removable"),
+        "pkg.glibc_refuse",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get pkg:river --actual",
+        Some("\"present\": true"),
+        "pkg.river_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get svc:river --actual",
+        Some("\"state\": \"running\""),
+        "river.running",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "for i in 1 2 3 4 5 6 7 8 9 10; do test -S /run/user/0/wayland-0 -o -S /run/user/0/wayland-1 && echo WL_OK && break; sleep 1; done",
+        Some("WL_OK"),
+        "river.wayland",
+        Duration::from_secs(20),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath set dev:vda present=false",
         Some("not removable"),
         "dev.refuse",
