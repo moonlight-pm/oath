@@ -79,6 +79,13 @@ pub struct Pkg {
     pub present: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Net {
+    pub up: bool,
+    pub ipv4: String,
+    pub gateway: String,
+}
+
 fn default_true() -> bool {
     true
 }

@@ -7,8 +7,8 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    converge_pkg, gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, ObjectId, Pkg,
-    PkgActual, Result, BTRFS_TOP, LIVE_SUBVOL,
+    converge_net, converge_pkg, gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, Net,
+    ObjectId, Pkg, PkgActual, Result, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -196,6 +196,24 @@ impl ApplyHooks for Live {
         // attached (the host serial looks "stuck"). Power-off makes QEMU exit.
         reboot(RebootMode::RB_POWER_OFF).map_err(|e| Error::Msg(format!("halt: {e}")))?;
         Ok(())
+    }
+
+    fn converge_net(&self, id: &ObjectId, desired: &Net) -> Result<Net> {
+        if self.catalog_root.as_path() != Path::new("/oath") {
+            return Ok(desired.clone());
+        }
+        let actual = converge_net(desired)?;
+        tel(
+            "oath",
+            "net",
+            json!({
+                "id": id.to_string(),
+                "up": actual.up,
+                "ipv4": actual.ipv4,
+                "gateway": actual.gateway,
+            }),
+        );
+        Ok(actual)
     }
 
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {

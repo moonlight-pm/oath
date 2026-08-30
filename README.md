@@ -46,7 +46,8 @@ compatibility promise.
 Phases 0–2 are done: an **x86_64 QEMU** appliance boots our PID 1, the
 catalog, hostname apply/undo/reboot, and `svc:hold` start/stop. Phase 3
 packages: sealed `busybox` / `btrfs` / `oath`, plus canary `pkg:hello`.
-Nothing is a daily driver. No installer or desktop.
+Static `net:net0` on QEMU user networking. Nothing is a daily driver.
+No installer, SSH, or desktop.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).
@@ -58,6 +59,7 @@ What next: [`CURRENT.md`](CURRENT.md).
 | Agent / contributor guide | [`AGENTS.md`](AGENTS.md) |
 | Catalog freeze | [`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md) |
 | Package freeze | [`docs/specs/2026-08-28-packages.md`](docs/specs/2026-08-28-packages.md) |
+| Net freeze | [`docs/specs/2026-08-29-net.md`](docs/specs/2026-08-29-net.md) |
 | Docs map | [`docs/README.md`](docs/README.md) |
 
 ## Build

@@ -89,8 +89,10 @@ once the disk is mounted.
 - `svc:hold` start / stop / undo / persist across reboot
 - `pkg:hello` install / remove / undo / persist across reboot
 - `pkg:busybox` / `btrfs` / `oath` present and not removable
+- `net:net0` up / ping gateway / down / undo / reboot persist
 
 ## Limits
 
-- No SSH, no installer, no network objects
+- QEMU user net + virtio-net; `net:net0` is `10.0.2.15/24`
+- No SSH, no installer
 - No boot-generation picker (undo is the supported rewind)

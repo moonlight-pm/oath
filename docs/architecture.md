@@ -13,12 +13,12 @@
 
 ---
 
-## As-built (2026-08-29)
+## As-built (2026-08-30)
 
 QEMU x86_64 appliance. Serial is the console.
 
 ```
-QEMU -kernel bzImage -initrd initrd.gz -drive virtio qcow2
+QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci -drive virtio qcow2
   kernel (borrowed Linux 6.12) + initramfs
     /init = oath-init
     loads virtio_blk + btrfs modules
@@ -32,12 +32,14 @@ QEMU -kernel bzImage -initrd initrd.gz -drive virtio qcow2
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /oath/                 catalog
     /oath/store/pkg/busybox|btrfs|oath|hello/
+    net0               virtio-net, 10.0.2.15/24 via 10.0.2.2
     /sbin/init -> ../usr/lib/oath/init
 ```
 
 PID 1: mount proc/sys/dev, hostname from `host:local`, **converge**
-`svc:*` (start enabled, SIGTERM disabled), reap, listen
-`/oath/run/init.sock`. Seeded services: `svc:serial`, `svc:hold`.
+`net:net0`, then `svc:*` (start enabled, SIGTERM disabled), reap,
+listen `/oath/run/init.sock`. Seeded services: `svc:serial`,
+`svc:hold`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)
@@ -57,4 +59,5 @@ build CLI: `cargo make` pack/run/probe). Artifacts in `build/` (gitignored).
 **Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) ·
 [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md) ·
-[specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md)
+[specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md) ·
+[specs/2026-08-29-net.md](specs/2026-08-29-net.md)

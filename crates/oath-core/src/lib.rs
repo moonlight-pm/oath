@@ -7,6 +7,7 @@ mod id;
 mod index;
 mod kinds;
 mod layout;
+mod net;
 mod pkg;
 mod seed;
 mod tel;
@@ -15,8 +16,9 @@ pub use catalog::{diff_values, Catalog, Drift, Object};
 pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
-pub use kinds::{Host, HostPower, Meta, Pkg, PkgActual, Svc, SvcActual, SvcRestart};
+pub use kinds::{Host, HostPower, Meta, Net, Pkg, PkgActual, Svc, SvcActual, SvcRestart};
 pub use layout::{gen_subvol_name, parse_gen_subvol, BTRFS_TOP, LIVE_SUBVOL};
+pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
 pub use pkg::{converge as converge_pkg, converge_with_link_root};
 pub use seed::seed;
 pub use tel::tel;
@@ -28,6 +30,7 @@ pub const KIND_HOST: &str = "host";
 pub const KIND_SVC: &str = "svc";
 pub const KIND_SNAP: &str = "snap";
 pub const KIND_PKG: &str = "pkg";
+pub const KIND_NET: &str = "net";
 
 pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)

@@ -116,11 +116,7 @@ impl ApplyHooks for MemHooks {
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
         let store = self.root.join("store/pkg").join(&id.name).join("bin");
         if !store.is_dir() {
-            return Ok(PkgActual {
-                present: desired.present,
-                links: Vec::new(),
-                removable: true,
-            });
+            return Ok(PkgActual { present: desired.present, links: Vec::new(), removable: true });
         }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present)
     }
@@ -145,6 +141,7 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:busybox"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:btrfs"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:oath"));
+    assert!(ids.iter().any(|i| i.to_string() == "net:net0"));
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -330,6 +327,21 @@ fn pkg_not_removable_refuses_absent() {
         Error::Hint { message, .. } => assert!(message.contains("not removable"), "{message}"),
         other => panic!("{other:?}"),
     }
+}
+
+#[test]
+fn net_up_down_undo() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "net:net0".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("up".into(), json!(false));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["up"], json!(false));
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired["up"], json!(true));
+    assert_eq!(cat.get(&id).unwrap().actual["up"], json!(true));
 }
 
 fn write_json_present_false(root: &std::path::Path, name: &str) {

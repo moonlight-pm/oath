@@ -32,7 +32,7 @@ build host, not the appliance.
 `set` is staging. Nothing is live until `apply`.
 
 Ids are `kind:name` — `host:local`, `svc:serial`, `snap:current`,
-`pkg:hello`.
+`pkg:hello`, `net:net0`.
 
 ## Safety
 

@@ -3,7 +3,7 @@ use std::path::Path;
 use serde_json::json;
 
 use crate::kinds::Meta;
-use crate::{write_json, ObjectId, Result, KIND_HOST, KIND_PKG, KIND_SNAP, KIND_SVC};
+use crate::{write_json, ObjectId, Result, KIND_HOST, KIND_NET, KIND_PKG, KIND_SNAP, KIND_SVC};
 
 pub const HOST_SCHEMA: &str = include_str!("../schema/host.json");
 pub const HOST_MD: &str = include_str!("../schema/host.md");
@@ -13,6 +13,8 @@ pub const SNAP_SCHEMA: &str = include_str!("../schema/snap.json");
 pub const SNAP_MD: &str = include_str!("../schema/snap.md");
 pub const PKG_SCHEMA: &str = include_str!("../schema/pkg.json");
 pub const PKG_MD: &str = include_str!("../schema/pkg.md");
+pub const NET_SCHEMA: &str = include_str!("../schema/net.json");
+pub const NET_MD: &str = include_str!("../schema/net.md");
 
 pub fn seed(root: &Path) -> Result<()> {
     std::fs::create_dir_all(root.join("schema"))?;
@@ -28,6 +30,8 @@ pub fn seed(root: &Path) -> Result<()> {
     write(root, "schema/snap.md", SNAP_MD);
     write(root, "schema/pkg.json", PKG_SCHEMA);
     write(root, "schema/pkg.md", PKG_MD);
+    write(root, "schema/net.json", NET_SCHEMA);
+    write(root, "schema/net.md", NET_MD);
 
     let host = ObjectId::new(KIND_HOST, "local");
     let host_val = json!({ "hostname": "oath", "power": "run" });
@@ -67,6 +71,10 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "busybox", true, false)?;
     seed_pkg(root, "btrfs", true, false)?;
     seed_pkg(root, "oath", true, false)?;
+
+    let net = ObjectId::new(KIND_NET, "net0");
+    let net_val = serde_json::to_value(crate::net::appliance_desired())?;
+    write_object(root, &net, "mutate", &net_val, &net_val)?;
 
     let cur = ObjectId::new(KIND_SNAP, "current");
     let gen0 = json!({ "generation": 0 });

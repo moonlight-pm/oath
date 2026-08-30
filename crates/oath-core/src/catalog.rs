@@ -6,9 +6,9 @@ use serde_json::{json, Map, Value};
 use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
-use crate::kinds::{Host, HostPower, Meta, Pkg};
+use crate::kinds::{Host, HostPower, Meta, Net, Pkg};
 use crate::{
-    now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_HOST, KIND_PKG,
+    now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_HOST, KIND_NET, KIND_PKG,
     KIND_SNAP, KIND_SVC,
 };
 
@@ -279,6 +279,12 @@ impl Catalog {
                 KIND_PKG => {
                     self.converge_one_pkg(&d.id, hooks)?;
                 }
+                KIND_NET => {
+                    let net: Net = serde_json::from_value(self.get(&d.id)?.desired.clone())?;
+                    let actual = hooks.converge_net(&d.id, &net)?;
+                    write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
+                    self.touch_status(&d.id, "in-sync")?;
+                }
                 _ => {
                     return Err(Error::hint(
                         format!("no handler for {}", d.id.kind),
@@ -318,6 +324,13 @@ impl Catalog {
         if let Ok(ids) = self.ls(Some(KIND_PKG)) {
             for id in ids {
                 self.converge_one_pkg(&id, hooks)?;
+            }
+        }
+
+        if let Ok(obj) = self.get(&ObjectId::new(KIND_NET, "net0")) {
+            if let Ok(net) = serde_json::from_value::<Net>(obj.desired.clone()) {
+                let actual = hooks.converge_net(&obj.id, &net)?;
+                write_json(&self.obj_dir(&obj.id).join("actual.json"), &actual)?;
             }
         }
 

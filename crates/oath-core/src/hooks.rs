@@ -1,5 +1,5 @@
 use crate::id::ObjectId;
-use crate::kinds::{Host, Pkg, PkgActual};
+use crate::kinds::{Host, Net, Pkg, PkgActual};
 use crate::Result;
 
 #[derive(Clone, Debug)]
@@ -59,6 +59,9 @@ pub trait ApplyHooks {
     }
     fn converge_pkg(&self, _id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
         Ok(PkgActual { present: desired.present, links: Vec::new(), removable: true })
+    }
+    fn converge_net(&self, _id: &ObjectId, desired: &Net) -> Result<Net> {
+        Ok(desired.clone())
     }
 }
 

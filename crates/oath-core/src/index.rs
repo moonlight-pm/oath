@@ -59,6 +59,7 @@ fn kind_line(kind: &str) -> &'static str {
         "svc" => "a process PID 1 supervises",
         "snap" => "btrfs generations (apply / undo)",
         "pkg" => "a package (store + /bin links)",
+        "net" => "a network link (net0, static IPv4)",
         _ => "see schema",
     }
 }

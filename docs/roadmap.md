@@ -43,7 +43,7 @@ reboot persist. Plan:
 
 ## Phase 3 — Packages and services as objects
 
-**Status: active**
+**Status: partial**
 
 Install/remove/query packages through the catalog. Services are objects
 with schema, not unit-file folklore. Freeze:
@@ -53,10 +53,12 @@ set of packages, deps, and fetch are not.
 
 ## Phase 4 — Devices and network
 
-**Status: planned**
+**Status: active**
 
 Hardware inventory as objects. One network model. The agent does not run
-`lspci` / `ip` / `udevadm` and guess.
+`lspci` / `ip` / `udevadm` and guess. Net canary:
+[specs/2026-08-29-net.md](specs/2026-08-29-net.md) (`net:net0` static).
+No `dev` kind, SSH, or DHCP yet.
 
 ## Phase 5 — Agent as a system component
 

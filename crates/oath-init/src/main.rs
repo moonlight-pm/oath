@@ -23,6 +23,9 @@ const MODULES: &[&str] = &[
     "kernel/drivers/virtio/virtio_pci_modern_dev.ko",
     "kernel/drivers/virtio/virtio_pci.ko",
     "kernel/drivers/block/virtio_blk.ko",
+    "kernel/net/core/failover.ko",
+    "kernel/drivers/net/net_failover.ko",
+    "kernel/drivers/net/virtio_net.ko",
     "kernel/crypto/crc32c_generic.ko",
     "kernel/lib/libcrc32c.ko",
     "kernel/crypto/xor.ko",
@@ -71,6 +74,7 @@ fn real_main() -> Result<(), String> {
     }
 
     apply_host();
+    apply_net();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     converge(&mut kids);
 
@@ -185,6 +189,27 @@ fn apply_host() {
     let dir = Path::new(DEFAULT_ROOT).join("objects/host/local");
     let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
     let _ = cat.write_index();
+}
+
+fn apply_net() {
+    let cat = match Catalog::open(DEFAULT_ROOT) {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let id = ObjectId::new("net", "net0");
+    let Ok(obj) = cat.get(&id) else { return };
+    let Ok(net) = serde_json::from_value::<oath_core::Net>(obj.desired) else { return };
+    match oath_core::converge_net(&net) {
+        Ok(actual) => {
+            tel("init", "net", json!({ "ok": true, "up": actual.up, "ipv4": actual.ipv4 }));
+            let dir = Path::new(DEFAULT_ROOT).join("objects/net/net0");
+            let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
+        }
+        Err(e) => {
+            log(&format!("net: {e}"));
+            tel("init", "net", json!({ "ok": false, "err": e.to_string() }));
+        }
+    }
 }
 
 struct Kid {

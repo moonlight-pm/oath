@@ -12,6 +12,7 @@ The only dogfood form is an **x86_64 QEMU** appliance on a serial console.
 | [Catalog](catalog.md) | Objects, kinds, on-disk tree |
 | [Services](services.md) | PID 1 and `svc:*` |
 | [Packages](packages.md) | `pkg:hello`, store, `/bin` links |
+| [Network](network.md) | `net:net0`, static IPv4 |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N` |
 | [The appliance](qemu.md) | Build, run, probe, disk layout |
 
@@ -21,6 +22,6 @@ that are not there.
 
 ## What this is not
 
-No installer, no network objects, no SSH, no desktop, no
-glibc-as-the-OS. Packages: sealed `busybox` / `btrfs` / `oath`, plus
-canary `pkg:hello`.
+No installer, no SSH, no desktop, no glibc-as-the-OS. Packages: sealed
+`busybox` / `btrfs` / `oath`, plus canary `pkg:hello`. One static
+link: `net:net0`.

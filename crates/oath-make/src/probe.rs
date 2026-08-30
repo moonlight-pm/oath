@@ -228,6 +228,71 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath ls --kind net",
+        Some("net:net0"),
+        "net.ls",
+        Duration::from_secs(8),
+    )?;
+    cmd(&mut vm, &mut steps, "ip -o link", Some("net0"), "net.link", Duration::from_secs(8))?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get net:net0 --actual",
+        Some("\"up\": true"),
+        "net.up",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "ping -c 1 -w 5 10.0.2.2 && echo NET_UP",
+        Some("NET_UP"),
+        "net.ping",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set net:net0 up=false",
+        None,
+        "net.set_down",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath apply net:net0",
+        Some("applied generation"),
+        "net.apply_down",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "ping -c 1 -w 3 10.0.2.2 || echo NET_DOWN",
+        Some("NET_DOWN"),
+        "net.down",
+        Duration::from_secs(10),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath undo",
+        Some("undid to generation"),
+        "net.undo",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "ping -c 1 -w 5 10.0.2.2 && echo NET_UP",
+        Some("NET_UP"),
+        "net.undo_ping",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath ls --kind pkg",
         Some("pkg:hello"),
         "pkg.ls",
@@ -507,6 +572,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         Some("\"state\": \"stopped\""),
         "reboot.hold_stopped",
         Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "ping -c 1 -w 5 10.0.2.2 && echo NET_UP",
+        Some("NET_UP"),
+        "reboot.net_ping",
+        Duration::from_secs(12),
     )?;
     cmd(
         &mut vm2,

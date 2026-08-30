@@ -12,7 +12,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. Phase 3 store layout (T11–T14) is closed.
+None open. Phase 4 net canary (T15) is closed.
 
 ---
 
@@ -138,6 +138,12 @@ Canary `pkg:hello` only. Do not wrap busybox / btrfs / `oath`. `svc`
 are one busybox package. `actual.removable=false`: `present=false` is
 refused (not confirm). hello stays removable. `wants` still out.
 
+### T15 — Network canary — locked 2026-08-29
+
+Kind `net`, object `net:net0`. QEMU user + virtio-net. Static
+`10.0.2.15/24` via `10.0.2.2`. NIC renamed to `net0`. Serial stays
+reachability. No SSH, DHCP, `dev`, or pkg fetch in this slice.
+
 ---
 
 ## Decision log
@@ -148,3 +154,4 @@ refused (not confirm). hello stays removable. `wants` still out.
 | 2026-08-27 | T1–T10 | Catalog freeze technical locks | this file; [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) |
 | 2026-08-28 | T11–T13 | Package store + canary | this file; [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md) |
 | 2026-08-29 | T14 | Base pkgs not removable | this file; [specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md) |
+| 2026-08-29 | T15 | Net canary static net0 | this file; [specs/2026-08-29-net.md](specs/2026-08-29-net.md) |

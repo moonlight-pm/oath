@@ -32,8 +32,9 @@ If a kind is not under `/oath/schema`, it does not exist.
 | `svc` | `svc:serial`, `svc:hold` | PID 1’s only config |
 | `snap` | `snap:current`, `snap:N` | Generations |
 | `pkg` | `busybox`, `btrfs`, `oath`, `hello` | Store + `/bin` symlink farm |
+| `net` | `net:net0` | Static IPv4 on the QEMU NIC |
 
-No device or network kinds yet.
+No device kind yet.
 
 `host` and `snap:current` share schema between desired and actual.
 `svc` actual is runtime (`state`, `pid`, `restarts`); drift is desired

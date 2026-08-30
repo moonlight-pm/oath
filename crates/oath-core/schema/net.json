@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oath:kind:net",
+  "title": "net",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["up", "ipv4", "gateway"],
+  "properties": {
+    "up": {
+      "type": "boolean",
+      "description": "If true, net0 is up with ipv4 and a default route via gateway. If false, the link is down."
+    },
+    "ipv4": {
+      "type": "string",
+      "minLength": 1,
+      "description": "IPv4 CIDR on net0 (static). Not DHCP."
+    },
+    "gateway": {
+      "type": "string",
+      "minLength": 1,
+      "description": "IPv4 default gateway."
+    }
+  }
+}
