@@ -95,6 +95,7 @@ pub fn qemu_args(
     serial_log: &Path,
     qemu_log: &Path,
     serial: SerialMode,
+    inject_authorized: Option<&Path>,
 ) -> Vec<String> {
     let mut a = vec![tools.qemu.display().to_string(), "-machine".into(), "q35".into()];
     if kvm() {
@@ -142,11 +143,93 @@ pub fn qemu_args(
         qemu_log.display().to_string(),
         "-no-reboot".into(),
     ]);
+    if let Some(p) = inject_authorized {
+        a.extend(["-fw_cfg".into(), format!("name=opt/oath/authorized,file={}", p.display())]);
+    }
     a
 }
 
 pub fn ssh_port() -> u16 {
     std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222)
+}
+
+/// Host public keys for QEMU fw_cfg inject. Derives .pub from default
+/// private keys when missing (this host has `id_rsa` but no `id_rsa.pub`).
+fn write_host_authorized(dest: &Path) -> Option<PathBuf> {
+    let mut keys: Vec<String> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    let mut push = |line: String| {
+        let line = line.trim().to_string();
+        if !(line.starts_with("ssh-") || line.starts_with("ecdsa-")) {
+            return;
+        }
+        let blob = line.split_whitespace().nth(1).unwrap_or("").to_string();
+        if blob.is_empty() || !seen.insert(blob) {
+            return;
+        }
+        keys.push(line);
+    };
+    if let Ok(p) = std::env::var("OATH_SSH_PUBKEY") {
+        if let Ok(s) = fs::read_to_string(&p) {
+            for l in s.lines() {
+                push(l.to_string());
+            }
+        }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        let ssh = PathBuf::from(home).join(".ssh");
+        if let Ok(rd) = fs::read_dir(&ssh) {
+            for e in rd.flatten() {
+                let name = e.file_name();
+                let n = name.to_string_lossy();
+                if n.ends_with(".pub") {
+                    if let Ok(s) = fs::read_to_string(e.path()) {
+                        for l in s.lines() {
+                            push(l.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        for name in ["id_ed25519", "id_ecdsa", "id_ecdsa_sk", "id_ed25519_sk", "id_rsa", "id_dsa"] {
+            let privk = ssh.join(name);
+            if privk.is_file() && !ssh.join(format!("{name}.pub")).is_file() {
+                if let Ok(o) = Command::new("ssh-keygen")
+                    .args(["-y", "-f", privk.to_str().unwrap()])
+                    .stdin(Stdio::null())
+                    .output()
+                {
+                    if o.status.success() {
+                        if let Ok(s) = String::from_utf8(o.stdout) {
+                            push(s);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if let Ok(o) = Command::new("ssh-add").args(["-L"]).stdin(Stdio::null()).output() {
+        if o.status.success() {
+            if let Ok(s) = String::from_utf8(o.stdout) {
+                for l in s.lines() {
+                    push(l.to_string());
+                }
+            }
+        }
+    }
+    if keys.is_empty() {
+        eprintln!(
+            "no host SSH public keys found (need ~/.ssh/*.pub, default id_rsa, ssh-agent, or OATH_SSH_PUBKEY)"
+        );
+        return None;
+    }
+    let mut body = keys.join("\n");
+    body.push('\n');
+    if fs::write(dest, &body).is_err() {
+        return None;
+    }
+    eprintln!("injecting {} SSH public key(s) into the guest", keys.len());
+    dest.canonicalize().ok().or_else(|| Some(dest.to_path_buf()))
 }
 
 /// OpenSSH to the QEMU user-net hostfwd. Extra args are passed to ssh(1).
@@ -188,6 +271,7 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     let run = new_run(out, "int")?;
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, "int")?;
+    let inject = write_host_authorized(&run.join("host.authorized"));
     let args = qemu_args(
         &tools,
         &img,
@@ -195,12 +279,13 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
         &run.join("serial.log"),
         &run.join("qemu.log"),
         SerialMode::Stdio,
+        inject.as_deref(),
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
     if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
-        eprintln!("ssh: ssh -p {} root@127.0.0.1  (set ssh:local authorized first)", ssh_port());
+        eprintln!("ssh: cargo make ssh   (port {})", ssh_port());
     } else {
         eprintln!(
             "ssh: guest is on bridge {} (DHCP: oath set net:net0 ipv4=dhcp)",
@@ -257,7 +342,7 @@ fn print_reachability(run: &Path) {
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
     if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
-        eprintln!("ssh: ssh -p {} root@127.0.0.1  (set ssh:local authorized first)", ssh_port());
+        eprintln!("ssh: cargo make ssh   (port {})", ssh_port());
     } else {
         eprintln!(
             "ssh: guest is on bridge {} (DHCP: oath set net:net0 ipv4=dhcp)",
@@ -272,6 +357,7 @@ fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<Strin
     let run = new_run(out, label)?;
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, label)?;
+    let inject = write_host_authorized(&run.join("host.authorized"));
     let args = qemu_args(
         &tools,
         &img,
@@ -279,6 +365,7 @@ fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<Strin
         &run.join("serial.log"),
         &run.join("qemu.log"),
         SerialMode::File,
+        inject.as_deref(),
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
     Ok((tools, args, run))
@@ -294,7 +381,13 @@ pub fn run_up(root: &Path, out: &Path) -> Result<i32> {
     eprintln!("Ctrl-C stops the VM");
     let mut cmd = Command::new(&args[0]);
     cmd.args(&args[1..]).stdin(Stdio::null()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
-    let status = cmd.status().context("qemu")?;
+    let mut child = cmd.spawn().context("qemu")?;
+    let pid = child.id() as i32;
+    fs::write(pid_file(out), format!("{pid}\n"))?;
+    fs::write(run_file(out), format!("{}\n", run.display()))?;
+    let status = child.wait().context("qemu")?;
+    let _ = fs::remove_file(pid_file(out));
+    let _ = fs::remove_file(run_file(out));
     let rc = status.code().unwrap_or(1);
     eprintln!("qemu exit {rc}  (logs in {})", run.display());
     Ok(rc)

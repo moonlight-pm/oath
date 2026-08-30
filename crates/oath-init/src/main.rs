@@ -28,6 +28,7 @@ const MODULES: &[&str] = &[
     "kernel/drivers/net/virtio_net.ko",
     "kernel/drivers/char/hw_random/rng-core.ko",
     "kernel/drivers/char/hw_random/virtio-rng.ko",
+    "kernel/drivers/firmware/qemu_fw_cfg.ko",
     "kernel/crypto/crc32c_generic.ko",
     "kernel/lib/libcrc32c.ko",
     "kernel/crypto/xor.ko",
@@ -81,6 +82,7 @@ fn real_main() -> Result<(), String> {
     apply_host();
     apply_net();
     apply_dev();
+    inject_ssh_from_host();
     apply_ssh();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     converge(&mut kids);
@@ -261,6 +263,45 @@ fn apply_dev() {
             Err(e) => log(&format!("dev {id}: {e}")),
         }
     }
+}
+
+fn inject_ssh_from_host() {
+    let raw = Path::new("/sys/firmware/qemu_fw_cfg/by_name/opt/oath/authorized/raw");
+    let Ok(body) = fs::read_to_string(raw) else {
+        return;
+    };
+    let extra: Vec<String> = body
+        .lines()
+        .map(str::trim)
+        .filter(|l| l.starts_with("ssh-") || l.starts_with("ecdsa-"))
+        .map(|s| s.to_string())
+        .collect();
+    if extra.is_empty() {
+        return;
+    }
+    let cat = match Catalog::open(DEFAULT_ROOT) {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let id = ObjectId::new("ssh", "local");
+    let Ok(obj) = cat.get(&id) else { return };
+    let Ok(mut ssh) = serde_json::from_value::<oath_core::Ssh>(obj.desired) else { return };
+    let mut n = 0usize;
+    for k in extra {
+        let blob = k.split_whitespace().nth(1).unwrap_or("");
+        if ssh.authorized.iter().any(|e| e.split_whitespace().nth(1) == Some(blob)) {
+            continue;
+        }
+        ssh.authorized.push(k);
+        n += 1;
+    }
+    if n == 0 {
+        return;
+    }
+    let dir = Path::new(DEFAULT_ROOT).join("objects/ssh/local");
+    let _ = oath_core::write_json(&dir.join("desired.json"), &ssh);
+    tel("init", "ssh_inject", json!({ "added": n, "total": ssh.authorized.len() }));
+    log(&format!("injected {n} host SSH public key(s)"));
 }
 
 fn apply_ssh() {

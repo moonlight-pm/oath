@@ -25,6 +25,7 @@ const MODULES: &[&str] = &[
     "kernel/drivers/net/virtio_net.ko.xz",
     "kernel/drivers/char/hw_random/rng-core.ko.xz",
     "kernel/drivers/char/hw_random/virtio-rng.ko.xz",
+    "kernel/drivers/firmware/qemu_fw_cfg.ko.xz",
     "kernel/crypto/crc32c_generic.ko.xz",
     "kernel/lib/libcrc32c.ko.xz",
     "kernel/crypto/xor.ko.xz",

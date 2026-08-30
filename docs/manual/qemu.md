@@ -31,10 +31,10 @@ oath ls
 See [using.md](using.md), [catalog.md](catalog.md), [services.md](services.md),
 [generations.md](generations.md).
 
-Headless (`up` / `start`) does not attach serial. After a pubkey is in
-`ssh:local`, `cargo make ssh` is `ssh -p 2222 root@127.0.0.1` (override
-with `OATH_SSH_PORT`). Extra args: `cargo make ssh -- ls /`. Serial
-output is in `build/runs/<id>/serial.log`.
+Headless (`up` / `start`) does not attach serial. They inject host
+SSH public keys into the guest at boot. Then `cargo make ssh` is
+`ssh -p 2222 root@127.0.0.1` (`OATH_SSH_PORT`). Extra args:
+`cargo make ssh -- ls /`. Serial is `build/runs/<id>/serial.log`.
 
 ## Leave the VM
 

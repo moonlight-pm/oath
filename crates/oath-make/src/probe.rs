@@ -27,7 +27,8 @@ impl SerialVm {
         qlog: &Path,
         cmdfile: &Path,
     ) -> Result<Self> {
-        let args = qemu::qemu_args(tools, img, overlay, serial, qlog, qemu::SerialMode::Stdio);
+        let args =
+            qemu::qemu_args(tools, img, overlay, serial, qlog, qemu::SerialMode::Stdio, None);
         fs::write(cmdfile, args.join(" ") + "\n")?;
         let child = Command::new(&args[0])
             .args(&args[1..])

@@ -16,14 +16,16 @@ oath set ssh:local --from-json '{"authorized":["ssh-ed25519 AAAA…"]}'
 oath apply
 ```
 
-QEMU user net (default):
+`cargo make up` / `start` injects host public keys into `ssh:local`
+(from `~/.ssh/*.pub`, default identities like `id_rsa` even without a
+`.pub` file, `ssh-add -L`, or `OATH_SSH_PUBKEY`). They are not baked
+into the image.
 
 ```
+cargo make up          # another terminal:
 cargo make ssh
 cargo make ssh -- -i ~/.ssh/id_ed25519
 ```
-
-That is `ssh -p 2222 root@127.0.0.1` (`OATH_SSH_PORT` overrides 2222).
 
 Port: `OATH_SSH_PORT` (default 2222), forwarded to guest 22.
 
