@@ -27,6 +27,6 @@ that are not there.
 
 No installer, no full Sola session. Packages: sealed `busybox` /
 `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`, `hello`, and
-`fetchme`. `svc:river` is the compositor.
+`fetchme`. `svc:seatd` + `svc:river` is the compositor (no input yet).
 `net:net0` + root SSH (host keys injected on `up`/`start`). Devices
 include `dev:card0`. `/proc` `/sys` `/dev` plus tmpfs and cgroup2.

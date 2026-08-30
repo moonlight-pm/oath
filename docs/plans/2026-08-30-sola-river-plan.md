@@ -11,5 +11,5 @@
 - [x] Submodule `forks/river` + `forks/wlroots`.
 - [x] Seed sealed `pkg:glibc`; relocate glibc + River ELF deps.
 - [x] Pack patched `river` as `pkg:river`; `svc:river` execs `/bin/river`.
-- [x] Probe: Wayland socket / `svc:river` running; headless probe
-      still passes. Manual + capabilities.
+- [x] `svc:seatd`; pixman; do not patchelf `ld-linux`. Probe: stable
+      pid + Wayland socket. No udev/libinput.

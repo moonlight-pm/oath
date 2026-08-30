@@ -47,7 +47,7 @@ ask the human.
 | [`specs/2026-08-30-wants-and-fetch.md`](specs/2026-08-30-wants-and-fetch.md) | wants + fetch | **Target** |
 | [`specs/2026-08-30-display.md`](specs/2026-08-30-display.md) | virtio-gpu display canary | **Target** |
 | [`specs/2026-08-30-pkg-hosting.md`](specs/2026-08-30-pkg-hosting.md) | T20 hosting (`pkg.url`, peer origin) | **Target** (not implemented) |
-| [`specs/2026-08-30-sola.md`](specs/2026-08-30-sola.md) | T21 Sola on Oath, River first | **Target** (active) |
+| [`specs/2026-08-30-sola.md`](specs/2026-08-30-sola.md) | T21 Sola on Oath, River first | **Target** (River/seatd in) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

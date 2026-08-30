@@ -70,4 +70,6 @@ build CLI: `cargo make`). Artifacts in `build/` (gitignored).
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md) ·
 [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md) ·
 [specs/2026-08-30-devices.md](specs/2026-08-30-devices.md) ·
-[specs/2026-08-30-display.md](specs/2026-08-30-display.md)
+[specs/2026-08-30-display.md](specs/2026-08-30-display.md) ·
+[specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) ·
+[specs/2026-08-30-sola.md](specs/2026-08-30-sola.md)

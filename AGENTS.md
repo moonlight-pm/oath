@@ -76,8 +76,9 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 
 Active freeze:
 [`docs/specs/2026-08-30-sola.md`](docs/specs/2026-08-30-sola.md)
-(T21; not implemented). Active plan:
-[`docs/plans/2026-08-30-sola-river-plan.md`](docs/plans/2026-08-30-sola-river-plan.md).
+(T21; River/seatd in, full Sola not). Active plan:
+[`docs/plans/2026-08-30-sola-river-plan.md`](docs/plans/2026-08-30-sola-river-plan.md)
+(`oath-sola` still out).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).

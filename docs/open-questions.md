@@ -12,8 +12,8 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T21 Sola/River-first is closed (implementation not started;
-GitHub remotes for `forks/` not created yet).
+None open. T21 River-first is closed (River/wlroots forks in;
+`oath-sola` not created; no udev/libinput).
 
 ---
 
@@ -179,13 +179,11 @@ Serving the store, hashes, and discovery are deferred.
 
 ### T21 — Sola on Oath, River first — locked 2026-08-30
 
-Patched River as `pkg:river` + `svc:river`. PID 1 is the only
-supervisor (no nested Sola process manager). glibc is sealed
-`pkg:glibc` for this payload. Build-time source forks under
-`forks/` (submodules of trees we maintain). First-party pkg sources
-under `apps/` (`hello`, `fetchme`). Fork Sola, River, and wlroots;
-Sola’s nix overlay patches become commits on those forks. Full Sola
-session out of this slice.
+Patched River as `pkg:river` + `svc:river` (wants `svc:seatd`).
+PID 1 is the only supervisor. glibc is sealed `pkg:glibc`.
+`forks/river` and `forks/wlroots` are submodules; `oath-sola` is
+not created. First-party pkg sources under `apps/`. Full Sola
+session and udev/libinput out of this slice.
 
 ---
 

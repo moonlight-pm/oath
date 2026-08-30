@@ -21,7 +21,7 @@ Product docs: [`manual/`](manual/) — current behavior.
 | objects | Typed object store | partial | freeze | QEMU | host/svc/snap/pkg/net/ssh/dev | [catalog](manual/catalog.md) |
 | oath-cli | `oath` verbs | partial | freeze | QEMU probe | MCP later | [using](manual/using.md) |
 | snap | generations; apply / undo | partial | freeze | probe (sibling `@gen-N`, reboot) | boot-generation pick still confirm-only; no bootloader menu | [generations](manual/generations.md) |
-| svc | Own supervisor | partial | freeze | hold + sshd; wants order | do not disable serial; no Requires-style hard deps | [services](manual/services.md) |
+| svc | Own supervisor | partial | freeze | hold + sshd + seatd + river | do not disable serial; no Requires-style hard deps | [services](manual/services.md) |
 | boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | borrowed kernel; River as `svc:river` | [qemu](manual/qemu.md) |
 | pkg | Package objects | partial | [freeze](specs/2026-08-30-pkg-hosting.md) | QEMU probe + fetchme | T20 identity: `pkg.url`, peer Oath host as origin; no guest store export, hash, deps, or versions | [packages](manual/packages.md) |
 | net | Network objects | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | QEMU probe ping + SSH | dhcp implemented; LAN bridge opt-in (`OATH_BRIDGE`) | [network](manual/network.md) |

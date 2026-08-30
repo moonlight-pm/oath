@@ -31,7 +31,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk if DISPLAY; host SSH keys injected on up/start. Manual: `docs/manual/`. |
+| Notes | `dev:card0` + gtk compositor if DISPLAY (black; no pointer/keyboard). Host SSH keys on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
@@ -55,15 +55,18 @@ Do not re-litigate without an explicit decision.
 - SSH: root, dropbear, **no baked private key**. Host keys under
   `/oath/ssh/`. Owner pubkeys in `ssh:local`. Serial still works.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
-  `busybox`/`btrfs`/`oath`/`dropbear` not removable; `hello` and
-  `fetchme` are. `pkg.url` wget canary. **T20:** no canonical archive;
-  another Oath host’s store is a valid origin. Git is not the store.
+  `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
+  `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
+  canonical archive; another Oath host’s store is a valid origin. Git
+  is not the store.
 - Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
-  the console; `svc:sshd` is dropbear; `svc:hold` wants serial.
-- Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set.
+  the console; `svc:sshd` is dropbear; `svc:hold` wants serial;
+  `svc:river` wants `svc:seatd`.
+- Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
+  is pixman River (no udev/libinput).
 - Sola on Oath: PID 1 is the only supervisor. First slice is patched
-  **River** as `pkg:river` + `svc:river`. glibc is sealed `pkg:glibc`
-  for that payload. Source forks under `forks/`. First-party pkg
+  **River** as `pkg:river` + `svc:river`. glibc is sealed `pkg:glibc`.
+  `forks/river` + `forks/wlroots` in; `oath-sola` not. First-party pkg
   sources under `apps/` (`hello`, `fetchme`).
 - MIT, Copyright (c) Joshua Kifer.
 
@@ -74,8 +77,9 @@ Do not re-litigate without an explicit decision.
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
 - Freeze: [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
-  (T21, not implemented)
+  (T21, River/seatd partial)
 - Plan: [docs/plans/2026-08-30-sola-river-plan.md](docs/plans/2026-08-30-sola-river-plan.md)
+  (`oath-sola` still out)
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
-  (T20, not implemented)
-- Roadmap: display canary in; River-first Sola port open
+  (T20 identity, not implemented)
+- Roadmap: display canary in; River as `svc`; full Sola not
