@@ -66,7 +66,8 @@ Do not re-litigate without an explicit decision.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set.
 - Sola on Oath: PID 1 is the only supervisor. First slice is patched
   **River** as `pkg:river` + `svc:river`. glibc is sealed `pkg:glibc`
-  for that payload. Source forks under `forks/` (build-time).
+  for that payload. Source forks under `forks/`. First-party pkg
+  sources under `apps/` (`hello`, `fetchme`).
 - MIT, Copyright (c) Joshua Kifer.
 
 ---

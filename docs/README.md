@@ -72,6 +72,7 @@ ask the human.
 | `crates/` | `oath-core`, `oath`, `oath-init`, `oath-make` |
 | `image/` | `tools.nix` borrowed prebuilts |
 | `forks/` | Maintained source forks (submodules; build-time) |
+| `apps/` | First-party `pkg:*` sources (`hello`, `fetchme`) |
 | `apocrypha/` | Scratch / history — not built, gitignored |
 | `.grok/skills/` | `oath-session-start`, `oath-progress-docs` |
 | `.grok/rules/active-work.md` | **Pointer** to `CURRENT.md` |

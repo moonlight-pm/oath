@@ -167,11 +167,11 @@ fn cmd(
     Ok(chunk)
 }
 
-fn spawn_fetch_server() -> Option<std::thread::JoinHandle<()>> {
+fn spawn_fetch_server(root: &Path) -> Option<std::thread::JoinHandle<()>> {
     let listener = TcpListener::bind(("0.0.0.0", 18765)).ok()?;
     let _ = listener.set_nonblocking(false);
+    let body = fs::read(root.join("apps/fetchme/bin/fetchme")).ok()?;
     Some(std::thread::spawn(move || {
-        let body = b"#!/bin/sh\nprintf 'fetched\\n'\n";
         for mut s in listener.incoming().flatten() {
             let mut buf = [0u8; 1024];
             let _ = s.read(&mut buf);
@@ -180,7 +180,7 @@ fn spawn_fetch_server() -> Option<std::thread::JoinHandle<()>> {
                 body.len()
             );
             let _ = s.write_all(head.as_bytes());
-            let _ = s.write_all(body);
+            let _ = s.write_all(&body);
         }
     }))
 }
@@ -256,7 +256,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     if std::env::var_os("OATH_SSH_PORT").is_none() {
         std::env::set_var("OATH_SSH_PORT", "13222");
     }
-    let _fetch = spawn_fetch_server();
+    let _fetch = spawn_fetch_server(root);
 
     let key_path = run.join("id_ed25519");
     let _ = Command::new("ssh-keygen")

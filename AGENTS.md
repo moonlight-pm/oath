@@ -121,6 +121,7 @@ crates/oath-init      PID 1 + serial-login
 crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe
 image/                tools.nix only (borrowed prebuilts)
 forks/                maintained source forks (submodules; build-time)
+apps/                 first-party pkg sources (`hello`, `fetchme`, …)
 ```
 
 Do not invent extra kinds until CURRENT says so. `pkg`, `net`, `ssh`,

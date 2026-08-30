@@ -182,9 +182,10 @@ Serving the store, hashes, and discovery are deferred.
 Patched River as `pkg:river` + `svc:river`. PID 1 is the only
 supervisor (no nested Sola process manager). glibc is sealed
 `pkg:glibc` for this payload. Build-time source forks under
-`forks/` (submodules of trees we maintain). Fork Sola, River, and
-wlroots; Sola’s nix overlay patches become commits on those forks.
-Full Sola session out of this slice.
+`forks/` (submodules of trees we maintain). First-party pkg sources
+under `apps/` (`hello`, `fetchme`). Fork Sola, River, and wlroots;
+Sola’s nix overlay patches become commits on those forks. Full Sola
+session out of this slice.
 
 ---
 

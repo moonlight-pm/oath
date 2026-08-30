@@ -155,10 +155,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         bail!("OATH_DROPBEARKEY / tools dropbearkey required");
     };
     write_dropbear_store(&oath_root, dropbear, dropbearkey)?;
-    let hello = oath_root.join("store/pkg/hello/bin/hello");
-    fs::create_dir_all(hello.parent().unwrap())?;
-    fs::write(&hello, "#!/bin/sh\nprintf 'hello\\n'\n")?;
-    chmod_exec(&hello)?;
+    write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
     link_pkg(&oath_root, &guest_bin, "busybox", false)?;
     link_pkg(&oath_root, &guest_bin, "btrfs", false)?;
     link_pkg(&oath_root, &guest_bin, "oath", false)?;

@@ -23,4 +23,6 @@ overlay.
 **Put a tree here** when we patch it or reshape it for Oath.
 
 **Do not** put unmodified busybox, mesa, or a random tarball here.
-Those stay `image/` (borrow) or a `pkg.url` (T20).
+Those stay `image/` (borrow) or a `pkg.url` (T20). First-party
+programs we wrote (`hello`, `fetchme`, later canaries) live in
+[`apps/`](../apps/README.md).
