@@ -266,6 +266,9 @@ impl ApplyHooks for Live {
         } else {
             self.catalog_root.join("bin")
         };
+        if desired.present && !desired.url.is_empty() {
+            fetch_pkg(&self.catalog_root, &id.name, &desired.url)?;
+        }
         let actual = converge_pkg(&self.catalog_root, &bin, &id.name, desired.present)?;
         tel(
             "oath",
@@ -278,4 +281,28 @@ impl ApplyHooks for Live {
         );
         Ok(actual)
     }
+}
+
+fn fetch_pkg(catalog_root: &Path, name: &str, url: &str) -> Result<()> {
+    let dir = catalog_root.join("store/pkg").join(name).join("bin");
+    fs::create_dir_all(&dir)?;
+    let dest = dir.join(name);
+    if dest.is_file() {
+        return Ok(());
+    }
+    let tmp = dir.join(format!(".{name}.wget"));
+    let st = Command::new("/bin/wget")
+        .args(["-q", "-O", tmp.to_str().unwrap(), url])
+        .status()
+        .map_err(|e| Error::Msg(format!("wget: {e}")))?;
+    if !st.success() {
+        let _ = fs::remove_file(&tmp);
+        return Err(Error::hint(format!("fetch pkg:{name} failed"), "oath schema pkg"));
+    }
+    use std::os::unix::fs::PermissionsExt;
+    let mut perm = fs::metadata(&tmp)?.permissions();
+    perm.set_mode(0o755);
+    fs::set_permissions(&tmp, perm)?;
+    fs::rename(&tmp, dest)?;
+    Ok(())
 }

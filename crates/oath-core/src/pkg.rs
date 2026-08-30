@@ -52,7 +52,7 @@ pub fn converge_with_link_root(
             })?;
             links.push(n.clone());
         }
-        Ok(PkgActual { present: true, links, removable: true })
+        Ok(PkgActual { present: true, links, removable: true, url: String::new() })
     } else {
         for n in &names {
             let dest = bin_dir.join(n);
@@ -61,7 +61,7 @@ pub fn converge_with_link_root(
                 fs::remove_file(&dest)?;
             }
         }
-        Ok(PkgActual { present: false, links: Vec::new(), removable: true })
+        Ok(PkgActual { present: false, links: Vec::new(), removable: true, url: String::new() })
     }
 }
 

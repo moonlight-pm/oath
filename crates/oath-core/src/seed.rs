@@ -66,7 +66,7 @@ pub fn seed(root: &Path) -> Result<()> {
     let hold = ObjectId::new(KIND_SVC, "hold");
     let hold_desired = json!({
         "exec": ["/bin/sleep", "86400000"],
-        "wants": [],
+        "wants": ["svc:serial"],
         "restart": "always",
         "enabled": true
     });
@@ -83,6 +83,21 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "btrfs", true, false)?;
     seed_pkg(root, "oath", true, false)?;
     seed_pkg(root, "dropbear", true, false)?;
+    write_object(
+        root,
+        &ObjectId::new(KIND_PKG, "fetchme"),
+        "mutate",
+        &json!({
+            "present": false,
+            "url": "http://10.0.2.2:18765/fetchme"
+        }),
+        &json!({
+            "present": false,
+            "links": [],
+            "removable": true,
+            "url": "http://10.0.2.2:18765/fetchme"
+        }),
+    )?;
 
     let sshd = ObjectId::new(KIND_SVC, "sshd");
     let sshd_desired = json!({

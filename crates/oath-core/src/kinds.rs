@@ -77,6 +77,9 @@ pub struct SvcActual {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Pkg {
     pub present: bool,
+    /// If non-empty, apply wget's this into the store when `present`.
+    #[serde(default)]
+    pub url: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -129,4 +132,6 @@ pub struct PkgActual {
     /// Engine-owned. If false, `present=false` is refused (not confirm).
     #[serde(default = "default_true")]
     pub removable: bool,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub url: String,
 }

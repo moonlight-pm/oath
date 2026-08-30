@@ -1,5 +1,6 @@
 use std::fs;
 use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::os::unix::io::AsRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -158,6 +159,24 @@ fn cmd(
     Ok(chunk)
 }
 
+fn spawn_fetch_server() -> Option<std::thread::JoinHandle<()>> {
+    let listener = TcpListener::bind(("0.0.0.0", 18765)).ok()?;
+    let _ = listener.set_nonblocking(false);
+    Some(std::thread::spawn(move || {
+        let body = b"#!/bin/sh\nprintf 'fetched\\n'\n";
+        for mut s in listener.incoming().flatten() {
+            let mut buf = [0u8; 1024];
+            let _ = s.read(&mut buf);
+            let head = format!(
+                "HTTP/1.0 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            let _ = s.write_all(head.as_bytes());
+            let _ = s.write_all(body);
+        }
+    }))
+}
+
 fn host_ssh(key: &Path, want_ok: bool) -> (bool, String) {
     let port = std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222u16);
     let tries = if want_ok { 10 } else { 2 };
@@ -225,6 +244,11 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     let overlay = qemu::overlay_disk(&tools, &run, &img.backing)?;
     qemu::write_meta(&run, &tools, &img, &overlay, "probe")?;
     eprintln!("run: {}", run.display());
+    // Don't fight a `cargo make up` that already owns 2222.
+    if std::env::var_os("OATH_SSH_PORT").is_none() {
+        std::env::set_var("OATH_SSH_PORT", "13222");
+    }
+    let _fetch = spawn_fetch_server();
 
     let key_path = run.join("id_ed25519");
     let _ = Command::new("ssh-keygen")
@@ -418,6 +442,30 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         Some("NET_UP"),
         "net.undo_ping",
         Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set pkg:fetchme present=true",
+        None,
+        "pkg.fetch_set",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath apply pkg:fetchme",
+        Some("applied generation"),
+        "pkg.fetch_apply",
+        Duration::from_secs(20),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "[ \"$(fetchme)\" = fetched ] && echo PKG_FETCH_OK",
+        Some("PKG_FETCH_OK"),
+        "pkg.fetch_run",
+        Duration::from_secs(8),
     )?;
     cmd(
         &mut vm,

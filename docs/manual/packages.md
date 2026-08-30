@@ -13,6 +13,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:oath` | `present: true` | no |
 | `pkg:dropbear` | `present: true` | no |
 | `pkg:hello` | `present: false` | yes — canary |
+| `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 
 `/bin/hello` prints `hello`. The symlink target is
 `/oath/store/pkg/hello/bin/hello`. Do not exec from the store; `/bin`
@@ -43,3 +44,7 @@ name it does not own.
 
 Takes effect on apply. Reboot is not required; it only proves the
 symlink survived on `@`.
+
+`url` on a `pkg` object: if `present` and the store file is missing,
+apply wget’s the URL into the store then links. The appliance canary
+is `pkg:fetchme` (`http://10.0.2.2:18765/fetchme` on QEMU user net).

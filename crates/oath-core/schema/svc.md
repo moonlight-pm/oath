@@ -11,7 +11,9 @@ editing `/etc`.
 ## Fields
 
 - `exec` — argv, `exec[0]` absolute.
-- `wants` — other `svc` ids that should be up first. No cycles.
+- `wants` — other `svc` ids that should be up first. PID 1 starts them
+  in that order. Cycles refuse `oath apply`. Disabled/unknown wants
+  are skipped (ordering, not Requires). `svc:hold` wants `svc:serial`.
 - `restart` — `never` | `always` | `on-failure`.
 - `enabled` — if false, the process is not running.
 

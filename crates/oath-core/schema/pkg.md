@@ -15,6 +15,8 @@ store. Do not fetch; v0 payloads are already on the image. Do not set
 - `present` — `true` links `store/.../bin/*` into `/bin`. `false`
   removes **this object’s** links. Store stays so re-install needs no
   network.
+- `url` — optional. If set and the store file is missing, apply wget’s
+  it into the store then links. `pkg:fetchme` is the canary.
 
 Actual also has `links` (basenames in `/bin`) and `removable`. If
 `removable` is false, `present=false` is refused (not `--confirm`).

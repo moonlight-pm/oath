@@ -372,7 +372,17 @@ fn converge(kids: &mut HashMap<i32, Kid>) {
         }
     }
 
-    for (id, spec) in &wanted {
+    let items: Vec<(String, Svc)> = wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();
+    let order = match oath_core::svc_start_order(&items) {
+        Ok(o) => o,
+        Err(e) => {
+            log(&format!("svc wants: {e}"));
+            tel("init", "svc_wants", json!({ "ok": false, "err": e.to_string() }));
+            Vec::new()
+        }
+    };
+    for id in &order {
+        let Some(spec) = wanted.get(id) else { continue };
         let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
         if !spec.enabled || spec.exec.is_empty() {
             if pid_for(kids, id).is_none() {
@@ -394,6 +404,15 @@ fn converge(kids: &mut HashMap<i32, Kid>) {
                 tel("init", "svc_fail", json!({ "id": id, "err": e }));
                 write_svc_actual(&oid, "failed", None, 0);
             }
+        }
+    }
+    for (id, spec) in &wanted {
+        if spec.enabled {
+            continue;
+        }
+        let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
+        if pid_for(kids, id).is_none() {
+            write_svc_actual(&oid, "stopped", None, 0);
         }
     }
 }

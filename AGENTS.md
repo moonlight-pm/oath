@@ -75,8 +75,8 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Active freeze:
-[`docs/specs/2026-08-30-devices.md`](docs/specs/2026-08-30-devices.md).
-Active plan: **none** (Phase 4 device inventory complete).
+[`docs/specs/2026-08-30-wants-and-fetch.md`](docs/specs/2026-08-30-wants-and-fetch.md).
+Active plan: **none** (wants + fetch complete).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).

@@ -20,8 +20,8 @@ converge, reaps, and restarts per policy (`never` / `always` /
 `/oath/run/init.sock`, and waits until actual `state` is `running` or
 `stopped`. `oath undo` notifies PID 1 after restoring the catalog.
 
-`wants` is in the schema (other `svc` ids that should be up first).
-Ordering is not implemented.
+`wants` is start order: enabled wanted services start first. Cycles
+refuse apply. `svc:hold` wants `svc:serial`.
 
 ## Start / stop
 

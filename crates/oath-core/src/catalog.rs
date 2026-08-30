@@ -203,6 +203,8 @@ impl Catalog {
             )));
         }
 
+        self.check_svc_wants()?;
+
         let parent = self.current_generation()?;
         let generation = self.next_generation()?;
 
@@ -221,7 +223,8 @@ impl Catalog {
                 }
             } else if d.id.kind == KIND_PKG {
                 json!({
-                    "present": obj.actual.get("present").cloned().unwrap_or(json!(false))
+                    "present": obj.actual.get("present").cloned().unwrap_or(json!(false)),
+                    "url": obj.desired.get("url").cloned().unwrap_or(json!("")),
                 })
             } else if d.id.kind == KIND_NET {
                 json!({
@@ -444,8 +447,25 @@ impl Catalog {
         }
         let mut actual = hooks.converge_pkg(id, &pkg)?;
         actual.removable = removable;
+        actual.url = pkg.url.clone();
         write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
         self.touch_status(id, "in-sync")?;
+        Ok(())
+    }
+
+    fn check_svc_wants(&self) -> Result<()> {
+        let Ok(ids) = self.ls(Some(KIND_SVC)) else {
+            return Ok(());
+        };
+        let mut svcs = Vec::new();
+        for id in ids {
+            if let Ok(obj) = self.get(&id) {
+                if let Ok(spec) = serde_json::from_value::<crate::kinds::Svc>(obj.desired) {
+                    svcs.push((id.to_string(), spec));
+                }
+            }
+        }
+        crate::svc_start_order(&svcs)?;
         Ok(())
     }
 

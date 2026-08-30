@@ -12,7 +12,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. Phase 4 devices (T17) is closed.
+None open. Wants + fetch (T18) is closed.
 
 ---
 
@@ -157,6 +157,11 @@ Kind `dev`. v0 `dev:vda`, `dev:net0`, `dev:ttyS0`. Not removable. Probe
 sysfs; do not load modules from the catalog. No udev. Unix floor:
 tmpfs `/tmp` `/dev/shm` `/run`, cgroup2. `/proc` was already mounted.
 
+### T18 — wants + fetch — locked 2026-08-30
+
+`svc.wants` is start order; cycles refuse apply. `pkg.url` wget into
+the store. No package repository. No new verbs.
+
 ---
 
 ## Decision log
@@ -170,3 +175,4 @@ tmpfs `/tmp` `/dev/shm` `/run`, cgroup2. `/proc` was already mounted.
 | 2026-08-29 | T15 | Net canary static net0 | this file; [specs/2026-08-29-net.md](specs/2026-08-29-net.md) |
 | 2026-08-30 | T16 | SSH catalog keys + DHCP | this file; [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md) |
 | 2026-08-30 | T17 | Device inventory + Unix floor | this file; [specs/2026-08-30-devices.md](specs/2026-08-30-devices.md) |
+| 2026-08-30 | T18 | svc wants + pkg url fetch | this file; [specs/2026-08-30-wants-and-fetch.md](specs/2026-08-30-wants-and-fetch.md) |

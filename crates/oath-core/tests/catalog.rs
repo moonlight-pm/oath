@@ -116,7 +116,12 @@ impl ApplyHooks for MemHooks {
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
         let store = self.root.join("store/pkg").join(&id.name).join("bin");
         if !store.is_dir() {
-            return Ok(PkgActual { present: desired.present, links: Vec::new(), removable: true });
+            return Ok(PkgActual {
+                present: desired.present,
+                links: Vec::new(),
+                removable: true,
+                url: desired.url.clone(),
+            });
         }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present)
     }
@@ -348,6 +353,25 @@ fn net_up_down_undo() {
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().desired["up"], json!(true));
     assert_eq!(cat.get(&id).unwrap().actual["up"], json!(true));
+}
+
+#[test]
+fn svc_wants_cycle_refuses_apply() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let hold: ObjectId = "svc:hold".parse().unwrap();
+    let sshd: ObjectId = "svc:sshd".parse().unwrap();
+    let mut a = Map::new();
+    a.insert("wants".into(), json!(["svc:sshd"]));
+    cat.set_fields(&hold, a).unwrap();
+    let mut b = Map::new();
+    b.insert("wants".into(), json!(["svc:hold"]));
+    cat.set_fields(&sshd, b).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    match err {
+        Error::Hint { message, .. } => assert!(message.contains("cycle"), "{message}"),
+        other => panic!("{other:?}"),
+    }
 }
 
 #[test]

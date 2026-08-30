@@ -13,9 +13,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Phase 4 devices + Unix floor shipped.** `dev:vda` / `net0` /
-   `ttyS0`; tmpfs `/tmp` `/dev/shm` `/run`; cgroup2. Do not add pkg
-   fetch or an enumerator unless asked.
+1. **Text OS leftovers shipped** (`svc` wants + `pkg:fetchme` wget).
+   Next program slice toward Sola is a **display canary** (virtio-gpu),
+   not Phase 5 agent or Phase 6 installer unless asked.
 2. Do not add glibc runtime / installer unless CURRENT is updated.
 3. Do not install to a real disk.
 
@@ -65,7 +65,7 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-devices.md](docs/specs/2026-08-30-devices.md)
-- Plan: [docs/plans/2026-08-30-devices-plan.md](docs/plans/2026-08-30-devices-plan.md)
+- Freeze: [docs/specs/2026-08-30-wants-and-fetch.md](docs/specs/2026-08-30-wants-and-fetch.md)
+- Plan: [docs/plans/2026-08-30-wants-fetch-plan.md](docs/plans/2026-08-30-wants-fetch-plan.md)
   (complete)
-- Roadmap: Phase 4 (active; net + ssh + dev inventory)
+- Roadmap: text OS complete enough; graphics next; agent/install later

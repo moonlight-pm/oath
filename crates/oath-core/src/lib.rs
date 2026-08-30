@@ -12,6 +12,7 @@ mod net;
 mod pkg;
 mod seed;
 mod ssh;
+mod svc_order;
 mod tel;
 
 pub use catalog::{diff_values, Catalog, Drift, Object};
@@ -28,6 +29,7 @@ pub use net::{appliance_desired as net_appliance_desired, converge as converge_n
 pub use pkg::{converge as converge_pkg, converge_with_link_root};
 pub use seed::seed;
 pub use ssh::converge as converge_ssh;
+pub use svc_order::start_order as svc_start_order;
 pub use tel::tel;
 
 pub const DEFAULT_ROOT: &str = "/oath";

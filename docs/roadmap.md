@@ -48,8 +48,9 @@ reboot persist. Plan:
 Install/remove/query packages through the catalog. Services are objects
 with schema, not unit-file folklore. Freeze:
 [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md). Canary
-`pkg:hello` plus sealed `busybox` / `btrfs` / `oath` are in. A real
-set of packages, deps, and fetch are not.
+`pkg:hello` plus sealed `busybox` / `btrfs` / `oath` / `dropbear` are
+in. `pkg:fetchme` wget canary is in. A package repository and deps
+are not.
 
 ## Phase 4 — Devices and network
 
@@ -59,8 +60,9 @@ Hardware inventory as objects. One network model. The agent does not run
 `lspci` / `ip` / `udevadm` and guess. Net canary:
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md),
 [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md)
-(`net:net0` + SSH + `dev` inventory). DHCP, `OATH_BRIDGE`, and Unix
-floor exist; module-as-catalog and pkg fetch do not.
+(`net:net0` + SSH + `dev` inventory). DHCP, `OATH_BRIDGE`, Unix floor,
+`svc` wants, and URL fetch exist. Module-as-catalog and a package
+repo do not.
 
 ## Phase 5 — Agent as a system component
 

@@ -9,6 +9,10 @@
     "present": {
       "type": "boolean",
       "description": "If true, files in /oath/store/pkg/<name>/bin/ are symlinked at /bin/<basename>. If false, those links are removed. The store tree stays."
+    },
+    "url": {
+      "type": "string",
+      "description": "If non-empty, apply wget's this URL into the store when present (local store wins if already there)."
     }
   }
 }
