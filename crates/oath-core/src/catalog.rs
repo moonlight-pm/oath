@@ -6,10 +6,10 @@ use serde_json::{json, Map, Value};
 use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
-use crate::kinds::{Host, HostPower, Meta, Net, Pkg, Ssh};
+use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, Ssh};
 use crate::{
-    now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_HOST, KIND_NET, KIND_PKG,
-    KIND_SNAP, KIND_SSH, KIND_SVC,
+    now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_DEV, KIND_HOST, KIND_NET,
+    KIND_PKG, KIND_SNAP, KIND_SSH, KIND_SVC,
 };
 
 #[derive(Clone, Debug)]
@@ -140,6 +140,9 @@ impl Catalog {
         {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
+        if id.kind == KIND_DEV && fields.get("present") == Some(&Value::Bool(false)) {
+            return Err(Error::hint(format!("{id} is not removable"), "oath schema dev"));
+        }
         let Some(map) = obj.desired.as_object_mut() else {
             return Err(Error::Msg("desired is not an object".into()));
         };
@@ -230,6 +233,10 @@ impl Catalog {
                 json!({
                     "authorized": obj.actual.get("authorized").cloned().unwrap_or(json!([]))
                 })
+            } else if d.id.kind == KIND_DEV {
+                json!({
+                    "present": obj.actual.get("present").cloned().unwrap_or(json!(true))
+                })
             } else {
                 obj.actual.clone()
             };
@@ -301,6 +308,12 @@ impl Catalog {
                     write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
                     self.touch_status(&d.id, "in-sync")?;
                 }
+                KIND_DEV => {
+                    let dev: Dev = serde_json::from_value(self.get(&d.id)?.desired.clone())?;
+                    let actual = hooks.converge_dev(&d.id, &dev)?;
+                    write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
+                    self.touch_status(&d.id, "in-sync")?;
+                }
                 _ => {
                     return Err(Error::hint(
                         format!("no handler for {}", d.id.kind),
@@ -354,6 +367,17 @@ impl Catalog {
             if let Ok(ssh) = serde_json::from_value::<Ssh>(obj.desired.clone()) {
                 let actual = hooks.converge_ssh(&obj.id, &ssh)?;
                 write_json(&self.obj_dir(&obj.id).join("actual.json"), &actual)?;
+            }
+        }
+
+        if let Ok(ids) = self.ls(Some(KIND_DEV)) {
+            for id in ids {
+                if let Ok(obj) = self.get(&id) {
+                    if let Ok(dev) = serde_json::from_value::<Dev>(obj.desired.clone()) {
+                        let actual = hooks.converge_dev(&id, &dev)?;
+                        write_json(&self.obj_dir(&id).join("actual.json"), &actual)?;
+                    }
+                }
             }
         }
 

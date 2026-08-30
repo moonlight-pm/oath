@@ -1,5 +1,5 @@
 use crate::id::ObjectId;
-use crate::kinds::{Host, Net, Pkg, PkgActual, Ssh, SshActual};
+use crate::kinds::{Dev, DevActual, Host, Net, Pkg, PkgActual, Ssh, SshActual};
 use crate::Result;
 
 #[derive(Clone, Debug)]
@@ -65,6 +65,18 @@ pub trait ApplyHooks {
     }
     fn converge_ssh(&self, _id: &ObjectId, desired: &Ssh) -> Result<SshActual> {
         Ok(SshActual { authorized: desired.authorized.clone(), host_key: false })
+    }
+    fn converge_dev(&self, id: &ObjectId, desired: &Dev) -> Result<DevActual> {
+        if !desired.present {
+            return Err(crate::Error::hint(format!("{id} is not removable"), "oath schema dev"));
+        }
+        let (class, node) = match id.name.as_str() {
+            "vda" => ("block", "/dev/vda"),
+            "net0" => ("net", "/sys/class/net/net0"),
+            "ttyS0" => ("tty", "/dev/ttyS0"),
+            _ => ("unknown", ""),
+        };
+        Ok(DevActual { present: true, class: class.into(), node: node.into() })
     }
 }
 

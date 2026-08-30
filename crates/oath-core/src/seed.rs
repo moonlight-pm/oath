@@ -4,7 +4,8 @@ use serde_json::json;
 
 use crate::kinds::Meta;
 use crate::{
-    write_json, ObjectId, Result, KIND_HOST, KIND_NET, KIND_PKG, KIND_SNAP, KIND_SSH, KIND_SVC,
+    write_json, ObjectId, Result, KIND_DEV, KIND_HOST, KIND_NET, KIND_PKG, KIND_SNAP, KIND_SSH,
+    KIND_SVC,
 };
 
 pub const HOST_SCHEMA: &str = include_str!("../schema/host.json");
@@ -19,6 +20,8 @@ pub const NET_SCHEMA: &str = include_str!("../schema/net.json");
 pub const NET_MD: &str = include_str!("../schema/net.md");
 pub const SSH_SCHEMA: &str = include_str!("../schema/ssh.json");
 pub const SSH_MD: &str = include_str!("../schema/ssh.md");
+pub const DEV_SCHEMA: &str = include_str!("../schema/dev.json");
+pub const DEV_MD: &str = include_str!("../schema/dev.md");
 
 pub fn seed(root: &Path) -> Result<()> {
     std::fs::create_dir_all(root.join("schema"))?;
@@ -38,6 +41,8 @@ pub fn seed(root: &Path) -> Result<()> {
     write(root, "schema/net.md", NET_MD);
     write(root, "schema/ssh.json", SSH_SCHEMA);
     write(root, "schema/ssh.md", SSH_MD);
+    write(root, "schema/dev.json", DEV_SCHEMA);
+    write(root, "schema/dev.md", DEV_MD);
 
     let host = ObjectId::new(KIND_HOST, "local");
     let host_val = json!({ "hostname": "oath", "power": "run" });
@@ -103,6 +108,10 @@ pub fn seed(root: &Path) -> Result<()> {
     let net_val = serde_json::to_value(crate::net::appliance_desired())?;
     write_object(root, &net, "mutate", &net_val, &net_val)?;
 
+    seed_dev(root, "vda", "block", "/dev/vda")?;
+    seed_dev(root, "net0", "net", "/sys/class/net/net0")?;
+    seed_dev(root, "ttyS0", "tty", "/dev/ttyS0")?;
+
     let cur = ObjectId::new(KIND_SNAP, "current");
     let gen0 = json!({ "generation": 0 });
     write_object(root, &cur, "mutate", &gen0, &gen0)?;
@@ -124,6 +133,17 @@ fn write(root: &Path, rel: &str, body: &str) {
         b.push('\n');
     }
     let _ = std::fs::write(p, b);
+}
+
+fn seed_dev(root: &Path, name: &str, class: &str, node: &str) -> Result<()> {
+    let id = ObjectId::new(KIND_DEV, name);
+    write_object(
+        root,
+        &id,
+        "mutate",
+        &json!({ "present": true }),
+        &json!({ "present": true, "class": class, "node": node }),
+    )
 }
 
 fn seed_pkg(root: &Path, name: &str, present: bool, removable: bool) -> Result<()> {

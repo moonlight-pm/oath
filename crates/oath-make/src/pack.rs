@@ -23,6 +23,8 @@ const MODULES: &[&str] = &[
     "kernel/net/core/failover.ko.xz",
     "kernel/drivers/net/net_failover.ko.xz",
     "kernel/drivers/net/virtio_net.ko.xz",
+    "kernel/drivers/char/hw_random/rng-core.ko.xz",
+    "kernel/drivers/char/hw_random/virtio-rng.ko.xz",
     "kernel/crypto/crc32c_generic.ko.xz",
     "kernel/lib/libcrc32c.ko.xz",
     "kernel/crypto/xor.ko.xz",
@@ -125,6 +127,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("etc/group"), "root:x:0:\n")?;
     fs::write(stage.join("etc/shadow"), "root:*:1:0:99999:7:::\n")?;
     fs::write(stage.join("etc/nsswitch.conf"), "passwd: files\ngroup: files\nshadow: files\n")?;
+    fs::write(stage.join("etc/hosts"), "127.0.0.1 localhost\n::1 localhost\n127.0.1.1 oath\n")?;
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("root/.ssh"))?;
     run(Command::new(bin.join("oath")).args([

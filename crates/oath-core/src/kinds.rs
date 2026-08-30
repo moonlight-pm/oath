@@ -97,6 +97,20 @@ pub struct Ssh {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Dev {
+    pub present: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DevActual {
+    pub present: bool,
+    #[serde(default)]
+    pub class: String,
+    #[serde(default)]
+    pub node: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SshActual {
     #[serde(default)]
     pub authorized: Vec<String>,

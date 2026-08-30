@@ -7,8 +7,9 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    converge_net, converge_pkg, converge_ssh, gen_subvol_name, tel, ApplyHooks, Error, Host,
-    HostPower, Net, ObjectId, Pkg, PkgActual, Result, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
+    converge_dev, converge_net, converge_pkg, converge_ssh, gen_subvol_name, tel, ApplyHooks, Dev,
+    DevActual, Error, Host, HostPower, Net, ObjectId, Pkg, PkgActual, Result, Ssh, SshActual,
+    BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -150,6 +151,10 @@ impl ApplyHooks for Live {
             .map_err(|e| Error::Msg(format!("sethostname: {e}")))?;
         let _ = fs::create_dir_all("/etc");
         let _ = fs::write("/etc/hostname", format!("{}\n", desired.hostname));
+        let _ = fs::write(
+            "/etc/hosts",
+            format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", desired.hostname),
+        );
         tel("oath", "hostname", json!({ "name": desired.hostname }));
         Ok(Host { hostname: desired.hostname.clone(), power: HostPower::Run })
     }
@@ -196,6 +201,28 @@ impl ApplyHooks for Live {
         // attached (the host serial looks "stuck"). Power-off makes QEMU exit.
         reboot(RebootMode::RB_POWER_OFF).map_err(|e| Error::Msg(format!("halt: {e}")))?;
         Ok(())
+    }
+
+    fn converge_dev(&self, id: &ObjectId, desired: &Dev) -> Result<DevActual> {
+        if self.catalog_root.as_path() != Path::new("/oath") {
+            return Ok(DevActual {
+                present: desired.present,
+                class: String::new(),
+                node: String::new(),
+            });
+        }
+        let actual = converge_dev(id, desired)?;
+        tel(
+            "oath",
+            "dev",
+            json!({
+                "id": id.to_string(),
+                "present": actual.present,
+                "class": actual.class,
+                "node": actual.node,
+            }),
+        );
+        Ok(actual)
     }
 
     fn converge_ssh(&self, id: &ObjectId, desired: &Ssh) -> Result<SshActual> {

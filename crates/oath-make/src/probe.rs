@@ -284,6 +284,78 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "grep ' /tmp ' /proc/mounts",
+        Some("tmpfs"),
+        "floor.tmp",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -d /dev/shm && echo SHM_OK",
+        Some("SHM_OK"),
+        "floor.shm",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "grep ' /run ' /proc/mounts",
+        Some("tmpfs"),
+        "floor.run",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -f /sys/fs/cgroup/cgroup.controllers && echo CGROUP_OK",
+        Some("CGROUP_OK"),
+        "floor.cgroup",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath ls --kind dev",
+        Some("dev:vda"),
+        "dev.ls_vda",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath ls --kind dev",
+        Some("dev:net0"),
+        "dev.ls_net0",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath ls --kind dev",
+        Some("dev:ttyS0"),
+        "dev.ls_tty",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get dev:vda --actual",
+        Some("\"present\": true"),
+        "dev.vda",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set dev:vda present=false",
+        Some("not removable"),
+        "dev.refuse",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath ls --kind net",
         Some("net:net0"),
         "net.ls",
@@ -705,6 +777,22 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         Some("NET_UP"),
         "reboot.net_ping",
         Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "oath ls --kind dev",
+        Some("dev:vda"),
+        "reboot.dev_vda",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "test -f /sys/fs/cgroup/cgroup.controllers && echo CGROUP_OK",
+        Some("CGROUP_OK"),
+        "reboot.cgroup",
+        Duration::from_secs(8),
     )?;
     {
         let (ok, detail) = host_ssh(&key_path, true);

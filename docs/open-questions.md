@@ -12,7 +12,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. Phase 4 SSH/DHCP (T16) is closed.
+None open. Phase 4 devices (T17) is closed.
 
 ---
 
@@ -151,6 +151,12 @@ Owner pubkeys in `ssh:local`. Dropbear `svc:sshd`, root only.
 `net:net0` `ipv4` may be `dhcp`. QEMU hostfwd 2222; optional
 `OATH_BRIDGE`. Network install injects **public** keys.
 
+### T17 — Device inventory — locked 2026-08-30
+
+Kind `dev`. v0 `dev:vda`, `dev:net0`, `dev:ttyS0`. Not removable. Probe
+sysfs; do not load modules from the catalog. No udev. Unix floor:
+tmpfs `/tmp` `/dev/shm` `/run`, cgroup2. `/proc` was already mounted.
+
 ---
 
 ## Decision log
@@ -163,3 +169,4 @@ Owner pubkeys in `ssh:local`. Dropbear `svc:sshd`, root only.
 | 2026-08-29 | T14 | Base pkgs not removable | this file; [specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md) |
 | 2026-08-29 | T15 | Net canary static net0 | this file; [specs/2026-08-29-net.md](specs/2026-08-29-net.md) |
 | 2026-08-30 | T16 | SSH catalog keys + DHCP | this file; [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md) |
+| 2026-08-30 | T17 | Device inventory + Unix floor | this file; [specs/2026-08-30-devices.md](specs/2026-08-30-devices.md) |

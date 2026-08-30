@@ -145,6 +145,9 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "ssh:local"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sshd"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:dropbear"));
+    assert!(ids.iter().any(|i| i.to_string() == "dev:vda"));
+    assert!(ids.iter().any(|i| i.to_string() == "dev:net0"));
+    assert!(ids.iter().any(|i| i.to_string() == "dev:ttyS0"));
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -345,6 +348,19 @@ fn net_up_down_undo() {
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().desired["up"], json!(true));
     assert_eq!(cat.get(&id).unwrap().actual["up"], json!(true));
+}
+
+#[test]
+fn dev_not_removable() {
+    let (_d, cat) = tmp();
+    let id: ObjectId = "dev:vda".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(false));
+    let err = cat.set_fields(&id, fields).unwrap_err();
+    match err {
+        Error::Hint { message, .. } => assert!(message.contains("not removable"), "{message}"),
+        other => panic!("{other:?}"),
+    }
 }
 
 #[test]

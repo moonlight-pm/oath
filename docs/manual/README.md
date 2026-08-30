@@ -13,6 +13,7 @@ The only dogfood form is an **x86_64 QEMU** appliance on a serial console.
 | [Services](services.md) | PID 1 and `svc:*` |
 | [Packages](packages.md) | `pkg:hello`, store, `/bin` links |
 | [Network](network.md) | `net:net0`, static or dhcp |
+| [Devices](devices.md) | `dev:vda` / `net0` / `ttyS0`; `/proc` `/tmp` cgroup |
 | [SSH](ssh.md) | `ssh:local` keys, dropbear, no baked private key |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N` |
 | [The appliance](qemu.md) | Build, run, probe, disk layout |
@@ -25,4 +26,6 @@ that are not there.
 
 No installer, no desktop, no glibc-as-the-OS. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear`, plus canary `pkg:hello`.
-`net:net0` + root SSH via catalog keys (no baked private key).
+`net:net0` + root SSH via catalog keys (no baked private key). Device
+inventory `dev:vda` / `net0` / `ttyS0`. `/proc` `/sys` `/dev` plus
+tmpfs and cgroup2.

@@ -13,10 +13,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Phase 4 SSH + DHCP shipped.** `ssh:local` catalog keys, dropbear,
-   hostfwd 2222. `ipv4=dhcp` supported; default image is still slirp
-   static. `OATH_BRIDGE` for a host bridge. Do not add `dev` or pkg
-   fetch unless asked.
+1. **Phase 4 devices + Unix floor shipped.** `dev:vda` / `net0` /
+   `ttyS0`; tmpfs `/tmp` `/dev/shm` `/run`; cgroup2. Do not add pkg
+   fetch or an enumerator unless asked.
 2. Do not add glibc runtime / installer unless CURRENT is updated.
 3. Do not install to a real disk.
 
@@ -30,7 +29,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH appliance (QEMU user net) |
 | How | `cargo make build` then `probe` / `run` |
-| Notes | `net:net0` + SSH pubkey login/undo/reboot. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
+| Notes | `dev:*` + Unix floor + net + SSH. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
 
 ```sh
 nix-shell
@@ -47,8 +46,8 @@ Do not re-litigate without an explicit decision.
 
 - Oath: Linux kernel, own userspace, musl base, own PID 1.
 - Catalog `/oath`, ids `kind:name`, `oath` is the only admin surface.
-- v0 kinds `host`, `svc`, `snap`, `pkg`, `net`, `ssh`. Sibling `@gen-N`
-  at `/oath/run/fs`.
+- v0 kinds `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`. Sibling
+  `@gen-N` at `/oath/run/fs`.
 - Network: `net:net0` renamed NIC. Default static slirp
   `10.0.2.15/24`. `ipv4=dhcp` via udhcpc. `OATH_BRIDGE` optional.
 - SSH: root, dropbear, **no baked private key**. Host keys under
@@ -66,7 +65,7 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-ssh-and-dhcp.md](docs/specs/2026-08-30-ssh-and-dhcp.md)
-- Plan: [docs/plans/2026-08-30-ssh-dhcp-plan.md](docs/plans/2026-08-30-ssh-dhcp-plan.md)
+- Freeze: [docs/specs/2026-08-30-devices.md](docs/specs/2026-08-30-devices.md)
+- Plan: [docs/plans/2026-08-30-devices-plan.md](docs/plans/2026-08-30-devices-plan.md)
   (complete)
-- Roadmap: Phase 4 (active; net + ssh dogfood)
+- Roadmap: Phase 4 (active; net + ssh + dev inventory)

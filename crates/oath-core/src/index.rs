@@ -61,6 +61,7 @@ fn kind_line(kind: &str) -> &'static str {
         "pkg" => "a package (store + /bin links)",
         "net" => "a network link (net0, static or dhcp)",
         "ssh" => "owner SSH public keys (root / dropbear)",
+        "dev" => "a hardware device (inventory)",
         _ => "see schema",
     }
 }

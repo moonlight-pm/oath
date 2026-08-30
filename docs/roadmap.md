@@ -59,8 +59,8 @@ Hardware inventory as objects. One network model. The agent does not run
 `lspci` / `ip` / `udevadm` and guess. Net canary:
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md),
 [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md)
-(`net:net0` + SSH). DHCP and `OATH_BRIDGE` exist; `dev` kind and pkg
-fetch do not.
+(`net:net0` + SSH + `dev` inventory). DHCP, `OATH_BRIDGE`, and Unix
+floor exist; module-as-catalog and pkg fetch do not.
 
 ## Phase 5 — Agent as a system component
 

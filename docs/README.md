@@ -42,7 +42,8 @@ ask the human.
 | [`specs/2026-08-28-packages.md`](specs/2026-08-28-packages.md) | Kind `pkg`, store, canary | **Target** |
 | [`specs/2026-08-29-pkg-base.md`](specs/2026-08-29-pkg-base.md) | Sealed busybox / btrfs / oath | **Target** |
 | [`specs/2026-08-29-net.md`](specs/2026-08-29-net.md) | `net:net0` static | **Target** |
-| [`specs/2026-08-30-ssh-and-dhcp.md`](specs/2026-08-30-ssh-and-dhcp.md) | SSH keys + dhcp | **Target** (active) |
+| [`specs/2026-08-30-ssh-and-dhcp.md`](specs/2026-08-30-ssh-and-dhcp.md) | SSH keys + dhcp | **Target** |
+| [`specs/2026-08-30-devices.md`](specs/2026-08-30-devices.md) | Device inventory + Unix floor | **Target** (active) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
@@ -50,6 +51,7 @@ ask the human.
 | [`plans/2026-08-29-pkg-base-plan.md`](plans/2026-08-29-pkg-base-plan.md) | Phase 3 base packages | **Build** (complete) |
 | [`plans/2026-08-29-net-canary-plan.md`](plans/2026-08-29-net-canary-plan.md) | Phase 4 `net:net0` | **Build** (complete) |
 | [`plans/2026-08-30-ssh-dhcp-plan.md`](plans/2026-08-30-ssh-dhcp-plan.md) | SSH + DHCP | **Build** (complete) |
+| [`plans/2026-08-30-devices-plan.md`](plans/2026-08-30-devices-plan.md) | Devices + Unix floor | **Build** (complete) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 

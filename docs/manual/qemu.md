@@ -89,6 +89,7 @@ once the disk is mounted.
 - `svc:hold` start / stop / undo / persist across reboot
 - `pkg:hello` install / remove / undo / persist across reboot
 - `pkg:busybox` / `btrfs` / `oath` present and not removable
+- `dev:vda` / `net0` / `ttyS0` inventory; tmpfs + cgroup2
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
 

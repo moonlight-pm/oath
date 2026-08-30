@@ -111,6 +111,8 @@ pub fn qemu_args(
         netdev(),
         "-device".into(),
         "virtio-net-pci,netdev=n0".into(),
+        "-device".into(),
+        "virtio-rng-pci".into(),
         "-drive".into(),
         format!("file={},if=virtio,format=qcow2,cache=writeback", overlay.display()),
         "-d".into(),

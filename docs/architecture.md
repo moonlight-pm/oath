@@ -38,9 +38,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci -driv
     /sbin/init -> ../usr/lib/oath/init
 ```
 
-PID 1: mount proc/sys/dev/pts, hostname from `host:local`, **converge**
-`net:net0` and `ssh:local` (host keys), then `svc:*` (start enabled,
-SIGTERM disabled), reap, listen `/oath/run/init.sock`. Seeded
+PID 1: mount proc/sys/dev/pts, tmpfs `/tmp` `/dev/shm` `/run`, cgroup2;
+hostname from `host:local`; **converge** `net:net0`, `dev:*`,
+`ssh:local`; then `svc:*`. Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
@@ -63,4 +63,5 @@ build CLI: `cargo make` pack/run/probe). Artifacts in `build/` (gitignored).
 [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md) ·
 [specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md) ·
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md) ·
-[specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md)
+[specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md) ·
+[specs/2026-08-30-devices.md](specs/2026-08-30-devices.md)

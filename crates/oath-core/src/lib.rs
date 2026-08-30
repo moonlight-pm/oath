@@ -1,6 +1,7 @@
 //! Catalog, kinds, apply/undo. The live tree is `/oath` on an appliance.
 
 mod catalog;
+mod dev;
 mod error;
 mod hooks;
 mod id;
@@ -14,11 +15,13 @@ mod ssh;
 mod tel;
 
 pub use catalog::{diff_values, Catalog, Drift, Object};
+pub use dev::converge as converge_dev;
 pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Host, HostPower, Meta, Net, Pkg, PkgActual, Ssh, SshActual, Svc, SvcActual, SvcRestart,
+    Dev, DevActual, Host, HostPower, Meta, Net, Pkg, PkgActual, Ssh, SshActual, Svc, SvcActual,
+    SvcRestart,
 };
 pub use layout::{gen_subvol_name, parse_gen_subvol, BTRFS_TOP, LIVE_SUBVOL};
 pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
@@ -36,6 +39,7 @@ pub const KIND_SNAP: &str = "snap";
 pub const KIND_PKG: &str = "pkg";
 pub const KIND_NET: &str = "net";
 pub const KIND_SSH: &str = "ssh";
+pub const KIND_DEV: &str = "dev";
 
 pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)

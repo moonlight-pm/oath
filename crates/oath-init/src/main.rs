@@ -26,6 +26,8 @@ const MODULES: &[&str] = &[
     "kernel/net/core/failover.ko",
     "kernel/drivers/net/net_failover.ko",
     "kernel/drivers/net/virtio_net.ko",
+    "kernel/drivers/char/hw_random/rng-core.ko",
+    "kernel/drivers/char/hw_random/virtio-rng.ko",
     "kernel/crypto/crc32c_generic.ko",
     "kernel/lib/libcrc32c.ko",
     "kernel/crypto/xor.ko",
@@ -56,6 +58,7 @@ fn real_main() -> Result<(), String> {
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
     let _ = fs::create_dir_all("/dev/pts");
     ensure_mount("devpts", "/dev/pts", "devpts");
+    unix_floor();
 
     if !Path::new("/oath/INDEX.md").exists() {
         load_modules();
@@ -77,6 +80,7 @@ fn real_main() -> Result<(), String> {
 
     apply_host();
     apply_net();
+    apply_dev();
     apply_ssh();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     converge(&mut kids);
@@ -143,7 +147,21 @@ fn mount_root() -> Result<(), String> {
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
     let _ = fs::create_dir_all("/dev/pts");
     ensure_mount("devpts", "/dev/pts", "devpts");
+    unix_floor();
     Ok(())
+}
+
+fn unix_floor() {
+    let flags = MsFlags::MS_NOSUID | MsFlags::MS_NODEV;
+    let _ = fs::create_dir_all("/tmp");
+    let _ = mount(Some("tmpfs"), "/tmp", Some("tmpfs"), flags, Some("mode=1777"));
+    let _ = fs::create_dir_all("/dev/shm");
+    let _ = mount(Some("tmpfs"), "/dev/shm", Some("tmpfs"), flags, Some("mode=1777"));
+    let _ = fs::create_dir_all("/run");
+    let _ = mount(Some("tmpfs"), "/run", Some("tmpfs"), flags, Some("mode=755"));
+    let _ = fs::create_dir_all("/sys/fs/cgroup");
+    let _ =
+        mount(Some("cgroup2"), "/sys/fs/cgroup", Some("cgroup2"), MsFlags::empty(), None::<&str>);
 }
 
 /// Mount btrfs subvolid=0 so generations can be sibling `@gen-N`, not nested on `@`.
@@ -190,6 +208,10 @@ fn apply_host() {
     }
     let _ = fs::create_dir_all("/etc");
     let _ = fs::write("/etc/hostname", format!("{}\n", host.hostname));
+    let _ = fs::write(
+        "/etc/hosts",
+        format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", host.hostname),
+    );
     let actual = Host { hostname: host.hostname, power: oath_core::HostPower::Run };
     let dir = Path::new(DEFAULT_ROOT).join("objects/host/local");
     let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
@@ -213,6 +235,30 @@ fn apply_net() {
         Err(e) => {
             log(&format!("net: {e}"));
             tel("init", "net", json!({ "ok": false, "err": e.to_string() }));
+        }
+    }
+}
+
+fn apply_dev() {
+    let cat = match Catalog::open(DEFAULT_ROOT) {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let Ok(ids) = cat.ls(Some("dev")) else { return };
+    for id in ids {
+        let Ok(obj) = cat.get(&id) else { continue };
+        let Ok(dev) = serde_json::from_value::<oath_core::Dev>(obj.desired) else { continue };
+        match oath_core::converge_dev(&id, &dev) {
+            Ok(actual) => {
+                tel(
+                    "init",
+                    "dev",
+                    json!({ "id": id.to_string(), "present": actual.present, "node": actual.node }),
+                );
+                let dir = Path::new(DEFAULT_ROOT).join("objects/dev").join(&id.name);
+                let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
+            }
+            Err(e) => log(&format!("dev {id}: {e}")),
         }
     }
 }

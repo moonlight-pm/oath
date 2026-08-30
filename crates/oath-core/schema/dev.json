@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oath:kind:dev",
+  "title": "dev",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["present"],
+  "properties": {
+    "present": {
+      "type": "boolean",
+      "description": "Whether this hardware is in the inventory. v0 QEMU devices cannot be set false."
+    }
+  }
+}
