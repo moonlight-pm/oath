@@ -142,6 +142,9 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:btrfs"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:oath"));
     assert!(ids.iter().any(|i| i.to_string() == "net:net0"));
+    assert!(ids.iter().any(|i| i.to_string() == "ssh:local"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:sshd"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:dropbear"));
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -342,6 +345,20 @@ fn net_up_down_undo() {
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().desired["up"], json!(true));
     assert_eq!(cat.get(&id).unwrap().actual["up"], json!(true));
+}
+
+#[test]
+fn ssh_authorized_undo() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "ssh:local".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("authorized".into(), json!(["ssh-ed25519 AAAATEST"]));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["authorized"], json!(["ssh-ed25519 AAAATEST"]));
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired["authorized"], json!([]));
 }
 
 fn write_json_present_false(root: &std::path::Path, name: &str) {

@@ -4,21 +4,20 @@
   "title": "net",
   "type": "object",
   "additionalProperties": false,
-  "required": ["up", "ipv4", "gateway"],
+  "required": ["up", "ipv4"],
   "properties": {
     "up": {
       "type": "boolean",
-      "description": "If true, net0 is up with ipv4 and a default route via gateway. If false, the link is down."
+      "description": "If true, net0 is up. If false, the link is down."
     },
     "ipv4": {
       "type": "string",
       "minLength": 1,
-      "description": "IPv4 CIDR on net0 (static). Not DHCP."
+      "description": "IPv4 CIDR (static) or the string dhcp."
     },
     "gateway": {
       "type": "string",
-      "minLength": 1,
-      "description": "IPv4 default gateway."
+      "description": "IPv4 default gateway. Ignored when ipv4 is dhcp."
     }
   }
 }

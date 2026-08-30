@@ -13,8 +13,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Phase 4 net canary shipped** (`net:net0` static QEMU slirp).
-   Do not add SSH, DHCP, `dev`, or pkg fetch unless asked.
+1. **Phase 4 SSH + DHCP shipped.** `ssh:local` catalog keys, dropbear,
+   hostfwd 2222. `ipv4=dhcp` supported; default image is still slirp
+   static. `OATH_BRIDGE` for a host bridge. Do not add `dev` or pkg
+   fetch unless asked.
 2. Do not add glibc runtime / installer unless CURRENT is updated.
 3. Do not install to a real disk.
 
@@ -26,9 +28,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 | | **QEMU appliance** |
 |--|---------------------|
-| Role | Phase 1–4 serial box with one static NIC |
+| Role | Serial + SSH appliance (QEMU user net) |
 | How | `cargo make build` then `probe` / `run` |
-| Notes | Hostname + `svc:hold` + pkgs + `net:net0` ping/undo/reboot. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
+| Notes | `net:net0` + SSH pubkey login/undo/reboot. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
 
 ```sh
 nix-shell
@@ -45,15 +47,17 @@ Do not re-litigate without an explicit decision.
 
 - Oath: Linux kernel, own userspace, musl base, own PID 1.
 - Catalog `/oath`, ids `kind:name`, `oath` is the only admin surface.
-- v0 kinds `host`, `svc`, `snap`, `pkg`, `net`. Sibling `@gen-N` at
-  `/oath/run/fs`.
-- Network: `net:net0` static `10.0.2.15/24` via `10.0.2.2`. NIC
-  renamed to `net0`. Serial is still how you log in.
+- v0 kinds `host`, `svc`, `snap`, `pkg`, `net`, `ssh`. Sibling `@gen-N`
+  at `/oath/run/fs`.
+- Network: `net:net0` renamed NIC. Default static slirp
+  `10.0.2.15/24`. `ipv4=dhcp` via udhcpc. `OATH_BRIDGE` optional.
+- SSH: root, dropbear, **no baked private key**. Host keys under
+  `/oath/ssh/`. Owner pubkeys in `ssh:local`. Serial still works.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
-  `busybox`/`btrfs`/`oath` not removable; hello is. No new verbs; no
+  `busybox`/`btrfs`/`oath`/`dropbear` not removable; hello is. No
   fetch in v0.
-- Services: PID 1 converges enabled/disabled `svc:*`. `svc:serial` is
-  the console; `svc:hold` is the start/stop test process.
+- Services: PID 1 converges `svc:*`. `svc:serial` is the console;
+  `svc:sshd` is dropbear; `svc:hold` is the start/stop test.
 - MIT, Copyright (c) Joshua Kifer.
 
 ---
@@ -62,7 +66,7 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-29-net.md](docs/specs/2026-08-29-net.md)
-- Plan: [docs/plans/2026-08-29-net-canary-plan.md](docs/plans/2026-08-29-net-canary-plan.md)
+- Freeze: [docs/specs/2026-08-30-ssh-and-dhcp.md](docs/specs/2026-08-30-ssh-and-dhcp.md)
+- Plan: [docs/plans/2026-08-30-ssh-dhcp-plan.md](docs/plans/2026-08-30-ssh-dhcp-plan.md)
   (complete)
-- Roadmap: Phase 4 net (active; canary done)
+- Roadmap: Phase 4 (active; net + ssh dogfood)

@@ -83,7 +83,24 @@ pub struct Pkg {
 pub struct Net {
     pub up: bool,
     pub ipv4: String,
+    #[serde(default)]
     pub gateway: String,
+    /// Runtime lease when `ipv4` is `dhcp`. Not a desired field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lease: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Ssh {
+    #[serde(default)]
+    pub authorized: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SshActual {
+    #[serde(default)]
+    pub authorized: Vec<String>,
+    pub host_key: bool,
 }
 
 fn default_true() -> bool {

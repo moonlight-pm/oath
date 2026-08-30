@@ -3,7 +3,9 @@ use std::path::Path;
 use serde_json::json;
 
 use crate::kinds::Meta;
-use crate::{write_json, ObjectId, Result, KIND_HOST, KIND_NET, KIND_PKG, KIND_SNAP, KIND_SVC};
+use crate::{
+    write_json, ObjectId, Result, KIND_HOST, KIND_NET, KIND_PKG, KIND_SNAP, KIND_SSH, KIND_SVC,
+};
 
 pub const HOST_SCHEMA: &str = include_str!("../schema/host.json");
 pub const HOST_MD: &str = include_str!("../schema/host.md");
@@ -15,6 +17,8 @@ pub const PKG_SCHEMA: &str = include_str!("../schema/pkg.json");
 pub const PKG_MD: &str = include_str!("../schema/pkg.md");
 pub const NET_SCHEMA: &str = include_str!("../schema/net.json");
 pub const NET_MD: &str = include_str!("../schema/net.md");
+pub const SSH_SCHEMA: &str = include_str!("../schema/ssh.json");
+pub const SSH_MD: &str = include_str!("../schema/ssh.md");
 
 pub fn seed(root: &Path) -> Result<()> {
     std::fs::create_dir_all(root.join("schema"))?;
@@ -32,6 +36,8 @@ pub fn seed(root: &Path) -> Result<()> {
     write(root, "schema/pkg.md", PKG_MD);
     write(root, "schema/net.json", NET_SCHEMA);
     write(root, "schema/net.md", NET_MD);
+    write(root, "schema/ssh.json", SSH_SCHEMA);
+    write(root, "schema/ssh.md", SSH_MD);
 
     let host = ObjectId::new(KIND_HOST, "local");
     let host_val = json!({ "hostname": "oath", "power": "run" });
@@ -71,6 +77,27 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "busybox", true, false)?;
     seed_pkg(root, "btrfs", true, false)?;
     seed_pkg(root, "oath", true, false)?;
+    seed_pkg(root, "dropbear", true, false)?;
+
+    let sshd = ObjectId::new(KIND_SVC, "sshd");
+    let sshd_desired = json!({
+        "exec": ["/bin/dropbear", "-F", "-E", "-s", "-D", "/root/.ssh", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
+        "wants": [],
+        "restart": "always",
+        "enabled": true
+    });
+    let sshd_actual = json!({
+        "state": "stopped",
+        "pid": null,
+        "restarts": 0
+    });
+    write_object(root, &sshd, "mutate", &sshd_desired, &sshd_actual)?;
+    write_json(&root.join("objects/svc/sshd/applied.json"), &sshd_desired)?;
+
+    let ssh = ObjectId::new(KIND_SSH, "local");
+    let ssh_desired = json!({ "authorized": [] });
+    let ssh_actual = json!({ "authorized": [], "host_key": false });
+    write_object(root, &ssh, "mutate", &ssh_desired, &ssh_actual)?;
 
     let net = ObjectId::new(KIND_NET, "net0");
     let net_val = serde_json::to_value(crate::net::appliance_desired())?;

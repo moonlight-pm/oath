@@ -11,6 +11,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:busybox` | `present: true` | no — applets are this one object |
 | `pkg:btrfs` | `present: true` | no |
 | `pkg:oath` | `present: true` | no |
+| `pkg:dropbear` | `present: true` | no |
 | `pkg:hello` | `present: false` | yes — canary |
 
 `/bin/hello` prints `hello`. The symlink target is

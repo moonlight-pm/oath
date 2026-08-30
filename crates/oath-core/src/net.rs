@@ -12,7 +12,7 @@ pub const APPLIANCE_IPV4: &str = "10.0.2.15/24";
 pub const APPLIANCE_GATEWAY: &str = "10.0.2.2";
 
 pub fn appliance_desired() -> Net {
-    Net { up: true, ipv4: APPLIANCE_IPV4.into(), gateway: APPLIANCE_GATEWAY.into() }
+    Net { up: true, ipv4: APPLIANCE_IPV4.into(), gateway: APPLIANCE_GATEWAY.into(), lease: None }
 }
 
 /// Configure the sole non-loopback NIC as `net0`.
@@ -28,10 +28,36 @@ pub fn converge(desired: &Net) -> Result<Net> {
     };
     if desired.up {
         ip(&["link", "set", &dev, "up"])?;
+        if desired.ipv4 == "dhcp" {
+            let st = Command::new("/bin/udhcpc")
+                .args([
+                    "-i",
+                    &dev,
+                    "-n",
+                    "-q",
+                    "-f",
+                    "-s",
+                    "/usr/lib/oath/udhcpc.script",
+                    "-T",
+                    "2",
+                    "-t",
+                    "5",
+                ])
+                .status()
+                .map_err(|e| Error::Msg(format!("udhcpc: {e}")))?;
+            if !st.success() {
+                return Err(Error::hint("udhcpc failed", "oath schema net"));
+            }
+            let mut out = desired.clone();
+            out.lease = read_lease(&dev);
+            return Ok(out);
+        }
         ip(&["addr", "flush", "dev", &dev])?;
         ip(&["addr", "add", &desired.ipv4, "dev", &dev])?;
-        let _ = ip(&["route", "del", "default"]);
-        ip(&["route", "add", "default", "via", &desired.gateway])?;
+        if !desired.gateway.is_empty() {
+            let _ = ip(&["route", "del", "default"]);
+            ip(&["route", "add", "default", "via", &desired.gateway])?;
+        }
     } else {
         let _ = ip(&["route", "del", "default"]);
         let _ = ip(&["addr", "flush", "dev", &dev]);
@@ -71,6 +97,12 @@ fn nics() -> Result<Vec<String>> {
     }
     v.sort();
     Ok(v)
+}
+
+fn read_lease(dev: &str) -> Option<String> {
+    let o = Command::new("/bin/ip").args(["-o", "-4", "addr", "show", "dev", dev]).output().ok()?;
+    let s = String::from_utf8_lossy(&o.stdout);
+    s.split_whitespace().find(|w| w.contains('/') && !w.contains(':')).map(|w| w.to_string())
 }
 
 fn ip(args: &[&str]) -> Result<()> {

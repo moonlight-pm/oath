@@ -1,5 +1,5 @@
 use crate::id::ObjectId;
-use crate::kinds::{Host, Net, Pkg, PkgActual};
+use crate::kinds::{Host, Net, Pkg, PkgActual, Ssh, SshActual};
 use crate::Result;
 
 #[derive(Clone, Debug)]
@@ -62,6 +62,9 @@ pub trait ApplyHooks {
     }
     fn converge_net(&self, _id: &ObjectId, desired: &Net) -> Result<Net> {
         Ok(desired.clone())
+    }
+    fn converge_ssh(&self, _id: &ObjectId, desired: &Ssh) -> Result<SshActual> {
+        Ok(SshActual { authorized: desired.authorized.clone(), host_key: false })
     }
 }
 

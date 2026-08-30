@@ -10,17 +10,21 @@ mod layout;
 mod net;
 mod pkg;
 mod seed;
+mod ssh;
 mod tel;
 
 pub use catalog::{diff_values, Catalog, Drift, Object};
 pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
-pub use kinds::{Host, HostPower, Meta, Net, Pkg, PkgActual, Svc, SvcActual, SvcRestart};
+pub use kinds::{
+    Host, HostPower, Meta, Net, Pkg, PkgActual, Ssh, SshActual, Svc, SvcActual, SvcRestart,
+};
 pub use layout::{gen_subvol_name, parse_gen_subvol, BTRFS_TOP, LIVE_SUBVOL};
 pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
 pub use pkg::{converge as converge_pkg, converge_with_link_root};
 pub use seed::seed;
+pub use ssh::converge as converge_ssh;
 pub use tel::tel;
 
 pub const DEFAULT_ROOT: &str = "/oath";
@@ -31,6 +35,7 @@ pub const KIND_SVC: &str = "svc";
 pub const KIND_SNAP: &str = "snap";
 pub const KIND_PKG: &str = "pkg";
 pub const KIND_NET: &str = "net";
+pub const KIND_SSH: &str = "ssh";
 
 pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)

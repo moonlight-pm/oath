@@ -32,7 +32,8 @@ If a kind is not under `/oath/schema`, it does not exist.
 | `svc` | `svc:serial`, `svc:hold` | PID 1’s only config |
 | `snap` | `snap:current`, `snap:N` | Generations |
 | `pkg` | `busybox`, `btrfs`, `oath`, `hello` | Store + `/bin` symlink farm |
-| `net` | `net:net0` | Static IPv4 on the QEMU NIC |
+| `net` | `net:net0` | Static IPv4 or `dhcp` |
+| `ssh` | `ssh:local` | Root authorized keys |
 
 No device kind yet.
 

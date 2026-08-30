@@ -115,12 +115,18 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     }
     copy_file(&bin.join("oath-init"), &stage.join("usr/lib/oath/init"))?;
     copy_file(&bin.join("serial-login"), &stage.join("usr/lib/oath/serial-login"))?;
+    fs::write(stage.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     chmod_exec(&stage.join("usr/lib/oath/init"))?;
     chmod_exec(&stage.join("usr/lib/oath/serial-login"))?;
+    chmod_exec(&stage.join("usr/lib/oath/udhcpc.script"))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../usr/lib/oath/init", stage.join("sbin/init"))?;
     fs::write(stage.join("etc/passwd"), "root:x:0:0:root:/root:/bin/sh\n")?;
     fs::write(stage.join("etc/group"), "root:x:0:\n")?;
+    fs::write(stage.join("etc/shadow"), "root:*:1:0:99999:7:::\n")?;
+    fs::write(stage.join("etc/nsswitch.conf"), "passwd: files\ngroup: files\nshadow: files\n")?;
+    fs::create_dir_all(stage.join("var/run"))?;
+    fs::create_dir_all(stage.join("root/.ssh"))?;
     run(Command::new(bin.join("oath")).args([
         "--root",
         stage.join("oath").to_str().unwrap(),
@@ -135,6 +141,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     };
     write_bin_store(&oath_root, "btrfs", btrfs)?;
     write_bin_store(&oath_root, "oath", &bin.join("oath"))?;
+    let Some(dropbear) = &tools.dropbear else {
+        bail!("OATH_DROPBEAR / tools dropbear required (pkg:dropbear)");
+    };
+    let Some(dropbearkey) = &tools.dropbearkey else {
+        bail!("OATH_DROPBEARKEY / tools dropbearkey required");
+    };
+    write_dropbear_store(&oath_root, dropbear, dropbearkey)?;
     let hello = oath_root.join("store/pkg/hello/bin/hello");
     fs::create_dir_all(hello.parent().unwrap())?;
     fs::write(&hello, "#!/bin/sh\nprintf 'hello\\n'\n")?;
@@ -142,6 +155,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "busybox", false)?;
     link_pkg(&oath_root, &guest_bin, "btrfs", false)?;
     link_pkg(&oath_root, &guest_bin, "oath", false)?;
+    link_pkg(&oath_root, &guest_bin, "dropbear", false)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -166,6 +180,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         sudo(&["mount", "-o", "loop,subvol=@", raw.to_str().unwrap(), rootfs.to_str().unwrap()])?;
         let stage_dot = format!("{}/.", stage.display());
         sudo(&["cp", "-a", &stage_dot, &format!("{}/", rootfs.display())])?;
+        sudo(&["chown", "-R", "0:0", rootfs.to_str().unwrap()])?;
         sudo(&["umount", rootfs.to_str().unwrap()])?;
         Ok(())
     })();
@@ -200,13 +215,23 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
     chmod_exec(&dir.join("busybox"))?;
     let list = crate::util::run_out(Command::new(busybox).arg("--list"))?;
     for a in list.split_whitespace() {
-        if matches!(a, "busybox" | "hello" | "btrfs" | "oath") {
+        if matches!(a, "busybox" | "hello" | "btrfs" | "oath" | "dropbear" | "dropbearkey") {
             continue;
         }
         let dest = dir.join(a);
         let _ = fs::remove_file(&dest);
         symlink("busybox", dest)?;
     }
+    Ok(())
+}
+
+fn write_dropbear_store(oath_root: &Path, dropbear: &Path, dropbearkey: &Path) -> Result<()> {
+    let dir = oath_root.join("store/pkg/dropbear/bin");
+    fs::create_dir_all(&dir)?;
+    copy_file(dropbear, &dir.join("dropbear"))?;
+    copy_file(dropbearkey, &dir.join("dropbearkey"))?;
+    chmod_exec(&dir.join("dropbear"))?;
+    chmod_exec(&dir.join("dropbearkey"))?;
     Ok(())
 }
 

@@ -10,6 +10,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 |----|------|---------|-------|
 | `svc:serial` | `/usr/lib/oath/serial-login` | enabled, `restart=always` | Root shell on the QEMU serial. Do not disable it unless you have another console. |
 | `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless sleeper for start/stop. |
+| `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. |
 
 PID 1 starts enabled services at boot, **stops disabled ones** on
 converge, reaps, and restarts per policy (`never` / `always` /

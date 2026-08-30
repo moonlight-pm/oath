@@ -11,6 +11,8 @@ pub struct Tools {
     pub modules: PathBuf,
     pub busybox: PathBuf,
     pub btrfs: Option<PathBuf>,
+    pub dropbear: Option<PathBuf>,
+    pub dropbearkey: Option<PathBuf>,
     pub qemu: PathBuf,
     pub qemu_img: PathBuf,
 }
@@ -20,6 +22,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut modules = std::env::var_os("OATH_MODULES").map(PathBuf::from);
     let mut busybox = std::env::var_os("OATH_BUSYBOX").map(PathBuf::from);
     let mut btrfs = std::env::var_os("OATH_BTRFS").map(PathBuf::from);
+    let mut dropbear = std::env::var_os("OATH_DROPBEAR").map(PathBuf::from);
+    let mut dropbearkey = std::env::var_os("OATH_DROPBEARKEY").map(PathBuf::from);
 
     if kernel.is_none() || modules.is_none() || busybox.is_none() {
         eprintln!("loading tools via nix-build image/tools.nix ...");
@@ -33,6 +37,14 @@ pub fn load(root: &Path) -> Result<Tools> {
         busybox = busybox.or_else(|| Some(tools.join("busybox")));
         btrfs = btrfs.or_else(|| {
             let p = tools.join("btrfs");
+            p.is_file().then_some(p)
+        });
+        dropbear = dropbear.or_else(|| {
+            let p = tools.join("dropbear");
+            p.is_file().then_some(p)
+        });
+        dropbearkey = dropbearkey.or_else(|| {
+            let p = tools.join("dropbearkey");
             p.is_file().then_some(p)
         });
         let musl = tools.join("musl-cc");
@@ -61,6 +73,8 @@ pub fn load(root: &Path) -> Result<Tools> {
         bail!("busybox not a file: {}", busybox.display());
     }
     let btrfs = btrfs.filter(|p| p.is_file());
+    let dropbear = dropbear.filter(|p| p.is_file());
+    let dropbearkey = dropbearkey.filter(|p| p.is_file());
     let _ = fs::metadata(&qemu)?;
-    Ok(Tools { kernel, modules, busybox, btrfs, qemu, qemu_img })
+    Ok(Tools { kernel, modules, busybox, btrfs, dropbear, dropbearkey, qemu, qemu_img })
 }

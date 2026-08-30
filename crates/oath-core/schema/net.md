@@ -13,8 +13,8 @@ box.
 ## Fields
 
 - `up` — link up with address + default route, or down.
-- `ipv4` — CIDR (appliance default `10.0.2.15/24`).
-- `gateway` — IPv4 (appliance default `10.0.2.2`).
+- `ipv4` — CIDR (appliance default `10.0.2.15/24`) or `dhcp`.
+- `gateway` — IPv4 (appliance default `10.0.2.2`). Ignored for dhcp.
 
 Safety: `mutate`. Apply snapshots, then converges with `/bin/ip`.
 

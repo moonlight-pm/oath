@@ -9,6 +9,8 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${k.modules}/lib/modules $out/modules
   ln -s ${pkgs.pkgsStatic.busybox}/bin/busybox $out/busybox
   ln -s ${pkgs.pkgsStatic.btrfs-progs}/bin/btrfs $out/btrfs
+  ln -s ${pkgs.pkgsStatic.dropbear}/bin/dropbear $out/dropbear
+  ln -s ${pkgs.pkgsStatic.dropbear}/bin/dropbearkey $out/dropbearkey
   ln -s ${muslCC}/bin/${muslCC.targetPrefix}cc $out/musl-cc
   for p in ${pkgs.qemu} ${pkgs.btrfs-progs} ${pkgs.cpio} ${pkgs.xz} ${pkgs.gzip}; do
     if [ -d $p/bin ]; then

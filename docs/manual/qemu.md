@@ -90,9 +90,12 @@ once the disk is mounted.
 - `pkg:hello` install / remove / undo / persist across reboot
 - `pkg:busybox` / `btrfs` / `oath` present and not removable
 - `net:net0` up / ping gateway / down / undo / reboot persist
+- SSH: inject pubkey, login, empty keys deny, undo, reboot persist
 
 ## Limits
 
 - QEMU user net + virtio-net; `net:net0` is `10.0.2.15/24`
-- No SSH, no installer
+- SSH hostfwd `127.0.0.1:2222` → guest 22 (`OATH_SSH_PORT`). Optional
+  `OATH_BRIDGE=br0` for a host bridge (no hostfwd).
+- No installer
 - No boot-generation picker (undo is the supported rewind)

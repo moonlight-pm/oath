@@ -7,8 +7,8 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    converge_net, converge_pkg, gen_subvol_name, tel, ApplyHooks, Error, Host, HostPower, Net,
-    ObjectId, Pkg, PkgActual, Result, BTRFS_TOP, LIVE_SUBVOL,
+    converge_net, converge_pkg, converge_ssh, gen_subvol_name, tel, ApplyHooks, Error, Host,
+    HostPower, Net, ObjectId, Pkg, PkgActual, Result, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -38,7 +38,7 @@ impl Live {
 
     /// Restore catalog documents without touching `/oath/run` (mounts, socket).
     fn restore_catalog(src_oath: &Path, dst_oath: &Path) -> Result<()> {
-        for name in ["objects", "schema", "log", "INDEX.md", "store"] {
+        for name in ["objects", "schema", "log", "INDEX.md", "store", "ssh"] {
             let from = src_oath.join(name);
             let to = dst_oath.join(name);
             if from.is_dir() {
@@ -196,6 +196,23 @@ impl ApplyHooks for Live {
         // attached (the host serial looks "stuck"). Power-off makes QEMU exit.
         reboot(RebootMode::RB_POWER_OFF).map_err(|e| Error::Msg(format!("halt: {e}")))?;
         Ok(())
+    }
+
+    fn converge_ssh(&self, id: &ObjectId, desired: &Ssh) -> Result<SshActual> {
+        if self.catalog_root.as_path() != Path::new("/oath") {
+            return Ok(SshActual { authorized: desired.authorized.clone(), host_key: false });
+        }
+        let actual = converge_ssh(desired)?;
+        tel(
+            "oath",
+            "ssh",
+            json!({
+                "id": id.to_string(),
+                "keys": actual.authorized.len(),
+                "host_key": actual.host_key,
+            }),
+        );
+        Ok(actual)
     }
 
     fn converge_net(&self, id: &ObjectId, desired: &Net) -> Result<Net> {

@@ -157,6 +157,53 @@ fn cmd(
     Ok(chunk)
 }
 
+fn host_ssh(key: &Path, want_ok: bool) -> (bool, String) {
+    let port = std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222u16);
+    let tries = if want_ok { 10 } else { 2 };
+    let mut last = String::new();
+    for _ in 0..tries {
+        let o = Command::new("ssh")
+            .args([
+                "-p",
+                &port.to_string(),
+                "-i",
+                &key.display().to_string(),
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+                "-o",
+                "GlobalKnownHostsFile=/dev/null",
+                "-o",
+                "ConnectTimeout=4",
+                "-o",
+                "BatchMode=yes",
+                "root@127.0.0.1",
+                "echo SSH_OK",
+            ])
+            .output();
+        match o {
+            Ok(o) => {
+                let stdout = String::from_utf8_lossy(&o.stdout);
+                let stderr = String::from_utf8_lossy(&o.stderr);
+                last = format!(
+                    "status={} stdout={:?} stderr={:?}",
+                    o.status.code().unwrap_or(-1),
+                    stdout.trim(),
+                    stderr.trim()
+                );
+                let ok = o.status.success() && stdout.contains("SSH_OK");
+                if ok == want_ok {
+                    return (true, last);
+                }
+            }
+            Err(e) => last = e.to_string(),
+        }
+        std::thread::sleep(Duration::from_millis(400));
+    }
+    (false, last)
+}
+
 fn extract_events(serial: &str) -> Vec<Value> {
     let mut out = Vec::new();
     for line in serial.lines() {
@@ -177,6 +224,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     let overlay = qemu::overlay_disk(&tools, &run, &img.backing)?;
     qemu::write_meta(&run, &tools, &img, &overlay, "probe")?;
     eprintln!("run: {}", run.display());
+
+    let key_path = run.join("id_ed25519");
+    let _ = Command::new("ssh-keygen")
+        .args(["-q", "-t", "ed25519", "-f", key_path.to_str().unwrap(), "-N", ""])
+        .status();
+    let pubkey = fs::read_to_string(run.join("id_ed25519.pub")).unwrap_or_default();
+    // Drop comment so the serial line stays short; keep type + blob.
+    let pubkey = pubkey.split_whitespace().take(2).collect::<Vec<_>>().join(" ");
 
     let mut steps = Vec::new();
 
@@ -207,6 +262,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     };
 
     let mut vm = boot("boot1", &mut steps)?;
+    cmd(&mut vm, &mut steps, "stty cols 512", None, "stty.cols", Duration::from_secs(5))?;
     cmd(&mut vm, &mut steps, "ls /oath/run/fs", Some("@"), "gens.top", Duration::from_secs(8))?;
     cmd(&mut vm, &mut steps, "oath ls", Some("host:local"), "ls.host", Duration::from_secs(8))?;
     cmd(
@@ -290,6 +346,75 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "net.undo_ping",
         Duration::from_secs(12),
     )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "grep :0016 /proc/net/tcp && echo SSHD_LISTEN",
+        Some("SSHD_LISTEN"),
+        "ssh.listen",
+        Duration::from_secs(8),
+    )?;
+    let set_json = serde_json::json!({ "authorized": [pubkey] }).to_string();
+    cmd(
+        &mut vm,
+        &mut steps,
+        &format!("oath set ssh:local --from-json '{set_json}'"),
+        None,
+        "ssh.set_key",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath apply ssh:local",
+        Some("applied generation"),
+        "ssh.apply_key",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "cat /root/.ssh/authorized_keys",
+        Some("ssh-ed25519"),
+        "ssh.keys_file",
+        Duration::from_secs(8),
+    )?;
+    {
+        let (ok, detail) = host_ssh(&key_path, true);
+        record(&mut steps, "ssh.login", ok, &detail);
+    }
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath set ssh:local --from-json '{\"authorized\":[]}'",
+        None,
+        "ssh.set_empty",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath apply ssh:local",
+        Some("applied generation"),
+        "ssh.apply_empty",
+        Duration::from_secs(12),
+    )?;
+    {
+        let (ok, detail) = host_ssh(&key_path, false);
+        record(&mut steps, "ssh.denied", ok, &detail);
+    }
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath undo",
+        Some("undid to generation"),
+        "ssh.undo",
+        Duration::from_secs(12),
+    )?;
+    {
+        let (ok, detail) = host_ssh(&key_path, true);
+        record(&mut steps, "ssh.undo_login", ok, &detail);
+    }
     cmd(
         &mut vm,
         &mut steps,
@@ -581,6 +706,10 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "reboot.net_ping",
         Duration::from_secs(12),
     )?;
+    {
+        let (ok, detail) = host_ssh(&key_path, true);
+        record(&mut steps, "reboot.ssh_login", ok, &detail);
+    }
     cmd(
         &mut vm2,
         &mut steps,

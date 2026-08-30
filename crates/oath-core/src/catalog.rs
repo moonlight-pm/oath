@@ -6,10 +6,10 @@ use serde_json::{json, Map, Value};
 use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
-use crate::kinds::{Host, HostPower, Meta, Net, Pkg};
+use crate::kinds::{Host, HostPower, Meta, Net, Pkg, Ssh};
 use crate::{
     now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_HOST, KIND_NET, KIND_PKG,
-    KIND_SNAP, KIND_SVC,
+    KIND_SNAP, KIND_SSH, KIND_SVC,
 };
 
 #[derive(Clone, Debug)]
@@ -220,6 +220,16 @@ impl Catalog {
                 json!({
                     "present": obj.actual.get("present").cloned().unwrap_or(json!(false))
                 })
+            } else if d.id.kind == KIND_NET {
+                json!({
+                    "up": obj.actual.get("up").cloned().unwrap_or(json!(false)),
+                    "ipv4": obj.actual.get("ipv4").cloned().unwrap_or(json!("")),
+                    "gateway": obj.actual.get("gateway").cloned().unwrap_or(json!("")),
+                })
+            } else if d.id.kind == KIND_SSH {
+                json!({
+                    "authorized": obj.actual.get("authorized").cloned().unwrap_or(json!([]))
+                })
             } else {
                 obj.actual.clone()
             };
@@ -285,6 +295,12 @@ impl Catalog {
                     write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
                     self.touch_status(&d.id, "in-sync")?;
                 }
+                KIND_SSH => {
+                    let ssh: Ssh = serde_json::from_value(self.get(&d.id)?.desired.clone())?;
+                    let actual = hooks.converge_ssh(&d.id, &ssh)?;
+                    write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
+                    self.touch_status(&d.id, "in-sync")?;
+                }
                 _ => {
                     return Err(Error::hint(
                         format!("no handler for {}", d.id.kind),
@@ -330,6 +346,13 @@ impl Catalog {
         if let Ok(obj) = self.get(&ObjectId::new(KIND_NET, "net0")) {
             if let Ok(net) = serde_json::from_value::<Net>(obj.desired.clone()) {
                 let actual = hooks.converge_net(&obj.id, &net)?;
+                write_json(&self.obj_dir(&obj.id).join("actual.json"), &actual)?;
+            }
+        }
+
+        if let Ok(obj) = self.get(&ObjectId::new(KIND_SSH, "local")) {
+            if let Ok(ssh) = serde_json::from_value::<Ssh>(obj.desired.clone()) {
+                let actual = hooks.converge_ssh(&obj.id, &ssh)?;
                 write_json(&self.obj_dir(&obj.id).join("actual.json"), &actual)?;
             }
         }

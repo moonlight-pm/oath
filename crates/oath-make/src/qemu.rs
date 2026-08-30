@@ -108,7 +108,7 @@ pub fn qemu_args(
         "-append".into(),
         "console=ttyS0 quiet loglevel=4 panic=10".into(),
         "-netdev".into(),
-        "user,id=n0".into(),
+        netdev(),
         "-device".into(),
         "virtio-net-pci,netdev=n0".into(),
         "-drive".into(),
@@ -122,6 +122,17 @@ pub fn qemu_args(
     a
 }
 
+fn ssh_port() -> u16 {
+    std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222)
+}
+
+fn netdev() -> String {
+    match std::env::var("OATH_BRIDGE") {
+        Ok(br) if !br.is_empty() => format!("bridge,id=n0,br={br}"),
+        _ => format!("user,id=n0,hostfwd=tcp:127.0.0.1:{}-:22", ssh_port()),
+    }
+}
+
 pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     let tools = crate::tools::load(root)?;
     let img = load_image(out)?;
@@ -132,6 +143,14 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
+    if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
+        eprintln!("ssh: ssh -p {} root@127.0.0.1  (set ssh:local authorized first)", ssh_port());
+    } else {
+        eprintln!(
+            "ssh: guest is on bridge {} (DHCP: oath set net:net0 ipv4=dhcp)",
+            std::env::var("OATH_BRIDGE").unwrap()
+        );
+    }
     let mut cmd = Command::new(&args[0]);
     cmd.args(&args[1..]).stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
     let status = cmd.status().context("qemu")?;

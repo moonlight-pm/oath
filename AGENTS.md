@@ -75,8 +75,8 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Active freeze:
-[`docs/specs/2026-08-29-net.md`](docs/specs/2026-08-29-net.md).
-Active plan: **none** (Phase 4 net canary complete).
+[`docs/specs/2026-08-30-ssh-and-dhcp.md`](docs/specs/2026-08-30-ssh-and-dhcp.md).
+Active plan: **none** (Phase 4 SSH/DHCP complete).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).
@@ -121,8 +121,8 @@ crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe
 image/                tools.nix only (borrowed prebuilts)
 ```
 
-Do not invent extra kinds until CURRENT says so. `pkg` and `net`
-exist; do not add other kinds unless CURRENT says so.
+Do not invent extra kinds until CURRENT says so. `pkg`, `net`, and
+`ssh` exist; do not add other kinds unless CURRENT says so.
 
 ## Workflow
 

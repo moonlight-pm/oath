@@ -1,0 +1,24 @@
+#!/bin/sh
+# Called by busybox udhcpc. $1 = deconfig|bound|renew|leasefail|nak
+[ -z "$1" ] && exit 1
+case "$1" in
+deconfig)
+	ip addr flush dev "$interface"
+	;;
+bound|renew)
+	ip addr flush dev "$interface"
+	ip addr add "$ip/$mask" dev "$interface"
+	ip link set "$interface" up
+	if [ -n "$router" ]; then
+		ip route del default 2>/dev/null
+		ip route add default via "$router" dev "$interface"
+	fi
+	if [ -n "$dns" ]; then
+		: >/etc/resolv.conf
+		for n in $dns; do
+			echo "nameserver $n" >>/etc/resolv.conf
+		done
+	fi
+	;;
+esac
+exit 0

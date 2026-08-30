@@ -54,6 +54,8 @@ fn real_main() -> Result<(), String> {
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
+    let _ = fs::create_dir_all("/dev/pts");
+    ensure_mount("devpts", "/dev/pts", "devpts");
 
     if !Path::new("/oath/INDEX.md").exists() {
         load_modules();
@@ -75,6 +77,7 @@ fn real_main() -> Result<(), String> {
 
     apply_host();
     apply_net();
+    apply_ssh();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     converge(&mut kids);
 
@@ -138,6 +141,8 @@ fn mount_root() -> Result<(), String> {
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
+    let _ = fs::create_dir_all("/dev/pts");
+    ensure_mount("devpts", "/dev/pts", "devpts");
     Ok(())
 }
 
@@ -208,6 +213,27 @@ fn apply_net() {
         Err(e) => {
             log(&format!("net: {e}"));
             tel("init", "net", json!({ "ok": false, "err": e.to_string() }));
+        }
+    }
+}
+
+fn apply_ssh() {
+    let cat = match Catalog::open(DEFAULT_ROOT) {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let id = ObjectId::new("ssh", "local");
+    let Ok(obj) = cat.get(&id) else { return };
+    let Ok(ssh) = serde_json::from_value::<oath_core::Ssh>(obj.desired) else { return };
+    match oath_core::converge_ssh(&ssh) {
+        Ok(actual) => {
+            tel("init", "ssh", json!({ "ok": true, "host_key": actual.host_key }));
+            let dir = Path::new(DEFAULT_ROOT).join("objects/ssh/local");
+            let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
+        }
+        Err(e) => {
+            log(&format!("ssh: {e}"));
+            tel("init", "ssh", json!({ "ok": false, "err": e.to_string() }));
         }
     }
 }

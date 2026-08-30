@@ -12,7 +12,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. Phase 4 net canary (T15) is closed.
+None open. Phase 4 SSH/DHCP (T16) is closed.
 
 ---
 
@@ -144,6 +144,13 @@ Kind `net`, object `net:net0`. QEMU user + virtio-net. Static
 `10.0.2.15/24` via `10.0.2.2`. NIC renamed to `net0`. Serial stays
 reachability. No SSH, DHCP, `dev`, or pkg fetch in this slice.
 
+### T16 — SSH keys and DHCP — locked 2026-08-30
+
+No baked login private key. Host keys generated under `/oath/ssh/`.
+Owner pubkeys in `ssh:local`. Dropbear `svc:sshd`, root only.
+`net:net0` `ipv4` may be `dhcp`. QEMU hostfwd 2222; optional
+`OATH_BRIDGE`. Network install injects **public** keys.
+
 ---
 
 ## Decision log
@@ -155,3 +162,4 @@ reachability. No SSH, DHCP, `dev`, or pkg fetch in this slice.
 | 2026-08-28 | T11–T13 | Package store + canary | this file; [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md) |
 | 2026-08-29 | T14 | Base pkgs not removable | this file; [specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md) |
 | 2026-08-29 | T15 | Net canary static net0 | this file; [specs/2026-08-29-net.md](specs/2026-08-29-net.md) |
+| 2026-08-30 | T16 | SSH catalog keys + DHCP | this file; [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md) |
