@@ -103,7 +103,7 @@ once the disk is mounted.
 - `dev:vda` / `net0` / `ttyS0` inventory; tmpfs + cgroup2
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
-- `svc:river` starts; Wayland socket under `/run/user/0`
+- `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/0`
 
 ## Limits
 

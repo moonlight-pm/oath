@@ -165,6 +165,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     copy_tree(glibc, &oath_root.join("store/pkg/glibc"))?;
     copy_tree(river, &oath_root.join("store/pkg/river"))?;
     chmod_exec(&oath_root.join("store/pkg/river/bin/river"))?;
+    if oath_root.join("store/pkg/river/bin/seatd").is_file() {
+        chmod_exec(&oath_root.join("store/pkg/river/bin/seatd"))?;
+    }
     if oath_root.join("store/pkg/river/libexec/river").is_file() {
         chmod_exec(&oath_root.join("store/pkg/river/libexec/river"))?;
     }

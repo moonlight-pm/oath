@@ -13,9 +13,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **T21 River first is in** (`pkg:glibc`, `pkg:river`, `svc:river`,
-   Wayland socket). Next: `oath-sola` fork when we map Sola apps to
-   `svc:*`. Do not nest Sola’s process manager.
+1. **T21 River holds DRM** (`svc:seatd` + pixman `svc:river`). gtk
+   window should stay up (black; no clients). No pointer/keyboard yet
+   (no udev). Next: `oath-sola` fork, or libinput.
 2. **T20 hosting locked**, not implemented.
 3. Do not add a throwaway compositor or a placeholder `pkg:sola`.
    Do not install to a real disk. glibc runtime is allowed **only**

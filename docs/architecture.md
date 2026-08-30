@@ -37,14 +37,15 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /dev/dri/card0     virtio-gpu (dev:card0)
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
-    river              svc:river (glibc payload; socket /run/user/0)
+    seatd              svc:seatd (DRM seat)
+    river              svc:river (glibc, pixman, socket /run/user/0)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
 PID 1: mount proc/sys/dev/pts, tmpfs `/tmp` `/dev/shm` `/run`, cgroup2;
 hostname from `host:local`; **converge** `net:net0`, `dev:*`,
 `ssh:local`; then `svc:*`. Socket `/oath/run/init.sock`. Seeded
-services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:river`.
+services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)

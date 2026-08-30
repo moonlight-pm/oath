@@ -20,6 +20,7 @@ fn main() {
         std::mem::forget(f);
     }
     let _ = writeln!(std::io::stderr(), "Oath. Root on serial. Try: oath");
+    let _ = std::env::set_current_dir("/root");
     let err = Command::new("/bin/busybox").args(["sh", "-l"]).exec();
     eprintln!("exec sh: {err}");
     std::process::exit(1);

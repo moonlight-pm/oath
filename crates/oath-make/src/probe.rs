@@ -156,10 +156,12 @@ fn cmd(
     let mut ok = true;
     let mut detail = String::new();
     if let Some(exp) = expect {
-        if !chunk.contains(exp) {
+        // Skip the echoed command so `echo FOO` does not count as FOO.
+        let body = chunk.get(line.len()..).unwrap_or(chunk.as_str());
+        if !body.contains(exp) {
             ok = false;
             let tail: String =
-                chunk.chars().rev().take(800).collect::<String>().chars().rev().collect();
+                body.chars().rev().take(800).collect::<String>().chars().rev().collect();
             detail = format!("expected {exp:?} in:\n{tail}");
         }
     }
@@ -284,7 +286,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
             ready,
             if ready { "" } else { "did not see init ready" },
         );
-        let prompt = vm.wait_for(r"~ #", Duration::from_secs(15))?;
+        let prompt = vm.wait_for(r"(~|/) #", Duration::from_secs(15))?;
         record(
             steps,
             &format!("{label}.prompt"),
@@ -421,18 +423,18 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "oath get svc:river --actual",
-        Some("\"state\": \"running\""),
+        "sleep 2; p1=$(pidof river); sleep 2; p2=$(pidof river); test -n \"$p1\" -a \"$p1\" = \"$p2\" && echo RIVER_STABLE",
+        Some("RIVER_STABLE"),
         "river.running",
-        Duration::from_secs(8),
+        Duration::from_secs(12),
     )?;
     cmd(
         &mut vm,
         &mut steps,
-        "for i in 1 2 3 4 5 6 7 8 9 10; do test -S /run/user/0/wayland-0 -o -S /run/user/0/wayland-1 && echo WL_OK && break; sleep 1; done",
-        Some("WL_OK"),
+        "test -S /run/user/0/wayland-0 -o -S /run/user/0/wayland-1 && echo WAYLAND_UP",
+        Some("WAYLAND_UP"),
         "river.wayland",
-        Duration::from_secs(20),
+        Duration::from_secs(8),
     )?;
     cmd(
         &mut vm,

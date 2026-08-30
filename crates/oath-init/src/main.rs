@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Read, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixListener;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
@@ -165,6 +166,8 @@ fn unix_floor() {
     let _ = mount(Some("tmpfs"), "/dev/shm", Some("tmpfs"), flags, Some("mode=1777"));
     let _ = fs::create_dir_all("/run");
     let _ = mount(Some("tmpfs"), "/run", Some("tmpfs"), flags, Some("mode=755"));
+    let _ = fs::create_dir_all("/run/user/0");
+    let _ = fs::set_permissions("/run/user/0", std::fs::Permissions::from_mode(0o700));
     let _ = fs::create_dir_all("/sys/fs/cgroup");
     let _ =
         mount(Some("cgroup2"), "/sys/fs/cgroup", Some("cgroup2"), MsFlags::empty(), None::<&str>);
@@ -432,7 +435,12 @@ fn spawn(spec: &Svc) -> Result<Pid, String> {
     if spec.exec.len() > 1 {
         cmd.args(&spec.exec[1..]);
     }
-    cmd.stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
+    cmd.env("PATH", "/bin")
+        .env("HOME", "/root")
+        .env("XDG_RUNTIME_DIR", "/run/user/0")
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
     unsafe {
         cmd.pre_exec(|| {
             // new session; serial-login takes the tty

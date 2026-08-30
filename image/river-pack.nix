@@ -4,6 +4,7 @@
 , mesa
 , xkeyboard_config
 , libglvnd
+, seatd
 , patchelf
 , file
 , bash
@@ -29,6 +30,7 @@ runCommand "oath-river-pack"
     MESA = mesa;
     XKB = xkeyboard_config;
     LIBGLVND = libglvnd;
+    SEATD = seatd.bin or seatd;
   } ''
   ${bash}/bin/bash ${./relocate-river.sh} "$out"
 ''

@@ -30,4 +30,4 @@ Product docs: [`manual/`](manual/) — current behavior.
 | agent | Agent runtime as a system component | idea | — | — | serial or SSH client | no |
 | update | Base-image updates | idea | — | — | generations are the primitive | no |
 | install | Installer to a disk | idea | — | — | not started | no |
-| sola | Sola session on Oath | partial | [freeze](specs/2026-08-30-sola.md) | QEMU probe river + Wayland socket | full session out; no `oath-sola` fork | [services](manual/services.md) |
+| sola | Sola session on Oath | partial | [freeze](specs/2026-08-30-sola.md) | QEMU probe river + Wayland socket | full session out; no udev/libinput; no `oath-sola` fork | [services](manual/services.md) |

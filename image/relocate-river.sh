@@ -49,6 +49,10 @@ enqueue() {
 }
 
 enqueue "$RIVER/bin/river"
+if [[ -n ${SEATD:-} ]]; then
+  enqueue "$SEATD/bin/seatd"
+  enqueue "$SEATD/bin/seatd-launch"
+fi
 
 # Mesa / glvnd pieces wlroots dlopens (not always in NEEDED).
 if [[ -n ${MESA:-} ]]; then
@@ -119,7 +123,8 @@ EOF
 fi
 
 if [[ -n ${XKB:-} && -d $XKB/share/X11/xkb ]]; then
-  cp -a "$XKB/share/X11/xkb" "$out/river/share/X11/xkb"
+  mkdir -p "$out/river/share/X11/xkb"
+  cp -aL "$XKB/share/X11/xkb/." "$out/river/share/X11/xkb/"
 fi
 
 # ld-linux name the guest interpreter path expects.
@@ -132,6 +137,9 @@ fi
 
 find "$out" -type f | while read -r f; do
   file -b "$f" | grep -q ELF || continue
+  case "$(basename "$f")" in
+    ld-linux*) continue ;;
+  esac
   chmod u+w "$f" || true
   if patchelf --print-interpreter "$f" >/dev/null 2>&1; then
     patchelf --set-interpreter "$interp_guest" "$f" || true
@@ -147,20 +155,46 @@ if patchelf --print-interpreter "$out/river/libexec/river" >/dev/null 2>&1; then
 fi
 patchelf --set-rpath "$rpath" "$out/river/libexec/river"
 
+for b in seatd seatd-launch; do
+  if [[ -e $out/river/lib/$b ]]; then
+    mv "$out/river/lib/$b" "$out/river/libexec/$b"
+    chmod u+w "$out/river/libexec/$b"
+    chmod +x "$out/river/libexec/$b"
+    if patchelf --print-interpreter "$out/river/libexec/$b" >/dev/null 2>&1; then
+      patchelf --set-interpreter "$interp_guest" "$out/river/libexec/$b"
+    fi
+    patchelf --set-rpath "$rpath" "$out/river/libexec/$b"
+  fi
+done
+
 cat >"$out/river/bin/river" <<'WRAP'
 #!/bin/sh
-export XDG_RUNTIME_DIR=/run/user/0
-mkdir -p "$XDG_RUNTIME_DIR"
-chmod 700 "$XDG_RUNTIME_DIR"
+export PATH=/bin
 export HOME=/root
-export LIBSEAT_BACKEND=builtin
+export XDG_RUNTIME_DIR=/run/user/0
+/bin/mkdir -p "$XDG_RUNTIME_DIR"
+/bin/chmod 700 "$XDG_RUNTIME_DIR"
+export LIBSEAT_BACKEND=seatd
+export XDG_SESSION_TYPE=tty
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export XKB_CONFIG_ROOT=/oath/store/pkg/river/share/X11/xkb
-export WLR_RENDERER=gles2
+# virtio-gpu-pci is 2D; gles2 needs virgl. Same as Sola's QEMU session.
+export WLR_RENDERER=pixman
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+# No udev: libinput finds no devices and wlroots refuses to start.
+export WLR_LIBINPUT_NO_DEVICES=1
 unset WAYLAND_DISPLAY
 unset DISPLAY
-exec /oath/store/pkg/river/libexec/river -log-level info -c :
+exec /oath/store/pkg/river/libexec/river -log-level info -c : >>/oath/log/river.log 2>&1
 WRAP
 chmod +x "$out/river/bin/river"
+if [[ -x $out/river/libexec/seatd ]]; then
+  cp -a "$out/river/libexec/seatd" "$out/river/bin/seatd"
+  chmod +x "$out/river/bin/seatd"
+fi
+[[ -x $out/river/bin/seatd ]] || {
+  echo "relocate-river: missing bin/seatd" >&2
+  exit 1
+}

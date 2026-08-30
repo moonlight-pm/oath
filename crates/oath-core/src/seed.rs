@@ -116,10 +116,25 @@ pub fn seed(root: &Path) -> Result<()> {
     write_object(root, &sshd, "mutate", &sshd_desired, &sshd_actual)?;
     write_json(&root.join("objects/svc/sshd/applied.json"), &sshd_desired)?;
 
+    let seatd = ObjectId::new(KIND_SVC, "seatd");
+    let seatd_desired = json!({
+        "exec": ["/bin/seatd"],
+        "wants": [],
+        "restart": "always",
+        "enabled": true
+    });
+    let seatd_actual = json!({
+        "state": "stopped",
+        "pid": null,
+        "restarts": 0
+    });
+    write_object(root, &seatd, "mutate", &seatd_desired, &seatd_actual)?;
+    write_json(&root.join("objects/svc/seatd/applied.json"), &seatd_desired)?;
+
     let river = ObjectId::new(KIND_SVC, "river");
     let river_desired = json!({
         "exec": ["/bin/river"],
-        "wants": [],
+        "wants": ["svc:seatd"],
         "restart": "always",
         "enabled": true
     });

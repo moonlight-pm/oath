@@ -29,7 +29,7 @@ If a kind is not under `/oath/schema`, it does not exist.
 | Kind | Ids | Role |
 |------|-----|------|
 | `host` | `host:local` only | Hostname and power (`run` / `reboot` / `halt`) |
-| `svc` | `svc:serial`, `svc:hold`, `svc:sshd`, `svc:river` | PID 1’s only config |
+| `svc` | `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river` | PID 1’s only config |
 | `snap` | `snap:current`, `snap:N` | Generations |
 | `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `glibc`, `river`, `hello`, `fetchme` | Store + `/bin` symlink farm |
 | `net` | `net:net0` | Static IPv4 or `dhcp` |
