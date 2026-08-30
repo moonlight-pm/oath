@@ -82,4 +82,4 @@ Installer, A/B or equivalent base updates, honest rollback.
 - Broad ABI compatibility for random Linux binaries
 - Large binary repository
 - Bare-metal diversity
-- A graphical session
+- A graphical session (display canary in: virtio-gpu; Wayland/Sola not)

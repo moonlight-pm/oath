@@ -18,7 +18,8 @@
 QEMU x86_64 appliance. Serial is the console.
 
 ```
-QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci -drive virtio qcow2
+QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
+-device virtio-gpu-pci -display gtk (or none) -drive virtio qcow2
   kernel (borrowed Linux 6.12) + initramfs
     /init = oath-init
     loads virtio_blk + btrfs modules
@@ -33,6 +34,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci -driv
     /oath/                 catalog
     /oath/store/pkg/busybox|btrfs|oath|hello/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
+    /dev/dri/card0     virtio-gpu (dev:card0)
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
     /sbin/init -> ../usr/lib/oath/init
@@ -64,4 +66,5 @@ build CLI: `cargo make` pack/run/probe). Artifacts in `build/` (gitignored).
 [specs/2026-08-29-pkg-base.md](specs/2026-08-29-pkg-base.md) ·
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md) ·
 [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md) ·
-[specs/2026-08-30-devices.md](specs/2026-08-30-devices.md)
+[specs/2026-08-30-devices.md](specs/2026-08-30-devices.md) ·
+[specs/2026-08-30-display.md](specs/2026-08-30-display.md)

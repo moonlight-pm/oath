@@ -12,7 +12,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. Wants + fetch (T18) is closed.
+None open. Display canary (T19) is closed.
 
 ---
 
@@ -162,6 +162,11 @@ tmpfs `/tmp` `/dev/shm` `/run`, cgroup2. `/proc` was already mounted.
 `svc.wants` is start order; cycles refuse apply. `pkg.url` wget into
 the store. No package repository. No new verbs.
 
+### T19 — Display canary — locked 2026-08-30
+
+virtio-gpu, `/dev/dri/card0`, `dev:card0`. gtk window when DISPLAY is
+set. Probe headless. No Wayland, River, or Sola in this slice.
+
 ---
 
 ## Decision log
@@ -176,3 +181,4 @@ the store. No package repository. No new verbs.
 | 2026-08-30 | T16 | SSH catalog keys + DHCP | this file; [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md) |
 | 2026-08-30 | T17 | Device inventory + Unix floor | this file; [specs/2026-08-30-devices.md](specs/2026-08-30-devices.md) |
 | 2026-08-30 | T18 | svc wants + pkg url fetch | this file; [specs/2026-08-30-wants-and-fetch.md](specs/2026-08-30-wants-and-fetch.md) |
+| 2026-08-30 | T19 | virtio-gpu display canary | this file; [specs/2026-08-30-display.md](specs/2026-08-30-display.md) |

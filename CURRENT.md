@@ -13,9 +13,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Text OS leftovers shipped** (`svc` wants + `pkg:fetchme` wget).
-   Next program slice toward Sola is a **display canary** (virtio-gpu),
-   not Phase 5 agent or Phase 6 installer unless asked.
+1. **Display canary shipped** (virtio-gpu, `dev:card0`). Next toward
+   Sola is a Wayland compositor as `svc`, not a full desktop. Do not
+   add glibc/River/Sola unless asked.
 2. Do not add glibc runtime / installer unless CURRENT is updated.
 3. Do not install to a real disk.
 
@@ -27,9 +27,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 | | **QEMU appliance** |
 |--|---------------------|
-| Role | Serial + SSH appliance (QEMU user net) |
+| Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` |
-| Notes | `dev:*` + Unix floor + net + SSH. Manual: `docs/manual/`. Telemetry: `build/runs/<id>/`. |
+| Notes | `dev:card0` + gtk window if DISPLAY. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
@@ -65,7 +65,7 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-wants-and-fetch.md](docs/specs/2026-08-30-wants-and-fetch.md)
-- Plan: [docs/plans/2026-08-30-wants-fetch-plan.md](docs/plans/2026-08-30-wants-fetch-plan.md)
+- Freeze: [docs/specs/2026-08-30-display.md](docs/specs/2026-08-30-display.md)
+- Plan: [docs/plans/2026-08-30-display-plan.md](docs/plans/2026-08-30-display-plan.md)
   (complete)
-- Roadmap: text OS complete enough; graphics next; agent/install later
+- Roadmap: display canary in; Wayland/Sola later

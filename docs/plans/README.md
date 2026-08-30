@@ -11,4 +11,5 @@ Completed plans stay here as history.
 [2026-08-29-net-canary-plan.md](2026-08-29-net-canary-plan.md),
 [2026-08-30-ssh-dhcp-plan.md](2026-08-30-ssh-dhcp-plan.md),
 [2026-08-30-devices-plan.md](2026-08-30-devices-plan.md),
-[2026-08-30-wants-fetch-plan.md](2026-08-30-wants-fetch-plan.md).
+[2026-08-30-wants-fetch-plan.md](2026-08-30-wants-fetch-plan.md),
+[2026-08-30-display-plan.md](2026-08-30-display-plan.md).

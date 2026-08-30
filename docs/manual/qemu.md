@@ -14,7 +14,7 @@ for packing the disk), btrfs-progs, qemu.
 ```sh
 nix-shell          # optional: kernel, qemu, musl cc, busybox, btrfs
 cargo make build
-cargo make run            # interactive serial
+cargo make run            # interactive serial; gtk window if DISPLAY is set
 cargo make up             # headless; serial in the run log; Ctrl-C kills QEMU
 cargo make start          # same, background
 cargo make ssh            # ssh -p 2222 root@127.0.0.1
@@ -105,6 +105,8 @@ once the disk is mounted.
 
 ## Limits
 
+- virtio-gpu (`/dev/dri/card0`). gtk window when `DISPLAY` is set
+  (`OATH_DISPLAY=none` to hide). Probe is headless.
 - QEMU user net + virtio-net; `net:net0` is `10.0.2.15/24`
 - SSH hostfwd `127.0.0.1:2222` → guest 22 (`OATH_SSH_PORT`). Optional
   `OATH_BRIDGE=br0` for a host bridge (no hostfwd).

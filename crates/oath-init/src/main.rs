@@ -23,6 +23,9 @@ const MODULES: &[&str] = &[
     "kernel/drivers/virtio/virtio_pci_modern_dev.ko",
     "kernel/drivers/virtio/virtio_pci.ko",
     "kernel/drivers/block/virtio_blk.ko",
+    "kernel/drivers/virtio/virtio_dma_buf.ko",
+    "kernel/drivers/gpu/drm/virtio/virtio-gpu.ko",
+    "kernel/drivers/virtio/virtio_input.ko",
     "kernel/net/core/failover.ko",
     "kernel/drivers/net/net_failover.ko",
     "kernel/drivers/net/virtio_net.ko",
@@ -82,6 +85,7 @@ fn real_main() -> Result<(), String> {
     apply_host();
     apply_net();
     apply_dev();
+    banner_tty0();
     inject_ssh_from_host();
     apply_ssh();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
@@ -238,6 +242,12 @@ fn apply_net() {
             log(&format!("net: {e}"));
             tel("init", "net", json!({ "ok": false, "err": e.to_string() }));
         }
+    }
+}
+
+fn banner_tty0() {
+    if let Ok(mut f) = fs::OpenOptions::new().write(true).open("/dev/tty0") {
+        let _ = writeln!(f, "Oath.");
     }
 }
 

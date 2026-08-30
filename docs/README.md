@@ -44,7 +44,8 @@ ask the human.
 | [`specs/2026-08-29-net.md`](specs/2026-08-29-net.md) | `net:net0` static | **Target** |
 | [`specs/2026-08-30-ssh-and-dhcp.md`](specs/2026-08-30-ssh-and-dhcp.md) | SSH keys + dhcp | **Target** |
 | [`specs/2026-08-30-devices.md`](specs/2026-08-30-devices.md) | Device inventory + Unix floor | **Target** |
-| [`specs/2026-08-30-wants-and-fetch.md`](specs/2026-08-30-wants-and-fetch.md) | wants + fetch | **Target** (active) |
+| [`specs/2026-08-30-wants-and-fetch.md`](specs/2026-08-30-wants-and-fetch.md) | wants + fetch | **Target** |
+| [`specs/2026-08-30-display.md`](specs/2026-08-30-display.md) | virtio-gpu display canary | **Target** (active) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
@@ -54,6 +55,7 @@ ask the human.
 | [`plans/2026-08-30-ssh-dhcp-plan.md`](plans/2026-08-30-ssh-dhcp-plan.md) | SSH + DHCP | **Build** (complete) |
 | [`plans/2026-08-30-devices-plan.md`](plans/2026-08-30-devices-plan.md) | Devices + Unix floor | **Build** (complete) |
 | [`plans/2026-08-30-wants-fetch-plan.md`](plans/2026-08-30-wants-fetch-plan.md) | wants + fetch | **Build** (complete) |
+| [`plans/2026-08-30-display-plan.md`](plans/2026-08-30-display-plan.md) | Display canary | **Build** (complete) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 

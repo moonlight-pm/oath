@@ -18,6 +18,7 @@ pub fn probe(name: &str) -> DevActual {
         "vda" => ("block", "/dev/vda"),
         "net0" => ("net", "/sys/class/net/net0"),
         "ttyS0" => ("tty", "/dev/ttyS0"),
+        "card0" => ("drm", "/dev/dri/card0"),
         _ => ("unknown", ""),
     };
     let present = !node.is_empty() && Path::new(node).exists();

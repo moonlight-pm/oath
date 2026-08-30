@@ -28,8 +28,16 @@ impl SerialVm {
         qlog: &Path,
         cmdfile: &Path,
     ) -> Result<Self> {
-        let args =
-            qemu::qemu_args(tools, img, overlay, serial, qlog, qemu::SerialMode::Stdio, None);
+        let args = qemu::qemu_args(
+            tools,
+            img,
+            overlay,
+            serial,
+            qlog,
+            qemu::SerialMode::Stdio,
+            None,
+            false,
+        );
         fs::write(cmdfile, args.join(" ") + "\n")?;
         let child = Command::new(&args[0])
             .args(&args[1..])
@@ -368,6 +376,22 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "oath get dev:vda --actual",
         Some("\"present\": true"),
         "dev.vda",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -c /dev/dri/card0 && echo DRM_OK",
+        Some("DRM_OK"),
+        "drm.card0",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get dev:card0 --actual",
+        Some("\"present\": true"),
+        "dev.card0",
         Duration::from_secs(8),
     )?;
     cmd(

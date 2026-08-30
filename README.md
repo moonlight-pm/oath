@@ -62,6 +62,7 @@ What next: [`CURRENT.md`](CURRENT.md).
 | Net freeze | [`docs/specs/2026-08-29-net.md`](docs/specs/2026-08-29-net.md) |
 | SSH freeze | [`docs/specs/2026-08-30-ssh-and-dhcp.md`](docs/specs/2026-08-30-ssh-and-dhcp.md) |
 | Devices freeze | [`docs/specs/2026-08-30-devices.md`](docs/specs/2026-08-30-devices.md) |
+| Display freeze | [`docs/specs/2026-08-30-display.md`](docs/specs/2026-08-30-display.md) |
 | Docs map | [`docs/README.md`](docs/README.md) |
 
 ## Build

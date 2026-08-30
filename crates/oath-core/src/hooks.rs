@@ -79,6 +79,7 @@ pub trait ApplyHooks {
             "vda" => ("block", "/dev/vda"),
             "net0" => ("net", "/sys/class/net/net0"),
             "ttyS0" => ("tty", "/dev/ttyS0"),
+            "card0" => ("drm", "/dev/dri/card0"),
             _ => ("unknown", ""),
         };
         Ok(DevActual { present: true, class: class.into(), node: node.into() })

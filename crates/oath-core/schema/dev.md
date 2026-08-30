@@ -9,8 +9,8 @@ devtmpfs, not the admin UI. There is no udev.
 `/dev`. Loading kernel modules is not this kind (yet). `net:net0` is
 the link; `dev:net0` is the NIC.
 
-v0 objects: `dev:vda` (root disk), `dev:net0`, `dev:ttyS0`. Not
-removable.
+v0 objects: `dev:vda` (root disk), `dev:net0`, `dev:ttyS0`,
+`dev:card0` (virtio-gpu). Not removable.
 
 ## Fields
 

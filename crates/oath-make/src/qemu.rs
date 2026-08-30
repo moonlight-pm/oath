@@ -96,6 +96,7 @@ pub fn qemu_args(
     qemu_log: &Path,
     serial: SerialMode,
     inject_authorized: Option<&Path>,
+    window: bool,
 ) -> Vec<String> {
     let mut a = vec![tools.qemu.display().to_string(), "-machine".into(), "q35".into()];
     if kvm() {
@@ -103,12 +104,17 @@ pub fn qemu_args(
     }
     a.extend([
         "-m".into(),
-        "512".into(),
-        "-display".into(),
-        "none".into(),
+        "1024".into(),
         "-monitor".into(),
         "none".into(),
+        "-vga".into(),
+        "none".into(),
     ]);
+    if window {
+        a.extend(["-display".into(), "gtk".into()]);
+    } else {
+        a.extend(["-display".into(), "none".into()]);
+    }
     match serial {
         SerialMode::Stdio => {
             a.extend([
@@ -128,13 +134,19 @@ pub fn qemu_args(
         "-initrd".into(),
         img.initrd.display().to_string(),
         "-append".into(),
-        "console=ttyS0 quiet loglevel=4 panic=10".into(),
+        "console=tty0 console=ttyS0 quiet loglevel=4 panic=10".into(),
         "-netdev".into(),
         netdev(),
         "-device".into(),
         "virtio-net-pci,netdev=n0".into(),
         "-device".into(),
         "virtio-rng-pci".into(),
+        "-device".into(),
+        "virtio-gpu-pci".into(),
+        "-device".into(),
+        "virtio-keyboard-pci".into(),
+        "-device".into(),
+        "virtio-mouse-pci".into(),
         "-drive".into(),
         format!("file={},if=virtio,format=qcow2,cache=writeback", overlay.display()),
         "-d".into(),
@@ -147,6 +159,14 @@ pub fn qemu_args(
         a.extend(["-fw_cfg".into(), format!("name=opt/oath/authorized,file={}", p.display())]);
     }
     a
+}
+
+fn host_wants_window() -> bool {
+    match std::env::var("OATH_DISPLAY") {
+        Ok(v) if v == "none" || v == "0" => false,
+        Ok(_) => true,
+        Err(_) => std::env::var_os("DISPLAY").is_some(),
+    }
 }
 
 pub fn ssh_port() -> u16 {
@@ -280,10 +300,14 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
         &run.join("qemu.log"),
         SerialMode::Stdio,
         inject.as_deref(),
+        host_wants_window(),
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
+    if host_wants_window() {
+        eprintln!("display: gtk window (OATH_DISPLAY=none to hide)");
+    }
     if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
         eprintln!("ssh: cargo make ssh   (port {})", ssh_port());
     } else {
@@ -341,6 +365,9 @@ fn running_pid(out: &Path) -> Result<Option<i32>> {
 fn print_reachability(run: &Path) {
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
+    if host_wants_window() {
+        eprintln!("display: gtk window (OATH_DISPLAY=none to hide)");
+    }
     if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
         eprintln!("ssh: cargo make ssh   (port {})", ssh_port());
     } else {
@@ -366,6 +393,7 @@ fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<Strin
         &run.join("qemu.log"),
         SerialMode::File,
         inject.as_deref(),
+        host_wants_window(),
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
     Ok((tools, args, run))

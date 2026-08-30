@@ -11,6 +11,7 @@ boot (kernel views, not catalog kinds).
 | `dev:vda` | block | `/dev/vda` (root disk) |
 | `dev:net0` | net | `/sys/class/net/net0` |
 | `dev:ttyS0` | tty | `/dev/ttyS0` |
+| `dev:card0` | drm | `/dev/dri/card0` (virtio-gpu) |
 
 Not removable. `oath set dev:vda present=false` is refused.
 
