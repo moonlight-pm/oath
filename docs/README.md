@@ -45,7 +45,8 @@ ask the human.
 | [`specs/2026-08-30-ssh-and-dhcp.md`](specs/2026-08-30-ssh-and-dhcp.md) | SSH keys + dhcp | **Target** |
 | [`specs/2026-08-30-devices.md`](specs/2026-08-30-devices.md) | Device inventory + Unix floor | **Target** |
 | [`specs/2026-08-30-wants-and-fetch.md`](specs/2026-08-30-wants-and-fetch.md) | wants + fetch | **Target** |
-| [`specs/2026-08-30-display.md`](specs/2026-08-30-display.md) | virtio-gpu display canary | **Target** (active) |
+| [`specs/2026-08-30-display.md`](specs/2026-08-30-display.md) | virtio-gpu display canary | **Target** |
+| [`specs/2026-08-30-pkg-hosting.md`](specs/2026-08-30-pkg-hosting.md) | T20 hosting (`pkg.url`, peer origin) | **Target** (not implemented) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

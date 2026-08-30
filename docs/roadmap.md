@@ -49,8 +49,9 @@ Install/remove/query packages through the catalog. Services are objects
 with schema, not unit-file folklore. Freeze:
 [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md). Canary
 `pkg:hello` plus sealed `busybox` / `btrfs` / `oath` / `dropbear` are
-in. `pkg:fetchme` wget canary is in. A package repository and deps
-are not.
+in. `pkg:fetchme` wget canary is in. Hosting identity is T20 (`pkg.url`;
+other Oath hosts as origin). Guest store export, hashes, deps, and
+versions are not.
 
 ## Phase 4 — Devices and network
 
@@ -61,8 +62,8 @@ Hardware inventory as objects. One network model. The agent does not run
 [specs/2026-08-29-net.md](specs/2026-08-29-net.md),
 [specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md)
 (`net:net0` + SSH + `dev` inventory + virtio-gpu). DHCP, `OATH_BRIDGE`,
-Unix floor, `svc` wants, and URL fetch exist. Module-as-catalog, a
-package repo, and Wayland do not.
+Unix floor, `svc` wants, and URL fetch exist. Module-as-catalog,
+guest store export, and Wayland do not.
 
 ## Phase 5 — Agent as a system component
 
@@ -82,4 +83,5 @@ Installer, A/B or equivalent base updates, honest rollback.
 - Broad ABI compatibility for random Linux binaries
 - Large binary repository
 - Bare-metal diversity
-- A graphical session (display canary in: virtio-gpu; Wayland/Sola not)
+- A graphical session (display canary in: virtio-gpu; no throwaway
+  compositor; Wayland/Sola not)

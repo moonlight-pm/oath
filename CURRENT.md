@@ -13,11 +13,13 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Display canary shipped** (virtio-gpu, `dev:card0`). Next toward
-   Sola is a Wayland compositor as `svc`, not a full desktop. Do not
-   add glibc/River/Sola unless asked.
-2. Do not add glibc runtime / installer unless CURRENT is updated.
-3. Do not install to a real disk.
+1. **Display canary shipped** (`dev:card0`). Do not add a throwaway
+   compositor or a placeholder `pkg:sola`. Graphical next is the
+   compositor Sola actually uses, as `svc`, only when asked.
+2. **T20 hosting locked**, not implemented: `pkg.url` is the origin;
+   other Oath hosts may serve store bytes. No git store, no `repo` kind.
+3. Do not add glibc runtime / River / Sola / installer unless CURRENT
+   is updated. Do not install to a real disk.
 
 **Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe` (`--build` on run/up/start).
 
@@ -54,7 +56,8 @@ Do not re-litigate without an explicit decision.
   `/oath/ssh/`. Owner pubkeys in `ssh:local`. Serial still works.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear` not removable; `hello` and
-  `fetchme` are. `pkg.url` wget canary. No package repo.
+  `fetchme` are. `pkg.url` wget canary. **T20:** no canonical archive;
+  another Oath host’s store is a valid origin. Git is not the store.
 - Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
   the console; `svc:sshd` is dropbear; `svc:hold` wants serial.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set.
@@ -66,7 +69,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-display.md](docs/specs/2026-08-30-display.md)
-- Plan: [docs/plans/2026-08-30-display-plan.md](docs/plans/2026-08-30-display-plan.md)
+- Freeze: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
+  (T20, not implemented)
+- Display: [docs/specs/2026-08-30-display.md](docs/specs/2026-08-30-display.md)
   (complete)
-- Roadmap: display canary in; Wayland/Sola later
+- Plan: **none**
+- Roadmap: display canary in; hosting identity locked; Wayland/Sola later

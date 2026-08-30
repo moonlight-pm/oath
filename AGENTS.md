@@ -75,8 +75,8 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Active freeze:
-[`docs/specs/2026-08-30-display.md`](docs/specs/2026-08-30-display.md).
-Active plan: **none** (display canary complete).
+[`docs/specs/2026-08-30-pkg-hosting.md`](docs/specs/2026-08-30-pkg-hosting.md)
+(T20 identity; not implemented). Active plan: **none**.
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).

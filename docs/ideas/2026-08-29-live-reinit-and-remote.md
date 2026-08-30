@@ -41,3 +41,4 @@ package canary (no fetch).
 Git, Jujutsu, Pijul, etc. are fine for **this repo**. They are not the
 running system. Live history is already btrfs generations plus the
 apply log. A checkout under `/oath` would be a second ontology.
+Locked as T20: [../specs/2026-08-30-pkg-hosting.md](../specs/2026-08-30-pkg-hosting.md).

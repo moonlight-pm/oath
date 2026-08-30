@@ -2,7 +2,7 @@
 **Status:** target (freeze)
 **Implementation:** partial
 **Dogfood:** QEMU probe — `svc` wants order + `pkg:fetchme` wget
-**Gaps:** no package index/repo; fetch is a URL on the object
+**Gaps:** deps/versions; hosting identity is T20 (not implemented here)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Service wants and package fetch
@@ -28,7 +28,8 @@ graphical session.
 
 ## Out
 
-- Package repository / deps / versions
+- Package deps / versions (hosting identity:
+  [2026-08-30-pkg-hosting.md](2026-08-30-pkg-hosting.md))
 - Resident agent (Phase 5)
 - Disk installer (Phase 6)
 - Graphics / Sola

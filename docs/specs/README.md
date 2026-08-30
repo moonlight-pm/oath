@@ -15,6 +15,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-30-devices.md](2026-08-30-devices.md) | `dev:*` inventory + Unix floor |
 | [2026-08-30-wants-and-fetch.md](2026-08-30-wants-and-fetch.md) | `svc` wants + `pkg.url` fetch |
 | [2026-08-30-display.md](2026-08-30-display.md) | virtio-gpu, `dev:card0`, gtk window |
+| [2026-08-30-pkg-hosting.md](2026-08-30-pkg-hosting.md) | T20: `pkg.url` origin; Oath hosts as store |
 
 Active plan: none. Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),
