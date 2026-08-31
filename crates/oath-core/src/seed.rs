@@ -85,6 +85,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "dropbear", true, false)?;
     seed_pkg(root, "glibc", true, false)?;
     seed_pkg(root, "river", true, true)?;
+    seed_pkg(root, "sola", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),
@@ -146,6 +147,21 @@ pub fn seed(root: &Path) -> Result<()> {
     write_object(root, &river, "mutate", &river_desired, &river_actual)?;
     write_json(&root.join("objects/svc/river/applied.json"), &river_desired)?;
 
+    seed_svc(root, "sola-bus", &["/bin/sola-bus"], &[])?;
+    seed_svc(root, "sola-call", &["/bin/sola-call"], &[])?;
+    seed_svc(
+        root,
+        "sola-river",
+        &["/bin/sola-river"],
+        &["svc:river", "svc:sola-bus", "svc:sola-call"],
+    )?;
+    seed_svc(
+        root,
+        "sola-shell",
+        &["/bin/sola-shell"],
+        &["svc:river", "svc:sola-bus", "svc:sola-call", "svc:sola-river"],
+    )?;
+
     let ssh = ObjectId::new(KIND_SSH, "local");
     let ssh_desired = json!({ "authorized": [] });
     let ssh_actual = json!({ "authorized": [], "host_key": false });
@@ -194,6 +210,24 @@ fn seed_dev(root: &Path, name: &str, class: &str, node: &str) -> Result<()> {
         &json!({ "present": true }),
         &json!({ "present": true, "class": class, "node": node }),
     )
+}
+
+fn seed_svc(root: &Path, name: &str, exec: &[&str], wants: &[&str]) -> Result<()> {
+    let id = ObjectId::new(KIND_SVC, name);
+    let desired = json!({
+        "exec": exec,
+        "wants": wants,
+        "restart": "always",
+        "enabled": true
+    });
+    let actual = json!({
+        "state": "stopped",
+        "pid": null,
+        "restarts": 0
+    });
+    write_object(root, &id, "mutate", &desired, &actual)?;
+    write_json(&root.join("objects/svc").join(name).join("applied.json"), &desired)?;
+    Ok(())
 }
 
 fn seed_pkg(root: &Path, name: &str, present: bool, removable: bool) -> Result<()> {

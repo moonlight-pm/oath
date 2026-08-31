@@ -7,16 +7,16 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-08-30
+**As of:** 2026-08-31
 
 ---
 
 ## Now
 
-1. **T23 open.** `forks/sola` is `moonlight-pm/oath-sola` (private).
-   Next: pack the session stack as `pkg:sola` + `svc:sola-bus` /
-   `sola-call` / `sola-river` / `sola-shell`. Do not run
-   `crates/sola`.
+1. **T23 session stack in.** `pkg:sola` + `svc:sola-bus` / `call` /
+   `river` (bridge) / `shell` on the appliance. gtk menubar when
+   `DISPLAY`. Full apps (`sola-session`, browser, …) out. Next: T20
+   hosting (locked, not implemented) unless we continue Sola apps.
 2. **T20 hosting locked**, not implemented.
 3. Do not add a throwaway compositor. Do not install to a real disk.
    glibc runtime is allowed **only** as `pkg:glibc` for this payload
@@ -32,7 +32,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk compositor if DISPLAY (`dev:kbd0` / `dev:mouse0`, no udevd). Host SSH keys on up/start. Manual: `docs/manual/`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY (`dev:kbd0` / `dev:mouse0`, no udevd). Host SSH keys on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
@@ -57,20 +57,21 @@ Do not re-litigate without an explicit decision.
   `/oath/ssh/`. Owner pubkeys in `ssh:local`. Serial still works.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
-  `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
+  `sola`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
   is not the store.
 - Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
   the console; `svc:sshd` is dropbear; `svc:hold` wants serial;
-  `svc:river` wants `svc:seatd`.
+  `svc:river` wants `svc:seatd`. Sola session: `svc:sola-bus` /
+  `sola-call` / `sola-river` / `sola-shell`.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
   is pixman River. Input is libinput via libudev-zero (`dev:kbd0` /
   `dev:mouse0`). No udevd. Path fallback in `forks/wlroots`.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 (`pkg:sola` + `svc:sola-bus` /
-  `call` / `river` / `shell`) — forked, not packed. glibc is sealed
-  `pkg:glibc`. `forks/river` + `forks/wlroots` + `forks/sola`. Do not
-  run `crates/sola`. First-party pkg sources under `apps/` (`hello`,
+  `call` / `river` / `shell`). glibc is sealed `pkg:glibc`.
+  `forks/river` + `forks/wlroots` + `forks/sola`. Do not run
+  `crates/sola`. First-party pkg sources under `apps/` (`hello`,
   `fetchme`).
 - MIT, Copyright (c) Joshua Kifer.
 
@@ -81,13 +82,13 @@ Do not re-litigate without an explicit decision.
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
 - Freeze: [docs/specs/2026-08-30-oath-sola.md](docs/specs/2026-08-30-oath-sola.md)
-  (T23, fork in). T22:
+  (T23 session stack). T22:
   [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
   (shipped). T21:
   [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
 - Plan: [docs/plans/2026-08-30-oath-sola-plan.md](docs/plans/2026-08-30-oath-sola-plan.md)
-  (open).
+  (complete).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
-- Roadmap: display canary in; River as `svc`; `oath-sola` forked;
-  session not packed
+- Roadmap: display canary in; River as `svc`; Sola session stack as
+  `svc`; full apps not

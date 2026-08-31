@@ -104,14 +104,15 @@ once the disk is mounted.
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
 - `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/0`
+- Sola session stack (`svc:sola-bus` / `call` / `river` / `shell`); no nested process manager
 - virtio keyboard + mouse (`dev:kbd0` / `dev:mouse0`; libinput via
   libudev-zero, no udevd)
 
 ## Limits
 
 - virtio-gpu (`/dev/dri/card0`). gtk window when `DISPLAY` is set is
-  pixman River with pointer/keyboard (no udevd). `OATH_DISPLAY=none`
-  hides it. Probe is headless.
+  pixman River plus the Sola menubar (software GL; no udevd).
+  `OATH_DISPLAY=none` hides it. Probe is headless.
 - QEMU user net + virtio-net; `net:net0` is `10.0.2.15/24`
 - SSH hostfwd `127.0.0.1:2222` → guest 22 (`OATH_SSH_PORT`). Optional
   `OATH_BRIDGE=br0` for a host bridge (no hostfwd).

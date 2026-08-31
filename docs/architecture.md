@@ -32,7 +32,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /usr/lib/oath/serial-login
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -40,13 +40,17 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     dropbear           svc:sshd, keys from ssh:local
     seatd              svc:seatd (DRM seat)
     river              svc:river (glibc, pixman, libudev-zero, socket /run/user/0)
+    sola-bus/call      svc:sola-bus / svc:sola-call (sockets /run/user/0)
+    sola-river         svc:sola-river (bridge, not the compositor)
+    sola-shell         svc:sola-shell (iced menubar; software GL)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
 PID 1: mount proc/sys/dev/pts, tmpfs `/tmp` `/dev/shm` `/run`, cgroup2;
 hostname from `host:local`; **converge** `net:net0`, `dev:*`,
 `ssh:local`; then `svc:*`. Socket `/oath/run/init.sock`. Seeded
-services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`.
+services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
+`svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)
@@ -63,8 +67,7 @@ Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-make` (host
 build CLI: `cargo make`). Artifacts in `build/` (gitignored).
-Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`;
-session not packed onto the guest).
+Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 
 **Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) ·

@@ -154,6 +154,11 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:river"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:river"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:seatd"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:sola"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-bus"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-call"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-river"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-shell"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:vda"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:net0"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:ttyS0"));

@@ -30,9 +30,11 @@ oath apply svc:serial
 
 The appliance ships `svc:serial` (serial root shell), `svc:hold`
 (`/bin/sleep 86400000`, for start/stop tests), `svc:sshd`,
-`svc:seatd`, and `svc:river` (patched River on `dev:card0`; wants
-seatd; libinput via libudev-zero). Do not disable serial unless you
-have another console.
+`svc:seatd`, `svc:river` (patched River on `dev:card0`; wants
+seatd; libinput via libudev-zero), and the Sola session stack
+(`svc:sola-bus`, `svc:sola-call`, `svc:sola-river` the Wayland
+bridge, `svc:sola-shell`). Do not run Sola’s process manager.
+Do not disable serial unless you have another console.
 
 ```
 oath set svc:hold enabled=false

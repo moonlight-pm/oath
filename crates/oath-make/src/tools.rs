@@ -15,6 +15,7 @@ pub struct Tools {
     pub dropbearkey: Option<PathBuf>,
     pub glibc: Option<PathBuf>,
     pub river: Option<PathBuf>,
+    pub sola_rt: Option<PathBuf>,
     pub qemu: PathBuf,
     pub qemu_img: PathBuf,
 }
@@ -28,6 +29,7 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut dropbearkey = std::env::var_os("OATH_DROPBEARKEY").map(PathBuf::from);
     let mut glibc = std::env::var_os("OATH_GLIBC").map(PathBuf::from);
     let mut river = std::env::var_os("OATH_RIVER").map(PathBuf::from);
+    let mut sola_rt = std::env::var_os("OATH_SOLA_RT").map(PathBuf::from);
 
     if kernel.is_none() || modules.is_none() || busybox.is_none() {
         eprintln!("loading tools via nix-build image/tools.nix ...");
@@ -57,6 +59,10 @@ pub fn load(root: &Path) -> Result<Tools> {
         });
         river = river.or_else(|| {
             let p = tools.join("river");
+            p.is_dir().then_some(p)
+        });
+        sola_rt = sola_rt.or_else(|| {
+            let p = tools.join("sola-rt");
             p.is_dir().then_some(p)
         });
         let musl = tools.join("musl-cc");
@@ -89,6 +95,7 @@ pub fn load(root: &Path) -> Result<Tools> {
     let dropbearkey = dropbearkey.filter(|p| p.is_file());
     let glibc = glibc.filter(|p| p.is_dir());
     let river = river.filter(|p| p.is_dir());
+    let sola_rt = sola_rt.filter(|p| p.is_dir());
     let _ = fs::metadata(&qemu)?;
     Ok(Tools {
         kernel,
@@ -99,6 +106,7 @@ pub fn load(root: &Path) -> Result<Tools> {
         dropbearkey,
         glibc,
         river,
+        sola_rt,
         qemu,
         qemu_img,
     })

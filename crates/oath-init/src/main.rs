@@ -439,6 +439,7 @@ fn spawn(spec: &Svc) -> Result<Pid, String> {
     cmd.env("PATH", "/bin")
         .env("HOME", "/root")
         .env("XDG_RUNTIME_DIR", "/run/user/0")
+        .env("SOLA_NO_SELF_WATCH", "1")
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());

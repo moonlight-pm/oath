@@ -1,6 +1,6 @@
 use std::fs;
 use std::os::unix::fs::symlink;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{bail, Context, Result};
@@ -11,7 +11,7 @@ use oath_core::{converge_with_link_root, write_json};
 
 use crate::cpio;
 use crate::tools::Tools;
-use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
+use crate::util::{chmod_exec, copy_file, copy_tree, out_dir, run, run_out, sudo};
 
 const MODULES: &[&str] = &[
     "kernel/drivers/virtio/virtio.ko.xz",
@@ -172,12 +172,19 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     if oath_root.join("store/pkg/river/libexec/river").is_file() {
         chmod_exec(&oath_root.join("store/pkg/river/libexec/river"))?;
     }
+    let sola = pack_sola(root, tools, out)?;
+    copy_tree(&sola, &oath_root.join("store/pkg/sola"))?;
+    for b in ["sola-bus", "sola-call", "sola-river", "sola-shell"] {
+        chmod_exec(&oath_root.join("store/pkg/sola/bin").join(b))?;
+        chmod_exec(&oath_root.join("store/pkg/sola/libexec").join(b))?;
+    }
     link_pkg(&oath_root, &guest_bin, "busybox", false)?;
     link_pkg(&oath_root, &guest_bin, "btrfs", false)?;
     link_pkg(&oath_root, &guest_bin, "oath", false)?;
     link_pkg(&oath_root, &guest_bin, "dropbear", false)?;
     link_pkg(&oath_root, &guest_bin, "glibc", false)?;
     link_pkg(&oath_root, &guest_bin, "river", false)?;
+    link_pkg(&oath_root, &guest_bin, "sola", true)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -249,6 +256,90 @@ fn write_dropbear_store(oath_root: &Path, dropbear: &Path, dropbearkey: &Path) -
     chmod_exec(&dir.join("dropbear"))?;
     chmod_exec(&dir.join("dropbearkey"))?;
     Ok(())
+}
+
+fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
+    let bins = sola_release_bins(root)?;
+    let Some(rt) = &tools.sola_rt else {
+        bail!("OATH_SOLA_RT / tools sola-rt required (pkg:sola)");
+    };
+    let sola_out = out.join("sola-pack");
+    let _ = fs::remove_dir_all(&sola_out);
+    eprintln!(">> relocate sola");
+    let script = root.join("image/relocate-sola.sh");
+    let mut cmd = Command::new("bash");
+    cmd.arg(&script).arg(&sola_out).env("SOLA_BINS", &bins);
+    for (key, name) in [
+        ("WAYLAND", "wayland"),
+        ("XKBCOMMON", "xkbcommon"),
+        ("LIBFFI", "libffi"),
+        ("LIBGLVND", "libglvnd"),
+        ("VULKAN_LOADER", "vulkan-loader"),
+        ("FONTCONFIG", "fontconfig"),
+        ("FREETYPE", "freetype"),
+        ("INTER", "inter"),
+    ] {
+        let p = rt.join(name);
+        if p.exists() {
+            cmd.env(key, p);
+        }
+    }
+    run(&mut cmd)?;
+    Ok(sola_out)
+}
+
+fn sola_release_bins(root: &Path) -> Result<PathBuf> {
+    if let Some(p) = std::env::var_os("OATH_SOLA_BINS") {
+        let p = PathBuf::from(p);
+        if p.join("sola-bus").is_file() {
+            return Ok(p);
+        }
+        bail!("OATH_SOLA_BINS missing sola-bus: {}", p.display());
+    }
+    let src = root.join("forks/sola");
+    if !src.join("Cargo.toml").is_file() {
+        bail!("forks/sola missing (git submodule?)");
+    }
+    let target = out_dir(root).join("sola-target");
+    fs::create_dir_all(&target)?;
+    let wt = ensure_sola_worktree(&src)?;
+    eprintln!(">> cargo build sola session ({})", wt.display());
+    run(Command::new("cargo").current_dir(&wt).env("CARGO_TARGET_DIR", &target).args([
+        "build",
+        "--release",
+        "-p",
+        "sola-bus",
+        "-p",
+        "sola-call",
+        "-p",
+        "sola-river",
+        "-p",
+        "sola-shell",
+    ]))?;
+    let bins = target.join("release");
+    for n in ["sola-bus", "sola-call", "sola-river", "sola-shell"] {
+        if !bins.join(n).is_file() {
+            bail!("missing sola {n} in {}", bins.display());
+        }
+    }
+    Ok(bins)
+}
+
+fn ensure_sola_worktree(src: &Path) -> Result<PathBuf> {
+    let wt = std::env::temp_dir().join("oath-sola-build");
+    let head = run_out(Command::new("git").current_dir(src).args(["rev-parse", "HEAD"]))?;
+    if wt.join("Cargo.toml").is_file() {
+        run(Command::new("git").current_dir(&wt).args(["checkout", "--detach", "--quiet", &head]))?;
+    } else {
+        run(Command::new("git").current_dir(src).args([
+            "worktree",
+            "add",
+            "--detach",
+            wt.to_str().unwrap(),
+            &head,
+        ]))?;
+    }
+    Ok(wt)
 }
 
 fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {

@@ -479,6 +479,62 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath get pkg:sola --actual",
+        Some("\"present\": true"),
+        "pkg.sola_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "sleep 5; pidof sola-bus >/dev/null && echo SOLA_BUS",
+        Some("SOLA_BUS"),
+        "sola.bus",
+        Duration::from_secs(16),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "pidof sola-call >/dev/null && echo SOLA_CALL",
+        Some("SOLA_CALL"),
+        "sola.call",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "pidof sola-river >/dev/null && echo SOLA_BRIDGE",
+        Some("SOLA_BRIDGE"),
+        "sola.bridge",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -S /run/user/0/sola-bus && test -S /run/user/0/sola-call && echo SOLA_SOCK",
+        Some("SOLA_SOCK"),
+        "sola.sockets",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "sleep 8; pidof sola-shell >/dev/null && echo SOLA_SHELL",
+        Some("SOLA_SHELL"),
+        "sola.shell",
+        Duration::from_secs(24),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -z \"$(pidof sola)\" && echo SOLA_NO_PM",
+        Some("SOLA_NO_PM"),
+        "sola.no_pm",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath set dev:vda present=false",
         Some("not removable"),
         "dev.refuse",

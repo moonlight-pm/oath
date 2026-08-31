@@ -3,7 +3,8 @@
 Borrowed **build-host** tools (kernel, busybox, qemu, musl cc) come from
 `tools.nix`. They are not the runtime. Patched River is built from
 `forks/river` + `forks/wlroots` (Sola nixpkgs pin) and relocated into
-`pkg:glibc` + `pkg:river` (libudev-zero, no udevd).
+`pkg:glibc` + `pkg:river` (libudev-zero, no udevd) + `pkg:sola`
+(session stack; host `cargo build --release` from `forks/sola`).
 
 Host orchestration is Rust:
 

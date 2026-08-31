@@ -21,8 +21,8 @@ Product docs: [`manual/`](manual/) — current behavior.
 | objects | Typed object store | partial | freeze | QEMU | host/svc/snap/pkg/net/ssh/dev | [catalog](manual/catalog.md) |
 | oath-cli | `oath` verbs | partial | freeze | QEMU probe | MCP later | [using](manual/using.md) |
 | snap | generations; apply / undo | partial | freeze | probe (sibling `@gen-N`, reboot) | boot-generation pick still confirm-only; no bootloader menu | [generations](manual/generations.md) |
-| svc | Own supervisor | partial | freeze | hold + sshd + seatd + river | do not disable serial; no Requires-style hard deps | [services](manual/services.md) |
-| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | borrowed kernel; River as `svc:river` | [qemu](manual/qemu.md) |
+| svc | Own supervisor | partial | freeze | hold + sshd + seatd + river + sola session | do not disable serial; no Requires-style hard deps | [services](manual/services.md) |
+| boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | borrowed kernel; River + Sola session as `svc` | [qemu](manual/qemu.md) |
 | pkg | Package objects | partial | [freeze](specs/2026-08-30-pkg-hosting.md) | QEMU probe + fetchme | T20 identity: `pkg.url`, peer Oath host as origin; no guest store export, hash, deps, or versions | [packages](manual/packages.md) |
 | net | Network objects | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | QEMU probe ping + SSH | dhcp implemented; LAN bridge opt-in (`OATH_BRIDGE`) | [network](manual/network.md) |
 | dev | Device objects | partial | [freeze](specs/2026-08-30-libinput.md) | QEMU probe | vda/net0/ttyS0/card0/kbd0/mouse0; no module loader; no udev | [devices](manual/devices.md) |
@@ -30,4 +30,4 @@ Product docs: [`manual/`](manual/) — current behavior.
 | agent | Agent runtime as a system component | idea | — | — | serial or SSH client | no |
 | update | Base-image updates | idea | — | — | generations are the primitive | no |
 | install | Installer to a disk | idea | — | — | not started | no |
-| sola | Sola session on Oath | partial | [freeze](specs/2026-08-30-oath-sola.md) | QEMU probe river.keyboard / river.pointer | `oath-sola` forked (`forks/sola`); session stack not packed; no nested PM; full apps out; no udevd | [services](manual/services.md) |
+| sola | Sola session on Oath | partial | [freeze](specs/2026-08-30-oath-sola.md) | QEMU probe sola.bus / sola.call / sola.bridge / sola.shell | session stack packed; no nested PM; no udevd; full apps (`sola-session`, browser, …) out; no dbus; software GL | [services](manual/services.md) |

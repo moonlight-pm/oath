@@ -13,6 +13,10 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. |
 | `svc:seatd` | `/bin/seatd` | enabled, `restart=always` | Seat for DRM. `svc:river` wants this. |
 | `svc:river` | `/bin/river` | enabled, `restart=always` | Patched River on `dev:card0` (pixman). libinput via libudev-zero (`dev:kbd0` / `dev:mouse0`). Socket under `/run/user/0`. |
+| `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=always` | Sola IPC bus. Socket `/run/user/0/sola-bus`. |
+| `svc:sola-call` | `/bin/sola-call` | enabled, `restart=always` | Sola call host. Socket `/run/user/0/sola-call`. |
+| `svc:sola-river` | `/bin/sola-river` | enabled, `restart=always` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |
+| `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=always` | Iced menubar / launcher. Wants river + bus + call + the bridge. Software GL. |
 
 PID 1 starts enabled services at boot, **stops disabled ones** on
 converge, reaps, and restarts per policy (`never` / `always` /

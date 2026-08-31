@@ -104,7 +104,7 @@ pub fn qemu_args(
     }
     a.extend([
         "-m".into(),
-        "1024".into(),
+        "2048".into(),
         "-monitor".into(),
         "none".into(),
         "-vga".into(),

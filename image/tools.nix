@@ -11,6 +11,7 @@ let
     riverSrc = ../forks/river;
     wlrootsSrc = ../forks/wlroots;
   };
+  solaRt = pkgs.callPackage ./sola-rt.nix { };
 in
 pkgs.runCommand "oath-build-tools" { } ''
   mkdir -p $out/bin
@@ -23,7 +24,8 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${muslCC}/bin/${muslCC.targetPrefix}cc $out/musl-cc
   ln -s ${riverPack}/glibc $out/glibc
   ln -s ${riverPack}/river $out/river
-  for p in ${pkgs.qemu} ${pkgs.btrfs-progs} ${pkgs.cpio} ${pkgs.xz} ${pkgs.gzip}; do
+  ln -s ${solaRt} $out/sola-rt
+  for p in ${pkgs.qemu} ${pkgs.btrfs-progs} ${pkgs.cpio} ${pkgs.xz} ${pkgs.gzip} ${pkgs.patchelf} ${pkgs.file}; do
     if [ -d $p/bin ]; then
       for b in $p/bin/*; do
         ln -s $b $out/bin/$(basename $b) || true

@@ -14,9 +14,8 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 None open. T22 libinput without udevd is closed (libudev-zero;
 path fallback in wlroots). T21 River-first is closed
-(River/wlroots forks in). T23 `oath-sola` remote is closed
-(private submodule `forks/sola`; session pack is the plan, not a
-fork).
+(River/wlroots forks in). T23 session stack is closed (`pkg:sola`
++ four `svc:*`; no nested PM).
 
 ---
 

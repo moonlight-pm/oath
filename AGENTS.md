@@ -76,7 +76,7 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 
 Latest freeze:
 [`docs/specs/2026-08-30-oath-sola.md`](docs/specs/2026-08-30-oath-sola.md)
-(T23; `oath-sola` forked, session not packed). T22:
+(T23 session stack shipped). T22:
 [`docs/specs/2026-08-30-libinput.md`](docs/specs/2026-08-30-libinput.md)
 (shipped). T21:
 [`docs/specs/2026-08-30-sola.md`](docs/specs/2026-08-30-sola.md)

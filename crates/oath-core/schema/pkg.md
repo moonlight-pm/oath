@@ -39,7 +39,7 @@ oath undo
 
 The appliance ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`,
 `pkg:dropbear`, and `pkg:glibc` already present (not removable),
-`pkg:river` present (removable), and `pkg:hello` absent until you
-apply. `/bin/hello` prints `hello`. Busybox applets are one package.
-`pkg:glibc` is the GNU C runtime for glibc payloads (River). Never
-load it into musl PID 1.
+`pkg:river` present (removable), `pkg:sola` present (removable), and
+`pkg:hello` absent until you apply. `/bin/hello` prints `hello`.
+Busybox applets are one package. `pkg:glibc` is the GNU C runtime
+for glibc payloads (River, Sola). Never load it into musl PID 1.

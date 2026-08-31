@@ -47,8 +47,8 @@ Phases 0–2 are done. The **x86_64 QEMU** appliance has PID 1, catalog,
 packages (store + `/bin` links, including `pkg:fetchme` wget), `net:net0`,
 dropbear SSH, `dev:*` (including virtio-gpu `card0` and virtio
 keyboard/mouse), and a gtk window when `DISPLAY` is set. `svc:river`
-is the compositor (T21/T22). `oath-sola` is forked (`forks/sola`);
-the session stack is not packed. Nothing is a daily driver. No installer.
+is the compositor (T21/T22). The Sola session stack is `pkg:sola` +
+four `svc:*` (T23). Nothing is a daily driver. No installer.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).
