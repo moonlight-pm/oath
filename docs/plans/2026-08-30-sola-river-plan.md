@@ -1,9 +1,10 @@
 # Plan — Sola on Oath, River first
 
 **Date:** 2026-08-30
-**Status:** open (`oath-sola` still out)
+**Status:** complete (River/seatd). `oath-sola` is not this plan.
 **Proof:** probe `river.running` / `river.wayland` (2026-08-30).
 **Freeze:** [../specs/2026-08-30-sola.md](../specs/2026-08-30-sola.md)
+**Next:** [2026-08-30-libinput-plan.md](2026-08-30-libinput-plan.md)
 
 - [x] T21 freeze + `forks/` layout lock.
 - [x] GitHub `oath-river` + `oath-wlroots` (Sola patches as commits).

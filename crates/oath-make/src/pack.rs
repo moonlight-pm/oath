@@ -22,6 +22,7 @@ const MODULES: &[&str] = &[
     "kernel/drivers/block/virtio_blk.ko.xz",
     "kernel/drivers/virtio/virtio_dma_buf.ko.xz",
     "kernel/drivers/gpu/drm/virtio/virtio-gpu.ko.xz",
+    "kernel/drivers/input/evdev.ko.xz",
     "kernel/drivers/virtio/virtio_input.ko.xz",
     "kernel/net/core/failover.ko.xz",
     "kernel/drivers/net/net_failover.ko.xz",

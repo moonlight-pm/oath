@@ -14,7 +14,7 @@ virtio-gpu window if `DISPLAY` is set).
 | [Services](services.md) | PID 1 and `svc:*` |
 | [Packages](packages.md) | store, `/bin` links, `hello` / `fetchme` |
 | [Network](network.md) | `net:net0`, static or dhcp |
-| [Devices](devices.md) | `vda` / `net0` / `ttyS0` / `card0`; Unix floor |
+| [Devices](devices.md) | `vda` / `net0` / `ttyS0` / `card0` / `kbd0` / `mouse0`; Unix floor |
 | [SSH](ssh.md) | `ssh:local` keys, dropbear, no baked private key |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N` |
 | [The appliance](qemu.md) | Build, run, probe, disk layout |
@@ -27,6 +27,7 @@ that are not there.
 
 No installer, no full Sola session. Packages: sealed `busybox` /
 `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`, `hello`, and
-`fetchme`. `svc:seatd` + `svc:river` is the compositor (no input yet).
-`net:net0` + root SSH (host keys injected on `up`/`start`). Devices
-include `dev:card0`. `/proc` `/sys` `/dev` plus tmpfs and cgroup2.
+`fetchme`. `svc:seatd` + `svc:river` is the compositor (libinput path
+backend; no udevd). `net:net0` + root SSH (host keys injected on
+`up`/`start`). Devices include `dev:card0`, `dev:kbd0`, `dev:mouse0`.
+`/proc` `/sys` `/dev` plus tmpfs and cgroup2.

@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-08-30)
+## As-built (2026-08-31)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -35,10 +35,11 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
+    /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
     seatd              svc:seatd (DRM seat)
-    river              svc:river (glibc, pixman, socket /run/user/0)
+    river              svc:river (glibc, pixman, libinput path, socket /run/user/0)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
@@ -72,4 +73,5 @@ build CLI: `cargo make`). Artifacts in `build/` (gitignored).
 [specs/2026-08-30-devices.md](specs/2026-08-30-devices.md) ·
 [specs/2026-08-30-display.md](specs/2026-08-30-display.md) ·
 [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) ·
-[specs/2026-08-30-sola.md](specs/2026-08-30-sola.md)
+[specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) ·
+[specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md)

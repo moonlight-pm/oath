@@ -12,6 +12,8 @@ boot (kernel views, not catalog kinds).
 | `dev:net0` | net | `/sys/class/net/net0` |
 | `dev:ttyS0` | tty | `/dev/ttyS0` |
 | `dev:card0` | drm | `/dev/dri/card0` (virtio-gpu) |
+| `dev:kbd0` | input | `/dev/input/event*` (virtio keyboard; node from sysfs name) |
+| `dev:mouse0` | input | `/dev/input/event*` (virtio mouse; node from sysfs name) |
 
 Not removable. `oath set dev:vda present=false` is refused.
 

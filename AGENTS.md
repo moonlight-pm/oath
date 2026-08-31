@@ -74,11 +74,11 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 - **Libc:** musl base; glibc only as a runtime object. Never two libcs in
   one process.
 
-Active freeze:
+Latest freeze:
+[`docs/specs/2026-08-30-libinput.md`](docs/specs/2026-08-30-libinput.md)
+(T22 shipped; libinput, no udevd). T21:
 [`docs/specs/2026-08-30-sola.md`](docs/specs/2026-08-30-sola.md)
-(T21; River/seatd in, full Sola not). Active plan:
-[`docs/plans/2026-08-30-sola-river-plan.md`](docs/plans/2026-08-30-sola-river-plan.md)
-(`oath-sola` still out).
+(River/seatd in, full Sola not). No open plan; next is `oath-sola`.
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).

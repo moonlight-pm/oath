@@ -80,6 +80,8 @@ pub trait ApplyHooks {
             "net0" => ("net", "/sys/class/net/net0"),
             "ttyS0" => ("tty", "/dev/ttyS0"),
             "card0" => ("drm", "/dev/dri/card0"),
+            "kbd0" => ("input", "/dev/input/event0"),
+            "mouse0" => ("input", "/dev/input/event1"),
             _ => ("unknown", ""),
         };
         Ok(DevActual { present: true, class: class.into(), node: node.into() })

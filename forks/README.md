@@ -14,7 +14,7 @@ git clone --recurse-submodules https://github.com/moonlight-pm/oath.git
 |------|----------|------------|----------------|
 | `sola/` | [moonlight-pm/Sola](https://github.com/moonlight-pm/Sola) | `moonlight-pm/oath-sola` (not added yet) | Oath-compat: catalog, `svc:*`, no nested supervisor |
 | `river/` | [riverwm/river](https://github.com/riverwm/river) | [moonlight-pm/oath-river](https://github.com/moonlight-pm/oath-river) | River 0.4.5 + Sola’s three River patches as commits |
-| `wlroots/` | [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots) | [moonlight-pm/oath-wlroots](https://github.com/moonlight-pm/oath-wlroots) | Sola’s screencopy cursor patch as a commit |
+| `wlroots/` | [wlroots](https://gitlab.freedesktop.org/wlroots/wlroots) | [moonlight-pm/oath-wlroots](https://github.com/moonlight-pm/oath-wlroots) | Sola’s screencopy cursor patch; libinput path fallback when udev finds no devices |
 
 **Put a tree here** when we patch it or reshape it for Oath.
 

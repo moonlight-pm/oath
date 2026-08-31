@@ -12,8 +12,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T21 River-first is closed (River/wlroots forks in;
-`oath-sola` not created; no udev/libinput).
+None open. T22 is libinput without udev (path backend). T21
+River-first is closed (River/wlroots forks in; `oath-sola` not
+created).
 
 ---
 
@@ -185,6 +186,12 @@ PID 1 is the only supervisor. glibc is sealed `pkg:glibc`.
 not created. First-party pkg sources under `apps/`. Full Sola
 session and udev/libinput out of this slice.
 
+### T22 — Libinput without udev — locked 2026-08-30
+
+libinput stays inside `pkg:river`. wlroots falls back to the path
+backend on `/dev/input/event*`. evdev module. `dev:kbd0` /
+`dev:mouse0`. No udevd. No `pkg:libinput`. No new kind.
+
 ---
 
 ## Decision log
@@ -202,3 +209,4 @@ session and udev/libinput out of this slice.
 | 2026-08-30 | T19 | virtio-gpu display canary | this file; [specs/2026-08-30-display.md](specs/2026-08-30-display.md) |
 | 2026-08-30 | T20 | pkg.url origin; Oath hosts as store | this file; [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) |
 | 2026-08-30 | T21 | Sola on Oath; River first; forks/ | this file; [specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) |
+| 2026-08-30 | T22 | libinput path backend; no udev | this file; [specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) |

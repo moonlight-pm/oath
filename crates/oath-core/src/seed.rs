@@ -159,6 +159,8 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_dev(root, "net0", "net", "/sys/class/net/net0")?;
     seed_dev(root, "ttyS0", "tty", "/dev/ttyS0")?;
     seed_dev(root, "card0", "drm", "/dev/dri/card0")?;
+    seed_dev(root, "kbd0", "input", "")?;
+    seed_dev(root, "mouse0", "input", "")?;
 
     let cur = ObjectId::new(KIND_SNAP, "current");
     let gen0 = json!({ "generation": 0 });

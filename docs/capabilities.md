@@ -8,7 +8,7 @@ Product docs: [`manual/`](manual/) — current behavior.
 
 **Status vocabulary:** `shipped` · `partial` · `spec’d` · `planned` · `idea`
 
-**As of:** 2026-08-30
+**As of:** 2026-08-31
 
 ---
 
@@ -25,9 +25,9 @@ Product docs: [`manual/`](manual/) — current behavior.
 | boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | borrowed kernel; River as `svc:river` | [qemu](manual/qemu.md) |
 | pkg | Package objects | partial | [freeze](specs/2026-08-30-pkg-hosting.md) | QEMU probe + fetchme | T20 identity: `pkg.url`, peer Oath host as origin; no guest store export, hash, deps, or versions | [packages](manual/packages.md) |
 | net | Network objects | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | QEMU probe ping + SSH | dhcp implemented; LAN bridge opt-in (`OATH_BRIDGE`) | [network](manual/network.md) |
-| dev | Device objects | partial | [freeze](specs/2026-08-30-display.md) | QEMU probe | vda/net0/ttyS0/card0; no module loader; no udev | [devices](manual/devices.md) |
+| dev | Device objects | partial | [freeze](specs/2026-08-30-libinput.md) | QEMU probe | vda/net0/ttyS0/card0/kbd0/mouse0; no module loader; no udev | [devices](manual/devices.md) |
 | ssh | Root SSH via catalog keys | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | probe login/deny/undo/reboot | dropbear; no baked private key; no second Unix user | [ssh](manual/ssh.md) |
 | agent | Agent runtime as a system component | idea | — | — | serial or SSH client | no |
 | update | Base-image updates | idea | — | — | generations are the primitive | no |
 | install | Installer to a disk | idea | — | — | not started | no |
-| sola | Sola session on Oath | partial | [freeze](specs/2026-08-30-sola.md) | QEMU probe river + Wayland socket | full session out; no udev/libinput; no `oath-sola` fork | [services](manual/services.md) |
+| sola | Sola session on Oath | partial | [freeze](specs/2026-08-30-libinput.md) | QEMU probe river.keyboard / river.pointer | full session out; no udevd; no `oath-sola` fork | [services](manual/services.md) |

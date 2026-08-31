@@ -399,6 +399,30 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test -c /dev/input/event0 && echo EVDEV_OK",
+        Some("EVDEV_OK"),
+        "dev.evdev",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get dev:kbd0 --actual",
+        Some("/dev/input/event"),
+        "dev.kbd0",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get dev:mouse0 --actual",
+        Some("/dev/input/event"),
+        "dev.mouse0",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath get pkg:glibc --actual",
         Some("\"present\": true"),
         "pkg.glibc_present",
@@ -434,6 +458,22 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "test -S /run/user/0/wayland-0 -o -S /run/user/0/wayland-1 && echo WAYLAND_UP",
         Some("WAYLAND_UP"),
         "river.wayland",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "grep -i keyboard /oath/log/river.log && echo LI_KBD",
+        Some("LI_KBD"),
+        "river.keyboard",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "grep -iE 'mouse|pointer' /oath/log/river.log && echo LI_PTR",
+        Some("LI_PTR"),
+        "river.pointer",
         Duration::from_secs(8),
     )?;
     cmd(
@@ -899,6 +939,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "oath ls --kind dev",
         Some("dev:vda"),
         "reboot.dev_vda",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm2,
+        &mut steps,
+        "oath get dev:kbd0 --actual",
+        Some("/dev/input/event"),
+        "reboot.kbd0",
         Duration::from_secs(8),
     )?;
     cmd(

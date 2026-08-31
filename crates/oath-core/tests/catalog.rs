@@ -158,6 +158,8 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "dev:net0"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:ttyS0"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:card0"));
+    assert!(ids.iter().any(|i| i.to_string() == "dev:kbd0"));
+    assert!(ids.iter().any(|i| i.to_string() == "dev:mouse0"));
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));

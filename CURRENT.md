@@ -7,19 +7,19 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-08-30
+**As of:** 2026-08-31
 
 ---
 
 ## Now
 
-1. **T21 River holds DRM** (`svc:seatd` + pixman `svc:river`). gtk
-   window should stay up (black; no clients). No pointer/keyboard yet
-   (no udev). Next: `oath-sola` fork, or libinput.
+1. **T22 in.** River takes virtio keyboard/mouse (`dev:kbd0` /
+   `dev:mouse0`, libudev-zero; path fallback in wlroots). gtk
+   window should move a pointer. Next: `oath-sola` fork.
 2. **T20 hosting locked**, not implemented.
 3. Do not add a throwaway compositor or a placeholder `pkg:sola`.
    Do not install to a real disk. glibc runtime is allowed **only**
-   as `pkg:glibc` for this payload (never in PID 1).
+   as `pkg:glibc` for this payload (never in PID 1). No udevd.
 
 **Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe` (`--build` on run/up/start).
 
@@ -31,7 +31,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk compositor if DISPLAY (black; no pointer/keyboard). Host SSH keys on up/start. Manual: `docs/manual/`. |
+| Notes | `dev:card0` + gtk compositor if DISPLAY (`dev:kbd0` / `dev:mouse0`, no udevd). Host SSH keys on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
@@ -63,7 +63,8 @@ Do not re-litigate without an explicit decision.
   the console; `svc:sshd` is dropbear; `svc:hold` wants serial;
   `svc:river` wants `svc:seatd`.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
-  is pixman River (no udev/libinput).
+  is pixman River. Input is libinput via libudev-zero (`dev:kbd0` /
+  `dev:mouse0`). No udevd. Path fallback in `forks/wlroots`.
 - Sola on Oath: PID 1 is the only supervisor. First slice is patched
   **River** as `pkg:river` + `svc:river`. glibc is sealed `pkg:glibc`.
   `forks/river` + `forks/wlroots` in; `oath-sola` not. First-party pkg
@@ -76,10 +77,10 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
-  (T21, River/seatd partial)
-- Plan: [docs/plans/2026-08-30-sola-river-plan.md](docs/plans/2026-08-30-sola-river-plan.md)
-  (`oath-sola` still out)
+- Freeze: [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
+  (T22 shipped). T21: [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
+- Plan: [docs/plans/2026-08-30-libinput-plan.md](docs/plans/2026-08-30-libinput-plan.md)
+  (complete). Next: `oath-sola` fork.
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
 - Roadmap: display canary in; River as `svc`; full Sola not

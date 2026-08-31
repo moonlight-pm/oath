@@ -10,13 +10,15 @@ devtmpfs, not the admin UI. There is no udev.
 the link; `dev:net0` is the NIC.
 
 v0 objects: `dev:vda` (root disk), `dev:net0`, `dev:ttyS0`,
-`dev:card0` (virtio-gpu). Not removable.
+`dev:card0` (virtio-gpu), `dev:kbd0`, `dev:mouse0`. Not removable.
 
 ## Fields
 
 - `present` — in inventory. `false` is refused on these objects.
 
-Actual also has `class` (`block` / `net` / `tty`) and `node`.
+Actual also has `class` (`block` / `net` / `tty` / `drm` / `input`)
+and `node`. `kbd0` / `mouse0` nodes come from sysfs names, not
+stable event numbers.
 
 ## Example
 

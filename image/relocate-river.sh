@@ -101,6 +101,18 @@ for f in "${!SEEN[@]}"; do
   chmod u+w "$d" 2>/dev/null || true
 done
 
+# systemd libudev needs udevd. libudev-zero does not (T22).
+if [[ -n ${LIBUDEV_ZERO:-} && -e $LIBUDEV_ZERO/lib/libudev.so.1 ]]; then
+  rm -f "$out/river/lib"/libudev.so*
+  cp -a "$LIBUDEV_ZERO/lib/libudev.so.1" "$out/river/lib/libudev.so.1"
+  chmod u+w "$out/river/lib/libudev.so.1" 2>/dev/null || true
+fi
+
+if [[ -n ${LIBINPUT_SHARE:-} && -d $LIBINPUT_SHARE ]]; then
+  mkdir -p "$out/river/share/libinput"
+  cp -aL "$LIBINPUT_SHARE/." "$out/river/share/libinput/"
+fi
+
 # DRI / GBM names Mesa looks up.
 if [[ -n ${MESA:-} ]]; then
   if [[ -e $out/river/lib/libdril_dri.so ]]; then
@@ -183,8 +195,8 @@ export XKB_CONFIG_ROOT=/oath/store/pkg/river/share/X11/xkb
 # virtio-gpu-pci is 2D; gles2 needs virgl. Same as Sola's QEMU session.
 export WLR_RENDERER=pixman
 export WLR_RENDERER_ALLOW_SOFTWARE=1
-# No udev: libinput finds no devices and wlroots refuses to start.
-export WLR_LIBINPUT_NO_DEVICES=1
+# No udevd: libudev-zero + wlroots path fallback on /dev/input/event*.
+export LIBINPUT_QUIRKS_DIR=/oath/store/pkg/river/share/libinput
 unset WAYLAND_DISPLAY
 unset DISPLAY
 exec /oath/store/pkg/river/libexec/river -log-level info -c : >>/oath/log/river.log 2>&1

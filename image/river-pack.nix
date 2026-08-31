@@ -5,6 +5,8 @@
 , xkeyboard_config
 , libglvnd
 , seatd
+, libudev-zero
+, libinput
 , patchelf
 , file
 , bash
@@ -31,6 +33,8 @@ runCommand "oath-river-pack"
     XKB = xkeyboard_config;
     LIBGLVND = libglvnd;
     SEATD = seatd.bin or seatd;
+    LIBUDEV_ZERO = libudev-zero;
+    LIBINPUT_SHARE = "${libinput.out}/share/libinput";
   } ''
   ${bash}/bin/bash ${./relocate-river.sh} "$out"
 ''

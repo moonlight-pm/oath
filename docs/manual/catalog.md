@@ -34,7 +34,7 @@ If a kind is not under `/oath/schema`, it does not exist.
 | `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `glibc`, `river`, `hello`, `fetchme` | Store + `/bin` symlink farm |
 | `net` | `net:net0` | Static IPv4 or `dhcp` |
 | `ssh` | `ssh:local` | Root authorized keys |
-| `dev` | `vda`, `net0`, `ttyS0`, `card0` | Hardware inventory |
+| `dev` | `vda`, `net0`, `ttyS0`, `card0`, `kbd0`, `mouse0` | Hardware inventory |
 
 `host` and `snap:current` share schema between desired and actual.
 `svc` actual is runtime (`state`, `pid`, `restarts`); drift is desired

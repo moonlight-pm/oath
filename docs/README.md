@@ -48,6 +48,7 @@ ask the human.
 | [`specs/2026-08-30-display.md`](specs/2026-08-30-display.md) | virtio-gpu display canary | **Target** |
 | [`specs/2026-08-30-pkg-hosting.md`](specs/2026-08-30-pkg-hosting.md) | T20 hosting (`pkg.url`, peer origin) | **Target** (not implemented) |
 | [`specs/2026-08-30-sola.md`](specs/2026-08-30-sola.md) | T21 Sola on Oath, River first | **Target** (River/seatd in) |
+| [`specs/2026-08-30-libinput.md`](specs/2026-08-30-libinput.md) | T22 libinput without udev | **Target** (shipped) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
@@ -58,7 +59,8 @@ ask the human.
 | [`plans/2026-08-30-devices-plan.md`](plans/2026-08-30-devices-plan.md) | Devices + Unix floor | **Build** (complete) |
 | [`plans/2026-08-30-wants-fetch-plan.md`](plans/2026-08-30-wants-fetch-plan.md) | wants + fetch | **Build** (complete) |
 | [`plans/2026-08-30-display-plan.md`](plans/2026-08-30-display-plan.md) | Display canary | **Build** (complete) |
-| [`plans/2026-08-30-sola-river-plan.md`](plans/2026-08-30-sola-river-plan.md) | T21 River first | **Build** (open) |
+| [`plans/2026-08-30-sola-river-plan.md`](plans/2026-08-30-sola-river-plan.md) | T21 River first | **Build** (complete) |
+| [`plans/2026-08-30-libinput-plan.md`](plans/2026-08-30-libinput-plan.md) | T22 libinput without udev | **Build** (complete) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 
