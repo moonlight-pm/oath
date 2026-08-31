@@ -17,7 +17,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/0/sola-call`. |
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |
 | `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher. Wants river + bus + call + the bridge. Software GL. |
-| `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). |
+| `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). First kit app is `/bin/sola-terminal` (tmux helper in `pkg:sola`). |
 
 **Quit Sola** (flower menu) broadcasts shutdown and the session processes
 exit 0. PID 1 does **not** restart them (`on-failure` only). River the

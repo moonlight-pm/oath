@@ -44,6 +44,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-river         svc:sola-river (bridge, not the compositor)
     sola-shell         svc:sola-shell (iced menubar; software GL; McMojave)
     sola-session       svc:sola-session (LaunchApp; direct spawn)
+    sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
@@ -84,4 +85,5 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) ·
 [specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) ·
 [specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) ·
-[specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md)
+[specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md) ·
+[specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md)

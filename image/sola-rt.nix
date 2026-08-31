@@ -6,10 +6,12 @@
 , libffi
 , libglvnd
 , vulkan-loader
+, tmux
+, ncurses
 , runCommand
 }:
 # Host `cargo build` produces the Sola ELFs. This tree is the dlopen
-# runtime relocate-sola.sh walks (wayland, fonts, vulkan loader).
+# runtime relocate-sola.sh walks (wayland, fonts, vulkan loader, tmux).
 runCommand "oath-sola-rt" { } ''
   mkdir -p $out
   ln -s ${wayland} $out/wayland
@@ -20,4 +22,6 @@ runCommand "oath-sola-rt" { } ''
   ln -s ${libffi} $out/libffi
   ln -s ${libglvnd} $out/libglvnd
   ln -s ${vulkan-loader} $out/vulkan-loader
+  ln -s ${tmux} $out/tmux
+  ln -s ${ncurses} $out/ncurses
 ''

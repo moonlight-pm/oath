@@ -16,4 +16,5 @@ Completed plans stay here as history.
 [2026-08-30-sola-river-plan.md](2026-08-30-sola-river-plan.md),
 [2026-08-30-libinput-plan.md](2026-08-30-libinput-plan.md),
 [2026-08-30-oath-sola-plan.md](2026-08-30-oath-sola-plan.md),
-[2026-08-31-sola-session-plan.md](2026-08-31-sola-session-plan.md).
+[2026-08-31-sola-session-plan.md](2026-08-31-sola-session-plan.md),
+[2026-08-31-sola-terminal-plan.md](2026-08-31-sola-terminal-plan.md).

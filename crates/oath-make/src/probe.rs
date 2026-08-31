@@ -542,6 +542,23 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test -x /bin/sola-terminal && test -x /bin/tmux && echo TERM_BINS",
+        Some("TERM_BINS"),
+        "sola.terminal_bins",
+        Duration::from_secs(8),
+    )?;
+    cmd(&mut vm, &mut steps, "tmux -V", Some("tmux"), "sola.tmux", Duration::from_secs(8))?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "sola-terminal >/dev/null 2>&1 & sleep 8; pidof sola-terminal >/dev/null && echo TERM_UP",
+        Some("TERM_UP"),
+        "sola.terminal",
+        Duration::from_secs(24),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath set dev:vda present=false",
         Some("not removable"),
         "dev.refuse",

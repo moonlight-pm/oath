@@ -18,6 +18,7 @@ path fallback in wlroots). T21 River-first is closed
 + session `svc:*`; no nested PM). T24 development layout is closed
 (one `pkg:sola` blob; develop Sola on Nix until Oath is the host).
 T25 session manager is closed (`svc:sola-session` in that blob).
+T26 sola-terminal is closed (sixth ELF + tmux helper in `pkg:sola`).
 
 ---
 
@@ -210,7 +211,13 @@ stays on the fork ([forks/README.md](../forks/README.md)).
 
 `svc:sola-session` is the LaunchApp / CloseApp owner, fifth ELF in
 `pkg:sola`. Direct spawn (no systemd). Dual-mode logs and Wayland.
-Not a nested process manager. Kit apps still out.
+Not a nested process manager. First kit app is T26.
+
+### T26 — First kit app (`sola-terminal`) — locked 2026-08-31
+
+`sola-terminal` is the sixth ELF in the one `pkg:sola` blob, with
+tmux as a helper in that same tree. Not a new kind. Not a `svc`.
+PID 1 does not supervise it. Other kit apps still out.
 
 ### T24 — Sola / app development layout — locked 2026-08-31
 
@@ -241,3 +248,4 @@ seat in `oath-sola`.
 | 2026-08-30 | T23 | oath-sola fork; session as `svc:*`; no nested PM | this file; [specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) |
 | 2026-08-31 | T24 | Sola/app dev: apply/undo; one sola blob; Nix host until Oath is | this file; [specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) |
 | 2026-08-31 | T25 | sola-session as svc; LaunchApp owner; still one sola blob | this file; [specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md) |
+| 2026-08-31 | T26 | sola-terminal + tmux in pkg:sola; no new kind | this file; [specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md) |

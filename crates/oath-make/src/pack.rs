@@ -37,6 +37,10 @@ const MODULES: &[&str] = &[
     "kernel/fs/btrfs/btrfs.ko.xz",
 ];
 
+/// Session + first kit app ELFs packed into `pkg:sola`.
+const SOLA_KIT_ELFS: &[&str] =
+    &["sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session", "sola-terminal"];
+
 pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::create_dir_all(out)?;
     eprintln!("kernel={}", tools.kernel.display());
@@ -174,7 +178,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     }
     let sola = pack_sola(root, tools, out)?;
     copy_tree(&sola, &oath_root.join("store/pkg/sola"))?;
-    for b in ["sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session"] {
+    for b in SOLA_KIT_ELFS.iter().copied().chain(std::iter::once("tmux")) {
         chmod_exec(&oath_root.join("store/pkg/sola/bin").join(b))?;
         chmod_exec(&oath_root.join("store/pkg/sola/libexec").join(b))?;
     }
@@ -197,18 +201,29 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     let rootfs = out.join("rootfs");
     fs::create_dir_all(&mnt)?;
     fs::create_dir_all(&rootfs)?;
-    sudo(&["mount", "-o", "loop", raw.to_str().unwrap(), mnt.to_str().unwrap()])?;
+    // nix-shell puts busybox `mount` first; that binary does not
+    // understand `subvol=@`. Use the host util-linux wrappers.
+    let mount = host_mount();
+    let umount = host_umount();
+    sudo(&[mount.as_str(), "-o", "loop", raw.to_str().unwrap(), mnt.to_str().unwrap()])?;
     let mount_ok = (|| -> Result<()> {
         sudo(&["btrfs", "subvolume", "create", mnt.join("@").to_str().unwrap()])?;
-        sudo(&["mount", "-o", "loop,subvol=@", raw.to_str().unwrap(), rootfs.to_str().unwrap()])?;
+        sudo(&[umount.as_str(), mnt.to_str().unwrap()])?;
+        sudo(&[
+            mount.as_str(),
+            "-o",
+            "loop,subvol=@",
+            raw.to_str().unwrap(),
+            rootfs.to_str().unwrap(),
+        ])?;
         let stage_dot = format!("{}/.", stage.display());
         sudo(&["cp", "-a", &stage_dot, &format!("{}/", rootfs.display())])?;
         sudo(&["chown", "-R", "0:0", rootfs.to_str().unwrap()])?;
-        sudo(&["umount", rootfs.to_str().unwrap()])?;
+        sudo(&[umount.as_str(), rootfs.to_str().unwrap()])?;
         Ok(())
     })();
-    let um = sudo(&["umount", mnt.to_str().unwrap()]);
-    mount_ok.and(um)?;
+    let _ = sudo(&[umount.as_str(), mnt.to_str().unwrap()]);
+    mount_ok?;
     run(Command::new(&tools.qemu_img).args([
         "convert",
         "-f",
@@ -285,6 +300,8 @@ fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
         ("FONTCONFIG", "fontconfig"),
         ("FREETYPE", "freetype"),
         ("INTER", "inter"),
+        ("TMUX_BIN", "tmux"),
+        ("NCURSES", "ncurses"),
     ] {
         let p = rt.join(name);
         if p.exists() {
@@ -311,22 +328,14 @@ fn sola_release_bins(root: &Path) -> Result<PathBuf> {
     fs::create_dir_all(&target)?;
     let wt = ensure_sola_worktree(&src)?;
     eprintln!(">> cargo build sola session ({})", wt.display());
-    run(Command::new("cargo").current_dir(&wt).env("CARGO_TARGET_DIR", &target).args([
-        "build",
-        "--release",
-        "-p",
-        "sola-bus",
-        "-p",
-        "sola-call",
-        "-p",
-        "sola-river",
-        "-p",
-        "sola-shell",
-        "-p",
-        "sola-session",
-    ]))?;
+    let mut args = vec!["build".to_string(), "--release".to_string()];
+    for n in SOLA_KIT_ELFS {
+        args.push("-p".to_string());
+        args.push((*n).to_string());
+    }
+    run(Command::new("cargo").current_dir(&wt).env("CARGO_TARGET_DIR", &target).args(&args))?;
     let bins = target.join("release");
-    for n in ["sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session"] {
+    for n in SOLA_KIT_ELFS {
         if !bins.join(n).is_file() {
             bail!("missing sola {n} in {}", bins.display());
         }
@@ -377,6 +386,24 @@ fn first_dir(modules: &Path) -> Option<String> {
         .collect();
     names.sort();
     names.into_iter().next()
+}
+
+fn host_mount() -> String {
+    for p in ["/run/wrappers/bin/mount", "/usr/bin/mount"] {
+        if Path::new(p).is_file() {
+            return p.to_string();
+        }
+    }
+    "mount".into()
+}
+
+fn host_umount() -> String {
+    for p in ["/run/wrappers/bin/umount", "/usr/bin/umount"] {
+        if Path::new(p).is_file() {
+            return p.to_string();
+        }
+    }
+    "umount".into()
 }
 
 fn nix_uid() -> u32 {

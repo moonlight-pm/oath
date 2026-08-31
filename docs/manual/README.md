@@ -25,7 +25,8 @@ that are not there.
 
 ## What this is not
 
-No installer, no full Sola apps (browser, mail, …). Packages: sealed
+No installer. Sola terminal is packed; other kit apps (browser, mail,
+…) are not. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
 `sola`, `hello`, and `fetchme`. `svc:seatd` + `svc:river` is the
 compositor (libinput via libudev-zero; no udevd). `svc:sola-bus` /

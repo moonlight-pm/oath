@@ -13,10 +13,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **T25 session manager in.** `svc:sola-session` in `pkg:sola`
-   (LaunchApp owner). gtk 1280×800 1:1 when `DISPLAY`. Kit apps
-   (browser, terminal, …) still out. Next: pack a first kit app, or
-   T20 hosting (locked, not implemented).
+1. **T26 sola-terminal in.** Sixth ELF in the one `pkg:sola` blob
+   (`/bin/sola-terminal` + tmux helper). Probe `sola.terminal`.
+   Other kit apps (browser, mail, settings, …) still out. Next:
+   pack another kit app, or T20 hosting (locked, not implemented).
 2. **T24 locked**, not implemented (Oath-as-dev-host). Keep one
    `pkg:sola` blob. Develop Sola on Nix until Oath is the host.
 3. **T20 hosting locked**, not implemented.
@@ -34,7 +34,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Host SSH keys on up/start. Manual: `docs/manual/`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Launcher Terminal is `/bin/sola-terminal`. Host SSH keys on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
@@ -75,7 +75,8 @@ Do not re-litigate without an explicit decision.
   Path fallback in `forks/wlroots`.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 + T25 (`pkg:sola` + `svc:sola-bus` /
-  `call` / `river` / `shell` / `session`). **T24:** one `pkg:sola`
+  `call` / `river` / `shell` / `session`). First kit app is T26
+  (`/bin/sola-terminal` + tmux in that blob). **T24:** one `pkg:sola`
   blob; develop Sola on Nix until Oath is the host; then development
   versions are apply/undo of the real objects (no second PATH, no
   nested PM). glibc is sealed `pkg:glibc`. `forks/river` +
@@ -93,17 +94,19 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-31-sola-session.md](docs/specs/2026-08-31-sola-session.md)
-  (T25 session manager). T24:
+- Freeze: [docs/specs/2026-08-31-sola-terminal.md](docs/specs/2026-08-31-sola-terminal.md)
+  (T26 sola-terminal). T25:
+  [docs/specs/2026-08-31-sola-session.md](docs/specs/2026-08-31-sola-session.md)
+  (session manager). T24:
   [docs/specs/2026-08-31-sola-dev.md](docs/specs/2026-08-31-sola-dev.md)
   (identity). T23:
   [docs/specs/2026-08-30-oath-sola.md](docs/specs/2026-08-30-oath-sola.md)
   (session stack). T22:
   [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
   (shipped).
-- Plan: [docs/plans/2026-08-31-sola-session-plan.md](docs/plans/2026-08-31-sola-session-plan.md)
+- Plan: [docs/plans/2026-08-31-sola-terminal-plan.md](docs/plans/2026-08-31-sola-terminal-plan.md)
   (complete).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
 - Roadmap: display canary in; River as `svc`; Sola session stack +
-  session manager as `svc`; kit apps not
+  session manager as `svc`; sola-terminal packed; other kit apps not

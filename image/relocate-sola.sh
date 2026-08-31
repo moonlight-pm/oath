@@ -10,6 +10,13 @@ guest_sola=/oath/store/pkg/sola/lib
 rpath="$guest_glibc:$guest_river:$guest_sola"
 interp_guest="$guest_glibc/ld-linux-x86-64.so.2"
 
+# Nix store copies land mode 555; `cp -a` keeps that, and a later
+# rebuild cannot replace the tree.
+if [[ -e $out ]]; then
+  chmod -R u+w "$out" 2>/dev/null || true
+  rm -rf "$out"
+fi
+
 mkdir -p "$out/lib" "$out/bin" "$out/libexec" \
   "$out/share/fonts" "$out/share/icons" "$out/share/cursors" "$out/etc/fonts"
 
@@ -40,12 +47,23 @@ enqueue() {
   queue+=("$real")
 }
 
-bins=(sola-bus sola-call sola-river sola-shell sola-session)
-for b in "${bins[@]}"; do
+kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal)
+for b in "${kit_bins[@]}"; do
   src="${SOLA_BINS:?}/$b"
   [[ -f $src ]] || { echo "relocate-sola: missing $src" >&2; exit 1; }
   enqueue "$src"
 done
+
+tmux_src=""
+if [[ -n ${TMUX_BIN:-} ]]; then
+  if [[ -f $TMUX_BIN ]]; then
+    tmux_src=$TMUX_BIN
+  elif [[ -f $TMUX_BIN/bin/tmux ]]; then
+    tmux_src=$TMUX_BIN/bin/tmux
+  fi
+fi
+[[ -n $tmux_src ]] || { echo "relocate-sola: TMUX_BIN missing (need tmux for sola-terminal)" >&2; exit 1; }
+enqueue "$tmux_src"
 
 enqueue_glob() {
   local g
@@ -106,7 +124,7 @@ for f in "${!SEEN[@]}"; do
     continue
   fi
   case "$name" in
-    sola-bus|sola-call|sola-river|sola-shell|sola-session) continue ;;
+    sola-bus|sola-call|sola-river|sola-shell|sola-session|sola-terminal|tmux) continue ;;
   esac
   d="$out/lib/$name"
   cp -a "$f" "$d"
@@ -146,6 +164,29 @@ if [[ -n ${INTER:-} ]]; then
   fi
 fi
 
+# tmux / inner shells need a few terminfo entries, not the whole tree.
+if [[ -n ${NCURSES:-} ]]; then
+  term_root=""
+  for src in "$NCURSES/share/terminfo" "$NCURSES/lib/terminfo"; do
+    if [[ -d $src ]]; then
+      term_root=$src
+      break
+    fi
+  done
+  if [[ -n $term_root ]]; then
+    mkdir -p "$out/share/terminfo"
+    for t in xterm xterm-256color tmux tmux-256color screen screen-256color; do
+      letter=${t:0:1}
+      if [[ -e $term_root/$letter/$t ]]; then
+        mkdir -p "$out/share/terminfo/$letter"
+        chmod u+w "$out/share/terminfo" "$out/share/terminfo/$letter"
+        cp "$term_root/$letter/$t" "$out/share/terminfo/$letter/$t"
+        chmod u+w "$out/share/terminfo/$letter/$t" 2>/dev/null || true
+      fi
+    done
+  fi
+fi
+
 cat >"$out/etc/fonts/fonts.conf" <<'EOF'
 <?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
@@ -164,19 +205,19 @@ find "$out/lib" -type f 2>/dev/null | while read -r f; do
   patchelf --set-rpath "$rpath" "$f" 2>/dev/null || true
 done
 
-for b in "${bins[@]}"; do
-  src="$SOLA_BINS/$b"
-  cp -a "$src" "$out/libexec/$b"
-  chmod u+w "$out/libexec/$b"
-  chmod +x "$out/libexec/$b"
-  if patchelf --print-interpreter "$out/libexec/$b" >/dev/null 2>&1; then
-    patchelf --set-interpreter "$interp_guest" "$out/libexec/$b"
+patchelf_libexec() {
+  local dest=$1
+  chmod u+w "$dest"
+  chmod +x "$dest"
+  if patchelf --print-interpreter "$dest" >/dev/null 2>&1; then
+    patchelf --set-interpreter "$interp_guest" "$dest"
   fi
-  patchelf --set-rpath "$rpath" "$out/libexec/$b"
-  cat >"$out/bin/$b" <<WRAP
-#!/bin/sh
-export PATH=/bin
+  patchelf --set-rpath "$rpath" "$dest"
+}
+
+guest_env='export PATH=/bin
 export HOME=/root
+export SHELL=/bin/sh
 export XDG_RUNTIME_DIR=/run/user/0
 export XDG_CACHE_HOME=/tmp
 export SOLA_NO_SELF_WATCH=1
@@ -186,20 +227,41 @@ export FONTCONFIG_PATH=/oath/store/pkg/sola/etc/fonts
 export SOLA_ASSETS_DIR=/oath/store/pkg/sola/share
 export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
 export XCURSOR_THEME=McMojave
+export TERMINFO=/oath/store/pkg/sola/share/terminfo
+export TERM=xterm-256color
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export WGPU_BACKEND=gl
 export LIBGL_ALWAYS_SOFTWARE=1
 # virtio-gpu lists 4K CVT modes; sola-river default is max ≥60Hz.
-export SOLA_OUTPUT_PICK=preferred
+export SOLA_OUTPUT_PICK=preferred'
+
+for b in "${kit_bins[@]}"; do
+  src="$SOLA_BINS/$b"
+  cp -a "$src" "$out/libexec/$b"
+  patchelf_libexec "$out/libexec/$b"
+  cat >"$out/bin/$b" <<WRAP
+#!/bin/sh
+$guest_env
 /bin/mkdir -p /tmp/fontconfig /oath/log
 exec /oath/store/pkg/sola/libexec/$b "\$@" >>/oath/log/$b.log 2>&1
 WRAP
   chmod +x "$out/bin/$b"
 done
 
-for b in "${bins[@]}"; do
+# tmux is a PTY child — must not steal stdout into a log file.
+cp -a "$tmux_src" "$out/libexec/tmux"
+patchelf_libexec "$out/libexec/tmux"
+cat >"$out/bin/tmux" <<WRAP
+#!/bin/sh
+$guest_env
+exec /oath/store/pkg/sola/libexec/tmux "\$@"
+WRAP
+chmod +x "$out/bin/tmux"
+
+for b in "${kit_bins[@]}" tmux; do
   [[ -x $out/libexec/$b ]] || { echo "relocate-sola: missing libexec/$b" >&2; exit 1; }
   [[ -x $out/bin/$b ]] || { echo "relocate-sola: missing bin/$b" >&2; exit 1; }
 done
+[[ -d $out/share/terminfo ]] || { echo "relocate-sola: missing share/terminfo" >&2; exit 1; }
