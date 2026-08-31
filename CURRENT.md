@@ -34,7 +34,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Host SSH keys on up/start. Manual: `docs/manual/`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Host SSH keys on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
