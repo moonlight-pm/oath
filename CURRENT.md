@@ -7,19 +7,20 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-08-31
+**As of:** 2026-08-30
 
 ---
 
 ## Now
 
-1. **T22 in.** River takes virtio keyboard/mouse (`dev:kbd0` /
-   `dev:mouse0`, libudev-zero; path fallback in wlroots). gtk
-   window should move a pointer. Next: `oath-sola` fork.
+1. **T23 open.** `forks/sola` is `moonlight-pm/oath-sola` (private).
+   Next: pack the session stack as `pkg:sola` + `svc:sola-bus` /
+   `sola-call` / `sola-river` / `sola-shell`. Do not run
+   `crates/sola`.
 2. **T20 hosting locked**, not implemented.
-3. Do not add a throwaway compositor or a placeholder `pkg:sola`.
-   Do not install to a real disk. glibc runtime is allowed **only**
-   as `pkg:glibc` for this payload (never in PID 1). No udevd.
+3. Do not add a throwaway compositor. Do not install to a real disk.
+   glibc runtime is allowed **only** as `pkg:glibc` for this payload
+   (never in PID 1). No udevd. No nested Sola process manager.
 
 **Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe` (`--build` on run/up/start).
 
@@ -65,10 +66,12 @@ Do not re-litigate without an explicit decision.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
   is pixman River. Input is libinput via libudev-zero (`dev:kbd0` /
   `dev:mouse0`). No udevd. Path fallback in `forks/wlroots`.
-- Sola on Oath: PID 1 is the only supervisor. First slice is patched
-  **River** as `pkg:river` + `svc:river`. glibc is sealed `pkg:glibc`.
-  `forks/river` + `forks/wlroots` in; `oath-sola` not. First-party pkg
-  sources under `apps/` (`hello`, `fetchme`).
+- Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
+  `svc:river`. Session stack is T23 (`pkg:sola` + `svc:sola-bus` /
+  `call` / `river` / `shell`) — forked, not packed. glibc is sealed
+  `pkg:glibc`. `forks/river` + `forks/wlroots` + `forks/sola`. Do not
+  run `crates/sola`. First-party pkg sources under `apps/` (`hello`,
+  `fetchme`).
 - MIT, Copyright (c) Joshua Kifer.
 
 ---
@@ -77,10 +80,14 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
-  (T22 shipped). T21: [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
-- Plan: [docs/plans/2026-08-30-libinput-plan.md](docs/plans/2026-08-30-libinput-plan.md)
-  (complete). Next: `oath-sola` fork.
+- Freeze: [docs/specs/2026-08-30-oath-sola.md](docs/specs/2026-08-30-oath-sola.md)
+  (T23, fork in). T22:
+  [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
+  (shipped). T21:
+  [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
+- Plan: [docs/plans/2026-08-30-oath-sola-plan.md](docs/plans/2026-08-30-oath-sola-plan.md)
+  (open).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
-- Roadmap: display canary in; River as `svc`; full Sola not
+- Roadmap: display canary in; River as `svc`; `oath-sola` forked;
+  session not packed

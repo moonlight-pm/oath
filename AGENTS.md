@@ -75,10 +75,12 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-08-30-oath-sola.md`](docs/specs/2026-08-30-oath-sola.md)
+(T23; `oath-sola` forked, session not packed). T22:
 [`docs/specs/2026-08-30-libinput.md`](docs/specs/2026-08-30-libinput.md)
-(T22 shipped; libinput, no udevd). T21:
+(shipped). T21:
 [`docs/specs/2026-08-30-sola.md`](docs/specs/2026-08-30-sola.md)
-(River/seatd in, full Sola not). No open plan; next is `oath-sola`.
+(River/seatd in).
 
 Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
 [`docs/open-questions.md`](docs/open-questions.md).

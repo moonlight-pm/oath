@@ -63,6 +63,8 @@ Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-make` (host
 build CLI: `cargo make`). Artifacts in `build/` (gitignored).
+Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`;
+session not packed onto the guest).
 
 **Target:**
 [specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md) ·
@@ -74,4 +76,5 @@ build CLI: `cargo make`). Artifacts in `build/` (gitignored).
 [specs/2026-08-30-display.md](specs/2026-08-30-display.md) ·
 [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) ·
 [specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) ·
-[specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md)
+[specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) ·
+[specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md)

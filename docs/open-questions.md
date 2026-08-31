@@ -14,7 +14,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 None open. T22 libinput without udevd is closed (libudev-zero;
 path fallback in wlroots). T21 River-first is closed
-(River/wlroots forks in; `oath-sola` not created).
+(River/wlroots forks in). T23 `oath-sola` remote is closed
+(private submodule `forks/sola`; session pack is the plan, not a
+fork).
 
 ---
 
@@ -182,9 +184,9 @@ Serving the store, hashes, and discovery are deferred.
 
 Patched River as `pkg:river` + `svc:river` (wants `svc:seatd`).
 PID 1 is the only supervisor. glibc is sealed `pkg:glibc`.
-`forks/river` and `forks/wlroots` are submodules; `oath-sola` is
-not created. First-party pkg sources under `apps/`. Full Sola
-session and udev/libinput out of this slice.
+`forks/river` and `forks/wlroots` are submodules. First-party pkg
+sources under `apps/`. Full Sola session and udev/libinput out of
+this slice. `oath-sola` is T23.
 
 ### T22 — Libinput without udev — locked 2026-08-30
 
@@ -192,6 +194,15 @@ libinput stays inside `pkg:river`. libudev is libudev-zero
 (borrowed). wlroots falls back to the path backend on
 `/dev/input/event*` if udev finds nothing. evdev module.
 `dev:kbd0` / `dev:mouse0`. No udevd. No `pkg:libinput`. No new kind.
+
+### T23 — Sola session on Oath — locked 2026-08-30
+
+`moonlight-pm/oath-sola` is the Oath-compat fork (private
+submodule `forks/sola`). PID 1 is the only supervisor. Bits are
+`pkg:sola`; processes are `svc:sola-bus`, `svc:sola-call`,
+`svc:sola-river` (bridge), `svc:sola-shell`. Do not pack
+`crates/sola`. Daily-driver Sola stays NixOS. Session pack is the
+open plan, not a new kind.
 
 ---
 
@@ -211,3 +222,4 @@ libinput stays inside `pkg:river`. libudev is libudev-zero
 | 2026-08-30 | T20 | pkg.url origin; Oath hosts as store | this file; [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) |
 | 2026-08-30 | T21 | Sola on Oath; River first; forks/ | this file; [specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) |
 | 2026-08-30 | T22 | libinput via libudev-zero; no udevd | this file; [specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) |
+| 2026-08-30 | T23 | oath-sola fork; session as `svc:*`; no nested PM | this file; [specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) |

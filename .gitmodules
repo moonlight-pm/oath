@@ -4,3 +4,6 @@
 [submodule "forks/river"]
 	path = forks/river
 	url = https://github.com/moonlight-pm/oath-river.git
+[submodule "forks/sola"]
+	path = forks/sola
+	url = https://github.com/moonlight-pm/oath-sola.git

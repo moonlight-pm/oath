@@ -3,7 +3,7 @@
 Implementation checklists. At most **one** open plan for the active slice.
 Completed plans stay here as history.
 
-**Open:** none (next: `oath-sola` fork). Completed:
+**Open:** [2026-08-30-oath-sola-plan.md](2026-08-30-oath-sola-plan.md) (T23). Completed:
 [2026-08-27-qemu-skeleton-plan.md](2026-08-27-qemu-skeleton-plan.md),
 [2026-08-28-svc-loop-plan.md](2026-08-28-svc-loop-plan.md),
 [2026-08-28-pkg-canary-plan.md](2026-08-28-pkg-canary-plan.md),

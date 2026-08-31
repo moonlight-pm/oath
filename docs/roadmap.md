@@ -85,4 +85,4 @@ Installer, A/B or equivalent base updates, honest rollback.
 - Large binary repository
 - Bare-metal diversity
 - A graphical session (display canary + T21 River as `svc` + T22
-  input; full Sola session not)
+  input + T23 `oath-sola` fork; session stack not packed)
