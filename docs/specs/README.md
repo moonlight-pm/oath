@@ -19,6 +19,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-30-sola.md](2026-08-30-sola.md) | T21: Sola on Oath, River first |
 | [2026-08-30-libinput.md](2026-08-30-libinput.md) | T22: libinput via libudev-zero, no udevd |
 | [2026-08-30-oath-sola.md](2026-08-30-oath-sola.md) | T23: Sola session on Oath (`oath-sola`) |
+| [2026-08-31-sola-dev.md](2026-08-31-sola-dev.md) | T24: Sola/app development layout (Nix host until Oath is) |
 
 Active plan: none (T23 complete). Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),

@@ -15,7 +15,8 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 None open. T22 libinput without udevd is closed (libudev-zero;
 path fallback in wlroots). T21 River-first is closed
 (River/wlroots forks in). T23 session stack is closed (`pkg:sola`
-+ four `svc:*`; no nested PM).
++ four `svc:*`; no nested PM). T24 development layout is closed
+(one `pkg:sola` blob; develop Sola on Nix until Oath is the host).
 
 ---
 
@@ -200,8 +201,15 @@ libinput stays inside `pkg:river`. libudev is libudev-zero
 submodule `forks/sola`). PID 1 is the only supervisor. Bits are
 `pkg:sola`; processes are `svc:sola-bus`, `svc:sola-call`,
 `svc:sola-river` (bridge), `svc:sola-shell`. Do not pack
-`crates/sola`. Daily-driver Sola stays NixOS. Session pack is the
-open plan, not a new kind.
+`crates/sola`. Daily-driver Sola stays NixOS. Not a new kind.
+
+### T24 — Sola / app development layout — locked 2026-08-31
+
+Development versions are package generations of the real objects
+(apply / undo). No second PATH, no `/opt/sola` on Oath, no
+`pkg:sola-dev`, no nested PM. Keep one `pkg:sola` blob. Develop
+Sola on Nix until Oath is the host; re-address then. Dual-mode
+seat in `oath-sola`.
 
 ---
 
@@ -222,3 +230,4 @@ open plan, not a new kind.
 | 2026-08-30 | T21 | Sola on Oath; River first; forks/ | this file; [specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) |
 | 2026-08-30 | T22 | libinput via libudev-zero; no udevd | this file; [specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) |
 | 2026-08-30 | T23 | oath-sola fork; session as `svc:*`; no nested PM | this file; [specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) |
+| 2026-08-31 | T24 | Sola/app dev: apply/undo; one sola blob; Nix host until Oath is | this file; [specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) |

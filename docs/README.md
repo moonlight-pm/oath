@@ -50,6 +50,7 @@ ask the human.
 | [`specs/2026-08-30-sola.md`](specs/2026-08-30-sola.md) | T21 Sola on Oath, River first | **Target** (River/seatd in) |
 | [`specs/2026-08-30-libinput.md`](specs/2026-08-30-libinput.md) | T22 libinput without udev | **Target** (shipped) |
 | [`specs/2026-08-30-oath-sola.md`](specs/2026-08-30-oath-sola.md) | T23 Sola session on Oath | **Target** (session stack) |
+| [`specs/2026-08-31-sola-dev.md`](specs/2026-08-31-sola-dev.md) | T24 Sola/app development layout | **Target** (identity; Nix host) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

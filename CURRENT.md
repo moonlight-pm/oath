@@ -17,8 +17,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `river` (bridge) / `shell` on the appliance. gtk menubar when
    `DISPLAY`. Full apps (`sola-session`, browser, …) out. Next: T20
    hosting (locked, not implemented) unless we continue Sola apps.
-2. **T20 hosting locked**, not implemented.
-3. Do not add a throwaway compositor. Do not install to a real disk.
+2. **T24 locked**, not implemented (Oath-as-dev-host). Keep one
+   `pkg:sola` blob. Develop Sola on Nix until Oath is the host.
+3. **T20 hosting locked**, not implemented.
+4. Do not add a throwaway compositor. Do not install to a real disk.
    glibc runtime is allowed **only** as `pkg:glibc` for this payload
    (never in PID 1). No udevd. No nested Sola process manager.
 
@@ -69,10 +71,12 @@ Do not re-litigate without an explicit decision.
   `dev:mouse0`). No udevd. Path fallback in `forks/wlroots`.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 (`pkg:sola` + `svc:sola-bus` /
-  `call` / `river` / `shell`). glibc is sealed `pkg:glibc`.
-  `forks/river` + `forks/wlroots` + `forks/sola`. Do not run
-  `crates/sola`. First-party pkg sources under `apps/` (`hello`,
-  `fetchme`).
+  `call` / `river` / `shell`). **T24:** one `pkg:sola` blob; develop
+  Sola on Nix until Oath is the host; then development versions are
+  apply/undo of the real objects (no second PATH, no nested PM).
+  glibc is sealed `pkg:glibc`. `forks/river` + `forks/wlroots` +
+  `forks/sola`. Do not run `crates/sola`. First-party pkg sources
+  under `apps/` (`hello`, `fetchme`).
 - MIT, Copyright (c) Joshua Kifer.
 
 ---
@@ -81,8 +85,10 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-30-oath-sola.md](docs/specs/2026-08-30-oath-sola.md)
-  (T23 session stack). T22:
+- Freeze: [docs/specs/2026-08-31-sola-dev.md](docs/specs/2026-08-31-sola-dev.md)
+  (T24 identity). T23:
+  [docs/specs/2026-08-30-oath-sola.md](docs/specs/2026-08-30-oath-sola.md)
+  (session stack). T22:
   [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
   (shipped). T21:
   [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
