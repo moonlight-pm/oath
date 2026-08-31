@@ -31,8 +31,8 @@ oath apply svc:serial
 The appliance ships `svc:serial` (serial root shell), `svc:hold`
 (`/bin/sleep 86400000`, for start/stop tests), `svc:sshd`,
 `svc:seatd`, and `svc:river` (patched River on `dev:card0`; wants
-seatd; libinput path backend on `/dev/input/event*`). Do not disable
-serial unless you have another console.
+seatd; libinput via libudev-zero). Do not disable serial unless you
+have another console.
 
 ```
 oath set svc:hold enabled=false

@@ -12,7 +12,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless sleeper for start/stop. |
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. |
 | `svc:seatd` | `/bin/seatd` | enabled, `restart=always` | Seat for DRM. `svc:river` wants this. |
-| `svc:river` | `/bin/river` | enabled, `restart=always` | Patched River on `dev:card0` (pixman). libinput path backend on `/dev/input/event*` (`dev:kbd0` / `dev:mouse0`). Socket under `/run/user/0`. |
+| `svc:river` | `/bin/river` | enabled, `restart=always` | Patched River on `dev:card0` (pixman). libinput via libudev-zero (`dev:kbd0` / `dev:mouse0`). Socket under `/run/user/0`. |
 
 PID 1 starts enabled services at boot, **stops disabled ones** on
 converge, reaps, and restarts per policy (`never` / `always` /

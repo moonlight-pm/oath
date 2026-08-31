@@ -64,7 +64,7 @@ Hardware inventory as objects. One network model. The agent does not run
 (`net:net0` + SSH + `dev` inventory + virtio-gpu). DHCP, `OATH_BRIDGE`,
 Unix floor, `svc` wants, and URL fetch exist. Module-as-catalog
 and guest store export do not. Wayland is T21 River as `svc`; input
-is T22 libinput path (no udevd).
+is T22 libinput via libudev-zero (no udevd).
 
 ## Phase 5 — Agent as a system component
 
@@ -84,5 +84,5 @@ Installer, A/B or equivalent base updates, honest rollback.
 - Broad ABI compatibility for random Linux binaries
 - Large binary repository
 - Bare-metal diversity
-- A graphical session (display canary + T21 River as `svc`; full
-  Sola session not)
+- A graphical session (display canary + T21 River as `svc` + T22
+  input; full Sola session not)

@@ -1,7 +1,7 @@
 # dev
 
 A hardware device. The catalog is the inventory. `/dev` is nodes from
-devtmpfs, not the admin UI. There is no udev.
+devtmpfs, not the admin UI. There is no udevd.
 
 **When to use:** see what the box has (`oath ls --kind dev`).
 

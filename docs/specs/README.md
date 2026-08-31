@@ -17,7 +17,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-30-display.md](2026-08-30-display.md) | virtio-gpu, `dev:card0`, gtk window |
 | [2026-08-30-pkg-hosting.md](2026-08-30-pkg-hosting.md) | T20: `pkg.url` origin; Oath hosts as store |
 | [2026-08-30-sola.md](2026-08-30-sola.md) | T21: Sola on Oath, River first |
-| [2026-08-30-libinput.md](2026-08-30-libinput.md) | T22: libinput path backend, no udev |
+| [2026-08-30-libinput.md](2026-08-30-libinput.md) | T22: libinput via libudev-zero, no udevd |
 
 Active plan: none (T22 complete). Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),

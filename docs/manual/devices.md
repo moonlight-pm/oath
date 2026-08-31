@@ -1,7 +1,7 @@
 # Devices
 
 Hardware inventory is `dev:*` objects. `/dev` is nodes from **devtmpfs**,
-not the admin UI. There is no udev. `/proc` and `/sys` are mounted at
+not the admin UI. There is no udevd. `/proc` and `/sys` are mounted at
 boot (kernel views, not catalog kinds).
 
 ## What ships

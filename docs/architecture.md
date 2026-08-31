@@ -22,7 +22,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
 -device virtio-gpu-pci -display gtk (or none) -drive virtio qcow2
   kernel (borrowed Linux 6.12) + initramfs
     /init = oath-init
-    loads virtio_blk, btrfs, virtio-gpu, virtio_net, …
+    loads virtio_blk, btrfs, virtio-gpu, evdev, virtio_input, virtio_net, …
     mounts /dev/vda subvol=@ , chroot
     mounts subvolid=0 at /oath/run/fs
   disk (btrfs)
@@ -39,7 +39,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
     seatd              svc:seatd (DRM seat)
-    river              svc:river (glibc, pixman, libinput path, socket /run/user/0)
+    river              svc:river (glibc, pixman, libudev-zero, socket /run/user/0)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
