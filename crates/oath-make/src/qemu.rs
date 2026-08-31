@@ -188,6 +188,16 @@ fn virtio_gpu() -> String {
     format!("virtio-gpu-pci,xres={w},yres={h}")
 }
 
+/// Guest pixels = host pixels. A HiDPI Wayland session otherwise scales
+/// the gtk window (1280 guest → 2560 host).
+pub fn qemu_command(args: &[String]) -> Command {
+    let mut cmd = Command::new(&args[0]);
+    cmd.args(&args[1..]);
+    cmd.env("GDK_SCALE", "1");
+    cmd.env("GDK_DPI_SCALE", "1");
+    cmd
+}
+
 fn host_wants_window() -> bool {
     match std::env::var("OATH_DISPLAY") {
         Ok(v) if v == "none" || v == "0" => false,
@@ -346,8 +356,8 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
             std::env::var("OATH_BRIDGE").unwrap()
         );
     }
-    let mut cmd = Command::new(&args[0]);
-    cmd.args(&args[1..]).stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
+    let mut cmd = qemu_command(&args);
+    cmd.stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
     let status = cmd.status().context("qemu")?;
     let rc = status.code().unwrap_or(1);
     if let Ok(mut meta) =
@@ -440,8 +450,8 @@ pub fn run_up(root: &Path, out: &Path) -> Result<i32> {
     let (_tools, args, run) = prepare_run(root, out, "up")?;
     print_reachability(&run);
     eprintln!("Ctrl-C stops the VM");
-    let mut cmd = Command::new(&args[0]);
-    cmd.args(&args[1..]).stdin(Stdio::null()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
+    let mut cmd = qemu_command(&args);
+    cmd.stdin(Stdio::null()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
     let mut child = cmd.spawn().context("qemu")?;
     let pid = child.id() as i32;
     fs::write(pid_file(out), format!("{pid}\n"))?;
@@ -461,11 +471,8 @@ pub fn start(root: &Path, out: &Path) -> Result<()> {
     }
     let (_tools, args, run) = prepare_run(root, out, "vm")?;
     let log = fs::File::create(run.join("qemu.out"))?;
-    let mut cmd = Command::new(&args[0]);
-    cmd.args(&args[1..])
-        .stdin(Stdio::null())
-        .stdout(Stdio::from(log.try_clone()?))
-        .stderr(Stdio::from(log));
+    let mut cmd = qemu_command(&args);
+    cmd.stdin(Stdio::null()).stdout(Stdio::from(log.try_clone()?)).stderr(Stdio::from(log));
     unsafe {
         cmd.pre_exec(|| {
             libc::setsid();

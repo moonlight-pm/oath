@@ -69,7 +69,8 @@ Do not re-litigate without an explicit decision.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
   is pixman River plus the Sola menubar (software GL, McMojave
   cursor), **1280×800 1:1** (`virtio-gpu-pci,xres/yres` + gtk
-  `zoom-to-fit=off`; `OATH_DISPLAY_WIDTH` / `HEIGHT`). Input is
+  `zoom-to-fit=off` + `GDK_SCALE=1` + sola-river
+  `SOLA_OUTPUT_PICK=preferred`; `OATH_DISPLAY_WIDTH` / `HEIGHT`). Input is
   libinput via libudev-zero (`dev:kbd0` / `dev:mouse0`). No udevd.
   Path fallback in `forks/wlroots`.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +

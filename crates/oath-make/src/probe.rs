@@ -39,8 +39,7 @@ impl SerialVm {
             false,
         );
         fs::write(cmdfile, args.join(" ") + "\n")?;
-        let child = Command::new(&args[0])
-            .args(&args[1..])
+        let child = qemu::qemu_command(&args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())

@@ -113,10 +113,12 @@ once the disk is mounted.
 
 - virtio-gpu (`/dev/dri/card0`). gtk window when `DISPLAY` is set is
   pixman River plus the Sola menubar at **1280×800 1:1** (software GL,
-  McMojave cursor; no udevd). Guest scanout matches the window
-  (`-device virtio-gpu-pci,xres=…,yres=…` and gtk `zoom-to-fit=off`).
-  `OATH_DISPLAY_WIDTH` / `OATH_DISPLAY_HEIGHT` override (640–7680).
-  `OATH_DISPLAY=none` hides it. Probe is headless.
+  McMojave cursor; no udevd). Guest scanout matches the window:
+  virtio-gpu `xres`/`yres`, gtk `zoom-to-fit=off`, `GDK_SCALE=1`, and
+  `SOLA_OUTPUT_PICK=preferred` so sola-river does not promote a 4K
+  CVT mode from virtio-gpu’s mode list. `OATH_DISPLAY_WIDTH` /
+  `OATH_DISPLAY_HEIGHT` override (640–7680). `OATH_DISPLAY=none` hides
+  it. Probe is headless.
 - QEMU user net + virtio-net; `net:net0` is `10.0.2.15/24`
 - SSH hostfwd `127.0.0.1:2222` → guest 22 (`OATH_SSH_PORT`). Optional
   `OATH_BRIDGE=br0` for a host bridge (no hostfwd).
