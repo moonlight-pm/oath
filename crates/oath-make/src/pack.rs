@@ -268,7 +268,14 @@ fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
     eprintln!(">> relocate sola");
     let script = root.join("image/relocate-sola.sh");
     let mut cmd = Command::new("bash");
-    cmd.arg(&script).arg(&sola_out).env("SOLA_BINS", &bins);
+    cmd.arg(&script)
+        .arg(&sola_out)
+        .env("SOLA_BINS", &bins)
+        .env("SOLA_SRC", root.join("forks/sola"));
+    let share = PathBuf::from("/opt/sola/share");
+    if share.is_dir() {
+        cmd.env("SOLA_SHARE", &share);
+    }
     for (key, name) in [
         ("WAYLAND", "wayland"),
         ("XKBCOMMON", "xkbcommon"),

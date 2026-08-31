@@ -11,7 +11,7 @@ rpath="$guest_glibc:$guest_river:$guest_sola"
 interp_guest="$guest_glibc/ld-linux-x86-64.so.2"
 
 mkdir -p "$out/lib" "$out/bin" "$out/libexec" \
-  "$out/share/fonts" "$out/etc/fonts"
+  "$out/share/fonts" "$out/share/icons" "$out/share/cursors" "$out/etc/fonts"
 
 is_glibc() {
   case "$(basename "$1")" in
@@ -123,6 +123,22 @@ for f in "$out"/lib/*; do
   fi
 done
 
+# First-party pack icons (flower / pillars) from the Sola source tree.
+if [[ -n ${SOLA_SRC:-} && -d $SOLA_SRC/crates/sola-assets/icons ]]; then
+  cp -a "$SOLA_SRC/crates/sola-assets/icons/." "$out/share/icons/"
+fi
+# Host Sola share: lucide + McMojave (not in git).
+if [[ -n ${SOLA_SHARE:-} ]]; then
+  if [[ -d $SOLA_SHARE/icons/lucide ]]; then
+    rm -rf "$out/share/icons/lucide"
+    cp -a "$SOLA_SHARE/icons/lucide" "$out/share/icons/lucide"
+  fi
+  if [[ -d $SOLA_SHARE/cursors/McMojave ]]; then
+    rm -rf "$out/share/cursors/McMojave"
+    cp -a "$SOLA_SHARE/cursors/McMojave" "$out/share/cursors/McMojave"
+  fi
+fi
+
 if [[ -n ${INTER:-} ]]; then
   if [[ -d $INTER/share/fonts ]]; then
     find "$INTER/share/fonts" -type f \( -name '*.ttf' -o -name '*.otf' -o -name '*.ttc' \) \
@@ -167,6 +183,9 @@ export SOLA_NO_SELF_WATCH=1
 export SOLA_LOG_DIR=/oath/log
 export FONTCONFIG_FILE=/oath/store/pkg/sola/etc/fonts/fonts.conf
 export FONTCONFIG_PATH=/oath/store/pkg/sola/etc/fonts
+export SOLA_ASSETS_DIR=/oath/store/pkg/sola/share
+export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
+export XCURSOR_THEME=McMojave
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json

@@ -197,6 +197,10 @@ export WLR_RENDERER=pixman
 export WLR_RENDERER_ALLOW_SOFTWARE=1
 # No udevd: libudev-zero + wlroots path fallback on /dev/input/event*.
 export LIBINPUT_QUIRKS_DIR=/oath/store/pkg/river/share/libinput
+# virtio-gpu often has no hardware cursor plane; pixman still draws software.
+export WLR_NO_HARDWARE_CURSORS=1
+export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
+export XCURSOR_THEME=McMojave
 unset WAYLAND_DISPLAY
 unset DISPLAY
 exec /oath/store/pkg/river/libexec/river -log-level info -c : >>/oath/log/river.log 2>&1

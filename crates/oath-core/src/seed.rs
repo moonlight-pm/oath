@@ -147,19 +147,21 @@ pub fn seed(root: &Path) -> Result<()> {
     write_object(root, &river, "mutate", &river_desired, &river_actual)?;
     write_json(&root.join("objects/svc/river/applied.json"), &river_desired)?;
 
-    seed_svc(root, "sola-bus", &["/bin/sola-bus"], &[])?;
-    seed_svc(root, "sola-call", &["/bin/sola-call"], &[])?;
+    seed_svc(root, "sola-bus", &["/bin/sola-bus"], &[], "on-failure")?;
+    seed_svc(root, "sola-call", &["/bin/sola-call"], &[], "on-failure")?;
     seed_svc(
         root,
         "sola-river",
         &["/bin/sola-river"],
         &["svc:river", "svc:sola-bus", "svc:sola-call"],
+        "on-failure",
     )?;
     seed_svc(
         root,
         "sola-shell",
         &["/bin/sola-shell"],
         &["svc:river", "svc:sola-bus", "svc:sola-call", "svc:sola-river"],
+        "on-failure",
     )?;
 
     let ssh = ObjectId::new(KIND_SSH, "local");
@@ -212,12 +214,12 @@ fn seed_dev(root: &Path, name: &str, class: &str, node: &str) -> Result<()> {
     )
 }
 
-fn seed_svc(root: &Path, name: &str, exec: &[&str], wants: &[&str]) -> Result<()> {
+fn seed_svc(root: &Path, name: &str, exec: &[&str], wants: &[&str], restart: &str) -> Result<()> {
     let id = ObjectId::new(KIND_SVC, name);
     let desired = json!({
         "exec": exec,
         "wants": wants,
-        "restart": "always",
+        "restart": restart,
         "enabled": true
     });
     let actual = json!({
