@@ -110,11 +110,7 @@ pub fn qemu_args(
         "-vga".into(),
         "none".into(),
     ]);
-    if window {
-        a.extend(["-display".into(), "gtk".into()]);
-    } else {
-        a.extend(["-display".into(), "none".into()]);
-    }
+    a.extend(["-display".into(), display_backend(window)]);
     match serial {
         SerialMode::Stdio => {
             a.extend([
@@ -142,7 +138,7 @@ pub fn qemu_args(
         "-device".into(),
         "virtio-rng-pci".into(),
         "-device".into(),
-        "virtio-gpu-pci".into(),
+        virtio_gpu(),
         "-device".into(),
         "virtio-keyboard-pci".into(),
         "-device".into(),
@@ -159,6 +155,37 @@ pub fn qemu_args(
         a.extend(["-fw_cfg".into(), format!("name=opt/oath/authorized,file={}", p.display())]);
     }
     a
+}
+
+/// Guest framebuffer + gtk window. virtio-gpu without `xres`/`yres` often
+/// advertises a large preferred mode; gtk `zoom-to-fit` then shrinks it
+/// and Sola chrome looks tiny. Pin both to the same size, 1:1.
+pub const DEFAULT_DISPLAY_WIDTH: u32 = 1280;
+pub const DEFAULT_DISPLAY_HEIGHT: u32 = 800;
+
+fn parse_dim(raw: Option<&str>, default: u32) -> u32 {
+    raw.and_then(|s| s.parse().ok()).filter(|&n| (640..=7680).contains(&n)).unwrap_or(default)
+}
+
+fn display_size() -> (u32, u32) {
+    (
+        parse_dim(std::env::var("OATH_DISPLAY_WIDTH").ok().as_deref(), DEFAULT_DISPLAY_WIDTH),
+        parse_dim(std::env::var("OATH_DISPLAY_HEIGHT").ok().as_deref(), DEFAULT_DISPLAY_HEIGHT),
+    )
+}
+
+fn display_backend(window: bool) -> String {
+    if window {
+        // zoom-to-fit=off: gtk window is guest pixels, not a scaled-down 1080p.
+        "gtk,zoom-to-fit=off,gl=off".into()
+    } else {
+        "none".into()
+    }
+}
+
+fn virtio_gpu() -> String {
+    let (w, h) = display_size();
+    format!("virtio-gpu-pci,xres={w},yres={h}")
 }
 
 fn host_wants_window() -> bool {
@@ -306,7 +333,10 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
     if host_wants_window() {
-        eprintln!("display: gtk window (OATH_DISPLAY=none to hide)");
+        let (w, h) = display_size();
+        eprintln!(
+            "display: gtk {w}x{h} 1:1 (OATH_DISPLAY=none to hide; OATH_DISPLAY_WIDTH/HEIGHT)"
+        );
     }
     if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
         eprintln!("ssh: cargo make ssh   (port {})", ssh_port());
@@ -366,7 +396,10 @@ fn print_reachability(run: &Path) {
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
     if host_wants_window() {
-        eprintln!("display: gtk window (OATH_DISPLAY=none to hide)");
+        let (w, h) = display_size();
+        eprintln!(
+            "display: gtk {w}x{h} 1:1 (OATH_DISPLAY=none to hide; OATH_DISPLAY_WIDTH/HEIGHT)"
+        );
     }
     if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
         eprintln!("ssh: cargo make ssh   (port {})", ssh_port());
@@ -472,4 +505,36 @@ pub fn stop(out: &Path) -> Result<()> {
     let _ = fs::remove_file(run_file(out));
     eprintln!("stopped pid {pid}");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_dim_default_and_bounds() {
+        assert_eq!(parse_dim(None, 1280), 1280);
+        assert_eq!(parse_dim(Some("nope"), 1280), 1280);
+        assert_eq!(parse_dim(Some("0"), 1280), 1280);
+        assert_eq!(parse_dim(Some("639"), 1280), 1280);
+        assert_eq!(parse_dim(Some("7681"), 1280), 1280);
+        assert_eq!(parse_dim(Some("1024"), 1280), 1024);
+        assert_eq!(parse_dim(Some("1920"), 1280), 1920);
+    }
+
+    #[test]
+    fn display_backend_gtk_is_one_to_one() {
+        assert_eq!(display_backend(true), "gtk,zoom-to-fit=off,gl=off");
+        assert_eq!(display_backend(false), "none");
+    }
+
+    #[test]
+    fn virtio_gpu_pins_scanout() {
+        // Default env: 1280x800. Don't assert env-dependent size here —
+        // the format is the lock.
+        let d = virtio_gpu();
+        assert!(d.starts_with("virtio-gpu-pci,xres="), "{d}");
+        assert!(d.contains(",yres="), "{d}");
+        assert!(!d.contains("zoom-to-fit"));
+    }
 }

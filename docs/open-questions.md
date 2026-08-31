@@ -15,8 +15,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 None open. T22 libinput without udevd is closed (libudev-zero;
 path fallback in wlroots). T21 River-first is closed
 (River/wlroots forks in). T23 session stack is closed (`pkg:sola`
-+ four `svc:*`; no nested PM). T24 development layout is closed
++ session `svc:*`; no nested PM). T24 development layout is closed
 (one `pkg:sola` blob; develop Sola on Nix until Oath is the host).
+T25 session manager is closed (`svc:sola-session` in that blob).
 
 ---
 
@@ -203,6 +204,12 @@ submodule `forks/sola`). PID 1 is the only supervisor. Bits are
 `svc:sola-river` (bridge), `svc:sola-shell`. Do not pack
 `crates/sola`. Daily-driver Sola stays NixOS. Not a new kind.
 
+### T25 — Sola session manager — locked 2026-08-31
+
+`svc:sola-session` is the LaunchApp / CloseApp owner, fifth ELF in
+`pkg:sola`. Direct spawn (no systemd). Dual-mode logs and Wayland.
+Not a nested process manager. Kit apps still out.
+
 ### T24 — Sola / app development layout — locked 2026-08-31
 
 Development versions are package generations of the real objects
@@ -231,3 +238,4 @@ seat in `oath-sola`.
 | 2026-08-30 | T22 | libinput via libudev-zero; no udevd | this file; [specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) |
 | 2026-08-30 | T23 | oath-sola fork; session as `svc:*`; no nested PM | this file; [specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) |
 | 2026-08-31 | T24 | Sola/app dev: apply/undo; one sola blob; Nix host until Oath is | this file; [specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) |
+| 2026-08-31 | T25 | sola-session as svc; LaunchApp owner; still one sola blob | this file; [specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md) |

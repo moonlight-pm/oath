@@ -13,10 +13,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **T23 session stack in.** `pkg:sola` + `svc:sola-bus` / `call` /
-   `river` (bridge) / `shell` on the appliance. gtk menubar when
-   `DISPLAY`. Full apps (`sola-session`, browser, …) out. Next: T20
-   hosting (locked, not implemented) unless we continue Sola apps.
+1. **T25 session manager in.** `svc:sola-session` in `pkg:sola`
+   (LaunchApp owner). gtk 1280×800 1:1 when `DISPLAY`. Kit apps
+   (browser, terminal, …) still out. Next: pack a first kit app, or
+   T20 hosting (locked, not implemented).
 2. **T24 locked**, not implemented (Oath-as-dev-host). Keep one
    `pkg:sola` blob. Develop Sola on Nix until Oath is the host.
 3. **T20 hosting locked**, not implemented.
@@ -34,7 +34,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY (`dev:kbd0` / `dev:mouse0`, no udevd). Host SSH keys on up/start. Manual: `docs/manual/`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Host SSH keys on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
@@ -65,19 +65,21 @@ Do not re-litigate without an explicit decision.
 - Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
   the console; `svc:sshd` is dropbear; `svc:hold` wants serial;
   `svc:river` wants `svc:seatd`. Sola session: `svc:sola-bus` /
-  `sola-call` / `sola-river` / `sola-shell`.
+  `sola-call` / `sola-river` / `sola-shell` / `sola-session`.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
   is pixman River plus the Sola menubar (software GL, McMojave
-  cursor). Input is libinput via libudev-zero (`dev:kbd0` /
-  `dev:mouse0`). No udevd. Path fallback in `forks/wlroots`.
+  cursor), **1280×800 1:1** (`virtio-gpu-pci,xres/yres` + gtk
+  `zoom-to-fit=off`; `OATH_DISPLAY_WIDTH` / `HEIGHT`). Input is
+  libinput via libudev-zero (`dev:kbd0` / `dev:mouse0`). No udevd.
+  Path fallback in `forks/wlroots`.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
-  `svc:river`. Session stack is T23 (`pkg:sola` + `svc:sola-bus` /
-  `call` / `river` / `shell`). **T24:** one `pkg:sola` blob; develop
-  Sola on Nix until Oath is the host; then development versions are
-  apply/undo of the real objects (no second PATH, no nested PM).
-  glibc is sealed `pkg:glibc`. `forks/river` + `forks/wlroots` +
-  `forks/sola`. Do not run `crates/sola`. First-party pkg sources
-  under `apps/` (`hello`, `fetchme`).
+  `svc:river`. Session stack is T23 + T25 (`pkg:sola` + `svc:sola-bus` /
+  `call` / `river` / `shell` / `session`). **T24:** one `pkg:sola`
+  blob; develop Sola on Nix until Oath is the host; then development
+  versions are apply/undo of the real objects (no second PATH, no
+  nested PM). glibc is sealed `pkg:glibc`. `forks/river` +
+  `forks/wlroots` + `forks/sola`. Do not run `crates/sola`.
+  First-party pkg sources under `apps/` (`hello`, `fetchme`).
 - MIT, Copyright (c) Joshua Kifer.
 
 ---
@@ -86,16 +88,17 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-31-sola-dev.md](docs/specs/2026-08-31-sola-dev.md)
-  (T24 identity). T23:
+- Freeze: [docs/specs/2026-08-31-sola-session.md](docs/specs/2026-08-31-sola-session.md)
+  (T25 session manager). T24:
+  [docs/specs/2026-08-31-sola-dev.md](docs/specs/2026-08-31-sola-dev.md)
+  (identity). T23:
   [docs/specs/2026-08-30-oath-sola.md](docs/specs/2026-08-30-oath-sola.md)
   (session stack). T22:
   [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
-  (shipped). T21:
-  [docs/specs/2026-08-30-sola.md](docs/specs/2026-08-30-sola.md)
-- Plan: [docs/plans/2026-08-30-oath-sola-plan.md](docs/plans/2026-08-30-oath-sola-plan.md)
+  (shipped).
+- Plan: [docs/plans/2026-08-31-sola-session-plan.md](docs/plans/2026-08-31-sola-session-plan.md)
   (complete).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
-- Roadmap: display canary in; River as `svc`; Sola session stack as
-  `svc`; full apps not
+- Roadmap: display canary in; River as `svc`; Sola session stack +
+  session manager as `svc`; kit apps not

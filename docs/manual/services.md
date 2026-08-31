@@ -17,13 +17,14 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/0/sola-call`. |
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |
 | `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher. Wants river + bus + call + the bridge. Software GL. |
+| `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). |
 
 **Quit Sola** (flower menu) broadcasts shutdown and the session processes
 exit 0. PID 1 does **not** restart them (`on-failure` only). River the
 compositor, serial, and SSH stay. Reboot or `oath apply` (while they
 remain `enabled=true`) starts the session again. To leave it off across
-reboot: `oath set svc:sola-shell enabled=false` (and the other three)
-then `oath apply`.
+reboot: `oath set svc:sola-shell enabled=false` (and bus, call, bridge,
+session) then `oath apply`.
 
 PID 1 starts enabled services at boot, **stops disabled ones** on
 converge, reaps, and restarts per policy (`never` / `always` /

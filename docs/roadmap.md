@@ -85,4 +85,4 @@ Installer, A/B or equivalent base updates, honest rollback.
 - Large binary repository
 - Bare-metal diversity
 - A graphical session (display canary + T21 River as `svc` + T22
-  input + T23 session stack; full Sola apps not)
+  input + T23 session stack + T25 session manager; kit apps not)

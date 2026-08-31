@@ -163,6 +163,13 @@ pub fn seed(root: &Path) -> Result<()> {
         &["svc:river", "svc:sola-bus", "svc:sola-call", "svc:sola-river"],
         "on-failure",
     )?;
+    seed_svc(
+        root,
+        "sola-session",
+        &["/bin/sola-session"],
+        &["svc:sola-bus", "svc:sola-call"],
+        "on-failure",
+    )?;
 
     let ssh = ObjectId::new(KIND_SSH, "local");
     let ssh_desired = json!({ "authorized": [] });

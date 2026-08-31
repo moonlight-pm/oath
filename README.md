@@ -48,7 +48,7 @@ packages (store + `/bin` links, including `pkg:fetchme` wget), `net:net0`,
 dropbear SSH, `dev:*` (including virtio-gpu `card0` and virtio
 keyboard/mouse), and a gtk window when `DISPLAY` is set. `svc:river`
 is the compositor (T21/T22). The Sola session stack is `pkg:sola` +
-four `svc:*` (T23). Nothing is a daily driver. No installer.
+five `svc:*` (T23/T25). Nothing is a daily driver. No installer.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).

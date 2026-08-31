@@ -174,7 +174,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     }
     let sola = pack_sola(root, tools, out)?;
     copy_tree(&sola, &oath_root.join("store/pkg/sola"))?;
-    for b in ["sola-bus", "sola-call", "sola-river", "sola-shell"] {
+    for b in ["sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session"] {
         chmod_exec(&oath_root.join("store/pkg/sola/bin").join(b))?;
         chmod_exec(&oath_root.join("store/pkg/sola/libexec").join(b))?;
     }
@@ -322,9 +322,11 @@ fn sola_release_bins(root: &Path) -> Result<PathBuf> {
         "sola-river",
         "-p",
         "sola-shell",
+        "-p",
+        "sola-session",
     ]))?;
     let bins = target.join("release");
-    for n in ["sola-bus", "sola-call", "sola-river", "sola-shell"] {
+    for n in ["sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session"] {
         if !bins.join(n).is_file() {
             bail!("missing sola {n} in {}", bins.display());
         }

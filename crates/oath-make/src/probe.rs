@@ -527,6 +527,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "pidof sola-session >/dev/null && echo SOLA_SESSION",
+        Some("SOLA_SESSION"),
+        "sola.session",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "test -z \"$(pidof sola)\" && echo SOLA_NO_PM",
         Some("SOLA_NO_PM"),
         "sola.no_pm",

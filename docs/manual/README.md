@@ -29,6 +29,7 @@ No installer, no full Sola apps (browser, mail, …). Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
 `sola`, `hello`, and `fetchme`. `svc:seatd` + `svc:river` is the
 compositor (libinput via libudev-zero; no udevd). `svc:sola-bus` /
-`sola-call` / `sola-river` / `sola-shell` is the session stack. `net:net0` + root SSH (host keys injected on
+`sola-call` / `sola-river` / `sola-shell` / `sola-session` is the
+session stack. `net:net0` + root SSH (host keys injected on
 `up`/`start`). Devices include `dev:card0`, `dev:kbd0`, `dev:mouse0`.
 `/proc` `/sys` `/dev` plus tmpfs and cgroup2.

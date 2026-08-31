@@ -19,7 +19,7 @@ QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
 ```
 QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
--device virtio-gpu-pci -display gtk (or none) -drive virtio qcow2
+-device virtio-gpu-pci,xres=1280,yres=800 -display gtk,zoom-to-fit=off (or none) -drive virtio qcow2
   kernel (borrowed Linux 6.12) + initramfs
     /init = oath-init
     loads virtio_blk, btrfs, virtio-gpu, evdev, virtio_input, virtio_net, …
@@ -43,6 +43,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-bus/call      svc:sola-bus / svc:sola-call (sockets /run/user/0)
     sola-river         svc:sola-river (bridge, not the compositor)
     sola-shell         svc:sola-shell (iced menubar; software GL; McMojave)
+    sola-session       svc:sola-session (LaunchApp; direct spawn)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
@@ -50,7 +51,8 @@ PID 1: mount proc/sys/dev/pts, tmpfs `/tmp` `/dev/shm` `/run`, cgroup2;
 hostname from `host:local`; **converge** `net:net0`, `dev:*`,
 `ssh:local`; then `svc:*`. Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
-`svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`.
+`svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
+`svc:sola-session`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)
@@ -81,4 +83,5 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) ·
 [specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) ·
 [specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) ·
-[specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md)
+[specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) ·
+[specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md)

@@ -40,7 +40,7 @@ enqueue() {
   queue+=("$real")
 }
 
-bins=(sola-bus sola-call sola-river sola-shell)
+bins=(sola-bus sola-call sola-river sola-shell sola-session)
 for b in "${bins[@]}"; do
   src="${SOLA_BINS:?}/$b"
   [[ -f $src ]] || { echo "relocate-sola: missing $src" >&2; exit 1; }
@@ -106,7 +106,7 @@ for f in "${!SEEN[@]}"; do
     continue
   fi
   case "$name" in
-    sola-bus|sola-call|sola-river|sola-shell) continue ;;
+    sola-bus|sola-call|sola-river|sola-shell|sola-session) continue ;;
   esac
   d="$out/lib/$name"
   cp -a "$f" "$d"

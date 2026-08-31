@@ -30,4 +30,4 @@ Product docs: [`manual/`](manual/) — current behavior.
 | agent | Agent runtime as a system component | idea | — | — | serial or SSH client | no |
 | update | Base-image updates | idea | — | — | generations are the primitive | no |
 | install | Installer to a disk | idea | — | — | not started | no |
-| sola | Sola session on Oath | partial | [freeze](specs/2026-08-31-sola-dev.md) | QEMU probe sola.bus / sola.call / sola.bridge / sola.shell | session stack packed (flower + McMojave cursor); Quit Sola is clean exit (`on-failure`); one `pkg:sola` blob; Sola developed on Nix (T24); no nested PM; no udevd; full apps out; no dbus; software GL | [services](manual/services.md) |
+| sola | Sola session on Oath | partial | [freeze](specs/2026-08-31-sola-session.md) | QEMU probe sola.bus / sola.call / sola.bridge / sola.shell / sola.session | session stack + LaunchApp owner packed (flower + McMojave cursor); gtk 1280×800 1:1; Quit Sola is clean exit (`on-failure`); one `pkg:sola` blob; Sola developed on Nix (T24); no nested PM; no udevd; kit apps out; no dbus; software GL | [services](manual/services.md) |

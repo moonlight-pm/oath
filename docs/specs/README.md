@@ -20,6 +20,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-30-libinput.md](2026-08-30-libinput.md) | T22: libinput via libudev-zero, no udevd |
 | [2026-08-30-oath-sola.md](2026-08-30-oath-sola.md) | T23: Sola session on Oath (`oath-sola`) |
 | [2026-08-31-sola-dev.md](2026-08-31-sola-dev.md) | T24: Sola/app development layout (Nix host until Oath is) |
+| [2026-08-31-sola-session.md](2026-08-31-sola-session.md) | T25: `svc:sola-session` LaunchApp owner |
 
 Active plan: none. Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),
@@ -33,4 +34,5 @@ Active plan: none. Completed:
 [../plans/2026-08-30-display-plan.md](../plans/2026-08-30-display-plan.md) (display),
 [../plans/2026-08-30-sola-river-plan.md](../plans/2026-08-30-sola-river-plan.md) (T21 River),
 [../plans/2026-08-30-libinput-plan.md](../plans/2026-08-30-libinput-plan.md) (T22 libinput),
-[../plans/2026-08-30-oath-sola-plan.md](../plans/2026-08-30-oath-sola-plan.md) (T23 session).
+[../plans/2026-08-30-oath-sola-plan.md](../plans/2026-08-30-oath-sola-plan.md) (T23 session),
+[../plans/2026-08-31-sola-session-plan.md](../plans/2026-08-31-sola-session-plan.md) (T25 session manager).
