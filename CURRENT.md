@@ -80,6 +80,8 @@ Do not re-litigate without an explicit decision.
   nested PM). glibc is sealed `pkg:glibc`. `forks/river` +
   `forks/wlroots` + `forks/sola`. Do not run `crates/sola`.
   First-party pkg sources under `apps/` (`hello`, `fetchme`).
+  Sola-generic fixes cherry-pick to `moonlight-pm/Sola`, then merge
+  back; Oath-compat stays on `oath-sola` ([forks/README.md](forks/README.md)).
 - MIT, Copyright (c) Joshua Kifer.
 
 ---

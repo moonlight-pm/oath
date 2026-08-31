@@ -203,6 +203,8 @@ submodule `forks/sola`). PID 1 is the only supervisor. Bits are
 `pkg:sola`; processes are `svc:sola-bus`, `svc:sola-call`,
 `svc:sola-river` (bridge), `svc:sola-shell`. Do not pack
 `crates/sola`. Daily-driver Sola stays NixOS. Not a new kind.
+Sola-generic fixes cherry-pick to Sola main, then pull; Oath-compat
+stays on the fork ([forks/README.md](../forks/README.md)).
 
 ### T25 — Sola session manager — locked 2026-08-31
 
