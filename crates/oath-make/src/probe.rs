@@ -550,6 +550,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "ls /oath/store/pkg/sola/share/fonts | grep -q JetBrains && echo MONO_FONT",
+        Some("MONO_FONT"),
+        "sola.mono_font",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "tmux -V && echo TMUX_OK",
         Some("TMUX_OK"),
         "sola.tmux",

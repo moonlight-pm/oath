@@ -159,12 +159,17 @@ if [[ -n ${SOLA_SHARE:-} ]]; then
   fi
 fi
 
-if [[ -n ${INTER:-} ]]; then
-  if [[ -d $INTER/share/fonts ]]; then
-    find "$INTER/share/fonts" -type f \( -name '*.ttf' -o -name '*.otf' -o -name '*.ttc' \) \
-      -exec cp -a {} "$out/share/fonts/" \;
-  fi
-fi
+copy_fonts() {
+  local src=$1
+  [[ -d $src ]] || return 0
+  find "$src" -type f \( -name '*.ttf' -o -name '*.otf' -o -name '*.ttc' \) \
+    -exec cp {} "$out/share/fonts/" \;
+}
+
+copy_fonts "${INTER:-}/share/fonts"
+# Kit terminal mono fallback. Without this, iced draws Inter on JetBrains
+# Mono cell metrics and glyphs float in wide cells.
+copy_fonts "${JETBRAINS_MONO:-}/share/fonts"
 
 # glibc tmux refuses to start without a UTF-8 locale. C.UTF-8 archive.
 if [[ -n ${LOCALES:-} ]]; then
@@ -289,3 +294,7 @@ for b in "${kit_bins[@]}" tmux; do
   [[ -x $out/bin/$b ]] || { echo "relocate-sola: missing bin/$b" >&2; exit 1; }
 done
 [[ -d $out/share/terminfo ]] || { echo "relocate-sola: missing share/terminfo" >&2; exit 1; }
+ls "$out"/share/fonts/*JetBrains* >/dev/null 2>&1 || {
+  echo "relocate-sola: missing JetBrains Mono in share/fonts" >&2
+  exit 1
+}

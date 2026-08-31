@@ -9,6 +9,7 @@
 , tmux
 , ncurses
 , glibcLocales
+, jetbrains-mono
 , runCommand
 }:
 # Host `cargo build` produces the Sola ELFs. This tree is the dlopen
@@ -32,4 +33,5 @@ runCommand "oath-sola-rt" { } ''
   ln -s ${tmux} $out/tmux
   ln -s ${ncurses} $out/ncurses
   ln -s ${cUtf8} $out/locales
+  ln -s ${jetbrains-mono} $out/jetbrains-mono
 ''

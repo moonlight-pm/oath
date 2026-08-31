@@ -303,6 +303,7 @@ fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
         ("TMUX_BIN", "tmux"),
         ("NCURSES", "ncurses"),
         ("LOCALES", "locales"),
+        ("JETBRAINS_MONO", "jetbrains-mono"),
     ] {
         let p = rt.join(name);
         if p.exists() {

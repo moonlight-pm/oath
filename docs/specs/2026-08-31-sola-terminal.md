@@ -2,9 +2,10 @@
 **Status:** target (freeze)
 **Implementation:** shipped (sola-terminal + tmux helper)
 **Dogfood:** QEMU probe `sola.terminal` / `sola.tmux` / `sola.tmux_session`
-(2026-08-31)
+/ `sola.mono_font` (2026-08-31)
 **Gaps:** other kit apps (browser, mail, settings, …); no dbus;
-software GL; Oath-as-dev-host is T24
+software GL; Oath-as-dev-host is T24; Iosevka Term Slab not packed
+(JetBrains Mono is the kit fallback)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # First kit app on Oath (`sola-terminal`)

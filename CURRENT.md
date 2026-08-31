@@ -34,7 +34,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|
 | Role | Serial + SSH + virtio-gpu appliance |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Launcher Terminal is `/bin/sola-terminal` (tmux needs packed `libresolv` + C.UTF-8). Host SSH keys on up/start. Manual: `docs/manual/`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; mono: JetBrains Mono). Host SSH keys on up/start. Manual: `docs/manual/`. |
 
 ```sh
 nix-shell
