@@ -2,7 +2,8 @@
 
 **Date:** 2026-08-31
 **Status:** complete
-**Proof:** probe `sola.terminal_bins` / `sola.tmux` / `sola.terminal`
+**Proof:** probe `sola.terminal_bins` / `sola.tmux` / `sola.tmux_session` /
+`sola.terminal`
 (plus T25 session stack). gtk is host DISPLAY, not this probe.
 **Freeze:** [../specs/2026-08-31-sola-terminal.md](../specs/2026-08-31-sola-terminal.md)
 

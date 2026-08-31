@@ -20,11 +20,13 @@ fi
 mkdir -p "$out/lib" "$out/bin" "$out/libexec" \
   "$out/share/fonts" "$out/share/icons" "$out/share/cursors" "$out/etc/fonts"
 
+# Only skip libs that relocate-river actually puts in pkg:glibc.
+# libresolv / nss / libutil are not in that closure (River does not
+# NEEDED them); tmux does. Those land in pkg:sola/lib.
 is_glibc() {
   case "$(basename "$1")" in
     ld-linux*|libc.so*|libm.so*|libdl.so*|libpthread.so*|librt.so*| \
-    libresolv.so*|libutil.so*|libcrypt.so*|libnss_*|libgcc_s.so*| \
-    libstdc++.so*|libssp.so*|libthread_db.so*|libanl.so*|libcidn.so*)
+    libgcc_s.so*|libstdc++.so*|libssp.so*)
       return 0
       ;;
     *) return 1 ;;
@@ -164,6 +166,25 @@ if [[ -n ${INTER:-} ]]; then
   fi
 fi
 
+# glibc tmux refuses to start without a UTF-8 locale. C.UTF-8 archive.
+if [[ -n ${LOCALES:-} ]]; then
+  arch=""
+  if [[ -f $LOCALES/lib/locale/locale-archive ]]; then
+    arch=$LOCALES/lib/locale/locale-archive
+  else
+    arch=$(find "$LOCALES" -name locale-archive -type f 2>/dev/null | head -n1 || true)
+  fi
+  if [[ -n $arch ]]; then
+    mkdir -p "$out/lib/locale"
+    cp "$arch" "$out/lib/locale/locale-archive"
+    chmod u+w "$out/lib/locale/locale-archive" 2>/dev/null || true
+  fi
+fi
+[[ -f $out/lib/locale/locale-archive ]] || {
+  echo "relocate-sola: missing locale-archive (LOCALES=C.UTF-8)" >&2
+  exit 1
+}
+
 # tmux / inner shells need a few terminfo entries, not the whole tree.
 if [[ -n ${NCURSES:-} ]]; then
   term_root=""
@@ -218,6 +239,9 @@ patchelf_libexec() {
 guest_env='export PATH=/bin
 export HOME=/root
 export SHELL=/bin/sh
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export LOCALE_ARCHIVE=/oath/store/pkg/sola/lib/locale/locale-archive
 export XDG_RUNTIME_DIR=/run/user/0
 export XDG_CACHE_HOME=/tmp
 export SOLA_NO_SELF_WATCH=1

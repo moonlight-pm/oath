@@ -547,7 +547,22 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "sola.terminal_bins",
         Duration::from_secs(8),
     )?;
-    cmd(&mut vm, &mut steps, "tmux -V", Some("tmux"), "sola.tmux", Duration::from_secs(8))?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "tmux -V && echo TMUX_OK",
+        Some("TMUX_OK"),
+        "sola.tmux",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "tmux -L oathprobe new-session -d -s t /bin/sleep 2 && tmux -L oathprobe ls && echo TMUX_SESS",
+        Some("TMUX_SESS"),
+        "sola.tmux_session",
+        Duration::from_secs(8),
+    )?;
     cmd(
         &mut vm,
         &mut steps,

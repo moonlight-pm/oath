@@ -302,6 +302,7 @@ fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
         ("INTER", "inter"),
         ("TMUX_BIN", "tmux"),
         ("NCURSES", "ncurses"),
+        ("LOCALES", "locales"),
     ] {
         let p = rt.join(name);
         if p.exists() {

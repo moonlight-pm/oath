@@ -1,7 +1,8 @@
 **Date:** 2026-08-31
 **Status:** target (freeze)
 **Implementation:** shipped (sola-terminal + tmux helper)
-**Dogfood:** QEMU probe `sola.terminal` / `sola.tmux` (2026-08-31)
+**Dogfood:** QEMU probe `sola.terminal` / `sola.tmux` / `sola.tmux_session`
+(2026-08-31)
 **Gaps:** other kit apps (browser, mail, settings, …); no dbus;
 software GL; Oath-as-dev-host is T24
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)

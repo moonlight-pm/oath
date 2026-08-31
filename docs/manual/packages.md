@@ -14,7 +14,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:dropbear` | `present: true` | no |
 | `pkg:glibc` | `present: true` | no — GNU C runtime for River and Sola; not loaded by PID 1 |
 | `pkg:river` | `present: true` | yes — patched River; `/bin/river` |
-| `pkg:sola` | `present: true` | yes — session stack + `sola-terminal`; `/bin/sola-bus` and siblings including `sola-session`, `sola-terminal`, and `tmux` |
+| `pkg:sola` | `present: true` | yes — session stack + `sola-terminal`; `/bin/sola-bus` and siblings including `sola-session`, `sola-terminal`, and `tmux` (C.UTF-8 locale-archive in the store tree) |
 | `pkg:hello` | `present: false` | yes — canary |
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 
