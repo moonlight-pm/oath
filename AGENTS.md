@@ -163,21 +163,32 @@ When a change is mixed, **two commits** (generic first, then Oath-compat)
 so the cherry-pick is clean. Do not mention Oath catalog / PID 1 on Sola
 main; software-GL wording is fine.
 
+**Keep `oath-sola` current.** Merge Sola `master` into `oath-sola`
+`master` regularly so the fork does not drift — at session start when
+the slice touches `forks/sola`, and after every Sola-generic land. Drift
+is the failure mode, not extra merge commits.
+
 ```sh
 cd forks/sola
 git remote add sola git@github.com:moonlight-pm/Sola.git   # once
 git fetch sola
-# Prefer a worktree so this submodule stays on oath-sola master:
+# Regular sync (no cherry-pick needed):
+git merge sola/master
+git push origin master
+# Sola-generic land — prefer a worktree so this submodule stays on
+# oath-sola master:
 git worktree add /tmp/sola-up sola/master
 cd /tmp/sola-up
 git cherry-pick -x <generic-commit>
 git push sola HEAD:master
 cd - && git worktree remove /tmp/sola-up
-git fetch sola && git merge sola/master   # on oath-sola master
+git fetch sola && git merge sola/master
+git push origin master
 ```
 
-Do not force-push Sola `master`. After the Sola land, pack the appliance
-from `oath-sola` as usual (`cargo make build`).
+Do not force-push Sola `master`. After the Sola land (or a sync that
+changes packed ELFs), pack the appliance from `oath-sola` (`cargo make
+build`).
 
 ## Grok tooling
 

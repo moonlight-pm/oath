@@ -28,6 +28,9 @@ programs we wrote (`hello`, `fetchme`, later canaries) live in
 `forks/sola` is [oath-sola](https://github.com/moonlight-pm/oath-sola).
 The NixOS daily driver is [Sola](https://github.com/moonlight-pm/Sola).
 T23: pull Sola into the fork; never push **Oath-compat** the other way.
+**Merge Sola `master` into `oath-sola` regularly** so the fork does not
+drift (session start when touching `forks/sola`, and after every
+Sola-generic land).
 
 Oath dogfood will find real Sola bugs (the GPU just hid them). Split
 commits so those can move.
@@ -44,10 +47,18 @@ git fetch sola
 git checkout -b from-oath/<topic> sola/master
 git cherry-pick -x <generic-commit>
 git push sola from-oath/<topic>
-# PR (or merge) onto Sola master, then:
+# land on Sola master, then:
 git checkout master
 git fetch sola
 git merge sola/master
+git push origin master
+```
+
+Regular sync without a new cherry-pick:
+
+```sh
+cd forks/sola
+git fetch sola && git merge sola/master && git push origin master
 ```
 
 Prefer two commits when a change is mixed (generic first, then

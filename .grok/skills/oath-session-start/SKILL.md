@@ -30,6 +30,9 @@ description: >
 - State in one short paragraph: priority, holds, dogfood facts, capability
   gaps, and any D* that blocks inventing policy.
 - Start work (or ask the human first if blocked on a decision point).
+- If the slice touches `forks/sola`, merge Sola `master` into `oath-sola`
+  first so the fork does not drift ([AGENTS.md](../../../AGENTS.md)
+  § Sola fork).
 - When finishing, invoke **oath-progress-docs** (or follow that skill’s
   checklist) before claiming done.
 
