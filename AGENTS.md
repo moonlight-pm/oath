@@ -144,6 +144,41 @@ not a new kind.
 - Do not mix “is” and “will be” in the same paragraph without a label.
 - Do not assume Debian/Arch/NixOS conventions apply to the *product*.
 
+## Sola fork — generic fixes vs Oath-compat
+
+`forks/sola` is **oath-sola** (`moonlight-pm/oath-sola`). The NixOS
+daily driver is **Sola** (`moonlight-pm/Sola`). T23: pull Sola into the
+fork; never push **Oath-compat** the other way. Commands:
+[`forks/README.md`](forks/README.md).
+
+Oath QEMU will surface real Sola bugs the host GPU hid. Classify every
+`forks/sola` commit:
+
+| Class | What | Where it lands |
+|-------|------|----------------|
+| **Sola-generic** | Overlay sizing, kit, bridge, anything that belongs on the NixOS desk | Cherry-pick onto `moonlight-pm/Sola` `master`, then merge Sola `master` into `oath-sola` |
+| **Oath-compat** | `/oath` vs `/opt/sola`, refuse `crates/sola` when `/oath/INDEX.md` exists, PID 1 env, packing | `oath-sola` only |
+
+When a change is mixed, **two commits** (generic first, then Oath-compat)
+so the cherry-pick is clean. Do not mention Oath catalog / PID 1 on Sola
+main; software-GL wording is fine.
+
+```sh
+cd forks/sola
+git remote add sola git@github.com:moonlight-pm/Sola.git   # once
+git fetch sola
+# Prefer a worktree so this submodule stays on oath-sola master:
+git worktree add /tmp/sola-up sola/master
+cd /tmp/sola-up
+git cherry-pick -x <generic-commit>
+git push sola HEAD:master
+cd - && git worktree remove /tmp/sola-up
+git fetch sola && git merge sola/master   # on oath-sola master
+```
+
+Do not force-push Sola `master`. After the Sola land, pack the appliance
+from `oath-sola` as usual (`cargo make build`).
+
 ## Grok tooling
 
 - Project permissions: `.grok/config.toml` (no secrets there either), when
