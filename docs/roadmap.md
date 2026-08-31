@@ -75,9 +75,10 @@ can speak. Default client can be Grok; the OS interface is not Grok.
 
 ## Phase 6 — Disk install and updates
 
-**Status: planned**
+**Status: active**
 
-Installer, A/B or equivalent base updates, honest rollback.
+Installer, A/B or equivalent base updates, honest rollback. First
+slice is T27: replace canto (SSH+kexec). QEMU probe stays.
 
 ## Later (unplanned)
 

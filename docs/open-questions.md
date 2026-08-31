@@ -19,6 +19,7 @@ path fallback in wlroots). T21 River-first is closed
 (one `pkg:sola` blob; develop Sola on Nix until Oath is the host).
 T25 session manager is closed (`svc:sola-session` in that blob).
 T26 sola-terminal is closed (sixth ELF + tmux helper in `pkg:sola`).
+T27 metal canary is closed (canto; SSH+kexec; QEMU probe stays).
 
 ---
 
@@ -38,11 +39,20 @@ T26 sola-terminal is closed (sixth ELF + tmux helper in `pkg:sola`).
 
 ## Closed
 
+### T27 — Metal canary (canto) — locked 2026-08-31
+
+Canto is the first real disk. SSH+kexec installer ramdisk, format
+btrfs `@`, EFI systemd-boot (binary only), inject owner pubkeys,
+reboot. Not nixos-anywhere / flakes / disko. QEMU probe stays.
+Operator names `--disk` and passes `--confirm`. Sola’s `ssh canto`
+desk is forfeit.
+
 ### D1 — First dogfood shape (P0) — locked 2026-08-27
 
 QEMU headless appliance. No desktop. No bare-metal installer in Phase 1.
 Success is a VM whose catalog an agent can read. **x86_64**, **serial
-console**.
+console**. **Amended T27:** QEMU remains the default probe; canto is
+the first metal canary.
 
 ### D2 — libc and foreign ABI (P0) — locked 2026-08-27
 
@@ -249,3 +259,4 @@ seat in `oath-sola`.
 | 2026-08-31 | T24 | Sola/app dev: apply/undo; one sola blob; Nix host until Oath is | this file; [specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) |
 | 2026-08-31 | T25 | sola-session as svc; LaunchApp owner; still one sola blob | this file; [specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md) |
 | 2026-08-31 | T26 | sola-terminal + tmux in pkg:sola; no new kind | this file; [specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md) |
+| 2026-08-31 | T27 | canto metal canary; SSH+kexec; QEMU probe stays | this file; [specs/2026-08-31-metal-canto.md](specs/2026-08-31-metal-canto.md) |

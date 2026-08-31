@@ -22,8 +22,11 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-31-sola-dev.md](2026-08-31-sola-dev.md) | T24: Sola/app development layout (Nix host until Oath is) |
 | [2026-08-31-sola-session.md](2026-08-31-sola-session.md) | T25: `svc:sola-session` LaunchApp owner |
 | [2026-08-31-sola-terminal.md](2026-08-31-sola-terminal.md) | T26: first kit app (`sola-terminal` + tmux) |
+| [2026-08-31-metal-canto.md](2026-08-31-metal-canto.md) | T27: canto metal canary (SSH+kexec) |
 
-Active plan: none. Completed:
+Active plan:
+[../plans/2026-08-31-metal-canto-plan.md](../plans/2026-08-31-metal-canto-plan.md)
+(T27). Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),
 [../plans/2026-08-28-svc-loop-plan.md](../plans/2026-08-28-svc-loop-plan.md) (Phase 2),
 [../plans/2026-08-28-pkg-canary-plan.md](../plans/2026-08-28-pkg-canary-plan.md) (Phase 3 canary),
