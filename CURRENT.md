@@ -67,7 +67,8 @@ Do not re-litigate without an explicit decision.
   `svc:river` wants `svc:seatd`. Sola session: `svc:sola-bus` /
   `sola-call` / `sola-river` / `sola-shell`.
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
-  is pixman River. Input is libinput via libudev-zero (`dev:kbd0` /
+  is pixman River plus the Sola menubar (software GL, McMojave
+  cursor). Input is libinput via libudev-zero (`dev:kbd0` /
   `dev:mouse0`). No udevd. Path fallback in `forks/wlroots`.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 (`pkg:sola` + `svc:sola-bus` /

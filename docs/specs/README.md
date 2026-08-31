@@ -21,7 +21,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-30-oath-sola.md](2026-08-30-oath-sola.md) | T23: Sola session on Oath (`oath-sola`) |
 | [2026-08-31-sola-dev.md](2026-08-31-sola-dev.md) | T24: Sola/app development layout (Nix host until Oath is) |
 
-Active plan: none (T23 complete). Completed:
+Active plan: none. Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),
 [../plans/2026-08-28-svc-loop-plan.md](../plans/2026-08-28-svc-loop-plan.md) (Phase 2),
 [../plans/2026-08-28-pkg-canary-plan.md](../plans/2026-08-28-pkg-canary-plan.md) (Phase 3 canary),

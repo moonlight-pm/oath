@@ -12,7 +12,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:btrfs` | `present: true` | no |
 | `pkg:oath` | `present: true` | no |
 | `pkg:dropbear` | `present: true` | no |
-| `pkg:glibc` | `present: true` | no — GNU C runtime for River; not loaded by PID 1 |
+| `pkg:glibc` | `present: true` | no — GNU C runtime for River and Sola; not loaded by PID 1 |
 | `pkg:river` | `present: true` | yes — patched River; `/bin/river` |
 | `pkg:sola` | `present: true` | yes — session stack; `/bin/sola-bus` and siblings |
 | `pkg:hello` | `present: false` | yes — canary |

@@ -45,7 +45,7 @@ ask the human.
 | [`specs/2026-08-30-ssh-and-dhcp.md`](specs/2026-08-30-ssh-and-dhcp.md) | SSH keys + dhcp | **Target** |
 | [`specs/2026-08-30-devices.md`](specs/2026-08-30-devices.md) | Device inventory + Unix floor | **Target** |
 | [`specs/2026-08-30-wants-and-fetch.md`](specs/2026-08-30-wants-and-fetch.md) | wants + fetch | **Target** |
-| [`specs/2026-08-30-display.md`](specs/2026-08-30-display.md) | virtio-gpu display canary | **Target** |
+| [`specs/2026-08-30-display.md`](specs/2026-08-30-display.md) | virtio-gpu display canary | **Target** (shipped) |
 | [`specs/2026-08-30-pkg-hosting.md`](specs/2026-08-30-pkg-hosting.md) | T20 hosting (`pkg.url`, peer origin) | **Target** (not implemented) |
 | [`specs/2026-08-30-sola.md`](specs/2026-08-30-sola.md) | T21 Sola on Oath, River first | **Target** (River/seatd in) |
 | [`specs/2026-08-30-libinput.md`](specs/2026-08-30-libinput.md) | T22 libinput without udev | **Target** (shipped) |

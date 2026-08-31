@@ -111,8 +111,8 @@ once the disk is mounted.
 ## Limits
 
 - virtio-gpu (`/dev/dri/card0`). gtk window when `DISPLAY` is set is
-  pixman River plus the Sola menubar (software GL; no udevd).
-  `OATH_DISPLAY=none` hides it. Probe is headless.
+  pixman River plus the Sola menubar (software GL, McMojave cursor;
+  no udevd). `OATH_DISPLAY=none` hides it. Probe is headless.
 - QEMU user net + virtio-net; `net:net0` is `10.0.2.15/24`
 - SSH hostfwd `127.0.0.1:2222` → guest 22 (`OATH_SSH_PORT`). Optional
   `OATH_BRIDGE=br0` for a host bridge (no hostfwd).

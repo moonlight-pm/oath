@@ -42,7 +42,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     river              svc:river (glibc, pixman, libudev-zero, socket /run/user/0)
     sola-bus/call      svc:sola-bus / svc:sola-call (sockets /run/user/0)
     sola-river         svc:sola-river (bridge, not the compositor)
-    sola-shell         svc:sola-shell (iced menubar; software GL)
+    sola-shell         svc:sola-shell (iced menubar; software GL; McMojave)
     /sbin/init -> ../usr/lib/oath/init
 ```
 
@@ -80,4 +80,5 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) ·
 [specs/2026-08-30-sola.md](specs/2026-08-30-sola.md) ·
 [specs/2026-08-30-libinput.md](specs/2026-08-30-libinput.md) ·
-[specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md)
+[specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) ·
+[specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md)
