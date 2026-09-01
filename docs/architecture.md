@@ -74,9 +74,12 @@ Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 /dev/sda --confirm` (`--qemu` OVMF rehearsal; `--usb --disk /dev/sdd`
 writes an EFI installer stick). Installer ramdisk: `oath.install=1`,
 dropbear, no `switch_root`. Format GPT ESP + btrfs `@`. Copy packed
-tree. `oath-efi` as `EFI/BOOT/BOOTX64.EFI` (native GOP, white mark,
-then kernel); systemd-boot kept at `EFI/systemd/`. amdgpu insmod is
-deferred until just before `svc:river`. `loader/entries/oath.conf`.
+tree. Boot graphics is layered, not one path: EFI GOP splash
+(`oath-efi` as `BOOTX64.EFI`) when firmware has GOP; PID 1 defers KMS
+drivers that would kick a live firmware framebuffer (amdgpu/i915/…,
+not virtio-gpu) until just before River; River starts black until
+Sola paints. USB installer still systemd-boot + tty0. QEMU `run`
+is still `-kernel`. `loader/entries/oath.conf`.
 Canto: two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits

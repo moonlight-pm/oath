@@ -1,0 +1,6 @@
+#!/bin/sh
+# River's default init paints solarized teal. Match the boot mark's black
+# field so the compositor does not flash a color before Sola.
+if command -v riverctl >/dev/null 2>&1; then
+	riverctl background-color 0x000000
+fi

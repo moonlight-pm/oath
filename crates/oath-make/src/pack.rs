@@ -257,10 +257,12 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     copy_file(&bin.join("serial-login"), &stage.join("usr/lib/oath/serial-login"))?;
     fs::write(stage.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     fs::write(stage.join("usr/lib/oath/run-compositor"), include_str!("run-compositor"))?;
+    fs::write(stage.join("usr/lib/oath/river-boot"), include_str!("river-boot"))?;
     chmod_exec(&stage.join("usr/lib/oath/init"))?;
     chmod_exec(&stage.join("usr/lib/oath/serial-login"))?;
     chmod_exec(&stage.join("usr/lib/oath/udhcpc.script"))?;
     chmod_exec(&stage.join("usr/lib/oath/run-compositor"))?;
+    chmod_exec(&stage.join("usr/lib/oath/river-boot"))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../usr/lib/oath/init", stage.join("sbin/init"))?;
     fs::write(stage.join("etc/passwd"), "root:x:0:0:root:/root:/bin/sh\n")?;

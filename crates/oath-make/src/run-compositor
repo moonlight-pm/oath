@@ -24,4 +24,5 @@ done
 export WLR_RENDERER="${WLR_RENDERER:-pixman}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/0}"
 mkdir -p "$XDG_RUNTIME_DIR"
-exec /bin/river "$@"
+# Default River init is solarized; keep black until Sola paints.
+exec /bin/river -c /usr/lib/oath/river-boot "$@"

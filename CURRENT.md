@@ -17,8 +17,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    panel: Philips 221V8L **1920×1080@75**. DualUp 2560×2880@30 works
    on that HDMI path (60 Hz needs the LG’s DisplayPort). Graphical
    boot is the white Oath mark on black (nothing else until Sola).
-   **Canto EFI splash is up.** Logo stays on GOP until PID 1 loads
-   amdgpu immediately before River (no fbdev/fbcon). Panel 1920×1080.
+   **Canto EFI splash is up.** Boot graphics is layered (EFI GOP mark,
+   then defer KMS that would steal that fb, River on black). Canto
+   is one stack, not every machine. SI still flashes on KMS bind.
    Next: kit apps / amdgpu accel / T24.
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.

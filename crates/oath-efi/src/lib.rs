@@ -6,10 +6,6 @@ const RAW: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/logo.bin"));
 const MARK_NUM: u32 = 1;
 const MARK_DEN: u32 = 3;
 
-/// Preferred GOP sizes. Native for the current canto panel first.
-pub const PREFER: &[(u32, u32)] =
-    &[(1920, 1080), (2560, 2880), (2560, 1440), (3840, 2160), (1280, 800)];
-
 #[derive(Clone, Copy)]
 pub struct Logo {
     pub w: u32,
@@ -30,15 +26,15 @@ pub fn logo() -> Option<Logo> {
     Some(Logo { w, h, alpha })
 }
 
-/// Pick a GOP mode. Prefer the panel's native size when the firmware lists it.
+/// Pick a GOP mode. Keep firmware's current mode when it already looks like
+/// a real panel (native). Do not hardcode a distro panel size.
 pub fn pick_mode(modes: &[(u32, u32)], current: (u32, u32)) -> (u32, u32) {
     if modes.is_empty() {
         return current;
     }
-    for want in PREFER {
-        if modes.iter().any(|m| m == want) {
-            return *want;
-        }
+    let listed = modes.iter().any(|m| *m == current);
+    if listed && current.0 >= 800 && current.1 >= 600 {
+        return current;
     }
     modes.iter().copied().max_by_key(|(w, h)| (*w as u64) * (*h as u64)).unwrap_or(current)
 }
@@ -93,15 +89,21 @@ mod tests {
     }
 
     #[test]
-    fn prefer_1080p_when_listed() {
+    fn keeps_firmware_native() {
         let modes = [(1024, 768), (1920, 1080), (3840, 2160)];
-        assert_eq!(pick_mode(&modes, (800, 600)), (1920, 1080));
+        assert_eq!(pick_mode(&modes, (1920, 1080)), (1920, 1080));
     }
 
     #[test]
-    fn largest_when_no_prefer() {
+    fn tiny_firmware_mode_uses_largest() {
+        let modes = [(640, 480), (1920, 1080), (3840, 2160)];
+        assert_eq!(pick_mode(&modes, (640, 480)), (3840, 2160));
+    }
+
+    #[test]
+    fn keeps_listed_firmware_mode() {
         let modes = [(800, 600), (1024, 768)];
-        assert_eq!(pick_mode(&modes, (800, 600)), (1024, 768));
+        assert_eq!(pick_mode(&modes, (800, 600)), (800, 600));
     }
 
     #[test]

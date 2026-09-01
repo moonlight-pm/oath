@@ -17,6 +17,7 @@ use nix::unistd::{sethostname, Pid};
 use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, BTRFS_TOP, DEFAULT_ROOT};
 use serde_json::json;
 
+mod gpu;
 #[allow(dead_code)]
 mod splash;
 
@@ -169,12 +170,13 @@ fn ensure_mount(fstype: &str, target: &str, source: &str) {
     let _ = mount(Some(source), target, Some(fstype), MsFlags::empty(), None::<&str>);
 }
 
-fn load_modules(skip_amdgpu: bool) {
+fn load_modules(defer_kms: bool) {
+    let defer = defer_kms && gpu::firmware_fb_live();
     let rel = kver();
     let base = Path::new("/lib/modules").join(&rel);
     let list = module_load_order(&base);
     for m in list {
-        if skip_amdgpu && m.ends_with("amdgpu.ko") {
+        if defer && gpu::takes_over_firmware_fb(&m) {
             continue;
         }
         if module_already_loaded(&m) {
@@ -199,7 +201,7 @@ fn load_modules(skip_amdgpu: bool) {
         }
     }
     let _ = Command::new("/bin/busybox").args(["mdev", "-s"]).status();
-    if !skip_amdgpu {
+    if !defer {
         wait_drm(Duration::from_secs(5));
     }
 }
