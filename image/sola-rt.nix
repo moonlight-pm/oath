@@ -11,6 +11,8 @@
 , glibcLocales
 , jetbrains-mono
 , iosevka-bin
+, cacert
+, libx11
 , runCommand
 }:
 # Host `cargo build` produces the Sola ELFs. This tree is the dlopen
@@ -39,4 +41,6 @@ runCommand "oath-sola-rt" { } ''
   ln -s ${cUtf8} $out/locales
   ln -s ${jetbrains-mono} $out/jetbrains-mono
   ln -s ${iosevkaTermSlab} $out/iosevka-term-slab
+  ln -s ${cacert} $out/cacert
+  ln -s ${libx11} $out/libx11
 ''

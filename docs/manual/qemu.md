@@ -106,7 +106,7 @@ once the disk is mounted.
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
 - `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/0`
 - Sola session stack (`svc:sola-bus` / `call` / `river` / `shell` /
-  `session`); `sola-terminal` + tmux + SF Pro Text / Iosevka Term Slab in `pkg:sola`; no
+  `session`); `sola-terminal` + tmux + `sola-browser` + CEF + SF Pro Text / Iosevka Term Slab in `pkg:sola`; no
   nested process manager
 - virtio keyboard + mouse (`dev:kbd0` / `dev:mouse0`; libinput via
   libudev-zero, no udevd)

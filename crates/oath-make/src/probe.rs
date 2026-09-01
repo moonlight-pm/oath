@@ -590,6 +590,30 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test -x /bin/sola-browser && echo BROWSER_BIN",
+        Some("BROWSER_BIN"),
+        "sola.browser_bin",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -f /oath/store/pkg/sola/cef/Release/libcef.so && echo CEF",
+        Some("CEF"),
+        "sola.cef",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "sola-browser >/dev/null 2>&1 & sleep 20; pidof sola-browser >/dev/null && echo BROWSER_UP",
+        Some("BROWSER_UP"),
+        "sola.browser",
+        Duration::from_secs(40),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath set dev:vda present=false",
         Some("not removable"),
         "dev.refuse",

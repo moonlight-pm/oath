@@ -19,7 +19,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    apps / amdgpu accel / T24.
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
-3. **T26 sola-terminal in** (QEMU). Other kit apps still out.
+3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
+   zygote; helper ready). Other kit apps still out.
 4. **T24 locked**, not implemented (Oath-as-dev-host). Develop Sola
    on Nix until Oath is the host.
 5. **T20 hosting locked**, not implemented.
@@ -38,7 +39,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh root@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). `sola-browser` packs on next `cargo make build`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
 
 ```sh
 nix-shell
@@ -98,8 +99,10 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-08-31-metal-canto.md](docs/specs/2026-08-31-metal-canto.md)
-  (T27 metal canary, partial). T26:
+- Freeze: [docs/specs/2026-09-01-sola-browser.md](docs/specs/2026-09-01-sola-browser.md)
+  (T28 sola-browser). T27:
+  [docs/specs/2026-08-31-metal-canto.md](docs/specs/2026-08-31-metal-canto.md)
+  (metal canary, partial). T26:
   [docs/specs/2026-08-31-sola-terminal.md](docs/specs/2026-08-31-sola-terminal.md)
   (sola-terminal). T25:
   [docs/specs/2026-08-31-sola-session.md](docs/specs/2026-08-31-sola-session.md)
@@ -110,12 +113,14 @@ Do not re-litigate without an explicit decision.
   (session stack). T22:
   [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
   (shipped).
-- Plan: [docs/plans/2026-08-31-metal-canto-plan.md](docs/plans/2026-08-31-metal-canto-plan.md)
+- Plan: [docs/plans/2026-09-01-sola-browser-plan.md](docs/plans/2026-09-01-sola-browser-plan.md)
+  (T28). T27:
+  [docs/plans/2026-08-31-metal-canto-plan.md](docs/plans/2026-08-31-metal-canto-plan.md)
   (complete). T26:
   [docs/plans/2026-08-31-sola-terminal-plan.md](docs/plans/2026-08-31-sola-terminal-plan.md)
   (complete).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
 - Roadmap: display canary in; River as `svc`; Sola session stack +
-  session manager as `svc`; sola-terminal packed; other kit apps not;
-  Phase 6 metal canary (canto) dogfoodable, gaps remain
+  session manager as `svc`; sola-terminal packed; sola-browser packing;
+  other kit apps not; Phase 6 metal canary (canto) dogfoodable, gaps remain

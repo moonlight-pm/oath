@@ -64,9 +64,16 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/drivers/hid/usbhid/usbhid.ko.xz",
 ];
 
-/// Session + first kit app ELFs packed into `pkg:sola`.
-const SOLA_KIT_ELFS: &[&str] =
-    &["sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session", "sola-terminal"];
+/// Session + kit app ELFs packed into `pkg:sola`.
+const SOLA_KIT_ELFS: &[&str] = &[
+    "sola-bus",
+    "sola-call",
+    "sola-river",
+    "sola-shell",
+    "sola-session",
+    "sola-terminal",
+    "sola-browser",
+];
 
 pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::create_dir_all(out)?;
@@ -413,6 +420,8 @@ fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
         ("LOCALES", "locales"),
         ("JETBRAINS_MONO", "jetbrains-mono"),
         ("IOSEVKA_TERM_SLAB", "iosevka-term-slab"),
+        ("CACERT", "cacert"),
+        ("LIBX11", "libx11"),
     ] {
         let p = rt.join(name);
         if p.exists() {
@@ -422,8 +431,29 @@ fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
     if let Some(sf) = sola_sf_fonts(root) {
         cmd.env("SOLA_SF_FONTS", sf);
     }
+    if let Some(cef) = sola_cef_dir(root) {
+        cmd.env("CEF_DIR", cef);
+    }
     run(&mut cmd)?;
     Ok(sola_out)
+}
+
+/// Host `cargo make install-cef` cache. Not in git.
+fn sola_cef_dir(root: &Path) -> Option<PathBuf> {
+    if let Some(p) = std::env::var_os("SOLA_CEF_DIR").or_else(|| std::env::var_os("CEF_DIR")) {
+        let p = PathBuf::from(p);
+        if p.join("Release").join("libcef.so").is_file() || p.join("libcef.so").is_file() {
+            return Some(p);
+        }
+    }
+    let ver = fs::read_to_string(root.join("forks/sola/cef-version")).ok()?;
+    let ver = ver.trim();
+    if ver.is_empty() {
+        return None;
+    }
+    let home = std::env::var_os("HOME")?;
+    let p = PathBuf::from(home).join(".cache/sola").join(format!("cef-{ver}"));
+    (p.join("Release").join("libcef.so").is_file() || p.join("libcef.so").is_file()).then_some(p)
 }
 
 /// Licensed SF Pro Text faces. Not in git; pack from the operator stash.

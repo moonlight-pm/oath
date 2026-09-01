@@ -3,8 +3,8 @@
 **Implementation:** shipped (sola-terminal + tmux helper)
 **Dogfood:** QEMU probe `sola.terminal` / `sola.tmux` / `sola.tmux_session`
 / `sola.ui_font` / `sola.mono_font` (2026-09-01)
-**Gaps:** other kit apps (browser, mail, settings, …); no dbus;
-software GL; Oath-as-dev-host is T24
+**Gaps:** other kit apps (mail, wrapper, settings, …); browser is T28;
+no dbus-daemon; software GL; Oath-as-dev-host is T24
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # First kit app on Oath (`sola-terminal`)

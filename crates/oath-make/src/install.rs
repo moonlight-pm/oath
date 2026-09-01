@@ -187,9 +187,8 @@ fn assert_usb_stick(dev: &str) -> Result<()> {
         bail!("{dev} is not removable; refusing to write USB installer");
     }
     let sys = format!("/sys/block/{name}");
-    let is_usb = fs::canonicalize(&sys)
-        .map(|p| p.to_string_lossy().contains("/usb"))
-        .unwrap_or(false);
+    let is_usb =
+        fs::canonicalize(&sys).map(|p| p.to_string_lossy().contains("/usb")).unwrap_or(false);
     if !is_usb {
         bail!("{dev} is removable but not USB; refusing");
     }
@@ -245,10 +244,8 @@ fn ssh_out(r: &Remote, remote_cmd: &str) -> Result<String> {
 }
 
 fn put_text(r: &Remote, dest: &str, body: &str) -> Result<()> {
-    let tmp = std::env::temp_dir().join(format!(
-        "oath-put-{}",
-        dest.rsplit('/').next().unwrap_or("file")
-    ));
+    let tmp = std::env::temp_dir()
+        .join(format!("oath-put-{}", dest.rsplit('/').next().unwrap_or("file")));
     fs::write(&tmp, body)?;
     let res = scp_root(r, &tmp, dest);
     let _ = fs::remove_file(&tmp);
@@ -706,7 +703,7 @@ fn qemu_headless(cmd: &mut Command, serial: &Path, netdev: &str, drive: &str) {
         "-machine",
         "q35",
         "-m",
-        "2048",
+        "4096",
         "-display",
         "none",
         "-monitor",

@@ -7,7 +7,11 @@ out=${1:?out}
 guest_glibc=/oath/store/pkg/glibc/lib
 guest_river=/oath/store/pkg/river/lib
 guest_sola=/oath/store/pkg/sola/lib
-rpath="$guest_glibc:$guest_river:$guest_sola"
+guest_cef=/oath/store/pkg/sola/cef/Release
+# Session ELFs prefer river's libudev-zero (no udevd). CEF needs the
+# versioned systemd libudev we packed into sola/lib.
+rpath="$guest_glibc:$guest_river:$guest_sola:$guest_cef"
+browser_rpath="$guest_glibc:$guest_sola:$guest_cef:$guest_river"
 interp_guest="$guest_glibc/ld-linux-x86-64.so.2"
 
 # Nix store copies land mode 555; `cp -a` keeps that, and a later
@@ -26,7 +30,17 @@ mkdir -p "$out/lib" "$out/bin" "$out/libexec" \
 is_glibc() {
   case "$(basename "$1")" in
     ld-linux*|libc.so*|libm.so*|libdl.so*|libpthread.so*|librt.so*| \
-    libgcc_s.so*|libstdc++.so*|libssp.so*)
+    libgcc_s.so*|libstdc++.so*)
+      return 0
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+# Shipped next to libcef.so — keep them in cef/Release, not lib/.
+is_cef_bundled() {
+  case "$(basename "$1")" in
+    libcef.so|libEGL.so|libGLESv2.so|libvk_swiftshader.so|libvulkan.so.1|chrome-sandbox)
       return 0
       ;;
     *) return 1 ;;
@@ -49,7 +63,7 @@ enqueue() {
   queue+=("$real")
 }
 
-kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal)
+kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal sola-browser)
 for b in "${kit_bins[@]}"; do
   src="${SOLA_BINS:?}/$b"
   [[ -f $src ]] || { echo "relocate-sola: missing $src" >&2; exit 1; }
@@ -66,6 +80,29 @@ if [[ -n ${TMUX_BIN:-} ]]; then
 fi
 [[ -n $tmux_src ]] || { echo "relocate-sola: TMUX_BIN missing (need tmux for sola-terminal)" >&2; exit 1; }
 enqueue "$tmux_src"
+
+# CEF tree (cache layout Release/ + Resources/). Pack source is
+# host `cargo make install-cef`; never commit the binaries.
+# Materialize Release (cp -aL): cache uses `../Resources` symlinks and
+# busybox tar on metal rewrites those members to `Resources/...`.
+cef_src=${CEF_DIR:-}
+if [[ -n $cef_src && -f $cef_src/Release/libcef.so ]]; then
+  mkdir -p "$out/cef/Release"
+  if [[ -d $cef_src/Resources ]]; then
+    cp -a "$cef_src/Resources" "$out/cef/Resources"
+  fi
+  cp -aL "$cef_src/Release/." "$out/cef/Release/"
+  chmod -R u+w "$out/cef" 2>/dev/null || true
+  enqueue "$cef_src/Release/libcef.so"
+elif [[ -n $cef_src && -f $cef_src/libcef.so ]]; then
+  mkdir -p "$out/cef/Release"
+  cp -aL "$cef_src/." "$out/cef/Release/"
+  chmod -R u+w "$out/cef" 2>/dev/null || true
+  enqueue "$cef_src/libcef.so"
+else
+  echo "relocate-sola: CEF_DIR missing libcef.so (set to ~/.cache/sola/cef-<pin>)" >&2
+  exit 1
+fi
 
 enqueue_glob() {
   local g
@@ -118,6 +155,15 @@ while [[ $i -lt ${#queue[@]} ]]; do
       [[ -e $dep ]] && enqueue "$dep"
     done < <("$loader" --list "$f" 2>/dev/null | awk '/=> \// {print $3} /^\//{print $1}')
   fi
+  # NSS dlopens sibling modules (softokn, freebl, ckbi) next to libnss3.
+  case "$(basename "$f")" in
+    libnss3.so*)
+      d=$(dirname "$f")
+      enqueue_glob "$d"/libsoftokn3.so* "$d"/libfreebl3.so* "$d"/libfreeblpriv3.so* \
+        "$d"/libnssckbi.so "$d"/libnssdbm3.so* "$d"/libnsssysinit.so* \
+        "$d"/libplc4.so* "$d"/libplds4.so*
+      ;;
+  esac
 done
 
 for f in "${!SEEN[@]}"; do
@@ -125,8 +171,11 @@ for f in "${!SEEN[@]}"; do
   if is_glibc "$name"; then
     continue
   fi
+  if is_cef_bundled "$name"; then
+    continue
+  fi
   case "$name" in
-    sola-bus|sola-call|sola-river|sola-shell|sola-session|sola-terminal|tmux) continue ;;
+    sola-bus|sola-call|sola-river|sola-shell|sola-session|sola-terminal|sola-browser|tmux) continue ;;
   esac
   d="$out/lib/$name"
   cp -a "$f" "$d"
@@ -188,6 +237,34 @@ copy_font_globs "${IOSEVKA_TERM_SLAB:-}/share/fonts" \
 copy_fonts "${INTER:-}/share/fonts"
 copy_fonts "${JETBRAINS_MONO:-}/share/fonts"
 
+# rustls-platform-verifier (vault) and other TLS clients need a CA bundle.
+# Chromium still uses NSS (libnssckbi) for page loads.
+mkdir -p "$out/etc/ssl/certs"
+if [[ -n ${CACERT:-} ]]; then
+  for b in "$CACERT/etc/ssl/certs/ca-bundle.crt" \
+           "$CACERT/etc/ssl/certs/ca-certificates.crt"; do
+    if [[ -f $b ]]; then
+      cp "$b" "$out/etc/ssl/certs/ca-certificates.crt"
+      break
+    fi
+  done
+fi
+[[ -f $out/etc/ssl/certs/ca-certificates.crt ]] || {
+  echo "relocate-sola: missing CA bundle (CACERT=cacert)" >&2
+  exit 1
+}
+
+# winit panics without a Compose file when LANG=C.UTF-8.
+mkdir -p "$out/share/X11/locale/en_US.UTF-8"
+if [[ -f ${LIBX11:-}/share/X11/locale/en_US.UTF-8/Compose ]]; then
+  cp "${LIBX11}/share/X11/locale/en_US.UTF-8/Compose" \
+    "$out/share/X11/locale/en_US.UTF-8/Compose"
+fi
+[[ -f $out/share/X11/locale/en_US.UTF-8/Compose ]] || {
+  echo "relocate-sola: missing X11 Compose (LIBX11)" >&2
+  exit 1
+}
+
 # glibc tmux refuses to start without a UTF-8 locale. C.UTF-8 archive.
 if [[ -n ${LOCALES:-} ]]; then
   arch=""
@@ -239,14 +316,27 @@ cat >"$out/etc/fonts/fonts.conf" <<'EOF'
 </fontconfig>
 EOF
 
-find "$out/lib" -type f 2>/dev/null | while read -r f; do
-  file -b "$f" | grep -q ELF || continue
+patchelf_guest() {
+  local f=$1
+  local rp=${2:-$rpath}
+  file -b "$f" | grep -q ELF || return 0
   chmod u+w "$f" || true
   if patchelf --print-interpreter "$f" >/dev/null 2>&1; then
     patchelf --set-interpreter "$interp_guest" "$f" || true
   fi
-  patchelf --set-rpath "$rpath" "$f" 2>/dev/null || true
+  patchelf --set-rpath "$rp" "$f" 2>/dev/null || true
+}
+
+find "$out/lib" -type f 2>/dev/null | while read -r f; do
+  patchelf_guest "$f" "$rpath"
 done
+# CEF's own SOs must see $ORIGIN (siblings) plus sola/lib before river
+# (systemd libudev vs libudev-zero).
+if [[ -d $out/cef ]]; then
+  find "$out/cef" -type f 2>/dev/null | while read -r f; do
+    patchelf_guest "$f" "\$ORIGIN:$browser_rpath"
+  done
+fi
 
 patchelf_libexec() {
   local dest=$1
@@ -271,6 +361,13 @@ export SOLA_LOG_DIR=/oath/log
 export FONTCONFIG_FILE=/oath/store/pkg/sola/etc/fonts/fonts.conf
 export FONTCONFIG_PATH=/oath/store/pkg/sola/etc/fonts
 export SOLA_ASSETS_DIR=/oath/store/pkg/sola/share
+export SOLA_CEF_DIR=/oath/store/pkg/sola/cef
+export SOLA_BROWSER=/bin/sola-browser
+export SSL_CERT_FILE=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
+export SSL_CERT_DIR=/oath/store/pkg/sola/etc/ssl/certs
+export CURL_CA_BUNDLE=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
+export XCOMPOSEFILE=/oath/store/pkg/sola/share/X11/locale/en_US.UTF-8/Compose
+export XKB_CONFIG_ROOT=/oath/store/pkg/river/share/X11/xkb
 export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
 export XCURSOR_THEME=McMojave
 export TERMINFO=/oath/store/pkg/sola/share/terminfo
@@ -286,11 +383,20 @@ export SOLA_OUTPUT_PICK=preferred'
 for b in "${kit_bins[@]}"; do
   src="$SOLA_BINS/$b"
   cp -a "$src" "$out/libexec/$b"
-  patchelf_libexec "$out/libexec/$b"
+  if [[ $b == sola-browser ]]; then
+    chmod u+w "$out/libexec/$b"
+    chmod +x "$out/libexec/$b"
+    if patchelf --print-interpreter "$out/libexec/$b" >/dev/null 2>&1; then
+      patchelf --set-interpreter "$interp_guest" "$out/libexec/$b"
+    fi
+    patchelf --set-rpath "$browser_rpath" "$out/libexec/$b"
+  else
+    patchelf_libexec "$out/libexec/$b"
+  fi
   cat >"$out/bin/$b" <<WRAP
 #!/bin/sh
 $guest_env
-/bin/mkdir -p /tmp/fontconfig /oath/log
+/bin/mkdir -p /tmp/fontconfig /oath/log /root/.local/share /root/.config
 exec /oath/store/pkg/sola/libexec/$b "\$@" >>/oath/log/$b.log 2>&1
 WRAP
   chmod +x "$out/bin/$b"
@@ -317,5 +423,13 @@ ls "$out"/share/fonts/SF-Pro-Text-* >/dev/null 2>&1 || {
 }
 ls "$out"/share/fonts/*IosevkaTermSlab* >/dev/null 2>&1 || {
   echo "relocate-sola: missing Iosevka Term Slab" >&2
+  exit 1
+}
+[[ -f $out/cef/Release/libcef.so ]] || {
+  echo "relocate-sola: missing cef/Release/libcef.so" >&2
+  exit 1
+}
+[[ -f $out/etc/ssl/certs/ca-certificates.crt ]] || {
+  echo "relocate-sola: missing etc/ssl/certs/ca-certificates.crt" >&2
   exit 1
 }

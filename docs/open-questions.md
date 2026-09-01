@@ -20,6 +20,8 @@ path fallback in wlroots). T21 River-first is closed
 T25 session manager is closed (`svc:sola-session` in that blob).
 T26 sola-terminal is closed (sixth ELF + tmux helper in `pkg:sola`).
 T27 metal canary is closed (canto; SSH+kexec; QEMU probe stays).
+T28 sola-browser is closed (seventh ELF + CEF helper in `pkg:sola`;
+no dbus-daemon; no `pkg:cef`).
 
 ---
 
@@ -38,6 +40,12 @@ T27 metal canary is closed (canto; SSH+kexec; QEMU probe stays).
 ---
 
 ## Closed
+
+### T28 — sola-browser (CEF) — locked 2026-09-01
+
+Seventh ELF in `pkg:sola` plus the CEF tree (`cef/Release` +
+`Resources`). No `pkg:cef`, no `pkg:sola-browser`, no dbus-daemon,
+no second Unix user. Pack the operator `install-cef` cache.
 
 ### T27 — Metal canary (canto) — locked 2026-08-31
 
