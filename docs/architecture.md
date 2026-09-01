@@ -74,7 +74,8 @@ Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 /dev/sda --confirm` (`--qemu` OVMF rehearsal; `--usb --disk /dev/sdd`
 writes an EFI installer stick). Installer ramdisk: `oath.install=1`,
 dropbear, no `switch_root`. Format GPT ESP + btrfs `@`. Copy packed
-tree. systemd-boot `BOOTX64.EFI` + `loader/entries/oath.conf`.
+tree. `oath-efi` as `EFI/BOOT/BOOTX64.EFI` (native GOP, white mark,
+then kernel); systemd-boot kept at `EFI/systemd/`. `loader/entries/oath.conf`.
 Canto: two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits
@@ -82,8 +83,9 @@ for carrier then dhcp. Dual Pitcairn amdgpu (`si_support=1`);
 `/usr/lib/oath/run-compositor` binds River to the connected DRM card.
 sola-river picks the mode matching physical mm.
 
-Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-make` (host
-build CLI: `cargo make`). Artifacts in `build/` (gitignored).
+Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-efi` (UEFI
+splash), `oath-make` (host build CLI: `cargo make`). Artifacts in
+`build/` (gitignored).
 Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 
 **Target:**

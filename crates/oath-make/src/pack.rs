@@ -92,6 +92,16 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         "-p",
         "oath-init",
     ]))?;
+    run(Command::new("cargo").current_dir(root).args([
+        "build",
+        "--release",
+        "--target",
+        "x86_64-unknown-uefi",
+        "-p",
+        "oath-efi",
+        "--features",
+        "uefi-app",
+    ]))?;
     let bin = root.join("target/x86_64-unknown-linux-musl/release");
     for n in ["oath", "oath-init", "serial-login"] {
         if !bin.join(n).is_file() {
@@ -190,6 +200,12 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     copy_file(&out.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
     copy_file(&tools.kernel, &ir_install.join("opt/oath-install/vmlinuz"))?;
     if let Some(boot) = &tools.systemd_boot {
+        copy_file(boot, &ir_install.join("opt/oath-install/systemd-bootx64.efi"))?;
+    }
+    let splash = root.join("target/x86_64-unknown-uefi/release/oath-efi.efi");
+    if splash.is_file() {
+        copy_file(&splash, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
+    } else if let Some(boot) = &tools.systemd_boot {
         copy_file(boot, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
     }
     fs::create_dir_all(ir_install.join("usr/lib/oath"))?;

@@ -8,7 +8,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 
 | Id | Exec | Default | Notes |
 |----|------|---------|-------|
-| `svc:serial` | `/usr/lib/oath/serial-login` | enabled, `restart=always` | Root shell on the QEMU serial. Do not disable it unless you have another console. |
+| `svc:serial` | `/usr/lib/oath/serial-login` | enabled, `restart=always` | Root shell on serial (`ttyS0` / `hvc0`). It does not take the graphical VT; that stays on the boot mark. Do not disable it unless you have another console. |
 | `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless sleeper for start/stop. |
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. |
 | `svc:seatd` | `/bin/seatd` | enabled, `restart=always` | Seat for DRM. `svc:river` wants this. |

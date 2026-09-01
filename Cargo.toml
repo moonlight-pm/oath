@@ -5,6 +5,13 @@ members = [
     "crates/oath",
     "crates/oath-init",
     "crates/oath-make",
+    "crates/oath-efi",
+]
+default-members = [
+    "crates/oath-core",
+    "crates/oath",
+    "crates/oath-init",
+    "crates/oath-make",
 ]
 
 [workspace.package]

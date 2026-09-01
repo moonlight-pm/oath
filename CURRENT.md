@@ -15,8 +15,12 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 1. **Canto Sola session is up** (amdgpu Pitcairn, pixman). Current
    panel: Philips 221V8L **1920×1080@75**. DualUp 2560×2880@30 works
-   on that HDMI path (60 Hz needs the LG’s DisplayPort). Next: kit
-   apps / amdgpu accel / T24.
+   on that HDMI path (60 Hz needs the LG’s DisplayPort). Graphical
+   boot is the white Oath mark on black (nothing else until Sola).
+   **Canto EFI splash is up.** `EFI/BOOT/BOOTX64.EFI` is `oath-efi`
+   (native GOP, white mark on black, then LoadImage the kernel).
+   Linux does not paint framebuffers. Panel native 1920×1080. Next:
+   kit apps / amdgpu accel / T24.
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
@@ -39,7 +43,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh root@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). `sola-browser` packs on next `cargo make build`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). `sola-browser` packs on next `cargo make build`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64); systemd-boot kept as fallback. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
 
 ```sh
 nix-shell
@@ -77,7 +81,8 @@ Do not re-litigate without an explicit decision.
   `zoom-to-fit=off` + `GDK_SCALE=1` + sola-river
   `SOLA_OUTPUT_PICK=preferred`; `OATH_DISPLAY_WIDTH` / `HEIGHT`). Input is
   libinput via libudev-zero (`dev:kbd0` / `dev:mouse0`). No udevd.
-  Path fallback in `forks/wlroots`.
+  Path fallback in `forks/wlroots`. Metal BOOTX64 is `oath-efi`
+  (native GOP, white mark on black); Linux does not paint fb.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 + T25 (`pkg:sola` + `svc:sola-bus` /
   `call` / `river` / `shell` / `session`). First kit app is T26

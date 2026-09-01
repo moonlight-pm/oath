@@ -18,8 +18,11 @@ What it does:
    loader entry or a USB stick (`--usb`). kexec is tried when there
    is no EFI loader; it did not bring canto’s Broadcom `tg3` up.
 2. Format GPT: 512M ESP + rest btrfs subvolume `@`.
-3. Copy the packed root, write systemd-boot (`BOOTX64.EFI`), kernel,
-   initrd, `loader/entries/oath.conf`.
+3. Copy the packed root, write `oath-efi` as `BOOTX64.EFI` (white
+   mark on black at native GOP, then the kernel), keep systemd-boot
+   at `EFI/systemd/` as fallback, kernel, initrd,
+   `loader/entries/oath.conf`. Apple/OEM firmware splash is not
+   ours to paint. The USB installer still uses systemd-boot + tty0.
 4. Set `host:local` hostname, `net:net0` dhcp, owner SSH pubkeys.
 5. Reboot. Courage is **SSH** as root with those keys, then `oath ls`.
 

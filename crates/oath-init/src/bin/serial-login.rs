@@ -27,7 +27,8 @@ fn main() {
 }
 
 fn open_tty() -> Option<std::fs::File> {
-    for p in ["/dev/tty0", "/dev/console", "/dev/ttyS0", "/dev/hvc0"] {
+    // Graphical VTs stay on the splash. The shell is serial only.
+    for p in ["/dev/ttyS0", "/dev/hvc0"] {
         if let Ok(f) = OpenOptions::new().read(true).write(true).open(p) {
             return Some(f);
         }

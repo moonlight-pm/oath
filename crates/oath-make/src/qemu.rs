@@ -130,7 +130,7 @@ pub fn qemu_args(
         "-initrd".into(),
         img.initrd.display().to_string(),
         "-append".into(),
-        "console=tty0 console=ttyS0 quiet loglevel=4 panic=10".into(),
+        format!("{QUIET_BOOT} console=ttyS0 panic=10"),
         "-netdev".into(),
         netdev(),
         "-device".into(),
@@ -162,6 +162,12 @@ pub fn qemu_args(
 /// and Sola chrome looks tiny. Pin both to the same size, 1:1.
 pub const DEFAULT_DISPLAY_WIDTH: u32 = 1280;
 pub const DEFAULT_DISPLAY_HEIGHT: u32 = 800;
+
+/// Graphical boot is the white mark on black. Kernel + init logs stay on serial.
+pub const QUIET_BOOT: &str = "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo";
+
+/// systemd-boot: no text menu; GOP at firmware's preferred (native-ish) mode.
+pub const LOADER_CONF: &str = "default oath.conf\ntimeout 0\neditor no\nconsole-mode auto\n";
 
 fn parse_dim(raw: Option<&str>, default: u32) -> u32 {
     raw.and_then(|s| s.parse().ok()).filter(|&n| (640..=7680).contains(&n)).unwrap_or(default)

@@ -17,6 +17,9 @@ use nix::unistd::{sethostname, Pid};
 use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, BTRFS_TOP, DEFAULT_ROOT};
 use serde_json::json;
 
+#[allow(dead_code)]
+mod splash;
+
 /// Fallback if packed `load-order` is missing. Deps before users.
 const MODULES: &[&str] = &[
     "kernel/drivers/virtio/virtio.ko",
@@ -80,7 +83,7 @@ const MODULES: &[&str] = &[
     "kernel/drivers/hid/usbhid/usbhid.ko",
 ];
 
-fn log(msg: &str) {
+pub(crate) fn log(msg: &str) {
     let _ = writeln!(std::io::stderr(), "oath-init: {msg}");
 }
 
@@ -131,7 +134,6 @@ fn real_main() -> Result<(), String> {
     apply_host();
     apply_net();
     apply_dev();
-    banner_tty0();
     inject_ssh_from_host();
     apply_ssh();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
@@ -207,7 +209,7 @@ fn cmdline() -> String {
     fs::read_to_string("/proc/cmdline").unwrap_or_default()
 }
 
-fn cmdline_flag(key: &str) -> bool {
+pub(crate) fn cmdline_flag(key: &str) -> bool {
     cmdline()
         .split_whitespace()
         .any(|t| t == key || t == format!("{key}=1") || t == format!("{key}=true"))
@@ -327,9 +329,7 @@ fn list_nics() -> Vec<String> {
 }
 
 fn nic_mac(n: &str) -> Option<String> {
-    fs::read_to_string(format!("/sys/class/net/{n}/address"))
-        .ok()
-        .map(|s| s.trim().to_lowercase())
+    fs::read_to_string(format!("/sys/class/net/{n}/address")).ok().map(|s| s.trim().to_lowercase())
 }
 
 fn nic_carrier(n: &str) -> bool {
@@ -339,16 +339,14 @@ fn nic_carrier(n: &str) -> bool {
 }
 
 fn timed_link_up(nic: &str, timeout: Duration) {
-    let mut child = match Command::new("/bin/busybox")
-        .args(["ip", "link", "set", nic, "up"])
-        .spawn()
-    {
-        Ok(c) => c,
-        Err(e) => {
-            log(&format!("ip link set {nic} up spawn: {e}"));
-            return;
-        }
-    };
+    let mut child =
+        match Command::new("/bin/busybox").args(["ip", "link", "set", nic, "up"]).spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                log(&format!("ip link set {nic} up spawn: {e}"));
+                return;
+            }
+        };
     let start = Instant::now();
     loop {
         match child.try_wait() {
@@ -380,11 +378,7 @@ fn pick_install_nic() -> Option<String> {
             let detail: Vec<String> = nics
                 .iter()
                 .map(|n| {
-                    format!(
-                        "{n} mac={} carrier={}",
-                        nic_mac(n).unwrap_or_default(),
-                        nic_carrier(n)
-                    )
+                    format!("{n} mac={} carrier={}", nic_mac(n).unwrap_or_default(), nic_carrier(n))
                 })
                 .collect();
             log(&format!("nics: {}", detail.join("; ")));
@@ -466,13 +460,12 @@ fn dump_kexec_debug() {
     }
     if let Ok(rd) = fs::read_dir("/sys/bus/pci/devices") {
         body.push_str("pci:\n");
-        let mut names: Vec<String> = rd
-            .flatten()
-            .map(|e| e.file_name().to_string_lossy().into_owned())
-            .collect();
+        let mut names: Vec<String> =
+            rd.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
         names.sort();
         for n in names {
-            let id = fs::read_to_string(format!("/sys/bus/pci/devices/{n}/uevent")).unwrap_or_default();
+            let id =
+                fs::read_to_string(format!("/sys/bus/pci/devices/{n}/uevent")).unwrap_or_default();
             body.push_str(&format!("{n} {id}"));
             if !body.ends_with('\n') {
                 body.push('\n');
@@ -498,9 +491,7 @@ fn dump_kexec_debug() {
         if !Path::new(cand).exists() {
             continue;
         }
-        let st = Command::new("/bin/busybox")
-            .args(["mount", "-t", "vfat", cand, "/esp"])
-            .status();
+        let st = Command::new("/bin/busybox").args(["mount", "-t", "vfat", cand, "/esp"]).status();
         if !matches!(st, Ok(s) if s.success()) {
             continue;
         }
@@ -627,12 +618,6 @@ fn apply_net() {
             log(&format!("net: {e}"));
             tel("init", "net", json!({ "ok": false, "err": e.to_string() }));
         }
-    }
-}
-
-fn banner_tty0() {
-    if let Ok(mut f) = fs::OpenOptions::new().write(true).open("/dev/tty0") {
-        let _ = writeln!(f, "Oath.");
     }
 }
 

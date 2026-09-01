@@ -129,6 +129,7 @@ apocrypha/            gitignored scratch/history — not product
 crates/oath-core      catalog, kinds, apply/undo
 crates/oath           CLI (guest)
 crates/oath-init      PID 1 + serial-login
+crates/oath-efi       UEFI splash (native GOP, white mark, LoadImage)
 crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe
 image/                tools.nix only (borrowed prebuilts)
 forks/                maintained source forks (submodules; build-time)
