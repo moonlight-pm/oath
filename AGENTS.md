@@ -75,8 +75,10 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-01-sola-browser.md`](docs/specs/2026-09-01-sola-browser.md)
+(T28 sola-browser). T27:
 [`docs/specs/2026-08-31-metal-canto.md`](docs/specs/2026-08-31-metal-canto.md)
-(T27 metal canary). T26:
+(metal canary). T26:
 [`docs/specs/2026-08-31-sola-terminal.md`](docs/specs/2026-08-31-sola-terminal.md)
 (sola-terminal). T25:
 [`docs/specs/2026-08-31-sola-session.md`](docs/specs/2026-08-31-sola-session.md)

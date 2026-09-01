@@ -2,9 +2,10 @@
 
 **Date:** 2026-09-01
 **Status:** complete
-**Proof:** probe `sola.browser_bin` / `sola.cef` / `sola.browser`
-(plus T26 terminal + T25 session stack). gtk is host DISPLAY, not
-this probe.
+**Proof:** canto live `/bin/sola-browser` (CEF helper ready, zygote +
+network service). Probe steps `sola.browser_bin` / `sola.cef` /
+`sola.browser` are wired; QEMU image after next `cargo make build`.
+gtk is host DISPLAY, not the probe.
 **Freeze:** [../specs/2026-09-01-sola-browser.md](../specs/2026-09-01-sola-browser.md)
 
 - [x] T28 freeze: `sola-browser` + CEF helper in `pkg:sola`; no new

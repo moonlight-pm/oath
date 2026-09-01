@@ -81,7 +81,8 @@ Do not re-litigate without an explicit decision.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 + T25 (`pkg:sola` + `svc:sola-bus` /
   `call` / `river` / `shell` / `session`). First kit app is T26
-  (`/bin/sola-terminal` + tmux in that blob). **T24:** one `pkg:sola`
+  (`/bin/sola-terminal` + tmux in that blob). T28 is `/bin/sola-browser`
+  + CEF in the same blob. **T24:** one `pkg:sola`
   blob; develop Sola on Nix until Oath is the host; then development
   versions are apply/undo of the real objects (no second PATH, no
   nested PM). glibc is sealed `pkg:glibc`. `forks/river` +
@@ -122,5 +123,6 @@ Do not re-litigate without an explicit decision.
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
 - Roadmap: display canary in; River as `svc`; Sola session stack +
-  session manager as `svc`; sola-terminal packed; sola-browser packing;
-  other kit apps not; Phase 6 metal canary (canto) dogfoodable, gaps remain
+  session manager as `svc`; sola-terminal packed; sola-browser packed
+  (canto; QEMU on next `cargo make build`); other kit apps not; Phase 6
+  metal canary (canto) dogfoodable, gaps remain

@@ -23,10 +23,9 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-31-sola-session.md](2026-08-31-sola-session.md) | T25: `svc:sola-session` LaunchApp owner |
 | [2026-08-31-sola-terminal.md](2026-08-31-sola-terminal.md) | T26: first kit app (`sola-terminal` + tmux) |
 | [2026-08-31-metal-canto.md](2026-08-31-metal-canto.md) | T27: canto metal canary (SSH+kexec) |
+| [2026-09-01-sola-browser.md](2026-09-01-sola-browser.md) | T28: `sola-browser` + CEF in `pkg:sola` |
 
-Active plan:
-[../plans/2026-08-31-metal-canto-plan.md](../plans/2026-08-31-metal-canto-plan.md)
-(T27). Completed:
+No open plan (see root [`CURRENT.md`](../../CURRENT.md)). Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),
 [../plans/2026-08-28-svc-loop-plan.md](../plans/2026-08-28-svc-loop-plan.md) (Phase 2),
 [../plans/2026-08-28-pkg-canary-plan.md](../plans/2026-08-28-pkg-canary-plan.md) (Phase 3 canary),
@@ -40,4 +39,6 @@ Active plan:
 [../plans/2026-08-30-libinput-plan.md](../plans/2026-08-30-libinput-plan.md) (T22 libinput),
 [../plans/2026-08-30-oath-sola-plan.md](../plans/2026-08-30-oath-sola-plan.md) (T23 session),
 [../plans/2026-08-31-sola-session-plan.md](../plans/2026-08-31-sola-session-plan.md) (T25 session manager),
-[../plans/2026-08-31-sola-terminal-plan.md](../plans/2026-08-31-sola-terminal-plan.md) (T26 sola-terminal).
+[../plans/2026-08-31-sola-terminal-plan.md](../plans/2026-08-31-sola-terminal-plan.md) (T26 sola-terminal),
+[../plans/2026-08-31-metal-canto-plan.md](../plans/2026-08-31-metal-canto-plan.md) (T27 metal canary),
+[../plans/2026-09-01-sola-browser-plan.md](../plans/2026-09-01-sola-browser-plan.md) (T28 sola-browser).

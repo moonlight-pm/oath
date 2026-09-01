@@ -3,8 +3,7 @@
 Implementation checklists. At most **one** open plan for the active slice.
 Completed plans stay here as history.
 
-**Open:** [2026-08-31-metal-canto-plan.md](2026-08-31-metal-canto-plan.md)
-(T27). Completed:
+**Open:** none (see root [`CURRENT.md`](../../CURRENT.md)). Completed:
 [2026-08-27-qemu-skeleton-plan.md](2026-08-27-qemu-skeleton-plan.md),
 [2026-08-28-svc-loop-plan.md](2026-08-28-svc-loop-plan.md),
 [2026-08-28-pkg-canary-plan.md](2026-08-28-pkg-canary-plan.md),
@@ -18,4 +17,6 @@ Completed plans stay here as history.
 [2026-08-30-libinput-plan.md](2026-08-30-libinput-plan.md),
 [2026-08-30-oath-sola-plan.md](2026-08-30-oath-sola-plan.md),
 [2026-08-31-sola-session-plan.md](2026-08-31-sola-session-plan.md),
-[2026-08-31-sola-terminal-plan.md](2026-08-31-sola-terminal-plan.md).
+[2026-08-31-sola-terminal-plan.md](2026-08-31-sola-terminal-plan.md),
+[2026-08-31-metal-canto-plan.md](2026-08-31-metal-canto-plan.md),
+[2026-09-01-sola-browser-plan.md](2026-09-01-sola-browser-plan.md).

@@ -54,6 +54,7 @@ ask the human.
 | [`specs/2026-08-31-sola-session.md`](specs/2026-08-31-sola-session.md) | T25 sola-session as `svc` | **Target** (session manager) |
 | [`specs/2026-08-31-sola-terminal.md`](specs/2026-08-31-sola-terminal.md) | T26 sola-terminal | **Target** (first kit app) |
 | [`specs/2026-08-31-metal-canto.md`](specs/2026-08-31-metal-canto.md) | T27 canto metal canary | **Target** (partial; EFI/USB) |
+| [`specs/2026-09-01-sola-browser.md`](specs/2026-09-01-sola-browser.md) | T28 sola-browser + CEF | **Target** (shipped; canto) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
@@ -70,6 +71,7 @@ ask the human.
 | [`plans/2026-08-31-sola-session-plan.md`](plans/2026-08-31-sola-session-plan.md) | T25 sola-session | **Build** (complete) |
 | [`plans/2026-08-31-sola-terminal-plan.md`](plans/2026-08-31-sola-terminal-plan.md) | T26 sola-terminal | **Build** (complete) |
 | [`plans/2026-08-31-metal-canto-plan.md`](plans/2026-08-31-metal-canto-plan.md) | T27 metal canary | **Build** (complete) |
+| [`plans/2026-09-01-sola-browser-plan.md`](plans/2026-09-01-sola-browser-plan.md) | T28 sola-browser | **Build** (complete) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 
