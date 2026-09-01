@@ -75,7 +75,8 @@ Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 writes an EFI installer stick). Installer ramdisk: `oath.install=1`,
 dropbear, no `switch_root`. Format GPT ESP + btrfs `@`. Copy packed
 tree. `oath-efi` as `EFI/BOOT/BOOTX64.EFI` (native GOP, white mark,
-then kernel); systemd-boot kept at `EFI/systemd/`. `loader/entries/oath.conf`.
+then kernel); systemd-boot kept at `EFI/systemd/`. amdgpu insmod is
+deferred until just before `svc:river`. `loader/entries/oath.conf`.
 Canto: two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits

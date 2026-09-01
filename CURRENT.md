@@ -17,10 +17,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    panel: Philips 221V8L **1920×1080@75**. DualUp 2560×2880@30 works
    on that HDMI path (60 Hz needs the LG’s DisplayPort). Graphical
    boot is the white Oath mark on black (nothing else until Sola).
-   **Canto EFI splash is up.** `EFI/BOOT/BOOTX64.EFI` is `oath-efi`
-   (native GOP, white mark on black, then LoadImage the kernel).
-   Linux does not paint framebuffers. Panel native 1920×1080. Next:
-   kit apps / amdgpu accel / T24.
+   **Canto EFI splash is up.** Logo stays on GOP until PID 1 loads
+   amdgpu immediately before River (no fbdev/fbcon). Panel 1920×1080.
+   Next: kit apps / amdgpu accel / T24.
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF

@@ -164,7 +164,8 @@ pub const DEFAULT_DISPLAY_WIDTH: u32 = 1280;
 pub const DEFAULT_DISPLAY_HEIGHT: u32 = 800;
 
 /// Graphical boot is the white mark on black. Kernel + init logs stay on serial.
-pub const QUIET_BOOT: &str = "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo";
+pub const QUIET_BOOT: &str =
+    "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo drm_kms_helper.fbdev_emulation=0";
 
 /// systemd-boot: no text menu; GOP at firmware's preferred (native-ish) mode.
 pub const LOADER_CONF: &str = "default oath.conf\ntimeout 0\neditor no\nconsole-mode auto\n";

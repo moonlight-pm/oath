@@ -4,8 +4,9 @@
 a metal canary (canto). Installer: [install.md](install.md). Not a
 desktop. On metal, `EFI/BOOT/BOOTX64.EFI` is `oath-efi`: it sets GOP
 to native (1920×1080 when the firmware lists it), paints the white
-Oath mark on black, then LoadImage’s the kernel. QEMU `run`/`probe`
-still boot `-kernel` (no EFI splash).
+Oath mark on black, then LoadImage’s the kernel. PID 1 leaves that
+mark alone until it loads amdgpu immediately before River. QEMU
+`run`/`probe` still boot `-kernel` (no EFI splash).
 
 Build tools (kernel, busybox, qemu, musl cc) are borrowed on the **host**.
 They are not the runtime identity.

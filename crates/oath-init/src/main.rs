@@ -113,7 +113,7 @@ fn real_main() -> Result<(), String> {
     }
 
     if !Path::new("/oath/INDEX.md").exists() {
-        load_modules();
+        load_modules(true);
         let dev = root_dev();
         mount_root(&dev)?;
         tel("init", "mounted", json!({ "dev": dev, "subvol": "@" }));
@@ -136,6 +136,8 @@ fn real_main() -> Result<(), String> {
     apply_dev();
     inject_ssh_from_host();
     apply_ssh();
+    load_modules(false);
+    hold_graphics();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     converge(&mut kids);
 
@@ -167,11 +169,17 @@ fn ensure_mount(fstype: &str, target: &str, source: &str) {
     let _ = mount(Some(source), target, Some(fstype), MsFlags::empty(), None::<&str>);
 }
 
-fn load_modules() {
+fn load_modules(skip_amdgpu: bool) {
     let rel = kver();
     let base = Path::new("/lib/modules").join(&rel);
     let list = module_load_order(&base);
     for m in list {
+        if skip_amdgpu && m.ends_with("amdgpu.ko") {
+            continue;
+        }
+        if module_already_loaded(&m) {
+            continue;
+        }
         let p = base.join(&m);
         if !p.exists() {
             log(&format!("no module {m}"));
@@ -191,6 +199,64 @@ fn load_modules() {
         }
     }
     let _ = Command::new("/bin/busybox").args(["mdev", "-s"]).status();
+    if !skip_amdgpu {
+        wait_drm(Duration::from_secs(5));
+    }
+}
+
+fn module_already_loaded(rel: &str) -> bool {
+    let stem = Path::new(rel).file_stem().and_then(|s| s.to_str()).unwrap_or("");
+    let name = stem.replace('-', "_");
+    Path::new("/sys/module").join(name).exists()
+}
+
+fn wait_drm(wait: Duration) {
+    let deadline = Instant::now() + wait;
+    while Instant::now() < deadline {
+        if drm_has_connected() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+fn drm_has_connected() -> bool {
+    let Ok(cards) = fs::read_dir("/sys/class/drm") else {
+        return false;
+    };
+    for e in cards.flatten() {
+        let p = e.path();
+        let name = p.file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        if !name.contains('-') {
+            continue;
+        }
+        if fs::read_to_string(p.join("status")).ok().is_some_and(|s| s.trim() == "connected") {
+            return true;
+        }
+    }
+    false
+}
+
+fn hold_graphics() {
+    let _ = fs::write("/proc/sys/kernel/printk", "0 0 0 0\n");
+    let _ = fs::write("/sys/class/graphics/fbcon/cursor_blink", b"0");
+    if let Ok(vt) = fs::read_dir("/sys/class/vtconsole") {
+        for e in vt.flatten() {
+            let _ = fs::write(e.path().join("bind"), b"0");
+        }
+    }
+    unsafe {
+        let fd = libc::open(c"/dev/tty0".as_ptr(), libc::O_RDWR);
+        if fd >= 0 {
+            libc::ioctl(fd, 0x4B3A as libc::Ioctl, 1);
+            libc::close(fd);
+        }
+        let fd = libc::open(c"/dev/tty1".as_ptr(), libc::O_RDWR);
+        if fd >= 0 {
+            libc::ioctl(fd, 0x4B3A as libc::Ioctl, 1);
+            libc::close(fd);
+        }
+    }
 }
 
 fn module_load_order(base: &Path) -> Vec<String> {
@@ -235,7 +301,7 @@ fn root_dev() -> String {
 }
 
 fn install_ramdisk() -> Result<(), String> {
-    load_modules();
+    load_modules(true);
     let _ = fs::create_dir_all("/root/.ssh");
     let _ = fs::create_dir_all("/etc");
     let _ = fs::create_dir_all("/var/run");
@@ -517,6 +583,7 @@ fn mount_root(dev: &str) -> Result<(), String> {
     let flags = MsFlags::empty();
     mount(Some(dev), "/newroot", Some("btrfs"), flags, Some("subvol=@"))
         .map_err(|e| format!("mount root {dev}: {e}"))?;
+    keep_initrd_mods("/newroot");
     // Switch into the disk. Keep this process as PID 1.
     std::env::set_current_dir("/newroot").map_err(|e| e.to_string())?;
     nix::unistd::chroot("/newroot").map_err(|e| format!("chroot: {e}"))?;
@@ -528,6 +595,20 @@ fn mount_root(dev: &str) -> Result<(), String> {
     ensure_mount("devpts", "/dev/pts", "devpts");
     unix_floor();
     Ok(())
+}
+
+/// Keep initrd modules/firmware after chroot so amdgpu can load just before River.
+fn keep_initrd_mods(newroot: &str) {
+    for rel in ["lib/modules", "lib/firmware"] {
+        let src = Path::new("/").join(rel);
+        let dst = Path::new(newroot).join(rel);
+        if !src.is_dir() {
+            continue;
+        }
+        let _ = fs::create_dir_all(&dst);
+        let _ =
+            mount(Some(src.as_path()), dst.as_path(), None::<&str>, MsFlags::MS_BIND, None::<&str>);
+    }
 }
 
 fn unix_floor() {

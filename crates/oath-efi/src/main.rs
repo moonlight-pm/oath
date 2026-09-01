@@ -228,12 +228,15 @@ fn efi_path(p: &str) -> String {
 }
 
 fn quiet_cmdline(options: &str) -> String {
-    let mut out = String::from("quiet loglevel=0 vt.global_cursor_default=0 logo.nologo");
+    let mut out = String::from(
+        "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo drm_kms_helper.fbdev_emulation=0",
+    );
     for tok in options.split_whitespace() {
         if tok == "quiet"
             || tok.starts_with("loglevel=")
             || tok == "logo.nologo"
             || tok.starts_with("vt.global_cursor_default=")
+            || tok.starts_with("drm_kms_helper.fbdev_emulation=")
             || tok == "console=tty0"
             || tok.starts_with("console=tty0,")
         {
