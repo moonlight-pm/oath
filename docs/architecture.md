@@ -45,6 +45,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-shell         svc:sola-shell (iced menubar; software GL; McMojave)
     sola-session       svc:sola-session (LaunchApp; direct spawn)
     sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
+    pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     /sbin/init -> ../usr/lib/oath/init
 ```
 

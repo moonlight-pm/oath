@@ -166,9 +166,26 @@ copy_fonts() {
     -exec cp {} "$out/share/fonts/" \;
 }
 
+copy_font_globs() {
+  local src=$1
+  shift
+  [[ -d $src ]] || return 0
+  local g
+  for g in "$@"; do
+    find "$src" -type f -name "$g" -exec cp {} "$out/share/fonts/" \;
+  done
+}
+
+# Kit seed: SF Pro Text (UI) + Iosevka Term Slab (mono). Inter /
+# JetBrains Mono stay as fallbacks. SF Pro is operator-licensed — never
+# commit the files; pack.rs passes SOLA_SF_FONTS from the host stash.
+copy_font_globs "${SOLA_SF_FONTS:-}" 'SF-Pro-Text-*'
+# Super-TTC includes Extended/Oblique faces; Regular+Bold is enough for
+# the terminal and kit mono role. Do not copy the whole 500M tree.
+copy_font_globs "${IOSEVKA_TERM_SLAB:-}/share/fonts" \
+  'SGr-IosevkaTermSlab-Regular.ttc' \
+  'SGr-IosevkaTermSlab-Bold.ttc'
 copy_fonts "${INTER:-}/share/fonts"
-# Kit terminal mono fallback. Without this, iced draws Inter on JetBrains
-# Mono cell metrics and glyphs float in wide cells.
 copy_fonts "${JETBRAINS_MONO:-}/share/fonts"
 
 # glibc tmux refuses to start without a UTF-8 locale. C.UTF-8 archive.
@@ -294,7 +311,11 @@ for b in "${kit_bins[@]}" tmux; do
   [[ -x $out/bin/$b ]] || { echo "relocate-sola: missing bin/$b" >&2; exit 1; }
 done
 [[ -d $out/share/terminfo ]] || { echo "relocate-sola: missing share/terminfo" >&2; exit 1; }
-ls "$out"/share/fonts/*JetBrains* >/dev/null 2>&1 || {
-  echo "relocate-sola: missing JetBrains Mono in share/fonts" >&2
+ls "$out"/share/fonts/SF-Pro-Text-* >/dev/null 2>&1 || {
+  echo "relocate-sola: missing SF Pro Text (set SOLA_SF_FONTS to the sola-sf dir)" >&2
+  exit 1
+}
+ls "$out"/share/fonts/*IosevkaTermSlab* >/dev/null 2>&1 || {
+  echo "relocate-sola: missing Iosevka Term Slab" >&2
   exit 1
 }

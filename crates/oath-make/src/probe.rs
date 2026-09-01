@@ -550,7 +550,15 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "ls /oath/store/pkg/sola/share/fonts | grep -q JetBrains && echo MONO_FONT",
+        "ls /oath/store/pkg/sola/share/fonts | grep -q SF-Pro-Text && echo UI_FONT",
+        Some("UI_FONT"),
+        "sola.ui_font",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "ls /oath/store/pkg/sola/share/fonts | grep -q IosevkaTermSlab && echo MONO_FONT",
         Some("MONO_FONT"),
         "sola.mono_font",
         Duration::from_secs(8),

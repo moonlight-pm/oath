@@ -1,5 +1,5 @@
 use std::fs;
-use std::os::unix::fs::{PermissionsExt, symlink};
+use std::os::unix::fs::{symlink, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -189,8 +189,20 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(ir_install.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     chmod_exec(&ir_install.join("usr/lib/oath/udhcpc.script"))?;
     for a in [
-        "ip", "udhcpc", "mount", "umount", "mkdir", "mdev", "mkfs.vfat", "blockdev",
-        "reboot", "sync", "sleep", "cp", "cat", "sh",
+        "ip",
+        "udhcpc",
+        "mount",
+        "umount",
+        "mkdir",
+        "mdev",
+        "mkfs.vfat",
+        "blockdev",
+        "reboot",
+        "sync",
+        "sleep",
+        "cp",
+        "cat",
+        "sh",
     ] {
         let _ = fs::remove_file(ir_install.join("bin").join(a));
         symlink("busybox", ir_install.join("bin").join(a))?;
@@ -400,14 +412,37 @@ fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
         ("NCURSES", "ncurses"),
         ("LOCALES", "locales"),
         ("JETBRAINS_MONO", "jetbrains-mono"),
+        ("IOSEVKA_TERM_SLAB", "iosevka-term-slab"),
     ] {
         let p = rt.join(name);
         if p.exists() {
             cmd.env(key, p);
         }
     }
+    if let Some(sf) = sola_sf_fonts(root) {
+        cmd.env("SOLA_SF_FONTS", sf);
+    }
     run(&mut cmd)?;
     Ok(sola_out)
+}
+
+/// Licensed SF Pro Text faces. Not in git; pack from the operator stash.
+fn sola_sf_fonts(root: &Path) -> Option<PathBuf> {
+    let mut cands = Vec::new();
+    if let Some(p) = std::env::var_os("SOLA_SF_FONTS") {
+        cands.push(PathBuf::from(p));
+    }
+    if let Some(home) = std::env::var_os("HOME") {
+        cands.push(PathBuf::from(home).join(".local/share/fonts/sola-sf"));
+    }
+    cands.push(root.join("forks/sola/.local/fonts/SF"));
+    cands.into_iter().find(|p| {
+        p.is_dir()
+            && fs::read_dir(p).ok().is_some_and(|rd| {
+                rd.filter_map(|e| e.ok())
+                    .any(|e| e.file_name().to_string_lossy().starts_with("SF-Pro-Text-"))
+            })
+    })
 }
 
 fn sola_release_bins(root: &Path) -> Result<PathBuf> {

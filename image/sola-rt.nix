@@ -10,6 +10,7 @@
 , ncurses
 , glibcLocales
 , jetbrains-mono
+, iosevka-bin
 , runCommand
 }:
 # Host `cargo build` produces the Sola ELFs. This tree is the dlopen
@@ -19,6 +20,9 @@ let
     allLocales = false;
     locales = [ "C.UTF-8/UTF-8" ];
   };
+  # Family name must be "Iosevka Term Slab" (kit seed). nerd-fonts
+  # IosevkaTermSlab is a different family and will not match.
+  iosevkaTermSlab = iosevka-bin.override { variant = "SGr-IosevkaTermSlab"; };
 in
 runCommand "oath-sola-rt" { } ''
   mkdir -p $out
@@ -34,4 +38,5 @@ runCommand "oath-sola-rt" { } ''
   ln -s ${ncurses} $out/ncurses
   ln -s ${cUtf8} $out/locales
   ln -s ${jetbrains-mono} $out/jetbrains-mono
+  ln -s ${iosevkaTermSlab} $out/iosevka-term-slab
 ''
