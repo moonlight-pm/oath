@@ -1,5 +1,5 @@
 use std::fs;
-use std::os::unix::fs::symlink;
+use std::os::unix::fs::{PermissionsExt, symlink};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -13,7 +13,9 @@ use crate::cpio;
 use crate::tools::Tools;
 use crate::util::{chmod_exec, copy_file, copy_tree, out_dir, run, run_out, sudo};
 
-const MODULES: &[&str] = &[
+/// Drivers we need. Transitive deps (led-class, ptp, nvme-auth, af_packet, …)
+/// are pulled from `modules.dep` at pack time so insmod order is valid.
+const MODULE_ROOTS: &[&str] = &[
     "kernel/drivers/virtio/virtio.ko.xz",
     "kernel/drivers/virtio/virtio_ring.ko.xz",
     "kernel/drivers/virtio/virtio_pci_legacy_dev.ko.xz",
@@ -27,6 +29,7 @@ const MODULES: &[&str] = &[
     "kernel/net/core/failover.ko.xz",
     "kernel/drivers/net/net_failover.ko.xz",
     "kernel/drivers/net/virtio_net.ko.xz",
+    "kernel/net/packet/af_packet.ko.xz",
     "kernel/drivers/char/hw_random/rng-core.ko.xz",
     "kernel/drivers/char/hw_random/virtio-rng.ko.xz",
     "kernel/drivers/firmware/qemu_fw_cfg.ko.xz",
@@ -35,6 +38,30 @@ const MODULES: &[&str] = &[
     "kernel/crypto/xor.ko.xz",
     "kernel/lib/raid6/raid6_pq.ko.xz",
     "kernel/fs/btrfs/btrfs.ko.xz",
+    "kernel/fs/fat/vfat.ko.xz",
+    "kernel/fs/nls/nls_cp437.ko.xz",
+    "kernel/fs/nls/nls_iso8859-1.ko.xz",
+    "kernel/fs/nls/nls_utf8.ko.xz",
+    "kernel/drivers/scsi/scsi_common.ko.xz",
+    "kernel/drivers/scsi/scsi_mod.ko.xz",
+    "kernel/drivers/scsi/sd_mod.ko.xz",
+    "kernel/drivers/ata/libata.ko.xz",
+    "kernel/drivers/ata/libahci.ko.xz",
+    "kernel/drivers/ata/ahci.ko.xz",
+    "kernel/drivers/nvme/host/nvme-core.ko.xz",
+    "kernel/drivers/nvme/host/nvme.ko.xz",
+    "kernel/drivers/net/phy/libphy.ko.xz",
+    "kernel/drivers/net/ethernet/broadcom/tg3.ko.xz",
+    "kernel/drivers/net/ethernet/intel/e1000e/e1000e.ko.xz",
+    "kernel/drivers/net/ethernet/intel/igb/igb.ko.xz",
+    "kernel/drivers/net/ethernet/realtek/r8169.ko.xz",
+    "kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko.xz",
+    "kernel/drivers/usb/host/xhci-pci.ko.xz",
+    "kernel/drivers/usb/host/ehci-pci.ko.xz",
+    "kernel/drivers/hid/hid.ko.xz",
+    "kernel/drivers/hid/hid-generic.ko.xz",
+    "kernel/drivers/hid/hid-apple.ko.xz",
+    "kernel/drivers/hid/usbhid/usbhid.ko.xz",
 ];
 
 /// Session + first kit app ELFs packed into `pkg:sola`.
@@ -80,30 +107,97 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
 
     let kver = first_dir(&tools.modules).context("no kver under modules")?;
     let mdst = ir.join("lib/modules").join(&kver);
-    for m in MODULES {
-        let src = tools.modules.join(&kver).join(m);
+    let dep_path = tools.modules.join(&kver).join("modules.dep");
+    let order = if dep_path.is_file() {
+        let text = fs::read_to_string(&dep_path).context("modules.dep")?;
+        resolve_load_order(&text, MODULE_ROOTS)
+    } else {
+        MODULE_ROOTS.iter().map(|m| m.trim_end_matches(".xz").to_string()).collect()
+    };
+    let mut copied = Vec::new();
+    for rel in &order {
+        let src_xz = tools.modules.join(&kver).join(format!("{rel}.xz"));
+        let src_raw = tools.modules.join(&kver).join(rel);
+        let src = if src_xz.is_file() { src_xz } else { src_raw };
         if !src.is_file() {
-            eprintln!("warn: missing module {m}");
+            eprintln!("warn: missing module {rel}");
             continue;
         }
-        let dst_name = m.trim_end_matches(".xz");
-        let dst = mdst.join(dst_name);
+        let dst = mdst.join(rel);
         fs::create_dir_all(dst.parent().unwrap())?;
-        let raw = Command::new("xz").args(["-d", "-c"]).arg(&src).output().context("xz")?;
-        if !raw.status.success() {
-            bail!("xz -d {m} failed");
+        if src.extension().is_some_and(|e| e == "xz") {
+            let raw = Command::new("xz").args(["-d", "-c"]).arg(&src).output().context("xz")?;
+            if !raw.status.success() {
+                bail!("xz -d {rel} failed");
+            }
+            fs::write(&dst, raw.stdout)?;
+        } else {
+            copy_file(&src, &dst)?;
         }
-        fs::write(dst, raw.stdout)?;
+        copied.push(rel.clone());
     }
+    fs::write(mdst.join("load-order"), copied.join("\n") + "\n")?;
 
-    let initrd = out.join("initrd.gz");
-    {
-        let f = fs::File::create(&initrd)?;
-        let mut gz = GzEncoder::new(f, Compression::best());
-        cpio::write_tree(&mut gz, &ir)?;
-        gz.finish()?;
-    }
+    copy_firmware(tools, &ir)?;
+    let initrd = write_cpio_gz(&ir, &out.join("initrd.gz"))?;
     eprintln!("initrd {}", initrd.display());
+
+    eprintln!(">> installer initramfs");
+    let ir_install = out.join("initramfs-install");
+    let _ = fs::remove_dir_all(&ir_install);
+    copy_tree(&ir, &ir_install)?;
+    if let Some(db) = &tools.dropbear {
+        copy_file(db, &ir_install.join("bin/dropbear"))?;
+        chmod_exec(&ir_install.join("bin/dropbear"))?;
+    }
+    if let Some(dk) = &tools.dropbearkey {
+        copy_file(dk, &ir_install.join("bin/dropbearkey"))?;
+        chmod_exec(&ir_install.join("bin/dropbearkey"))?;
+    }
+    if let Some(sg) = &tools.sgdisk {
+        copy_file(sg, &ir_install.join("bin/sgdisk"))?;
+        chmod_exec(&ir_install.join("bin/sgdisk"))?;
+    }
+    if let Some(fat) = &tools.mkfs_fat {
+        copy_file(fat, &ir_install.join("bin/mkfs.fat"))?;
+        chmod_exec(&ir_install.join("bin/mkfs.fat"))?;
+    }
+    if let Some(btrfs) = &tools.btrfs {
+        copy_file(btrfs, &ir_install.join("bin/btrfs"))?;
+        chmod_exec(&ir_install.join("bin/btrfs"))?;
+    }
+    if let Some(mk) = &tools.mkfs_btrfs {
+        copy_file(mk, &ir_install.join("bin/mkfs.btrfs"))?;
+        chmod_exec(&ir_install.join("bin/mkfs.btrfs"))?;
+    }
+    if let Some(gt) = &tools.gnutar {
+        let _ = fs::remove_file(ir_install.join("bin/tar"));
+        copy_file(gt, &ir_install.join("bin/tar"))?;
+        chmod_exec(&ir_install.join("bin/tar"))?;
+    } else {
+        let _ = fs::remove_file(ir_install.join("bin/tar"));
+        symlink("busybox", ir_install.join("bin/tar"))?;
+    }
+    // busybox applets used by the host install script over SSH
+    fs::create_dir_all(ir_install.join("opt/oath-install"))?;
+    copy_file(&out.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
+    copy_file(&tools.kernel, &ir_install.join("opt/oath-install/vmlinuz"))?;
+    if let Some(boot) = &tools.systemd_boot {
+        copy_file(boot, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
+    }
+    fs::create_dir_all(ir_install.join("usr/lib/oath"))?;
+    fs::write(ir_install.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
+    chmod_exec(&ir_install.join("usr/lib/oath/udhcpc.script"))?;
+    for a in [
+        "ip", "udhcpc", "mount", "umount", "mkdir", "mdev", "mkfs.vfat", "blockdev",
+        "reboot", "sync", "sleep", "cp", "cat", "sh",
+    ] {
+        let _ = fs::remove_file(ir_install.join("bin").join(a));
+        symlink("busybox", ir_install.join("bin").join(a))?;
+    }
+    fs::create_dir_all(ir_install.join("root/.ssh"))?;
+    let initrd_install = write_cpio_gz(&ir_install, &out.join("initrd-install.gz"))?;
+    eprintln!("initrd-install {}", initrd_install.display());
 
     eprintln!(">> stage rootfs");
     let stage = out.join("stage");
@@ -127,9 +221,11 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     copy_file(&bin.join("oath-init"), &stage.join("usr/lib/oath/init"))?;
     copy_file(&bin.join("serial-login"), &stage.join("usr/lib/oath/serial-login"))?;
     fs::write(stage.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
+    fs::write(stage.join("usr/lib/oath/run-compositor"), include_str!("run-compositor"))?;
     chmod_exec(&stage.join("usr/lib/oath/init"))?;
     chmod_exec(&stage.join("usr/lib/oath/serial-login"))?;
     chmod_exec(&stage.join("usr/lib/oath/udhcpc.script"))?;
+    chmod_exec(&stage.join("usr/lib/oath/run-compositor"))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../usr/lib/oath/init", stage.join("sbin/init"))?;
     fs::write(stage.join("etc/passwd"), "root:x:0:0:root:/root:/bin/sh\n")?;
@@ -362,6 +458,130 @@ fn ensure_sola_worktree(src: &Path) -> Result<PathBuf> {
     Ok(wt)
 }
 
+fn write_cpio_gz(tree: &Path, dest: &Path) -> Result<PathBuf> {
+    let f = fs::File::create(dest)?;
+    let mut gz = GzEncoder::new(f, Compression::best());
+    cpio::write_tree(&mut gz, tree)?;
+    gz.finish()?;
+    Ok(dest.to_path_buf())
+}
+
+fn copy_firmware(tools: &Tools, ir: &Path) -> Result<()> {
+    if let Some(fw) = &tools.firmware {
+        if fw.is_dir() {
+            copy_tree(fw, &ir.join("lib/firmware"))?;
+        }
+    }
+    Ok(())
+}
+
+pub fn bake_install_keys(out: &Path, keys: &str) -> Result<PathBuf> {
+    let tree = out.join("initramfs-install");
+    if !tree.join("init").is_file() {
+        bail!("missing installer initramfs (run cargo make build)");
+    }
+    let baked = out.join("initramfs-install-keys");
+    let _ = fs::remove_dir_all(&baked);
+    copy_tree(&tree, &baked)?;
+    fs::create_dir_all(baked.join("root/.ssh"))?;
+    fs::set_permissions(baked.join("root/.ssh"), fs::Permissions::from_mode(0o700))?;
+    fs::write(baked.join("root/.ssh/authorized_keys"), keys)?;
+    fs::set_permissions(
+        baked.join("root/.ssh/authorized_keys"),
+        fs::Permissions::from_mode(0o600),
+    )?;
+    write_cpio_gz(&baked, &out.join("initrd-install.gz"))
+}
+
+/// Transitive closure + topological load order from `modules.dep`.
+/// Output paths have `.xz` stripped (pack stores uncompressed `.ko`).
+pub(crate) fn resolve_load_order(dep_text: &str, roots: &[&str]) -> Vec<String> {
+    use std::collections::{HashMap, HashSet, VecDeque};
+
+    let mut graph: HashMap<String, Vec<String>> = HashMap::new();
+    for line in dep_text.lines() {
+        let Some((key, rest)) = line.split_once(':') else {
+            continue;
+        };
+        let key = key.trim();
+        if key.is_empty() {
+            continue;
+        }
+        graph.insert(key.to_string(), rest.split_whitespace().map(|s| s.to_string()).collect());
+    }
+
+    let mut rank: HashMap<String, usize> = HashMap::new();
+    let mut need: HashSet<String> = HashSet::new();
+    let mut q = VecDeque::new();
+    for r in roots {
+        q.push_back((*r).to_string());
+    }
+    let mut next_rank = 0usize;
+    while let Some(n) = q.pop_front() {
+        if !need.insert(n.clone()) {
+            continue;
+        }
+        rank.entry(n.clone()).or_insert_with(|| {
+            let r = next_rank;
+            next_rank += 1;
+            r
+        });
+        if let Some(deps) = graph.get(&n) {
+            for d in deps {
+                if !need.contains(d) {
+                    q.push_back(d.clone());
+                }
+            }
+        }
+    }
+
+    let mut indeg: HashMap<String, usize> = need.iter().map(|n| (n.clone(), 0)).collect();
+    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+    for n in &need {
+        if let Some(deps) = graph.get(n) {
+            for d in deps {
+                if need.contains(d) {
+                    adj.entry(d.clone()).or_default().push(n.clone());
+                    *indeg.get_mut(n).unwrap() += 1;
+                }
+            }
+        }
+    }
+
+    let mut zero: Vec<String> =
+        indeg.iter().filter(|(_, d)| **d == 0).map(|(k, _)| k.clone()).collect();
+    zero.sort_by_key(|n| rank.get(n).copied().unwrap_or(usize::MAX));
+    let mut order = Vec::new();
+    while let Some(n) = {
+        if zero.is_empty() {
+            None
+        } else {
+            Some(zero.remove(0))
+        }
+    } {
+        order.push(n.clone());
+        if let Some(children) = adj.get(&n) {
+            let mut next = children.clone();
+            next.sort_by_key(|m| rank.get(m).copied().unwrap_or(usize::MAX));
+            for m in next {
+                if let Some(e) = indeg.get_mut(&m) {
+                    *e = e.saturating_sub(1);
+                    if *e == 0 {
+                        zero.push(m);
+                        zero.sort_by_key(|x| rank.get(x).copied().unwrap_or(usize::MAX));
+                    }
+                }
+            }
+        }
+    }
+    for n in &need {
+        if !order.iter().any(|x| x == n) {
+            order.push(n.clone());
+        }
+    }
+    order.into_iter().map(|p| p.trim_end_matches(".xz").to_string()).collect()
+}
+
 fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {
     let dest = oath_root.join("store/pkg").join(name).join("bin").join(name);
     fs::create_dir_all(dest.parent().unwrap())?;
@@ -419,4 +639,46 @@ fn nix_gid() -> u32 {
         fn getgid() -> u32;
     }
     unsafe { getgid() }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_load_order_deps_before_user() {
+        let dep = "\
+a.ko.xz: b.ko.xz c.ko.xz
+b.ko.xz: c.ko.xz
+c.ko.xz:
+d.ko.xz: a.ko.xz
+";
+        let order = resolve_load_order(dep, &["a.ko.xz", "d.ko.xz"]);
+        let pos = |n: &str| order.iter().position(|x| x == n).unwrap();
+        assert!(pos("c.ko") < pos("b.ko"));
+        assert!(pos("b.ko") < pos("a.ko"));
+        assert!(pos("a.ko") < pos("d.ko"));
+        assert_eq!(order.len(), 4);
+    }
+
+    #[test]
+    fn resolve_load_order_af_packet_and_libphy() {
+        let dep = "\
+kernel/drivers/net/phy/libphy.ko.xz: kernel/drivers/leds/led-class.ko.xz
+kernel/drivers/leds/led-class.ko.xz:
+kernel/net/packet/af_packet.ko.xz:
+kernel/drivers/net/virtio_net.ko.xz:
+";
+        let order = resolve_load_order(
+            dep,
+            &[
+                "kernel/drivers/net/virtio_net.ko.xz",
+                "kernel/net/packet/af_packet.ko.xz",
+                "kernel/drivers/net/phy/libphy.ko.xz",
+            ],
+        );
+        let pos = |n: &str| order.iter().position(|x| x == n).unwrap();
+        assert!(pos("kernel/drivers/leds/led-class.ko") < pos("kernel/drivers/net/phy/libphy.ko"));
+        assert!(order.iter().any(|x| x == "kernel/net/packet/af_packet.ko"));
+    }
 }

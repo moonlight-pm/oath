@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-08-31)
+## As-built (2026-09-01)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -68,6 +68,18 @@ then converges links.
 Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 `start` / `probe`). `cargo make ssh` is hostfwd 2222.
 
+**Metal install (T27):** `cargo make install --target user@host --disk
+/dev/sda --confirm` (`--qemu` OVMF rehearsal; `--usb --disk /dev/sdd`
+writes an EFI installer stick). Installer ramdisk: `oath.install=1`,
+dropbear, no `switch_root`. Format GPT ESP + btrfs `@`. Copy packed
+tree. systemd-boot `BOOTX64.EFI` + `loader/entries/oath.conf`.
+Canto: two Broadcom `tg3` ports; live cable is MAC
+`00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
+oneshot / USB installer is the working entry. After boot, PID 1 waits
+for carrier then dhcp. Dual Pitcairn amdgpu (`si_support=1`);
+`/usr/lib/oath/run-compositor` binds River to the connected DRM card.
+sola-river picks the mode matching physical mm.
+
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-make` (host
 build CLI: `cargo make`). Artifacts in `build/` (gitignored).
 Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
@@ -86,4 +98,5 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-08-30-oath-sola.md](specs/2026-08-30-oath-sola.md) ·
 [specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) ·
 [specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md) ·
-[specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md)
+[specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md) ·
+[specs/2026-08-31-metal-canto.md](specs/2026-08-31-metal-canto.md)

@@ -4,8 +4,8 @@ How the system works **today**. Not a roadmap. If it is not here, do not
 assume Debian, systemd, or another distro.
 
 Oath is a Linux you administer with `oath`. The live catalog is `/oath`.
-The only dogfood form is an **x86_64 QEMU** appliance (serial, SSH,
-virtio-gpu window if `DISPLAY` is set).
+Dogfood: **x86_64 QEMU** appliance (serial, SSH, virtio-gpu window if
+`DISPLAY` is set) and **canto** (metal, SSH).
 
 | Page | What |
 |------|------|
@@ -18,6 +18,7 @@ virtio-gpu window if `DISPLAY` is set).
 | [SSH](ssh.md) | `ssh:local` keys, dropbear, no baked private key |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N` |
 | [The appliance](qemu.md) | Build, run, probe, disk layout |
+| [Install](install.md) | `cargo make install` to a named disk; USB stick |
 
 On a running box, start at `/oath/INDEX.md` (or `oath` with no arguments).
 That file is generated from the live catalog and cannot advertise kinds
@@ -25,7 +26,7 @@ that are not there.
 
 ## What this is not
 
-No installer. Sola terminal is packed; other kit apps (browser, mail,
+Sola terminal is packed; other kit apps (browser, mail,
 …) are not. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
 `sola`, `hello`, and `fetchme`. `svc:seatd` + `svc:river` is the

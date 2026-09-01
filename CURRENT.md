@@ -7,37 +7,38 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-08-31
+**As of:** 2026-09-01
 
 ---
 
 ## Now
 
-1. **T27 metal canary (canto).** Replace canto’s OS via SSH+kexec
-   (nixos-anywhere *shape*, not the tool). QEMU probe stays. Prove
-   in OVMF before wiping. Disk node + `--confirm` required. Next
-   implementation: installer ramdisk + `cargo make install`.
-2. **T26 sola-terminal in.** Other kit apps still out.
-3. **T24 locked**, not implemented (Oath-as-dev-host). Develop Sola
-   on Nix until Oath is the host — that Nix box is no longer canto
-   after the wipe.
-4. **T20 hosting locked**, not implemented.
-5. Do not add a throwaway compositor. glibc runtime is allowed
+1. **Canto Sola session is up** (amdgpu Pitcairn, pixman). Current
+   panel: Philips 221V8L **1920×1080@75**. DualUp 2560×2880@30 works
+   on that HDMI path (60 Hz needs the LG’s DisplayPort). Next: kit
+   apps / amdgpu accel / T24.
+2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
+   `net:net0` dhcp 10.0.0.3.
+3. **T26 sola-terminal in** (QEMU). Other kit apps still out.
+4. **T24 locked**, not implemented (Oath-as-dev-host). Develop Sola
+   on Nix until Oath is the host.
+5. **T20 hosting locked**, not implemented.
+6. Do not add a throwaway compositor. glibc runtime is allowed
    **only** as `pkg:glibc` for this payload (never in PID 1). No
    udevd. No nested Sola process manager. Do not write a real disk
    the operator did not name, or without `--confirm`.
 
-**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe` (`--build` on run/up/start).
+**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe|install` (`--build` on run/up/start).
 
 ---
 
 ## Known dogfood state
 
-| | **QEMU appliance** |
-|--|---------------------|
-| Role | Serial + SSH + virtio-gpu appliance |
-| How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; mono: JetBrains Mono). Host SSH keys on up/start. Manual: `docs/manual/`. |
+| | **QEMU appliance** | **canto (metal)** |
+|--|---------------------|-------------------|
+| Role | Serial + SSH + virtio-gpu appliance | First metal canary |
+| How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh root@canto` (10.0.0.3) |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; mono: JetBrains Mono). Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. |
 
 ```sh
 nix-shell
@@ -98,7 +99,7 @@ Do not re-litigate without an explicit decision.
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
 - Freeze: [docs/specs/2026-08-31-metal-canto.md](docs/specs/2026-08-31-metal-canto.md)
-  (T27 metal canary). T26:
+  (T27 metal canary, partial). T26:
   [docs/specs/2026-08-31-sola-terminal.md](docs/specs/2026-08-31-sola-terminal.md)
   (sola-terminal). T25:
   [docs/specs/2026-08-31-sola-session.md](docs/specs/2026-08-31-sola-session.md)
@@ -110,11 +111,11 @@ Do not re-litigate without an explicit decision.
   [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
   (shipped).
 - Plan: [docs/plans/2026-08-31-metal-canto-plan.md](docs/plans/2026-08-31-metal-canto-plan.md)
-  (open). T26:
+  (complete). T26:
   [docs/plans/2026-08-31-sola-terminal-plan.md](docs/plans/2026-08-31-sola-terminal-plan.md)
   (complete).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; other kit apps not;
-  Phase 6 metal canary (canto) is Now
+  Phase 6 metal canary (canto) dogfoodable, gaps remain

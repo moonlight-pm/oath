@@ -49,7 +49,8 @@ dropbear SSH, `dev:*` (including virtio-gpu `card0` and virtio
 keyboard/mouse), and a gtk window when `DISPLAY` is set. `svc:river`
 is the compositor (T21/T22). The Sola session stack is `pkg:sola` +
 five `svc:*` (T23/T25) plus `sola-terminal` in that blob (T26).
-Nothing is a daily driver. No installer.
+Nothing is a daily driver. Metal canary (canto) installs with
+`cargo make install`.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).

@@ -28,7 +28,14 @@ pub fn probe(name: &str) -> DevActual {
         "card0" => fixed("drm", "/dev/dri/card0"),
         "kbd0" => input_dev(InputKind::Keyboard),
         "mouse0" => input_dev(InputKind::Pointer),
-        _ => DevActual { present: false, class: "unknown".into(), node: String::new() },
+        other => {
+            let node = format!("/dev/{other}");
+            if Path::new(&node).exists() {
+                DevActual { present: true, class: "block".into(), node }
+            } else {
+                DevActual { present: false, class: "unknown".into(), node: String::new() }
+            }
+        }
     }
 }
 

@@ -27,7 +27,7 @@ fn main() {
 }
 
 fn open_tty() -> Option<std::fs::File> {
-    for p in ["/dev/console", "/dev/ttyS0", "/dev/hvc0"] {
+    for p in ["/dev/tty0", "/dev/console", "/dev/ttyS0", "/dev/hvc0"] {
         if let Ok(f) = OpenOptions::new().read(true).write(true).open(p) {
             return Some(f);
         }

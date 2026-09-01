@@ -2,7 +2,9 @@
 
 use std::fs;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use crate::error::{Error, Result};
 use crate::kinds::Net;
@@ -68,19 +70,65 @@ pub fn converge(desired: &Net) -> Result<Net> {
 
 fn find_or_rename_net0() -> Result<Option<String>> {
     let nics = nics()?;
-    if nics.iter().any(|n| n == NET0) {
-        return Ok(Some(NET0.into()));
-    }
-    if nics.len() == 1 {
-        let old = &nics[0];
-        let _ = ip(&["link", "set", old, "down"]);
-        ip(&["link", "set", old, "name", NET0])?;
-        return Ok(Some(NET0.into()));
-    }
     if nics.is_empty() {
         return Ok(None);
     }
-    Err(Error::hint(format!("expected one NIC, found {}", nics.join(", ")), "oath schema net"))
+    if nics.iter().any(|n| n == NET0) {
+        timed_link_up(NET0);
+        let _ = wait_carrier(&[NET0.to_string()], Duration::from_secs(15));
+        return Ok(Some(NET0.into()));
+    }
+    for n in &nics {
+        timed_link_up(n);
+    }
+    let old = wait_carrier(&nics, Duration::from_secs(15)).ok_or_else(|| {
+        Error::hint(format!("no carrier on {}", nics.join(", ")), "oath schema net")
+    })?;
+    if old != NET0 {
+        // Rename while up. Do not `ip link set down` — unplugged tg3 can block there.
+        ip(&["link", "set", &old, "name", NET0])?;
+        timed_link_up(NET0);
+    }
+    Ok(Some(NET0.into()))
+}
+
+fn timed_link_up(nic: &str) {
+    let mut child = match Command::new("/bin/ip")
+        .args(["link", "set", nic, "up"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => return,
+            Ok(None) if start.elapsed() > Duration::from_secs(2) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return;
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(50)),
+            Err(_) => return,
+        }
+    }
+}
+
+fn wait_carrier(nics: &[String], timeout: Duration) -> Option<String> {
+    let start = Instant::now();
+    loop {
+        if let Some(n) = nics.iter().find(|n| nic_has_carrier(n)) {
+            return Some(n.clone());
+        }
+        if start.elapsed() > timeout {
+            return nics.iter().find(|n| nic_has_carrier(n)).cloned();
+        }
+        thread::sleep(Duration::from_millis(200));
+    }
 }
 
 fn nics() -> Result<Vec<String>> {
@@ -91,12 +139,29 @@ fn nics() -> Result<Vec<String>> {
     let mut v = Vec::new();
     for e in fs::read_dir(dir)? {
         let n = e?.file_name().to_string_lossy().into_owned();
-        if n != "lo" {
-            v.push(n);
+        if skip_nic(&n) {
+            continue;
         }
+        v.push(n);
     }
     v.sort();
     Ok(v)
+}
+
+fn skip_nic(n: &str) -> bool {
+    n == "lo"
+        || n.starts_with("docker")
+        || n.starts_with("br-")
+        || n.starts_with("virbr")
+        || n.starts_with("veth")
+        || n.starts_with("wl")
+        || n.starts_with("wwan")
+}
+
+fn nic_has_carrier(n: &str) -> bool {
+    fs::read_to_string(format!("/sys/class/net/{n}/carrier"))
+        .map(|s| s.trim() == "1")
+        .unwrap_or(false)
 }
 
 fn read_lease(dev: &str) -> Option<String> {
@@ -114,4 +179,19 @@ fn ip(args: &[&str]) -> Result<()> {
         return Err(Error::Msg(format!("ip {} failed", args.join(" "))));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skip_virtual_and_wifi() {
+        assert!(skip_nic("lo"));
+        assert!(skip_nic("docker0"));
+        assert!(skip_nic("wlp13s0"));
+        assert!(!skip_nic("enp12s0"));
+        assert!(!skip_nic("eth0"));
+        assert!(!skip_nic("net0"));
+    }
 }

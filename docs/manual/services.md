@@ -12,7 +12,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless sleeper for start/stop. |
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. |
 | `svc:seatd` | `/bin/seatd` | enabled, `restart=always` | Seat for DRM. `svc:river` wants this. |
-| `svc:river` | `/bin/river` | enabled, `restart=always` | Patched River on `dev:card0` (pixman). libinput via libudev-zero (`dev:kbd0` / `dev:mouse0`). Socket under `/run/user/0`. |
+| `svc:river` | `/usr/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river`: picks the DRM card with a connected connector (dual-GPU). Pixman. libinput via libudev-zero. |
 | `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/0/sola-bus`. |
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/0/sola-call`. |
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |

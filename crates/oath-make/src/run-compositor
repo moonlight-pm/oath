@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pick the DRM node that has a connected connector (dual-GPU Macs).
+card=
+for c in /sys/class/drm/card[0-9]; do
+	[ -d "$c" ] || continue
+	name=$(basename "$c")
+	case "$name" in
+	card[0-9]) ;;
+	*) continue ;;
+	esac
+	for conn in "$c"/"$name"-*; do
+		[ -f "$conn/status" ] || continue
+		if [ "$(cat "$conn/status")" = connected ]; then
+			n=${name#card}
+			if [ -e "/dev/dri/card$n" ]; then
+				card=/dev/dri/card$n
+				break
+			fi
+		fi
+	done
+	[ -n "$card" ] && break
+done
+[ -n "$card" ] && export WLR_DRM_DEVICES=$card
+export WLR_RENDERER="${WLR_RENDERER:-pixman}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/0}"
+mkdir -p "$XDG_RUNTIME_DIR"
+exec /bin/river "$@"

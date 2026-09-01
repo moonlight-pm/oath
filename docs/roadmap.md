@@ -77,8 +77,9 @@ can speak. Default client can be Grok; the OS interface is not Grok.
 
 **Status: active**
 
-Installer, A/B or equivalent base updates, honest rollback. First
-slice is T27: replace canto (SSH+kexec). QEMU probe stays.
+Installer, A/B or equivalent base updates, honest rollback. T27 canto
+canary is dogfoodable (EFI/USB installer, SSH courage). kexec on that
+Apple is still a gap. QEMU probe stays.
 
 ## Later (unplanned)
 

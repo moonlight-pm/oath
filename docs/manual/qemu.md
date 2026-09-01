@@ -1,7 +1,8 @@
 # The appliance
 
-**Today’s product:** an x86_64 QEMU machine with a serial console. Not
-an installer. Not bare metal. Not a desktop.
+**Today’s product:** an x86_64 QEMU machine with a serial console, plus
+a metal canary (canto). Installer: [install.md](install.md). Not a
+desktop.
 
 Build tools (kernel, busybox, qemu, musl cc) are borrowed on the **host**.
 They are not the runtime identity.

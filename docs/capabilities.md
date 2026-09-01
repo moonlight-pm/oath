@@ -8,7 +8,7 @@ Product docs: [`manual/`](manual/) — current behavior.
 
 **Status vocabulary:** `shipped` · `partial` · `spec’d` · `planned` · `idea`
 
-**As of:** 2026-08-31
+**As of:** 2026-09-01
 
 ---
 
@@ -24,10 +24,10 @@ Product docs: [`manual/`](manual/) — current behavior.
 | svc | Own supervisor | partial | freeze | hold + sshd + seatd + river + sola session | do not disable serial; no Requires-style hard deps | [services](manual/services.md) |
 | boot | Kernel + init + QEMU | partial | [plan](plans/2026-08-27-qemu-skeleton-plan.md) | `cargo make run` / `probe` | borrowed kernel; River + Sola session as `svc` | [qemu](manual/qemu.md) |
 | pkg | Package objects | partial | [freeze](specs/2026-08-30-pkg-hosting.md) | QEMU probe + fetchme | T20 identity: `pkg.url`, peer Oath host as origin; no guest store export, hash, deps, or versions | [packages](manual/packages.md) |
-| net | Network objects | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | QEMU probe ping + SSH | dhcp implemented; LAN bridge opt-in (`OATH_BRIDGE`) | [network](manual/network.md) |
+| net | Network objects | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | QEMU probe ping + SSH; canto dhcp 10.0.0.3 | dhcp implemented; wait-for-carrier before rename when several NICs; LAN bridge opt-in (`OATH_BRIDGE`) | [network](manual/network.md) |
 | dev | Device objects | partial | [freeze](specs/2026-08-30-libinput.md) | QEMU probe | vda/net0/ttyS0/card0/kbd0/mouse0; no module loader; no udev | [devices](manual/devices.md) |
 | ssh | Root SSH via catalog keys | partial | [freeze](specs/2026-08-30-ssh-and-dhcp.md) | probe login/deny/undo/reboot | dropbear; no baked private key; no second Unix user | [ssh](manual/ssh.md) |
 | agent | Agent runtime as a system component | idea | — | — | serial or SSH client | no |
 | update | Base-image updates | idea | — | — | generations are the primitive | no |
-| install | Installer to a disk | spec’d | [freeze](specs/2026-08-31-metal-canto.md) | — | T27: canto via SSH+kexec; QEMU-EFI rehearsal first; no USB primary; no gen picker | no |
-| sola | Sola session on Oath | partial | [freeze](specs/2026-08-31-sola-terminal.md) | QEMU probe sola.bus / sola.call / sola.bridge / sola.shell / sola.session / sola.terminal / sola.tmux_session / sola.mono_font | session stack + LaunchApp owner packed (flower + McMojave cursor); gtk 1280×800 1:1 (preferred virtio-gpu mode, not max CVT); menubar panels Frame to the card (not full-output software GL); window menu + Super+K shortcuts overlay; Quit Sola is clean exit (`on-failure`); one `pkg:sola` blob including `sola-terminal` + tmux (`libresolv` + C.UTF-8 locale-archive) + JetBrains Mono; Sola developed on Nix (T24); no nested PM; no udevd; other kit apps out; no dbus; software GL; launcher/switcher still full-output | [services](manual/services.md) |
+| install | Installer to a disk | partial | [freeze](specs/2026-08-31-metal-canto.md) | QEMU-EFI rehearsal + canto SSH | `cargo make install --target --disk --confirm`; `--qemu` OVMF rehearsal; `--usb` EFI ramdisk stick. Canto entered via USB/EFI oneshot (kexec left Broadcom tg3 down). GPT ESP+btrfs `@`, systemd-boot. Gaps: kexec not used on this Apple; no gen picker | [install](manual/install.md) |
+| sola | Sola session on Oath | partial | [freeze](specs/2026-08-31-sola-terminal.md) | QEMU probe + canto HDMI (amdgpu Pitcairn, pixman, 1920×1080@75) | session stack packed; `run-compositor` picks the connected DRM card; sola-river picks the mode matching physical aspect (DualUp 2560×2880@30 vs 4K@60); software GL; no amdgpu accel; other kit apps out; no dbus | [services](manual/services.md) |

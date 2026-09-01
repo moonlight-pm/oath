@@ -212,7 +212,7 @@ pub fn ssh_port() -> u16 {
 
 /// Host public keys for QEMU fw_cfg inject. Derives .pub from default
 /// private keys when missing (this host has `id_rsa` but no `id_rsa.pub`).
-fn write_host_authorized(dest: &Path) -> Option<PathBuf> {
+pub fn host_pubkeys_body() -> Option<String> {
     let mut keys: Vec<String> = Vec::new();
     let mut seen = std::collections::HashSet::new();
     let mut push = |line: String| {
@@ -282,10 +282,18 @@ fn write_host_authorized(dest: &Path) -> Option<PathBuf> {
     }
     let mut body = keys.join("\n");
     body.push('\n');
+    Some(body)
+}
+
+fn write_host_authorized(dest: &Path) -> Option<PathBuf> {
+    let body = host_pubkeys_body()?;
     if fs::write(dest, &body).is_err() {
         return None;
     }
-    eprintln!("injecting {} SSH public key(s) into the guest", keys.len());
+    eprintln!(
+        "injecting {} SSH public key(s) into the guest",
+        body.lines().filter(|l| !l.is_empty()).count()
+    );
     dest.canonicalize().ok().or_else(|| Some(dest.to_path_buf()))
 }
 

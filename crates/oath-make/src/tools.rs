@@ -11,8 +11,17 @@ pub struct Tools {
     pub modules: PathBuf,
     pub busybox: PathBuf,
     pub btrfs: Option<PathBuf>,
+    pub mkfs_btrfs: Option<PathBuf>,
     pub dropbear: Option<PathBuf>,
     pub dropbearkey: Option<PathBuf>,
+    pub sgdisk: Option<PathBuf>,
+    pub mkfs_fat: Option<PathBuf>,
+    pub kexec: Option<PathBuf>,
+    pub gnutar: Option<PathBuf>,
+    pub systemd_boot: Option<PathBuf>,
+    pub ovmf_code: Option<PathBuf>,
+    pub ovmf_vars: Option<PathBuf>,
+    pub firmware: Option<PathBuf>,
     pub glibc: Option<PathBuf>,
     pub river: Option<PathBuf>,
     pub sola_rt: Option<PathBuf>,
@@ -96,14 +105,32 @@ pub fn load(root: &Path) -> Result<Tools> {
     let glibc = glibc.filter(|p| p.is_dir());
     let river = river.filter(|p| p.is_dir());
     let sola_rt = sola_rt.filter(|p| p.is_dir());
+    let tools_dir = kernel.parent().map(|p| p.to_path_buf());
+    let opt_file = |name: &str| -> Option<PathBuf> {
+        let p = tools_dir.as_ref()?.join(name);
+        p.is_file().then_some(p)
+    };
+    let opt_dir = |name: &str| -> Option<PathBuf> {
+        let p = tools_dir.as_ref()?.join(name);
+        p.is_dir().then_some(p)
+    };
     let _ = fs::metadata(&qemu)?;
     Ok(Tools {
         kernel,
         modules,
         busybox,
         btrfs,
+        mkfs_btrfs: opt_file("mkfs.btrfs"),
         dropbear,
         dropbearkey,
+        sgdisk: opt_file("sgdisk"),
+        mkfs_fat: opt_file("mkfs.fat"),
+        kexec: opt_file("kexec"),
+        gnutar: opt_file("gnutar"),
+        systemd_boot: opt_file("systemd-bootx64.efi"),
+        ovmf_code: opt_file("OVMF_CODE.fd"),
+        ovmf_vars: opt_file("OVMF_VARS.fd"),
+        firmware: opt_dir("firmware"),
         glibc,
         river,
         sola_rt,

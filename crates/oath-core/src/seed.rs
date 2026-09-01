@@ -134,7 +134,7 @@ pub fn seed(root: &Path) -> Result<()> {
 
     let river = ObjectId::new(KIND_SVC, "river");
     let river_desired = json!({
-        "exec": ["/bin/river"],
+        "exec": ["/usr/lib/oath/run-compositor"],
         "wants": ["svc:seatd"],
         "restart": "always",
         "enabled": true

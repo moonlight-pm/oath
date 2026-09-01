@@ -8,7 +8,7 @@ use std::os::unix::net::UnixListener;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use nix::mount::{mount, MsFlags};
 use nix::sys::signal::{kill, Signal};
@@ -17,6 +17,7 @@ use nix::unistd::{sethostname, Pid};
 use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, BTRFS_TOP, DEFAULT_ROOT};
 use serde_json::json;
 
+/// Fallback if packed `load-order` is missing. Deps before users.
 const MODULES: &[&str] = &[
     "kernel/drivers/virtio/virtio.ko",
     "kernel/drivers/virtio/virtio_ring.ko",
@@ -31,6 +32,7 @@ const MODULES: &[&str] = &[
     "kernel/net/core/failover.ko",
     "kernel/drivers/net/net_failover.ko",
     "kernel/drivers/net/virtio_net.ko",
+    "kernel/net/packet/af_packet.ko",
     "kernel/drivers/char/hw_random/rng-core.ko",
     "kernel/drivers/char/hw_random/virtio-rng.ko",
     "kernel/drivers/firmware/qemu_fw_cfg.ko",
@@ -39,6 +41,43 @@ const MODULES: &[&str] = &[
     "kernel/crypto/xor.ko",
     "kernel/lib/raid6/raid6_pq.ko",
     "kernel/fs/btrfs/btrfs.ko",
+    "kernel/fs/fat/fat.ko",
+    "kernel/fs/fat/vfat.ko",
+    "kernel/fs/nls/nls_cp437.ko",
+    "kernel/fs/nls/nls_iso8859-1.ko",
+    "kernel/fs/nls/nls_utf8.ko",
+    "kernel/drivers/scsi/scsi_common.ko",
+    "kernel/drivers/scsi/scsi_mod.ko",
+    "kernel/drivers/scsi/sd_mod.ko",
+    "kernel/drivers/ata/libata.ko",
+    "kernel/drivers/ata/libahci.ko",
+    "kernel/drivers/ata/ahci.ko",
+    "kernel/drivers/nvme/common/nvme-auth.ko",
+    "kernel/drivers/nvme/host/nvme-core.ko",
+    "kernel/drivers/nvme/host/nvme.ko",
+    "kernel/drivers/leds/led-class.ko",
+    "kernel/drivers/pps/pps_core.ko",
+    "kernel/drivers/ptp/ptp.ko",
+    "kernel/drivers/dca/dca.ko",
+    "kernel/drivers/i2c/algos/i2c-algo-bit.ko",
+    "kernel/drivers/net/phy/libphy.ko",
+    "kernel/drivers/net/mdio/fwnode_mdio.ko",
+    "kernel/drivers/net/phy/fixed_phy.ko",
+    "kernel/drivers/net/mdio/of_mdio.ko",
+    "kernel/drivers/net/phy/mdio_devres.ko",
+    "kernel/drivers/net/ethernet/broadcom/tg3.ko",
+    "kernel/drivers/net/ethernet/intel/e1000e/e1000e.ko",
+    "kernel/drivers/net/ethernet/intel/igb/igb.ko",
+    "kernel/drivers/net/ethernet/realtek/r8169.ko",
+    "kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko",
+    "kernel/drivers/usb/host/xhci-hcd.ko",
+    "kernel/drivers/usb/host/xhci-pci.ko",
+    "kernel/drivers/usb/host/ehci-hcd.ko",
+    "kernel/drivers/usb/host/ehci-pci.ko",
+    "kernel/drivers/hid/hid.ko",
+    "kernel/drivers/hid/hid-generic.ko",
+    "kernel/drivers/hid/hid-apple.ko",
+    "kernel/drivers/hid/usbhid/usbhid.ko",
 ];
 
 fn log(msg: &str) {
@@ -66,10 +105,15 @@ fn real_main() -> Result<(), String> {
     ensure_mount("devpts", "/dev/pts", "devpts");
     unix_floor();
 
+    if cmdline_flag("oath.install") {
+        return install_ramdisk();
+    }
+
     if !Path::new("/oath/INDEX.md").exists() {
         load_modules();
-        mount_root()?;
-        tel("init", "mounted", json!({ "dev": "/dev/vda", "subvol": "@" }));
+        let dev = root_dev();
+        mount_root(&dev)?;
+        tel("init", "mounted", json!({ "dev": dev, "subvol": "@" }));
     }
 
     let _ = fs::create_dir_all("/oath/run");
@@ -122,30 +166,366 @@ fn ensure_mount(fstype: &str, target: &str, source: &str) {
 }
 
 fn load_modules() {
-    let rel = fs::read_to_string("/proc/sys/kernel/osrelease").unwrap_or_default();
-    let rel = rel.trim();
-    let base = Path::new("/lib/modules").join(rel);
-    for m in MODULES {
-        let p = base.join(m);
+    let rel = kver();
+    let base = Path::new("/lib/modules").join(&rel);
+    let list = module_load_order(&base);
+    for m in list {
+        let p = base.join(&m);
         if !p.exists() {
             log(&format!("no module {m}"));
             tel("init", "module", json!({ "name": m, "ok": false, "err": "missing" }));
             continue;
         }
-        let st = Command::new("/bin/busybox").args(["insmod", p.to_str().unwrap()]).status();
+        let mut cmd = Command::new("/bin/busybox");
+        cmd.arg("insmod").arg(p.to_str().unwrap());
+        if m.ends_with("amdgpu.ko") {
+            cmd.args(["si_support=1", "cik_support=1"]);
+        }
+        let st = cmd.status();
         let ok = matches!(st, Ok(s) if s.success());
         if !ok {
             tel("init", "module", json!({ "name": m, "ok": false }));
             log(&format!("insmod {m} -> {st:?}"));
         }
     }
+    let _ = Command::new("/bin/busybox").args(["mdev", "-s"]).status();
 }
 
-fn mount_root() -> Result<(), String> {
+fn module_load_order(base: &Path) -> Vec<String> {
+    let p = base.join("load-order");
+    if let Ok(s) = fs::read_to_string(&p) {
+        let v: Vec<String> =
+            s.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).map(|l| l.to_string()).collect();
+        if !v.is_empty() {
+            return v;
+        }
+    }
+    MODULES.iter().map(|s| (*s).to_string()).collect()
+}
+
+fn cmdline() -> String {
+    fs::read_to_string("/proc/cmdline").unwrap_or_default()
+}
+
+fn cmdline_flag(key: &str) -> bool {
+    cmdline()
+        .split_whitespace()
+        .any(|t| t == key || t == format!("{key}=1") || t == format!("{key}=true"))
+}
+
+fn cmdline_val(key: &str) -> Option<String> {
+    let prefix = format!("{key}=");
+    cmdline().split_whitespace().find_map(|t| t.strip_prefix(&prefix).map(|s| s.to_string()))
+}
+
+fn root_dev() -> String {
+    cmdline_val("oath.root").unwrap_or_else(|| {
+        if Path::new("/dev/vda").exists() {
+            "/dev/vda".into()
+        } else if Path::new("/dev/sda2").exists() {
+            "/dev/sda2".into()
+        } else if Path::new("/dev/nvme0n1p2").exists() {
+            "/dev/nvme0n1p2".into()
+        } else {
+            "/dev/vda".into()
+        }
+    })
+}
+
+fn install_ramdisk() -> Result<(), String> {
+    load_modules();
+    let _ = fs::create_dir_all("/root/.ssh");
+    let _ = fs::create_dir_all("/etc");
+    let _ = fs::create_dir_all("/var/run");
+    let _ = fs::create_dir_all("/oath/log");
+    let _ = fs::create_dir_all("/run/oath-install");
+    if !Path::new("/etc/passwd").exists() {
+        let _ = fs::write("/etc/passwd", "root:x:0:0:root:/root:/bin/sh\n");
+    }
+    let _ = fs::set_permissions("/root/.ssh", fs::Permissions::from_mode(0o700));
+    start_install_tty0();
+    bring_up_install_net();
+    if !install_has_ipv4() {
+        log("no ipv4 after dhcp; dump dmesg to ESP, keep ramdisk");
+        dump_kexec_debug();
+        bring_up_install_net();
+    }
+    start_install_dropbear();
+    let _ = fs::write("/run/oath-install/ready", "1\n");
+    log("install ramdisk ready (dropbear)");
+    tel("init", "install", json!({ "ready": true }));
+    loop {
+        std::thread::sleep(Duration::from_secs(1));
+    }
+}
+
+fn bring_up_install_net() {
+    let nic = match pick_install_nic() {
+        Some(n) => n,
+        None => {
+            log("no install nic");
+            tel("init", "install-net", json!({ "ok": false, "err": "no nic" }));
+            return;
+        }
+    };
+    log(&format!("install nic {nic}"));
+    timed_link_up(&nic, Duration::from_secs(2));
+    if let Some(ip) = cmdline_val("oath.ip") {
+        let st =
+            Command::new("/bin/busybox").args(["ip", "addr", "add", &ip, "dev", &nic]).status();
+        log(&format!("ip addr add {ip} dev {nic} -> {st:?}"));
+        if let Some(gw) = cmdline_val("oath.gw") {
+            let st = Command::new("/bin/busybox")
+                .args(["ip", "route", "add", "default", "via", &gw])
+                .status();
+            log(&format!("ip route default via {gw} -> {st:?}"));
+        }
+        tel("init", "install-net", json!({ "nic": nic, "ip": ip, "dhcp": false }));
+        return;
+    }
+    for i in 0..5 {
+        if nic_carrier(&nic) {
+            break;
+        }
+        log(&format!("wait carrier {nic} {i}"));
+        std::thread::sleep(Duration::from_millis(400));
+    }
+    let st = Command::new("/bin/busybox")
+        .args([
+            "udhcpc",
+            "-i",
+            &nic,
+            "-n",
+            "-q",
+            "-f",
+            "-s",
+            "/usr/lib/oath/udhcpc.script",
+            "-T",
+            "2",
+            "-t",
+            "8",
+        ])
+        .status();
+    log(&format!("udhcpc {nic} -> {st:?}"));
+    tel("init", "install-net", json!({ "nic": nic, "dhcp": true }));
+}
+
+fn list_nics() -> Vec<String> {
+    let mut v = Vec::new();
+    let Ok(rd) = fs::read_dir("/sys/class/net") else {
+        return v;
+    };
+    for e in rd.flatten() {
+        let n = e.file_name().to_string_lossy().into_owned();
+        if n == "lo" {
+            continue;
+        }
+        v.push(n);
+    }
+    v.sort();
+    v
+}
+
+fn nic_mac(n: &str) -> Option<String> {
+    fs::read_to_string(format!("/sys/class/net/{n}/address"))
+        .ok()
+        .map(|s| s.trim().to_lowercase())
+}
+
+fn nic_carrier(n: &str) -> bool {
+    fs::read_to_string(format!("/sys/class/net/{n}/carrier"))
+        .map(|s| s.trim() == "1")
+        .unwrap_or(false)
+}
+
+fn timed_link_up(nic: &str, timeout: Duration) {
+    let mut child = match Command::new("/bin/busybox")
+        .args(["ip", "link", "set", nic, "up"])
+        .spawn()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            log(&format!("ip link set {nic} up spawn: {e}"));
+            return;
+        }
+    };
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(st)) => {
+                log(&format!("ip link set {nic} up -> {st}"));
+                return;
+            }
+            Ok(None) if start.elapsed() > timeout => {
+                let _ = child.kill();
+                let _ = child.wait();
+                log(&format!("ip link set {nic} up timed out"));
+                return;
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(50)),
+            Err(e) => {
+                log(&format!("ip link set {nic} up wait: {e}"));
+                return;
+            }
+        }
+    }
+}
+
+fn pick_install_nic() -> Option<String> {
+    let want_mac = cmdline_val("oath.mac").map(|s| s.to_lowercase());
+    let want_name = cmdline_val("oath.nic");
+    for i in 0..75 {
+        let nics = list_nics();
+        if i == 0 || i % 10 == 0 || !nics.is_empty() {
+            let detail: Vec<String> = nics
+                .iter()
+                .map(|n| {
+                    format!(
+                        "{n} mac={} carrier={}",
+                        nic_mac(n).unwrap_or_default(),
+                        nic_carrier(n)
+                    )
+                })
+                .collect();
+            log(&format!("nics: {}", detail.join("; ")));
+        }
+        if let Some(mac) = &want_mac {
+            for n in &nics {
+                if nic_mac(n).as_deref() == Some(mac.as_str()) {
+                    timed_link_up(n, Duration::from_secs(2));
+                    return Some(n.clone());
+                }
+            }
+        }
+        for n in &nics {
+            timed_link_up(n, Duration::from_secs(2));
+            if nic_carrier(n) {
+                return Some(n.clone());
+            }
+        }
+        if let Some(want) = &want_name {
+            if nics.iter().any(|n| n == want) {
+                timed_link_up(want, Duration::from_secs(2));
+                return Some(want.clone());
+            }
+        }
+        std::thread::sleep(Duration::from_millis(200));
+    }
+    None
+}
+
+fn start_install_tty0() {
+    let mut cmd = Command::new("/bin/busybox");
+    cmd.args(["sh", "-l"]);
+    cmd.env("PATH", "/bin").env("HOME", "/root").env("PS1", "oath-install# ");
+    unsafe {
+        cmd.pre_exec(|| {
+            let fd = libc::open(c"/dev/tty0".as_ptr(), libc::O_RDWR);
+            if fd < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            libc::dup2(fd, 0);
+            libc::dup2(fd, 1);
+            libc::dup2(fd, 2);
+            if fd > 2 {
+                libc::close(fd);
+            }
+            libc::setsid();
+            libc::ioctl(0, libc::TIOCSCTTY, 1);
+            Ok(())
+        });
+    }
+    match cmd.spawn() {
+        Ok(_) => log("tty0 shell"),
+        Err(e) => log(&format!("tty0 shell: {e}")),
+    }
+}
+
+fn install_has_ipv4() -> bool {
+    let o = Command::new("/bin/busybox").args(["ip", "addr"]).output();
+    let Ok(o) = o else {
+        return false;
+    };
+    String::from_utf8_lossy(&o.stdout).lines().any(|l| {
+        let t = l.trim();
+        t.contains("inet ") && !t.contains("127.0.0.1") && !t.starts_with("inet6")
+    })
+}
+
+fn dump_kexec_debug() {
+    let mut body = String::new();
+    body.push_str("cmdline: ");
+    body.push_str(&cmdline());
+    body.push('\n');
+    body.push_str("nics: ");
+    body.push_str(&list_nics().join(","));
+    body.push('\n');
+    if let Ok(o) = Command::new("/bin/busybox").args(["ip", "addr"]).output() {
+        body.push_str("ip addr:\n");
+        body.push_str(&String::from_utf8_lossy(&o.stdout));
+    }
+    if let Ok(rd) = fs::read_dir("/sys/bus/pci/devices") {
+        body.push_str("pci:\n");
+        let mut names: Vec<String> = rd
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        for n in names {
+            let id = fs::read_to_string(format!("/sys/bus/pci/devices/{n}/uevent")).unwrap_or_default();
+            body.push_str(&format!("{n} {id}"));
+            if !body.ends_with('\n') {
+                body.push('\n');
+            }
+        }
+    }
+    if let Ok(rd) = fs::read_dir("/lib/firmware/tigon") {
+        body.push_str("firmware tigon: ");
+        let mut n: Vec<_> =
+            rd.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+        n.sort();
+        body.push_str(&n.join(","));
+        body.push('\n');
+    } else {
+        body.push_str("firmware tigon: missing\n");
+    }
+    if let Ok(o) = Command::new("/bin/busybox").arg("dmesg").output() {
+        body.push_str("dmesg:\n");
+        body.push_str(&String::from_utf8_lossy(&o.stdout));
+    }
+    let _ = fs::create_dir_all("/esp");
+    for cand in ["/dev/sda1", "/dev/nvme0n1p1", "/dev/vda1", "/dev/sdb1"] {
+        if !Path::new(cand).exists() {
+            continue;
+        }
+        let st = Command::new("/bin/busybox")
+            .args(["mount", "-t", "vfat", cand, "/esp"])
+            .status();
+        if !matches!(st, Ok(s) if s.success()) {
+            continue;
+        }
+        let _ = fs::write("/esp/oath-kexec.log", &body);
+        let _ = Command::new("/bin/busybox").args(["umount", "/esp"]).status();
+        log(&format!("wrote /esp/oath-kexec.log via {cand}"));
+        break;
+    }
+}
+
+fn start_install_dropbear() {
+    let _ = Command::new("/bin/dropbearkey")
+        .args(["-t", "ed25519", "-f", "/run/oath-install/host_ed25519"])
+        .status();
+    let st = Command::new("/bin/dropbear")
+        .args(["-E", "-s", "-D", "/root/.ssh", "-r", "/run/oath-install/host_ed25519", "-p", "22"])
+        .status();
+    log(&format!("dropbear -> {st:?}"));
+}
+
+fn mount_root(dev: &str) -> Result<(), String> {
     let _ = fs::create_dir_all("/newroot");
     let flags = MsFlags::empty();
-    mount(Some("/dev/vda"), "/newroot", Some("btrfs"), flags, Some("subvol=@"))
-        .map_err(|e| format!("mount root: {e}"))?;
+    mount(Some(dev), "/newroot", Some("btrfs"), flags, Some("subvol=@"))
+        .map_err(|e| format!("mount root {dev}: {e}"))?;
     // Switch into the disk. Keep this process as PID 1.
     std::env::set_current_dir("/newroot").map_err(|e| e.to_string())?;
     nix::unistd::chroot("/newroot").map_err(|e| format!("chroot: {e}"))?;
@@ -183,7 +563,8 @@ fn mount_toplevel() {
         return;
     }
     let data = "subvolid=0";
-    let err = mount(Some("/dev/vda"), top, Some("btrfs"), MsFlags::empty(), Some(data));
+    let dev = root_dev();
+    let err = mount(Some(dev.as_str()), top, Some("btrfs"), MsFlags::empty(), Some(data));
     let ok = top.join("@").is_dir();
     tel(
         "init",
@@ -436,6 +817,7 @@ fn spawn(spec: &Svc) -> Result<Pid, String> {
     if spec.exec.len() > 1 {
         cmd.args(&spec.exec[1..]);
     }
+    let _ = fs::create_dir_all("/run/user/0");
     cmd.env("PATH", "/bin")
         .env("HOME", "/root")
         .env("XDG_RUNTIME_DIR", "/run/user/0")

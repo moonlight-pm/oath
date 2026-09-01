@@ -1,4 +1,5 @@
 mod cpio;
+mod install;
 mod pack;
 mod probe;
 mod qemu;
@@ -52,6 +53,27 @@ enum Cmd {
     },
     /// Scripted courage test + telemetry.
     Probe,
+    /// Wipe `--disk` on `--target` (or `--qemu` OVMF rehearsal). Requires `--confirm`.
+    Install {
+        /// `user@host` or `user@host:port`. Ignored with `--qemu`.
+        #[arg(long)]
+        target: Option<String>,
+        /// Whole-disk node to GPT-wipe (`/dev/sda`, `/dev/vda`, …).
+        #[arg(long)]
+        disk: String,
+        /// Required. This is a destructive confirm-class action.
+        #[arg(long)]
+        confirm: bool,
+        /// Rehearse in QEMU+OVMF instead of a real host.
+        #[arg(long)]
+        qemu: bool,
+        /// Write an EFI installer to `--disk` (must be a removable USB). No `--target`.
+        #[arg(long)]
+        usb: bool,
+        /// `host:local` hostname after install (default: oath; canto: pass canto).
+        #[arg(long)]
+        hostname: Option<String>,
+    },
 }
 
 fn main() {
@@ -95,6 +117,13 @@ fn real() -> Result<()> {
         Cmd::Probe => {
             let rc = probe::probe(&root, &out)?;
             std::process::exit(rc);
+        }
+        Cmd::Install { target, disk, confirm, qemu, usb, hostname } => {
+            install::run_install(
+                &root,
+                &out,
+                install::Opts { target, disk, confirm, qemu, usb, hostname },
+            )?;
         }
     }
     Ok(())
