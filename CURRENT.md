@@ -23,8 +23,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    Virtio SW cursor / `LIBGL_ALWAYS_SOFTWARE` only when a DRM card is
    virtio — Canto uses hardware cursors (sola-scope). Super+K overlay
    is card-sized (Sola `f8ff7871`). **T29:** `/bin/sola-workspaces` +
-   `/bin/solactl` on canto (no git/grok yet). Next: git/grok on the
-   guest, or amdgpu accel / remaining kit.
+   `/bin/solactl` on canto (no git/grok yet). **T30:** `pkg:grok`
+   identity locked (catalog owns the ELF; Grok does not self-update).
+   Packing waits on **T31** (seat user + catalog env — ask, amends
+   T9). Or amdgpu accel / remaining kit.
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
@@ -32,6 +34,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    canto (no git/grok). Other kit apps still out.
 4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. Git/grok/rustc still host-side.
+   **T30** grok identity locked; ELF not packed. **T31** seat+env open.
 5. **T20 hosting locked**, not implemented.
 6. Do not add a throwaway compositor. glibc runtime is allowed
    **only** as `pkg:glibc` for this payload (never in PID 1). No
@@ -75,7 +78,8 @@ Do not re-litigate without an explicit decision.
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
-  is not the store.
+  is not the store. **T30:** `pkg:grok` is catalog-owned (not packed);
+  Grok does not self-update.
 - Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
   the console; `svc:sshd` is dropbear; `svc:hold` wants serial;
   `svc:river` wants `svc:seatd`. Sola session: `svc:sola-bus` /
@@ -93,7 +97,9 @@ Do not re-litigate without an explicit decision.
   `call` / `river` / `shell` / `session`). First kit app is T26
   (`/bin/sola-terminal` + tmux in that blob). T28 is `/bin/sola-browser`
   + CEF in the same blob. T29 is `/bin/sola-workspaces` + `solactl`
-  in the same blob (no git/grok yet). **T24:** one `pkg:sola` blob;
+  in the same blob (no git/grok yet). **T30:** `pkg:grok` is the
+  install; Grok does not update Grok; `$GROK_HOME` is state; not in
+  the Sola blob. **T24:** one `pkg:sola` blob;
   development versions are apply/undo of the real objects (no second
   PATH, no nested PM). Oath-as-dev-host **started** (T29 Workspaces on
   canto); inner loop (git/grok/rustc) still Nix. glibc is sealed
@@ -112,8 +118,10 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-02-sola-workspaces.md](docs/specs/2026-09-02-sola-workspaces.md)
-  (T29 sola-workspaces). T28:
+- Freeze: [docs/specs/2026-09-02-pkg-grok.md](docs/specs/2026-09-02-pkg-grok.md)
+  (T30 `pkg:grok` identity). T29:
+  [docs/specs/2026-09-02-sola-workspaces.md](docs/specs/2026-09-02-sola-workspaces.md)
+  (sola-workspaces). T28:
   [docs/specs/2026-09-01-sola-browser.md](docs/specs/2026-09-01-sola-browser.md)
   (sola-browser). T27:
   [docs/specs/2026-08-31-metal-canto.md](docs/specs/2026-08-31-metal-canto.md)
@@ -139,5 +147,6 @@ Do not re-litigate without an explicit decision.
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
   (canto; QEMU on next `cargo make build`); sola-workspaces packed
-  (canto; QEMU on next build); other kit apps not; Phase 6 metal
+  (canto; QEMU on next build); `pkg:grok` identity locked, ELF not
+  packed (T31 seat+env open); other kit apps not; Phase 6 metal
   canary (canto) dogfoodable, gaps remain

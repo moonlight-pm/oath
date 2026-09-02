@@ -75,8 +75,10 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-02-pkg-grok.md`](docs/specs/2026-09-02-pkg-grok.md)
+(T30 `pkg:grok` identity). T29:
 [`docs/specs/2026-09-02-sola-workspaces.md`](docs/specs/2026-09-02-sola-workspaces.md)
-(T29 sola-workspaces). T28:
+(sola-workspaces). T28:
 [`docs/specs/2026-09-01-sola-browser.md`](docs/specs/2026-09-01-sola-browser.md)
 (sola-browser). T27:
 [`docs/specs/2026-08-31-metal-canto.md`](docs/specs/2026-08-31-metal-canto.md)

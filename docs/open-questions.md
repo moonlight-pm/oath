@@ -12,18 +12,20 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T22 libinput without udevd is closed (libudev-zero;
-path fallback in wlroots). T21 River-first is closed
-(River/wlroots forks in). T23 session stack is closed (`pkg:sola`
-+ session `svc:*`; no nested PM). T24 development layout is closed
-(one `pkg:sola` blob; Oath-as-dev-host started with T29; inner loop
-still Nix).
-T25 session manager is closed (`svc:sola-session` in that blob).
-T26 sola-terminal is closed (sixth ELF + tmux helper in `pkg:sola`).
-T27 metal canary is closed (canto; SSH+kexec; QEMU probe stays).
-T28 sola-browser is closed (seventh ELF + CEF helper in `pkg:sola`;
-no dbus-daemon; no `pkg:cef`). T29 sola-workspaces is closed
-(eighth ELF + `solactl` in `pkg:sola`; no git/grok yet).
+**T31 — Seat user + catalog env (amends T9 / T16).** Open. Root
+owns `/oath/store` and `/bin`. Daily work (Sola, Workspaces, grok)
+must not be able to replace those bits. Ask before inventing:
+username / catalog shape, what runs as the seat, SSH vs root
+admin, whether `oath apply` is root-only, and `host:local` env
+(PID 1 injects `GROK_DISABLE_AUTOUPDATER` and other required
+variables into svc spawn + login). No new kind unless CURRENT
+says so.
+
+Closed recently: T22 libinput without udevd; T21 River-first; T23
+session stack; T24 development layout; T25 session manager; T26
+sola-terminal; T27 metal canary; T28 sola-browser; T29
+sola-workspaces; T30 `pkg:grok` (catalog owns the ELF; Grok does
+not self-update).
 
 ---
 
@@ -253,6 +255,13 @@ seat in `oath-sola`. Oath-as-dev-host **started** with T29
 `solactl` as a helper in that same tree. Not a new kind. Not a `svc`.
 PID 1 does not supervise it. git/grok not in this slice.
 
+### T30 — Vendor-updating packages (`pkg:grok`) — locked 2026-09-02
+
+`pkg:grok` is the install (store + `/bin` farm). Grok does not
+update Grok; check is `grok update --check`, change is apply.
+`$GROK_HOME` is user state, not the ELF. Not in `pkg:sola`. No
+`install.sh` on the guest. Seat user + catalog env are T31.
+
 ---
 
 ## Decision log
@@ -278,3 +287,4 @@ PID 1 does not supervise it. git/grok not in this slice.
 | 2026-08-31 | T27 | canto metal canary; SSH+kexec; QEMU probe stays | this file; [specs/2026-08-31-metal-canto.md](specs/2026-08-31-metal-canto.md) |
 | 2026-09-01 | T28 | sola-browser + CEF in pkg:sola; no pkg:cef | this file; [specs/2026-09-01-sola-browser.md](specs/2026-09-01-sola-browser.md) |
 | 2026-09-02 | T29 | sola-workspaces + solactl in pkg:sola; no git/grok | this file; [specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md) |
+| 2026-09-02 | T30 | pkg:grok catalog-owned; Grok does not self-update | this file; [specs/2026-09-02-pkg-grok.md](specs/2026-09-02-pkg-grok.md) |
