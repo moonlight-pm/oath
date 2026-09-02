@@ -21,8 +21,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    then defer KMS that would steal that fb, River on black). Canto
    is one stack, not every machine. SI still flashes on KMS bind.
    Virtio SW cursor / `LIBGL_ALWAYS_SOFTWARE` only when a DRM card is
-   virtio — Canto uses hardware cursors (sola-scope). Next: kit apps /
-   amdgpu accel / T24.
+   virtio — Canto uses hardware cursors (sola-scope). Super+K overlay
+   is card-sized (Sola `f8ff7871`). Next: kit apps / amdgpu accel / T24.
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
