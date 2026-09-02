@@ -101,7 +101,11 @@ impl ApplyHooks for MemHooks {
     }
     fn converge_host(&self, desired: &Host) -> Result<Host> {
         *self.hostname.lock().unwrap() = desired.hostname.clone();
-        Ok(Host { hostname: desired.hostname.clone(), power: HostPower::Run })
+        Ok(Host {
+            hostname: desired.hostname.clone(),
+            power: HostPower::Run,
+            env: desired.env.clone(),
+        })
     }
     fn notify_init(&self) -> Result<()> {
         Ok(())
@@ -169,6 +173,14 @@ fn seed_lists_host() {
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
+    let host = cat.get(&"host:local".parse().unwrap()).unwrap();
+    assert_eq!(host.desired["env"]["GROK_DISABLE_AUTOUPDATER"], "1");
+    let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
+    assert_eq!(serial.desired["exec"][0], "/lib/oath/serial-login");
+    let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();
+    let exec = sshd.desired["exec"].as_array().unwrap();
+    assert!(exec.iter().any(|v| v == "-w"));
+    assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
 }
 
 fn write_hello_store(root: &std::path::Path) {

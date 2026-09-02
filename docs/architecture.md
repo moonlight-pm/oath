@@ -28,9 +28,11 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
   disk (btrfs)
     @            live root
     @gen-N       readonly sibling generations
-    /usr/lib/oath/init     PID 1 after pivot
-    /usr/lib/oath/serial-login
+    /lib/oath/init         PID 1 after pivot
+    /lib/oath/serial-login
+    /lib/oath/sudo         setuid; /bin/sudo
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
+    /home                  seat home (Unix user `home`, uid 1000)
     /oath/                 catalog
     /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
@@ -39,9 +41,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
     seatd              svc:seatd (DRM seat)
-    river              svc:river (glibc, pixman, libudev-zero, socket /run/user/0;
+    river              svc:river as `home` (glibc, pixman, libudev-zero, socket /run/user/1000;
                        hardware cursors unless a DRM card is virtio)
-    sola-bus/call      svc:sola-bus / svc:sola-call (sockets /run/user/0)
+    sola-bus/call      svc:sola-bus / svc:sola-call as `home` (sockets /run/user/1000)
     sola-river         svc:sola-river (bridge, not the compositor)
     sola-shell         svc:sola-shell (iced menubar; wgpu/gl; llvmpipe forced
                        only on virtio KMS; McMojave)
@@ -51,7 +53,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
     solactl            /bin/solactl (call-plane CLI in pkg:sola)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
-    /sbin/init -> ../usr/lib/oath/init
+    /sbin/init -> ../lib/oath/init
 ```
 
 PID 1: mount proc/sys/dev/pts, tmpfs `/tmp` `/dev/shm` `/run`, cgroup2;
@@ -88,7 +90,8 @@ Canto: two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits
 for carrier then dhcp. Dual Pitcairn amdgpu (`si_support=1`);
-`/usr/lib/oath/run-compositor` binds River to the connected DRM card.
+`/lib/oath/run-compositor` binds River to the connected DRM card. The
+graphical stack runs as Unix user `home`. SSH is `home`; serial is root.
 sola-river picks the mode matching physical mm.
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-efi` (UEFI

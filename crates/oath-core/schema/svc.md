@@ -28,7 +28,8 @@ oath set svc:serial enabled=true
 oath apply svc:serial
 ```
 
-The appliance ships `svc:serial` (serial root shell), `svc:hold`
+The appliance ships `svc:serial` (serial root shell; graphical
+stack runs as `home`), `svc:hold`
 (`/bin/sleep 86400000`, for start/stop tests), `svc:sshd`,
 `svc:seatd`, `svc:river` (patched River on `dev:card0`; wants
 seatd; libinput via libudev-zero), and the Sola session stack

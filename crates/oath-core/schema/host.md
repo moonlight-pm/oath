@@ -2,10 +2,11 @@
 
 The machine itself. There is exactly one object: `host:local`.
 
-**When to use:** change the hostname; reboot or halt the appliance.
+**When to use:** change the hostname; reboot or halt the appliance;
+set required process environment.
 
 **When not:** do not invent extra host objects. Network and packages are
-not this kind.
+not this kind. Do not add a Unix user kind — the seat is always `home`.
 
 ## Fields
 
@@ -14,6 +15,9 @@ not this kind.
 - `power` — `run` (steady), `reboot`, or `halt`. Changing away from
   `run` is **confirm** (`oath apply --confirm`). After a reboot apply,
   desired is set back to `run` so the box does not loop.
+- `env` — `NAME=value` map. PID 1 injects these into every `svc`
+  spawn. `/etc/profile` and `/home/.profile` are side effects. Seed
+  includes `GROK_DISABLE_AUTOUPDATER=1`.
 
 ## Example
 

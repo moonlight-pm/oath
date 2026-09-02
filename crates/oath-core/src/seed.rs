@@ -45,12 +45,16 @@ pub fn seed(root: &Path) -> Result<()> {
     write(root, "schema/dev.md", DEV_MD);
 
     let host = ObjectId::new(KIND_HOST, "local");
-    let host_val = json!({ "hostname": "oath", "power": "run" });
+    let host_val = json!({
+        "hostname": "oath",
+        "power": "run",
+        "env": { "GROK_DISABLE_AUTOUPDATER": "1" }
+    });
     write_object(root, &host, "mutate", &host_val, &host_val)?;
 
     let serial = ObjectId::new(KIND_SVC, "serial");
     let serial_desired = json!({
-        "exec": ["/usr/lib/oath/serial-login"],
+        "exec": ["/lib/oath/serial-login"],
         "wants": [],
         "restart": "always",
         "enabled": true
@@ -104,7 +108,7 @@ pub fn seed(root: &Path) -> Result<()> {
 
     let sshd = ObjectId::new(KIND_SVC, "sshd");
     let sshd_desired = json!({
-        "exec": ["/bin/dropbear", "-F", "-E", "-s", "-D", "/root/.ssh", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
+        "exec": ["/bin/dropbear", "-F", "-E", "-s", "-w", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
         "wants": [],
         "restart": "always",
         "enabled": true
@@ -119,7 +123,7 @@ pub fn seed(root: &Path) -> Result<()> {
 
     let seatd = ObjectId::new(KIND_SVC, "seatd");
     let seatd_desired = json!({
-        "exec": ["/bin/seatd"],
+        "exec": ["/bin/seatd", "-g", "seat"],
         "wants": [],
         "restart": "always",
         "enabled": true
@@ -134,7 +138,7 @@ pub fn seed(root: &Path) -> Result<()> {
 
     let river = ObjectId::new(KIND_SVC, "river");
     let river_desired = json!({
-        "exec": ["/usr/lib/oath/run-compositor"],
+        "exec": ["/lib/oath/run-compositor"],
         "wants": ["svc:seatd"],
         "restart": "always",
         "enabled": true

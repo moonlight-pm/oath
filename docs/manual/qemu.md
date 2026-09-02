@@ -23,11 +23,11 @@ cargo make run            # interactive serial; gtk window if DISPLAY is set
 cargo make run --build    # pack first, then run (same flag on up / start)
 cargo make up             # headless; serial in the run log; Ctrl-C kills QEMU
 cargo make start          # same, background
-cargo make ssh            # ssh -p 2222 root@127.0.0.1
+cargo make ssh            # ssh -p 2222 home@127.0.0.1
 cargo make stop
 ```
 
-You land on a root shell. Then:
+Serial is a **root** shell. SSH is **home** (`sudo` has no password). Then:
 
 ```
 oath
@@ -39,7 +39,7 @@ See [using.md](using.md), [catalog.md](catalog.md), [services.md](services.md),
 
 Headless (`up` / `start`) does not attach serial. They inject host
 SSH public keys into the guest at boot. Then `cargo make ssh` is
-`ssh -p 2222 root@127.0.0.1` (`OATH_SSH_PORT`). Extra args:
+`ssh -p 2222 home@127.0.0.1` (`OATH_SSH_PORT`). Extra args:
 `cargo make ssh -- ls /`. Serial is `build/runs/<id>/serial.log`.
 
 ## Leave the VM
@@ -86,7 +86,7 @@ and a loop-mount (sudo) are still external tools.
 
 - Linux kernel (borrowed) + initramfs (`oath-init` as `/init`)
 - btrfs disk, live subvolume `@`
-- `/usr/lib/oath/init` — PID 1 after switch-root
+- `/lib/oath/init` — PID 1 after switch-root
 - Catalog at `/oath`
 - `/oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hello}/`; `/bin` is a symlink farm
 - `/bin/hello` only after `pkg:hello` is present
@@ -108,7 +108,7 @@ once the disk is mounted.
 - `dev:vda` / `net0` / `ttyS0` inventory; tmpfs + cgroup2
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
-- `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/0`
+- `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/1000`
 - Sola session stack (`svc:sola-bus` / `call` / `river` / `shell` /
   `session`); `sola-terminal` + tmux + `sola-browser` + CEF +
   `sola-workspaces` + `solactl` + SF Pro Text / Iosevka Term Slab in

@@ -21,9 +21,9 @@ for c in /sys/class/drm/card[0-9]; do
 	[ -n "$card" ] && break
 done
 [ -n "$card" ] && export WLR_DRM_DEVICES=$card
-[ -f /usr/lib/oath/display-env.sh ] && . /usr/lib/oath/display-env.sh
+[ -f /lib/oath/display-env.sh ] && . /lib/oath/display-env.sh
 export WLR_RENDERER="${WLR_RENDERER:-pixman}"
-export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/0}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
 mkdir -p "$XDG_RUNTIME_DIR"
 # Default River init is solarized; keep black until Sola paints.
-exec /bin/river -c /usr/lib/oath/river-boot "$@"
+exec /bin/river -c /lib/oath/river-boot "$@"

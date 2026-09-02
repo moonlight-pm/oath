@@ -182,8 +182,8 @@ done
 cat >"$out/river/bin/river" <<'WRAP'
 #!/bin/sh
 export PATH=/bin
-export HOME=/root
-export XDG_RUNTIME_DIR=/run/user/0
+export HOME="${HOME:-/home}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
 /bin/mkdir -p "$XDG_RUNTIME_DIR"
 /bin/chmod 700 "$XDG_RUNTIME_DIR"
 export LIBSEAT_BACKEND=seatd
@@ -198,7 +198,7 @@ export WLR_RENDERER_ALLOW_SOFTWARE=1
 # No udevd: libudev-zero + wlroots path fallback on /dev/input/event*.
 export LIBINPUT_QUIRKS_DIR=/oath/store/pkg/river/share/libinput
 # SW cursor / llvmpipe only when a DRM card is virtio (not merely the module).
-[ -f /usr/lib/oath/display-env.sh ] && . /usr/lib/oath/display-env.sh
+[ -f /lib/oath/display-env.sh ] && . /lib/oath/display-env.sh
 export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
 export XCURSOR_THEME=McMojave
 unset WAYLAND_DISPLAY

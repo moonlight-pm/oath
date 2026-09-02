@@ -45,7 +45,7 @@ enum Cmd {
     },
     /// Stop a VM started with `start`.
     Stop,
-    /// SSH to the QEMU guest (`root@127.0.0.1`, port `OATH_SSH_PORT` / 2222).
+    /// SSH to the QEMU guest (`home@127.0.0.1`, port `OATH_SSH_PORT` / 2222).
     Ssh {
         /// Extra ssh(1) args (`-i key`, a remote command, …).
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]

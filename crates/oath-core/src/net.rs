@@ -39,7 +39,7 @@ pub fn converge(desired: &Net) -> Result<Net> {
                     "-q",
                     "-f",
                     "-s",
-                    "/usr/lib/oath/udhcpc.script",
+                    "/lib/oath/udhcpc.script",
                     "-T",
                     "2",
                     "-t",

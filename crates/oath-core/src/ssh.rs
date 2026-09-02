@@ -8,7 +8,7 @@ use crate::error::{Error, Result};
 use crate::kinds::{Ssh, SshActual};
 
 pub const HOST_KEY: &str = "/oath/ssh/host_ed25519";
-pub const AUTHORIZED: &str = "/root/.ssh/authorized_keys";
+pub const AUTHORIZED: &str = "/home/.ssh/authorized_keys";
 
 pub fn converge(desired: &Ssh) -> Result<SshActual> {
     fs::create_dir_all("/oath/ssh")?;
@@ -22,7 +22,8 @@ pub fn converge(desired: &Ssh) -> Result<SshActual> {
             return Err(Error::hint("dropbearkey failed", "oath get pkg:dropbear"));
         }
     }
-    fs::create_dir_all("/root/.ssh")?;
+    let ssh_dir = format!("{}/.ssh", crate::seat::HOME);
+    fs::create_dir_all(&ssh_dir)?;
     let mut body = String::new();
     for k in &desired.authorized {
         let k = k.trim();
@@ -32,8 +33,10 @@ pub fn converge(desired: &Ssh) -> Result<SshActual> {
         }
     }
     fs::write(AUTHORIZED, &body)?;
-    let _ = Command::new("/bin/chown").args(["-R", "0:0", "/root/.ssh"]).status();
-    let _ = Command::new("/bin/chmod").args(["700", "/root/.ssh"]).status();
+    let own = format!("{}:{}", crate::seat::UID, crate::seat::GID);
+    let _ = Command::new("/bin/chown").args(["-R", &own, crate::seat::HOME]).status();
+    let _ = Command::new("/bin/chmod").args(["755", crate::seat::HOME]).status();
+    let _ = Command::new("/bin/chmod").args(["700", &ssh_dir]).status();
     let _ = Command::new("/bin/chmod").args(["600", AUTHORIZED]).status();
     Ok(SshActual { authorized: desired.authorized.clone(), host_key: host.is_file() })
 }

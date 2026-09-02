@@ -19,9 +19,11 @@ fn main() {
         }
         std::mem::forget(f);
     }
-    let _ = writeln!(std::io::stderr(), "Oath. Root on serial. Try: oath");
+    let _ =
+        writeln!(std::io::stderr(), "Oath. Root on serial (break-glass). SSH is home. Try: oath");
     let _ = std::env::set_current_dir("/root");
-    let err = Command::new("/bin/busybox").args(["sh", "-l"]).exec();
+    let err =
+        Command::new("/bin/busybox").args(["sh"]).env("HOME", "/root").env("PS1", "/ # ").exec();
     eprintln!("exec sh: {err}");
     std::process::exit(1);
 }

@@ -349,12 +349,12 @@ patchelf_libexec() {
 }
 
 guest_env='export PATH=/bin
-export HOME=/root
+export HOME="${HOME:-/home}"
 export SHELL=/bin/sh
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
 export LOCALE_ARCHIVE=/oath/store/pkg/sola/lib/locale/locale-archive
-export XDG_RUNTIME_DIR=/run/user/0
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
 export XDG_CACHE_HOME=/tmp
 export SOLA_NO_SELF_WATCH=1
 export SOLA_LOG_DIR=/oath/log
@@ -376,7 +376,7 @@ export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export WGPU_BACKEND=gl
-[ -f /usr/lib/oath/display-env.sh ] && . /usr/lib/oath/display-env.sh
+[ -f /lib/oath/display-env.sh ] && . /lib/oath/display-env.sh
 # virtio-gpu lists 4K CVT modes; sola-river default is max ≥60Hz.
 export SOLA_OUTPUT_PICK=preferred'
 
@@ -396,7 +396,7 @@ for b in "${kit_bins[@]}"; do
   cat >"$out/bin/$b" <<WRAP
 #!/bin/sh
 $guest_env
-/bin/mkdir -p /tmp/fontconfig /oath/log /root/.local/share /root/.config
+/bin/mkdir -p /tmp/fontconfig /oath/log "\$HOME/.local/share" "\$HOME/.config"
 exec /oath/store/pkg/sola/libexec/$b "\$@" >>/oath/log/$b.log 2>&1
 WRAP
   chmod +x "$out/bin/$b"

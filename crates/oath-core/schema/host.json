@@ -16,6 +16,11 @@
       "type": "string",
       "enum": ["run", "reboot", "halt"],
       "description": "run is steady state. reboot and halt require --confirm on apply."
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Process environment PID 1 injects into svc spawn and login. Catalog is truth; /etc/profile is a side effect."
     }
   }
 }

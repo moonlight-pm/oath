@@ -149,14 +149,13 @@ impl ApplyHooks for Live {
     fn converge_host(&self, desired: &Host) -> Result<Host> {
         sethostname(desired.hostname.as_str())
             .map_err(|e| Error::Msg(format!("sethostname: {e}")))?;
-        let _ = fs::create_dir_all("/etc");
-        let _ = fs::write("/etc/hostname", format!("{}\n", desired.hostname));
-        let _ = fs::write(
-            "/etc/hosts",
-            format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", desired.hostname),
-        );
+        oath_core::seat::write_side_effects(desired)?;
         tel("oath", "hostname", json!({ "name": desired.hostname }));
-        Ok(Host { hostname: desired.hostname.clone(), power: HostPower::Run })
+        Ok(Host {
+            hostname: desired.hostname.clone(),
+            power: HostPower::Run,
+            env: desired.env.clone(),
+        })
     }
 
     fn notify_init(&self) -> Result<()> {

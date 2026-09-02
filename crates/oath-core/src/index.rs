@@ -45,8 +45,9 @@ pass `--confirm` unless the owner asked for that class of change.
 
 ## Where you are
 
-Serial console on the appliance. Root is the owner. The catalog lives
-at `/oath`.
+Serial is **root** (break-glass). SSH is **home** (`HOME=/home`).
+The catalog lives at `/oath`. Do not confuse `/home` (seat) with
+`/usr` (gone — helpers are `/lib/oath`).
 "#,
         index = cat.root().join("INDEX.md").display(),
         kinds = kinds_block.trim_end(),
@@ -55,12 +56,12 @@ at `/oath`.
 
 fn kind_line(kind: &str) -> &'static str {
     match kind {
-        "host" => "this machine (hostname, power)",
+        "host" => "this machine (hostname, power, env)",
         "svc" => "a process PID 1 supervises",
         "snap" => "btrfs generations (apply / undo)",
         "pkg" => "a package (store + /bin links)",
         "net" => "a network link (net0, static or dhcp)",
-        "ssh" => "owner SSH public keys (root / dropbear)",
+        "ssh" => "owner SSH public keys (home / dropbear)",
         "dev" => "a hardware device (inventory)",
         _ => "see schema",
     }

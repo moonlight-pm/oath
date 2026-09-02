@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,6 +30,9 @@ impl Meta {
 pub struct Host {
     pub hostname: String,
     pub power: HostPower,
+    /// Injected into every svc spawn; `/etc/profile` is a side effect.
+    #[serde(default)]
+    pub env: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

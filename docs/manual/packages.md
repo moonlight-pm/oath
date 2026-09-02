@@ -23,7 +23,7 @@ target. There is no `apt` and no `oath install`.
 is how you run what is installed.
 
 `present=false` on a non-removable package is **refused** (not
-`--confirm`). PID 1 stays at `/usr/lib/oath/init`; it is not a
+`--confirm`). PID 1 stays at `/lib/oath/init`; it is not a
 package.
 
 ## Install / remove

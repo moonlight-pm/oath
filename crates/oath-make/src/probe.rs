@@ -187,6 +187,10 @@ fn spawn_fetch_server(root: &Path) -> Option<std::thread::JoinHandle<()>> {
 }
 
 fn host_ssh(key: &Path, want_ok: bool) -> (bool, String) {
+    host_ssh_as(key, "home", "echo SSH_OK", want_ok)
+}
+
+fn host_ssh_as(key: &Path, user: &str, remote: &str, want_ok: bool) -> (bool, String) {
     let port = std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222u16);
     let tries = if want_ok { 10 } else { 2 };
     let mut last = String::new();
@@ -207,8 +211,8 @@ fn host_ssh(key: &Path, want_ok: bool) -> (bool, String) {
                 "ConnectTimeout=4",
                 "-o",
                 "BatchMode=yes",
-                "root@127.0.0.1",
-                "echo SSH_OK",
+                &format!("{user}@127.0.0.1"),
+                remote,
             ])
             .output();
         match o {
@@ -305,6 +309,30 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "oath get host:local",
         Some("hostname: \"oath\""),
         "get.initial",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "grep '^home:' /etc/passwd && test -d /home && echo SEAT_HOME",
+        Some("SEAT_HOME"),
+        "seat.passwd",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /lib/oath/init && test ! -e /usr/lib/oath/init && echo LIB_OATH",
+        Some("LIB_OATH"),
+        "seat.lib_oath",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "grep GROK_DISABLE_AUTOUPDATER /etc/profile && echo ENV_GROK",
+        Some("ENV_GROK"),
+        "seat.env",
         Duration::from_secs(8),
     )?;
     cmd(
@@ -454,7 +482,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -S /run/user/0/wayland-0 -o -S /run/user/0/wayland-1 && echo WAYLAND_UP",
+        "test -S /run/user/1000/wayland-0 -o -S /run/user/1000/wayland-1 && echo WAYLAND_UP",
         Some("WAYLAND_UP"),
         "river.wayland",
         Duration::from_secs(8),
@@ -510,7 +538,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -S /run/user/0/sola-bus && test -S /run/user/0/sola-call && echo SOLA_SOCK",
+        "test -S /run/user/1000/sola-bus && test -S /run/user/1000/sola-call && echo SOLA_SOCK",
         Some("SOLA_SOCK"),
         "sola.sockets",
         Duration::from_secs(8),
@@ -529,6 +557,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         "pidof sola-session >/dev/null && echo SOLA_SESSION",
         Some("SOLA_SESSION"),
         "sola.session",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "grep '^Uid:' /proc/$(pidof sola-session)/status | grep 1000 && echo SEAT_UID",
+        Some("SEAT_UID"),
+        "seat.session_uid",
         Duration::from_secs(8),
     )?;
     cmd(
@@ -736,7 +772,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "cat /root/.ssh/authorized_keys",
+        "cat /home/.ssh/authorized_keys",
         Some("ssh-ed25519"),
         "ssh.keys_file",
         Duration::from_secs(8),
@@ -744,6 +780,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     {
         let (ok, detail) = host_ssh(&key_path, true);
         record(&mut steps, "ssh.login", ok, &detail);
+    }
+    {
+        let (ok, detail) = host_ssh_as(&key_path, "root", "echo SSH_OK", false);
+        record(&mut steps, "ssh.root_denied", ok, &detail);
+    }
+    {
+        let (ok, detail) = host_ssh_as(&key_path, "home", "sudo id -u && echo SSH_OK", true);
+        record(&mut steps, "ssh.sudo", ok, &detail);
     }
     cmd(
         &mut vm,

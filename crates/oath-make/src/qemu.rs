@@ -320,7 +320,7 @@ pub fn ssh(out: &Path, extra: &[String]) -> Result<i32> {
         "UserKnownHostsFile=/dev/null",
         "-o",
         "GlobalKnownHostsFile=/dev/null",
-        "root@127.0.0.1",
+        "home@127.0.0.1",
     ])
     .args(extra)
     .stdin(Stdio::inherit())

@@ -98,7 +98,11 @@ impl ApplyHooks for NullHooks {
         Ok(())
     }
     fn converge_host(&self, desired: &Host) -> Result<Host> {
-        Ok(Host { hostname: desired.hostname.clone(), power: crate::kinds::HostPower::Run })
+        Ok(Host {
+            hostname: desired.hostname.clone(),
+            power: crate::kinds::HostPower::Run,
+            env: desired.env.clone(),
+        })
     }
     fn notify_init(&self) -> Result<()> {
         Ok(())

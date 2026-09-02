@@ -12,20 +12,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-**T31 — Seat user + catalog env (amends T9 / T16).** Open. Root
-owns `/oath/store` and `/bin`. Daily work (Sola, Workspaces, grok)
-must not be able to replace those bits. Ask before inventing:
-username / catalog shape, what runs as the seat, SSH vs root
-admin, whether `oath apply` is root-only, and `host:local` env
-(PID 1 injects `GROK_DISABLE_AUTOUPDATER` and other required
-variables into svc spawn + login). No new kind unless CURRENT
-says so.
-
-Closed recently: T22 libinput without udevd; T21 River-first; T23
-session stack; T24 development layout; T25 session manager; T26
-sola-terminal; T27 metal canary; T28 sola-browser; T29
-sola-workspaces; T30 `pkg:grok` (catalog owns the ELF; Grok does
-not self-update).
+None open. T31 seat `home` is closed (SSH `home`, serial root,
+sudo ALL no password, `HOME=/home`, `/lib/oath`, `host:local.env`).
+T30 `pkg:grok` identity closed. T29 sola-workspaces closed.
 
 ---
 
@@ -136,10 +125,11 @@ QEMU serial. SSH later.
 
 `x86_64` only in Phase 1.
 
-### T9 — Principal — locked 2026-08-27
+### T9 — Principal — locked 2026-08-27, amended T31 2026-09-02
 
-Root on serial is the owner. Agent is not a second Unix user. Log
-uid + tty.
+Serial is root (break-glass). Daily seat and SSH are Unix user
+`home` (uid 1000, `HOME=/home`). The agent is not a third Unix
+user. Log uid + tty.
 
 ### T10 — Confirm class — locked 2026-08-27
 
@@ -262,6 +252,13 @@ update Grok; check is `grok update --check`, change is apply.
 `$GROK_HOME` is user state, not the ELF. Not in `pkg:sola`. No
 `install.sh` on the guest. Seat user + catalog env are T31.
 
+### T31 — Seat `home` + catalog env + `/lib/oath` — locked 2026-09-02
+
+Unix name `home`, `HOME=/home`. Graphical stack as `home`. SSH
+`home` only; serial root. `sudo` ALL, no password. `host:local.env`
+(PID 1 injects; seed `GROK_DISABLE_AUTOUPDATER=1`). Helpers at
+`/lib/oath`. No `/usr`. No new kind.
+
 ---
 
 ## Decision log
@@ -288,3 +285,4 @@ update Grok; check is `grok update --check`, change is apply.
 | 2026-09-01 | T28 | sola-browser + CEF in pkg:sola; no pkg:cef | this file; [specs/2026-09-01-sola-browser.md](specs/2026-09-01-sola-browser.md) |
 | 2026-09-02 | T29 | sola-workspaces + solactl in pkg:sola; no git/grok | this file; [specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md) |
 | 2026-09-02 | T30 | pkg:grok catalog-owned; Grok does not self-update | this file; [specs/2026-09-02-pkg-grok.md](specs/2026-09-02-pkg-grok.md) |
+| 2026-09-02 | T31 | seat home; SSH home; sudo ALL nopass; /lib/oath; host.env | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |

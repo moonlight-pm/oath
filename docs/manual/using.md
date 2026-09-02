@@ -61,5 +61,6 @@ does not loop.
 
 ## Who you are
 
-Serial login is **root** (the owner). There is no second Unix user.
-The apply log records uid and tty.
+Serial login is **root** (break-glass). Daily SSH is **home**
+(`HOME=/home`). `sudo` (no password) becomes root. The apply log
+records uid and tty.

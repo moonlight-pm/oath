@@ -1,6 +1,6 @@
 # Services
 
-PID 1 is **oath-init** (`/usr/lib/oath/init`, also `/sbin/init`). It is
+PID 1 is **oath-init** (`/lib/oath/init`, also `/sbin/init`). It is
 not a catalog object. Every supervised process is a `svc:*` object.
 There is no unit file, no systemd, no `/etc/init.d`.
 
@@ -8,13 +8,13 @@ There is no unit file, no systemd, no `/etc/init.d`.
 
 | Id | Exec | Default | Notes |
 |----|------|---------|-------|
-| `svc:serial` | `/usr/lib/oath/serial-login` | enabled, `restart=always` | Root shell on serial (`ttyS0` / `hvc0`). It does not take the graphical VT; that stays on the boot mark. Do not disable it unless you have another console. |
+| `svc:serial` | `/lib/oath/serial-login` | enabled, `restart=always` | Root shell on serial (`ttyS0` / `hvc0`). It does not take the graphical VT; that stays on the boot mark. Do not disable it unless you have another console. |
 | `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless sleeper for start/stop. |
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. |
 | `svc:seatd` | `/bin/seatd` | enabled, `restart=always` | Seat for DRM. `svc:river` wants this. |
-| `svc:river` | `/usr/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river`: picks the DRM card with a connected connector (dual-GPU). Pixman. libinput via libudev-zero. |
-| `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/0/sola-bus`. |
-| `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/0/sola-call`. |
+| `svc:river` | `/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river` (runs as `home`): picks the DRM card with a connected connector (dual-GPU). Pixman. libinput via libudev-zero. |
+| `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/1000/sola-bus`. |
+| `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/1000/sola-call`. |
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |
 | `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher / window menu / Super+K shortcuts. Wants river + bus + call + the bridge. wgpu/gl; llvmpipe only on virtio KMS. |
 | `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). Kit apps in `pkg:sola`: `/bin/sola-terminal` (tmux), `/bin/sola-browser` (CEF), `/bin/sola-workspaces` (`solactl` helper). |

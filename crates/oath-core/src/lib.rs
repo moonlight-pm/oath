@@ -10,6 +10,7 @@ mod kinds;
 mod layout;
 mod net;
 mod pkg;
+pub mod seat;
 mod seed;
 mod ssh;
 mod svc_order;

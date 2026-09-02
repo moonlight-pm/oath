@@ -25,16 +25,20 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is card-sized (Sola `f8ff7871`). **T29:** `/bin/sola-workspaces` +
    `/bin/solactl` on canto (no git/grok yet). **T30:** `pkg:grok`
    identity locked (catalog owns the ELF; Grok does not self-update).
-   Packing waits on **T31** (seat user + catalog env — ask, amends
-   T9). Or amdgpu accel / remaining kit.
-2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
+   **T31** seat `home` + `/lib/oath` + `host:local.env` **QEMU probe
+   green.** Canto still the previous image (`ssh root@canto`) until
+   rebuild/install (`ssh home@canto` then). Next: pack `pkg:grok`,
+   or install T31 on canto, or amdgpu accel / remaining kit.
+2. **T27 metal canary is in.** `ssh root@canto` (pre-T31 image).
+   After T31 install: `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto (no git/grok). Other kit apps still out.
 4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. Git/grok/rustc still host-side.
-   **T30** grok identity locked; ELF not packed. **T31** seat+env open.
+   **T30** grok identity locked; ELF not packed. **T31** seat `home`
+   locked (SSH home, serial root, sudo ALL no password, `/lib/oath`).
 5. **T20 hosting locked**, not implemented.
 6. Do not add a throwaway compositor. glibc runtime is allowed
    **only** as `pkg:glibc` for this payload (never in PID 1). No
@@ -72,8 +76,10 @@ Do not re-litigate without an explicit decision.
   `@gen-N` at `/oath/run/fs`.
 - Network: `net:net0` renamed NIC. Default static slirp
   `10.0.2.15/24`. `ipv4=dhcp` via udhcpc. `OATH_BRIDGE` optional.
-- SSH: root, dropbear, **no baked private key**. Host keys under
-  `/oath/ssh/`. Owner pubkeys in `ssh:local`. Serial still works.
+- SSH: **home** only, dropbear `-w`, **no baked private key**. Host
+  keys under `/oath/ssh/`. Owner pubkeys in `ssh:local` →
+  `/home/.ssh/authorized_keys`. Serial is root. `home` has `sudo`
+  ALL, no password. Unix name `home`, uid 1000, `HOME=/home`.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
@@ -94,7 +100,7 @@ Do not re-litigate without an explicit decision.
   (native GOP, white mark on black); Linux does not paint fb.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 + T25 (`pkg:sola` + `svc:sola-bus` /
-  `call` / `river` / `shell` / `session`). First kit app is T26
+  `call` / `river` / `shell` / `session`; graphical stack as `home`). First kit app is T26
   (`/bin/sola-terminal` + tmux in that blob). T28 is `/bin/sola-browser`
   + CEF in the same blob. T29 is `/bin/sola-workspaces` + `solactl`
   in the same blob (no git/grok yet). **T30:** `pkg:grok` is the
@@ -118,8 +124,10 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-02-pkg-grok.md](docs/specs/2026-09-02-pkg-grok.md)
-  (T30 `pkg:grok` identity). T29:
+- Freeze: [docs/specs/2026-09-02-seat-home.md](docs/specs/2026-09-02-seat-home.md)
+  (T31 seat `home` + `/lib/oath` + env). T30:
+  [docs/specs/2026-09-02-pkg-grok.md](docs/specs/2026-09-02-pkg-grok.md)
+  (`pkg:grok` identity). T29:
   [docs/specs/2026-09-02-sola-workspaces.md](docs/specs/2026-09-02-sola-workspaces.md)
   (sola-workspaces). T28:
   [docs/specs/2026-09-01-sola-browser.md](docs/specs/2026-09-01-sola-browser.md)

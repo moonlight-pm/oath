@@ -500,7 +500,7 @@ mount --bind /esp /mnt/boot
     }
     ssh_run(
         r,
-        "/bin/busybox chown -R 0:0 /mnt && /bin/busybox chmod 755 /mnt && /bin/busybox chmod 700 /mnt/root && /bin/busybox mkdir -p /mnt/root/.ssh && /bin/busybox chmod 700 /mnt/root/.ssh",
+        "/bin/busybox chown -R 0:0 /mnt && /bin/busybox chmod 755 /mnt && /bin/busybox chmod 700 /mnt/root && /bin/busybox mkdir -p /mnt/root/.ssh /mnt/home/.ssh && /bin/busybox chown -R 1000:1000 /mnt/home && /bin/busybox chmod 755 /mnt/home && /bin/busybox chmod 700 /mnt/home/.ssh && /bin/busybox chmod 4755 /mnt/lib/oath/sudo",
     )?;
 
     patch_catalog(out, opts, &hostname, r)?;
@@ -533,7 +533,9 @@ mount --bind /esp /mnt/boot
 
 fn patch_catalog(out: &Path, opts: &Opts, hostname: &str, r: &Remote) -> Result<()> {
     // Hostname + dhcp on the installed catalog. Keys already in desired via tar + extra write.
-    let host_json = format!(r#"{{"hostname":"{hostname}","power":"run"}}"#);
+    let host_json = format!(
+        r#"{{"hostname":"{hostname}","power":"run","env":{{"GROK_DISABLE_AUTOUPDATER":"1"}}}}"#
+    );
     let net_json = r#"{"up":true,"ipv4":"dhcp","gateway":"","lease":null}"#;
     ssh_run(
         r,

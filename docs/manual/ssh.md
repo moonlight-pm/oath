@@ -1,11 +1,12 @@
 # SSH
 
-Root SSH is the owner over the network. Serial is still the console.
-There is **no password** and **no private key in the image**.
+SSH login is **home**. Root SSH is denied. Serial is still the
+root console. There is **no password** and **no private key in the
+image**.
 
 Host keys are generated on first boot under `/oath/ssh/`. Login keys
 are `ssh:local` `authorized` (OpenSSH public key lines). Apply writes
-`/root/.ssh/authorized_keys`.
+`/home/.ssh/authorized_keys`.
 
 `svc:sshd` is dropbear (`pkg:dropbear`, not removable).
 
@@ -25,6 +26,7 @@ into the image.
 cargo make up          # another terminal:
 cargo make ssh
 cargo make ssh -- -i ~/.ssh/id_ed25519
+# guest user is home; sudo has no password
 ```
 
 Port: `OATH_SSH_PORT` (default 2222), forwarded to guest 22.

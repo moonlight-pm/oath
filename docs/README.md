@@ -57,6 +57,7 @@ ask the human.
 | [`specs/2026-09-01-sola-browser.md`](specs/2026-09-01-sola-browser.md) | T28 sola-browser + CEF | **Target** (shipped; canto) |
 | [`specs/2026-09-02-sola-workspaces.md`](specs/2026-09-02-sola-workspaces.md) | T29 sola-workspaces + solactl | **Target** (shipped; canto; no git/grok) |
 | [`specs/2026-09-02-pkg-grok.md`](specs/2026-09-02-pkg-grok.md) | T30 `pkg:grok` (vendor-updating pkgs) | **Target** (identity; ELF not packed) |
+| [`specs/2026-09-02-seat-home.md`](specs/2026-09-02-seat-home.md) | T31 seat `home` + `/lib/oath` + env | **Target** (QEMU probe; canto until reinstall) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

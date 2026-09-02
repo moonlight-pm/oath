@@ -105,7 +105,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         "uefi-app",
     ]))?;
     let bin = root.join("target/x86_64-unknown-linux-musl/release");
-    for n in ["oath", "oath-init", "serial-login"] {
+    for n in ["oath", "oath-init", "serial-login", "sudo"] {
         if !bin.join(n).is_file() {
             bail!("missing {n}");
         }
@@ -210,9 +210,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     } else if let Some(boot) = &tools.systemd_boot {
         copy_file(boot, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
     }
-    fs::create_dir_all(ir_install.join("usr/lib/oath"))?;
-    fs::write(ir_install.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
-    chmod_exec(&ir_install.join("usr/lib/oath/udhcpc.script"))?;
+    fs::create_dir_all(ir_install.join("lib/oath"))?;
+    fs::write(ir_install.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
+    chmod_exec(&ir_install.join("lib/oath/udhcpc.script"))?;
     for a in [
         "ip",
         "udhcpc",
@@ -240,41 +240,45 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     let stage = out.join("stage");
     let _ = fs::remove_dir_all(&stage);
     for d in [
-        "bin",
-        "sbin",
-        "usr/lib/oath",
-        "etc",
-        "root",
-        "tmp",
-        "proc",
-        "sys",
-        "dev",
-        "run",
-        "oath",
-        "lib",
+        "bin", "sbin", "lib/oath", "etc", "root", "home", "tmp", "proc", "sys", "dev", "run",
+        "oath", "lib",
     ] {
         fs::create_dir_all(stage.join(d))?;
     }
-    copy_file(&bin.join("oath-init"), &stage.join("usr/lib/oath/init"))?;
-    copy_file(&bin.join("serial-login"), &stage.join("usr/lib/oath/serial-login"))?;
-    fs::write(stage.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
-    fs::write(stage.join("usr/lib/oath/run-compositor"), include_str!("run-compositor"))?;
-    fs::write(stage.join("usr/lib/oath/river-boot"), include_str!("river-boot"))?;
-    fs::write(stage.join("usr/lib/oath/display-env.sh"), include_str!("display-env.sh"))?;
-    chmod_exec(&stage.join("usr/lib/oath/init"))?;
-    chmod_exec(&stage.join("usr/lib/oath/serial-login"))?;
-    chmod_exec(&stage.join("usr/lib/oath/udhcpc.script"))?;
-    chmod_exec(&stage.join("usr/lib/oath/run-compositor"))?;
-    chmod_exec(&stage.join("usr/lib/oath/river-boot"))?;
+    copy_file(&bin.join("oath-init"), &stage.join("lib/oath/init"))?;
+    copy_file(&bin.join("serial-login"), &stage.join("lib/oath/serial-login"))?;
+    copy_file(&bin.join("sudo"), &stage.join("lib/oath/sudo"))?;
+    fs::write(stage.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
+    fs::write(stage.join("lib/oath/run-compositor"), include_str!("run-compositor"))?;
+    fs::write(stage.join("lib/oath/river-boot"), include_str!("river-boot"))?;
+    fs::write(stage.join("lib/oath/display-env.sh"), include_str!("display-env.sh"))?;
+    chmod_exec(&stage.join("lib/oath/init"))?;
+    chmod_exec(&stage.join("lib/oath/serial-login"))?;
+    chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
+    chmod_exec(&stage.join("lib/oath/run-compositor"))?;
+    chmod_exec(&stage.join("lib/oath/river-boot"))?;
+    fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
-    symlink("../usr/lib/oath/init", stage.join("sbin/init"))?;
-    fs::write(stage.join("etc/passwd"), "root:x:0:0:root:/root:/bin/sh\n")?;
-    fs::write(stage.join("etc/group"), "root:x:0:\n")?;
-    fs::write(stage.join("etc/shadow"), "root:*:1:0:99999:7:::\n")?;
+    symlink("../lib/oath/init", stage.join("sbin/init"))?;
+    let _ = fs::remove_file(stage.join("bin/sudo"));
+    symlink("../lib/oath/sudo", stage.join("bin/sudo"))?;
+    fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
+    fs::write(stage.join("etc/group"), oath_core::seat::group_file())?;
+    fs::write(stage.join("etc/shadow"), oath_core::seat::shadow_file())?;
     fs::write(stage.join("etc/nsswitch.conf"), "passwd: files\ngroup: files\nshadow: files\n")?;
     fs::write(stage.join("etc/hosts"), "127.0.0.1 localhost\n::1 localhost\n127.0.1.1 oath\n")?;
+    fs::write(
+        stage.join("etc/profile"),
+        oath_core::seat::profile_body(&{
+            let mut m = std::collections::BTreeMap::new();
+            m.insert("GROK_DISABLE_AUTOUPDATER".into(), "1".into());
+            m
+        }),
+    )?;
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("root/.ssh"))?;
+    fs::create_dir_all(stage.join("home/.ssh"))?;
+    fs::write(stage.join("home/.profile"), fs::read_to_string(stage.join("etc/profile"))?)?;
     run(Command::new(bin.join("oath")).args([
         "--root",
         stage.join("oath").to_str().unwrap(),
@@ -355,6 +359,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         let stage_dot = format!("{}/.", stage.display());
         sudo(&["cp", "-a", &stage_dot, &format!("{}/", rootfs.display())])?;
         sudo(&["chown", "-R", "0:0", rootfs.to_str().unwrap()])?;
+        sudo(&[
+            "chown",
+            "-R",
+            &format!("{}:{}", oath_core::seat::UID, oath_core::seat::GID),
+            rootfs.join("home").to_str().unwrap(),
+        ])?;
+        sudo(&["chmod", "4755", rootfs.join("lib/oath/sudo").to_str().unwrap()])?;
         sudo(&[umount.as_str(), rootfs.to_str().unwrap()])?;
         Ok(())
     })();
@@ -389,7 +400,8 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
     chmod_exec(&dir.join("busybox"))?;
     let list = crate::util::run_out(Command::new(busybox).arg("--list"))?;
     for a in list.split_whitespace() {
-        if matches!(a, "busybox" | "hello" | "btrfs" | "oath" | "dropbear" | "dropbearkey") {
+        if matches!(a, "busybox" | "hello" | "btrfs" | "oath" | "dropbear" | "dropbearkey" | "sudo")
+        {
             continue;
         }
         let dest = dir.join(a);

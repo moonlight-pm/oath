@@ -135,9 +135,11 @@ fn real_main() -> Result<(), String> {
     apply_host();
     apply_net();
     apply_dev();
+    ensure_seat();
     inject_ssh_from_host();
     apply_ssh();
     load_modules(false);
+    oath_core::seat::open_device_nodes();
     hold_graphics();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     converge(&mut kids);
@@ -369,7 +371,7 @@ fn bring_up_install_net() {
             "-q",
             "-f",
             "-s",
-            "/usr/lib/oath/udhcpc.script",
+            "/lib/oath/udhcpc.script",
             "-T",
             "2",
             "-t",
@@ -677,7 +679,8 @@ fn apply_host() {
         "/etc/hosts",
         format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", host.hostname),
     );
-    let actual = Host { hostname: host.hostname, power: oath_core::HostPower::Run };
+    let _ = oath_core::seat::write_side_effects(&host);
+    let actual = Host { hostname: host.hostname, power: oath_core::HostPower::Run, env: host.env };
     let dir = Path::new(DEFAULT_ROOT).join("objects/host/local");
     let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
     let _ = cat.write_index();
@@ -856,7 +859,7 @@ fn converge(kids: &mut HashMap<i32, Kid>) {
         if pid_for(kids, id).is_some() {
             continue;
         }
-        match spawn(spec) {
+        match spawn(id, spec) {
             Ok(pid) => {
                 tel("init", "svc_start", json!({ "id": id, "pid": pid.as_raw() }));
                 write_svc_actual(&oid, "running", Some(pid.as_raw()), 0);
@@ -880,27 +883,105 @@ fn converge(kids: &mut HashMap<i32, Kid>) {
     }
 }
 
-fn spawn(spec: &Svc) -> Result<Pid, String> {
+fn host_env() -> Vec<(String, String)> {
+    let cat = Catalog::open(DEFAULT_ROOT).ok();
+    let Some(cat) = cat else { return Vec::new() };
+    let id = ObjectId::new("host", "local");
+    let Ok(obj) = cat.get(&id) else { return Vec::new() };
+    let Ok(host) = serde_json::from_value::<Host>(obj.desired) else {
+        return Vec::new();
+    };
+    host.env
+        .into_iter()
+        .filter(|(k, v)| oath_core::seat::valid_env_name(k) && !v.contains('\n'))
+        .collect()
+}
+
+fn ensure_seat() {
+    use oath_core::seat;
+    let home = Path::new(seat::HOME);
+    let ssh = home.join(".ssh");
+    let xdg = format!("/run/user/{}", seat::UID);
+    let _ = fs::create_dir_all(home);
+    let _ = fs::create_dir_all(&ssh);
+    let _ = fs::create_dir_all(&xdg);
+    let _ = fs::create_dir_all("/oath/log");
+    let own = format!("{}:{}", seat::UID, seat::GID);
+    let _ = Command::new("/bin/chown").args(["-R", &own, seat::HOME]).status();
+    let _ = Command::new("/bin/chmod").args(["755", seat::HOME]).status();
+    let _ = Command::new("/bin/chmod").args(["700", &ssh.to_string_lossy()]).status();
+    let _ = Command::new("/bin/chown").args([&own, &xdg]).status();
+    let _ = Command::new("/bin/chmod").args(["700", &xdg]).status();
+    let _ = fs::set_permissions("/oath/log", fs::Permissions::from_mode(0o1777));
+}
+
+fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
+    let seat = oath_core::seat::is_seat_svc(id)
+        || spec.exec.iter().any(|a| {
+            a.contains("run-compositor") || a.contains("/bin/sola-") || a.contains("sola-")
+        });
     let mut cmd = Command::new(&spec.exec[0]);
     if spec.exec.len() > 1 {
         cmd.args(&spec.exec[1..]);
     }
-    let _ = fs::create_dir_all("/run/user/0");
+    let (home, xdg, user) = if seat {
+        (
+            oath_core::seat::HOME,
+            format!("/run/user/{}", oath_core::seat::UID),
+            oath_core::seat::NAME,
+        )
+    } else {
+        ("/root", "/run/user/0".into(), "root")
+    };
+    let _ = fs::create_dir_all(&xdg);
+    if seat {
+        let own = format!("{}:{}", oath_core::seat::UID, oath_core::seat::GID);
+        let _ = Command::new("/bin/chown").args([&own, &xdg]).status();
+        let _ = Command::new("/bin/chmod").args(["700", xdg.as_str()]).status();
+        oath_core::seat::open_device_nodes();
+    }
     cmd.env("PATH", "/bin")
-        .env("HOME", "/root")
-        .env("XDG_RUNTIME_DIR", "/run/user/0")
-        .env("SOLA_NO_SELF_WATCH", "1")
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit());
+        .env("HOME", home)
+        .env("USER", user)
+        .env("LOGNAME", user)
+        .env("SHELL", "/bin/sh")
+        .env("PS1", "/ # ")
+        .env("XDG_RUNTIME_DIR", &xdg)
+        .env("SOLA_NO_SELF_WATCH", "1");
+    for (k, v) in host_env() {
+        cmd.env(k, v);
+    }
+    cmd.stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
+    let drop_priv = seat;
     unsafe {
-        cmd.pre_exec(|| {
-            // new session; serial-login takes the tty
+        cmd.pre_exec(move || {
             libc::setsid();
+            if drop_priv {
+                let gids: [libc::gid_t; 4] = [
+                    oath_core::seat::GID,
+                    oath_core::seat::GROUP_SEAT,
+                    oath_core::seat::GROUP_VIDEO,
+                    oath_core::seat::GROUP_INPUT,
+                ];
+                if libc::setgroups(gids.len() as libc::size_t, gids.as_ptr()) != 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                if libc::setgid(oath_core::seat::GID) != 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                if libc::setuid(oath_core::seat::UID) != 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+            }
             Ok(())
         });
     }
     let child = cmd.spawn().map_err(|e| e.to_string())?;
+    tel(
+        "init",
+        "svc_spawn",
+        json!({ "id": id, "seat": seat, "uid": if seat { oath_core::seat::UID } else { 0 } }),
+    );
     Ok(Pid::from_raw(child.id() as i32))
 }
 
@@ -923,7 +1004,7 @@ fn reap(kids: &mut HashMap<i32, Kid>) {
         let id: ObjectId = k.id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
         if restart {
             std::thread::sleep(Duration::from_millis(200));
-            if let Ok(npid) = spawn(&k.spec) {
+            if let Ok(npid) = spawn(&k.id, &k.spec) {
                 write_svc_actual(&id, "running", Some(npid.as_raw()), 1);
                 kids.insert(npid.as_raw(), Kid { id: k.id, spec: k.spec });
             }
