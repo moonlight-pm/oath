@@ -39,10 +39,12 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
     seatd              svc:seatd (DRM seat)
-    river              svc:river (glibc, pixman, libudev-zero, socket /run/user/0)
+    river              svc:river (glibc, pixman, libudev-zero, socket /run/user/0;
+                       hardware cursors unless a DRM card is virtio)
     sola-bus/call      svc:sola-bus / svc:sola-call (sockets /run/user/0)
     sola-river         svc:sola-river (bridge, not the compositor)
-    sola-shell         svc:sola-shell (iced menubar; software GL; McMojave)
+    sola-shell         svc:sola-shell (iced menubar; wgpu/gl; llvmpipe forced
+                       only on virtio KMS; McMojave)
     sola-session       svc:sola-session (LaunchApp; direct spawn)
     sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)

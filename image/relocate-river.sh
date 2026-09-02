@@ -197,8 +197,8 @@ export WLR_RENDERER=pixman
 export WLR_RENDERER_ALLOW_SOFTWARE=1
 # No udevd: libudev-zero + wlroots path fallback on /dev/input/event*.
 export LIBINPUT_QUIRKS_DIR=/oath/store/pkg/river/share/libinput
-# virtio-gpu often has no hardware cursor plane; pixman still draws software.
-export WLR_NO_HARDWARE_CURSORS=1
+# SW cursor / llvmpipe only when a DRM card is virtio (not merely the module).
+[ -f /usr/lib/oath/display-env.sh ] && . /usr/lib/oath/display-env.sh
 export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
 export XCURSOR_THEME=McMojave
 unset WAYLAND_DISPLAY

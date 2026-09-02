@@ -258,6 +258,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("usr/lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     fs::write(stage.join("usr/lib/oath/run-compositor"), include_str!("run-compositor"))?;
     fs::write(stage.join("usr/lib/oath/river-boot"), include_str!("river-boot"))?;
+    fs::write(stage.join("usr/lib/oath/display-env.sh"), include_str!("display-env.sh"))?;
     chmod_exec(&stage.join("usr/lib/oath/init"))?;
     chmod_exec(&stage.join("usr/lib/oath/serial-login"))?;
     chmod_exec(&stage.join("usr/lib/oath/udhcpc.script"))?;

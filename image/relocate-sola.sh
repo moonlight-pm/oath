@@ -376,7 +376,7 @@ export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export WGPU_BACKEND=gl
-export LIBGL_ALWAYS_SOFTWARE=1
+[ -f /usr/lib/oath/display-env.sh ] && . /usr/lib/oath/display-env.sh
 # virtio-gpu lists 4K CVT modes; sola-river default is max ≥60Hz.
 export SOLA_OUTPUT_PICK=preferred'
 
