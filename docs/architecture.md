@@ -48,6 +48,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-session       svc:sola-session (LaunchApp; direct spawn)
     sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
+    sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
+    solactl            /bin/solactl (call-plane CLI in pkg:sola)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     /sbin/init -> ../usr/lib/oath/init
 ```

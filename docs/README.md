@@ -55,6 +55,7 @@ ask the human.
 | [`specs/2026-08-31-sola-terminal.md`](specs/2026-08-31-sola-terminal.md) | T26 sola-terminal | **Target** (first kit app) |
 | [`specs/2026-08-31-metal-canto.md`](specs/2026-08-31-metal-canto.md) | T27 canto metal canary | **Target** (partial; EFI/USB) |
 | [`specs/2026-09-01-sola-browser.md`](specs/2026-09-01-sola-browser.md) | T28 sola-browser + CEF | **Target** (shipped; canto) |
+| [`specs/2026-09-02-sola-workspaces.md`](specs/2026-09-02-sola-workspaces.md) | T29 sola-workspaces + solactl | **Target** (shipped; canto; no git/grok) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

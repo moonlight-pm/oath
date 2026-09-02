@@ -22,13 +22,15 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is one stack, not every machine. SI still flashes on KMS bind.
    Virtio SW cursor / `LIBGL_ALWAYS_SOFTWARE` only when a DRM card is
    virtio — Canto uses hardware cursors (sola-scope). Super+K overlay
-   is card-sized (Sola `f8ff7871`). Next: kit apps / amdgpu accel / T24.
+   is card-sized (Sola `f8ff7871`). **T29:** `/bin/sola-workspaces` +
+   `/bin/solactl` on canto (no git/grok yet). Next: git/grok on the
+   guest, or amdgpu accel / remaining kit.
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). Other kit apps still out.
-4. **T24 locked**, not implemented (Oath-as-dev-host). Develop Sola
-   on Nix until Oath is the host.
+4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
+   **started**: Workspaces ELF is on canto. Git/grok/rustc still host-side.
 5. **T20 hosting locked**, not implemented.
 6. Do not add a throwaway compositor. glibc runtime is allowed
    **only** as `pkg:glibc` for this payload (never in PID 1). No
@@ -45,7 +47,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh root@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). `sola-browser` packs on next `cargo make build`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman compositor, **hardware cursors**, no `LIBGL_ALWAYS_SOFTWARE`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64); systemd-boot kept as fallback. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman compositor, **hardware cursors**, no `LIBGL_ALWAYS_SOFTWARE`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` live (no git/grok). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
 
 ```sh
 nix-shell

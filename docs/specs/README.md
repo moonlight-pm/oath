@@ -24,6 +24,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-31-sola-terminal.md](2026-08-31-sola-terminal.md) | T26: first kit app (`sola-terminal` + tmux) |
 | [2026-08-31-metal-canto.md](2026-08-31-metal-canto.md) | T27: canto metal canary (SSH+kexec) |
 | [2026-09-01-sola-browser.md](2026-09-01-sola-browser.md) | T28: `sola-browser` + CEF in `pkg:sola` |
+| [2026-09-02-sola-workspaces.md](2026-09-02-sola-workspaces.md) | T29: `sola-workspaces` + `solactl` in `pkg:sola` |
 
 No open plan (see root [`CURRENT.md`](../../CURRENT.md)). Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),

@@ -73,6 +73,8 @@ const SOLA_KIT_ELFS: &[&str] = &[
     "sola-session",
     "sola-terminal",
     "sola-browser",
+    "sola-workspaces",
+    "solactl",
 ];
 
 pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {

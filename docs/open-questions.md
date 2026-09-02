@@ -21,7 +21,8 @@ T25 session manager is closed (`svc:sola-session` in that blob).
 T26 sola-terminal is closed (sixth ELF + tmux helper in `pkg:sola`).
 T27 metal canary is closed (canto; SSH+kexec; QEMU probe stays).
 T28 sola-browser is closed (seventh ELF + CEF helper in `pkg:sola`;
-no dbus-daemon; no `pkg:cef`).
+no dbus-daemon; no `pkg:cef`). T29 sola-workspaces is closed
+(eighth ELF + `solactl` in `pkg:sola`; no git/grok yet).
 
 ---
 
@@ -241,9 +242,15 @@ PID 1 does not supervise it. Other kit apps still out.
 
 Development versions are package generations of the real objects
 (apply / undo). No second PATH, no `/opt/sola` on Oath, no
-`pkg:sola-dev`, no nested PM. Keep one `pkg:sola` blob. Develop
-Sola on Nix until Oath is the host; re-address then. Dual-mode
-seat in `oath-sola`.
+`pkg:sola-dev`, no nested PM. Keep one `pkg:sola` blob. Dual-mode
+seat in `oath-sola`. Oath-as-dev-host **started** with T29
+(Workspaces ELF on canto); git/grok/rustc still host-side.
+
+### T29 — Kit workspaces (`sola-workspaces`) — locked 2026-09-02
+
+`sola-workspaces` is the eighth ELF in the one `pkg:sola` blob, with
+`solactl` as a helper in that same tree. Not a new kind. Not a `svc`.
+PID 1 does not supervise it. git/grok not in this slice.
 
 ---
 
@@ -268,3 +275,5 @@ seat in `oath-sola`.
 | 2026-08-31 | T25 | sola-session as svc; LaunchApp owner; still one sola blob | this file; [specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md) |
 | 2026-08-31 | T26 | sola-terminal + tmux in pkg:sola; no new kind | this file; [specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md) |
 | 2026-08-31 | T27 | canto metal canary; SSH+kexec; QEMU probe stays | this file; [specs/2026-08-31-metal-canto.md](specs/2026-08-31-metal-canto.md) |
+| 2026-09-01 | T28 | sola-browser + CEF in pkg:sola; no pkg:cef | this file; [specs/2026-09-01-sola-browser.md](specs/2026-09-01-sola-browser.md) |
+| 2026-09-02 | T29 | sola-workspaces + solactl in pkg:sola; no git/grok | this file; [specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md) |

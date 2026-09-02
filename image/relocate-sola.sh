@@ -63,7 +63,7 @@ enqueue() {
   queue+=("$real")
 }
 
-kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal sola-browser)
+kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal sola-browser sola-workspaces solactl)
 for b in "${kit_bins[@]}"; do
   src="${SOLA_BINS:?}/$b"
   [[ -f $src ]] || { echo "relocate-sola: missing $src" >&2; exit 1; }
@@ -411,6 +411,14 @@ $guest_env
 exec /oath/store/pkg/sola/libexec/tmux "\$@"
 WRAP
 chmod +x "$out/bin/tmux"
+
+# solactl is a CLI — stdout is the product, not a log.
+cat >"$out/bin/solactl" <<WRAP
+#!/bin/sh
+$guest_env
+exec /oath/store/pkg/sola/libexec/solactl "\$@"
+WRAP
+chmod +x "$out/bin/solactl"
 
 for b in "${kit_bins[@]}" tmux; do
   [[ -x $out/libexec/$b ]] || { echo "relocate-sola: missing libexec/$b" >&2; exit 1; }
