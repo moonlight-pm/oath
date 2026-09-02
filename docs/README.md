@@ -50,7 +50,7 @@ ask the human.
 | [`specs/2026-08-30-sola.md`](specs/2026-08-30-sola.md) | T21 Sola on Oath, River first | **Target** (River/seatd in) |
 | [`specs/2026-08-30-libinput.md`](specs/2026-08-30-libinput.md) | T22 libinput without udev | **Target** (shipped) |
 | [`specs/2026-08-30-oath-sola.md`](specs/2026-08-30-oath-sola.md) | T23 Sola session on Oath | **Target** (session stack) |
-| [`specs/2026-08-31-sola-dev.md`](specs/2026-08-31-sola-dev.md) | T24 Sola/app development layout | **Target** (identity; Nix host) |
+| [`specs/2026-08-31-sola-dev.md`](specs/2026-08-31-sola-dev.md) | T24 Sola/app development layout | **Target** (identity; Oath-as-dev-host started) |
 | [`specs/2026-08-31-sola-session.md`](specs/2026-08-31-sola-session.md) | T25 sola-session as `svc` | **Target** (session manager) |
 | [`specs/2026-08-31-sola-terminal.md`](specs/2026-08-31-sola-terminal.md) | T26 sola-terminal | **Target** (first kit app) |
 | [`specs/2026-08-31-metal-canto.md`](specs/2026-08-31-metal-canto.md) | T27 canto metal canary | **Target** (partial; EFI/USB) |

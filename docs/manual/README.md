@@ -26,8 +26,8 @@ that are not there.
 
 ## What this is not
 
-Sola terminal and browser are packed; other kit apps (mail,
-wrapper, settings, …) are not. Packages: sealed
+Sola terminal, browser, and workspaces (`solactl`) are packed;
+other kit apps (mail, wrapper, settings, …) are not. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
 `sola`, `hello`, and `fetchme`. `svc:seatd` + `svc:river` is the
 compositor (libinput via libudev-zero; no udevd). `svc:sola-bus` /

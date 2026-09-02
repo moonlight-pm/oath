@@ -3,9 +3,9 @@
 **Implementation:** shipped (seventh ELF + CEF helper in `pkg:sola`)
 **Dogfood:** canto live (`/bin/sola-browser`, CEF zygote + network
 service; helper ready). QEMU probe after next `cargo make build`.
-**Gaps:** `sola-wrapper` out; no dbus-daemon; software GL / SwiftShader;
-Oath-as-dev-host is T24; xkb compose locale still C.UTF-8 (XCOMPOSEFILE
-+ river `XKB_CONFIG_ROOT`)
+**Gaps:** `sola-wrapper` out; workspaces is T29; no dbus-daemon;
+software GL / SwiftShader; Oath-as-dev-host is T24; xkb compose locale
+still C.UTF-8 (XCOMPOSEFILE + river `XKB_CONFIG_ROOT`)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Kit browser on Oath (`sola-browser`)

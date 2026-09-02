@@ -16,7 +16,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/0/sola-bus`. |
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/0/sola-call`. |
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |
-| `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher / window menu / Super+K shortcuts. Wants river + bus + call + the bridge. Software GL. |
+| `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher / window menu / Super+K shortcuts. Wants river + bus + call + the bridge. wgpu/gl; llvmpipe only on virtio KMS. |
 | `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). Kit apps in `pkg:sola`: `/bin/sola-terminal` (tmux), `/bin/sola-browser` (CEF), `/bin/sola-workspaces` (`solactl` helper). |
 
 **Quit Sola** (flower menu) broadcasts shutdown and the session processes

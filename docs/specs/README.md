@@ -19,7 +19,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-08-30-sola.md](2026-08-30-sola.md) | T21: Sola on Oath, River first |
 | [2026-08-30-libinput.md](2026-08-30-libinput.md) | T22: libinput via libudev-zero, no udevd |
 | [2026-08-30-oath-sola.md](2026-08-30-oath-sola.md) | T23: Sola session on Oath (`oath-sola`) |
-| [2026-08-31-sola-dev.md](2026-08-31-sola-dev.md) | T24: Sola/app development layout (Nix host until Oath is) |
+| [2026-08-31-sola-dev.md](2026-08-31-sola-dev.md) | T24: Sola/app development layout (Oath-as-dev-host started; inner loop still Nix) |
 | [2026-08-31-sola-session.md](2026-08-31-sola-session.md) | T25: `svc:sola-session` LaunchApp owner |
 | [2026-08-31-sola-terminal.md](2026-08-31-sola-terminal.md) | T26: first kit app (`sola-terminal` + tmux) |
 | [2026-08-31-metal-canto.md](2026-08-31-metal-canto.md) | T27: canto metal canary (SSH+kexec) |

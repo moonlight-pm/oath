@@ -88,4 +88,5 @@ Apple is still a gap. QEMU probe stays.
 - Bare-metal diversity
 - A graphical session (display canary + T21 River as `svc` + T22
   input + T23 session stack + T25 session manager + T26
-  sola-terminal + T28 sola-browser; other kit apps not)
+  sola-terminal + T28 sola-browser + T29 sola-workspaces; other kit
+  apps not)

@@ -3,8 +3,8 @@
 **Implementation:** shipped (session manager)
 **Dogfood:** QEMU probe `sola.session` (2026-08-31)
 **Gaps:** other kit apps still out (mail, wrapper, settings, …);
-terminal is T26; browser is T28; no dbus-daemon; software GL;
-Oath-as-dev-host is T24
+terminal is T26; browser is T28; workspaces is T29; no dbus-daemon;
+software GL; Oath-as-dev-host is T24
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Sola session manager on Oath (`svc:sola-session`)

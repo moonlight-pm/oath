@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-09-01)
+## As-built (2026-09-02)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -111,4 +111,6 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-08-31-sola-dev.md](specs/2026-08-31-sola-dev.md) ·
 [specs/2026-08-31-sola-session.md](specs/2026-08-31-sola-session.md) ·
 [specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md) ·
-[specs/2026-08-31-metal-canto.md](specs/2026-08-31-metal-canto.md)
+[specs/2026-08-31-metal-canto.md](specs/2026-08-31-metal-canto.md) ·
+[specs/2026-09-01-sola-browser.md](specs/2026-09-01-sola-browser.md) ·
+[specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md)

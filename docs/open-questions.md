@@ -16,7 +16,8 @@ None open. T22 libinput without udevd is closed (libudev-zero;
 path fallback in wlroots). T21 River-first is closed
 (River/wlroots forks in). T23 session stack is closed (`pkg:sola`
 + session `svc:*`; no nested PM). T24 development layout is closed
-(one `pkg:sola` blob; develop Sola on Nix until Oath is the host).
+(one `pkg:sola` blob; Oath-as-dev-host started with T29; inner loop
+still Nix).
 T25 session manager is closed (`svc:sola-session` in that blob).
 T26 sola-terminal is closed (sixth ELF + tmux helper in `pkg:sola`).
 T27 metal canary is closed (canto; SSH+kexec; QEMU probe stays).

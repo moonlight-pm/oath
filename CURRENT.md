@@ -28,7 +28,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 2. **T27 metal canary is in.** `ssh root@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
-   zygote; helper ready). Other kit apps still out.
+   zygote; helper ready). **T29 sola-workspaces + solactl in** on
+   canto (no git/grok). Other kit apps still out.
 4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. Git/grok/rustc still host-side.
 5. **T20 hosting locked**, not implemented.
@@ -47,7 +48,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh root@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman compositor, **hardware cursors**, no `LIBGL_ALWAYS_SOFTWARE`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` live (no git/grok). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). Workspaces ELF after next `cargo make build`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). River + Sola session running (pixman compositor, **hardware cursors**, no `LIBGL_ALWAYS_SOFTWARE`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` live (no git/grok). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
 
 ```sh
 nix-shell
@@ -91,10 +92,12 @@ Do not re-litigate without an explicit decision.
   `svc:river`. Session stack is T23 + T25 (`pkg:sola` + `svc:sola-bus` /
   `call` / `river` / `shell` / `session`). First kit app is T26
   (`/bin/sola-terminal` + tmux in that blob). T28 is `/bin/sola-browser`
-  + CEF in the same blob. **T24:** one `pkg:sola`
-  blob; develop Sola on Nix until Oath is the host; then development
-  versions are apply/undo of the real objects (no second PATH, no
-  nested PM). glibc is sealed `pkg:glibc`. `forks/river` +
+  + CEF in the same blob. T29 is `/bin/sola-workspaces` + `solactl`
+  in the same blob (no git/grok yet). **T24:** one `pkg:sola` blob;
+  development versions are apply/undo of the real objects (no second
+  PATH, no nested PM). Oath-as-dev-host **started** (T29 Workspaces on
+  canto); inner loop (git/grok/rustc) still Nix. glibc is sealed
+  `pkg:glibc`. `forks/river` +
   `forks/wlroots` + `forks/sola`. Do not run `crates/sola`.
   First-party pkg sources under `apps/` (`hello`, `fetchme`).
   Sola-generic fixes cherry-pick to `moonlight-pm/Sola`, then merge
@@ -109,8 +112,10 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-01-sola-browser.md](docs/specs/2026-09-01-sola-browser.md)
-  (T28 sola-browser). T27:
+- Freeze: [docs/specs/2026-09-02-sola-workspaces.md](docs/specs/2026-09-02-sola-workspaces.md)
+  (T29 sola-workspaces). T28:
+  [docs/specs/2026-09-01-sola-browser.md](docs/specs/2026-09-01-sola-browser.md)
+  (sola-browser). T27:
   [docs/specs/2026-08-31-metal-canto.md](docs/specs/2026-08-31-metal-canto.md)
   (metal canary, partial). T26:
   [docs/specs/2026-08-31-sola-terminal.md](docs/specs/2026-08-31-sola-terminal.md)
@@ -118,20 +123,21 @@ Do not re-litigate without an explicit decision.
   [docs/specs/2026-08-31-sola-session.md](docs/specs/2026-08-31-sola-session.md)
   (session manager). T24:
   [docs/specs/2026-08-31-sola-dev.md](docs/specs/2026-08-31-sola-dev.md)
-  (identity). T23:
+  (identity; Oath-as-dev-host started). T23:
   [docs/specs/2026-08-30-oath-sola.md](docs/specs/2026-08-30-oath-sola.md)
   (session stack). T22:
   [docs/specs/2026-08-30-libinput.md](docs/specs/2026-08-30-libinput.md)
   (shipped).
 - Plan: [docs/plans/2026-09-01-sola-browser-plan.md](docs/plans/2026-09-01-sola-browser-plan.md)
-  (T28). T27:
+  (T28, complete). T27:
   [docs/plans/2026-08-31-metal-canto-plan.md](docs/plans/2026-08-31-metal-canto-plan.md)
   (complete). T26:
   [docs/plans/2026-08-31-sola-terminal-plan.md](docs/plans/2026-08-31-sola-terminal-plan.md)
-  (complete).
+  (complete). No T29 plan file (packed from the freeze).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
   (T20 identity, not implemented)
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
-  (canto; QEMU on next `cargo make build`); other kit apps not; Phase 6
-  metal canary (canto) dogfoodable, gaps remain
+  (canto; QEMU on next `cargo make build`); sola-workspaces packed
+  (canto; QEMU on next build); other kit apps not; Phase 6 metal
+  canary (canto) dogfoodable, gaps remain

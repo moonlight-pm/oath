@@ -8,7 +8,7 @@ Product docs: [`manual/`](manual/) — current behavior.
 
 **Status vocabulary:** `shipped` · `partial` · `spec’d` · `planned` · `idea`
 
-**As of:** 2026-09-01
+**As of:** 2026-09-02
 
 ---
 

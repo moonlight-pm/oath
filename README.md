@@ -48,8 +48,8 @@ packages (store + `/bin` links, including `pkg:fetchme` wget), `net:net0`,
 dropbear SSH, `dev:*` (including virtio-gpu `card0` and virtio
 keyboard/mouse), and a gtk window when `DISPLAY` is set. `svc:river`
 is the compositor (T21/T22). The Sola session stack is `pkg:sola` +
-five `svc:*` (T23/T25) plus `sola-terminal` (T26) and `sola-browser`
-(T28, CEF) in that blob.
+five `svc:*` (T23/T25) plus `sola-terminal` (T26), `sola-browser`
+(T28, CEF), and `sola-workspaces` + `solactl` (T29) in that blob.
 Nothing is a daily driver. Metal canary (canto) installs with
 `cargo make install`.
 
