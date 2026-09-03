@@ -56,6 +56,10 @@ oath set host:local power=halt
 oath apply --confirm    # powers off; QEMU should exit
 ```
 
+The Sola flower menu **Restart Computer** / **Shut Down** run those
+same verbs (`sudo oath apply --confirm`). The click is the owner's
+confirm.
+
 After a reboot apply, desired `power` is set back to `run` so the box
 does not loop.
 

@@ -26,6 +26,10 @@ remain `enabled=true`) starts the session again. To leave it off across
 reboot: `oath set svc:sola-shell enabled=false` (and bus, call, bridge,
 session) then `oath apply`.
 
+**Restart Computer** / **Shut Down** (flower menu) are `host:local`
+`power=reboot` / `power=halt`. The click is the owner's confirm:
+`sudo oath apply --confirm host:local`. There is no logind.
+
 PID 1 starts enabled services at boot, **stops disabled ones** on
 converge, reaps, and restarts per policy (`never` / `always` /
 `on-failure`).
