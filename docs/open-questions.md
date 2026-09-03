@@ -128,7 +128,7 @@ QEMU serial. SSH later.
 ### T9 — Principal — locked 2026-08-27, amended T31 2026-09-02
 
 Serial is root (break-glass). Daily seat and SSH are Unix user
-`home` (uid 1000, `HOME=/home`). The agent is not a third Unix
+`home` (uid 1, `HOME=/home`). The agent is not a third Unix
 user. Log uid + tty.
 
 ### T10 — Confirm class — locked 2026-08-27
@@ -254,10 +254,10 @@ update Grok; check is `grok update --check`, change is apply.
 
 ### T31 — Seat `home` + catalog env + `/lib/oath` — locked 2026-09-02
 
-Unix name `home`, `HOME=/home`. Graphical stack as `home`. SSH
-`home` only; serial root. `sudo` ALL, no password. `host:local.env`
-(PID 1 injects; seed `GROK_DISABLE_AUTOUPDATER=1`). Helpers at
-`/lib/oath`. No `/usr`. No new kind.
+Unix name `home`, uid/gid 1, `HOME=/home`. Graphical stack as
+`home`. SSH `home` only; serial root. `sudo` ALL, no password.
+`host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
+`$HOME/.profile`). Helpers at `/lib/oath`. No `/usr`. No new kind.
 
 ---
 
@@ -286,3 +286,4 @@ Unix name `home`, `HOME=/home`. Graphical stack as `home`. SSH
 | 2026-09-02 | T29 | sola-workspaces + solactl in pkg:sola; no git/grok | this file; [specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md) |
 | 2026-09-02 | T30 | pkg:grok catalog-owned; Grok does not self-update | this file; [specs/2026-09-02-pkg-grok.md](specs/2026-09-02-pkg-grok.md) |
 | 2026-09-02 | T31 | seat home; SSH home; sudo ALL nopass; /lib/oath; host.env | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
+| 2026-09-03 | T31 | home uid 1; env not in $HOME/.profile | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |

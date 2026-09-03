@@ -32,7 +32,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /lib/oath/serial-login
     /lib/oath/sudo         setuid; /bin/sudo
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
-    /home                  seat home (Unix user `home`, uid 1000)
+    /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
     /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
@@ -41,9 +41,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
     seatd              svc:seatd (DRM seat)
-    river              svc:river as `home` (glibc, pixman, libudev-zero, socket /run/user/1000;
+    river              svc:river as `home` (glibc, pixman, libudev-zero, socket /run/user/1;
                        hardware cursors unless a DRM card is virtio)
-    sola-bus/call      svc:sola-bus / svc:sola-call as `home` (sockets /run/user/1000)
+    sola-bus/call      svc:sola-bus / svc:sola-call as `home` (sockets /run/user/1)
     sola-river         svc:sola-river (bridge, not the compositor)
     sola-shell         svc:sola-shell (iced menubar; wgpu/gl; llvmpipe forced
                        only on virtio KMS; McMojave)

@@ -16,7 +16,8 @@ not this kind. Do not add a Unix user kind — the seat is always `home`.
   `run` is **confirm** (`oath apply --confirm`). After a reboot apply,
   desired is set back to `run` so the box does not loop.
 - `env` — `NAME=value` map. PID 1 injects these into every `svc`
-  spawn. `/etc/profile` and `/home/.profile` are side effects. Seed
+  spawn. `/etc/profile` is a root-owned side effect. Do not write
+  `$HOME/.profile`. Seed
   includes `GROK_DISABLE_AUTOUPDATER=1`.
 
 ## Example

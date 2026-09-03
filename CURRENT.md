@@ -25,7 +25,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is card-sized (Sola `f8ff7871`). **T29:** `/bin/sola-workspaces` +
    `/bin/solactl` on canto (no git/grok yet). **T30:** `pkg:grok`
    identity locked (catalog owns the ELF; Grok does not self-update).
-   **T31** on canto: `ssh home@canto` (uid 1000, sudo ALL, no
+   **T31** on canto: `ssh home@canto` (uid 1, sudo ALL, no
    password). Graphical stack **off** (river/Sola/seatd disabled —
    crash-looped as `home` on amdgpu). Serial **off** (no UART; was
    restart-spamming tty0). Next: bring River/Sola back as `home`,
@@ -79,7 +79,7 @@ Do not re-litigate without an explicit decision.
 - SSH: **home** only, dropbear `-w`, **no baked private key**. Host
   keys under `/oath/ssh/`. Owner pubkeys in `ssh:local` →
   `/home/.ssh/authorized_keys`. Serial is root. `home` has `sudo`
-  ALL, no password. Unix name `home`, uid 1000, `HOME=/home`.
+  ALL, no password. Unix name `home`, uid 1, `HOME=/home`.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no

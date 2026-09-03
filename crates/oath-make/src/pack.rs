@@ -278,7 +278,6 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("root/.ssh"))?;
     fs::create_dir_all(stage.join("home/.ssh"))?;
-    fs::write(stage.join("home/.profile"), fs::read_to_string(stage.join("etc/profile"))?)?;
     run(Command::new(bin.join("oath")).args([
         "--root",
         stage.join("oath").to_str().unwrap(),

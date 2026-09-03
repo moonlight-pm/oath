@@ -183,7 +183,7 @@ cat >"$out/river/bin/river" <<'WRAP'
 #!/bin/sh
 export PATH=/bin
 export HOME="${HOME:-/home}"
-export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 /bin/mkdir -p "$XDG_RUNTIME_DIR"
 /bin/chmod 700 "$XDG_RUNTIME_DIR"
 export LIBSEAT_BACKEND=seatd

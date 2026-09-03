@@ -108,7 +108,7 @@ once the disk is mounted.
 - `dev:vda` / `net0` / `ttyS0` inventory; tmpfs + cgroup2
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
-- `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/1000`
+- `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/1`
 - Sola session stack (`svc:sola-bus` / `call` / `river` / `shell` /
   `session`); `sola-terminal` + tmux + `sola-browser` + CEF +
   `sola-workspaces` + `solactl` + SF Pro Text / Iosevka Term Slab in

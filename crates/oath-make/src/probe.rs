@@ -482,7 +482,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -S /run/user/1000/wayland-0 -o -S /run/user/1000/wayland-1 && echo WAYLAND_UP",
+        "test -S /run/user/1/wayland-0 -o -S /run/user/1/wayland-1 && echo WAYLAND_UP",
         Some("WAYLAND_UP"),
         "river.wayland",
         Duration::from_secs(8),
@@ -538,7 +538,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -S /run/user/1000/sola-bus && test -S /run/user/1000/sola-call && echo SOLA_SOCK",
+        "test -S /run/user/1/sola-bus && test -S /run/user/1/sola-call && echo SOLA_SOCK",
         Some("SOLA_SOCK"),
         "sola.sockets",
         Duration::from_secs(8),
@@ -562,7 +562,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "grep '^Uid:' /proc/$(pidof sola-session)/status | grep 1000 && echo SEAT_UID",
+        "awk '/^Uid:/{print $2}' /proc/$(pidof sola-session)/status | grep -x 1 && echo SEAT_UID",
         Some("SEAT_UID"),
         "seat.session_uid",
         Duration::from_secs(8),

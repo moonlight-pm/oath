@@ -1,9 +1,7 @@
-//! Setuid helper: `home` (uid 1000) becomes root with no password.
+//! Setuid helper: `home` becomes root with no password.
 
 use std::os::unix::process::CommandExt;
 use std::process::{exit, Command};
-
-const SEAT_UID: u32 = 1000;
 
 fn main() {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
@@ -19,7 +17,7 @@ fn main() {
     }
     let uid = unsafe { libc::getuid() };
     let euid = unsafe { libc::geteuid() };
-    if uid != 0 && uid != SEAT_UID {
+    if uid != 0 && uid != oath_core::seat::UID {
         eprintln!("sudo: not allowed");
         exit(1);
     }
