@@ -105,8 +105,7 @@ fn real_main() -> Result<(), String> {
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
-    let _ = fs::create_dir_all("/dev/pts");
-    ensure_mount("devpts", "/dev/pts", "devpts");
+    mount_devpts();
     unix_floor();
 
     if cmdline_flag("oath.install") {
@@ -175,6 +174,19 @@ fn ensure_mount(fstype: &str, target: &str, source: &str) {
     }
     let _ = fs::create_dir_all(target);
     let _ = mount(Some(source), target, Some(fstype), MsFlags::empty(), None::<&str>);
+}
+
+/// Dropbear allocates PTYs via `/dev/pts/ptmx`. Kernel default is
+/// `mode=600,ptmxmode=000`, which refuses interactive SSH for `home`.
+fn mount_devpts() {
+    let _ = fs::create_dir_all("/dev/pts");
+    let opts = "mode=0666,ptmxmode=0666";
+    let _ = mount(Some("devpts"), "/dev/pts", Some("devpts"), MsFlags::empty(), Some(opts));
+    let _ = mount(Some("devpts"), "/dev/pts", Some("devpts"), MsFlags::MS_REMOUNT, Some(opts));
+    let _ = fs::set_permissions("/dev/ptmx", fs::Permissions::from_mode(0o666));
+    for n in ["/dev/null", "/dev/zero", "/dev/tty", "/dev/random", "/dev/urandom"] {
+        let _ = fs::set_permissions(n, fs::Permissions::from_mode(0o666));
+    }
 }
 
 fn load_modules(defer_kms: bool) {
@@ -600,8 +612,7 @@ fn mount_root(dev: &str) -> Result<(), String> {
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
-    let _ = fs::create_dir_all("/dev/pts");
-    ensure_mount("devpts", "/dev/pts", "devpts");
+    mount_devpts();
     unix_floor();
     Ok(())
 }
