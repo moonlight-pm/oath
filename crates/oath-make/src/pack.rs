@@ -328,6 +328,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "glibc", false)?;
     link_pkg(&oath_root, &guest_bin, "river", false)?;
     link_pkg(&oath_root, &guest_bin, "sola", true)?;
+    let grok = grok_elf()?;
+    eprintln!("grok={}", grok.display());
+    write_bin_store(&oath_root, "grok", &grok)?;
+    link_pkg(&oath_root, &guest_bin, "grok", true)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -677,6 +681,32 @@ pub(crate) fn resolve_load_order(dep_text: &str, roots: &[&str]) -> Vec<String> 
         }
     }
     order.into_iter().map(|p| p.trim_end_matches(".xz").to_string()).collect()
+}
+
+/// Borrowed static-pie Grok ELF (T30). Not in nix; not in `pkg:sola`.
+fn grok_elf() -> Result<PathBuf> {
+    let mut cands = Vec::new();
+    if let Some(p) = std::env::var_os("OATH_GROK") {
+        cands.push(PathBuf::from(p));
+    }
+    if let Ok(out) = Command::new("sh").args(["-c", "command -v grok"]).output() {
+        if out.status.success() {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                cands.push(PathBuf::from(s));
+            }
+        }
+    }
+    if let Some(h) = std::env::var_os("HOME") {
+        cands.push(PathBuf::from(h).join(".grok/bin/grok"));
+    }
+    for p in cands {
+        if p.is_file() {
+            return fs::canonicalize(&p)
+                .with_context(|| format!("canonicalize grok ELF {}", p.display()));
+        }
+    }
+    bail!("OATH_GROK: no grok ELF (set OATH_GROK or put grok on PATH)")
 }
 
 fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {

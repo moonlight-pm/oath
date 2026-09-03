@@ -78,7 +78,7 @@ Latest freeze:
 [`docs/specs/2026-09-02-seat-home.md`](docs/specs/2026-09-02-seat-home.md)
 (T31 seat `home`). T30:
 [`docs/specs/2026-09-02-pkg-grok.md`](docs/specs/2026-09-02-pkg-grok.md)
-(`pkg:grok` identity). T29:
+(`pkg:grok` packed). T29:
 [`docs/specs/2026-09-02-sola-workspaces.md`](docs/specs/2026-09-02-sola-workspaces.md)
 (sola-workspaces). T28:
 [`docs/specs/2026-09-01-sola-browser.md`](docs/specs/2026-09-01-sola-browser.md)

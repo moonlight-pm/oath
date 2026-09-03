@@ -44,7 +44,8 @@ compatibility promise.
 ## Status
 
 Phases 0–2 are done. The **x86_64 QEMU** appliance has PID 1, catalog,
-packages (store + `/bin` links, including `pkg:fetchme` wget), `net:net0`,
+packages (store + `/bin` links, including `pkg:fetchme` wget and
+`pkg:grok`), `net:net0`,
 dropbear SSH, `dev:*` (including virtio-gpu `card0` and virtio
 keyboard/mouse), and a gtk window when `DISPLAY` is set. `svc:river`
 is the compositor (T21/T22). The Sola session stack is `pkg:sola` +

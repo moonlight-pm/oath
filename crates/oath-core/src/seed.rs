@@ -90,6 +90,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "glibc", true, false)?;
     seed_pkg(root, "river", true, true)?;
     seed_pkg(root, "sola", true, true)?;
+    seed_pkg(root, "grok", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),

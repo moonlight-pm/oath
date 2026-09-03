@@ -498,6 +498,38 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath get pkg:grok --actual",
+        Some("\"present\": true"),
+        "pkg.grok_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /bin/grok && readlink /bin/grok | grep -q /oath/store/pkg/grok/bin/grok && echo GROK_BIN",
+        Some("GROK_BIN"),
+        "pkg.grok_bin",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "GROK_DISABLE_AUTOUPDATER=1 grok --version | grep -q grok && echo GROK_VER",
+        Some("GROK_VER"),
+        "pkg.grok_version",
+        Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "stat -c '%u %a' /oath/store/pkg/grok/bin/grok | grep -E '^0 755$' && echo GROK_RO",
+        Some("GROK_RO"),
+        "pkg.grok_root_owned",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "sleep 2; p1=$(pidof river); sleep 2; p2=$(pidof river); test -n \"$p1\" -a \"$p1\" = \"$p2\" && echo RIVER_STABLE",
         Some("RIVER_STABLE"),
         "river.running",
