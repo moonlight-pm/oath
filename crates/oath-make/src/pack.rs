@@ -332,6 +332,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     eprintln!("grok={}", grok.display());
     write_bin_store(&oath_root, "grok", &grok)?;
     link_pkg(&oath_root, &guest_bin, "grok", true)?;
+    pack_curl(&oath_root, tools)?;
+    link_pkg(&oath_root, &guest_bin, "curl", true)?;
+    pack_git(root, tools, out, &oath_root)?;
+    link_pkg(&oath_root, &guest_bin, "git", true)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -681,6 +685,40 @@ pub(crate) fn resolve_load_order(dep_text: &str, roots: &[&str]) -> Vec<String> 
         }
     }
     order.into_iter().map(|p| p.trim_end_matches(".xz").to_string()).collect()
+}
+
+fn pack_curl(oath_root: &Path, tools: &Tools) -> Result<()> {
+    let curl = tools.curl.as_ref().context("OATH_CURL / tools curl required (pkg:curl)")?;
+    let cacert = tools.cacert.as_ref().context("OATH_CACERT / tools ca-bundle required")?;
+    let dest = oath_root.join("store/pkg/curl");
+    fs::create_dir_all(dest.join("bin"))?;
+    fs::create_dir_all(dest.join("libexec"))?;
+    fs::create_dir_all(dest.join("ssl"))?;
+    copy_file(curl, &dest.join("libexec/curl"))?;
+    chmod_exec(&dest.join("libexec/curl"))?;
+    copy_file(cacert, &dest.join("ssl/cert.pem"))?;
+    fs::write(
+        dest.join("bin/curl"),
+        "#!/bin/sh\nexport CURL_CA_BUNDLE=\"${CURL_CA_BUNDLE:-/oath/store/pkg/curl/ssl/cert.pem}\"\nexport SSL_CERT_FILE=\"${SSL_CERT_FILE:-/oath/store/pkg/curl/ssl/cert.pem}\"\nexec /oath/store/pkg/curl/libexec/curl \"$@\"\n",
+    )?;
+    chmod_exec(&dest.join("bin/curl"))?;
+    Ok(())
+}
+
+fn pack_git(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
+    let git = tools.git.as_ref().context("OATH_GIT / tools git required (pkg:git)")?;
+    let cacert = tools.cacert.as_ref().context("OATH_CACERT / tools ca-bundle required")?;
+    let git_out = out.join("git-pack");
+    let _ = fs::remove_dir_all(&git_out);
+    eprintln!(">> relocate git");
+    run(Command::new("bash")
+        .arg(root.join("image/relocate-git.sh"))
+        .arg(&git_out)
+        .env("GIT", git))?;
+    copy_file(cacert, &git_out.join("ssl/cert.pem"))?;
+    copy_tree(&git_out, &oath_root.join("store/pkg/git"))?;
+    chmod_exec(&oath_root.join("store/pkg/git/bin/git"))?;
+    Ok(())
 }
 
 /// Borrowed static-pie Grok ELF (T30). Not in nix; not in `pkg:sola`.

@@ -530,6 +530,38 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath get pkg:git --actual",
+        Some("\"present\": true"),
+        "pkg.git_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /bin/git && git --version | grep -q git && echo GIT_VER",
+        Some("GIT_VER"),
+        "pkg.git_version",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get pkg:curl --actual",
+        Some("\"present\": true"),
+        "pkg.curl_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /bin/curl && curl --version | grep -q curl && echo CURL_VER",
+        Some("CURL_VER"),
+        "pkg.curl_version",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "sleep 2; p1=$(pidof river); sleep 2; p2=$(pidof river); test -n \"$p1\" -a \"$p1\" = \"$p2\" && echo RIVER_STABLE",
         Some("RIVER_STABLE"),
         "river.running",

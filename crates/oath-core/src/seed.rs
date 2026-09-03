@@ -91,6 +91,8 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "river", true, true)?;
     seed_pkg(root, "sola", true, true)?;
     seed_pkg(root, "grok", true, true)?;
+    seed_pkg(root, "git", true, true)?;
+    seed_pkg(root, "curl", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),

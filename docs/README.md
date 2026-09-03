@@ -55,7 +55,7 @@ ask the human.
 | [`specs/2026-08-31-sola-terminal.md`](specs/2026-08-31-sola-terminal.md) | T26 sola-terminal | **Target** (first kit app) |
 | [`specs/2026-08-31-metal-canto.md`](specs/2026-08-31-metal-canto.md) | T27 canto metal canary | **Target** (partial; EFI/USB) |
 | [`specs/2026-09-01-sola-browser.md`](specs/2026-09-01-sola-browser.md) | T28 sola-browser + CEF | **Target** (shipped; canto) |
-| [`specs/2026-09-02-sola-workspaces.md`](specs/2026-09-02-sola-workspaces.md) | T29 sola-workspaces + solactl | **Target** (shipped; canto; no git) |
+| [`specs/2026-09-02-sola-workspaces.md`](specs/2026-09-02-sola-workspaces.md) | T29 sola-workspaces + solactl | **Target** (shipped; canto) |
 | [`specs/2026-09-02-pkg-grok.md`](specs/2026-09-02-pkg-grok.md) | T30 `pkg:grok` (vendor-updating pkgs) | **Target** (packed; canto) |
 | [`specs/2026-09-02-seat-home.md`](specs/2026-09-02-seat-home.md) | T31 seat `home` + `/lib/oath` + env | **Target** (canto `ssh home@canto`; graphical as `home`) |
 | [`plans/`](plans/) | Implementation checklists | Build |

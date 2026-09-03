@@ -25,6 +25,9 @@ pub struct Tools {
     pub glibc: Option<PathBuf>,
     pub river: Option<PathBuf>,
     pub sola_rt: Option<PathBuf>,
+    pub git: Option<PathBuf>,
+    pub curl: Option<PathBuf>,
+    pub cacert: Option<PathBuf>,
     pub qemu: PathBuf,
     pub qemu_img: PathBuf,
 }
@@ -39,6 +42,9 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut glibc = std::env::var_os("OATH_GLIBC").map(PathBuf::from);
     let mut river = std::env::var_os("OATH_RIVER").map(PathBuf::from);
     let mut sola_rt = std::env::var_os("OATH_SOLA_RT").map(PathBuf::from);
+    let mut git = std::env::var_os("OATH_GIT").map(PathBuf::from);
+    let mut curl = std::env::var_os("OATH_CURL").map(PathBuf::from);
+    let mut cacert = std::env::var_os("OATH_CACERT").map(PathBuf::from);
 
     if kernel.is_none() || modules.is_none() || busybox.is_none() {
         eprintln!("loading tools via nix-build image/tools.nix ...");
@@ -74,6 +80,18 @@ pub fn load(root: &Path) -> Result<Tools> {
             let p = tools.join("sola-rt");
             p.is_dir().then_some(p)
         });
+        git = git.or_else(|| {
+            let p = tools.join("git");
+            p.is_dir().then_some(p)
+        });
+        curl = curl.or_else(|| {
+            let p = tools.join("curl");
+            p.is_file().then_some(p)
+        });
+        cacert = cacert.or_else(|| {
+            let p = tools.join("ca-bundle.crt");
+            p.is_file().then_some(p)
+        });
         let musl = tools.join("musl-cc");
         if std::env::var_os("CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER").is_none()
             && musl.is_file()
@@ -105,6 +123,9 @@ pub fn load(root: &Path) -> Result<Tools> {
     let glibc = glibc.filter(|p| p.is_dir());
     let river = river.filter(|p| p.is_dir());
     let sola_rt = sola_rt.filter(|p| p.is_dir());
+    let git = git.filter(|p| p.is_dir());
+    let curl = curl.filter(|p| p.is_file());
+    let cacert = cacert.filter(|p| p.is_file());
     let tools_dir = kernel.parent().map(|p| p.to_path_buf());
     let opt_file = |name: &str| -> Option<PathBuf> {
         let p = tools_dir.as_ref()?.join(name);
@@ -134,6 +155,9 @@ pub fn load(root: &Path) -> Result<Tools> {
         glibc,
         river,
         sola_rt,
+        git,
+        curl,
+        cacert,
         qemu,
         qemu_img,
     })

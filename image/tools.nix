@@ -36,6 +36,9 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${riverPack}/glibc $out/glibc
   ln -s ${riverPack}/river $out/river
   ln -s ${solaRt} $out/sola-rt
+  ln -s ${pkgs.git} $out/git
+  ln -s ${pkgs.pkgsStatic.curl.bin}/bin/curl $out/curl
+  ln -s ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/ca-bundle.crt
   if [ -d ${pkgs.linux-firmware}/lib/firmware/tigon ]; then
     cp -a ${pkgs.linux-firmware}/lib/firmware/tigon $out/firmware/tigon
   fi
