@@ -1,8 +1,9 @@
 # SSH
 
-SSH login is **home**. Root SSH is denied. Serial is still the
-root console. There is **no password** and **no private key in the
-image**.
+SSH login is **home** (uid 1, `HOME=/home`). Root SSH is denied.
+`sudo` has no password. Serial is root when that svc is enabled
+(canto has no UART, so `svc:serial` is off). There is **no password**
+and **no private key in the image**.
 
 Host keys are generated on first boot under `/oath/ssh/`. Login keys
 are `ssh:local` `authorized` (OpenSSH public key lines). Apply writes

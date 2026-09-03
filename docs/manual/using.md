@@ -61,6 +61,7 @@ does not loop.
 
 ## Who you are
 
-Serial login is **root** (break-glass). Daily SSH is **home**
-(`HOME=/home`). `sudo` (no password) becomes root. The apply log
+Serial login is **root** (break-glass) when `svc:serial` is on.
+Daily SSH is **home** (uid 1, `HOME=/home`). `sudo` (no password)
+becomes root. Groups are `root` and `home` only. The apply log
 records uid and tty.

@@ -12,9 +12,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T31 seat `home` is closed (SSH `home`, serial root,
-sudo ALL no password, `HOME=/home`, `/lib/oath`, `host:local.env`).
-T30 `pkg:grok` identity closed. T29 sola-workspaces closed.
+None open. T31 seat `home` is closed (uid 1, SSH `home`, groups
+`root`+`home`, sudo ALL, `/lib/oath`, `host:local.env`). T30
+`pkg:grok` identity closed. T29 sola-workspaces closed.
 
 ---
 

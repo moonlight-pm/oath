@@ -24,7 +24,8 @@ What it does:
    `loader/entries/oath.conf`. Apple/OEM firmware splash is not
    ours to paint. The USB installer still uses systemd-boot + tty0.
 4. Set `host:local` hostname, `net:net0` dhcp, owner SSH pubkeys.
-5. Reboot. Courage is **SSH** as root with those keys, then `oath ls`.
+5. Reboot. Courage is **SSH as `home`** with those keys, then
+   `oath ls`. (`sudo` has no password.)
 
 QEMU rehearsal (no real host):
 
@@ -43,6 +44,7 @@ Hold Option on a Mac, boot the EFI entry. The ramdisk gets a shell on
 command from the build machine; it sees `/run/oath-install/ready` and
 skips the enter-installer step.
 
-Metal keeps the Sola session stack on. QEMU sets
-`SOLA_OUTPUT_PICK=preferred` so virtio-gpu stays 1280×800; metal
-unsets that so sola-river can match the panel’s physical aspect.
+QEMU sets `SOLA_OUTPUT_PICK=preferred` so virtio-gpu stays 1280×800.
+Metal unsets that so sola-river can match the panel. Canto’s
+graphical stack is **off** until DRM-as-`home` is fixed; SSH is the
+courage test.

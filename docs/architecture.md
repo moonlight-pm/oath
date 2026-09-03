@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-09-02)
+## As-built (2026-09-03)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -28,7 +28,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
   disk (btrfs)
     @            live root
     @gen-N       readonly sibling generations
-    /lib/oath/init         PID 1 after pivot
+    /init (ESP initrd)     PID 1; chroot into @ and keeps running
+    /lib/oath/init         same ELF on disk (not exec'd after chroot)
     /lib/oath/serial-login
     /lib/oath/sudo         setuid; /bin/sudo
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
@@ -56,9 +57,10 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /sbin/init -> ../lib/oath/init
 ```
 
-PID 1: mount proc/sys/dev/pts, tmpfs `/tmp` `/dev/shm` `/run`, cgroup2;
-hostname from `host:local`; **converge** `net:net0`, `dev:*`,
-`ssh:local`; then `svc:*`. Socket `/oath/run/init.sock`. Seeded
+PID 1 is the initrd `/init` (stays PID 1 after chroot). Mount proc/sys/dev/pts
+(`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; hostname +
+`host:local.env`; load ethernet; **converge** `net:net0` (dhcp) + `ssh:local`;
+sshd; then amdgpu; then remaining `svc:*`. Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
 `svc:sola-session`.

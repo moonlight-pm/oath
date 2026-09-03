@@ -86,7 +86,5 @@ Apple is still a gap. QEMU probe stays.
 - Broad ABI compatibility for random Linux binaries
 - Large binary repository
 - Bare-metal diversity
-- A graphical session (display canary + T21 River as `svc` + T22
-  input + T23 session stack + T25 session manager + T26
-  sola-terminal + T28 sola-browser + T29 sola-workspaces; other kit
-  apps not)
+- Remaining kit apps (wrapper, mail, …); git/grok/rustc on the guest
+- Canto graphical stack as `home` (currently SSH-only; river/Sola off)

@@ -13,23 +13,13 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Canto Sola session is up** (amdgpu Pitcairn, pixman compositor). Current
-   panel: Philips 221V8L **1920×1080@75**. DualUp 2560×2880@30 works
-   on that HDMI path (60 Hz needs the LG’s DisplayPort). Graphical
-   boot is the white Oath mark on black (nothing else until Sola).
-   **Canto EFI splash is up.** Boot graphics is layered (EFI GOP mark,
-   then defer KMS that would steal that fb, River on black). Canto
-   is one stack, not every machine. SI still flashes on KMS bind.
-   Virtio SW cursor / `LIBGL_ALWAYS_SOFTWARE` only when a DRM card is
-   virtio — Canto uses hardware cursors (sola-scope). Super+K overlay
-   is card-sized (Sola `f8ff7871`). **T29:** `/bin/sola-workspaces` +
-   `/bin/solactl` on canto (no git/grok yet). **T30:** `pkg:grok`
-   identity locked (catalog owns the ELF; Grok does not self-update).
-   **T31** on canto: `ssh home@canto` (uid 1, sudo ALL, no
-   password). Graphical stack **off** (river/Sola/seatd disabled —
-   crash-looped as `home` on amdgpu). Serial **off** (no UART; was
-   restart-spamming tty0). Next: bring River/Sola back as `home`,
-   pack `pkg:grok`, or amdgpu accel.
+1. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
+   no password, groups `root`+`home` only. Graphical stack **off**
+   (river/Sola/seatd disabled — crash-looped as `home` on amdgpu).
+   Serial svc **off** (no UART). EFI mark still paints. Panel is
+   Philips 221V8L 1920×1080@75. **T30** `pkg:grok` identity locked,
+   ELF not packed. Next: River/Sola as `home` without the crash-loop,
+   or pack `pkg:grok`.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
@@ -38,7 +28,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. Git/grok/rustc still host-side.
    **T30** grok identity locked; ELF not packed. **T31** seat `home`
-   locked (SSH home, serial root, sudo ALL no password, `/lib/oath`).
+   locked (uid 1, SSH home, sudo ALL, `/lib/oath`, catalog env).
 5. **T20 hosting locked**, not implemented.
 6. Do not add a throwaway compositor. glibc runtime is allowed
    **only** as `pkg:glibc` for this payload (never in PID 1). No
@@ -55,7 +45,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal` (tmux: `libresolv` + C.UTF-8; UI: SF Pro Text; mono: Iosevka Term Slab, Inter/JetBrains Mono fallbacks). Workspaces ELF after next `cargo make build`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **disabled** until DRM-as-home is fixed. EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed (session not running). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **disabled** until DRM-as-home is fixed. EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed (session not running). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
 
 ```sh
 nix-shell
@@ -78,18 +68,23 @@ Do not re-litigate without an explicit decision.
   `10.0.2.15/24`. `ipv4=dhcp` via udhcpc. `OATH_BRIDGE` optional.
 - SSH: **home** only, dropbear `-w`, **no baked private key**. Host
   keys under `/oath/ssh/`. Owner pubkeys in `ssh:local` →
-  `/home/.ssh/authorized_keys`. Serial is root. `home` has `sudo`
-  ALL, no password. Unix name `home`, uid 1, `HOME=/home`.
+  `/home/.ssh/authorized_keys`. Serial is root when the svc is on
+  (break-glass); no UART on canto so `svc:serial` is disabled.
+  `home` has `sudo` ALL, no password. Unix name `home`, uid 1,
+  `HOME=/home`. Groups: `root` and `home` only. Required env is
+  `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
+  `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (not packed);
   Grok does not self-update.
-- Services: PID 1 converges `svc:*` in `wants` order. `svc:serial` is
-  the console; `svc:sshd` is dropbear; `svc:hold` wants serial;
-  `svc:river` wants `svc:seatd`. Sola session: `svc:sola-bus` /
-  `sola-call` / `sola-river` / `sola-shell` / `sola-session`.
+- Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
+  dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
+  `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
+  `svc:seatd`. Sola session: `svc:sola-bus` / `sola-call` / `river` /
+  `shell` / `session` (as `home` when enabled).
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
   is pixman River plus the Sola menubar (software GL, McMojave
   cursor), **1280×800 1:1** (`virtio-gpu-pci,xres/yres` + gtk
@@ -104,7 +99,7 @@ Do not re-litigate without an explicit decision.
   (`/bin/sola-terminal` + tmux in that blob). T28 is `/bin/sola-browser`
   + CEF in the same blob. T29 is `/bin/sola-workspaces` + `solactl`
   in the same blob (no git/grok yet). **T30:** `pkg:grok` is the
-  install; Grok does not update Grok; `$GROK_HOME` is state; not in
+  install; Grok does not update Grok; `$GROK_HOME` is `/home/.grok`; not in
   the Sola blob. **T24:** one `pkg:sola` blob;
   development versions are apply/undo of the real objects (no second
   PATH, no nested PM). Oath-as-dev-host **started** (T29 Workspaces on
@@ -155,6 +150,6 @@ Do not re-litigate without an explicit decision.
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
   (canto; QEMU on next `cargo make build`); sola-workspaces packed
-  (canto; QEMU on next build); `pkg:grok` identity locked, ELF not
-  packed (T31 seat+env open); other kit apps not; Phase 6 metal
-  canary (canto) dogfoodable, gaps remain
+  (canto; QEMU on next build); T31 seat `home` on canto SSH;
+  `pkg:grok` identity locked, ELF not packed; other kit apps not;
+  Phase 6 metal canary (canto) dogfoodable, graphical stack off
