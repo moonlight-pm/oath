@@ -7,6 +7,7 @@
 
 use std::path::Path;
 
+#[allow(dead_code)]
 pub fn firmware_fb_live() -> bool {
     Path::new("/sys/module/simpledrm").is_dir()
         || Path::new("/sys/devices/platform/simple-framebuffer.0").exists()

@@ -133,15 +133,20 @@ fn real_main() -> Result<(), String> {
     }
 
     apply_host();
+    // Ethernet first. Do not insmod amdgpu before dhcp/sshd — on canto
+    // there is no simpledrm, so a "defer KMS" pass that still required
+    // firmware_fb_live() would load amdgpu and hang the NIC forever.
+    load_modules(true);
     apply_net();
     apply_dev();
     ensure_seat();
     inject_ssh_from_host();
     apply_ssh();
-    load_modules(false);
-    oath_core::seat::open_device_nodes();
     hold_graphics();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
+    converge(&mut kids);
+    load_modules(false);
+    oath_core::seat::open_device_nodes();
     converge(&mut kids);
 
     let sock_path = "/oath/run/init.sock";
@@ -173,7 +178,7 @@ fn ensure_mount(fstype: &str, target: &str, source: &str) {
 }
 
 fn load_modules(defer_kms: bool) {
-    let defer = defer_kms && gpu::firmware_fb_live();
+    let defer = defer_kms;
     let rel = kver();
     let base = Path::new("/lib/modules").join(&rel);
     let list = module_load_order(&base);

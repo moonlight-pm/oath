@@ -7,18 +7,21 @@ use std::os::unix::process::CommandExt;
 use std::process::Command;
 
 fn main() {
-    let tty = open_tty();
-    if let Some(f) = tty {
-        let fd = f.as_raw_fd();
-        unsafe {
-            libc::dup2(fd, 0);
-            libc::dup2(fd, 1);
-            libc::dup2(fd, 2);
-            libc::setsid();
-            libc::ioctl(0, libc::TIOCSCTTY, 1);
+    let Some(f) = open_tty() else {
+        // No UART. Stay up so restart=always does not spam tty0.
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(3600));
         }
-        std::mem::forget(f);
+    };
+    let fd = f.as_raw_fd();
+    unsafe {
+        libc::dup2(fd, 0);
+        libc::dup2(fd, 1);
+        libc::dup2(fd, 2);
+        libc::setsid();
+        libc::ioctl(0, libc::TIOCSCTTY, 1);
     }
+    std::mem::forget(f);
     let _ =
         writeln!(std::io::stderr(), "Oath. Root on serial (break-glass). SSH is home. Try: oath");
     let _ = std::env::set_current_dir("/root");

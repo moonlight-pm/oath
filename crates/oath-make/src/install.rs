@@ -555,8 +555,7 @@ mount --bind /esp /mnt/boot
         "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && (test -f /opt/oath-install/systemd-bootx64.efi && cp /opt/oath-install/systemd-bootx64.efi /esp/EFI/systemd/systemd-bootx64.efi || cp /opt/oath-install/BOOTX64.EFI /esp/EFI/systemd/systemd-bootx64.efi) && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
     )?;
     let entry = format!(
-        "title Oath\nlinux /vmlinuz\ninitrd /initrd.gz\noptions {quiet} console=ttyS0,115200 console=tty0 amdgpu.si_support=1 radeon.si_support=0 oath.root={p2}\n",
-        quiet = crate::qemu::QUIET_BOOT,
+        "title Oath\nlinux /vmlinuz\ninitrd /initrd.gz\noptions console=ttyS0,115200 console=tty0 amdgpu.si_support=1 radeon.si_support=0 oath.root={p2}\n",
     );
     ssh_run(
         r,
