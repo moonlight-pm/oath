@@ -59,6 +59,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
     solactl            /bin/solactl (call-plane CLI in pkg:sola)
+    sola-kvm           svc:sola-kvm listen as `home` (UDP 4242; virtual pointer)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     /sbin/init -> ../lib/oath/init
 ```
@@ -73,7 +74,7 @@ and pipewire as `home`).
 Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
-`svc:sola-session`, `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse`.
+`svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)

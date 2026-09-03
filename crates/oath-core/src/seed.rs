@@ -178,21 +178,10 @@ pub fn seed(root: &Path) -> Result<()> {
         &["svc:sola-bus", "svc:sola-call"],
         "on-failure",
     )?;
+    seed_svc(root, "sola-kvm", &["/bin/sola-kvm", "listen"], &["svc:river"], "always")?;
     seed_svc(root, "pipewire", &["/bin/pipewire"], &[], "always")?;
-    seed_svc(
-        root,
-        "wireplumber",
-        &["/bin/wireplumber"],
-        &["svc:pipewire"],
-        "always",
-    )?;
-    seed_svc(
-        root,
-        "pipewire-pulse",
-        &["/bin/pipewire-pulse"],
-        &["svc:pipewire"],
-        "always",
-    )?;
+    seed_svc(root, "wireplumber", &["/bin/wireplumber"], &["svc:pipewire"], "always")?;
+    seed_svc(root, "pipewire-pulse", &["/bin/pipewire-pulse"], &["svc:pipewire"], "always")?;
 
     let ssh = ObjectId::new(KIND_SSH, "local");
     let ssh_desired = json!({ "authorized": [] });

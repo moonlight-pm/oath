@@ -171,6 +171,7 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-river"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-shell"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-session"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-kvm"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:vda"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:net0"));
     assert!(ids.iter().any(|i| i.to_string() == "dev:ttyS0"));

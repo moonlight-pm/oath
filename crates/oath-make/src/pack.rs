@@ -83,6 +83,7 @@ const SOLA_KIT_ELFS: &[&str] = &[
     "sola-browser",
     "sola-workspaces",
     "solactl",
+    "sola-kvm",
 ];
 
 pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {

@@ -63,7 +63,7 @@ enqueue() {
   queue+=("$real")
 }
 
-kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal sola-browser sola-workspaces solactl)
+kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal sola-browser sola-workspaces solactl sola-kvm)
 for b in "${kit_bins[@]}"; do
   src="${SOLA_BINS:?}/$b"
   [[ -f $src ]] || { echo "relocate-sola: missing $src" >&2; exit 1; }

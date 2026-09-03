@@ -776,6 +776,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test -x /bin/sola-kvm && echo KVM_BIN",
+        Some("KVM_BIN"),
+        "sola.kvm_bin",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "test -x /bin/sola-browser && echo BROWSER_BIN",
         Some("BROWSER_BIN"),
         "sola.browser_bin",

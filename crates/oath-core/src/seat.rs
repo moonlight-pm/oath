@@ -19,8 +19,16 @@ pub fn is_seat_svc(id: &str) -> bool {
     let name = id.strip_prefix("svc:").unwrap_or(id);
     matches!(
         name,
-        "river" | "sola-bus" | "sola-call" | "sola-river" | "sola-shell" | "sola-session"
-            | "pipewire" | "wireplumber" | "pipewire-pulse"
+        "river"
+            | "sola-bus"
+            | "sola-call"
+            | "sola-river"
+            | "sola-shell"
+            | "sola-session"
+            | "sola-kvm"
+            | "pipewire"
+            | "wireplumber"
+            | "pipewire-pulse"
     )
 }
 
@@ -115,6 +123,7 @@ mod tests {
     fn seat_svcs_are_graphical_not_seatd() {
         assert!(is_seat_svc("svc:river"));
         assert!(is_seat_svc("svc:sola-shell"));
+        assert!(is_seat_svc("svc:sola-kvm"));
         assert!(is_seat_svc("river"));
         assert!(is_seat_svc("svc:pipewire"));
         assert!(is_seat_svc("svc:wireplumber"));
