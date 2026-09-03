@@ -12,9 +12,6 @@ pub const NAME: &str = "home";
 pub const UID: u32 = 1;
 pub const GID: u32 = 1;
 pub const HOME: &str = "/home";
-pub const GROUP_SEAT: u32 = 71;
-pub const GROUP_VIDEO: u32 = 44;
-pub const GROUP_INPUT: u32 = 14;
 pub const HELPERS: &str = "/lib/oath";
 
 pub fn is_seat_svc(id: &str) -> bool {
@@ -30,14 +27,7 @@ pub fn passwd_file() -> String {
 }
 
 pub fn group_file() -> String {
-    format!(
-        "root:x:0:\n\
-         {NAME}:x:{GID}:\n\
-         seat:x:{GROUP_SEAT}:{NAME}\n\
-         video:x:{GROUP_VIDEO}:{NAME}\n\
-         input:x:{GROUP_INPUT}:{NAME}\n\
-         wheel:x:10:{NAME}\n"
-    )
+    format!("root:x:0:\n{NAME}:x:{GID}:\n")
 }
 
 pub fn shadow_file() -> String {
@@ -102,6 +92,11 @@ mod tests {
         assert_eq!(UID, 1);
         assert_eq!(GID, 1);
         assert!(passwd_file().contains("home:x:1:1:home:/home:"));
+        let g = group_file();
+        assert!(g.contains("home:x:1:"));
+        assert!(!g.contains("wheel"));
+        assert!(!g.contains("video"));
+        assert!(!g.contains("seat:"));
     }
 
     #[test]
@@ -117,8 +112,8 @@ mod tests {
 
 /// DRM + evdev nodes the seat compositor must open (no udevd).
 pub fn open_device_nodes() {
-    chmod_tree("/dev/dri", 0o660, 0, GROUP_VIDEO);
-    chmod_tree("/dev/input", 0o660, 0, GROUP_INPUT);
+    chmod_tree("/dev/dri", 0o660, 0, GID);
+    chmod_tree("/dev/input", 0o660, 0, GID);
 }
 
 fn chmod_tree(dir: &str, mode: u32, uid: u32, gid: u32) {

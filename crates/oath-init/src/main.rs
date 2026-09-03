@@ -973,16 +973,11 @@ fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
         cmd.pre_exec(move || {
             libc::setsid();
             if drop_priv {
-                let gids: [libc::gid_t; 4] = [
-                    oath_core::seat::GID,
-                    oath_core::seat::GROUP_SEAT,
-                    oath_core::seat::GROUP_VIDEO,
-                    oath_core::seat::GROUP_INPUT,
-                ];
-                if libc::setgroups(gids.len() as libc::size_t, gids.as_ptr()) != 0 {
+                let gid = oath_core::seat::GID;
+                if libc::setgroups(1, &gid) != 0 {
                     return Err(std::io::Error::last_os_error());
                 }
-                if libc::setgid(oath_core::seat::GID) != 0 {
+                if libc::setgid(gid) != 0 {
                     return Err(std::io::Error::last_os_error());
                 }
                 if libc::setuid(oath_core::seat::UID) != 0 {

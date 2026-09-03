@@ -123,7 +123,7 @@ pub fn seed(root: &Path) -> Result<()> {
 
     let seatd = ObjectId::new(KIND_SVC, "seatd");
     let seatd_desired = json!({
-        "exec": ["/bin/seatd", "-g", "seat"],
+        "exec": ["/bin/seatd", "-g", "home"],
         "wants": [],
         "restart": "always",
         "enabled": true

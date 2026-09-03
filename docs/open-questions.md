@@ -257,7 +257,8 @@ update Grok; check is `grok update --check`, change is apply.
 Unix name `home`, uid/gid 1, `HOME=/home`. Graphical stack as
 `home`. SSH `home` only; serial root. `sudo` ALL, no password.
 `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
-`$HOME/.profile`). Helpers at `/lib/oath`. No `/usr`. No new kind.
+`$HOME/.profile`). Groups: `root` and `home` only. Helpers at
+`/lib/oath`. No `/usr`. No new kind.
 
 ---
 
@@ -287,3 +288,4 @@ Unix name `home`, uid/gid 1, `HOME=/home`. Graphical stack as
 | 2026-09-02 | T30 | pkg:grok catalog-owned; Grok does not self-update | this file; [specs/2026-09-02-pkg-grok.md](specs/2026-09-02-pkg-grok.md) |
 | 2026-09-02 | T31 | seat home; SSH home; sudo ALL nopass; /lib/oath; host.env | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
 | 2026-09-03 | T31 | home uid 1; env not in $HOME/.profile | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
+| 2026-09-03 | T31 | groups: root + home only | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
