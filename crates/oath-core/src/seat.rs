@@ -140,7 +140,15 @@ pub fn open_device_nodes() {
     chmod_tree("/dev/dri", 0o660, 0, GID);
     chmod_tree("/dev/input", 0o660, 0, GID);
     // mdev -s after amdgpu resets these to 0660 root:root.
-    for n in ["/dev/null", "/dev/zero", "/dev/full", "/dev/tty", "/dev/random", "/dev/urandom"] {
+    for n in [
+        "/dev/null",
+        "/dev/zero",
+        "/dev/full",
+        "/dev/tty",
+        "/dev/ptmx",
+        "/dev/random",
+        "/dev/urandom",
+    ] {
         let _ = fs::set_permissions(n, fs::Permissions::from_mode(0o666));
     }
 }

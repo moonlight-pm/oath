@@ -120,6 +120,10 @@ if [[ -n ${MESA:-} ]]; then
     ln -sf ../libdril_dri.so "$out/river/lib/dri/kms_swrast_dri.so"
     ln -sf ../libdril_dri.so "$out/river/lib/dri/swrast_dri.so"
     ln -sf ../libdril_dri.so "$out/river/lib/dri/libdril_dri.so"
+    # libdril dispatches by DRI name. amdgpu → radeonsi (Pitcairn/SI on canto).
+    # Without this file Mesa falls through zink then llvmpipe and iced typing lags.
+    ln -sf ../libdril_dri.so "$out/river/lib/dri/radeonsi_dri.so"
+    ln -sf ../libdril_dri.so "$out/river/lib/dri/radeon_dri.so"
   fi
   if [[ -e $out/river/lib/dri_gbm.so ]]; then
     ln -sf ../dri_gbm.so "$out/river/lib/gbm/dri_gbm.so"

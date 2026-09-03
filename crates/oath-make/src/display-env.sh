@@ -16,7 +16,12 @@ unset _oath_c _oath_d
 if [ "$oath_virtio_kms" = 1 ]; then
 	export WLR_NO_HARDWARE_CURSORS=1
 	export LIBGL_ALWAYS_SOFTWARE=1
+	export WLR_RENDERER=pixman
 else
 	unset WLR_NO_HARDWARE_CURSORS
 	unset LIBGL_ALWAYS_SOFTWARE
+	# pixman compositor has no linux-dmabuf. iced/wgpu then falls through
+	# zink + llvmpipe and typing in the launcher lags. gles2 on amdgpu
+	# (radeonsi) is the hardware path. virtio stays pixman (no virgl).
+	export WLR_RENDERER=gles2
 fi

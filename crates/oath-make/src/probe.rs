@@ -434,6 +434,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "stat -c %a /dev/ptmx | grep 666 && echo PTMX_OK",
+        Some("PTMX_OK"),
+        "dev.ptmx",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath get dev:card0 --actual",
         Some("\"present\": true"),
         "dev.card0",

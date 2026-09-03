@@ -42,8 +42,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /oath/ssh/         dropbear host keys (generated)
     dropbear           svc:sshd, keys from ssh:local
     seatd              svc:seatd (DRM seat)
-    river              svc:river as `home` (glibc, pixman, libudev-zero, socket /run/user/1;
-                       hardware cursors unless a DRM card is virtio)
+    river              svc:river as `home` (glibc, libudev-zero, socket /run/user/1;
+                       gles2/radeonsi on real KMS, pixman on virtio; hardware
+                       cursors unless a DRM card is virtio)
     sola-bus/call      svc:sola-bus / svc:sola-call as `home` (sockets /run/user/1)
     sola-river         svc:sola-river (bridge, not the compositor)
     sola-shell         svc:sola-shell (iced menubar; wgpu/gl; llvmpipe forced
