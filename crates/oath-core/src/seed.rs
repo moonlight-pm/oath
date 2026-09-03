@@ -93,6 +93,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "grok", true, true)?;
     seed_pkg(root, "git", true, true)?;
     seed_pkg(root, "curl", true, true)?;
+    seed_pkg(root, "pipewire", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),
@@ -176,6 +177,21 @@ pub fn seed(root: &Path) -> Result<()> {
         &["/bin/sola-session"],
         &["svc:sola-bus", "svc:sola-call"],
         "on-failure",
+    )?;
+    seed_svc(root, "pipewire", &["/bin/pipewire"], &[], "always")?;
+    seed_svc(
+        root,
+        "wireplumber",
+        &["/bin/wireplumber"],
+        &["svc:pipewire"],
+        "always",
+    )?;
+    seed_svc(
+        root,
+        "pipewire-pulse",
+        &["/bin/pipewire-pulse"],
+        &["svc:pipewire"],
+        "always",
     )?;
 
     let ssh = ObjectId::new(KIND_SSH, "local");

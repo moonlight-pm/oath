@@ -35,7 +35,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -48,8 +48,11 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-bus/call      svc:sola-bus / svc:sola-call as `home` (sockets /run/user/1)
     sola-river         svc:sola-river (bridge, not the compositor)
     sola-shell         svc:sola-shell (iced menubar; wgpu/gl; llvmpipe forced
-                       only on virtio KMS; McMojave)
+                       only on virtio KMS; McMojave; LED graphs are RGBA images)
     sola-session       svc:sola-session (LaunchApp; direct spawn)
+    pipewire           pkg:pipewire + seat svcs (pipewire, wireplumber,
+                       pipewire-pulse) as `home`; ALSA PCH analog pinned
+                       (no udevd card enum)
     sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
@@ -66,7 +69,7 @@ sshd; then amdgpu; wait for `/dev/dri` + `/dev/input` and chown them
 Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
-`svc:sola-session`.
+`svc:sola-session`, `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse`.
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)

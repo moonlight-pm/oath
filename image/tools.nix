@@ -39,6 +39,10 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${pkgs.git} $out/git
   ln -s ${pkgs.pkgsStatic.curl.bin}/bin/curl $out/curl
   ln -s ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/ca-bundle.crt
+  ln -s ${pkgs.pipewire} $out/pipewire
+  ln -s ${pkgs.wireplumber} $out/wireplumber
+  ln -s ${pkgs.alsa-lib} $out/alsa-lib
+  ln -s ${pkgs.libpulseaudio} $out/libpulseaudio
   if [ -d ${pkgs.linux-firmware}/lib/firmware/tigon ]; then
     cp -a ${pkgs.linux-firmware}/lib/firmware/tigon $out/firmware/tigon
   fi

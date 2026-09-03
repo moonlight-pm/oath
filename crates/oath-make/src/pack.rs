@@ -62,6 +62,14 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/drivers/hid/hid-generic.ko.xz",
     "kernel/drivers/hid/hid-apple.ko.xz",
     "kernel/drivers/hid/usbhid/usbhid.ko.xz",
+    // Canto: Intel HDA 8086:1d20 (Cirrus) + Pitcairn HDMI 1002:aab0.
+    // QEMU: virtio_snd. USB: headset. Transitive snd-* from modules.dep.
+    "kernel/sound/pci/hda/snd-hda-intel.ko.xz",
+    "kernel/sound/pci/hda/snd-hda-codec-hdmi.ko.xz",
+    "kernel/sound/pci/hda/snd-hda-codec-cirrus.ko.xz",
+    "kernel/sound/pci/hda/snd-hda-codec-generic.ko.xz",
+    "kernel/sound/usb/snd-usb-audio.ko.xz",
+    "kernel/sound/virtio/virtio_snd.ko.xz",
 ];
 
 /// Session + kit app ELFs packed into `pkg:sola`.
@@ -336,6 +344,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "curl", true)?;
     pack_git(root, tools, out, &oath_root)?;
     link_pkg(&oath_root, &guest_bin, "git", true)?;
+    pack_pipewire(root, tools, out, &oath_root)?;
+    link_pkg(&oath_root, &guest_bin, "pipewire", true)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -703,6 +713,71 @@ fn pack_curl(oath_root: &Path, tools: &Tools) -> Result<()> {
     )?;
     chmod_exec(&dest.join("bin/curl"))?;
     Ok(())
+}
+
+fn pack_pipewire(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
+    let pw = dir_or_nix(tools.pipewire.as_ref(), "pipewire")?;
+    let wp = dir_or_nix(tools.wireplumber.as_ref(), "wireplumber")?;
+    let alsa = dir_or_nix(tools.alsa_lib.as_ref(), "alsa-lib")?;
+    let pulse = dir_or_nix(tools.libpulse.as_ref(), "libpulseaudio")?;
+    let pw_out = out.join("pipewire-pack");
+    let _ = fs::remove_dir_all(&pw_out);
+    eprintln!(">> relocate pipewire");
+    run(Command::new("bash")
+        .arg(root.join("image/relocate-pipewire.sh"))
+        .arg(&pw_out)
+        .env("PIPEWIRE", &pw)
+        .env("WIREPLUMBER", &wp)
+        .env("ALSA_LIB", &alsa)
+        .env("LIBPULSE", &pulse))?;
+    copy_tree(&pw_out, &oath_root.join("store/pkg/pipewire"))?;
+    for b in [
+        "pipewire",
+        "pipewire-pulse",
+        "wireplumber",
+        "wpctl",
+        "pw-dump",
+        "pw-cat",
+        "pw-cli",
+        "pw-play",
+        "pw-record",
+    ] {
+        chmod_exec(&oath_root.join("store/pkg/pipewire/bin").join(b))?;
+        let libexec = oath_root.join("store/pkg/pipewire/libexec").join(b);
+        if libexec.is_file() && !libexec.symlink_metadata()?.file_type().is_symlink() {
+            chmod_exec(&libexec)?;
+        }
+    }
+    Ok(())
+}
+
+fn dir_or_nix(have: Option<&PathBuf>, attr: &str) -> Result<PathBuf> {
+    if let Some(p) = have {
+        if p.is_dir() {
+            return Ok(p.clone());
+        }
+    }
+    let key = format!("OATH_{}", attr.to_ascii_uppercase().replace('-', "_"));
+    if let Some(p) = std::env::var_os(&key) {
+        let p = PathBuf::from(p);
+        if p.is_dir() {
+            return Ok(p);
+        }
+    }
+    eprintln!("nix-build <nixpkgs> -A {attr}");
+    let out = run_out(Command::new("nix-build").args(["--no-out-link", "<nixpkgs>", "-A", attr]))?;
+    let p = PathBuf::from(out.trim());
+    if !p.is_dir() && !p.is_file() {
+        bail!("{attr} nix-build is not a path: {}", p.display());
+    }
+    // alsa-lib / libpulseaudio / pipewire are store dirs.
+    if p.is_file() {
+        return p
+            .parent()
+            .map(|d| d.to_path_buf())
+            .with_context(|| format!("{attr} is a file with no parent"));
+    }
+    Ok(p)
 }
 
 fn pack_git(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {

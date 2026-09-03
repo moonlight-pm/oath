@@ -28,6 +28,10 @@ pub struct Tools {
     pub git: Option<PathBuf>,
     pub curl: Option<PathBuf>,
     pub cacert: Option<PathBuf>,
+    pub pipewire: Option<PathBuf>,
+    pub wireplumber: Option<PathBuf>,
+    pub alsa_lib: Option<PathBuf>,
+    pub libpulse: Option<PathBuf>,
     pub qemu: PathBuf,
     pub qemu_img: PathBuf,
 }
@@ -158,6 +162,18 @@ pub fn load(root: &Path) -> Result<Tools> {
         git,
         curl,
         cacert,
+        pipewire: opt_dir("pipewire").or_else(|| {
+            std::env::var_os("OATH_PIPEWIRE").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
+        wireplumber: opt_dir("wireplumber").or_else(|| {
+            std::env::var_os("OATH_WIREPLUMBER").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
+        alsa_lib: opt_dir("alsa-lib").or_else(|| {
+            std::env::var_os("OATH_ALSA_LIB").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
+        libpulse: opt_dir("libpulseaudio").or_else(|| {
+            std::env::var_os("OATH_LIBPULSEAUDIO").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
         qemu,
         qemu_img,
     })

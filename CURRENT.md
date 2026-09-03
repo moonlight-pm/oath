@@ -19,16 +19,21 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    1920×1080). `/dev/ptmx` is 0666 so terminal tmux/PTY works.
    Serial svc **off** (no UART). EFI mark still paints. **T30**
    `pkg:grok` packed (`/bin/grok`, updater off). `pkg:git` and
-   `pkg:curl` packed. Next: remaining kit or rustc on the guest.
+   `pkg:curl` packed. Menubar CPU/MEM/RX LED graphs paint (image
+   raster, not 1×1 canvas). Volume chip is up (`pkg:pipewire` +
+   ALSA HDA; Built-in Audio). Next: remaining kit (spotify ELF)
+   or rustc on the guest.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto. Other kit apps still out. **Sola master**
-   merged into oath-sola (`fee49995`) and packed `pkg:sola` is live
-   on canto (flower Restart Computer / Shut Down via `oath apply
-   --confirm`; Super+Tab counts, notify pile, volume spectrum,
-   rounded float CSD, browser omnibox/devtools).
+   merged into oath-sola (`a6dd7c12`, Sola `c631e241` LED raster)
+   and packed `pkg:sola` is live on canto (flower Restart Computer
+   / Shut Down via `oath apply --confirm`; Super+Tab counts, notify
+   pile, volume spectrum, rounded float CSD, browser omnibox/devtools).
+   `pkg:pipewire` is on canto this boot (PipeWire + WirePlumber +
+   pulse + ALSA PCH sink); HDMI not auto-enumerated; no dbus.
 4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. rustc still host-side.
    **T30** `pkg:grok` packed. **T31** seat `home`
@@ -49,7 +54,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `fee49995` (flower Restart/Shutdown via oath). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
 
 ```sh
 nix-shell
@@ -80,10 +85,10 @@ Do not re-litigate without an explicit decision.
   `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
 - Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
-  `sola`, `grok`, `git`, `curl`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
+  `sola`, `grok`, `git`, `curl`, `pipewire`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (`/bin/grok`);
-  Grok does not self-update. `pkg:git` and `pkg:curl` packed.
+  Grok does not self-update. `pkg:git`, `pkg:curl`, and `pkg:pipewire` packed.
 - Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
   dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
@@ -104,7 +109,7 @@ Do not re-litigate without an explicit decision.
   + CEF in the same blob. T29 is `/bin/sola-workspaces` + `solactl`
   in the same blob. **T30:** `pkg:grok` is the
   install; Grok does not update Grok; `$GROK_HOME` is `/home/.grok`; not in
-  the Sola blob. `pkg:git` and `pkg:curl` packed. **T24:** one `pkg:sola` blob;
+  the Sola blob. `pkg:git`, `pkg:curl`, and `pkg:pipewire` packed. **T24:** one `pkg:sola` blob;
   development versions are apply/undo of the real objects (no second
   PATH, no nested PM). Oath-as-dev-host **started** (T29 Workspaces on
   canto); inner loop (rustc) still Nix. glibc is sealed
@@ -155,5 +160,5 @@ Do not re-litigate without an explicit decision.
   session manager as `svc`; sola-terminal packed; sola-browser packed
   (canto; QEMU on next `cargo make build`); sola-workspaces packed
   (canto; QEMU on next build); T31 seat `home` on canto SSH +
-  graphical stack as `home`; `pkg:grok` / `pkg:git` / `pkg:curl`
+  graphical stack as `home`; `pkg:grok` / `pkg:git` / `pkg:curl` / `pkg:pipewire`
   packed; other kit apps not; Phase 6 metal canary (canto) dogfoodable

@@ -18,6 +18,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:grok` | `present: true` | yes — borrowed static-pie Grok ELF; `/bin/grok`. Updater off (`GROK_DISABLE_AUTOUPDATER`). State is `/home/.grok`, not the payload. |
 | `pkg:git` | `present: true` | yes — borrowed Git; `/bin/git`. HTTPS via `git-remote-http` + CA bundle in the store. |
 | `pkg:curl` | `present: true` | yes — borrowed static musl curl; `/bin/curl`. CA bundle in the store. |
+| `pkg:pipewire` | `present: true` | yes — PipeWire + WirePlumber + pipewire-pulse + alsa-lib + libpulse; `/bin/pipewire`, `/bin/wpctl`, `/bin/pw-dump`, `/bin/pw-cat`. |
 | `pkg:hello` | `present: false` | yes — canary |
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 

@@ -82,6 +82,12 @@ const MODULES: &[&str] = &[
     "kernel/drivers/hid/hid-generic.ko",
     "kernel/drivers/hid/hid-apple.ko",
     "kernel/drivers/hid/usbhid/usbhid.ko",
+    "kernel/sound/pci/hda/snd-hda-intel.ko",
+    "kernel/sound/pci/hda/snd-hda-codec-hdmi.ko",
+    "kernel/sound/pci/hda/snd-hda-codec-cirrus.ko",
+    "kernel/sound/pci/hda/snd-hda-codec-generic.ko",
+    "kernel/sound/usb/snd-usb-audio.ko",
+    "kernel/sound/virtio/virtio_snd.ko",
 ];
 
 pub(crate) fn log(msg: &str) {
@@ -202,7 +208,7 @@ fn load_modules(defer_kms: bool) {
     let base = Path::new("/lib/modules").join(&rel);
     let list = module_load_order(&base);
     for m in list {
-        if defer && gpu::takes_over_firmware_fb(&m) {
+        if defer && load_late(&m) {
             continue;
         }
         if module_already_loaded(&m) {
@@ -230,6 +236,13 @@ fn load_modules(defer_kms: bool) {
     if !defer {
         wait_drm(Duration::from_secs(5));
     }
+}
+
+/// KMS takeover plus ALSA. HDMI audio sits on the GPU function; load
+/// snd after amdgpu so the HDA controller is there. Analog Intel HDA
+/// can wait the same two seconds.
+fn load_late(rel: &str) -> bool {
+    gpu::takes_over_firmware_fb(rel) || rel.contains("/sound/")
 }
 
 fn module_already_loaded(rel: &str) -> bool {
@@ -673,6 +686,11 @@ fn unix_floor() {
     let xdg = format!("/run/user/{}", oath_core::seat::UID);
     let _ = fs::create_dir_all(&xdg);
     let _ = fs::set_permissions(&xdg, std::fs::Permissions::from_mode(0o700));
+    // glib/dbus look here; we do not ship dbus-daemon.
+    if !Path::new("/etc/machine-id").is_file() {
+        let _ = fs::create_dir_all("/etc");
+        let _ = fs::write("/etc/machine-id", "00000000000000000000000000000001\n");
+    }
     let _ = fs::create_dir_all("/sys/fs/cgroup");
     let _ =
         mount(Some("cgroup2"), "/sys/fs/cgroup", Some("cgroup2"), MsFlags::empty(), None::<&str>);

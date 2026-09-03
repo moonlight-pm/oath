@@ -162,6 +162,10 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:grok"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:git"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:curl"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:pipewire"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:wireplumber"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire-pulse"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-bus"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-call"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-river"));

@@ -18,6 +18,11 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |
 | `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher / window menu / Super+K / Super+Tab. Wants river + bus + call + the bridge. wgpu/gl; llvmpipe only on virtio KMS; gles2/radeonsi on metal. |
 | `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). Kit apps in `pkg:sola`: `/bin/sola-terminal` (tmux), `/bin/sola-browser` (CEF), `/bin/sola-workspaces` (`solactl` helper). |
+| `svc:pipewire` | `/bin/pipewire` | enabled, `restart=always` | Seat audio graph as `home`. `/run/user/1/pipewire-0`. Wants nothing. |
+| `svc:wireplumber` | `/bin/wireplumber` | enabled, `restart=always` | Session manager (`--profile main-embedded`). Wants `svc:pipewire`. |
+| `svc:pipewire-pulse` | `/bin/pipewire-pulse` | enabled, `restart=always` | Pulse compatibility for librespot. Wants `svc:pipewire`. |
+
+On canto this boot, PipeWire was started as `home` by hand (`XDG_RUNTIME_DIR=/run/user/1`) so the menubar volume chip has a sink before the next ESP initrd (old PID 1 does not treat `svc:pipewire` as a seat svc). New images seed the three svcs as seat.
 
 **Quit Sola** (flower menu) broadcasts shutdown and the session processes
 exit 0. PID 1 does **not** restart them (`on-failure` only). River the

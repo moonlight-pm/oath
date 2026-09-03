@@ -20,6 +20,7 @@ pub fn is_seat_svc(id: &str) -> bool {
     matches!(
         name,
         "river" | "sola-bus" | "sola-call" | "sola-river" | "sola-shell" | "sola-session"
+            | "pipewire" | "wireplumber" | "pipewire-pulse"
     )
 }
 
@@ -115,6 +116,9 @@ mod tests {
         assert!(is_seat_svc("svc:river"));
         assert!(is_seat_svc("svc:sola-shell"));
         assert!(is_seat_svc("river"));
+        assert!(is_seat_svc("svc:pipewire"));
+        assert!(is_seat_svc("svc:wireplumber"));
+        assert!(is_seat_svc("svc:pipewire-pulse"));
         assert!(!is_seat_svc("svc:seatd"));
         assert!(!is_seat_svc("svc:sshd"));
         assert!(!is_seat_svc("svc:serial"));
@@ -132,13 +136,15 @@ mod tests {
     }
 }
 
-/// DRM + evdev nodes the seat compositor must open (no udevd).
+/// DRM, evdev, and ALSA nodes the seat compositor / PipeWire must open (no udevd).
 /// Kernel/mdev default gid is often 44/14 (`video`/`input` folklore).
 pub fn open_device_nodes() {
     let _ = fs::create_dir_all("/dev/dri");
     let _ = fs::create_dir_all("/dev/input");
     chmod_tree("/dev/dri", 0o660, 0, GID);
     chmod_tree("/dev/input", 0o660, 0, GID);
+    let _ = fs::create_dir_all("/dev/snd");
+    chmod_tree("/dev/snd", 0o660, 0, GID);
     // mdev -s after amdgpu resets these to 0660 root:root.
     for n in [
         "/dev/null",
