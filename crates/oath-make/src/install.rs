@@ -25,6 +25,7 @@ pub struct Opts {
     pub hostname: Option<String>,
 }
 
+#[derive(Clone)]
 struct Remote {
     user: String,
     host: String,
@@ -234,6 +235,14 @@ fn ssh_run(r: &Remote, remote_cmd: &str) -> Result<()> {
     Ok(())
 }
 
+fn ssh_reboot(r: &Remote) -> Result<()> {
+    let mut c = ssh_base(r);
+    c.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=2"]);
+    c.arg("/bin/busybox reboot -f");
+    let _ = c.status();
+    Ok(())
+}
+
 fn ssh_out(r: &Remote, remote_cmd: &str) -> Result<String> {
     let cmd = if r.sudo { format!("sudo -n {remote_cmd}") } else { remote_cmd.to_string() };
     let o = ssh_base(r).arg(&cmd).output().context("ssh")?;
@@ -284,13 +293,44 @@ fn already_installer(r: &Remote) -> bool {
 fn enter_installer(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<()> {
     // kexec on this Apple box jumps and never brings tg3 up. Firmware reboot
     // re-inits PCI; QEMU rehearsal does not use this path.
-    if ssh_out(r, "test -d /sys/firmware/efi && test -d /boot/loader/entries && echo YES")
+    if ssh_out(r, "test -d /sys/firmware/efi && echo YES")
         .map(|s| s.contains("YES"))
         .unwrap_or(false)
     {
-        return efi_oneshot_installer(out, tools, opts, r);
+        if let Err(e) = mount_esp(r, opts) {
+            eprintln!("mount ESP: {e}");
+        }
+        if ssh_out(r, "test -d /boot/loader/entries && echo YES")
+            .map(|s| s.contains("YES"))
+            .unwrap_or(false)
+        {
+            return efi_oneshot_installer(out, tools, opts, r);
+        }
+        eprintln!("EFI but no loader entries; kexec fallback");
     }
     kexec_into_installer(out, tools, opts, r)
+}
+
+fn mount_esp(r: &Remote, opts: &Opts) -> Result<()> {
+    if ssh_out(r, "test -d /boot/loader/entries && echo YES")
+        .map(|s| s.contains("YES"))
+        .unwrap_or(false)
+    {
+        return Ok(());
+    }
+    let (p1, _) = parts(&opts.disk);
+    let dev = ssh_out(r, "blkid -L OATHESP").ok().filter(|s| s.starts_with("/dev/")).unwrap_or(p1);
+    let _ = ssh_run(r, "modprobe vfat || true");
+    ssh_run(r, "mkdir -p /boot")?;
+    ssh_run(r, &format!("mount -t vfat {dev} /boot"))?;
+    if !ssh_out(r, "test -d /boot/loader/entries && echo YES")
+        .map(|s| s.contains("YES"))
+        .unwrap_or(false)
+    {
+        bail!("mounted {dev} on /boot but loader/entries is missing");
+    }
+    eprintln!("ESP {dev} mounted on /boot");
+    Ok(())
 }
 
 fn installer_cmdline(r: &Remote) -> Result<String> {
@@ -321,16 +361,16 @@ fn efi_oneshot_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) ->
     let entry = format!(
         "title Oath installer\nlinux /oath-install/vmlinuz\ninitrd /oath-install/initrd.gz\noptions {cmdline}\n"
     );
+    // oath-efi (BOOTX64) reads only loader/entries/oath.conf — not loader.conf
+    // default / oneshot. systemd-boot fallback still gets a separate entry.
+    put_text(r, "/boot/loader/entries/oath.conf", &entry)?;
     put_text(r, "/boot/loader/entries/oath-install.conf", &entry)?;
-    let oneshot = ssh_run(r, "bootctl set-oneshot oath-install.conf");
-    if oneshot.is_err() {
-        eprintln!("bootctl set-oneshot failed; writing loader.conf default");
-        put_text(r, "/boot/loader/loader.conf", "default oath-install.conf\ntimeout 1\n")?;
-    }
+    put_text(r, "/boot/loader/loader.conf", "default oath-install.conf\ntimeout 1\n")?;
+    let _ = ssh_run(r, "sync");
     eprintln!("rebooting into installer (firmware re-inits PCI)");
     let mut c = ssh_base(r);
     c.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=2"]);
-    c.arg(if r.sudo { "sudo -n systemctl reboot" } else { "systemctl reboot" });
+    c.arg(&reboot_remote_cmd(r));
     if let Ok(mut child) = c.spawn() {
         let start = Instant::now();
         loop {
@@ -515,7 +555,7 @@ mount --bind /esp /mnt/boot
         "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && (test -f /opt/oath-install/systemd-bootx64.efi && cp /opt/oath-install/systemd-bootx64.efi /esp/EFI/systemd/systemd-bootx64.efi || cp /opt/oath-install/BOOTX64.EFI /esp/EFI/systemd/systemd-bootx64.efi) && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
     )?;
     let entry = format!(
-        "title Oath\nlinux /vmlinuz\ninitrd /initrd.gz\noptions {quiet} console=ttyS0,115200 amdgpu.si_support=1 radeon.si_support=0 oath.root={p2}\n",
+        "title Oath\nlinux /vmlinuz\ninitrd /initrd.gz\noptions {quiet} console=ttyS0,115200 console=tty0 amdgpu.si_support=1 radeon.si_support=0 oath.root={p2}\n",
         quiet = crate::qemu::QUIET_BOOT,
     );
     ssh_run(
@@ -526,7 +566,7 @@ mount --bind /esp /mnt/boot
             e = sh_quote(&entry),
         ),
     )?;
-    ssh_run(r, "umount /mnt/boot /mnt /esp || true")?;
+    ssh_run(r, "sync; umount /mnt/boot /mnt /esp || true")?;
     eprintln!("disk written; reboot");
     Ok(())
 }
@@ -565,7 +605,7 @@ fn patch_catalog(out: &Path, opts: &Opts, hostname: &str, r: &Remote) -> Result<
         ssh_run(
             r,
             r#"w=/mnt/oath/store/pkg/sola/bin/sola-river
-[ -f "$w" ] && sed -i 's/^export SOLA_OUTPUT_PICK=preferred/# export SOLA_OUTPUT_PICK=preferred/' "$w"
+[ -f "$w" ] && /bin/busybox sed -i 's/^export SOLA_OUTPUT_PICK=preferred/# export SOLA_OUTPUT_PICK=preferred/' "$w"
 true"#,
         )?;
     }
@@ -587,10 +627,10 @@ fn install_remote(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<
     wait_ssh(&inst, Duration::from_secs(300))?;
     format_and_copy(out, tools, opts, &inst)?;
     eprintln!("disk written; reboot");
-    let _ = ssh_run(&inst, "/bin/busybox reboot -f");
-    wait_oath_ssh(&inst, Duration::from_secs(300))?;
-    let ls = ssh_out(&inst, "/bin/oath ls")?;
-    eprintln!("oath ls:\n{ls}");
+    let _ = ssh_reboot(&inst);
+    let live = wait_oath_ssh(&r.host, r.port, Duration::from_secs(300))?;
+    let ls = ssh_out(&live, "/bin/oath ls")?;
+    eprintln!("oath ls ({}@{}):\n{ls}", live.user, live.host);
     if !ls.contains("host:local") {
         bail!("installed system has no host:local");
     }
@@ -677,10 +717,11 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         dump_serial(&serial_boot);
         bail!("OVMF qemu exited immediately: {st}");
     }
-    let wait = wait_oath_ssh(&inst, Duration::from_secs(180));
+    let wait = wait_oath_ssh("127.0.0.1", port, Duration::from_secs(180));
     let ok = wait.is_ok();
     if ok {
-        let ls = ssh_out(&inst, "oath ls")?;
+        let live = wait.as_ref().expect("ok");
+        let ls = ssh_out(live, "oath ls")?;
         eprintln!("oath ls:\n{ls}");
         if !ls.contains("host:local") {
             let _ = boot_child.kill();
@@ -738,15 +779,43 @@ fn dump_serial(path: &Path) {
     }
 }
 
-fn wait_oath_ssh(r: &Remote, timeout: Duration) -> Result<()> {
+fn reboot_remote_cmd(r: &Remote) -> String {
+    let inner = if ssh_out(r, "test -x /bin/oath && echo YES")
+        .map(|s| s.contains("YES"))
+        .unwrap_or(false)
+    {
+        "oath set host:local power=reboot && oath apply --confirm".to_string()
+    } else if ssh_out(r, "command -v systemctl >/dev/null && echo YES")
+        .map(|s| s.contains("YES"))
+        .unwrap_or(false)
+    {
+        "systemctl reboot".into()
+    } else {
+        "/bin/reboot -f".into()
+    };
+    if r.sudo {
+        format!("sudo -n {inner}")
+    } else {
+        inner
+    }
+}
+
+fn wait_oath_ssh(host: &str, port: u16, timeout: Duration) -> Result<Remote> {
+    let candidates = [
+        Remote { user: "home".into(), host: host.into(), port, sudo: false },
+        Remote { user: "root".into(), host: host.into(), port, sudo: false },
+    ];
     let deadline = Instant::now() + timeout;
-    eprintln!("waiting for installed SSH at {}:{}", r.host, r.port);
+    eprintln!("waiting for installed SSH at {host}:{port} (home, then root)");
     while Instant::now() < deadline {
-        if ssh_out(r, "test -f /oath/INDEX.md && echo YES")
-            .map(|s| s.contains("YES"))
-            .unwrap_or(false)
-        {
-            return Ok(());
+        for c in &candidates {
+            if ssh_out(c, "test -f /oath/INDEX.md && echo YES")
+                .map(|s| s.contains("YES"))
+                .unwrap_or(false)
+            {
+                eprintln!("installed SSH is {}@{host}", c.user);
+                return Ok(c.clone());
+            }
         }
         thread::sleep(Duration::from_secs(3));
     }
