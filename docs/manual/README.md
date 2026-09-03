@@ -15,7 +15,7 @@ Dogfood: **x86_64 QEMU** appliance (serial, SSH, virtio-gpu window if
 | [Packages](packages.md) | store, `/bin` links, `hello` / `fetchme` |
 | [Network](network.md) | `net:net0`, static or dhcp |
 | [Devices](devices.md) | `vda` / `net0` / `ttyS0` / `card0` / `kbd0` / `mouse0`; Unix floor |
-| [SSH](ssh.md) | `ssh:local` keys, dropbear, no baked private key |
+| [SSH](ssh.md) | `ssh:local` keys, dropbear, scp/sftp, no baked private key |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N` |
 | [The appliance](qemu.md) | Build, run, probe, disk layout |
 | [Install](install.md) | `cargo make install` to a named disk; USB stick |

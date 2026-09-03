@@ -190,8 +190,62 @@ fn host_ssh(key: &Path, want_ok: bool) -> (bool, String) {
     host_ssh_as(key, "home", "echo SSH_OK", want_ok)
 }
 
+fn ssh_port() -> u16 {
+    std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222u16)
+}
+
+fn host_scp(key: &Path) -> (bool, String) {
+    let port = ssh_port();
+    let src = std::env::temp_dir().join("oath-probe-scp.txt");
+    let marker = format!("probe-scp-{}", std::process::id());
+    if let Err(e) = fs::write(&src, format!("{marker}\n")) {
+        return (false, format!("write {}: {e}", src.display()));
+    }
+    let o = Command::new("scp")
+        .args([
+            "-P",
+            &port.to_string(),
+            "-i",
+            &key.display().to_string(),
+            "-o",
+            "StrictHostKeyChecking=no",
+            "-o",
+            "UserKnownHostsFile=/dev/null",
+            "-o",
+            "GlobalKnownHostsFile=/dev/null",
+            "-o",
+            "ConnectTimeout=4",
+            "-o",
+            "BatchMode=yes",
+            &src.display().to_string(),
+            "home@127.0.0.1:/tmp/oath-probe-scp.txt",
+        ])
+        .output();
+    let _ = fs::remove_file(&src);
+    match o {
+        Ok(o) if o.status.success() => {
+            let (ok, detail) = host_ssh_as(
+                key,
+                "home",
+                &format!("grep -q '{marker}' /tmp/oath-probe-scp.txt && echo SSH_OK"),
+                true,
+            );
+            (ok, format!("scp ok; {detail}"))
+        }
+        Ok(o) => (
+            false,
+            format!(
+                "scp status={} stderr={:?}",
+                o.status.code().unwrap_or(-1),
+                String::from_utf8_lossy(&o.stderr).trim()
+            ),
+        ),
+        Err(e) => (false, e.to_string()),
+    }
+}
+
 fn host_ssh_as(key: &Path, user: &str, remote: &str, want_ok: bool) -> (bool, String) {
-    let port = std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222u16);
+    let port = ssh_port();
     let tries = if want_ok { 10 } else { 2 };
     let mut last = String::new();
     for _ in 0..tries {
@@ -884,6 +938,26 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     {
         let (ok, detail) = host_ssh_as(&key_path, "home", "sudo id -u && echo SSH_OK", true);
         record(&mut steps, "ssh.sudo", ok, &detail);
+    }
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /bin/vi && vi --help 2>&1 | grep -q 'Usage: vi' && echo VI_OK",
+        Some("VI_OK"),
+        "pkg.busybox_vi",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /bin/scp -a -x /bin/sftp-server && echo SFTP_BIN",
+        Some("SFTP_BIN"),
+        "ssh.sftp_bin",
+        Duration::from_secs(8),
+    )?;
+    {
+        let (ok, detail) = host_scp(&key_path);
+        record(&mut steps, "ssh.scp", ok, &detail);
     }
     cmd(
         &mut vm,

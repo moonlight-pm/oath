@@ -14,6 +14,8 @@ pub struct Tools {
     pub mkfs_btrfs: Option<PathBuf>,
     pub dropbear: Option<PathBuf>,
     pub dropbearkey: Option<PathBuf>,
+    pub dropbear_scp: Option<PathBuf>,
+    pub sftp_server: Option<PathBuf>,
     pub sgdisk: Option<PathBuf>,
     pub mkfs_fat: Option<PathBuf>,
     pub kexec: Option<PathBuf>,
@@ -43,6 +45,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut btrfs = std::env::var_os("OATH_BTRFS").map(PathBuf::from);
     let mut dropbear = std::env::var_os("OATH_DROPBEAR").map(PathBuf::from);
     let mut dropbearkey = std::env::var_os("OATH_DROPBEARKEY").map(PathBuf::from);
+    let mut dropbear_scp = std::env::var_os("OATH_DROPBEAR_SCP").map(PathBuf::from);
+    let mut sftp_server = std::env::var_os("OATH_SFTP_SERVER").map(PathBuf::from);
     let mut glibc = std::env::var_os("OATH_GLIBC").map(PathBuf::from);
     let mut river = std::env::var_os("OATH_RIVER").map(PathBuf::from);
     let mut sola_rt = std::env::var_os("OATH_SOLA_RT").map(PathBuf::from);
@@ -70,6 +74,14 @@ pub fn load(root: &Path) -> Result<Tools> {
         });
         dropbearkey = dropbearkey.or_else(|| {
             let p = tools.join("dropbearkey");
+            p.is_file().then_some(p)
+        });
+        dropbear_scp = dropbear_scp.or_else(|| {
+            let p = tools.join("dropbear-scp");
+            p.is_file().then_some(p)
+        });
+        sftp_server = sftp_server.or_else(|| {
+            let p = tools.join("sftp-server");
             p.is_file().then_some(p)
         });
         glibc = glibc.or_else(|| {
@@ -124,6 +136,18 @@ pub fn load(root: &Path) -> Result<Tools> {
     let btrfs = btrfs.filter(|p| p.is_file());
     let dropbear = dropbear.filter(|p| p.is_file());
     let dropbearkey = dropbearkey.filter(|p| p.is_file());
+    let dropbear_scp = dropbear_scp.filter(|p| p.is_file()).or_else(|| {
+        dropbear.as_ref().and_then(|d| {
+            let p = d.parent()?.join("dropbear-scp");
+            p.is_file().then_some(p)
+        })
+    });
+    let sftp_server = sftp_server.filter(|p| p.is_file()).or_else(|| {
+        dropbear.as_ref().and_then(|d| {
+            let p = d.parent()?.join("sftp-server");
+            p.is_file().then_some(p)
+        })
+    });
     let glibc = glibc.filter(|p| p.is_dir());
     let river = river.filter(|p| p.is_dir());
     let sola_rt = sola_rt.filter(|p| p.is_dir());
@@ -148,6 +172,8 @@ pub fn load(root: &Path) -> Result<Tools> {
         mkfs_btrfs: opt_file("mkfs.btrfs"),
         dropbear,
         dropbearkey,
+        dropbear_scp,
+        sftp_server,
         sgdisk: opt_file("sgdisk"),
         mkfs_fat: opt_file("mkfs.fat"),
         kexec: opt_file("kexec"),

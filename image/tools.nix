@@ -12,6 +12,13 @@ let
     wlrootsSrc = ../forks/wlroots;
   };
   solaRt = pkgs.callPackage ./sola-rt.nix { };
+  # Dropbear looks up sftp-server at compile time. Nixpkgs defaults that
+  # to a NixOS path; point it at the Oath /bin farm. enableSCP builds the
+  # legacy scp helper so `scp -O` works too (modern scp uses SFTP).
+  dropbearOath = pkgs.pkgsStatic.dropbear.override {
+    enableSCP = true;
+    sftpPath = "/bin/sftp-server";
+  };
   sbEfi = pkgs.runCommand "systemd-bootx64.efi" { } ''
     cp ${pkgs.systemd}/lib/systemd/boot/efi/systemd-bootx64.efi $out
   '';
@@ -23,8 +30,10 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${pkgs.pkgsStatic.busybox}/bin/busybox $out/busybox
   ln -s ${pkgs.pkgsStatic.btrfs-progs}/bin/btrfs $out/btrfs
   ln -s ${pkgs.pkgsStatic.btrfs-progs}/bin/mkfs.btrfs $out/mkfs.btrfs
-  ln -s ${pkgs.pkgsStatic.dropbear}/bin/dropbear $out/dropbear
-  ln -s ${pkgs.pkgsStatic.dropbear}/bin/dropbearkey $out/dropbearkey
+  ln -s ${dropbearOath}/bin/dropbear $out/dropbear
+  ln -s ${dropbearOath}/bin/dropbearkey $out/dropbearkey
+  ln -s ${dropbearOath}/bin/scp $out/dropbear-scp
+  ln -s ${pkgs.pkgsStatic.openssh}/libexec/sftp-server $out/sftp-server
   ln -s ${pkgs.pkgsStatic.gptfdisk}/bin/sgdisk $out/sgdisk
   ln -s ${pkgs.pkgsStatic.dosfstools}/bin/mkfs.fat $out/mkfs.fat
   ln -s ${pkgs.pkgsStatic.kexec-tools}/bin/kexec $out/kexec

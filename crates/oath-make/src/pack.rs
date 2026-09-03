@@ -181,6 +181,14 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         copy_file(dk, &ir_install.join("bin/dropbearkey"))?;
         chmod_exec(&ir_install.join("bin/dropbearkey"))?;
     }
+    if let Some(scp) = &tools.dropbear_scp {
+        copy_file(scp, &ir_install.join("bin/scp"))?;
+        chmod_exec(&ir_install.join("bin/scp"))?;
+    }
+    if let Some(sftp) = &tools.sftp_server {
+        copy_file(sftp, &ir_install.join("bin/sftp-server"))?;
+        chmod_exec(&ir_install.join("bin/sftp-server"))?;
+    }
     if let Some(sg) = &tools.sgdisk {
         copy_file(sg, &ir_install.join("bin/sgdisk"))?;
         chmod_exec(&ir_install.join("bin/sgdisk"))?;
@@ -306,7 +314,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     let Some(dropbearkey) = &tools.dropbearkey else {
         bail!("OATH_DROPBEARKEY / tools dropbearkey required");
     };
-    write_dropbear_store(&oath_root, dropbear, dropbearkey)?;
+    let Some(dropbear_scp) = &tools.dropbear_scp else {
+        bail!("OATH_DROPBEAR_SCP / tools dropbear-scp required (pkg:dropbear scp)");
+    };
+    let Some(sftp_server) = &tools.sftp_server else {
+        bail!("OATH_SFTP_SERVER / tools sftp-server required (pkg:dropbear sftp)");
+    };
+    write_dropbear_store(&oath_root, dropbear, dropbearkey, dropbear_scp, sftp_server)?;
     write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
     let Some(glibc) = &tools.glibc else {
         bail!("OATH_GLIBC / tools glibc required (pkg:glibc)");
@@ -417,8 +431,18 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
     chmod_exec(&dir.join("busybox"))?;
     let list = crate::util::run_out(Command::new(busybox).arg("--list"))?;
     for a in list.split_whitespace() {
-        if matches!(a, "busybox" | "hello" | "btrfs" | "oath" | "dropbear" | "dropbearkey" | "sudo")
-        {
+        if matches!(
+            a,
+            "busybox"
+                | "hello"
+                | "btrfs"
+                | "oath"
+                | "dropbear"
+                | "dropbearkey"
+                | "scp"
+                | "sftp-server"
+                | "sudo"
+        ) {
             continue;
         }
         let dest = dir.join(a);
@@ -428,13 +452,23 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
     Ok(())
 }
 
-fn write_dropbear_store(oath_root: &Path, dropbear: &Path, dropbearkey: &Path) -> Result<()> {
+fn write_dropbear_store(
+    oath_root: &Path,
+    dropbear: &Path,
+    dropbearkey: &Path,
+    scp: &Path,
+    sftp_server: &Path,
+) -> Result<()> {
     let dir = oath_root.join("store/pkg/dropbear/bin");
     fs::create_dir_all(&dir)?;
     copy_file(dropbear, &dir.join("dropbear"))?;
     copy_file(dropbearkey, &dir.join("dropbearkey"))?;
+    copy_file(scp, &dir.join("scp"))?;
+    copy_file(sftp_server, &dir.join("sftp-server"))?;
     chmod_exec(&dir.join("dropbear"))?;
     chmod_exec(&dir.join("dropbearkey"))?;
+    chmod_exec(&dir.join("scp"))?;
+    chmod_exec(&dir.join("sftp-server"))?;
     Ok(())
 }
 

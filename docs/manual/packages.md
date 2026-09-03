@@ -8,10 +8,10 @@ target. There is no `apt` and no `oath install`.
 
 | Id | Default | Removable |
 |----|---------|-----------|
-| `pkg:busybox` | `present: true` | no — applets are this one object |
+| `pkg:busybox` | `present: true` | no — applets are this one object (includes `/bin/vi`) |
 | `pkg:btrfs` | `present: true` | no |
 | `pkg:oath` | `present: true` | no |
-| `pkg:dropbear` | `present: true` | no |
+| `pkg:dropbear` | `present: true` | no — dropbear, dropbearkey, scp, sftp-server |
 | `pkg:glibc` | `present: true` | no — GNU C runtime for River and Sola; not loaded by PID 1 |
 | `pkg:river` | `present: true` | yes — patched River; `/bin/river` |
 | `pkg:sola` | `present: true` | yes — session stack + `sola-terminal` + `sola-browser` + `sola-workspaces`; `/bin/sola-bus` and siblings including `sola-session`, `sola-terminal`, `sola-browser`, `sola-workspaces`, `solactl`, and `tmux` (C.UTF-8 locale-archive; CEF under `cef/`; SF Pro Text + Iosevka Term Slab, with Inter / JetBrains Mono fallbacks) |

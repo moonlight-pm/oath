@@ -21,8 +21,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pkg:grok` packed (`/bin/grok`, updater off). `pkg:git` and
    `pkg:curl` packed. Menubar CPU/MEM/RX LED graphs paint (image
    raster, not 1×1 canvas). Volume chip is up (`pkg:pipewire` +
-   ALSA HDA; Built-in Audio). Next: remaining kit (spotify ELF)
-   or rustc on the guest.
+   ALSA HDA; Built-in Audio). **scp / sftp** as `home@canto` (dropbear
+   `sftp-server` + `scp`; busybox `/bin/vi`). Next: remaining kit
+   (spotify ELF) or rustc on the guest.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
@@ -53,8 +54,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 | | **QEMU appliance** | **canto (metal)** |
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
-| How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire` is in seed for the **next** `cargo make build`; the current qcow was not rebuilt with it. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
+| How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire` and dropbear `scp`/`sftp-server` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. |
 
 ```sh
 nix-shell
@@ -77,7 +78,9 @@ Do not re-litigate without an explicit decision.
   `10.0.2.15/24`. `ipv4=dhcp` via udhcpc. `OATH_BRIDGE` optional.
 - SSH: **home** only, dropbear `-w`, **no baked private key**. Host
   keys under `/oath/ssh/`. Owner pubkeys in `ssh:local` →
-  `/home/.ssh/authorized_keys`. Serial is root when the svc is on
+  `/home/.ssh/authorized_keys`. `pkg:dropbear` ships `/bin/scp` and
+  `/bin/sftp-server` (musl OpenSSH helper; not glibc OpenSSH sshd).
+  Serial is root when the svc is on
   (break-glass); no UART on canto so `svc:serial` is disabled.
   `home` has `sudo` ALL, no password. Unix name `home`, uid 1,
   `HOME=/home`. Groups: `root` and `home` only. Required env is

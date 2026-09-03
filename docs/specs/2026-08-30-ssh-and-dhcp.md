@@ -1,8 +1,10 @@
 **Date:** 2026-08-30
 **Status:** target (freeze)
 **Implementation:** partial
-**Dogfood:** QEMU probe — SSH login / deny / undo / reboot; net ping
-**Gaps:** LAN bridge not dogfooded here (no host br0); dhcp oneshot not a svc
+**Dogfood:** QEMU probe — SSH login / deny / undo / reboot; net ping;
+canto `ssh` / `scp` / `sftp` as `home` (2026-09-03)
+**Gaps:** LAN bridge not dogfooded here (no host br0); dhcp oneshot not a svc;
+QEMU image not yet rebuilt with sftp-server (canto live-updated)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # SSH and DHCP

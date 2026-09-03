@@ -9,7 +9,10 @@ Host keys are generated on first boot under `/oath/ssh/`. Login keys
 are `ssh:local` `authorized` (OpenSSH public key lines). Apply writes
 `/home/.ssh/authorized_keys`.
 
-`svc:sshd` is dropbear (`pkg:dropbear`, not removable).
+`svc:sshd` is dropbear (`pkg:dropbear`, not removable). The same
+package ships `/bin/sftp-server` (OpenSSH helper, musl static) and
+`/bin/scp` (dropbear). Host `scp` / `sftp` as `home` work (canto
+live; QEMU on the next pack). The editor is busybox `vi` (`/bin/vi`).
 
 ## Add a key
 
@@ -31,6 +34,13 @@ cargo make ssh -- -i ~/.ssh/id_ed25519
 ```
 
 Port: `OATH_SSH_PORT` (default 2222), forwarded to guest 22.
+
+```
+scp ./file home@canto:/home/file
+sftp home@canto
+```
+
+QEMU: `scp -P "$OATH_SSH_PORT" ./file home@127.0.0.1:/home/file`.
 
 Empty `authorized` means nobody can log in. Undo restores the last
 keys. Host keys persist across undo of key lists (same machine).

@@ -262,8 +262,8 @@ fn put_text(r: &Remote, dest: &str, body: &str) -> Result<()> {
 }
 
 fn scp_root(r: &Remote, src: &Path, dest: &str) -> Result<()> {
-    // Dropbear ramdisk has no sftp-server and no scp applet. Stream bytes
-    // over ssh. `sudo tee` because `sudo cat > dest` redirects as the user.
+    // Stream bytes over ssh so the first hop does not depend on guest
+    // scp/sftp. `sudo tee` because `sudo cat > dest` redirects as the user.
     let remote = if r.sudo {
         format!("sudo -n tee {dest} >/dev/null")
     } else {
