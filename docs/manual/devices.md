@@ -34,3 +34,7 @@ PID 1 also mounts (not catalog objects):
 
 `/etc/hosts` has `localhost` and the hostname (updated with `host:local`).
 QEMU has virtio-rng.
+
+ALSA nodes (`/dev/snd/*`) are **not** `dev:*` objects. On metal, PID 1
+loads HDA modules after KMS and chowns `/dev/snd` `0660` root:`home`
+the same way as DRM/evdev. No udevd.

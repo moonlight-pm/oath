@@ -27,11 +27,13 @@ that are not there.
 ## What this is not
 
 Sola terminal, browser, and workspaces (`solactl`) are packed;
-other kit apps (mail, wrapper, settings, …) are not. Packages: sealed
+other kit apps (mail, wrapper, spotify, …) are not. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
-`sola`, `grok`, `git`, `curl`, `hello`, and `fetchme`. `svc:seatd` + `svc:river` is the
-compositor (libinput via libudev-zero; no udevd). `svc:sola-bus` /
-`sola-call` / `sola-river` / `sola-shell` / `sola-session` is the
-session stack. `net:net0` + root SSH (host keys injected on
-`up`/`start`). Devices include `dev:card0`, `dev:kbd0`, `dev:mouse0`.
-`/proc` `/sys` `/dev` plus tmpfs and cgroup2.
+`sola`, `grok`, `git`, `curl`, `pipewire`, `hello`, and `fetchme`.
+`svc:seatd` + `svc:river` is the compositor (libinput via libudev-zero;
+no udevd). `svc:sola-bus` / `sola-call` / `sola-river` / `sola-shell` /
+`sola-session` is the session stack. Audio is `pkg:pipewire` +
+`svc:pipewire` / `wireplumber` / `pipewire-pulse` (as `home`). `net:net0`
++ SSH as `home` (host keys injected on `up`/`start`). Devices include
+`dev:card0`, `dev:kbd0`, `dev:mouse0`. `/proc` `/sys` `/dev` plus tmpfs
+and cgroup2.

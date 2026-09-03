@@ -18,7 +18,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:grok` | `present: true` | yes — borrowed static-pie Grok ELF; `/bin/grok`. Updater off (`GROK_DISABLE_AUTOUPDATER`). State is `/home/.grok`, not the payload. |
 | `pkg:git` | `present: true` | yes — borrowed Git; `/bin/git`. HTTPS via `git-remote-http` + CA bundle in the store. |
 | `pkg:curl` | `present: true` | yes — borrowed static musl curl; `/bin/curl`. CA bundle in the store. |
-| `pkg:pipewire` | `present: true` | yes — PipeWire + WirePlumber + pipewire-pulse + alsa-lib + libpulse; `/bin/pipewire`, `/bin/wpctl`, `/bin/pw-dump`, `/bin/pw-cat`. |
+| `pkg:pipewire` | `present: true` | yes — PipeWire + WirePlumber + pipewire-pulse + alsa-lib + libpulse; `/bin/pipewire`, `/bin/wireplumber`, `/bin/pipewire-pulse`, `/bin/wpctl`, `/bin/pw-dump`, `/bin/pw-cat`. Menubar volume talks to this (`pw-dump` / `wpctl` / `pw-cat`). sola-spotify (not packed) needs the Pulse socket + those libs at runtime. |
 | `pkg:hello` | `present: false` | yes — canary |
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 
@@ -51,6 +51,12 @@ name it does not own.
 
 Takes effect on apply. Reboot is not required; it only proves the
 symlink survived on `@`.
+
+`pkg:pipewire` is the seat audio graph, not a Sola blob. Without it the
+shell **hides** the volume chip. There is no udevd, so HDMI cards are
+not auto-enumerated; canto pins Intel PCH analog as **Built-in Audio**
+(`hw:0,0`) in the packed `pipewire.conf.d`. `wpctl status` as `home`
+(`XDG_RUNTIME_DIR=/run/user/1`) is the check.
 
 `url` on a `pkg` object: if `present` and the store file is missing,
 apply wget’s the URL into the store then links. The appliance canary

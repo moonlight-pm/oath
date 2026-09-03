@@ -51,8 +51,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        only on virtio KMS; McMojave; LED graphs are RGBA images)
     sola-session       svc:sola-session (LaunchApp; direct spawn)
     pipewire           pkg:pipewire + seat svcs (pipewire, wireplumber,
-                       pipewire-pulse) as `home`; ALSA PCH analog pinned
-                       (no udevd card enum)
+                       pipewire-pulse) as `home`; `/run/user/1/pipewire-0`;
+                       ALSA PCH analog pinned as Built-in Audio (no udevd
+                       card enum). Canto cards: Intel HDA PCH + two HDMI.
     sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
@@ -64,8 +65,10 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
 PID 1 is the initrd `/init` (stays PID 1 after chroot). Mount proc/sys/dev/pts
 (`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; hostname +
 `host:local.env`; load ethernet; **converge** `net:net0` (dhcp) + `ssh:local`;
-sshd; then amdgpu; wait for `/dev/dri` + `/dev/input` and chown them
-`0660` root:`home`; then remaining `svc:*` (River/Sola as `home`).
+sshd; then amdgpu + ALSA HDA (snd deferred with KMS); wait for
+`/dev/dri` + `/dev/input` and chown them `0660` root:`home` (same for
+`/dev/snd` when the nodes exist); then remaining `svc:*` (River/Sola
+and pipewire as `home`).
 Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
@@ -124,4 +127,6 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-08-31-sola-terminal.md](specs/2026-08-31-sola-terminal.md) ·
 [specs/2026-08-31-metal-canto.md](specs/2026-08-31-metal-canto.md) ·
 [specs/2026-09-01-sola-browser.md](specs/2026-09-01-sola-browser.md) ·
-[specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md)
+[specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md) ·
+[specs/2026-09-02-pkg-grok.md](specs/2026-09-02-pkg-grok.md) ·
+[specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md)

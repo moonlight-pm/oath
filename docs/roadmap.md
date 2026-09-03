@@ -86,4 +86,4 @@ Apple is still a gap. QEMU probe stays.
 - Broad ABI compatibility for random Linux binaries
 - Large binary repository
 - Bare-metal diversity
-- Remaining kit apps (wrapper, mail, …); rustc on the guest
+- Remaining kit apps (spotify, wrapper, mail, …); rustc on the guest

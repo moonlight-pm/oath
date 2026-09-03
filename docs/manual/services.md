@@ -22,7 +22,25 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:wireplumber` | `/bin/wireplumber` | enabled, `restart=always` | Session manager (`--profile main-embedded`). Wants `svc:pipewire`. |
 | `svc:pipewire-pulse` | `/bin/pipewire-pulse` | enabled, `restart=always` | Pulse compatibility for librespot. Wants `svc:pipewire`. |
 
-On canto this boot, PipeWire was started as `home` by hand (`XDG_RUNTIME_DIR=/run/user/1`) so the menubar volume chip has a sink before the next ESP initrd (old PID 1 does not treat `svc:pipewire` as a seat svc). New images seed the three svcs as seat.
+## Audio
+
+The menubar volume chip appears only when `pw-dump` works. Default sink
+on canto is **Built-in Audio** (Intel HDA PCH analog). The 12-band LED
+spectrum is a `pw-cat` tap on that sink. `wpctl` changes volume.
+
+```
+XDG_RUNTIME_DIR=/run/user/1 wpctl status
+XDG_RUNTIME_DIR=/run/user/1 pw-dump | head
+```
+
+On canto **this boot**, PipeWire was started as `home` by hand
+(`XDG_RUNTIME_DIR=/run/user/1`) so the chip has a sink before the next
+ESP initrd (the running PID 1 does not treat `svc:pipewire` as a seat
+svc). New images seed the three svcs as seat. A reboot without that
+initrd drops the ALSA modules and the daemons.
+
+No dbus-daemon: MPRIS / BlueZ stay quiet. HDMI heads exist as ALSA
+cards but are not udev-enumerated.
 
 **Quit Sola** (flower menu) broadcasts shutdown and the session processes
 exit 0. PID 1 does **not** restart them (`on-failure` only). River the
