@@ -181,6 +181,11 @@ fn seed_lists_host() {
     let exec = sshd.desired["exec"].as_array().unwrap();
     assert!(exec.iter().any(|v| v == "-w"));
     assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
+    let seatd = cat.get(&"svc:seatd".parse().unwrap()).unwrap();
+    let exec = seatd.desired["exec"].as_array().unwrap();
+    assert!(exec.iter().any(|v| v == "-u"));
+    assert!(exec.iter().any(|v| v == "-g"));
+    assert!(exec.iter().any(|v| v == "home"));
 }
 
 fn write_hello_store(root: &std::path::Path) {

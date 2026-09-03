@@ -14,12 +14,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 ## Now
 
 1. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
-   no password, groups `root`+`home` only. Graphical stack **off**
-   (river/Sola/seatd disabled — crash-looped as `home` on amdgpu).
-   Serial svc **off** (no UART). EFI mark still paints. Panel is
-   Philips 221V8L 1920×1080@75. **T30** `pkg:grok` identity locked,
-   ELF not packed. Next: River/Sola as `home` without the crash-loop,
-   or pack `pkg:grok`.
+   no password, groups `root`+`home` only. Graphical stack **on**
+   as `home` (River + Sola on amdgpu DP-10, Philips 1920×1080).
+   Serial svc **off** (no UART). EFI mark still paints. **T30**
+   `pkg:grok` identity locked, ELF not packed. Next: pack `pkg:grok`.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
@@ -45,7 +43,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **disabled** until DRM-as-home is fixed. EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed (session not running). Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev `0660` root:`home`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. |
 
 ```sh
 nix-shell
@@ -150,6 +148,6 @@ Do not re-litigate without an explicit decision.
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
   (canto; QEMU on next `cargo make build`); sola-workspaces packed
-  (canto; QEMU on next build); T31 seat `home` on canto SSH;
-  `pkg:grok` identity locked, ELF not packed; other kit apps not;
-  Phase 6 metal canary (canto) dogfoodable, graphical stack off
+  (canto; QEMU on next build); T31 seat `home` on canto SSH +
+  graphical stack as `home`; `pkg:grok` identity locked, ELF not
+  packed; other kit apps not; Phase 6 metal canary (canto) dogfoodable

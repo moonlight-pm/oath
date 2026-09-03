@@ -143,10 +143,12 @@ fn real_main() -> Result<(), String> {
     apply_ssh();
     hold_graphics();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
-    converge(&mut kids);
+    // sshd/dhcp first. River as `home` on amdgpu crash-loops if it starts
+    // before KMS and /dev/input exist (libinput ENOENT, WLR on simpledrm).
+    converge(&mut kids, false);
     load_modules(false);
-    oath_core::seat::open_device_nodes();
-    converge(&mut kids);
+    wait_seat_devices(Duration::from_secs(10));
+    converge(&mut kids, true);
 
     let sock_path = "/oath/run/init.sock";
     let _ = fs::remove_file(sock_path);
@@ -155,13 +157,18 @@ fn real_main() -> Result<(), String> {
 
     log("ready");
     tel("init", "ready", json!({ "svcs": kids.len(), "kver": kver() }));
+    let mut last_dev = Instant::now();
     loop {
         reap(&mut kids);
+        if last_dev.elapsed() >= Duration::from_secs(2) {
+            oath_core::seat::open_device_nodes();
+            last_dev = Instant::now();
+        }
         if let Ok((mut s, _)) = listener.accept() {
             let mut buf = [0u8; 64];
             let n = s.read(&mut buf).unwrap_or(0);
             tel("init", "converge", json!({ "bytes": n }));
-            converge(&mut kids);
+            converge(&mut kids, true);
             let _ = s.write_all(b"ok\n");
         }
         std::thread::sleep(Duration::from_millis(200));
@@ -235,6 +242,28 @@ fn wait_drm(wait: Duration) {
     let deadline = Instant::now() + wait;
     while Instant::now() < deadline {
         if drm_has_connected() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+fn wait_seat_devices(wait: Duration) {
+    let _ = fs::create_dir_all("/dev/input");
+    let _ = fs::create_dir_all("/dev/dri");
+    let deadline = Instant::now() + wait;
+    loop {
+        oath_core::seat::open_device_nodes();
+        let drm = oath_core::seat::drm_nodes_ready();
+        let input = oath_core::seat::input_nodes_ready();
+        if drm && input {
+            log("seat devices ready");
+            tel("init", "seat_devices", json!({ "drm": drm, "input": input, "ok": true }));
+            return;
+        }
+        if Instant::now() >= deadline {
+            log(&format!("seat devices timeout drm={drm} input={input}"));
+            tel("init", "seat_devices", json!({ "drm": drm, "input": input, "ok": false }));
             return;
         }
         std::thread::sleep(Duration::from_millis(50));
@@ -641,6 +670,9 @@ fn unix_floor() {
     let _ = mount(Some("tmpfs"), "/run", Some("tmpfs"), flags, Some("mode=755"));
     let _ = fs::create_dir_all("/run/user/0");
     let _ = fs::set_permissions("/run/user/0", std::fs::Permissions::from_mode(0o700));
+    let xdg = format!("/run/user/{}", oath_core::seat::UID);
+    let _ = fs::create_dir_all(&xdg);
+    let _ = fs::set_permissions(&xdg, std::fs::Permissions::from_mode(0o700));
     let _ = fs::create_dir_all("/sys/fs/cgroup");
     let _ =
         mount(Some("cgroup2"), "/sys/fs/cgroup", Some("cgroup2"), MsFlags::empty(), None::<&str>);
@@ -827,7 +859,7 @@ fn stop_kid(kids: &mut HashMap<i32, Kid>, id: &str) {
     }
 }
 
-fn converge(kids: &mut HashMap<i32, Kid>) {
+fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool) {
     let cat = match Catalog::open(DEFAULT_ROOT) {
         Ok(c) => c,
         Err(_) => return,
@@ -866,6 +898,9 @@ fn converge(kids: &mut HashMap<i32, Kid>) {
     for id in &order {
         let Some(spec) = wanted.get(id) else { continue };
         let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
+        if !start_seat && oath_core::seat::is_seat_svc(id) {
+            continue;
+        }
         if !spec.enabled || spec.exec.is_empty() {
             if pid_for(kids, id).is_none() {
                 write_svc_actual(&oid, "stopped", None, 0);
@@ -928,7 +963,7 @@ fn ensure_seat() {
     let _ = Command::new("/bin/chmod").args(["700", &ssh.to_string_lossy()]).status();
     let _ = Command::new("/bin/chown").args([&own, &xdg]).status();
     let _ = Command::new("/bin/chmod").args(["700", &xdg]).status();
-    let _ = fs::set_permissions("/oath/log", fs::Permissions::from_mode(0o1777));
+    oath_core::seat::chown_logs();
 }
 
 fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {

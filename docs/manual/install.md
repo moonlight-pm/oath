@@ -45,6 +45,6 @@ command from the build machine; it sees `/run/oath-install/ready` and
 skips the enter-installer step.
 
 QEMU sets `SOLA_OUTPUT_PICK=preferred` so virtio-gpu stays 1280×800.
-Metal unsets that so sola-river can match the panel. Canto’s
-graphical stack is **off** until DRM-as-`home` is fixed; SSH is the
-courage test.
+Metal unsets that so sola-river can match the panel. After install,
+SSH is `home` and the graphical stack runs as `home` (River waits
+for DRM + `/dev/input`, then chowns those nodes `0660` root:`home`).

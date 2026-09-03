@@ -87,4 +87,3 @@ Apple is still a gap. QEMU probe stays.
 - Large binary repository
 - Bare-metal diversity
 - Remaining kit apps (wrapper, mail, …); git/grok/rustc on the guest
-- Canto graphical stack as `home` (currently SSH-only; river/Sola off)

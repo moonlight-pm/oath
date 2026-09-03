@@ -602,8 +602,8 @@ fn patch_catalog(out: &Path, opts: &Opts, hostname: &str, r: &Remote) -> Result<
             s = sh_quote(&ssh_json)
         ),
     )?;
-    // Metal has no virtio-gpu + /dev/input yet. River/Sola crash-loop
-    // floods the console. Courage is SSH. QEMU rehearsal keeps them on.
+    // QEMU pins SOLA_OUTPUT_PICK=preferred (1280×800 virtio). Metal
+    // unsets it so sola-river can match the connected panel.
     if !opts.qemu {
         ssh_run(
             r,

@@ -60,7 +60,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
 PID 1 is the initrd `/init` (stays PID 1 after chroot). Mount proc/sys/dev/pts
 (`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; hostname +
 `host:local.env`; load ethernet; **converge** `net:net0` (dhcp) + `ssh:local`;
-sshd; then amdgpu; then remaining `svc:*`. Socket `/oath/run/init.sock`. Seeded
+sshd; then amdgpu; wait for `/dev/dri` + `/dev/input` and chown them
+`0660` root:`home`; then remaining `svc:*` (River/Sola as `home`).
+Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
 `svc:sola-session`.

@@ -418,6 +418,22 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "stat -c %g /dev/dri/card0 | grep -x 1 && echo DRM_GID",
+        Some("DRM_GID"),
+        "drm.gid_home",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "stat -c %g /dev/input/event0 | grep -x 1 && echo INPUT_GID",
+        Some("INPUT_GID"),
+        "dev.input_gid_home",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath get dev:card0 --actual",
         Some("\"present\": true"),
         "dev.card0",
@@ -478,6 +494,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         Some("RIVER_STABLE"),
         "river.running",
         Duration::from_secs(12),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -S /run/seatd.sock -o -S /var/run/seatd.sock && echo SEATD_SOCK",
+        Some("SEATD_SOCK"),
+        "seatd.sock",
+        Duration::from_secs(8),
     )?;
     cmd(
         &mut vm,

@@ -5,7 +5,7 @@ assume Debian, systemd, or another distro.
 
 Oath is a Linux you administer with `oath`. The live catalog is `/oath`.
 Dogfood: **x86_64 QEMU** appliance (serial, SSH, virtio-gpu window if
-`DISPLAY` is set) and **canto** (metal, SSH).
+`DISPLAY` is set) and **canto** (metal, SSH + Sola as `home`).
 
 | Page | What |
 |------|------|
