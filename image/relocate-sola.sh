@@ -437,6 +437,9 @@ fi
 exec /bin/solactl open "$1"
 WRAP
 chmod +x "$out/bin/xdg-open"
+# webbrowser (Grok) does not exec xdg-open unless $BROWSER is set; it
+# falls through to x-www-browser after xdg-settings fails.
+ln -sf xdg-open "$out/bin/x-www-browser"
 
 cat >"$out/share/applications/sola-browser.desktop" <<'DESK'
 [Desktop Entry]

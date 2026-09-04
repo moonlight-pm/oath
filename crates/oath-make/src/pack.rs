@@ -487,6 +487,7 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
                 | "sftp-server"
                 | "sudo"
                 | "xdg-open"
+                | "x-www-browser"
         ) {
             continue;
         }

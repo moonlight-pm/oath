@@ -808,7 +808,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -x /bin/sola-browser -a -x /bin/xdg-open && echo BROWSER_BIN",
+        "test -x /bin/sola-browser -a -x /bin/xdg-open -a -x /bin/x-www-browser && echo BROWSER_BIN",
         Some("BROWSER_BIN"),
         "sola.browser_bin",
         Duration::from_secs(8),
