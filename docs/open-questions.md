@@ -12,8 +12,8 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T34 UTC system clock closed (display TZ later; not
-`TZ` in env). T33 off-box backup closed (one NFS send, overwrite,
+None open. T34 UTC system clock closed (`host:local.timezone`
+display; not `TZ` in env). T33 off-box backup closed (one NFS send, overwrite,
 04:00 Mountain in `backup-daily`). T32 pack identity closed (content hash,
 hash-in-path store, pin on `desired.hash`, no recipe language). T31 seat `home`
 is closed (uid 1, SSH `home`, groups `root`+`home`, sudo ALL,
@@ -326,4 +326,4 @@ helper.
 | 2026-09-03 | T31 | groups: root + home only | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
 | 2026-09-03 | T32 | pack identity: content hash, hash-in-path, pin, no recipe | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |
 | 2026-09-03 | T33 | off-box backup: one NFS send, overwrite, svc:backup | this file; [specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md) |
-| 2026-09-04 | T34 | UTC system clock; display TZ later; no TZ in host.env | this file; [specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md) |
+| 2026-09-04 | T34 | UTC system clock; `host:local.timezone` display; no TZ in host.env | this file; [specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md) |

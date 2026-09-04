@@ -64,12 +64,13 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`)
     backup-daily       /lib/oath/backup-daily (04:00 Mountain loop; seed off)
+    with-seat-tz       /lib/oath/with-seat-tz (T34 display TZ for seat)
     /sbin/init -> ../lib/oath/init
 ```
 
 PID 1 is the initrd `/init` (stays PID 1 after chroot). Mount proc/sys/dev/pts
 (`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; hostname +
-`host:local.env`; load ethernet; **converge** `net:net0` (dhcp) + `ssh:local`;
+`host:local.env`; seat `TZ` from `host:local.timezone`; load ethernet; **converge** `net:net0` (dhcp) + `ssh:local`;
 sshd; then amdgpu + ALSA HDA (snd deferred with KMS); wait for
 `/dev/dri` + `/dev/input` and chown them `0660` root:`home` (same for
 `/dev/snd` when the nodes exist); then remaining `svc:*` (River/Sola

@@ -76,7 +76,7 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 
 Latest freeze:
 [`docs/specs/2026-09-04-utc-clock.md`](docs/specs/2026-09-04-utc-clock.md)
-(T34 UTC system clock; display TZ later).
+(T34 UTC system clock; `host:local.timezone` display).
 [`docs/specs/2026-09-03-backup-nfs.md`](docs/specs/2026-09-03-backup-nfs.md)
 (T33 one NFS copy; partial, canto).
 [`docs/specs/2026-09-03-pkg-pack-identity.md`](docs/specs/2026-09-03-pkg-pack-identity.md)
