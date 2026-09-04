@@ -69,6 +69,8 @@ bin/          # each file → /bin/<basename> when this object is present
 lib/          # optional; not on PATH
 share/        # optional
 INDEX.md      # optional; short, agent-readable: what this is, how to run it
+libexec/oath-backup-quiesce  # optional; run before a generation snapshot
+libexec/oath-backup-thaw     # optional; run after that snapshot
 ```
 
 - Do not exec from the store; `/bin` is how you run what is installed.
@@ -78,6 +80,9 @@ INDEX.md      # optional; short, agent-readable: what this is, how to run it
 - Optional `INDEX.md` is how a human or agent tells two hashes of
   the same name apart (they may be different programs). Oath will
   not invent a second description format.
+- Optional `libexec/oath-backup-quiesce` / `oath-backup-thaw`: the
+  pack’s way to freeze a payload (postgres WAL, etc.) across the
+  snapshot. Missing = crash-consistent only. See T33.
 
 ---
 

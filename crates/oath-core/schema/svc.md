@@ -20,11 +20,12 @@ editing `/etc`.
   is still enabled).
 - `enabled` — if false, the process is not running.
 
-`svc:backup` is a oneshot (`restart=never`, default `enabled=false`).
-`exec` is `/lib/oath/backup-send` plus an NFS spec
-(`10.0.0.12:/mnt/alpha/backup/canto`). Enable and `oath apply` sends
-one full generation to that directory (overwrite). Last send is
-`actual` plus `last.json` (generation, checksum).
+`svc:backup` sleeps until **04:00 US Mountain** then sends
+(`restart=always`, default `enabled=false` so QEMU does not hit the
+NAS). `exec` is `/lib/oath/backup-daily` plus an NFS spec
+(`10.0.0.12:/mnt/alpha/backup/canto`). Enable and `oath apply` starts
+the sleeper (no send until 4am). Manual send:
+`/lib/oath/backup-send <spec>`. Last send is `actual` plus `last.json`.
 
 Safety: `mutate`. Apply writes desired, then notifies PID 1.
 

@@ -1,0 +1,57 @@
+#!/bin/sh
+# Run backup-send every day at 04:00 US Mountain (MST/MDT).
+# Usage: backup-daily host:/export/path
+# POSIX TZ — no tzdata. DST: second Sunday March → first Sunday November.
+set -eu
+
+spec=${1:?nfs spec (host:/path)}
+bb=/bin/busybox
+[ -x "$bb" ] || bb=busybox
+send=/lib/oath/backup-send
+if [ ! -x "$send" ]; then
+	echo "backup-daily: missing $send" >&2
+	exit 1
+fi
+
+export TZ=MST7MDT,M3.2.0,M11.1.0
+
+log() { echo "backup-daily: $*" >&2; }
+
+unpad() {
+	n=$1
+	while [ -n "$n" ] && [ "$n" != "${n#0}" ] && [ ${#n} -gt 1 ]; do
+		n=${n#0}
+	done
+	[ -n "$n" ] || n=0
+	echo "$n"
+}
+
+seconds_since_midnight() {
+	h=$(unpad "$($bb date +%H)")
+	m=$(unpad "$($bb date +%M)")
+	s=$(unpad "$($bb date +%S)")
+	echo $((h * 3600 + m * 60 + s))
+}
+
+sleep_until_four() {
+	now=$(seconds_since_midnight)
+	target=$((4 * 3600))
+	if [ "$now" -ge "$target" ]; then
+		wait=$((86400 - now + target))
+	else
+		wait=$((target - now))
+	fi
+	log "sleep ${wait}s until 04:00 Mountain ($($bb date))"
+	$bb sleep "$wait"
+}
+
+log "start dest=$spec tz=$TZ now=$($bb date)"
+while :; do
+	sleep_until_four
+	log "run $send $spec"
+	if "$send" "$spec"; then
+		log "send ok"
+	else
+		log "send failed (will try again tomorrow)"
+	fi
+done

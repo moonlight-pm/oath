@@ -274,12 +274,14 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("lib/oath/river-boot"), include_str!("river-boot"))?;
     fs::write(stage.join("lib/oath/display-env.sh"), include_str!("display-env.sh"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
+    fs::write(stage.join("lib/oath/backup-daily"), include_str!("backup-daily"))?;
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
     chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
     chmod_exec(&stage.join("lib/oath/run-compositor"))?;
     chmod_exec(&stage.join("lib/oath/river-boot"))?;
     chmod_exec(&stage.join("lib/oath/backup-send"))?;
+    chmod_exec(&stage.join("lib/oath/backup-daily"))?;
     fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../lib/oath/init", stage.join("sbin/init"))?;

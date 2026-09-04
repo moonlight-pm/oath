@@ -1,17 +1,17 @@
 **Date:** 2026-09-03
 **Status:** target (freeze)
 **Implementation:** partial
-**Dogfood:** canto 2026-09-04 `svc:backup` last send generation 16 to
+**Dogfood:** canto 2026-09-04 last send generation 16 to
   `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` 2056610447 bytes,
-  checksum match). Helper run by hand this boot (ESP initrd still old
-  PID 1). NFS modules insmod’d live.
+  checksum match). `svc:backup` is `backup-daily` at 04:00 Mountain
+  (this boot). NFS modules insmod’d live; ESP initrd still old.
 **Gaps:**
-- NFS modules + helper packed for the **next** `cargo make build`;
-  canto ESP initrd not rebuilt (reboot drops nfs.ko until then)
-- `svc:backup` enable+apply oneshot needs the new PID 1
+- NFS modules + helpers packed for the **next** `cargo make build`;
+  canto reboot drops nfs.ko until ESP initrd is rebuilt
 - no restore-in-installer
 - QEMU image not rebuilt with this yet
 - local `@gen-N` reaping still out
+- no packed pkg yet ships quiesce/thaw hooks
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Off-box backup (one NFS copy)
@@ -94,6 +94,24 @@ Local `@gen-N` is not “multiples of 4.2G.” It is CoW on the system
 disk. Apply/undo keeps using it. Reaping local gens is a separate
 gap.
 
+### Open files and databases
+
+A btrfs snapshot is atomic for **what is on disk**. It is not a dump
+of process memory. That is the same class of restore as “the machine
+lost power”: WAL databases (postgres, sqlite in WAL mode, most
+stores) recover. Torn *pages* that never hit disk are the remaining
+risk; `sync` before snapshot is the floor.
+
+`fsfreeze` of `/` is the wrong extra: the helper, catalog, and NFS
+client live on `@`. Freezing the root deadlocks the backup.
+
+The pack is the place for anything stronger. Optional
+`libexec/oath-backup-quiesce` / `oath-backup-thaw` in the store tree
+(T32 layout). backup-send discovers them on **present** packages.
+No new catalog field, no recipe language. A future `pkg:postgres`
+ships `pg_backup_start` / `pg_backup_stop` there and mentions it in
+INDEX.md. Until then, crash-consistent is the standard.
+
 ### Why NFS, not “another Oath host” first
 
 T20 already says another Oath store is a valid **package** origin.
@@ -129,11 +147,26 @@ no fstab dialect.
   The NAS is not the catalog; the sidecar is how a later restore
   knows what the blob is. Apply verifies checksum on restore when
   we have restore; v0 at least writes it.
-- **Explicit trigger.** No clock. `svc:backup` (`restart: never`,
-  `wants` network), `exec` is `/lib/oath/backup-send` plus the NFS
-  target (`host:/export` or a mount path). Enable + `oath apply` runs
-  it. It mounts if needed, sends, unmounts or leaves the mount as
-  the helper decides, exits. PID 1 does not loop it.
+- **Clock: 04:00 US Mountain, every day.** `svc:backup` `exec` is
+  `/lib/oath/backup-daily` plus the NFS target. `restart: always`.
+  Default `enabled=false` (QEMU / images that should not hit the
+  NAS). Enable + `oath apply` starts a sleeper; it does **not** send
+  immediately. POSIX TZ `MST7MDT,M3.2.0,M11.1.0` (no tzdata). Manual
+  send is still `/lib/oath/backup-send <spec>`.
+- **Crash-consistent is the floor.** `sync` + `btrfs filesystem sync`
+  then a read-only snapshot of `@`. That is one instant of the tree
+  (like power-loss). Do not `fsfreeze` `/` — the helper lives on `@`.
+- **Application-consistent is optional per pack.** If a present
+  `pkg:<name>` ships executable
+  `/oath/store/pkg/<name>/libexec/oath-backup-quiesce` (and optional
+  `oath-backup-thaw`), backup-send runs quiesce **after** the NFS
+  mount succeeds and **before** snapshot, then thaw immediately after
+  snapshot (before the long send). Missing hooks: skip. Quiesce
+  non-zero: abort (thaw whatever already ran). No new kind, no extra
+  catalog field. INDEX.md should mention the hook. Postgres: a
+  crash-consistent snapshot of the data dir is a supported restore
+  (WAL recovery); `pg_backup_start` / `pg_backup_stop` belong in
+  those two libexec scripts when we pack postgres.
 - **No new kind. No new verb.** Destination lives in `svc:backup`
   desired `exec` (same pattern as dropbear flags). Record last
   successful send on that svc’s **actual** (generation, time, dest,
@@ -180,8 +213,7 @@ Ordered so each step keeps the same stream identity.
 5. **Retention** — hourly/daily/weekly once dest space is a decision,
    not a default. Policy is catalog (`snap` records + a keep count),
    not a second tool.
-6. **Clock** — `restart: always` with a sleep, or a timer, on
-   `svc:backup`. Still the same helper. v0 stays explicit apply.
+6. **Clock** — **in** (04:00 Mountain, `backup-daily`).
 7. **Sparse btrfs image on NFS** — Time Machine sparse-bundle
    analogue: loop file, `btrfs receive`, browse with
    `mount -o subvol=@gen-N`. Same send, nicer look. More failure
@@ -204,7 +236,7 @@ Ordered so each step keeps the same stream identity.
 - Snapshotting NFS, or treating NFS as btrfs
 - `kind:backup`, `kind:mount`, `oath backup`
 - Home-only send
-- Clock-triggered send
+- Clock other than 04:00 Mountain (DST via POSIX TZ above)
 - Sparsebundle / loop image
 - Installer restore (later)
 - Reaping `@gen-N` on the system disk

@@ -31,8 +31,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `THOXA_ROOT`). `ssh home@canto echo hi` is `thoxa -c`. Root/serial
    stay `/bin/sh`. **T33** off-box backup: one NFS copy on nas
    `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` gen 16, ~1.9G,
-   checksum match). Helper `/lib/oath/backup-send` this boot (nfs
-   modules insmod’d live; ESP initrd still old). Next: remaining kit
+   checksum match). `svc:backup` sleeps until **04:00 Mountain** then
+   sends (`backup-daily`; nfs modules this boot). Next: remaining kit
    (spotify ELF) or rustc on the guest, or rebuild ESP initrd.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
@@ -98,11 +98,12 @@ Do not re-litigate without an explicit decision.
   `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
   `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
 - Backup: **T33 (partial):** one NFS copy of whole `@` via `btrfs send`
-  of a read-only generation; overwrite (temp + rename); `svc:backup`
-  (`restart: never`, default off); dest
-  `10.0.0.12:/mnt/alpha/backup/canto`. Sidecar checksum. Not hourly.
-  `oath undo` stays catalog-only. Canto live: gen 16 send. NFS in the
-  next packed initrd.
+  of a read-only generation; overwrite. `svc:backup` is
+  `/lib/oath/backup-daily` at **04:00 US Mountain** (`restart: always`,
+  seed off). Crash-consistent + optional pack
+  `libexec/oath-backup-quiesce` / `thaw`. Dest
+  `10.0.0.12:/mnt/alpha/backup/canto`. Canto live: gen 16 send; daily
+  sleeper on. NFS in the next packed initrd.
 - Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no

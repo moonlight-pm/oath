@@ -25,13 +25,31 @@ die() {
 	exit 1
 }
 
+quiesced_list=/tmp/oath-backup-quiesced
+
+thaw_all() {
+	[ -f "$quiesced_list" ] || return 0
+	# Reverse of quiesce order.
+	names=$($bb cat "$quiesced_list")
+	rev=
+	for n in $names; do
+		rev="$n $rev"
+	done
+	for name in $rev; do
+		hook=/oath/store/pkg/$name/libexec/oath-backup-thaw
+		if [ -x "$hook" ]; then
+			log "thaw pkg:$name"
+			"$hook" || log "thaw pkg:$name failed (continuing)"
+		fi
+	done
+	$bb rm -f "$quiesced_list"
+}
+
 cleanup() {
+	thaw_all
 	if [ "$mounted" = 1 ]; then
 		$bb umount "$mnt" 2>/dev/null || $bb umount -l "$mnt" 2>/dev/null || true
 		mounted=0
-	fi
-	if [ -x /bin/oath ]; then
-		/bin/oath set svc:backup enabled=false >/dev/null 2>&1 || true
 	fi
 }
 trap cleanup EXIT
@@ -80,6 +98,27 @@ next_gen() {
 	echo $((n + 1))
 }
 
+pkg_present() {
+	f=/oath/objects/pkg/$1/actual.json
+	[ -f "$f" ] || return 1
+	$bb grep -q '"present"[[:space:]]*:[[:space:]]*true' "$f"
+}
+
+quiesce_all() {
+	$bb rm -f "$quiesced_list"
+	$bb touch "$quiesced_list"
+	for dir in $($bb ls /oath/objects/pkg 2>/dev/null | $bb sort); do
+		pkg_present "$dir" || continue
+		hook=/oath/store/pkg/$dir/libexec/oath-backup-quiesce
+		[ -x "$hook" ] || continue
+		log "quiesce pkg:$dir"
+		if ! "$hook"; then
+			die "quiesce pkg:$dir failed"
+		fi
+		echo "$dir" >>"$quiesced_list"
+	done
+}
+
 current_gen() {
 	p=/oath/objects/snap/current/actual.json
 	[ -f "$p" ] || {
@@ -104,12 +143,16 @@ mounted=1
 log "mounted"
 
 [ -d "$live" ] || die "no live subvol $live"
+quiesce_all
+$bb sync
+btrfs filesystem sync "$live" 2>/dev/null || true
 parent=$(current_gen)
 [ -n "$parent" ] || parent=0
 gen=$(next_gen)
 snap=$fs/@gen-$gen
 log "snapshot @ -> @gen-$gen (parent $parent)"
 btrfs subvolume snapshot -r "$live" "$snap" || die "snapshot"
+thaw_all
 
 now=$($bb date -u +%Y-%m-%dT%H:%M:%SZ)
 snapdir=/oath/objects/snap/$gen

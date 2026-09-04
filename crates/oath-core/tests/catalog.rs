@@ -193,8 +193,8 @@ fn seed_lists_host() {
     assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
     let backup = cat.get(&"svc:backup".parse().unwrap()).unwrap();
     assert_eq!(backup.desired["enabled"], false);
-    assert_eq!(backup.desired["restart"], "never");
-    assert_eq!(backup.desired["exec"][0], "/lib/oath/backup-send");
+    assert_eq!(backup.desired["restart"], "always");
+    assert_eq!(backup.desired["exec"][0], "/lib/oath/backup-daily");
     let seatd = cat.get(&"svc:seatd".parse().unwrap()).unwrap();
     let exec = seatd.desired["exec"].as_array().unwrap();
     assert!(exec.iter().any(|v| v == "-u"));

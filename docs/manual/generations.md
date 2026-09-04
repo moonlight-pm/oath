@@ -38,7 +38,9 @@ Picking an arbitrary old generation as the boot default is **confirm**
 class. There is no bootloader menu yet. `undo` is the supported rewind.
 
 Off-box copy is `svc:backup` (T33): one NFS file, overwritten, not a
-second undo. `oath undo` does not restore from the NAS.
+second undo. Daily at 04:00 US Mountain. Snapshot is crash-consistent
+(`sync` + CoW); packs may add `libexec/oath-backup-quiesce`.
+`oath undo` does not restore from the NAS.
 
 qcow2 snapshots on the QEMU host are debug only. They are not this
 mechanism.

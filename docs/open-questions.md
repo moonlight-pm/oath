@@ -280,10 +280,11 @@ still two names (T24).
 ### T33 — Off-box backup (one NFS copy) — locked 2026-09-03
 
 `btrfs send` of a read-only `@` generation to one file on NFS.
-Overwrite (atomic replace). Explicit `svc:backup`, no clock, no
-retention, no new kind or verb. `oath undo` stays catalog-only.
-Sidecar checksum. Incremental / sparse image / peer receive /
-installer restore later.
+Overwrite (atomic replace). `svc:backup` at 04:00 US Mountain
+(`backup-daily`). Crash-consistent floor; optional pack
+`libexec/oath-backup-quiesce` / `thaw`. No new kind or verb.
+`oath undo` stays catalog-only. Sidecar checksum. Incremental /
+sparse image / peer receive / installer restore later.
 
 ---
 

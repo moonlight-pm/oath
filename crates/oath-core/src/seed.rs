@@ -190,9 +190,9 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_svc_full(
         root,
         "backup",
-        &["/lib/oath/backup-send", "10.0.0.12:/mnt/alpha/backup/canto"],
+        &["/lib/oath/backup-daily", "10.0.0.12:/mnt/alpha/backup/canto"],
         &[],
-        "never",
+        "always",
         false,
     )?;
 
