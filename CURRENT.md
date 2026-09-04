@@ -37,7 +37,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is `thoxa -c`). Seat rc is Oath-local (`std/prompt`; no NixOS `path()`). sola-terminal and workspaces tmux inherit `$SHELL`
    (pkg:sola wrappers default `/bin/thoxa`, not ash). Wrappers `cd
    $HOME` so a new Terminal is not `/` (PID 1 cwd). Root/serial
-   stay `/bin/sh`. **T33** off-box backup: one NFS copy on nas
+   stay `/bin/sh`. Catalog env is `/etc/profile` only; live `pkg:oath`
+   does not write `$HOME/.profile`. **T33** off-box backup: one NFS copy on nas
    `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` gen 16, ~1.9G,
    checksum match). `svc:backup` sleeps until **04:00 Mountain** then
    sends (`backup-daily`; nfs modules this boot). **T34** Sola clock

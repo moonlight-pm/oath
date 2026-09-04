@@ -68,4 +68,6 @@ does not loop.
 Serial login is **root** (break-glass) when `svc:serial` is on.
 Daily SSH is **home** (uid 1, `HOME=/home`). `sudo` (no password)
 becomes root. Groups are `root` and `home` only. The apply log
-records uid and tty.
+records uid and tty. Catalog env (`host:local.env`) is injected by
+PID 1 and written to root-owned `/etc/profile`. `oath apply` does
+not write `$HOME/.profile`.

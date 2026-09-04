@@ -392,6 +392,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test ! -e /home/.profile && echo NO_HOME_PROFILE",
+        Some("NO_HOME_PROFILE"),
+        "seat.no_home_profile",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath get svc:hold --actual",
         Some("\"state\": \"running\""),
         "hold.running",
