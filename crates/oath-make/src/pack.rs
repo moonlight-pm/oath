@@ -328,13 +328,23 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     let Some(dropbearkey) = &tools.dropbearkey else {
         bail!("OATH_DROPBEARKEY / tools dropbearkey required");
     };
+    let Some(dropbear_dbclient) = &tools.dropbear_dbclient else {
+        bail!("OATH_DROPBEAR_DBCLIENT / tools dropbear-dbclient required (pkg:dropbear ssh)");
+    };
     let Some(dropbear_scp) = &tools.dropbear_scp else {
         bail!("OATH_DROPBEAR_SCP / tools dropbear-scp required (pkg:dropbear scp)");
     };
     let Some(sftp_server) = &tools.sftp_server else {
         bail!("OATH_SFTP_SERVER / tools sftp-server required (pkg:dropbear sftp)");
     };
-    write_dropbear_store(&oath_root, dropbear, dropbearkey, dropbear_scp, sftp_server)?;
+    write_dropbear_store(
+        &oath_root,
+        dropbear,
+        dropbearkey,
+        dropbear_dbclient,
+        dropbear_scp,
+        sftp_server,
+    )?;
     write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
     let Some(glibc) = &tools.glibc else {
         bail!("OATH_GLIBC / tools glibc required (pkg:glibc)");
@@ -455,6 +465,8 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
                 | "oath"
                 | "dropbear"
                 | "dropbearkey"
+                | "dbclient"
+                | "ssh"
                 | "scp"
                 | "sftp-server"
                 | "sudo"
@@ -472,6 +484,7 @@ fn write_dropbear_store(
     oath_root: &Path,
     dropbear: &Path,
     dropbearkey: &Path,
+    dbclient: &Path,
     scp: &Path,
     sftp_server: &Path,
 ) -> Result<()> {
@@ -479,10 +492,13 @@ fn write_dropbear_store(
     fs::create_dir_all(&dir)?;
     copy_file(dropbear, &dir.join("dropbear"))?;
     copy_file(dropbearkey, &dir.join("dropbearkey"))?;
+    copy_file(dbclient, &dir.join("ssh"))?;
+    symlink("ssh", dir.join("dbclient"))?;
     copy_file(scp, &dir.join("scp"))?;
     copy_file(sftp_server, &dir.join("sftp-server"))?;
     chmod_exec(&dir.join("dropbear"))?;
     chmod_exec(&dir.join("dropbearkey"))?;
+    chmod_exec(&dir.join("ssh"))?;
     chmod_exec(&dir.join("scp"))?;
     chmod_exec(&dir.join("sftp-server"))?;
     Ok(())

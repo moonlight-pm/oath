@@ -32,6 +32,7 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${pkgs.pkgsStatic.btrfs-progs}/bin/mkfs.btrfs $out/mkfs.btrfs
   ln -s ${dropbearOath}/bin/dropbear $out/dropbear
   ln -s ${dropbearOath}/bin/dropbearkey $out/dropbearkey
+  ln -s ${dropbearOath}/bin/dbclient $out/dropbear-dbclient
   ln -s ${dropbearOath}/bin/scp $out/dropbear-scp
   ln -s ${pkgs.pkgsStatic.openssh}/libexec/sftp-server $out/sftp-server
   ln -s ${pkgs.pkgsStatic.gptfdisk}/bin/sgdisk $out/sgdisk

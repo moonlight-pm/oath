@@ -14,6 +14,7 @@ pub struct Tools {
     pub mkfs_btrfs: Option<PathBuf>,
     pub dropbear: Option<PathBuf>,
     pub dropbearkey: Option<PathBuf>,
+    pub dropbear_dbclient: Option<PathBuf>,
     pub dropbear_scp: Option<PathBuf>,
     pub sftp_server: Option<PathBuf>,
     pub sgdisk: Option<PathBuf>,
@@ -45,6 +46,7 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut btrfs = std::env::var_os("OATH_BTRFS").map(PathBuf::from);
     let mut dropbear = std::env::var_os("OATH_DROPBEAR").map(PathBuf::from);
     let mut dropbearkey = std::env::var_os("OATH_DROPBEARKEY").map(PathBuf::from);
+    let mut dropbear_dbclient = std::env::var_os("OATH_DROPBEAR_DBCLIENT").map(PathBuf::from);
     let mut dropbear_scp = std::env::var_os("OATH_DROPBEAR_SCP").map(PathBuf::from);
     let mut sftp_server = std::env::var_os("OATH_SFTP_SERVER").map(PathBuf::from);
     let mut glibc = std::env::var_os("OATH_GLIBC").map(PathBuf::from);
@@ -74,6 +76,10 @@ pub fn load(root: &Path) -> Result<Tools> {
         });
         dropbearkey = dropbearkey.or_else(|| {
             let p = tools.join("dropbearkey");
+            p.is_file().then_some(p)
+        });
+        dropbear_dbclient = dropbear_dbclient.or_else(|| {
+            let p = tools.join("dropbear-dbclient");
             p.is_file().then_some(p)
         });
         dropbear_scp = dropbear_scp.or_else(|| {
@@ -136,6 +142,12 @@ pub fn load(root: &Path) -> Result<Tools> {
     let btrfs = btrfs.filter(|p| p.is_file());
     let dropbear = dropbear.filter(|p| p.is_file());
     let dropbearkey = dropbearkey.filter(|p| p.is_file());
+    let dropbear_dbclient = dropbear_dbclient.filter(|p| p.is_file()).or_else(|| {
+        dropbear.as_ref().and_then(|d| {
+            let p = d.parent()?.join("dropbear-dbclient");
+            p.is_file().then_some(p)
+        })
+    });
     let dropbear_scp = dropbear_scp.filter(|p| p.is_file()).or_else(|| {
         dropbear.as_ref().and_then(|d| {
             let p = d.parent()?.join("dropbear-scp");
@@ -172,6 +184,7 @@ pub fn load(root: &Path) -> Result<Tools> {
         mkfs_btrfs: opt_file("mkfs.btrfs"),
         dropbear,
         dropbearkey,
+        dropbear_dbclient,
         dropbear_scp,
         sftp_server,
         sgdisk: opt_file("sgdisk"),

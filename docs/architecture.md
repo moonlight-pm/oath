@@ -40,8 +40,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
     /oath/ssh/         dropbear host keys (generated)
-    dropbear           svc:sshd, keys from ssh:local; /bin/scp +
-                       /bin/sftp-server (SFTPSERVER_PATH=/bin/sftp-server)
+    dropbear           svc:sshd, keys from ssh:local; /bin/ssh (dbclient) +
+                       /bin/scp + /bin/sftp-server (SFTPSERVER_PATH=/bin/sftp-server)
     seatd              svc:seatd (DRM seat)
     river              svc:river as `home` (glibc, libudev-zero, socket /run/user/1;
                        gles2/radeonsi on real KMS, pixman on virtio; hardware

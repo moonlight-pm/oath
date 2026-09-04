@@ -22,7 +22,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pkg:curl` packed. Menubar CPU/MEM/RX LED graphs paint (image
    raster, not 1×1 canvas). Volume chip is up (`pkg:pipewire` +
    ALSA HDA; Built-in Audio). **scp / sftp** as `home@canto` (dropbear
-   `sftp-server` + `scp`; busybox `/bin/vi`). **sola-kvm client** on
+   `sftp-server` + `scp`; guest `/bin/ssh` is dropbear dbclient; busybox `/bin/vi`). **sola-kvm client** on
    canto (`/bin/sola-kvm listen`, UDP 4242); novus peer is canto
    10.0.0.3 1920×1080 (Mac 10.0.0.133 unconfigured from this desk).
    KVM clipboard: CLIP1 TCP same port, text + `image/png` on Enter/Leave.
@@ -98,8 +98,9 @@ Do not re-litigate without an explicit decision.
   `10.0.2.15/24`. `ipv4=dhcp` via udhcpc. `OATH_BRIDGE` optional.
 - SSH: **home** only, dropbear `-w`, **no baked private key**. Host
   keys under `/oath/ssh/`. Owner pubkeys in `ssh:local` →
-  `/home/.ssh/authorized_keys`. `pkg:dropbear` ships `/bin/scp` and
-  `/bin/sftp-server` (musl OpenSSH helper; not glibc OpenSSH sshd).
+  `/home/.ssh/authorized_keys`. `pkg:dropbear` ships `/bin/ssh`
+  (dropbear dbclient), `/bin/scp`, and `/bin/sftp-server` (musl OpenSSH
+  helper; not glibc OpenSSH sshd).
   Serial is root when the svc is on
   (break-glass); no UART on canto so `svc:serial` is disabled.
   `home` has `sudo` ALL, no password. Unix name `home`, uid 1,
