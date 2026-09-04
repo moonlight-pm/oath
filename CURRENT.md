@@ -18,7 +18,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    as `home` (River GLES2/radeonsi + Sola on amdgpu DP-10, Philips
    1920×1080). `/dev/ptmx` is 0666 so terminal tmux/PTY works.
    Serial svc **off** (no UART). EFI mark still paints. **T30**
-   `pkg:grok` packed (`/bin/grok`, updater off). `pkg:git` and
+   `pkg:grok` packed (`/bin/grok`, updater off). Guest `/bin/xdg-open`
+   is `solactl open` so Grok login can raise sola-browser. `pkg:git` and
    `pkg:curl` packed. Menubar CPU/MEM/RX LED graphs paint (image
    raster, not 1×1 canvas). Volume chip is up (`pkg:pipewire` +
    ALSA HDA; Built-in Audio). **scp / sftp** as `home@canto` (dropbear

@@ -486,6 +486,7 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
                 | "scp"
                 | "sftp-server"
                 | "sudo"
+                | "xdg-open"
         ) {
             continue;
         }

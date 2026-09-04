@@ -59,6 +59,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
     solactl            /bin/solactl (call-plane CLI in pkg:sola)
+    xdg-open           /bin/xdg-open (solactl open → sola-browser; not xdg-utils)
     sola-kvm           svc:sola-kvm listen as `home` (UDP 4242; virtual pointer)
     pkg:thoxa          `/bin/thoxa` (glibc; session REPL is the `home` login shell)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)

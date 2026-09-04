@@ -22,7 +22,8 @@ if [[ -e $out ]]; then
 fi
 
 mkdir -p "$out/lib" "$out/bin" "$out/libexec" \
-  "$out/share/fonts" "$out/share/icons" "$out/share/cursors" "$out/etc/fonts"
+  "$out/share/fonts" "$out/share/icons" "$out/share/cursors" \
+  "$out/share/applications" "$out/etc/fonts" "$out/etc/xdg"
 
 # Only skip libs that relocate-river actually puts in pkg:glibc.
 # libresolv / nss / libutil are not in that closure (River does not
@@ -424,6 +425,35 @@ $guest_env
 exec /oath/store/pkg/sola/libexec/solactl "\$@"
 WRAP
 chmod +x "$out/bin/solactl"
+
+# Grok / webbrowser exec xdg-open. No dbus, no xdg-utils — hand off to
+# solactl open (running sola-browser, or spawn).
+cat >"$out/bin/xdg-open" <<'WRAP'
+#!/bin/sh
+if [ -z "$1" ]; then
+	echo "xdg-open: missing file or URL" >&2
+	exit 1
+fi
+exec /bin/solactl open "$1"
+WRAP
+chmod +x "$out/bin/xdg-open"
+
+cat >"$out/share/applications/sola-browser.desktop" <<'DESK'
+[Desktop Entry]
+Type=Application
+Name=Sola Browser
+Exec=/bin/sola-browser %u
+Terminal=false
+MimeType=x-scheme-handler/http;x-scheme-handler/https;text/html;application/xhtml+xml;x-scheme-handler/about;
+NoDisplay=true
+DESK
+cat >"$out/etc/xdg/mimeapps.list" <<'MIME'
+[Default Applications]
+x-scheme-handler/http=sola-browser.desktop
+x-scheme-handler/https=sola-browser.desktop
+text/html=sola-browser.desktop
+application/xhtml+xml=sola-browser.desktop
+MIME
 
 for b in "${kit_bins[@]}" tmux; do
   [[ -x $out/libexec/$b ]] || { echo "relocate-sola: missing libexec/$b" >&2; exit 1; }
