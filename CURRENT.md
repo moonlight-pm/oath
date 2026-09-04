@@ -25,6 +25,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `sftp-server` + `scp`; busybox `/bin/vi`). **sola-kvm client** on
    canto (`/bin/sola-kvm listen`, UDP 4242); novus peer is canto
    10.0.0.3 1920×1080 (Mac 10.0.0.133 unconfigured from this desk).
+   KVM clipboard: CLIP1 TCP same port, text + `image/png` on Enter/Leave.
    Next: remaining kit (spotify ELF) or rustc on the guest.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
