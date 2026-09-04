@@ -19,7 +19,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:git` | `present: true` | yes — borrowed Git; `/bin/git`. HTTPS via `git-remote-http` + CA bundle in the store. |
 | `pkg:curl` | `present: true` | yes — borrowed static musl curl; `/bin/curl`. CA bundle in the store. |
 | `pkg:pipewire` | `present: true` | yes — PipeWire + WirePlumber + pipewire-pulse + alsa-lib + libpulse; `/bin/pipewire`, `/bin/wireplumber`, `/bin/pipewire-pulse`, `/bin/wpctl`, `/bin/pw-dump`, `/bin/pw-cat`. Menubar volume talks to this (`pw-dump` / `wpctl` / `pw-cat`). sola-spotify (not packed) needs the Pulse socket + those libs at runtime. |
-| `pkg:thoxa` | `present: true` | yes — sister compiler + session REPL; `/bin/thoxa` is the `home` login shell (wrapper + `libexec/thoxa`). Root/serial stay busybox `/bin/sh`. `thoxa -c` is libtcc (no guest `cc`); `thoxa build` still needs `cc`. |
+| `pkg:thoxa` | `present: true` | yes — sister compiler + session REPL; `/bin/thoxa` is the `home` login shell (wrapper + `libexec/thoxa`) and the `$SHELL` for sola-terminal / workspaces tmux. Root/serial stay busybox `/bin/sh`. `thoxa -c` is libtcc (no guest `cc`); `thoxa build` still needs `cc`. |
 | `pkg:hello` | `present: false` | yes — canary |
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 

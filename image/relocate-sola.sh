@@ -348,9 +348,12 @@ patchelf_libexec() {
   patchelf --set-rpath "$rpath" "$dest"
 }
 
+# SHELL follows host:local.env (PID 1 injects /bin/thoxa for the seat).
+# Do not force /bin/sh — that made sola-terminal / workspaces tmux ash
+# while SSH already used the passwd shell.
 guest_env='export PATH=/bin
 export HOME="${HOME:-/home}"
-export SHELL=/bin/sh
+export SHELL="${SHELL:-/bin/thoxa}"
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
 export LOCALE_ARCHIVE=/oath/store/pkg/sola/lib/locale/locale-archive

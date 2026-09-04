@@ -14,7 +14,9 @@ package ships `/bin/sftp-server` (OpenSSH helper, musl static) and
 `/bin/scp` (dropbear). Host `scp` / `sftp` as `home` work (canto
 live; QEMU on the next pack). The editor is busybox `vi` (`/bin/vi`).
 The `home` login shell is `/bin/thoxa` (`pkg:thoxa`; `thoxa -c` for
-`ssh host cmd`). Dropbear **rejects the user** unless that path is
+`ssh host cmd`). sola-terminal and sola-workspaces tmux panes use the
+same `$SHELL` (wrappers default `/bin/thoxa`; they must not force
+`/bin/sh`). Dropbear **rejects the user** unless that path is
 listed in `/etc/shells` (the client error looks like publickey
 denied). Root/serial stay `/bin/sh`.
 
