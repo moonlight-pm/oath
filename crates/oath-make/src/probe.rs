@@ -982,7 +982,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -x /bin/ssh -a -x /bin/scp -a -x /bin/sftp-server && echo SFTP_BIN",
+        "test -x /bin/ssh -a -x /bin/ssh-keygen -a -x /bin/scp -a -x /bin/sftp-server && ssh -V 2>&1 | grep -q OpenSSH && echo SFTP_BIN",
         Some("SFTP_BIN"),
         "ssh.sftp_bin",
         Duration::from_secs(8),

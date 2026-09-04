@@ -112,7 +112,7 @@ once the disk is mounted.
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
 - scp/sftp as `home` (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`; next image)
-- guest `/bin/ssh` (dropbear dbclient; canto live; QEMU next image)
+- guest `/bin/ssh` (musl OpenSSH; canto live; QEMU next image)
 - busybox `/bin/vi`
 - `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/1`
 - Sola session stack (`svc:sola-bus` / `call` / `river` / `shell` /

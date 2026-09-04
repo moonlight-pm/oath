@@ -305,6 +305,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
             m
         }),
     )?;
+    fs::create_dir_all(stage.join("etc/ssh"))?;
+    fs::write(
+        stage.join("etc/ssh/ssh_config"),
+        "# guest OpenSSH client. Record unknown hosts; refuse changed keys.\n\
+         Host *\n\
+         \tStrictHostKeyChecking accept-new\n",
+    )?;
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("root/.ssh"))?;
     fs::create_dir_all(stage.join("home/.ssh"))?;
@@ -329,10 +336,16 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         bail!("OATH_DROPBEARKEY / tools dropbearkey required");
     };
     let Some(dropbear_dbclient) = &tools.dropbear_dbclient else {
-        bail!("OATH_DROPBEAR_DBCLIENT / tools dropbear-dbclient required (pkg:dropbear ssh)");
+        bail!("OATH_DROPBEAR_DBCLIENT / tools dropbear-dbclient required");
     };
     let Some(dropbear_scp) = &tools.dropbear_scp else {
         bail!("OATH_DROPBEAR_SCP / tools dropbear-scp required (pkg:dropbear scp)");
+    };
+    let Some(openssh_ssh) = &tools.openssh_ssh else {
+        bail!("OATH_OPENSSH_SSH / tools openssh-ssh required (guest /bin/ssh)");
+    };
+    let Some(openssh_ssh_keygen) = &tools.openssh_ssh_keygen else {
+        bail!("OATH_OPENSSH_SSH_KEYGEN / tools openssh-ssh-keygen required");
     };
     let Some(sftp_server) = &tools.sftp_server else {
         bail!("OATH_SFTP_SERVER / tools sftp-server required (pkg:dropbear sftp)");
@@ -343,6 +356,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         dropbearkey,
         dropbear_dbclient,
         dropbear_scp,
+        openssh_ssh,
+        openssh_ssh_keygen,
         sftp_server,
     )?;
     write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
@@ -467,6 +482,7 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
                 | "dropbearkey"
                 | "dbclient"
                 | "ssh"
+                | "ssh-keygen"
                 | "scp"
                 | "sftp-server"
                 | "sudo"
@@ -486,19 +502,24 @@ fn write_dropbear_store(
     dropbearkey: &Path,
     dbclient: &Path,
     scp: &Path,
+    ssh: &Path,
+    ssh_keygen: &Path,
     sftp_server: &Path,
 ) -> Result<()> {
     let dir = oath_root.join("store/pkg/dropbear/bin");
     fs::create_dir_all(&dir)?;
     copy_file(dropbear, &dir.join("dropbear"))?;
     copy_file(dropbearkey, &dir.join("dropbearkey"))?;
-    copy_file(dbclient, &dir.join("ssh"))?;
-    symlink("ssh", dir.join("dbclient"))?;
+    copy_file(dbclient, &dir.join("dbclient"))?;
+    copy_file(ssh, &dir.join("ssh"))?;
+    copy_file(ssh_keygen, &dir.join("ssh-keygen"))?;
     copy_file(scp, &dir.join("scp"))?;
     copy_file(sftp_server, &dir.join("sftp-server"))?;
     chmod_exec(&dir.join("dropbear"))?;
     chmod_exec(&dir.join("dropbearkey"))?;
+    chmod_exec(&dir.join("dbclient"))?;
     chmod_exec(&dir.join("ssh"))?;
+    chmod_exec(&dir.join("ssh-keygen"))?;
     chmod_exec(&dir.join("scp"))?;
     chmod_exec(&dir.join("sftp-server"))?;
     Ok(())

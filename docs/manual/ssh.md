@@ -10,10 +10,12 @@ are `ssh:local` `authorized` (OpenSSH public key lines). Apply writes
 `/home/.ssh/authorized_keys`.
 
 `svc:sshd` is dropbear (`pkg:dropbear`, not removable). The same
-package ships `/bin/ssh` (dropbear `dbclient`), `/bin/sftp-server`
-(OpenSSH helper, musl static), and `/bin/scp` (dropbear). Host
-`scp` / `sftp` as `home` work. Guest `ssh` is on canto this boot
-(QEMU on the next pack). The editor is busybox `vi` (`/bin/vi`).
+package ships musl OpenSSH `/bin/ssh` and `/bin/ssh-keygen`,
+`/bin/sftp-server`, dropbear `/bin/scp`, and `/bin/dbclient`.
+Guest `/etc/ssh/ssh_config` is `StrictHostKeyChecking accept-new`
+(record unknown hosts, refuse changed keys). Host `scp` / `sftp`
+as `home` work. Guest `ssh` is on canto this boot (QEMU on the next
+pack). The editor is busybox `vi` (`/bin/vi`).
 The `home` login shell is `/bin/thoxa` (`pkg:thoxa`; `thoxa -c` for
 `ssh host cmd`). sola-terminal and sola-workspaces tmux panes use the
 same `$SHELL` (wrappers default `/bin/thoxa`; they must not force
