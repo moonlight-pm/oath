@@ -34,7 +34,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    lists `/bin/thoxa` and `/bin/sh`; `host:local.env` `SHELL` /
    `THOXA_ROOT`). Store hand-copied this boot from Thoxa `ee2e3cf`
    (D156 emacs line editor + Tab complete; `ssh home@canto echo hi`
-   is `thoxa -c`). sola-terminal and workspaces tmux inherit `$SHELL`
+   is `thoxa -c`). Seat rc is Oath-local (`std/prompt`; no NixOS `path()`). sola-terminal and workspaces tmux inherit `$SHELL`
    (pkg:sola wrappers default `/bin/thoxa`, not ash). Wrappers `cd
    $HOME` so a new Terminal is not `/` (PID 1 cwd). Root/serial
    stay `/bin/sh`. **T33** off-box backup: one NFS copy on nas
