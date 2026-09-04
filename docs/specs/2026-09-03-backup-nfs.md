@@ -1,12 +1,16 @@
 **Date:** 2026-09-03
 **Status:** target (freeze)
-**Implementation:** not started
-**Dogfood:** none
+**Implementation:** partial
+**Dogfood:** canto 2026-09-04 `svc:backup` last send generation 16 to
+  `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` 2056610447 bytes,
+  checksum match). Helper run by hand this boot (ESP initrd still old
+  PID 1). NFS modules insmod’d live.
 **Gaps:**
-- no NFS client in the image (modules, `mount -t nfs`)
-- no `/lib/oath/backup-send` helper
-- no `svc:backup` seed
-- no off-box send, sidecar, or restore path
+- NFS modules + helper packed for the **next** `cargo make build`;
+  canto ESP initrd not rebuilt (reboot drops nfs.ko until then)
+- `svc:backup` enable+apply oneshot needs the new PID 1
+- no restore-in-installer
+- QEMU image not rebuilt with this yet
 - local `@gen-N` reaping still out
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 

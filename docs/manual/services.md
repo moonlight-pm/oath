@@ -22,6 +22,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:pipewire` | `/bin/pipewire` | enabled, `restart=always` | Seat audio graph as `home`. `/run/user/1/pipewire-0`. Wants nothing. |
 | `svc:wireplumber` | `/bin/wireplumber` | enabled, `restart=always` | Session manager (`--profile main-embedded`). Wants `svc:pipewire`. |
 | `svc:pipewire-pulse` | `/bin/pipewire-pulse` | enabled, `restart=always` | Pulse compatibility for librespot. Wants `svc:pipewire`. |
+| `svc:backup` | `/lib/oath/backup-send` + NFS spec | **off**, `restart=never` | One `btrfs send` of a read-only `@` generation to NFS. Overwrites `canto.send` (+ `canto.json` sidecar). Default dest `10.0.0.12:/mnt/alpha/backup/canto`. Enable and `oath apply` is “Back Up Now” on an image with the new PID 1. Canto this boot: helper was run by hand (ESP initrd still old). |
 
 ## Audio
 

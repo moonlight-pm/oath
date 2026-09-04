@@ -37,5 +37,8 @@ converges `pkg:*` links and `svc:*`. It does **not** replace `/oath/run`
 Picking an arbitrary old generation as the boot default is **confirm**
 class. There is no bootloader menu yet. `undo` is the supported rewind.
 
+Off-box copy is `svc:backup` (T33): one NFS file, overwritten, not a
+second undo. `oath undo` does not restore from the NAS.
+
 qcow2 snapshots on the QEMU host are debug only. They are not this
 mechanism.

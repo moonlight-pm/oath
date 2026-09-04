@@ -7,7 +7,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-09-03
+**As of:** 2026-09-04
 
 ---
 
@@ -29,7 +29,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    **`pkg:thoxa`** is the `home` login shell (`/bin/thoxa`; `/etc/shells`
    lists `/bin/thoxa` and `/bin/sh`; `host:local.env` `SHELL` /
    `THOXA_ROOT`). `ssh home@canto echo hi` is `thoxa -c`. Root/serial
-   stay `/bin/sh`. Next: remaining kit (spotify ELF) or rustc on the guest.
+   stay `/bin/sh`. **T33** off-box backup: one NFS copy on nas
+   `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` gen 16, ~1.9G,
+   checksum match). Helper `/lib/oath/backup-send` this boot (nfs
+   modules insmod’d live; ESP initrd still old). Next: remaining kit
+   (spotify ELF) or rustc on the guest, or rebuild ESP initrd.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
@@ -61,7 +65,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer). |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match). NFS modules insmod’d live; helper `/lib/oath/backup-send`. |
 
 ```sh
 nix-shell
@@ -93,11 +97,12 @@ Do not re-litigate without an explicit decision.
   Root/serial stay `/bin/sh`. Groups: `root` and `home` only. Required env is
   `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
   `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
-- Backup: **T33 (target, not implemented):** one NFS copy of whole `@`
-  via `btrfs send` of a read-only generation; overwrite (temp +
-  rename); explicit `svc:backup` (`restart: never`); no new kind or
-  verb; sidecar checksum. Not hourly. `oath undo` stays catalog-only.
-  Local `@gen-N` stays CoW apply/undo.
+- Backup: **T33 (partial):** one NFS copy of whole `@` via `btrfs send`
+  of a read-only generation; overwrite (temp + rename); `svc:backup`
+  (`restart: never`, default off); dest
+  `10.0.0.12:/mnt/alpha/backup/canto`. Sidecar checksum. Not hourly.
+  `oath undo` stays catalog-only. Canto live: gen 16 send. NFS in the
+  next packed initrd.
 - Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
@@ -152,7 +157,7 @@ Do not re-litigate without an explicit decision.
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
 - Freeze: [docs/specs/2026-09-03-backup-nfs.md](docs/specs/2026-09-03-backup-nfs.md)
-  (T33 one NFS copy; not implemented).
+  (T33 one NFS copy; partial, canto).
   [docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md)
   (T32 pack identity; not implemented).
   [docs/specs/2026-09-03-pkg-thoxa.md](docs/specs/2026-09-03-pkg-thoxa.md)
@@ -191,4 +196,5 @@ Do not re-litigate without an explicit decision.
   (canto; QEMU on next `cargo make build`); sola-workspaces packed
   (canto; QEMU on next build); T31 seat `home` on canto SSH +
   graphical stack as `home`; `pkg:grok` / `pkg:git` / `pkg:curl` / `pkg:pipewire`
-  packed; `pkg:thoxa` packed as the `home` login shell; other kit apps not; Phase 6 metal canary (canto) dogfoodable
+  packed; `pkg:thoxa` packed as the `home` login shell; T33 one NFS
+  copy on nas (canto gen 16); other kit apps not; Phase 6 metal canary (canto) dogfoodable

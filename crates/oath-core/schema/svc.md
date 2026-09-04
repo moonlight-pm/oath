@@ -14,8 +14,17 @@ editing `/etc`.
 - `wants` — other `svc` ids that should be up first. PID 1 starts them
   in that order. Cycles refuse `oath apply`. Disabled/unknown wants
   are skipped (ordering, not Requires). `svc:hold` wants `svc:serial`.
-- `restart` — `never` | `always` | `on-failure`.
+- `restart` — `never` | `always` | `on-failure`. `never` is a oneshot:
+  PID 1 starts it when enabled, does not start it again after it
+  exits until `enabled` goes false then true (or the next boot if it
+  is still enabled).
 - `enabled` — if false, the process is not running.
+
+`svc:backup` is a oneshot (`restart=never`, default `enabled=false`).
+`exec` is `/lib/oath/backup-send` plus an NFS spec
+(`10.0.0.12:/mnt/alpha/backup/canto`). Enable and `oath apply` sends
+one full generation to that directory (overwrite). Last send is
+`actual` plus `last.json` (generation, checksum).
 
 Safety: `mutate`. Apply writes desired, then notifies PID 1.
 
@@ -34,7 +43,8 @@ stack runs as `home`), `svc:hold`
 `svc:seatd`, `svc:river` (patched River on `dev:card0`; wants
 seatd; libinput via libudev-zero), and the Sola session stack
 (`svc:sola-bus`, `svc:sola-call`, `svc:sola-river` the Wayland
-bridge, `svc:sola-shell`, `svc:sola-session`). Do not run Sola’s
+bridge, `svc:sola-shell`, `svc:sola-session`), and `svc:backup`
+(off-box NFS send; off until you enable it). Do not run Sola’s
 process manager.
 Do not disable serial unless you have another console.
 

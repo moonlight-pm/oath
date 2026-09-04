@@ -153,6 +153,7 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "net:net0"));
     assert!(ids.iter().any(|i| i.to_string() == "ssh:local"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sshd"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:backup"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:dropbear"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:glibc"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:river"));
@@ -190,6 +191,10 @@ fn seed_lists_host() {
     let exec = sshd.desired["exec"].as_array().unwrap();
     assert!(exec.iter().any(|v| v == "-w"));
     assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
+    let backup = cat.get(&"svc:backup".parse().unwrap()).unwrap();
+    assert_eq!(backup.desired["enabled"], false);
+    assert_eq!(backup.desired["restart"], "never");
+    assert_eq!(backup.desired["exec"][0], "/lib/oath/backup-send");
     let seatd = cat.get(&"svc:seatd".parse().unwrap()).unwrap();
     let exec = seatd.desired["exec"].as_array().unwrap();
     assert!(exec.iter().any(|v| v == "-u"));

@@ -1,6 +1,6 @@
 //! PID 1. Mounts, hostname from the catalog, supervises svc:*, reaps.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{Read, Write};
 use std::os::unix::fs::PermissionsExt;
@@ -88,6 +88,14 @@ const MODULES: &[&str] = &[
     "kernel/sound/pci/hda/snd-hda-codec-generic.ko",
     "kernel/sound/usb/snd-usb-audio.ko",
     "kernel/sound/virtio/virtio_snd.ko",
+    "kernel/net/sunrpc/sunrpc.ko",
+    "kernel/fs/nfs_common/grace.ko",
+    "kernel/fs/netfs/netfs.ko",
+    "kernel/fs/nfs_common/nfs_localio.ko",
+    "kernel/fs/lockd/lockd.ko",
+    "kernel/fs/nfs/nfs.ko",
+    "kernel/net/dns_resolver/dns_resolver.ko",
+    "kernel/fs/nfs/nfsv4.ko",
 ];
 
 pub(crate) fn log(msg: &str) {
@@ -149,12 +157,13 @@ fn real_main() -> Result<(), String> {
     apply_ssh();
     hold_graphics();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
+    let mut oneshot_done: HashSet<String> = HashSet::new();
     // sshd/dhcp first. River as `home` on amdgpu crash-loops if it starts
     // before KMS and /dev/input exist (libinput ENOENT, WLR on simpledrm).
-    converge(&mut kids, false);
+    converge(&mut kids, false, &mut oneshot_done);
     load_modules(false);
     wait_seat_devices(Duration::from_secs(10));
-    converge(&mut kids, true);
+    converge(&mut kids, true, &mut oneshot_done);
 
     let sock_path = "/oath/run/init.sock";
     let _ = fs::remove_file(sock_path);
@@ -165,7 +174,7 @@ fn real_main() -> Result<(), String> {
     tel("init", "ready", json!({ "svcs": kids.len(), "kver": kver() }));
     let mut last_dev = Instant::now();
     loop {
-        reap(&mut kids);
+        reap(&mut kids, &mut oneshot_done);
         if last_dev.elapsed() >= Duration::from_secs(2) {
             oath_core::seat::open_device_nodes();
             last_dev = Instant::now();
@@ -174,7 +183,7 @@ fn real_main() -> Result<(), String> {
             let mut buf = [0u8; 64];
             let n = s.read(&mut buf).unwrap_or(0);
             tel("init", "converge", json!({ "bytes": n }));
-            converge(&mut kids, true);
+            converge(&mut kids, true, &mut oneshot_done);
             let _ = s.write_all(b"ok\n");
         }
         std::thread::sleep(Duration::from_millis(200));
@@ -877,7 +886,7 @@ fn stop_kid(kids: &mut HashMap<i32, Kid>, id: &str) {
     }
 }
 
-fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool) {
+fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut HashSet<String>) {
     let cat = match Catalog::open(DEFAULT_ROOT) {
         Ok(c) => c,
         Err(_) => return,
@@ -920,6 +929,7 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool) {
             continue;
         }
         if !spec.enabled || spec.exec.is_empty() {
+            oneshot_done.remove(id);
             if pid_for(kids, id).is_none() {
                 write_svc_actual(&oid, "stopped", None, 0);
             }
@@ -928,10 +938,16 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool) {
         if pid_for(kids, id).is_some() {
             continue;
         }
+        if spec.restart == oath_core::SvcRestart::Never && oneshot_done.contains(id) {
+            continue;
+        }
         match spawn(id, spec) {
             Ok(pid) => {
                 tel("init", "svc_start", json!({ "id": id, "pid": pid.as_raw() }));
                 write_svc_actual(&oid, "running", Some(pid.as_raw()), 0);
+                if spec.restart == oath_core::SvcRestart::Never {
+                    oneshot_done.insert(id.clone());
+                }
                 kids.insert(pid.as_raw(), Kid { id: id.clone(), spec: spec.clone() });
             }
             Err(e) => {
@@ -1050,7 +1066,7 @@ fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
     Ok(Pid::from_raw(child.id() as i32))
 }
 
-fn reap(kids: &mut HashMap<i32, Kid>) {
+fn reap(kids: &mut HashMap<i32, Kid>, oneshot_done: &mut HashSet<String>) {
     loop {
         let (pid, failed) = match waitpid(Pid::from_raw(-1), Some(WaitPidFlag::WNOHANG)) {
             Ok(WaitStatus::Exited(pid, code)) => (pid, code != 0),
@@ -1067,6 +1083,9 @@ fn reap(kids: &mut HashMap<i32, Kid>) {
             oath_core::SvcRestart::OnFailure => failed,
         };
         let id: ObjectId = k.id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
+        if k.spec.restart == oath_core::SvcRestart::Never {
+            oneshot_done.insert(k.id.clone());
+        }
         if restart {
             std::thread::sleep(Duration::from_millis(200));
             if let Ok(npid) = spawn(&k.id, &k.spec) {
@@ -1081,7 +1100,17 @@ fn reap(kids: &mut HashMap<i32, Kid>) {
 
 fn write_svc_actual(id: &ObjectId, state: &str, pid: Option<i32>, restarts: u32) {
     let dir = Path::new(DEFAULT_ROOT).join("objects").join(&id.kind).join(&id.name);
-    let v = serde_json::json!({ "state": state, "pid": pid, "restarts": restarts });
+    let mut v = serde_json::json!({ "state": state, "pid": pid, "restarts": restarts });
+    let last = dir.join("last.json");
+    if let Ok(extra) = oath_core::read_json::<serde_json::Value>(&last) {
+        if let Some(obj) = extra.as_object() {
+            for (k, val) in obj {
+                if v.get(k).is_none() {
+                    v[k] = val.clone();
+                }
+            }
+        }
+    }
     let _ = oath_core::write_json(&dir.join("actual.json"), &v);
 }
 

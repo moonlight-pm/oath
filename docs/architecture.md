@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-09-03)
+## As-built (2026-09-04)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -62,6 +62,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-kvm           svc:sola-kvm listen as `home` (UDP 4242; virtual pointer)
     pkg:thoxa          `/bin/thoxa` (glibc; session REPL is the `home` login shell)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
+    backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`; default off)
     /sbin/init -> ../lib/oath/init
 ```
 
@@ -75,12 +76,14 @@ and pipewire as `home`).
 Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
-`svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse`.
+`svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`,
+`svc:pipewire-pulse`, `svc:backup` (oneshot NFS send; default off).
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)
 from that generation, not `/oath/run`. Fallback: copy the catalog tree
-when the top-level is not mounted.
+when the top-level is not mounted. Off-box: `/lib/oath/backup-send`
+`btrfs send`s a read-only generation to one NFS file (T33).
 
 Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
 `oath apply` on `pkg:*` creates or removes `/bin` symlinks into

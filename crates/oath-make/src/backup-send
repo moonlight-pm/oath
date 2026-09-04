@@ -1,0 +1,155 @@
+#!/bin/sh
+# Send a read-only generation of @ to one NFS file. Overwrite atomically.
+# Usage: backup-send host:/export/path
+# Writes $hostname.send and $hostname.json in that directory.
+set -eu
+
+spec=${1:?nfs spec (host:/path)}
+bb=/bin/busybox
+[ -x "$bb" ] || bb=busybox
+
+host=$($bb hostname 2>/dev/null || hostname 2>/dev/null || echo oath)
+host=${host%%.*}
+[ -n "$host" ] || host=oath
+
+fs=/oath/run/fs
+live=$fs/@
+mnt=/run/oath-backup
+obj=/oath/objects/svc/backup
+mounted=0
+
+log() { echo "backup-send: $*" >&2; }
+
+die() {
+	log "error: $*"
+	exit 1
+}
+
+cleanup() {
+	if [ "$mounted" = 1 ]; then
+		$bb umount "$mnt" 2>/dev/null || $bb umount -l "$mnt" 2>/dev/null || true
+		mounted=0
+	fi
+	if [ -x /bin/oath ]; then
+		/bin/oath set svc:backup enabled=false >/dev/null 2>&1 || true
+	fi
+}
+trap cleanup EXIT
+
+have_fs() {
+	$bb grep -q "$1" /proc/filesystems 2>/dev/null
+}
+
+ins() {
+	kver=$($bb uname -r)
+	rel=$1
+	p=/lib/modules/$kver/$rel
+	stem=$($bb basename "$rel" .ko)
+	name=$($bb echo "$stem" | $bb tr '-' '_')
+	[ -d "/sys/module/$name" ] && return 0
+	[ -f "$p" ] || return 0
+	$bb insmod "$p" 2>/dev/null || true
+}
+
+load_nfs() {
+	have_fs nfs && have_fs nfs4 && return 0
+	ins kernel/net/sunrpc/sunrpc.ko
+	ins kernel/fs/nfs_common/grace.ko
+	ins kernel/fs/netfs/netfs.ko
+	ins kernel/fs/nfs_common/nfs_localio.ko
+	ins kernel/fs/lockd/lockd.ko
+	ins kernel/fs/nfs/nfs.ko
+	ins kernel/net/dns_resolver/dns_resolver.ko
+	ins kernel/fs/nfs/nfsv4.ko
+	ins kernel/fs/nfs_common/nfs_acl.ko
+	ins kernel/fs/nfs/nfsv3.ko
+	have_fs nfs || have_fs nfs4 || die "nfs filesystem not available (insmod?)"
+}
+
+next_gen() {
+	n=0
+	for d in "$fs"/@gen-*; do
+		[ -d "$d" ] || continue
+		b=${d##*/}
+		g=${b#@gen-}
+		case $g in
+		'' | *[!0-9]*) continue ;;
+		esac
+		[ "$g" -gt "$n" ] && n=$g
+	done
+	echo $((n + 1))
+}
+
+current_gen() {
+	p=/oath/objects/snap/current/actual.json
+	[ -f "$p" ] || {
+		echo 0
+		return
+	}
+	# {"generation": 14}
+	$bb sed -n 's/.*"generation"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$p" | $bb head -n 1
+}
+
+load_nfs
+$bb mkdir -p "$mnt"
+log "mount $spec -> $mnt"
+if have_fs nfs4; then
+	$bb mount -i -t nfs4 -o rw,nolock,soft,timeo=30 "$spec" "$mnt" || die "mount nfs4 $spec"
+else
+	$bb mount -i -t nfs -o rw,nolock,vers=4,soft,timeo=30 "$spec" "$mnt" ||
+		$bb mount -i -t nfs -o rw,nolock,vers=3,soft,timeo=30 "$spec" "$mnt" ||
+		die "mount nfs $spec"
+fi
+mounted=1
+log "mounted"
+
+[ -d "$live" ] || die "no live subvol $live"
+parent=$(current_gen)
+[ -n "$parent" ] || parent=0
+gen=$(next_gen)
+snap=$fs/@gen-$gen
+log "snapshot @ -> @gen-$gen (parent $parent)"
+btrfs subvolume snapshot -r "$live" "$snap" || die "snapshot"
+
+now=$($bb date -u +%Y-%m-%dT%H:%M:%SZ)
+snapdir=/oath/objects/snap/$gen
+$bb mkdir -p "$snapdir"
+printf '{"generation":%s,"parent":%s,"time":"%s","reason":"backup"}\n' "$gen" "$parent" "$now" >"$snapdir/actual.json"
+printf '{}\n' >"$snapdir/desired.json"
+printf '{"id":"snap:%s","kind":"snap","name":"%s","safety":"mutate","status":"in-sync"}\n' "$gen" "$gen" >"$snapdir/meta.json"
+printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/desired.json
+printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/actual.json
+
+tmp=$mnt/$host.send.tmp
+final=$mnt/$host.send
+side_tmp=$mnt/$host.json.tmp
+side=$mnt/$host.json
+$bb rm -f "$tmp" "$side_tmp"
+log "send $snap -> $spec $host.send.tmp"
+btrfs send -f "$tmp" "$snap" || {
+	$bb rm -f "$tmp"
+	die "btrfs send"
+}
+$bb sync
+size=$($bb wc -c <"$tmp")
+size=$($bb echo "$size" | $bb tr -d ' ')
+sum=$($bb sha256sum "$tmp")
+sum=${sum%% *}
+printf '{"hostname":"%s","generation":%s,"time":"%s","size":%s,"checksum":"sha256:%s","dest":"%s"}\n' \
+	"$host" "$gen" "$now" "$size" "$sum" "$spec" >"$side_tmp"
+$bb sync
+$bb mv -f "$tmp" "$final"
+$bb mv -f "$side_tmp" "$side"
+$bb sync
+log "ok generation=$gen size=$size checksum=sha256:$sum"
+
+$bb mkdir -p "$obj"
+printf '{"generation":%s,"time":"%s","dest":"%s","checksum":"sha256:%s","size":%s}\n' \
+	"$gen" "$now" "$spec" "$sum" "$size" >"$obj/last.json"
+if [ -f "$obj/actual.json" ]; then
+	printf '{"state":"running","pid":null,"restarts":0,"generation":%s,"time":"%s","dest":"%s","checksum":"sha256:%s","size":%s}\n' \
+		"$gen" "$now" "$spec" "$sum" "$size" >"$obj/actual.json"
+fi
+
+log "done"
+exit 0

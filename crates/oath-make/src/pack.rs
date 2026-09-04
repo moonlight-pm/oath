@@ -70,6 +70,10 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/sound/pci/hda/snd-hda-codec-generic.ko.xz",
     "kernel/sound/usb/snd-usb-audio.ko.xz",
     "kernel/sound/virtio/virtio_snd.ko.xz",
+    // T33: NFS client for off-box btrfs send. Deps (sunrpc, lockd, netfs, …)
+    // come from modules.dep.
+    "kernel/fs/nfs/nfs.ko.xz",
+    "kernel/fs/nfs/nfsv4.ko.xz",
 ];
 
 /// Session + kit app ELFs packed into `pkg:sola`.
@@ -269,11 +273,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("lib/oath/run-compositor"), include_str!("run-compositor"))?;
     fs::write(stage.join("lib/oath/river-boot"), include_str!("river-boot"))?;
     fs::write(stage.join("lib/oath/display-env.sh"), include_str!("display-env.sh"))?;
+    fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
     chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
     chmod_exec(&stage.join("lib/oath/run-compositor"))?;
     chmod_exec(&stage.join("lib/oath/river-boot"))?;
+    chmod_exec(&stage.join("lib/oath/backup-send"))?;
     fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../lib/oath/init", stage.join("sbin/init"))?;
@@ -855,12 +861,7 @@ fn thoxa_src(root: &Path) -> Result<PathBuf> {
 fn pack_thoxa(root: &Path, out: &Path, oath_root: &Path) -> Result<()> {
     let src = thoxa_src(root)?;
     eprintln!(">> cargo build thoxa ({})", src.display());
-    run(Command::new("cargo").current_dir(&src).args([
-        "build",
-        "--release",
-        "-p",
-        "thoxa",
-    ]))?;
+    run(Command::new("cargo").current_dir(&src).args(["build", "--release", "-p", "thoxa"]))?;
     let bin = src.join("target/rust/release/thoxa");
     if !bin.is_file() {
         bail!("missing thoxa ELF at {}", bin.display());

@@ -187,6 +187,14 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_svc(root, "pipewire", &["/bin/pipewire"], &[], "always")?;
     seed_svc(root, "wireplumber", &["/bin/wireplumber"], &["svc:pipewire"], "always")?;
     seed_svc(root, "pipewire-pulse", &["/bin/pipewire-pulse"], &["svc:pipewire"], "always")?;
+    seed_svc_full(
+        root,
+        "backup",
+        &["/lib/oath/backup-send", "10.0.0.12:/mnt/alpha/backup/canto"],
+        &[],
+        "never",
+        false,
+    )?;
 
     let ssh = ObjectId::new(KIND_SSH, "local");
     let ssh_desired = json!({ "authorized": [] });
@@ -239,12 +247,23 @@ fn seed_dev(root: &Path, name: &str, class: &str, node: &str) -> Result<()> {
 }
 
 fn seed_svc(root: &Path, name: &str, exec: &[&str], wants: &[&str], restart: &str) -> Result<()> {
+    seed_svc_full(root, name, exec, wants, restart, true)
+}
+
+fn seed_svc_full(
+    root: &Path,
+    name: &str,
+    exec: &[&str],
+    wants: &[&str],
+    restart: &str,
+    enabled: bool,
+) -> Result<()> {
     let id = ObjectId::new(KIND_SVC, name);
     let desired = json!({
         "exec": exec,
         "wants": wants,
         "restart": restart,
-        "enabled": true
+        "enabled": enabled
     });
     let actual = json!({
         "state": "stopped",

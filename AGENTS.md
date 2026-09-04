@@ -76,7 +76,7 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 
 Latest freeze:
 [`docs/specs/2026-09-03-backup-nfs.md`](docs/specs/2026-09-03-backup-nfs.md)
-(T33 one NFS copy; not implemented).
+(T33 one NFS copy; partial, canto).
 [`docs/specs/2026-09-03-pkg-pack-identity.md`](docs/specs/2026-09-03-pkg-pack-identity.md)
 (T32 pack identity; not implemented).
 [`docs/specs/2026-09-03-pkg-thoxa.md`](docs/specs/2026-09-03-pkg-thoxa.md)
