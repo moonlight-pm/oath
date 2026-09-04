@@ -105,6 +105,7 @@ impl ApplyHooks for MemHooks {
             hostname: desired.hostname.clone(),
             power: HostPower::Run,
             env: desired.env.clone(),
+            timezone: desired.timezone.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {
@@ -185,6 +186,7 @@ fn seed_lists_host() {
     assert!(idx.contains("`pkg`"));
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
     assert_eq!(host.desired["env"]["GROK_DISABLE_AUTOUPDATER"], "1");
+    assert_eq!(host.desired["timezone"], "MST7MDT,M3.2.0,M11.1.0");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
     assert_eq!(serial.desired["exec"][0], "/lib/oath/serial-login");
     let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();

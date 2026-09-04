@@ -755,7 +755,12 @@ fn apply_host() {
         format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", host.hostname),
     );
     let _ = oath_core::seat::write_side_effects(&host);
-    let actual = Host { hostname: host.hostname, power: oath_core::HostPower::Run, env: host.env };
+    let actual = Host {
+        hostname: host.hostname,
+        power: oath_core::HostPower::Run,
+        env: host.env,
+        timezone: host.timezone,
+    };
     let dir = Path::new(DEFAULT_ROOT).join("objects/host/local");
     let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
     let _ = cat.write_index();
@@ -968,6 +973,19 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
     }
 }
 
+fn host_timezone() -> Option<String> {
+    let cat = Catalog::open(DEFAULT_ROOT).ok()?;
+    let id = ObjectId::new("host", "local");
+    let obj = cat.get(&id).ok()?;
+    let host: Host = serde_json::from_value(obj.desired).ok()?;
+    let tz = host.timezone.trim();
+    if tz.is_empty() {
+        None
+    } else {
+        Some(tz.to_string())
+    }
+}
+
 fn host_env() -> Vec<(String, String)> {
     let cat = Catalog::open(DEFAULT_ROOT).ok();
     let Some(cat) = cat else { return Vec::new() };
@@ -1036,6 +1054,11 @@ fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
         .env("SOLA_NO_SELF_WATCH", "1");
     for (k, v) in host_env() {
         cmd.env(k, v);
+    }
+    if seat {
+        if let Some(tz) = host_timezone() {
+            cmd.env("TZ", tz);
+        }
     }
     cmd.stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
     let drop_priv = seat;

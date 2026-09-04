@@ -19,8 +19,10 @@ not this kind. Do not add a Unix user kind — the seat is always `home`.
   spawn. `/etc/profile` is a root-owned side effect. Do not write
   `$HOME/.profile`. Seed
   includes `GROK_DISABLE_AUTOUPDATER=1`. Do **not** put `TZ` here
-  (T34): the system clock is UTC; a display timezone is a later
-  `host:local` field, not process env.
+  (T34).
+- `timezone` — POSIX TZ for **display** (Sola clock, seat apps). Empty
+  is UTC. Seed is US Mountain `MST7MDT,M3.2.0,M11.1.0`. PID 1 sets
+  `TZ` on seat svcs only. Logs and `date` stay UTC.
 
 ## Example
 
@@ -30,6 +32,16 @@ oath get host:local
 oath set host:local hostname=atlas
 oath diff
 oath apply
+```
+
+Display timezone (Sola clock; system `date` stays UTC):
+
+```
+oath set host:local timezone=MST7MDT,M3.2.0,M11.1.0
+oath apply
+```
+
+Restart the graphical stack (or reboot) so seat processes pick up `TZ`.
 ```
 
 Reboot (owner asked):

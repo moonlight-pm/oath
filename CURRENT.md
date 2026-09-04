@@ -32,7 +32,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    stay `/bin/sh`. **T33** off-box backup: one NFS copy on nas
    `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` gen 16, ~1.9G,
    checksum match). `svc:backup` sleeps until **04:00 Mountain** then
-   sends (`backup-daily`; nfs modules this boot). Next: remaining kit
+   sends (`backup-daily`; nfs modules this boot). **T34** Sola clock
+   is `host:local.timezone` (Mountain POSIX); `date` stays UTC. Next: remaining kit
    (spotify ELF) or rustc on the guest, or rebuild ESP initrd.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
@@ -98,8 +99,8 @@ Do not re-litigate without an explicit decision.
   `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
   `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
 - Clock: **T34** — system time is UTC (logs, `snap`, backup sidecar
-  `…Z`). Do not set `/etc/localtime` or `TZ` in `host:local.env`.
-  Display timezone is a later `host:local` field (not implemented).
+  `…Z`). `host:local.timezone` is POSIX display TZ (seed Mountain);
+  seat/`sola-shell` get `TZ`. Not `/etc/localtime`, not `host.env`.
   T33 04:00 Mountain is POSIX TZ **inside** `backup-daily` only.
 - Backup: **T33 (partial):** one NFS copy of whole `@` via `btrfs send`
   of a read-only generation; overwrite. `svc:backup` is

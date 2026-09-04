@@ -291,8 +291,9 @@ Incremental / sparse image / peer receive / installer restore later.
 
 Kernel, logs, and catalog timestamps are UTC (`Z`). Do not set
 `/etc/localtime` as truth. Do not put `TZ` in `host:local.env`.
-Display timezone is a later `host:local` field. Wall-clock schedules
-(T33 04:00 Mountain) keep POSIX TZ inside the helper.
+`host:local.timezone` is POSIX display TZ (seat / Sola clock).
+Wall-clock schedules (T33 04:00 Mountain) keep POSIX TZ inside the
+helper.
 
 ---
 

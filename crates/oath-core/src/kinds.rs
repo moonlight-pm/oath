@@ -33,6 +33,10 @@ pub struct Host {
     /// Injected into every svc spawn; `/etc/profile` is a side effect.
     #[serde(default)]
     pub env: BTreeMap<String, String>,
+    /// Display timezone (POSIX TZ). Empty = UTC. Seat processes get `TZ`
+    /// from this; not `env`, not `/etc/localtime` (T34).
+    #[serde(default)]
+    pub timezone: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

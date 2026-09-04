@@ -577,7 +577,7 @@ mount --bind /esp /mnt/boot
 fn patch_catalog(out: &Path, opts: &Opts, hostname: &str, r: &Remote) -> Result<()> {
     // Hostname + dhcp on the installed catalog. Keys already in desired via tar + extra write.
     let host_json = format!(
-        r#"{{"hostname":"{hostname}","power":"run","env":{{"GROK_DISABLE_AUTOUPDATER":"1"}}}}"#
+        r#"{{"hostname":"{hostname}","power":"run","timezone":"MST7MDT,M3.2.0,M11.1.0","env":{{"GROK_DISABLE_AUTOUPDATER":"1","SHELL":"/bin/thoxa","THOXA_ROOT":"/oath/store/pkg/thoxa"}}}}"#
     );
     let net_json = r#"{"up":true,"ipv4":"dhcp","gateway":"","lease":null}"#;
     ssh_run(

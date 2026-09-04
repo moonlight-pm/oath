@@ -48,6 +48,7 @@ pub fn seed(root: &Path) -> Result<()> {
     let host_val = json!({
         "hostname": "oath",
         "power": "run",
+        "timezone": "MST7MDT,M3.2.0,M11.1.0",
         "env": {
             "GROK_DISABLE_AUTOUPDATER": "1",
             "SHELL": "/bin/thoxa",

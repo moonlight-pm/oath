@@ -1,4 +1,13 @@
 # Sourced by /bin/river and sola-* wrappers.
+# Display TZ from host:local.timezone (T34). Empty → leave unset (UTC).
+if [ -f /oath/objects/host/local/desired.json ]; then
+	_oath_tz=$(sed -n 's/.*"timezone"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+		/oath/objects/host/local/desired.json | head -n 1)
+	if [ -n "$_oath_tz" ]; then
+		export TZ="$_oath_tz"
+	fi
+	unset _oath_tz
+fi
 # virtio-gpu (QEMU) often has no cursor plane and no virgl — software
 # cursor + llvmpipe. Real KMS (amdgpu, i915, …) must not force that:
 # hardware cursors are what sola-scope needs (sprite on its own plane).

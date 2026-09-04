@@ -1,0 +1,11 @@
+#!/bin/sh
+# Exec a seat binary with TZ from host:local.timezone (T34 display TZ).
+# System clock stays UTC; only this process sees the zone.
+json=/oath/objects/host/local/desired.json
+if [ -f "$json" ]; then
+	tz=$(sed -n 's/.*"timezone"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$json" | head -n 1)
+	if [ -n "$tz" ]; then
+		export TZ="$tz"
+	fi
+fi
+exec "$@"
