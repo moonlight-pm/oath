@@ -132,4 +132,6 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-09-01-sola-browser.md](specs/2026-09-01-sola-browser.md) ·
 [specs/2026-09-02-sola-workspaces.md](specs/2026-09-02-sola-workspaces.md) ·
 [specs/2026-09-02-pkg-grok.md](specs/2026-09-02-pkg-grok.md) ·
-[specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md)
+[specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) ·
+[specs/2026-09-03-pkg-thoxa.md](specs/2026-09-03-pkg-thoxa.md) ·
+[specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md)

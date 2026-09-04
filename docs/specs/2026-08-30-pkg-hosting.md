@@ -2,14 +2,18 @@
 **Status:** target (freeze)
 **Implementation:** not started
 **Dogfood:** none (identity only; `pkg:fetchme` already fetches a URL)
-**Gaps:** no guest store export; no content hash/signature; no peer discovery
+**Gaps:** no guest store export; no peer discovery; signatures still out.
+  Content-hash identity is T32
+  ([2026-09-03-pkg-pack-identity.md](2026-09-03-pkg-pack-identity.md)), not
+  implemented.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Package hosting (Oath hosts as origin)
 
 Extends [2026-08-30-wants-and-fetch.md](2026-08-30-wants-and-fetch.md).
 Same verbs, same store, same `pkg.url`. Does not implement a new
-fetch path in this freeze.
+fetch path in this freeze. Pack identity (content hash, hash-in-path
+store, pin on `desired.hash`) is T32.
 
 ---
 
@@ -36,8 +40,10 @@ freeze is the identity of hosting, not a second index language.
 ## Out
 
 - Serving `/oath/store` from a guest (deferred)
-- Content hash / signature / mirrors
+- Content hash / signature / mirrors (hash identity is T32; signatures
+  and mirrors still out)
 - Discovering other Oath hosts
-- Package deps, versions, a large binary archive
+- Package deps, semver-style versions, a large binary archive
+  (content-hash identity is T32)
 - Git as apply or as the payload store
 - Compositor / Sola / glibc runtime (T21)

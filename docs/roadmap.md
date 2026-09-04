@@ -50,8 +50,9 @@ with schema, not unit-file folklore. Freeze:
 [specs/2026-08-28-packages.md](specs/2026-08-28-packages.md). Canary
 `pkg:hello` plus sealed `busybox` / `btrfs` / `oath` / `dropbear` are
 in. `pkg:fetchme` wget canary is in. Hosting identity is T20 (`pkg.url`;
-other Oath hosts as origin). Guest store export, hashes, deps, and
-versions are not.
+other Oath hosts as origin). Pack identity is T32 (content hash,
+hash-in-path store, `desired.hash` pin, no recipe language) — spec’d,
+not implemented. Guest store export, deps, and signatures are not.
 
 ## Phase 4 — Devices and network
 

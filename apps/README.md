@@ -9,6 +9,12 @@ Each directory is the store tree for `pkg:<name>`:
 apps/<name>/bin/<name>  →  /oath/store/pkg/<name>/bin/<name>
 ```
 
+That layout **is** the pack. Oath does not ship a recipe language;
+authors produce this tree however they want. Target identity (content
+hash, `/oath/store/pkg/<name>/<hash>/`, pin on `desired.hash`) is T32
+([docs/specs/2026-09-03-pkg-pack-identity.md](../docs/specs/2026-09-03-pkg-pack-identity.md))
+— not implemented; as-built store has no hash component.
+
 | Path | Catalog | Notes |
 |------|---------|--------|
 | `hello/` | `pkg:hello` | packed into the image; removable canary |

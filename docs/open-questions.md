@@ -12,9 +12,11 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T31 seat `home` is closed (uid 1, SSH `home`, groups
-`root`+`home`, sudo ALL, `/lib/oath`, `host:local.env`). T30
-`pkg:grok` identity closed. T29 sola-workspaces closed.
+None open. T32 pack identity closed (content hash, hash-in-path
+store, pin on `desired.hash`, no recipe language). T31 seat `home`
+is closed (uid 1, SSH `home`, groups `root`+`home`, sudo ALL,
+`/lib/oath`, `host:local.env`). T30 `pkg:grok` identity closed.
+T29 sola-workspaces closed.
 
 ---
 
@@ -136,16 +138,17 @@ user. Log uid + tty.
 `mutate` vs `confirm`. Halt, wipe, boot-generation (except undo last)
 need `--confirm`. Agents do not pass it unless the owner asked.
 
-### T11 — Package store — locked 2026-08-28
+### T11 — Package store — locked 2026-08-28, amended T32 2026-09-03
 
-`/oath/store/pkg/<name>/` is the package tree. `/bin` is a symlink farm
+`/oath/store/pkg/<name>/` is the package tree (as-built). **T32
+target:** `/oath/store/pkg/<name>/<hash>/`. `/bin` is a symlink farm
 to that tree. No hard links. No second PATH. No unpack into `/usr`.
 
-### T12 — Package surface — locked 2026-08-28
+### T12 — Package surface — locked 2026-08-28, amended T32 2026-09-03
 
 Kind `pkg`. Same `oath` verbs (`set` / `apply` / `undo`). No `oath
-install`, no apt dialect. v0 field `present`. No fetch, no glibc, no
-from-source in this slice.
+install`, no apt dialect. v0 field `present`. **T32 target:** also
+`hash` (the pin). No fetch, no glibc, no from-source in this slice.
 
 ### T13 — Phase 3 first package — locked 2026-08-28
 
@@ -192,7 +195,8 @@ set. Probe headless. No Wayland, River, or Sola in this slice.
 `pkg.url` is the origin. Another Oath host that has a store tree may
 serve those bytes; the peer sets `url` and applies. No canonical
 archive, no `repo` kind, no git-as-store. Apply does not clone.
-Serving the store, hashes, and discovery are deferred.
+Serving the store, signatures, and discovery are deferred. Content-hash
+identity is T32.
 
 ### T21 — Sola on Oath, River first — locked 2026-08-30
 
@@ -231,13 +235,15 @@ Not a nested process manager. First kit app is T26.
 tmux as a helper in that same tree. Not a new kind. Not a `svc`.
 PID 1 does not supervise it. Other kit apps still out.
 
-### T24 — Sola / app development layout — locked 2026-08-31
+### T24 — Sola / app development layout — locked 2026-08-31, amended T32 2026-09-03
 
 Development versions are package generations of the real objects
 (apply / undo). No second PATH, no `/opt/sola` on Oath, no
 `pkg:sola-dev`, no nested PM. Keep one `pkg:sola` blob. Dual-mode
 seat in `oath-sola`. Oath-as-dev-host **started** with T29
-(Workspaces ELF on canto); git/grok/rustc still host-side.
+(Workspaces ELF on canto); git/grok/rustc still host-side. **T32:**
+extra realizations of one name may sit under hash-in-path; two
+runnable at once is still two names.
 
 ### T29 — Kit workspaces (`sola-workspaces`) — locked 2026-09-02
 
@@ -259,6 +265,15 @@ Unix name `home`, uid/gid 1, `HOME=/home`. Graphical stack as
 `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
 `$HOME/.profile`). Groups: `root` and `home` only. Helpers at
 `/lib/oath`. No `/usr`. No new kind.
+
+### T32 — Pack identity — locked 2026-09-03
+
+A pack is a directory matching the store layout. No recipe language.
+Realization id is the content hash of that tree. Target store
+`/oath/store/pkg/<name>/<hash>/`. Name is a slot; hash is the bits.
+`desired.hash` is the pin; apply verifies, does not choose. Same
+verbs; no new kind. Git is not the version. Two runnable at once is
+still two names (T24).
 
 ---
 
@@ -289,3 +304,4 @@ Unix name `home`, uid/gid 1, `HOME=/home`. Graphical stack as
 | 2026-09-02 | T31 | seat home; SSH home; sudo ALL nopass; /lib/oath; host.env | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
 | 2026-09-03 | T31 | home uid 1; env not in $HOME/.profile | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
 | 2026-09-03 | T31 | groups: root + home only | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
+| 2026-09-03 | T32 | pack identity: content hash, hash-in-path, pin, no recipe | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |

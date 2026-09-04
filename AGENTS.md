@@ -75,6 +75,8 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-03-pkg-pack-identity.md`](docs/specs/2026-09-03-pkg-pack-identity.md)
+(T32 pack identity; not implemented).
 [`docs/specs/2026-09-03-pkg-thoxa.md`](docs/specs/2026-09-03-pkg-thoxa.md)
 (`pkg:thoxa` login shell). T31:
 [`docs/specs/2026-09-02-seat-home.md`](docs/specs/2026-09-02-seat-home.md)

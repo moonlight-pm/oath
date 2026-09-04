@@ -93,12 +93,17 @@ Do not re-litigate without an explicit decision.
   Root/serial stay `/bin/sh`. Groups: `root` and `home` only. Required env is
   `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
   `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
-- Packages: store `/oath/store/pkg/<name>/`; `/bin` is a symlink farm;
+- Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (`/bin/grok`);
   Grok does not self-update. `pkg:git`, `pkg:curl`, `pkg:pipewire`, and `pkg:thoxa` packed.
+  **T32 (target, not implemented):** a pack is a directory matching
+  that layout (no recipe language). Realization id is the content hash
+  of the tree. Store becomes `/oath/store/pkg/<name>/<hash>/`. Name is
+  a slot; hash is the bits. `desired.hash` is the pin; apply verifies.
+  Two runnable at once is still two names.
 - Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
   dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
@@ -141,7 +146,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-03-pkg-thoxa.md](docs/specs/2026-09-03-pkg-thoxa.md)
+- Freeze: [docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md)
+  (T32 pack identity; not implemented).
+  [docs/specs/2026-09-03-pkg-thoxa.md](docs/specs/2026-09-03-pkg-thoxa.md)
   (`pkg:thoxa` login shell). T31:
   [docs/specs/2026-09-02-seat-home.md](docs/specs/2026-09-02-seat-home.md)
   (T31 seat `home` + `/lib/oath` + env). T30:
@@ -170,7 +177,8 @@ Do not re-litigate without an explicit decision.
   [docs/plans/2026-08-31-sola-terminal-plan.md](docs/plans/2026-08-31-sola-terminal-plan.md)
   (complete). No T29 plan file (packed from the freeze).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
-  (T20 identity, not implemented)
+  (T20 identity, not implemented). Pack identity: T32
+  ([docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md))
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
   (canto; QEMU on next `cargo make build`); sola-workspaces packed
