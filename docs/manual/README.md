@@ -29,7 +29,7 @@ that are not there.
 Sola terminal, browser, and workspaces (`solactl`) are packed;
 other kit apps (mail, wrapper, spotify, …) are not. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
-`sola`, `grok`, `git`, `curl`, `pipewire`, `hello`, and `fetchme`.
+`sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `hello`, and `fetchme`.
 `svc:seatd` + `svc:river` is the compositor (libinput via libudev-zero;
 no udevd). `svc:sola-bus` / `sola-call` / `sola-river` / `sola-shell` /
 `sola-session` is the session stack. Audio is `pkg:pipewire` +

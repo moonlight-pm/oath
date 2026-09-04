@@ -1009,11 +1009,12 @@ fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
         let _ = Command::new("/bin/chmod").args(["700", xdg.as_str()]).status();
         oath_core::seat::open_device_nodes();
     }
+    let shell = if seat { "/bin/thoxa" } else { "/bin/sh" };
     cmd.env("PATH", "/bin")
         .env("HOME", home)
         .env("USER", user)
         .env("LOGNAME", user)
-        .env("SHELL", "/bin/sh")
+        .env("SHELL", shell)
         .env("PS1", "/ # ")
         .env("XDG_RUNTIME_DIR", &xdg)
         .env("SOLA_NO_SELF_WATCH", "1");

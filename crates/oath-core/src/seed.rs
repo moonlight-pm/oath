@@ -48,7 +48,11 @@ pub fn seed(root: &Path) -> Result<()> {
     let host_val = json!({
         "hostname": "oath",
         "power": "run",
-        "env": { "GROK_DISABLE_AUTOUPDATER": "1" }
+        "env": {
+            "GROK_DISABLE_AUTOUPDATER": "1",
+            "SHELL": "/bin/thoxa",
+            "THOXA_ROOT": "/oath/store/pkg/thoxa"
+        }
     });
     write_object(root, &host, "mutate", &host_val, &host_val)?;
 
@@ -94,6 +98,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "git", true, true)?;
     seed_pkg(root, "curl", true, true)?;
     seed_pkg(root, "pipewire", true, true)?;
+    seed_pkg(root, "thoxa", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),

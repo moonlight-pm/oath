@@ -568,6 +568,22 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test -x /bin/thoxa && grep -q /bin/thoxa /etc/passwd && grep -q /bin/thoxa /etc/shells && echo THOXA_SHELL",
+        Some("THOXA_SHELL"),
+        "pkg.thoxa_shell",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "thoxa -c 'echo hi' | grep -q hi && echo THOXA_C",
+        Some("THOXA_C"),
+        "pkg.thoxa_dash_c",
+        Duration::from_secs(20),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "GROK_DISABLE_AUTOUPDATER=1 grok --version | grep -q grok && echo GROK_VER",
         Some("GROK_VER"),
         "pkg.grok_version",

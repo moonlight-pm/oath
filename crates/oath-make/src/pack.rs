@@ -282,6 +282,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
     fs::write(stage.join("etc/group"), oath_core::seat::group_file())?;
     fs::write(stage.join("etc/shadow"), oath_core::seat::shadow_file())?;
+    fs::write(stage.join("etc/shells"), oath_core::seat::shells_file())?;
     fs::write(stage.join("etc/nsswitch.conf"), "passwd: files\ngroup: files\nshadow: files\n")?;
     fs::write(stage.join("etc/hosts"), "127.0.0.1 localhost\n::1 localhost\n127.0.1.1 oath\n")?;
     fs::write(
@@ -289,6 +290,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         oath_core::seat::profile_body(&{
             let mut m = std::collections::BTreeMap::new();
             m.insert("GROK_DISABLE_AUTOUPDATER".into(), "1".into());
+            m.insert("SHELL".into(), "/bin/thoxa".into());
+            m.insert("THOXA_ROOT".into(), "/oath/store/pkg/thoxa".into());
             m
         }),
     )?;
@@ -361,6 +364,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "git", true)?;
     pack_pipewire(root, tools, out, &oath_root)?;
     link_pkg(&oath_root, &guest_bin, "pipewire", true)?;
+    pack_thoxa(root, out, &oath_root)?;
+    link_pkg(&oath_root, &guest_bin, "thoxa", true)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -828,6 +833,54 @@ fn pack_git(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<
     copy_file(cacert, &git_out.join("ssl/cert.pem"))?;
     copy_tree(&git_out, &oath_root.join("store/pkg/git"))?;
     chmod_exec(&oath_root.join("store/pkg/git/bin/git"))?;
+    Ok(())
+}
+
+fn thoxa_src(root: &Path) -> Result<PathBuf> {
+    if let Some(p) = std::env::var_os("OATH_THOXA") {
+        let p = PathBuf::from(p);
+        if p.join("crates/compiler/Cargo.toml").is_file() {
+            return Ok(p);
+        }
+        bail!("OATH_THOXA missing crates/compiler: {}", p.display());
+    }
+    let sibling = root.join("../Thoxa");
+    if sibling.join("crates/compiler/Cargo.toml").is_file() {
+        return fs::canonicalize(&sibling)
+            .with_context(|| format!("canonicalize {}", sibling.display()));
+    }
+    bail!("Thoxa tree not found (set OATH_THOXA or put Thoxa next to Oath)")
+}
+
+fn pack_thoxa(root: &Path, out: &Path, oath_root: &Path) -> Result<()> {
+    let src = thoxa_src(root)?;
+    eprintln!(">> cargo build thoxa ({})", src.display());
+    run(Command::new("cargo").current_dir(&src).args([
+        "build",
+        "--release",
+        "-p",
+        "thoxa",
+    ]))?;
+    let bin = src.join("target/rust/release/thoxa");
+    if !bin.is_file() {
+        bail!("missing thoxa ELF at {}", bin.display());
+    }
+    // Session steps link this archive; build it if cargo didn't.
+    if !src.join("target/c/libthoxa_rt.a").is_file() {
+        eprintln!(">> cargo make runtime");
+        run(Command::new("cargo").current_dir(&src).args(["make", "runtime"]))?;
+    }
+    let thoxa_out = out.join("thoxa-pack");
+    let _ = fs::remove_dir_all(&thoxa_out);
+    eprintln!(">> relocate thoxa");
+    run(Command::new("bash")
+        .arg(root.join("image/relocate-thoxa.sh"))
+        .arg(&thoxa_out)
+        .env("THOXA_SRC", &src)
+        .env("THOXA_BIN", &bin))?;
+    copy_tree(&thoxa_out, &oath_root.join("store/pkg/thoxa"))?;
+    chmod_exec(&oath_root.join("store/pkg/thoxa/bin/thoxa"))?;
+    chmod_exec(&oath_root.join("store/pkg/thoxa/libexec/thoxa"))?;
     Ok(())
 }
 

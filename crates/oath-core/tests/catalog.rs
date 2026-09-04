@@ -163,6 +163,7 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:git"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:curl"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:pipewire"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:thoxa"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:wireplumber"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire-pulse"));

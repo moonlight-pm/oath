@@ -33,7 +33,12 @@ pub fn is_seat_svc(id: &str) -> bool {
 }
 
 pub fn passwd_file() -> String {
-    format!("root:x:0:0:root:/root:/bin/sh\n{NAME}:x:{UID}:{GID}:{NAME}:{HOME}:/bin/sh\n")
+    format!("root:x:0:0:root:/root:/bin/sh\n{NAME}:x:{UID}:{GID}:{NAME}:{HOME}:/bin/thoxa\n")
+}
+
+/// Dropbear (and getusershell) reject logins whose pw_shell is not listed here.
+pub fn shells_file() -> String {
+    "/bin/sh\n/bin/thoxa\n".into()
 }
 
 pub fn group_file() -> String {
@@ -52,6 +57,7 @@ pub fn write_side_effects(desired: &Host) -> Result<()> {
         format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", desired.hostname),
     )?;
     write_profile(&desired.env)?;
+    fs::write("/etc/shells", shells_file())?;
     Ok(())
 }
 
@@ -101,7 +107,9 @@ mod tests {
     fn home_is_uid_1() {
         assert_eq!(UID, 1);
         assert_eq!(GID, 1);
-        assert!(passwd_file().contains("home:x:1:1:home:/home:"));
+        assert!(passwd_file().contains("home:x:1:1:home:/home:/bin/thoxa"));
+        assert!(shells_file().contains("/bin/thoxa"));
+        assert!(shells_file().contains("/bin/sh"));
         let g = group_file();
         assert!(g.contains("home:x:1:"));
         assert!(!g.contains("wheel"));

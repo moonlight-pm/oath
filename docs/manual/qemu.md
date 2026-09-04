@@ -106,6 +106,7 @@ once the disk is mounted.
 - `pkg:hello` install / remove / undo / persist across reboot
 - `pkg:grok` present; `/bin/grok --version`; store ELF root-owned
 - `pkg:git` / `pkg:curl` present; `git --version`; `curl --version`
+- `pkg:thoxa` present on next image (`/bin/thoxa` login shell; canto live this boot)
 - `pkg:busybox` / `btrfs` / `oath` present and not removable
 - `dev:vda` / `net0` / `ttyS0` inventory; tmpfs + cgroup2
 - `net:net0` up / ping gateway / down / undo / reboot persist
