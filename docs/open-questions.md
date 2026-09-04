@@ -12,8 +12,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T33 off-box backup closed (one NFS send, overwrite,
-explicit `svc:backup`). T32 pack identity closed (content hash,
+None open. T34 UTC system clock closed (display TZ later; not
+`TZ` in env). T33 off-box backup closed (one NFS send, overwrite,
+04:00 Mountain in `backup-daily`). T32 pack identity closed (content hash,
 hash-in-path store, pin on `desired.hash`, no recipe language). T31 seat `home`
 is closed (uid 1, SSH `home`, groups `root`+`home`, sudo ALL,
 `/lib/oath`, `host:local.env`). T30 `pkg:grok` identity closed.
@@ -277,14 +278,21 @@ Realization id is the content hash of that tree. Target store
 verbs; no new kind. Git is not the version. Two runnable at once is
 still two names (T24).
 
-### T33 — Off-box backup (one NFS copy) — locked 2026-09-03
+### T33 — Off-box backup (one NFS copy) — locked 2026-09-03, amended 2026-09-04
 
 `btrfs send` of a read-only `@` generation to one file on NFS.
 Overwrite (atomic replace). `svc:backup` at 04:00 US Mountain
-(`backup-daily`). Crash-consistent floor; optional pack
-`libexec/oath-backup-quiesce` / `thaw`. No new kind or verb.
-`oath undo` stays catalog-only. Sidecar checksum. Incremental /
-sparse image / peer receive / installer restore later.
+(`backup-daily`; POSIX TZ in that process only). Crash-consistent
+floor; optional pack `libexec/oath-backup-quiesce` / `thaw`. No new
+kind or verb. `oath undo` stays catalog-only. Sidecar checksum.
+Incremental / sparse image / peer receive / installer restore later.
+
+### T34 — UTC system clock — locked 2026-09-04
+
+Kernel, logs, and catalog timestamps are UTC (`Z`). Do not set
+`/etc/localtime` as truth. Do not put `TZ` in `host:local.env`.
+Display timezone is a later `host:local` field. Wall-clock schedules
+(T33 04:00 Mountain) keep POSIX TZ inside the helper.
 
 ---
 
@@ -317,3 +325,4 @@ sparse image / peer receive / installer restore later.
 | 2026-09-03 | T31 | groups: root + home only | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
 | 2026-09-03 | T32 | pack identity: content hash, hash-in-path, pin, no recipe | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |
 | 2026-09-03 | T33 | off-box backup: one NFS send, overwrite, svc:backup | this file; [specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md) |
+| 2026-09-04 | T34 | UTC system clock; display TZ later; no TZ in host.env | this file; [specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md) |

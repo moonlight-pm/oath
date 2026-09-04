@@ -31,6 +31,18 @@ is how you run what is installed.
 `--confirm`). PID 1 stays at `/lib/oath/init`; it is not a
 package.
 
+Optional backup hooks in the store tree (T32/T33), not catalog
+fields:
+
+```
+/oath/store/pkg/<name>/libexec/oath-backup-quiesce
+/oath/store/pkg/<name>/libexec/oath-backup-thaw
+```
+
+`backup-send` runs quiesce on **present** packs that shipped the
+executable, snapshots, then thaw. Missing hook: crash-consistent
+only. Mention the hook in that pack’s `INDEX.md` if you ship one.
+
 ## Install / remove
 
 ```

@@ -15,6 +15,16 @@ hash, `/oath/store/pkg/<name>/<hash>/`, pin on `desired.hash`) is T32
 ([docs/specs/2026-09-03-pkg-pack-identity.md](../docs/specs/2026-09-03-pkg-pack-identity.md))
 — not implemented; as-built store has no hash component.
 
+Optional, next to `bin/`:
+
+```
+apps/<name>/libexec/oath-backup-quiesce
+apps/<name>/libexec/oath-backup-thaw
+```
+
+Present packs with those executables are frozen across a generation
+snapshot (T33). No hook is the default (crash-consistent).
+
 | Path | Catalog | Notes |
 |------|---------|--------|
 | `hello/` | `pkg:hello` | packed into the image; removable canary |

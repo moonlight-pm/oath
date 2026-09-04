@@ -97,6 +97,10 @@ Do not re-litigate without an explicit decision.
   Root/serial stay `/bin/sh`. Groups: `root` and `home` only. Required env is
   `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
   `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
+- Clock: **T34** — system time is UTC (logs, `snap`, backup sidecar
+  `…Z`). Do not set `/etc/localtime` or `TZ` in `host:local.env`.
+  Display timezone is a later `host:local` field (not implemented).
+  T33 04:00 Mountain is POSIX TZ **inside** `backup-daily` only.
 - Backup: **T33 (partial):** one NFS copy of whole `@` via `btrfs send`
   of a read-only generation; overwrite. `svc:backup` is
   `/lib/oath/backup-daily` at **04:00 US Mountain** (`restart: always`,
@@ -157,7 +161,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-03-backup-nfs.md](docs/specs/2026-09-03-backup-nfs.md)
+- Freeze: [docs/specs/2026-09-04-utc-clock.md](docs/specs/2026-09-04-utc-clock.md)
+  (T34 UTC system clock; display TZ later).
+  [docs/specs/2026-09-03-backup-nfs.md](docs/specs/2026-09-03-backup-nfs.md)
   (T33 one NFS copy; partial, canto).
   [docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md)
   (T32 pack identity; not implemented).

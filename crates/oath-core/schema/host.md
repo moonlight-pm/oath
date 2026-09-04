@@ -18,7 +18,9 @@ not this kind. Do not add a Unix user kind — the seat is always `home`.
 - `env` — `NAME=value` map. PID 1 injects these into every `svc`
   spawn. `/etc/profile` is a root-owned side effect. Do not write
   `$HOME/.profile`. Seed
-  includes `GROK_DISABLE_AUTOUPDATER=1`.
+  includes `GROK_DISABLE_AUTOUPDATER=1`. Do **not** put `TZ` here
+  (T34): the system clock is UTC; a display timezone is a later
+  `host:local` field, not process env.
 
 ## Example
 

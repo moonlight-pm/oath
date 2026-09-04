@@ -61,6 +61,7 @@ ask the human.
 | [`specs/2026-09-03-pkg-thoxa.md`](specs/2026-09-03-pkg-thoxa.md) | `pkg:thoxa` login shell | **Target** (canto live; QEMU next pack) |
 | [`specs/2026-09-03-pkg-pack-identity.md`](specs/2026-09-03-pkg-pack-identity.md) | T32 pack identity (content hash, hash-in-path, pin) | **Target** (not implemented) |
 | [`specs/2026-09-03-backup-nfs.md`](specs/2026-09-03-backup-nfs.md) | T33 off-box backup (one NFS send, overwrite) | **Target** (partial; canto) |
+| [`specs/2026-09-04-utc-clock.md`](specs/2026-09-04-utc-clock.md) | T34 UTC system clock, display TZ later | **Target** (clock is UTC; display field not implemented) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

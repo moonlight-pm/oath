@@ -151,8 +151,9 @@ no fstab dialect.
   `/lib/oath/backup-daily` plus the NFS target. `restart: always`.
   Default `enabled=false` (QEMU / images that should not hit the
   NAS). Enable + `oath apply` starts a sleeper; it does **not** send
-  immediately. POSIX TZ `MST7MDT,M3.2.0,M11.1.0` (no tzdata). Manual
-  send is still `/lib/oath/backup-send <spec>`.
+  immediately. POSIX TZ `MST7MDT,M3.2.0,M11.1.0` **in that process
+  only** (T34: system clock stays UTC; no tzdata). Manual send is
+  still `/lib/oath/backup-send <spec>`. Sidecar `time` is `…Z`.
 - **Crash-consistent is the floor.** `sync` + `btrfs filesystem sync`
   then a read-only snapshot of `@`. That is one instant of the tree
   (like power-loss). Do not `fsfreeze` `/` — the helper lives on `@`.

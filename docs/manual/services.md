@@ -78,3 +78,47 @@ oath undo
 ```
 
 Actual `state` is `stopped` | `starting` | `running` | `failed`.
+
+## Backup (NFS)
+
+One off-box copy of the live `@` subvolume. Not a second undo.
+Schedule and dest live on `svc:backup`.
+
+```
+oath get svc:backup
+cat /oath/objects/svc/backup/last.json
+```
+
+Canto dest is `10.0.0.12:/mnt/alpha/backup/canto` (NAS share `alpha`,
+folder `backup/canto`). After a send:
+
+| File | What |
+|------|------|
+| `canto.send` | `btrfs send` stream of that generation (overwritten) |
+| `canto.json` | hostname, generation, **UTC** time (`…Z`), size, sha256 |
+
+The sleeper is `/lib/oath/backup-daily`. It waits until **04:00 US
+Mountain** (POSIX TZ inside that process only) then runs
+`backup-send`. The **system clock stays UTC** — `date` on the box is
+Zulu. Seed leaves `svc:backup` **off** so QEMU does not hit the NAS.
+Canto has it **on**.
+
+Send now (overwrites the one NAS copy; previous file kept until the
+new send finishes):
+
+```
+sudo /lib/oath/backup-send 10.0.0.12:/mnt/alpha/backup/canto
+```
+
+Stop the daily sleeper:
+
+```
+oath set svc:backup enabled=false
+oath apply svc:backup
+```
+
+Snapshot is crash-consistent (`sync` + btrfs CoW). Packs that need a
+freeze (postgres WAL, etc.) may ship
+`/oath/store/pkg/<name>/libexec/oath-backup-quiesce` and
+`oath-backup-thaw`. No hook means skip. Reboot without a rebuilt ESP
+initrd drops nfs.ko (canto this boot loaded it by hand).

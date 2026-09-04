@@ -24,6 +24,11 @@ Actual also has `links` (basenames in `/bin`) and `removable`. If
 
 Safety: `mutate`. Apply snapshots, then converges links.
 
+Optional store files (not schema fields):
+`libexec/oath-backup-quiesce` and `libexec/oath-backup-thaw`. The
+off-box backup helper runs them on **present** packs before/after the
+generation snapshot. Missing = skip.
+
 ## Example
 
 ```

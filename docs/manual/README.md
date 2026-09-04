@@ -20,6 +20,9 @@ Dogfood: **x86_64 QEMU** appliance (serial, SSH, virtio-gpu window if
 | [The appliance](qemu.md) | Build, run, probe, disk layout |
 | [Install](install.md) | `cargo make install` to a named disk; USB stick |
 
+Off-box backup (`svc:backup`) is in [Services](services.md). System
+clock is UTC; 04:00 Mountain is the backup schedule only.
+
 On a running box, start at `/oath/INDEX.md` (or `oath` with no arguments).
 That file is generated from the live catalog and cannot advertise kinds
 that are not there.

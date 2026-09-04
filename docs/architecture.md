@@ -83,8 +83,9 @@ services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)
 from that generation, not `/oath/run`. Fallback: copy the catalog tree
-when the top-level is not mounted. Off-box: `/lib/oath/backup-send`
-`btrfs send`s a read-only generation to one NFS file (T33).
+when the top-level is not mounted. Off-box: `svc:backup` runs
+`/lib/oath/backup-daily` (04:00 Mountain in-process TZ; system clock
+UTC) which calls `/lib/oath/backup-send` (T33).
 
 Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
 `oath apply` on `pkg:*` creates or removes `/bin` symlinks into
@@ -139,4 +140,5 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) ·
 [specs/2026-09-03-pkg-thoxa.md](specs/2026-09-03-pkg-thoxa.md) ·
 [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) ·
-[specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md)
+[specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md) ·
+[specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md)
