@@ -134,4 +134,5 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-09-02-pkg-grok.md](specs/2026-09-02-pkg-grok.md) ·
 [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) ·
 [specs/2026-09-03-pkg-thoxa.md](specs/2026-09-03-pkg-thoxa.md) ·
-[specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md)
+[specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) ·
+[specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md)

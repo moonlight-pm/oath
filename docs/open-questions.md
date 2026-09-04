@@ -12,8 +12,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T32 pack identity closed (content hash, hash-in-path
-store, pin on `desired.hash`, no recipe language). T31 seat `home`
+None open. T33 off-box backup closed (one NFS send, overwrite,
+explicit `svc:backup`). T32 pack identity closed (content hash,
+hash-in-path store, pin on `desired.hash`, no recipe language). T31 seat `home`
 is closed (uid 1, SSH `home`, groups `root`+`home`, sudo ALL,
 `/lib/oath`, `host:local.env`). T30 `pkg:grok` identity closed.
 T29 sola-workspaces closed.
@@ -70,7 +71,8 @@ config.
 ### D4 — Package and update model (P0) — locked 2026-08-27
 
 Packages as catalog objects (later). Rollback via **btrfs** subvolume
-generations. qcow2 snapshots are host debug only.
+generations. qcow2 snapshots are host debug only. Off-box copy of a
+generation is T33 (one NFS send, overwrite).
 
 ### D5 — Filesystem layout (P0) — locked 2026-08-27
 
@@ -275,6 +277,14 @@ Realization id is the content hash of that tree. Target store
 verbs; no new kind. Git is not the version. Two runnable at once is
 still two names (T24).
 
+### T33 — Off-box backup (one NFS copy) — locked 2026-09-03
+
+`btrfs send` of a read-only `@` generation to one file on NFS.
+Overwrite (atomic replace). Explicit `svc:backup`, no clock, no
+retention, no new kind or verb. `oath undo` stays catalog-only.
+Sidecar checksum. Incremental / sparse image / peer receive /
+installer restore later.
+
 ---
 
 ## Decision log
@@ -305,3 +315,4 @@ still two names (T24).
 | 2026-09-03 | T31 | home uid 1; env not in $HOME/.profile | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
 | 2026-09-03 | T31 | groups: root + home only | this file; [specs/2026-09-02-seat-home.md](specs/2026-09-02-seat-home.md) |
 | 2026-09-03 | T32 | pack identity: content hash, hash-in-path, pin, no recipe | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |
+| 2026-09-03 | T33 | off-box backup: one NFS send, overwrite, svc:backup | this file; [specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md) |

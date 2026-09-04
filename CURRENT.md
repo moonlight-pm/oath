@@ -93,6 +93,11 @@ Do not re-litigate without an explicit decision.
   Root/serial stay `/bin/sh`. Groups: `root` and `home` only. Required env is
   `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
   `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
+- Backup: **T33 (target, not implemented):** one NFS copy of whole `@`
+  via `btrfs send` of a read-only generation; overwrite (temp +
+  rename); explicit `svc:backup` (`restart: never`); no new kind or
+  verb; sidecar checksum. Not hourly. `oath undo` stays catalog-only.
+  Local `@gen-N` stays CoW apply/undo.
 - Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
@@ -146,7 +151,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md)
+- Freeze: [docs/specs/2026-09-03-backup-nfs.md](docs/specs/2026-09-03-backup-nfs.md)
+  (T33 one NFS copy; not implemented).
+  [docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md)
   (T32 pack identity; not implemented).
   [docs/specs/2026-09-03-pkg-thoxa.md](docs/specs/2026-09-03-pkg-thoxa.md)
   (`pkg:thoxa` login shell). T31:

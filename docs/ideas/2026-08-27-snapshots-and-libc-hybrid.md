@@ -50,7 +50,10 @@ That is simpler to teach an agent than “A/B *and* a journal *and*
 package rollback.”
 
 **First candidate:** btrfs subvolumes. Known, in-tree, QEMU-friendly,
-send/receive if we ever need to move generations. bcachefs is younger.
+send/receive if we ever need to move generations. **T33** is that
+move: one NFS copy, overwrite
+([../specs/2026-09-03-backup-nfs.md](../specs/2026-09-03-backup-nfs.md)).
+bcachefs is younger.
 ZFS is excellent and a license/politics problem. Overlayfs+OSTREE is a
 different ontology (we would be inheriting OSTree).
 
