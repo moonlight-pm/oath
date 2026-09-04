@@ -35,7 +35,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `THOXA_ROOT`). Store hand-copied this boot from Thoxa `ee2e3cf`
    (D156 emacs line editor + Tab complete; `ssh home@canto echo hi`
    is `thoxa -c`). sola-terminal and workspaces tmux inherit `$SHELL`
-   (pkg:sola wrappers default `/bin/thoxa`, not ash). Root/serial
+   (pkg:sola wrappers default `/bin/thoxa`, not ash). Wrappers `cd
+   $HOME` so a new Terminal is not `/` (PID 1 cwd). Root/serial
    stay `/bin/sh`. **T33** off-box backup: one NFS copy on nas
    `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` gen 16, ~1.9G,
    checksum match). `svc:backup` sleeps until **04:00 Mountain** then

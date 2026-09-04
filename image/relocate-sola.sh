@@ -351,8 +351,10 @@ patchelf_libexec() {
 # SHELL follows host:local.env (PID 1 injects /bin/thoxa for the seat).
 # Do not force /bin/sh — that made sola-terminal / workspaces tmux ash
 # while SSH already used the passwd shell.
+# PID 1 cwd is `/`; cd $HOME so tmux new-session without -c is not root.
 guest_env='export PATH=/bin
 export HOME="${HOME:-/home}"
+cd "$HOME" || true
 export SHELL="${SHELL:-/bin/thoxa}"
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
