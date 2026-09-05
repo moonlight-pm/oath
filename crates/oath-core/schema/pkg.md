@@ -50,4 +50,6 @@ borrowed static-pie; updater off), `pkg:git` and `pkg:curl` present
 (removable), and
 `pkg:hello` absent until you apply. `/bin/hello` prints `hello`.
 Busybox applets are one package. `pkg:glibc` is the GNU C runtime
-for glibc payloads (River, Sola). Never load it into musl PID 1.
+for glibc payloads (River, Sola, rustc). Never load it into musl PID 1.
+`pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` are the guest
+toolchain (T35).

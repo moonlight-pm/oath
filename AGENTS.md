@@ -75,8 +75,13 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-05-sola-kit-apps.md`](docs/specs/2026-09-05-sola-kit-apps.md)
+(T36 remaining kit apps in `pkg:sola`). T35:
+[`docs/specs/2026-09-05-guest-toolchain.md`](docs/specs/2026-09-05-guest-toolchain.md)
+(guest toolchain; `pkg:cc` / `pkg:rustc` / `pkg:cmake` /
+`pkg:pkg-config`). T34:
 [`docs/specs/2026-09-04-utc-clock.md`](docs/specs/2026-09-04-utc-clock.md)
-(T34 UTC system clock; `host:local.timezone` display).
+(UTC system clock; `host:local.timezone` display).
 [`docs/specs/2026-09-03-backup-nfs.md`](docs/specs/2026-09-03-backup-nfs.md)
 (T33 one NFS copy; partial, canto).
 [`docs/specs/2026-09-03-pkg-pack-identity.md`](docs/specs/2026-09-03-pkg-pack-identity.md)

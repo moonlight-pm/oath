@@ -52,7 +52,12 @@ pub fn seed(root: &Path) -> Result<()> {
         "env": {
             "GROK_DISABLE_AUTOUPDATER": "1",
             "SHELL": "/bin/thoxa",
-            "THOXA_ROOT": "/oath/store/pkg/thoxa"
+            "THOXA_ROOT": "/oath/store/pkg/thoxa",
+            "CC": "/bin/cc",
+            "CXX": "/bin/c++",
+            "AR": "/bin/ar",
+            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER": "/bin/musl-cc",
+            "CMAKE_GENERATOR": "Ninja"
         }
     });
     write_object(root, &host, "mutate", &host_val, &host_val)?;
@@ -100,6 +105,10 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "curl", true, true)?;
     seed_pkg(root, "pipewire", true, true)?;
     seed_pkg(root, "thoxa", true, true)?;
+    seed_pkg(root, "cc", true, true)?;
+    seed_pkg(root, "rustc", true, true)?;
+    seed_pkg(root, "cmake", true, true)?;
+    seed_pkg(root, "pkg-config", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),

@@ -8,10 +8,12 @@ guest_glibc=/oath/store/pkg/glibc/lib
 guest_river=/oath/store/pkg/river/lib
 guest_sola=/oath/store/pkg/sola/lib
 guest_cef=/oath/store/pkg/sola/cef/Release
+guest_pw=/oath/store/pkg/pipewire/lib
 # Session ELFs prefer river's libudev-zero (no udevd). CEF needs the
-# versioned systemd libudev we packed into sola/lib.
-rpath="$guest_glibc:$guest_river:$guest_sola:$guest_cef"
-browser_rpath="$guest_glibc:$guest_sola:$guest_cef:$guest_river"
+# versioned systemd libudev we packed into sola/lib. Spotify Pulse
+# client libs live in pkg:pipewire.
+rpath="$guest_glibc:$guest_river:$guest_sola:$guest_cef:$guest_pw"
+browser_rpath="$guest_glibc:$guest_sola:$guest_cef:$guest_river:$guest_pw"
 interp_guest="$guest_glibc/ld-linux-x86-64.so.2"
 
 # Nix store copies land mode 555; `cp -a` keeps that, and a later
@@ -64,7 +66,12 @@ enqueue() {
   queue+=("$real")
 }
 
-kit_bins=(sola-bus sola-call sola-river sola-shell sola-session sola-terminal sola-browser sola-workspaces solactl sola-kvm)
+kit_bins=(
+  sola-bus sola-call sola-river sola-shell sola-session
+  sola-terminal sola-browser sola-workspaces solactl sola-kvm
+  sola-settings sola-monitor sola-kit sola-preview sola-paint
+  sola-mail sola-arcade sola-scope sola-spotify sola-wrapper
+)
 for b in "${kit_bins[@]}"; do
   src="${SOLA_BINS:?}/$b"
   [[ -f $src ]] || { echo "relocate-sola: missing $src" >&2; exit 1; }
@@ -175,9 +182,14 @@ for f in "${!SEEN[@]}"; do
   if is_cef_bundled "$name"; then
     continue
   fi
-  case "$name" in
-    sola-bus|sola-call|sola-river|sola-shell|sola-session|sola-terminal|sola-browser|tmux) continue ;;
-  esac
+  skip_lib=0
+  for b in "${kit_bins[@]}" tmux; do
+    if [[ $name == "$b" ]]; then
+      skip_lib=1
+      break
+    fi
+  done
+  [[ $skip_lib -eq 1 ]] && continue
   d="$out/lib/$name"
   cp -a "$f" "$d"
   chmod u+w "$d" 2>/dev/null || true
@@ -389,7 +401,7 @@ export SOLA_OUTPUT_PICK=preferred'
 for b in "${kit_bins[@]}"; do
   src="$SOLA_BINS/$b"
   cp -a "$src" "$out/libexec/$b"
-  if [[ $b == sola-browser ]]; then
+  if [[ $b == sola-browser || $b == sola-wrapper ]]; then
     chmod u+w "$out/libexec/$b"
     chmod +x "$out/libexec/$b"
     if patchelf --print-interpreter "$out/libexec/$b" >/dev/null 2>&1; then

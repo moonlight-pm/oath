@@ -18,8 +18,9 @@ not this kind. Do not add a Unix user kind — the seat is always `home`.
 - `env` — `NAME=value` map. PID 1 injects these into every `svc`
   spawn. `/etc/profile` is a root-owned side effect. Do not write
   `$HOME/.profile`. Seed
-  includes `GROK_DISABLE_AUTOUPDATER=1`. Do **not** put `TZ` here
-  (T34).
+  includes `GROK_DISABLE_AUTOUPDATER=1`, `SHELL=/bin/thoxa`, and
+  (T35) `CC` / `CXX` / `AR` / `CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER`
+  / `CMAKE_GENERATOR`. Do **not** put `TZ` here (T34).
 - `timezone` — POSIX TZ for **display** (Sola clock, seat apps). Empty
   is UTC. Seed is US Mountain `MST7MDT,M3.2.0,M11.1.0`. PID 1 sets
   `TZ` on seat svcs only. Logs and `date` stay UTC.

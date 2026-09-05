@@ -88,6 +88,16 @@ const SOLA_KIT_ELFS: &[&str] = &[
     "sola-workspaces",
     "solactl",
     "sola-kvm",
+    "sola-settings",
+    "sola-monitor",
+    "sola-kit",
+    "sola-preview",
+    "sola-paint",
+    "sola-mail",
+    "sola-arcade",
+    "sola-scope",
+    "sola-spotify",
+    "sola-wrapper",
 ];
 
 pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
@@ -302,6 +312,14 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
             m.insert("GROK_DISABLE_AUTOUPDATER".into(), "1".into());
             m.insert("SHELL".into(), "/bin/thoxa".into());
             m.insert("THOXA_ROOT".into(), "/oath/store/pkg/thoxa".into());
+            m.insert("CC".into(), "/bin/cc".into());
+            m.insert("CXX".into(), "/bin/c++".into());
+            m.insert("AR".into(), "/bin/ar".into());
+            m.insert(
+                "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER".into(),
+                "/bin/musl-cc".into(),
+            );
+            m.insert("CMAKE_GENERATOR".into(), "Ninja".into());
             m
         }),
     )?;
@@ -401,6 +419,32 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "pipewire", true)?;
     pack_thoxa(root, out, &oath_root)?;
     link_pkg(&oath_root, &guest_bin, "thoxa", true)?;
+    let cc_pack = pack_cc(root, out)?;
+    copy_tree(&cc_pack, &oath_root.join("store/pkg/cc"))?;
+    chmod_exec(&oath_root.join("store/pkg/cc/libexec/zig/zig"))?;
+    chmod_exec(&oath_root.join("store/pkg/cc/libexec/patchelf"))?;
+    link_pkg(&oath_root, &guest_bin, "cc", true)?;
+    let patchelf = oath_root.join("store/pkg/cc/libexec/patchelf");
+    pack_script_pkg(root, out, &oath_root, "pack-pkg-config.sh", "pkg-config", &[])?;
+    link_pkg(&oath_root, &guest_bin, "pkg-config", true)?;
+    pack_script_pkg(
+        root,
+        out,
+        &oath_root,
+        "pack-cmake.sh",
+        "cmake",
+        &[("PATCHELF", &patchelf)],
+    )?;
+    link_pkg(&oath_root, &guest_bin, "cmake", true)?;
+    pack_script_pkg(
+        root,
+        out,
+        &oath_root,
+        "pack-rustc.sh",
+        "rustc",
+        &[("PATCHELF", &patchelf)],
+    )?;
+    link_pkg(&oath_root, &guest_bin, "rustc", true)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -899,6 +943,38 @@ fn thoxa_src(root: &Path) -> Result<PathBuf> {
             .with_context(|| format!("canonicalize {}", sibling.display()));
     }
     bail!("Thoxa tree not found (set OATH_THOXA or put Thoxa next to Oath)")
+}
+
+fn pack_cc(root: &Path, out: &Path) -> Result<PathBuf> {
+    let dest = out.join("cc-pack");
+    eprintln!(">> pack cc (zig)");
+    run(Command::new("sh")
+        .arg(root.join("image/pack-cc.sh"))
+        .arg(&dest)
+        .env("OATH_FETCH", out.join("fetch")))?;
+    Ok(dest)
+}
+
+fn pack_script_pkg(
+    root: &Path,
+    out: &Path,
+    oath_root: &Path,
+    script: &str,
+    name: &str,
+    extra: &[(&str, &PathBuf)],
+) -> Result<()> {
+    let dest = out.join(format!("{name}-pack"));
+    eprintln!(">> pack {name}");
+    let mut cmd = Command::new("sh");
+    cmd.arg(root.join("image").join(script))
+        .arg(&dest)
+        .env("OATH_FETCH", out.join("fetch"));
+    for (k, v) in extra {
+        cmd.env(*k, v);
+    }
+    run(&mut cmd)?;
+    copy_tree(&dest, &oath_root.join("store/pkg").join(name))?;
+    Ok(())
 }
 
 fn pack_thoxa(root: &Path, out: &Path, oath_root: &Path) -> Result<()> {

@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-09-04)
+## As-built (2026-09-05)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -35,7 +35,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,thoxa,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,thoxa,cc,rustc,cmake,pkg-config,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -62,6 +62,11 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     xdg-open           /bin/xdg-open (solactl open → sola-browser; x-www-browser same; not xdg-utils)
     sola-kvm           svc:sola-kvm listen as `home` (UDP 4242; virtual pointer)
     pkg:thoxa          `/bin/thoxa` (glibc; session REPL is the `home` login shell)
+    pkg:cc             `/bin/cc` (Zig; gnu default, musl-cc for Oath ELFs;
+                       `zig-gnu-cc.sh` drops rustc `-fuse-ld=lld` / cc-rs `--target=`)
+    pkg:rustc          `/bin/rustc` `/bin/cargo` (1.98.1 gnu host + musl std)
+    pkg:cmake          `/bin/cmake` `/bin/ninja`
+    pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`)
     backup-daily       /lib/oath/backup-daily (04:00 Mountain loop; seed off)

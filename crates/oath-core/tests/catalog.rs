@@ -166,6 +166,10 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:curl"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:pipewire"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:thoxa"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:cc"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:rustc"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:cmake"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:pkg-config"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:wireplumber"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire-pulse"));
@@ -186,6 +190,7 @@ fn seed_lists_host() {
     assert!(idx.contains("`pkg`"));
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
     assert_eq!(host.desired["env"]["GROK_DISABLE_AUTOUPDATER"], "1");
+    assert_eq!(host.desired["env"]["CC"], "/bin/cc");
     assert_eq!(host.desired["timezone"], "MST7MDT,M3.2.0,M11.1.0");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
     assert_eq!(serial.desired["exec"][0], "/lib/oath/serial-login");

@@ -62,6 +62,7 @@ ask the human.
 | [`specs/2026-09-03-pkg-pack-identity.md`](specs/2026-09-03-pkg-pack-identity.md) | T32 pack identity (content hash, hash-in-path, pin) | **Target** (not implemented) |
 | [`specs/2026-09-03-backup-nfs.md`](specs/2026-09-03-backup-nfs.md) | T33 off-box backup (one NFS send, overwrite) | **Target** (partial; canto) |
 | [`specs/2026-09-04-utc-clock.md`](specs/2026-09-04-utc-clock.md) | T34 UTC system clock; `host:local.timezone` display | **Target** (partial; canto Sola clock Mountain) |
+| [`specs/2026-09-05-guest-toolchain.md`](specs/2026-09-05-guest-toolchain.md) | T35 guest toolchain (`pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config`) | **Target** (canto gen 19) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

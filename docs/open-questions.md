@@ -12,7 +12,10 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T34 UTC system clock closed (`host:local.timezone`
+None open. T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
+Arcade ELF without gamescope/Steam/XWayland). T35 guest toolchain closed (official tarballs; `pkg:cc` is
+Zig providing `cc`; rustc gnu host + musl std; cmake+ninja; empty
+pkg-config farm). T34 UTC system clock closed (`host:local.timezone`
 display; not `TZ` in env). T33 off-box backup closed (one NFS send, overwrite,
 04:00 Mountain in `backup-daily`). T32 pack identity closed (content hash,
 hash-in-path store, pin on `desired.hash`, no recipe language). T31 seat `home`
@@ -238,21 +241,30 @@ Not a nested process manager. First kit app is T26.
 tmux as a helper in that same tree. Not a new kind. Not a `svc`.
 PID 1 does not supervise it. Other kit apps still out.
 
-### T24 — Sola / app development layout — locked 2026-08-31, amended T32 2026-09-03
+### T24 — Sola / app development layout — locked 2026-08-31, amended T32 2026-09-03, T35 2026-09-05
 
 Development versions are package generations of the real objects
 (apply / undo). No second PATH, no `/opt/sola` on Oath, no
 `pkg:sola-dev`, no nested PM. Keep one `pkg:sola` blob. Dual-mode
 seat in `oath-sola`. Oath-as-dev-host **started** with T29
-(Workspaces ELF on canto); git/grok/rustc still host-side. **T32:**
-extra realizations of one name may sit under hash-in-path; two
-runnable at once is still two names.
+(Workspaces ELF on canto). **T35:** guest toolchain is `pkg:cc` /
+`pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` (official tarballs; no
+Nix, no rustup). **T32:** extra realizations of one name may sit
+under hash-in-path; two runnable at once is still two names.
 
 ### T29 — Kit workspaces (`sola-workspaces`) — locked 2026-09-02
 
 `sola-workspaces` is the eighth ELF in the one `pkg:sola` blob, with
 `solactl` as a helper in that same tree. Not a new kind. Not a `svc`.
 PID 1 does not supervise it. git/grok not in this slice.
+
+### T36 — Remaining kit apps — locked 2026-09-05
+
+Settings, monitor, kit, preview, paint, mail, arcade, scope, spotify,
+and wrapper are more ELFs in the one `pkg:sola` blob. Not new kinds.
+Not `svc:*`. Arcade does not grow XWayland/Steam/gamescope. Spotify
+Pulse is `pkg:pipewire`. Wrapper uses packed CEF. Canto fill is
+`image/install-sola-kit.sh`.
 
 ### T30 — Vendor-updating packages (`pkg:grok`) — locked 2026-09-02
 
@@ -295,6 +307,14 @@ Kernel, logs, and catalog timestamps are UTC (`Z`). Do not set
 Wall-clock schedules (T33 04:00 Mountain) keep POSIX TZ inside the
 helper.
 
+### T35 — Guest toolchain — locked 2026-09-05
+
+`pkg:cc` (Zig providing `cc` / `musl-cc` / patchelf), `pkg:rustc`
+(official gnu host + musl std), `pkg:cmake` (Kitware + ninja),
+`pkg:pkg-config` (empty farm). Official tarballs, no Nix, no rustup,
+no QEMU as the fill path. Default `cc` is glibc; `musl-cc` is Oath
+guest ELFs.
+
 ---
 
 ## Decision log
@@ -327,3 +347,4 @@ helper.
 | 2026-09-03 | T32 | pack identity: content hash, hash-in-path, pin, no recipe | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |
 | 2026-09-03 | T33 | off-box backup: one NFS send, overwrite, svc:backup | this file; [specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md) |
 | 2026-09-04 | T34 | UTC system clock; `host:local.timezone` display; no TZ in host.env | this file; [specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md) |
+| 2026-09-05 | T35 | guest toolchain: pkg:cc (zig), pkg:rustc, pkg:cmake+ninja, pkg:pkg-config empty farm | this file; [specs/2026-09-05-guest-toolchain.md](specs/2026-09-05-guest-toolchain.md) |

@@ -808,6 +808,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test -x /bin/sola-settings -a -x /bin/sola-monitor -a -x /bin/sola-kit -a -x /bin/sola-preview -a -x /bin/sola-paint -a -x /bin/sola-mail -a -x /bin/sola-arcade -a -x /bin/sola-scope -a -x /bin/sola-spotify -a -x /bin/sola-wrapper && echo KIT_APPS",
+        Some("KIT_APPS"),
+        "sola.kit_apps",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "test -x /bin/sola-browser -a -x /bin/xdg-open -a -x /bin/x-www-browser && echo BROWSER_BIN",
         Some("BROWSER_BIN"),
         "sola.browser_bin",
