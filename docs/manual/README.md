@@ -34,7 +34,7 @@ other kit apps (mail, wrapper, spotify, …) are not. Steam/gamescope/
 Xwayland are separate packages. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
 `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
-`cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `steam`,
+`cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `mesa`, `steam`,
 `hello`, and `fetchme`.
 `svc:seatd` + `svc:river` is the compositor (libinput via libudev-zero;
 no udevd). `svc:sola-bus` / `sola-call` / `sola-river` / `sola-shell` /

@@ -34,8 +34,8 @@ only: the nest is in. River is not rebuilt with host XWayland.
   the farm. Do not add `pkg:sola-arcade`.
 - **Steam / gamescope / Xwayland are not the Sola blob.** Removable
   `pkg:steam`, `pkg:gamescope`, `pkg:xwayland`, `pkg:mesa`. Same class as
-  `pkg:pipewire`. `pkg:mesa` is the 64-bit X11 GLX stack (Debian 26.1.6);
-  River stays GLES/EGL.
+  `pkg:pipewire`. `pkg:mesa` is the 64-bit X11 GLX stack plus Vulkan WSI
+  (Debian 26.1.6 RADV + Khronos loader); River stays GLES/EGL.
 - **`pkg:bash` is borrowed static musl GNU bash** (same class as
   `pkg:grok`). Steam’s launcher and Grok’s agent shell need `builtin`
   / `shopt` / `-O extglob`. Busybox ash is not bash. `/bin/bash` is

@@ -56,14 +56,14 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    steamwebhelper runs on the host via `STEAM_RUNTIME_STEAMRT` →
    `pkg:steam/libexec/pv-host` (no pressure-vessel; `CLONE_NEWUSER` is
    EPERM because PID 1 chrooted from the initrd). `gamescope --help`
-   works; Wayland nest still dies on RADV WSI. **T36** other kit names
-   still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. **`pkg:mesa`** is GLX plus
-   Vulkan WSI (RADV 26.1.6, loader 1.4.357, `/bin/vulkaninfo`). gamescope
-   selects `AMD Radeon Graphics (RADV PITCAIRN)`; nested Wayland still
-   dies on `vkAllocateDescriptorSets` (SI). Next: that descriptor
-   failure, or a `.pc` for alsa. `lo` is up this boot (`127.0.0.1`);
-   PID 1 `unix_floor` will do that on the next image.
+   works. **`pkg:mesa`** is GLX plus Vulkan WSI (RADV 26.1.6, loader
+   1.4.357, `/bin/vulkaninfo`). gamescope selects `AMD Radeon Graphics
+   (RADV PITCAIRN)`; nested Wayland still dies on
+   `vkAllocateDescriptorSets` (SI). **T36** other kit names still out
+   (`alsa.pc`). Zig `cc` host link is `image/oath-cc-link.sh` +
+   `zig-gnu-cc.sh`. Next: that descriptor failure, or a `.pc` for alsa.
+   `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
+   on the next image.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF

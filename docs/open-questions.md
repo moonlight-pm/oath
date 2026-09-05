@@ -266,12 +266,12 @@ Settings, monitor, kit, preview, paint, mail, arcade, scope, spotify,
 and wrapper are more ELFs in the one `pkg:sola` blob. Not new kinds.
 Not `svc:*`. Spotify Pulse is `pkg:pipewire`. Wrapper uses packed CEF.
 Canto fill is `image/install-sola-kit.sh`. **T37** packs Steam /
-gamescope / Xwayland as separate `pkg:*` so Arcade can nest.
+gamescope / Xwayland / mesa as separate `pkg:*` so Arcade can nest.
 
 ### T37 — Arcade + Steam runtime — locked 2026-09-05
 
 `sola-arcade` stays in `pkg:sola`. Steam, gamescope, Xwayland, and the
-64-bit GLX stack are removable `pkg:steam` / `pkg:gamescope` /
+64-bit GLX + Vulkan WSI stack are removable `pkg:steam` / `pkg:gamescope` /
 `pkg:xwayland` / `pkg:mesa`. `pkg:bash` is borrowed static musl GNU
 bash. No new `svc:*`. Nested X is gamescope’s `Xwayland` on PATH. Host
 River is still packed without xwaylandSupport. 32-bit glibc loader is

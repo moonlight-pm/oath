@@ -6,7 +6,7 @@ the full kit **failed** on canto (`alsa-sys` / empty `.pc` farm);
 **Dogfood:** packing list is in; `/bin/sola-arcade` on canto (T37).
 Other T36 names **not** linked. QEMU after next `cargo make build`.
 **Gaps:** guest `cargo build` of spotify/librespot died on `alsa.pc`.
-**T37** adds Steam / gamescope / Xwayland as separate `pkg:*`. Spotify
+**T37** adds Steam / gamescope / Xwayland / mesa as separate `pkg:*`. Spotify
 MPRIS wants a session bus — no `dbus-daemon`. Zig `cc` must drop rustc
 `-fuse-ld=lld`, cc-rs `--target=`, and `--dynamic-linker` on `-c`.
 First full oath-sola inner loop is still out.
@@ -17,7 +17,7 @@ First full oath-sola inner loop is still out.
 T26–T29 packed Terminal, Browser, Workspaces, and KVM. The launcher
 already lists the rest at `env::bin_path("sola-…")`. This freeze packs
 those ELFs into the **same `pkg:sola` blob** — **not** a split, **not**
-new `svc:*`. Steam/gamescope/Xwayland are T37 (`pkg:*`, not this blob).
+new `svc:*`. Steam/gamescope/Xwayland/mesa are T37 (`pkg:*`, not this blob).
 
 ---
 
