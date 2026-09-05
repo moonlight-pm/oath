@@ -75,8 +75,10 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-05-arcade-steam.md`](docs/specs/2026-09-05-arcade-steam.md)
+(T37 Arcade + Steam runtime). T36:
 [`docs/specs/2026-09-05-sola-kit-apps.md`](docs/specs/2026-09-05-sola-kit-apps.md)
-(T36 remaining kit apps in `pkg:sola`). T35:
+(remaining kit apps in `pkg:sola`). T35:
 [`docs/specs/2026-09-05-guest-toolchain.md`](docs/specs/2026-09-05-guest-toolchain.md)
 (guest toolchain; `pkg:cc` / `pkg:rustc` / `pkg:cmake` /
 `pkg:pkg-config`). T34:

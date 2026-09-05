@@ -170,6 +170,10 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:rustc"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:cmake"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:pkg-config"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:bash"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:xwayland"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:gamescope"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:steam"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:wireplumber"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire-pulse"));

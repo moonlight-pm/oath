@@ -1,11 +1,12 @@
 **Date:** 2026-09-05
 **Status:** target (freeze)
 **Implementation:** packing list + live-install script; guest cargo of
-the kit ELFs **failed** on canto (`alsa-sys` / empty `.pc` farm)
-**Dogfood:** packing list is in; `/bin/sola-settings` and siblings **not**
-linked. QEMU after next `cargo make build` (same ELF list).
-**Gaps:** guest `cargo build` died on `alsa.pc` (spotify/librespot pulse).
-Arcade UI packs; gamescope / Steam / XWayland stay out (T23). Spotify
+the full kit **failed** on canto (`alsa-sys` / empty `.pc` farm);
+`sola-arcade` built (T37)
+**Dogfood:** packing list is in; `/bin/sola-arcade` on canto (T37).
+Other T36 names **not** linked. QEMU after next `cargo make build`.
+**Gaps:** guest `cargo build` of spotify/librespot died on `alsa.pc`.
+**T37** adds Steam / gamescope / Xwayland as separate `pkg:*`. Spotify
 MPRIS wants a session bus — no `dbus-daemon`. Zig `cc` must drop rustc
 `-fuse-ld=lld`, cc-rs `--target=`, and `--dynamic-linker` on `-c`.
 First full oath-sola inner loop is still out.
@@ -16,7 +17,7 @@ First full oath-sola inner loop is still out.
 T26–T29 packed Terminal, Browser, Workspaces, and KVM. The launcher
 already lists the rest at `env::bin_path("sola-…")`. This freeze packs
 those ELFs into the **same `pkg:sola` blob** — **not** a split, **not**
-new `svc:*`, **not** XWayland/Steam.
+new `svc:*`. Steam/gamescope/Xwayland are T37 (`pkg:*`, not this blob).
 
 ---
 
@@ -49,8 +50,8 @@ new `svc:*`, **not** XWayland/Steam.
   `pkg:pipewire/lib`.
 - **PID 1 does not supervise kit apps.** `sola-session` launches them
   (direct spawn). No new `svc:*`.
-- **Arcade does not grow XWayland / Steam / gamescope.** The ELF may
-  open. Launching a title still needs those bits (T23 Out).
+- **Arcade ELF in this freeze.** Launching a title is T37
+  (`pkg:gamescope` / `pkg:steam` / `pkg:xwayland`).
 - **libdbus is a library.** Do not start `dbus-daemon` for MPRIS.
 - **Canto fill** is `image/install-sola-kit.sh` (guest `cargo build`
   from the Sola tree + patchelf into the live store). Image pack is
@@ -75,5 +76,6 @@ On canto (and QEMU after rebuild):
 
 - `pkg:sola-mail` / splitting `pkg:sola`
 - Nested `crates/sola`, udevd, dbus-daemon
-- XWayland, Steam, gamescope, a second Unix user
+- XWayland / Steam / gamescope as *this* freeze (T37)
+- A second Unix user
 - Self-watch inner loop (apply a tree you built)

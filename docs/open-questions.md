@@ -12,8 +12,10 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
-Arcade ELF without gamescope/Steam/XWayland). T35 guest toolchain closed (official tarballs; `pkg:cc` is
+None open. T37 Arcade + Steam runtime closed (`pkg:bash` / `pkg:xwayland` /
+`pkg:gamescope` / `pkg:steam`; Arcade ELF stays in `pkg:sola`; no new `svc`;
+host River still without xwaylandSupport). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
+Arcade ELF without gamescope/Steam/XWayland — **amended T37**). T35 guest toolchain closed (official tarballs; `pkg:cc` is
 Zig providing `cc`; rustc gnu host + musl std; cmake+ninja; empty
 pkg-config farm). T34 UTC system clock closed (`host:local.timezone`
 display; not `TZ` in env). T33 off-box backup closed (one NFS send, overwrite,
@@ -258,13 +260,22 @@ under hash-in-path; two runnable at once is still two names.
 `solactl` as a helper in that same tree. Not a new kind. Not a `svc`.
 PID 1 does not supervise it. git/grok not in this slice.
 
-### T36 — Remaining kit apps — locked 2026-09-05
+### T36 — Remaining kit apps — locked 2026-09-05, amended T37
 
 Settings, monitor, kit, preview, paint, mail, arcade, scope, spotify,
 and wrapper are more ELFs in the one `pkg:sola` blob. Not new kinds.
-Not `svc:*`. Arcade does not grow XWayland/Steam/gamescope. Spotify
-Pulse is `pkg:pipewire`. Wrapper uses packed CEF. Canto fill is
-`image/install-sola-kit.sh`.
+Not `svc:*`. Spotify Pulse is `pkg:pipewire`. Wrapper uses packed CEF.
+Canto fill is `image/install-sola-kit.sh`. **T37** packs Steam /
+gamescope / Xwayland as separate `pkg:*` so Arcade can nest.
+
+### T37 — Arcade + Steam runtime — locked 2026-09-05
+
+`sola-arcade` stays in `pkg:sola`. Steam, gamescope, and Xwayland are
+removable `pkg:steam` / `pkg:gamescope` / `pkg:xwayland`. `pkg:bash`
+is borrowed static musl GNU bash. No new `svc:*`. Nested X is
+gamescope’s `Xwayland` on PATH. Host River is still packed without
+xwaylandSupport. 32-bit glibc loader is `pkg:steam/lib32`, not a
+second libc in PID 1.
 
 ### T30 — Vendor-updating packages (`pkg:grok`) — locked 2026-09-02
 

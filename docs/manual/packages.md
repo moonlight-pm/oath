@@ -14,7 +14,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:dropbear` | `present: true` | no — dropbear, dropbearkey, musl OpenSSH `/bin/ssh` + `ssh-keygen`, dropbear `dbclient`/`scp`, sftp-server |
 | `pkg:glibc` | `present: true` | no — GNU C runtime for River and Sola; not loaded by PID 1 |
 | `pkg:river` | `present: true` | yes — patched River; `/bin/river` |
-| `pkg:sola` | `present: true` | yes — session stack + `sola-terminal` + `sola-browser` + `sola-workspaces` + `sola-kvm`; `/bin/sola-bus` and siblings including `sola-session`, `sola-terminal`, `sola-browser`, `sola-workspaces`, `solactl`, `sola-kvm`, `tmux`, and `/bin/xdg-open` (`solactl open` → sola-browser; `x-www-browser` is the same shim; not xdg-utils). C.UTF-8 locale-archive; CEF under `cef/`; SF Pro Text + Iosevka Term Slab, with Inter / JetBrains Mono fallbacks. Next image pack also lists settings/monitor/kit/preview/paint/mail/arcade/scope/spotify/wrapper (T36); not in `/bin` on canto yet. |
+| `pkg:sola` | `present: true` | yes — session stack + `sola-terminal` + `sola-browser` + `sola-workspaces` + `sola-kvm` + **`sola-arcade`** (T37); `/bin/sola-bus` and siblings including `sola-session`, `sola-terminal`, `sola-browser`, `sola-workspaces`, `solactl`, `sola-kvm`, `tmux`, `/bin/xdg-open` (`solactl open` → sola-browser; `x-www-browser` is the same shim; not xdg-utils). C.UTF-8 locale-archive; CEF under `cef/`; SF Pro Text + Iosevka Term Slab, with Inter / JetBrains Mono fallbacks. T36 names besides arcade still not in `/bin` on canto. |
 | `pkg:grok` | `present: true` | yes — borrowed static-pie Grok ELF; `/bin/grok`. Updater off (`GROK_DISABLE_AUTOUPDATER`). State is `/home/.grok`, not the payload. |
 | `pkg:git` | `present: true` | yes — borrowed Git; `/bin/git`. HTTPS via `git-remote-http` + CA bundle in the store. |
 | `pkg:curl` | `present: true` | yes — borrowed static musl curl; `/bin/curl`. CA bundle in the store. |
@@ -24,6 +24,10 @@ target. There is no `apt` and no `oath install`.
 | `pkg:rustc` | `present: true` | yes — official rustc + cargo 1.98.1 (gnu host) + rust-std musl. No rustup. |
 | `pkg:cmake` | `present: true` | yes — Kitware cmake 4.3.5 + ninja 1.13.2. |
 | `pkg:pkg-config` | `present: true` | yes — `/bin/pkg-config` exists; empty `.pc` farm (`--exists` fails). |
+| `pkg:bash` | `present: true` | yes — borrowed static musl GNU bash 5.2.15; `/bin/bash` is the ELF (not an ash wrapper). Steam scripts and Grok’s agent shell need it. |
+| `pkg:xwayland` | `present: true` | yes — Debian Xwayland 24.1.13; `/bin/Xwayland`. gamescope nested X looks this up on PATH. |
+| `pkg:gamescope` | `present: true` | yes — windowed nest compositor; `/bin/gamescope`. Arcade Play uses this. Canto packed; `--help` still has a remaining NEEDED/glibc gap. |
+| `pkg:steam` | `present: true` | yes — Valve steam-launcher + ubuntu12_32 bootstrap + 32-bit loader in `lib32`. `/bin/steam`. User state is `~/.steam` and `~/.local/share/Steam`. |
 | `pkg:hello` | `present: false` | yes — canary |
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 

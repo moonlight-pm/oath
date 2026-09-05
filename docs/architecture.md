@@ -35,7 +35,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,thoxa,cc,rustc,cmake,pkg-config,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,steam,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -67,6 +67,11 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:rustc          `/bin/rustc` `/bin/cargo` (1.98.1 gnu host + musl std)
     pkg:cmake          `/bin/cmake` `/bin/ninja`
     pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
+    pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
+    pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13)
+    pkg:gamescope      `/bin/gamescope` (windowed nest)
+    pkg:steam          `/bin/steam` + 32-bit loader in lib32
+    sola-arcade        `/bin/sola-arcade` (kit app in pkg:sola)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`)
     backup-daily       /lib/oath/backup-daily (04:00 Mountain loop; seed off)
@@ -148,4 +153,7 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-09-03-pkg-thoxa.md](specs/2026-09-03-pkg-thoxa.md) ·
 [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) ·
 [specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md) ·
-[specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md)
+[specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md) ·
+[specs/2026-09-05-guest-toolchain.md](specs/2026-09-05-guest-toolchain.md) ·
+[specs/2026-09-05-sola-kit-apps.md](specs/2026-09-05-sola-kit-apps.md) ·
+[specs/2026-09-05-arcade-steam.md](specs/2026-09-05-arcade-steam.md)

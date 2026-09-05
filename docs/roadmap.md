@@ -89,5 +89,6 @@ on nas `alpha/backup/canto`).
 - Broad ABI compatibility for random Linux binaries
 - Large binary repository
 - Bare-metal diversity
-- Remaining kit apps (T36 packing list in; canto guest cargo failed
-  on `alsa.pc`); first finished guest `cargo build` of Oath/Sola/Thoxa
+- Remaining kit apps (T36 packing list in; T37 `sola-arcade` + Steam
+  runtime on canto; guest cargo of spotify still failed on `alsa.pc`);
+  first finished guest `cargo build` of Oath/Sola/Thoxa

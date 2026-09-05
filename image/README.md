@@ -17,7 +17,9 @@ hash, hash-in-path, pin) is T32
 (session stack including sola-session, sola-terminal + tmux,
 sola-browser + CEF, workspaces, kvm, and remaining kit apps; host
 `cargo build --release` from `forks/sola`). Canto live-add:
-`sh image/install-sola-kit.sh`.
+`sh image/install-sola-kit.sh`. Arcade + Steam runtime (T37):
+`sh image/install-bash.sh`, `sh image/build-sola-arcade.sh`,
+`bash image/install-arcade-runtime.sh`.
 
 Host orchestration is Rust:
 

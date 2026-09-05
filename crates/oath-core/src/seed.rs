@@ -109,6 +109,10 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "rustc", true, true)?;
     seed_pkg(root, "cmake", true, true)?;
     seed_pkg(root, "pkg-config", true, true)?;
+    seed_pkg(root, "bash", true, true)?;
+    seed_pkg(root, "xwayland", true, true)?;
+    seed_pkg(root, "gamescope", true, true)?;
+    seed_pkg(root, "steam", true, true)?;
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),

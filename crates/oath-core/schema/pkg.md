@@ -52,4 +52,5 @@ borrowed static-pie; updater off), `pkg:git` and `pkg:curl` present
 Busybox applets are one package. `pkg:glibc` is the GNU C runtime
 for glibc payloads (River, Sola, rustc). Never load it into musl PID 1.
 `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` are the guest
-toolchain (T35).
+toolchain (T35). `pkg:bash` / `pkg:xwayland` / `pkg:gamescope` /
+`pkg:steam` are the Arcade runtime (T37).

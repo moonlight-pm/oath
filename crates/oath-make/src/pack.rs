@@ -445,6 +445,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         &[("PATCHELF", &patchelf)],
     )?;
     link_pkg(&oath_root, &guest_bin, "rustc", true)?;
+    pack_script_pkg(root, out, &oath_root, "pack-bash.sh", "bash", &[])?;
+    link_pkg(&oath_root, &guest_bin, "bash", true)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");

@@ -46,18 +46,19 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is `host:local.timezone` (Mountain POSIX); `date` stays UTC. **T35**
    guest toolchain live (gen 19): `pkg:cc` Zig 0.16, `pkg:rustc` 1.98.1,
    `pkg:cmake` 4.3.5 + ninja, `pkg:pkg-config` empty farm. Official
-   tarballs, no Nix, no rustup. **T36** remaining kit apps: packing
-   list + `image/install-sola-kit.sh` in. Guest `cargo build` of
-   those ELFs **failed** (`alsa-sys` needs `alsa.pc`; empty
-   `pkg:pkg-config` farm). Not in `/bin`. Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh` (drop rustc `-fuse-ld=lld`,
-   cc-rs `--target=`, `--dynamic-linker` on `-c`). Next: a `.pc` for
-   alsa (or skip pulse backend), finish kit ELFs, or rebuild ESP initrd.
+   tarballs, no Nix, no rustup. **T37** Arcade + Steam runtime on
+   canto (gen 21): `/bin/bash` (GNU 5.2.15 static musl),
+   `/bin/sola-arcade` (guest cargo), `/bin/Xwayland` 24.1.13,
+   `/bin/gamescope`, `/bin/steam` (bootstrap extracts; 32-bit ELF
+   loads). **T36** other kit names still out (`alsa.pc`). Zig `cc`
+   host link is `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next:
+   finish gamescope NEEDED against packed glibc, smoke Arcade Play
+   on the desk, or a `.pc` for alsa / remaining kit ELFs.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
-   canto. Other kit apps still out. **Sola master**
+   canto. **T37** `/bin/sola-arcade` in. Other kit apps still out. **Sola master**
    merged into oath-sola (`a6dd7c12`, Sola `c631e241` LED raster)
    and packed `pkg:sola` is live on canto (flower Restart Computer
    / Shut Down via `oath apply --confirm`; Super+Tab counts, notify
@@ -84,7 +85,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm; first guest `cargo build` not smoked). |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/sola-arcade` `/bin/Xwayland` `/bin/gamescope` `/bin/steam` (gen 21; Xwayland `-version` 24.1.13; 32-bit Steam ELF loads; gamescope `--help` still a glibc/NEEDED mix). |
 
 ```sh
 nix-shell
@@ -131,12 +132,14 @@ Do not re-litigate without an explicit decision.
 - Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
-  `cmake`, `pkg-config`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
+  `cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `steam`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (`/bin/grok`);
   Grok does not self-update. `pkg:git`, `pkg:curl`, `pkg:pipewire`, and `pkg:thoxa` packed.
   **T35:** `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` packed
   on canto (gen 19; official tarballs; no Nix, no rustup).
+  **T37:** `pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:steam`
+  packed on canto (gen 21); `sola-arcade` in `pkg:sola`.
   **T32 (target, not implemented):** a pack is a directory matching
   that layout (no recipe language). Realization id is the content hash
   of the tree. Store becomes `/oath/store/pkg/<name>/<hash>/`. Name is
@@ -185,7 +188,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-05-guest-toolchain.md](docs/specs/2026-09-05-guest-toolchain.md)
+- Freeze: [docs/specs/2026-09-05-arcade-steam.md](docs/specs/2026-09-05-arcade-steam.md)
+  (T37 Arcade + Steam runtime).
+  [docs/specs/2026-09-05-guest-toolchain.md](docs/specs/2026-09-05-guest-toolchain.md)
   (T35 guest toolchain).
   [docs/specs/2026-09-04-utc-clock.md](docs/specs/2026-09-04-utc-clock.md)
   (T34 UTC system clock; `host:local.timezone` display).
@@ -231,4 +236,5 @@ Do not re-litigate without an explicit decision.
   graphical stack as `home`; `pkg:grok` / `pkg:git` / `pkg:curl` / `pkg:pipewire`
   packed; `pkg:thoxa` packed as the `home` login shell; T33 one NFS
   copy on nas (canto gen 16); T35 guest toolchain live on canto (gen 19);
-  other kit apps not; Phase 6 metal canary (canto) dogfoodable
+  T37 Arcade + Steam runtime on canto (gen 21); other kit apps not;
+  Phase 6 metal canary (canto) dogfoodable
