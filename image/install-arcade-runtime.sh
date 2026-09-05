@@ -105,6 +105,17 @@ debs=(
 	pool/main/libc/libcap2/libcap2_2.75-7ubuntu2_amd64.deb
 	pool/universe/liba/libavif/libavif16_1.3.0-1ubuntu1_amd64.deb
 	pool/main/libd/libdecor-0/libdecor-0-0_0.2.2-2_amd64.deb
+	pool/universe/libd/libdecor-0/libdecor-0-plugin-1-cairo_0.2.2-2_amd64.deb
+	pool/main/p/pango1.0/libpango-1.0-0_1.56.3-1build1_amd64.deb
+	pool/main/p/pango1.0/libpangocairo-1.0-0_1.56.3-1build1_amd64.deb
+	pool/main/p/pango1.0/libpangoft2-1.0-0_1.56.3-1build1_amd64.deb
+	pool/main/c/cairo/libcairo2_1.18.4-1build1_amd64.deb
+	pool/main/h/harfbuzz/libharfbuzz0b_10.2.0-1_amd64.deb
+	pool/main/f/fontconfig/libfontconfig1_2.15.0-2.3ubuntu1_amd64.deb
+	pool/main/libt/libthai/libthai0_0.1.29-2build1_amd64.deb
+	pool/main/libd/libdatrie/libdatrie1_0.2.13-4_amd64.deb
+	pool/main/g/graphite2/libgraphite2-3_1.3.14-2ubuntu1_amd64.deb
+	pool/main/f/fribidi/libfribidi0_1.0.16-1_amd64.deb
 	pool/main/libe/libei/libeis1_1.3.901-1_amd64.deb
 	pool/universe/l/luajit/libluajit-5.1-2_2.1.0+openresty20250117-2ubuntu1_amd64.deb
 	pool/main/libx/libx11/libx11-6_1.8.12-1build1_amd64.deb
@@ -250,7 +261,7 @@ if [ -d /tmp/gs/usr/lib/x86_64-linux-gnu/gamescope ]; then
 fi
 cat >"$stagedir/gamescope/bin/gamescope" <<'WRAP'
 #!/bin/sh
-export PATH=/bin:/usr/bin
+export PATH=/bin:/usr/bin:/oath/store/pkg/gamescope/libexec
 export HOME="${HOME:-/home}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
@@ -263,6 +274,9 @@ export NODEVICE_SELECT=1
 # Ubuntu 3.16 pool is short for RADV YCbCr planes (SI vkAllocateDescriptorSets).
 export VK_LAYER_PATH=/oath/store/pkg/gamescope/share/vulkan/explicit_layer.d
 export VK_INSTANCE_LAYERS=VK_LAYER_OATH_gamescope_pool
+export LIBDECOR_PLUGIN_DIR=/oath/store/pkg/gamescope/lib/libdecor/plugins-1
+export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/sola/etc/fonts/fonts.conf}"
+export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
 # libmvec.so.1 is a real glibc object (GLIBC_2.22). Do not let a
 # libmvec→libm symlink win; that is "GLIBC_2.22 not found".
 export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
@@ -304,13 +318,85 @@ cat >"$stagedir/gamescope/share/vulkan/explicit_layer.d/VkLayer_oath_gamescope_p
 }
 JSON
 
+echo "==> pack libdecor plugins (cairo + oath dummy)"
+gs_lib=$stagedir/gamescope/lib
+gs_rpath="$glibc:$gs_lib:$river:$pw:/oath/store/pkg/sola/lib"
+mkdir -p "$gs_lib/libdecor/plugins-1"
+deb_lib=$stagedir/debroot/usr/lib/x86_64-linux-gnu
+cairo_plug=
+if [ -f /tmp/gs/usr/lib/x86_64-linux-gnu/libdecor/plugins-1/libdecor-cairo.so ]; then
+	cairo_plug=/tmp/gs/usr/lib/x86_64-linux-gnu/libdecor/plugins-1/libdecor-cairo.so
+elif [ -f "$deb_lib/libdecor/plugins-1/libdecor-cairo.so" ]; then
+	cairo_plug=$deb_lib/libdecor/plugins-1/libdecor-cairo.so
+fi
+if [ -n "$cairo_plug" ]; then
+	cp -a "$cairo_plug" "$gs_lib/libdecor/plugins-1/libdecor-cairo.so"
+	chmod u+w "$gs_lib/libdecor/plugins-1/libdecor-cairo.so"
+fi
+copy_gs_so() {
+	local pat=$1
+	local f
+	f=$(find "$deb_lib" -name "$pat" ! -type l | head -1)
+	[ -n "$f" ] || return 0
+	cp -a "$f" "$gs_lib/$(basename "$f")"
+	chmod u+w "$gs_lib/$(basename "$f")"
+	local so
+	so=$(patchelf --print-soname "$gs_lib/$(basename "$f")" 2>/dev/null || true)
+	if [ -n "$so" ] && [ "$so" != "$(basename "$f")" ]; then
+		ln -sfn "$(basename "$f")" "$gs_lib/$so"
+	fi
+}
+for pat in \
+	'libpangocairo-1.0.so.0*' \
+	'libpangoft2-1.0.so.0*' \
+	'libpango-1.0.so.0*' \
+	'libcairo.so.2*' \
+	'libharfbuzz.so.0*' \
+	'libfontconfig.so.1*' \
+	'libthai.so.0*' \
+	'libdatrie.so.1*' \
+	'libgraphite2.so.3*' \
+	'libfribidi.so.0*'
+do
+	copy_gs_so "$pat"
+done
+find "$gs_lib" "$gs_lib/libdecor/plugins-1" -maxdepth 1 -type f \( \
+	-name 'libpango*' -o -name 'libcairo.so.2*' -o -name 'libharfbuzz*' \
+	-o -name 'libfontconfig.so.1*' -o -name 'libthai*' -o -name 'libdatrie*' \
+	-o -name 'libgraphite2*' -o -name 'libfribidi*' -o -name 'libdecor-cairo.so' \
+\) | while read -r f; do
+	is_elf "$f" || continue
+	chmod u+w "$f" || true
+	patchelf --set-rpath "$gs_rpath" "$f" 2>/dev/null || true
+done
+# Dummy wins (HIGH). Cairo mmap-crashes on 0-size CSD; dummy reports 1px
+# borders so first xdg geometry is 2x2 instead of 0x0.
+oath_plug_src=$here/libdecor-oath-plugin.c
+oath_plug_obj=$stagedir/libdecor-oath-plugin.o
+oath_plug_so=$gs_lib/libdecor/plugins-1/libdecor-oath.so
+if [ ! -f "$oath_plug_src" ]; then
+	echo "missing $oath_plug_src" >&2
+	exit 1
+fi
+decor_so=
+for f in "$gs_lib"/libdecor-0.so.0*; do
+	[ -f "$f" ] && [ ! -L "$f" ] && decor_so=$f
+done
+[ -n "$decor_so" ] || { echo "missing libdecor-0.so in gamescope pack" >&2; exit 1; }
+/bin/cc -c -fPIC -O2 -fno-sanitize=undefined -o "$oath_plug_obj" "$oath_plug_src"
+/oath/store/pkg/cc/libexec/zig/zig cc -target x86_64-linux-gnu -shared -O2 -fno-sanitize=undefined \
+	-Wl,-rpath,/oath/store/pkg/gamescope/lib:/oath/store/pkg/glibc/lib \
+	-o "$oath_plug_so" "$oath_plug_obj" "$decor_so"
+
 cat >"$stagedir/gamescope/INDEX.md" <<'EOF'
 # pkg:gamescope
 
 Windowed nest compositor for sola-arcade. Ubuntu questing 3.16 gamescope
 relocated onto pkg:glibc + pkg:river. Removable. PID 1 does not supervise it.
 VK_LAYER_OATH_gamescope_pool pads descriptor pools so RADV SI can
-vkAllocateDescriptorSets (YCbCr planes).
+vkAllocateDescriptorSets (YCbCr planes). libdecor-cairo is packed;
+libdecor-oath (HIGH) reports 1px borders so River accepts the first
+xdg geometry (cairo mmap-crashes on a 0-size CSD buffer).
 EOF
 
 echo "==> pack xwayland"
