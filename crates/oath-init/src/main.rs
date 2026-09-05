@@ -703,6 +703,10 @@ fn unix_floor() {
     let _ = fs::create_dir_all("/sys/fs/cgroup");
     let _ =
         mount(Some("cgroup2"), "/sys/fs/cgroup", Some("cgroup2"), MsFlags::empty(), None::<&str>);
+    // Steam/CEF bind 127.0.0.1. net:net0 is the NIC; lo is not a catalog object.
+    let _ = Command::new("/bin/ip").args(["link", "set", "lo", "up"]).status();
+    let _ = Command::new("/bin/ip").args(["addr", "add", "127.0.0.1/8", "dev", "lo"]).status();
+    let _ = Command::new("/bin/ip").args(["addr", "add", "::1/128", "dev", "lo"]).status();
 }
 
 /// Mount btrfs subvolid=0 so generations can be sibling `@gen-N`, not nested on `@`.

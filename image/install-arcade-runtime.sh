@@ -497,20 +497,30 @@ done
 # Point pkg:steam/lib32 at those files so 32-bit dlmopen can find them.
 link_sonames() {
 	_src=$1
+	_want=${2:-1}
+	_destdir=$store/lib32
+	[ "$_want" = "2" ] && _destdir=$store/lib64
 	[ -d "$_src" ] || return 0
-	mkdir -p "$store/lib32"
+	mkdir -p "$_destdir"
 	for _f in "$_src"/lib*.so "$_src"/lib*.so.*; do
 		[ -f "$_f" ] || continue
 		_class=$(od -An -N1 -j4 -tu1 "$_f" 2>/dev/null | tr -d ' \n')
-		[ "$_class" = "1" ] || continue
+		[ "$_class" = "$_want" ] || continue
 		_so=$(patchelf --print-soname "$_f" 2>/dev/null || true)
 		[ -n "$_so" ] || _so=$(basename "$_f")
 		case "$_so" in
-		libc.so.6|libdl.so.2|libm.so.6|libpthread.so.0|librt.so.1|ld-linux.so.2|libresolv.so.2|libstdc++.so.6|libgcc_s.so.1|libdrm.so.2|libdrm_amdgpu.so.1)
+		libc.so.6|libdl.so.2|libm.so.6|libpthread.so.0|librt.so.1|ld-linux.so.2|ld-linux-x86-64.so.2|libresolv.so.2|libstdc++.so.6|libgcc_s.so.1|libdrm.so.2|libdrm_amdgpu.so.1)
 			continue ;;
 		esac
-		ln -sfn "$_f" "$store/lib32/$_so"
-		ln -sfn "$_f" "$store/lib32/$(basename "$_f")"
+		# 64-bit CEF must not see steamrt3's old glvnd; use pkg:sola/river.
+		if [ "$_want" = "2" ]; then
+			case "$_so" in
+			libGL.so.1|libEGL.so.1|libGLX.so.0|libGLdispatch.so.0|libGLESv2.so.2)
+				continue ;;
+			esac
+		fi
+		ln -sfn "$_f" "$_destdir/$_so"
+		ln -sfn "$_f" "$_destdir/$(basename "$_f")"
 	done
 }
 rt="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steam-runtime"
@@ -518,7 +528,11 @@ link_sonames "$rt/usr/lib/i386-linux-gnu"
 link_sonames "$rt/lib/i386-linux-gnu"
 for _d in "${XDG_DATA_HOME:-$HOME/.local/share}/Steam/steamrt64/pv-runtime/steam-runtime-steamrt"/steamrt3c_platform_*/files/lib/i386-linux-gnu \
 	"${XDG_DATA_HOME:-$HOME/.local/share}/Steam/steamrt64/pv-runtime/steam-runtime-steamrt"/steamrt3c_platform_*/files/lib/i386-linux-gnu/*/; do
-	link_sonames "$_d"
+	link_sonames "$_d" 1
+done
+for _d in "${XDG_DATA_HOME:-$HOME/.local/share}/Steam/steamrt64/pv-runtime/steam-runtime-steamrt"/steamrt3c_platform_*/files/lib/x86_64-linux-gnu \
+	"${XDG_DATA_HOME:-$HOME/.local/share}/Steam/steamrt64/pv-runtime/steam-runtime-steamrt"/steamrt3c_platform_*/files/lib/x86_64-linux-gnu/*/; do
+	link_sonames "$_d" 2
 done
 # 32-bit steamui is loaded from $PLATFORM (ubuntu12_32) first. Put GL/gtk
 # SONAMEs there so the 32-bit loader never sees 64-bit libGL. This glibc
@@ -541,6 +555,53 @@ export PATH="$store/libexec:/bin:/usr/bin"
 export LD_LIBRARY_PATH="$srtdir:/oath/store/pkg/glibc/lib"
 COMPAT
 chmod 644 "$stagedir/steam/libexec/steam-compat.sh"
+# steamwebhelper.sh execs $STEAM_RUNTIME_STEAMRT/_v2-entry-point.
+# Valve checksums ubuntu12_64/steamwebhelper.sh — do not replace it.
+# CLONE_NEWUSER is EPERM because PID 1 chrooted from the initrd.
+mkdir -p "$stagedir/steam/libexec/pv-host"
+cat >"$stagedir/steam/libexec/pv-host/_v2-entry-point" <<'WH'
+#!/bin/bash
+# Host-side steamwebhelper: skip pressure-vessel. steam.sh documents
+# STEAM_RUNTIME_STEAMRT as the unsupported override for this.
+set -eu
+log() { echo "steamwebhelper-host[$$]: $*" >&2; }
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--) shift; break ;;
+	--*) shift ;;
+	*) break ;;
+	esac
+done
+if [ $# -lt 1 ]; then
+	log "missing steamwebhelper_sniper_wrap.sh"
+	exit 1
+fi
+wrap=$1
+shift
+dir=$(CDPATH= cd -- "$(dirname "$wrap")" && pwd)
+cd "$dir"
+store=/oath/store/pkg/steam
+export LD_LIBRARY_PATH="$dir:${store}/lib64:/oath/store/pkg/sola/lib:/oath/store/pkg/river/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/glibc/lib"
+export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
+export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
+export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
+export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/sola/etc/fonts/fonts.conf}"
+export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
+unset LIBGL_ALWAYS_SOFTWARE
+case " $* " in
+*\ --no-sandbox\ *) ;;
+*) set -- --no-sandbox "$@" ;;
+esac
+# Pack has no libGLX_mesa; CEF GPU init fails on radeonsi. Software is
+# enough for the login/UI chrome.
+case " $* " in
+*\ --disable-gpu\ *) ;;
+*) set -- --disable-gpu "$@" ;;
+esac
+log "host (no pressure-vessel) exec ./steamwebhelper $*"
+exec ./steamwebhelper "$@"
+WH
+chmod 755 "$stagedir/steam/libexec/pv-host/_v2-entry-point"
 cat >"$stagedir/steam/bin/steam" <<'WRAP'
 #!/bin/sh
 export HOME="${HOME:-/home}"
@@ -611,6 +672,11 @@ if [ -d "$rt/usr/libexec/steam-runtime-tools-0" ] && ! unshare -U true >/dev/nul
 		"$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap" 2>/dev/null || true
 	chmod 755 "$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap" 2>/dev/null || true
 fi
+# steam.sh: STEAM_RUNTIME_STEAMRT overrides steamwebhelper's pressure-vessel
+# entry point. Do not replace ubuntu12_64/steamwebhelper.sh (client checksum).
+if [ -x /oath/store/pkg/steam/libexec/pv-host/_v2-entry-point ]; then
+	export STEAM_RUNTIME_STEAMRT=/oath/store/pkg/steam/libexec/pv-host
+fi
 exec /bin/bash /oath/store/pkg/steam/libexec/bin_steam.sh "$@"
 WRAP
 chmod 755 "$stagedir/steam/bin/steam"
@@ -621,6 +687,8 @@ Valve steam-launcher (bootstrap tarball + bin_steam.sh) plus a 32-bit
 glibc loader for ubuntu12_32/steam. User state is ~/.steam and
 ~/.local/share/Steam. The /bin/steam wrapper creates /usr/bin/env,
 /lib64, CA certs, xz/tar shims, and 32-bit GL SONAMEs beside steamui.so.
+steamwebhelper skips pressure-vessel (CLONE_NEWUSER is EPERM after PID 1
+chroot) and runs on the host with 64-bit steamrt3 SONAMEs in lib64.
 Removable. PID 1 does not supervise Steam.
 EOF
 

@@ -70,7 +70,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
     pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; rootful `:2` for Steam)
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV ICD in the pack)
-    pkg:steam          `/bin/steam` wrapper + 32-bit loader in lib32;
+    pkg:steam          `/bin/steam` wrapper + 32-bit loader in lib32
+                       + 64-bit steamrt3 SONAMEs in lib64; host
+                       `_v2-entry-point` at `libexec/pv-host` (no bwrap);
                        live nodes `/usr/bin/env`, `/lib64/ld-linux-x86-64.so.2`,
                        `/lib/ld-linux.so.2`, `/etc/ssl/certs` (not the /bin farm)
     sola-arcade        `/bin/sola-arcade` (kit app in pkg:sola)
@@ -81,8 +83,10 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /sbin/init -> ../lib/oath/init
 ```
 
-PID 1 is the initrd `/init` (stays PID 1 after chroot). Mount proc/sys/dev/pts
-(`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; hostname +
+PID 1 is the initrd `/init` (stays PID 1 after chroot — that chroot is
+why `CLONE_NEWUSER` is EPERM even as root). Mount proc/sys/dev/pts
+(`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; `lo` up with
+`127.0.0.1` + `::1` (next image; canto this boot by hand); hostname +
 `host:local.env`; seat `TZ` from `host:local.timezone`; load ethernet; **converge** `net:net0` (dhcp) + `ssh:local`;
 sshd; then amdgpu + ALSA HDA (snd deferred with KMS); wait for
 `/dev/dri` + `/dev/input` and chown them `0660` root:`home` (same for
