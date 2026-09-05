@@ -70,7 +70,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
     pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13)
     pkg:gamescope      `/bin/gamescope` (windowed nest)
-    pkg:steam          `/bin/steam` + 32-bit loader in lib32
+    pkg:steam          `/bin/steam` wrapper + 32-bit loader in lib32;
+                       live nodes `/usr/bin/env`, `/lib64/ld-linux-x86-64.so.2`,
+                       `/lib/ld-linux.so.2`, `/etc/ssl/certs` (not the /bin farm)
     sola-arcade        `/bin/sola-arcade` (kit app in pkg:sola)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`)

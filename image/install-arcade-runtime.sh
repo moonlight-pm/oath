@@ -317,6 +317,47 @@ if [ -s "$i386_deb" ]; then
 	fi
 	find "$stagedir/i386" -name 'ld-linux.so.2' -exec cp -a {} "$stagedir/steam/lib32/ld-linux.so.2" \;
 fi
+cat >"$stagedir/steam/libexec/ldconfig" <<'LD'
+#!/bin/sh
+# Steam setup.sh runs `ldconfig -XNv`. Oath has no ld.so.cache.
+if [ "$1" = "-p" ] || [ "$1" = "--print-cache" ]; then
+	if [ -d /lib/i386-linux-gnu ]; then
+		for f in /lib/i386-linux-gnu/*.so*; do
+			[ -e "$f" ] || continue
+			echo "	$(basename "$f") (libc6,x86-32) => $f"
+		done
+	fi
+	exit 0
+fi
+echo "/lib/i386-linux-gnu:"
+if [ -d /lib/i386-linux-gnu ]; then
+	ls -1 /lib/i386-linux-gnu 2>/dev/null | sed 's/^/	/'
+fi
+echo "/lib64:"
+echo "	ld-linux-x86-64.so.2 -> /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2"
+exit 0
+LD
+chmod 755 "$stagedir/steam/libexec/ldconfig"
+# steam.sh get_missing_libraries calls `ldd`. No libc-bin on Oath.
+cat >"$stagedir/steam/bin/ldd" <<'LDD'
+#!/bin/sh
+f=
+while [ $# -gt 0 ]; do
+	case $1 in
+	--version|-v) echo "ldd (oath pkg:steam)"; exit 0 ;;
+	-*) shift ;;
+	*) f=$1; break ;;
+	esac
+done
+[ -n "$f" ] && [ -e "$f" ] || { echo "ldd: missing file" >&2; exit 1; }
+# ELF class at offset 4: 1=32-bit, 2=64-bit.
+class=$(od -An -N1 -j4 -tu1 "$f" 2>/dev/null | tr -d ' \n')
+if [ "$class" = "1" ]; then
+	exec /lib/ld-linux.so.2 --list "$f"
+fi
+exec /lib64/ld-linux-x86-64.so.2 --list "$f"
+LDD
+chmod 755 "$stagedir/steam/bin/ldd"
 # zenity stub — Steam only uses it for dialogs.
 cat >"$stagedir/steam/bin/zenity" <<'Z'
 #!/bin/sh
@@ -326,17 +367,84 @@ Z
 chmod 755 "$stagedir/steam/bin/zenity"
 cat >"$stagedir/steam/bin/steam" <<'WRAP'
 #!/bin/sh
-export PATH=/bin
+export PATH=/bin:/usr/bin
 export HOME="${HOME:-/home}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-# 32-bit steam ELF wants /lib/ld-linux.so.2. Point a live node at our copy.
-if [ ! -e /lib/ld-linux.so.2 ] && [ -f /oath/store/pkg/steam/lib32/ld-linux.so.2 ]; then
-	sudo -n ln -sfn /oath/store/pkg/steam/lib32/ld-linux.so.2 /lib/ld-linux.so.2 2>/dev/null || true
+certs=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
+[ -f "$certs" ] || certs=/oath/store/pkg/curl/ssl/cert.pem
+export SSL_CERT_FILE="${SSL_CERT_FILE:-$certs}"
+export SSL_CERT_DIR="${SSL_CERT_DIR:-/oath/store/pkg/sola/etc/ssl/certs}"
+export CURL_CA_BUNDLE="${CURL_CA_BUNDLE:-$SSL_CERT_FILE}"
+export REQUESTS_CA_BUNDLE="${REQUESTS_CA_BUNDLE:-$SSL_CERT_FILE}"
+# Compat nodes Steam's scripts assume (not the /bin farm).
+# steam.sh is #!/usr/bin/env bash; srt-logger is a 64-bit ELF
+# with interp /lib64/ld-linux-x86-64.so.2. Missing those is the kernel
+# "cannot execute: required file not found" on execve.
+sudo -n mkdir -p /usr/bin /lib64 /lib/i386-linux-gnu /sbin /etc/ssl/certs 2>/dev/null || true
+sudo -n ln -sfn /bin/env /usr/bin/env 2>/dev/null || true
+sudo -n ln -sfn /bin/bash /usr/bin/bash 2>/dev/null || true
+sudo -n ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 2>/dev/null || true
+# glibc 2.34+ folded libresolv into libc; 64-bit srt-logger still NEEDED it.
+sudo -n ln -sfn libc.so.6 /oath/store/pkg/glibc/lib/libresolv.so.2 2>/dev/null || true
+sudo -n ln -sfn /proc/self/fd /dev/fd 2>/dev/null || true
+if [ -f "$certs" ]; then
+	sudo -n ln -sfn "$certs" /etc/ssl/certs/ca-certificates.crt 2>/dev/null || true
+	sudo -n ln -sfn "$certs" /etc/ssl/cert.pem 2>/dev/null || true
 fi
-export LD_LIBRARY_PATH="/oath/store/pkg/steam/lib32:${LD_LIBRARY_PATH:-}"
+if [ -x /oath/store/pkg/steam/libexec/ldconfig ]; then
+	sudo -n ln -sfn /oath/store/pkg/steam/libexec/ldconfig /sbin/ldconfig 2>/dev/null || true
+fi
+if [ -x /oath/store/pkg/steam/bin/ldd ]; then
+	sudo -n ln -sfn /oath/store/pkg/steam/bin/ldd /usr/bin/ldd 2>/dev/null || true
+fi
+if [ -f /oath/store/pkg/steam/lib32/ld-linux.so.2 ]; then
+	sudo -n ln -sfn /oath/store/pkg/steam/lib32/ld-linux.so.2 /lib/ld-linux.so.2 2>/dev/null || true
+	for f in /oath/store/pkg/steam/lib32/*.so*; do
+		[ -e "$f" ] || continue
+		sudo -n ln -sfn "$f" /lib/i386-linux-gnu/"$(basename "$f")" 2>/dev/null || true
+	done
+fi
+# Host-side steam-runtime-tools (srt-logger) NEEDED gio/glib/cap.
+# Scout $ORIGIN copies are broken relative symlinks; use packed host GLib.
+lp="/oath/store/pkg/sola/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/river/lib:/oath/store/pkg/steam/lib32"
+rt="$XDG_DATA_HOME/Steam/ubuntu12_32/steam-runtime"
+if [ -d "$rt/usr/lib/x86_64-linux-gnu" ]; then
+	lp="$rt/usr/lib/x86_64-linux-gnu:$rt/lib/x86_64-linux-gnu:$lp"
+fi
+export LD_LIBRARY_PATH="$lp${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 mkdir -p "$HOME/.steam" "$XDG_DATA_HOME/Steam" /tmp/fontconfig
-# Valve's launcher is bash.
+# Valve's launcher is bash. Busybox readlink has no -e.
+if grep -q 'readlink -e' /oath/store/pkg/steam/libexec/bin_steam.sh 2>/dev/null; then
+	sudo -n sed -i 's/readlink -e -q/readlink -f/g; s/readlink -e/readlink -f/g' \
+		/oath/store/pkg/steam/libexec/bin_steam.sh 2>/dev/null || true
+fi
+# Bootstrap extract leaves amd64/{lib,usr/lib*} as relative symlinks that
+# do not resolve from those directories. check-requirements then looks for
+# srt-bwrap under amd64/usr/libexec and dies with ENOENT.
+if [ -d "$rt/amd64/usr" ]; then
+	ln -sfn ../../usr/libexec "$rt/amd64/usr/libexec" 2>/dev/null || true
+	ln -sfn ../../usr/lib "$rt/amd64/usr/lib" 2>/dev/null || true
+	ln -sfn ../../usr/share "$rt/amd64/usr/share" 2>/dev/null || true
+	ln -sfn ../lib "$rt/amd64/lib" 2>/dev/null || true
+fi
+# CLONE_NEWUSER is EPERM on this kernel even as root (other nses work).
+# Valve's check-requirements treats that as fatal exit 71.
+cr="$rt/amd64/usr/bin/steam-runtime-check-requirements"
+if [ -e "$cr" ] && ! unshare -U true >/dev/null 2>&1; then
+	if [ "$(head -c 4 "$cr" 2>/dev/null)" = $'\x7fELF' ]; then
+		mv "$cr" "$cr.real" 2>/dev/null || true
+	fi
+	if [ ! -x "$cr" ] || [ -f "$cr.real" ]; then
+		cat >"$cr" <<'STUB'
+#!/bin/sh
+# Oath: user namespaces are compiled in but CLONE_NEWUSER is EPERM.
+# Valve exits 71 if this check fails. Pressure-vessel / Proton still need userns.
+exit 0
+STUB
+		chmod 755 "$cr" 2>/dev/null || true
+	fi
+fi
 exec /bin/bash /oath/store/pkg/steam/libexec/bin_steam.sh "$@"
 WRAP
 chmod 755 "$stagedir/steam/bin/steam"
@@ -345,7 +453,9 @@ cat >"$stagedir/steam/INDEX.md" <<'EOF'
 
 Valve steam-launcher (bootstrap tarball + bin_steam.sh) plus a 32-bit
 glibc loader for ubuntu12_32/steam. User state is ~/.steam and
-~/.local/share/Steam. Removable. PID 1 does not supervise Steam.
+~/.local/share/Steam. The /bin/steam wrapper creates /usr/bin/env,
+/lib64/ld-linux-x86-64.so.2, and /etc/ssl/certs so steam.sh and
+srt-logger can exec. Removable. PID 1 does not supervise Steam.
 EOF
 
 echo "==> install sola-arcade"
@@ -405,8 +515,27 @@ for n in Xwayland gamescope steam zenity; do
 done
 # 32-bit loader at the path the steam ELF encodes.
 if [ -f "$store/steam/lib32/ld-linux.so.2" ]; then
-	as_root mkdir -p /lib
+	as_root mkdir -p /lib /lib/i386-linux-gnu
 	as_root ln -sfn /oath/store/pkg/steam/lib32/ld-linux.so.2 /lib/ld-linux.so.2
+	for f in "$store/steam/lib32"/*.so*; do
+		[ -e "$f" ] || continue
+		as_root ln -sfn "$f" /lib/i386-linux-gnu/"$(basename "$f")"
+	done
+fi
+# Host nodes Steam shebangs / ELF interps / TLS assume. Not the /bin farm.
+as_root mkdir -p /usr/bin /lib64 /sbin /etc/ssl/certs
+as_root ln -sfn /bin/env /usr/bin/env
+as_root ln -sfn /bin/bash /usr/bin/bash
+as_root ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+as_root ln -sfn libc.so.6 /oath/store/pkg/glibc/lib/libresolv.so.2
+as_root ln -sfn /proc/self/fd /dev/fd
+as_root ln -sfn /oath/store/pkg/steam/libexec/ldconfig /sbin/ldconfig
+as_root ln -sfn /oath/store/pkg/steam/bin/ldd /usr/bin/ldd
+certs=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
+[ -f "$certs" ] || certs=/oath/store/pkg/curl/ssl/cert.pem
+if [ -f "$certs" ]; then
+	as_root ln -sfn "$certs" /etc/ssl/certs/ca-certificates.crt
+	as_root ln -sfn "$certs" /etc/ssl/cert.pem
 fi
 
 if [ "$(id -u)" = 0 ]; then
