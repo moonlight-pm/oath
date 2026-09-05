@@ -6,19 +6,20 @@
   `/lib/ld-linux.so.2`. `/bin/steam` execs past `srt-logger` / `steam.sh`
   (`/usr/bin/env` + `/lib64` loader); canto downloaded and extracted the
   ubuntu12 client (~496 MB). steamwebhelper stays up on the host
-  (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`). Guest
-  `cargo build -p sola-arcade` succeeded.
+  (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`) with `pkg:mesa`
+  GLX (CEF `BrowserReady`). Guest `cargo build -p sola-arcade` succeeded.
 **Gaps:** `gamescope --backend wayland` selects RADV PITCAIRN then
   dies (`vkAllocateDescriptorSets` / `VK_KHR_wayland_surface`). Steam
   uses rootful `pkg:xwayland` (`DISPLAY=:2`). steamwebhelper skips
-  pressure-vessel (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`;
-  `CLONE_NEWUSER` is EPERM after PID 1 chroot) and stays up; CEF GPU
-  process still SIGSEGV (no `libGLX_mesa`; 64-bit helpers still hit
-  ELFCLASS32 `libGL` from ubuntu12_32). QEMU image pack of these pkgs
-  not in `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).
+  pressure-vessel (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`)
+  and CEF GPU uses `pkg:mesa` GLX (`gldriverquery` DRI3 radeonsi;
+  `BrowserReady`). 64-bit helpers launched *by* 32-bit steam.sh still
+  see ELFCLASS32 `libGL` on ubuntu12_32 first. QEMU image pack of these
+  pkgs not in `cargo make build` yet. Other T36 kit ELFs still out
+  (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
-# Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:steam`)
+# Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
 
 T36 packed the Arcade **ELF** and left Steam/gamescope/XWayland out.
 This freeze packs those runtimes as **separate removable `pkg:*`**
@@ -33,8 +34,9 @@ only: the nest is in. River is not rebuilt with host XWayland.
   `/oath/store/pkg/sola/libexec/sola-arcade`; `/bin/sola-arcade` via
   the farm. Do not add `pkg:sola-arcade`.
 - **Steam / gamescope / Xwayland are not the Sola blob.** Removable
-  `pkg:steam`, `pkg:gamescope`, `pkg:xwayland`. Same class as
-  `pkg:pipewire`.
+  `pkg:steam`, `pkg:gamescope`, `pkg:xwayland`, `pkg:mesa`. Same class as
+  `pkg:pipewire`. `pkg:mesa` is the 64-bit X11 GLX stack (Debian 26.1.6);
+  River stays GLES/EGL.
 - **`pkg:bash` is borrowed static musl GNU bash** (same class as
   `pkg:grok`). Steam’s launcher and Grok’s agent shell need `builtin`
   / `shopt` / `-O extglob`. Busybox ash is not bash. `/bin/bash` is

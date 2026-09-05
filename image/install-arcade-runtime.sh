@@ -1,6 +1,7 @@
 #!/bin/bash
-# Live-install pkg:xwayland, pkg:gamescope, pkg:steam and sola-arcade on this
-# Oath box. Ubuntu questing debs + Steam bootstrap + Debian i386 libc.
+# Live-install pkg:xwayland, pkg:gamescope, pkg:mesa, pkg:steam and
+# sola-arcade on this Oath box. Ubuntu questing debs + Steam bootstrap
+# + Debian i386 libc + Debian mesa 26.1.6 GLX.
 # Busybox dpkg-deb cannot unpack zstd debs; use /tmp/zstd from image/pack.
 set -euo pipefail
 
@@ -297,6 +298,99 @@ Xwayland for gamescope's nested X and (later) host River. Debian 24.1
 relocated onto pkg:glibc + pkg:river. Removable.
 EOF
 
+echo "==> pack mesa (64-bit GLX)"
+debian_mirror=https://deb.debian.org/debian/pool/main
+fetch_debian() {
+	local rel=$1
+	local dest=$fetchdir/$(basename "$rel")
+	if [ -f "$dest" ] && [ -s "$dest" ]; then
+		echo "cached $dest"
+		return 0
+	fi
+	echo "fetch $debian_mirror/$rel"
+	curl -fL --retry 3 --retry-delay 2 -o "$dest" "$debian_mirror/$rel"
+}
+for rel in \
+	m/mesa/libglx-mesa0_26.1.6-1_amd64.deb \
+	m/mesa/mesa-libgallium_26.1.6-1_amd64.deb \
+	m/mesa/libgl1-mesa-dri_26.1.6-1_amd64.deb \
+	m/mesa/libgbm1_26.1.6-1_amd64.deb \
+	libg/libglvnd/libgl1_1.7.0-3+b1_amd64.deb \
+	libg/libglvnd/libglx0_1.7.0-3+b1_amd64.deb \
+	libg/libglvnd/libglvnd0_1.7.0-3+b1_amd64.deb \
+	libx/libxcb/libxcb-glx0_1.17.0-2+b2_amd64.deb \
+	libd/libdrm/libdrm-common_2.4.124-2_all.deb
+do
+	fetch_debian "$rel"
+	extract_deb "$fetchdir/$(basename "$rel")" "$stagedir/debroot"
+done
+rm -rf "$stagedir/mesa"
+mkdir -p "$stagedir/mesa/lib/dri" "$stagedir/mesa/lib/gbm" "$stagedir/mesa/share/libdrm" "$stagedir/mesa/share/glvnd"
+mesa_src=$stagedir/debroot/usr/lib/x86_64-linux-gnu
+mesa_rpath="$glibc:/oath/store/pkg/mesa/lib:$river:/oath/store/pkg/xwayland/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/sola/lib"
+copy_mesa() {
+	local src=$1 dest=$2
+	[ -e "$src" ] || { echo "missing $src" >&2; return 1; }
+	cp -aL "$src" "$dest"
+	chmod u+w "$dest" 2>/dev/null || true
+}
+# glvnd dispatch + mesa GLX vendor + matching gallium (not river 26.1.0).
+copy_mesa "$mesa_src/libGL.so.1.7.0" "$stagedir/mesa/lib/libGL.so.1.7.0"
+copy_mesa "$mesa_src/libGLX.so.0.0.0" "$stagedir/mesa/lib/libGLX.so.0.0.0"
+copy_mesa "$mesa_src/libGLdispatch.so.0.0.0" "$stagedir/mesa/lib/libGLdispatch.so.0.0.0"
+copy_mesa "$mesa_src/libGLX_mesa.so.0.0.0" "$stagedir/mesa/lib/libGLX_mesa.so.0.0.0"
+copy_mesa "$mesa_src/libgallium-26.1.6-1.so" "$stagedir/mesa/lib/libgallium-26.1.6-1.so"
+copy_mesa "$mesa_src/libgbm.so.1.0.0" "$stagedir/mesa/lib/libgbm.so.1.0.0"
+copy_mesa "$mesa_src/libxcb-glx.so.0" "$stagedir/mesa/lib/libxcb-glx.so.0" || \
+	copy_mesa "$(find "$stagedir/debroot" -name 'libxcb-glx.so.0*' ! -type l | head -1)" "$stagedir/mesa/lib/libxcb-glx.so.0"
+copy_mesa "$mesa_src/dri/libdril_dri.so" "$stagedir/mesa/lib/dri/libdril_dri.so"
+copy_mesa "$mesa_src/gbm/dri_gbm.so" "$stagedir/mesa/lib/gbm/dri_gbm.so"
+if [ -f "$stagedir/debroot/usr/share/libdrm/amdgpu.ids" ]; then
+	copy_mesa "$stagedir/debroot/usr/share/libdrm/amdgpu.ids" "$stagedir/mesa/share/libdrm/amdgpu.ids"
+fi
+ln -sfn libGL.so.1.7.0 "$stagedir/mesa/lib/libGL.so.1"
+ln -sfn libGLX.so.0.0.0 "$stagedir/mesa/lib/libGLX.so.0"
+ln -sfn libGLdispatch.so.0.0.0 "$stagedir/mesa/lib/libGLdispatch.so.0"
+ln -sfn libGLX_mesa.so.0.0.0 "$stagedir/mesa/lib/libGLX_mesa.so.0"
+ln -sfn libGLX_mesa.so.0 "$stagedir/mesa/lib/libGLX_indirect.so.0"
+ln -sfn libgbm.so.1.0.0 "$stagedir/mesa/lib/libgbm.so.1"
+ln -sfn libdril_dri.so "$stagedir/mesa/lib/dri/radeonsi_dri.so"
+ln -sfn libdril_dri.so "$stagedir/mesa/lib/dri/swrast_dri.so"
+ln -sfn libdril_dri.so "$stagedir/mesa/lib/dri/kms_swrast_dri.so"
+# glvnd GLX vendor file (absolute path so CEF does not search /usr).
+cat >"$stagedir/mesa/share/glvnd/10_mesa.json" <<'JSON'
+{
+    "file_format_version" : "1.0.0",
+    "ICD" : {
+        "library_path" : "/oath/store/pkg/mesa/lib/libGLX_mesa.so.0"
+    }
+}
+JSON
+find "$stagedir/mesa/lib" "$stagedir/mesa/lib/dri" "$stagedir/mesa/lib/gbm" -type f | while read -r f; do
+	is_elf "$f" || continue
+	chmod u+w "$f" || true
+	if patchelf --print-interpreter "$f" >/dev/null 2>&1; then
+		patchelf --set-interpreter "$interp" "$f" || true
+	fi
+	patchelf --set-rpath "$mesa_rpath" "$f" 2>/dev/null || true
+done
+# SONAME links for versioned copies (xcb-glx may be libxcb-glx.so.0.0.0).
+for f in "$stagedir/mesa/lib"/lib*.so*; do
+	[ -f "$f" ] && [ ! -L "$f" ] || continue
+	so=$(patchelf --print-soname "$f" 2>/dev/null || true)
+	[ -n "$so" ] || continue
+	if [ "$so" != "$(basename "$f")" ]; then
+		ln -sfn "$(basename "$f")" "$stagedir/mesa/lib/$so"
+	fi
+done
+cat >"$stagedir/mesa/INDEX.md" <<'EOF'
+# pkg:mesa
+
+64-bit OpenGL/GLX for X11 clients (Steam CEF, nested Xwayland). Debian
+mesa 26.1.6 GLX + glvnd + gallium, relocated onto pkg:glibc. DRI is
+libdril → radeonsi. LLVM stays in pkg:river. Removable. No /bin ELF.
+EOF
+
 echo "==> pack steam"
 rm -rf "$stagedir/steam"
 mkdir -p "$stagedir/steam/bin" "$stagedir/steam/libexec" "$stagedir/steam/lib32" "$stagedir/steam/share"
@@ -471,6 +565,10 @@ fi
 if [ -x "$store/bin/ldd" ]; then
 	sudo -n ln -sfn "$store/bin/ldd" /usr/bin/ldd 2>/dev/null || true
 fi
+if [ -f /oath/store/pkg/mesa/share/libdrm/amdgpu.ids ]; then
+	sudo -n mkdir -p /usr/share/libdrm 2>/dev/null || true
+	sudo -n ln -sfn /oath/store/pkg/mesa/share/libdrm/amdgpu.ids /usr/share/libdrm/amdgpu.ids 2>/dev/null || true
+fi
 if [ -f "$store/lib32/ld-linux.so.2" ]; then
 	sudo -n ln -sfn "$store/lib32/ld-linux.so.2" /lib/ld-linux.so.2 2>/dev/null || true
 	for f in "$store/lib32"/*.so*; do
@@ -515,7 +613,7 @@ link_sonames() {
 		# 64-bit CEF must not see steamrt3's old glvnd; use pkg:sola/river.
 		if [ "$_want" = "2" ]; then
 			case "$_so" in
-			libGL.so.1|libEGL.so.1|libGLX.so.0|libGLdispatch.so.0|libGLESv2.so.2)
+			libGL.so.1|libEGL.so.1|libGLX.so.0|libGLX_mesa.so.0|libGLdispatch.so.0|libGLESv2.so.2|libgallium-*)
 				continue ;;
 			esac
 		fi
@@ -581,9 +679,10 @@ shift
 dir=$(CDPATH= cd -- "$(dirname "$wrap")" && pwd)
 cd "$dir"
 store=/oath/store/pkg/steam
-export LD_LIBRARY_PATH="$dir:${store}/lib64:/oath/store/pkg/sola/lib:/oath/store/pkg/river/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/glibc/lib"
-export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
-export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
+export LD_LIBRARY_PATH="$dir:/oath/store/pkg/mesa/lib:${store}/lib64:/oath/store/pkg/river/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/glibc/lib"
+export LIBGL_DRIVERS_PATH=/oath/store/pkg/mesa/lib/dri
+export GBM_BACKENDS_PATH=/oath/store/pkg/mesa/lib/gbm
+export __GLX_VENDOR_LIBRARY_NAME=mesa
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/sola/etc/fonts/fonts.conf}"
 export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
@@ -591,12 +690,6 @@ unset LIBGL_ALWAYS_SOFTWARE
 case " $* " in
 *\ --no-sandbox\ *) ;;
 *) set -- --no-sandbox "$@" ;;
-esac
-# Pack has no libGLX_mesa; CEF GPU init fails on radeonsi. Software is
-# enough for the login/UI chrome.
-case " $* " in
-*\ --disable-gpu\ *) ;;
-*) set -- --disable-gpu "$@" ;;
 esac
 log "host (no pressure-vessel) exec ./steamwebhelper $*"
 exec ./steamwebhelper "$@"
@@ -739,6 +832,7 @@ as_root ln -sfn /oath/store/pkg/sola/bin/sola-arcade /bin/sola-arcade
 
 install_store xwayland "$stagedir/xwayland"
 install_store gamescope "$stagedir/gamescope"
+install_store mesa "$stagedir/mesa"
 install_store steam "$stagedir/steam"
 
 # /bin/steam must not fight an existing name.

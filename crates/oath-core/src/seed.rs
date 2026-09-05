@@ -112,6 +112,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "bash", true, true)?;
     seed_pkg(root, "xwayland", true, true)?;
     seed_pkg(root, "gamescope", true, true)?;
+    seed_pkg(root, "mesa", true, true)?;
     seed_pkg(root, "steam", true, true)?;
     write_object(
         root,
