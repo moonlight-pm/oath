@@ -6,15 +6,13 @@
   `/lib/ld-linux.so.2`. `/bin/steam` execs past `srt-logger` / `steam.sh`
   (`/usr/bin/env` + `/lib64` loader); canto downloaded and extracted the
   ubuntu12 client (~496 MB). Guest `cargo build -p sola-arcade` succeeded.
-**Gaps:** `gamescope --help` still dies on a remaining NEEDED / glibc
-  symbol mix (Ubuntu 3.16 vs packed `pkg:glibc`). Steam client loads
-  `steamui.so` (32-bit GL from steamrt3c) then exits `Unable to open
-  X11 display` on host River (`xwaylandSupport = false`; nest is
-  gamescope). `CLONE_NEWUSER` is EPERM even as root — the launcher
-  stubs `srt-bwrap` so check-requirements can pass; pressure-vessel /
-  Proton still need user namespaces. QEMU image pack of these pkgs
-  not in `cargo make build` yet. Other T36 kit ELFs still out
-  (`alsa.pc`).
+**Gaps:** `gamescope --backend wayland` selects RADV PITCAIRN then
+  dies (`vkAllocateDescriptorSets` / `VK_KHR_wayland_surface`). Steam
+  instead uses rootful `pkg:xwayland` (`DISPLAY=:2`) so the 32-bit
+  client has an X server. Steam process stays up; CEF/webhelper still
+  wants 64-bit GL/Vulkan WSI. `CLONE_NEWUSER` is EPERM (srt-bwrap
+  stubbed). QEMU image pack of these pkgs not in `cargo make build`
+  yet. Other T36 kit ELFs still out (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:steam`)

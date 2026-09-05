@@ -255,7 +255,13 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
-export VK_LAYER_PATH="${VK_LAYER_PATH:-/oath/store/pkg/gamescope/share}"
+export VK_ICD_FILENAMES=/oath/store/pkg/gamescope/share/vulkan/icd.d/radeon_icd.json
+export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
+export DISABLE_LAYER_MESA_DEVICE_SELECT=1
+export NODEVICE_SELECT=1
+# libmvec.so.1 is a real glibc object (GLIBC_2.22). Do not let a
+# libmvec→libm symlink win; that is "GLIBC_2.22 not found".
+export LD_LIBRARY_PATH="/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
 exec /oath/store/pkg/gamescope/libexec/gamescope "$@"
 WRAP
 chmod 755 "$stagedir/gamescope/bin/gamescope"
@@ -271,10 +277,14 @@ extract_deb "$fetchdir/xwayland_24.1.13-1_amd64.deb" "$stagedir/debroot"
 relocate_bins "$stagedir/xwayland" "$stagedir/debroot/usr/bin/Xwayland"
 cat >"$stagedir/xwayland/bin/Xwayland" <<'WRAP'
 #!/bin/sh
-export PATH=/bin
+export PATH=/bin:/usr/bin
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
+export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
+export XKB_CONFIG_ROOT="${XKB_CONFIG_ROOT:-/oath/store/pkg/river/share/X11/xkb}"
+export XKB_BINDIR=/oath/store/pkg/xwayland/libexec
+export LD_LIBRARY_PATH="/oath/store/pkg/xwayland/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
 exec /oath/store/pkg/xwayland/libexec/Xwayland "$@"
 WRAP
 chmod 755 "$stagedir/xwayland/bin/Xwayland"
@@ -440,7 +450,8 @@ export REQUESTS_CA_BUNDLE="${REQUESTS_CA_BUNDLE:-$SSL_CERT_FILE}"
 export LANG="${LANG:-C.UTF-8}"
 export LC_ALL="${LC_ALL:-C.UTF-8}"
 # Seat env points 64-bit mesa at river/dri; 32-bit steamui must not see it.
-unset LIBGL_DRIVERS_PATH
+# 32-bit radeonsi/swrast live in pkg:steam/lib32/dri.
+export LIBGL_DRIVERS_PATH=/usr/lib/i386-linux-gnu/dri:/oath/store/pkg/steam/lib32/dri
 unset LIBGL_ALWAYS_SOFTWARE
 unset __EGL_VENDOR_LIBRARY_FILENAMES
 unset GBM_BACKENDS_PATH
@@ -495,7 +506,7 @@ link_sonames() {
 		_so=$(patchelf --print-soname "$_f" 2>/dev/null || true)
 		[ -n "$_so" ] || _so=$(basename "$_f")
 		case "$_so" in
-		libc.so.6|libdl.so.2|libm.so.6|libpthread.so.0|librt.so.1|ld-linux.so.2|libresolv.so.2)
+		libc.so.6|libdl.so.2|libm.so.6|libpthread.so.0|librt.so.1|ld-linux.so.2|libresolv.so.2|libstdc++.so.6|libgcc_s.so.1|libdrm.so.2|libdrm_amdgpu.so.1)
 			continue ;;
 		esac
 		ln -sfn "$_f" "$store/lib32/$_so"
@@ -537,6 +548,40 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 # shellcheck disable=SC1091
 . /oath/store/pkg/steam/libexec/steam-compat.sh
+# Host River has no XWayland. Rootful pkg:xwayland is the X11 nest
+# (gamescope Vulkan still fails on SI/Pitcairn). Never host -f.
+if [ -z "${DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ]; then
+	sudo -n mkdir -p /tmp/.X11-unix /usr/share/X11 /usr/bin 2>/dev/null || true
+	sudo -n chmod 1777 /tmp/.X11-unix 2>/dev/null || true
+	sudo -n ln -sfn /oath/store/pkg/river/share/X11/xkb /usr/share/X11/xkb 2>/dev/null || true
+	if [ -x /oath/store/pkg/xwayland/libexec/xkbcomp ]; then
+		sudo -n ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /usr/bin/xkbcomp 2>/dev/null || true
+	fi
+	if [ ! -S /tmp/.X11-unix/X2 ]; then
+		/bin/Xwayland :2 -geometry 1920x1080 -decorate -glamor es -noreset -nolisten tcp \
+			>/tmp/xwayland.log 2>&1 &
+		n=0
+		while [ "$n" -lt 30 ]; do
+			[ -S /tmp/.X11-unix/X2 ] && break
+			sleep 1
+			n=$((n + 1))
+		done
+	fi
+	export DISPLAY=:2
+fi
+if [ -n "${DISPLAY-}" ]; then
+	# gamescope sets XDG_CURRENT_DESKTOP=gamescope → Steam forces BPM.
+	export XDG_CURRENT_DESKTOP=Sola
+	export XDG_SESSION_DESKTOP=Sola
+	export XDG_SESSION_TYPE=x11
+	unset GAMESCOPE_WAYLAND_DISPLAY
+	export SteamDeck=0
+	export STEAM_USE_GAMEPADUI=0
+	export SteamTenfoot=0
+	export SDL_VIDEODRIVER=x11
+	export GDK_BACKEND=x11
+	export QT_QPA_PLATFORM=xcb
+fi
 mkdir -p "$HOME/.steam" "$XDG_DATA_HOME/Steam" /tmp/fontconfig
 # Valve's launcher is bash. Busybox readlink has no -e.
 if grep -q 'readlink -e' /oath/store/pkg/steam/libexec/bin_steam.sh 2>/dev/null; then
@@ -634,6 +679,16 @@ for n in Xwayland gamescope steam zenity; do
 		as_root rm -f /bin/$n
 	fi
 done
+# glibc 2.42 ships libmvec.so.1 (GLIBC_2.22 vector math). A libmvec→libm
+# symlink makes gamescope/vorbis die: version `GLIBC_2.22' not found.
+# relocate-pipewire copied the real object into pkg:pipewire; put it back.
+if [ -f /oath/store/pkg/pipewire/lib/libmvec.so.1 ]; then
+	if [ -L /oath/store/pkg/glibc/lib/libmvec.so.1 ] || [ ! -f /oath/store/pkg/glibc/lib/libmvec.so.1 ]; then
+		as_root cp -a /oath/store/pkg/pipewire/lib/libmvec.so.1 /tmp/libmvec.so.1
+		as_root mv /tmp/libmvec.so.1 /oath/store/pkg/glibc/lib/libmvec.so.1
+		as_root chmod 755 /oath/store/pkg/glibc/lib/libmvec.so.1
+	fi
+fi
 # 32-bit loader at the path the steam ELF encodes.
 if [ -f "$store/steam/lib32/ld-linux.so.2" ]; then
 	as_root mkdir -p /lib /lib/i386-linux-gnu
@@ -657,6 +712,15 @@ certs=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
 if [ -f "$certs" ]; then
 	as_root ln -sfn "$certs" /etc/ssl/certs/ca-certificates.crt
 	as_root ln -sfn "$certs" /etc/ssl/cert.pem
+fi
+# Xwayland looks up /usr/share/X11/xkb/rules/evdev (not XKB_CONFIG_ROOT)
+# and xkbcomp on PATH. /tmp/.X11-unix must exist for the display socket.
+as_root mkdir -p /usr/share/X11 /tmp/.X11-unix /usr/bin
+as_root ln -sfn /oath/store/pkg/river/share/X11/xkb /usr/share/X11/xkb
+as_root chmod 1777 /tmp/.X11-unix
+if [ -x /oath/store/pkg/xwayland/libexec/xkbcomp ]; then
+	as_root ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /usr/bin/xkbcomp
+	as_root ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /bin/xkbcomp
 fi
 
 if [ "$(id -u)" = 0 ]; then
