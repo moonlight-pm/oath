@@ -256,13 +256,13 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
-export VK_ICD_FILENAMES=/oath/store/pkg/gamescope/share/vulkan/icd.d/radeon_icd.json
+export VK_ICD_FILENAMES=/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json
 export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 export DISABLE_LAYER_MESA_DEVICE_SELECT=1
 export NODEVICE_SELECT=1
 # libmvec.so.1 is a real glibc object (GLIBC_2.22). Do not let a
 # libmvec→libm symlink win; that is "GLIBC_2.22 not found".
-export LD_LIBRARY_PATH="/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
+export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
 exec /oath/store/pkg/gamescope/libexec/gamescope "$@"
 WRAP
 chmod 755 "$stagedir/gamescope/bin/gamescope"
@@ -315,11 +315,14 @@ for rel in \
 	m/mesa/mesa-libgallium_26.1.6-1_amd64.deb \
 	m/mesa/libgl1-mesa-dri_26.1.6-1_amd64.deb \
 	m/mesa/libgbm1_26.1.6-1_amd64.deb \
+	m/mesa/mesa-vulkan-drivers_26.1.6-1_amd64.deb \
 	libg/libglvnd/libgl1_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglx0_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglvnd0_1.7.0-3+b1_amd64.deb \
 	libx/libxcb/libxcb-glx0_1.17.0-2+b2_amd64.deb \
-	libd/libdrm/libdrm-common_2.4.124-2_all.deb
+	libd/libdrm/libdrm-common_2.4.124-2_all.deb \
+	v/vulkan-loader/libvulkan1_1.4.357.0-1_amd64.deb \
+	v/vulkan-tools/vulkan-tools_1.4.341.0+dfsg1-1_amd64.deb
 do
 	fetch_debian "$rel"
 	extract_deb "$fetchdir/$(basename "$rel")" "$stagedir/debroot"
@@ -383,12 +386,104 @@ for f in "$stagedir/mesa/lib"/lib*.so*; do
 		ln -sfn "$(basename "$f")" "$stagedir/mesa/lib/$so"
 	fi
 done
+# Vulkan loader + RADV/virtio ICDs (WSI: wayland/xlib/xcb) + vulkaninfo.
+vk_so=$(find "$stagedir/debroot" -name 'libvulkan.so.1.*' ! -type l | head -1)
+radeon_so=$(find "$stagedir/debroot" -name 'libvulkan_radeon.so' ! -type l | head -1)
+virtio_so=$(find "$stagedir/debroot" -name 'libvulkan_virtio.so' ! -type l | head -1)
+vinfo=$(find "$stagedir/debroot" -type f -name vulkaninfo | head -1)
+[ -n "$vk_so" ] || { echo "missing libvulkan.so.1" >&2; exit 1; }
+[ -n "$radeon_so" ] || { echo "missing libvulkan_radeon.so" >&2; exit 1; }
+mkdir -p "$stagedir/mesa/libexec" "$stagedir/mesa/bin" "$stagedir/mesa/share/vulkan/icd.d"
+copy_mesa "$vk_so" "$stagedir/mesa/lib/$(basename "$vk_so")"
+copy_mesa "$radeon_so" "$stagedir/mesa/lib/libvulkan_radeon.so"
+if [ -n "$virtio_so" ]; then
+	copy_mesa "$virtio_so" "$stagedir/mesa/lib/libvulkan_virtio.so"
+fi
+copy_mesa "$vinfo" "$stagedir/mesa/libexec/vulkaninfo"
+ln -sfn "$(basename "$vk_so")" "$stagedir/mesa/lib/libvulkan.so.1"
+cat >"$stagedir/mesa/share/vulkan/icd.d/radeon_icd.json" <<'JSON'
+{
+    "ICD": {
+        "api_version": "1.4.354",
+        "library_path": "/oath/store/pkg/mesa/lib/libvulkan_radeon.so"
+    },
+    "file_format_version": "1.0.1"
+}
+JSON
+if [ -f "$stagedir/mesa/lib/libvulkan_virtio.so" ]; then
+	cat >"$stagedir/mesa/share/vulkan/icd.d/virtio_icd.json" <<'JSON'
+{
+    "ICD": {
+        "api_version": "1.4.354",
+        "library_path": "/oath/store/pkg/mesa/lib/libvulkan_virtio.so"
+    },
+    "file_format_version": "1.0.1"
+}
+JSON
+fi
+for f in "$stagedir/mesa/lib"/libvulkan.so.1.* "$stagedir/mesa/lib/libvulkan_radeon.so" \
+	"$stagedir/mesa/lib/libvulkan_virtio.so" "$stagedir/mesa/libexec/vulkaninfo"; do
+	[ -f "$f" ] && [ ! -L "$f" ] || continue
+	chmod u+w "$f" || true
+	if patchelf --print-interpreter "$f" >/dev/null 2>&1; then
+		patchelf --set-interpreter "$interp" "$f" || true
+	fi
+	patchelf --set-rpath "$mesa_rpath" "$f" 2>/dev/null || true
+done
+cat >"$stagedir/mesa/bin/vulkaninfo" <<'WRAP'
+#!/bin/sh
+export HOME="${HOME:-/home}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+export VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json}"
+export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
+export DISABLE_LAYER_MESA_DEVICE_SELECT=1
+export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/river/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/glibc/lib:${LD_LIBRARY_PATH:-}"
+exec /oath/store/pkg/mesa/libexec/vulkaninfo "$@"
+WRAP
+chmod 755 "$stagedir/mesa/bin/vulkaninfo"
+# 32-bit RADV so the ubuntu12_32 Steam client can vkCreateInstance
+# (64-bit ICD json is the default for gamescope/vulkaninfo/pv-host).
+fetch_debian m/mesa/mesa-vulkan-drivers_26.1.6-1_i386.deb
+fetch_debian l/llvm-toolchain-21/libllvm21_21.1.8-10_i386.deb
+fetch_debian v/vulkan-loader/libvulkan1_1.4.357.0-1_i386.deb
+extract_deb "$fetchdir/mesa-vulkan-drivers_26.1.6-1_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/libllvm21_21.1.8-10_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/libvulkan1_1.4.357.0-1_i386.deb" "$stagedir/debroot32"
+mkdir -p "$stagedir/mesa/lib32"
+radeon32=$(find "$stagedir/debroot32" -name 'libvulkan_radeon.so' ! -type l | head -1)
+llvm32=$(find "$stagedir/debroot32" -name 'libLLVM.so.21.1' ! -type l | head -1)
+vk32=$(find "$stagedir/debroot32" -name 'libvulkan.so.1.*' ! -type l | head -1)
+copy_mesa "$radeon32" "$stagedir/mesa/lib32/libvulkan_radeon.so"
+copy_mesa "$llvm32" "$stagedir/mesa/lib32/libLLVM.so.21.1"
+copy_mesa "$vk32" "$stagedir/mesa/lib32/$(basename "$vk32")"
+ln -sfn "$(basename "$vk32")" "$stagedir/mesa/lib32/libvulkan.so.1"
+interp32=/oath/store/pkg/steam/lib32/ld-linux.so.2
+rpath32="/oath/store/pkg/mesa/lib32:/oath/store/pkg/steam/lib32:$glibc"
+for f in "$stagedir/mesa/lib32"/*; do
+	[ -f "$f" ] && [ ! -L "$f" ] || continue
+	is_elf "$f" || continue
+	chmod u+w "$f" || true
+	if patchelf --print-interpreter "$f" >/dev/null 2>&1; then
+		patchelf --set-interpreter "$interp32" "$f" || true
+	fi
+	patchelf --set-rpath "$rpath32" "$f" 2>/dev/null || true
+done
+cat >"$stagedir/mesa/share/vulkan/icd.d/radeon_icd32.json" <<'JSON'
+{
+    "ICD": {
+        "api_version": "1.4.354",
+        "library_path": "/oath/store/pkg/mesa/lib32/libvulkan_radeon.so"
+    },
+    "file_format_version": "1.0.1"
+}
+JSON
 cat >"$stagedir/mesa/INDEX.md" <<'EOF'
 # pkg:mesa
 
-64-bit OpenGL/GLX for X11 clients (Steam CEF, nested Xwayland). Debian
-mesa 26.1.6 GLX + glvnd + gallium, relocated onto pkg:glibc. DRI is
-libdril → radeonsi. LLVM stays in pkg:river. Removable. No /bin ELF.
+64-bit OpenGL/GLX and Vulkan WSI for X11/Wayland clients. Debian mesa
+26.1.6 GLX + glvnd + gallium + RADV, plus Khronos vulkan-loader 1.4.357
+and vulkaninfo. DRI is libdril → radeonsi. ICD is
+share/vulkan/icd.d/radeon_icd.json. LLVM stays in pkg:river. Removable.
 EOF
 
 echo "==> pack steam"
@@ -613,7 +708,7 @@ link_sonames() {
 		# 64-bit CEF must not see steamrt3's old glvnd; use pkg:sola/river.
 		if [ "$_want" = "2" ]; then
 			case "$_so" in
-			libGL.so.1|libEGL.so.1|libGLX.so.0|libGLX_mesa.so.0|libGLdispatch.so.0|libGLESv2.so.2|libgallium-*)
+			libGL.so.1|libEGL.so.1|libGLX.so.0|libGLX_mesa.so.0|libGLdispatch.so.0|libGLESv2.so.2|libgallium-*|libvulkan.so.1)
 				continue ;;
 			esac
 		fi
@@ -641,7 +736,7 @@ if [ -d "$u32" ]; then
 		[ -e "$_f" ] || continue
 		_b=$(basename "$_f")
 		case "$_b" in
-		libc.so*|libdl.so*|libm.so*|libpthread.so*|librt.so*|ld-linux*) continue ;;
+		libc.so*|libdl.so*|libm.so*|libpthread.so*|librt.so*|ld-linux*|libvulkan.so*) continue ;;
 		esac
 		[ -e "$u32/$_b" ] && continue
 		ln -sfn "$_f" "$u32/$_b"
@@ -650,7 +745,19 @@ fi
 # Prepend our xz/tar shims so steam.sh extract_archive works.
 export PATH="$store/libexec:/bin:/usr/bin"
 # 64-bit-only: srt-logger / identify-library-abi. Never mix in lib32.
-export LD_LIBRARY_PATH="$srtdir:/oath/store/pkg/glibc/lib"
+# pkg:mesa first so 64-bit vulkan/GLX beat steamrt and ubuntu12_32.
+export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:$srtdir:/oath/store/pkg/glibc/lib"
+if [ -f /oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json ]; then
+	sudo -n mkdir -p /usr/share/vulkan/icd.d /lib/i386-linux-gnu 2>/dev/null || true
+	sudo -n ln -sfn /oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json \
+		/usr/share/vulkan/icd.d/radeon_icd.json 2>/dev/null || true
+	for f in /oath/store/pkg/mesa/lib32/libvulkan_radeon.so \
+		/oath/store/pkg/mesa/lib32/libLLVM.so.21.1 \
+		/oath/store/pkg/mesa/lib32/libvulkan.so.1; do
+		[ -e "$f" ] || continue
+		sudo -n ln -sfn "$f" /lib/i386-linux-gnu/"$(basename "$f")" 2>/dev/null || true
+	done
+fi
 COMPAT
 chmod 644 "$stagedir/steam/libexec/steam-compat.sh"
 # steamwebhelper.sh execs $STEAM_RUNTIME_STEAMRT/_v2-entry-point.
@@ -683,6 +790,9 @@ export LD_LIBRARY_PATH="$dir:/oath/store/pkg/mesa/lib:${store}/lib64:/oath/store
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/mesa/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/mesa/lib/gbm
 export __GLX_VENDOR_LIBRARY_NAME=mesa
+export VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json}"
+export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
+export DISABLE_LAYER_MESA_DEVICE_SELECT=1
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/sola/etc/fonts/fonts.conf}"
 export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
@@ -834,9 +944,10 @@ install_store xwayland "$stagedir/xwayland"
 install_store gamescope "$stagedir/gamescope"
 install_store mesa "$stagedir/mesa"
 install_store steam "$stagedir/steam"
+as_root ln -sfn /oath/store/pkg/mesa/bin/vulkaninfo /bin/vulkaninfo
 
 # /bin/steam must not fight an existing name.
-for n in Xwayland gamescope steam zenity; do
+for n in Xwayland gamescope steam zenity vulkaninfo; do
 	if [ -e /bin/$n ] && [ ! -L /bin/$n ]; then
 		as_root rm -f /bin/$n
 	fi

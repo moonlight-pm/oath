@@ -70,8 +70,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
     pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; rootful `:2` for Steam)
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV ICD in the pack)
-    pkg:mesa           64-bit GLX/GL (Debian mesa 26.1.6 + glvnd); DRI
-                       `libdril`→radeonsi; LLVM from pkg:river
+    pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.1.6
+                       RADV + glvnd + vulkan-loader); `/bin/vulkaninfo`;
+                       DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
     pkg:steam          `/bin/steam` wrapper + 32-bit loader in lib32
                        + 64-bit steamrt3 SONAMEs in lib64; host
                        `_v2-entry-point` at `libexec/pv-host` (no bwrap);

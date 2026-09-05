@@ -7,16 +7,15 @@
   (`/usr/bin/env` + `/lib64` loader); canto downloaded and extracted the
   ubuntu12 client (~496 MB). steamwebhelper stays up on the host
   (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`) with `pkg:mesa`
-  GLX (CEF `BrowserReady`). Guest `cargo build -p sola-arcade` succeeded.
+  GLX (CEF `BrowserReady`) and Vulkan WSI (RADV + loader). Guest
+  `cargo build -p sola-arcade` succeeded.
 **Gaps:** `gamescope --backend wayland` selects RADV PITCAIRN then
-  dies (`vkAllocateDescriptorSets` / `VK_KHR_wayland_surface`). Steam
-  uses rootful `pkg:xwayland` (`DISPLAY=:2`). steamwebhelper skips
-  pressure-vessel (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`)
-  and CEF GPU uses `pkg:mesa` GLX (`gldriverquery` DRI3 radeonsi;
-  `BrowserReady`). 64-bit helpers launched *by* 32-bit steam.sh still
-  see ELFCLASS32 `libGL` on ubuntu12_32 first. QEMU image pack of these
-  pkgs not in `cargo make build` yet. Other T36 kit ELFs still out
-  (`alsa.pc`).
+  dies (`vkAllocateDescriptorSets` on SI; SDL then says wayland
+  surface not enabled). Steam uses rootful `pkg:xwayland`. CEF GPU
+  uses `pkg:mesa` GLX (`BrowserReady`). Vulkan WSI is packed (RADV +
+  loader + 32-bit ICD); Steam’s mixed 32/64 `LD_LIBRARY_PATH` still
+  confuses in-process topology. QEMU image pack of these pkgs not in
+  `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
