@@ -69,7 +69,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
     pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; rootful `:2` for Steam)
-    pkg:gamescope      `/bin/gamescope` (windowed nest; RADV ICD in the pack)
+    pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
+                       `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools)
     pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.1.6
                        RADV + glvnd + vulkan-loader); `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`

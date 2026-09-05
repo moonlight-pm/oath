@@ -250,7 +250,7 @@ if [ -d /tmp/gs/usr/lib/x86_64-linux-gnu/gamescope ]; then
 fi
 cat >"$stagedir/gamescope/bin/gamescope" <<'WRAP'
 #!/bin/sh
-export PATH=/bin
+export PATH=/bin:/usr/bin
 export HOME="${HOME:-/home}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
@@ -260,17 +260,57 @@ export VK_ICD_FILENAMES=/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json
 export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 export DISABLE_LAYER_MESA_DEVICE_SELECT=1
 export NODEVICE_SELECT=1
+# Ubuntu 3.16 pool is short for RADV YCbCr planes (SI vkAllocateDescriptorSets).
+export VK_LAYER_PATH=/oath/store/pkg/gamescope/share/vulkan/explicit_layer.d
+export VK_INSTANCE_LAYERS=VK_LAYER_OATH_gamescope_pool
 # libmvec.so.1 is a real glibc object (GLIBC_2.22). Do not let a
 # libmvec→libm symlink win; that is "GLIBC_2.22 not found".
 export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
+# wlroots looks up /usr/bin/Xwayland; scripts live under /usr/share/gamescope.
+sudo -n mkdir -p /usr/bin /usr/share 2>/dev/null || true
+sudo -n ln -sfn /oath/store/pkg/xwayland/bin/Xwayland /usr/bin/Xwayland 2>/dev/null || true
+sudo -n ln -sfn /oath/store/pkg/gamescope/share/gamescope /usr/share/gamescope 2>/dev/null || true
 exec /oath/store/pkg/gamescope/libexec/gamescope "$@"
 WRAP
 chmod 755 "$stagedir/gamescope/bin/gamescope"
+
+echo "==> pack gamescope descriptor-pool layer"
+layer_src=$here/gamescope-pool-layer.c
+layer_obj=$stagedir/gamescope-pool-layer.o
+layer_so=$stagedir/gamescope/lib/libVkLayer_oath_gamescope_pool.so
+if [ ! -f "$layer_src" ]; then
+	echo "missing $layer_src" >&2
+	exit 1
+fi
+/bin/cc -c -fPIC -O2 -fno-sanitize=undefined -o "$layer_obj" "$layer_src"
+/oath/store/pkg/cc/libexec/zig/zig cc -target x86_64-linux-gnu -shared -O2 -fno-sanitize=undefined \
+	-Wl,-rpath,/oath/store/pkg/glibc/lib \
+	-o "$layer_so" "$layer_obj"
+mkdir -p "$stagedir/gamescope/share/vulkan/explicit_layer.d"
+cat >"$stagedir/gamescope/share/vulkan/explicit_layer.d/VkLayer_oath_gamescope_pool.json" <<'JSON'
+{
+    "file_format_version": "1.2.0",
+    "layer": {
+        "name": "VK_LAYER_OATH_gamescope_pool",
+        "type": "GLOBAL",
+        "library_path": "/oath/store/pkg/gamescope/lib/libVkLayer_oath_gamescope_pool.so",
+        "api_version": "1.3.0",
+        "implementation_version": "1",
+        "description": "Pad gamescope descriptor pools for RADV YCbCr planes",
+        "disable_environment": {
+            "DISABLE_OATH_GAMESCOPE_POOL": "1"
+        }
+    }
+}
+JSON
+
 cat >"$stagedir/gamescope/INDEX.md" <<'EOF'
 # pkg:gamescope
 
 Windowed nest compositor for sola-arcade. Ubuntu questing 3.16 gamescope
 relocated onto pkg:glibc + pkg:river. Removable. PID 1 does not supervise it.
+VK_LAYER_OATH_gamescope_pool pads descriptor pools so RADV SI can
+vkAllocateDescriptorSets (YCbCr planes).
 EOF
 
 echo "==> pack xwayland"
@@ -812,8 +852,9 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 # shellcheck disable=SC1091
 . /oath/store/pkg/steam/libexec/steam-compat.sh
-# Host River has no XWayland. Rootful pkg:xwayland is the X11 nest
-# (gamescope Vulkan still fails on SI/Pitcairn). Never host -f.
+# Host River has no XWayland. Direct `steam` still nests on rootful
+# pkg:xwayland (DISPLAY=:2). Arcade Play uses /bin/gamescope.
+# Never host -f.
 if [ -z "${DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ]; then
 	sudo -n mkdir -p /tmp/.X11-unix /usr/share/X11 /usr/bin 2>/dev/null || true
 	sudo -n chmod 1777 /tmp/.X11-unix 2>/dev/null || true
@@ -995,6 +1036,9 @@ if [ -x /oath/store/pkg/xwayland/libexec/xkbcomp ]; then
 	as_root ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /usr/bin/xkbcomp
 	as_root ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /bin/xkbcomp
 fi
+# wlroots hardcodes /usr/bin/Xwayland; gamescope scripts use /usr/share/gamescope.
+as_root ln -sfn /oath/store/pkg/xwayland/bin/Xwayland /usr/bin/Xwayland
+as_root ln -sfn /oath/store/pkg/gamescope/share/gamescope /usr/share/gamescope
 
 if [ "$(id -u)" = 0 ]; then
 	oath apply pkg:xwayland pkg:gamescope pkg:steam

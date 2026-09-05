@@ -8,14 +8,19 @@
   ubuntu12 client (~496 MB). steamwebhelper stays up on the host
   (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`) with `pkg:mesa`
   GLX (CEF `BrowserReady`) and Vulkan WSI (RADV + loader). Guest
-  `cargo build -p sola-arcade` succeeded.
-**Gaps:** `gamescope --backend wayland` selects RADV PITCAIRN then
-  dies (`vkAllocateDescriptorSets` on SI; SDL then says wayland
-  surface not enabled). Steam uses rootful `pkg:xwayland`. CEF GPU
-  uses `pkg:mesa` GLX (`BrowserReady`). Vulkan WSI is packed (RADV +
-  loader + 32-bit ICD); Steam’s mixed 32/64 `LD_LIBRARY_PATH` still
-  confuses in-process topology. QEMU image pack of these pkgs not in
-  `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).
+  `cargo build -p sola-arcade` succeeded. `gamescope --backend wayland`
+  selects RADV PITCAIRN and allocates descriptors (pool layer);
+  nested Xwayland starts.
+**Gaps:** `gamescope --backend wayland` selects RADV PITCAIRN and
+  allocates descriptors (`VK_LAYER_OATH_gamescope_pool` pads Ubuntu
+  3.16's short YCbCr pool). Nested Xwayland starts. River then kills
+  the client (`xdg_surface.set_window_geometry(0,0,0,0)` from
+  libdecor with no cairo plugin). Steam uses rootful `pkg:xwayland`.
+  CEF GPU uses `pkg:mesa` GLX (`BrowserReady`). Vulkan WSI is packed
+  (RADV + loader + 32-bit ICD); Steam’s mixed 32/64 `LD_LIBRARY_PATH`
+  still confuses in-process topology. QEMU image pack of these pkgs
+  not in `cargo make build` yet. Other T36 kit ELFs still out
+  (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
