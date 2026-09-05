@@ -365,60 +365,185 @@ echo "zenity-stub: $*" >&2
 exit 0
 Z
 chmod 755 "$stagedir/steam/bin/zenity"
-cat >"$stagedir/steam/bin/steam" <<'WRAP'
+# Busybox xz has no --robot; busybox tar has no --blocking-factor.
+# steam.sh extract_archive needs both. Keep these off the /bin farm.
+cat >"$stagedir/steam/libexec/xz" <<'XZ'
 #!/bin/sh
-export PATH=/bin:/usr/bin
-export HOME="${HOME:-/home}"
-export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
-export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+robot= list=
+for a in "$@"; do
+	case "$a" in
+	--robot) robot=1 ;;
+	--list|-l) list=1 ;;
+	esac
+done
+if [ -n "$robot" ] && [ -n "$list" ]; then
+	# GNU xz --robot --list: steam.sh awk '{print $5}' is uncompressed bytes.
+	echo "totals	1	0	1	1	0"
+	exit 0
+fi
+exec /oath/store/pkg/busybox/bin/xz "$@"
+XZ
+chmod 755 "$stagedir/steam/libexec/xz"
+cat >"$stagedir/steam/libexec/tar" <<'TAR'
+#!/bin/sh
+# Drop GNU tar flags busybox does not implement.
+saved=$#
+skip=
+for a in "$@"; do
+	if [ -n "$skip" ]; then
+		skip=
+		continue
+	fi
+	case "$a" in
+	--blocking-factor|--checkpoint|--checkpoint-action) skip=1; continue ;;
+	--blocking-factor=*|--checkpoint=*|--checkpoint-action=*) continue ;;
+	esac
+	set -- "$@" "$a"
+done
+shift "$saved"
+exec /oath/store/pkg/busybox/bin/tar "$@"
+TAR
+chmod 755 "$stagedir/steam/libexec/tar"
+# check-requirements runs srt-bwrap to test user namespaces. Stub it
+# when CLONE_NEWUSER is EPERM. Do not edit steam.sh (updater checksums it).
+cat >"$stagedir/steam/libexec/srt-bwrap" <<'BW'
+#!/bin/sh
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--bind|--ro-bind|--dev|--tmpfs|--proc|--dir|--chmod|--uid|--gid|--hostname|--chdir|--setenv|--unsetenv)
+		shift 2 ;;
+	--unshare-user|--unshare-pid|--unshare-net|--unshare-uts|--unshare-ipc|--unshare-cgroup|--unshare-all|--die-with-parent|--as-pid-1|--clearenv|--new-session|--disable-userns)
+		shift ;;
+	--)
+		shift; break ;;
+	-*)
+		shift ;;
+	*)
+		break ;;
+	esac
+done
+[ $# -eq 0 ] && exit 0
+exec "$@"
+BW
+chmod 755 "$stagedir/steam/libexec/srt-bwrap"
+cat >"$stagedir/steam/libexec/steam-compat.sh" <<'COMPAT'
+# sourced by /bin/steam. Host nodes + 32-bit SONAMEs + library path.
+# Do not put pkg:sola/lib (64-bit libGL) on LD_LIBRARY_PATH: steamui.so is
+# 32-bit and dlmopen errors on ELFCLASS64 instead of skipping.
+store=/oath/store/pkg/steam
 certs=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
 [ -f "$certs" ] || certs=/oath/store/pkg/curl/ssl/cert.pem
 export SSL_CERT_FILE="${SSL_CERT_FILE:-$certs}"
 export SSL_CERT_DIR="${SSL_CERT_DIR:-/oath/store/pkg/sola/etc/ssl/certs}"
 export CURL_CA_BUNDLE="${CURL_CA_BUNDLE:-$SSL_CERT_FILE}"
 export REQUESTS_CA_BUNDLE="${REQUESTS_CA_BUNDLE:-$SSL_CERT_FILE}"
-# Compat nodes Steam's scripts assume (not the /bin farm).
-# steam.sh is #!/usr/bin/env bash; srt-logger is a 64-bit ELF
-# with interp /lib64/ld-linux-x86-64.so.2. Missing those is the kernel
-# "cannot execute: required file not found" on execve.
+export LANG="${LANG:-C.UTF-8}"
+export LC_ALL="${LC_ALL:-C.UTF-8}"
+# Seat env points 64-bit mesa at river/dri; 32-bit steamui must not see it.
+unset LIBGL_DRIVERS_PATH
+unset LIBGL_ALWAYS_SOFTWARE
+unset __EGL_VENDOR_LIBRARY_FILENAMES
+unset GBM_BACKENDS_PATH
 sudo -n mkdir -p /usr/bin /lib64 /lib/i386-linux-gnu /sbin /etc/ssl/certs 2>/dev/null || true
 sudo -n ln -sfn /bin/env /usr/bin/env 2>/dev/null || true
 sudo -n ln -sfn /bin/bash /usr/bin/bash 2>/dev/null || true
 sudo -n ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 2>/dev/null || true
-# glibc 2.34+ folded libresolv into libc; 64-bit srt-logger still NEEDED it.
 sudo -n ln -sfn libc.so.6 /oath/store/pkg/glibc/lib/libresolv.so.2 2>/dev/null || true
 sudo -n ln -sfn /proc/self/fd /dev/fd 2>/dev/null || true
 if [ -f "$certs" ]; then
 	sudo -n ln -sfn "$certs" /etc/ssl/certs/ca-certificates.crt 2>/dev/null || true
 	sudo -n ln -sfn "$certs" /etc/ssl/cert.pem 2>/dev/null || true
 fi
-if [ -x /oath/store/pkg/steam/libexec/ldconfig ]; then
-	sudo -n ln -sfn /oath/store/pkg/steam/libexec/ldconfig /sbin/ldconfig 2>/dev/null || true
+if [ -x "$store/libexec/ldconfig" ]; then
+	sudo -n ln -sfn "$store/libexec/ldconfig" /sbin/ldconfig 2>/dev/null || true
 fi
-if [ -x /oath/store/pkg/steam/bin/ldd ]; then
-	sudo -n ln -sfn /oath/store/pkg/steam/bin/ldd /usr/bin/ldd 2>/dev/null || true
+if [ -x "$store/bin/ldd" ]; then
+	sudo -n ln -sfn "$store/bin/ldd" /usr/bin/ldd 2>/dev/null || true
 fi
-if [ -f /oath/store/pkg/steam/lib32/ld-linux.so.2 ]; then
-	sudo -n ln -sfn /oath/store/pkg/steam/lib32/ld-linux.so.2 /lib/ld-linux.so.2 2>/dev/null || true
-	for f in /oath/store/pkg/steam/lib32/*.so*; do
+if [ -f "$store/lib32/ld-linux.so.2" ]; then
+	sudo -n ln -sfn "$store/lib32/ld-linux.so.2" /lib/ld-linux.so.2 2>/dev/null || true
+	for f in "$store/lib32"/*.so*; do
 		[ -e "$f" ] || continue
 		sudo -n ln -sfn "$f" /lib/i386-linux-gnu/"$(basename "$f")" 2>/dev/null || true
 	done
 fi
-# Host-side steam-runtime-tools (srt-logger) NEEDED gio/glib/cap.
-# Scout $ORIGIN copies are broken relative symlinks; use packed host GLib.
-lp="/oath/store/pkg/sola/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/river/lib:/oath/store/pkg/steam/lib32"
-rt="$XDG_DATA_HOME/Steam/ubuntu12_32/steam-runtime"
-if [ -d "$rt/usr/lib/x86_64-linux-gnu" ]; then
-	lp="$rt/usr/lib/x86_64-linux-gnu:$rt/lib/x86_64-linux-gnu:$lp"
+# 64-bit srt-logger needs GLib, not mesa. Symlink a GL-free dir.
+srtdir=$store/lib/srt
+mkdir -p "$srtdir"
+for n in libgio-2.0.so.0 libgobject-2.0.so.0 libglib-2.0.so.0 \
+	libgmodule-2.0.so.0 libz.so.1 libffi.so.8 libpcre2-8.so.0 \
+	libmount.so.1 libselinux.so.1 libblkid.so.1 libcap.so.2 \
+	libresolv.so.2 libelf.so.1 liblzma.so.5 libacl.so.1; do
+	for src in /oath/store/pkg/sola/lib /oath/store/pkg/river/lib \
+		/oath/store/pkg/glibc/lib /oath/store/pkg/gamescope/lib; do
+		if [ -e "$src/$n" ]; then
+			ln -sfn "$src/$n" "$srtdir/$n"
+			break
+		fi
+	done
+done
+# steamrt3c ships libGL.so.1.7.0 without a libGL.so.1 SONAME link.
+# Point pkg:steam/lib32 at those files so 32-bit dlmopen can find them.
+link_sonames() {
+	_src=$1
+	[ -d "$_src" ] || return 0
+	mkdir -p "$store/lib32"
+	for _f in "$_src"/lib*.so "$_src"/lib*.so.*; do
+		[ -f "$_f" ] || continue
+		_class=$(od -An -N1 -j4 -tu1 "$_f" 2>/dev/null | tr -d ' \n')
+		[ "$_class" = "1" ] || continue
+		_so=$(patchelf --print-soname "$_f" 2>/dev/null || true)
+		[ -n "$_so" ] || _so=$(basename "$_f")
+		case "$_so" in
+		libc.so.6|libdl.so.2|libm.so.6|libpthread.so.0|librt.so.1|ld-linux.so.2|libresolv.so.2)
+			continue ;;
+		esac
+		ln -sfn "$_f" "$store/lib32/$_so"
+		ln -sfn "$_f" "$store/lib32/$(basename "$_f")"
+	done
+}
+rt="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steam-runtime"
+link_sonames "$rt/usr/lib/i386-linux-gnu"
+link_sonames "$rt/lib/i386-linux-gnu"
+for _d in "${XDG_DATA_HOME:-$HOME/.local/share}/Steam/steamrt64/pv-runtime/steam-runtime-steamrt"/steamrt3c_platform_*/files/lib/i386-linux-gnu \
+	"${XDG_DATA_HOME:-$HOME/.local/share}/Steam/steamrt64/pv-runtime/steam-runtime-steamrt"/steamrt3c_platform_*/files/lib/i386-linux-gnu/*/; do
+	link_sonames "$_d"
+done
+# 32-bit steamui is loaded from $PLATFORM (ubuntu12_32) first. Put GL/gtk
+# SONAMEs there so the 32-bit loader never sees 64-bit libGL. This glibc
+# errors on wrong ELF class instead of skipping (mixed LD_LIBRARY_PATH dies).
+u32="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32"
+if [ -d "$u32" ]; then
+	for _f in "$store/lib32"/lib*.so*; do
+		[ -e "$_f" ] || continue
+		_b=$(basename "$_f")
+		case "$_b" in
+		libc.so*|libdl.so*|libm.so*|libpthread.so*|librt.so*|ld-linux*) continue ;;
+		esac
+		[ -e "$u32/$_b" ] && continue
+		ln -sfn "$_f" "$u32/$_b"
+	done
 fi
-export LD_LIBRARY_PATH="$lp${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Prepend our xz/tar shims so steam.sh extract_archive works.
+export PATH="$store/libexec:/bin:/usr/bin"
+# 64-bit-only: srt-logger / identify-library-abi. Never mix in lib32.
+export LD_LIBRARY_PATH="$srtdir:/oath/store/pkg/glibc/lib"
+COMPAT
+chmod 644 "$stagedir/steam/libexec/steam-compat.sh"
+cat >"$stagedir/steam/bin/steam" <<'WRAP'
+#!/bin/sh
+export HOME="${HOME:-/home}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+# shellcheck disable=SC1091
+. /oath/store/pkg/steam/libexec/steam-compat.sh
 mkdir -p "$HOME/.steam" "$XDG_DATA_HOME/Steam" /tmp/fontconfig
 # Valve's launcher is bash. Busybox readlink has no -e.
 if grep -q 'readlink -e' /oath/store/pkg/steam/libexec/bin_steam.sh 2>/dev/null; then
 	sudo -n sed -i 's/readlink -e -q/readlink -f/g; s/readlink -e/readlink -f/g' \
 		/oath/store/pkg/steam/libexec/bin_steam.sh 2>/dev/null || true
 fi
+rt="$XDG_DATA_HOME/Steam/ubuntu12_32/steam-runtime"
 # Bootstrap extract leaves amd64/{lib,usr/lib*} as relative symlinks that
 # do not resolve from those directories. check-requirements then looks for
 # srt-bwrap under amd64/usr/libexec and dies with ENOENT.
@@ -429,21 +554,17 @@ if [ -d "$rt/amd64/usr" ]; then
 	ln -sfn ../lib "$rt/amd64/lib" 2>/dev/null || true
 fi
 # CLONE_NEWUSER is EPERM on this kernel even as root (other nses work).
-# Valve's check-requirements treats that as fatal exit 71.
-cr="$rt/amd64/usr/bin/steam-runtime-check-requirements"
-if [ -e "$cr" ] && ! unshare -U true >/dev/null 2>&1; then
-	if [ "$(head -c 4 "$cr" 2>/dev/null)" = $'\x7fELF' ]; then
-		mv "$cr" "$cr.real" 2>/dev/null || true
+# Point amd64/usr/libexec at the real tools, then stub srt-bwrap so
+# check-requirements exits 0. Do not sed steam.sh (updater checksums it).
+if [ -d "$rt/usr/libexec/steam-runtime-tools-0" ] && ! unshare -U true >/dev/null 2>&1; then
+	if [ -f "$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap" ] && \
+	   [ "$(head -c 4 "$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap" 2>/dev/null)" = $'\x7fELF' ]; then
+		mv "$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap" \
+			"$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap.real" 2>/dev/null || true
 	fi
-	if [ ! -x "$cr" ] || [ -f "$cr.real" ]; then
-		cat >"$cr" <<'STUB'
-#!/bin/sh
-# Oath: user namespaces are compiled in but CLONE_NEWUSER is EPERM.
-# Valve exits 71 if this check fails. Pressure-vessel / Proton still need userns.
-exit 0
-STUB
-		chmod 755 "$cr" 2>/dev/null || true
-	fi
+	cp /oath/store/pkg/steam/libexec/srt-bwrap \
+		"$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap" 2>/dev/null || true
+	chmod 755 "$rt/usr/libexec/steam-runtime-tools-0/srt-bwrap" 2>/dev/null || true
 fi
 exec /bin/bash /oath/store/pkg/steam/libexec/bin_steam.sh "$@"
 WRAP
@@ -454,8 +575,8 @@ cat >"$stagedir/steam/INDEX.md" <<'EOF'
 Valve steam-launcher (bootstrap tarball + bin_steam.sh) plus a 32-bit
 glibc loader for ubuntu12_32/steam. User state is ~/.steam and
 ~/.local/share/Steam. The /bin/steam wrapper creates /usr/bin/env,
-/lib64/ld-linux-x86-64.so.2, and /etc/ssl/certs so steam.sh and
-srt-logger can exec. Removable. PID 1 does not supervise Steam.
+/lib64, CA certs, xz/tar shims, and 32-bit GL SONAMEs beside steamui.so.
+Removable. PID 1 does not supervise Steam.
 EOF
 
 echo "==> install sola-arcade"
