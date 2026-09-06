@@ -34,8 +34,10 @@
   RADV SI). Do not patchelf live `steamui.so`. River accepts the nest
   (`libdecor-oath` 1px). steamui library window paints after login
   (Deck welcome); CEF BrowserReady is up. Nested present to River
-  was GPU static: no DRM modifiers + `--steam` `composite_force 0`
-  (direct dmabuf scan-out). Wrapper forces composition and SDR.
+  is still wrong: exported BOs are kernel `ARRAY_2D_TILED_THIN1`;
+  River GLES samples them as linear (line-blocks). Internal
+  `gamescopectl screenshot` is the Deck UI. Wrapper forces
+  composition and SDR; that is not the remaining glass bug.
   `XOpenIM()` still fails `LANG=C.UTF-8` until `compose.dir` aliases
   C.UTF-8 (compat.sh). CEF GPU is `--disable-gpu` on SI. WebUITransport
   needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked. Rootful `:2`
