@@ -70,7 +70,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    popup (`Sign in to Steam`) is on `:2`. Rootful Xwayland does not
    share CLIPBOARD with Wayland; `libexec/xwayland-clip` (`wl-paste
    --watch` → `xclip`) owns `:2` CLIPBOARD so Ctrl+V pastes (seeded
-   this boot, no Steam restart). steamui identifies the
+   this boot, no Steam restart). After login the library window was
+   created at INT_MIN and Steam segfaulted (black nest: Xwayland
+   `-noreset` kept the empty root). `libexec/oath-xwm` is up on `:2`
+   (map + clamp; InputOnly hold so the Wayland surface survives
+   login → library). Relight Steam to pick it up. steamui identifies the
    CEF websocket peer with `lsof -P -F upnR -i TCP@…`; `pkg:steam`
    ships `libexec/oath-lsof` and the wrapper links `/bin/lsof`.
    32-bit RADV dlopens (`libdisplay-info.so.3` + `libxml2.so.16`);

@@ -471,6 +471,25 @@ fi
 install -m 755 "$here/xwayland-clip.sh" "$stagedir/xwayland/libexec/xwayland-clip"
 install -m 755 "$here/xwayland-clip-in.sh" "$stagedir/xwayland/libexec/xwayland-clip-in"
 
+echo "==> pack oath-xwm"
+zig_cc=${zig_cc:-/oath/store/pkg/cc/libexec/zig/zig}
+xcb_so=
+for f in "$stagedir/xwayland/lib"/libxcb.so.1*; do
+	[ -f "$f" ] && [ ! -L "$f" ] && xcb_so=$f && break
+done
+[ -n "$xcb_so" ] || xcb_so=$stagedir/xwayland/lib/libxcb.so.1
+if [ -x "$zig_cc" ] && [ -f "$here/oath-xwm.c" ] && [ -e "$xcb_so" ]; then
+	"$zig_cc" cc -target x86_64-linux-gnu -O2 -fno-sanitize=undefined \
+		-Wl,-rpath,/oath/store/pkg/xwayland/lib:/oath/store/pkg/glibc/lib \
+		-o "$stagedir/xwayland/libexec/oath-xwm" \
+		"$here/oath-xwm.c" "$xcb_so" || \
+		echo "warn: oath-xwm not built" >&2
+	if [ -x "$stagedir/xwayland/libexec/oath-xwm" ]; then
+		patchelf --set-interpreter "$interp" "$stagedir/xwayland/libexec/oath-xwm" || true
+		chmod 755 "$stagedir/xwayland/libexec/oath-xwm"
+	fi
+fi
+
 cat >"$stagedir/xwayland/INDEX.md" <<'EOF'
 # pkg:xwayland
 
@@ -480,6 +499,11 @@ relocated onto pkg:glibc + pkg:river. Removable.
 Rootful `Xwayland :2 -decorate` (Steam nest) does not share CLIPBOARD
 with Wayland. `libexec/xwayland-clip` watches the compositor clipboard
 (`wl-paste`) and owns X11 CLIPBOARD (`xclip`) so Ctrl+V pastes.
+
+Rootful Xwayland has no WM. Steam's library window then lands at
+INT_MIN and the nest is black. `libexec/oath-xwm` maps and clamps
+windows onto the screen and holds one InputOnly client so the
+Wayland surface survives login → library.
 EOF
 
 echo "==> pack mesa (64-bit GLX)"
@@ -1138,6 +1162,16 @@ if [ -n "${DISPLAY-}" ]; then
 	# watch so Ctrl+V in Steam pastes the desk clipboard.
 	if [ -x /oath/store/pkg/xwayland/libexec/xwayland-clip ]; then
 		/oath/store/pkg/xwayland/libexec/xwayland-clip --daemon
+	fi
+	# Rootful Xwayland has no WM. Steam's library window is created at
+	# INT_MIN and the nest stays black unless something maps/clamps it.
+	if [ -x /oath/store/pkg/xwayland/libexec/oath-xwm ]; then
+		pidfile=/tmp/oath-xwm.pid
+		old=$(cat "$pidfile" 2>/dev/null || true)
+		if [ -z "$old" ] || ! kill -0 "$old" 2>/dev/null; then
+			/oath/store/pkg/xwayland/libexec/oath-xwm >>/tmp/oath-xwm.log 2>&1 &
+			echo $! >"$pidfile"
+		fi
 	fi
 	# gamescope sets XDG_CURRENT_DESKTOP=gamescope → Steam forces BPM.
 	export XDG_CURRENT_DESKTOP=Sola

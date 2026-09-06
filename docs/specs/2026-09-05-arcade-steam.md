@@ -21,7 +21,9 @@
   once `/bin/lsof` exists (`oath-lsof`: `lsof -P -F upnR -i TCP@…`).
   Login popup is up on canto `:2`. Rootful Xwayland CLIPBOARD is
   bridged from the compositor (`xwayland-clip`: `wl-paste --watch` →
-  `xclip`) so Ctrl+V pastes (canto this boot). 32-bit RADV has
+  `xclip`) so Ctrl+V pastes (canto this boot). After login the library
+  window was created at INT_MIN (no X11 WM on rootful `:2`) and Steam
+  segfaulted; `oath-xwm` maps/clamps windows on `:2`. 32-bit RADV has
   `libdisplay-info.so.3` + `libxml2.so.16`; dual ICD jsons. Steam
   still logs missing `VK_KHR_surface` / `VK_KHR_xlib_surface`. Arcade
   Play unsmoked. QEMU image pack of these pkgs not in `cargo make
