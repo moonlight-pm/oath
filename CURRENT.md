@@ -52,7 +52,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `/bin/gamescope`, `/bin/steam` (bootstrap extracts; 32-bit ELF
    loads; launcher execs; ubuntu12 client on disk; `steamui.so`
    loads with 32-bit GL from steamrt3c). Direct `/bin/steam` execs
-   **gamescope** (`--backend wayland`, no `-b`, no
+   **gamescope** (`--backend wayland --steam`, no `-b`, no
    `--force-windows-fullscreen`: that stretched Steam’s 0×0 offscreen
    CEF buffer to 1920×1080 and looked like GPU static). Nested
    Xwayland is gamescope’s `-rootless`

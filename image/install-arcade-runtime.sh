@@ -868,6 +868,25 @@ done
 exec "$@"
 BW
 chmod 755 "$stagedir/steam/libexec/srt-bwrap"
+# steam.sh: STEAM_DEBUGGER=${DEBUGGER-} runs after extract, before the
+# ubuntu12_32/steam ELF. Re-apply dlmopen shims the updater clobbers.
+cat >"$stagedir/steam/libexec/oath-steam-preexec" <<'PRE'
+#!/bin/sh
+ui="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steamui.so"
+u32="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32"
+so=/oath/store/pkg/steam/lib32/liboath-peercred.so
+# steam.sh has already rewritten PATH; use absolute patchelf.
+pe=/bin/patchelf
+if [ -f "$so" ] && [ -f "$ui" ]; then
+	ln -sfn "$so" "$u32/liboath-peercred.so"
+	if [ -x "$pe" ] && ! "$pe" --print-needed "$ui" 2>/dev/null | grep -q liboath-peercred; then
+		"$pe" --add-needed liboath-peercred.so "$ui" 2>/dev/null || true
+	fi
+fi
+echo "oath-steam-preexec: needed=$( $pe --print-needed "$ui" 2>/dev/null | head -n 1 )" >&2
+exec "$@"
+PRE
+chmod 755 "$stagedir/steam/libexec/oath-steam-preexec"
 # 32-bit preload: steamui SO_PEERCRED on TCP returns pid 0.
 zig_cc=/oath/store/pkg/cc/libexec/zig/zig
 if [ -x "$zig_cc" ] && [ -f "$here/oath-steam-peercred.c" ]; then
@@ -1178,6 +1197,7 @@ if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -
 		exec /bin/gamescope --backend wayland -S fit \
 			-W 1920 -H 1080 -w 1920 -h 1080 \
 			--cursor-scale-height 1080 \
+			--steam \
 			-- "$0" "$@"
 	fi
 fi
@@ -1213,6 +1233,12 @@ if [ -n "${DISPLAY-}" ]; then
 	export ENABLE_GAMESCOPE_WSI=0
 	export ENABLE_HDR_WSI=0
 	export DXVK_HDR=0
+	# steam.sh execs the client after package extract. DEBUGGER is the
+	# post-extract hook (STEAM_DEBUGGER=${DEBUGGER-}). Re-apply steamui
+	# shims the updater just overwrote, then exec the real ELF.
+	if [ -x /oath/store/pkg/steam/libexec/oath-steam-preexec ]; then
+		export DEBUGGER=/oath/store/pkg/steam/libexec/oath-steam-preexec
+	fi
 fi
 mkdir -p "$HOME/.steam" "$XDG_DATA_HOME/Steam" /tmp/fontconfig
 # Valve's launcher is bash. Busybox readlink has no -e.

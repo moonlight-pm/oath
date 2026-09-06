@@ -341,6 +341,30 @@ int SDL_SetWindowSize(void *window, int w, int h)
 	return real(window, w, h);
 }
 
+void *SDL_CreateWindowWithProperties(unsigned int props)
+{
+	static void *(*real)(unsigned int);
+	static int (*getsize)(void *, int *, int *);
+	static int (*setsize)(void *, int, int);
+	void *w;
+	int ww = 0, hh = 0;
+
+	if (!real)
+		real = (void *(*)(unsigned int))dlsym(RTLD_NEXT, "SDL_CreateWindowWithProperties");
+	w = real(props);
+	if (!w)
+		return w;
+	if (!getsize)
+		getsize = (int (*)(void *, int *, int *))dlsym(RTLD_NEXT, "SDL_GetWindowSize");
+	if (!setsize)
+		setsize = (int (*)(void *, int, int))dlsym(RTLD_NEXT, "SDL_SetWindowSize");
+	if (getsize)
+		getsize(w, &ww, &hh);
+	if (setsize && (ww < 64 || hh < 64))
+		setsize(w, 1920, 1080);
+	return w;
+}
+
 int SDL_SetWindowPosition(void *window, int x, int y)
 {
 	static int (*real)(void *, int, int);
