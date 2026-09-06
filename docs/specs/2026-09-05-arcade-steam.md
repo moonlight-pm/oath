@@ -56,6 +56,13 @@ only: the nest is in. River is not rebuilt with host XWayland.
   PID 1. The ubuntu12_32 Steam ELF wants `/lib/ld-linux.so.2`; apply
   may symlink that node at the packed loader. Multiarch
   `/lib/i386-linux-gnu` is the loader search path.
+- **Steam must not rewrite `pkg:glibc`.** Ubuntu 2.34+ folded
+  `libresolv` into libc; this `pkg:glibc` still ships a separate
+  `libresolv.so.2` (`__b64_pton@GLIBC_2.2.5`). tmux NEEDs it and
+  searches `pkg:glibc` first on rpath. Stubbing `libresolv` →
+  `libc.so.6` makes sola-terminal and workspaces fail to open panes.
+  srt-logger gets `libresolv` from `pkg:steam/lib/srt` (copy from
+  `pkg:sola`). Host nodes (`/usr/bin/env`, `/lib64` loader) are fine.
 - **User Steam state is `$HOME/.steam` and `$HOME/.local/share/Steam`.**
   The pack is the launcher + bootstrap tarball, not the library.
 - **Canto fill** is `image/install-bash.sh`,
@@ -74,6 +81,8 @@ On canto (and QEMU after the image pack):
 3. `test -x /bin/Xwayland` and `Xwayland -version` prints 24.1.x.
 4. `test -x /bin/gamescope` and `test -x /bin/steam`.
 5. Serial and SSH still work. `pgrep -x sola` stays empty.
+6. `tmux -V` prints a version (not `undefined symbol: __b64_pton`).
+   `pkg:glibc` `libresolv.so.2` is a real DSO, not a `libc.so.6` stub.
 
 ---
 

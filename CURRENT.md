@@ -64,6 +64,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    (`libdecor-oath` 1px borders so first xdg geometry is 2×2, then
    1920×1080; cairo plugin is packed but mmap-crashes on a 0-size
    CSD buffer). Direct `steam` still uses rootful Xwayland.
+   **tmux:** new Terminal tabs and workspaces splits work. Steam had stubbed
+   `pkg:glibc` `libresolv.so.2` → `libc.so.6`; this glibc still exports
+   `__b64_pton` from a real libresolv, which tmux NEEDs. A second
+   sola-terminal process used to retract the first's new tabs (Sola-generic
+   fix packed into `libexec/sola-terminal` + `sola-workspaces` this boot).
    **T36** other kit names still out (`alsa.pc`). Zig `cc` host link is
    `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: Arcade Play smoke,
    or a `.pc` for alsa.

@@ -24,6 +24,22 @@ as_root() {
 	if [ "$(id -u)" = 0 ]; then "$@"; else sudo -n "$@"; fi
 }
 
+# Ubuntu 2.34+ folded libresolv into libc; this pkg:glibc still ships a
+# separate libresolv. tmux NEEDs __b64_pton@GLIBC_2.2.5 from it, and
+# tmux's rpath searches pkg:glibc first. Never stub libresolv → libc.
+# srt-logger finds it via pkg:steam/lib/srt (pkg:sola copy).
+install_real_libresolv() {
+	local dest=/oath/store/pkg/glibc/lib/libresolv.so.2
+	local src=/oath/store/pkg/sola/lib/libresolv.so.2
+	if [ -L "$dest" ]; then
+		as_root rm -f "$dest"
+	fi
+	if [ ! -f "$dest" ] && [ -f "$src" ]; then
+		as_root cp -a "$src" "$dest"
+		as_root chmod 755 "$dest"
+	fi
+}
+
 is_elf() {
 	[ -f "$1" ] || return 1
 	[ "$(head -c 4 "$1" 2>/dev/null)" = $'\x7fELF' ]
@@ -774,7 +790,15 @@ sudo -n mkdir -p /usr/bin /lib64 /lib/i386-linux-gnu /sbin /etc/ssl/certs 2>/dev
 sudo -n ln -sfn /bin/env /usr/bin/env 2>/dev/null || true
 sudo -n ln -sfn /bin/bash /usr/bin/bash 2>/dev/null || true
 sudo -n ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 2>/dev/null || true
-sudo -n ln -sfn libc.so.6 /oath/store/pkg/glibc/lib/libresolv.so.2 2>/dev/null || true
+# Do not stub pkg:glibc libresolv → libc (tmux __b64_pton; rpath glibc first).
+if [ -L /oath/store/pkg/glibc/lib/libresolv.so.2 ]; then
+	sudo -n rm -f /oath/store/pkg/glibc/lib/libresolv.so.2 2>/dev/null || true
+	if [ -f /oath/store/pkg/sola/lib/libresolv.so.2 ]; then
+		sudo -n cp -a /oath/store/pkg/sola/lib/libresolv.so.2 \
+			/oath/store/pkg/glibc/lib/libresolv.so.2 2>/dev/null || true
+		sudo -n chmod 755 /oath/store/pkg/glibc/lib/libresolv.so.2 2>/dev/null || true
+	fi
+fi
 sudo -n ln -sfn /proc/self/fd /dev/fd 2>/dev/null || true
 if [ -f "$certs" ]; then
 	sudo -n ln -sfn "$certs" /etc/ssl/certs/ca-certificates.crt 2>/dev/null || true
@@ -1017,9 +1041,11 @@ Valve steam-launcher (bootstrap tarball + bin_steam.sh) plus a 32-bit
 glibc loader for ubuntu12_32/steam. User state is ~/.steam and
 ~/.local/share/Steam. The /bin/steam wrapper creates /usr/bin/env,
 /lib64, CA certs, xz/tar shims, and 32-bit GL SONAMEs beside steamui.so.
-steamwebhelper skips pressure-vessel (CLONE_NEWUSER is EPERM after PID 1
-chroot) and runs on the host with 64-bit steamrt3 SONAMEs in lib64.
-Removable. PID 1 does not supervise Steam.
+It must not rewrite pkg:glibc (Ubuntu folded libresolv into libc; this
+glibc still ships a separate libresolv that tmux NEEDs). srt-logger
+gets libresolv from lib/srt. steamwebhelper skips pressure-vessel
+(CLONE_NEWUSER is EPERM after PID 1 chroot) and runs on the host with
+64-bit steamrt3 SONAMEs in lib64. Removable. PID 1 does not supervise Steam.
 EOF
 
 echo "==> install sola-arcade"
@@ -1103,7 +1129,7 @@ as_root mkdir -p /usr/bin /lib64 /sbin /etc/ssl/certs
 as_root ln -sfn /bin/env /usr/bin/env
 as_root ln -sfn /bin/bash /usr/bin/bash
 as_root ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
-as_root ln -sfn libc.so.6 /oath/store/pkg/glibc/lib/libresolv.so.2
+install_real_libresolv
 as_root ln -sfn /proc/self/fd /dev/fd
 as_root ln -sfn /oath/store/pkg/steam/libexec/ldconfig /sbin/ldconfig
 as_root ln -sfn /oath/store/pkg/steam/bin/ldd /usr/bin/ldd
