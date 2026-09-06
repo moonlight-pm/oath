@@ -11,8 +11,10 @@
   `cargo build -p sola-arcade` succeeded. `gamescope --backend wayland`
   selects RADV PITCAIRN and allocates descriptors (pool layer);
   nested Xwayland starts; River accepts the nest window
-  (`libdecor-oath`). Direct `/bin/steam` execs gamescope (no `-b`, no
-  `--force-windows-fullscreen`). Launcher lists Steam. 32-bit RADV
+  (`libdecor-oath`). Direct `/bin/steam` execs gamescope (`--backend
+  wayland --steam`, no `-b`, no `--force-windows-fullscreen`; nested
+  client is Deck UI `-gamepadui -steamdeck`). Launcher lists Steam.
+  32-bit RADV
   loads (`pkg:mesa/lib32` wayland 1.26 `wl_fixes_interface`; ICD
   DT_RPATH so steamrt’s old wayland cannot hide it). GpuTopology
   reports RADV PITCAIRN. steamui still segfaults after the library
@@ -23,7 +25,8 @@
   no `-b`; `-b` commits xdg 0×0 and segfaults). Do not pass
   `--force-windows-fullscreen` (0×0 CEF buffer upscaled = static on
   RADV SI). River accepts the nest (`libdecor-oath` 1px). steamui still
-  segfaults after login when creating the library window. CEF GPU uses
+  segfaults after login when creating the library window (desktop
+  chrome and Deck UI). CEF GPU uses
   `pkg:mesa` GLX; WebUITransport needs `/bin/lsof` (`oath-lsof`).
   Arcade Play unsmoked. Rootful `:2` + clip/xwm is leftover fallback.
   QEMU image pack of these pkgs not in `cargo make build` yet. Other
