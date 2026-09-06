@@ -34,8 +34,10 @@
   RADV SI). Do not patchelf live `steamui.so`. River accepts the nest
   (`libdecor-oath` 1px). steamui library window paints after login
   (Deck welcome); CEF BrowserReady is up. Nested present to River
-  is still wrong: exported BOs are kernel `ARRAY_2D_TILED_THIN1`;
-  River GLES samples them as linear (line-blocks). Internal
+  is still wrong: live GET is `tiling_info=0x6016a4`
+  (`ARRAY_2D_TILED_THIN1`, THIN, P8_32x32_8x16). Layer no longer
+  SETs LINEAR_ALIGNED (that lied). `GEM_MMAP` is EPERM on VRAM;
+  GBM implicit map samples linear too. Internal
   `gamescopectl screenshot` is the Deck UI. Wrapper forces
   composition and SDR; that is not the remaining glass bug.
   `XOpenIM()` still fails `LANG=C.UTF-8` until `compose.dir` aliases

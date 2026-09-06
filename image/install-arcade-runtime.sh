@@ -322,8 +322,8 @@ if [ ! -f "$layer_src" ]; then
 fi
 /bin/cc -c -fPIC -O2 -fno-sanitize=undefined -o "$layer_obj" "$layer_src"
 /oath/store/pkg/cc/libexec/zig/zig cc -target x86_64-linux-gnu -shared -O2 -fno-sanitize=undefined \
-	-Wl,-rpath,/oath/store/pkg/glibc/lib \
-	-o "$layer_so" "$layer_obj"
+	-Wl,-rpath,/oath/store/pkg/glibc/lib:/oath/store/pkg/mesa/lib:/oath/store/pkg/river/lib \
+	-o "$layer_so" "$layer_obj" -ldl
 mkdir -p "$stagedir/gamescope/share/vulkan/explicit_layer.d"
 cat >"$stagedir/gamescope/share/vulkan/explicit_layer.d/VkLayer_oath_gamescope_pool.json" <<'JSON'
 {

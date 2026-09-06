@@ -12,20 +12,28 @@
  *
  * Pitcairn has no DRM format modifiers. Nested Wayland present is a
  * dmabuf to River's radeonsi GLES. RADV SI still allocates those BOs
- * as ARRAY_2D_TILED_THIN1 (Vulkan rowPitch=width*4). River samples
- * INVALID-modifier imports as linear → repeated colored line-blocks.
- * Layer: pad pools; log CreateImage/rowPitch; clear WSI scanout
- * (kernel stays 2D); SET LINEAR_ALIGNED metadata on export (radeonsi
- * GLES still ignores it). Glass fix is importer 2D sampling or a
- * detile blit before present.
+ * as ARRAY_2D_TILED_THIN1 even when Vulkan tiling is LINEAR
+ * (rowPitch=width*4). River samples INVALID-modifier imports as
+ * linear → repeated colored line-blocks.
+ *
+ * Do not SET LINEAR_ALIGNED on a 2D BO — that makes GET lie and is
+ * indistinguishable from "importer ignores metadata". GET the real
+ * array mode; if tiled, detile into a GTT LINEAR_ALIGNED BO and
+ * export that fd. GBM map (Mesa GPU blit) is preferred; CPU addr
+ * for 1D and for 2D with bank_w=bank_h=macro=1 (Pitcairn display
+ * 32bpp tile[12]).
  */
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dlfcn.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <errno.h>
 
 #define VKAPI_ATTR
 #define VKAPI_CALL
@@ -58,13 +66,12 @@ typedef struct VkAllocationCallbacks VkAllocationCallbacks;
 #define VK_STRUCTURE_TYPE_WSI_IMAGE_CREATE_INFO_MESA 1000001002u
 #define VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO 1000070000u
 
+/* Mesa 24+ wsi_common.h: two C++ bools. Do not copy past blit_src. */
 struct wsi_image_create_info {
 	VkStructureType sType;
 	const void *pNext;
-	unsigned char scanout; /* C++ bool in Mesa/gamescope */
-	unsigned char pad[3];
-	uint32_t modifier_count;
-	const uint64_t *modifiers;
+	unsigned char scanout;
+	unsigned char blit_src;
 };
 
 struct VkExternalMemoryImageCreateInfo {
@@ -180,6 +187,8 @@ typedef struct VkMemoryGetFdInfoKHR {
 	uint32_t handleType;
 } VkMemoryGetFdInfoKHR;
 typedef VkResult(VKAPI_PTR *PFN_vkGetMemoryFdKHR)(VkDevice, const VkMemoryGetFdInfoKHR *, int *);
+typedef VkResult(VKAPI_PTR *PFN_vkBindImageMemory)(VkDevice, VkImage, VkDeviceMemory, VkDeviceSize);
+typedef void(VKAPI_PTR *PFN_vkDestroyImage)(VkDevice, VkImage, const VkAllocationCallbacks *);
 
 enum { LAYER_NEGOTIATE_INTERFACE_STRUCT = 1 };
 enum { CURRENT_LOADER_LAYER_INTERFACE_VERSION = 2, MIN_SUPPORTED_LOADER_LAYER_INTERFACE_VERSION = 1 };
@@ -232,12 +241,60 @@ static PFN_vkCreateDescriptorPool next_pool;
 static PFN_vkCreateImage next_create_image;
 static PFN_vkGetImageSubresourceLayout next_layout;
 static PFN_vkGetMemoryFdKHR next_get_fd;
+static PFN_vkBindImageMemory next_bind_image;
+static PFN_vkDestroyImage next_destroy_image;
 static int padded_once;
-static int linear_once;
 static int layout_logs;
 static int scanout_once;
 static int create_logs;
 static int meta_once;
+static int detile_once;
+
+#define MAX_TRACK 96
+struct track_img {
+	VkImage image;
+	VkDeviceMemory memory;
+	uint32_t w, h, bpp;
+	uint32_t pitch;
+	int in_use;
+};
+static struct track_img tracked[MAX_TRACK];
+
+static struct track_img *track_find_image(VkImage image) {
+	uint32_t i;
+	if (!image)
+		return NULL;
+	for (i = 0; i < MAX_TRACK; i++)
+		if (tracked[i].in_use && tracked[i].image == image)
+			return &tracked[i];
+	return NULL;
+}
+
+static struct track_img *track_find_memory(VkDeviceMemory memory) {
+	uint32_t i;
+	if (!memory)
+		return NULL;
+	for (i = 0; i < MAX_TRACK; i++)
+		if (tracked[i].in_use && tracked[i].memory == memory)
+			return &tracked[i];
+	return NULL;
+}
+
+static struct track_img *track_slot(VkImage image) {
+	uint32_t i;
+	struct track_img *t = track_find_image(image);
+	if (t)
+		return t;
+	for (i = 0; i < MAX_TRACK; i++) {
+		if (!tracked[i].in_use) {
+			memset(&tracked[i], 0, sizeof(tracked[i]));
+			tracked[i].in_use = 1;
+			tracked[i].image = image;
+			return &tracked[i];
+		}
+	}
+	return NULL;
+}
 
 static VkLayerInstanceCreateInfo *find_inst_link(const VkInstanceCreateInfo *info) {
 	for (const VkBaseInStructure *c = (const void *)info->pNext; c; c = c->pNext) {
@@ -288,6 +345,8 @@ static VkResult VKAPI_CALL hook_CreateDevice(VkPhysicalDevice phys, const VkDevi
 		next_create_image = (PFN_vkCreateImage)next_gdpa(*out, "vkCreateImage");
 		next_layout = (PFN_vkGetImageSubresourceLayout)next_gdpa(*out, "vkGetImageSubresourceLayout");
 		next_get_fd = (PFN_vkGetMemoryFdKHR)next_gdpa(*out, "vkGetMemoryFdKHR");
+		next_bind_image = (PFN_vkBindImageMemory)next_gdpa(*out, "vkBindImageMemory");
+		next_destroy_image = (PFN_vkDestroyImage)next_gdpa(*out, "vkDestroyImage");
 		fprintf(stderr, "[gamescope-pool] device created createImage=%p getFd=%p\n", (void *)next_create_image,
 			(void *)next_get_fd);
 	}
@@ -398,42 +457,88 @@ static VkResult VKAPI_CALL hook_CreateImage(VkDevice device, const VkImageCreate
 
 	log_pnext(info);
 	/* Nested Wayland is not KMS. WSI scanout=true makes RADV SI
-	 * allocate ARRAY_2D_TILED_THIN1 + DISPLAY microtile (kernel
-	 * tiling_info). Vulkan still samples that correctly (xwm
-	 * screenshot is the Deck UI); River's radeonsi GLES imports
-	 * INVALID modifiers as linear → line-blocks on the glass.
-	 * Clear scanout so the exported BO is LINEAR_ALIGNED.
+	 * allocate ARRAY_2D_TILED_THIN1 + DISPLAY microtile. Clear
+	 * scanout so RADV is allowed to allocate linear; GET on export
+	 * still decides whether we must detile.
 	 */
 	use = strip_wsi_scanout(info, &local, &wsi_store, &ext_store);
-	return next_create_image(device, use, a, out);
+	{
+		VkResult r = next_create_image(device, use, a, out);
+		if (r == VK_SUCCESS && out && *out && use->extent.width >= 256 && use->extent.height >= 256) {
+			struct track_img *t = track_slot(*out);
+			if (t) {
+				t->w = use->extent.width;
+				t->h = use->extent.height;
+				t->bpp = 4;
+				t->pitch = use->extent.width * 4;
+			}
+		}
+		return r;
+	}
 }
 
 static void VKAPI_CALL hook_GetImageSubresourceLayout(VkDevice device, VkImage image, const VkImageSubresource *sub,
 						      VkSubresourceLayout *layout) {
 	if (next_layout)
 		next_layout(device, image, sub, layout);
-	if (layout && layout->rowPitch && layout_logs < 16) {
-		fprintf(stderr, "[gamescope-pool] subresource offset=%llu size=%llu rowPitch=%llu\n",
-			(unsigned long long)layout->offset, (unsigned long long)layout->size,
-			(unsigned long long)layout->rowPitch);
-		layout_logs++;
+	if (layout && layout->rowPitch) {
+		struct track_img *t = track_find_image(image);
+		if (t)
+			t->pitch = (uint32_t)layout->rowPitch;
+		if (layout_logs < 16) {
+			fprintf(stderr, "[gamescope-pool] subresource offset=%llu size=%llu rowPitch=%llu\n",
+				(unsigned long long)layout->offset, (unsigned long long)layout->size,
+				(unsigned long long)layout->rowPitch);
+			layout_logs++;
+		}
 	}
 }
 
-/* SI: RADV stores LINEAR vulkan images as ARRAY_2D_TILED_THIN1 in the
- * kernel BO. River's radeonsi GLES imports INVALID modifiers; if it
- * honours GEM_METADATA it detiles linear pixels (or if it ignores
- * metadata it samples 2D as linear). Force LINEAR_ALIGNED metadata on
- * export so the importer treats the buffer as tightly packed rows.
- */
+static VkResult VKAPI_CALL hook_BindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory,
+						VkDeviceSize offset) {
+	VkResult r;
+	if (!next_bind_image)
+		return VK_ERROR_INITIALIZATION_FAILED;
+	r = next_bind_image(device, image, memory, offset);
+	if (r == VK_SUCCESS) {
+		struct track_img *t = track_find_image(image);
+		if (t)
+			t->memory = memory;
+	}
+	return r;
+}
+
+static void VKAPI_CALL hook_DestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks *a) {
+	struct track_img *t = track_find_image(image);
+	if (t)
+		t->in_use = 0;
+	if (next_destroy_image)
+		next_destroy_image(device, image, a);
+}
+
 #define DRM_IOCTL_BASE 'd'
 #define DRM_COMMAND_BASE 0x40
+#define DRM_IOCTL_PRIME_HANDLE_TO_FD _IOWR(DRM_IOCTL_BASE, 0x2d, struct oath_drm_prime_handle)
 #define DRM_IOCTL_PRIME_FD_TO_HANDLE _IOWR(DRM_IOCTL_BASE, 0x2e, struct oath_drm_prime_handle)
+#define DRM_AMDGPU_GEM_CREATE 0x00
+#define DRM_AMDGPU_GEM_MMAP 0x01
 #define DRM_AMDGPU_GEM_METADATA 0x06
+#define DRM_IOCTL_AMDGPU_GEM_CREATE \
+	_IOWR(DRM_IOCTL_BASE, DRM_COMMAND_BASE + DRM_AMDGPU_GEM_CREATE, union oath_amdgpu_gem_create)
+#define DRM_IOCTL_AMDGPU_GEM_MMAP \
+	_IOWR(DRM_IOCTL_BASE, DRM_COMMAND_BASE + DRM_AMDGPU_GEM_MMAP, union oath_amdgpu_gem_mmap)
 #define DRM_IOCTL_AMDGPU_GEM_METADATA \
 	_IOWR(DRM_IOCTL_BASE, DRM_COMMAND_BASE + DRM_AMDGPU_GEM_METADATA, struct oath_amdgpu_gem_metadata)
 #define AMDGPU_GEM_METADATA_OP_SET_METADATA 1
+#define AMDGPU_GEM_METADATA_OP_GET_METADATA 2
+#define AMDGPU_TILING_ARRAY_LINEAR_GENERAL 0ull
 #define AMDGPU_TILING_ARRAY_LINEAR_ALIGNED 1ull
+#define AMDGPU_TILING_ARRAY_1D_TILED_THIN1 2ull
+#define AMDGPU_TILING_ARRAY_2D_TILED_THIN1 4ull
+#define AMDGPU_GEM_DOMAIN_GTT 0x2ull
+#define AMDGPU_GEM_CREATE_CPU_ACCESS_REQUIRED (1ull << 0)
+#define DRM_CLOEXEC 0x00080000u
+#define DRM_RDWR 0x00000002u
 
 struct oath_drm_prime_handle {
 	uint32_t handle;
@@ -450,48 +555,552 @@ struct oath_amdgpu_gem_metadata {
 		uint32_t data[64];
 	} data;
 };
+union oath_amdgpu_gem_create {
+	struct {
+		uint64_t bo_size;
+		uint64_t alignment;
+		uint64_t domains;
+		uint64_t domain_flags;
+	} in;
+	struct {
+		uint32_t handle;
+		uint32_t _pad;
+	} out;
+};
+union oath_amdgpu_gem_mmap {
+	struct {
+		uint32_t handle;
+		uint32_t _pad;
+	} in;
+	struct {
+		uint64_t addr_ptr;
+	} out;
+};
 
-static void force_linear_metadata(int dmabuf_fd) {
-	int drm, i;
-	const char *nodes[] = { "/dev/dri/renderD128", "/dev/dri/renderD129", NULL };
-	if (dmabuf_fd < 0)
-		return;
-	for (i = 0; nodes[i]; i++) {
-		struct oath_drm_prime_handle prime;
+struct dma_buf_sync {
+	uint64_t flags;
+};
+#define DMA_BUF_SYNC_READ (1ull << 0)
+#define DMA_BUF_SYNC_WRITE (1ull << 1)
+#define DMA_BUF_SYNC_RW (DMA_BUF_SYNC_READ | DMA_BUF_SYNC_WRITE)
+#define DMA_BUF_SYNC_START (0ull << 2)
+#define DMA_BUF_SYNC_END (1ull << 2)
+#define DMA_BUF_BASE 'b'
+#define DMA_BUF_IOCTL_SYNC _IOW(DMA_BUF_BASE, 0, struct dma_buf_sync)
+
+static int open_render_node(void) {
+	int fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC);
+	if (fd < 0)
+		fd = open("/dev/dri/renderD129", O_RDWR | O_CLOEXEC);
+	return fd;
+}
+
+static int gem_metadata(int drm, int dmabuf_fd, uint32_t op, uint64_t *tiling_io) {
+	struct oath_drm_prime_handle prime;
+	struct oath_amdgpu_gem_metadata md;
+	memset(&prime, 0, sizeof(prime));
+	prime.fd = dmabuf_fd;
+	if (ioctl(drm, DRM_IOCTL_PRIME_FD_TO_HANDLE, &prime) != 0)
+		return -1;
+	memset(&md, 0, sizeof(md));
+	md.handle = prime.handle;
+	md.op = op;
+	if (op == AMDGPU_GEM_METADATA_OP_SET_METADATA)
+		md.data.tiling_info = *tiling_io;
+	if (ioctl(drm, DRM_IOCTL_AMDGPU_GEM_METADATA, &md) != 0)
+		return -1;
+	if (op == AMDGPU_GEM_METADATA_OP_GET_METADATA)
+		*tiling_io = md.data.tiling_info;
+	return 0;
+}
+
+static uint32_t si_num_pipes(uint32_t hw_pipe) {
+	if (hw_pipe == 0)
+		return 2;
+	if (hw_pipe >= 4 && hw_pipe <= 7)
+		return 4;
+	if (hw_pipe >= 8 && hw_pipe <= 14)
+		return 8;
+	if (hw_pipe >= 16)
+		return 16;
+	return 8;
+}
+
+static uint32_t si_pipe_from_coord(uint32_t x, uint32_t y, uint32_t hw_pipe) {
+	uint32_t tx = x / 8, ty = y / 8;
+	uint32_t x3 = tx & 1, x4 = (tx >> 1) & 1, x5 = (tx >> 2) & 1;
+	uint32_t y3 = ty & 1, y4 = (ty >> 1) & 1, y5 = (ty >> 2) & 1;
+	uint32_t p0 = 0, p1 = 0, p2 = 0, n;
+	switch (hw_pipe) {
+	case 0:
+		p0 = x3 ^ y3;
+		n = 2;
+		break;
+	case 10: /* P8_32x32_8x16 — Pitcairn */
+		p0 = x4 ^ y3 ^ x5;
+		p1 = x3 ^ y4;
+		p2 = x5 ^ y5;
+		n = 8;
+		break;
+	case 4: /* P4_8x16 */
+		p0 = x4 ^ y3;
+		p1 = x3 ^ y4;
+		n = 4;
+		break;
+	default:
+		p0 = x4 ^ y3 ^ x5;
+		p1 = x3 ^ y4;
+		p2 = x5 ^ y5;
+		n = si_num_pipes(hw_pipe);
+		break;
+	}
+	return (p0 | (p1 << 1) | (p2 << 2)) & (n - 1);
+}
+
+static uint32_t si_bank_from_coord(uint32_t x, uint32_t y, uint32_t num_banks, uint32_t bank_w, uint32_t bank_h) {
+	uint32_t tx = (x / 8) / (bank_w ? bank_w : 1);
+	uint32_t ty = (y / 8) / (bank_h ? bank_h : 1);
+	uint32_t x3 = tx & 1, x4 = (tx >> 1) & 1, x5 = (tx >> 2) & 1;
+	uint32_t y3 = ty & 1, y4 = (ty >> 1) & 1, y5 = (ty >> 2) & 1, y6 = (ty >> 3) & 1;
+	uint32_t bank;
+	switch (num_banks) {
+	case 2:
+		bank = x3 ^ y3;
+		break;
+	case 4:
+		bank = (x3 ^ y4) | ((x4 ^ y3) << 1);
+		break;
+	case 8:
+		bank = (x4 ^ y5) | ((x3 ^ y4) << 1) | ((x5 ^ y3) << 2);
+		break;
+	default:
+		bank = (x3 ^ y6) | ((x4 ^ y5) << 1) | ((x5 ^ y4) << 2) | ((x5 ^ y3) << 3);
+		break;
+	}
+	return bank & (num_banks - 1);
+}
+
+static uint32_t si_micro_index_32(uint32_t x, uint32_t y, int display) {
+	uint32_t x0 = x & 1, x1 = (x >> 1) & 1, x2 = (x >> 2) & 1;
+	uint32_t y0 = y & 1, y1 = (y >> 1) & 1, y2 = (y >> 2) & 1;
+	if (display)
+		return x0 | (x1 << 1) | (x2 << 2) | (y1 << 3) | (y0 << 4) | (y2 << 5);
+	return x0 | (y0 << 1) | (x1 << 2) | (y1 << 3) | (x2 << 4) | (y2 << 5);
+}
+
+static uint64_t si_addr_32(uint32_t x, uint32_t y, uint32_t pitch_px, uint64_t tiling) {
+	uint32_t array_mode = (uint32_t)((tiling >> 0) & 0xf);
+	uint32_t hw_pipe = (uint32_t)((tiling >> 4) & 0x1f);
+	uint32_t micro = (uint32_t)((tiling >> 12) & 0x7);
+	uint32_t bank_w = 1u << ((tiling >> 16) & 0x3);
+	uint32_t bank_h = 1u << ((tiling >> 18) & 0x3);
+	uint32_t mtilea = 1u << ((tiling >> 20) & 0x3);
+	uint32_t num_banks = 2u << ((tiling >> 22) & 0x3);
+	uint32_t pix = si_micro_index_32(x, y, micro == 0);
+	uint32_t num_pipes, pipe, bank, mtile_w, mtile_h, pitch_mt;
+	uint64_t mtile_n;
+
+	if (array_mode == AMDGPU_TILING_ARRAY_1D_TILED_THIN1) {
+		uint32_t mx = x / 8, my = y / 8;
+		uint32_t pitch_m = pitch_px / 8;
+		return ((uint64_t)my * pitch_m + mx) * 256ull + (uint64_t)pix * 4ull;
+	}
+
+	num_pipes = si_num_pipes(hw_pipe);
+	pipe = si_pipe_from_coord(x, y, hw_pipe);
+	bank = si_bank_from_coord(x, y, num_banks, bank_w, bank_h);
+	mtile_w = 8 * bank_w * num_pipes * mtilea;
+	mtile_h = 8 * bank_h * num_banks / (mtilea ? mtilea : 1);
+	if (!mtile_w)
+		mtile_w = 8;
+	if (!mtile_h)
+		mtile_h = 8;
+	pitch_mt = pitch_px / mtile_w;
+	if (!pitch_mt)
+		pitch_mt = 1;
+	mtile_n = (uint64_t)(y / mtile_h) * pitch_mt + (x / mtile_w);
+	/* bank_w=bank_h=macro=1 → one microtile per pipe×bank (Pitcairn display 32). */
+	return (uint64_t)pix * 4ull + (uint64_t)pipe * 256ull + (uint64_t)bank * 256ull * num_pipes +
+	       mtile_n * 256ull * num_pipes * num_banks;
+}
+
+static void dma_sync(int fd, uint64_t flags) {
+	struct dma_buf_sync s;
+	s.flags = flags;
+	ioctl(fd, DMA_BUF_IOCTL_SYNC, &s);
+}
+
+static int create_linear_dmabuf(int drm, size_t size, uint64_t *mmap_off, uint32_t *handle_out) {
+	union oath_amdgpu_gem_create cr;
+	union oath_amdgpu_gem_mmap mm;
+	struct oath_drm_prime_handle prime;
+	memset(&cr, 0, sizeof(cr));
+	cr.in.bo_size = size;
+	cr.in.alignment = 4096;
+	cr.in.domains = AMDGPU_GEM_DOMAIN_GTT;
+	cr.in.domain_flags = AMDGPU_GEM_CREATE_CPU_ACCESS_REQUIRED;
+	if (ioctl(drm, DRM_IOCTL_AMDGPU_GEM_CREATE, &cr) != 0)
+		return -1;
+	{
 		struct oath_amdgpu_gem_metadata md;
-		drm = open(nodes[i], O_RDWR | O_CLOEXEC);
-		if (drm < 0)
-			continue;
-		memset(&prime, 0, sizeof(prime));
-		prime.fd = dmabuf_fd;
-		if (ioctl(drm, DRM_IOCTL_PRIME_FD_TO_HANDLE, &prime) != 0) {
-			close(drm);
-			continue;
-		}
 		memset(&md, 0, sizeof(md));
-		md.handle = prime.handle;
+		md.handle = cr.out.handle;
 		md.op = AMDGPU_GEM_METADATA_OP_SET_METADATA;
 		md.data.tiling_info = AMDGPU_TILING_ARRAY_LINEAR_ALIGNED;
-		if (ioctl(drm, DRM_IOCTL_AMDGPU_GEM_METADATA, &md) == 0) {
-			if (!meta_once) {
-				fprintf(stderr, "[gamescope-pool] set LINEAR_ALIGNED metadata via %s handle=%u\n",
-					nodes[i], prime.handle);
-				meta_once = 1;
-			}
-			close(drm);
-			return;
-		}
-		close(drm);
+		ioctl(drm, DRM_IOCTL_AMDGPU_GEM_METADATA, &md);
 	}
+	memset(&mm, 0, sizeof(mm));
+	mm.in.handle = cr.out.handle;
+	if (ioctl(drm, DRM_IOCTL_AMDGPU_GEM_MMAP, &mm) != 0)
+		return -1;
+	memset(&prime, 0, sizeof(prime));
+	prime.handle = cr.out.handle;
+	prime.flags = DRM_CLOEXEC | DRM_RDWR;
+	if (ioctl(drm, DRM_IOCTL_PRIME_HANDLE_TO_FD, &prime) != 0)
+		return -1;
+	*mmap_off = mm.out.addr_ptr;
+	*handle_out = cr.out.handle;
+	return prime.fd;
+}
+
+struct gbm_device;
+
+static int gbm_detile_copy(int drm, int src_fd, uint32_t w, uint32_t h, uint32_t pitch, uint8_t *dst,
+			   uint32_t dst_pitch, uint32_t dest_w, uint32_t dest_h) {
+	static void *gbm;
+	static struct gbm_device *(*create_dev)(int);
+	static void *(*bo_import)(struct gbm_device *, uint32_t, void *, uint32_t);
+	static void *(*bo_map)(void *, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t *, void **);
+	static void (*bo_unmap)(void *, void *);
+	static void (*bo_destroy)(void *);
+	static void (*dev_destroy)(struct gbm_device *);
+	static int gbm_log;
+	static struct gbm_device *dev;
+	static int dev_drm = -1;
+	void *bo, *map_data = NULL, *p;
+	uint32_t map_stride = 0;
+	uint32_t y;
+	struct {
+		int fd;
+		uint32_t width, height, stride, format;
+	} imp;
+	if (!gbm) {
+		gbm = dlopen("libgbm.so.1", RTLD_NOW | RTLD_LOCAL);
+		if (!gbm) {
+			if (!gbm_log)
+				fprintf(stderr, "[gamescope-pool] dlopen libgbm.so.1: %s\n", dlerror());
+			gbm_log = 1;
+			return -1;
+		}
+		create_dev = (void *)dlsym(gbm, "gbm_create_device");
+		bo_import = (void *)dlsym(gbm, "gbm_bo_import");
+		bo_map = (void *)dlsym(gbm, "gbm_bo_map");
+		bo_unmap = (void *)dlsym(gbm, "gbm_bo_unmap");
+		bo_destroy = (void *)dlsym(gbm, "gbm_bo_destroy");
+		dev_destroy = (void *)dlsym(gbm, "gbm_device_destroy");
+		if (!create_dev || !bo_import || !bo_map || !bo_unmap || !bo_destroy) {
+			fprintf(stderr, "[gamescope-pool] libgbm missing symbols\n");
+			return -1;
+		}
+	}
+	if (!dev) {
+		dev_drm = dup(drm);
+		if (dev_drm < 0)
+			dev_drm = open_render_node();
+		dev = create_dev(dev_drm);
+		if (!dev) {
+			if (!gbm_log)
+				fprintf(stderr, "[gamescope-pool] gbm_create_device failed errno=%d\n", errno);
+			gbm_log = 1;
+			return -1;
+		}
+	}
+	imp.fd = src_fd;
+	imp.width = w;
+	imp.height = h;
+	imp.stride = pitch;
+	imp.format = 0x34325241u; /* ARGB8888 */
+	/* Implicit FD import treats INVALID as linear. Ask the driver to
+	 * read GEM_METADATA (2D thin) via the modifier token. */
+	{
+		struct {
+			uint32_t width, height, format, num_fds;
+			int fds[4];
+			int strides[4];
+			int offsets[4];
+			uint64_t modifier;
+		} mod;
+		memset(&mod, 0, sizeof(mod));
+		mod.width = w;
+		mod.height = h;
+		mod.format = 0x34325241u;
+		mod.num_fds = 1;
+		mod.fds[0] = src_fd;
+		mod.strides[0] = (int)pitch;
+		mod.modifier = 0x00ffffffffffffffull; /* DRM_FORMAT_MOD_INVALID */
+		bo = bo_import(dev, 0x5504u, &mod, 4u); /* GBM_BO_IMPORT_FD_MODIFIER */
+		if (!bo) {
+			mod.format = 0x34325258u;
+			bo = bo_import(dev, 0x5504u, &mod, 4u);
+		}
+	}
+	if (!bo)
+		bo = bo_import(dev, 0x5503u, &imp, 4u);
+	if (!bo) {
+		imp.format = 0x34325258u;
+		bo = bo_import(dev, 0x5503u, &imp, 4u);
+	}
+	if (!bo) {
+		if (!gbm_log)
+			fprintf(stderr, "[gamescope-pool] gbm_bo_import failed errno=%d w=%u h=%u stride=%u\n", errno, w,
+				h, pitch);
+		gbm_log = 1;
+		return -1;
+	}
+	p = bo_map(bo, 0, 0, w, h, 1u, &map_stride, &map_data);
+	if (!p) {
+		if (!gbm_log)
+			fprintf(stderr, "[gamescope-pool] gbm_bo_map failed errno=%d\n", errno);
+		gbm_log = 1;
+		bo_destroy(bo);
+		return -1;
+	}
+	if (!map_stride)
+		map_stride = pitch;
+	if (dest_w == 0 || dest_w > w)
+		dest_w = w;
+	if (dest_h == 0 || dest_h > h)
+		dest_h = h;
+	for (y = 0; y < dest_h; y++)
+		memcpy(dst + (size_t)y * dst_pitch, (const uint8_t *)p + (size_t)y * map_stride, (size_t)dest_w * 4);
+	bo_unmap(bo, map_data);
+	bo_destroy(bo);
+	(void)dev_destroy;
+	return 0;
+}
+
+static void cpu_detile(const uint8_t *src, size_t src_len, uint32_t w, uint32_t h, uint32_t pitch, uint64_t tiling,
+		       uint8_t *dst, uint32_t dst_pitch) {
+	uint32_t x, y;
+	uint32_t array_mode = (uint32_t)((tiling >> 0) & 0xf);
+	for (y = 0; y < h; y++) {
+		for (x = 0; x < w; x++) {
+			uint64_t off;
+			if (array_mode == AMDGPU_TILING_ARRAY_1D_TILED_THIN1 ||
+			    array_mode == AMDGPU_TILING_ARRAY_2D_TILED_THIN1)
+				off = si_addr_32(x, y, pitch / 4, tiling);
+			else
+				off = (uint64_t)y * pitch + (uint64_t)x * 4;
+			if (off + 4 > src_len)
+				continue;
+			memcpy(dst + (size_t)y * dst_pitch + (size_t)x * 4, src + off, 4);
+		}
+	}
+}
+
+#define LINEAR_SLOTS 4
+struct linear_slot {
+	int fd;
+	int drm;
+	uint32_t w, h, pitch;
+	size_t map_len;
+	void *map;
+};
+static struct linear_slot lin_slots[LINEAR_SLOTS];
+static unsigned lin_next;
+static int lin_inited;
+
+static struct linear_slot *linear_slot_get(uint32_t w, uint32_t h) {
+	struct linear_slot *s;
+	uint64_t mmap_off = 0;
+	uint32_t handle = 0;
+	uint32_t dst_pitch = (w * 4 + 255u) & ~255u;
+	size_t dst_len = (size_t)dst_pitch * h;
+	int drm, fd;
+	void *map;
+	unsigned i;
+
+	if (!lin_inited) {
+		for (i = 0; i < LINEAR_SLOTS; i++) {
+			lin_slots[i].fd = -1;
+			lin_slots[i].drm = -1;
+		}
+		lin_inited = 1;
+	}
+	if (dst_len < 4096)
+		dst_len = 4096;
+	for (i = 0; i < LINEAR_SLOTS; i++) {
+		s = &lin_slots[(lin_next + i) % LINEAR_SLOTS];
+		if (s->fd >= 0 && s->map && s->w == w && s->h == h && s->pitch == dst_pitch) {
+			lin_next = (unsigned)((s - lin_slots) + 1);
+			return s;
+		}
+	}
+	drm = open_render_node();
+	if (drm < 0)
+		return NULL;
+	fd = create_linear_dmabuf(drm, dst_len, &mmap_off, &handle);
+	if (fd < 0) {
+		close(drm);
+		return NULL;
+	}
+	map = mmap(NULL, dst_len, PROT_READ | PROT_WRITE, MAP_SHARED, drm, (off_t)mmap_off);
+	if (map == MAP_FAILED)
+		map = mmap(NULL, dst_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (map == MAP_FAILED) {
+		close(fd);
+		close(drm);
+		return NULL;
+	}
+	s = &lin_slots[lin_next % LINEAR_SLOTS];
+	lin_next++;
+	if (s->map)
+		munmap(s->map, s->map_len);
+	if (s->fd >= 0)
+		close(s->fd);
+	if (s->drm >= 0)
+		close(s->drm);
+	s->fd = fd;
+	s->drm = drm;
+	s->w = w;
+	s->h = h;
+	s->pitch = dst_pitch;
+	s->map_len = dst_len;
+	s->map = map;
+	return s;
+}
+
+static int detile_dmabuf(int src_fd, uint32_t w, uint32_t h, uint32_t pitch, uint64_t tiling) {
+	struct linear_slot *s;
+	uint32_t import_w, import_h;
+	size_t src_len;
+	int used_gbm = 0;
+	int out;
+	uint32_t mtile_w, pitch_px;
+	uint8_t *src;
+
+	if (w == 0 || h == 0 || pitch == 0)
+		return -1;
+	src_len = (size_t)lseek(src_fd, 0, SEEK_END);
+	if (src_len == (size_t)-1 || src_len == 0)
+		src_len = (size_t)pitch * h;
+	/* WSI often GetMemoryFdKHR before GetImageSubresourceLayout, so
+	 * tracked pitch is still w*4. SI pitch is 256-byte aligned. */
+	if (pitch < ((w * 4 + 255u) & ~255u))
+		pitch = (w * 4 + 255u) & ~255u;
+	import_w = pitch / 4;
+	if (import_w < w)
+		import_w = w;
+	import_h = h;
+	if (pitch && src_len / pitch > h)
+		import_h = (uint32_t)(src_len / pitch);
+
+	s = linear_slot_get(w, h);
+	if (!s) {
+		fprintf(stderr, "[gamescope-pool] linear slot errno=%d\n", errno);
+		return -1;
+	}
+	dma_sync(s->fd, DMA_BUF_SYNC_START | DMA_BUF_SYNC_WRITE);
+	/* Prefer GEM_MMAP + CPU detile so we do not load radeonsi via GBM
+	 * in the RADV process (that OOMs Pitcairn 2GB on remake). */
+	src = MAP_FAILED;
+	{
+		struct oath_drm_prime_handle prime;
+		union oath_amdgpu_gem_mmap mm;
+		memset(&prime, 0, sizeof(prime));
+		prime.fd = src_fd;
+		if (ioctl(s->drm, DRM_IOCTL_PRIME_FD_TO_HANDLE, &prime) == 0) {
+			memset(&mm, 0, sizeof(mm));
+			mm.in.handle = prime.handle;
+			if (ioctl(s->drm, DRM_IOCTL_AMDGPU_GEM_MMAP, &mm) == 0)
+				src = mmap(NULL, src_len, PROT_READ, MAP_SHARED, s->drm, (off_t)mm.out.addr_ptr);
+			else if (!detile_once)
+				fprintf(stderr, "[gamescope-pool] GEM_MMAP errno=%d\n", errno);
+		} else if (!detile_once)
+			fprintf(stderr, "[gamescope-pool] PRIME_FD_TO_HANDLE errno=%d\n", errno);
+	}
+	if (src == MAP_FAILED)
+		src = mmap(NULL, src_len, PROT_READ, MAP_SHARED, src_fd, 0);
+	if (src != MAP_FAILED) {
+		mtile_w = 8u * (1u << (unsigned)((tiling >> 16) & 0x3)) * si_num_pipes((uint32_t)((tiling >> 4) & 0x1f)) *
+			  (1u << (unsigned)((tiling >> 20) & 0x3));
+		pitch_px = pitch / 4;
+		if (mtile_w && (pitch_px % mtile_w))
+			pitch_px = (pitch_px + mtile_w - 1) / mtile_w * mtile_w;
+		cpu_detile(src, src_len, w, h, pitch_px * 4, tiling, s->map, s->pitch);
+		munmap(src, src_len);
+		used_gbm = 0;
+	} else {
+		used_gbm = gbm_detile_copy(s->drm, src_fd, import_w, import_h, pitch, s->map, s->pitch, w, h) == 0;
+		if (!used_gbm)
+			used_gbm = gbm_detile_copy(s->drm, src_fd, w, h, pitch, s->map, s->pitch, w, h) == 0;
+		if (!used_gbm) {
+			fprintf(stderr, "[gamescope-pool] mmap src errno=%d gbm failed %ux%u len=%zu\n", errno, w, h,
+				src_len);
+			dma_sync(s->fd, DMA_BUF_SYNC_END | DMA_BUF_SYNC_WRITE);
+			return -1;
+		}
+	}
+	dma_sync(s->fd, DMA_BUF_SYNC_END | DMA_BUF_SYNC_WRITE);
+	out = dup(s->fd);
+	if (!detile_once) {
+		fprintf(stderr, "[gamescope-pool] detile %ux%u import=%ux%u pitch=%u tiling=0x%llx via %s\n", w, h,
+			import_w, import_h, pitch, (unsigned long long)tiling, used_gbm ? "gbm" : "cpu");
+		detile_once = 1;
+	}
+	return out;
 }
 
 static VkResult VKAPI_CALL hook_GetMemoryFdKHR(VkDevice device, const VkMemoryGetFdInfoKHR *info, int *pFd) {
 	VkResult r;
+	int drm;
+	uint64_t tiling = 0;
+	uint32_t array_mode;
+	struct track_img *t;
 	if (!next_get_fd)
 		return VK_ERROR_INITIALIZATION_FAILED;
 	r = next_get_fd(device, info, pFd);
-	if (r == VK_SUCCESS && pFd)
-		force_linear_metadata(*pFd);
+	if (r != VK_SUCCESS || !pFd || *pFd < 0)
+		return r;
+	{
+		const char *nodes[] = { "/dev/dri/renderD128", "/dev/dri/renderD129", NULL };
+		int i, got = 0;
+		for (i = 0; nodes[i]; i++) {
+			drm = open(nodes[i], O_RDWR | O_CLOEXEC);
+			if (drm < 0)
+				continue;
+			if (gem_metadata(drm, *pFd, AMDGPU_GEM_METADATA_OP_GET_METADATA, &tiling) == 0)
+				got = 1;
+			close(drm);
+			if (got)
+				break;
+		}
+		if (!got)
+			return r;
+	}
+	array_mode = (uint32_t)((tiling >> 0) & 0xf);
+	t = info ? track_find_memory(info->memory) : NULL;
+	if (!meta_once) {
+		fprintf(stderr,
+			"[gamescope-pool] export GET tiling=0x%llx array_mode=%u pipe=%u micro=%u bank_w=%u bank_h=%u "
+			"mtilea=%u banks=%u %ux%u pitch=%u\n",
+			(unsigned long long)tiling, array_mode, (unsigned)((tiling >> 4) & 0x1f),
+			(unsigned)((tiling >> 12) & 0x7), 1u << (unsigned)((tiling >> 16) & 0x3),
+			1u << (unsigned)((tiling >> 18) & 0x3), 1u << (unsigned)((tiling >> 20) & 0x3),
+			2u << (unsigned)((tiling >> 22) & 0x3), t ? t->w : 0, t ? t->h : 0, t ? t->pitch : 0);
+		meta_once = 1;
+	}
+	close(drm);
+	if (array_mode > AMDGPU_TILING_ARRAY_LINEAR_ALIGNED && t && t->w && t->h) {
+		int linear_fd = detile_dmabuf(*pFd, t->w, t->h, t->pitch ? t->pitch : t->w * 4, tiling);
+		if (linear_fd >= 0) {
+			close(*pFd);
+			*pFd = linear_fd;
+		} else if (!detile_once) {
+			fprintf(stderr, "[gamescope-pool] detile failed errno=%d, presenting tiled fd\n", errno);
+			detile_once = 1;
+		}
+	}
 	return r;
 }
 
@@ -507,6 +1116,10 @@ static PFN_vkVoidFunction VKAPI_CALL hook_GetDeviceProcAddr(VkDevice device, con
 		return (PFN_vkVoidFunction)hook_GetImageSubresourceLayout;
 	if (!strcmp(name, "vkGetMemoryFdKHR"))
 		return (PFN_vkVoidFunction)hook_GetMemoryFdKHR;
+	if (!strcmp(name, "vkBindImageMemory"))
+		return (PFN_vkVoidFunction)hook_BindImageMemory;
+	if (!strcmp(name, "vkDestroyImage"))
+		return (PFN_vkVoidFunction)hook_DestroyImage;
 	if (!strcmp(name, "vkGetDeviceProcAddr"))
 		return (PFN_vkVoidFunction)hook_GetDeviceProcAddr;
 	if (!strcmp(name, "vkCreateDevice"))
@@ -531,6 +1144,10 @@ static PFN_vkVoidFunction VKAPI_CALL hook_GetInstanceProcAddr(VkInstance instanc
 		return (PFN_vkVoidFunction)hook_GetImageSubresourceLayout;
 	if (!strcmp(name, "vkGetMemoryFdKHR"))
 		return (PFN_vkVoidFunction)hook_GetMemoryFdKHR;
+	if (!strcmp(name, "vkBindImageMemory"))
+		return (PFN_vkVoidFunction)hook_BindImageMemory;
+	if (!strcmp(name, "vkDestroyImage"))
+		return (PFN_vkVoidFunction)hook_DestroyImage;
 	return next_gipa ? next_gipa(instance, name) : NULL;
 }
 

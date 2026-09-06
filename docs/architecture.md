@@ -81,8 +81,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        composition + SDR; River GLES still samples
                        2D-tiled nest dmabufs as linear).
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
-                       `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools
-                       and logs SI export tiling;
+                       `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools,
+                       GETs SI export tiling, does not SET LINEAR_ALIGNED;
                        `libdecor-oath` 1px borders so River accepts xdg geometry)
     pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.1.6
                        RADV + glvnd + vulkan-loader); `/bin/vulkaninfo`;
