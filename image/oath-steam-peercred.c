@@ -5,7 +5,7 @@
  * Linux returns pid 0 for AF_INET. Fill pid from /proc/net/tcp +
  * /proc/<pid>/fd, then walk up to the steamwebhelper browser process
  * (no --type=). The current client’s “Checked: 0/<webhelper>” path does
- * not call SO_PEERCRED (it fopen()s /proc/*/stat); this hook is
+ * not call SO_PEERCRED (it fopen()s /proc/<pid>/stat); this hook is
  * best-effort for the creds case.
  */
 #define _GNU_SOURCE
@@ -193,6 +193,170 @@ static unsigned int pid_for_tcp_fd(int s)
 }
 
 
+
+/* Steam's library / CEF windows are created at INT_MIN with size 0x0.
+ * X11 then either BadValue's or gamescope composites an empty buffer
+ * (static on RADV SI). Clamp before the request hits the wire.
+ */
+typedef unsigned long XWindow;
+
+static void clamp_geom(int *x, int *y, unsigned int *w, unsigned int *h)
+{
+	if (x && (*x < -64 || *x > 7680))
+		*x = 0;
+	if (y && (*y < -64 || *y > 4320))
+		*y = 0;
+	if (w && (*w < 64 || *w > 7680))
+		*w = 1920;
+	if (h && (*h < 64 || *h > 4320))
+		*h = 1080;
+}
+
+XWindow XCreateWindow(void *dpy, XWindow parent, int x, int y, unsigned int width,
+    unsigned int height, unsigned int border_width, int depth, unsigned int class_,
+    void *visual, unsigned long valuemask, void *attributes)
+{
+	static XWindow (*real)(void *, XWindow, int, int, unsigned int, unsigned int,
+	    unsigned int, int, unsigned int, void *, unsigned long, void *);
+	if (!real)
+		real = (XWindow (*)(void *, XWindow, int, int, unsigned int, unsigned int,
+		           unsigned int, int, unsigned int, void *, unsigned long, void *))
+			dlsym(RTLD_NEXT, "XCreateWindow");
+	clamp_geom(&x, &y, &width, &height);
+	return real(dpy, parent, x, y, width, height, border_width, depth, class_, visual,
+	    valuemask, attributes);
+}
+
+XWindow XCreateSimpleWindow(void *dpy, XWindow parent, int x, int y, unsigned int width,
+    unsigned int height, unsigned int border_width, unsigned long border,
+    unsigned long background)
+{
+	static XWindow (*real)(void *, XWindow, int, int, unsigned int, unsigned int,
+	    unsigned int, unsigned long, unsigned long);
+	if (!real)
+		real = (XWindow (*)(void *, XWindow, int, int, unsigned int, unsigned int,
+		           unsigned int, unsigned long, unsigned long))
+			dlsym(RTLD_NEXT, "XCreateSimpleWindow");
+	clamp_geom(&x, &y, &width, &height);
+	return real(dpy, parent, x, y, width, height, border_width, border, background);
+}
+
+int XMoveResizeWindow(void *dpy, XWindow w, int x, int y, unsigned int width,
+    unsigned int height)
+{
+	static int (*real)(void *, XWindow, int, int, unsigned int, unsigned int);
+	if (!real)
+		real = (int (*)(void *, XWindow, int, int, unsigned int, unsigned int))
+			dlsym(RTLD_NEXT, "XMoveResizeWindow");
+	clamp_geom(&x, &y, &width, &height);
+	return real(dpy, w, x, y, width, height);
+}
+
+int XResizeWindow(void *dpy, XWindow w, unsigned int width, unsigned int height)
+{
+	static int (*real)(void *, XWindow, unsigned int, unsigned int);
+	if (!real)
+		real = (int (*)(void *, XWindow, unsigned int, unsigned int))
+			dlsym(RTLD_NEXT, "XResizeWindow");
+	clamp_geom(NULL, NULL, &width, &height);
+	return real(dpy, w, width, height);
+}
+
+int XMoveWindow(void *dpy, XWindow w, int x, int y)
+{
+	static int (*real)(void *, XWindow, int, int);
+	if (!real)
+		real = (int (*)(void *, XWindow, int, int))dlsym(RTLD_NEXT, "XMoveWindow");
+	clamp_geom(&x, &y, NULL, NULL);
+	return real(dpy, w, x, y);
+}
+
+#define CWX (1 << 0)
+#define CWY (1 << 1)
+#define CWWidth (1 << 2)
+#define CWHeight (1 << 3)
+
+int XConfigureWindow(void *dpy, XWindow w, unsigned int mask, void *changes)
+{
+	static int (*real)(void *, XWindow, unsigned int, void *);
+	struct {
+		int x, y;
+		int width, height;
+		int border_width;
+		XWindow sibling;
+		int stack_mode;
+	} copy;
+	int x = 0, y = 0;
+	unsigned int width = 1920, height = 1080;
+
+	if (!real)
+		real = (int (*)(void *, XWindow, unsigned int, void *))
+			dlsym(RTLD_NEXT, "XConfigureWindow");
+	if (!changes)
+		return real(dpy, w, mask, changes);
+	memcpy(&copy, changes, sizeof copy);
+	if (mask & CWX)
+		x = copy.x;
+	if (mask & CWY)
+		y = copy.y;
+	if (mask & CWWidth)
+		width = (unsigned int)copy.width;
+	if (mask & CWHeight)
+		height = (unsigned int)copy.height;
+	clamp_geom(&x, &y, &width, &height);
+	if (mask & CWX)
+		copy.x = x;
+	if (mask & CWY)
+		copy.y = y;
+	if (mask & CWWidth)
+		copy.width = (int)width;
+	if (mask & CWHeight)
+		copy.height = (int)height;
+	return real(dpy, w, mask, &copy);
+}
+
+/* steamui.so is SDL3. Zero-size CreateWindow is the library chrome. */
+void *SDL_CreateWindow(const char *title, int w, int h, unsigned long flags)
+{
+	static void *(*real)(const char *, int, int, unsigned long);
+	if (!real)
+		real = (void *(*)(const char *, int, int, unsigned long))
+			dlsym(RTLD_NEXT, "SDL_CreateWindow");
+	if (w < 64)
+		w = 1920;
+	if (h < 64)
+		h = 1080;
+	return real(title, w, h, flags);
+}
+
+int SDL_SetWindowSize(void *window, int w, int h)
+{
+	static int (*real)(void *, int, int);
+	if (!real)
+		real = (int (*)(void *, int, int))dlsym(RTLD_NEXT, "SDL_SetWindowSize");
+	if (w < 64)
+		w = 1920;
+	if (h < 64)
+		h = 1080;
+	return real(window, w, h);
+}
+
+int SDL_SetWindowPosition(void *window, int x, int y)
+{
+	static int (*real)(void *, int, int);
+	if (!real)
+		real = (int (*)(void *, int, int))dlsym(RTLD_NEXT, "SDL_SetWindowPosition");
+	if (x < -64 || x > 7680)
+		x = 0;
+	if (y < -64 || y > 4320)
+		y = 0;
+	return real(window, x, y);
+}
+
+static void __attribute__((constructor)) oath_peercred_init(void)
+{
+	fprintf(stderr, "oath-steam-peercred: loaded (X11/SDL clamp)\n");
+}
 
 int getsockopt(int fd, int level, int optname, void *optval, socklen_t *optlen)
 {

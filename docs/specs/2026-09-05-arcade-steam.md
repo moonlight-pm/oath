@@ -11,18 +11,21 @@
   `cargo build -p sola-arcade` succeeded. `gamescope --backend wayland`
   selects RADV PITCAIRN and allocates descriptors (pool layer);
   nested Xwayland starts; River accepts the nest window
-  (`libdecor-oath`). Direct `/bin/steam` execs gamescope (no `-b`).
-  Launcher lists Steam. steamui still segfaults after the library
-  window.
+  (`libdecor-oath`). Direct `/bin/steam` execs gamescope (no `-b`, no
+  `--force-windows-fullscreen`). Launcher lists Steam. 32-bit RADV
+  loads (`pkg:mesa/lib32` wayland 1.26 `wl_fixes_interface`; ICD
+  DT_RPATH so steamrt’s old wayland cannot hide it). GpuTopology
+  reports RADV PITCAIRN. steamui still segfaults after the library
+  window (gamescope nest and rootful Xwayland both).
 **Gaps:** Direct `/bin/steam` nests in gamescope (`--backend wayland`,
-  no `-b`; `-b` commits xdg 0×0 and segfaults). River accepts the nest
-  (`libdecor-oath` 1px). steamui still segfaults after login when
-  creating the library window (INT_MIN + hide). CEF GPU uses `pkg:mesa`
-  GLX; WebUITransport needs `/bin/lsof` (`oath-lsof`). 32-bit RADV
-  still logs missing `VK_KHR_surface` / `VK_KHR_xlib_surface`. Arcade
-  Play unsmoked. Rootful `:2` + clip/xwm is leftover fallback. QEMU
-  image pack of these pkgs not in `cargo make build` yet. Other T36
-  kit ELFs still out (`alsa.pc`).
+  no `-b`; `-b` commits xdg 0×0 and segfaults). Do not pass
+  `--force-windows-fullscreen` (0×0 CEF buffer upscaled = static on
+  RADV SI). River accepts the nest (`libdecor-oath` 1px). steamui still
+  segfaults after login when creating the library window. CEF GPU uses
+  `pkg:mesa` GLX; WebUITransport needs `/bin/lsof` (`oath-lsof`).
+  Arcade Play unsmoked. Rootful `:2` + clip/xwm is leftover fallback.
+  QEMU image pack of these pkgs not in `cargo make build` yet. Other
+  T36 kit ELFs still out (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)

@@ -657,29 +657,38 @@ fetch_debian l/llvm-toolchain-21/libllvm21_21.1.8-10_i386.deb
 fetch_debian v/vulkan-loader/libvulkan1_1.4.357.0-1_i386.deb
 # RADV NEEDs libdisplay-info.so.3; LLVM 21 NEEDs libxml2.so.16.
 # steam/lib32 already has drm/xcb/ffi/z3/edit/atomic.
+# steamrt's libwayland-client 0.3.0 has no wl_fixes_interface; Mesa 26
+# RADV fails to dlopen (loader then reports no VK_KHR_surface). Pack
+# Debian 1.26 beside the ICD so rpath finds it first.
 fetch_debian libd/libdisplay-info/libdisplay-info3_0.3.0-1+b1_i386.deb
 fetch_debian libx/libxml2/libxml2-16_2.15.3+dfsg-1_i386.deb
+fetch_debian w/wayland/libwayland-client0_1.26.0-1_i386.deb
 extract_deb "$fetchdir/mesa-vulkan-drivers_26.1.6-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libllvm21_21.1.8-10_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libvulkan1_1.4.357.0-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libdisplay-info3_0.3.0-1+b1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libxml2-16_2.15.3+dfsg-1_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/libwayland-client0_1.26.0-1_i386.deb" "$stagedir/debroot32"
 mkdir -p "$stagedir/mesa/lib32"
 radeon32=$(find "$stagedir/debroot32" -name 'libvulkan_radeon.so' ! -type l | head -1)
 llvm32=$(find "$stagedir/debroot32" -name 'libLLVM.so.21.1' ! -type l | head -1)
 vk32=$(find "$stagedir/debroot32" -name 'libvulkan.so.1.*' ! -type l | head -1)
 di32=$(find "$stagedir/debroot32" -name 'libdisplay-info.so.0.3.0' ! -type l | head -1)
 xml32=$(find "$stagedir/debroot32" -name 'libxml2.so.16.*' ! -type l | head -1)
+wl32=$(find "$stagedir/debroot32" -name 'libwayland-client.so.0.*' ! -type l | head -1)
 copy_mesa "$radeon32" "$stagedir/mesa/lib32/libvulkan_radeon.so"
 copy_mesa "$llvm32" "$stagedir/mesa/lib32/libLLVM.so.21.1"
 copy_mesa "$vk32" "$stagedir/mesa/lib32/$(basename "$vk32")"
 ln -sfn "$(basename "$vk32")" "$stagedir/mesa/lib32/libvulkan.so.1"
 [ -n "$di32" ] || { echo "missing 32-bit libdisplay-info" >&2; exit 1; }
 [ -n "$xml32" ] || { echo "missing 32-bit libxml2.so.16" >&2; exit 1; }
+[ -n "$wl32" ] || { echo "missing 32-bit libwayland-client" >&2; exit 1; }
 copy_mesa "$di32" "$stagedir/mesa/lib32/$(basename "$di32")"
 copy_mesa "$xml32" "$stagedir/mesa/lib32/$(basename "$xml32")"
+copy_mesa "$wl32" "$stagedir/mesa/lib32/$(basename "$wl32")"
 ln -sfn "$(basename "$di32")" "$stagedir/mesa/lib32/libdisplay-info.so.3"
 ln -sfn "$(basename "$xml32")" "$stagedir/mesa/lib32/libxml2.so.16"
+ln -sfn "$(basename "$wl32")" "$stagedir/mesa/lib32/libwayland-client.so.0"
 interp32=/oath/store/pkg/steam/lib32/ld-linux.so.2
 rpath32="/oath/store/pkg/mesa/lib32:/oath/store/pkg/steam/lib32:$glibc"
 for f in "$stagedir/mesa/lib32"/*; do
@@ -691,6 +700,12 @@ for f in "$stagedir/mesa/lib32"/*; do
 	fi
 	patchelf --set-rpath "$rpath32" "$f" 2>/dev/null || true
 done
+# Steam sets LD_LIBRARY_PATH to steamrt (old wayland). DT_RUNPATH loses;
+# DT_RPATH on the ICD wins so wl_fixes resolves.
+patchelf --force-rpath --set-rpath "$rpath32" \
+	"$stagedir/mesa/lib32/libvulkan_radeon.so"
+patchelf --force-rpath --set-rpath "$mesa_rpath" \
+	"$stagedir/mesa/lib/libvulkan_radeon.so"
 cat >"$stagedir/mesa/share/vulkan/icd.d/radeon_icd32.json" <<'JSON'
 {
     "ICD": {
@@ -708,8 +723,10 @@ cat >"$stagedir/mesa/INDEX.md" <<'EOF'
 and vulkaninfo. DRI is libdril → radeonsi. ICD is
 share/vulkan/icd.d/radeon_icd.json (64-bit) and radeon_icd32.json
 (32-bit Steam). lib32 ships RADV + LLVM 21 + libdisplay-info.so.3 +
-libxml2.so.16 so the ubuntu12_32 client can vkCreateInstance. 64-bit
-LLVM stays in pkg:river. Removable.
+libxml2.so.16 + libwayland-client 1.26 (`wl_fixes_interface`; steamrt
+0.3.0 is too old). ICD uses DT_RPATH so Steam's steamrt
+LD_LIBRARY_PATH cannot hide the new wayland. 64-bit LLVM stays in
+pkg:river. Removable.
 EOF
 
 echo "==> pack steam"
@@ -1154,9 +1171,12 @@ if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -
 		# Do not pass -b (borderless): that skips libdecor and
 		# commits xdg geometry 0x0, which segfaults gamescope on
 		# this River. libdecor-oath reports 1px borders instead.
+		# Do not pass --force-windows-fullscreen: Steam's offscreen
+		# CEF browser is created at INT_MIN with size 0x0, and
+		# stretching that buffer to 1920x1080 is GPU garbage
+		# (static) on RADV SI before steamui dies.
 		exec /bin/gamescope --backend wayland -S fit \
 			-W 1920 -H 1080 -w 1920 -h 1080 \
-			--force-windows-fullscreen \
 			--cursor-scale-height 1080 \
 			-- "$0" "$@"
 	fi
@@ -1187,6 +1207,12 @@ if [ -n "${DISPLAY-}" ]; then
 	export SDL_VIDEODRIVER=x11
 	export GDK_BACKEND=x11
 	export QT_QPA_PLATFORM=xcb
+	# Nested Xwayland: native xlib WSI. The FROG gamescope WSI layer
+	# is 64-bit only; leaving ENABLE_GAMESCOPE_WSI set hides surface
+	# extensions from 32-bit steamui. Pitcairn is SDR.
+	export ENABLE_GAMESCOPE_WSI=0
+	export ENABLE_HDR_WSI=0
+	export DXVK_HDR=0
 fi
 mkdir -p "$HOME/.steam" "$XDG_DATA_HOME/Steam" /tmp/fontconfig
 # Valve's launcher is bash. Busybox readlink has no -e.

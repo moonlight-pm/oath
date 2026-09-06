@@ -79,7 +79,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.1.6
                        RADV + glvnd + vulkan-loader); `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
-                       plus `libdisplay-info.so.3` + `libxml2.so.16`
+                       plus `libdisplay-info.so.3` + `libxml2.so.16` +
+                       `libwayland-client` 1.26 (`wl_fixes`); ICD DT_RPATH
     pkg:steam          `/bin/steam` wrapper + 32-bit loader in lib32
                        + 64-bit steamrt3 SONAMEs in lib64; host
                        `_v2-entry-point` at `libexec/pv-host` (no bwrap);
