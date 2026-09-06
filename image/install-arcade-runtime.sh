@@ -1351,6 +1351,30 @@ else
 	sudo -n oath apply pkg:xwayland pkg:gamescope pkg:steam
 fi
 
+echo "==> sola launcher Steam"
+# User catalog (settings/applications.json) plus live bus so Super+Space
+# lists Steam without a shell restart. Built-ins stay in sola-shell.
+home_cfg="${HOME:-/home}/.config/sola/shell"
+mkdir -p "$home_cfg"
+if [ ! -f "$home_cfg/applications.json" ]; then
+	cat >"$home_cfg/applications.json" <<'JSON'
+{
+  "apps": [
+    {
+      "app_id": "steam",
+      "label": "Steam",
+      "command": "/bin/steam",
+      "icon": "lucide/gamepad-2"
+    }
+  ]
+}
+JSON
+fi
+if command -v solactl >/dev/null 2>&1; then
+	solactl emit Application '{"app_id":"steam","label":"Steam","command":"/bin/steam","icon":"lucide/gamepad-2"}' \
+		2>/dev/null || true
+fi
+
 echo "==> courage"
 for b in bash sola-arcade gamescope Xwayland steam; do
 	if [ -x /bin/$b ]; then

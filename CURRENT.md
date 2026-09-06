@@ -66,7 +66,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    CSD buffer). Direct `steam` nests in gamescope (`--backend wayland`,
    no `-b`: borderless commits xdg 0×0 and segfaults).
    **Steam this boot:** `/bin/steam` execs gamescope. Nest window
-   floats 1920×1052. Nested Xwayland is `-rootless` `:0`. Client
+   floats 1920×1052. Nested Xwayland is `-rootless` `:0`. Launcher
+   lists **Steam** (`~/.config/sola/shell/applications.json` + bus
+   `Application` in `state.yaml`; `/bin/steam`; `lucide/gamepad-2`).
+   Client
    updated then steamui segfaulted after opening the library window
    (same INT_MIN create + hide as on rootful `:2`). Rootful `:2` was
    the login workaround. Login
