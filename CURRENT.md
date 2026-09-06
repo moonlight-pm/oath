@@ -79,12 +79,17 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    (`_XlcCreateLocaleDataBase`); steam-runtime locale is live-linked
    and `XLOCALEDIR` is set. Not missing `VK_KHR_surface`, not SDL
    modal, not live-file DT_NEEDED. **Gap:** gamescope’s internal
-   screenshot is the Deck library; the nest River showed was GPU
-   static from direct dmabuf scan-out (Pitcairn has no DRM modifiers;
-   `--steam` sets `composite_force 0` and HDR on). Wrapper now
-   `gamescope_composite_force=true`, `STEAM_GAMESCOPE_HDR_SUPPORTED=0`,
-   `--disable-color-management`, and a delayed `gamescopectl`
-   re-assert. Confirm the nest on the glass. `XOpenIM()` still fails
+   screenshot (`gamescopectl screenshot`) is the Deck library.
+   `solactl compositor screenshot` (no raise) is the glass: repeated
+   colored line-blocks. `--app gamescope` copies the xdg_toplevel
+   (Workspaces chrome), not the subsurface dmabufs. Exported BOs are
+   kernel `ARRAY_2D_TILED_THIN1` (display/thin microtile);
+   Vulkan `rowPitch=7680`. River radeonsi GLES samples them as
+   linear. Pitcairn has no DRM modifiers. Wrapper still
+   `gamescope_composite_force=true` + SDR. Layer can SET
+   `LINEAR_ALIGNED` metadata (importer ignores it) and clear Mesa
+   WSI scanout (kernel stays 2D). Next: radeonsi/wlroots honor 2D
+   implicit import, or detile before present. `XOpenIM()` still fails
    `LANG=C.UTF-8`. No 32-bit `libgbm`. Arcade Play unsmoked. Novus is
    not a gamescope Steam session: River is
    `+xwayland`, `steam` is nixpkgs `*-bwrap` FHS, `unshare -U`
