@@ -433,11 +433,53 @@ WRAP
 chmod 755 "$stagedir/xwayland/bin/Xwayland"
 # gamescope looks up Xwayland on PATH
 ln -sfn /oath/store/pkg/xwayland/bin/Xwayland "$stagedir/gamescope/bin/Xwayland" 2>/dev/null || true
+
+echo "==> pack xwayland clipboard bridge"
+# Rootful Xwayland does not share CLIPBOARD with the compositor. wl-paste
+# watches wlr-data-control; xclip owns X11 CLIPBOARD so Ctrl+V pastes.
+clip_mirror=https://deb.debian.org/debian/pool/main
+for rel in x/xclip/xclip_0.13-4_amd64.deb w/wl-clipboard/wl-clipboard_2.2.1-2_amd64.deb; do
+	dest=$fetchdir/$(basename "$rel")
+	if [ ! -f "$dest" ] || [ ! -s "$dest" ]; then
+		echo "fetch $clip_mirror/$rel"
+		curl -fL --retry 3 --retry-delay 2 -o "$dest" "$clip_mirror/$rel"
+	fi
+	extract_deb "$dest" "$stagedir/debroot"
+done
+clip_rpath="$glibc:/oath/store/pkg/xwayland/lib:$river"
+for b in xclip wl-paste wl-copy; do
+	src=$stagedir/debroot/usr/bin/$b
+	[ -f "$src" ] || { echo "missing $src" >&2; exit 1; }
+	cp -a "$src" "$stagedir/xwayland/libexec/$b"
+	chmod u+w "$stagedir/xwayland/libexec/$b"
+	patchelf --set-interpreter "$interp" "$stagedir/xwayland/libexec/$b"
+	patchelf --set-rpath "$clip_rpath" "$stagedir/xwayland/libexec/$b"
+done
+# libXmu → libXt → libSM → libuuid (not always in the Xwayland NEEDED set).
+uuid=
+for f in "$stagedir/gamescope/lib"/libuuid.so.1.* \
+	"$stagedir/debroot"/usr/lib/x86_64-linux-gnu/libuuid.so.1.* \
+	"$stagedir/xwayland/lib"/libuuid.so.1.*; do
+	[ -f "$f" ] && [ ! -L "$f" ] || continue
+	uuid=$f
+	break
+done
+if [ -n "$uuid" ]; then
+	cp -a "$uuid" "$stagedir/xwayland/lib/$(basename "$uuid")"
+	ln -sfn "$(basename "$uuid")" "$stagedir/xwayland/lib/libuuid.so.1"
+fi
+install -m 755 "$here/xwayland-clip.sh" "$stagedir/xwayland/libexec/xwayland-clip"
+install -m 755 "$here/xwayland-clip-in.sh" "$stagedir/xwayland/libexec/xwayland-clip-in"
+
 cat >"$stagedir/xwayland/INDEX.md" <<'EOF'
 # pkg:xwayland
 
 Xwayland for gamescope's nested X and (later) host River. Debian 24.1
 relocated onto pkg:glibc + pkg:river. Removable.
+
+Rootful `Xwayland :2 -decorate` (Steam nest) does not share CLIPBOARD
+with Wayland. `libexec/xwayland-clip` watches the compositor clipboard
+(`wl-paste`) and owns X11 CLIPBOARD (`xclip`) so Ctrl+V pastes.
 EOF
 
 echo "==> pack mesa (64-bit GLX)"
@@ -1092,6 +1134,11 @@ if [ -z "${DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ]; then
 	export DISPLAY=:2
 fi
 if [ -n "${DISPLAY-}" ]; then
+	# Rootful Xwayland does not share CLIPBOARD with Wayland. Seed +
+	# watch so Ctrl+V in Steam pastes the desk clipboard.
+	if [ -x /oath/store/pkg/xwayland/libexec/xwayland-clip ]; then
+		/oath/store/pkg/xwayland/libexec/xwayland-clip --daemon
+	fi
 	# gamescope sets XDG_CURRENT_DESKTOP=gamescope → Steam forces BPM.
 	export XDG_CURRENT_DESKTOP=Sola
 	export XDG_SESSION_DESKTOP=Sola
