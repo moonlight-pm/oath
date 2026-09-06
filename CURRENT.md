@@ -69,20 +69,27 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    patched copy (`ubuntu12_32/steamui.oath.so`); do **not** patchelf
    live `steamui.so` (Steam verifies size and re-extracts forever).
    steamwebhelper `_v2-entry-point` passes `--disable-gpu` (CEF GPU
-   process SIGBUS 135 on RADV SI). **Gap:** steamui still segfaults
-   after `WaitingForLibraryReady` / `PopupHTMLWindow` (desktop chrome
-   and Deck UI). Not missing `VK_KHR_surface`, not SDL modal, not
-   live-file DT_NEEDED. Novus is not a gamescope Steam session: River
-   is `+xwayland`, `steam` is nixpkgs `*-bwrap` FHS, `unshare -U`
-   works, dbus is up; Steam is a host X11 window. Arcade Play
-   unsmoked. **tmux:** new Terminal
-   tabs and workspaces splits work (do not stub `pkg:glibc`
+   process SIGBUS 135 on RADV SI). steamui **library paints** after
+   login (Deck welcome “PRESS any button to continue”; 1920×1080
+   depth-32 X window). The post-`PopupHTMLWindow` SIGSEGV was
+   `dlsym(RTLD_NEXT, SDL_CreateWindow)` NULL in the steamui dlmopen
+   NS (shim is first DT_NEEDED); `load_sym` dlopens `libSDL3.so.0`
+   via constructor-saved real `dlopen`. Missing
+   `/usr/share/X11/locale` was an earlier NULL-deref
+   (`_XlcCreateLocaleDataBase`); steam-runtime locale is live-linked
+   and `XLOCALEDIR` is set. Not missing `VK_KHR_surface`, not SDL
+   modal, not live-file DT_NEEDED. **Gap:** `XOpenIM()` still fails
+   `LANG=C.UTF-8` (`compose.dir` has no C.UTF-8 row; next launch
+   aliases it to `en_US.UTF-8`). No 32-bit `libgbm`. Arcade Play
+   unsmoked. Novus is not a gamescope Steam session: River is
+   `+xwayland`, `steam` is nixpkgs `*-bwrap` FHS, `unshare -U`
+   works, dbus is up; Steam is a host X11 window. **tmux:** new
+   Terminal tabs and workspaces splits work (do not stub `pkg:glibc`
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: steamui library
-   crash after PopupHTMLWindow (32-bit client; CEF BrowserReady),
-   Arcade Play smoke, or a `.pc` for alsa.
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: Arcade Play smoke,
+   XOpenIM on a fresh Steam launch, or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
@@ -116,7 +123,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/sola-arcade` `/bin/Xwayland` `/bin/gamescope` `/bin/steam` + `pkg:mesa` (gen 21; `/bin/steam` nests in gamescope `--steam`, no `-b`, no `--force-windows-fullscreen`; Deck UI `-gamepadui -steamdeck`; launcher Steam; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy so steamui sees the shim; CEF `--disable-gpu` (SI SIGBUS); steamui still segfaults after PopupHTMLWindow; `libdecor-oath` 1px borders; `CLONE_NEWUSER` EPERM from PID 1 chroot). |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/sola-arcade` `/bin/Xwayland` `/bin/gamescope` `/bin/steam` + `pkg:mesa` (gen 21; `/bin/steam` nests in gamescope `--steam`, no `-b`, no `--force-windows-fullscreen`; Deck UI `-gamepadui -steamdeck`; launcher Steam; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy so steamui sees the shim; `load_sym` (RTLD_NEXT is NULL in that NS); CEF `--disable-gpu` (SI SIGBUS); steamui library paints after login (Deck welcome); `XOpenIM` still fails C.UTF-8; `libdecor-oath` 1px borders; `CLONE_NEWUSER` EPERM from PID 1 chroot). |
 
 ```sh
 nix-shell

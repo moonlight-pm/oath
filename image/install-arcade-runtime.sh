@@ -963,9 +963,31 @@ export LIBGL_DRIVERS_PATH=/usr/lib/i386-linux-gnu/dri:/oath/store/pkg/steam/lib3
 unset LIBGL_ALWAYS_SOFTWARE
 unset __EGL_VENDOR_LIBRARY_FILENAMES
 unset GBM_BACKENDS_PATH
-sudo -n mkdir -p /usr/bin /lib64 /lib/i386-linux-gnu /sbin /etc/ssl/certs 2>/dev/null || true
+sudo -n mkdir -p /usr/bin /lib64 /lib/i386-linux-gnu /sbin /etc/ssl/certs /usr/share/X11 2>/dev/null || true
 sudo -n ln -sfn /bin/env /usr/bin/env 2>/dev/null || true
 sudo -n ln -sfn /bin/bash /usr/bin/bash 2>/dev/null || true
+# libX11 i18n: compiled-in XLOCALEDIR is /usr/share/X11/locale. Missing
+# locale.dir makes _XlcCreateLocaleDataBase NULL-deref in steamui.
+# compose.dir has no C.UTF-8 row (only `Compose C` → iso8859-1), so
+# XOpenIM() fails even after locale.dir exists.
+rt="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steam-runtime"
+if [ -d "$rt/usr/share/X11/locale" ]; then
+	sudo -n ln -sfn "$rt/usr/share/X11/locale" /usr/share/X11/locale 2>/dev/null || true
+	sudo -n mkdir -p /usr/lib/i386-linux-gnu/X11 2>/dev/null || true
+	sudo -n ln -sfn /usr/share/X11/locale /usr/lib/i386-linux-gnu/X11/locale 2>/dev/null || true
+	export XLOCALEDIR=/usr/share/X11/locale
+	# Do not grep 'C.UTF-8' as a regex: it matches es_EC.UTF-8.
+	if [ -f "$rt/usr/share/X11/locale/compose.dir" ] &&
+	    ! awk '$NF=="C.UTF-8"{f=1} END{exit !f}' "$rt/usr/share/X11/locale/compose.dir"; then
+		printf '%s\n' 'en_US.UTF-8/Compose	C.UTF-8' \
+			>> "$rt/usr/share/X11/locale/compose.dir" || true
+	fi
+	if [ -f "$rt/usr/share/X11/locale/locale.dir" ] &&
+	    ! awk '$NF=="C.UTF-8"{f=1} END{exit !f}' "$rt/usr/share/X11/locale/locale.dir"; then
+		printf '%s\n' 'en_US.UTF-8/XLC_LOCALE	C.UTF-8' \
+			>> "$rt/usr/share/X11/locale/locale.dir" || true
+	fi
+fi
 sudo -n ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 2>/dev/null || true
 # Do not stub pkg:glibc libresolv → libc (tmux __b64_pton; rpath glibc first).
 if [ -L /oath/store/pkg/glibc/lib/libresolv.so.2 ]; then

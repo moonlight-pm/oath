@@ -74,7 +74,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        `libexec/oath-xwm` maps/clamps leftover rootful `:2`.
                        Direct `/bin/steam` execs gamescope (no `-b`,
                        `--steam`, Deck UI `-gamepadui -steamdeck`;
-                       steamui dlmopen copy of liboath-peercred;
+                       steamui dlmopen copy of liboath-peercred
+                       (`load_sym` — RTLD_NEXT is NULL in that NS);
+                       `/usr/share/X11/locale` from steam-runtime;
                        CEF `--disable-gpu` on SI).
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools;

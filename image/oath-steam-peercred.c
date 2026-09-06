@@ -12,6 +12,11 @@
  * Steam's library / CEF chrome is SDL3. A modal/popup with no parent
  * returns NULL ("Modal windows must specify a parent window") and
  * steamui segfaults after WaitingForLibraryReady.
+ *
+ * This .so is first DT_NEEDED of steamui.oath.so, so dlsym(RTLD_NEXT,
+ * "SDL_CreateWindow") is NULL in the dlmopen NS. load_sym() dlopens
+ * libSDL3/libX11 with the real dlopen (constructor-saved; do not call
+ * our interposed dlopen or we recurse).
  */
 #define _GNU_SOURCE
 #include <dirent.h>
@@ -43,6 +48,37 @@ struct ucred_t {
 };
 
 static int (*real_getsockopt)(int, int, int, void *, socklen_t *);
+static void slog(const char *fmt, ...);
+
+#ifndef RTLD_NOLOAD
+#define RTLD_NOLOAD 4
+#endif
+
+static void *(*sys_dlopen)(const char *, int);
+static void *(*sys_dlmopen)(long, const char *, int);
+
+static void *load_sym(const char *lib, const char *name)
+{
+	void *h, *s;
+
+	if (!sys_dlopen)
+		sys_dlopen = (void *(*)(const char *, int))dlsym(RTLD_NEXT, "dlopen");
+	if (!sys_dlopen) {
+		slog("oath-steam: no real dlopen\n");
+		return NULL;
+	}
+	h = sys_dlopen(lib, RTLD_NOLOAD | RTLD_NOW);
+	if (!h)
+		h = sys_dlopen(lib, RTLD_NOW);
+	if (!h) {
+		slog("oath-steam: dlopen %s failed\n", lib);
+		return NULL;
+	}
+	s = dlsym(h, name);
+	if (!s)
+		slog("oath-steam: no %s in %s\n", name, lib);
+	return s;
+}
 
 static void slog(const char *fmt, ...)
 {
@@ -252,7 +288,9 @@ XWindow XCreateWindow(void *dpy, XWindow parent, int x, int y, unsigned int widt
 	if (!real)
 		real = (XWindow (*)(void *, XWindow, int, int, unsigned int, unsigned int,
 		           unsigned int, int, unsigned int, void *, unsigned long, void *))
-			dlsym(RTLD_NEXT, "XCreateWindow");
+			load_sym("libX11.so.6", "XCreateWindow");
+	if (!real)
+		return 0;
 	if (x < -4096 || x > 7680 || y < -4096 || y > 4320 || width == 0 || height == 0)
 		slog("oath-steam: XCreateWindow clamp %d,%d %ux%u\n", x, y, width, height);
 	clamp_geom(&x, &y, &width, &height);
@@ -269,7 +307,9 @@ XWindow XCreateSimpleWindow(void *dpy, XWindow parent, int x, int y, unsigned in
 	if (!real)
 		real = (XWindow (*)(void *, XWindow, int, int, unsigned int, unsigned int,
 		           unsigned int, unsigned long, unsigned long))
-			dlsym(RTLD_NEXT, "XCreateSimpleWindow");
+			load_sym("libX11.so.6", "XCreateSimpleWindow");
+	if (!real)
+		return 0;
 	clamp_geom(&x, &y, &width, &height);
 	return real(dpy, parent, x, y, width, height, border_width, border, background);
 }
@@ -280,7 +320,9 @@ int XMoveResizeWindow(void *dpy, XWindow w, int x, int y, unsigned int width,
 	static int (*real)(void *, XWindow, int, int, unsigned int, unsigned int);
 	if (!real)
 		real = (int (*)(void *, XWindow, int, int, unsigned int, unsigned int))
-			dlsym(RTLD_NEXT, "XMoveResizeWindow");
+			load_sym("libX11.so.6", "XMoveResizeWindow");
+	if (!real)
+		return 0;
 	clamp_geom(&x, &y, &width, &height);
 	return real(dpy, w, x, y, width, height);
 }
@@ -290,7 +332,9 @@ int XResizeWindow(void *dpy, XWindow w, unsigned int width, unsigned int height)
 	static int (*real)(void *, XWindow, unsigned int, unsigned int);
 	if (!real)
 		real = (int (*)(void *, XWindow, unsigned int, unsigned int))
-			dlsym(RTLD_NEXT, "XResizeWindow");
+			load_sym("libX11.so.6", "XResizeWindow");
+	if (!real)
+		return 0;
 	clamp_geom(NULL, NULL, &width, &height);
 	return real(dpy, w, width, height);
 }
@@ -299,7 +343,9 @@ int XMoveWindow(void *dpy, XWindow w, int x, int y)
 {
 	static int (*real)(void *, XWindow, int, int);
 	if (!real)
-		real = (int (*)(void *, XWindow, int, int))dlsym(RTLD_NEXT, "XMoveWindow");
+		real = (int (*)(void *, XWindow, int, int))load_sym("libX11.so.6", "XMoveWindow");
+	if (!real)
+		return 0;
 	clamp_geom(&x, &y, NULL, NULL);
 	return real(dpy, w, x, y);
 }
@@ -324,7 +370,9 @@ int XConfigureWindow(void *dpy, XWindow w, unsigned int mask, void *changes)
 
 	if (!real)
 		real = (int (*)(void *, XWindow, unsigned int, void *))
-			dlsym(RTLD_NEXT, "XConfigureWindow");
+			load_sym("libX11.so.6", "XConfigureWindow");
+	if (!real)
+		return 0;
 	if (!changes)
 		return real(dpy, w, mask, changes);
 	memcpy(&copy, changes, sizeof copy);
@@ -362,7 +410,9 @@ unsigned long XInternAtom(void *dpy, const char *name, int only_if_exists)
 
 	if (!real)
 		real = (unsigned long (*)(void *, const char *, int))
-			dlsym(RTLD_NEXT, "XInternAtom");
+			load_sym("libX11.so.6", "XInternAtom");
+	if (!real)
+		return 0;
 	a = real(dpy, name, only_if_exists);
 	if (name && a) {
 		if (!atom_viewport && strcmp(name, "GAMESCOPE_VIEWPORT_SUPPORTED") == 0)
@@ -409,7 +459,31 @@ int XGetWindowProperty(void *dpy, unsigned long w, unsigned long property, long 
 		real = (int (*)(void *, unsigned long, unsigned long, long, long, int,
 		           unsigned long, unsigned long *, int *, unsigned long *,
 		           unsigned long *, unsigned char **))
-			dlsym(RTLD_NEXT, "XGetWindowProperty");
+			load_sym("libX11.so.6", "XGetWindowProperty");
+	if (!real)
+		return 1;
+	if (property && (!atom_viewport || !atom_hdr || !atom_vroverlay)) {
+		static char *(*getname)(void *, unsigned long);
+		static int (*xfree)(void *);
+		char *n;
+
+		if (!getname)
+			getname = (char *(*)(void *, unsigned long))
+				load_sym("libX11.so.6", "XGetAtomName");
+		if (!xfree)
+			xfree = (int (*)(void *))load_sym("libX11.so.6", "XFree");
+		n = (getname && dpy) ? getname(dpy, property) : NULL;
+		if (n) {
+			if (!atom_viewport && strcmp(n, "GAMESCOPE_VIEWPORT_SUPPORTED") == 0)
+				atom_viewport = property;
+			else if (!atom_hdr && strcmp(n, "GAMESCOPE_HDR_ENABLED") == 0)
+				atom_hdr = property;
+			else if (!atom_vroverlay && strcmp(n, "GAMESCOPE_VROVERLAY_FORWARDING") == 0)
+				atom_vroverlay = property;
+			if (xfree)
+				xfree(n);
+		}
+	}
 	if (property && property == atom_viewport)
 		return fake_cardinal(1, actual_type, actual_format, nitems, bytes_after, prop);
 	if (property && property == atom_hdr)
@@ -462,9 +536,11 @@ void *SDL_CreateWindow(const char *title, int w, int h, uint32_t flags_lo,
 
 	if (!real)
 		real = (void *(*)(const char *, int, int, uint32_t, uint32_t))
-			dlsym(RTLD_NEXT, "SDL_CreateWindow");
+			load_sym("libSDL3.so.0", "SDL_CreateWindow");
+	if (!real)
+		return NULL;
 	if (!geterr)
-		geterr = (const char *(*)(void))dlsym(RTLD_NEXT, "SDL_GetError");
+		geterr = (const char *(*)(void))load_sym("libSDL3.so.0", "SDL_GetError");
 	if (w == 0)
 		w = 1920;
 	if (h == 0)
@@ -486,7 +562,9 @@ int SDL_SetWindowSize(void *window, int w, int h)
 {
 	static int (*real)(void *, int, int);
 	if (!real)
-		real = (int (*)(void *, int, int))dlsym(RTLD_NEXT, "SDL_SetWindowSize");
+		real = (int (*)(void *, int, int))load_sym("libSDL3.so.0", "SDL_SetWindowSize");
+	if (!real)
+		return 0;
 	if (w == 0)
 		w = 1920;
 	if (h == 0)
@@ -498,7 +576,9 @@ int SDL_SetWindowPosition(void *window, int x, int y)
 {
 	static int (*real)(void *, int, int);
 	if (!real)
-		real = (int (*)(void *, int, int))dlsym(RTLD_NEXT, "SDL_SetWindowPosition");
+		real = (int (*)(void *, int, int))load_sym("libSDL3.so.0", "SDL_SetWindowPosition");
+	if (!real)
+		return 0;
 	if (!sdl_pos_magic(x) && (x < -4096 || x > 7680))
 		x = 0;
 	if (!sdl_pos_magic(y) && (y < -4096 || y > 4320))
@@ -510,7 +590,7 @@ int SDL_SetWindowModal(void *window, int modal)
 {
 	static int (*real)(void *, int);
 	if (!real)
-		real = (int (*)(void *, int))dlsym(RTLD_NEXT, "SDL_SetWindowModal");
+		real = (int (*)(void *, int))load_sym("libSDL3.so.0", "SDL_SetWindowModal");
 	if (modal && window && !last_window)
 		last_window = window;
 	slog("oath-steam: SDL_SetWindowModal %p modal=%d\n", window, modal);
@@ -523,7 +603,7 @@ int SDL_SetWindowParent(void *window, void *parent)
 {
 	static int (*real)(void *, void *);
 	if (!real)
-		real = (int (*)(void *, void *))dlsym(RTLD_NEXT, "SDL_SetWindowParent");
+		real = (int (*)(void *, void *))load_sym("libSDL3.so.0", "SDL_SetWindowParent");
 	if (!parent)
 		parent = last_window;
 	slog("oath-steam: SDL_SetWindowParent %p parent=%p\n", window, parent);
@@ -540,7 +620,9 @@ void *SDL_CreatePopupWindow(void *parent, int x, int y, int w, int h,
 
 	if (!real)
 		real = (void *(*)(void *, int, int, int, int, uint32_t, uint32_t))
-			dlsym(RTLD_NEXT, "SDL_CreatePopupWindow");
+			load_sym("libSDL3.so.0", "SDL_CreatePopupWindow");
+	if (!real)
+		return NULL;
 	if (!parent)
 		parent = last_window;
 	if (w == 0)
@@ -575,27 +657,29 @@ void *SDL_CreateWindowWithProperties(unsigned int props)
 	int modal = 0, menu = 0, tooltip = 0;
 
 	if (!real)
-		real = (void *(*)(unsigned int))dlsym(RTLD_NEXT, "SDL_CreateWindowWithProperties");
+		real = (void *(*)(unsigned int))load_sym("libSDL3.so.0", "SDL_CreateWindowWithProperties");
+	if (!real)
+		return NULL;
 	if (!getnum)
 		getnum = (long long (*)(unsigned int, const char *, long long))
-			dlsym(RTLD_NEXT, "SDL_GetNumberProperty");
+			load_sym("libSDL3.so.0", "SDL_GetNumberProperty");
 	if (!getbool)
 		getbool = (int (*)(unsigned int, const char *, int))
-			dlsym(RTLD_NEXT, "SDL_GetBooleanProperty");
+			load_sym("libSDL3.so.0", "SDL_GetBooleanProperty");
 	if (!getptr)
 		getptr = (void *(*)(unsigned int, const char *, void *))
-			dlsym(RTLD_NEXT, "SDL_GetPointerProperty");
+			load_sym("libSDL3.so.0", "SDL_GetPointerProperty");
 	if (!setnum)
 		setnum = (int (*)(unsigned int, const char *, long long))
-			dlsym(RTLD_NEXT, "SDL_SetNumberProperty");
+			load_sym("libSDL3.so.0", "SDL_SetNumberProperty");
 	if (!setbool)
 		setbool = (int (*)(unsigned int, const char *, int))
-			dlsym(RTLD_NEXT, "SDL_SetBooleanProperty");
+			load_sym("libSDL3.so.0", "SDL_SetBooleanProperty");
 	if (!setptr)
 		setptr = (int (*)(unsigned int, const char *, void *))
-			dlsym(RTLD_NEXT, "SDL_SetPointerProperty");
+			load_sym("libSDL3.so.0", "SDL_SetPointerProperty");
 	if (!geterr)
-		geterr = (const char *(*)(void))dlsym(RTLD_NEXT, "SDL_GetError");
+		geterr = (const char *(*)(void))load_sym("libSDL3.so.0", "SDL_GetError");
 
 	if (getnum) {
 		ww = getnum(props, PROP_W, 0);
@@ -699,24 +783,24 @@ static const char *prepare_steamui(const char *filename)
 
 void *dlmopen(long lmid, const char *filename, int flags)
 {
-	static void *(*real)(long, const char *, int);
-
-	if (!real)
-		real = (void *(*)(long, const char *, int))dlsym(RTLD_NEXT, "dlmopen");
+	if (!sys_dlmopen)
+		sys_dlmopen = (void *(*)(long, const char *, int))dlsym(RTLD_NEXT, "dlmopen");
+	if (!sys_dlmopen)
+		return NULL;
 	if (filename)
 		filename = prepare_steamui(filename);
-	return real(lmid, filename, flags);
+	return sys_dlmopen(lmid, filename, flags);
 }
 
 void *dlopen(const char *filename, int flags)
 {
-	static void *(*real)(const char *, int);
-
-	if (!real)
-		real = (void *(*)(const char *, int))dlsym(RTLD_NEXT, "dlopen");
+	if (!sys_dlopen)
+		sys_dlopen = (void *(*)(const char *, int))dlsym(RTLD_NEXT, "dlopen");
+	if (!sys_dlopen)
+		return NULL;
 	if (filename)
 		filename = prepare_steamui(filename);
-	return real(filename, flags);
+	return sys_dlopen(filename, flags);
 }
 
 static void __attribute__((constructor)) oath_peercred_init(void)
@@ -724,7 +808,10 @@ static void __attribute__((constructor)) oath_peercred_init(void)
 	const char *so = "/oath/store/pkg/steam/lib32/liboath-peercred.so";
 	const char *link = "/home/.local/share/Steam/ubuntu12_32/liboath-peercred.so";
 
-	slog("oath-steam-peercred: loaded (X11/SDL clamp) pid=%d\n", (int)getpid());
+	sys_dlopen = (void *(*)(const char *, int))dlsym(RTLD_NEXT, "dlopen");
+	sys_dlmopen = (void *(*)(long, const char *, int))dlsym(RTLD_NEXT, "dlmopen");
+	slog("oath-steam-peercred: loaded (X11/SDL clamp) pid=%d dlopen=%p dlmopen=%p\n",
+	    (int)getpid(), (void *)sys_dlopen, (void *)sys_dlmopen);
 	if (access(so, R_OK) == 0)
 		symlink(so, link);
 }
@@ -736,8 +823,10 @@ int getsockopt(int fd, int level, int optname, void *optval, socklen_t *optlen)
 	unsigned int p;
 
 	if (!real_getsockopt)
-		real_getsockopt = (int (*)(int, int, int, void *, socklen_t *))dlsym(
-			RTLD_NEXT, "getsockopt");
+		real_getsockopt = (int (*)(int, int, int, void *, socklen_t *))
+			load_sym("libc.so.6", "getsockopt");
+	if (!real_getsockopt)
+		return -1;
 	r = real_getsockopt(fd, level, optname, optval, optlen);
 	if (r != 0 || level != SOL_SOCKET || optname != SO_PEERCRED || !optval ||
 	    !optlen)
