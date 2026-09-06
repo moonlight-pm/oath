@@ -445,12 +445,13 @@ debian_mirror=https://deb.debian.org/debian/pool/main
 fetch_debian() {
 	local rel=$1
 	local dest=$fetchdir/$(basename "$rel")
+	local url=$debian_mirror/$(printf '%s' "$rel" | sed 's/+/%2B/g')
 	if [ -f "$dest" ] && [ -s "$dest" ]; then
 		echo "cached $dest"
 		return 0
 	fi
-	echo "fetch $debian_mirror/$rel"
-	curl -fL --retry 3 --retry-delay 2 -o "$dest" "$debian_mirror/$rel"
+	echo "fetch $url"
+	curl -fL --retry 3 --retry-delay 2 -o "$dest" "$url"
 }
 for rel in \
 	m/mesa/libglx-mesa0_26.1.6-1_amd64.deb \
@@ -588,17 +589,31 @@ chmod 755 "$stagedir/mesa/bin/vulkaninfo"
 fetch_debian m/mesa/mesa-vulkan-drivers_26.1.6-1_i386.deb
 fetch_debian l/llvm-toolchain-21/libllvm21_21.1.8-10_i386.deb
 fetch_debian v/vulkan-loader/libvulkan1_1.4.357.0-1_i386.deb
+# RADV NEEDs libdisplay-info.so.3; LLVM 21 NEEDs libxml2.so.16.
+# steam/lib32 already has drm/xcb/ffi/z3/edit/atomic.
+fetch_debian libd/libdisplay-info/libdisplay-info3_0.3.0-1+b1_i386.deb
+fetch_debian libx/libxml2/libxml2-16_2.15.3+dfsg-1_i386.deb
 extract_deb "$fetchdir/mesa-vulkan-drivers_26.1.6-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libllvm21_21.1.8-10_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libvulkan1_1.4.357.0-1_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/libdisplay-info3_0.3.0-1+b1_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/libxml2-16_2.15.3+dfsg-1_i386.deb" "$stagedir/debroot32"
 mkdir -p "$stagedir/mesa/lib32"
 radeon32=$(find "$stagedir/debroot32" -name 'libvulkan_radeon.so' ! -type l | head -1)
 llvm32=$(find "$stagedir/debroot32" -name 'libLLVM.so.21.1' ! -type l | head -1)
 vk32=$(find "$stagedir/debroot32" -name 'libvulkan.so.1.*' ! -type l | head -1)
+di32=$(find "$stagedir/debroot32" -name 'libdisplay-info.so.0.3.0' ! -type l | head -1)
+xml32=$(find "$stagedir/debroot32" -name 'libxml2.so.16.*' ! -type l | head -1)
 copy_mesa "$radeon32" "$stagedir/mesa/lib32/libvulkan_radeon.so"
 copy_mesa "$llvm32" "$stagedir/mesa/lib32/libLLVM.so.21.1"
 copy_mesa "$vk32" "$stagedir/mesa/lib32/$(basename "$vk32")"
 ln -sfn "$(basename "$vk32")" "$stagedir/mesa/lib32/libvulkan.so.1"
+[ -n "$di32" ] || { echo "missing 32-bit libdisplay-info" >&2; exit 1; }
+[ -n "$xml32" ] || { echo "missing 32-bit libxml2.so.16" >&2; exit 1; }
+copy_mesa "$di32" "$stagedir/mesa/lib32/$(basename "$di32")"
+copy_mesa "$xml32" "$stagedir/mesa/lib32/$(basename "$xml32")"
+ln -sfn "$(basename "$di32")" "$stagedir/mesa/lib32/libdisplay-info.so.3"
+ln -sfn "$(basename "$xml32")" "$stagedir/mesa/lib32/libxml2.so.16"
 interp32=/oath/store/pkg/steam/lib32/ld-linux.so.2
 rpath32="/oath/store/pkg/mesa/lib32:/oath/store/pkg/steam/lib32:$glibc"
 for f in "$stagedir/mesa/lib32"/*; do
@@ -625,7 +640,10 @@ cat >"$stagedir/mesa/INDEX.md" <<'EOF'
 64-bit OpenGL/GLX and Vulkan WSI for X11/Wayland clients. Debian mesa
 26.1.6 GLX + glvnd + gallium + RADV, plus Khronos vulkan-loader 1.4.357
 and vulkaninfo. DRI is libdril → radeonsi. ICD is
-share/vulkan/icd.d/radeon_icd.json. LLVM stays in pkg:river. Removable.
+share/vulkan/icd.d/radeon_icd.json (64-bit) and radeon_icd32.json
+(32-bit Steam). lib32 ships RADV + LLVM 21 + libdisplay-info.so.3 +
+libxml2.so.16 so the ubuntu12_32 client can vkCreateInstance. 64-bit
+LLVM stays in pkg:river. Removable.
 EOF
 
 echo "==> pack steam"
@@ -767,6 +785,33 @@ done
 exec "$@"
 BW
 chmod 755 "$stagedir/steam/libexec/srt-bwrap"
+# 32-bit preload: steamui SO_PEERCRED on TCP returns pid 0.
+zig_cc=/oath/store/pkg/cc/libexec/zig/zig
+if [ -x "$zig_cc" ] && [ -f "$here/oath-steam-peercred.c" ]; then
+	"$zig_cc" cc -target x86-linux-gnu -shared -fPIC -O2 \
+		-L "$stagedir/steam/lib32" \
+		-Wl,-rpath,/oath/store/pkg/steam/lib32 \
+		-o "$stagedir/steam/lib32/liboath-peercred.so" \
+		"$here/oath-steam-peercred.c" || \
+		echo "warn: liboath-peercred.so not built" >&2
+fi
+mkdir -p "$stagedir/steam/lib64"
+if [ -x "$zig_cc" ] && [ -f "$here/oath-steam-dumpable.c" ]; then
+	"$zig_cc" cc -target x86_64-linux-gnu -shared -fPIC -O2 \
+		-Wl,-rpath,/oath/store/pkg/glibc/lib \
+		-o "$stagedir/steam/lib64/liboath-dumpable.so" \
+		"$here/oath-steam-dumpable.c" || \
+		echo "warn: liboath-dumpable.so not built" >&2
+fi
+if [ -x "$zig_cc" ] && [ -f "$here/oath-lsof.c" ]; then
+	"$zig_cc" cc -target x86_64-linux-musl -static -O2 \
+		-o "$stagedir/steam/libexec/oath-lsof" \
+		"$here/oath-lsof.c" || \
+		echo "warn: oath-lsof not built" >&2
+	if [ -x "$stagedir/steam/libexec/oath-lsof" ]; then
+		chmod 755 "$stagedir/steam/libexec/oath-lsof"
+	fi
+fi
 cat >"$stagedir/steam/libexec/steam-compat.sh" <<'COMPAT'
 # sourced by /bin/steam. Host nodes + 32-bit SONAMEs + library path.
 # Do not put pkg:sola/lib (64-bit libGL) on LD_LIBRARY_PATH: steamui.so is
@@ -894,19 +939,56 @@ if [ -d "$u32" ]; then
 fi
 # Prepend our xz/tar shims so steam.sh extract_archive works.
 export PATH="$store/libexec:/bin:/usr/bin"
-# 64-bit-only: srt-logger / identify-library-abi. Never mix in lib32.
-# pkg:mesa first so 64-bit vulkan/GLX beat steamrt and ubuntu12_32.
-export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:$srtdir:/oath/store/pkg/glibc/lib"
+# 64-bit srt-logger needs GLib from $srtdir. Do not put 64-bit mesa/lib
+# on this path: 32-bit steam then dlopens ELFCLASS64 libvulkan and the
+# ICD never loads. 64-bit vulkan is /lib64/libvulkan.so.1 (below).
+export LD_LIBRARY_PATH="$srtdir:/oath/store/pkg/glibc/lib"
 if [ -f /oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json ]; then
-	sudo -n mkdir -p /usr/share/vulkan/icd.d /lib/i386-linux-gnu 2>/dev/null || true
+	sudo -n mkdir -p /usr/share/vulkan/icd.d /lib/i386-linux-gnu /lib64 2>/dev/null || true
+	# Both ICDs: the loader skips the wrong ELF class. A single
+	# radeon_icd.json pointing at lib32 makes 64-bit steamsysinfo
+	# vkCreateInstance return VK_ERROR_INCOMPATIBLE_DRIVER (-9).
+	sudo -n ln -sfn /oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json \
+		/usr/share/vulkan/icd.d/radeon_icd.x86_64.json 2>/dev/null || true
 	sudo -n ln -sfn /oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json \
-		/usr/share/vulkan/icd.d/radeon_icd.json 2>/dev/null || true
-	for f in /oath/store/pkg/mesa/lib32/libvulkan_radeon.so \
-		/oath/store/pkg/mesa/lib32/libLLVM.so.21.1 \
-		/oath/store/pkg/mesa/lib32/libvulkan.so.1; do
+		/usr/share/vulkan/icd.d/radeon_icd.i686.json 2>/dev/null || true
+	sudo -n rm -f /usr/share/vulkan/icd.d/radeon_icd.json 2>/dev/null || true
+	sudo -n ln -sfn /oath/store/pkg/mesa/lib/libvulkan.so.1 \
+		/lib64/libvulkan.so.1 2>/dev/null || true
+	for f in /oath/store/pkg/mesa/lib32/lib*.so*; do
 		[ -e "$f" ] || continue
 		sudo -n ln -sfn "$f" /lib/i386-linux-gnu/"$(basename "$f")" 2>/dev/null || true
 	done
+fi
+export VK_ICD_FILENAMES="/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json:/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json"
+export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
+if [ -f /oath/store/pkg/steam/lib32/liboath-peercred.so ]; then
+	# 32-bit only; 64-bit helpers ignore the wrong ELF class.
+	export LD_PRELOAD="/oath/store/pkg/steam/lib32/liboath-peercred.so${LD_PRELOAD:+:$LD_PRELOAD}"
+	_ui="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steamui.so"
+	if [ -f "$_ui" ] && command -v patchelf >/dev/null 2>&1; then
+		if ! patchelf --print-needed "$_ui" 2>/dev/null | grep -q liboath-peercred; then
+			patchelf --add-needed liboath-peercred.so "$_ui" 2>/dev/null || true
+		fi
+	fi
+fi
+# glibc nsswitch on the first images omitted hosts:. Steam CEF looks up
+# steamloopback.host; PID 1 rewrites /etc/hosts without that alias.
+if ! grep -q '^hosts:' /etc/nsswitch.conf 2>/dev/null; then
+	sudo -n sh -c 'printf "%s\n" "hosts: files dns" >> /etc/nsswitch.conf' 2>/dev/null || true
+fi
+if ! grep -q 'steamloopback.host' /etc/hosts 2>/dev/null; then
+	sudo -n sh -c 'printf "%s\n" "127.0.0.1 steamloopback.host" >> /etc/hosts' 2>/dev/null || true
+fi
+if [ -x /oath/store/pkg/steam/libexec/oath-lsof ]; then
+	sudo -n mkdir -p /usr/bin /usr/sbin /sbin 2>/dev/null || true
+	if [ ! -x /usr/bin/lsof ] || ! grep -q oath-lsof /usr/bin/lsof 2>/dev/null; then
+		sudo -n sh -c 'printf "%s\n" "#!/bin/sh" "exec sudo -n /oath/store/pkg/steam/libexec/oath-lsof \"\$@\"" > /usr/bin/lsof' 2>/dev/null || true
+		sudo -n chmod 755 /usr/bin/lsof 2>/dev/null || true
+	fi
+	sudo -n ln -sfn /usr/bin/lsof /bin/lsof 2>/dev/null || true
+	sudo -n ln -sfn /usr/bin/lsof /sbin/lsof 2>/dev/null || true
+	sudo -n ln -sfn /usr/bin/lsof /usr/sbin/lsof 2>/dev/null || true
 fi
 COMPAT
 chmod 644 "$stagedir/steam/libexec/steam-compat.sh"
@@ -940,17 +1022,42 @@ export LD_LIBRARY_PATH="$dir:/oath/store/pkg/mesa/lib:${store}/lib64:/oath/store
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/mesa/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/mesa/lib/gbm
 export __GLX_VENDOR_LIBRARY_NAME=mesa
-export VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json}"
-export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 export DISABLE_LAYER_MESA_DEVICE_SELECT=1
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/sola/etc/fonts/fonts.conf}"
 export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
+export VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json:/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json}"
+export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 unset LIBGL_ALWAYS_SOFTWARE
+unset LD_PRELOAD
+if [ -f /oath/store/pkg/steam/lib64/liboath-dumpable.so ]; then
+	export LD_PRELOAD=/oath/store/pkg/steam/lib64/liboath-dumpable.so
+fi
 case " $* " in
 *\ --no-sandbox\ *) ;;
 *) set -- --no-sandbox "$@" ;;
 esac
+# steamui WebUITransport matches the websocket inode in
+# /proc/<webhelper-pid>/fd. CEF's network utility process owns the TCP
+# socket otherwise (Checked: 0/<pid> → reject → segfault).
+feats_done=0
+args=()
+for a in "$@"; do
+	case "$a" in
+	--enable-features=*)
+		case "$a" in
+		*NetworkServiceInProcess*) ;;
+		*) a="$a,NetworkServiceInProcess" ;;
+		esac
+		feats_done=1
+		;;
+	esac
+	args+=("$a")
+done
+set -- "${args[@]}"
+if [ "$feats_done" = 0 ]; then
+	set -- --enable-features=NetworkServiceInProcess "$@"
+fi
 log "host (no pressure-vessel) exec ./steamwebhelper $*"
 exec ./steamwebhelper "$@"
 WH
@@ -1045,7 +1152,9 @@ It must not rewrite pkg:glibc (Ubuntu folded libresolv into libc; this
 glibc still ships a separate libresolv that tmux NEEDs). srt-logger
 gets libresolv from lib/srt. steamwebhelper skips pressure-vessel
 (CLONE_NEWUSER is EPERM after PID 1 chroot) and runs on the host with
-64-bit steamrt3 SONAMEs in lib64. Removable. PID 1 does not supervise Steam.
+64-bit steamrt3 SONAMEs in lib64. libexec/oath-lsof is the
+lsof Steam's WebUITransport runs (`-P -F upnR -i TCP@…`). Removable.
+PID 1 does not supervise Steam.
 EOF
 
 echo "==> install sola-arcade"

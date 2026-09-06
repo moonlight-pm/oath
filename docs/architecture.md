@@ -75,11 +75,15 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.1.6
                        RADV + glvnd + vulkan-loader); `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
+                       plus `libdisplay-info.so.3` + `libxml2.so.16`
     pkg:steam          `/bin/steam` wrapper + 32-bit loader in lib32
                        + 64-bit steamrt3 SONAMEs in lib64; host
                        `_v2-entry-point` at `libexec/pv-host` (no bwrap);
+                       `libexec/oath-lsof` (`/bin/lsof` wrapper);
                        live nodes `/usr/bin/env`, `/lib64/ld-linux-x86-64.so.2`,
-                       `/lib/ld-linux.so.2`, `/etc/ssl/certs` (not the /bin farm)
+                       `/lib/ld-linux.so.2`, `/etc/ssl/certs`, `/bin/lsof`,
+                       `/usr/share/vulkan/icd.d/radeon_icd.{x86_64,i686}.json`
+                       (not the /bin farm)
     sola-arcade        `/bin/sola-arcade` (kit app in pkg:sola)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`)

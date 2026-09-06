@@ -303,7 +303,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("etc/group"), oath_core::seat::group_file())?;
     fs::write(stage.join("etc/shadow"), oath_core::seat::shadow_file())?;
     fs::write(stage.join("etc/shells"), oath_core::seat::shells_file())?;
-    fs::write(stage.join("etc/nsswitch.conf"), "passwd: files\ngroup: files\nshadow: files\n")?;
+    fs::write(
+        stage.join("etc/nsswitch.conf"),
+        "passwd: files\ngroup: files\nshadow: files\nhosts: files dns\n",
+    )?;
     fs::write(stage.join("etc/hosts"), "127.0.0.1 localhost\n::1 localhost\n127.0.1.1 oath\n")?;
     fs::write(
         stage.join("etc/profile"),

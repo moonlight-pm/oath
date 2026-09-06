@@ -7,7 +7,7 @@
   (`/usr/bin/env` + `/lib64` loader); canto downloaded and extracted the
   ubuntu12 client (~496 MB). steamwebhelper stays up on the host
   (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`) with `pkg:mesa`
-  GLX (CEF `BrowserReady`) and Vulkan WSI (RADV + loader). Guest
+  GLX (CEF `BrowserReady`; WebUITransport accepts via `oath-lsof`). Guest
   `cargo build -p sola-arcade` succeeded. `gamescope --backend wayland`
   selects RADV PITCAIRN and allocates descriptors (pool layer);
   nested Xwayland starts; River accepts the nest window
@@ -17,11 +17,13 @@
   the nest window (`libdecor-oath` 1px borders). Packed
   `libdecor-cairo` mmap-crashes on a 0-size CSD buffer so dummy
   wins. Steam uses rootful `pkg:xwayland`. CEF GPU uses `pkg:mesa`
-  GLX (`BrowserReady`). Vulkan WSI is packed (RADV + loader + 32-bit
-  ICD); Steam’s mixed 32/64 `LD_LIBRARY_PATH` still confuses
-  in-process topology. Arcade Play unsmoked. QEMU image pack of
-  these pkgs not in `cargo make build` yet. Other T36 kit ELFs still
-  out (`alsa.pc`).
+  GLX (`BrowserReady`). WebUITransport accepts the loopback websocket
+  once `/bin/lsof` exists (`oath-lsof`: `lsof -P -F upnR -i TCP@…`).
+  Login popup is up on canto `:2`. 32-bit RADV has
+  `libdisplay-info.so.3` + `libxml2.so.16`; dual ICD jsons. Steam
+  still logs missing `VK_KHR_surface` / `VK_KHR_xlib_surface`. Arcade
+  Play unsmoked. QEMU image pack of these pkgs not in `cargo make
+  build` yet. Other T36 kit ELFs still out (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
