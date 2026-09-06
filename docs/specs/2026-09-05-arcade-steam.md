@@ -16,7 +16,9 @@
   loads (`pkg:mesa/lib32` wayland 1.26 `wl_fixes_interface`; ICD
   DT_RPATH so steamrt’s old wayland cannot hide it). GpuTopology
   reports RADV PITCAIRN. steamui still segfaults after the library
-  window (gamescope nest and rootful Xwayland both).
+  window (desktop chrome, Deck UI, gamescope nest, and rootful
+  Xwayland). Novus runs Steam as a host X11 client on River
+  `+xwayland` inside nixpkgs `steam-*-bwrap`; not a gamescope session.
 **Gaps:** Direct `/bin/steam` nests in gamescope (`--backend wayland`,
   no `-b`; `-b` commits xdg 0×0 and segfaults). Do not pass
   `--force-windows-fullscreen` (0×0 CEF buffer upscaled = static on

@@ -887,6 +887,39 @@ echo "oath-steam-preexec: needed=$( $pe --print-needed "$ui" 2>/dev/null | head 
 exec "$@"
 PRE
 chmod 755 "$stagedir/steam/libexec/oath-steam-preexec"
+# Deck UI shells out to SteamOS helpers. Stub the ones that abort
+# GetSystemVersionDetails; do not invent a second OS.
+mkdir -p "$stagedir/steam/libexec/steamos-polkit-helpers"
+cat >"$stagedir/steam/libexec/steamos-select-branch" <<'STUB'
+#!/bin/sh
+echo rel
+STUB
+cat >"$stagedir/steam/libexec/lsb_release" <<'STUB'
+#!/bin/sh
+case "$1" in
+-is|--id) echo SteamOS ;;
+-rs|--release) echo 3.7 ;;
+-ds|--description) echo "SteamOS 3.7" ;;
+*) echo "SteamOS 3.7" ;;
+esac
+STUB
+cat >"$stagedir/steam/libexec/timedatectl" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+cat >"$stagedir/steam/libexec/steamos-polkit-helpers/steamos-devkit-mode" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+cat >"$stagedir/steam/libexec/steamos-polkit-helpers/jupiter-dock-updater" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+chmod 755 "$stagedir/steam/libexec/steamos-select-branch" \
+	"$stagedir/steam/libexec/lsb_release" \
+	"$stagedir/steam/libexec/timedatectl" \
+	"$stagedir/steam/libexec/steamos-polkit-helpers/steamos-devkit-mode" \
+	"$stagedir/steam/libexec/steamos-polkit-helpers/jupiter-dock-updater"
 # 32-bit preload: steamui SO_PEERCRED on TCP returns pid 0.
 zig_cc=/oath/store/pkg/cc/libexec/zig/zig
 if [ -x "$zig_cc" ] && [ -f "$here/oath-steam-peercred.c" ]; then
@@ -1202,8 +1235,37 @@ if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -
 	fi
 fi
 if [ -n "${DISPLAY-}" ]; then
-	# Rootful leftover only. gamescope's nested X is already a WM.
-	if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
+	export XDG_SESSION_TYPE=x11
+	export SDL_VIDEODRIVER=x11
+	export GDK_BACKEND=x11
+	export QT_QPA_PLATFORM=xcb
+	# Nested Xwayland: native xlib WSI. The FROG gamescope WSI layer
+	# is 64-bit only; leaving ENABLE_GAMESCOPE_WSI set hides surface
+	# extensions from 32-bit steamui. Pitcairn is SDR.
+	export ENABLE_GAMESCOPE_WSI=0
+	export ENABLE_HDR_WSI=0
+	export DXVK_HDR=0
+	if [ -n "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
+		# gamescope nest: Deck / gamepad UI (the chrome gamescope
+		# actually speaks). Do not rewrite XDG_CURRENT_DESKTOP or
+		# unset GAMESCOPE_WAYLAND_DISPLAY — those were forcing the
+		# desktop library window that segfaults after login.
+		export SteamDeck=1
+		export STEAM_USE_GAMEPADUI=1
+		export SteamTenfoot=1
+		sudo -n mkdir -p /usr/bin/steamos-polkit-helpers 2>/dev/null || true
+		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-polkit-helpers/steamos-devkit-mode \
+			/usr/bin/steamos-polkit-helpers/steamos-devkit-mode 2>/dev/null || true
+		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-polkit-helpers/jupiter-dock-updater \
+			/usr/bin/steamos-polkit-helpers/jupiter-dock-updater 2>/dev/null || true
+		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-select-branch \
+			/usr/bin/steamos-select-branch 2>/dev/null || true
+		case " $* " in
+		*" -gamepadui "*|*" -steamdeck "*) ;;
+		*) set -- -gamepadui -steamdeck "$@" ;;
+		esac
+	else
+		# Rootful leftover only. gamescope's nested X is already a WM.
 		if [ -x /oath/store/pkg/xwayland/libexec/xwayland-clip ]; then
 			/oath/store/pkg/xwayland/libexec/xwayland-clip --daemon
 		fi
@@ -1215,24 +1277,12 @@ if [ -n "${DISPLAY-}" ]; then
 				echo $! >"$pidfile"
 			fi
 		fi
+		export XDG_CURRENT_DESKTOP=Sola
+		export XDG_SESSION_DESKTOP=Sola
+		export SteamDeck=0
+		export STEAM_USE_GAMEPADUI=0
+		export SteamTenfoot=0
 	fi
-	# gamescope sets XDG_CURRENT_DESKTOP=gamescope → Steam forces BPM.
-	export XDG_CURRENT_DESKTOP=Sola
-	export XDG_SESSION_DESKTOP=Sola
-	export XDG_SESSION_TYPE=x11
-	unset GAMESCOPE_WAYLAND_DISPLAY
-	export SteamDeck=0
-	export STEAM_USE_GAMEPADUI=0
-	export SteamTenfoot=0
-	export SDL_VIDEODRIVER=x11
-	export GDK_BACKEND=x11
-	export QT_QPA_PLATFORM=xcb
-	# Nested Xwayland: native xlib WSI. The FROG gamescope WSI layer
-	# is 64-bit only; leaving ENABLE_GAMESCOPE_WSI set hides surface
-	# extensions from 32-bit steamui. Pitcairn is SDR.
-	export ENABLE_GAMESCOPE_WSI=0
-	export ENABLE_HDR_WSI=0
-	export DXVK_HDR=0
 	# steam.sh execs the client after package extract. DEBUGGER is the
 	# post-extract hook (STEAM_DEBUGGER=${DEBUGGER-}). Re-apply steamui
 	# shims the updater just overwrote, then exec the real ELF.

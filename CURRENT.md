@@ -66,8 +66,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    GpuTopology reports RADV PITCAIRN. Rootful `:2` +
    `xwayland-clip` / `oath-xwm` is leftover fallback only.
    **Gap:** steamui still segfaults after login when creating the
-   library window (gamescope nest and rootful Xwayland both). Arcade
-   Play unsmoked. **tmux:** new Terminal
+   library window — desktop chrome and Deck UI (`-gamepadui
+   -steamdeck`) both. Novus is not a gamescope Steam session: River
+   is `+xwayland`, `steam` is nixpkgs `*-bwrap` FHS, `unshare -U`
+   works, dbus is up; Steam is a host X11 window. Arcade Play
+   unsmoked. **tmux:** new Terminal
    tabs and workspaces splits work (do not stub `pkg:glibc`
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other

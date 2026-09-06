@@ -72,7 +72,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        `libexec/xwayland-clip` bridges Wayland clipboard →
                        X11 CLIPBOARD (`wl-paste` + `xclip`) so Ctrl+V pastes;
                        `libexec/oath-xwm` maps/clamps leftover rootful `:2`.
-                       Direct `/bin/steam` execs gamescope (no `-b`).
+                       Direct `/bin/steam` execs gamescope (no `-b`,
+                       `--steam`, Deck UI `-gamepadui -steamdeck`).
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools;
                        `libdecor-oath` 1px borders so River accepts xdg geometry)
