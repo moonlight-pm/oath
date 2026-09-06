@@ -1,12 +1,12 @@
 **Date:** 2026-08-31
 **Status:** target (freeze)
 **Implementation:** partial
-**Dogfood:** canto is Oath (`ssh root@canto`, `host:local` name canto,
-`net:net0` dhcp 10.0.0.3). Sola session on amdgpu (pixman). QEMU-EFI
-rehearsal passed. QEMU probe stays.
+**Dogfood:** canto is Oath (`ssh home@canto`, `host:local` name canto,
+`net:net0` dhcp 10.0.0.3). Sola session on amdgpu (GLES2/radeonsi).
+QEMU-EFI rehearsal passed. QEMU probe stays. T38 firmware menu on ESP.
 **Gaps:** kexec did not bring tg3 up on this Apple (EFI oneshot / USB
-installer instead); no generation picker; Sola on metal is pixman (no
-amdgpu accel); DualUp native 60 Hz needs DisplayPort not HDMI
+installer instead); T38 timeout menu unsmoked until reboot; DualUp
+native 60 Hz needs DisplayPort not HDMI
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Metal canary: replace canto (`nixos-anywhere` shape)

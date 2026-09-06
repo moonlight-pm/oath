@@ -4,7 +4,7 @@
 **Dogfood:** QEMU probe (`cargo make probe`) — hostname + `svc:hold` start/stop/undo/reboot
 **Gaps:**
 - MCP, extra kinds (out of freeze)
-- Boot-generation picker (undo is the supported rewind)
+- Firmware boot picker is T38 (catalog undo is still `@gen-N`)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Catalog, objects, and `oath` — target design

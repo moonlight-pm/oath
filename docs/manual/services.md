@@ -36,10 +36,10 @@ XDG_RUNTIME_DIR=/run/user/1 pw-dump | head
 ```
 
 On canto **this boot**, PipeWire was started as `home` by hand
-(`XDG_RUNTIME_DIR=/run/user/1`) so the chip has a sink before the next
-ESP initrd (the running PID 1 does not treat `svc:pipewire` as a seat
-svc). New images seed the three svcs as seat. A reboot without that
-initrd drops the ALSA modules and the daemons.
+(`XDG_RUNTIME_DIR=/run/user/1`) so the chip has a sink. The running
+PID 1 is still pre-T38 until reboot; the ESP initrd is T38 and seeds
+the three seat svcs. Reboot into that initrd to keep ALSA modules and
+the daemons without a hand start.
 
 No dbus-daemon: MPRIS / BlueZ stay quiet. HDMI heads exist as ALSA
 cards but are not udev-enumerated.
