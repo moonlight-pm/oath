@@ -73,7 +73,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        X11 CLIPBOARD (`wl-paste` + `xclip`) so Ctrl+V pastes;
                        `libexec/oath-xwm` maps/clamps leftover rootful `:2`.
                        Direct `/bin/steam` execs gamescope (no `-b`,
-                       `--steam`, Deck UI `-gamepadui -steamdeck`).
+                       `--steam`, Deck UI `-gamepadui -steamdeck`;
+                       steamui dlmopen copy of liboath-peercred;
+                       CEF `--disable-gpu` on SI).
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools;
                        `libdecor-oath` 1px borders so River accepts xdg geometry)

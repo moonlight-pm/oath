@@ -875,15 +875,12 @@ cat >"$stagedir/steam/libexec/oath-steam-preexec" <<'PRE'
 ui="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steamui.so"
 u32="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32"
 so=/oath/store/pkg/steam/lib32/liboath-peercred.so
-# steam.sh has already rewritten PATH; use absolute patchelf.
-pe=/bin/patchelf
-if [ -f "$so" ] && [ -f "$ui" ]; then
+if [ -f "$so" ] && [ -d "$u32" ]; then
 	ln -sfn "$so" "$u32/liboath-peercred.so"
-	if [ -x "$pe" ] && ! "$pe" --print-needed "$ui" 2>/dev/null | grep -q liboath-peercred; then
-		"$pe" --add-needed liboath-peercred.so "$ui" 2>/dev/null || true
-	fi
 fi
-echo "oath-steam-preexec: needed=$( $pe --print-needed "$ui" 2>/dev/null | head -n 1 )" >&2
+# Do not patchelf live steamui.so — Steam verifies size and re-extracts.
+# dlmopen in liboath-peercred.so loads a patched copy from /tmp.
+echo "oath-steam-preexec: shim=$so ui=$ui" >&2
 exec "$@"
 PRE
 chmod 755 "$stagedir/steam/libexec/oath-steam-preexec"
@@ -1165,12 +1162,19 @@ export VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-/oath/store/pkg/mesa/share/vulkan/i
 export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 unset LIBGL_ALWAYS_SOFTWARE
 unset LD_PRELOAD
+# Pitcairn RADV SI: CEF GPU process SIGBUS (exit 135) compositing the
+# 0x0 library browser. Software compositing is enough for Deck chrome.
+export RADV_DEBUG="${RADV_DEBUG:-nodcc,nohiz}"
 if [ -f /oath/store/pkg/steam/lib64/liboath-dumpable.so ]; then
 	export LD_PRELOAD=/oath/store/pkg/steam/lib64/liboath-dumpable.so
 fi
 case " $* " in
 *\ --no-sandbox\ *) ;;
 *) set -- --no-sandbox "$@" ;;
+esac
+case " $* " in
+*\ --disable-gpu\ *) ;;
+*) set -- --disable-gpu --disable-gpu-compositing "$@" ;;
 esac
 # steamui WebUITransport matches the websocket inode in
 # /proc/<webhelper-pid>/fd. CEF's network utility process owns the TCP
@@ -1204,6 +1208,9 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 # shellcheck disable=SC1091
 . /oath/store/pkg/steam/libexec/steam-compat.sh
+if [ -z "${WAYLAND_DISPLAY-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/1}/wayland-1" ]; then
+	export WAYLAND_DISPLAY=wayland-1
+fi
 # Nest is gamescope as a Wayland client (T37). Never host -f. Rootful
 # Xwayland :2 was a workaround while gamescope Vulkan was still
 # failing on SI; the nest window is in (RADV PITCAIRN + libdecor-oath).
@@ -1260,6 +1267,10 @@ if [ -n "${DISPLAY-}" ]; then
 			/usr/bin/steamos-polkit-helpers/jupiter-dock-updater 2>/dev/null || true
 		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-select-branch \
 			/usr/bin/steamos-select-branch 2>/dev/null || true
+		sudo -n ln -sfn /oath/store/pkg/steam/libexec/lsb_release \
+			/usr/bin/lsb_release 2>/dev/null || true
+		sudo -n ln -sfn /oath/store/pkg/steam/libexec/timedatectl \
+			/usr/bin/timedatectl 2>/dev/null || true
 		case " $* " in
 		*" -gamepadui "*|*" -steamdeck "*) ;;
 		*) set -- -gamepadui -steamdeck "$@" ;;
@@ -1338,7 +1349,9 @@ It must not rewrite pkg:glibc (Ubuntu folded libresolv into libc; this
 glibc still ships a separate libresolv that tmux NEEDs). srt-logger
 gets libresolv from lib/srt. steamwebhelper skips pressure-vessel
 (CLONE_NEWUSER is EPERM after PID 1 chroot) and runs on the host with
-64-bit steamrt3 SONAMEs in lib64. libexec/oath-lsof is the
+64-bit steamrt3 SONAMEs in lib64 (`--disable-gpu` on RADV SI).
+liboath-peercred.so is dlmopen’d as a patched copy of steamui.so
+(do not patchelf the live file). libexec/oath-lsof is the
 lsof Steam's WebUITransport runs (`-P -F upnR -i TCP@…`). Removable.
 PID 1 does not supervise Steam.
 EOF
