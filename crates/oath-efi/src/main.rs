@@ -10,6 +10,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::ffi::c_void;
+use core::fmt::Write;
 use core::ptr;
 
 use uefi::boot::{self, LoadImageSource, ScopedProtocol};

@@ -100,6 +100,30 @@ const SOLA_KIT_ELFS: &[&str] = &[
     "sola-wrapper",
 ];
 
+/// Kernel + initrd + `oath-efi` only. Used by `cargo make esp` on metal
+/// (no qcow, no qemu, no nix river pack).
+pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
+    fs::create_dir_all(out)?;
+    eprintln!("kernel={}", tools.kernel.display());
+    eprintln!("modules={}", tools.modules.display());
+    eprintln!("busybox={}", tools.busybox.display());
+    eprintln!(">> musl oath-init");
+    run(Command::new("cargo").current_dir(root).args([
+        "build",
+        "--release",
+        "--target",
+        "x86_64-unknown-linux-musl",
+        "-p",
+        "oath-init",
+    ]))?;
+    let init = root.join("target/x86_64-unknown-linux-musl/release/oath-init");
+    if !init.is_file() {
+        bail!("missing oath-init");
+    }
+    build_efi(root)?;
+    write_initrd(root, out, tools, &init)
+}
+
 pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::create_dir_all(out)?;
     eprintln!("kernel={}", tools.kernel.display());
@@ -117,77 +141,19 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         "-p",
         "oath-init",
     ]))?;
-    run(Command::new("cargo").current_dir(root).args([
-        "build",
-        "--release",
-        "--target",
-        "x86_64-unknown-uefi",
-        "-p",
-        "oath-efi",
-        "--features",
-        "uefi-app",
-    ]))?;
+    build_efi(root)?;
     let bin = root.join("target/x86_64-unknown-linux-musl/release");
     for n in ["oath", "oath-init", "serial-login", "sudo"] {
         if !bin.join(n).is_file() {
             bail!("missing {n}");
         }
     }
-
-    eprintln!(">> initramfs");
-    let ir = out.join("initramfs");
-    let _ = fs::remove_dir_all(&ir);
-    for d in ["bin", "dev", "proc", "sys", "newroot", "lib/modules"] {
-        fs::create_dir_all(ir.join(d))?;
-    }
-    copy_file(&bin.join("oath-init"), &ir.join("init"))?;
-    chmod_exec(&ir.join("init"))?;
-    copy_file(&tools.busybox, &ir.join("bin/busybox"))?;
-    chmod_exec(&ir.join("bin/busybox"))?;
-    let _ = fs::remove_file(ir.join("bin/sh"));
-    symlink("busybox", ir.join("bin/sh"))?;
-
-    let kver = first_dir(&tools.modules).context("no kver under modules")?;
-    let mdst = ir.join("lib/modules").join(&kver);
-    let dep_path = tools.modules.join(&kver).join("modules.dep");
-    let order = if dep_path.is_file() {
-        let text = fs::read_to_string(&dep_path).context("modules.dep")?;
-        resolve_load_order(&text, MODULE_ROOTS)
-    } else {
-        MODULE_ROOTS.iter().map(|m| m.trim_end_matches(".xz").to_string()).collect()
-    };
-    let mut copied = Vec::new();
-    for rel in &order {
-        let src_xz = tools.modules.join(&kver).join(format!("{rel}.xz"));
-        let src_raw = tools.modules.join(&kver).join(rel);
-        let src = if src_xz.is_file() { src_xz } else { src_raw };
-        if !src.is_file() {
-            eprintln!("warn: missing module {rel}");
-            continue;
-        }
-        let dst = mdst.join(rel);
-        fs::create_dir_all(dst.parent().unwrap())?;
-        if src.extension().is_some_and(|e| e == "xz") {
-            let raw = Command::new("xz").args(["-d", "-c"]).arg(&src).output().context("xz")?;
-            if !raw.status.success() {
-                bail!("xz -d {rel} failed");
-            }
-            fs::write(&dst, raw.stdout)?;
-        } else {
-            copy_file(&src, &dst)?;
-        }
-        copied.push(rel.clone());
-    }
-    fs::write(mdst.join("load-order"), copied.join("\n") + "\n")?;
-
-    copy_firmware(tools, &ir)?;
-    let initrd = write_cpio_gz(&ir, &out.join("initrd.gz"))?;
-    eprintln!("initrd {}", initrd.display());
+    write_initrd(root, out, tools, &bin.join("oath-init"))?;
 
     eprintln!(">> installer initramfs");
     let ir_install = out.join("initramfs-install");
     let _ = fs::remove_dir_all(&ir_install);
-    copy_tree(&ir, &ir_install)?;
+    copy_tree(&out.join("initramfs"), &ir_install)?;
     if let Some(db) = &tools.dropbear {
         copy_file(db, &ir_install.join("bin/dropbear"))?;
         chmod_exec(&ir_install.join("bin/dropbear"))?;
@@ -711,6 +677,313 @@ fn ensure_sola_worktree(src: &Path) -> Result<PathBuf> {
     Ok(wt)
 }
 
+fn build_efi(root: &Path) -> Result<PathBuf> {
+    eprintln!(">> uefi oath-efi");
+    run(Command::new("cargo").current_dir(root).args([
+        "build",
+        "--release",
+        "--target",
+        "x86_64-unknown-uefi",
+        "-p",
+        "oath-efi",
+        "--features",
+        "uefi-app",
+    ]))?;
+    let efi = root.join("target/x86_64-unknown-uefi/release/oath-efi.efi");
+    let alt = root.join("target/x86_64-unknown-uefi/release/oath-efi");
+    if efi.is_file() {
+        Ok(efi)
+    } else if alt.is_file() {
+        Ok(alt)
+    } else {
+        bail!("missing oath-efi (need rust-std x86_64-unknown-uefi)");
+    }
+}
+
+fn write_initrd(root: &Path, out: &Path, tools: &Tools, init: &Path) -> Result<()> {
+    let _ = root;
+    eprintln!(">> initramfs");
+    let ir = out.join("initramfs");
+    let _ = fs::remove_dir_all(&ir);
+    for d in ["bin", "dev", "proc", "sys", "newroot", "lib/modules"] {
+        fs::create_dir_all(ir.join(d))?;
+    }
+    copy_file(init, &ir.join("init"))?;
+    chmod_exec(&ir.join("init"))?;
+    copy_file(&tools.busybox, &ir.join("bin/busybox"))?;
+    chmod_exec(&ir.join("bin/busybox"))?;
+    let _ = fs::remove_file(ir.join("bin/sh"));
+    symlink("busybox", ir.join("bin/sh"))?;
+
+    let kver = std::env::var("OATH_KVER")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .or_else(|| first_dir(&tools.modules))
+        .context("no kver under modules")?;
+    let kdir = tools.modules.join(&kver);
+    let mdst = ir.join("lib/modules").join(&kver);
+    let order = module_load_order(&kdir)?;
+    let mut copied = Vec::new();
+    for rel in &order {
+        let Some(src) = find_module(&kdir, rel) else {
+            eprintln!("warn: missing module {rel}");
+            continue;
+        };
+        let dst = mdst.join(ko_path(rel));
+        fs::create_dir_all(dst.parent().unwrap())?;
+        let bytes = decompress_module(&src)?;
+        fs::write(&dst, bytes)?;
+        copied.push(ko_path(rel));
+    }
+    fs::write(mdst.join("load-order"), copied.join("\n") + "\n")?;
+
+    copy_firmware(tools, &ir)?;
+    let initrd = write_cpio_gz(&ir, &out.join("initrd.gz"))?;
+    eprintln!("initrd {}", initrd.display());
+    Ok(())
+}
+
+/// Strip `.ko.{zst,xz,gz}` down to `.ko` (Ubuntu mainline, Nix, Debian).
+pub(crate) fn ko_path(p: &str) -> String {
+    let mut p = p.trim().to_string();
+    loop {
+        let next = p
+            .strip_suffix(".zst")
+            .or_else(|| p.strip_suffix(".xz"))
+            .or_else(|| p.strip_suffix(".gz"));
+        match next {
+            Some(s) => p = s.to_string(),
+            None => break,
+        }
+    }
+    p
+}
+
+fn zstd_bin() -> PathBuf {
+    crate::util::which("zstd")
+        .or_else(|| {
+            let p = PathBuf::from("/tmp/zstd");
+            p.is_file().then_some(p)
+        })
+        .unwrap_or_else(|| PathBuf::from("zstd"))
+}
+
+fn find_module(kdir: &Path, rel: &str) -> Option<PathBuf> {
+    let rel = ko_path(rel);
+    for cand in [
+        rel.clone(),
+        format!("{rel}.xz"),
+        format!("{rel}.zst"),
+        format!("{rel}.gz"),
+    ] {
+        let p = kdir.join(&cand);
+        if p.is_file() {
+            return Some(p);
+        }
+    }
+    None
+}
+
+fn decompress_module(src: &Path) -> Result<Vec<u8>> {
+    let name = src.file_name().and_then(|s| s.to_str()).unwrap_or("");
+    if name.ends_with(".zst") {
+        let out = Command::new(zstd_bin())
+            .args(["-d", "-c"])
+            .arg(src)
+            .output()
+            .context("zstd")?;
+        if !out.status.success() {
+            bail!("zstd -d {} failed", src.display());
+        }
+        return Ok(out.stdout);
+    }
+    if name.ends_with(".xz") {
+        let out = Command::new("xz").args(["-d", "-c"]).arg(src).output().context("xz")?;
+        if !out.status.success() {
+            bail!("xz -d {} failed", src.display());
+        }
+        return Ok(out.stdout);
+    }
+    if name.ends_with(".gz") {
+        let out = Command::new("gzip").args(["-d", "-c"]).arg(src).output().context("gzip")?;
+        if !out.status.success() {
+            bail!("gzip -d {} failed", src.display());
+        }
+        return Ok(out.stdout);
+    }
+    fs::read(src).with_context(|| format!("read {}", src.display()))
+}
+
+fn module_load_order(kdir: &Path) -> Result<Vec<String>> {
+    let load_order = kdir.join("load-order");
+    if load_order.is_file() {
+        let text = fs::read_to_string(&load_order).context("load-order")?;
+        let rows: Vec<String> = text
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty() && !l.starts_with('#'))
+            .map(ko_path)
+            .collect();
+        if !rows.is_empty() {
+            return Ok(rows);
+        }
+    }
+    let dep_path = kdir.join("modules.dep");
+    if dep_path.is_file() {
+        let text = fs::read_to_string(&dep_path).context("modules.dep")?;
+        if dep_graph_useful(&text) {
+            return Ok(resolve_load_order(&text, MODULE_ROOTS));
+        }
+    }
+    resolve_by_modinfo(kdir, MODULE_ROOTS)
+}
+
+fn dep_graph_useful(text: &str) -> bool {
+    text.lines().any(|l| {
+        l.split_once(':')
+            .map(|(_, rest)| rest.split_whitespace().any(|t| t.contains(".ko")))
+            .unwrap_or(false)
+    })
+}
+
+fn index_modules(kdir: &Path) -> Result<std::collections::HashMap<String, PathBuf>> {
+    use std::collections::HashMap;
+    let mut map = HashMap::new();
+    let kernel = kdir.join("kernel");
+    if !kernel.is_dir() {
+        return Ok(map);
+    }
+    fn walk(dir: &Path, kdir: &Path, map: &mut HashMap<String, PathBuf>) -> Result<()> {
+        for e in fs::read_dir(dir)? {
+            let e = e?;
+            let p = e.path();
+            if p.is_dir() {
+                walk(&p, kdir, map)?;
+                continue;
+            }
+            let name = e.file_name().to_string_lossy().into_owned();
+            let base = ko_path(&name);
+            if !base.ends_with(".ko") {
+                continue;
+            }
+            let stem = base.trim_end_matches(".ko").to_string();
+            let rel = p.strip_prefix(kdir).unwrap_or(&p).to_path_buf();
+            map.entry(stem).or_insert(rel);
+        }
+        Ok(())
+    }
+    walk(&kernel, kdir, &mut map)?;
+    Ok(map)
+}
+
+fn modinfo_depends(bytes: &[u8]) -> Vec<String> {
+    let mut out = Vec::new();
+    for chunk in bytes.split(|b| *b == 0) {
+        let Ok(s) = std::str::from_utf8(chunk) else { continue };
+        let Some(rest) = s.strip_prefix("depends=") else { continue };
+        if rest.is_empty() {
+            continue;
+        }
+        out.extend(rest.split(',').filter(|x| !x.is_empty()).map(|s| s.to_string()));
+    }
+    out
+}
+
+/// Ubuntu mainline (and others) ship `.ko.zst` without `modules.dep`.
+/// Walk `depends=` from the modules we actually copy.
+fn resolve_by_modinfo(kdir: &Path, roots: &[&str]) -> Result<Vec<String>> {
+    use std::collections::{HashMap, HashSet, VecDeque};
+    let index = index_modules(kdir)?;
+    let mut rel_of: HashMap<String, String> = HashMap::new();
+    let mut q = VecDeque::new();
+    for r in roots {
+        let rel = ko_path(r);
+        let stem = Path::new(&rel)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&rel)
+            .trim_end_matches(".ko")
+            .to_string();
+        if find_module(kdir, &rel).is_some() {
+            q.push_back(rel.clone());
+            rel_of.insert(stem, rel);
+        } else if let Some(p) = index.get(&stem) {
+            let r = p.to_string_lossy().into_owned();
+            q.push_back(ko_path(&r));
+            rel_of.insert(stem, ko_path(&r));
+        }
+    }
+    let mut need: HashSet<String> = HashSet::new();
+    let mut deps_of: HashMap<String, Vec<String>> = HashMap::new();
+    while let Some(rel) = q.pop_front() {
+        let rel = ko_path(&rel);
+        if !need.insert(rel.clone()) {
+            continue;
+        }
+        let Some(src) = find_module(kdir, &rel) else {
+            eprintln!("warn: missing module {rel}");
+            continue;
+        };
+        let bytes = decompress_module(&src)?;
+        let mut deps = Vec::new();
+        for name in modinfo_depends(&bytes) {
+            if let Some(p) = index.get(&name) {
+                let drel = ko_path(&p.to_string_lossy());
+                deps.push(drel.clone());
+                if !need.contains(&drel) {
+                    q.push_back(drel);
+                }
+            } else {
+                eprintln!("warn: dep {name} of {rel} not in tree");
+            }
+        }
+        deps_of.insert(rel, deps);
+    }
+    // deps before users
+    let mut indeg: HashMap<String, usize> = need.iter().map(|n| (n.clone(), 0)).collect();
+    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+    for (n, deps) in &deps_of {
+        for d in deps {
+            if need.contains(d) {
+                adj.entry(d.clone()).or_default().push(n.clone());
+                *indeg.get_mut(n).unwrap() += 1;
+            }
+        }
+    }
+    let mut zero: Vec<String> =
+        indeg.iter().filter(|(_, d)| **d == 0).map(|(k, _)| k.clone()).collect();
+    zero.sort();
+    let mut order = Vec::new();
+    while let Some(n) = {
+        if zero.is_empty() {
+            None
+        } else {
+            Some(zero.remove(0))
+        }
+    } {
+        order.push(n.clone());
+        if let Some(children) = adj.get(&n) {
+            let mut next = children.clone();
+            next.sort();
+            for m in next {
+                if let Some(e) = indeg.get_mut(&m) {
+                    *e = e.saturating_sub(1);
+                    if *e == 0 {
+                        zero.push(m);
+                        zero.sort();
+                    }
+                }
+            }
+        }
+    }
+    for n in &need {
+        if !order.iter().any(|x| x == n) {
+            order.push(n.clone());
+        }
+    }
+    Ok(order)
+}
+
 fn write_cpio_gz(tree: &Path, dest: &Path) -> Result<PathBuf> {
     let f = fs::File::create(dest)?;
     let mut gz = GzEncoder::new(f, Compression::best());
@@ -756,18 +1029,18 @@ pub(crate) fn resolve_load_order(dep_text: &str, roots: &[&str]) -> Vec<String> 
         let Some((key, rest)) = line.split_once(':') else {
             continue;
         };
-        let key = key.trim();
+        let key = ko_path(key.trim());
         if key.is_empty() {
             continue;
         }
-        graph.insert(key.to_string(), rest.split_whitespace().map(|s| s.to_string()).collect());
+        graph.insert(key, rest.split_whitespace().map(ko_path).collect());
     }
 
     let mut rank: HashMap<String, usize> = HashMap::new();
     let mut need: HashSet<String> = HashSet::new();
     let mut q = VecDeque::new();
     for r in roots {
-        q.push_back((*r).to_string());
+        q.push_back(ko_path(r));
     }
     let mut next_rank = 0usize;
     while let Some(n) = q.pop_front() {
@@ -832,7 +1105,7 @@ pub(crate) fn resolve_load_order(dep_text: &str, roots: &[&str]) -> Vec<String> 
             order.push(n.clone());
         }
     }
-    order.into_iter().map(|p| p.trim_end_matches(".xz").to_string()).collect()
+    order.into_iter().map(|p| ko_path(&p)).collect()
 }
 
 fn pack_curl(oath_root: &Path, tools: &Tools) -> Result<()> {
@@ -1112,6 +1385,32 @@ d.ko.xz: a.ko.xz
         assert!(pos("b.ko") < pos("a.ko"));
         assert!(pos("a.ko") < pos("d.ko"));
         assert_eq!(order.len(), 4);
+    }
+
+    #[test]
+    fn ko_path_strips_zst() {
+        assert_eq!(ko_path("kernel/foo.ko.zst"), "kernel/foo.ko");
+        assert_eq!(ko_path("kernel/foo.ko.xz"), "kernel/foo.ko");
+        assert_eq!(ko_path("kernel/foo.ko"), "kernel/foo.ko");
+    }
+
+    #[test]
+    fn resolve_load_order_zst_keys() {
+        let dep = "\
+a.ko.zst: b.ko.zst
+b.ko.zst:
+";
+        let order = resolve_load_order(dep, &["a.ko.xz"]);
+        let pos = |n: &str| order.iter().position(|x| x == n).unwrap();
+        assert!(pos("b.ko") < pos("a.ko"));
+    }
+
+    #[test]
+    fn dep_graph_empty_deps_is_useless() {
+        let dep = "a.ko.zst:\nb.ko.zst:\n";
+        assert!(!dep_graph_useful(dep));
+        let dep = "a.ko.zst: b.ko.zst\n";
+        assert!(dep_graph_useful(dep));
     }
 
     #[test]

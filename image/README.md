@@ -19,7 +19,9 @@ sola-browser + CEF, workspaces, kvm, and remaining kit apps; host
 `cargo build --release` from `forks/sola`). Canto live-add:
 `sh image/install-sola-kit.sh`. Arcade + Steam runtime (T37):
 `sh image/install-bash.sh`, `sh image/build-sola-arcade.sh`,
-`bash image/install-arcade-runtime.sh`.
+`bash image/install-arcade-runtime.sh`. Mesa-only refresh:
+`bash image/pack-mesa.sh`. Metal kernel without Nix:
+`sh image/fetch-linux-mainline.sh` then `cargo make esp`.
 
 Host orchestration is Rust:
 

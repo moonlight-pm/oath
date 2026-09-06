@@ -27,7 +27,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     mounts subvolid=0 at /oath/run/fs
   disk (btrfs)
     @            live root
-    @gen-N       readonly sibling generations
+    @gen-N       readonly sibling generations (catalog undo)
+    @boot-N      read-write snapshot at ESP rotate (firmware menu)
     /init (ESP initrd)     PID 1; chroot into @ and keeps running
     /lib/oath/init         same ELF on disk (not exec'd after chroot)
     /lib/oath/serial-login
@@ -64,7 +65,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:thoxa          `/bin/thoxa` (glibc; session REPL is the `home` login shell)
     pkg:cc             `/bin/cc` (Zig; gnu default, musl-cc for Oath ELFs;
                        `zig-gnu-cc.sh` drops rustc `-fuse-ld=lld` / cc-rs `--target=`)
-    pkg:rustc          `/bin/rustc` `/bin/cargo` (1.98.1 gnu host + musl std)
+    pkg:rustc          `/bin/rustc` `/bin/cargo` (1.98.1 gnu host + musl std
+                       + rust-std `x86_64-unknown-uefi` for `oath-efi`)
     pkg:cmake          `/bin/cmake` `/bin/ninja`
     pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
@@ -84,9 +86,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools,
                        GETs SI export tiling, does not SET LINEAR_ALIGNED;
                        `libdecor-oath` 1px borders so River accepts xdg geometry)
-    pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.2.1
-                       pack script; live canto still 26.1.6 until
-                       reinstall); `/bin/vulkaninfo`;
+    pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.2.1);
+                       `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
                        plus `libdisplay-info.so.3` + `libxml2.so.16` +
                        `libwayland-client` 1.26 (`wl_fixes`); ICD DT_RPATH
@@ -149,7 +150,9 @@ is still `-kernel`. Metal `oath-efi` reads `loader/loader.conf` +
 `loader/oath-boots` (timeout 5) and `loader/entries/oath.conf` plus
 `oath-<id>.conf` archives under `/oath/boot/<id>/`. `oath.subvol=@`
 or `@boot-N`. `cargo make esp --esp --confirm` rotates without a wipe.
-Canto: two Broadcom `tg3` ports; live cable is MAC
+Canto ESP current is Ubuntu mainline 7.3-rc1 (live process 6.12.93
+until reboot); archives boot 1 (pre-T38) and boot 2 (6.12 + T38).
+Two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits
 for carrier then dhcp. Dual Pitcairn amdgpu (`si_support=1`);

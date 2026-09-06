@@ -35,7 +35,8 @@ cargo make esp --esp /dev/sda1 --confirm --root /dev/sda2
 That archives the live ESP kernel as `oath/boot/<id>/`, keeps five
 archives, snapshots `@` to `@boot-<id>`, and copies the new bits.
 Reboot; the firmware menu can pick the archive if the new kernel
-fails.
+fails. Metal without Nix: set `OATH_KERNEL`, `OATH_MODULES`,
+`OATH_BUSYBOX` (see `image/fetch-linux-mainline.sh`).
 4. Set `host:local` hostname, `net:net0` dhcp, owner SSH pubkeys.
 5. Reboot. Courage is **SSH as `home`** with those keys, then
    `oath ls`. (`sudo` has no password.)

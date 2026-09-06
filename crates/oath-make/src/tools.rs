@@ -134,10 +134,11 @@ pub fn load(root: &Path) -> Result<Tools> {
         }
     }
 
+    // `cargo make esp` on metal has no qemu. Probe/run still need the real bins.
     let qemu = which("qemu-system-x86_64")
         .or_else(|| std::env::var_os("QEMU").map(PathBuf::from))
-        .context("qemu-system-x86_64 not on PATH (try: nix-shell)")?;
-    let qemu_img = which("qemu-img").context("qemu-img not on PATH")?;
+        .unwrap_or_else(|| PathBuf::from("/bin/true"));
+    let qemu_img = which("qemu-img").unwrap_or_else(|| PathBuf::from("/bin/true"));
 
     let kernel = kernel.context("OATH_KERNEL")?;
     let modules = modules.context("OATH_MODULES")?;
@@ -220,7 +221,14 @@ pub fn load(root: &Path) -> Result<Tools> {
         systemd_boot: opt_file("systemd-bootx64.efi"),
         ovmf_code: opt_file("OVMF_CODE.fd"),
         ovmf_vars: opt_file("OVMF_VARS.fd"),
-        firmware: opt_dir("firmware"),
+        firmware: opt_dir("firmware")
+            .or_else(|| {
+                std::env::var_os("OATH_FIRMWARE").map(PathBuf::from).filter(|p| p.is_dir())
+            })
+            .or_else(|| {
+                let p = PathBuf::from("/lib/firmware");
+                p.is_dir().then_some(p)
+            }),
         glibc,
         river,
         sola_rt,

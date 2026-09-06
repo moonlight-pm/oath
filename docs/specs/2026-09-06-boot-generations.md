@@ -1,10 +1,13 @@
 **Date:** 2026-09-06
 **Status:** target (freeze)
-**Implementation:** in tree (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
-**Dogfood:** not on canto ESP until `cargo make esp --confirm` (needs packed
-  initrd + `oath-efi`). QEMU `run`/`probe` stay `-kernel` (no menu).
-**Gaps:** metal timeout menu unsmoked; kernel 7.3 only on the next nix pack;
-  River GLES is still the river-pack Mesa until that pack rebuilds
+**Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
+**Dogfood:** canto ESP rotated twice 2026-09-06 (`oath-efi` timeout 5;
+  current Ubuntu mainline **7.3-rc1**; archive boot 2 is 6.12.93 + T38
+  initrd + `@boot-2`; boot 1 is pre-T38). Live kernel this boot is still
+  6.12.93 until reboot. QEMU `run`/`probe` stay `-kernel` (no menu).
+**Gaps:** metal timeout menu unsmoked (needs reboot); River GLES is still
+  the river-pack Mesa until that pack rebuilds; 7.3 GFX6 modifiers need
+  that River mesa + this kernel after reboot. `pkg:mesa` live is 26.2.1.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Boot generations (last 5) + current packages
@@ -38,9 +41,11 @@ subvolume), not `oath undo`.
 - **Non-wipe ESP update:** `cargo make esp --esp /dev/sda1 --confirm`.
   Rotates, copies new `oath-efi` + kernel + initrd, writes BLS.
   Does **not** format a disk. Full install still `--confirm` + `--disk`.
-- **Kernel:** newest packaged kernel the build nixpkgs knows
-  (`linuxPackages_testing` / `linux_7_3` when present, else
-  `linuxPackages_latest`). Pitcairn still sets `amdgpu.si_support=1`
+- **Kernel:** newest packaged kernel the build host can borrow.
+  Nix pack: `linuxPackages_testing` / `linux_7_3` when present, else
+  `linuxPackages_latest`. Metal without Nix: Ubuntu mainline
+  (`image/fetch-linux-mainline.sh`, 7.3-rc1 as of 2026-09-06 — GFX6
+  DRM modifiers). Pitcairn still sets `amdgpu.si_support=1`
   until the running kernel defaults SI to amdgpu.
 - **`pkg:mesa`:** current Debian mesa (26.2.x), not a frozen 26.1.6.
   Gamescope/RADV follow that pack. River GLES follows `pkg:river`

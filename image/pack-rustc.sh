@@ -15,6 +15,9 @@ RUST_URL=https://static.rust-lang.org/dist/${RUST_DATE}/rust-${RUST_VER}-x86_64-
 RUST_SHA=24ba1338a2d35c5a3247936546429e163fa674d726102af18bdf624582c57aea
 MUSL_URL=https://static.rust-lang.org/dist/${RUST_DATE}/rust-std-${RUST_VER}-x86_64-unknown-linux-musl.tar.gz
 MUSL_SHA=ac111ad77967e98d0362e49a2c19121f3f54e4e68c247b90995e665687ebede8
+# gzip: same busybox xz short-read as the host tarball.
+UEFI_URL=https://static.rust-lang.org/dist/${RUST_DATE}/rust-std-${RUST_VER}-x86_64-unknown-uefi.tar.gz
+UEFI_SHA=5c21ffed6ac697898a091187ed1ea3abce35cf7ac2598e948944e02a6c7f0658
 
 guest=/oath/store/pkg/rustc
 guest_glibc=/oath/store/pkg/glibc/lib
@@ -63,6 +66,18 @@ tar -xzf "$mtar" -C "$cache" || {
 msrc=$cache/rust-std-${RUST_VER}-x86_64-unknown-linux-musl
 if [ -x "$msrc/install.sh" ]; then
 	sh "$msrc/install.sh" --prefix="$prefix" --disable-ldconfig >/dev/null
+fi
+
+utar=$cache/rust-std-${RUST_VER}-x86_64-unknown-uefi.tar.gz
+sh "$fetch" "$UEFI_URL" "$utar" "$UEFI_SHA"
+echo "extract rust-std uefi $RUST_VER"
+tar -xzf "$utar" -C "$cache" || {
+	echo "tar extract failed for $utar" >&2
+	exit 1
+}
+usrc=$cache/rust-std-${RUST_VER}-x86_64-unknown-uefi
+if [ -x "$usrc/install.sh" ]; then
+	sh "$usrc/install.sh" --prefix="$prefix" --disable-ldconfig >/dev/null
 fi
 
 # Copy the prefix. Bins go to libexec (real ELFs); wrappers in bin/.

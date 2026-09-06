@@ -60,7 +60,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `_v2-entry-point` (`CLONE_NEWUSER` EPERM). Launcher lists **Steam**
    (`~/.config/sola/shell/applications.json` + `state.yaml`
    `Application`; `/bin/steam`; `lucide/gamepad-2`). **`pkg:mesa`**
-   is GLX plus Vulkan WSI (RADV 26.1.6). 32-bit RADV loads (Debian
+   is GLX plus Vulkan WSI (RADV 26.2.1). 32-bit RADV loads (Debian
    `libwayland-client` 1.26 in `pkg:mesa/lib32` for
    `wl_fixes_interface`; steamrt 0.3.0 is too old; ICD uses DT_RPATH).
    GpuTopology reports RADV PITCAIRN. Rootful `:2` +
@@ -106,15 +106,17 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    smoke, or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
-   **T38** firmware boots: last five ESP archives + current. `oath-efi`
-   menu (metal timeout 5, QEMU EFI 0). PID 1 honors `oath.subvol=@` /
-   `@boot-N` / `@gen-N`. `cargo make esp --esp /dev/sda1 --confirm`
-   rotates without wiping. Kernel pick in `image/tools.nix` is newest
-   nixpkgs packaged (`linuxPackages_testing` / 7.3 when present).
-   `pkg:mesa` pack script is Debian **26.2.1**. Live canto is still
-   kernel 6.12.93 + mesa 26.1.6 until a nix pack and `esp`. Nest
-   present still needs that kernel+Mesa on **both** RADV and River
-   radeonsi (or the linear CreateImage lever).
+   **T38** firmware boots on canto ESP: last five archives + current.
+   `oath-efi` menu (metal timeout 5, QEMU EFI 0). PID 1 honors
+   `oath.subvol=@` / `@boot-N` / `@gen-N`. `cargo make esp --esp
+   /dev/sda1 --confirm` rotated twice this boot without wiping
+   (`@boot-1`, `@boot-2`). Current ESP kernel is Ubuntu mainline
+   **7.3-rc1** (GFX6 DRM modifiers; `image/fetch-linux-mainline.sh`);
+   archive boot 2 is 6.12.93 + T38 initrd. Live process is still
+   6.12.93 until reboot. `pkg:mesa` live is Debian **26.2.1** (gen 22). Nest
+   present still needs 7.3 + Mesa on **both** RADV (`pkg:mesa`) and
+   River radeonsi (or the linear CreateImage lever). Do not
+   `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF

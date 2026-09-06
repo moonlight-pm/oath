@@ -139,4 +139,4 @@ once the disk is mounted.
 - SSH hostfwd `127.0.0.1:2222` → guest 22 (`OATH_SSH_PORT`). Optional
   `OATH_BRIDGE=br0` for a host bridge (no hostfwd).
 - No installer
-- No boot-generation picker (undo is the supported rewind)
+- No firmware boot menu (`run`/`probe` are `-kernel`; metal T38 menu is EFI)

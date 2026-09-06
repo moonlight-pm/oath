@@ -635,17 +635,23 @@ pub fn update_esp(repo: &Path, out: &Path, opts: EspOpts) -> Result<()> {
         bail!("--esp must be a /dev/ node (got {:?})", opts.esp);
     }
     let tools = tools::load(repo)?;
-    if !out.join("initrd.gz").is_file() {
-        pack::build(repo, out, &tools)?;
-    }
+    pack::boot_image(repo, out, &tools)?;
     let efi = repo.join("target/x86_64-unknown-uefi/release/oath-efi.efi");
-    if !efi.is_file() {
-        pack::build(repo, out, &tools)?;
-    }
+    let efi_alt = repo.join("target/x86_64-unknown-uefi/release/oath-efi");
+    let efi = if efi.is_file() {
+        efi
+    } else if efi_alt.is_file() {
+        efi_alt
+    } else {
+        bail!("oath-efi missing after boot_image");
+    };
     let mnt = out.join("esp-mnt");
     let _ = fs::create_dir_all(&mnt);
     let _ = sudo(&["umount", mnt.to_str().unwrap()]);
-    sudo(&["mount", &opts.esp, mnt.to_str().unwrap()])?;
+    let uid = unsafe { libc::getuid() };
+    let gid = unsafe { libc::getgid() };
+    let mnt_opts = format!("rw,uid={uid},gid={gid},umask=022");
+    sudo(&["mount", "-t", "vfat", "-o", &mnt_opts, &opts.esp, mnt.to_str().unwrap()])?;
     let result = (|| -> Result<u64> {
         let (id, prune) = crate::boot::apply_rotate_files(
             &mnt,
