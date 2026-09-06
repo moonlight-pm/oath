@@ -293,6 +293,14 @@ export VK_INSTANCE_LAYERS=VK_LAYER_OATH_gamescope_pool
 export LIBDECOR_PLUGIN_DIR=/oath/store/pkg/gamescope/lib/libdecor/plugins-1
 export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/sola/etc/fonts/fonts.conf}"
 export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
+# Pitcairn has no DRM modifiers. Direct scan-out of client dmabufs to
+# River (radeonsi GLES) is GPU tiling garbage; force vulkan composite.
+# gamescope --steam also advertises HDR; SI is SDR.
+export gamescope_composite_force=true
+export gamescope_hdr_enabled=false
+export AMD_DEBUG="${AMD_DEBUG:+$AMD_DEBUG,}nodcc"
+export RADV_DEBUG="${RADV_DEBUG:+$RADV_DEBUG,}nodcc,nohiz"
+export R600_DEBUG="${R600_DEBUG:+$R600_DEBUG,}nodcc"
 # libmvec.so.1 is a real glibc object (GLIBC_2.22). Do not let a
 # libmvec→libm symlink win; that is "GLIBC_2.22 not found".
 export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
@@ -988,6 +996,28 @@ if [ -d "$rt/usr/share/X11/locale" ]; then
 			>> "$rt/usr/share/X11/locale/locale.dir" || true
 	fi
 fi
+# Nested gamescope --steam advertises HDR and then scan-outs client
+# dmabufs. Pitcairn has no DRM modifiers: that pass-through is static
+# on River (radeonsi). Force SDR + re-assert composite after Steam's
+# CGamescopeController sets composite_force 0.
+if [ -n "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
+	export STEAM_GAMESCOPE_HDR_SUPPORTED=0
+	export ENABLE_HDR_WSI=0
+	export DXVK_HDR=0
+	(
+		ctl=/oath/store/pkg/gamescope/libexec/gamescopectl
+		[ -x "$ctl" ] || exit 0
+		export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+		unset LD_PRELOAD
+		i=0
+		while [ "$i" -lt 8 ]; do
+			sleep 12
+			"$ctl" hdr_enabled 0
+			"$ctl" composite_force 1
+			i=$((i + 1))
+		done
+	) >/tmp/oath-gamescope-convar.log 2>&1 &
+fi
 sudo -n ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 2>/dev/null || true
 # Do not stub pkg:glibc libresolv → libc (tmux __b64_pton; rpath glibc first).
 if [ -L /oath/store/pkg/glibc/lib/libresolv.so.2 ]; then
@@ -1259,6 +1289,7 @@ if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -
 		exec /bin/gamescope --backend wayland -S fit \
 			-W 1920 -H 1080 -w 1920 -h 1080 \
 			--cursor-scale-height 1080 \
+			--disable-color-management \
 			--steam \
 			-- "$0" "$@"
 	fi
@@ -1279,6 +1310,9 @@ if [ -n "${DISPLAY-}" ]; then
 		# actually speaks). Do not rewrite XDG_CURRENT_DESKTOP or
 		# unset GAMESCOPE_WAYLAND_DISPLAY — those were forcing the
 		# desktop library window that segfaults after login.
+		# gamescope UpdateCompatEnvVars always sets HDR_SUPPORTED=1;
+		# Pitcairn is SDR and HDR pass-through looks like static.
+		export STEAM_GAMESCOPE_HDR_SUPPORTED=0
 		export SteamDeck=1
 		export STEAM_USE_GAMEPADUI=1
 		export SteamTenfoot=1

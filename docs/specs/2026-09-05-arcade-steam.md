@@ -33,9 +33,11 @@
   `--force-windows-fullscreen` (0×0 CEF buffer upscaled = static on
   RADV SI). Do not patchelf live `steamui.so`. River accepts the nest
   (`libdecor-oath` 1px). steamui library window paints after login
-  (Deck welcome); CEF BrowserReady is up. `XOpenIM()` still fails
-  `LANG=C.UTF-8` until `compose.dir` aliases C.UTF-8 (compat.sh).
-  CEF GPU is `--disable-gpu` on SI. WebUITransport
+  (Deck welcome); CEF BrowserReady is up. Nested present to River
+  was GPU static: no DRM modifiers + `--steam` `composite_force 0`
+  (direct dmabuf scan-out). Wrapper forces composition and SDR.
+  `XOpenIM()` still fails `LANG=C.UTF-8` until `compose.dir` aliases
+  C.UTF-8 (compat.sh). CEF GPU is `--disable-gpu` on SI. WebUITransport
   needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked. Rootful `:2`
   + clip/xwm is leftover fallback. QEMU image pack of these pkgs not
   in `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).

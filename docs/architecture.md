@@ -77,7 +77,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        steamui dlmopen copy of liboath-peercred
                        (`load_sym` — RTLD_NEXT is NULL in that NS);
                        `/usr/share/X11/locale` from steam-runtime;
-                       CEF `--disable-gpu` on SI).
+                       CEF `--disable-gpu` on SI; nest forces
+                       composition + SDR so River is not dmabuf static).
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools;
                        `libdecor-oath` 1px borders so River accepts xdg geometry)

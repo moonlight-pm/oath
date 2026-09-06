@@ -78,18 +78,24 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `/usr/share/X11/locale` was an earlier NULL-deref
    (`_XlcCreateLocaleDataBase`); steam-runtime locale is live-linked
    and `XLOCALEDIR` is set. Not missing `VK_KHR_surface`, not SDL
-   modal, not live-file DT_NEEDED. **Gap:** `XOpenIM()` still fails
-   `LANG=C.UTF-8` (`compose.dir` has no C.UTF-8 row; next launch
-   aliases it to `en_US.UTF-8`). No 32-bit `libgbm`. Arcade Play
-   unsmoked. Novus is not a gamescope Steam session: River is
+   modal, not live-file DT_NEEDED. **Gap:** gamescope’s internal
+   screenshot is the Deck library; the nest River showed was GPU
+   static from direct dmabuf scan-out (Pitcairn has no DRM modifiers;
+   `--steam` sets `composite_force 0` and HDR on). Wrapper now
+   `gamescope_composite_force=true`, `STEAM_GAMESCOPE_HDR_SUPPORTED=0`,
+   `--disable-color-management`, and a delayed `gamescopectl`
+   re-assert. Confirm the nest on the glass. `XOpenIM()` still fails
+   `LANG=C.UTF-8`. No 32-bit `libgbm`. Arcade Play unsmoked. Novus is
+   not a gamescope Steam session: River is
    `+xwayland`, `steam` is nixpkgs `*-bwrap` FHS, `unshare -U`
    works, dbus is up; Steam is a host X11 window. **tmux:** new
    Terminal tabs and workspaces splits work (do not stub `pkg:glibc`
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: Arcade Play smoke,
-   XOpenIM on a fresh Steam launch, or a `.pc` for alsa.
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: confirm the
+   gamescope nest is not static on the glass, Arcade Play smoke, or
+   a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
