@@ -63,8 +63,14 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    pool). Nested Xwayland starts. River accepts the nest window
    (`libdecor-oath` 1px borders so first xdg geometry is 2×2, then
    1920×1080; cairo plugin is packed but mmap-crashes on a 0-size
-   CSD buffer). Direct `steam` still uses rootful Xwayland.
-   **Steam this boot:** `/bin/steam` stays up. Rootful Xwayland `:2`,
+   CSD buffer). Direct `steam` nests in gamescope (`--backend wayland`,
+   no `-b`: borderless commits xdg 0×0 and segfaults).
+   **Steam this boot:** `/bin/steam` execs gamescope. Nest window
+   floats 1920×1052. Nested Xwayland is `-rootless` `:0`. Client
+   updated then steamui segfaulted after opening the library window
+   (same INT_MIN create + hide as on rootful `:2`). Rootful `:2` was
+   the login workaround. Login
+   popup (`Sign in to Steam`) was on `:2`. Rootful leftover:
    ubuntu12 client, steamwebhelper `BrowserReady`, WebUITransport
    accepts `https://steamloopback.host` (no `Checked: 0`). Login
    popup (`Sign in to Steam`) is on `:2`. Rootful Xwayland does not

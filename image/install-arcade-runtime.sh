@@ -1135,42 +1135,45 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 # shellcheck disable=SC1091
 . /oath/store/pkg/steam/libexec/steam-compat.sh
-# Host River has no XWayland. Direct `steam` still nests on rootful
-# pkg:xwayland (DISPLAY=:2). Arcade Play uses /bin/gamescope.
-# Never host -f.
-if [ -z "${DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ]; then
-	sudo -n mkdir -p /tmp/.X11-unix /usr/share/X11 /usr/bin 2>/dev/null || true
-	sudo -n chmod 1777 /tmp/.X11-unix 2>/dev/null || true
-	sudo -n ln -sfn /oath/store/pkg/river/share/X11/xkb /usr/share/X11/xkb 2>/dev/null || true
-	if [ -x /oath/store/pkg/xwayland/libexec/xkbcomp ]; then
-		sudo -n ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /usr/bin/xkbcomp 2>/dev/null || true
+# Nest is gamescope as a Wayland client (T37). Never host -f. Rootful
+# Xwayland :2 was a workaround while gamescope Vulkan was still
+# failing on SI; the nest window is in (RADV PITCAIRN + libdecor-oath).
+if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -x /bin/gamescope ]; then
+	nest=0
+	case "${DISPLAY-}" in
+	""|:2|:2.*) nest=1 ;;
+	esac
+	if [ "$nest" = 1 ]; then
+		sudo -n mkdir -p /tmp/.X11-unix /usr/share/X11 /usr/bin 2>/dev/null || true
+		sudo -n chmod 1777 /tmp/.X11-unix 2>/dev/null || true
+		sudo -n ln -sfn /oath/store/pkg/river/share/X11/xkb /usr/share/X11/xkb 2>/dev/null || true
+		if [ -x /oath/store/pkg/xwayland/libexec/xkbcomp ]; then
+			sudo -n ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /usr/bin/xkbcomp 2>/dev/null || true
+		fi
+		unset DISPLAY
+		# Do not pass -b (borderless): that skips libdecor and
+		# commits xdg geometry 0x0, which segfaults gamescope on
+		# this River. libdecor-oath reports 1px borders instead.
+		exec /bin/gamescope --backend wayland -S fit \
+			-W 1920 -H 1080 -w 1920 -h 1080 \
+			--force-windows-fullscreen \
+			--cursor-scale-height 1080 \
+			-- "$0" "$@"
 	fi
-	if [ ! -S /tmp/.X11-unix/X2 ]; then
-		/bin/Xwayland :2 -geometry 1920x1080 -decorate -glamor es -noreset -nolisten tcp \
-			>/tmp/xwayland.log 2>&1 &
-		n=0
-		while [ "$n" -lt 30 ]; do
-			[ -S /tmp/.X11-unix/X2 ] && break
-			sleep 1
-			n=$((n + 1))
-		done
-	fi
-	export DISPLAY=:2
 fi
 if [ -n "${DISPLAY-}" ]; then
-	# Rootful Xwayland does not share CLIPBOARD with Wayland. Seed +
-	# watch so Ctrl+V in Steam pastes the desk clipboard.
-	if [ -x /oath/store/pkg/xwayland/libexec/xwayland-clip ]; then
-		/oath/store/pkg/xwayland/libexec/xwayland-clip --daemon
-	fi
-	# Rootful Xwayland has no WM. Steam's library window is created at
-	# INT_MIN and the nest stays black unless something maps/clamps it.
-	if [ -x /oath/store/pkg/xwayland/libexec/oath-xwm ]; then
-		pidfile=/tmp/oath-xwm.pid
-		old=$(cat "$pidfile" 2>/dev/null || true)
-		if [ -z "$old" ] || ! kill -0 "$old" 2>/dev/null; then
-			/oath/store/pkg/xwayland/libexec/oath-xwm >>/tmp/oath-xwm.log 2>&1 &
-			echo $! >"$pidfile"
+	# Rootful leftover only. gamescope's nested X is already a WM.
+	if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
+		if [ -x /oath/store/pkg/xwayland/libexec/xwayland-clip ]; then
+			/oath/store/pkg/xwayland/libexec/xwayland-clip --daemon
+		fi
+		if [ -x /oath/store/pkg/xwayland/libexec/oath-xwm ]; then
+			pidfile=/tmp/oath-xwm.pid
+			old=$(cat "$pidfile" 2>/dev/null || true)
+			if [ -z "$old" ] || ! kill -0 "$old" 2>/dev/null; then
+				/oath/store/pkg/xwayland/libexec/oath-xwm >>/tmp/oath-xwm.log 2>&1 &
+				echo $! >"$pidfile"
+			fi
 		fi
 	fi
 	# gamescope sets XDG_CURRENT_DESKTOP=gamescope → Steam forces BPM.

@@ -16,7 +16,8 @@
   allocates descriptors, starts nested Xwayland, and River accepts
   the nest window (`libdecor-oath` 1px borders). Packed
   `libdecor-cairo` mmap-crashes on a 0-size CSD buffer so dummy
-  wins. Steam uses rootful `pkg:xwayland`. CEF GPU uses `pkg:mesa`
+  wins. Direct `steam` nests in gamescope (`--backend wayland`, no
+  `-b`). CEF GPU uses `pkg:mesa`
   GLX (`BrowserReady`). WebUITransport accepts the loopback websocket
   once `/bin/lsof` exists (`oath-lsof`: `lsof -P -F upnR -i TCP@…`).
   Login popup is up on canto `:2`. Rootful Xwayland CLIPBOARD is
