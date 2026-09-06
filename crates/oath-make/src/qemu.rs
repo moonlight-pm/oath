@@ -167,9 +167,6 @@ pub const DEFAULT_DISPLAY_HEIGHT: u32 = 800;
 pub const QUIET_BOOT: &str =
     "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo drm_kms_helper.fbdev_emulation=0";
 
-/// systemd-boot: no text menu; GOP at firmware's preferred (native-ish) mode.
-pub const LOADER_CONF: &str = "default oath.conf\ntimeout 0\neditor no\nconsole-mode auto\n";
-
 fn parse_dim(raw: Option<&str>, default: u32) -> u32 {
     raw.and_then(|s| s.parse().ok()).filter(|&n| (640..=7680).contains(&n)).unwrap_or(default)
 }

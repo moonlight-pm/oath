@@ -1,7 +1,7 @@
 #!/bin/bash
 # Live-install pkg:xwayland, pkg:gamescope, pkg:mesa, pkg:steam and
 # sola-arcade on this Oath box. Ubuntu questing debs + Steam bootstrap
-# + Debian i386 libc + Debian mesa 26.1.6 GLX.
+# + Debian i386 libc + Debian mesa 26.2.1 GLX.
 # Busybox dpkg-deb cannot unpack zstd debs; use /tmp/zstd from image/pack.
 set -euo pipefail
 
@@ -528,11 +528,11 @@ fetch_debian() {
 	curl -fL --retry 3 --retry-delay 2 -o "$dest" "$url"
 }
 for rel in \
-	m/mesa/libglx-mesa0_26.1.6-1_amd64.deb \
-	m/mesa/mesa-libgallium_26.1.6-1_amd64.deb \
-	m/mesa/libgl1-mesa-dri_26.1.6-1_amd64.deb \
-	m/mesa/libgbm1_26.1.6-1_amd64.deb \
-	m/mesa/mesa-vulkan-drivers_26.1.6-1_amd64.deb \
+	m/mesa/libglx-mesa0_26.2.1-4_amd64.deb \
+	m/mesa/mesa-libgallium_26.2.1-4_amd64.deb \
+	m/mesa/libgl1-mesa-dri_26.2.1-4_amd64.deb \
+	m/mesa/libgbm1_26.2.1-4_amd64.deb \
+	m/mesa/mesa-vulkan-drivers_26.2.1-4_amd64.deb \
 	libg/libglvnd/libgl1_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglx0_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglvnd0_1.7.0-3+b1_amd64.deb \
@@ -559,7 +559,9 @@ copy_mesa "$mesa_src/libGL.so.1.7.0" "$stagedir/mesa/lib/libGL.so.1.7.0"
 copy_mesa "$mesa_src/libGLX.so.0.0.0" "$stagedir/mesa/lib/libGLX.so.0.0.0"
 copy_mesa "$mesa_src/libGLdispatch.so.0.0.0" "$stagedir/mesa/lib/libGLdispatch.so.0.0.0"
 copy_mesa "$mesa_src/libGLX_mesa.so.0.0.0" "$stagedir/mesa/lib/libGLX_mesa.so.0.0.0"
-copy_mesa "$mesa_src/libgallium-26.1.6-1.so" "$stagedir/mesa/lib/libgallium-26.1.6-1.so"
+gallium_so=$(find "$mesa_src" -maxdepth 1 -name 'libgallium-*.so' ! -type l | head -1)
+[ -n "$gallium_so" ] || { echo "missing libgallium in $mesa_src" >&2; exit 1; }
+copy_mesa "$gallium_so" "$stagedir/mesa/lib/$(basename "$gallium_so")"
 copy_mesa "$mesa_src/libgbm.so.1.0.0" "$stagedir/mesa/lib/libgbm.so.1.0.0"
 copy_mesa "$mesa_src/libxcb-glx.so.0" "$stagedir/mesa/lib/libxcb-glx.so.0" || \
 	copy_mesa "$(find "$stagedir/debroot" -name 'libxcb-glx.so.0*' ! -type l | head -1)" "$stagedir/mesa/lib/libxcb-glx.so.0"
@@ -660,7 +662,7 @@ WRAP
 chmod 755 "$stagedir/mesa/bin/vulkaninfo"
 # 32-bit RADV so the ubuntu12_32 Steam client can vkCreateInstance
 # (64-bit ICD json is the default for gamescope/vulkaninfo/pv-host).
-fetch_debian m/mesa/mesa-vulkan-drivers_26.1.6-1_i386.deb
+fetch_debian m/mesa/mesa-vulkan-drivers_26.2.1-4_i386.deb
 fetch_debian l/llvm-toolchain-21/libllvm21_21.1.8-10_i386.deb
 fetch_debian v/vulkan-loader/libvulkan1_1.4.357.0-1_i386.deb
 # RADV NEEDs libdisplay-info.so.3; LLVM 21 NEEDs libxml2.so.16.
@@ -671,7 +673,7 @@ fetch_debian v/vulkan-loader/libvulkan1_1.4.357.0-1_i386.deb
 fetch_debian libd/libdisplay-info/libdisplay-info3_0.3.0-1+b1_i386.deb
 fetch_debian libx/libxml2/libxml2-16_2.15.3+dfsg-1_i386.deb
 fetch_debian w/wayland/libwayland-client0_1.26.0-1_i386.deb
-extract_deb "$fetchdir/mesa-vulkan-drivers_26.1.6-1_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/mesa-vulkan-drivers_26.2.1-4_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libllvm21_21.1.8-10_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libvulkan1_1.4.357.0-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libdisplay-info3_0.3.0-1+b1_i386.deb" "$stagedir/debroot32"
@@ -727,7 +729,7 @@ cat >"$stagedir/mesa/INDEX.md" <<'EOF'
 # pkg:mesa
 
 64-bit OpenGL/GLX and Vulkan WSI for X11/Wayland clients. Debian mesa
-26.1.6 GLX + glvnd + gallium + RADV, plus Khronos vulkan-loader 1.4.357
+26.2.1 GLX + glvnd + gallium + RADV, plus Khronos vulkan-loader 1.4.357
 and vulkaninfo. DRI is libdril → radeonsi. ICD is
 share/vulkan/icd.d/radeon_icd.json (64-bit) and radeon_icd32.json
 (32-bit Steam). lib32 ships RADV + LLVM 21 + libdisplay-info.so.3 +

@@ -25,7 +25,10 @@ pub use kinds::{
     Dev, DevActual, Host, HostPower, Meta, Net, Pkg, PkgActual, Ssh, SshActual, Svc, SvcActual,
     SvcRestart,
 };
-pub use layout::{gen_subvol_name, parse_gen_subvol, BTRFS_TOP, LIVE_SUBVOL};
+pub use layout::{
+    boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
+    rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL,
+};
 pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
 pub use pkg::{converge as converge_pkg, converge_with_link_root};
 pub use seed::seed;

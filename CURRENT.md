@@ -106,6 +106,15 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    smoke, or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
+   **T38** firmware boots: last five ESP archives + current. `oath-efi`
+   menu (metal timeout 5, QEMU EFI 0). PID 1 honors `oath.subvol=@` /
+   `@boot-N` / `@gen-N`. `cargo make esp --esp /dev/sda1 --confirm`
+   rotates without wiping. Kernel pick in `image/tools.nix` is newest
+   nixpkgs packaged (`linuxPackages_testing` / 7.3 when present).
+   `pkg:mesa` pack script is Debian **26.2.1**. Live canto is still
+   kernel 6.12.93 + mesa 26.1.6 until a nix pack and `esp`. Nest
+   present still needs that kernel+Mesa on **both** RADV and River
+   radeonsi (or the linear CreateImage lever).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF

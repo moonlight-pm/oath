@@ -129,8 +129,9 @@ fn real_main() -> Result<(), String> {
     if !Path::new("/oath/INDEX.md").exists() {
         load_modules(true);
         let dev = root_dev();
-        mount_root(&dev)?;
-        tel("init", "mounted", json!({ "dev": dev, "subvol": "@" }));
+        let sub = root_subvol();
+        mount_root(&dev, &sub)?;
+        tel("init", "mounted", json!({ "dev": dev, "subvol": sub }));
     }
 
     let _ = fs::create_dir_all("/oath/run");
@@ -356,6 +357,12 @@ pub(crate) fn cmdline_flag(key: &str) -> bool {
 fn cmdline_val(key: &str) -> Option<String> {
     let prefix = format!("{key}=");
     cmdline().split_whitespace().find_map(|t| t.strip_prefix(&prefix).map(|s| s.to_string()))
+}
+
+fn root_subvol() -> String {
+    cmdline_val("oath.subvol")
+        .and_then(|s| oath_core::boot_subvol(&s).map(|v| v.to_string()))
+        .unwrap_or_else(|| oath_core::LIVE_SUBVOL.to_string())
 }
 
 fn root_dev() -> String {
@@ -650,11 +657,18 @@ fn start_install_dropbear() {
     log(&format!("dropbear -> {st:?}"));
 }
 
-fn mount_root(dev: &str) -> Result<(), String> {
+fn mount_root(dev: &str, subvol: &str) -> Result<(), String> {
     let _ = fs::create_dir_all("/newroot");
     let flags = MsFlags::empty();
-    mount(Some(dev), "/newroot", Some("btrfs"), flags, Some("subvol=@"))
-        .map_err(|e| format!("mount root {dev}: {e}"))?;
+    let data = format!("subvol={subvol}");
+    let first = mount(Some(dev), "/newroot", Some("btrfs"), flags, Some(data.as_str()));
+    if first.is_err() && subvol != oath_core::LIVE_SUBVOL {
+        log(&format!("subvol {subvol} failed, falling back to @"));
+        mount(Some(dev), "/newroot", Some("btrfs"), flags, Some("subvol=@"))
+            .map_err(|e| format!("mount root {dev}: {e}"))?;
+    } else {
+        first.map_err(|e| format!("mount root {dev} {subvol}: {e}"))?;
+    }
     keep_initrd_mods("/newroot");
     // Switch into the disk. Keep this process as PID 1.
     std::env::set_current_dir("/newroot").map_err(|e| e.to_string())?;

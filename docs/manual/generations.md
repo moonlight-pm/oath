@@ -10,6 +10,7 @@ The system disk is **btrfs**.
 |-----------|------|
 | `@` | Live root, mounted at `/` |
 | `@gen-N` | Read-only snapshot of `@` taken **before** that apply |
+| `@boot-N` | Read-write snapshot of `@` taken when the ESP is rotated (firmware menu) |
 
 PID 1 mounts the btrfs top-level (subvolid=0) at **`/oath/run/fs`**:
 
@@ -34,8 +35,13 @@ reused (it is `max(existing)+1`, not `parent+1`).
 converges `pkg:*` links and `svc:*`. It does **not** replace `/oath/run`
 (mounts and the init socket stay).
 
-Picking an arbitrary old generation as the boot default is **confirm**
-class. There is no bootloader menu yet. `undo` is the supported rewind.
+`oath undo` is catalog rewind. Firmware rewind is the **boot menu**
+(T38): `oath-efi` lists current plus the last five archived
+kernel+initrd pairs. Timeout 5 s on metal (0 on QEMU EFI). Up/Down/Enter.
+An archive boots `oath.subvol=@boot-N` (matching userspace snapshot).
+Write a new slot with `cargo make esp --esp /dev/sda1 --confirm` (does
+not format the disk). QEMU `run`/`probe` still boot `-kernel` and have
+no menu.
 
 Off-box copy is `svc:backup` (T33): one NFS file, overwritten, not a
 second undo. Daily at 04:00 US Mountain. Snapshot is crash-consistent

@@ -21,7 +21,10 @@ use uefi::proto::media::file::{File, FileAttribute, FileMode, FileType};
 use uefi::CStr16;
 use uefi::{guid, Guid};
 
-use oath_efi::{logo, mark_size, pick_mode, raster_mark, Logo};
+use oath_efi::{
+    logo, mark_size, menu_step, parse_bls, parse_loader_conf, parse_oath_boots, pick_mode,
+    raster_mark, Logo, MenuKey,
+};
 
 const LINUX_INITRD_MEDIA_GUID: Guid = guid!("5568e427-68fc-4f3d-ac74-ca555231cc68");
 const LOAD_FILE2_GUID: Guid = guid!("4006c0c1-fcb3-403e-996d-4a6c8724e06d");
@@ -162,22 +165,132 @@ fn blit_logo(gop: &mut GraphicsOutput, vis_w: u32, vis_h: u32, logo: &Logo) {
 }
 
 fn boot_linux() -> Result<(), ()> {
-    let bls = read_path("\\loader\\entries\\oath.conf").unwrap_or_default();
-    let (kernel_path, initrd_path, options) = parse_bls(&bls);
-    let kernel = read_path(&kernel_path).map_err(|_| ())?;
-    let initrd = read_path(&initrd_path).ok();
-    let cmdline = quiet_cmdline(&options);
+    let (names, timeout) = boot_list();
+    let mut entries = Vec::new();
+    for name in &names {
+        let mut path = String::from("\\loader\\entries\\");
+        path.push_str(name);
+        if let Ok(bytes) = read_path(&path) {
+            if let Ok(text) = core::str::from_utf8(&bytes) {
+                entries.push(parse_bls(text));
+            }
+        }
+    }
+    if entries.is_empty() {
+        let bls = read_path("\\loader\\entries\\oath.conf").unwrap_or_default();
+        let text = core::str::from_utf8(&bls).unwrap_or("");
+        entries.push(parse_bls(text));
+    }
+    let idx = if timeout == 0 || entries.len() <= 1 { 0 } else { pick_entry(&entries, timeout) };
+    let e = entries.get(idx).ok_or(())?;
+    start_kernel(&e.linux, &e.initrd, &e.options)
+}
 
+fn boot_list() -> (Vec<String>, u32) {
+    let loader = read_path("\\loader\\loader.conf").unwrap_or_default();
+    let text = core::str::from_utf8(&loader).unwrap_or("");
+    let (default, timeout) = parse_loader_conf(text);
+    let boots = read_path("\\loader\\oath-boots").unwrap_or_default();
+    let mut names = parse_oath_boots(core::str::from_utf8(&boots).unwrap_or(""));
+    if names.is_empty() {
+        names.push(default);
+    }
+    (names, timeout)
+}
+
+fn pick_entry(entries: &[oath_efi::Bls], timeout: u32) -> usize {
+    let n = entries.len();
+    let mut idx = 0usize;
+    let mut left = timeout;
+    print_menu(entries, idx, left);
+    loop {
+        if let Some(key) = read_menu_key() {
+            match menu_step(idx, n, key) {
+                None => return 0,
+                Some((i, true)) => return i,
+                Some((i, false)) => {
+                    idx = i;
+                    print_menu(entries, idx, left);
+                }
+            }
+            continue;
+        }
+        boot::stall(1_000_000);
+        if left == 0 {
+            return idx;
+        }
+        left -= 1;
+        print_menu(entries, idx, left);
+    }
+}
+
+fn read_menu_key() -> Option<MenuKey> {
+    use uefi::proto::console::text::{Input, Key, ScanCode};
+    let handle = boot::get_handle_for_protocol::<Input>().ok()?;
+    let mut input = boot::open_protocol_exclusive::<Input>(handle).ok()?;
+    match input.read_key() {
+        Ok(Some(Key::Special(ScanCode::UP))) => Some(MenuKey::Up),
+        Ok(Some(Key::Special(ScanCode::DOWN))) => Some(MenuKey::Down),
+        Ok(Some(Key::Special(ScanCode::ESCAPE))) => Some(MenuKey::Esc),
+        Ok(Some(Key::Printable(c))) => {
+            let u = u16::from(c);
+            if u == b'\r' as u16 || u == b'\n' as u16 {
+                Some(MenuKey::Enter)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+fn print_menu(entries: &[oath_efi::Bls], idx: usize, left: u32) {
+    let _ = uefi::system::with_stdout(|out| {
+        let _ = out.clear();
+        let _ = out.write_str("Oath boot\r\n");
+        let mut t = String::from("timeout ");
+        t.push_str(u32_str(left).as_str());
+        t.push_str("  (Up/Down/Enter)\r\n\r\n");
+        let _ = out.write_str(&t);
+        for (i, e) in entries.iter().enumerate() {
+            let mark = if i == idx { '>' } else { ' ' };
+            let mut line = String::new();
+            line.push(mark);
+            line.push(' ');
+            line.push_str(&e.title);
+            line.push_str("\r\n");
+            let _ = out.write_str(&line);
+        }
+    });
+}
+
+fn u32_str(n: u32) -> String {
+    let mut buf = [0u8; 10];
+    let mut x = n;
+    if x == 0 {
+        return String::from("0");
+    }
+    let mut i = buf.len();
+    while x > 0 && i > 0 {
+        i -= 1;
+        buf[i] = b'0' + (x % 10) as u8;
+        x /= 10;
+    }
+    String::from(core::str::from_utf8(&buf[i..]).unwrap_or("0"))
+}
+
+fn start_kernel(kernel_path: &str, initrd_path: &str, options: &str) -> Result<(), ()> {
+    let kernel = read_path(kernel_path).map_err(|_| ())?;
+    let initrd = read_path(initrd_path).ok();
+    let cmdline = quiet_cmdline(options);
     if let Some(initrd) = initrd {
         register_initrd(initrd)?;
     }
-
     let khandle = boot::load_image(
         boot::image_handle(),
         LoadImageSource::FromBuffer { buffer: &kernel, file_path: None },
     )
     .map_err(|_| ())?;
-
     set_cmdline(khandle, &cmdline)?;
     boot::start_image(khandle).map_err(|_| ())?;
     Ok(())
@@ -192,39 +305,6 @@ fn boot_systemd_boot() -> Result<Status, ()> {
     .map_err(|_| ())?;
     boot::start_image(handle).map_err(|_| ())?;
     Ok(Status::SUCCESS)
-}
-
-fn parse_bls(text: &[u8]) -> (String, String, String) {
-    let s = core::str::from_utf8(text).unwrap_or("");
-    let mut linux = String::from("\\vmlinuz");
-    let mut initrd = String::from("\\initrd.gz");
-    let mut options = String::new();
-    for line in s.lines() {
-        let line = line.trim();
-        if let Some(rest) = line.strip_prefix("linux ") {
-            linux = efi_path(rest.trim());
-        } else if let Some(rest) = line.strip_prefix("initrd ") {
-            initrd = efi_path(rest.trim());
-        } else if let Some(rest) = line.strip_prefix("options ") {
-            options = String::from(rest.trim());
-        }
-    }
-    (linux, initrd, options)
-}
-
-fn efi_path(p: &str) -> String {
-    let p = p.trim();
-    if p.starts_with('\\') {
-        String::from(p)
-    } else if let Some(rest) = p.strip_prefix('/') {
-        let mut s = String::from("\\");
-        s.push_str(rest);
-        s
-    } else {
-        let mut s = String::from("\\");
-        s.push_str(p);
-        s
-    }
 }
 
 fn quiet_cmdline(options: &str) -> String {

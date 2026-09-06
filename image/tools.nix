@@ -1,6 +1,12 @@
 { pkgs ? import <nixpkgs> {} }:
 let
-  k = pkgs.linuxPackages_6_12.kernel;
+  # Same newest-kernel pick as shell.nix. 7.3-rc is linuxPackages_testing
+  # on current nixpkgs; fall back to latest if the attr is missing.
+  k =
+    if pkgs ? linuxPackages_testing then pkgs.linuxPackages_testing.kernel
+    else if pkgs ? linuxPackages_7_3 then pkgs.linuxPackages_7_3.kernel
+    else if pkgs ? linuxPackages_7_2 then pkgs.linuxPackages_7_2.kernel
+    else pkgs.linuxPackages_latest.kernel;
   muslCC = pkgs.pkgsStatic.stdenv.cc;
   # Same nixpkgs pin Sola uses so River 0.4.5 + wlroots 0.20 match the forks.
   pinned = import (builtins.fetchTarball {

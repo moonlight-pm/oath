@@ -34,6 +34,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-09-05-guest-toolchain.md](2026-09-05-guest-toolchain.md) | T35: guest `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` |
 | [2026-09-05-sola-kit-apps.md](2026-09-05-sola-kit-apps.md) | T36: remaining kit apps in `pkg:sola` |
 | [2026-09-05-arcade-steam.md](2026-09-05-arcade-steam.md) | T37: Arcade + Steam runtime |
+| [2026-09-06-boot-generations.md](2026-09-06-boot-generations.md) | T38: last-5 firmware boots; current kernel/mesa |
 
 No open plan (see root [`CURRENT.md`](../../CURRENT.md)). Completed:
 [../plans/2026-08-27-qemu-skeleton-plan.md](../plans/2026-08-27-qemu-skeleton-plan.md) (Phase 1),

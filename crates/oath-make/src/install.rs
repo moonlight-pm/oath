@@ -25,6 +25,12 @@ pub struct Opts {
     pub hostname: Option<String>,
 }
 
+pub struct EspOpts {
+    pub esp: String,
+    pub confirm: bool,
+    pub root_dev: String,
+}
+
 #[derive(Clone)]
 struct Remote {
     user: String,
@@ -558,15 +564,16 @@ mount --bind /esp /mnt/boot
         r,
         "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && (test -f /opt/oath-install/systemd-bootx64.efi && cp /opt/oath-install/systemd-bootx64.efi /esp/EFI/systemd/systemd-bootx64.efi || cp /opt/oath-install/BOOTX64.EFI /esp/EFI/systemd/systemd-bootx64.efi) && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
     )?;
-    let entry = format!(
-        "title Oath\nlinux /vmlinuz\ninitrd /initrd.gz\noptions console=ttyS0,115200 console=tty0 amdgpu.si_support=1 radeon.si_support=0 oath.root={p2}\n",
-    );
+    let entry = crate::boot::current_bls(&p2, "");
+    let loader = if opts.qemu { crate::boot::LOADER_CONF_QEMU } else { crate::boot::LOADER_CONF_METAL };
+    let boots = crate::boot::format_oath_boots(&[String::from("oath.conf")]);
     ssh_run(
         r,
         &format!(
-            "printf '%s' {q} > /esp/loader/loader.conf && printf '%s' {e} > /esp/loader/entries/oath.conf",
-            q = sh_quote(crate::qemu::LOADER_CONF),
+            "printf '%s' {q} > /esp/loader/loader.conf && printf '%s' {e} > /esp/loader/entries/oath.conf && printf '%s' {b} > /esp/loader/oath-boots",
+            q = sh_quote(loader),
             e = sh_quote(&entry),
+            b = sh_quote(&boots),
         ),
     )?;
     ssh_run(r, "sync; umount /mnt/boot /mnt /esp || true")?;
@@ -618,6 +625,70 @@ true"#,
 
 fn sh_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', "'\\''"))
+}
+
+/// Non-destructive ESP write: archive the live kernel+initrd, copy the
+/// packed image, keep five boots. Does not format.
+pub fn update_esp(repo: &Path, out: &Path, opts: EspOpts) -> Result<()> {
+    crate::boot::require_confirm(opts.confirm)?;
+    if !opts.esp.starts_with("/dev/") {
+        bail!("--esp must be a /dev/ node (got {:?})", opts.esp);
+    }
+    let tools = tools::load(repo)?;
+    if !out.join("initrd.gz").is_file() {
+        pack::build(repo, out, &tools)?;
+    }
+    let efi = repo.join("target/x86_64-unknown-uefi/release/oath-efi.efi");
+    if !efi.is_file() {
+        pack::build(repo, out, &tools)?;
+    }
+    let mnt = out.join("esp-mnt");
+    let _ = fs::create_dir_all(&mnt);
+    let _ = sudo(&["umount", mnt.to_str().unwrap()]);
+    sudo(&["mount", &opts.esp, mnt.to_str().unwrap()])?;
+    let result = (|| -> Result<u64> {
+        let (id, prune) = crate::boot::apply_rotate_files(
+            &mnt,
+            &tools.kernel,
+            &out.join("initrd.gz"),
+            efi.is_file().then_some(efi.as_path()),
+            &opts.root_dev,
+            "",
+            crate::boot::LOADER_CONF_METAL,
+        )?;
+        snapshot_boot(id);
+        for old in prune {
+            delete_boot_snapshot(old);
+        }
+        Ok(id)
+    })();
+    let _ = sudo(&["sync"]);
+    let _ = sudo(&["umount", mnt.to_str().unwrap()]);
+    let id = result?;
+    eprintln!("ESP updated; archived as boot {id}. Reboot and pick from the firmware menu if the new kernel fails.");
+    Ok(())
+}
+
+fn snapshot_boot(id: u64) {
+    let src = Path::new(oath_core::BTRFS_TOP).join("@");
+    let dst = Path::new(oath_core::BTRFS_TOP).join(oath_core::boot_subvol_name(id));
+    if !src.is_dir() || dst.exists() {
+        return;
+    }
+    let _ = sudo(&[
+        "btrfs",
+        "subvolume",
+        "snapshot",
+        src.to_str().unwrap(),
+        dst.to_str().unwrap(),
+    ]);
+}
+
+fn delete_boot_snapshot(id: u64) {
+    let dst = Path::new(oath_core::BTRFS_TOP).join(oath_core::boot_subvol_name(id));
+    if dst.exists() {
+        let _ = sudo(&["btrfs", "subvolume", "delete", dst.to_str().unwrap()]);
+    }
 }
 
 fn install_remote(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<()> {

@@ -1,3 +1,4 @@
+mod boot;
 mod cpio;
 mod install;
 mod pack;
@@ -74,6 +75,19 @@ enum Cmd {
         #[arg(long)]
         hostname: Option<String>,
     },
+    /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
+    /// Does not format a disk.
+    Esp {
+        /// VFAT ESP node (`/dev/sda1`).
+        #[arg(long)]
+        esp: String,
+        /// Required. Writes firmware.
+        #[arg(long)]
+        confirm: bool,
+        /// Root device the BLS `oath.root=` option should name (`/dev/sda2`).
+        #[arg(long, default_value = "/dev/sda2")]
+        root: String,
+    },
 }
 
 fn main() {
@@ -123,6 +137,13 @@ fn real() -> Result<()> {
                 &root,
                 &out,
                 install::Opts { target, disk, confirm, qemu, usb, hostname },
+            )?;
+        }
+        Cmd::Esp { esp, confirm, root: root_dev } => {
+            install::update_esp(
+                &root,
+                &out,
+                install::EspOpts { esp, confirm, root_dev },
             )?;
         }
     }

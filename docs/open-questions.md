@@ -12,7 +12,9 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 
 ## Decision points (ask human)
 
-None open. T37 Arcade + Steam runtime closed (`pkg:bash` / `pkg:xwayland` /
+None open. T38 boot generations closed (last 5 ESP archives + current;
+`oath-efi` menu; `oath.subvol`; `cargo make esp`; newest borrowed kernel;
+Debian mesa 26.2.x). T37 Arcade + Steam runtime closed (`pkg:bash` / `pkg:xwayland` /
 `pkg:gamescope` / `pkg:mesa` / `pkg:steam`; Arcade ELF stays in `pkg:sola`; no new `svc`;
 host River still without xwaylandSupport). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
 Arcade ELF without gamescope/Steam/XWayland — **amended T37**). T35 guest toolchain closed (official tarballs; `pkg:cc` is
@@ -29,8 +31,6 @@ T29 sola-workspaces closed.
 
 ## Open technical questions
 
-- Bootloader hook to boot `@gen-N` (layout is `@` + `@gen-N` at
-  `/oath/run/fs`; picker not built).
 - PID 1 notify socket bytes (`/oath/run/…`) — implementation detail;
   must not become a second config format.
 - How much of coreutils we replace vs busybox vs our own (Phase 1 may
@@ -359,3 +359,6 @@ guest ELFs.
 | 2026-09-03 | T33 | off-box backup: one NFS send, overwrite, svc:backup | this file; [specs/2026-09-03-backup-nfs.md](specs/2026-09-03-backup-nfs.md) |
 | 2026-09-04 | T34 | UTC system clock; `host:local.timezone` display; no TZ in host.env | this file; [specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md) |
 | 2026-09-05 | T35 | guest toolchain: pkg:cc (zig), pkg:rustc, pkg:cmake+ninja, pkg:pkg-config empty farm | this file; [specs/2026-09-05-guest-toolchain.md](specs/2026-09-05-guest-toolchain.md) |
+| 2026-09-05 | T36 | remaining kit apps in pkg:sola | this file; [specs/2026-09-05-sola-kit-apps.md](specs/2026-09-05-sola-kit-apps.md) |
+| 2026-09-05 | T37 | Arcade + Steam runtime | this file; [specs/2026-09-05-arcade-steam.md](specs/2026-09-05-arcade-steam.md) |
+| 2026-09-06 | T38 | last-5 firmware boots; `oath.subvol`; current kernel/mesa; T27 menu Out lifted | this file; [specs/2026-09-06-boot-generations.md](specs/2026-09-06-boot-generations.md) |

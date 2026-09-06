@@ -2,6 +2,11 @@
 
 #![no_std]
 
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+
 const RAW: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/logo.bin"));
 const MARK_NUM: u32 = 1;
 const MARK_DEN: u32 = 3;
@@ -65,6 +70,97 @@ pub fn sample_alpha(logo: &Logo, x: u32, y: u32, dw: u32, dh: u32) -> u8 {
     }
 }
 
+pub fn parse_loader_conf(text: &str) -> (String, u32) {
+    let mut default = String::from("oath.conf");
+    let mut timeout = 0u32;
+    for line in text.lines() {
+        let line = line.trim();
+        if let Some(rest) = line.strip_prefix("default ") {
+            default = String::from(rest.trim());
+        } else if let Some(rest) = line.strip_prefix("timeout ") {
+            timeout = rest.trim().parse().unwrap_or(0);
+        }
+    }
+    (default, timeout)
+}
+
+pub fn parse_oath_boots(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        out.push(String::from(line));
+    }
+    out
+}
+
+pub struct Bls {
+    pub title: String,
+    pub linux: String,
+    pub initrd: String,
+    pub options: String,
+}
+
+pub fn parse_bls(text: &str) -> Bls {
+    let mut e = Bls {
+        title: String::from("Oath"),
+        linux: String::from("\\vmlinuz"),
+        initrd: String::from("\\initrd.gz"),
+        options: String::new(),
+    };
+    for line in text.lines() {
+        let line = line.trim();
+        if let Some(rest) = line.strip_prefix("title ") {
+            e.title = String::from(rest.trim());
+        } else if let Some(rest) = line.strip_prefix("linux ") {
+            e.linux = efi_slash(rest.trim());
+        } else if let Some(rest) = line.strip_prefix("initrd ") {
+            e.initrd = efi_slash(rest.trim());
+        } else if let Some(rest) = line.strip_prefix("options ") {
+            e.options = String::from(rest.trim());
+        }
+    }
+    e
+}
+
+pub fn efi_slash(p: &str) -> String {
+    let p = p.trim();
+    let mut s = String::from("\\");
+    let mut first = true;
+    for part in p.split(['/', '\\']).filter(|x| !x.is_empty()) {
+        if !first {
+            s.push('\\');
+        }
+        first = false;
+        s.push_str(part);
+    }
+    s
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MenuKey {
+    Up,
+    Down,
+    Enter,
+    Esc,
+}
+
+/// `None` = cancel (Esc). `Some((idx, done))` — done means Enter.
+pub fn menu_step(idx: usize, n: usize, key: MenuKey) -> Option<(usize, bool)> {
+    if n == 0 {
+        return None;
+    }
+    let last = n - 1;
+    match key {
+        MenuKey::Up => Some((if idx == 0 { last } else { idx - 1 }, false)),
+        MenuKey::Down => Some((if idx >= last { 0 } else { idx + 1 }, false)),
+        MenuKey::Enter => Some((idx.min(last), true)),
+        MenuKey::Esc => None,
+    }
+}
+
 /// Fill `out` (len = dw*dh) with grayscale 0..=255 (white over black).
 pub fn raster_mark(logo: &Logo, dw: u32, dh: u32, out: &mut [u8]) {
     for y in 0..dh {
@@ -114,5 +210,25 @@ mod tests {
         raster_mark(&l, s, s, &mut buf);
         assert_eq!(buf[0], 0);
         assert!(buf[(s / 2 * s + s / 2) as usize] > 200);
+    }
+
+    #[test]
+    fn loader_and_bls() {
+        let (d, t) = parse_loader_conf("default oath.conf\ntimeout 5\n");
+        assert_eq!(d, "oath.conf");
+        assert_eq!(t, 5);
+        let boots = parse_oath_boots("# c\noath.conf\noath-1.conf\n");
+        assert_eq!(boots.len(), 2);
+        let b = parse_bls("title Oath boot 1\nlinux /oath/boot/1/vmlinuz\ninitrd /oath/boot/1/initrd.gz\noptions oath.subvol=@boot-1\n");
+        assert_eq!(b.linux, "\\oath\\boot\\1\\vmlinuz");
+        assert!(b.options.contains("@boot-1"));
+    }
+
+    #[test]
+    fn menu_wraps() {
+        assert_eq!(menu_step(0, 3, MenuKey::Up), Some((2, false)));
+        assert_eq!(menu_step(2, 3, MenuKey::Down), Some((0, false)));
+        assert_eq!(menu_step(1, 3, MenuKey::Enter), Some((1, true)));
+        assert_eq!(menu_step(0, 3, MenuKey::Esc), None);
     }
 }

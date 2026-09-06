@@ -13,14 +13,14 @@
 
 ---
 
-## As-built (2026-09-05)
+## As-built (2026-09-06)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
 ```
 QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
 -device virtio-gpu-pci,xres=1280,yres=800 -display gtk,zoom-to-fit=off (or none) -drive virtio qcow2
-  kernel (borrowed Linux 6.12) + initramfs
+  kernel (borrowed; newest nixpkgs packaged, 7.3-rc/testing when present) + initramfs
     /init = oath-init
     loads virtio_blk, btrfs, virtio-gpu, evdev, virtio_input, virtio_net, …
     mounts /dev/vda subvol=@ , chroot
@@ -84,8 +84,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools,
                        GETs SI export tiling, does not SET LINEAR_ALIGNED;
                        `libdecor-oath` 1px borders so River accepts xdg geometry)
-    pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.1.6
-                       RADV + glvnd + vulkan-loader); `/bin/vulkaninfo`;
+    pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.2.1
+                       pack script; live canto still 26.1.6 until
+                       reinstall); `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
                        plus `libdisplay-info.so.3` + `libxml2.so.16` +
                        `libwayland-client` 1.26 (`wl_fixes`); ICD DT_RPATH
@@ -144,7 +145,10 @@ tree. Boot graphics is layered, not one path: EFI GOP splash
 drivers that would kick a live firmware framebuffer (amdgpu/i915/…,
 not virtio-gpu) until just before River; River starts black until
 Sola paints. USB installer still systemd-boot + tty0. QEMU `run`
-is still `-kernel`. `loader/entries/oath.conf`.
+is still `-kernel`. Metal `oath-efi` reads `loader/loader.conf` +
+`loader/oath-boots` (timeout 5) and `loader/entries/oath.conf` plus
+`oath-<id>.conf` archives under `/oath/boot/<id>/`. `oath.subvol=@`
+or `@boot-N`. `cargo make esp --esp --confirm` rotates without a wipe.
 Canto: two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits

@@ -6,7 +6,9 @@ desktop. On metal, `EFI/BOOT/BOOTX64.EFI` is `oath-efi`: it sets GOP
 to native (1920×1080 when the firmware lists it), paints the white
 Oath mark on black, then LoadImage’s the kernel. PID 1 leaves that
 mark alone until it loads amdgpu immediately before River. QEMU
-`run`/`probe` still boot `-kernel` (no EFI splash).
+`run`/`probe` still boot `-kernel` (no EFI splash, no boot menu).
+Metal `oath-efi` shows a 5 s firmware menu of current plus archived
+boots (T38). QEMU EFI rehearsal keeps `timeout 0`.
 
 Build tools (kernel, busybox, qemu, musl cc) are borrowed on the **host**.
 They are not the runtime identity.
@@ -25,6 +27,7 @@ cargo make up             # headless; serial in the run log; Ctrl-C kills QEMU
 cargo make start          # same, background
 cargo make ssh            # ssh -p 2222 home@127.0.0.1
 cargo make stop
+cargo make esp --esp /dev/sda1 --confirm   # metal: rotate last-5 boots, no wipe
 ```
 
 Serial is a **root** shell. SSH is **home** (`sudo` has no password). Then:

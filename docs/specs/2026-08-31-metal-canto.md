@@ -88,6 +88,5 @@ the running system is still the catalog.
 - nixos-anywhere, disko, flakes, NixOS on the disk
 - USB/ISO as the primary path (recovery stick later)
 - Dual-boot, preserving canto’s old root
-- Boot-generation firmware menu
 - General “install any PC” product
 - Writing a disk this repo did not name, or without `--confirm`
