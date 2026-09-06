@@ -68,7 +68,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:cmake          `/bin/cmake` `/bin/ninja`
     pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
-    pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; rootful `:2` for Steam);
+    pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; gamescope nested X;
                        `libexec/xwayland-clip` bridges Wayland clipboard →
                        X11 CLIPBOARD (`wl-paste` + `xclip`) so Ctrl+V pastes;
                        `libexec/oath-xwm` maps/clamps leftover rootful `:2`.

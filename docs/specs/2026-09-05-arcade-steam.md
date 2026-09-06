@@ -11,24 +11,18 @@
   `cargo build -p sola-arcade` succeeded. `gamescope --backend wayland`
   selects RADV PITCAIRN and allocates descriptors (pool layer);
   nested Xwayland starts; River accepts the nest window
-  (`libdecor-oath`).
-**Gaps:** `gamescope --backend wayland` selects RADV PITCAIRN,
-  allocates descriptors, starts nested Xwayland, and River accepts
-  the nest window (`libdecor-oath` 1px borders). Packed
-  `libdecor-cairo` mmap-crashes on a 0-size CSD buffer so dummy
-  wins. Direct `steam` nests in gamescope (`--backend wayland`, no
-  `-b`). CEF GPU uses `pkg:mesa`
-  GLX (`BrowserReady`). WebUITransport accepts the loopback websocket
-  once `/bin/lsof` exists (`oath-lsof`: `lsof -P -F upnR -i TCP@…`).
-  Login popup is up on canto `:2`. Rootful Xwayland CLIPBOARD is
-  bridged from the compositor (`xwayland-clip`: `wl-paste --watch` →
-  `xclip`) so Ctrl+V pastes (canto this boot). After login the library
-  window was created at INT_MIN (no X11 WM on rootful `:2`) and Steam
-  segfaulted; `oath-xwm` maps/clamps windows on `:2`. 32-bit RADV has
-  `libdisplay-info.so.3` + `libxml2.so.16`; dual ICD jsons. Steam
+  (`libdecor-oath`). Direct `/bin/steam` execs gamescope (no `-b`).
+  Launcher lists Steam. steamui still segfaults after the library
+  window.
+**Gaps:** Direct `/bin/steam` nests in gamescope (`--backend wayland`,
+  no `-b`; `-b` commits xdg 0×0 and segfaults). River accepts the nest
+  (`libdecor-oath` 1px). steamui still segfaults after login when
+  creating the library window (INT_MIN + hide). CEF GPU uses `pkg:mesa`
+  GLX; WebUITransport needs `/bin/lsof` (`oath-lsof`). 32-bit RADV
   still logs missing `VK_KHR_surface` / `VK_KHR_xlib_surface`. Arcade
-  Play unsmoked. QEMU image pack of these pkgs not in `cargo make
-  build` yet. Other T36 kit ELFs still out (`alsa.pc`).
+  Play unsmoked. Rootful `:2` + clip/xwm is leftover fallback. QEMU
+  image pack of these pkgs not in `cargo make build` yet. Other T36
+  kit ELFs still out (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
