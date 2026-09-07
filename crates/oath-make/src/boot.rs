@@ -106,14 +106,43 @@ pub fn archive_conf_name(id: u64) -> String {
     format!("oath-{id}.conf")
 }
 
+/// Parse `oath-N.conf` / VFAT `OATH-N.CON` (8.3) / a numeric `oath/boot/N` dir.
+pub fn parse_archive_conf_id(name: &str) -> Option<u64> {
+    let name = name.to_ascii_lowercase();
+    if name == "oath.conf" || name == "oath-install.conf" {
+        return None;
+    }
+    let stem = name
+        .strip_suffix(".conf")
+        .or_else(|| name.strip_suffix(".con"))
+        .unwrap_or(name.as_str());
+    let rest = stem.strip_prefix("oath-")?;
+    if rest.is_empty() || !rest.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    rest.parse().ok()
+}
+
 /// Existing archive ids from `loader/entries/oath-N.conf` names.
 pub fn existing_archive_ids(names: &[String]) -> Vec<u64> {
+    let mut ids: Vec<u64> = names.iter().filter_map(|n| parse_archive_conf_id(n)).collect();
+    ids.sort_unstable();
+    ids.dedup();
+    ids
+}
+
+/// Numeric directories under `oath/boot/` (VFAT may hide the BLS 8.3 name).
+pub fn existing_archive_slot_ids(boot_dir: &Path) -> Vec<u64> {
     let mut ids = Vec::new();
-    for n in names {
-        let stem = n.strip_suffix(".conf").unwrap_or(n);
-        if let Some(rest) = stem.strip_prefix("oath-") {
-            if rest.bytes().all(|b| b.is_ascii_digit()) {
-                if let Ok(id) = rest.parse::<u64>() {
+    let Ok(rd) = fs::read_dir(boot_dir) else {
+        return ids;
+    };
+    for e in rd.flatten() {
+        let name = e.file_name();
+        let name = name.to_string_lossy();
+        if name.bytes().all(|b| b.is_ascii_digit()) {
+            if let Ok(id) = name.parse::<u64>() {
+                if e.path().is_dir() {
                     ids.push(id);
                 }
             }
@@ -152,7 +181,7 @@ pub fn list_archive_confs(entries_dir: &Path) -> Result<Vec<String>> {
     for e in fs::read_dir(entries_dir).with_context(|| format!("read {}", entries_dir.display()))? {
         let e = e?;
         let name = e.file_name().to_string_lossy().into_owned();
-        if name.starts_with("oath-") && name.ends_with(".conf") && name != "oath-install.conf" {
+        if parse_archive_conf_id(&name).is_some() {
             names.push(name);
         }
     }
@@ -169,10 +198,14 @@ pub fn apply_rotate_files(
     loader_conf: &str,
 ) -> Result<(u64, Vec<u64>)> {
     let entries = esp.join("loader/entries");
+    let slots = esp.join("oath/boot");
     fs::create_dir_all(&entries)?;
-    fs::create_dir_all(esp.join("oath/boot"))?;
+    fs::create_dir_all(&slots)?;
     let names = list_archive_confs(&entries)?;
-    let ids = existing_archive_ids(&names);
+    let mut ids = existing_archive_ids(&names);
+    ids.extend(existing_archive_slot_ids(&slots));
+    ids.sort_unstable();
+    ids.dedup();
     let plan = plan_rotate(&ids);
 
     let cur_k = esp.join("vmlinuz");
@@ -193,6 +226,8 @@ pub fn apply_rotate_files(
     for id in &plan.prune {
         let _ = fs::remove_dir_all(esp.join("oath/boot").join(id.to_string()));
         let _ = fs::remove_file(entries.join(archive_conf_name(*id)));
+        let _ = fs::remove_file(entries.join(format!("OATH-{id}.CON")));
+        let _ = fs::remove_file(entries.join(format!("oath-{id}.con")));
     }
 
     let mut boots = vec![String::from("oath.conf")];
@@ -274,6 +309,25 @@ mod tests {
             "oath-10.conf".into(),
         ]);
         assert_eq!(ids, vec![2, 10]);
+    }
+
+    #[test]
+    fn vfat_short_name_and_case() {
+        assert_eq!(parse_archive_conf_id("OATH-5.CON"), Some(5));
+        assert_eq!(parse_archive_conf_id("oath-6.con"), Some(6));
+        assert_eq!(parse_archive_conf_id("OATH.CON"), None);
+        let ids = existing_archive_ids(&[
+            "oath-1.conf".into(),
+            "oath-2.conf".into(),
+            "oath-4.conf".into(),
+            "OATH-5.CON".into(),
+            "OATH-6.CON".into(),
+            "OATH.CON".into(),
+        ]);
+        assert_eq!(ids, vec![1, 2, 4, 5, 6]);
+        let p = plan_rotate(&ids);
+        assert_eq!(p.new_id, 7);
+        assert_eq!(p.prune, vec![1]);
     }
 
     #[test]
