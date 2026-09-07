@@ -32,26 +32,58 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
  
  	/* Recompute clocks with updated max_limits. */
  	amdgpu_legacy_dpm_compute_clocks(adev);
-@@ -3929,11 +3937,16 @@
+@@ -3929,11 +3937,27 @@
  	u32 levels = ps->performance_level_count;
  
  	if (level == AMD_DPM_FORCED_LEVEL_HIGH) {
 -		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetEnabledLevels, levels) != PPSMC_Result_OK)
-+		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetEnabledLevels, levels) != PPSMC_Result_OK) {
-+			drm_err(adev_to_drm(adev),
-+				"si dpm: SetEnabledLevels %u failed (force high)\n", levels);
- 			return -EINVAL;
-+		}
+-			return -EINVAL;
++		PPSMC_Result r;
  
 -		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 1) != PPSMC_Result_OK)
-+		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 1) != PPSMC_Result_OK) {
-+			drm_err(adev_to_drm(adev), "si dpm: SetForcedLevels 1 failed (force high)\n");
++		/*
++		 * Pitcairn SMC rejects SetForcedLevels(1) (0x83) after
++		 * SetEnabledLevels. rv770-era ForceHigh (0x42) is the
++		 * command that actually raises the SCLK. Try the SI
++		 * sequence first, then the older pair.
++		 */
++		r = si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetEnabledLevels, levels);
++		if (r == PPSMC_Result_OK)
++			r = si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 1);
++		if (r != PPSMC_Result_OK) {
++			amdgpu_si_send_msg_to_smc(adev, PPSMC_MSG_NoForcedLevel);
++			amdgpu_si_send_msg_to_smc(adev, PPSMC_MSG_ZeroLevelsDisabled);
++			r = amdgpu_si_send_msg_to_smc(adev, PPSMC_MSG_ForceHigh);
++		}
++		if (r != PPSMC_Result_OK) {
++			drm_err(adev_to_drm(adev),
++				"si dpm: force high failed levels=%u smc=%d\n", levels, r);
  			return -EINVAL;
 +		}
  	} else if (level == AMD_DPM_FORCED_LEVEL_LOW) {
  		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 0) != PPSMC_Result_OK)
  			return -EINVAL;
-@@ -7210,6 +7223,17 @@
+@@ -5263,8 +5287,18 @@
+ 		break;
+ 	}
+ 
+-	if (adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC)
++	/*
++	 * VBIOS HARDWAREDC makes the SMC watch a DC GPIO. On a desktop
++	 * (no ACPI battery, ac_power) that pin floats as DC, the SMC
++	 * clamps to the 300/150 MHz DC state, and SetForcedLevels(1)
++	 * returns 0xff. Only enable the GPIO when we are actually on DC.
++	 */
++	if ((adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC) &&
++	    !adev->pm.ac_power)
+ 		table->systemFlags |= PPSMC_SYSTEMFLAG_GPIO_DC;
++	else if (adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC)
++		drm_info(adev_to_drm(adev),
++			 "si dpm: skip GPIO_DC (ac_power=%d)\n", adev->pm.ac_power);
+ 
+ 	if (adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_REGULATOR_HOT) {
+ 		if ((adev->pdev->device != 0x6818) && (adev->pdev->device != 0x6819))
+@@ -7210,6 +7244,17 @@
  	si_program_display_gap(adev);
  }
  
@@ -69,7 +101,7 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
  
  static void si_parse_pplib_non_clock_info(struct amdgpu_device *adev,
  					  struct amdgpu_ps *rps,
-@@ -7712,6 +7736,14 @@
+@@ -7712,6 +7757,14 @@
  #if 0 //TODO ?
  	si_dpm_powergate_uvd(adev, true);
  #endif
@@ -84,7 +116,7 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
  	return 0;
  }
  
-@@ -7869,6 +7901,29 @@
+@@ -7869,6 +7922,29 @@
  		adev->pm.dpm_enabled = false;
  	else
  		adev->pm.dpm_enabled = true;
@@ -114,7 +146,7 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
  	amdgpu_legacy_dpm_compute_clocks(adev);
  	mutex_unlock(&adev->pm.mutex);
  	return ret;
-@@ -8154,6 +8209,7 @@
+@@ -8154,6 +8230,7 @@
  	.set_power_state = &si_dpm_set_power_state,
  	.post_set_power_state = &si_dpm_post_set_power_state,
  	.display_configuration_changed = &si_dpm_display_configuration_changed,

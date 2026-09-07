@@ -105,10 +105,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: SI DPM still
-   **300/150** after reboot (`SetForcedLevels 1` fails; pick is
-   UI_PERFORMANCE). Arcade Play still unsmoked (library empty);
-   `/bin/gamescope` drops `-b`. Or a `.pc` for alsa.
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: Arcade Play
+   (library empty); `/bin/gamescope` drops `-b`. Or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
    **T38** firmware boots on canto ESP: last five archives + current.
@@ -122,10 +120,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    **boot 6** is 7.3 DC_SI #2 (pre-DPM-patch). **boot 1** pruned this
    rotate. systemd-boot stays `BOOTX64` so the 5 s list is visible
    (oath-efi logo still hides the picker). Live process is **7.3.0-rc1
-   #3** (13:46 MDT, `joshua@novus`). `RunningOnAC` smc=OK, DC
-   `num_display=1` `vblank=464µs`, pick class=0x5 (UI_PERFORMANCE);
-   hwmon **sclk 300 MHz / mclk 150 MHz**; `force high` is
-   `SetForcedLevels 1 failed`. `pkg:mesa` live is Debian **26.2.1**
+   #3** + GPIO_DC-skip `amdgpu`. `force high` is **850/1270 MHz**
+   (level 3 of 4). VBIOS `HARDWAREDC` was floating the DC GPIO so the
+   SMC clamped to 300/150 and `SetForcedLevels` returned 0xff. `pkg:mesa` live is Debian **26.2.1**
    plus **libdrm 2.4.134** and **32-bit libgbm**. card1 DP-10 is up.
    Small SI DPM patches live under `image/linux-patches` (vanilla
    tarball + fragment + patches; not a linux.git fork). **`cargo make
@@ -133,9 +130,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `OATH_FIRMWARE`); the first DPM initrd omitted it and both GPUs
    `Fatal error during GPU init` (`pitcairn_mc.bin` missing). Live
    recovery: copy firmware + `insmod`. ESP initrd now includes the
-   blobs. DPM: 5 VBIOS states, pick UI_PERFORMANCE, `RunningOnAC` OK,
-   vblank 464µs, `num_display=1`; clocks still **300/150** (SMC
-   `SetForcedLevels 1` fails). `gpu_busy_percent` is ENOTSUP. Gamescope pool layer **smoked**: host-visible GTT +
+   blobs. DPM: skip `GPIO_DC` when `ac_power`; `force high` **850/1270**.
+   `gpu_busy_percent` is ENOTSUP. Gamescope pool layer **smoked**: host-visible GTT +
    CPU detile; nested Xwayland is `-glamor off` (no SIGBUS); nest
    holds with sola-river up (xdg never-configured was WM-down, not
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.

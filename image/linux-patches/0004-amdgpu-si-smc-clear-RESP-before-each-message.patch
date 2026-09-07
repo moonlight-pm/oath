@@ -1,0 +1,20 @@
+From: Oath <oath@local>
+Subject: 0004-amdgpu-si-smc-clear-RESP-before-each-message.patch
+
+--- a/drivers/gpu/drm/amd/pm/legacy-dpm/si_smc.c
++++ b/drivers/gpu/drm/amd/pm/legacy-dpm/si_smc.c
+@@ -191,6 +191,14 @@
+ 	if (!amdgpu_si_is_smc_running(adev))
+ 		return PPSMC_Result_Failed;
+ 
++	/*
++	 * CI/SMU7 clear SMC_RESP_0 before posting a new message. SI never
++	 * did, so the poll returns the previous OK immediately and the SMC
++	 * races the next command. SetEnabledLevels then looks successful
++	 * while SetForcedLevels (1) actually runs against one enabled
++	 * level and fails.
++	 */
++	WREG32(mmSMC_RESP_0, 0);
+ 	WREG32(mmSMC_MESSAGE_0, msg);
+ 
+ 	for (i = 0; i < usec_timeout; i++) {
