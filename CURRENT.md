@@ -117,13 +117,14 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    systemd-boot stays `BOOTX64` so the 5 s list is visible (oath-efi
    logo still hides the picker). Live process is **7.3.0-rc1** (`ssh
    home@canto`; PID 1 `ready` kver 7.3.0-rc1; amdgpu both Pitcairns).
-   `pkg:mesa` live is Debian **26.2.1** (gen 22). Live kernel is **#2**
-   (`DRM_AMD_DC_SI=y`). card1 planes advertise GFX6 `IN_FORMATS`
-   (`0x02000001a8940400`, `0x0200000180d40400`, `0x0200000000000200`,
-   LINEAR). **Steam nest** still cannot start: RADV
-   `amdgpu_query_sw_info(address_prt_wa_control_bit)` fails. River GLES
-   paints on card1 DP-10. Spare Pitcairn (card0, nothing plugged) is
-   render-only later, not CrossFire. Do not
+   `pkg:mesa` live is Debian **26.2.1** (gen 22) plus **libdrm 2.4.134**
+   in `pkg:mesa/lib` (RADV needs `amdgpu_sw_info_address_prt_wa_control_bit`;
+   river libdrm only had `address32_hi`). Live kernel is **#2**
+   (`DRM_AMD_DC_SI=y`). card1 planes advertise GFX6 `IN_FORMATS`.
+   `vulkaninfo` sees two RADV PITCAIRN devices. gamescope selects
+   PITCAIRN; it still logs **no Vulkan DRM format modifiers**. River
+   GLES paints on card1 DP-10. Spare GPU idea:
+   `docs/ideas/2026-09-07-canto-second-pitcairn.md`. Do not
    `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.

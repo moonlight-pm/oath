@@ -71,7 +71,9 @@ for rel in \
 	libg/libglvnd/libglx0_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglvnd0_1.7.0-3+b1_amd64.deb \
 	libx/libxcb/libxcb-glx0_1.17.0-2+b2_amd64.deb \
-	libd/libdrm/libdrm-common_2.4.124-2_all.deb \
+	libd/libdrm/libdrm-common_2.4.134-3_all.deb \
+	libd/libdrm/libdrm2_2.4.134-3_amd64.deb \
+	libd/libdrm/libdrm-amdgpu1_2.4.134-3_amd64.deb \
 	v/vulkan-loader/libvulkan1_1.4.357.0-1_amd64.deb \
 	v/vulkan-tools/vulkan-tools_1.4.341.0+dfsg1-1_amd64.deb
 do
@@ -96,6 +98,16 @@ copy_mesa "$mesa_src/libGLX_mesa.so.0.0.0" "$stagedir/mesa/lib/libGLX_mesa.so.0.
 gallium_so=$(find "$mesa_src" -maxdepth 1 -name 'libgallium-*.so' ! -type l | head -1)
 [ -n "$gallium_so" ] || { echo "missing libgallium in $mesa_src" >&2; exit 1; }
 copy_mesa "$gallium_so" "$stagedir/mesa/lib/$(basename "$gallium_so")"
+# Mesa 26.2.1 RADV needs libdrm >= 2.4.134 (amdgpu_sw_info_address_prt_wa_control_bit).
+# River's libdrm only implements address32_hi and RADV treats the miss as fatal.
+drm_so=$(find "$stagedir/debroot" -name 'libdrm.so.2.134.0' ! -type l | head -1)
+drm_amd=$(find "$stagedir/debroot" -name 'libdrm_amdgpu.so.1.134.0' ! -type l | head -1)
+[ -n "$drm_so" ] || { echo "missing libdrm.so.2.134.0" >&2; exit 1; }
+[ -n "$drm_amd" ] || { echo "missing libdrm_amdgpu.so.1.134.0" >&2; exit 1; }
+copy_mesa "$drm_so" "$stagedir/mesa/lib/libdrm.so.2.134.0"
+copy_mesa "$drm_amd" "$stagedir/mesa/lib/libdrm_amdgpu.so.1.134.0"
+ln -sfn libdrm.so.2.134.0 "$stagedir/mesa/lib/libdrm.so.2"
+ln -sfn libdrm_amdgpu.so.1.134.0 "$stagedir/mesa/lib/libdrm_amdgpu.so.1"
 copy_mesa "$mesa_src/libgbm.so.1.0.0" "$stagedir/mesa/lib/libgbm.so.1.0.0"
 copy_mesa "$mesa_src/libxcb-glx.so.0" "$stagedir/mesa/lib/libxcb-glx.so.0" || \
 	copy_mesa "$(find "$stagedir/debroot" -name 'libxcb-glx.so.0*' ! -type l | head -1)" "$stagedir/mesa/lib/libxcb-glx.so.0"
@@ -200,6 +212,10 @@ extract_deb "$fetchdir/libvulkan1_1.4.357.0-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libdisplay-info3_0.3.0-1_b1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libxml2-16_2.15.3_dfsg-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libwayland-client0_1.26.0-1_i386.deb" "$stagedir/debroot32"
+fetch_debian libd/libdrm/libdrm2_2.4.134-3_i386.deb
+fetch_debian libd/libdrm/libdrm-amdgpu1_2.4.134-3_i386.deb
+extract_deb "$fetchdir/libdrm2_2.4.134-3_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/libdrm-amdgpu1_2.4.134-3_i386.deb" "$stagedir/debroot32"
 mkdir -p "$stagedir/mesa/lib32"
 radeon32=$(find "$stagedir/debroot32" -name 'libvulkan_radeon.so' ! -type l | head -1)
 llvm32=$(find "$stagedir/debroot32" -name 'libLLVM.so.21.1' ! -type l | head -1)
@@ -217,6 +233,14 @@ ln -sfn "$(basename "$vk32")" "$stagedir/mesa/lib32/libvulkan.so.1"
 copy_mesa "$di32" "$stagedir/mesa/lib32/$(basename "$di32")"
 copy_mesa "$xml32" "$stagedir/mesa/lib32/$(basename "$xml32")"
 copy_mesa "$wl32" "$stagedir/mesa/lib32/$(basename "$wl32")"
+drm32=$(find "$stagedir/debroot32" -name 'libdrm.so.2.134.0' ! -type l | head -1)
+drmamd32=$(find "$stagedir/debroot32" -name 'libdrm_amdgpu.so.1.134.0' ! -type l | head -1)
+[ -n "$drm32" ] || { echo "missing 32-bit libdrm.so.2.134.0" >&2; exit 1; }
+[ -n "$drmamd32" ] || { echo "missing 32-bit libdrm_amdgpu.so.1.134.0" >&2; exit 1; }
+copy_mesa "$drm32" "$stagedir/mesa/lib32/libdrm.so.2.134.0"
+copy_mesa "$drmamd32" "$stagedir/mesa/lib32/libdrm_amdgpu.so.1.134.0"
+ln -sfn libdrm.so.2.134.0 "$stagedir/mesa/lib32/libdrm.so.2"
+ln -sfn libdrm_amdgpu.so.1.134.0 "$stagedir/mesa/lib32/libdrm_amdgpu.so.1"
 ln -sfn "$(basename "$di32")" "$stagedir/mesa/lib32/libdisplay-info.so.3"
 ln -sfn "$(basename "$xml32")" "$stagedir/mesa/lib32/libxml2.so.16"
 ln -sfn "$(basename "$wl32")" "$stagedir/mesa/lib32/libwayland-client.so.0"
@@ -253,7 +277,9 @@ share/vulkan/icd.d/radeon_icd.json (64-bit) and radeon_icd32.json
 libxml2.so.16 + libwayland-client 1.26 (`wl_fixes_interface`; steamrt
 0.3.0 is too old). ICD uses DT_RPATH so Steam's steamrt
 LD_LIBRARY_PATH cannot hide the new wayland. 64-bit LLVM stays in
-pkg:river. Removable.
+pkg:river. Ships Debian libdrm 2.4.134 in lib/ and lib32/ so RADV's
+amdgpu_sw_info_address_prt_wa_control_bit query succeeds (river's
+libdrm only implements address32_hi). Removable.
 EOF
 
 echo "==> install pkg:mesa"
