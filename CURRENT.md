@@ -122,10 +122,12 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto. **T37** `/bin/sola-arcade` in. Other kit apps still out. **Sola master**
-   merged into oath-sola (`a6dd7c12`, Sola `c631e241` LED raster)
-   and packed `pkg:sola` is live on canto (flower Restart Computer
-   / Shut Down via `oath apply --confirm`; Super+Tab counts, notify
-   pile, volume spectrum, rounded float CSD, browser omnibox/devtools).
+   merged into oath-sola (`ac4826a6`, Sola `2d40773e`: second Terminal
+   tmux, `bin_path` kit launch, Workspaces Grok resume). Packed
+   `pkg:sola` on canto is still the earlier blob (`a6dd7c12` / kvm
+   hand-copy `386c9d78`): flower Restart Computer / Shut Down via
+   `oath apply --confirm`; Super+Tab counts, notify pile, volume
+   spectrum, rounded float CSD, browser omnibox/devtools.
    `pkg:pipewire` is on canto this boot (PipeWire + WirePlumber +
    pulse + ALSA PCH sink); HDMI not auto-enumerated; no dbus.
 4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
