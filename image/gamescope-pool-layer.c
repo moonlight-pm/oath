@@ -30,9 +30,12 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <dlfcn.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include <errno.h>
 
 #define VKAPI_ATTR
@@ -65,6 +68,19 @@ typedef struct VkAllocationCallbacks VkAllocationCallbacks;
 /* Mesa private: src/vulkan/wsi/wsi_common.h */
 #define VK_STRUCTURE_TYPE_WSI_IMAGE_CREATE_INFO_MESA 1000001002u
 #define VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO 1000070000u
+#define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 1000059001u
+#define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT 1000353000u
+
+struct VkPhysicalDeviceDrmPropertiesEXT {
+	VkStructureType sType;
+	void *pNext;
+	uint32_t hasPrimary;
+	uint32_t hasRender;
+	int64_t primaryMajor;
+	int64_t primaryMinor;
+	int64_t renderMajor;
+	int64_t renderMinor;
+};
 
 /* Mesa 24+ wsi_common.h: two C++ bools. Do not copy past blit_src. */
 struct wsi_image_create_info {
@@ -83,6 +99,8 @@ struct VkExternalMemoryImageCreateInfo {
 typedef void(VKAPI_PTR *PFN_vkVoidFunction)(void);
 typedef PFN_vkVoidFunction(VKAPI_PTR *PFN_vkGetInstanceProcAddr)(VkInstance, const char *);
 typedef PFN_vkVoidFunction(VKAPI_PTR *PFN_vkGetDeviceProcAddr)(VkDevice, const char *);
+typedef VkResult(VKAPI_PTR *PFN_vkEnumeratePhysicalDevices)(VkInstance, uint32_t *, VkPhysicalDevice *);
+typedef void(VKAPI_PTR *PFN_vkGetPhysicalDeviceProperties2)(VkPhysicalDevice, void *);
 typedef PFN_vkVoidFunction(VKAPI_PTR *PFN_GetPhysicalDeviceProcAddr)(VkInstance, const char *);
 
 typedef struct VkBaseInStructure {
@@ -274,6 +292,8 @@ static PFN_vkBindImageMemory next_bind_image;
 static PFN_vkDestroyImage next_destroy_image;
 static PFN_vkAllocateMemory next_alloc;
 static PFN_vkGetPhysicalDeviceMemoryProperties next_mem_props;
+static PFN_vkEnumeratePhysicalDevices next_enum_pd;
+static PFN_vkGetPhysicalDeviceProperties2 next_pd_props2;
 static VkPhysicalDeviceMemoryProperties mem_props;
 static VkInstance the_instance;
 static int have_mem_props;
@@ -284,6 +304,8 @@ static int scanout_once;
 static int create_logs;
 static int meta_once;
 static int detile_once;
+
+static const char *display_render_path(void);
 
 #define MAX_TRACK 96
 struct track_img {
@@ -363,10 +385,65 @@ static VkResult VKAPI_CALL hook_CreateInstance(const VkInstanceCreateInfo *info,
 	next_create_instance = (PFN_vkCreateInstance)next_gipa(NULL, "vkCreateInstance");
 	{
 		VkResult r = next_create_instance(info, a, out);
-		if (r == VK_SUCCESS && out)
+		if (r == VK_SUCCESS && out) {
 			the_instance = *out;
+			next_enum_pd = (PFN_vkEnumeratePhysicalDevices)next_gipa(*out, "vkEnumeratePhysicalDevices");
+			next_pd_props2 = (PFN_vkGetPhysicalDeviceProperties2)next_gipa(*out, "vkGetPhysicalDeviceProperties2");
+			if (!next_pd_props2)
+				next_pd_props2 = (PFN_vkGetPhysicalDeviceProperties2)next_gipa(
+					*out, "vkGetPhysicalDeviceProperties2KHR");
+		}
 		return r;
 	}
+}
+
+static int drm_props_match_render(VkPhysicalDevice pd, unsigned maj, unsigned mino) {
+	struct {
+		uint32_t sType;
+		uint32_t pad;
+		void *pNext;
+		unsigned char properties[2048];
+	} props2;
+	struct VkPhysicalDeviceDrmPropertiesEXT drm;
+	if (!next_pd_props2)
+		return 0;
+	memset(&drm, 0, sizeof(drm));
+	drm.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+	memset(&props2, 0, sizeof(props2));
+	props2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	props2.pNext = &drm;
+	next_pd_props2(pd, &props2);
+	return drm.hasRender && drm.renderMajor == (int64_t)maj && drm.renderMinor == (int64_t)mino;
+}
+
+static VkResult VKAPI_CALL hook_EnumeratePhysicalDevices(VkInstance instance, uint32_t *pCount,
+							 VkPhysicalDevice *pPhysicalDevices) {
+	VkResult r;
+	uint32_t i;
+	struct stat st;
+	const char *rend;
+	if (!next_enum_pd && next_gipa)
+		next_enum_pd = (PFN_vkEnumeratePhysicalDevices)next_gipa(instance, "vkEnumeratePhysicalDevices");
+	if (!next_enum_pd)
+		return VK_ERROR_INITIALIZATION_FAILED;
+	r = next_enum_pd(instance, pCount, pPhysicalDevices);
+	if (r != VK_SUCCESS || !pPhysicalDevices || !pCount || *pCount < 2)
+		return r;
+	rend = display_render_path();
+	if (!rend || stat(rend, &st) != 0)
+		return r;
+	for (i = 0; i < *pCount; i++) {
+		if (!drm_props_match_render(pPhysicalDevices[i], major(st.st_rdev), minor(st.st_rdev)))
+			continue;
+		if (i != 0) {
+			VkPhysicalDevice tmp = pPhysicalDevices[0];
+			pPhysicalDevices[0] = pPhysicalDevices[i];
+			pPhysicalDevices[i] = tmp;
+		}
+		fprintf(stderr, "[gamescope-pool] prefer drm %s (phys %u of %u)\n", rend, i, *pCount);
+		break;
+	}
+	return r;
 }
 
 static VkResult VKAPI_CALL hook_CreateDevice(VkPhysicalDevice phys, const VkDeviceCreateInfo *info,
@@ -685,10 +762,97 @@ struct dma_buf_sync {
 #define DMA_BUF_BASE 'b'
 #define DMA_BUF_IOCTL_SYNC _IOW(DMA_BUF_BASE, 0, struct dma_buf_sync)
 
+/* Dual Pitcairn: spare is renderD128; River is on the connected card
+ * (renderD129). A nest from the spare GPU imports as black on card1. */
+static const char *display_render_path(void) {
+	static char path[80];
+	static int once;
+	const char *e;
+	DIR *d;
+	struct dirent *de;
+	char card[32], sys[128], rend[128];
+	int n;
+
+	if (once)
+		return path[0] ? path : NULL;
+	once = 1;
+	e = getenv("OATH_DRM_RENDER");
+	if (e && e[0] == '/' && access(e, R_OK) == 0) {
+		snprintf(path, sizeof(path), "%s", e);
+		return path;
+	}
+	e = getenv("WLR_DRM_DEVICES");
+	if (e && sscanf(e, "/dev/dri/card%d", &n) == 1) {
+		snprintf(sys, sizeof(sys), "/sys/class/drm/card%d/device/drm", n);
+		d = opendir(sys);
+		if (d) {
+			while ((de = readdir(d))) {
+				if (strncmp(de->d_name, "renderD", 7) != 0)
+					continue;
+				snprintf(path, sizeof(path), "/dev/dri/%s", de->d_name);
+				closedir(d);
+				return path;
+			}
+			closedir(d);
+		}
+	}
+	d = opendir("/sys/class/drm");
+	if (!d)
+		return NULL;
+	while ((de = readdir(d))) {
+		char stpath[160], st[32];
+		FILE *f;
+		if (strncmp(de->d_name, "card", 4) != 0)
+			continue;
+		if (!strchr(de->d_name, '-'))
+			continue;
+		snprintf(stpath, sizeof(stpath), "/sys/class/drm/%s/status", de->d_name);
+		f = fopen(stpath, "r");
+		if (!f)
+			continue;
+		if (!fgets(st, sizeof(st), f)) {
+			fclose(f);
+			continue;
+		}
+		fclose(f);
+		if (strncmp(st, "connected", 9) != 0)
+			continue;
+		if (sscanf(de->d_name, "card%d-", &n) != 1)
+			continue;
+		snprintf(card, sizeof(card), "card%d", n);
+		snprintf(sys, sizeof(sys), "/sys/class/drm/%s/device/drm", card);
+		{
+			DIR *rd = opendir(sys);
+			if (!rd)
+				continue;
+			while ((de = readdir(rd))) {
+				if (strncmp(de->d_name, "renderD", 7) != 0)
+					continue;
+				snprintf(rend, sizeof(rend), "/dev/dri/%s", de->d_name);
+				snprintf(path, sizeof(path), "%s", rend);
+				closedir(rd);
+				closedir(d);
+				return path;
+			}
+			closedir(rd);
+		}
+		continue;
+	}
+	closedir(d);
+	return NULL;
+}
+
 static int open_render_node(void) {
-	int fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC);
+	const char *p = display_render_path();
+	int fd;
+	if (p) {
+		fd = open(p, O_RDWR | O_CLOEXEC);
+		if (fd >= 0)
+			return fd;
+	}
+	fd = open("/dev/dri/renderD129", O_RDWR | O_CLOEXEC);
 	if (fd < 0)
-		fd = open("/dev/dri/renderD129", O_RDWR | O_CLOEXEC);
+		fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC);
 	return fd;
 }
 
@@ -1160,8 +1324,14 @@ static VkResult VKAPI_CALL hook_GetMemoryFdKHR(VkDevice device, const VkMemoryGe
 	if (r != VK_SUCCESS || !pFd || *pFd < 0)
 		return r;
 	{
-		const char *nodes[] = { "/dev/dri/renderD128", "/dev/dri/renderD129", NULL };
-		int i, got = 0;
+		const char *nodes[4];
+		int i, got = 0, n = 0;
+		const char *pref = display_render_path();
+		if (pref)
+			nodes[n++] = pref;
+		nodes[n++] = "/dev/dri/renderD129";
+		nodes[n++] = "/dev/dri/renderD128";
+		nodes[n] = NULL;
 		for (i = 0; nodes[i]; i++) {
 			drm = open(nodes[i], O_RDWR | O_CLOEXEC);
 			if (drm < 0)
@@ -1228,6 +1398,8 @@ static PFN_vkVoidFunction VKAPI_CALL hook_GetDeviceProcAddr(VkDevice device, con
 static PFN_vkVoidFunction VKAPI_CALL hook_GetInstanceProcAddr(VkInstance instance, const char *name) {
 	if (!strcmp(name, "vkCreateInstance"))
 		return (PFN_vkVoidFunction)hook_CreateInstance;
+	if (!strcmp(name, "vkEnumeratePhysicalDevices"))
+		return (PFN_vkVoidFunction)hook_EnumeratePhysicalDevices;
 	if (!strcmp(name, "vkCreateDevice"))
 		return (PFN_vkVoidFunction)hook_CreateDevice;
 	if (!strcmp(name, "vkGetDeviceProcAddr"))

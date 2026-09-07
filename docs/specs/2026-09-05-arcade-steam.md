@@ -43,7 +43,10 @@
   while `pidof river` is empty (canto gen 28). Do not SET
   LINEAR_ALIGNED on the tiled source. 32-bit `libgbm` is
   in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
-  Wrapper forces composition and SDR.
+  Wrapper forces composition and SDR. Dual Pitcairn: gamescope
+  must use the connected card’s render node (`OATH_DRM_RENDER`,
+  pool layer reorders Vulkan devices). Nest from renderD128
+  (spare) imports as black on River’s card1.
   CEF GPU is `--disable-gpu` on SI. WebUITransport
   needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked (library
   empty this boot). `/bin/gamescope` drops `-b`/`--borderless` so

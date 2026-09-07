@@ -287,6 +287,27 @@ export VK_ICD_FILENAMES=/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json
 export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 export DISABLE_LAYER_MESA_DEVICE_SELECT=1
 export NODEVICE_SELECT=1
+# Dual Pitcairn: spare GPU is renderD128. River is on the connected
+# card (card1 / renderD129). Nest from the spare imports as black.
+_gs_card=
+for _c in /sys/class/drm/card[0-9]; do
+	_name=$(basename "$_c")
+	for _conn in "$_c"/"$_name"-*; do
+		[ -f "$_conn/status" ] || continue
+		[ "$(cat "$_conn/status" 2>/dev/null)" = connected ] || continue
+		_gs_card=$_name
+		break
+	done
+	[ -n "$_gs_card" ] && break
+done
+if [ -n "$_gs_card" ]; then
+	export WLR_DRM_DEVICES=/dev/dri/$_gs_card
+	for _r in /sys/class/drm/$_gs_card/device/drm/renderD*; do
+		[ -e "$_r" ] || continue
+		export OATH_DRM_RENDER=/dev/dri/$(basename "$_r")
+		break
+	done
+fi
 # Ubuntu 3.16 pool is short for RADV YCbCr planes (SI vkAllocateDescriptorSets).
 export VK_LAYER_PATH=/oath/store/pkg/gamescope/share/vulkan/explicit_layer.d
 export VK_INSTANCE_LAYERS=VK_LAYER_OATH_gamescope_pool
