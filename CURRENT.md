@@ -115,8 +115,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    ESP **Oath** default is that kernel + matching initrd (`subvol=@`).
    **Oath boot 4** is the 6.12 rescue copy. **boot 1** still works.
    systemd-boot stays `BOOTX64` so the 5 s list is visible (oath-efi
-   logo still hides the picker). Live process is still 6.12.93 until
-   reboot into **Oath**. `pkg:mesa` live is Debian **26.2.1** (gen 22).
+   logo still hides the picker). Live process is **7.3.0-rc1** (`ssh
+   home@canto`; PID 1 `ready` kver 7.3.0-rc1; amdgpu both Pitcairns). `pkg:mesa` live is Debian **26.2.1** (gen 22).
    Nest present still needs this 7.3 + Mesa on **both** RADV and River
    radeonsi. Do not `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,

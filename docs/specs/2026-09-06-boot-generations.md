@@ -1,14 +1,13 @@
 **Date:** 2026-09-06
 **Status:** target (freeze)
 **Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
-**Dogfood:** Ubuntu 7.3-rc1 panicked; rescue **boot 1** (6.12.93).
-  Compiled vanilla **7.3.0-rc1** (`joshua@novus`) is ESP default **Oath**.
-  Boot 4 archives the 6.12 rescue kernel. Not rebooted into it yet.
-  QEMU `run`/`probe` stay `-kernel` (no menu).
+**Dogfood:** Ubuntu 7.3-rc1 panicked; rescue **boot 1** / **boot 4**
+  (6.12.93). Live canto is compiled vanilla **7.3.0-rc1** (`joshua@novus`;
+  PID 1 ready; amdgpu both Pitcairns). QEMU `run`/`probe` stay `-kernel`.
 **Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
-  visible; oath-efi still paints over it. Oath 7.3 not yet booted.
-  River GLES is still the river-pack Mesa; GFX6 modifiers need that
-  River mesa + this kernel on the metal. `pkg:mesa` live is 26.2.1.
+  visible; oath-efi still paints over it. River GLES is still the
+  river-pack Mesa; GFX6 modifiers need that River mesa on this kernel.
+  `pkg:mesa` live is 26.2.1.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Boot generations (last 5) + current packages
