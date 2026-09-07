@@ -1,6 +1,6 @@
 #!/bin/sh
-# Borrow Ubuntu mainline kernel 7.3-rc1 (GFX6 DRM modifiers) as a packed
-# bzImage + modules tree. No Nix. SHA256 from kernel.ubuntu.com CHECKSUMS.
+# Old shortcut: Ubuntu mainline 7.3-rc1 debs. Panicked on canto.
+# Do not use. Compile vanilla with image/build-linux.sh instead.
 #
 #   sh image/fetch-linux-mainline.sh [outdir]
 #

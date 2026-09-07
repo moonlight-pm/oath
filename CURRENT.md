@@ -108,15 +108,17 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    on the next image.
    **T38** firmware boots on canto ESP: last five archives + current.
    `oath-efi` menu (metal timeout 5, QEMU EFI 0). PID 1 honors
-   `oath.subvol=@` / `@boot-N` / `@gen-N`. `cargo make esp --esp
-   /dev/sda1 --confirm` rotated twice this boot without wiping
-   (`@boot-1`, `@boot-2`). Current ESP kernel is Ubuntu mainline
-   **7.3-rc1** (GFX6 DRM modifiers; `image/fetch-linux-mainline.sh`);
-   archive boot 2 is 6.12.93 + T38 initrd. Live process is still
-   6.12.93 until reboot. `pkg:mesa` live is Debian **26.2.1** (gen 22). Nest
-   present still needs 7.3 + Mesa on **both** RADV (`pkg:mesa`) and
-   River radeonsi (or the linear CreateImage lever). Do not
-   `cargo make install --confirm` (wipe).
+   `oath.subvol=@` / `@boot-N` / `@gen-N`. Ubuntu mainline 7.3-rc1
+   **panicked** on canto (PID 1 died after dhcp). Kernel lock amended:
+   vanilla kernel.org **7.3.0-rc1** compiled on the desk
+   (`image/build-linux.sh`, nice 10, `-j16`; `joshua@novus`, gcc 14.3).
+   ESP **Oath** default is that kernel + matching initrd (`subvol=@`).
+   **Oath boot 4** is the 6.12 rescue copy. **boot 1** still works.
+   systemd-boot stays `BOOTX64` so the 5 s list is visible (oath-efi
+   logo still hides the picker). Live process is still 6.12.93 until
+   reboot into **Oath**. `pkg:mesa` live is Debian **26.2.1** (gen 22).
+   Nest present still needs this 7.3 + Mesa on **both** RADV and River
+   radeonsi. Do not `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF

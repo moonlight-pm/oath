@@ -75,6 +75,8 @@ enum Cmd {
         #[arg(long)]
         hostname: Option<String>,
     },
+    /// Pack kernel + initrd + oath-efi only (no qcow, no ESP write).
+    Boot,
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
     Esp {
@@ -138,6 +140,10 @@ fn real() -> Result<()> {
                 &out,
                 install::Opts { target, disk, confirm, qemu, usb, hostname },
             )?;
+        }
+        Cmd::Boot => {
+            let tools = tools::load(&root)?;
+            pack::boot_image(&root, &out, &tools)?;
         }
         Cmd::Esp { esp, confirm, root: root_dev } => {
             install::update_esp(

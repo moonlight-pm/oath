@@ -37,6 +37,9 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/lib/libcrc32c.ko.xz",
     "kernel/crypto/xor.ko.xz",
     "kernel/lib/raid6/raid6_pq.ko.xz",
+    // 7.3 moved raid helpers
+    "kernel/lib/raid/xor/xor.ko.xz",
+    "kernel/lib/raid/raid6/raid6_pq.ko.xz",
     "kernel/fs/btrfs/btrfs.ko.xz",
     "kernel/fs/fat/vfat.ko.xz",
     "kernel/fs/nls/nls_cp437.ko.xz",
@@ -68,6 +71,12 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/sound/pci/hda/snd-hda-codec-hdmi.ko.xz",
     "kernel/sound/pci/hda/snd-hda-codec-cirrus.ko.xz",
     "kernel/sound/pci/hda/snd-hda-codec-generic.ko.xz",
+    // 7.3 HDA layout (canto Cirrus + Pitcairn HDMI)
+    "kernel/sound/hda/controllers/snd-hda-intel.ko.xz",
+    "kernel/sound/hda/codecs/hdmi/snd-hda-codec-hdmi.ko.xz",
+    "kernel/sound/hda/codecs/cirrus/snd-hda-codec-cs420x.ko.xz",
+    "kernel/sound/hda/codecs/cirrus/snd-hda-codec-cs421x.ko.xz",
+    "kernel/sound/hda/codecs/snd-hda-codec-generic.ko.xz",
     "kernel/sound/usb/snd-usb-audio.ko.xz",
     "kernel/sound/virtio/virtio_snd.ko.xz",
     // T33: NFS client for off-box btrfs send. Deps (sunrpc, lockd, netfs, …)

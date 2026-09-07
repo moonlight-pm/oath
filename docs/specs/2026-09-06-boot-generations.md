@@ -1,13 +1,14 @@
 **Date:** 2026-09-06
 **Status:** target (freeze)
 **Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
-**Dogfood:** canto ESP rotated twice 2026-09-06 (`oath-efi` timeout 5;
-  current Ubuntu mainline **7.3-rc1**; archive boot 2 is 6.12.93 + T38
-  initrd + `@boot-2`; boot 1 is pre-T38). Live kernel this boot is still
-  6.12.93 until reboot. QEMU `run`/`probe` stay `-kernel` (no menu).
-**Gaps:** metal timeout menu unsmoked (needs reboot); River GLES is still
-  the river-pack Mesa until that pack rebuilds; 7.3 GFX6 modifiers need
-  that River mesa + this kernel after reboot. `pkg:mesa` live is 26.2.1.
+**Dogfood:** Ubuntu 7.3-rc1 panicked; rescue **boot 1** (6.12.93).
+  Compiled vanilla **7.3.0-rc1** (`joshua@novus`) is ESP default **Oath**.
+  Boot 4 archives the 6.12 rescue kernel. Not rebooted into it yet.
+  QEMU `run`/`probe` stay `-kernel` (no menu).
+**Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
+  visible; oath-efi still paints over it. Oath 7.3 not yet booted.
+  River GLES is still the river-pack Mesa; GFX6 modifiers need that
+  River mesa + this kernel on the metal. `pkg:mesa` live is 26.2.1.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Boot generations (last 5) + current packages
@@ -41,12 +42,16 @@ subvolume), not `oath undo`.
 - **Non-wipe ESP update:** `cargo make esp --esp /dev/sda1 --confirm`.
   Rotates, copies new `oath-efi` + kernel + initrd, writes BLS.
   Does **not** format a disk. Full install still `--confirm` + `--disk`.
-- **Kernel:** newest packaged kernel the build host can borrow.
-  Nix pack: `linuxPackages_testing` / `linux_7_3` when present, else
-  `linuxPackages_latest`. Metal without Nix: Ubuntu mainline
-  (`image/fetch-linux-mainline.sh`, 7.3-rc1 as of 2026-09-06 — GFX6
-  DRM modifiers). Pitcairn still sets `amdgpu.si_support=1`
-  until the running kernel defaults SI to amdgpu.
+- **Kernel:** vanilla **kernel.org** source, **Oath `.config`**, we
+  compile (`image/build-linux.sh` + `image/linux.fragment`). Not Ubuntu
+  generic, not a NixOS kernel, not a linux.git fork in this repo. Same
+  class as packing Zig: borrow upstream, ship the bits we need. Version
+  tracks **7.3** (GFX6 DRM modifiers for Pitcairn). Drivers are the
+  initrd `MODULE_ROOTS` list (amdgpu SI, tg3, btrfs, virtio, HDA, NFS,
+  …) plus EFI stub and `IA32_EMULATION` (32-bit Steam). Pitcairn still
+  sets `amdgpu.si_support=1` until the running kernel defaults SI to
+  amdgpu. QEMU `nix-shell` may still point `OATH_KERNEL` at a nixpkgs
+  bzImage until the next image rebuild.
 - **`pkg:mesa`:** current Debian mesa (26.2.x), not a frozen 26.1.6.
   Gamescope/RADV follow that pack. River GLES follows `pkg:river`
   until river-pack is rebuilt.
@@ -56,7 +61,8 @@ subvolume), not `oath undo`.
 - systemd-boot as the operator menu
 - More than five archived ESP boots
 - Pairing catalog undo with firmware entries automatically
-- Building a kernel tree in this repo (still borrowed)
+- A `linux.git` submodule or carrying patches (vanilla tarball + fragment only)
+- Ubuntu/Debian/NixOS packaged generic kernels as the metal kernel
 
 ## Courage
 
