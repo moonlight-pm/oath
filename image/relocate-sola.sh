@@ -415,8 +415,16 @@ for b in "${kit_bins[@]}"; do
     # River restart: libexec often exits 0 when the compositor dies
     # (wayland loop ends cleanly). PID 1 `restart=on-failure` treats
     # that as Quit Sola and leaves xdg clients unconfigured. Retry
-    # while river is gone; exit 0 only if the compositor is still up
-    # (flower Quit).
+    # while river is gone. If river is already back but the rest of
+    # the session is still up (Steam/gamescope killed the compositor
+    # and `restart=always` raced us), retry too — otherwise the glass
+    # stays River-black with no WM. Exit 0 only when river is up and
+    # the peer session process is gone (flower Quit).
+    if [[ $b == sola-river ]]; then
+      peer_check='pidof sola-shell'
+    else
+      peer_check='pidof sola-session'
+    fi
     cat >"$out/bin/$b" <<WRAP
 #!/bin/sh
 $guest_env
@@ -428,6 +436,10 @@ while true; do
     exit "\$code"
   fi
   if pidof river >/dev/null 2>&1; then
+    sleep 1
+    if pidof river >/dev/null 2>&1 && $peer_check >/dev/null 2>&1; then
+      continue
+    fi
     exit 0
   fi
   sleep 1

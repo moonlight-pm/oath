@@ -40,7 +40,10 @@
   `xdg_surface#19: error 3` was River skipping configure because
   sola-river was down after a compositor restart (exit 0 +
   `restart=on-failure`). Nest holds with the WM up. Wrappers retry
-  while `pidof river` is empty (canto gen 28). Do not SET
+  while `pidof river` is empty **or** river is already back and the
+  session is still up (canto gen 35 bounce). `GAMESCOPE_VIEWPORT_SUPPORTED`
+  is faked as 0 so steamui sizes the SDL window (value 1 left
+  MainMenu 1×1 hidden). Do not SET
   LINEAR_ALIGNED on the tiled source. 32-bit `libgbm` is
   in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
   Wrapper forces composition and SDR. Dual Pitcairn: gamescope

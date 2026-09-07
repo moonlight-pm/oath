@@ -1513,7 +1513,9 @@ gets libresolv from lib/srt. steamwebhelper skips pressure-vessel
 (CLONE_NEWUSER is EPERM after PID 1 chroot) and runs on the host with
 64-bit steamrt3 SONAMEs in lib64 (`--disable-gpu` on RADV SI).
 steamui SDL display 0×0 is clamped; steamwebhelper `liboath-cefgeom`
-clamps X11/xcb 0×0 creates.
+clamps X11/xcb 0×0 creates. GAMESCOPE_VIEWPORT_SUPPORTED is faked as
+0 (atom present) so steamui sizes the SDL window; value 1 took the
+overlay path and left MainMenu 1×1 hidden. HDR atom stays 0.
 liboath-glclass.so (64-bit LD_PRELOAD) redirects libGL/libEGL dlopen
 to pkg:mesa so gldriverquery does not hit ubuntu12_32 ELFCLASS32.
 liboath-peercred.so is dlmopen’d as a patched copy of steamui.so

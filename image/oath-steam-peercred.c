@@ -398,6 +398,11 @@ int XConfigureWindow(void *dpy, XWindow w, unsigned int mask, void *changes)
 
 /* gamescope --steam publishes these on the nested root. Rootless Xwayland
  * plus a late set means steamui often sees None and then enables HDR on SI.
+ *
+ * Fake the atoms as present so the read is not None. Value 0 for
+ * VIEWPORT_SUPPORTED: steamui then sizes the SDL window (Deck MainMenu)
+ * instead of the overlay path that leaves MainMenu 1x1 hidden. Value 1
+ * was that overlay lie. HDR stays 0 (Pitcairn SDR).
  */
 static unsigned long atom_viewport;
 static unsigned long atom_hdr;
@@ -484,10 +489,22 @@ int XGetWindowProperty(void *dpy, unsigned long w, unsigned long property, long 
 				xfree(n);
 		}
 	}
-	if (property && property == atom_viewport)
-		return fake_cardinal(1, actual_type, actual_format, nitems, bytes_after, prop);
-	if (property && property == atom_hdr)
+	if (property && property == atom_viewport) {
+		static int once;
+		if (!once) {
+			once = 1;
+			slog("oath-steam: fake GAMESCOPE_VIEWPORT_SUPPORTED=0\n");
+		}
 		return fake_cardinal(0, actual_type, actual_format, nitems, bytes_after, prop);
+	}
+	if (property && property == atom_hdr) {
+		static int once;
+		if (!once) {
+			once = 1;
+			slog("oath-steam: fake GAMESCOPE_HDR_ENABLED=0\n");
+		}
+		return fake_cardinal(0, actual_type, actual_format, nitems, bytes_after, prop);
+	}
 	if (property && property == atom_vroverlay)
 		return fake_cardinal(0, actual_type, actual_format, nitems, bytes_after, prop);
 	return real(dpy, w, property, offset, length, del, req_type, actual_type,

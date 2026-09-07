@@ -53,11 +53,16 @@ session) then `oath apply`.
 
 If **River the compositor** dies, sola-river/shell used to exit 0 as
 well (the Wayland loop ended cleanly). PID 1 then left the window
-manager down, and gamescope died with `xdg_surface has never been
-configured`. The packed `/bin/sola-river` and `/bin/sola-shell`
-wrappers now retry while `pidof river` is empty; they still exit 0
-when the compositor is up (Quit Sola). Next sola pack: the ELFs
-themselves exit 1 on compositor death.
+manager down, and the glass stays River-black (`xdg_surface has never
+been configured` for nests). The packed `/bin/sola-river` and
+`/bin/sola-shell` wrappers retry while `pidof river` is empty **or**
+while river is already back and the rest of the session is still up
+(Steam/gamescope can kill the compositor faster than the wrapper
+notices; `restart=always` races). They still exit 0 when river is up
+and the peer session process is gone (flower Quit). A stopped
+`svc:sola-river` with `enabled=true` is Quit-shaped: plain `oath apply`
+does not start it — bounce `enabled=false` then `true`. Next sola
+pack: the ELFs themselves exit 1 on compositor death.
 
 **Restart Computer** / **Shut Down** (flower menu) are `host:local`
 `power=reboot` / `power=halt`. The click is the owner's confirm:
