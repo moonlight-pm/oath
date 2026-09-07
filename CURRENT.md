@@ -117,13 +117,13 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    systemd-boot stays `BOOTX64` so the 5 s list is visible (oath-efi
    logo still hides the picker). Live process is **7.3.0-rc1** (`ssh
    home@canto`; PID 1 `ready` kver 7.3.0-rc1; amdgpu both Pitcairns).
-   `pkg:mesa` live is Debian **26.2.1** (gen 22). **GFX6 modifiers are
-   not on:** `CONFIG_DRM_AMD_DC_SI` was off, so Pitcairn is legacy DCE
-   (planes have no `IN_FORMATS`). **Steam nest cannot start:** RADV
-   `amdgpu_query_sw_info(address_prt_wa_control_bit)` fails on this
-   rc1; gamescope aborts `failed to find physical device`. River GLES
-   still paints. Next: `DRM_AMD_DC_SI=y` and a libdrm/RADV that
-   matches 7.3. Do not `cargo make install --confirm` (wipe).
+   `pkg:mesa` live is Debian **26.2.1** (gen 22). Live kernel is still
+   **#1** (no DC_SI). ESP default **Oath** is **#2** (`DRM_AMD_DC_SI=y`,
+   `amdgpu_dm_plane_calc_gfx6_mod` in amdgpu.ko). **boot 5** is #1.
+   **Steam nest** still cannot start on the live kernel: RADV
+   `amdgpu_query_sw_info(address_prt_wa_control_bit)` fails. River GLES
+   still paints. Reboot to pick up DC_SI. Do not
+   `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
