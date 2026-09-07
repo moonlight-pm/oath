@@ -1016,6 +1016,13 @@ if [ -x "$zig_cc" ] && [ -f "$here/oath-glclass.c" ]; then
 		"$here/oath-glclass.c" || \
 		echo "warn: liboath-glclass.so not built" >&2
 fi
+if [ -x "$zig_cc" ] && [ -f "$here/oath-cefgeom.c" ]; then
+	"$zig_cc" cc -target x86_64-linux-gnu -shared -fPIC -O2 \
+		-Wl,-rpath,/oath/store/pkg/glibc/lib \
+		-o "$stagedir/steam/lib64/liboath-cefgeom.so" \
+		"$here/oath-cefgeom.c" -ldl || \
+		echo "warn: liboath-cefgeom.so not built" >&2
+fi
 if [ -x "$zig_cc" ] && [ -f "$here/oath-lsof.c" ]; then
 	"$zig_cc" cc -target x86_64-linux-musl -static -O2 \
 		-o "$stagedir/steam/libexec/oath-lsof" \
@@ -1309,8 +1316,15 @@ unset LD_PRELOAD
 # Pitcairn RADV SI: CEF GPU process SIGBUS (exit 135) compositing the
 # 0x0 library browser. Software compositing is enough for Deck chrome.
 export RADV_DEBUG="${RADV_DEBUG:-nodcc,nohiz}"
+_pre=
 if [ -f /oath/store/pkg/steam/lib64/liboath-dumpable.so ]; then
-	export LD_PRELOAD=/oath/store/pkg/steam/lib64/liboath-dumpable.so
+	_pre=/oath/store/pkg/steam/lib64/liboath-dumpable.so
+fi
+if [ -f /oath/store/pkg/steam/lib64/liboath-cefgeom.so ]; then
+	_pre="${_pre:+$_pre:}/oath/store/pkg/steam/lib64/liboath-cefgeom.so"
+fi
+if [ -n "$_pre" ]; then
+	export LD_PRELOAD="$_pre"
 fi
 case " $* " in
 *\ --no-sandbox\ *) ;;
@@ -1498,6 +1512,8 @@ glibc still ships a separate libresolv that tmux NEEDs). srt-logger
 gets libresolv from lib/srt. steamwebhelper skips pressure-vessel
 (CLONE_NEWUSER is EPERM after PID 1 chroot) and runs on the host with
 64-bit steamrt3 SONAMEs in lib64 (`--disable-gpu` on RADV SI).
+steamui SDL display 0×0 is clamped; steamwebhelper `liboath-cefgeom`
+clamps X11/xcb 0×0 creates.
 liboath-glclass.so (64-bit LD_PRELOAD) redirects libGL/libEGL dlopen
 to pkg:mesa so gldriverquery does not hit ubuntu12_32 ELFCLASS32.
 liboath-peercred.so is dlmopen’d as a patched copy of steamui.so

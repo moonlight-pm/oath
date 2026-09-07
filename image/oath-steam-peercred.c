@@ -558,6 +558,136 @@ void *SDL_CreateWindow(const char *title, int w, int h, uint32_t flags_lo,
 	return win;
 }
 
+typedef struct {
+	int x, y, w, h;
+} SDL_Rect;
+
+typedef struct {
+	uint32_t displayID;
+	uint32_t format;
+	int w, h;
+	float pixel_density;
+	float refresh_rate;
+	int refresh_rate_numerator;
+	int refresh_rate_denominator;
+	void *internal;
+} SDL_DisplayMode;
+
+/*
+ * Nested Xwayland -glamor off often yields 0x0 from SDL3 display
+ * queries. steamui then CreateBrowser(..., 0x0) and CEF logs
+ * "Invalid browser dimensions" — Deck chrome never paints.
+ */
+int SDL_GetDisplayBounds(uint32_t id, SDL_Rect *rect)
+{
+	static int (*real)(uint32_t, SDL_Rect *);
+	int r;
+
+	if (!real)
+		real = (int (*)(uint32_t, SDL_Rect *))
+			load_sym("libSDL3.so.0", "SDL_GetDisplayBounds");
+	if (!real)
+		return 0;
+	r = real(id, rect);
+	if (rect && (rect->w <= 0 || rect->h <= 0)) {
+		slog("oath-steam: SDL_GetDisplayBounds id=%u was %dx%d; clamp 1920x1080\n",
+		    id, rect->w, rect->h);
+		rect->x = 0;
+		rect->y = 0;
+		rect->w = 1920;
+		rect->h = 1080;
+		return 1;
+	}
+	return r;
+}
+
+const SDL_DisplayMode *SDL_GetDesktopDisplayMode(uint32_t id)
+{
+	static const SDL_DisplayMode *(*real)(uint32_t);
+	static SDL_DisplayMode copy;
+	const SDL_DisplayMode *m;
+
+	if (!real)
+		real = (const SDL_DisplayMode *(*)(uint32_t))
+			load_sym("libSDL3.so.0", "SDL_GetDesktopDisplayMode");
+	if (!real)
+		return NULL;
+	m = real(id);
+	if (m && m->w > 0 && m->h > 0)
+		return m;
+	if (m)
+		copy = *m;
+	else
+		memset(&copy, 0, sizeof copy);
+	slog("oath-steam: SDL_GetDesktopDisplayMode id=%u was %dx%d; clamp 1920x1080\n",
+	    id, m ? m->w : 0, m ? m->h : 0);
+	copy.displayID = id ? id : 1;
+	copy.w = 1920;
+	copy.h = 1080;
+	if (copy.pixel_density <= 0)
+		copy.pixel_density = 1.f;
+	if (copy.refresh_rate <= 0)
+		copy.refresh_rate = 75.f;
+	if (copy.refresh_rate_numerator <= 0) {
+		copy.refresh_rate_numerator = 75;
+		copy.refresh_rate_denominator = 1;
+	}
+	return &copy;
+}
+
+float SDL_GetDisplayContentScale(uint32_t id)
+{
+	static float (*real)(uint32_t);
+	float s;
+
+	if (!real)
+		real = (float (*)(uint32_t))
+			load_sym("libSDL3.so.0", "SDL_GetDisplayContentScale");
+	if (!real)
+		return 1.f;
+	s = real(id);
+	if (s <= 0.f) {
+		slog("oath-steam: SDL_GetDisplayContentScale id=%u was %f; clamp 1\n", id, (double)s);
+		return 1.f;
+	}
+	return s;
+}
+
+uint32_t SDL_GetPrimaryDisplay(void)
+{
+	static uint32_t (*real)(void);
+	uint32_t id;
+
+	if (!real)
+		real = (uint32_t (*)(void))load_sym("libSDL3.so.0", "SDL_GetPrimaryDisplay");
+	if (!real)
+		return 1;
+	id = real();
+	if (!id) {
+		slog("oath-steam: SDL_GetPrimaryDisplay was 0; fake 1\n");
+		return 1;
+	}
+	return id;
+}
+
+uint32_t *SDL_GetDisplays(int *count)
+{
+	static uint32_t *(*real)(int *);
+	static uint32_t fake[1] = { 1 };
+	uint32_t *ids;
+
+	if (!real)
+		real = (uint32_t *(*)(int *))load_sym("libSDL3.so.0", "SDL_GetDisplays");
+	ids = real ? real(count) : NULL;
+	if (!ids || (count && *count <= 0)) {
+		if (count)
+			*count = 1;
+		slog("oath-steam: SDL_GetDisplays empty; fake 1 display\n");
+		return fake;
+	}
+	return ids;
+}
+
 int SDL_SetWindowSize(void *window, int w, int h)
 {
 	static int (*real)(void *, int, int);

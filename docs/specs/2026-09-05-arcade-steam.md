@@ -47,7 +47,10 @@
   must use the connected card’s render node (`OATH_DRM_RENDER`,
   pool layer reorders Vulkan devices). Nest from renderD128
   (spare) imports as black on River’s card1.
-  CEF GPU is `--disable-gpu` on SI. WebUITransport
+  CEF GPU is `--disable-gpu` on SI. steamui SDL display
+  queries that return 0×0 are clamped to 1920×1080;
+  steamwebhelper `liboath-cefgeom` clamps X11/xcb 0×0
+  creates (Shared JS Context / gamepadui). WebUITransport
   needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked (library
   empty this boot). `/bin/gamescope` drops `-b`/`--borderless` so
   Arcade’s Sola-generic nest flags do not xdg-0×0 on this River.

@@ -106,9 +106,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
    `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: relaunch Steam
-   (nest was on spare GPU renderD128 → black on card1; wrapper +
-   pool layer pin `OATH_DRM_RENDER`). Arcade Play (library empty).
-   Or a `.pc` for alsa.
+   (CEF 0×0 clamp: steamui SDL display + webhelper X11/xcb). Arcade
+   Play (library empty). Or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
    **T38** firmware boots on canto ESP: last five archives + current.
