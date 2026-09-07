@@ -21,5 +21,6 @@ pkgs.mkShell {
     curl
     gnutar
     gzip
+    patch
   ];
 }

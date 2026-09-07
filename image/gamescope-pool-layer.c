@@ -190,6 +190,35 @@ typedef VkResult(VKAPI_PTR *PFN_vkGetMemoryFdKHR)(VkDevice, const VkMemoryGetFdI
 typedef VkResult(VKAPI_PTR *PFN_vkBindImageMemory)(VkDevice, VkImage, VkDeviceMemory, VkDeviceSize);
 typedef void(VKAPI_PTR *PFN_vkDestroyImage)(VkDevice, VkImage, const VkAllocationCallbacks *);
 
+#define VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO 5
+#define VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 0x00000002u
+#define VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 0x00000004u
+
+typedef struct VkMemoryAllocateInfo {
+	VkStructureType sType;
+	const void *pNext;
+	VkDeviceSize allocationSize;
+	uint32_t memoryTypeIndex;
+} VkMemoryAllocateInfo;
+typedef struct VkMemoryType {
+	uint32_t propertyFlags;
+	uint32_t heapIndex;
+} VkMemoryType;
+typedef struct VkMemoryHeap {
+	VkDeviceSize size;
+	uint32_t flags;
+} VkMemoryHeap;
+typedef struct VkPhysicalDeviceMemoryProperties {
+	uint32_t memoryTypeCount;
+	VkMemoryType memoryTypes[32];
+	uint32_t memoryHeapCount;
+	VkMemoryHeap memoryHeaps[16];
+} VkPhysicalDeviceMemoryProperties;
+typedef VkResult(VKAPI_PTR *PFN_vkAllocateMemory)(VkDevice, const VkMemoryAllocateInfo *,
+						  const VkAllocationCallbacks *, VkDeviceMemory *);
+typedef void(VKAPI_PTR *PFN_vkGetPhysicalDeviceMemoryProperties)(VkPhysicalDevice,
+								 VkPhysicalDeviceMemoryProperties *);
+
 enum { LAYER_NEGOTIATE_INTERFACE_STRUCT = 1 };
 enum { CURRENT_LOADER_LAYER_INTERFACE_VERSION = 2, MIN_SUPPORTED_LOADER_LAYER_INTERFACE_VERSION = 1 };
 enum { VK_LAYER_LINK_INFO = 0 };
@@ -243,6 +272,12 @@ static PFN_vkGetImageSubresourceLayout next_layout;
 static PFN_vkGetMemoryFdKHR next_get_fd;
 static PFN_vkBindImageMemory next_bind_image;
 static PFN_vkDestroyImage next_destroy_image;
+static PFN_vkAllocateMemory next_alloc;
+static PFN_vkGetPhysicalDeviceMemoryProperties next_mem_props;
+static VkPhysicalDeviceMemoryProperties mem_props;
+static VkInstance the_instance;
+static int have_mem_props;
+static int gtt_once;
 static int padded_once;
 static int layout_logs;
 static int scanout_once;
@@ -326,7 +361,12 @@ static VkResult VKAPI_CALL hook_CreateInstance(const VkInstanceCreateInfo *info,
 	next_gipa = link->u.pLayerInfo->pfnNextGetInstanceProcAddr;
 	link->u.pLayerInfo = link->u.pLayerInfo->pNext;
 	next_create_instance = (PFN_vkCreateInstance)next_gipa(NULL, "vkCreateInstance");
-	return next_create_instance(info, a, out);
+	{
+		VkResult r = next_create_instance(info, a, out);
+		if (r == VK_SUCCESS && out)
+			the_instance = *out;
+		return r;
+	}
 }
 
 static VkResult VKAPI_CALL hook_CreateDevice(VkPhysicalDevice phys, const VkDeviceCreateInfo *info,
@@ -347,8 +387,18 @@ static VkResult VKAPI_CALL hook_CreateDevice(VkPhysicalDevice phys, const VkDevi
 		next_get_fd = (PFN_vkGetMemoryFdKHR)next_gdpa(*out, "vkGetMemoryFdKHR");
 		next_bind_image = (PFN_vkBindImageMemory)next_gdpa(*out, "vkBindImageMemory");
 		next_destroy_image = (PFN_vkDestroyImage)next_gdpa(*out, "vkDestroyImage");
-		fprintf(stderr, "[gamescope-pool] device created createImage=%p getFd=%p\n", (void *)next_create_image,
-			(void *)next_get_fd);
+		next_alloc = (PFN_vkAllocateMemory)next_gdpa(*out, "vkAllocateMemory");
+		if (next_gipa && !have_mem_props) {
+			next_mem_props = (PFN_vkGetPhysicalDeviceMemoryProperties)next_gipa(
+				the_instance, "vkGetPhysicalDeviceMemoryProperties");
+			if (next_mem_props) {
+				next_mem_props(phys, &mem_props);
+				have_mem_props = 1;
+			}
+		}
+		fprintf(stderr, "[gamescope-pool] device created createImage=%p getFd=%p alloc=%p host_vis_types=%u\n",
+			(void *)next_create_image, (void *)next_get_fd, (void *)next_alloc,
+			have_mem_props ? mem_props.memoryTypeCount : 0);
 	}
 	return r;
 }
@@ -376,6 +426,53 @@ static VkResult VKAPI_CALL hook_CreateDescriptorPool(VkDevice device, const VkDe
 		local.pPoolSizes = padded;
 	}
 	return next_pool(device, &local, a, out);
+}
+
+static uint32_t pick_host_visible_type(uint32_t orig) {
+	uint32_t i;
+
+	if (!have_mem_props || orig >= mem_props.memoryTypeCount)
+		return orig;
+	for (i = 0; i < mem_props.memoryTypeCount; i++) {
+		uint32_t f = mem_props.memoryTypes[i].propertyFlags;
+		if ((f & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) && (f & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+			return i;
+	}
+	return orig;
+}
+
+static VkResult VKAPI_CALL hook_AllocateMemory(VkDevice device, const VkMemoryAllocateInfo *info,
+					       const VkAllocationCallbacks *a, VkDeviceMemory *out) {
+	VkMemoryAllocateInfo local;
+	uint32_t t;
+
+	if (!next_alloc)
+		return VK_ERROR_INITIALIZATION_FAILED;
+	if (!info)
+		return next_alloc(device, info, a, out);
+	/* SI WSI LINEAR images still land in VRAM (GEM_MMAP EPERM). Put
+	 * swapchain-sized allocs in GTT so CPU detile can mmap. */
+	if (have_mem_props && info->allocationSize >= 256ull * 256ull * 4ull) {
+		t = pick_host_visible_type(info->memoryTypeIndex);
+		if (t != info->memoryTypeIndex) {
+			local = *info;
+			local.memoryTypeIndex = t;
+			{
+				VkResult r = next_alloc(device, &local, a, out);
+				if (r == VK_SUCCESS) {
+					if (!gtt_once) {
+						fprintf(stderr,
+							"[gamescope-pool] AllocateMemory %llu bytes type %u -> %u (host visible)\n",
+							(unsigned long long)info->allocationSize, info->memoryTypeIndex,
+							t);
+						gtt_once = 1;
+					}
+					return r;
+				}
+			}
+		}
+	}
+	return next_alloc(device, info, a, out);
 }
 
 /* gamescope (modifierless) puts Mesa WSI scanout=true on flippable
@@ -1090,7 +1187,6 @@ static VkResult VKAPI_CALL hook_GetMemoryFdKHR(VkDevice device, const VkMemoryGe
 			2u << (unsigned)((tiling >> 22) & 0x3), t ? t->w : 0, t ? t->h : 0, t ? t->pitch : 0);
 		meta_once = 1;
 	}
-	close(drm);
 	if (array_mode > AMDGPU_TILING_ARRAY_LINEAR_ALIGNED && t && t->w && t->h) {
 		int linear_fd = detile_dmabuf(*pFd, t->w, t->h, t->pitch ? t->pitch : t->w * 4, tiling);
 		if (linear_fd >= 0) {
@@ -1110,6 +1206,8 @@ static PFN_vkVoidFunction VKAPI_CALL hook_GetInstanceProcAddr(VkInstance instanc
 static PFN_vkVoidFunction VKAPI_CALL hook_GetDeviceProcAddr(VkDevice device, const char *name) {
 	if (!strcmp(name, "vkCreateDescriptorPool"))
 		return (PFN_vkVoidFunction)hook_CreateDescriptorPool;
+	if (!strcmp(name, "vkAllocateMemory"))
+		return (PFN_vkVoidFunction)hook_AllocateMemory;
 	if (!strcmp(name, "vkCreateImage"))
 		return (PFN_vkVoidFunction)hook_CreateImage;
 	if (!strcmp(name, "vkGetImageSubresourceLayout"))
@@ -1138,6 +1236,8 @@ static PFN_vkVoidFunction VKAPI_CALL hook_GetInstanceProcAddr(VkInstance instanc
 		return (PFN_vkVoidFunction)hook_GetInstanceProcAddr;
 	if (!strcmp(name, "vkCreateDescriptorPool"))
 		return (PFN_vkVoidFunction)hook_CreateDescriptorPool;
+	if (!strcmp(name, "vkAllocateMemory"))
+		return (PFN_vkVoidFunction)hook_AllocateMemory;
 	if (!strcmp(name, "vkCreateImage"))
 		return (PFN_vkVoidFunction)hook_CreateImage;
 	if (!strcmp(name, "vkGetImageSubresourceLayout"))

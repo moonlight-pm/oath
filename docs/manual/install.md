@@ -36,7 +36,9 @@ That archives the live ESP kernel as `oath/boot/<id>/`, keeps five
 archives, snapshots `@` to `@boot-<id>`, and copies the new bits.
 Reboot; the firmware menu can pick the archive if the new kernel
 fails. Metal without Nix: set `OATH_KERNEL`, `OATH_MODULES`,
-`OATH_BUSYBOX` (see `image/build-linux.sh`).
+`OATH_BUSYBOX`, and `OATH_FIRMWARE` (Pitcairn `amdgpu/*.bin` must be
+in the initrd; see `image/build-linux.sh`). SI DPM patches apply from
+`image/linux-patches` when compiling.
 4. Set `host:local` hostname, `net:net0` dhcp, owner SSH pubkeys.
 5. Reboot. Courage is **SSH as `home`** with those keys, then
    `oath ls`. (`sudo` has no password.)

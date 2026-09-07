@@ -7,7 +7,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-09-06
+**As of:** 2026-09-07
 
 ---
 
@@ -101,9 +101,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: radeonsi implicit
-   2D import (or GTT WSI so the layer can CPU-detile), Arcade Play
-   smoke, or a `.pc` for alsa.
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: smoke the GTT
+   gamescope layer (CPU detile after host-visible allocs), SI DPM
+   clocks still 300/150 after connector fallback, Arcade Play, or a
+   `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
    **T38** firmware boots on canto ESP: last five archives + current.
@@ -114,21 +115,26 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    (`image/build-linux.sh`, nice 10, `-j16`; `joshua@novus`, gcc 14.3).
    ESP **Oath** default is that kernel + matching initrd (`subvol=@`).
    **Oath boot 4** is the 6.12 rescue copy. **boot 1** still works.
-   systemd-boot stays `BOOTX64` so the 5 s list is visible (oath-efi
-   logo still hides the picker). Live process is **7.3.0-rc1** (`ssh
-   home@canto`; PID 1 `ready` kver 7.3.0-rc1; amdgpu both Pitcairns).
-   `pkg:mesa` live is Debian **26.2.1** (gen 22) plus **libdrm 2.4.134**
-   in `pkg:mesa/lib` (RADV needs `amdgpu_sw_info_address_prt_wa_control_bit`;
-   river libdrm only had `address32_hi`). Live kernel is **#2**
-   (`DRM_AMD_DC_SI=y`). card1 planes advertise GFX6 `IN_FORMATS`.
-   `vulkaninfo` sees two RADV PITCAIRN devices. gamescope selects
-   PITCAIRN; it still logs **no Vulkan DRM format modifiers**. River
-   GLES paints on card1 DP-10. **Desk is laggy:** SI DPM is stuck at
-   boot clocks (sclk 300 MHz, mclk 150 MHz, `power level 0`);
-   `gpu_busy_percent` is ENOTSUP. Menubar GPU graph is NVML (NVIDIA)
-   only, so it never appears on Pitcairn. Spare GPU idea:
-   `docs/ideas/2026-09-07-canto-second-pitcairn.md`. Do not
-   `cargo make install --confirm` (wipe).
+   **boot 6** is 7.3 DC_SI #2 (pre-DPM-patch). Ubuntu panic **boot 3**
+   was pruned so boot 1 stays. systemd-boot stays `BOOTX64` so the 5 s
+   list is visible (oath-efi logo still hides the picker). Live process
+   is **7.3.0-rc1 #2** with patched `amdgpu.ko` (`DRM_AMD_DC_SI=y`;
+   SI DPM connector fallback). `pkg:mesa` live is Debian **26.2.1**
+   plus **libdrm 2.4.134** and **32-bit libgbm**. card1 DP-10 is up.
+   Small SI DPM patches live under `image/linux-patches` (vanilla
+   tarball + fragment + patches; not a linux.git fork). **`cargo make
+   boot` must pack Pitcairn firmware** (`build/linux/firmware` or
+   `OATH_FIRMWARE`); the first DPM initrd omitted it and both GPUs
+   `Fatal error during GPU init` (`pitcairn_mc.bin` missing). Live
+   recovery: copy firmware + `insmod`. ESP initrd now includes the
+   blobs. DPM hw_init sees **5 power states** (PERFORMANCE max
+   850/1270 MHz); fallback counted **1** connected connector; clocks
+   still sit at **300/150** (`force high` I/O error). `gpu_busy_percent`
+   is ENOTSUP. Gamescope pool layer now tries **host-visible GTT**
+   allocs so CPU detile can `GEM_MMAP` (nest present still unsmoked
+   this boot). Steam-runtime `compose.dir` already aliases C.UTF-8.
+   Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.
+   Do not `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF

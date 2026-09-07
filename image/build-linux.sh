@@ -41,6 +41,22 @@ if [ ! -f "$src/Makefile" ]; then
 fi
 
 cd "$src"
+patches=$here/linux-patches
+if [ -d "$patches" ]; then
+	for p in "$patches"/*.patch; do
+		[ -f "$p" ] || continue
+		base=$(basename "$p")
+		if patch -p1 -N --dry-run -r - --forward -i "$p" >/dev/null 2>&1; then
+			echo "patch $base"
+			patch -p1 -N -r - --forward -i "$p"
+		elif patch -p1 -R --dry-run -r - -i "$p" >/dev/null 2>&1; then
+			echo "patch $base (already applied)"
+		else
+			echo "patch $base FAILED" >&2
+			exit 1
+		fi
+	done
+fi
 echo "config fragment $fragment  jobs=$jobs  nice=10"
 make ARCH=x86_64 defconfig
 ./scripts/kconfig/merge_config.sh -m .config "$fragment"
@@ -61,8 +77,24 @@ mv "$out/modules-root/lib/modules/$rel" "$out/modules/$rel"
 rm -rf "$out/modules-root"
 cp -a "$src/arch/x86/boot/bzImage" "$out/vmlinuz"
 
+# Pitcairn firmware next to the kernel so `cargo make boot` packs it
+# without nix-build tools.nix (OATH_KERNEL parent dir).
+if [ ! -d "$out/firmware/amdgpu" ]; then
+	src_fw=${OATH_FIRMWARE:-}
+	if [ -z "$src_fw" ] || [ ! -d "$src_fw" ]; then
+		src_fw=$here/../build/linux/firmware
+	fi
+	if [ -d "$src_fw/amdgpu" ]; then
+		mkdir -p "$out/firmware"
+		cp -a "$src_fw/." "$out/firmware/"
+	fi
+fi
+
 echo "kernel $out/vmlinuz"
 echo "modules $out/modules/$rel"
 echo "OATH_KERNEL=$out/vmlinuz"
 echo "OATH_MODULES=$out/modules"
 echo "OATH_KVER=$rel"
+if [ -d "$out/firmware/amdgpu" ]; then
+	echo "OATH_FIRMWARE=$out/firmware"
+fi

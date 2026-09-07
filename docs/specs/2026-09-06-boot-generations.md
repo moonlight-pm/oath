@@ -2,8 +2,9 @@
 **Status:** target (freeze)
 **Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
 **Dogfood:** Ubuntu 7.3-rc1 panicked; rescue **boot 1** / **boot 4**
-  (6.12.93). Live canto is compiled vanilla **7.3.0-rc1** (`joshua@novus`;
-  PID 1 ready; amdgpu both Pitcairns). QEMU `run`/`probe` stay `-kernel`.
+  (6.12.93). Live canto is compiled vanilla **7.3.0-rc1 #2** + SI DPM
+  `amdgpu` patch (`joshua@novus`; Pitcairn firmware in ESP initrd).
+  QEMU `run`/`probe` stay `-kernel`.
 **Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
   visible; oath-efi still paints over it. River GLES is still the
   river-pack Mesa; GFX6 modifiers need that River mesa on this kernel.
@@ -42,13 +43,18 @@ subvolume), not `oath undo`.
   Rotates, copies new `oath-efi` + kernel + initrd, writes BLS.
   Does **not** format a disk. Full install still `--confirm` + `--disk`.
 - **Kernel:** vanilla **kernel.org** source, **Oath `.config`**, we
-  compile (`image/build-linux.sh` + `image/linux.fragment`). Not Ubuntu
-  generic, not a NixOS kernel, not a linux.git fork in this repo. Same
-  class as packing Zig: borrow upstream, ship the bits we need. Version
-  tracks **7.3** (GFX6 DRM modifiers for Pitcairn). Drivers are the
-  initrd `MODULE_ROOTS` list (amdgpu SI, tg3, btrfs, virtio, HDA, NFS,
-  …) plus EFI stub and `IA32_EMULATION` (32-bit Steam). Pitcairn still
-  sets `amdgpu.si_support=1` until the running kernel defaults SI to
+  compile (`image/build-linux.sh` + `image/linux.fragment` + optional
+  `image/linux-patches/*.patch`). Not Ubuntu generic, not a NixOS
+  kernel, not a linux.git fork in this repo. Small Oath patches are
+  allowed (SI DPM under Display Core). Same class as packing Zig:
+  borrow upstream, ship the bits we need. Version tracks **7.3**
+  (GFX6 DRM modifiers for Pitcairn). Drivers are the initrd
+  `MODULE_ROOTS` list (amdgpu SI, tg3, btrfs, virtio, HDA, NFS, …)
+  plus EFI stub and `IA32_EMULATION` (32-bit Steam). **Pitcairn
+  firmware** (`amdgpu/pitcairn_*.bin`) must be in the initrd
+  (`OATH_FIRMWARE` or `$OATH_KERNEL` sibling `firmware/`); PID 1
+  bind-mounts initrd `/lib/firmware` over `@`. Pitcairn still sets
+  `amdgpu.si_support=1` until the running kernel defaults SI to
   amdgpu. QEMU `nix-shell` may still point `OATH_KERNEL` at a nixpkgs
   bzImage until the next image rebuild.
 - **`pkg:mesa`:** current Debian mesa (26.2.x), not a frozen 26.1.6.
@@ -60,7 +66,7 @@ subvolume), not `oath undo`.
 - systemd-boot as the operator menu
 - More than five archived ESP boots
 - Pairing catalog undo with firmware entries automatically
-- A `linux.git` submodule or carrying patches (vanilla tarball + fragment only)
+- A `linux.git` submodule (vanilla tarball + fragment + `image/linux-patches`)
 - Ubuntu/Debian/NixOS packaged generic kernels as the metal kernel
 
 ## Courage

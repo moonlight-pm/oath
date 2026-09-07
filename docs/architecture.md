@@ -20,7 +20,8 @@ QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 ```
 QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
 -device virtio-gpu-pci,xres=1280,yres=800 -display gtk,zoom-to-fit=off (or none) -drive virtio qcow2
-  kernel (vanilla kernel.org + Oath fragment; 7.3 for GFX6) + initramfs
+  kernel (vanilla kernel.org + Oath fragment + image/linux-patches; 7.3 for GFX6) + initramfs
+    (Pitcairn amdgpu/*.bin in initrd /lib/firmware)
     /init = oath-init
     loads virtio_blk, btrfs, virtio-gpu, evdev, virtio_input, virtio_net, …
     mounts /dev/vda subvol=@ , chroot

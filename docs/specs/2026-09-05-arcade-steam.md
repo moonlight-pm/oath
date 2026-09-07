@@ -36,12 +36,13 @@
   (Deck welcome); CEF BrowserReady is up. Nested present to River
   is still wrong: live GET is `tiling_info=0x6016a4`
   (`ARRAY_2D_TILED_THIN1`, THIN, P8_32x32_8x16). Layer no longer
-  SETs LINEAR_ALIGNED (that lied). `GEM_MMAP` is EPERM on VRAM;
-  GBM implicit map samples linear too. Internal
+  SETs LINEAR_ALIGNED (that lied). Layer remaps swapchain-sized
+  `vkAllocateMemory` to host-visible GTT so CPU detile can `GEM_MMAP`
+  (unsmoked this boot). 32-bit `libgbm` is in `pkg:mesa/lib32`.
+  steam-runtime `compose.dir` aliases C.UTF-8. Internal
   `gamescopectl screenshot` is the Deck UI. Wrapper forces
   composition and SDR; that is not the remaining glass bug.
-  `XOpenIM()` still fails `LANG=C.UTF-8` until `compose.dir` aliases
-  C.UTF-8 (compat.sh). CEF GPU is `--disable-gpu` on SI. WebUITransport
+  CEF GPU is `--disable-gpu` on SI. WebUITransport
   needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked. Rootful `:2`
   + clip/xwm is leftover fallback. QEMU image pack of these pkgs not
   in `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).

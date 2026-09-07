@@ -15,7 +15,7 @@ Founding D1–D9 and the catalog freeze’s technical locks are **closed**.
 None open. T38 boot generations closed (last 5 ESP archives + current;
 `oath-efi` menu; `oath.subvol`; `cargo make esp`). Kernel lock **amended
 2026-09-07**: vanilla kernel.org + Oath fragment, we compile
-(`image/build-linux.sh`); not Ubuntu/NixOS generic. Still 7.3 for GFX6.
+(`image/build-linux.sh` + `image/linux-patches`); not Ubuntu/NixOS generic. Still 7.3 for GFX6.
 Debian mesa 26.2.x). T37 Arcade + Steam runtime closed (`pkg:bash` / `pkg:xwayland` /
 `pkg:gamescope` / `pkg:mesa` / `pkg:steam`; Arcade ELF stays in `pkg:sola`; no new `svc`;
 host River still without xwaylandSupport). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;

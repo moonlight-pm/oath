@@ -1,0 +1,72 @@
+From: Oath <oath@local>
+Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
+
+--- a/drivers/gpu/drm/amd/pm/legacy-dpm/si_dpm.c
++++ b/drivers/gpu/drm/amd/pm/legacy-dpm/si_dpm.c
+@@ -7210,6 +7210,17 @@
+ 	si_program_display_gap(adev);
+ }
+ 
++static int si_dpm_display_configuration_change(void *handle,
++					       const struct amd_pp_display_configuration *input)
++{
++	struct amdgpu_device *adev = handle;
++
++	if (!input)
++		return -EINVAL;
++	adev->pm.pm_display_cfg = *input;
++	return 0;
++}
++
+ 
+ static void si_parse_pplib_non_clock_info(struct amdgpu_device *adev,
+ 					  struct amdgpu_ps *rps,
+@@ -7712,6 +7723,10 @@
+ #if 0 //TODO ?
+ 	si_dpm_powergate_uvd(adev, true);
+ #endif
++	/* DC modeset may not have run yet, but HPD connectors exist. */
++	mutex_lock(&adev->pm.mutex);
++	amdgpu_legacy_dpm_compute_clocks(adev);
++	mutex_unlock(&adev->pm.mutex);
+ 	return 0;
+ }
+ 
+@@ -7869,6 +7884,29 @@
+ 		adev->pm.dpm_enabled = false;
+ 	else
+ 		adev->pm.dpm_enabled = true;
++	{
++		int i;
++
++		drm_info(adev_to_drm(adev),
++			 "si dpm hw_init enabled=%d num_ps=%d\n",
++			 adev->pm.dpm_enabled, adev->pm.dpm.num_ps);
++		for (i = 0; i < adev->pm.dpm.num_ps; i++) {
++			struct amdgpu_ps *ps = &adev->pm.dpm.ps[i];
++			struct si_ps *si_ps = si_get_ps(ps);
++			u32 sclk = 0, mclk = 0;
++
++			if (si_ps && si_ps->performance_level_count) {
++				struct rv7xx_pl *pl =
++					&si_ps->performance_levels[si_ps->performance_level_count - 1];
++
++				sclk = pl->sclk;
++				mclk = pl->mclk;
++			}
++			drm_info(adev_to_drm(adev),
++				 "si dpm ps[%d] class=0x%x sclk=%u mclk=%u\n",
++				 i, ps->class, sclk, mclk);
++		}
++	}
+ 	amdgpu_legacy_dpm_compute_clocks(adev);
+ 	mutex_unlock(&adev->pm.mutex);
+ 	return ret;
+@@ -8154,6 +8192,7 @@
+ 	.set_power_state = &si_dpm_set_power_state,
+ 	.post_set_power_state = &si_dpm_post_set_power_state,
+ 	.display_configuration_changed = &si_dpm_display_configuration_changed,
++	.display_configuration_change = &si_dpm_display_configuration_change,
+ 	.get_sclk = &si_dpm_get_sclk,
+ 	.get_mclk = &si_dpm_get_mclk,
+ 	.print_power_state = &si_dpm_print_power_state,

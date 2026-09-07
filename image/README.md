@@ -22,7 +22,10 @@ sola-browser + CEF, workspaces, kvm, and remaining kit apps; host
 `bash image/install-arcade-runtime.sh`. Mesa-only refresh:
 `bash image/pack-mesa.sh`. Metal kernel: vanilla kernel.org + Oath fragment
 (`sh image/build-linux.sh`, half the host cores, nice 10). Then
-`OATH_KERNEL=build/linux/vmlinuz OATH_MODULES=build/linux/modules cargo make esp`.
+`OATH_KERNEL=build/linux/vmlinuz OATH_MODULES=build/linux/modules cargo make esp`
+(and `OATH_FIRMWARE=build/linux/firmware` or a `firmware/` dir next to
+the vmlinuz so Pitcairn `amdgpu/*.bin` lands in the initrd). SI DPM
+patches: `image/linux-patches`.
 `image/fetch-linux-mainline.sh` is the old Ubuntu-deb shortcut; do not
 use it.
 

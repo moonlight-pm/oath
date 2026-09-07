@@ -673,12 +673,14 @@ fetch_debian v/vulkan-loader/libvulkan1_1.4.357.0-1_i386.deb
 fetch_debian libd/libdisplay-info/libdisplay-info3_0.3.0-1+b1_i386.deb
 fetch_debian libx/libxml2/libxml2-16_2.15.3+dfsg-1_i386.deb
 fetch_debian w/wayland/libwayland-client0_1.26.0-1_i386.deb
+fetch_debian m/mesa/libgbm1_26.2.1-4_i386.deb
 extract_deb "$fetchdir/mesa-vulkan-drivers_26.2.1-4_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libllvm21_21.1.8-10_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libvulkan1_1.4.357.0-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libdisplay-info3_0.3.0-1+b1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libxml2-16_2.15.3+dfsg-1_i386.deb" "$stagedir/debroot32"
 extract_deb "$fetchdir/libwayland-client0_1.26.0-1_i386.deb" "$stagedir/debroot32"
+extract_deb "$fetchdir/libgbm1_26.2.1-4_i386.deb" "$stagedir/debroot32"
 mkdir -p "$stagedir/mesa/lib32"
 radeon32=$(find "$stagedir/debroot32" -name 'libvulkan_radeon.so' ! -type l | head -1)
 llvm32=$(find "$stagedir/debroot32" -name 'libLLVM.so.21.1' ! -type l | head -1)
@@ -699,6 +701,11 @@ copy_mesa "$wl32" "$stagedir/mesa/lib32/$(basename "$wl32")"
 ln -sfn "$(basename "$di32")" "$stagedir/mesa/lib32/libdisplay-info.so.3"
 ln -sfn "$(basename "$xml32")" "$stagedir/mesa/lib32/libxml2.so.16"
 ln -sfn "$(basename "$wl32")" "$stagedir/mesa/lib32/libwayland-client.so.0"
+gbm32=$(find "$stagedir/debroot32" -name 'libgbm.so.1.0.0' ! -type l | head -1)
+if [ -n "$gbm32" ]; then
+	copy_mesa "$gbm32" "$stagedir/mesa/lib32/libgbm.so.1.0.0"
+	ln -sfn libgbm.so.1.0.0 "$stagedir/mesa/lib32/libgbm.so.1"
+fi
 interp32=/oath/store/pkg/steam/lib32/ld-linux.so.2
 rpath32="/oath/store/pkg/mesa/lib32:/oath/store/pkg/steam/lib32:$glibc"
 for f in "$stagedir/mesa/lib32"/*; do

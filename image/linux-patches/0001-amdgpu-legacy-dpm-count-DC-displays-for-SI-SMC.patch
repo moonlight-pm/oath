@@ -1,0 +1,48 @@
+From: Oath <oath@local>
+Subject: 0001-amdgpu-legacy-dpm-count-DC-displays-for-SI-SMC.patch
+
+--- a/drivers/gpu/drm/amd/pm/legacy-dpm/legacy_dpm.c
++++ b/drivers/gpu/drm/amd/pm/legacy-dpm/legacy_dpm.c
+@@ -28,6 +28,7 @@
+ #include "legacy_dpm.h"
+ #include "amdgpu_dpm_internal.h"
+ #include "amdgpu_display.h"
++#include <drm/drm_connector.h>
+ 
+ #define amdgpu_dpm_pre_set_power_state(adev) \
+ 		((adev)->powerplay.pp_funcs->pre_set_power_state((adev)->powerplay.pp_handle))
+@@ -963,8 +964,33 @@
+ {
+ 	struct amdgpu_device *adev = (struct amdgpu_device *)handle;
+ 
+-	if (!adev->dc_enabled)
++	if (!adev->dc_enabled) {
+ 		amdgpu_dpm_get_display_cfg(adev);
++	} else if (adev->pm.pm_display_cfg.num_display == 0) {
++		/*
++		 * DC skipped filling pm_display_cfg (or memcmp'd equal to
++		 * empty). SI SMC stays in the no-CRTC boot state (300/150 MHz)
++		 * unless num_display > 0. Count live DRM connectors.
++		 */
++		struct drm_device *ddev = adev_to_drm(adev);
++		struct drm_connector_list_iter iter;
++		struct drm_connector *connector;
++		u32 n = 0;
++
++		drm_connector_list_iter_begin(ddev, &iter);
++		drm_for_each_connector_iter(connector, &iter) {
++			if (connector->status == connector_status_connected)
++				n++;
++		}
++		drm_connector_list_iter_end(&iter);
++		if (n) {
++			adev->pm.pm_display_cfg.num_display = n;
++			adev->pm.pm_display_cfg.crtc_index = 0;
++			drm_info(ddev,
++				 "legacy dpm: DC left num_display=0, counted %u connected connector(s)\n",
++				 n);
++		}
++	}
+ 
+ 	amdgpu_dpm_change_power_state_locked(adev);
+ }
