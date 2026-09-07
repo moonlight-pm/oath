@@ -117,12 +117,13 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    systemd-boot stays `BOOTX64` so the 5 s list is visible (oath-efi
    logo still hides the picker). Live process is **7.3.0-rc1** (`ssh
    home@canto`; PID 1 `ready` kver 7.3.0-rc1; amdgpu both Pitcairns).
-   `pkg:mesa` live is Debian **26.2.1** (gen 22). Live kernel is still
-   **#1** (no DC_SI). ESP default **Oath** is **#2** (`DRM_AMD_DC_SI=y`,
-   `amdgpu_dm_plane_calc_gfx6_mod` in amdgpu.ko). **boot 5** is #1.
-   **Steam nest** still cannot start on the live kernel: RADV
+   `pkg:mesa` live is Debian **26.2.1** (gen 22). Live kernel is **#2**
+   (`DRM_AMD_DC_SI=y`). card1 planes advertise GFX6 `IN_FORMATS`
+   (`0x02000001a8940400`, `0x0200000180d40400`, `0x0200000000000200`,
+   LINEAR). **Steam nest** still cannot start: RADV
    `amdgpu_query_sw_info(address_prt_wa_control_bit)` fails. River GLES
-   still paints. Reboot to pick up DC_SI. Do not
+   paints on card1 DP-10. Spare Pitcairn (card0, nothing plugged) is
+   render-only later, not CrossFire. Do not
    `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
