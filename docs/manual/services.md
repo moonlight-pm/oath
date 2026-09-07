@@ -15,8 +15,8 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:river` | `/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river` (runs as `home`): picks the DRM card with a connected connector (dual-GPU). GLES2/radeonsi on real KMS, pixman on virtio. libinput via libudev-zero. |
 | `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/1/sola-bus`. |
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/1/sola-call`. |
-| `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. |
-| `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher / window menu / Super+K / Super+Tab. Wants river + bus + call + the bridge. wgpu/gl; llvmpipe only on virtio KMS; gles2/radeonsi on metal. |
+| `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. Wrapper retries while `pidof river` is empty so a compositor restart is not treated as Quit Sola. |
+| `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher / window menu / Super+K / Super+Tab. Wants river + bus + call + the bridge. wgpu/gl; llvmpipe only on virtio KMS; gles2/radeonsi on metal. Same compositor-retry wrapper as the bridge. |
 | `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). Kit apps in `pkg:sola`: `/bin/sola-terminal` (tmux, `$SHELL` default `/bin/thoxa`; first tab `$HOME`), `/bin/sola-browser` (CEF), `/bin/sola-workspaces` (`solactl` helper; same `$SHELL`). `/bin/xdg-open` is `solactl open` (Grok login; `/bin/x-www-browser` is the same shim; not xdg-utils). |
 | `svc:sola-kvm` | `/bin/sola-kvm listen` | enabled, `restart=always` | Linux KVM **client** as `home`. UDP 4242 injects via River virtual pointer/keyboard (key before modifiers, so Super+Tab confirms on Super-up; kernel auto-repeat is not injected). CLIP1 TCP on the same port syncs text and `image/png` on Enter/Leave. Wants `svc:river`. |
 | `svc:pipewire` | `/bin/pipewire` | enabled, `restart=always` | Seat audio graph as `home`. `/run/user/1/pipewire-0`. Wants nothing. |
@@ -50,6 +50,14 @@ compositor, serial, and SSH stay. Reboot or `oath apply` (while they
 remain `enabled=true`) starts the session again. To leave it off across
 reboot: `oath set svc:sola-shell enabled=false` (and bus, call, bridge,
 session) then `oath apply`.
+
+If **River the compositor** dies, sola-river/shell used to exit 0 as
+well (the Wayland loop ended cleanly). PID 1 then left the window
+manager down, and gamescope died with `xdg_surface has never been
+configured`. The packed `/bin/sola-river` and `/bin/sola-shell`
+wrappers now retry while `pidof river` is empty; they still exit 0
+when the compositor is up (Quit Sola). Next sola pack: the ELFs
+themselves exit 1 on compositor death.
 
 **Restart Computer** / **Shut Down** (flower menu) are `host:local`
 `power=reboot` / `power=halt`. The click is the owner's confirm:

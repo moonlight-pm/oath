@@ -411,12 +411,36 @@ for b in "${kit_bins[@]}"; do
   else
     patchelf_libexec "$out/libexec/$b"
   fi
-  cat >"$out/bin/$b" <<WRAP
+  if [[ $b == sola-river || $b == sola-shell ]]; then
+    # River restart: libexec often exits 0 when the compositor dies
+    # (wayland loop ends cleanly). PID 1 `restart=on-failure` treats
+    # that as Quit Sola and leaves xdg clients unconfigured. Retry
+    # while river is gone; exit 0 only if the compositor is still up
+    # (flower Quit).
+    cat >"$out/bin/$b" <<WRAP
+#!/bin/sh
+$guest_env
+/bin/mkdir -p /tmp/fontconfig /oath/log "\$HOME/.local/share" "\$HOME/.config"
+while true; do
+  /oath/store/pkg/sola/libexec/$b "\$@" >>/oath/log/$b.log 2>&1
+  code=\$?
+  if [ "\$code" -ne 0 ]; then
+    exit "\$code"
+  fi
+  if pidof river >/dev/null 2>&1; then
+    exit 0
+  fi
+  sleep 1
+done
+WRAP
+  else
+    cat >"$out/bin/$b" <<WRAP
 #!/bin/sh
 $guest_env
 /bin/mkdir -p /tmp/fontconfig /oath/log "\$HOME/.local/share" "\$HOME/.config"
 exec /oath/store/pkg/sola/libexec/$b "\$@" >>/oath/log/$b.log 2>&1
 WRAP
+  fi
   chmod +x "$out/bin/$b"
 done
 

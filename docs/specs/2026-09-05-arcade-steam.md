@@ -36,9 +36,12 @@
   radeonsi SIGBUS’d on SI tiled BOs; mesa 26.2.1 libgallium needs
   GLIBC_2.43). 64-bit `liboath-glclass.so` stops gldriverquery
   ELFCLASS32. Latest nest smoke: GpuTopology + pool `vkCreateImage`
-  1920×1080 + `SDL_CreateWindow` OpenGL 4.5, no SIGBUS; then
-  `xdg_surface#19: error 3: xdg_surface has never been configured`.
-  Do not SET LINEAR_ALIGNED on the tiled source. 32-bit `libgbm` is
+  1920×1080 + `SDL_CreateWindow` OpenGL 4.5, no SIGBUS. The
+  `xdg_surface#19: error 3` was River skipping configure because
+  sola-river was down after a compositor restart (exit 0 +
+  `restart=on-failure`). Nest holds with the WM up. Wrappers retry
+  while `pidof river` is empty (canto gen 28). Do not SET
+  LINEAR_ALIGNED on the tiled source. 32-bit `libgbm` is
   in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
   Wrapper forces composition and SDR.
   CEF GPU is `--disable-gpu` on SI. WebUITransport
