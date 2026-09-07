@@ -32,16 +32,12 @@
   no `-b`; `-b` commits xdg 0×0 and segfaults). Do not pass
   `--force-windows-fullscreen` (0×0 CEF buffer upscaled = static on
   RADV SI). Do not patchelf live `steamui.so`. River accepts the nest
-  (`libdecor-oath` 1px). steamui library window paints after login
-  (Deck welcome); CEF BrowserReady is up. Nested present to River
-  is still wrong: live GET is `tiling_info=0x6016a4`
-  (`ARRAY_2D_TILED_THIN1`, THIN, P8_32x32_8x16). Layer no longer
-  SETs LINEAR_ALIGNED (that lied). Layer remaps swapchain-sized
-  `vkAllocateMemory` to host-visible GTT so CPU detile can `GEM_MMAP`
-  (unsmoked this boot). 32-bit `libgbm` is in `pkg:mesa/lib32`.
-  steam-runtime `compose.dir` aliases C.UTF-8. Internal
-  `gamescopectl screenshot` is the Deck UI. Wrapper forces
-  composition and SDR; that is not the remaining glass bug.
+  (`libdecor-oath` 1px). Latest nest smoke: GTT CPU detile
+  (`AllocateMemory` type 3→2; `detile … via cpu`); then `libGL.so.1`
+  ELFCLASS32 and nested Xwayland SIGBUS in river `libgallium-26.1.0`.
+  Do not SET LINEAR_ALIGNED on the tiled source. 32-bit `libgbm` is
+  in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
+  Wrapper forces composition and SDR.
   CEF GPU is `--disable-gpu` on SI. WebUITransport
   needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked. Rootful `:2`
   + clip/xwm is leftover fallback. QEMU image pack of these pkgs not
