@@ -105,9 +105,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: **reboot canto**
-   to smoke SI DPM clocks (ESP default is timings + RunningOnAC;
-   live still 300/150). Arcade Play still unsmoked (library empty);
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: SI DPM still
+   **300/150** after reboot (`SetForcedLevels 1` fails; pick is
+   UI_PERFORMANCE). Arcade Play still unsmoked (library empty);
    `/bin/gamescope` drops `-b`. Or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
@@ -117,13 +117,15 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    **panicked** on canto (PID 1 died after dhcp). Kernel lock amended:
    vanilla kernel.org **7.3.0-rc1** compiled on the desk
    (`image/build-linux.sh`, nice 10, `-j16`; `joshua@novus`, gcc 14.3).
-   ESP **Oath** default is 7.3 DPM timings + RunningOnAC (`subvol=@`;
-   reboot to take it). **Oath boot 4** is the 6.12 rescue. **boot 7**
-   is previous 7.3 DPM #2. **boot 6** is 7.3 DC_SI #2 (pre-DPM-patch).
-   **boot 1** pruned this rotate. systemd-boot stays `BOOTX64` so the 5 s
-   list is visible (oath-efi logo still hides the picker). Live process
-   is still **7.3.0-rc1 #2** with the pre-rotate `amdgpu.ko` (`DRM_AMD_DC_SI=y`;
-   SI DPM connector fallback). `pkg:mesa` live is Debian **26.2.1**
+   ESP **Oath** default is 7.3 DPM timings + RunningOnAC (`subvol=@`).
+   **Oath boot 4** is the 6.12 rescue. **boot 7** is previous 7.3 DPM #2.
+   **boot 6** is 7.3 DC_SI #2 (pre-DPM-patch). **boot 1** pruned this
+   rotate. systemd-boot stays `BOOTX64` so the 5 s list is visible
+   (oath-efi logo still hides the picker). Live process is **7.3.0-rc1
+   #3** (13:46 MDT, `joshua@novus`). `RunningOnAC` smc=OK, DC
+   `num_display=1` `vblank=464µs`, pick class=0x5 (UI_PERFORMANCE);
+   hwmon **sclk 300 MHz / mclk 150 MHz**; `force high` is
+   `SetForcedLevels 1 failed`. `pkg:mesa` live is Debian **26.2.1**
    plus **libdrm 2.4.134** and **32-bit libgbm**. card1 DP-10 is up.
    Small SI DPM patches live under `image/linux-patches` (vanilla
    tarball + fragment + patches; not a linux.git fork). **`cargo make
@@ -131,14 +133,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `OATH_FIRMWARE`); the first DPM initrd omitted it and both GPUs
    `Fatal error during GPU init` (`pitcairn_mc.bin` missing). Live
    recovery: copy firmware + `insmod`. ESP initrd now includes the
-   blobs. DPM hw_init sees **5 power states** (PERFORMANCE max
-   850/1270 MHz); fallback counted **1** connected connector; clocks
-   still sit at **300/150** (`force high` I/O error). DC left
-   `min_vblank_time=0` (skips SINGLE_DISPLAY_ONLY UI_PERFORMANCE)
-   and never sent `RunningOnAC` (no ACPI adapter). 0001/0002 fill
-   CRTC timings and notify AC. ESP default is that kernel (reboot
-   to smoke clocks). **boot 7** holds the previous 7.3 DPM #2.
-   `gpu_busy_percent` is ENOTSUP. Gamescope pool layer **smoked**: host-visible GTT +
+   blobs. DPM: 5 VBIOS states, pick UI_PERFORMANCE, `RunningOnAC` OK,
+   vblank 464µs, `num_display=1`; clocks still **300/150** (SMC
+   `SetForcedLevels 1` fails). `gpu_busy_percent` is ENOTSUP. Gamescope pool layer **smoked**: host-visible GTT +
    CPU detile; nested Xwayland is `-glamor off` (no SIGBUS); nest
    holds with sola-river up (xdg never-configured was WM-down, not
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.

@@ -2,16 +2,14 @@
 **Status:** target (freeze)
 **Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
 **Dogfood:** Ubuntu 7.3-rc1 panicked; rescue **boot 4** (6.12.93).
-  ESP default is 7.3 DPM timings + RunningOnAC (reboot to take it).
-  Live canto is still **7.3.0-rc1 #2** pre-rotate until then.
+  Live canto is **7.3.0-rc1 #3** (DPM timings + RunningOnAC).
   **boot 7** is previous DPM #2. QEMU `run`/`probe` stay `-kernel`.
 **Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
   visible; oath-efi still paints over it. River GLES is still the
   river-pack Mesa; GFX6 modifiers need that River mesa on this kernel.
-  `pkg:mesa` live is 26.2.1. SI DPM clocks still 300/150 on live
-  canto until reboot. 0001/0002 fill DC CRTC timings and send
-  RunningOnAC; ESP default is that kernel (boot 7 = previous 7.3
-  DPM #2; boot 1 pruned).
+  `pkg:mesa` live is 26.2.1. SI DPM: `RunningOnAC` OK, pick
+  UI_PERFORMANCE, vblank 464µs; clocks still **300/150** (`SetForcedLevels
+  1` fails). boot 7 = previous 7.3 DPM #2; boot 1 pruned.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Boot generations (last 5) + current packages
