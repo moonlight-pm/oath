@@ -71,7 +71,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:cmake          `/bin/cmake` `/bin/ninja`
     pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
-    pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; gamescope nested X;
+    pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; gamescope nested X
+                       is `-glamor off` — river radeonsi SIGBUS’d on SI;
+                       mesa 26.2.1 libgallium needs GLIBC_2.43;
                        `libexec/xwayland-clip` bridges Wayland clipboard →
                        X11 CLIPBOARD (`wl-paste` + `xclip`) so Ctrl+V pastes;
                        `libexec/oath-xwm` maps/clamps leftover rootful `:2`.
@@ -87,7 +89,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools,
                        GETs SI export tiling, does not SET LINEAR_ALIGNED;
                        `libdecor-oath` 1px borders so River accepts xdg geometry)
-    pkg:mesa           64-bit GLX/GL + Vulkan WSI (Debian mesa 26.2.1);
+    pkg:mesa           64-bit GLX/GL/EGL + Vulkan WSI (Debian mesa 26.2.1);
                        `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
                        plus `libdisplay-info.so.3` + `libxml2.so.16` +
@@ -96,6 +98,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        + 64-bit steamrt3 SONAMEs in lib64; host
                        `_v2-entry-point` at `libexec/pv-host` (no bwrap);
                        `libexec/oath-lsof` (`/bin/lsof` wrapper);
+                       `lib64/liboath-glclass.so` (64-bit libGL redirect);
                        live nodes `/usr/bin/env`, `/lib64/ld-linux-x86-64.so.2`,
                        `/lib/ld-linux.so.2`, `/etc/ssl/certs`, `/bin/lsof`,
                        `/usr/share/vulkan/icd.d/radeon_icd.{x86_64,i686}.json`

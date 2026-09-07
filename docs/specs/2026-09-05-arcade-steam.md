@@ -32,9 +32,12 @@
   no `-b`; `-b` commits xdg 0×0 and segfaults). Do not pass
   `--force-windows-fullscreen` (0×0 CEF buffer upscaled = static on
   RADV SI). Do not patchelf live `steamui.so`. River accepts the nest
-  (`libdecor-oath` 1px). Latest nest smoke: GTT CPU detile
-  (`AllocateMemory` type 3→2; `detile … via cpu`); then `libGL.so.1`
-  ELFCLASS32 and nested Xwayland SIGBUS in river `libgallium-26.1.0`.
+  (`libdecor-oath` 1px). Nested Xwayland is `-glamor off` (river
+  radeonsi SIGBUS’d on SI tiled BOs; mesa 26.2.1 libgallium needs
+  GLIBC_2.43). 64-bit `liboath-glclass.so` stops gldriverquery
+  ELFCLASS32. Latest nest smoke: GpuTopology + pool `vkCreateImage`
+  1920×1080 + `SDL_CreateWindow` OpenGL 4.5, no SIGBUS; then
+  `xdg_surface#19: error 3: xdg_surface has never been configured`.
   Do not SET LINEAR_ALIGNED on the tiled source. 32-bit `libgbm` is
   in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
   Wrapper forces composition and SDR.

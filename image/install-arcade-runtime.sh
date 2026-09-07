@@ -303,6 +303,7 @@ export RADV_DEBUG="${RADV_DEBUG:+$RADV_DEBUG,}nodcc,nohiz"
 export R600_DEBUG="${R600_DEBUG:+$R600_DEBUG,}nodcc"
 # libmvec.so.1 is a real glibc object (GLIBC_2.22). Do not let a
 # libmvec→libm symlink win; that is "GLIBC_2.22 not found".
+unset LD_PRELOAD
 export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
 # wlroots looks up /usr/bin/Xwayland; scripts live under /usr/share/gamescope.
 sudo -n mkdir -p /usr/bin /usr/share 2>/dev/null || true
@@ -430,13 +431,17 @@ cat >"$stagedir/xwayland/bin/Xwayland" <<'WRAP'
 #!/bin/sh
 export PATH=/bin:/usr/bin
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+# Nested glamor on river radeonsi SIGBUS'd on SI (GEM map of tiled
+# BOs). mesa 26.2.1 libgallium needs GLIBC_2.43. -glamor off keeps
+# DRI3 (Vulkan WSI); XWAYLAND_NO_GLAMOR would drop DRI3 too.
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export XKB_CONFIG_ROOT="${XKB_CONFIG_ROOT:-/oath/store/pkg/river/share/X11/xkb}"
 export XKB_BINDIR=/oath/store/pkg/xwayland/libexec
+unset LD_PRELOAD
 export LD_LIBRARY_PATH="/oath/store/pkg/xwayland/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
-exec /oath/store/pkg/xwayland/libexec/Xwayland "$@"
+exec /oath/store/pkg/xwayland/libexec/Xwayland -glamor off "$@"
 WRAP
 chmod 755 "$stagedir/xwayland/bin/Xwayland"
 # gamescope looks up Xwayland on PATH
@@ -502,7 +507,9 @@ cat >"$stagedir/xwayland/INDEX.md" <<'EOF'
 # pkg:xwayland
 
 Xwayland for gamescope's nested X and (later) host River. Debian 24.1
-relocated onto pkg:glibc + pkg:river. Removable.
+relocated onto pkg:glibc + pkg:river. Nested Xwayland is `-glamor off`
+(river radeonsi SIGBUS'd on SI tiled BOs; mesa 26.2.1 libgallium
+needs GLIBC_2.43). Removable.
 
 Rootful `Xwayland :2 -decorate` (Steam nest) does not share CLIPBOARD
 with Wayland. `libexec/xwayland-clip` watches the compositor clipboard
@@ -536,6 +543,9 @@ for rel in \
 	libg/libglvnd/libgl1_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglx0_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglvnd0_1.7.0-3+b1_amd64.deb \
+	libg/libglvnd/libegl1_1.7.0-3+b1_amd64.deb \
+	libg/libglvnd/libgles2_1.7.0-3+b1_amd64.deb \
+	m/mesa/libegl-mesa0_26.2.1-4_amd64.deb \
 	libx/libxcb/libxcb-glx0_1.17.0-2+b2_amd64.deb \
 	libd/libdrm/libdrm-common_2.4.124-2_all.deb \
 	v/vulkan-loader/libvulkan1_1.4.357.0-1_amd64.deb \
@@ -545,7 +555,8 @@ do
 	extract_deb "$fetchdir/$(basename "$rel")" "$stagedir/debroot"
 done
 rm -rf "$stagedir/mesa"
-mkdir -p "$stagedir/mesa/lib/dri" "$stagedir/mesa/lib/gbm" "$stagedir/mesa/share/libdrm" "$stagedir/mesa/share/glvnd"
+mkdir -p "$stagedir/mesa/lib/dri" "$stagedir/mesa/lib/gbm" "$stagedir/mesa/share/libdrm" \
+	"$stagedir/mesa/share/glvnd/egl_vendor.d"
 mesa_src=$stagedir/debroot/usr/lib/x86_64-linux-gnu
 mesa_rpath="$glibc:/oath/store/pkg/mesa/lib:$river:/oath/store/pkg/xwayland/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/sola/lib"
 copy_mesa() {
@@ -559,6 +570,9 @@ copy_mesa "$mesa_src/libGL.so.1.7.0" "$stagedir/mesa/lib/libGL.so.1.7.0"
 copy_mesa "$mesa_src/libGLX.so.0.0.0" "$stagedir/mesa/lib/libGLX.so.0.0.0"
 copy_mesa "$mesa_src/libGLdispatch.so.0.0.0" "$stagedir/mesa/lib/libGLdispatch.so.0.0.0"
 copy_mesa "$mesa_src/libGLX_mesa.so.0.0.0" "$stagedir/mesa/lib/libGLX_mesa.so.0.0.0"
+copy_mesa "$mesa_src/libEGL.so.1.1.0" "$stagedir/mesa/lib/libEGL.so.1.1.0"
+copy_mesa "$mesa_src/libEGL_mesa.so.0.0.0" "$stagedir/mesa/lib/libEGL_mesa.so.0.0.0"
+copy_mesa "$mesa_src/libGLESv2.so.2.1.0" "$stagedir/mesa/lib/libGLESv2.so.2.1.0"
 gallium_so=$(find "$mesa_src" -maxdepth 1 -name 'libgallium-*.so' ! -type l | head -1)
 [ -n "$gallium_so" ] || { echo "missing libgallium in $mesa_src" >&2; exit 1; }
 copy_mesa "$gallium_so" "$stagedir/mesa/lib/$(basename "$gallium_so")"
@@ -575,6 +589,9 @@ ln -sfn libGLX.so.0.0.0 "$stagedir/mesa/lib/libGLX.so.0"
 ln -sfn libGLdispatch.so.0.0.0 "$stagedir/mesa/lib/libGLdispatch.so.0"
 ln -sfn libGLX_mesa.so.0.0.0 "$stagedir/mesa/lib/libGLX_mesa.so.0"
 ln -sfn libGLX_mesa.so.0 "$stagedir/mesa/lib/libGLX_indirect.so.0"
+ln -sfn libEGL.so.1.1.0 "$stagedir/mesa/lib/libEGL.so.1"
+ln -sfn libEGL_mesa.so.0.0.0 "$stagedir/mesa/lib/libEGL_mesa.so.0"
+ln -sfn libGLESv2.so.2.1.0 "$stagedir/mesa/lib/libGLESv2.so.2"
 ln -sfn libgbm.so.1.0.0 "$stagedir/mesa/lib/libgbm.so.1"
 ln -sfn libdril_dri.so "$stagedir/mesa/lib/dri/radeonsi_dri.so"
 ln -sfn libdril_dri.so "$stagedir/mesa/lib/dri/swrast_dri.so"
@@ -585,6 +602,14 @@ cat >"$stagedir/mesa/share/glvnd/10_mesa.json" <<'JSON'
     "file_format_version" : "1.0.0",
     "ICD" : {
         "library_path" : "/oath/store/pkg/mesa/lib/libGLX_mesa.so.0"
+    }
+}
+JSON
+cat >"$stagedir/mesa/share/glvnd/egl_vendor.d/50_mesa.json" <<'JSON'
+{
+    "file_format_version" : "1.0.0",
+    "ICD" : {
+        "library_path" : "/oath/store/pkg/mesa/lib/libEGL_mesa.so.0"
     }
 }
 JSON
@@ -735,9 +760,10 @@ JSON
 cat >"$stagedir/mesa/INDEX.md" <<'EOF'
 # pkg:mesa
 
-64-bit OpenGL/GLX and Vulkan WSI for X11/Wayland clients. Debian mesa
-26.2.1 GLX + glvnd + gallium + RADV, plus Khronos vulkan-loader 1.4.357
-and vulkaninfo. DRI is libdril → radeonsi. ICD is
+64-bit OpenGL/GLX/EGL and Vulkan WSI for X11/Wayland clients. Debian mesa
+26.2.1 GLX + EGL + glvnd + gallium + RADV, plus Khronos vulkan-loader
+1.4.357 and vulkaninfo. Nested Xwayland is `-glamor off` (this libgallium needs GLIBC_2.43;
+pkg:glibc is 2.42). DRI is libdril → radeonsi. ICD is
 share/vulkan/icd.d/radeon_icd.json (64-bit) and radeon_icd32.json
 (32-bit Steam). lib32 ships RADV + LLVM 21 + libdisplay-info.so.3 +
 libxml2.so.16 + libwayland-client 1.26 (`wl_fixes_interface`; steamrt
@@ -952,6 +978,13 @@ if [ -x "$zig_cc" ] && [ -f "$here/oath-steam-dumpable.c" ]; then
 		"$here/oath-steam-dumpable.c" || \
 		echo "warn: liboath-dumpable.so not built" >&2
 fi
+if [ -x "$zig_cc" ] && [ -f "$here/oath-glclass.c" ]; then
+	"$zig_cc" cc -target x86_64-linux-gnu -shared -fPIC -O2 \
+		-Wl,-rpath,/oath/store/pkg/glibc/lib \
+		-o "$stagedir/steam/lib64/liboath-glclass.so" \
+		"$here/oath-glclass.c" || \
+		echo "warn: liboath-glclass.so not built" >&2
+fi
 if [ -x "$zig_cc" ] && [ -f "$here/oath-lsof.c" ]; then
 	"$zig_cc" cc -target x86_64-linux-musl -static -O2 \
 		-o "$stagedir/steam/libexec/oath-lsof" \
@@ -1148,23 +1181,42 @@ if [ -f /oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json ]; then
 	sudo -n rm -f /usr/share/vulkan/icd.d/radeon_icd.json 2>/dev/null || true
 	sudo -n ln -sfn /oath/store/pkg/mesa/lib/libvulkan.so.1 \
 		/lib64/libvulkan.so.1 2>/dev/null || true
+	for n in libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libEGL.so.1 \
+		libGLESv2.so.2 libgbm.so.1 libGLX_mesa.so.0 libEGL_mesa.so.0; do
+		if [ -e /oath/store/pkg/mesa/lib/$n ]; then
+			sudo -n ln -sfn /oath/store/pkg/mesa/lib/$n /lib64/$n 2>/dev/null || true
+		fi
+	done
 	for f in /oath/store/pkg/mesa/lib32/lib*.so*; do
 		[ -e "$f" ] || continue
 		sudo -n ln -sfn "$f" /lib/i386-linux-gnu/"$(basename "$f")" 2>/dev/null || true
 	done
 fi
+u64="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_64"
+if [ -d "$u64" ]; then
+	for n in libGL.so.1 libEGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2; do
+		if [ -e /oath/store/pkg/mesa/lib/$n ]; then
+			ln -sfn /oath/store/pkg/mesa/lib/$n "$u64/$n"
+		fi
+	done
+fi
 export VK_ICD_FILENAMES="/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json:/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd32.json"
 export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
+_preload=""
 if [ -f /oath/store/pkg/steam/lib32/liboath-peercred.so ]; then
 	# 32-bit only; 64-bit helpers ignore the wrong ELF class.
-	export LD_PRELOAD="/oath/store/pkg/steam/lib32/liboath-peercred.so${LD_PRELOAD:+:$LD_PRELOAD}"
-	_ui="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steamui.so"
-	if [ -f "$_ui" ] && command -v patchelf >/dev/null 2>&1; then
-		if ! patchelf --print-needed "$_ui" 2>/dev/null | grep -q liboath-peercred; then
-			patchelf --add-needed liboath-peercred.so "$_ui" 2>/dev/null || true
-		fi
-	fi
+	_preload=/oath/store/pkg/steam/lib32/liboath-peercred.so
 fi
+if [ -f /oath/store/pkg/steam/lib64/liboath-glclass.so ]; then
+	# 64-bit only; 32-bit steam ignores ELFCLASS64. Stops gldriverquery
+	# loading ubuntu12_32's 32-bit libGL.so.1.
+	_preload="${_preload:+$_preload:}/oath/store/pkg/steam/lib64/liboath-glclass.so"
+fi
+if [ -n "$_preload" ]; then
+	export LD_PRELOAD="${_preload}${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+# Do not patchelf live steamui.so (verifier re-extracts). oath-steam-preexec
+# dlmopen's a copy.
 # glibc nsswitch on the first images omitted hosts:. Steam CEF looks up
 # steamloopback.host; PID 1 rewrites /etc/hosts without that alias.
 if ! grep -q '^hosts:' /etc/nsswitch.conf 2>/dev/null; then
@@ -1415,6 +1467,8 @@ glibc still ships a separate libresolv that tmux NEEDs). srt-logger
 gets libresolv from lib/srt. steamwebhelper skips pressure-vessel
 (CLONE_NEWUSER is EPERM after PID 1 chroot) and runs on the host with
 64-bit steamrt3 SONAMEs in lib64 (`--disable-gpu` on RADV SI).
+liboath-glclass.so (64-bit LD_PRELOAD) redirects libGL/libEGL dlopen
+to pkg:mesa so gldriverquery does not hit ubuntu12_32 ELFCLASS32.
 liboath-peercred.so is dlmopen’d as a patched copy of steamui.so
 (do not patchelf the live file). libexec/oath-lsof is the
 lsof Steam's WebUITransport runs (`-P -F upnR -i TCP@…`). Removable.

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pack/live-install pkg:mesa from Debian mesa 26.2.1-4. Same layout as
-# image/install-arcade-runtime.sh (64-bit GLX + RADV, 32-bit RADV).
+# image/install-arcade-runtime.sh (64-bit GLX/EGL + RADV, 32-bit RADV).
 # Does not rebuild gamescope/Steam.
 set -euo pipefail
 
@@ -70,6 +70,9 @@ for rel in \
 	libg/libglvnd/libgl1_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglx0_1.7.0-3+b1_amd64.deb \
 	libg/libglvnd/libglvnd0_1.7.0-3+b1_amd64.deb \
+	libg/libglvnd/libegl1_1.7.0-3+b1_amd64.deb \
+	libg/libglvnd/libgles2_1.7.0-3+b1_amd64.deb \
+	m/mesa/libegl-mesa0_26.2.1-4_amd64.deb \
 	libx/libxcb/libxcb-glx0_1.17.0-2+b2_amd64.deb \
 	libd/libdrm/libdrm-common_2.4.134-3_all.deb \
 	libd/libdrm/libdrm2_2.4.134-3_amd64.deb \
@@ -82,7 +85,8 @@ do
 done
 
 rm -rf "$stagedir/mesa"
-mkdir -p "$stagedir/mesa/lib/dri" "$stagedir/mesa/lib/gbm" "$stagedir/mesa/share/libdrm" "$stagedir/mesa/share/glvnd"
+mkdir -p "$stagedir/mesa/lib/dri" "$stagedir/mesa/lib/gbm" "$stagedir/mesa/share/libdrm" \
+	"$stagedir/mesa/share/glvnd/egl_vendor.d"
 mesa_src=$stagedir/debroot/usr/lib/x86_64-linux-gnu
 mesa_rpath="$glibc:/oath/store/pkg/mesa/lib:$river:/oath/store/pkg/xwayland/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/sola/lib"
 copy_mesa() {
@@ -95,6 +99,9 @@ copy_mesa "$mesa_src/libGL.so.1.7.0" "$stagedir/mesa/lib/libGL.so.1.7.0"
 copy_mesa "$mesa_src/libGLX.so.0.0.0" "$stagedir/mesa/lib/libGLX.so.0.0.0"
 copy_mesa "$mesa_src/libGLdispatch.so.0.0.0" "$stagedir/mesa/lib/libGLdispatch.so.0.0.0"
 copy_mesa "$mesa_src/libGLX_mesa.so.0.0.0" "$stagedir/mesa/lib/libGLX_mesa.so.0.0.0"
+copy_mesa "$mesa_src/libEGL.so.1.1.0" "$stagedir/mesa/lib/libEGL.so.1.1.0"
+copy_mesa "$mesa_src/libEGL_mesa.so.0.0.0" "$stagedir/mesa/lib/libEGL_mesa.so.0.0.0"
+copy_mesa "$mesa_src/libGLESv2.so.2.1.0" "$stagedir/mesa/lib/libGLESv2.so.2.1.0"
 gallium_so=$(find "$mesa_src" -maxdepth 1 -name 'libgallium-*.so' ! -type l | head -1)
 [ -n "$gallium_so" ] || { echo "missing libgallium in $mesa_src" >&2; exit 1; }
 copy_mesa "$gallium_so" "$stagedir/mesa/lib/$(basename "$gallium_so")"
@@ -121,6 +128,9 @@ ln -sfn libGLX.so.0.0.0 "$stagedir/mesa/lib/libGLX.so.0"
 ln -sfn libGLdispatch.so.0.0.0 "$stagedir/mesa/lib/libGLdispatch.so.0"
 ln -sfn libGLX_mesa.so.0.0.0 "$stagedir/mesa/lib/libGLX_mesa.so.0"
 ln -sfn libGLX_mesa.so.0 "$stagedir/mesa/lib/libGLX_indirect.so.0"
+ln -sfn libEGL.so.1.1.0 "$stagedir/mesa/lib/libEGL.so.1"
+ln -sfn libEGL_mesa.so.0.0.0 "$stagedir/mesa/lib/libEGL_mesa.so.0"
+ln -sfn libGLESv2.so.2.1.0 "$stagedir/mesa/lib/libGLESv2.so.2"
 ln -sfn libgbm.so.1.0.0 "$stagedir/mesa/lib/libgbm.so.1"
 ln -sfn libdril_dri.so "$stagedir/mesa/lib/dri/radeonsi_dri.so"
 ln -sfn libdril_dri.so "$stagedir/mesa/lib/dri/swrast_dri.so"
@@ -130,6 +140,14 @@ cat >"$stagedir/mesa/share/glvnd/10_mesa.json" <<'JSON'
     "file_format_version" : "1.0.0",
     "ICD" : {
         "library_path" : "/oath/store/pkg/mesa/lib/libGLX_mesa.so.0"
+    }
+}
+JSON
+cat >"$stagedir/mesa/share/glvnd/egl_vendor.d/50_mesa.json" <<'JSON'
+{
+    "file_format_version" : "1.0.0",
+    "ICD" : {
+        "library_path" : "/oath/store/pkg/mesa/lib/libEGL_mesa.so.0"
     }
 }
 JSON
@@ -276,9 +294,10 @@ JSON
 cat >"$stagedir/mesa/INDEX.md" <<'EOF'
 # pkg:mesa
 
-64-bit OpenGL/GLX and Vulkan WSI for X11/Wayland clients. Debian mesa
-26.2.1 GLX + glvnd + gallium + RADV, plus Khronos vulkan-loader 1.4.357
-and vulkaninfo. DRI is libdril → radeonsi. ICD is
+64-bit OpenGL/GLX/EGL and Vulkan WSI for X11/Wayland clients. Debian mesa
+26.2.1 GLX + EGL + glvnd + gallium + RADV, plus Khronos vulkan-loader
+1.4.357 and vulkaninfo. DRI is libdril → radeonsi. Nested Xwayland is `-glamor off`:
+this libgallium needs acosf@GLIBC_2.43 and pkg:glibc is 2.42. ICD is
 share/vulkan/icd.d/radeon_icd.json (64-bit) and radeon_icd32.json
 (32-bit Steam). lib32 ships RADV + LLVM 21 + libdisplay-info.so.3 +
 libxml2.so.16 + libwayland-client 1.26 (`wl_fixes_interface`; steamrt

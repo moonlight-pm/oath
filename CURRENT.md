@@ -78,15 +78,21 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `/usr/share/X11/locale` was an earlier NULL-deref
    (`_XlcCreateLocaleDataBase`); steam-runtime locale is live-linked
    and `XLOCALEDIR` is set. Not missing `VK_KHR_surface`, not SDL
-   modal, not live-file DT_NEEDED. **Gap:** nest present. 2026-09-07
-   smoke (`/tmp/steam-launch.log`): pool layer remapped
-   `AllocateMemory` 8294400 B type 3→2 (host visible) and **CPU-detiled**
-   1920×1080 `tiling=0x6016a4` (no `GEM_MMAP` EPERM). RADV still logs
-   **no DRM format modifiers**. Steam then died: `libGL.so.1`
-   **ELFCLASS32** in a 64-bit process, nested Xwayland **SIGBUS** in
-   `pkg:river` `libgallium-26.1.0.so`. Do **not** SET `LINEAR_ALIGNED`
-   on the tiled source. 32-bit `libgbm` is in `pkg:mesa/lib32`.
-   steam-runtime `compose.dir` aliases C.UTF-8. Arcade Play unsmoked.
+   modal, not live-file DT_NEEDED. **Gap:** nest present. Nested
+   Xwayland is **`-glamor off`** (river radeonsi SIGBUS’d on SI tiled
+   BOs; mesa 26.2.1 `libgallium` needs `acosf@GLIBC_2.43` and
+   pkg:glibc is 2.42). 64-bit `liboath-glclass.so` redirects
+   `libGL`/`libEGL` dlopen to `pkg:mesa` so `ubuntu12_64/gldriverquery`
+   is no longer ELFCLASS32 (it now fails “matching GLX visual” with
+   glamor off). `pkg:mesa` also ships 64-bit EGL. Do **not** patchelf
+   live `steamui.so` (steam-compat no longer `--add-needed`s it).
+   2026-09-07 evening smoke: GpuTopology RADV PITCAIRN; pool layer
+   `vkCreateImage` 1920×1080; `SDL_CreateWindow` OpenGL 4.5; **no
+   SIGBUS**. Then gamescope died: `xdg_surface#19: error 3:
+   xdg_surface has never been configured`. Do **not** SET
+   `LINEAR_ALIGNED` on the tiled source. 32-bit `libgbm` is in
+   `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
+   Arcade Play unsmoked.
    Super+Tab focuses the Gamescope nest. Novus is
    not a gamescope Steam session: River is
    `+xwayland`, `steam` is nixpkgs `*-bwrap` FHS, `unshare -U`
@@ -95,8 +101,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: 64-bit `libGL`
-   (stop ELFCLASS32), Xwayland SIGBUS on radeonsi, SI DPM clocks
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: gamescope
+   `xdg_surface` never-configured after `-glamor off`, SI DPM clocks
    still 300/150, Arcade Play, or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
@@ -124,7 +130,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    850/1270 MHz); fallback counted **1** connected connector; clocks
    still sit at **300/150** (`force high` I/O error). `gpu_busy_percent`
    is ENOTSUP. Gamescope pool layer **smoked**: host-visible GTT +
-   CPU detile; nest then died on `libGL` ELFCLASS32 + Xwayland
+   CPU detile; nested Xwayland is `-glamor off` (no SIGBUS); nest then died on xdg_surface never-configured
    SIGBUS. Steam-runtime `compose.dir` already aliases C.UTF-8.
    Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.
    Do not `cargo make install --confirm` (wipe).
@@ -161,7 +167,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/sola-arcade` `/bin/Xwayland` `/bin/gamescope` `/bin/steam` + `pkg:mesa` (gen 21; `/bin/steam` nests in gamescope `--steam`, no `-b`, no `--force-windows-fullscreen`; Deck UI `-gamepadui -steamdeck`; launcher Steam; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy so steamui sees the shim; `load_sym` (RTLD_NEXT is NULL in that NS); CEF `--disable-gpu` (SI SIGBUS); steamui library painted after login on earlier boots (Deck welcome); 2026-09-07 nest smoke: GTT CPU detile, then `libGL` ELFCLASS32 + Xwayland SIGBUS; do not SET LINEAR_ALIGNED; `libdecor-oath` 1px borders; `CLONE_NEWUSER` EPERM from PID 1 chroot). **T38** ESP: systemd-boot `BOOTX64` timeout 5; current is compiled vanilla **7.3.0-rc1 #2** + patched `amdgpu` + Pitcairn firmware in initrd (`subvol=@`). Archives: boot 1 (pre-T38), 2, 4 (6.12 rescue), 5 (7.3 no DC_SI), 6 (7.3 DC_SI #2). **`pkg:mesa`** Debian **26.2.1** + libdrm 2.4.134 + 32-bit libgbm. Steam nest smoke: GTT CPU detile; then `libGL` ELFCLASS32 + Xwayland SIGBUS. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola is oath-sola `a6dd7c12` (LED graphs rastered to an image). **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/sola-arcade` `/bin/Xwayland` `/bin/gamescope` `/bin/steam` + `pkg:mesa` (gen 21; `/bin/steam` nests in gamescope `--steam`, no `-b`, no `--force-windows-fullscreen`; Deck UI `-gamepadui -steamdeck`; launcher Steam; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy so steamui sees the shim; `load_sym` (RTLD_NEXT is NULL in that NS); CEF `--disable-gpu` (SI SIGBUS); steamui library painted after login on earlier boots (Deck welcome); 2026-09-07 nest smoke: GTT CPU detile; `-glamor off` (no SIGBUS); then xdg_surface never-configured; do not SET LINEAR_ALIGNED; `libdecor-oath` 1px borders; `CLONE_NEWUSER` EPERM from PID 1 chroot). **T38** ESP: systemd-boot `BOOTX64` timeout 5; current is compiled vanilla **7.3.0-rc1 #2** + patched `amdgpu` + Pitcairn firmware in initrd (`subvol=@`). Archives: boot 1 (pre-T38), 2, 4 (6.12 rescue), 5 (7.3 no DC_SI), 6 (7.3 DC_SI #2). **`pkg:mesa`** Debian **26.2.1** + libdrm 2.4.134 + 32-bit libgbm. Steam nest smoke: GTT CPU detile; `-glamor off` (no SIGBUS); then xdg_surface never-configured. |
 
 ```sh
 nix-shell
