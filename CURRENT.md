@@ -123,7 +123,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    (`DRM_AMD_DC_SI=y`). card1 planes advertise GFX6 `IN_FORMATS`.
    `vulkaninfo` sees two RADV PITCAIRN devices. gamescope selects
    PITCAIRN; it still logs **no Vulkan DRM format modifiers**. River
-   GLES paints on card1 DP-10. Spare GPU idea:
+   GLES paints on card1 DP-10. **Desk is laggy:** SI DPM is stuck at
+   boot clocks (sclk 300 MHz, mclk 150 MHz, `power level 0`);
+   `gpu_busy_percent` is ENOTSUP. Menubar GPU graph is NVML (NVIDIA)
+   only, so it never appears on Pitcairn. Spare GPU idea:
    `docs/ideas/2026-09-07-canto-second-pitcairn.md`. Do not
    `cargo make install --confirm` (wipe).
 2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
