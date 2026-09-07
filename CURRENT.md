@@ -106,7 +106,15 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
    `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: SI DPM clocks
-   still 300/150, Arcade Play, or a `.pc` for alsa.
+   still 300/150 until the next ESP (DC left `min_vblank_time=0` so
+   SI skipped UI_PERFORMANCE; SMC never got `RunningOnAC` with no
+   ACPI adapter). `image/linux-patches` 0001/0002 now fill atomic
+   CRTC timings and send `PPSMC_MSG_RunningOnAC` at late_init.
+   Kernel compiled on the desk (`nix-shell image/linux-build.nix`);
+   not on the live ESP until `cargo make esp`. Arcade Play
+   still unsmoked (library empty); `/bin/gamescope` now drops `-b`
+   so Arcade’s Sola-generic nest flags do not xdg-0×0 on this
+   River. Or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
    **T38** firmware boots on canto ESP: last five archives + current.
@@ -131,8 +139,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    recovery: copy firmware + `insmod`. ESP initrd now includes the
    blobs. DPM hw_init sees **5 power states** (PERFORMANCE max
    850/1270 MHz); fallback counted **1** connected connector; clocks
-   still sit at **300/150** (`force high` I/O error). `gpu_busy_percent`
-   is ENOTSUP. Gamescope pool layer **smoked**: host-visible GTT +
+   still sit at **300/150** (`force high` I/O error). DC left
+   `min_vblank_time=0` (skips SINGLE_DISPLAY_ONLY UI_PERFORMANCE)
+   and never sent `RunningOnAC` (no ACPI adapter). 0001/0002 fill
+   CRTC timings and notify AC; not on the live ESP yet.
+   `gpu_busy_percent` is ENOTSUP. Gamescope pool layer **smoked**: host-visible GTT +
    CPU detile; nested Xwayland is `-glamor off` (no SIGBUS); nest
    holds with sola-river up (xdg never-configured was WM-down, not
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.

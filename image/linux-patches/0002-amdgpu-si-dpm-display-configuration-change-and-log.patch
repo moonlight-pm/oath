@@ -3,7 +3,55 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
 
 --- a/drivers/gpu/drm/amd/pm/legacy-dpm/si_dpm.c
 +++ b/drivers/gpu/drm/amd/pm/legacy-dpm/si_dpm.c
-@@ -7210,6 +7210,17 @@
+@@ -23,6 +23,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <linux/power_supply.h>
+ 
+ #include "amdgpu.h"
+ #include "amdgpu_pm.h"
+@@ -3895,10 +3896,17 @@
+ 	/*
+ 	 * Check if the platform already manages the AC/DC switch via dedicated GPIO.
+ 	 * Otherwise SMU automatically notices DC, but needs to be notified of AC.
++	 * Desktop boards (no ACPI AC adapter) never get an ACPI power event, so
++	 * also send RunningOnAC here when the system is on mains. Without that
++	 * the SI SMC stays on the DC boot clocks (300/150 MHz).
+ 	 */
+-	if (adev->pm.ac_power &&
+-	    (adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC))
+-		amdgpu_si_send_msg_to_smc(adev, PPSMC_MSG_RunningOnAC);
++	if (adev->pm.ac_power) {
++		PPSMC_Result r = amdgpu_si_send_msg_to_smc(adev, PPSMC_MSG_RunningOnAC);
++
++		drm_info(adev_to_drm(adev),
++			 "si dpm: RunningOnAC smc=%d hardwaredc=%d\n",
++			 r, !!(adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC));
++	}
+ 
+ 	/* Recompute clocks with updated max_limits. */
+ 	amdgpu_legacy_dpm_compute_clocks(adev);
+@@ -3929,11 +3937,16 @@
+ 	u32 levels = ps->performance_level_count;
+ 
+ 	if (level == AMD_DPM_FORCED_LEVEL_HIGH) {
+-		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetEnabledLevels, levels) != PPSMC_Result_OK)
++		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetEnabledLevels, levels) != PPSMC_Result_OK) {
++			drm_err(adev_to_drm(adev),
++				"si dpm: SetEnabledLevels %u failed (force high)\n", levels);
+ 			return -EINVAL;
++		}
+ 
+-		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 1) != PPSMC_Result_OK)
++		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 1) != PPSMC_Result_OK) {
++			drm_err(adev_to_drm(adev), "si dpm: SetForcedLevels 1 failed (force high)\n");
+ 			return -EINVAL;
++		}
+ 	} else if (level == AMD_DPM_FORCED_LEVEL_LOW) {
+ 		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 0) != PPSMC_Result_OK)
+ 			return -EINVAL;
+@@ -7210,6 +7223,17 @@
  	si_program_display_gap(adev);
  }
  
@@ -21,18 +69,22 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
  
  static void si_parse_pplib_non_clock_info(struct amdgpu_device *adev,
  					  struct amdgpu_ps *rps,
-@@ -7712,6 +7723,10 @@
+@@ -7712,6 +7736,14 @@
  #if 0 //TODO ?
  	si_dpm_powergate_uvd(adev, true);
  #endif
 +	/* DC modeset may not have run yet, but HPD connectors exist. */
 +	mutex_lock(&adev->pm.mutex);
-+	amdgpu_legacy_dpm_compute_clocks(adev);
++	adev->pm.ac_power = power_supply_is_system_supplied() > 0;
++	drm_info(adev_to_drm(adev),
++		 "si dpm late_init ac_power=%d platform_caps=0x%x\n",
++		 adev->pm.ac_power, adev->pm.dpm.platform_caps);
++	si_notify_hw_of_powersource(adev);
 +	mutex_unlock(&adev->pm.mutex);
  	return 0;
  }
  
-@@ -7869,6 +7884,29 @@
+@@ -7869,6 +7901,29 @@
  		adev->pm.dpm_enabled = false;
  	else
  		adev->pm.dpm_enabled = true;
@@ -62,7 +114,7 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
  	amdgpu_legacy_dpm_compute_clocks(adev);
  	mutex_unlock(&adev->pm.mutex);
  	return ret;
-@@ -8154,6 +8192,7 @@
+@@ -8154,6 +8209,7 @@
  	.set_power_state = &si_dpm_set_power_state,
  	.post_set_power_state = &si_dpm_post_set_power_state,
  	.display_configuration_changed = &si_dpm_display_configuration_changed,

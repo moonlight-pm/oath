@@ -1,6 +1,9 @@
 #!/bin/sh
 # Compile vanilla kernel.org Linux with the Oath fragment (not Ubuntu generic).
 #
+# Host deps (elfutils/gelf.h, bison, pahole, …):
+#   nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'
+#
 #   sh image/build-linux.sh [outdir]
 #
 # CPU: nice(10) + half the cores (this desk is 32, so -j16). Override with

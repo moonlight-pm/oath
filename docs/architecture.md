@@ -90,7 +90,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
                        `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools,
                        GETs SI export tiling, does not SET LINEAR_ALIGNED;
-                       `libdecor-oath` 1px borders so River accepts xdg geometry)
+                       `libdecor-oath` 1px borders so River accepts xdg geometry;
+                       wrapper drops `-b`/`--borderless` — Arcade still
+                       passes `-b`, which commits xdg 0×0 on this River)
     pkg:mesa           64-bit GLX/GL/EGL + Vulkan WSI (Debian mesa 26.2.1);
                        `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`

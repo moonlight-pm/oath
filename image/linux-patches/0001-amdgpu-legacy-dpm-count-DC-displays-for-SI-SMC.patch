@@ -3,46 +3,139 @@ Subject: 0001-amdgpu-legacy-dpm-count-DC-displays-for-SI-SMC.patch
 
 --- a/drivers/gpu/drm/amd/pm/legacy-dpm/legacy_dpm.c
 +++ b/drivers/gpu/drm/amd/pm/legacy-dpm/legacy_dpm.c
-@@ -28,6 +28,7 @@
+@@ -28,6 +28,9 @@
  #include "legacy_dpm.h"
  #include "amdgpu_dpm_internal.h"
  #include "amdgpu_display.h"
 +#include <drm/drm_connector.h>
++#include <drm/drm_crtc.h>
++#include <drm/drm_modes.h>
  
  #define amdgpu_dpm_pre_set_power_state(adev) \
  		((adev)->powerplay.pp_funcs->pre_set_power_state((adev)->powerplay.pp_handle))
-@@ -963,8 +964,33 @@
+@@ -959,14 +962,123 @@
+ 	return 0;
+ }
+ 
++/*
++ * DC on SI often leaves pm_display_cfg empty (num_display=0,
++ * min_vblank_time=0). SI then treats vblank as too short, clears
++ * single_display, skips SINGLE_DISPLAY_ONLY UI_PERFORMANCE states,
++ * and the SMC stays on the 300/150 MHz boot level. Fill from live
++ * DRM connectors / atomic CRTC modes the way non-DC
++ * amdgpu_dpm_get_display_cfg walks CRTCs.
++ */
++static void amdgpu_legacy_dpm_fill_dc_displays(struct amdgpu_device *adev)
++{
++	struct drm_device *ddev = adev_to_drm(adev);
++	struct amd_pp_display_configuration *cfg = &adev->pm.pm_display_cfg;
++	struct drm_connector_list_iter iter;
++	struct drm_connector *connector;
++	struct drm_crtc *crtc;
++	const struct drm_display_mode *mode;
++	u32 n = 0, active = 0;
++	u32 htotal, vblank_lines, vblank_in_pixels, vblank_time_us;
++	int vrefresh;
++
++	cfg->min_vblank_time = 0xffffffff;
++	cfg->vrefresh = 0;
++	cfg->crtc_index = 0;
++	cfg->line_time_in_us = 0;
++
++	drm_connector_list_iter_begin(ddev, &iter);
++	drm_for_each_connector_iter(connector, &iter) {
++		if (connector->status != connector_status_connected)
++			continue;
++		n++;
++		if (!connector->state || !connector->state->crtc)
++			continue;
++		crtc = connector->state->crtc;
++		if (!crtc->state || !crtc->state->enable)
++			continue;
++		mode = &crtc->state->adjusted_mode;
++		if (!mode->clock)
++			mode = &crtc->state->mode;
++		if (!mode->clock)
++			continue;
++
++		vrefresh = drm_mode_vrefresh(mode);
++		htotal = mode->crtc_htotal ? mode->crtc_htotal : mode->htotal;
++		if (mode->crtc_vblank_end > mode->crtc_vdisplay)
++			vblank_lines = mode->crtc_vblank_end - mode->crtc_vdisplay;
++		else if (mode->vtotal > mode->vdisplay)
++			vblank_lines = mode->vtotal - mode->vdisplay;
++		else
++			vblank_lines = 0;
++		vblank_in_pixels = htotal * vblank_lines;
++		if (mode->clock && vblank_in_pixels)
++			vblank_time_us = vblank_in_pixels * 1000 / mode->clock;
++		else
++			vblank_time_us = 0xffffffff;
++
++		/* Match non-DC: refresh >120 Hz cannot switch MCLK. */
++		if (vrefresh > 120)
++			vblank_time_us = 0;
++		else if (vblank_time_us == 0)
++			vblank_time_us = 0xffffffff;
++
++		if (vblank_time_us < cfg->min_vblank_time)
++			cfg->min_vblank_time = vblank_time_us;
++		if (!cfg->vrefresh)
++			cfg->vrefresh = vrefresh;
++		if (active == 0 && mode->clock && htotal)
++			cfg->line_time_in_us = htotal * 1000 / mode->clock;
++		if (active < ARRAY_SIZE(cfg->displays)) {
++			cfg->displays[active].controller_id = active + 1;
++			cfg->displays[active].pixel_clock = mode->clock;
++		}
++		active++;
++	}
++	drm_connector_list_iter_end(&iter);
++
++	cfg->num_display = n;
++	/*
++	 * Connected but no atomic mode yet: do not leave min_vblank_time
++	 * at 0 (vblank_too_short) or at the "displays off" max without
++	 * also setting num_display.
++	 */
++	if (n && cfg->min_vblank_time == 0)
++		cfg->min_vblank_time = 0xffffffff;
++
++	if (n)
++		drm_info(ddev,
++			 "legacy dpm: DC displays connected=%u active=%u vrefresh=%u vblank_us=%u line_us=%u pixel=%u\n",
++			 n, active, cfg->vrefresh, cfg->min_vblank_time,
++			 cfg->line_time_in_us, cfg->displays[0].pixel_clock);
++}
++
+ void amdgpu_legacy_dpm_compute_clocks(void *handle)
  {
  	struct amdgpu_device *adev = (struct amdgpu_device *)handle;
++	struct amdgpu_ps *ps;
++	int ret;
  
 -	if (!adev->dc_enabled)
 +	if (!adev->dc_enabled) {
  		amdgpu_dpm_get_display_cfg(adev);
-+	} else if (adev->pm.pm_display_cfg.num_display == 0) {
-+		/*
-+		 * DC skipped filling pm_display_cfg (or memcmp'd equal to
-+		 * empty). SI SMC stays in the no-CRTC boot state (300/150 MHz)
-+		 * unless num_display > 0. Count live DRM connectors.
-+		 */
-+		struct drm_device *ddev = adev_to_drm(adev);
-+		struct drm_connector_list_iter iter;
-+		struct drm_connector *connector;
-+		u32 n = 0;
-+
-+		drm_connector_list_iter_begin(ddev, &iter);
-+		drm_for_each_connector_iter(connector, &iter) {
-+			if (connector->status == connector_status_connected)
-+				n++;
-+		}
-+		drm_connector_list_iter_end(&iter);
-+		if (n) {
-+			adev->pm.pm_display_cfg.num_display = n;
-+			adev->pm.pm_display_cfg.crtc_index = 0;
-+			drm_info(ddev,
-+				 "legacy dpm: DC left num_display=0, counted %u connected connector(s)\n",
-+				 n);
-+		}
++	} else if (adev->pm.pm_display_cfg.num_display == 0 ||
++		   adev->pm.pm_display_cfg.min_vblank_time == 0) {
++		amdgpu_legacy_dpm_fill_dc_displays(adev);
 +	}
  
- 	amdgpu_dpm_change_power_state_locked(adev);
+-	amdgpu_dpm_change_power_state_locked(adev);
++	ret = amdgpu_dpm_change_power_state_locked(adev);
++	ps = adev->pm.dpm.requested_ps;
++	if (ps)
++		drm_info(adev_to_drm(adev),
++			 "legacy dpm: pick class=0x%x caps=0x%x ret=%d ac=%d num_display=%u vblank=%u\n",
++			 ps->class, ps->caps, ret, adev->pm.ac_power,
++			 adev->pm.pm_display_cfg.num_display,
++			 adev->pm.pm_display_cfg.min_vblank_time);
++	else
++		drm_info(adev_to_drm(adev),
++			 "legacy dpm: pick failed ret=%d num_display=%u vblank=%u\n",
++			 ret, adev->pm.pm_display_cfg.num_display,
++			 adev->pm.pm_display_cfg.min_vblank_time);
  }
+ 
+ void amdgpu_dpm_thermal_work_handler(struct work_struct *work)

@@ -8,7 +8,9 @@
 **Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
   visible; oath-efi still paints over it. River GLES is still the
   river-pack Mesa; GFX6 modifiers need that River mesa on this kernel.
-  `pkg:mesa` live is 26.2.1.
+  `pkg:mesa` live is 26.2.1. SI DPM clocks still 300/150 on live
+  canto; 0001/0002 now fill DC CRTC timings and send RunningOnAC
+  (not on ESP until the next `cargo make esp`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Boot generations (last 5) + current packages

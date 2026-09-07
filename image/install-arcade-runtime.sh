@@ -309,7 +309,17 @@ export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/gamescope/lib:/
 sudo -n mkdir -p /usr/bin /usr/share 2>/dev/null || true
 sudo -n ln -sfn /oath/store/pkg/xwayland/bin/Xwayland /usr/bin/Xwayland 2>/dev/null || true
 sudo -n ln -sfn /oath/store/pkg/gamescope/share/gamescope /usr/share/gamescope 2>/dev/null || true
-exec /oath/store/pkg/gamescope/libexec/gamescope "$@"
+# River + libdecor-oath: -b skips CSD and commits xdg 0x0 (segfault).
+# Arcade still passes -b (Sola-generic NixOS path). Drop it here.
+_gs=
+for _a in "$@"; do
+	case "$_a" in
+	-b|--borderless) continue ;;
+	esac
+	_gs="${_gs:+$_gs }$_a"
+done
+# shellcheck disable=SC2086
+exec /oath/store/pkg/gamescope/libexec/gamescope $_gs
 WRAP
 chmod 755 "$stagedir/gamescope/bin/gamescope"
 

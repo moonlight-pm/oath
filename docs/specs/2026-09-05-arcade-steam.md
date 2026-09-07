@@ -45,9 +45,12 @@
   in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
   Wrapper forces composition and SDR.
   CEF GPU is `--disable-gpu` on SI. WebUITransport
-  needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked. Rootful `:2`
-  + clip/xwm is leftover fallback. QEMU image pack of these pkgs not
-  in `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).
+  needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked (library
+  empty this boot). `/bin/gamescope` drops `-b`/`--borderless` so
+  Arcade’s Sola-generic nest flags do not xdg-0×0 on this River.
+  Rootful `:2` + clip/xwm is leftover fallback. QEMU image pack of
+  these pkgs not in `cargo make build` yet. Other T36 kit ELFs still
+  out (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
