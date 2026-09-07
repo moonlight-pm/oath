@@ -143,10 +143,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto. **T37** `/bin/sola-arcade` in. Other kit apps still out. **Sola master**
-   merged into oath-sola (`ac4826a6`, Sola `2d40773e`: second Terminal
-   tmux, `bin_path` kit launch, Workspaces Grok resume). Packed
-   `pkg:sola` on canto is still the earlier blob (`a6dd7c12` / kvm
-   hand-copy `386c9d78`): flower Restart Computer / Shut Down via
+   merged into oath-sola (`59a54d59`, Sola `0d364617`: compositor
+   death exits 1; Quit Sola stays 0). Packed `pkg:sola` on canto is
+   still the earlier blob (`a6dd7c12` / kvm hand-copy `386c9d78`);
+   `/bin/sola-river` and `/bin/sola-shell` wrappers this boot retry
+   while `pidof river` is empty. Flower Restart Computer / Shut Down via
    `oath apply --confirm`; Super+Tab counts, notify pile, volume
    spectrum, rounded float CSD, browser omnibox/devtools.
    `pkg:pipewire` is on canto this boot (PipeWire + WirePlumber +

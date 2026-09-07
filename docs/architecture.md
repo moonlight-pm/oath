@@ -49,9 +49,11 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        gles2/radeonsi on real KMS, pixman on virtio; hardware
                        cursors unless a DRM card is virtio)
     sola-bus/call      svc:sola-bus / svc:sola-call as `home` (sockets /run/user/1)
-    sola-river         svc:sola-river (bridge, not the compositor)
+    sola-river         svc:sola-river (bridge, not the compositor;
+                       `/bin` wrapper retries while `pidof river` is empty)
     sola-shell         svc:sola-shell (iced menubar; wgpu/gl; llvmpipe forced
-                       only on virtio KMS; McMojave; LED graphs are RGBA images)
+                       only on virtio KMS; McMojave; LED graphs are RGBA images;
+                       same compositor-retry wrapper as the bridge)
     sola-session       svc:sola-session (LaunchApp; direct spawn)
     pipewire           pkg:pipewire + seat svcs (pipewire, wireplumber,
                        pipewire-pulse) as `home`; `/run/user/1/pipewire-0`;
