@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-09-06)
+## As-built (2026-09-08)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -47,7 +47,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     seatd              svc:seatd (DRM seat)
     river              svc:river as `home` (glibc, libudev-zero, socket /run/user/1;
                        gles2/radeonsi on real KMS, pixman on virtio; hardware
-                       cursors unless a DRM card is virtio)
+                       cursors unless a DRM card is virtio; packed
+                       `+xwayland`, `WLR_XWAYLAND=/bin/Xwayland`; Super+Q
+                       SIGTERMs X11 class `steam` after WM_DELETE)
     sola-bus/call      svc:sola-bus / svc:sola-call as `home` (sockets /run/user/1)
     sola-river         svc:sola-river (bridge, not the compositor;
                        `/bin` wrapper retries while `pidof river` is empty)
@@ -73,23 +75,15 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:cmake          `/bin/cmake` `/bin/ninja`
     pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
-    pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; gamescope nested X
-                       is `-glamor off` — river radeonsi SIGBUS’d on SI;
+    pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; session Steam is
+                       River `+xwayland` `:0`; Arcade Play nested X is
+                       gamescope `-rootless` usually `:1`, `-glamor off`
+                       — river radeonsi SIGBUS’d on SI tiled BOs;
                        mesa 26.2.1 libgallium needs GLIBC_2.43;
-                       `libexec/xwayland-clip` bridges Wayland clipboard →
-                       X11 CLIPBOARD (`wl-paste` + `xclip`) so Ctrl+V pastes;
-                       `libexec/oath-xwm` maps/clamps leftover rootful `:2`.
-                       Direct `/bin/steam` execs gamescope (no `-b`,
-                       `--steam`, Deck UI `-gamepadui -steamdeck`;
-                       steamui dlmopen copy of liboath-peercred
-                       (`load_sym` — RTLD_NEXT is NULL in that NS);
-                       `/usr/share/X11/locale` from steam-runtime;
-                       CEF `--disable-gpu` on SI; nest forces
-                       composition + SDR; River GLES still samples
-                       2D-tiled nest dmabufs as linear).
-    pkg:gamescope      `/bin/gamescope` (windowed nest; RADV via pkg:mesa;
-                       `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools,
-                       GETs SI export tiling, does not SET LINEAR_ALIGNED;
+                       `libexec/xwayland-clip` / `oath-xwm` leftover
+                       rootful `:2` only)
+    pkg:gamescope      `/bin/gamescope` (Arcade Play nest, `--backend wayland`;
+                       `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools;
                        `libdecor-oath` 1px borders so River accepts xdg geometry;
                        wrapper drops `-b`/`--borderless`; pins
                        `OATH_DRM_RENDER` to the connected card so the
@@ -98,17 +92,24 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
                        plus `libdisplay-info.so.3` + `libxml2.so.16` +
-                       `libwayland-client` 1.26 (`wl_fixes`); ICD DT_RPATH
-    pkg:steam          `/bin/steam` wrapper + 32-bit loader in lib32
-                       + 64-bit steamrt3 SONAMEs in lib64; host
-                       `_v2-entry-point` at `libexec/pv-host` (no bwrap);
+                       `libwayland-client` 1.26 (`wl_fixes`); ICD DT_RPATH;
+                       SI patches: radeonsi imported pitch (`0001`);
+                       RADV linear-export (`0002` — tree is sampled/WSI;
+                       live canto is full TRANSFER_SRC)
+    pkg:steam          `/bin/steam` wrapper (session X11 on River, not
+                       gamescope); 32-bit loader in lib32 + 64-bit
+                       steamrt3 SONAMEs in lib64; host `_v2-entry-point`
+                       at `libexec/pv-host` (no bwrap);
                        `libexec/oath-lsof` (`/bin/lsof` wrapper);
                        `lib64/liboath-glclass.so` (64-bit libGL redirect);
+                       `STEAM_FRAME_FORCE_CLOSE=1` on `:0`; CEF `--disable-gpu`;
                        live nodes `/usr/bin/env`, `/lib64/ld-linux-x86-64.so.2`,
                        `/lib/ld-linux.so.2`, `/etc/ssl/certs`, `/bin/lsof`,
                        `/usr/share/vulkan/icd.d/radeon_icd.{x86_64,i686}.json`
                        (not the /bin farm)
-    sola-arcade        `/bin/sola-arcade` (kit app in pkg:sola)
+    sola-arcade        `/bin/sola-arcade` (kit app in pkg:sola; lucide from
+                       `/oath/store/pkg/sola/share` when `/oath/INDEX.md`
+                       exists; Play nests gamescope `--nested-steam`)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`)
     backup-daily       /lib/oath/backup-daily (04:00 Mountain loop; seed off)

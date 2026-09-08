@@ -1,65 +1,39 @@
 **Date:** 2026-09-05
 **Status:** target (freeze)
-**Implementation:** packing + live-install scripts; canto apply gen 21
-**Dogfood:** canto `/bin/bash`, `/bin/sola-arcade`, `/bin/Xwayland` (`-version`
-  24.1.13), `/bin/gamescope`, `/bin/steam`. 32-bit Steam ELF loads with
-  `/lib/ld-linux.so.2`. `/bin/steam` execs past `srt-logger` / `steam.sh`
-  (`/usr/bin/env` + `/lib64` loader); canto downloaded and extracted the
-  ubuntu12 client (~496 MB). steamwebhelper stays up on the host
-  (`STEAM_RUNTIME_STEAMRT` → `pkg:steam/libexec/pv-host`) with `pkg:mesa`
-  GLX (CEF `BrowserReady`; WebUITransport accepts via `oath-lsof`). Guest
-  `cargo build -p sola-arcade` succeeded. `gamescope --backend wayland`
-  selects RADV PITCAIRN and allocates descriptors (pool layer);
-  nested Xwayland starts; River accepts the nest window
-  (`libdecor-oath`). Direct `/bin/steam` execs gamescope (`--backend
-  wayland --steam`, no `-b`, no `--force-windows-fullscreen`; nested
-  client is Deck UI `-gamepadui -steamdeck`). Launcher lists Steam.
-  32-bit RADV
-  loads (`pkg:mesa/lib32` wayland 1.26 `wl_fixes_interface`; ICD
-  DT_RPATH so steamrt’s old wayland cannot hide it). GpuTopology
-  reports RADV PITCAIRN. `liboath-peercred.so` is first DT_NEEDED of a
-  *copy* (`steamui.oath.so`) loaded via interposed `dlmopen` — live
-  `steamui.so` stays unpatched so Steam’s verifier does not loop.
-  steamwebhelper `_v2-entry-point` adds `--disable-gpu` (CEF GPU
-  SIGBUS 135 on RADV SI). steamui library chrome paints after login
-  (Deck welcome in the nest). The post-`PopupHTMLWindow` SIGSEGV was
-  a NULL `SDL_CreateWindow` from `dlsym(RTLD_NEXT)` in the dlmopen
-  NS; `load_sym` uses the real `dlopen`. `/usr/share/X11/locale` is
-  live-linked from steam-runtime (`XLOCALEDIR`). Novus runs Steam as a
-  host X11 client on River `+xwayland` inside nixpkgs `steam-*-bwrap`;
-  not a gamescope session.
-**Gaps:** Direct `/bin/steam` nests in gamescope (`--backend wayland`,
-  no `-b`; `-b` commits xdg 0×0 and segfaults). Do not pass
-  `--force-windows-fullscreen` (0×0 CEF buffer upscaled = static on
-  RADV SI). Do not patchelf live `steamui.so`. River accepts the nest
-  (`libdecor-oath` 1px). Nested Xwayland is `-glamor off` (river
-  radeonsi SIGBUS’d on SI tiled BOs; mesa 26.2.1 libgallium needs
-  GLIBC_2.43). 64-bit `liboath-glclass.so` stops gldriverquery
-  ELFCLASS32. Latest nest smoke: GpuTopology + pool `vkCreateImage`
-  1920×1080 + `SDL_CreateWindow` OpenGL 4.5, no SIGBUS. The
-  `xdg_surface#19: error 3` was River skipping configure because
-  sola-river was down after a compositor restart (exit 0 +
-  `restart=on-failure`). Nest holds with the WM up. Wrappers retry
-  while `pidof river` is empty **or** river is already back and the
-  session is still up (canto gen 35 bounce). `GAMESCOPE_VIEWPORT_SUPPORTED`
-  is faked as 0 so steamui sizes the SDL window (value 1 left
-  MainMenu 1×1 hidden). gamescope xwm screenshot is the Deck library; the Wayland nest was black because the pool layer CPU-detiled a LINEAR BO whose GET still said 2D (mtilea=4, pitch 1920). RADV on GFX6-8 allocates WSI/TRANSFER_SRC exports LINEAR_ALIGNED so River can sample them. radeonsi also keeps imported pitch on INVALID dmabufs. Do not SET
-  LINEAR_ALIGNED on a genuinely 2D BO. 32-bit `libgbm` is
-  in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
-  Wrapper forces composition and SDR. Dual Pitcairn: gamescope
-  must use the connected card’s render node (`OATH_DRM_RENDER`,
-  pool layer reorders Vulkan devices). Nest from renderD128
-  (spare) imports as black on River’s card1.
-  CEF GPU is `--disable-gpu` on SI. steamui SDL display
-  queries that return 0×0 are clamped to 1920×1080;
-  steamwebhelper `liboath-cefgeom` clamps X11/xcb 0×0
-  creates (Shared JS Context / gamepadui). WebUITransport
-  needs `/bin/lsof` (`oath-lsof`). Arcade Play unsmoked (library
-  empty this boot). `/bin/gamescope` drops `-b`/`--borderless` so
-  Arcade’s Sola-generic nest flags do not xdg-0×0 on this River.
-  Rootful `:2` + clip/xwm is leftover fallback. QEMU image pack of
-  these pkgs not in `cargo make build` yet. Other T36 kit ELFs still
-  out (`alsa.pc`).
+**Implementation:** packing + live-install scripts; canto apply gen 21;
+  River packed `+xwayland` (amended 2026-09-08)
+**Dogfood:** canto `/bin/bash`, `/bin/sola-arcade`, `/bin/Xwayland`
+  (`-version` 24.1.13), `/bin/gamescope`, `/bin/steam`. 32-bit Steam
+  ELF loads with `/lib/ld-linux.so.2`. Session `/bin/steam` is a
+  River `+xwayland` X11 client (`DISPLAY=:0`,
+  `WLR_XWAYLAND=/bin/Xwayland`); user confirmed the library paints.
+  steamwebhelper stays up on the host (`STEAM_RUNTIME_STEAMRT` →
+  `pkg:steam/libexec/pv-host`) with `pkg:mesa` GLX (CEF
+  `BrowserReady`; WebUITransport accepts via `oath-lsof`). Guest
+  `cargo build -p sola-arcade` succeeded. Arcade lucide loads from
+  `/oath/store/pkg/sola/share` when `/oath/INDEX.md` exists
+  (oath-sola `53ca8c10`). Arcade Play still nests
+  `gamescope --backend wayland` (wrapper drops `-b`; nested X
+  usually `:1`, `-glamor off`). 32-bit RADV loads
+  (`pkg:mesa/lib32` wayland 1.26 `wl_fixes_interface`; ICD DT_RPATH).
+  GpuTopology reports RADV PITCAIRN. `liboath-peercred.so` is first
+  DT_NEEDED of a *copy* (`steamui.oath.so`) loaded via interposed
+  `dlmopen` — live `steamui.so` stays unpatched. steamwebhelper
+  `_v2-entry-point` adds `--disable-gpu` (CEF GPU SIGBUS 135 on
+  RADV SI). Super+Q SIGTERMs X11 class `steam` after WM_DELETE
+  (River `699a166`). Novus Steam remains nixpkgs `*-bwrap` FHS.
+**Gaps:** Arcade Play unsmoked (refuses while `ubuntu12_32/steam`
+  is live; leftover client was killed; Super+Q reap not
+  user-verified). Library-in-gamescope parked (CEF ~1 fps, strobe,
+  xdg-never-configured). Do not `--force-windows-fullscreen`. Do
+  not pin Deck 1280×800 for titles. Do not patchelf live
+  `steamui.so`. Nested Xwayland is `-glamor off`. Live canto RADV
+  linear-export is WSI/external **and large TRANSFER_SRC**; tree
+  `0002` is sampled/WSI only (emptied the nest). radeonsi keeps
+  imported pitch on INVALID dmabufs (`0001`). Dual Pitcairn: nest
+  must use the connected card (`OATH_DRM_RENDER`). CEF is
+  `--disable-gpu` on SI. QEMU image pack of these pkgs not in
+  `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
@@ -67,7 +41,9 @@
 T36 packed the Arcade **ELF** and left Steam/gamescope/XWayland out.
 This freeze packs those runtimes as **separate removable `pkg:*`**
 and puts `sola-arcade` on `/bin`. Amends T23/T36 Out for this slice
-only: the nest is in. River is not rebuilt with host XWayland.
+only: the nest is in. **Amended 2026-09-08:** host River is packed
+`+xwayland`; session `/bin/steam` is a normal X11 client. Arcade
+Play still uses the gamescope nest.
 
 ---
 
@@ -86,10 +62,15 @@ only: the nest is in. River is not rebuilt with host XWayland.
   the ELF, not a `#!/bin/sh` wrapper.
 - **No new `svc:*`.** PID 1 does not supervise Arcade, gamescope, or
   Steam. `sola-session` LaunchApp spawns `/bin/sola-arcade --run …`.
-- **Nest is gamescope as a Wayland client** (`--backend wayland`,
-  never host `-f`). Host River is still packed with
-  `xwaylandSupport = false`. Nested X is gamescope’s `Xwayland` on
-  PATH (`/bin/Xwayland`).
+- **Arcade Play nest is gamescope as a Wayland client**
+  (`--backend wayland`, never host `-f`). Nested X is gamescope’s
+  `Xwayland` on PATH (`/bin/Xwayland`), usually `:1`, `-glamor off`.
+- **Session Steam is host X11.** Host River is packed with
+  `xwaylandSupport = true` and `WLR_XWAYLAND=/bin/Xwayland`.
+  `/bin/steam` is a River Xwayland client on `:0`. Do not exec
+  gamescope for the library. Super+Q / Sola close SIGTERMs X11
+  class `steam` after WM_DELETE (`STEAM_FRAME_FORCE_CLOSE=1` is
+  not enough).
 - **32-bit glibc lives in `pkg:steam/lib32`**, not a second libc in
   PID 1. The ubuntu12_32 Steam ELF wants `/lib/ld-linux.so.2`; apply
   may symlink that node at the packed loader. Multiarch
@@ -121,12 +102,14 @@ On canto (and QEMU after the image pack):
 5. Serial and SSH still work. `pgrep -x sola` stays empty.
 6. `tmux -V` prints a version (not `undefined symbol: __b64_pton`).
    `pkg:glibc` `libresolv.so.2` is a real DSO, not a `libc.so.6` stub.
+7. Direct `/bin/steam` is an X11 client on session `:0` (not nested in
+   gamescope). Arcade Play still uses the gamescope nest.
 
 ---
 
 ## Out
 
-- Rebuilding River with `xwaylandSupport` (host X11 Steam windows)
+- Library Steam inside gamescope (parked 2026-09-08; session X11 instead)
 - `dbus-daemon`, a second Unix user, `pkg:python`
 - Splitting `pkg:sola`
 - Upgrading sealed `pkg:glibc` to Ubuntu questing

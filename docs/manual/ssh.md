@@ -17,9 +17,11 @@ Guest `/etc/ssh/ssh_config` is `StrictHostKeyChecking accept-new`
 as `home` work. Guest `ssh` is on canto this boot (QEMU on the next
 pack). The editor is busybox `vi` (`/bin/vi`).
 The `home` login shell is `/bin/thoxa` (`pkg:thoxa`; `thoxa -c` for
-`ssh host cmd`). sola-terminal and sola-workspaces tmux panes use the
-same `$SHELL` (wrappers default `/bin/thoxa`; they must not force
-`/bin/sh`). Dropbear **rejects the user** unless that path is
+`ssh host cmd`). A quoted script passed as the SSH command is often
+**echoed, not executed**. Prefer `ssh canto /bin/busybox ash` with the
+script on stdin, or unquoted argv. sola-terminal and sola-workspaces
+tmux panes use the same `$SHELL` (wrappers default `/bin/thoxa`; they
+must not force `/bin/sh`). Dropbear **rejects the user** unless that path is
 listed in `/etc/shells` (the client error looks like publickey
 denied). Root/serial stay `/bin/sh`.
 

@@ -18,7 +18,7 @@ None open. T38 boot generations closed (last 5 ESP archives + current;
 (`image/build-linux.sh` + `image/linux-patches`); not Ubuntu/NixOS generic. Still 7.3 for GFX6.
 Debian mesa 26.2.x). T37 Arcade + Steam runtime closed (`pkg:bash` / `pkg:xwayland` /
 `pkg:gamescope` / `pkg:mesa` / `pkg:steam`; Arcade ELF stays in `pkg:sola`; no new `svc`;
-host River still without xwaylandSupport). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
+host River **`+xwayland`** as of 2026-09-08 — session Steam is X11; Arcade Play still nests gamescope). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
 Arcade ELF without gamescope/Steam/XWayland — **amended T37**). T35 guest toolchain closed (official tarballs; `pkg:cc` is
 Zig providing `cc`; rustc gnu host + musl std; cmake+ninja; empty
 pkg-config farm). T34 UTC system clock closed (`host:local.timezone`
@@ -270,14 +270,15 @@ Not `svc:*`. Spotify Pulse is `pkg:pipewire`. Wrapper uses packed CEF.
 Canto fill is `image/install-sola-kit.sh`. **T37** packs Steam /
 gamescope / Xwayland / mesa as separate `pkg:*` so Arcade can nest.
 
-### T37 — Arcade + Steam runtime — locked 2026-09-05
+### T37 — Arcade + Steam runtime — locked 2026-09-05, amended 2026-09-08
 
 `sola-arcade` stays in `pkg:sola`. Steam, gamescope, Xwayland, and the
 64-bit GLX + Vulkan WSI stack are removable `pkg:steam` / `pkg:gamescope` /
 `pkg:xwayland` / `pkg:mesa`. `pkg:bash` is borrowed static musl GNU
-bash. No new `svc:*`. Nested X is gamescope’s `Xwayland` on PATH. Host
-River is still packed without xwaylandSupport. 32-bit glibc loader is
-`pkg:steam/lib32`, not a second libc in PID 1.
+bash. No new `svc:*`. Arcade Play nested X is gamescope’s `Xwayland` on
+PATH. **Amended 2026-09-08:** host River is packed `+xwayland`; session
+`/bin/steam` is a normal X11 client (library-in-gamescope parked).
+32-bit glibc loader is `pkg:steam/lib32`, not a second libc in PID 1.
 
 ### T30 — Vendor-updating packages (`pkg:grok`) — locked 2026-09-02
 

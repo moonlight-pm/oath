@@ -31,7 +31,8 @@ that are not there.
 
 Sola terminal, browser, workspaces (`solactl`), and arcade are packed;
 other kit apps (mail, wrapper, spotify, …) are not. Steam/gamescope/
-Xwayland are separate packages. Packages: sealed
+Xwayland are separate packages. Session Steam is a River X11 window;
+Arcade Play still nests gamescope. Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
 `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
 `cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `mesa`, `steam`,
