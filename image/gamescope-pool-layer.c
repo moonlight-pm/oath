@@ -27,8 +27,11 @@
  * (rowPitch=width*4, pitch not a macrotile multiple) while GET still
  * reports ARRAY_2D_TILED_THIN1. CPU-detiling that as 2D with mtilea=4
  * writes mostly OOB → a black nest, even though gamescope's xwm
- * screenshot of the Deck UI is fine. Skip detile when Vulkan tiling
- * is LINEAR or the pitch is not a macrotile multiple.
+ * screenshot of the Deck UI is fine.
+ *
+ * Present path: blit each nest-sized image into a LINEAR twin we
+ * created (RADV can read its own tiling), export the twin's dmabuf.
+ * River samples linear. CPU detile is leftover fallback only.
  */
 #include <stdint.h>
 #include <stddef.h>
@@ -68,13 +71,45 @@ typedef struct VkAllocationCallbacks VkAllocationCallbacks;
 #define VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO 14
 #define VK_IMAGE_TILING_LINEAR 0
 #define VK_IMAGE_TILING_OPTIMAL 1
-#define VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 0x00000010u
+#define VK_IMAGE_USAGE_TRANSFER_SRC_BIT 0x00000001u
+#define VK_IMAGE_USAGE_TRANSFER_DST_BIT 0x00000002u
 #define VK_IMAGE_USAGE_SAMPLED_BIT 0x00000004u
 #define VK_IMAGE_USAGE_STORAGE_BIT 0x00000008u
-#define VK_IMAGE_USAGE_TRANSFER_SRC_BIT 0x00000001u
+#define VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 0x00000010u
+#define VK_IMAGE_TYPE_2D 1
+#define VK_SAMPLE_COUNT_1_BIT 1
+#define VK_SHARING_MODE_EXCLUSIVE 0
+#define VK_IMAGE_LAYOUT_UNDEFINED 0
+#define VK_IMAGE_LAYOUT_GENERAL 1
+#define VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL 6
+#define VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL 7
+#define VK_IMAGE_LAYOUT_PRESENT_SRC_KHR 1000001002u
+#define VK_IMAGE_ASPECT_COLOR_BIT 1u
+#define VK_PIPELINE_STAGE_TRANSFER_BIT 0x00001000u
+#define VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT 0x00000020u
+#define VK_PIPELINE_STAGE_ALL_COMMANDS_BIT 0x00010000u
+#define VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT 0x00000100u
+#define VK_ACCESS_TRANSFER_READ_BIT 0x00000800u
+#define VK_ACCESS_TRANSFER_WRITE_BIT 0x00001000u
+#define VK_ACCESS_MEMORY_READ_BIT 0x00008000u
+#define VK_ACCESS_MEMORY_WRITE_BIT 0x00010000u
+#define VK_FILTER_NEAREST 0
+#define VK_COMMAND_BUFFER_LEVEL_PRIMARY 0
+#define VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT 2u
+#define VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT 1u
+#define VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO 39
+#define VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO 40
+#define VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO 42
+#define VK_STRUCTURE_TYPE_SUBMIT_INFO 4
+#define VK_STRUCTURE_TYPE_FENCE_CREATE_INFO 8
+#define VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER 45
+#define VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO 1000072001u
+#define VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT 0x00000020u
+#define VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT 0x00000200u
+#define VK_QUEUE_FAMILY_IGNORED 0xffffffffu
 /* Mesa private: src/vulkan/wsi/wsi_common.h */
 #define VK_STRUCTURE_TYPE_WSI_IMAGE_CREATE_INFO_MESA 1000001002u
-#define VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO 1000070000u
+#define VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO 1000072000u
 #define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 1000059001u
 #define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT 1000353000u
 
@@ -244,6 +279,110 @@ typedef VkResult(VKAPI_PTR *PFN_vkAllocateMemory)(VkDevice, const VkMemoryAlloca
 typedef void(VKAPI_PTR *PFN_vkGetPhysicalDeviceMemoryProperties)(VkPhysicalDevice,
 								 VkPhysicalDeviceMemoryProperties *);
 
+typedef struct VkQueue_T *VkQueue;
+typedef struct VkCommandPool_T *VkCommandPool;
+typedef struct VkCommandBuffer_T *VkCommandBuffer;
+typedef struct VkFence_T *VkFence;
+typedef struct VkOffset3D {
+	int32_t x, y, z;
+} VkOffset3D;
+typedef struct VkImageSubresourceRange {
+	uint32_t aspectMask;
+	uint32_t baseMipLevel;
+	uint32_t levelCount;
+	uint32_t baseArrayLayer;
+	uint32_t layerCount;
+} VkImageSubresourceRange;
+typedef struct VkImageSubresourceLayers {
+	uint32_t aspectMask;
+	uint32_t mipLevel;
+	uint32_t baseArrayLayer;
+	uint32_t layerCount;
+} VkImageSubresourceLayers;
+typedef struct VkImageMemoryBarrier {
+	VkStructureType sType;
+	const void *pNext;
+	uint32_t srcAccessMask;
+	uint32_t dstAccessMask;
+	uint32_t oldLayout;
+	uint32_t newLayout;
+	uint32_t srcQueueFamilyIndex;
+	uint32_t dstQueueFamilyIndex;
+	VkImage image;
+	VkImageSubresourceRange subresourceRange;
+} VkImageMemoryBarrier;
+typedef struct VkImageBlit {
+	VkImageSubresourceLayers srcSubresource;
+	VkOffset3D srcOffsets[2];
+	VkImageSubresourceLayers dstSubresource;
+	VkOffset3D dstOffsets[2];
+} VkImageBlit;
+typedef struct VkMemoryRequirements {
+	VkDeviceSize size;
+	VkDeviceSize alignment;
+	uint32_t memoryTypeBits;
+} VkMemoryRequirements;
+typedef struct VkExportMemoryAllocateInfo {
+	VkStructureType sType;
+	const void *pNext;
+	uint32_t handleTypes;
+} VkExportMemoryAllocateInfo;
+typedef struct VkCommandPoolCreateInfo {
+	VkStructureType sType;
+	const void *pNext;
+	uint32_t flags;
+	uint32_t queueFamilyIndex;
+} VkCommandPoolCreateInfo;
+typedef struct VkCommandBufferAllocateInfo {
+	VkStructureType sType;
+	const void *pNext;
+	VkCommandPool commandPool;
+	uint32_t level;
+	uint32_t commandBufferCount;
+} VkCommandBufferAllocateInfo;
+typedef struct VkCommandBufferBeginInfo {
+	VkStructureType sType;
+	const void *pNext;
+	uint32_t flags;
+	const void *pInheritanceInfo;
+} VkCommandBufferBeginInfo;
+typedef struct VkSubmitInfo {
+	VkStructureType sType;
+	const void *pNext;
+	uint32_t waitSemaphoreCount;
+	const void *pWaitSemaphores;
+	const uint32_t *pWaitDstStageMask;
+	uint32_t commandBufferCount;
+	const VkCommandBuffer *pCommandBuffers;
+	uint32_t signalSemaphoreCount;
+	const void *pSignalSemaphores;
+} VkSubmitInfo;
+typedef struct VkFenceCreateInfo {
+	VkStructureType sType;
+	const void *pNext;
+	uint32_t flags;
+} VkFenceCreateInfo;
+typedef void(VKAPI_PTR *PFN_vkGetDeviceQueue)(VkDevice, uint32_t, uint32_t, VkQueue *);
+typedef VkResult(VKAPI_PTR *PFN_vkCreateCommandPool)(VkDevice, const VkCommandPoolCreateInfo *,
+						     const VkAllocationCallbacks *, VkCommandPool *);
+typedef VkResult(VKAPI_PTR *PFN_vkAllocateCommandBuffers)(VkDevice, const VkCommandBufferAllocateInfo *,
+							  VkCommandBuffer *);
+typedef VkResult(VKAPI_PTR *PFN_vkCreateFence)(VkDevice, const VkFenceCreateInfo *, const VkAllocationCallbacks *,
+					       VkFence *);
+typedef VkResult(VKAPI_PTR *PFN_vkResetFences)(VkDevice, uint32_t, const VkFence *);
+typedef VkResult(VKAPI_PTR *PFN_vkWaitForFences)(VkDevice, uint32_t, const VkFence *, uint32_t, uint64_t);
+typedef VkResult(VKAPI_PTR *PFN_vkResetCommandBuffer)(VkCommandBuffer, uint32_t);
+typedef VkResult(VKAPI_PTR *PFN_vkBeginCommandBuffer)(VkCommandBuffer, const VkCommandBufferBeginInfo *);
+typedef VkResult(VKAPI_PTR *PFN_vkEndCommandBuffer)(VkCommandBuffer);
+typedef void(VKAPI_PTR *PFN_vkCmdPipelineBarrier)(VkCommandBuffer, uint32_t, uint32_t, uint32_t, uint32_t,
+						  const void *, uint32_t, const void *, uint32_t,
+						  const VkImageMemoryBarrier *);
+typedef void(VKAPI_PTR *PFN_vkCmdBlitImage)(VkCommandBuffer, VkImage, uint32_t, VkImage, uint32_t, uint32_t,
+					    const VkImageBlit *, uint32_t);
+typedef VkResult(VKAPI_PTR *PFN_vkQueueSubmit)(VkQueue, uint32_t, const VkSubmitInfo *, VkFence);
+typedef void(VKAPI_PTR *PFN_vkGetImageMemoryRequirements)(VkDevice, VkImage, VkMemoryRequirements *);
+typedef void(VKAPI_PTR *PFN_vkFreeMemory)(VkDevice, VkDeviceMemory, const VkAllocationCallbacks *);
+
 enum { LAYER_NEGOTIATE_INTERFACE_STRUCT = 1 };
 enum { CURRENT_LOADER_LAYER_INTERFACE_VERSION = 2, MIN_SUPPORTED_LOADER_LAYER_INTERFACE_VERSION = 1 };
 enum { VK_LAYER_LINK_INFO = 0 };
@@ -300,6 +439,28 @@ static PFN_vkDestroyImage next_destroy_image;
 static PFN_vkAllocateMemory next_alloc;
 static PFN_vkGetPhysicalDeviceMemoryProperties next_mem_props;
 static PFN_vkEnumeratePhysicalDevices next_enum_pd;
+static PFN_vkGetDeviceQueue next_get_queue;
+static PFN_vkCreateCommandPool next_create_pool;
+static PFN_vkAllocateCommandBuffers next_alloc_cmd;
+static PFN_vkCreateFence next_create_fence;
+static PFN_vkResetFences next_reset_fences;
+static PFN_vkWaitForFences next_wait_fences;
+static PFN_vkResetCommandBuffer next_reset_cmd;
+static PFN_vkBeginCommandBuffer next_begin_cmd;
+static PFN_vkEndCommandBuffer next_end_cmd;
+static PFN_vkCmdPipelineBarrier next_barrier;
+static PFN_vkCmdBlitImage next_blit;
+static PFN_vkQueueSubmit next_queue_submit;
+static PFN_vkGetImageMemoryRequirements next_img_reqs;
+static PFN_vkFreeMemory next_free_mem;
+static VkDevice the_device;
+static VkQueue blit_queue;
+static VkCommandPool blit_pool;
+static VkCommandBuffer blit_cmd;
+static VkFence blit_fence;
+static int blit_ready;
+static int blit_busy;
+static int blit_log;
 static PFN_vkGetPhysicalDeviceProperties2 next_pd_props2;
 static VkPhysicalDeviceMemoryProperties mem_props;
 static VkInstance the_instance;
@@ -321,6 +482,10 @@ struct track_img {
 	uint32_t w, h, bpp;
 	uint32_t pitch;
 	uint32_t vk_tiling;
+	uint32_t format;
+	uint32_t samples;
+	VkImage twin_image;
+	VkDeviceMemory twin_memory;
 	int in_use;
 };
 static struct track_img tracked[MAX_TRACK];
@@ -466,6 +631,7 @@ static VkResult VKAPI_CALL hook_CreateDevice(VkPhysicalDevice phys, const VkDevi
 		next_create_device = (PFN_vkCreateDevice)next_gipa(NULL, "vkCreateDevice");
 	VkResult r = next_create_device(phys, info, a, out);
 	if (r == VK_SUCCESS && next_gdpa) {
+		the_device = *out;
 		next_pool = (PFN_vkCreateDescriptorPool)next_gdpa(*out, "vkCreateDescriptorPool");
 		next_create_image = (PFN_vkCreateImage)next_gdpa(*out, "vkCreateImage");
 		next_layout = (PFN_vkGetImageSubresourceLayout)next_gdpa(*out, "vkGetImageSubresourceLayout");
@@ -473,6 +639,20 @@ static VkResult VKAPI_CALL hook_CreateDevice(VkPhysicalDevice phys, const VkDevi
 		next_bind_image = (PFN_vkBindImageMemory)next_gdpa(*out, "vkBindImageMemory");
 		next_destroy_image = (PFN_vkDestroyImage)next_gdpa(*out, "vkDestroyImage");
 		next_alloc = (PFN_vkAllocateMemory)next_gdpa(*out, "vkAllocateMemory");
+		next_get_queue = (PFN_vkGetDeviceQueue)next_gdpa(*out, "vkGetDeviceQueue");
+		next_create_pool = (PFN_vkCreateCommandPool)next_gdpa(*out, "vkCreateCommandPool");
+		next_alloc_cmd = (PFN_vkAllocateCommandBuffers)next_gdpa(*out, "vkAllocateCommandBuffers");
+		next_create_fence = (PFN_vkCreateFence)next_gdpa(*out, "vkCreateFence");
+		next_reset_fences = (PFN_vkResetFences)next_gdpa(*out, "vkResetFences");
+		next_wait_fences = (PFN_vkWaitForFences)next_gdpa(*out, "vkWaitForFences");
+		next_reset_cmd = (PFN_vkResetCommandBuffer)next_gdpa(*out, "vkResetCommandBuffer");
+		next_begin_cmd = (PFN_vkBeginCommandBuffer)next_gdpa(*out, "vkBeginCommandBuffer");
+		next_end_cmd = (PFN_vkEndCommandBuffer)next_gdpa(*out, "vkEndCommandBuffer");
+		next_barrier = (PFN_vkCmdPipelineBarrier)next_gdpa(*out, "vkCmdPipelineBarrier");
+		next_blit = (PFN_vkCmdBlitImage)next_gdpa(*out, "vkCmdBlitImage");
+		next_queue_submit = (PFN_vkQueueSubmit)next_gdpa(*out, "vkQueueSubmit");
+		next_img_reqs = (PFN_vkGetImageMemoryRequirements)next_gdpa(*out, "vkGetImageMemoryRequirements");
+		next_free_mem = (PFN_vkFreeMemory)next_gdpa(*out, "vkFreeMemory");
 		if (next_gipa && !have_mem_props) {
 			next_mem_props = (PFN_vkGetPhysicalDeviceMemoryProperties)next_gipa(
 				the_instance, "vkGetPhysicalDeviceMemoryProperties");
@@ -481,8 +661,33 @@ static VkResult VKAPI_CALL hook_CreateDevice(VkPhysicalDevice phys, const VkDevi
 				have_mem_props = 1;
 			}
 		}
-		fprintf(stderr, "[gamescope-pool] device created createImage=%p getFd=%p alloc=%p host_vis_types=%u\n",
-			(void *)next_create_image, (void *)next_get_fd, (void *)next_alloc,
+		blit_ready = 0;
+		if (next_get_queue && next_create_pool && next_alloc_cmd && next_create_fence && next_blit &&
+		    next_queue_submit) {
+			VkCommandPoolCreateInfo pci;
+			VkCommandBufferAllocateInfo cai;
+			VkFenceCreateInfo fi;
+			memset(&pci, 0, sizeof pci);
+			pci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			pci.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			pci.queueFamilyIndex = 0;
+			next_get_queue(*out, 0, 0, &blit_queue);
+			if (blit_queue && next_create_pool(*out, &pci, NULL, &blit_pool) == VK_SUCCESS) {
+				memset(&cai, 0, sizeof cai);
+				cai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				cai.commandPool = blit_pool;
+				cai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+				cai.commandBufferCount = 1;
+				memset(&fi, 0, sizeof fi);
+				fi.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+				if (next_alloc_cmd(*out, &cai, &blit_cmd) == VK_SUCCESS &&
+				    next_create_fence(*out, &fi, NULL, &blit_fence) == VK_SUCCESS)
+					blit_ready = 1;
+			}
+		}
+		fprintf(stderr,
+			"[gamescope-pool] device created createImage=%p getFd=%p alloc=%p blit=%d host_vis_types=%u\n",
+			(void *)next_create_image, (void *)next_get_fd, (void *)next_alloc, blit_ready,
 			have_mem_props ? mem_props.memoryTypeCount : 0);
 	}
 	return r;
@@ -524,6 +729,193 @@ static uint32_t pick_host_visible_type(uint32_t orig) {
 			return i;
 	}
 	return orig;
+}
+
+static uint32_t pick_type_for_bits(uint32_t bits) {
+	uint32_t i, fallback = 0xffffffffu;
+
+	if (!have_mem_props)
+		return 0;
+	for (i = 0; i < mem_props.memoryTypeCount; i++) {
+		uint32_t f;
+		if (!(bits & (1u << i)))
+			continue;
+		f = mem_props.memoryTypes[i].propertyFlags;
+		if ((f & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) && (f & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+			return i;
+		if (fallback == 0xffffffffu)
+			fallback = i;
+	}
+	return fallback == 0xffffffffu ? 0 : fallback;
+}
+
+static int ensure_twin(VkDevice device, struct track_img *t) {
+	VkImageCreateInfo ci;
+	struct VkExternalMemoryImageCreateInfo ext;
+	VkMemoryRequirements req;
+	VkMemoryAllocateInfo ai;
+	struct VkExportMemoryAllocateInfo exp;
+	VkImage img = NULL;
+	VkDeviceMemory mem = NULL;
+	VkSubresourceLayout lay;
+	VkImageSubresource sub;
+
+	if (!t || t->twin_image)
+		return t && t->twin_image ? 0 : -1;
+	if (!next_create_image || !next_alloc || !next_bind_image || !next_img_reqs || !t->w || !t->h || !t->format)
+		return -1;
+	memset(&ext, 0, sizeof ext);
+	ext.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
+	ext.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT |
+			  VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+	memset(&ci, 0, sizeof ci);
+	ci.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	ci.pNext = &ext;
+	ci.imageType = VK_IMAGE_TYPE_2D;
+	ci.format = t->format;
+	ci.extent.width = t->w;
+	ci.extent.height = t->h;
+	ci.extent.depth = 1;
+	ci.mipLevels = 1;
+	ci.arrayLayers = 1;
+	ci.samples = VK_SAMPLE_COUNT_1_BIT;
+	ci.tiling = VK_IMAGE_TILING_LINEAR;
+	ci.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	ci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	ci.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	if (next_create_image(device, &ci, NULL, &img) != VK_SUCCESS || !img)
+		return -1;
+	next_img_reqs(device, img, &req);
+	memset(&exp, 0, sizeof exp);
+	exp.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
+	exp.handleTypes = ext.handleTypes;
+	memset(&ai, 0, sizeof ai);
+	ai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	ai.pNext = &exp;
+	ai.allocationSize = req.size;
+	ai.memoryTypeIndex = pick_type_for_bits(req.memoryTypeBits);
+	if (next_alloc(device, &ai, NULL, &mem) != VK_SUCCESS || !mem) {
+		if (next_destroy_image)
+			next_destroy_image(device, img, NULL);
+		return -1;
+	}
+	if (next_bind_image(device, img, mem, 0) != VK_SUCCESS) {
+		if (next_free_mem)
+			next_free_mem(device, mem, NULL);
+		if (next_destroy_image)
+			next_destroy_image(device, img, NULL);
+		return -1;
+	}
+	t->twin_image = img;
+	t->twin_memory = mem;
+	if (next_layout) {
+		memset(&sub, 0, sizeof sub);
+		sub.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		memset(&lay, 0, sizeof lay);
+		next_layout(device, img, &sub, &lay);
+		if (lay.rowPitch)
+			t->pitch = (uint32_t)lay.rowPitch;
+	}
+	return 0;
+}
+
+static int blit_one(VkDevice device, struct track_img *t) {
+	VkCommandBufferBeginInfo bi;
+	VkImageMemoryBarrier bar[2];
+	VkImageBlit blit;
+	VkSubmitInfo si;
+	VkResult r;
+
+	if (!blit_ready || !t || !t->image || !t->twin_image)
+		return -1;
+	if (ensure_twin(device, t) != 0)
+		return -1;
+	next_reset_fences(device, 1, &blit_fence);
+	next_reset_cmd(blit_cmd, 0);
+	memset(&bi, 0, sizeof bi);
+	bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (next_begin_cmd(blit_cmd, &bi) != VK_SUCCESS)
+		return -1;
+	memset(bar, 0, sizeof bar);
+	bar[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	bar[0].srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	bar[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	bar[0].oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+	bar[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	bar[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	bar[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	bar[0].image = t->image;
+	bar[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	bar[0].subresourceRange.levelCount = 1;
+	bar[0].subresourceRange.layerCount = 1;
+	bar[1] = bar[0];
+	bar[1].srcAccessMask = 0;
+	bar[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	bar[1].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	bar[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	bar[1].image = t->twin_image;
+	next_barrier(blit_cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL,
+		     2, bar);
+	memset(&blit, 0, sizeof blit);
+	blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit.srcSubresource.layerCount = 1;
+	blit.dstSubresource = blit.srcSubresource;
+	blit.srcOffsets[1].x = (int32_t)t->w;
+	blit.srcOffsets[1].y = (int32_t)t->h;
+	blit.srcOffsets[1].z = 1;
+	blit.dstOffsets[1] = blit.srcOffsets[1];
+	next_blit(blit_cmd, t->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, t->twin_image,
+		  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_NEAREST);
+	bar[0].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	bar[0].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	bar[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	bar[0].newLayout = VK_IMAGE_LAYOUT_GENERAL;
+	bar[0].image = t->twin_image;
+	next_barrier(blit_cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0,
+		     NULL, 1, bar);
+	if (next_end_cmd(blit_cmd) != VK_SUCCESS)
+		return -1;
+	memset(&si, 0, sizeof si);
+	si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	si.commandBufferCount = 1;
+	si.pCommandBuffers = &blit_cmd;
+	r = next_queue_submit(blit_queue, 1, &si, blit_fence);
+	if (r != VK_SUCCESS)
+		return -1;
+	r = next_wait_fences(device, 1, &blit_fence, 1, ~(uint64_t)0);
+	if (r != VK_SUCCESS)
+		return -1;
+	if (!blit_log) {
+		fprintf(stderr, "[gamescope-pool] blit present %ux%u -> linear twin\n", t->w, t->h);
+		blit_log = 1;
+	}
+	return 0;
+}
+
+static void blit_all_twins(VkDevice device) {
+	uint32_t i;
+	for (i = 0; i < MAX_TRACK; i++) {
+		if (!tracked[i].in_use || !tracked[i].twin_image)
+			continue;
+		if (blit_one(device, &tracked[i]) != 0 && blit_log < 2) {
+			fprintf(stderr, "[gamescope-pool] blit failed %ux%u\n", tracked[i].w, tracked[i].h);
+			blit_log = 2;
+		}
+	}
+}
+
+static VkResult VKAPI_CALL hook_QueueSubmit(VkQueue queue, uint32_t count, const VkSubmitInfo *info, VkFence fence) {
+	VkResult r;
+	if (!next_queue_submit)
+		return VK_ERROR_INITIALIZATION_FAILED;
+	r = next_queue_submit(queue, count, info, fence);
+	if (r != VK_SUCCESS || blit_busy || !blit_ready || !the_device || queue != blit_queue)
+		return r;
+	blit_busy = 1;
+	blit_all_twins(the_device);
+	blit_busy = 0;
+	return r;
 }
 
 static VkResult VKAPI_CALL hook_AllocateMemory(VkDevice device, const VkMemoryAllocateInfo *info,
@@ -644,6 +1036,13 @@ static VkResult VKAPI_CALL hook_CreateImage(VkDevice device, const VkImageCreate
 	 * still decides whether we must detile.
 	 */
 	use = strip_wsi_scanout(info, &local, &wsi_store, &ext_store);
+	if (use && use->extent.width >= 256 && use->extent.height >= 256) {
+		if (use != &local) {
+			local = *use;
+			use = &local;
+		}
+		local.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	}
 	{
 		VkResult r = next_create_image(device, use, a, out);
 		if (r == VK_SUCCESS && out && *out && use->extent.width >= 256 && use->extent.height >= 256) {
@@ -654,6 +1053,8 @@ static VkResult VKAPI_CALL hook_CreateImage(VkDevice device, const VkImageCreate
 				t->bpp = 4;
 				t->pitch = use->extent.width * 4;
 				t->vk_tiling = use->tiling;
+				t->format = use->format;
+				t->samples = use->samples;
 			}
 		}
 		return r;
@@ -662,16 +1063,20 @@ static VkResult VKAPI_CALL hook_CreateImage(VkDevice device, const VkImageCreate
 
 static void VKAPI_CALL hook_GetImageSubresourceLayout(VkDevice device, VkImage image, const VkImageSubresource *sub,
 						      VkSubresourceLayout *layout) {
-	if (next_layout)
+	struct track_img *t = track_find_image(image);
+	if (t && t->twin_image && next_layout) {
+		next_layout(device, t->twin_image, sub, layout);
+		if (layout && layout->rowPitch)
+			t->pitch = (uint32_t)layout->rowPitch;
+	} else if (next_layout)
 		next_layout(device, image, sub, layout);
 	if (layout && layout->rowPitch) {
-		struct track_img *t = track_find_image(image);
-		if (t)
+		if (t && !t->twin_image)
 			t->pitch = (uint32_t)layout->rowPitch;
 		if (layout_logs < 16) {
-			fprintf(stderr, "[gamescope-pool] subresource offset=%llu size=%llu rowPitch=%llu\n",
+			fprintf(stderr, "[gamescope-pool] subresource offset=%llu size=%llu rowPitch=%llu twin=%d\n",
 				(unsigned long long)layout->offset, (unsigned long long)layout->size,
-				(unsigned long long)layout->rowPitch);
+				(unsigned long long)layout->rowPitch, t && t->twin_image);
 			layout_logs++;
 		}
 	}
@@ -685,16 +1090,26 @@ static VkResult VKAPI_CALL hook_BindImageMemory(VkDevice device, VkImage image, 
 	r = next_bind_image(device, image, memory, offset);
 	if (r == VK_SUCCESS) {
 		struct track_img *t = track_find_image(image);
-		if (t)
+		if (t) {
 			t->memory = memory;
+			if (t->w >= 256 && t->h >= 256 && t->samples <= 1)
+				ensure_twin(device, t);
+		}
 	}
 	return r;
 }
 
 static void VKAPI_CALL hook_DestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks *a) {
 	struct track_img *t = track_find_image(image);
-	if (t)
+	if (t) {
+		if (t->twin_image && next_destroy_image)
+			next_destroy_image(device, t->twin_image, a);
+		if (t->twin_memory && next_free_mem)
+			next_free_mem(device, t->twin_memory, a);
+		t->twin_image = NULL;
+		t->twin_memory = NULL;
 		t->in_use = 0;
+	}
 	if (next_destroy_image)
 		next_destroy_image(device, image, a);
 }
@@ -1329,6 +1744,28 @@ static VkResult VKAPI_CALL hook_GetMemoryFdKHR(VkDevice device, const VkMemoryGe
 	struct track_img *t;
 	if (!next_get_fd)
 		return VK_ERROR_INITIALIZATION_FAILED;
+	t = info ? track_find_memory(info->memory) : NULL;
+	if (t && t->w >= 256 && t->h >= 256 && blit_ready) {
+		VkMemoryGetFdInfoKHR fi;
+		if (ensure_twin(device, t) == 0 && blit_one(device, t) == 0 && t->twin_memory) {
+			fi = *info;
+			fi.memory = t->twin_memory;
+			r = next_get_fd(device, &fi, pFd);
+			if (r == VK_SUCCESS && pFd && *pFd >= 0) {
+				uint64_t linear = AMDGPU_TILING_ARRAY_LINEAR_ALIGNED;
+				int d = open_render_node();
+				if (d >= 0) {
+					gem_metadata(d, *pFd, AMDGPU_GEM_METADATA_OP_SET_METADATA, &linear);
+					close(d);
+				}
+				if (!meta_once) {
+					fprintf(stderr, "[gamescope-pool] export blit twin %ux%u fd\n", t->w, t->h);
+					meta_once = 1;
+				}
+				return r;
+			}
+		}
+	}
 	r = next_get_fd(device, info, pFd);
 	if (r != VK_SUCCESS || !pFd || *pFd < 0)
 		return r;
@@ -1428,6 +1865,8 @@ static PFN_vkVoidFunction VKAPI_CALL hook_GetDeviceProcAddr(VkDevice device, con
 		return (PFN_vkVoidFunction)hook_BindImageMemory;
 	if (!strcmp(name, "vkDestroyImage"))
 		return (PFN_vkVoidFunction)hook_DestroyImage;
+	if (!strcmp(name, "vkQueueSubmit"))
+		return (PFN_vkVoidFunction)hook_QueueSubmit;
 	if (!strcmp(name, "vkGetDeviceProcAddr"))
 		return (PFN_vkVoidFunction)hook_GetDeviceProcAddr;
 	if (!strcmp(name, "vkCreateDevice"))
@@ -1460,6 +1899,8 @@ static PFN_vkVoidFunction VKAPI_CALL hook_GetInstanceProcAddr(VkInstance instanc
 		return (PFN_vkVoidFunction)hook_BindImageMemory;
 	if (!strcmp(name, "vkDestroyImage"))
 		return (PFN_vkVoidFunction)hook_DestroyImage;
+	if (!strcmp(name, "vkQueueSubmit"))
+		return (PFN_vkVoidFunction)hook_QueueSubmit;
 	return next_gipa ? next_gipa(instance, name) : NULL;
 }
 

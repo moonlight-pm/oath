@@ -43,7 +43,7 @@
   while `pidof river` is empty **or** river is already back and the
   session is still up (canto gen 35 bounce). `GAMESCOPE_VIEWPORT_SUPPORTED`
   is faked as 0 so steamui sizes the SDL window (value 1 left
-  MainMenu 1×1 hidden). gamescope xwm screenshot is the Deck library; the Wayland nest was black because the pool layer CPU-detiled a LINEAR BO whose GET still said 2D (mtilea=4, pitch 1920). Skip detile in that case. Do not SET
+  MainMenu 1×1 hidden). gamescope xwm screenshot is the Deck library; the Wayland nest was black because the pool layer CPU-detiled a LINEAR BO whose GET still said 2D (mtilea=4, pitch 1920). Present is a GPU blit into a LINEAR twin dmabuf River can sample. Do not SET
   LINEAR_ALIGNED on a genuinely 2D BO. 32-bit `libgbm` is
   in `pkg:mesa/lib32`. steam-runtime `compose.dir` aliases C.UTF-8.
   Wrapper forces composition and SDR. Dual Pitcairn: gamescope
