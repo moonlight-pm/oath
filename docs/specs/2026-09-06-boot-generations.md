@@ -1,14 +1,16 @@
 **Date:** 2026-09-06
 **Status:** target (freeze)
 **Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
-**Dogfood:** Ubuntu 7.3-rc1 panicked; rescue **boot 4** (6.12.93).
-  Live canto is **7.3.0-rc1 #3** + GPIO_DC-skip amdgpu (`force high`
-  850/1270). QEMU `run`/`probe` stay `-kernel`.
+**Dogfood:** Ubuntu 7.3-rc1 panicked. Live canto is **7.3.0-rc1 #3**
+  + GPIO_DC-skip amdgpu (`force high` 850/1270) until reboot into the
+  ESP just written (btusb + unix_floor dbus dirs). Last-5: boot
+  11,10,9,8,7. **boot 4** (6.12.93 rescue) pruned this rotate.
+  QEMU `run`/`probe` stay `-kernel`.
 **Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
   visible; oath-efi still paints over it. River GLES is still the
   river-pack Mesa; GFX6 modifiers need that River mesa on this kernel.
   `pkg:mesa` live is 26.2.1. SI DPM: skip GPIO_DC on AC;
-  `force high` **850/1270 MHz**. boot 4 is 6.12 rescue.
+  `force high` **850/1270 MHz**. No 6.12 rescue slot after this rotate.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Boot generations (last 5) + current packages

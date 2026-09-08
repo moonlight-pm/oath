@@ -27,11 +27,12 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `/bin/env sola-audio=1 /bin/pipewire` (the `sola-` token makes
    spawn drop uid 1). sola-shell already has a `pw-cat` meter on
    that sink. Bluetooth chip: `pkg:bluez` (system dbus + bluetoothd)
-   gen 41; Apple BCM20702 `hci0` (`05ac:828d`) after insmod of 7.3
-   `btusb`/`bluetooth`. Adapter powered (`bluetoothctl show`). Shell
-   hides the glyph with no adapter; it should be on the bar now.
-   Modules are in `/lib/modules/7.3.0-rc1` this boot; next
-   `cargo make esp` puts them in the initrd. **scp / sftp** as `home@canto` (dropbear
+   gen 41; Apple BCM20702 `hci0` (`05ac:828d`) powered
+   (`bluetoothctl show`). zbus talks
+   `/var/run/dbus/system_bus_socket` (symlink to `/run/dbus/…`);
+   agent registered. Glyph is a 14px lucide rune **left of the
+   volume spectrum**. Modules are live this boot; ESP initrd now
+   packs `btusb`/`bluetooth` (reboot to persist). **scp / sftp** as `home@canto` (dropbear
    `sftp-server` + `scp`; guest `/bin/ssh` is musl OpenSSH; busybox `/bin/vi`). **sola-kvm client** on
    canto (`/bin/sola-kvm listen`, UDP 4242); novus peer is canto
    10.0.0.3 1920×1080 (Mac 10.0.0.133 unconfigured from this desk).
@@ -96,30 +97,34 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: a `.pc` for
    alsa, or confirm Super+Q reaps `ubuntu12_32/steam`. Do not
    resurrect the canto gamescope nest.
-   `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
-   on the next image.
+   `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` also
+   mkdirs `/run/dbus` and `/var/run/dbus` (next reboot).
    **T38** firmware boots on canto ESP: last five archives + current.
    `oath-efi` menu (metal timeout 5, QEMU EFI 0). PID 1 honors
    `oath.subvol=@` / `@boot-N` / `@gen-N`. Ubuntu mainline 7.3-rc1
    **panicked** on canto (PID 1 died after dhcp). Kernel lock amended:
    vanilla kernel.org **7.3.0-rc1** compiled on the desk
    (`image/build-linux.sh`, nice 10, `-j16`; `joshua@novus`, gcc 14.3).
-   ESP **Oath** default is 7.3 DPM timings + RunningOnAC (`subvol=@`).
-   **Oath boot 4** is the 6.12 rescue. **boot 7** is previous 7.3 DPM #2.
-   **boot 6** is 7.3 DC_SI #2 (pre-DPM-patch). **boot 1** pruned this
-   rotate. systemd-boot stays `BOOTX64` so the 5 s list is visible
-   (oath-efi logo still hides the picker). Live process is **7.3.0-rc1
-   #3** + GPIO_DC-skip `amdgpu`. `force high` is **850/1270 MHz**
+   ESP **Oath** default is 7.3 DPM + BT modules + unix_floor dbus
+   dirs (`subvol=@`). Last-5: **boot 11** (previous live), 10, 9, 8, 7.
+   **boot 4** (6.12 rescue) pruned this rotate. systemd-boot stays
+   `BOOTX64` so the 5 s list is visible (oath-efi logo still hides
+   the picker). Live process is still **7.3.0-rc1 #3** until reboot.
+   `force high` is **850/1270 MHz**
    (level 3 of 4). VBIOS `HARDWAREDC` was floating the DC GPIO so the
    SMC clamped to 300/150 and `SetForcedLevels` returned 0xff. `pkg:mesa` live is Debian **26.2.1**
    plus **libdrm 2.4.134** and **32-bit libgbm**. card1 DP-10 is up.
    Small SI DPM patches live under `image/linux-patches` (vanilla
    tarball + fragment + patches; not a linux.git fork). **`cargo make
-   boot` must pack Pitcairn firmware** (`build/linux/firmware` or
-   `OATH_FIRMWARE`); the first DPM initrd omitted it and both GPUs
-   `Fatal error during GPU init` (`pitcairn_mc.bin` missing). Live
-   recovery: copy firmware + `insmod`. ESP initrd now includes the
-   blobs. DPM: skip `GPIO_DC` when `ac_power`; `force high` **850/1270**.
+   boot` on the desk:** `OATH_KERNEL` / `OATH_MODULES` /
+   `OATH_FIRMWARE` / `OATH_BUSYBOX`; musl linker is rustup `rust-lld`
+   (zig cc duplicates musl crt). NixOS has no `/bin/true` — `tools.rs`
+   uses `true` on PATH. **Do not** `cargo make esp --esp /dev/sda1` on
+   novus (that is novus’s disk). Pack on novus, rotate the ESP **on
+   canto**. Must pack Pitcairn firmware (`build/linux/firmware` or
+   `OATH_FIRMWARE`); a DPM initrd without `pitcairn_mc.bin` kills both
+   GPUs. ESP initrd includes the blobs + `btusb`. DPM: skip `GPIO_DC`
+   when `ac_power`; `force high` **850/1270**.
    `gpu_busy_percent` is ENOTSUP. Session Xwayland is `-glamor off` (no
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.
    Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.

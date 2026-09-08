@@ -41,13 +41,15 @@ On canto, `svc:pipewire` / `wireplumber` / `pipewire-pulse` are catalog
 objects (gen 40) and run as `home`. Default sink is **Built-in Audio**.
 The live PID 1 ELF predates `pipewire` in the seat list, so desired
 exec is `/bin/env sola-audio=1 /bin/…` — a no-op env var whose name
-contains `sola-`, which is how that init decides to drop uid 1. Next
-`cargo make esp` packs an init that knows those names; the extra env
-is then harmless.
+contains `sola-`, which is how that init decides to drop uid 1. The
+ESP initrd now packs that init; after reboot the extra env is
+harmless.
 
 System D-Bus + BlueZ are `pkg:bluez` (`svc:dbus`, `svc:bluetoothd`).
 The menubar Bluetooth chip appears when `org.bluez` has an adapter
-(`hci0`). Session bus / MPRIS stay out. HDMI heads exist as ALSA
+(`hci0`). sola-shell’s zbus client uses
+`/var/run/dbus/system_bus_socket` (symlink to `/run/dbus/…`).
+Session bus / MPRIS stay out. HDMI heads exist as ALSA
 cards but are not udev-enumerated.
 
 **Quit Sola** (flower menu) broadcasts shutdown and the session processes

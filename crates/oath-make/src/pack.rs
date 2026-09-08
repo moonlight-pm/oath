@@ -85,6 +85,8 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/net/bluetooth/rfcomm/rfcomm.ko.xz",
     "kernel/net/bluetooth/hidp/hidp.ko.xz",
     "kernel/drivers/bluetooth/btbcm.ko.xz",
+    "kernel/drivers/bluetooth/btrtl.ko.xz",
+    "kernel/drivers/bluetooth/btintel.ko.xz",
     "kernel/drivers/bluetooth/btusb.ko.xz",
     // T33: NFS client for off-box btrfs send. Deps (sunrpc, lockd, netfs, …)
     // come from modules.dep.
@@ -300,10 +302,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
             m.insert("CC".into(), "/bin/cc".into());
             m.insert("CXX".into(), "/bin/c++".into());
             m.insert("AR".into(), "/bin/ar".into());
-            m.insert(
-                "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER".into(),
-                "/bin/musl-cc".into(),
-            );
+            m.insert("CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER".into(), "/bin/musl-cc".into());
             m.insert("CMAKE_GENERATOR".into(), "Ninja".into());
             m
         }),
@@ -414,23 +413,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     let patchelf = oath_root.join("store/pkg/cc/libexec/patchelf");
     pack_script_pkg(root, out, &oath_root, "pack-pkg-config.sh", "pkg-config", &[])?;
     link_pkg(&oath_root, &guest_bin, "pkg-config", true)?;
-    pack_script_pkg(
-        root,
-        out,
-        &oath_root,
-        "pack-cmake.sh",
-        "cmake",
-        &[("PATCHELF", &patchelf)],
-    )?;
+    pack_script_pkg(root, out, &oath_root, "pack-cmake.sh", "cmake", &[("PATCHELF", &patchelf)])?;
     link_pkg(&oath_root, &guest_bin, "cmake", true)?;
-    pack_script_pkg(
-        root,
-        out,
-        &oath_root,
-        "pack-rustc.sh",
-        "rustc",
-        &[("PATCHELF", &patchelf)],
-    )?;
+    pack_script_pkg(root, out, &oath_root, "pack-rustc.sh", "rustc", &[("PATCHELF", &patchelf)])?;
     link_pkg(&oath_root, &guest_bin, "rustc", true)?;
     pack_script_pkg(root, out, &oath_root, "pack-bash.sh", "bash", &[])?;
     link_pkg(&oath_root, &guest_bin, "bash", true)?;
@@ -788,12 +773,7 @@ fn zstd_bin() -> PathBuf {
 
 fn find_module(kdir: &Path, rel: &str) -> Option<PathBuf> {
     let rel = ko_path(rel);
-    for cand in [
-        rel.clone(),
-        format!("{rel}.xz"),
-        format!("{rel}.zst"),
-        format!("{rel}.gz"),
-    ] {
+    for cand in [rel.clone(), format!("{rel}.xz"), format!("{rel}.zst"), format!("{rel}.gz")] {
         let p = kdir.join(&cand);
         if p.is_file() {
             return Some(p);
@@ -805,11 +785,7 @@ fn find_module(kdir: &Path, rel: &str) -> Option<PathBuf> {
 fn decompress_module(src: &Path) -> Result<Vec<u8>> {
     let name = src.file_name().and_then(|s| s.to_str()).unwrap_or("");
     if name.ends_with(".zst") {
-        let out = Command::new(zstd_bin())
-            .args(["-d", "-c"])
-            .arg(src)
-            .output()
-            .context("zstd")?;
+        let out = Command::new(zstd_bin()).args(["-d", "-c"]).arg(src).output().context("zstd")?;
         if !out.status.success() {
             bail!("zstd -d {} failed", src.display());
         }
@@ -1284,9 +1260,7 @@ fn pack_script_pkg(
     let dest = out.join(format!("{name}-pack"));
     eprintln!(">> pack {name}");
     let mut cmd = Command::new("sh");
-    cmd.arg(root.join("image").join(script))
-        .arg(&dest)
-        .env("OATH_FETCH", out.join("fetch"));
+    cmd.arg(root.join("image").join(script)).arg(&dest).env("OATH_FETCH", out.join("fetch"));
     for (k, v) in extra {
         cmd.env(*k, v);
     }

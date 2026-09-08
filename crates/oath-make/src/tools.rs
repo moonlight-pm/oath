@@ -136,11 +136,15 @@ pub fn load(root: &Path) -> Result<Tools> {
         }
     }
 
-    // `cargo make esp` on metal has no qemu. Probe/run still need the real bins.
+    // `cargo make boot` / `esp` have no qemu. NixOS has no `/bin/true`;
+    // `true` lives on PATH (`/run/current-system/sw/bin/true`). Probe/run
+    // still need the real bins.
     let qemu = which("qemu-system-x86_64")
         .or_else(|| std::env::var_os("QEMU").map(PathBuf::from))
+        .or_else(|| which("true"))
         .unwrap_or_else(|| PathBuf::from("/bin/true"));
-    let qemu_img = which("qemu-img").unwrap_or_else(|| PathBuf::from("/bin/true"));
+    let qemu_img =
+        which("qemu-img").or_else(|| which("true")).unwrap_or_else(|| PathBuf::from("/bin/true"));
 
     let kernel = kernel.context("OATH_KERNEL")?;
     let modules = modules.context("OATH_MODULES")?;
@@ -202,7 +206,11 @@ pub fn load(root: &Path) -> Result<Tools> {
         let p = tools_dir.as_ref()?.join(name);
         p.is_dir().then_some(p)
     };
-    let _ = fs::metadata(&qemu)?;
+    if qemu.is_file() {
+        let _ = fs::metadata(&qemu).with_context(|| format!("qemu {}", qemu.display()))?;
+    } else if qemu.file_name().and_then(|n| n.to_str()) != Some("true") {
+        bail!("qemu not a file: {}", qemu.display());
+    }
     Ok(Tools {
         kernel,
         modules,
@@ -224,9 +232,7 @@ pub fn load(root: &Path) -> Result<Tools> {
         ovmf_code: opt_file("OVMF_CODE.fd"),
         ovmf_vars: opt_file("OVMF_VARS.fd"),
         firmware: opt_dir("firmware")
-            .or_else(|| {
-                std::env::var_os("OATH_FIRMWARE").map(PathBuf::from).filter(|p| p.is_dir())
-            })
+            .or_else(|| std::env::var_os("OATH_FIRMWARE").map(PathBuf::from).filter(|p| p.is_dir()))
             .or_else(|| {
                 let p = PathBuf::from("/lib/firmware");
                 p.is_dir().then_some(p)
@@ -249,12 +255,10 @@ pub fn load(root: &Path) -> Result<Tools> {
         libpulse: opt_dir("libpulseaudio").or_else(|| {
             std::env::var_os("OATH_LIBPULSEAUDIO").map(PathBuf::from).filter(|p| p.is_dir())
         }),
-        dbus: opt_dir("dbus").or_else(|| {
-            std::env::var_os("OATH_DBUS").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
-        bluez: opt_dir("bluez").or_else(|| {
-            std::env::var_os("OATH_BLUEZ").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
+        dbus: opt_dir("dbus")
+            .or_else(|| std::env::var_os("OATH_DBUS").map(PathBuf::from).filter(|p| p.is_dir())),
+        bluez: opt_dir("bluez")
+            .or_else(|| std::env::var_os("OATH_BLUEZ").map(PathBuf::from).filter(|p| p.is_dir())),
         qemu,
         qemu_img,
     })

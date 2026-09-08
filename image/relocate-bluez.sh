@@ -174,13 +174,15 @@ fi
 cat >"$out/bin/dbus-daemon" <<'WRAP'
 #!/bin/sh
 root=/oath/store/pkg/bluez
-mkdir -p /run/dbus /var/lib/dbus /etc
+mkdir -p /run/dbus /var/run/dbus /var/lib/dbus /etc
 if [ ! -s /etc/machine-id ]; then
 	if [ -x "$root/libexec/dbus-uuidgen" ]; then
 		"$root/libexec/dbus-uuidgen" --ensure=/etc/machine-id 2>/dev/null || \
 			"$root/libexec/dbus-uuidgen" > /etc/machine-id
 	fi
 fi
+# zbus (sola-shell) defaults to /var/run/dbus; libdbus often uses /run/dbus.
+ln -sfn /run/dbus/system_bus_socket /var/run/dbus/system_bus_socket 2>/dev/null || true
 exec "$root/libexec/dbus-daemon" \
 	--config-file="$root/share/dbus-1/system.conf" \
 	--nofork --nopidfile "$@"

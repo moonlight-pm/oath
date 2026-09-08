@@ -62,7 +62,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        ALSA PCH analog pinned as Built-in Audio (no udevd
                        card enum). Canto cards: Intel HDA PCH + two HDMI.
     bluez              pkg:bluez; svc:dbus (system bus) + svc:bluetoothd;
-                       canto Apple BCM20702 `hci0` (`05ac:828d`)
+                       `/run/dbus/system_bus_socket` + zbus
+                       `/var/run/dbus/…` symlink; canto Apple BCM20702
+                       `hci0` (`05ac:828d`); initrd packs btusb
     sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)

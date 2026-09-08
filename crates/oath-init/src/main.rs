@@ -88,6 +88,17 @@ const MODULES: &[&str] = &[
     "kernel/sound/pci/hda/snd-hda-codec-generic.ko",
     "kernel/sound/usb/snd-usb-audio.ko",
     "kernel/sound/virtio/virtio_snd.ko",
+    "kernel/net/rfkill/rfkill.ko",
+    "kernel/crypto/kpp.ko",
+    "kernel/crypto/ecc.ko",
+    "kernel/crypto/ecdh_generic.ko",
+    "kernel/net/bluetooth/bluetooth.ko",
+    "kernel/drivers/bluetooth/btbcm.ko",
+    "kernel/drivers/bluetooth/btrtl.ko",
+    "kernel/drivers/bluetooth/btintel.ko",
+    "kernel/drivers/bluetooth/btusb.ko",
+    "kernel/net/bluetooth/rfcomm/rfcomm.ko",
+    "kernel/net/bluetooth/hidp/hidp.ko",
     "kernel/net/sunrpc/sunrpc.ko",
     "kernel/fs/nfs_common/grace.ko",
     "kernel/fs/netfs/netfs.ko",
@@ -709,7 +720,9 @@ fn unix_floor() {
     let xdg = format!("/run/user/{}", oath_core::seat::UID);
     let _ = fs::create_dir_all(&xdg);
     let _ = fs::set_permissions(&xdg, std::fs::Permissions::from_mode(0o700));
-    // glib/dbus look here; we do not ship dbus-daemon.
+    // glib/dbus look here. zbus defaults to /var/run/dbus/system_bus_socket.
+    let _ = fs::create_dir_all("/run/dbus");
+    let _ = fs::create_dir_all("/var/run/dbus");
     if !Path::new("/etc/machine-id").is_file() {
         let _ = fs::create_dir_all("/etc");
         let _ = fs::write("/etc/machine-id", "00000000000000000000000000000001\n");
