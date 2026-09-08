@@ -1408,7 +1408,10 @@ if [ -z "${WAYLAND_DISPLAY-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/1}/wayland
 	export WAYLAND_DISPLAY=wayland-1
 fi
 # Session X11: River +xwayland (rootless). Do not nest gamescope.
-if [ -z "${DISPLAY-}" ] && [ -S /tmp/.X11-unix/X0 ]; then
+# Arcade Play starts steam under gamescope with a nested DISPLAY (:1).
+# Do not steal that onto session :0.
+if [ -z "${DISPLAY-}" ] && [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] &&
+    [ -S /tmp/.X11-unix/X0 ]; then
 	export DISPLAY=:0
 fi
 if [ -n "${DISPLAY-}" ]; then
