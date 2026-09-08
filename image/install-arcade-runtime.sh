@@ -1032,6 +1032,20 @@ if [ -x "$zig_cc" ] && [ -f "$here/oath-lsof.c" ]; then
 		chmod 755 "$stagedir/steam/libexec/oath-lsof"
 	fi
 fi
+if [ -x "$zig_cc" ] && [ -f "$here/oath-gs-fit.c" ]; then
+	xcb_h=$(ls /nix/store/*-libxcb-*-dev/include/xcb/xcb.h 2>/dev/null | head -1)
+	xcb_lib=$(ls -d /nix/store/*-libxcb-1.*/lib 2>/dev/null | head -1)
+	if [ -n "$xcb_h" ] && [ -n "$xcb_lib" ]; then
+		"$zig_cc" cc -target x86_64-linux-gnu -O2 \
+			-I"$(dirname "$(dirname "$xcb_h")")" \
+			-L"$xcb_lib" \
+			-Wl,-rpath,/oath/store/pkg/xwayland/lib:/oath/store/pkg/glibc/lib \
+			-o "$stagedir/steam/libexec/oath-gs-fit" \
+			"$here/oath-gs-fit.c" -lxcb || \
+			echo "warn: oath-gs-fit not built" >&2
+		chmod 755 "$stagedir/steam/libexec/oath-gs-fit" 2>/dev/null || true
+	fi
+fi
 cat >"$stagedir/steam/libexec/steam-compat.sh" <<'COMPAT'
 # sourced by /bin/steam. Host nodes + 32-bit SONAMEs + library path.
 # Do not put pkg:sola/lib (64-bit libGL) on LD_LIBRARY_PATH: steamui.so is
@@ -1097,6 +1111,21 @@ if [ -n "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
 			i=$((i + 1))
 		done
 	) >/tmp/oath-gamescope-convar.log 2>&1 &
+	# sola-arcade Fit: nested X atoms, not gamescope CLI
+	# --force-windows-fullscreen (that aborted wayland). Resize
+	# BPM/SDL to the nest so hit-test matches pixels.
+	(
+		fit=/oath/store/pkg/steam/libexec/oath-gs-fit
+		[ -x "$fit" ] || exit 0
+		export DISPLAY="${DISPLAY:-:0}"
+		unset LD_PRELOAD
+		i=0
+		while [ "$i" -lt 16 ]; do
+			sleep 3
+			"$fit" 1920 1080
+			i=$((i + 1))
+		done
+	) >/tmp/oath-gs-fit.log 2>&1 &
 fi
 sudo -n ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 2>/dev/null || true
 # Do not stub pkg:glibc libresolv → libc (tmux __b64_pton; rpath glibc first).
