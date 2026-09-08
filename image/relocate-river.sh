@@ -208,6 +208,8 @@ export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
 export XCURSOR_THEME=McMojave
 unset WAYLAND_DISPLAY
 unset DISPLAY
+# wlroots bakes a nix store Xwayland path; guest binary is /bin/Xwayland.
+export WLR_XWAYLAND=/bin/Xwayland
 exec /oath/store/pkg/river/libexec/river -log-level info -c : >>/oath/log/river.log 2>&1
 WRAP
 chmod +x "$out/river/bin/river"

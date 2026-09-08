@@ -1407,40 +1407,9 @@ export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 if [ -z "${WAYLAND_DISPLAY-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/1}/wayland-1" ]; then
 	export WAYLAND_DISPLAY=wayland-1
 fi
-# Nest is gamescope as a Wayland client (T37). Never host -f. Rootful
-# Xwayland :2 was a workaround while gamescope Vulkan was still
-# failing on SI; the nest window is in (RADV PITCAIRN + libdecor-oath).
-if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -x /bin/gamescope ]; then
-	nest=0
-	case "${DISPLAY-}" in
-	""|:2|:2.*) nest=1 ;;
-	esac
-	if [ "$nest" = 1 ]; then
-		sudo -n mkdir -p /tmp/.X11-unix /usr/share/X11 /usr/bin 2>/dev/null || true
-		sudo -n chmod 1777 /tmp/.X11-unix 2>/dev/null || true
-		sudo -n ln -sfn /oath/store/pkg/river/share/X11/xkb /usr/share/X11/xkb 2>/dev/null || true
-		if [ -x /oath/store/pkg/xwayland/libexec/xkbcomp ]; then
-			sudo -n ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /usr/bin/xkbcomp 2>/dev/null || true
-		fi
-		unset DISPLAY
-		# Do not pass -b (borderless): that skips libdecor and
-		# commits xdg geometry 0x0, which segfaults gamescope on
-		# this River. libdecor-oath reports 1px borders instead.
-		# Do not pass --force-windows-fullscreen: Steam's offscreen
-		# CEF browser is created at INT_MIN with size 0x0, and
-		# stretching that buffer to 1920x1080 is GPU garbage
-		# (static) on RADV SI before steamui dies.
-		# Nested virtual monitor is 1080p. Keep --steam: without it
-		# desktop CEF resizes 700x440→1280x800 and gamescope hits
-		# xdg_surface never configured (strobe then die). Overlay
-		# dual-paint is the remaining flash on this path.
-		exec /bin/gamescope --backend wayland -S fit \
-			-W 1920 -H 1080 -w 1920 -h 1080 \
-			--cursor-scale-height 1080 \
-			--disable-color-management \
-			--steam \
-			-- "$0" "$@"
-	fi
+# Session X11: River +xwayland (rootless). Do not nest gamescope.
+if [ -z "${DISPLAY-}" ] && [ -S /tmp/.X11-unix/X0 ]; then
+	export DISPLAY=:0
 fi
 if [ -n "${DISPLAY-}" ]; then
 	export XDG_SESSION_TYPE=x11

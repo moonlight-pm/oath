@@ -28,7 +28,7 @@ let
   });
   riverPkg = (river.override {
     wlroots_0_20 = wlroots;
-    xwaylandSupport = false;
+    xwaylandSupport = true;
   }).overrideAttrs (_old: {
     src = lib.cleanSource riverSrc;
   });
