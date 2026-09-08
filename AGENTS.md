@@ -164,6 +164,18 @@ and `dev` exist; do not add other kinds unless CURRENT says so.
 Sola/River work uses existing `pkg` + `svc`. glibc is `pkg:glibc`,
 not a new kind.
 
+## Driver patches are first-class
+
+When the bug is a **generation gap** (no DRM modifiers, SI DPM, GET tiling
+lies), **patch the driver first**: Mesa RADV/radeonsi in
+`image/mesa-patches/`, amdgpu in `image/linux-patches/`. Gate on
+`gfx_level` / chip family so one `pkg:mesa` / one kernel still ships
+everywhere. Vulkan layers, X11 property fakes, and CPU detile are for
+**proving the hop**, not the product fix.
+
+T37 lesson: days of gamescope-pool GET/SET/CEF clamps did not change the
+nest picture. One RADV “export LINEAR_ALIGNED on GFX6-8” patch did.
+
 ## Workflow
 
 - Living progress: `CURRENT.md`. Specs/plans under `docs/` when a phase or

@@ -910,11 +910,8 @@ static VkResult VKAPI_CALL hook_QueueSubmit(VkQueue queue, uint32_t count, const
 	if (!next_queue_submit)
 		return VK_ERROR_INITIALIZATION_FAILED;
 	r = next_queue_submit(queue, count, info, fence);
-	if (r != VK_SUCCESS || blit_busy || !blit_ready || !the_device || queue != blit_queue)
-		return r;
-	blit_busy = 1;
-	blit_all_twins(the_device);
-	blit_busy = 0;
+	/* RADV SI linear-export is the present path. A GPU blit+wait
+	 * per submit was ~1 fps. */
 	return r;
 }
 

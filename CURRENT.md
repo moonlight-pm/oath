@@ -110,7 +110,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: relaunch Steam (RADV SI linear-export in pkg:mesa). Arcade
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: nest paints (~1 fps). Drop pool-layer submit stall (live); then narrow RADV linear to export-only (not all TRANSFER_SRC); then CEF GPU vs --disable-gpu. Arcade
    Play (library empty). Or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
