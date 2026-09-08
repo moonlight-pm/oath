@@ -39,9 +39,11 @@ converges `pkg:*` links and `svc:*`. It does **not** replace `/oath/run`
 (T38): `oath-efi` lists current plus the last five archived
 kernel+initrd pairs. Timeout 5 s on metal (0 on QEMU EFI). Up/Down/Enter.
 An archive boots `oath.subvol=@boot-N` (matching userspace snapshot).
-Write a new slot with `cargo make esp --esp /dev/sda1 --confirm` (does
-not format the disk). QEMU `run`/`probe` still boot `-kernel` and have
-no menu.
+Write a new slot with `cargo make esp --esp /dev/sda1 --confirm` on
+the machine that owns that ESP (does not format the disk). Packing
+on the desk and rotating on canto is the metal path — never point
+`--esp` at the build host’s disk by accident. QEMU `run`/`probe`
+still boot `-kernel` and have no menu.
 
 Off-box copy is `svc:backup` (T33): one NFS file, overwritten, not a
 second undo. Daily at 04:00 US Mountain. Snapshot is crash-consistent

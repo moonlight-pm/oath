@@ -28,17 +28,20 @@ What it does:
 Later kernel/initrd/efi updates (no wipe):
 
 ```sh
-cargo make build
+cargo make boot
 cargo make esp --esp /dev/sda1 --confirm --root /dev/sda2
 ```
 
-That archives the live ESP kernel as `oath/boot/<id>/`, keeps five
-archives, snapshots `@` to `@boot-<id>`, and copies the new bits.
-Reboot; the firmware menu can pick the archive if the new kernel
-fails. Metal without Nix: set `OATH_KERNEL`, `OATH_MODULES`,
-`OATH_BUSYBOX`, and `OATH_FIRMWARE` (Pitcairn `amdgpu/*.bin` must be
-in the initrd; see `image/build-linux.sh`). SI DPM patches apply from
-`image/linux-patches` when compiling.
+`--esp` is the VFAT node **on the machine you run the command on**.
+Do not pass the build host’s `/dev/sda1` when the ESP lives on
+canto — pack on the desk (`cargo make boot` with `OATH_KERNEL` /
+`OATH_MODULES` / `OATH_FIRMWARE` / `OATH_BUSYBOX`), copy
+`vmlinuz` + `initrd.gz` to canto, rotate there. That archives the
+live ESP kernel as `oath/boot/<id>/`, keeps five archives, snapshots
+`@` to `@boot-<id>`, and copies the new bits. Reboot; the firmware
+menu can pick the archive if the new kernel fails. Pitcairn
+`amdgpu/*.bin` must be in the initrd (`image/build-linux.sh`). SI
+DPM patches apply from `image/linux-patches` when compiling.
 4. Set `host:local` hostname, `net:net0` dhcp, owner SSH pubkeys.
 5. Reboot. Courage is **SSH as `home`** with those keys, then
    `oath ls`. (`sudo` has no password.)

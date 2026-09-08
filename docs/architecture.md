@@ -153,9 +153,10 @@ is still `-kernel`. Metal `oath-efi` reads `loader/loader.conf` +
 `loader/oath-boots` (timeout 5) and `loader/entries/oath.conf` plus
 `oath-<id>.conf` archives under `/oath/boot/<id>/`. `oath.subvol=@`
 or `@boot-N`. `cargo make esp --esp --confirm` rotates without a wipe.
-Canto live kernel is vanilla **7.3.0-rc1** (`image/linux.fragment`).
-Boot 4 is the 6.12 rescue archive. systemd-boot is `BOOTX64`
-so the menu is visible. Ubuntu generic is not the product kernel.
+Canto live kernel is vanilla **7.3.0-rc1** (`image/linux.fragment`)
+until reboot into the ESP just written. Last-5 archives are boot
+11, 10, 9, 8, 7 (boot 4 / 6.12 rescue pruned). systemd-boot is
+`BOOTX64` so the menu is visible. Ubuntu generic is not the product kernel.
 Two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits

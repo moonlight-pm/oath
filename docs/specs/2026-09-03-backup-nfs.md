@@ -4,11 +4,11 @@
 **Dogfood:** canto 2026-09-04 last send generation 16 to
   `10.0.0.12:/mnt/alpha/backup/canto` (`canto.send` 2056610447 bytes,
   checksum match). `svc:backup` is `backup-daily` at 04:00 Mountain
-  (this boot). NFS modules insmod’d live this boot; T38 ESP initrd
-  packs nfs (after reboot).
+  (this boot). NFS modules insmod’d live this boot; the ESP just
+  written packs nfs (and btusb) — reboot to load them from initrd.
 **Gaps:**
-- live this boot still the pre-T38 PID 1; reboot to keep nfs.ko from
-  the T38 initrd
+- live this boot still the pre-rotate PID 1; reboot to keep nfs.ko
+  from the current ESP initrd
 - no restore-in-installer
 - QEMU image not rebuilt with this yet
 - local `@gen-N` reaping still out
