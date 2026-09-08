@@ -1741,28 +1741,8 @@ static VkResult VKAPI_CALL hook_GetMemoryFdKHR(VkDevice device, const VkMemoryGe
 	struct track_img *t;
 	if (!next_get_fd)
 		return VK_ERROR_INITIALIZATION_FAILED;
-	t = info ? track_find_memory(info->memory) : NULL;
-	if (t && t->w >= 256 && t->h >= 256 && blit_ready) {
-		VkMemoryGetFdInfoKHR fi;
-		if (ensure_twin(device, t) == 0 && blit_one(device, t) == 0 && t->twin_memory) {
-			fi = *info;
-			fi.memory = t->twin_memory;
-			r = next_get_fd(device, &fi, pFd);
-			if (r == VK_SUCCESS && pFd && *pFd >= 0) {
-				uint64_t linear = AMDGPU_TILING_ARRAY_LINEAR_ALIGNED;
-				int d = open_render_node();
-				if (d >= 0) {
-					gem_metadata(d, *pFd, AMDGPU_GEM_METADATA_OP_SET_METADATA, &linear);
-					close(d);
-				}
-				if (!meta_once) {
-					fprintf(stderr, "[gamescope-pool] export blit twin %ux%u fd\n", t->w, t->h);
-					meta_once = 1;
-				}
-				return r;
-			}
-		}
-	}
+	/* RADV SI linear-export is the present path. Do not blit+wait
+	 * on GetMemoryFdKHR (that was ~1 fps). */
 	r = next_get_fd(device, info, pFd);
 	if (r != VK_SUCCESS || !pFd || *pFd < 0)
 		return r;

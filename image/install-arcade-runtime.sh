@@ -319,6 +319,9 @@ export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
 # gamescope --steam also advertises HDR; SI is SDR.
 export gamescope_composite_force=true
 export gamescope_hdr_enabled=false
+# SI AUTO sits at 300/150 even with a 1080p nest (DPM sees River CRTC
+# idle-ish). Force high while gamescope is the desk.
+echo high | sudo -n tee /sys/class/drm/card1/device/power_dpm_force_performance_level >/dev/null 2>&1 || true
 export AMD_DEBUG="${AMD_DEBUG:+$AMD_DEBUG,}nodcc"
 export RADV_DEBUG="${RADV_DEBUG:+$RADV_DEBUG,}nodcc,nohiz"
 export R600_DEBUG="${R600_DEBUG:+$R600_DEBUG,}nodcc"
