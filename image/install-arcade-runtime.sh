@@ -1419,6 +1419,12 @@ if [ -n "${DISPLAY-}" ]; then
 	export SDL_VIDEODRIVER=x11
 	export GDK_BACKEND=x11
 	export QT_QPA_PLATFORM=xcb
+	# Session Steam: Sola close sends WM_DELETE; without this, Steam
+	# hides to a tray we do not have and ubuntu12_32/steam stays up.
+	# Nested Arcade Play is :1 — do not force-close that client.
+	case "${DISPLAY-}" in
+	:0|:0.*) export STEAM_FRAME_FORCE_CLOSE=1 ;;
+	esac
 	# Nested Xwayland: native xlib WSI. The FROG gamescope WSI layer
 	# is 64-bit only; leaving ENABLE_GAMESCOPE_WSI set hides surface
 	# extensions from 32-bit steamui. Pitcairn is SDR.
