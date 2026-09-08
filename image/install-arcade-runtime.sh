@@ -1125,7 +1125,7 @@ if [ -n "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
 		i=0
 		while [ "$i" -lt 16 ]; do
 			sleep 3
-			"$fit" 1920 1080
+			"$fit" 1280 800
 			i=$((i + 1))
 		done
 	) >/tmp/oath-gs-fit.log 2>&1 &
@@ -1351,8 +1351,8 @@ export VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-/oath/store/pkg/mesa/share/vulkan/i
 export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 unset LIBGL_ALWAYS_SOFTWARE
 unset LD_PRELOAD
-# Pitcairn RADV SI: CEF GPU process SIGBUS (exit 135) compositing the
-# 0x0 library browser. Software compositing is enough for Deck chrome.
+# Pitcairn RADV SI: CEF GPU used to SIGBUS on a 0x0 view. Software
+# CEF is ~1 fps for Deck chrome; try GPU now that the nest is real.
 export RADV_DEBUG="${RADV_DEBUG:-nodcc,nohiz}"
 _pre=
 if [ -f /oath/store/pkg/steam/lib64/liboath-dumpable.so ]; then
@@ -1368,10 +1368,7 @@ case " $* " in
 *\ --no-sandbox\ *) ;;
 *) set -- --no-sandbox "$@" ;;
 esac
-case " $* " in
-*\ --disable-gpu\ *) ;;
-*) set -- --disable-gpu --disable-gpu-compositing "$@" ;;
-esac
+# Do not force --disable-gpu. Software Skia is the 1 fps Deck UI.
 # steamui WebUITransport matches the websocket inode in
 # /proc/<webhelper-pid>/fd. CEF's network utility process owns the TCP
 # socket otherwise (Checked: 0/<pid> → reject → segfault).
@@ -1430,8 +1427,12 @@ if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -
 		# CEF browser is created at INT_MIN with size 0x0, and
 		# stretching that buffer to 1920x1080 is GPU garbage
 		# (static) on RADV SI before steamui dies.
+		# Nested size is Steam Deck native (1280x800). Output is
+		# the 1080p nest; -S fit scales including the pointer.
+		# Matching -w/-h to 1920 stretched a 1280 BPM layout
+		# (wrong highlights, pages flip). Do not Fit-poke 1920.
 		exec /bin/gamescope --backend wayland -S fit \
-			-W 1920 -H 1080 -w 1920 -h 1080 \
+			-W 1920 -H 1080 -w 1280 -h 800 \
 			--cursor-scale-height 1080 \
 			--disable-color-management \
 			--steam \
