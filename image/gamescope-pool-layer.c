@@ -22,6 +22,13 @@
  * export that fd. GBM map (Mesa GPU blit) is preferred; CPU addr
  * for 1D and for 2D with bank_w=bank_h=macro=1 (Pitcairn display
  * 32bpp tile[12]).
+ *
+ * After clearing WSI scanout, RADV often *does* allocate LINEAR
+ * (rowPitch=width*4, pitch not a macrotile multiple) while GET still
+ * reports ARRAY_2D_TILED_THIN1. CPU-detiling that as 2D with mtilea=4
+ * writes mostly OOB → a black nest, even though gamescope's xwm
+ * screenshot of the Deck UI is fine. Skip detile when Vulkan tiling
+ * is LINEAR or the pitch is not a macrotile multiple.
  */
 #include <stdint.h>
 #include <stddef.h>
@@ -313,6 +320,7 @@ struct track_img {
 	VkDeviceMemory memory;
 	uint32_t w, h, bpp;
 	uint32_t pitch;
+	uint32_t vk_tiling;
 	int in_use;
 };
 static struct track_img tracked[MAX_TRACK];
@@ -645,6 +653,7 @@ static VkResult VKAPI_CALL hook_CreateImage(VkDevice device, const VkImageCreate
 				t->h = use->extent.height;
 				t->bpp = 4;
 				t->pitch = use->extent.width * 4;
+				t->vk_tiling = use->tiling;
 			}
 		}
 		return r;
@@ -1358,13 +1367,44 @@ static VkResult VKAPI_CALL hook_GetMemoryFdKHR(VkDevice device, const VkMemoryGe
 		meta_once = 1;
 	}
 	if (array_mode > AMDGPU_TILING_ARRAY_LINEAR_ALIGNED && t && t->w && t->h) {
-		int linear_fd = detile_dmabuf(*pFd, t->w, t->h, t->pitch ? t->pitch : t->w * 4, tiling);
-		if (linear_fd >= 0) {
-			close(*pFd);
-			*pFd = linear_fd;
-		} else if (!detile_once) {
-			fprintf(stderr, "[gamescope-pool] detile failed errno=%d, presenting tiled fd\n", errno);
-			detile_once = 1;
+		uint32_t num_pipes = si_num_pipes((uint32_t)((tiling >> 4) & 0x1f));
+		uint32_t bank_w = 1u << (unsigned)((tiling >> 16) & 0x3);
+		uint32_t mtilea = 1u << (unsigned)((tiling >> 20) & 0x3);
+		uint32_t mtile_w = 8u * bank_w * num_pipes * mtilea;
+		uint32_t pitch_px = (t->pitch ? t->pitch : t->w * 4) / 4;
+		int skip = 0;
+
+		/* LINEAR vk image + 2D GET: scanout-clear worked; bits are
+		 * linear. CPU-detiling as 2D (esp. mtilea=4, pitch 1920)
+		 * is a black nest. Same if pitch is not a macrotile. */
+		if (t->vk_tiling == 0)
+			skip = 1;
+		if (mtile_w && pitch_px % mtile_w)
+			skip = 1;
+		if (skip) {
+			if (!detile_once) {
+				fprintf(stderr,
+					"[gamescope-pool] skip detile vk_tiling=%u pitch_px=%u mtile_w=%u (GET 2D on linear bits)\n",
+					t->vk_tiling, pitch_px, mtile_w);
+				detile_once = 1;
+			}
+			{
+				uint64_t linear = AMDGPU_TILING_ARRAY_LINEAR_ALIGNED;
+				int d = open_render_node();
+				if (d >= 0) {
+					gem_metadata(d, *pFd, AMDGPU_GEM_METADATA_OP_SET_METADATA, &linear);
+					close(d);
+				}
+			}
+		} else {
+			int linear_fd = detile_dmabuf(*pFd, t->w, t->h, t->pitch ? t->pitch : t->w * 4, tiling);
+			if (linear_fd >= 0) {
+				close(*pFd);
+				*pFd = linear_fd;
+			} else if (!detile_once) {
+				fprintf(stderr, "[gamescope-pool] detile failed errno=%d, presenting tiled fd\n", errno);
+				detile_once = 1;
+			}
 		}
 	}
 	return r;

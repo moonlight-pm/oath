@@ -110,8 +110,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: relaunch Steam
-   (viewport=0 shim live on canto; menubar is back). Arcade
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: relaunch Steam (pool layer skips CPU-detile when GET says 2D but Vulkan/pitch is linear — black nest; xwm screenshot was the Deck library). Arcade
    Play (library empty). Or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.

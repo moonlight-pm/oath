@@ -1272,6 +1272,12 @@ if [ -x /oath/store/pkg/steam/libexec/oath-lsof ]; then
 	sudo -n ln -sfn /usr/bin/lsof /bin/lsof 2>/dev/null || true
 	sudo -n ln -sfn /usr/bin/lsof /sbin/lsof 2>/dev/null || true
 	sudo -n ln -sfn /usr/bin/lsof /usr/sbin/lsof 2>/dev/null || true
+	# steam-runtime prepends amd64/usr/bin; that lsof cannot see CEF
+	# sockets (Checked: 0/<webhelper>). Shadow it with oath-lsof.
+	rt_lsof="${XDG_DATA_HOME:-$HOME/.local/share}/Steam/ubuntu12_32/steam-runtime/amd64/usr/bin/lsof"
+	if [ -e "$rt_lsof" ] && ! grep -q oath-lsof "$rt_lsof" 2>/dev/null; then
+		ln -sfn /usr/bin/lsof "$rt_lsof" 2>/dev/null || true
+	fi
 fi
 COMPAT
 chmod 644 "$stagedir/steam/libexec/steam-compat.sh"
