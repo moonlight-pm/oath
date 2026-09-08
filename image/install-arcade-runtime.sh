@@ -1430,13 +1430,15 @@ if [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] && [ -n "${WAYLAND_DISPLAY-}" ] && [ -
 		# CEF browser is created at INT_MIN with size 0x0, and
 		# stretching that buffer to 1920x1080 is GPU garbage
 		# (static) on RADV SI before steamui dies.
-		# Nested virtual monitor is 1080p. No --steam: that is the
-		# overlay protocol (BPM + SDL + 1x1 MainMenu all live →
-		# flash). Arcade --nested-steam is the same cut.
+		# Nested virtual monitor is 1080p. Keep --steam: without it
+		# desktop CEF resizes 700x440→1280x800 and gamescope hits
+		# xdg_surface never configured (strobe then die). Overlay
+		# dual-paint is the remaining flash on this path.
 		exec /bin/gamescope --backend wayland -S fit \
 			-W 1920 -H 1080 -w 1920 -h 1080 \
 			--cursor-scale-height 1080 \
 			--disable-color-management \
+			--steam \
 			-- "$0" "$@"
 	fi
 fi
@@ -1452,21 +1454,13 @@ if [ -n "${DISPLAY-}" ]; then
 	export ENABLE_HDR_WSI=0
 	export DXVK_HDR=0
 	if [ -n "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
-		# One nested X client. gamescope sets XDG_CURRENT_DESKTOP=
-		# gamescope, which forces gamepadui/BPM (second surface).
-		# Arcade --nested-steam: desktop identity, drop the
-		# overlay display. SDL dlmopen crash after login is fixed.
-		export XDG_CURRENT_DESKTOP=Sola
-		export XDG_SESSION_DESKTOP=Sola
-		unset GAMESCOPE_WAYLAND_DISPLAY
+		# Keep GAMESCOPE_WAYLAND_DISPLAY. Unsetting it + no --steam
+		# is Arcade nested-steam (titles); for /bin/steam library
+		# that path strobed then xdg-never-configured.
 		export STEAM_GAMESCOPE_HDR_SUPPORTED=0
 		export SteamDeck=0
 		export STEAM_USE_GAMEPADUI=0
 		export SteamTenfoot=0
-		case " $* " in
-		*" -nofriendsui "*) ;;
-		*) set -- -nofriendsui "$@" ;;
-		esac
 		sudo -n mkdir -p /usr/bin/steamos-polkit-helpers 2>/dev/null || true
 		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-polkit-helpers/steamos-devkit-mode \
 			/usr/bin/steamos-polkit-helpers/steamos-devkit-mode 2>/dev/null || true
