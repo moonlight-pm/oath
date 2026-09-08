@@ -1,0 +1,53 @@
+diff -ru a/src/amd/common/ac_surface.c b/src/amd/common/ac_surface.c
+--- a/src/amd/common/ac_surface.c	2026-09-07 21:24:14.096483709 -0600
++++ b/src/amd/common/ac_surface.c	2026-09-07 21:25:02.160171328 -0600
+@@ -4351,8 +4351,13 @@
+                                        unsigned num_layers, unsigned num_mipmap_levels,
+                                        uint64_t offset, unsigned pitch)
+ {
+-   if ((ac_surface_get_pitch_align(info, surf) - 1) & pitch)
+-      return false;
++   /* GFX6-8 implicit-modifier import: producer stride is often width*bpp,
++    * not macrotile-aligned. Rejecting it makes EGL import fail or sample
++    * linear (line-boxes on Pitcairn nests). */
++   if (pitch && ((ac_surface_get_pitch_align(info, surf) - 1) & pitch)) {
++      if (!(surf->flags & RADEON_SURF_IMPORTED) || info->gfx_level >= GFX9)
++         return false;
++   }
+ 
+    /* Require an equal pitch with metadata (DCC), mipmapping, non-linear layout (that could be
+     * relaxed), or when the chip is GFX10, which is the only generation that can't override
+@@ -4392,6 +4397,8 @@
+          surf->u.legacy.level[0].nblk_x = pitch;
+          surf->u.legacy.level[0].slice_size_dw =
+             ((uint64_t)pitch * surf->u.legacy.level[0].nblk_y * surf->bpe) / 4;
++         surf->surf_size = (uint64_t)surf->u.legacy.level[0].slice_size_dw * 4;
++         surf->total_size = surf->surf_size;
+       }
+ 
+       if (offset) {
+diff -ru a/src/gallium/drivers/radeonsi/si_texture.c b/src/gallium/drivers/radeonsi/si_texture.c
+--- a/src/gallium/drivers/radeonsi/si_texture.c	2026-09-07 21:24:14.098483738 -0600
++++ b/src/gallium/drivers/radeonsi/si_texture.c	2026-09-07 21:25:10.454289915 -0600
+@@ -20,6 +20,7 @@
+ #include "util/u_transfer.h"
+ 
+ #include <errno.h>
++#include <stdio.h>
+ #include <inttypes.h>
+ 
+ #include "amd/addrlib/inc/addrinterface.h"
+@@ -1843,6 +1844,13 @@
+    if (r)
+       return NULL;
+ 
++   if (sscreen->info.gfx_level < GFX9) {
++      fprintf(stderr,
++              "[radeonsi] import %ux%u modifier=0x%llx mode=%u stride=%u flags=0x%llx\n",
++              templ->width0, templ->height0, (unsigned long long)modifier,
++              (unsigned)metadata.mode, stride, (unsigned long long)surface.flags);
++   }
++
+    /* This is a hack to skip alignment checking for 3D textures */
+    if (templ->target == PIPE_TEXTURE_3D)
+       stride = 0;

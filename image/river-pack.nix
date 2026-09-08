@@ -15,6 +15,13 @@
 , wlrootsSrc
 }:
 let
+  # Pitcairn nest: radeonsi samples INVALID-modifier dmabufs using GEM
+  # tiling, but rejected width*bpp pitches that are not macrotile-aligned.
+  mesaSi = mesa.overrideAttrs (old: {
+    patches = (old.patches or []) ++ [
+      ./mesa-patches/0001-ac-surface-si-imported-implicit-pitch.patch
+    ];
+  });
   wlroots = wlroots_0_20.overrideAttrs (old: {
     src = lib.cleanSource wlrootsSrc;
   });
@@ -29,7 +36,7 @@ runCommand "oath-river-pack"
   {
     nativeBuildInputs = [ patchelf file bash ];
     RIVER = riverPkg;
-    MESA = mesa;
+    MESA = mesaSi;
     XKB = xkeyboard_config;
     LIBGLVND = libglvnd;
     SEATD = seatd.bin or seatd;
