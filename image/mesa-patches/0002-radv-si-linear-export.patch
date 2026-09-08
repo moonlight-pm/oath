@@ -1,12 +1,11 @@
---- a/src/amd/vulkan/radv_image.c	2026-09-07 22:01:40.390234360 -0600
-+++ b/src/amd/vulkan/radv_image.c	2026-09-07 22:01:50.317572497 -0600
-@@ -44,6 +44,19 @@
+--- a/src/amd/vulkan/radv_image.c	2026-09-07 23:47:22.301088833 -0600
++++ b/src/amd/vulkan/radv_image.c	2026-09-07 23:47:22.335089292 -0600
+@@ -44,6 +44,18 @@
        return RADEON_SURF_MODE_LINEAR_ALIGNED;
     }
  
-+   /* GFX6-8 have no DRM modifiers. Wayland compositors import these
-+    * dmabufs as linear. Keep WSI/exported images linear so the bytes
-+    * match. OPTIMAL+SCANOUT on SI is still 2D display tiling. */
++   /* GFX6-8: no DRM modifiers. WSI/dmabuf export must be linear so
++    * River samples the same layout. */
 +   if (pdev->info.gfx_level < GFX9 && pCreateInfo->samples <= 1 &&
 +       !vk_format_is_depth_or_stencil(format)) {
 +      const VkExternalMemoryImageCreateInfo *ext =
@@ -20,22 +19,28 @@
     if (pdev->info.vcn_ip_version < VCN_2_0_0 &&
         pCreateInfo->usage & (VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR |
                               VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR))
-@@ -727,6 +740,20 @@
+@@ -727,6 +739,26 @@
     if (image->vk.external_handle_types)
        flags |= RADEON_SURF_SHAREABLE;
  
-+   /* gamescope nest: OPTIMAL swapchain images with TRANSFER_SRC, no
-+    * EXTERNAL in pNext. Same SI handshake as WSI/export. */
++   /* gamescope nest often has no EXTERNAL in pNext. Linearize only
++    * images a compositor will sample (SAMPLED+TRANSFER_SRC), not
++    * blit temps (TRANSFER_SRC|DST only) — those stay tiled. */
 +   if (pdev->info.gfx_level < GFX9 && !is_depth && pCreateInfo->samples <= 1 &&
 +       pCreateInfo->imageType == VK_IMAGE_TYPE_2D &&
-+       pCreateInfo->extent.width >= 256 && pCreateInfo->extent.height >= 256 &&
-+       (image->vk.external_handle_types ||
-+        (pCreateInfo->usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT))) {
-+      flags = RADEON_SURF_CLR(flags, MODE);
-+      flags |= RADEON_SURF_SET(RADEON_SURF_MODE_LINEAR_ALIGNED, MODE);
-+      fprintf(stderr, "[radv] SI linear export %ux%u usage=0x%x handles=0x%x\n",
-+              pCreateInfo->extent.width, pCreateInfo->extent.height,
-+              pCreateInfo->usage, image->vk.external_handle_types);
++       pCreateInfo->extent.width >= 256 && pCreateInfo->extent.height >= 256) {
++      const struct wsi_image_create_info *wsi =
++         vk_find_struct_const(pCreateInfo->pNext, WSI_IMAGE_CREATE_INFO_MESA);
++      VkImageUsageFlags u = pCreateInfo->usage;
++      bool sampled_export = (u & VK_IMAGE_USAGE_SAMPLED_BIT) &&
++                            (u & VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
++      if (image->vk.external_handle_types || wsi || sampled_export) {
++         flags = RADEON_SURF_CLR(flags, MODE);
++         flags |= RADEON_SURF_SET(RADEON_SURF_MODE_LINEAR_ALIGNED, MODE);
++         fprintf(stderr, "[radv] SI linear export %ux%u usage=0x%x handles=0x%x\n",
++                 pCreateInfo->extent.width, pCreateInfo->extent.height, u,
++                 image->vk.external_handle_types);
++      }
 +   }
 +
     if (alignment && alignment->maximumRequestedAlignment && !(instance->debug_flags & RADV_DEBUG_FORCE_COMPRESS)) {
