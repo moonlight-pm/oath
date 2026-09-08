@@ -1459,9 +1459,12 @@ if [ -n "${DISPLAY-}" ]; then
 		# gamescope UpdateCompatEnvVars always sets HDR_SUPPORTED=1;
 		# Pitcairn is SDR and HDR pass-through looks like static.
 		export STEAM_GAMESCOPE_HDR_SUPPORTED=0
-		export SteamDeck=1
-		export STEAM_USE_GAMEPADUI=1
-		export SteamTenfoot=1
+		# Nested X is 1920x1080. SteamDeck=1 + -steamdeck makes BPM
+		# 1280x800 (Deck native) and hits miss inside a 1080 nest.
+		# gamescope --steam stays; chrome follows the virtual monitor.
+		export SteamDeck=0
+		export STEAM_USE_GAMEPADUI=0
+		export SteamTenfoot=0
 		sudo -n mkdir -p /usr/bin/steamos-polkit-helpers 2>/dev/null || true
 		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-polkit-helpers/steamos-devkit-mode \
 			/usr/bin/steamos-polkit-helpers/steamos-devkit-mode 2>/dev/null || true
@@ -1473,10 +1476,6 @@ if [ -n "${DISPLAY-}" ]; then
 			/usr/bin/lsb_release 2>/dev/null || true
 		sudo -n ln -sfn /oath/store/pkg/steam/libexec/timedatectl \
 			/usr/bin/timedatectl 2>/dev/null || true
-		case " $* " in
-		*" -gamepadui "*|*" -steamdeck "*) ;;
-		*) set -- -gamepadui -steamdeck "$@" ;;
-		esac
 	else
 		# Rootful leftover only. gamescope's nested X is already a WM.
 		if [ -x /oath/store/pkg/xwayland/libexec/xwayland-clip ]; then
