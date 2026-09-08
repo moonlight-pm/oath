@@ -21,8 +21,12 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pkg:grok` packed (`/bin/grok`, updater off). Guest `/bin/xdg-open`
    is `solactl open` so Grok login can raise sola-browser. `pkg:git` and
    `pkg:curl` packed. Menubar CPU/MEM/RX LED graphs paint (image
-   raster, not 1×1 canvas). Volume chip is up (`pkg:pipewire` +
-   ALSA HDA; Built-in Audio). **scp / sftp** as `home@canto` (dropbear
+   raster, not 1×1 canvas). Volume chip: PipeWire trio is catalog
+   `svc:*` (canto gen 40) as `home`; default sink **Built-in Audio**.
+   Live PID 1 predates `pipewire` in `is_seat_svc`, so exec is
+   `/bin/env sola-audio=1 /bin/pipewire` (the `sola-` token makes
+   spawn drop uid 1). sola-shell already has a `pw-cat` meter on
+   that sink. **scp / sftp** as `home@canto` (dropbear
    `sftp-server` + `scp`; guest `/bin/ssh` is musl OpenSSH; busybox `/bin/vi`). **sola-kvm client** on
    canto (`/bin/sola-kvm listen`, UDP 4242); novus peer is canto
    10.0.0.3 1920×1080 (Mac 10.0.0.133 unconfigured from this desk).
@@ -129,8 +133,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pidof river` is empty or the session is still up. Flower Restart Computer / Shut Down via
    `oath apply --confirm`; Super+Tab counts, notify pile, volume
    spectrum, rounded float CSD, browser omnibox/devtools.
-   `pkg:pipewire` is on canto this boot (PipeWire + WirePlumber +
-   pulse + ALSA PCH sink); HDMI not auto-enumerated; no dbus.
+   `pkg:pipewire` on canto: `svc:pipewire` / `wireplumber` /
+   `pipewire-pulse` applied gen 40 as `home` (Built-in Audio);
+   HDMI not auto-enumerated; no dbus.
 4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. **T35** toolchain live.
    **T30** `pkg:grok` packed. **T31** seat `home` locked (uid 1, SSH
@@ -220,8 +225,8 @@ Do not re-litigate without an explicit decision.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
   `svc:seatd`. Sola session: `svc:sola-bus` / `sola-call` / `river` /
   `shell` / `session` (as `home` when enabled). Audio: `svc:pipewire` /
-  `wireplumber` / `pipewire-pulse` as `home` (seeded; canto this boot
-  started them by hand until ESP initrd is rebuilt).
+  `wireplumber` / `pipewire-pulse` as `home` (canto gen 40; live PID 1
+  needs a `sola-` exec token to drop uid).
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
   is pixman River plus the Sola menubar (software GL, McMojave
   cursor), **1280×800 1:1** (`virtio-gpu-pci,xres/yres` + gtk

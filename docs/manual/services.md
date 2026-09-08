@@ -35,11 +35,13 @@ XDG_RUNTIME_DIR=/run/user/1 wpctl status
 XDG_RUNTIME_DIR=/run/user/1 pw-dump | head
 ```
 
-On canto **this boot**, PipeWire was started as `home` by hand
-(`XDG_RUNTIME_DIR=/run/user/1`) so the chip has a sink. The running
-PID 1 is still pre-T38 until reboot; the ESP initrd is T38 and seeds
-the three seat svcs. Reboot into that initrd to keep ALSA modules and
-the daemons without a hand start.
+On canto, `svc:pipewire` / `wireplumber` / `pipewire-pulse` are catalog
+objects (gen 40) and run as `home`. Default sink is **Built-in Audio**.
+The live PID 1 ELF predates `pipewire` in the seat list, so desired
+exec is `/bin/env sola-audio=1 /bin/…` — a no-op env var whose name
+contains `sola-`, which is how that init decides to drop uid 1. Next
+`cargo make esp` packs an init that knows those names; the extra env
+is then harmless.
 
 No dbus-daemon: MPRIS / BlueZ stay quiet. HDMI heads exist as ALSA
 cards but are not udev-enumerated.
