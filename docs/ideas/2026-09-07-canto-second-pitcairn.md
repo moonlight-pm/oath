@@ -1,8 +1,9 @@
 # Spare Pitcairn as a render device
 
 **Status:** idea (parked 2026-09-07). Not a freeze. Do not implement
-from this file.
-**Related:** T37 Steam nest; T38 7.3 GFX6 modifiers; canto dual
+from this file. T37 gamescope nest on SI is parked
+(`t37-gamescope-canto`); this idea stays parked with it.
+**Related:** T37 (parked nest); T38 7.3 GFX6 modifiers; canto dual
 `1002:6810`.
 
 ---
