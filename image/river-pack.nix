@@ -20,6 +20,7 @@ let
   mesaSi = mesa.overrideAttrs (old: {
     patches = (old.patches or []) ++ [
       ./mesa-patches/0001-ac-surface-si-imported-implicit-pitch.patch
+      ./mesa-patches/0002-radv-si-linear-export.patch
     ];
   });
   wlroots = wlroots_0_20.overrideAttrs (old: {

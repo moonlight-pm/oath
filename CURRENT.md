@@ -110,7 +110,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `libresolv`). A second sola-terminal process used to retract the
    first's new tabs (Sola-generic fix packed this boot). **T36** other
    kit names still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: relaunch Steam (River radeonsi patched to keep SI imported pitch). Arcade
+   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: relaunch Steam (RADV SI linear-export in pkg:mesa). Arcade
    Play (library empty). Or a `.pc` for alsa.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.

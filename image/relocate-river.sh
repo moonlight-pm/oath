@@ -64,6 +64,7 @@ if [[ -n ${MESA:-} ]]; then
   enqueue "$MESA/lib/libEGL_mesa.so.0" || true
   enqueue "$MESA/lib/gbm/dri_gbm.so" || true
   enqueue "$MESA/lib/libvulkan_virtio.so" || true
+  enqueue "$MESA/lib/libvulkan_radeon.so" || true
 fi
 if [[ -n ${LIBGLVND:-} ]]; then
   enqueue "$LIBGLVND/lib/libGLdispatch.so.0" || true
