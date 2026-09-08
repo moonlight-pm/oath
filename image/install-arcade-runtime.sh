@@ -1,7 +1,8 @@
 #!/bin/bash
-# Live-install pkg:xwayland, pkg:gamescope, pkg:mesa, pkg:steam and
-# sola-arcade on this Oath box. Ubuntu questing debs + Steam bootstrap
-# + Debian i386 libc + Debian mesa 26.2.1 GLX.
+# Live-install pkg:xwayland, pkg:mesa, pkg:steam (session X11 Steam).
+# pkg:gamescope and sola-arcade only when the connected GPU has Vulkan
+# WSI DRM format modifiers (not AMD GFX6–8 / virtio). Ubuntu questing
+# debs + Steam bootstrap + Debian i386 libc + Debian mesa 26.2.1 GLX.
 # Busybox dpkg-deb cannot unpack zstd debs; use /tmp/zstd from image/pack.
 set -euo pipefail
 
@@ -96,6 +97,59 @@ install_store() {
 	as_root cp -a "$src" "$store/$name"
 	as_root chmod -R u+rX "$store/$name"
 	write_obj "$name"
+}
+
+# Keep in sync with crates/oath-core/src/gpu.rs.
+# Vulkan WSI DRM modifiers: AMD GFX6–8 and virtio-gpu do not have them.
+oath_pci_drm_modifiers() {
+	local v d
+	v=$(printf '%04x' "0x${1#0x}" 2>/dev/null) || return 0
+	d=$(printf '%04x' "0x${2#0x}" 2>/dev/null) || return 0
+	v=$(printf '%s' "$v" | tr 'A-F' 'a-f')
+	d=$(printf '%s' "$d" | tr 'A-F' 'a-f')
+	case "$v" in
+	1af4) return 1 ;;
+	10de|8086) return 0 ;;
+	1002)
+		case "$d" in
+		130[4-9]|130[a-f]|131[0-9]|131[a-d]) return 1 ;;
+		66[0-7]?) return 1 ;;
+		678?|679?|68[0-3]?) return 1 ;;
+		67[a-f]?) return 1 ;;
+		69[0-4]?|698?|699?) return 1 ;;
+		730?) return 1 ;;
+		983?|985?|987[0-7]|98e4) return 1 ;;
+		*) return 0 ;;
+		esac
+		;;
+	*) return 0 ;;
+	esac
+}
+
+oath_gpu_drm_modifiers() {
+	local card name conn status vendor device any=0
+	for card in /sys/class/drm/card[0-9] /sys/class/drm/card[0-9][0-9]; do
+		[ -d "$card" ] || continue
+		name=$(basename "$card")
+		case "$name" in
+		card*[!0-9]*) continue ;;
+		esac
+		local connected=0
+		for conn in "$card"/"$name"-*; do
+			[ -f "$conn/status" ] || continue
+			status=$(cat "$conn/status" 2>/dev/null || true)
+			[ "$status" = connected ] && connected=1 && break
+		done
+		[ "$connected" = 1 ] || continue
+		any=1
+		vendor=$(cat "$card/device/vendor" 2>/dev/null || true)
+		device=$(cat "$card/device/device" 2>/dev/null || true)
+		if ! oath_pci_drm_modifiers "$vendor" "$device"; then
+			echo "gpu $vendor:$device on $name has no DRM modifiers" >&2
+			return 1
+		fi
+	done
+	[ "$any" = 1 ]
 }
 
 # --- zstd ---
@@ -254,28 +308,30 @@ relocate_bins() {
 }
 
 echo "==> pack gamescope"
-gs_src=$stagedir/debroot/usr/games
-if [ ! -f /tmp/gs/usr/games/gamescope ]; then
-	extract_deb "$fetchdir/gamescope_3.16.24+ds-2_amd64.deb" "$stagedir/debroot"
-fi
-# Prefer already-extracted /tmp/gs if present.
-gs_bin=${GAMESCOPE_BIN:-}
-if [ -x /tmp/gs/usr/games/gamescope ]; then
-	gs_bin=/tmp/gs/usr/games
-else
-	gs_bin=$stagedir/debroot/usr/games
-fi
-relocate_bins "$stagedir/gamescope" \
-	"$gs_bin/gamescope" "$gs_bin/gamescopectl" "$gs_bin/gamescopereaper"
-if [ -d /tmp/gs/usr/share/gamescope ]; then
-	cp -a /tmp/gs/usr/share/gamescope "$stagedir/gamescope/share/gamescope"
-elif [ -d "$stagedir/debroot/usr/share/gamescope" ]; then
-	cp -a "$stagedir/debroot/usr/share/gamescope" "$stagedir/gamescope/share/gamescope"
-fi
-if [ -d /tmp/gs/usr/lib/x86_64-linux-gnu/gamescope ]; then
-	cp -a /tmp/gs/usr/lib/x86_64-linux-gnu/gamescope/. "$stagedir/gamescope/lib/"
-fi
-cat >"$stagedir/gamescope/bin/gamescope" <<'WRAP'
+PACK_GAMESCOPE=0
+if oath_gpu_drm_modifiers; then
+	PACK_GAMESCOPE=1
+	gs_src=$stagedir/debroot/usr/games
+	if [ ! -f /tmp/gs/usr/games/gamescope ]; then
+		extract_deb "$fetchdir/gamescope_3.16.24+ds-2_amd64.deb" "$stagedir/debroot"
+	fi
+	gs_bin=${GAMESCOPE_BIN:-}
+	if [ -x /tmp/gs/usr/games/gamescope ]; then
+		gs_bin=/tmp/gs/usr/games
+	else
+		gs_bin=$stagedir/debroot/usr/games
+	fi
+	relocate_bins "$stagedir/gamescope" \
+		"$gs_bin/gamescope" "$gs_bin/gamescopectl" "$gs_bin/gamescopereaper"
+	if [ -d /tmp/gs/usr/share/gamescope ]; then
+		cp -a /tmp/gs/usr/share/gamescope "$stagedir/gamescope/share/gamescope"
+	elif [ -d "$stagedir/debroot/usr/share/gamescope" ]; then
+		cp -a "$stagedir/debroot/usr/share/gamescope" "$stagedir/gamescope/share/gamescope"
+	fi
+	if [ -d /tmp/gs/usr/lib/x86_64-linux-gnu/gamescope ]; then
+		cp -a /tmp/gs/usr/lib/x86_64-linux-gnu/gamescope/. "$stagedir/gamescope/lib/"
+	fi
+	cat >"$stagedir/gamescope/bin/gamescope" <<'WRAP'
 #!/bin/sh
 export PATH=/bin:/usr/bin:/oath/store/pkg/gamescope/libexec
 export HOME="${HOME:-/home}"
@@ -286,177 +342,80 @@ export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vend
 export VK_ICD_FILENAMES=/oath/store/pkg/mesa/share/vulkan/icd.d/radeon_icd.json
 export VK_DRIVER_FILES="$VK_ICD_FILENAMES"
 export DISABLE_LAYER_MESA_DEVICE_SELECT=1
-export NODEVICE_SELECT=1
-# Dual Pitcairn: spare GPU is renderD128. River is on the connected
-# card (card1 / renderD129). Nest from the spare imports as black.
-_gs_card=
-for _c in /sys/class/drm/card[0-9]; do
-	_name=$(basename "$_c")
-	for _conn in "$_c"/"$_name"-*; do
-		[ -f "$_conn/status" ] || continue
-		[ "$(cat "$_conn/status" 2>/dev/null)" = connected ] || continue
-		_gs_card=$_name
-		break
-	done
-	[ -n "$_gs_card" ] && break
-done
-if [ -n "$_gs_card" ]; then
-	export WLR_DRM_DEVICES=/dev/dri/$_gs_card
-	for _r in /sys/class/drm/$_gs_card/device/drm/renderD*; do
-		[ -e "$_r" ] || continue
-		export OATH_DRM_RENDER=/dev/dri/$(basename "$_r")
-		break
-	done
-fi
-# Ubuntu 3.16 pool is short for RADV YCbCr planes (SI vkAllocateDescriptorSets).
-export VK_LAYER_PATH=/oath/store/pkg/gamescope/share/vulkan/explicit_layer.d
-export VK_INSTANCE_LAYERS=VK_LAYER_OATH_gamescope_pool
 export LIBDECOR_PLUGIN_DIR=/oath/store/pkg/gamescope/lib/libdecor/plugins-1
 export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/sola/etc/fonts/fonts.conf}"
 export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/oath/store/pkg/sola/etc/fonts}"
-# Pitcairn has no DRM modifiers. Direct scan-out of client dmabufs to
-# River (radeonsi GLES) is GPU tiling garbage; force vulkan composite.
-# gamescope --steam also advertises HDR; SI is SDR.
-export gamescope_composite_force=true
-export gamescope_hdr_enabled=false
-# SI AUTO sits at 300/150 even with a 1080p nest (DPM sees River CRTC
-# idle-ish). Force high while gamescope is the desk.
-echo high | sudo -n tee /sys/class/drm/card1/device/power_dpm_force_performance_level >/dev/null 2>&1 || true
-export AMD_DEBUG="${AMD_DEBUG:+$AMD_DEBUG,}nodcc"
-export RADV_DEBUG="${RADV_DEBUG:+$RADV_DEBUG,}nodcc,nohiz"
-export R600_DEBUG="${R600_DEBUG:+$R600_DEBUG,}nodcc"
-# libmvec.so.1 is a real glibc object (GLIBC_2.22). Do not let a
-# libmvec→libm symlink win; that is "GLIBC_2.22 not found".
 unset LD_PRELOAD
 export LD_LIBRARY_PATH="/oath/store/pkg/mesa/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/xwayland/lib:/oath/store/pkg/pipewire/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
-# wlroots looks up /usr/bin/Xwayland; scripts live under /usr/share/gamescope.
 sudo -n mkdir -p /usr/bin /usr/share 2>/dev/null || true
 sudo -n ln -sfn /oath/store/pkg/xwayland/bin/Xwayland /usr/bin/Xwayland 2>/dev/null || true
 sudo -n ln -sfn /oath/store/pkg/gamescope/share/gamescope /usr/share/gamescope 2>/dev/null || true
-# River + libdecor-oath: -b skips CSD and commits xdg 0x0 (segfault).
-# Arcade still passes -b (Sola-generic NixOS path). Drop it here.
-_gs=
-for _a in "$@"; do
-	case "$_a" in
-	-b|--borderless) continue ;;
-	esac
-	_gs="${_gs:+$_gs }$_a"
-done
-# shellcheck disable=SC2086
-exec /oath/store/pkg/gamescope/libexec/gamescope $_gs
+exec /oath/store/pkg/gamescope/libexec/gamescope "$@"
 WRAP
-chmod 755 "$stagedir/gamescope/bin/gamescope"
+	chmod 755 "$stagedir/gamescope/bin/gamescope"
 
-echo "==> pack gamescope descriptor-pool layer"
-layer_src=$here/gamescope-pool-layer.c
-layer_obj=$stagedir/gamescope-pool-layer.o
-layer_so=$stagedir/gamescope/lib/libVkLayer_oath_gamescope_pool.so
-if [ ! -f "$layer_src" ]; then
-	echo "missing $layer_src" >&2
-	exit 1
-fi
-/bin/cc -c -fPIC -O2 -fno-sanitize=undefined -o "$layer_obj" "$layer_src"
-/oath/store/pkg/cc/libexec/zig/zig cc -target x86_64-linux-gnu -shared -O2 -fno-sanitize=undefined \
-	-Wl,-rpath,/oath/store/pkg/glibc/lib:/oath/store/pkg/mesa/lib:/oath/store/pkg/river/lib \
-	-o "$layer_so" "$layer_obj" -ldl
-mkdir -p "$stagedir/gamescope/share/vulkan/explicit_layer.d"
-cat >"$stagedir/gamescope/share/vulkan/explicit_layer.d/VkLayer_oath_gamescope_pool.json" <<'JSON'
-{
-    "file_format_version": "1.2.0",
-    "layer": {
-        "name": "VK_LAYER_OATH_gamescope_pool",
-        "type": "GLOBAL",
-        "library_path": "/oath/store/pkg/gamescope/lib/libVkLayer_oath_gamescope_pool.so",
-        "api_version": "1.3.0",
-        "implementation_version": "1",
-        "description": "Pad gamescope descriptor pools for RADV YCbCr planes",
-        "disable_environment": {
-            "DISABLE_OATH_GAMESCOPE_POOL": "1"
-        }
-    }
-}
-JSON
-
-echo "==> pack libdecor plugins (cairo + oath dummy)"
-gs_lib=$stagedir/gamescope/lib
-gs_rpath="$glibc:$gs_lib:$river:$pw:/oath/store/pkg/sola/lib"
-mkdir -p "$gs_lib/libdecor/plugins-1"
-deb_lib=$stagedir/debroot/usr/lib/x86_64-linux-gnu
-cairo_plug=
-if [ -f /tmp/gs/usr/lib/x86_64-linux-gnu/libdecor/plugins-1/libdecor-cairo.so ]; then
-	cairo_plug=/tmp/gs/usr/lib/x86_64-linux-gnu/libdecor/plugins-1/libdecor-cairo.so
-elif [ -f "$deb_lib/libdecor/plugins-1/libdecor-cairo.so" ]; then
-	cairo_plug=$deb_lib/libdecor/plugins-1/libdecor-cairo.so
-fi
-if [ -n "$cairo_plug" ]; then
-	cp -a "$cairo_plug" "$gs_lib/libdecor/plugins-1/libdecor-cairo.so"
-	chmod u+w "$gs_lib/libdecor/plugins-1/libdecor-cairo.so"
-fi
-copy_gs_so() {
-	local pat=$1
-	local f
-	f=$(find "$deb_lib" -name "$pat" ! -type l | head -1)
-	[ -n "$f" ] || return 0
-	cp -a "$f" "$gs_lib/$(basename "$f")"
-	chmod u+w "$gs_lib/$(basename "$f")"
-	local so
-	so=$(patchelf --print-soname "$gs_lib/$(basename "$f")" 2>/dev/null || true)
-	if [ -n "$so" ] && [ "$so" != "$(basename "$f")" ]; then
-		ln -sfn "$(basename "$f")" "$gs_lib/$so"
+	echo "==> pack libdecor-cairo"
+	gs_lib=$stagedir/gamescope/lib
+	gs_rpath="$glibc:$gs_lib:$river:$pw:/oath/store/pkg/sola/lib"
+	mkdir -p "$gs_lib/libdecor/plugins-1"
+	deb_lib=$stagedir/debroot/usr/lib/x86_64-linux-gnu
+	cairo_plug=
+	if [ -f /tmp/gs/usr/lib/x86_64-linux-gnu/libdecor/plugins-1/libdecor-cairo.so ]; then
+		cairo_plug=/tmp/gs/usr/lib/x86_64-linux-gnu/libdecor/plugins-1/libdecor-cairo.so
+	elif [ -f "$deb_lib/libdecor/plugins-1/libdecor-cairo.so" ]; then
+		cairo_plug=$deb_lib/libdecor/plugins-1/libdecor-cairo.so
 	fi
-}
-for pat in \
-	'libpangocairo-1.0.so.0*' \
-	'libpangoft2-1.0.so.0*' \
-	'libpango-1.0.so.0*' \
-	'libcairo.so.2*' \
-	'libharfbuzz.so.0*' \
-	'libfontconfig.so.1*' \
-	'libthai.so.0*' \
-	'libdatrie.so.1*' \
-	'libgraphite2.so.3*' \
-	'libfribidi.so.0*'
-do
-	copy_gs_so "$pat"
-done
-find "$gs_lib" "$gs_lib/libdecor/plugins-1" -maxdepth 1 -type f \( \
-	-name 'libpango*' -o -name 'libcairo.so.2*' -o -name 'libharfbuzz*' \
-	-o -name 'libfontconfig.so.1*' -o -name 'libthai*' -o -name 'libdatrie*' \
-	-o -name 'libgraphite2*' -o -name 'libfribidi*' -o -name 'libdecor-cairo.so' \
-\) | while read -r f; do
-	is_elf "$f" || continue
-	chmod u+w "$f" || true
-	patchelf --set-rpath "$gs_rpath" "$f" 2>/dev/null || true
-done
-# Dummy wins (HIGH). Cairo mmap-crashes on 0-size CSD; dummy reports 1px
-# borders so first xdg geometry is 2x2 instead of 0x0.
-oath_plug_src=$here/libdecor-oath-plugin.c
-oath_plug_obj=$stagedir/libdecor-oath-plugin.o
-oath_plug_so=$gs_lib/libdecor/plugins-1/libdecor-oath.so
-if [ ! -f "$oath_plug_src" ]; then
-	echo "missing $oath_plug_src" >&2
-	exit 1
-fi
-decor_so=
-for f in "$gs_lib"/libdecor-0.so.0*; do
-	[ -f "$f" ] && [ ! -L "$f" ] && decor_so=$f
-done
-[ -n "$decor_so" ] || { echo "missing libdecor-0.so in gamescope pack" >&2; exit 1; }
-/bin/cc -c -fPIC -O2 -fno-sanitize=undefined -o "$oath_plug_obj" "$oath_plug_src"
-/oath/store/pkg/cc/libexec/zig/zig cc -target x86_64-linux-gnu -shared -O2 -fno-sanitize=undefined \
-	-Wl,-rpath,/oath/store/pkg/gamescope/lib:/oath/store/pkg/glibc/lib \
-	-o "$oath_plug_so" "$oath_plug_obj" "$decor_so"
-
-cat >"$stagedir/gamescope/INDEX.md" <<'EOF'
+	if [ -n "$cairo_plug" ]; then
+		cp -a "$cairo_plug" "$gs_lib/libdecor/plugins-1/libdecor-cairo.so"
+		chmod u+w "$gs_lib/libdecor/plugins-1/libdecor-cairo.so"
+	fi
+	copy_gs_so() {
+		local pat=$1
+		local f
+		f=$(find "$deb_lib" -name "$pat" ! -type l | head -1)
+		[ -n "$f" ] || return 0
+		cp -a "$f" "$gs_lib/$(basename "$f")"
+		chmod u+w "$gs_lib/$(basename "$f")"
+		local so
+		so=$(patchelf --print-soname "$gs_lib/$(basename "$f")" 2>/dev/null || true)
+		if [ -n "$so" ] && [ "$so" != "$(basename "$f")" ]; then
+			ln -sfn "$(basename "$f")" "$gs_lib/$so"
+		fi
+	}
+	for pat in \
+		'libpangocairo-1.0.so.0*' \
+		'libpangoft2-1.0.so.0*' \
+		'libpango-1.0.so.0*' \
+		'libcairo.so.2*' \
+		'libharfbuzz.so.0*' \
+		'libfontconfig.so.1*' \
+		'libthai.so.0*' \
+		'libdatrie.so.1*' \
+		'libgraphite2.so.3*' \
+		'libfribidi.so.0*'
+	do
+		copy_gs_so "$pat"
+	done
+	find "$gs_lib" "$gs_lib/libdecor/plugins-1" -maxdepth 1 -type f \( \
+		-name 'libpango*' -o -name 'libcairo.so.2*' -o -name 'libharfbuzz*' \
+		-o -name 'libfontconfig.so.1*' -o -name 'libthai*' -o -name 'libdatrie*' \
+		-o -name 'libgraphite2*' -o -name 'libfribidi*' -o -name 'libdecor-cairo.so' \
+	\) | while read -r f; do
+		is_elf "$f" || continue
+		chmod u+w "$f" || true
+		patchelf --set-rpath "$gs_rpath" "$f" 2>/dev/null || true
+	done
+	cat >"$stagedir/gamescope/INDEX.md" <<'EOF'
 # pkg:gamescope
 
 Windowed nest compositor for sola-arcade. Ubuntu questing 3.16 gamescope
 relocated onto pkg:glibc + pkg:river. Removable. PID 1 does not supervise it.
-VK_LAYER_OATH_gamescope_pool pads descriptor pools so RADV SI can
-vkAllocateDescriptorSets (YCbCr planes). libdecor-cairo is packed;
-libdecor-oath (HIGH) reports 1px borders so River accepts the first
-xdg geometry (cairo mmap-crashes on a 0-size CSD buffer).
+Needs a GPU with Vulkan WSI DRM format modifiers (`requires.drm_modifiers`).
+AMD GFX6–8 and virtio-gpu are refused at apply.
 EOF
+else
+	echo "skip pkg:gamescope — connected GPU has no DRM format modifiers"
+fi
 
 echo "==> pack xwayland"
 extract_deb "$fetchdir/xwayland_24.1.13-1_amd64.deb" "$stagedir/debroot"
@@ -465,94 +424,27 @@ cat >"$stagedir/xwayland/bin/Xwayland" <<'WRAP'
 #!/bin/sh
 export PATH=/bin:/usr/bin
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
-# Nested glamor on river radeonsi SIGBUS'd on SI (GEM map of tiled
-# BOs). mesa 26.2.1 libgallium needs GLIBC_2.43. -glamor off keeps
-# DRI3 (Vulkan WSI); XWAYLAND_NO_GLAMOR would drop DRI3 too.
+# SI glamor SIGBUS'd on tiled BOs (session Steam on River +xwayland).
+# mesa 26.2.1 libgallium needs GLIBC_2.43. -glamor off keeps DRI3.
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/river/lib/dri
 export GBM_BACKENDS_PATH=/oath/store/pkg/river/lib/gbm
 export __EGL_VENDOR_LIBRARY_FILENAMES=/oath/store/pkg/river/share/glvnd/egl_vendor.d/50_mesa.json
 export XKB_CONFIG_ROOT="${XKB_CONFIG_ROOT:-/oath/store/pkg/river/share/X11/xkb}"
 export XKB_BINDIR=/oath/store/pkg/xwayland/libexec
 unset LD_PRELOAD
-export LD_LIBRARY_PATH="/oath/store/pkg/xwayland/lib:/oath/store/pkg/gamescope/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
+export LD_LIBRARY_PATH="/oath/store/pkg/xwayland/lib:/oath/store/pkg/river/lib:/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib"
 exec /oath/store/pkg/xwayland/libexec/Xwayland -glamor off "$@"
 WRAP
 chmod 755 "$stagedir/xwayland/bin/Xwayland"
-# gamescope looks up Xwayland on PATH
-ln -sfn /oath/store/pkg/xwayland/bin/Xwayland "$stagedir/gamescope/bin/Xwayland" 2>/dev/null || true
-
-echo "==> pack xwayland clipboard bridge"
-# Rootful Xwayland does not share CLIPBOARD with the compositor. wl-paste
-# watches wlr-data-control; xclip owns X11 CLIPBOARD so Ctrl+V pastes.
-clip_mirror=https://deb.debian.org/debian/pool/main
-for rel in x/xclip/xclip_0.13-4_amd64.deb w/wl-clipboard/wl-clipboard_2.2.1-2_amd64.deb; do
-	dest=$fetchdir/$(basename "$rel")
-	if [ ! -f "$dest" ] || [ ! -s "$dest" ]; then
-		echo "fetch $clip_mirror/$rel"
-		curl -fL --retry 3 --retry-delay 2 -o "$dest" "$clip_mirror/$rel"
-	fi
-	extract_deb "$dest" "$stagedir/debroot"
-done
-clip_rpath="$glibc:/oath/store/pkg/xwayland/lib:$river"
-for b in xclip wl-paste wl-copy; do
-	src=$stagedir/debroot/usr/bin/$b
-	[ -f "$src" ] || { echo "missing $src" >&2; exit 1; }
-	cp -a "$src" "$stagedir/xwayland/libexec/$b"
-	chmod u+w "$stagedir/xwayland/libexec/$b"
-	patchelf --set-interpreter "$interp" "$stagedir/xwayland/libexec/$b"
-	patchelf --set-rpath "$clip_rpath" "$stagedir/xwayland/libexec/$b"
-done
-# libXmu → libXt → libSM → libuuid (not always in the Xwayland NEEDED set).
-uuid=
-for f in "$stagedir/gamescope/lib"/libuuid.so.1.* \
-	"$stagedir/debroot"/usr/lib/x86_64-linux-gnu/libuuid.so.1.* \
-	"$stagedir/xwayland/lib"/libuuid.so.1.*; do
-	[ -f "$f" ] && [ ! -L "$f" ] || continue
-	uuid=$f
-	break
-done
-if [ -n "$uuid" ]; then
-	cp -a "$uuid" "$stagedir/xwayland/lib/$(basename "$uuid")"
-	ln -sfn "$(basename "$uuid")" "$stagedir/xwayland/lib/libuuid.so.1"
+if [ "$PACK_GAMESCOPE" = 1 ]; then
+	ln -sfn /oath/store/pkg/xwayland/bin/Xwayland "$stagedir/gamescope/bin/Xwayland" 2>/dev/null || true
 fi
-install -m 755 "$here/xwayland-clip.sh" "$stagedir/xwayland/libexec/xwayland-clip"
-install -m 755 "$here/xwayland-clip-in.sh" "$stagedir/xwayland/libexec/xwayland-clip-in"
-
-echo "==> pack oath-xwm"
-zig_cc=${zig_cc:-/oath/store/pkg/cc/libexec/zig/zig}
-xcb_so=
-for f in "$stagedir/xwayland/lib"/libxcb.so.1*; do
-	[ -f "$f" ] && [ ! -L "$f" ] && xcb_so=$f && break
-done
-[ -n "$xcb_so" ] || xcb_so=$stagedir/xwayland/lib/libxcb.so.1
-if [ -x "$zig_cc" ] && [ -f "$here/oath-xwm.c" ] && [ -e "$xcb_so" ]; then
-	"$zig_cc" cc -target x86_64-linux-gnu -O2 -fno-sanitize=undefined \
-		-Wl,-rpath,/oath/store/pkg/xwayland/lib:/oath/store/pkg/glibc/lib \
-		-o "$stagedir/xwayland/libexec/oath-xwm" \
-		"$here/oath-xwm.c" "$xcb_so" || \
-		echo "warn: oath-xwm not built" >&2
-	if [ -x "$stagedir/xwayland/libexec/oath-xwm" ]; then
-		patchelf --set-interpreter "$interp" "$stagedir/xwayland/libexec/oath-xwm" || true
-		chmod 755 "$stagedir/xwayland/libexec/oath-xwm"
-	fi
-fi
-
 cat >"$stagedir/xwayland/INDEX.md" <<'EOF'
 # pkg:xwayland
 
-Xwayland for gamescope's nested X and (later) host River. Debian 24.1
-relocated onto pkg:glibc + pkg:river. Nested Xwayland is `-glamor off`
-(river radeonsi SIGBUS'd on SI tiled BOs; mesa 26.2.1 libgallium
-needs GLIBC_2.43). Removable.
-
-Rootful `Xwayland :2 -decorate` (Steam nest) does not share CLIPBOARD
-with Wayland. `libexec/xwayland-clip` watches the compositor clipboard
-(`wl-paste`) and owns X11 CLIPBOARD (`xclip`) so Ctrl+V pastes.
-
-Rootful Xwayland has no WM. Steam's library window then lands at
-INT_MIN and the nest is black. `libexec/oath-xwm` maps and clamps
-windows onto the screen and holds one InputOnly client so the
-Wayland surface survives login → library.
+Xwayland for host River (`+xwayland`) so session `/bin/steam` is a
+normal X11 client. Debian 24.1 relocated onto pkg:glibc + pkg:river.
+`-glamor off` on SI (river radeonsi SIGBUS'd on tiled BOs). Removable.
 EOF
 
 echo "==> pack mesa (64-bit GLX)"
@@ -796,8 +688,8 @@ cat >"$stagedir/mesa/INDEX.md" <<'EOF'
 
 64-bit OpenGL/GLX/EGL and Vulkan WSI for X11/Wayland clients. Debian mesa
 26.2.1 GLX + EGL + glvnd + gallium + RADV, plus Khronos vulkan-loader
-1.4.357 and vulkaninfo. Nested Xwayland is `-glamor off` (this libgallium needs GLIBC_2.43;
-pkg:glibc is 2.42). DRI is libdril → radeonsi. ICD is
+1.4.357 and vulkaninfo. Session Xwayland is `-glamor off` on SI (this
+libgallium needs GLIBC_2.43; pkg:glibc is 2.42). DRI is libdril → radeonsi. ICD is
 share/vulkan/icd.d/radeon_icd.json (64-bit) and radeon_icd32.json
 (32-bit Steam). lib32 ships RADV + LLVM 21 + libdisplay-info.so.3 +
 libxml2.so.16 + libwayland-client 1.26 (`wl_fixes_interface`; steamrt
@@ -1035,20 +927,6 @@ if [ -x "$zig_cc" ] && [ -f "$here/oath-lsof.c" ]; then
 		chmod 755 "$stagedir/steam/libexec/oath-lsof"
 	fi
 fi
-if [ -x "$zig_cc" ] && [ -f "$here/oath-gs-fit.c" ]; then
-	xcb_h=$(ls /nix/store/*-libxcb-*-dev/include/xcb/xcb.h 2>/dev/null | head -1)
-	xcb_lib=$(ls -d /nix/store/*-libxcb-1.*/lib 2>/dev/null | head -1)
-	if [ -n "$xcb_h" ] && [ -n "$xcb_lib" ]; then
-		"$zig_cc" cc -target x86_64-linux-gnu -O2 \
-			-I"$(dirname "$(dirname "$xcb_h")")" \
-			-L"$xcb_lib" \
-			-Wl,-rpath,/oath/store/pkg/xwayland/lib:/oath/store/pkg/glibc/lib \
-			-o "$stagedir/steam/libexec/oath-gs-fit" \
-			"$here/oath-gs-fit.c" -lxcb || \
-			echo "warn: oath-gs-fit not built" >&2
-		chmod 755 "$stagedir/steam/libexec/oath-gs-fit" 2>/dev/null || true
-	fi
-fi
 cat >"$stagedir/steam/libexec/steam-compat.sh" <<'COMPAT'
 # sourced by /bin/steam. Host nodes + 32-bit SONAMEs + library path.
 # Do not put pkg:sola/lib (64-bit libGL) on LD_LIBRARY_PATH: steamui.so is
@@ -1092,43 +970,6 @@ if [ -d "$rt/usr/share/X11/locale" ]; then
 		printf '%s\n' 'en_US.UTF-8/XLC_LOCALE	C.UTF-8' \
 			>> "$rt/usr/share/X11/locale/locale.dir" || true
 	fi
-fi
-# Nested gamescope --steam advertises HDR and then scan-outs client
-# dmabufs. Pitcairn has no DRM modifiers: that pass-through is static
-# on River (radeonsi). Force SDR + re-assert composite after Steam's
-# CGamescopeController sets composite_force 0.
-if [ -n "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
-	export STEAM_GAMESCOPE_HDR_SUPPORTED=0
-	export ENABLE_HDR_WSI=0
-	export DXVK_HDR=0
-	(
-		ctl=/oath/store/pkg/gamescope/libexec/gamescopectl
-		[ -x "$ctl" ] || exit 0
-		export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
-		unset LD_PRELOAD
-		i=0
-		while [ "$i" -lt 8 ]; do
-			sleep 12
-			"$ctl" hdr_enabled 0
-			"$ctl" composite_force 1
-			i=$((i + 1))
-		done
-	) >/tmp/oath-gamescope-convar.log 2>&1 &
-	# sola-arcade Fit: nested X atoms, not gamescope CLI
-	# --force-windows-fullscreen (that aborted wayland). Resize
-	# BPM/SDL to the nest so hit-test matches pixels.
-	(
-		fit=/oath/store/pkg/steam/libexec/oath-gs-fit
-		[ -x "$fit" ] || exit 0
-		export DISPLAY="${DISPLAY:-:0}"
-		unset LD_PRELOAD
-		i=0
-		while [ "$i" -lt 16 ]; do
-			sleep 3
-			"$fit" 1920 1080
-			i=$((i + 1))
-		done
-	) >/tmp/oath-gs-fit.log 2>&1 &
 fi
 sudo -n ln -sfn /oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2 2>/dev/null || true
 # Do not stub pkg:glibc libresolv → libc (tmux __b64_pton; rpath glibc first).
@@ -1407,11 +1248,8 @@ export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 if [ -z "${WAYLAND_DISPLAY-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/1}/wayland-1" ]; then
 	export WAYLAND_DISPLAY=wayland-1
 fi
-# Session X11: River +xwayland (rootless). Do not nest gamescope.
-# Arcade Play starts steam under gamescope with a nested DISPLAY (:1).
-# Do not steal that onto session :0.
-if [ -z "${DISPLAY-}" ] && [ -z "${GAMESCOPE_WAYLAND_DISPLAY-}" ] &&
-    [ -S /tmp/.X11-unix/X0 ]; then
+# Session X11: River +xwayland (rootless).
+if [ -z "${DISPLAY-}" ] && [ -S /tmp/.X11-unix/X0 ]; then
 	export DISPLAY=:0
 fi
 if [ -n "${DISPLAY-}" ]; then
@@ -1419,56 +1257,19 @@ if [ -n "${DISPLAY-}" ]; then
 	export SDL_VIDEODRIVER=x11
 	export GDK_BACKEND=x11
 	export QT_QPA_PLATFORM=xcb
-	# Session Steam: Sola close sends WM_DELETE; without this, Steam
-	# hides to a tray we do not have and ubuntu12_32/steam stays up.
-	# Nested Arcade Play is :1 — do not force-close that client.
+	# Sola close sends WM_DELETE; without this, Steam hides to a tray
+	# we do not have and ubuntu12_32/steam stays up.
 	case "${DISPLAY-}" in
 	:0|:0.*) export STEAM_FRAME_FORCE_CLOSE=1 ;;
 	esac
-	# Nested Xwayland: native xlib WSI. The FROG gamescope WSI layer
-	# is 64-bit only; leaving ENABLE_GAMESCOPE_WSI set hides surface
-	# extensions from 32-bit steamui. Pitcairn is SDR.
 	export ENABLE_GAMESCOPE_WSI=0
 	export ENABLE_HDR_WSI=0
 	export DXVK_HDR=0
-	if [ -n "${GAMESCOPE_WAYLAND_DISPLAY-}" ]; then
-		# Keep GAMESCOPE_WAYLAND_DISPLAY. Unsetting it + no --steam
-		# is Arcade nested-steam (titles); for /bin/steam library
-		# that path strobed then xdg-never-configured.
-		export STEAM_GAMESCOPE_HDR_SUPPORTED=0
-		export SteamDeck=0
-		export STEAM_USE_GAMEPADUI=0
-		export SteamTenfoot=0
-		sudo -n mkdir -p /usr/bin/steamos-polkit-helpers 2>/dev/null || true
-		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-polkit-helpers/steamos-devkit-mode \
-			/usr/bin/steamos-polkit-helpers/steamos-devkit-mode 2>/dev/null || true
-		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-polkit-helpers/jupiter-dock-updater \
-			/usr/bin/steamos-polkit-helpers/jupiter-dock-updater 2>/dev/null || true
-		sudo -n ln -sfn /oath/store/pkg/steam/libexec/steamos-select-branch \
-			/usr/bin/steamos-select-branch 2>/dev/null || true
-		sudo -n ln -sfn /oath/store/pkg/steam/libexec/lsb_release \
-			/usr/bin/lsb_release 2>/dev/null || true
-		sudo -n ln -sfn /oath/store/pkg/steam/libexec/timedatectl \
-			/usr/bin/timedatectl 2>/dev/null || true
-	else
-		# Rootful leftover only. gamescope's nested X is already a WM.
-		if [ -x /oath/store/pkg/xwayland/libexec/xwayland-clip ]; then
-			/oath/store/pkg/xwayland/libexec/xwayland-clip --daemon
-		fi
-		if [ -x /oath/store/pkg/xwayland/libexec/oath-xwm ]; then
-			pidfile=/tmp/oath-xwm.pid
-			old=$(cat "$pidfile" 2>/dev/null || true)
-			if [ -z "$old" ] || ! kill -0 "$old" 2>/dev/null; then
-				/oath/store/pkg/xwayland/libexec/oath-xwm >>/tmp/oath-xwm.log 2>&1 &
-				echo $! >"$pidfile"
-			fi
-		fi
-		export XDG_CURRENT_DESKTOP=Sola
-		export XDG_SESSION_DESKTOP=Sola
-		export SteamDeck=0
-		export STEAM_USE_GAMEPADUI=0
-		export SteamTenfoot=0
-	fi
+	export XDG_CURRENT_DESKTOP=Sola
+	export XDG_SESSION_DESKTOP=Sola
+	export SteamDeck=0
+	export STEAM_USE_GAMEPADUI=0
+	export SteamTenfoot=0
 	# steam.sh execs the client after package extract. DEBUGGER is the
 	# post-extract hook (STEAM_DEBUGGER=${DEBUGGER-}). Re-apply steamui
 	# shims the updater just overwrote, then exec the real ELF.
@@ -1537,20 +1338,21 @@ lsof Steam's WebUITransport runs (`-P -F upnR -i TCP@…`). Removable.
 PID 1 does not supervise Steam.
 EOF
 
-echo "==> install sola-arcade"
-arcade_elf=${SOLA_ARCADE_ELF:-$root/build/sola-target/release/sola-arcade}
-if [ ! -f "$arcade_elf" ]; then
-	echo "missing $arcade_elf — run image/build-sola-arcade.sh" >&2
-	exit 1
-fi
-as_root mkdir -p /oath/store/pkg/sola/libexec /oath/store/pkg/sola/bin
-as_root cp -a "$arcade_elf" /oath/store/pkg/sola/libexec/sola-arcade
-as_root chmod u+w /oath/store/pkg/sola/libexec/sola-arcade
-as_root chmod +x /oath/store/pkg/sola/libexec/sola-arcade
-rpath="$glibc:$river:/oath/store/pkg/sola/lib:/oath/store/pkg/sola/cef/Release:$pw"
-as_root patchelf --set-interpreter "$interp" /oath/store/pkg/sola/libexec/sola-arcade || true
-as_root patchelf --set-rpath "$rpath" /oath/store/pkg/sola/libexec/sola-arcade
-as_root tee /oath/store/pkg/sola/bin/sola-arcade >/dev/null <<'WRAP'
+if [ "$PACK_GAMESCOPE" = 1 ]; then
+	echo "==> install sola-arcade"
+	arcade_elf=${SOLA_ARCADE_ELF:-$root/build/sola-target/release/sola-arcade}
+	if [ ! -f "$arcade_elf" ]; then
+		echo "missing $arcade_elf — run image/build-sola-arcade.sh" >&2
+		exit 1
+	fi
+	as_root mkdir -p /oath/store/pkg/sola/libexec /oath/store/pkg/sola/bin
+	as_root cp -a "$arcade_elf" /oath/store/pkg/sola/libexec/sola-arcade
+	as_root chmod u+w /oath/store/pkg/sola/libexec/sola-arcade
+	as_root chmod +x /oath/store/pkg/sola/libexec/sola-arcade
+	rpath="$glibc:$river:/oath/store/pkg/sola/lib:/oath/store/pkg/sola/cef/Release:$pw"
+	as_root patchelf --set-interpreter "$interp" /oath/store/pkg/sola/libexec/sola-arcade || true
+	as_root patchelf --set-rpath "$rpath" /oath/store/pkg/sola/libexec/sola-arcade
+	as_root tee /oath/store/pkg/sola/bin/sola-arcade >/dev/null <<'WRAP'
 #!/bin/sh
 export PATH=/bin
 export HOME="${HOME:-/home}"
@@ -1579,11 +1381,34 @@ export SOLA_OUTPUT_PICK=preferred
 /bin/mkdir -p /tmp/fontconfig /oath/log "$HOME/.local/share" "$HOME/.config"
 exec /oath/store/pkg/sola/libexec/sola-arcade "$@" >>/oath/log/sola-arcade.log 2>&1
 WRAP
-as_root chmod 755 /oath/store/pkg/sola/bin/sola-arcade
-as_root ln -sfn /oath/store/pkg/sola/bin/sola-arcade /bin/sola-arcade
+	as_root chmod 755 /oath/store/pkg/sola/bin/sola-arcade
+	as_root ln -sfn /oath/store/pkg/sola/bin/sola-arcade /bin/sola-arcade
+else
+	echo "skip sola-arcade — GPU has no DRM format modifiers"
+	as_root rm -f /bin/sola-arcade /oath/store/pkg/sola/bin/sola-arcade
+fi
 
 install_store xwayland "$stagedir/xwayland"
-install_store gamescope "$stagedir/gamescope"
+if [ "$PACK_GAMESCOPE" = 1 ]; then
+	install_store gamescope "$stagedir/gamescope"
+	as_root tee /oath/objects/pkg/gamescope/desired.json >/dev/null <<'JSON'
+{ "present": true, "requires": { "drm_modifiers": true } }
+JSON
+else
+	echo "==> pkg:gamescope present=false (no DRM modifiers)"
+	as_root rm -rf /oath/store/pkg/gamescope
+	as_root rm -f /bin/gamescope /bin/gamescopectl /bin/gamescopereaper
+	as_root mkdir -p /oath/objects/pkg/gamescope
+	as_root tee /oath/objects/pkg/gamescope/desired.json >/dev/null <<'JSON'
+{ "present": false, "requires": { "drm_modifiers": true } }
+JSON
+	as_root tee /oath/objects/pkg/gamescope/actual.json >/dev/null <<'JSON'
+{ "present": false, "links": [], "removable": true, "requires": { "drm_modifiers": true } }
+JSON
+	as_root tee /oath/objects/pkg/gamescope/meta.json >/dev/null <<'JSON'
+{ "id": "pkg:gamescope", "kind": "pkg", "name": "gamescope", "safety": "mutate", "status": "in-sync" }
+JSON
+fi
 install_store mesa "$stagedir/mesa"
 install_store steam "$stagedir/steam"
 as_root ln -sfn /oath/store/pkg/mesa/bin/vulkaninfo /bin/vulkaninfo
@@ -1637,14 +1462,23 @@ if [ -x /oath/store/pkg/xwayland/libexec/xkbcomp ]; then
 	as_root ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /usr/bin/xkbcomp
 	as_root ln -sfn /oath/store/pkg/xwayland/libexec/xkbcomp /bin/xkbcomp
 fi
-# wlroots hardcodes /usr/bin/Xwayland; gamescope scripts use /usr/share/gamescope.
+# wlroots hardcodes /usr/bin/Xwayland.
 as_root ln -sfn /oath/store/pkg/xwayland/bin/Xwayland /usr/bin/Xwayland
-as_root ln -sfn /oath/store/pkg/gamescope/share/gamescope /usr/share/gamescope
+if [ "$PACK_GAMESCOPE" = 1 ]; then
+	as_root ln -sfn /oath/store/pkg/gamescope/share/gamescope /usr/share/gamescope
+fi
 
 if [ "$(id -u)" = 0 ]; then
-	oath apply pkg:xwayland pkg:gamescope pkg:steam
+	oath apply pkg:xwayland pkg:steam
 else
-	sudo -n oath apply pkg:xwayland pkg:gamescope pkg:steam
+	sudo -n oath apply pkg:xwayland pkg:steam
+fi
+if [ "$PACK_GAMESCOPE" = 1 ]; then
+	if [ "$(id -u)" = 0 ]; then
+		oath apply pkg:gamescope
+	else
+		sudo -n oath apply pkg:gamescope
+	fi
 fi
 
 echo "==> sola launcher Steam"
@@ -1672,14 +1506,25 @@ if command -v solactl >/dev/null 2>&1; then
 fi
 
 echo "==> courage"
-for b in bash sola-arcade gamescope Xwayland steam; do
+for b in bash Xwayland steam; do
 	if [ -x /bin/$b ]; then
 		echo "  /bin/$b -> $(readlink /bin/$b 2>/dev/null || echo ELF)"
 	else
 		echo "  MISSING /bin/$b"
 	fi
 done
-echo 'gamescope needed after rpath:'
-patchelf --print-needed /oath/store/pkg/gamescope/libexec/gamescope | head
-"$interp" --library-path "$glibc:$store/gamescope/lib:$river:$pw" --list "$store/gamescope/libexec/gamescope" 2>&1 | grep -E 'not found|=>' | head -n 30 || true
+if [ "$PACK_GAMESCOPE" = 1 ]; then
+	for b in sola-arcade gamescope; do
+		if [ -x /bin/$b ]; then
+			echo "  /bin/$b -> $(readlink /bin/$b 2>/dev/null || echo ELF)"
+		else
+			echo "  MISSING /bin/$b"
+		fi
+	done
+	echo 'gamescope needed after rpath:'
+	patchelf --print-needed /oath/store/pkg/gamescope/libexec/gamescope | head
+	"$interp" --library-path "$glibc:$store/gamescope/lib:$river:$pw" --list "$store/gamescope/libexec/gamescope" 2>&1 | grep -E 'not found|=>' | head -n 30 || true
+else
+	echo "  sola-arcade/gamescope skipped (no DRM modifiers)"
+fi
 echo "done"

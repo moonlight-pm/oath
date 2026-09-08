@@ -83,12 +83,29 @@ pub struct SvcActual {
     pub restarts: u32,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PkgRequires {
+    /// Vulkan WSI DRM format modifiers on the connected GPU.
+    /// AMD GFX6–8 and virtio-gpu do not have them (gamescope nest).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub drm_modifiers: bool,
+}
+
+impl PkgRequires {
+    pub fn is_none(&self) -> bool {
+        !self.drm_modifiers
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Pkg {
     pub present: bool,
     /// If non-empty, apply wget's this into the store when `present`.
     #[serde(default)]
     pub url: String,
+    /// Hardware the bits need. Apply `present=true` is refused if unmet.
+    #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
+    pub requires: PkgRequires,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -143,4 +160,6 @@ pub struct PkgActual {
     pub removable: bool,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub url: String,
+    #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
+    pub requires: PkgRequires,
 }

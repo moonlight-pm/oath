@@ -57,7 +57,7 @@ manager down, and the glass stays River-black (`xdg_surface has never
 been configured` for nests). The packed `/bin/sola-river` and
 `/bin/sola-shell` wrappers retry while `pidof river` is empty **or**
 while river is already back and the rest of the session is still up
-(Steam/gamescope can kill the compositor faster than the wrapper
+(Steam can kill the compositor faster than the wrapper
 notices; `restart=always` races). They still exit 0 when river is up
 and the peer session process is gone (flower Quit). A stopped
 `svc:sola-river` with `enabled=true` is Quit-shaped: plain `oath apply`

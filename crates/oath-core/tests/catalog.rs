@@ -1,8 +1,8 @@
 use std::sync::Mutex;
 
 use oath_core::{
-    converge_pkg, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId,
-    Pkg, PkgActual, Result, EXIT_CONFIRM,
+    converge_pkg, seed, with_drm_modifiers_override, Actor, ApplyHooks, Catalog, Error, Host,
+    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
 
@@ -126,6 +126,7 @@ impl ApplyHooks for MemHooks {
                 links: Vec::new(),
                 removable: true,
                 url: desired.url.clone(),
+                requires: desired.requires.clone(),
             });
         }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present)
@@ -173,6 +174,9 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:bash"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:xwayland"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:gamescope"));
+    let gs = cat.get(&"pkg:gamescope".parse().unwrap()).unwrap();
+    assert_eq!(gs.desired["present"], json!(false));
+    assert_eq!(gs.desired["requires"]["drm_modifiers"], json!(true));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:mesa"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:steam"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire"));
@@ -460,4 +464,42 @@ fn ssh_authorized_undo() {
 fn write_json_present_false(root: &std::path::Path, name: &str) {
     let p = root.join("objects/pkg").join(name).join("desired.json");
     std::fs::write(p, "{\n  \"present\": false\n}\n").unwrap();
+}
+
+#[test]
+fn gamescope_apply_refuses_without_drm_modifiers() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let store = d.path().join("store/pkg/gamescope/bin/gamescope");
+    std::fs::create_dir_all(store.parent().unwrap()).unwrap();
+    std::fs::write(&store, "gamescope-payload\n").unwrap();
+    let id: ObjectId = "pkg:gamescope".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(true));
+    cat.set_fields(&id, fields).unwrap();
+    let err = with_drm_modifiers_override(false, || {
+        cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err()
+    });
+    match err {
+        Error::Hint { message, hint } => {
+            assert!(message.contains("DRM format modifiers"), "{message}");
+            assert!(hint.contains("schema"));
+        }
+        other => panic!("{other:?}"),
+    }
+    assert!(!d.path().join("bin/gamescope").exists());
+}
+
+#[test]
+fn sola_arcade_bin_skipped_without_drm_modifiers() {
+    let (d, _cat) = tmp();
+    let store = d.path().join("store/pkg/sola/bin");
+    std::fs::create_dir_all(&store).unwrap();
+    std::fs::write(store.join("sola-session"), "session\n").unwrap();
+    std::fs::write(store.join("sola-arcade"), "arcade\n").unwrap();
+    with_drm_modifiers_override(false, || {
+        converge_pkg(d.path(), &d.path().join("bin"), "sola", true).unwrap();
+    });
+    assert!(d.path().join("bin/sola-session").symlink_metadata().unwrap().file_type().is_symlink());
+    assert!(d.path().join("bin/sola-arcade").symlink_metadata().is_err());
 }

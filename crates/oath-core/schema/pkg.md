@@ -18,6 +18,12 @@ store. Do not fetch; v0 payloads are already on the image. Do not set
   network.
 - `url` — optional. If set and the store file is missing, apply wget’s
   it into the store then links. `pkg:fetchme` is the canary.
+- `requires` — optional hardware the bits need. `drm_modifiers: true`
+  means apply `present=true` is refused unless a connected GPU exports
+  Vulkan WSI DRM format modifiers (AMD GFX6–8 and virtio-gpu do not).
+  `pkg:gamescope` always has this requirement. Uninstall is always
+  allowed. `sola-arcade` lives in `pkg:sola`; apply skips that `/bin`
+  link on the same GPUs rather than refusing the whole Sola blob.
 
 Actual also has `links` (basenames in `/bin`) and `removable`. If
 `removable` is false, `present=false` is refused (not `--confirm`).
@@ -53,4 +59,6 @@ Busybox applets are one package. `pkg:glibc` is the GNU C runtime
 for glibc payloads (River, Sola, rustc). Never load it into musl PID 1.
 `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` are the guest
 toolchain (T35). `pkg:bash` / `pkg:xwayland` / `pkg:gamescope` /
-`pkg:steam` are the Arcade runtime (T37).
+`pkg:steam` are the Arcade runtime (T37). `pkg:gamescope` is
+`present: false` until a GPU with DRM modifiers applies it;
+`sola-arcade` is not linked on cards that cannot run the nest.

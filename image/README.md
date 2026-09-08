@@ -17,9 +17,10 @@ hash, hash-in-path, pin) is T32
 (session stack including sola-session, sola-terminal + tmux,
 sola-browser + CEF, workspaces, kvm, and remaining kit apps; host
 `cargo build --release` from `forks/sola`). Canto live-add:
-`sh image/install-sola-kit.sh`. Arcade + Steam runtime (T37):
-`sh image/install-bash.sh`, `sh image/build-sola-arcade.sh`,
-`bash image/install-arcade-runtime.sh`. Mesa-only refresh:
+`sh image/install-sola-kit.sh`. Steam runtime (T37):
+`sh image/install-bash.sh`,
+`bash image/install-arcade-runtime.sh` (session X11 Steam; gamescope /
+sola-arcade only if the GPU has DRM modifiers). Mesa-only refresh:
 `bash image/pack-mesa.sh`. Metal kernel: vanilla kernel.org + Oath fragment
 (`nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'`,
 half the host cores, nice 10). Then

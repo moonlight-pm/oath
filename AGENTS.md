@@ -166,15 +166,17 @@ not a new kind.
 
 ## Driver patches are first-class
 
-When the bug is a **generation gap** (no DRM modifiers, SI DPM, GET tiling
-lies), **patch the driver first**: Mesa RADV/radeonsi in
-`image/mesa-patches/`, amdgpu in `image/linux-patches/`. Gate on
-`gfx_level` / chip family so one `pkg:mesa` / one kernel still ships
-everywhere. Vulkan layers, X11 property fakes, and CPU detile are for
-**proving the hop**, not the product fix.
+When the bug is a **generation gap** (SI DPM, modeset, GET tiling lies),
+**patch the driver first**: amdgpu in `image/linux-patches/`. Gate on
+`gfx_level` / chip family so one kernel still ships everywhere. Vulkan
+layers, X11 property fakes, and CPU detile are for **proving the hop**,
+not the product fix.
 
-T37 lesson: days of gamescope-pool GET/SET/CEF clamps did not change the
-nest picture. One RADV “export LINEAR_ALIGNED on GFX6-8” patch did.
+T37 lesson: gamescope on SI/Pitcairn was parked. Pool-layer GET/SET/CEF
+clamps and RADV LINEAR_ALIGNED export did not make a product nest.
+Session Steam is host Xwayland. `pkg:gamescope` / `sola-arcade` require
+Vulkan WSI DRM modifiers; apply refuses on GFX6–8 and virtio. Do not
+resurrect the canto nest science.
 
 ## Workflow
 

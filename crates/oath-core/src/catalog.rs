@@ -222,10 +222,14 @@ impl Catalog {
                     obj.desired.clone()
                 }
             } else if d.id.kind == KIND_PKG {
-                json!({
+                let mut last = json!({
                     "present": obj.actual.get("present").cloned().unwrap_or(json!(false)),
                     "url": obj.desired.get("url").cloned().unwrap_or(json!("")),
-                })
+                });
+                if let Some(req) = obj.desired.get("requires") {
+                    last["requires"] = req.clone();
+                }
+                last
             } else if d.id.kind == KIND_NET {
                 json!({
                     "up": obj.actual.get("up").cloned().unwrap_or(json!(false)),
@@ -445,9 +449,11 @@ impl Catalog {
         if !pkg.present && !removable {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
+        crate::pkg::check_requires(&id.name, &pkg)?;
         let mut actual = hooks.converge_pkg(id, &pkg)?;
         actual.removable = removable;
         actual.url = pkg.url.clone();
+        actual.requires = pkg.requires.clone();
         write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
         self.touch_status(id, "in-sync")?;
         Ok(())

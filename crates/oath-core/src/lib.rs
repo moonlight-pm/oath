@@ -3,6 +3,7 @@
 mod catalog;
 mod dev;
 mod error;
+mod gpu;
 mod hooks;
 mod id;
 mod index;
@@ -21,16 +22,17 @@ pub use dev::converge as converge_dev;
 pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
+pub use gpu::{drm_modifiers_available, pci_has_drm_modifiers, with_drm_modifiers_override};
 pub use kinds::{
-    Dev, DevActual, Host, HostPower, Meta, Net, Pkg, PkgActual, Ssh, SshActual, Svc, SvcActual,
-    SvcRestart,
+    Dev, DevActual, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgRequires, Ssh, SshActual, Svc,
+    SvcActual, SvcRestart,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
     rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL,
 };
 pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
-pub use pkg::{converge as converge_pkg, converge_with_link_root};
+pub use pkg::{check_requires, converge as converge_pkg, converge_with_link_root};
 pub use seed::seed;
 pub use ssh::converge as converge_ssh;
 pub use svc_order::start_order as svc_start_order;

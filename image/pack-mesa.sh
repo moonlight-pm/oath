@@ -1,7 +1,7 @@
 #!/bin/bash
 # Pack/live-install pkg:mesa from Debian mesa 26.2.1-4. Same layout as
 # image/install-arcade-runtime.sh (64-bit GLX/EGL + RADV, 32-bit RADV).
-# Does not rebuild gamescope/Steam.
+# Does not rebuild Steam.
 set -euo pipefail
 
 here=$(CDPATH= cd -- "$(dirname "$0")" && pwd)

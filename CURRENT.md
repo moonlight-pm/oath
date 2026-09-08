@@ -46,71 +46,45 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is `host:local.timezone` (Mountain POSIX); `date` stays UTC. **T35**
    guest toolchain live (gen 19): `pkg:cc` Zig 0.16, `pkg:rustc` 1.98.1,
    `pkg:cmake` 4.3.5 + ninja, `pkg:pkg-config` empty farm. Official
-   tarballs, no Nix, no rustup. **T37** Arcade + Steam runtime on
+   tarballs, no Nix, no rustup. **T37** Steam runtime on
    canto (gen 21): `/bin/bash` (GNU 5.2.15 static musl),
-   `/bin/sola-arcade` (guest cargo; lucide from
-   `/oath/store/pkg/sola/share` when `/oath/INDEX.md` exists —
-   oath-sola `53ca8c10`; no `/opt/sola` symlink), `/bin/Xwayland`
-   24.1.13, `/bin/gamescope`, `/bin/steam` (bootstrap extracts;
+   `/bin/Xwayland` 24.1.13, `/bin/steam` (bootstrap extracts;
    32-bit ELF loads; ubuntu12 client on disk; `steamui.so` loads
    with 32-bit GL from steamrt3c). **Session Steam** is a normal
    X11 window on River **`+xwayland`** (`DISPLAY=:0`,
    `WLR_XWAYLAND=/bin/Xwayland`; user confirmed the library
-   paints). Direct `/bin/steam` does **not** exec gamescope
-   (library-in-gamescope parked: CEF software ~1 fps, dual
-   surfaces flash, `--steam` vs nested-steam xdg-never-configured).
-   Arcade **Play** still nests `gamescope --backend wayland`
-   (wrapper drops `-b`; nested Xwayland usually `:1`,
-   **`-glamor off`**; `--nested-steam -applaunch`; refuses if
-   `ubuntu12_32/steam` is live). Super+Q / Sola close:
-   `STEAM_FRAME_FORCE_CLOSE=1` on `:0` is not enough
-   (hide-to-tray); River `Window.close` SIGTERMs X11 class
-   `steam` (live `libexec/river` `699a166`; leftover client was
-   killed — Play smoke still pending). Launcher lists **Steam**
-   (`~/.config/sola/shell/applications.json` + `state.yaml`
-   `Application`; `/bin/steam`; `lucide/gamepad-2`). **`pkg:mesa`**
-   is GLX plus Vulkan WSI (RADV 26.2.1). 32-bit RADV loads (Debian
-   `libwayland-client` 1.26 in `pkg:mesa/lib32` for
+   paints). Super+Q / Sola close: `STEAM_FRAME_FORCE_CLOSE=1` on
+   `:0` is not enough (hide-to-tray); River `Window.close` SIGTERMs
+   X11 class `steam` (live `libexec/river` `699a166`). Launcher
+   lists **Steam** (`~/.config/sola/shell/applications.json` +
+   `state.yaml` `Application`; `/bin/steam`; `lucide/gamepad-2`).
+   **`pkg:mesa`** is GLX plus Vulkan WSI (RADV 26.2.1). 32-bit RADV
+   loads (Debian `libwayland-client` 1.26 in `pkg:mesa/lib32` for
    `wl_fixes_interface`; steamrt 0.3.0 is too old; ICD uses DT_RPATH).
-   GpuTopology reports RADV PITCAIRN. Rootful `:2` +
-   `xwayland-clip` / `oath-xwm` is leftover fallback only.
-   `liboath-peercred.so` is in the steamui **dlmopen** namespace via a
-   patched copy (`ubuntu12_32/steamui.oath.so`); do **not** patchelf
-   live `steamui.so` (Steam verifies size and re-extracts forever).
-   steamwebhelper `_v2-entry-point` passes `--disable-gpu` (CEF GPU
-   process SIGBUS 135 on RADV SI). Nested Xwayland is
-   **`-glamor off`** (river radeonsi SIGBUS’d on SI tiled BOs;
-   mesa 26.2.1 `libgallium` needs `acosf@GLIBC_2.43` and
-   pkg:glibc is 2.42). 64-bit `liboath-glclass.so` redirects
-   `libGL`/`libEGL` dlopen to `pkg:mesa` so
-   `ubuntu12_64/gldriverquery` is no longer ELFCLASS32.
-   SI has tiling but RADV advertises **no DRM modifiers**; River
-   samples INVALID as linear. **Live** nest paint is RADV
-   **LINEAR_ALIGNED** on WSI/external **and large TRANSFER_SRC**
-   (GFX6-8). Tree `image/mesa-patches/0002` was narrowed to
-   sampled/WSI (emptied the nest); canto still runs the full
-   TRANSFER_SRC RADV. radeonsi keeps imported pitch on INVALID
-   dmabufs (`0001`). Do **not** SET `LINEAR_ALIGNED` on a
-   genuinely 2D BO. Do not `--force-windows-fullscreen`. Do not
-   pin Deck 1280×800 for titles. Dual Pitcairn: nest must use
-   the connected card (`OATH_DRM_RENDER`; spare renderD128 is
-   black on River card1). `libdecor-oath` 1px borders. Wrappers
-   retry while `pidof river` is empty **or** river is already
-   back and the session is still up. `CLONE_NEWUSER` EPERM from
-   PID 1 chroot. `liboath-peercred` fakes
-   `GAMESCOPE_VIEWPORT_SUPPORTED=0` (value 1 left MainMenu 1×1
-   hidden). CEF 0×0 SDL/X11 clamps are in the same shim. 32-bit
+   GpuTopology reports RADV PITCAIRN. `liboath-peercred.so` is in
+   the steamui **dlmopen** namespace via a patched copy
+   (`ubuntu12_32/steamui.oath.so`); do **not** patchelf live
+   `steamui.so`. steamwebhelper `_v2-entry-point` passes
+   `--disable-gpu` (CEF GPU process SIGBUS 135 on RADV SI). Session
+   Xwayland is **`-glamor off`** (river radeonsi SIGBUS’d on SI
+   tiled BOs). 64-bit `liboath-glclass.so` redirects `libGL`/`libEGL`
+   dlopen to `pkg:mesa` so `ubuntu12_64/gldriverquery` is no longer
+   ELFCLASS32. `CLONE_NEWUSER` EPERM from PID 1 chroot. 32-bit
    `libgbm` is in `pkg:mesa/lib32`. steam-runtime `compose.dir`
    aliases C.UTF-8. Novus Steam is still nixpkgs `*-bwrap` FHS,
-   not this pack. **tmux:** new Terminal tabs and workspaces
-   splits work (do not stub `pkg:glibc` `libresolv`). A second
-   sola-terminal process used to retract the first's new tabs
-   (Sola-generic fix packed this boot). **T36** other kit names
-   still out (`alsa.pc`). Zig `cc` host link is
-   `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: Arcade Play
-   smoke (quit session Steam first). Confirm Super+Q reaps
-   `ubuntu12_32/steam`. Land live RADV TRANSFER_SRC back into
-   tree `0002`. Or a `.pc` for alsa.
+   not this pack. **Gamescope nest on SI is parked** (tag
+   `t37-gamescope-canto`): no `pkg:gamescope` / `/bin/sola-arcade`
+   on canto. Apply refuses `pkg:gamescope` `present=true` without
+   Vulkan WSI DRM modifiers (Pitcairn `1002:6810`); `sola-arcade`
+   farm link is skipped on the same GPUs. SI nest patches, pool
+   layer, `libdecor-oath` removed from the tree. **tmux:** new
+   Terminal tabs and workspaces splits work (do not stub
+   `pkg:glibc` `libresolv`). A second sola-terminal process used to
+   retract the first's new tabs (Sola-generic fix packed this boot).
+   **T36** other kit names still out (`alsa.pc`). Zig `cc` host link
+   is `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: a `.pc` for
+   alsa, or confirm Super+Q reaps `ubuntu12_32/steam`. Do not
+   resurrect the canto gamescope nest.
    `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` will do that
    on the next image.
    **T38** firmware boots on canto ESP: last five archives + current.
@@ -135,9 +109,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `Fatal error during GPU init` (`pitcairn_mc.bin` missing). Live
    recovery: copy firmware + `insmod`. ESP initrd now includes the
    blobs. DPM: skip `GPIO_DC` when `ac_power`; `force high` **850/1270**.
-   `gpu_busy_percent` is ENOTSUP. Gamescope nest paint on SI is
-   **RADV LINEAR_ALIGNED export** (live TRANSFER_SRC), not the
-   pool-layer CPU detile. Nested Xwayland is `-glamor off` (no
+   `gpu_busy_percent` is ENOTSUP. Session Xwayland is `-glamor off` (no
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.
    Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.
    Do not `cargo make install --confirm` (wipe).
@@ -145,10 +117,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `net:net0` dhcp 10.0.0.3.
 3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
-   canto. **T37** `/bin/sola-arcade` in. Other kit apps still out. **Sola master**
+   canto. **T37** session Steam in; `/bin/sola-arcade` **not** on canto
+   (no DRM modifiers). Other kit apps still out. **Sola master**
    merged into oath-sola (`59a54d59`, Sola `0d364617`: compositor
    death exits 1; Quit Sola stays 0). Packed `pkg:sola` on canto:
-   arcade ELF rebuilt from oath-sola `53ca8c10` (assets_dir);
    kvm libexec still `386c9d78`; rest of the blob may still be
    `a6dd7c12`.
    `/bin/sola-river` and `/bin/sola-shell` wrappers retry while
@@ -177,7 +149,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola: arcade ELF oath-sola `53ca8c10` (assets_dir); kvm libexec `386c9d78`; rest may still be `a6dd7c12`. **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/sola-arcade` `/bin/Xwayland` `/bin/gamescope` `/bin/steam` + `pkg:mesa` (gen 21; **session Steam** is River `+xwayland` `:0` — user confirmed; Arcade Play still nests gamescope, unsmoked; Super+Q SIGTERMs X11 class `steam`; lucide from `/oath/store/pkg/sola/share`; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy; CEF `--disable-gpu`; nested X `-glamor off`; live RADV SI linear-export TRANSFER_SRC paints the nest; tree `0002` is sampled/WSI only; `libdecor-oath` 1px; `CLONE_NEWUSER` EPERM). **T38** ESP: systemd-boot `BOOTX64` timeout 5; current is compiled vanilla **7.3.0-rc1 #3** + patched `amdgpu` + Pitcairn firmware in initrd (`subvol=@`). Archives: boot 4 (6.12 rescue), 6 (7.3 DC_SI #2), 7 (previous 7.3 DPM #2). **`pkg:mesa`** Debian **26.2.1** + libdrm 2.4.134 + 32-bit libgbm. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. River/Sola **as `home`** (uid 1; DRM/evdev/ALSA `0660` root:`home`; River GLES2/radeonsi). Packed Sola: kvm libexec `386c9d78`; rest may still be `a6dd7c12`. **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`; no dbus). **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/Xwayland` `/bin/steam` + `pkg:mesa` (gen 21; **session Steam** is River `+xwayland` `:0` — user confirmed; Super+Q SIGTERMs X11 class `steam`; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy; CEF `--disable-gpu`; session X `-glamor off`; `CLONE_NEWUSER` EPERM; **gamescope / sola-arcade not on canto** — no DRM modifiers). **T38** ESP: systemd-boot `BOOTX64` timeout 5; current is compiled vanilla **7.3.0-rc1 #3** + patched `amdgpu` + Pitcairn firmware in initrd (`subvol=@`). Archives: boot 4 (6.12 rescue), 6 (7.3 DC_SI #2), 7 (previous 7.3 DPM #2). **`pkg:mesa`** Debian **26.2.1** + libdrm 2.4.134 + 32-bit libgbm. |
 
 ```sh
 nix-shell
@@ -230,10 +202,10 @@ Do not re-litigate without an explicit decision.
   Grok does not self-update. `pkg:git`, `pkg:curl`, `pkg:pipewire`, and `pkg:thoxa` packed.
   **T35:** `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` packed
   on canto (gen 19; official tarballs; no Nix, no rustup).
-  **T37:** `pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` /
-  `pkg:steam` packed on canto (gen 21); `sola-arcade` in `pkg:sola`.
-  Session `/bin/steam` is River `+xwayland`; Arcade Play still nests
-  gamescope.
+  **T37:** `pkg:bash` / `pkg:xwayland` / `pkg:mesa` / `pkg:steam`
+  packed on canto (gen 21). Session `/bin/steam` is River `+xwayland`.
+  `pkg:gamescope` seed `present: false` + `requires.drm_modifiers`;
+  apply refuses on SI/virtio. `/bin/sola-arcade` not linked on canto.
   **T32 (target, not implemented):** a pack is a directory matching
   that layout (no recipe language). Realization id is the content hash
   of the tree. Store becomes `/oath/store/pkg/<name>/<hash>/`. Name is
@@ -332,5 +304,5 @@ Do not re-litigate without an explicit decision.
   graphical stack as `home`; `pkg:grok` / `pkg:git` / `pkg:curl` / `pkg:pipewire`
   packed; `pkg:thoxa` packed as the `home` login shell; T33 one NFS
   copy on nas (canto gen 16); T35 guest toolchain live on canto (gen 19);
-  T37 Arcade + Steam runtime on canto (gen 21); other kit apps not;
+  T37 session Steam on canto (gen 21); gamescope/arcade not on SI; other kit apps not;
   Phase 6 metal canary (canto) dogfoodable

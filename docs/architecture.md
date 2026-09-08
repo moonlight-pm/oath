@@ -76,26 +76,16 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     pkg:pkg-config     `/bin/pkg-config` (empty .pc farm)
     pkg:bash           `/bin/bash` (GNU 5.2.15 static musl)
     pkg:xwayland       `/bin/Xwayland` (Debian 24.1.13; session Steam is
-                       River `+xwayland` `:0`; Arcade Play nested X is
-                       gamescope `-rootless` usually `:1`, `-glamor off`
-                       — river radeonsi SIGBUS’d on SI tiled BOs;
-                       mesa 26.2.1 libgallium needs GLIBC_2.43;
-                       `libexec/xwayland-clip` / `oath-xwm` leftover
-                       rootful `:2` only)
-    pkg:gamescope      `/bin/gamescope` (Arcade Play nest, `--backend wayland`;
-                       `VK_LAYER_OATH_gamescope_pool` pads YCbCr descriptor pools;
-                       `libdecor-oath` 1px borders so River accepts xdg geometry;
-                       wrapper drops `-b`/`--borderless`; pins
-                       `OATH_DRM_RENDER` to the connected card so the
-                       nest is not on the spare Pitcairn)
+                       River `+xwayland` `:0`; `-glamor off` on SI —
+                       river radeonsi SIGBUS’d on tiled BOs)
+    pkg:gamescope      `/bin/gamescope` (Arcade Play nest on GPUs with
+                       Vulkan WSI DRM modifiers; seed `present: false`;
+                       apply refuses on AMD GFX6–8 / virtio)
     pkg:mesa           64-bit GLX/GL/EGL + Vulkan WSI (Debian mesa 26.2.1);
                        `/bin/vulkaninfo`;
                        DRI `libdril`→radeonsi; 32-bit RADV in `lib32`
                        plus `libdisplay-info.so.3` + `libxml2.so.16` +
-                       `libwayland-client` 1.26 (`wl_fixes`); ICD DT_RPATH;
-                       SI patches: radeonsi imported pitch (`0001`);
-                       RADV linear-export (`0002` — tree is sampled/WSI;
-                       live canto is full TRANSFER_SRC)
+                       `libwayland-client` 1.26 (`wl_fixes`); ICD DT_RPATH
     pkg:steam          `/bin/steam` wrapper (session X11 on River, not
                        gamescope); 32-bit loader in lib32 + 64-bit
                        steamrt3 SONAMEs in lib64; host `_v2-entry-point`
@@ -107,9 +97,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        `/lib/ld-linux.so.2`, `/etc/ssl/certs`, `/bin/lsof`,
                        `/usr/share/vulkan/icd.d/radeon_icd.{x86_64,i686}.json`
                        (not the /bin farm)
-    sola-arcade        `/bin/sola-arcade` (kit app in pkg:sola; lucide from
-                       `/oath/store/pkg/sola/share` when `/oath/INDEX.md`
-                       exists; Play nests gamescope `--nested-steam`)
+    sola-arcade        kit app in pkg:sola; `/bin` link only when the
+                       GPU has DRM modifiers (not on canto Pitcairn)
     pkg:sola fonts     SF Pro Text + Iosevka Term Slab (Inter / JetBrains Mono fallbacks)
     backup-send        /lib/oath/backup-send (T33 NFS `btrfs send`)
     backup-daily       /lib/oath/backup-daily (04:00 Mountain loop; seed off)

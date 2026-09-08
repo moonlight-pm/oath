@@ -2,9 +2,10 @@
 **Status:** target (freeze)
 **Implementation:** packing list + live-install script; guest cargo of
 the full kit **failed** on canto (`alsa-sys` / empty `.pc` farm);
-`sola-arcade` built (T37)
-**Dogfood:** packing list is in; `/bin/sola-arcade` on canto (T37).
-Other T36 names **not** linked. QEMU after next `cargo make build`.
+`sola-arcade` built (T37); `/bin` link only on GPUs with DRM modifiers
+**Dogfood:** packing list is in; `/bin/sola-arcade` **not** on canto
+(Pitcairn has no DRM modifiers). Other T36 names **not** linked.
+QEMU after next `cargo make build`.
 **Gaps:** guest `cargo build` of spotify/librespot died on `alsa.pc`.
 **T37** adds Steam / gamescope / Xwayland / mesa as separate `pkg:*`. Spotify
 MPRIS wants a session bus — no `dbus-daemon`. Zig `cc` must drop rustc

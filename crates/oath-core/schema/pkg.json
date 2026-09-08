@@ -13,6 +13,17 @@
     "url": {
       "type": "string",
       "description": "If non-empty, apply wget's this URL into the store when present (local store wins if already there)."
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Hardware this package needs. Apply present=true is refused if unmet. Uninstall is always allowed.",
+      "properties": {
+        "drm_modifiers": {
+          "type": "boolean",
+          "description": "Connected GPU must export Vulkan WSI DRM format modifiers. AMD GFX6–8 (SI/CIK/Polaris) and virtio-gpu do not. pkg:gamescope always requires this even if the field is omitted."
+        }
+      }
     }
   }
 }

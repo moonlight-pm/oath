@@ -5,7 +5,8 @@ use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use crate::error::{Error, Result};
-use crate::kinds::PkgActual;
+use crate::gpu::drm_modifiers_available;
+use crate::kinds::{Pkg, PkgActual, PkgRequires};
 
 pub fn store_bin(catalog_root: &Path, name: &str) -> PathBuf {
     catalog_root.join("store").join("pkg").join(name).join("bin")
@@ -35,6 +36,10 @@ pub fn converge_with_link_root(
     if present {
         let mut links = Vec::new();
         for n in &names {
+            if skip_bin(name, n) {
+                unlink_ours(bin_dir, link_root, name, n, &store)?;
+                continue;
+            }
             let target = store_target(link_root, name, n);
             let dest = bin_dir.join(n);
             if dest.symlink_metadata().is_ok() {
@@ -52,17 +57,65 @@ pub fn converge_with_link_root(
             })?;
             links.push(n.clone());
         }
-        Ok(PkgActual { present: true, links, removable: true, url: String::new() })
+        Ok(PkgActual {
+            present: true,
+            links,
+            removable: true,
+            url: String::new(),
+            requires: PkgRequires::default(),
+        })
     } else {
         for n in &names {
-            let dest = bin_dir.join(n);
-            let target = store_target(link_root, name, n);
-            if dest.symlink_metadata().is_ok() && is_our_link(&dest, &target, &store.join(n)) {
-                fs::remove_file(&dest)?;
-            }
+            unlink_ours(bin_dir, link_root, name, n, &store)?;
         }
-        Ok(PkgActual { present: false, links: Vec::new(), removable: true, url: String::new() })
+        Ok(PkgActual {
+            present: false,
+            links: Vec::new(),
+            removable: true,
+            url: String::new(),
+            requires: PkgRequires::default(),
+        })
     }
+}
+
+/// Refuse `present=true` when the package needs GPU features this
+/// machine does not have. Uninstall (`present=false`) is always ok.
+pub fn check_requires(name: &str, desired: &Pkg) -> Result<()> {
+    if !desired.present {
+        return Ok(());
+    }
+    let needs = desired.requires.drm_modifiers || name == "gamescope";
+    if !needs {
+        return Ok(());
+    }
+    if drm_modifiers_available() {
+        return Ok(());
+    }
+    Err(Error::hint(
+        format!(
+            "pkg:{name} needs a GPU with DRM format modifiers (Vulkan WSI); this card does not"
+        ),
+        "oath schema pkg",
+    ))
+}
+
+fn skip_bin(pkg: &str, bin: &str) -> bool {
+    pkg == "sola" && bin == "sola-arcade" && !drm_modifiers_available()
+}
+
+fn unlink_ours(
+    bin_dir: &Path,
+    link_root: &Path,
+    name: &str,
+    n: &str,
+    store: &Path,
+) -> Result<()> {
+    let dest = bin_dir.join(n);
+    let target = store_target(link_root, name, n);
+    if dest.symlink_metadata().is_ok() && is_our_link(&dest, &target, &store.join(n)) {
+        fs::remove_file(&dest)?;
+    }
+    Ok(())
 }
 
 pub fn converge(

@@ -18,7 +18,12 @@ None open. T38 boot generations closed (last 5 ESP archives + current;
 (`image/build-linux.sh` + `image/linux-patches`); not Ubuntu/NixOS generic. Still 7.3 for GFX6.
 Debian mesa 26.2.x). T37 Arcade + Steam runtime closed (`pkg:bash` / `pkg:xwayland` /
 `pkg:gamescope` / `pkg:mesa` / `pkg:steam`; Arcade ELF stays in `pkg:sola`; no new `svc`;
-host River **`+xwayland`** as of 2026-09-08 — session Steam is X11; Arcade Play still nests gamescope). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
+host River **`+xwayland`** as of 2026-09-08 — session Steam is X11).
+**Amended 2026-09-08:** apply refuses packages that declare
+`requires.drm_modifiers` when the connected GPU has none (AMD GFX6–8,
+virtio-gpu). `pkg:gamescope` always has that requirement; seed
+`present: false`. `sola-arcade` is not linked on those GPUs (canto
+Pitcairn). Gamescope-on-SI nest is parked (`t37-gamescope-canto`). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
 Arcade ELF without gamescope/Steam/XWayland — **amended T37**). T35 guest toolchain closed (official tarballs; `pkg:cc` is
 Zig providing `cc`; rustc gnu host + musl std; cmake+ninja; empty
 pkg-config farm). T34 UTC system clock closed (`host:local.timezone`
@@ -275,10 +280,16 @@ gamescope / Xwayland / mesa as separate `pkg:*` so Arcade can nest.
 `sola-arcade` stays in `pkg:sola`. Steam, gamescope, Xwayland, and the
 64-bit GLX + Vulkan WSI stack are removable `pkg:steam` / `pkg:gamescope` /
 `pkg:xwayland` / `pkg:mesa`. `pkg:bash` is borrowed static musl GNU
-bash. No new `svc:*`. Arcade Play nested X is gamescope’s `Xwayland` on
-PATH. **Amended 2026-09-08:** host River is packed `+xwayland`; session
-`/bin/steam` is a normal X11 client (library-in-gamescope parked).
-32-bit glibc loader is `pkg:steam/lib32`, not a second libc in PID 1.
+bash. No new `svc:*`. **Amended 2026-09-08:** host River is packed
+`+xwayland`; session `/bin/steam` is a normal X11 client
+(library-in-gamescope parked). Gamescope nest on SI/Pitcairn is
+**parked** (tag `t37-gamescope-canto`). Apply is the installer: a
+package may declare `requires.drm_modifiers`; `present=true` is
+refused if the connected GPU has no Vulkan WSI DRM modifiers.
+`pkg:gamescope` always requires that (seed `present: false`).
+`/bin/sola-arcade` is not linked on those GPUs; `pkg:sola` still
+applies. 32-bit glibc loader is `pkg:steam/lib32`, not a second libc
+in PID 1.
 
 ### T30 — Vendor-updating packages (`pkg:grok`) — locked 2026-09-02
 
