@@ -208,6 +208,8 @@ Do not re-litigate without an explicit decision.
   packed on canto (gen 21). Session `/bin/steam` is River `+xwayland`.
   `pkg:gamescope` seed `present: false` + `requires.drm_modifiers`;
   apply refuses on SI/virtio. `/bin/sola-arcade` not linked on canto.
+  Not in the QEMU image (`cargo make build` never packs Steam /
+  Xwayland / mesa / gamescope).
   **T32 (target, not implemented):** a pack is a directory matching
   that layout (no recipe language). Realization id is the content hash
   of the tree. Store becomes `/oath/store/pkg/<name>/<hash>/`. Name is

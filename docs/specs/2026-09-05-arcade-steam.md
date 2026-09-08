@@ -18,9 +18,9 @@
   **`pkg:gamescope` and `/bin/sola-arcade` are not installed on
   canto** (Pitcairn `1002:6810` has no Vulkan WSI DRM modifiers).
   Novus Steam remains nixpkgs `*-bwrap` FHS.
-**Gaps:** QEMU image pack of steam/xwayland/mesa not in
-  `cargo make build` yet. Other T36 kit ELFs still out (`alsa.pc`).
-  Arcade Play is for GPUs with DRM modifiers only (not SI).
+**Gaps:** Other T36 kit ELFs still out (`alsa.pc`). Arcade Play is
+  for GPUs with DRM modifiers only (not SI). QEMU never packs
+  Steam / Xwayland / mesa / gamescope (metal live-install only).
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`)
@@ -82,12 +82,16 @@ is **out** (parked; tag `t37-gamescope-canto`). `pkg:gamescope` and
   `image/install-arcade-runtime.sh` (Steam + Xwayland + mesa;
   gamescope/arcade skipped on this GPU). Official / Ubuntu / Debian
   debs, relocated. No Nix on canto.
+- **Not the QEMU image.** `cargo make build` does not pack
+  `pkg:steam` / `pkg:xwayland` / `pkg:mesa` / `pkg:gamescope`.
+  The appliance is not a Steam host. Novus desktop Steam stays
+  nixpkgs `*-bwrap`.
 
 ---
 
 ## Courage test (this slice)
 
-On canto (and QEMU after the image pack):
+On canto:
 
 1. `test -x /bin/bash` and `bash --version` is GNU bash.
 2. `test -x /bin/Xwayland` and `Xwayland -version` prints 24.1.x.
@@ -112,4 +116,5 @@ On canto (and QEMU after the image pack):
 - `dbus-daemon`, a second Unix user, `pkg:python`
 - Splitting `pkg:sola`
 - Upgrading sealed `pkg:glibc` to Ubuntu questing
+- QEMU image pack of Steam / Xwayland / mesa / gamescope
 - Other remaining T36 kit ELFs (spotify still wants `alsa.pc`)
