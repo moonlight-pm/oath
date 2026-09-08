@@ -113,7 +113,8 @@ On canto:
   `t37-gamescope-canto`). No RADV LINEAR_ALIGNED export, no
   `VK_LAYER_OATH_gamescope_pool`, no `libdecor-oath`, no mesa SI
   nest patches.
-- `dbus-daemon`, a second Unix user, `pkg:python`
+- Session `dbus-daemon` / MPRIS (system bus is `pkg:bluez`)
+- A second Unix user, `pkg:python`
 - Splitting `pkg:sola`
 - Upgrading sealed `pkg:glibc` to Ubuntu questing
 - QEMU image pack of Steam / Xwayland / mesa / gamescope

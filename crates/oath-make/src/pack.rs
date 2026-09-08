@@ -79,6 +79,13 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/sound/hda/codecs/snd-hda-codec-generic.ko.xz",
     "kernel/sound/usb/snd-usb-audio.ko.xz",
     "kernel/sound/virtio/virtio_snd.ko.xz",
+    // Canto Apple BCM20702 (05ac:828d). bluetooth.ko is the core.
+    "kernel/net/rfkill/rfkill.ko.xz",
+    "kernel/net/bluetooth/bluetooth.ko.xz",
+    "kernel/net/bluetooth/rfcomm/rfcomm.ko.xz",
+    "kernel/net/bluetooth/hidp/hidp.ko.xz",
+    "kernel/drivers/bluetooth/btbcm.ko.xz",
+    "kernel/drivers/bluetooth/btusb.ko.xz",
     // T33: NFS client for off-box btrfs send. Deps (sunrpc, lockd, netfs, …)
     // come from modules.dep.
     "kernel/fs/nfs/nfs.ko.xz",
@@ -395,6 +402,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "git", true)?;
     pack_pipewire(root, tools, out, &oath_root)?;
     link_pkg(&oath_root, &guest_bin, "pipewire", true)?;
+    pack_bluez(root, tools, out, &oath_root)?;
+    link_pkg(&oath_root, &guest_bin, "bluez", true)?;
     pack_thoxa(root, out, &oath_root)?;
     link_pkg(&oath_root, &guest_bin, "thoxa", true)?;
     let cc_pack = pack_cc(root, out)?;
@@ -1164,6 +1173,28 @@ fn pack_pipewire(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Re
     ] {
         chmod_exec(&oath_root.join("store/pkg/pipewire/bin").join(b))?;
         let libexec = oath_root.join("store/pkg/pipewire/libexec").join(b);
+        if libexec.is_file() && !libexec.symlink_metadata()?.file_type().is_symlink() {
+            chmod_exec(&libexec)?;
+        }
+    }
+    Ok(())
+}
+
+fn pack_bluez(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
+    let dbus = dir_or_nix(tools.dbus.as_ref(), "dbus")?;
+    let bluez = dir_or_nix(tools.bluez.as_ref(), "bluez")?;
+    let bz_out = out.join("bluez-pack");
+    let _ = fs::remove_dir_all(&bz_out);
+    eprintln!(">> relocate bluez");
+    run(Command::new("bash")
+        .arg(root.join("image/relocate-bluez.sh"))
+        .arg(&bz_out)
+        .env("DBUS", &dbus)
+        .env("BLUEZ", &bluez))?;
+    copy_tree(&bz_out, &oath_root.join("store/pkg/bluez"))?;
+    for b in ["dbus-daemon", "bluetoothd", "bluetoothctl", "dbus-send"] {
+        chmod_exec(&oath_root.join("store/pkg/bluez/bin").join(b))?;
+        let libexec = oath_root.join("store/pkg/bluez/libexec").join(b);
         if libexec.is_file() && !libexec.symlink_metadata()?.file_type().is_symlink() {
             chmod_exec(&libexec)?;
         }

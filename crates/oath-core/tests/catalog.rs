@@ -179,9 +179,12 @@ fn seed_lists_host() {
     assert_eq!(gs.desired["requires"]["drm_modifiers"], json!(true));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:mesa"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:steam"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:bluez"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:wireplumber"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire-pulse"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:dbus"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:bluetoothd"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-bus"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-call"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:sola-river"));

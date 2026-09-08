@@ -61,6 +61,8 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${pkgs.wireplumber} $out/wireplumber
   ln -s ${pkgs.alsa-lib} $out/alsa-lib
   ln -s ${pkgs.libpulseaudio} $out/libpulseaudio
+  ln -s ${pkgs.dbus} $out/dbus
+  ln -s ${pkgs.bluez} $out/bluez
   if [ -d ${pkgs.linux-firmware}/lib/firmware/tigon ]; then
     cp -a ${pkgs.linux-firmware}/lib/firmware/tigon $out/firmware/tigon
   fi

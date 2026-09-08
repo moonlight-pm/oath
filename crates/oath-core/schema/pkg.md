@@ -62,3 +62,5 @@ toolchain (T35). `pkg:bash` / `pkg:xwayland` / `pkg:gamescope` /
 `pkg:steam` are the Arcade runtime (T37). `pkg:gamescope` is
 `present: false` until a GPU with DRM modifiers applies it;
 `sola-arcade` is not linked on cards that cannot run the nest.
+`pkg:bluez` is the system D-Bus plus BlueZ (`/bin/dbus-daemon`,
+`/bin/bluetoothd`). Session bus / MPRIS stay out.

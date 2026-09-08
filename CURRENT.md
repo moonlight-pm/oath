@@ -26,7 +26,12 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    Live PID 1 predates `pipewire` in `is_seat_svc`, so exec is
    `/bin/env sola-audio=1 /bin/pipewire` (the `sola-` token makes
    spawn drop uid 1). sola-shell already has a `pw-cat` meter on
-   that sink. **scp / sftp** as `home@canto` (dropbear
+   that sink. Bluetooth chip: `pkg:bluez` (system dbus + bluetoothd)
+   gen 41; Apple BCM20702 `hci0` (`05ac:828d`) after insmod of 7.3
+   `btusb`/`bluetooth`. Adapter powered (`bluetoothctl show`). Shell
+   hides the glyph with no adapter; it should be on the bar now.
+   Modules are in `/lib/modules/7.3.0-rc1` this boot; next
+   `cargo make esp` puts them in the initrd. **scp / sftp** as `home@canto` (dropbear
    `sftp-server` + `scp`; guest `/bin/ssh` is musl OpenSSH; busybox `/bin/vi`). **sola-kvm client** on
    canto (`/bin/sola-kvm listen`, UDP 4242); novus peer is canto
    10.0.0.3 1920×1080 (Mac 10.0.0.133 unconfigured from this desk).
@@ -203,7 +208,7 @@ Do not re-litigate without an explicit decision.
 - Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
-  `cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `mesa`, `steam`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
+  `cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `mesa`, `steam`, `bluez`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (`/bin/grok`);
   Grok does not self-update. `pkg:git`, `pkg:curl`, `pkg:pipewire`, and `pkg:thoxa` packed.

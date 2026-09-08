@@ -104,6 +104,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "git", true, true)?;
     seed_pkg(root, "curl", true, true)?;
     seed_pkg(root, "pipewire", true, true)?;
+    seed_pkg(root, "bluez", true, true)?;
     seed_pkg(root, "thoxa", true, true)?;
     seed_pkg(root, "cc", true, true)?;
     seed_pkg(root, "rustc", true, true)?;
@@ -216,6 +217,8 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_svc(root, "pipewire", &["/bin/pipewire"], &[], "always")?;
     seed_svc(root, "wireplumber", &["/bin/wireplumber"], &["svc:pipewire"], "always")?;
     seed_svc(root, "pipewire-pulse", &["/bin/pipewire-pulse"], &["svc:pipewire"], "always")?;
+    seed_svc(root, "dbus", &["/bin/dbus-daemon"], &[], "always")?;
+    seed_svc(root, "bluetoothd", &["/bin/bluetoothd"], &["svc:dbus"], "always")?;
     seed_svc_full(
         root,
         "backup",

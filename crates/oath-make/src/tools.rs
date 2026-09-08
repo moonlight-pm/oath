@@ -37,6 +37,8 @@ pub struct Tools {
     pub wireplumber: Option<PathBuf>,
     pub alsa_lib: Option<PathBuf>,
     pub libpulse: Option<PathBuf>,
+    pub dbus: Option<PathBuf>,
+    pub bluez: Option<PathBuf>,
     pub qemu: PathBuf,
     pub qemu_img: PathBuf,
 }
@@ -246,6 +248,12 @@ pub fn load(root: &Path) -> Result<Tools> {
         }),
         libpulse: opt_dir("libpulseaudio").or_else(|| {
             std::env::var_os("OATH_LIBPULSEAUDIO").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
+        dbus: opt_dir("dbus").or_else(|| {
+            std::env::var_os("OATH_DBUS").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
+        bluez: opt_dir("bluez").or_else(|| {
+            std::env::var_os("OATH_BLUEZ").map(PathBuf::from).filter(|p| p.is_dir())
         }),
         qemu,
         qemu_img,

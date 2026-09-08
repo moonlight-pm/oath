@@ -20,7 +20,8 @@ sola-browser + CEF, workspaces, kvm, and remaining kit apps; host
 `sh image/install-sola-kit.sh`. Steam runtime (T37):
 `sh image/install-bash.sh`,
 `bash image/install-arcade-runtime.sh` (session X11 Steam; gamescope /
-sola-arcade only if the GPU has DRM modifiers). Mesa-only refresh:
+sola-arcade only if the GPU has DRM modifiers). Bluetooth:
+`bash image/install-bluez.sh` (system dbus + bluetoothd). Mesa-only refresh:
 `bash image/pack-mesa.sh`. Metal kernel: vanilla kernel.org + Oath fragment
 (`nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'`,
 half the host cores, nice 10). Then

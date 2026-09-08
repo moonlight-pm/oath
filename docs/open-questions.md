@@ -24,7 +24,9 @@ host River **`+xwayland`** as of 2026-09-08 — session Steam is X11).
 virtio-gpu). `pkg:gamescope` always has that requirement; seed
 `present: false`. `sola-arcade` is not linked on those GPUs (canto
 Pitcairn). Gamescope-on-SI nest is parked (`t37-gamescope-canto`).
-QEMU never packs Steam / Xwayland / mesa / gamescope. T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
+QEMU never packs Steam / Xwayland / mesa / gamescope.
+System D-Bus + BlueZ are `pkg:bluez` (menubar Bluetooth chip; not
+session MPRIS). T36 remaining kit apps closed (same `pkg:sola` blob; no new `svc`;
 Arcade ELF without gamescope/Steam/XWayland — **amended T37**). T35 guest toolchain closed (official tarballs; `pkg:cc` is
 Zig providing `cc`; rustc gnu host + musl std; cmake+ninja; empty
 pkg-config farm). T34 UTC system clock closed (`host:local.timezone`
@@ -378,4 +380,5 @@ guest ELFs.
 | 2026-09-05 | T36 | remaining kit apps in pkg:sola | this file; [specs/2026-09-05-sola-kit-apps.md](specs/2026-09-05-sola-kit-apps.md) |
 | 2026-09-05 | T37 | Arcade + Steam runtime | this file; [specs/2026-09-05-arcade-steam.md](specs/2026-09-05-arcade-steam.md) |
 | 2026-09-08 | T37 | QEMU never packs Steam / Xwayland / mesa / gamescope | this file |
+| 2026-09-08 | T36 | system dbus + BlueZ for menubar chip; session MPRIS still out | this file |
 | 2026-09-06 | T38 | last-5 firmware boots; `oath.subvol`; current kernel/mesa; T27 menu Out lifted | this file; [specs/2026-09-06-boot-generations.md](specs/2026-09-06-boot-generations.md) |

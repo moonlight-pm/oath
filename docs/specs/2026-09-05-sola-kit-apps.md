@@ -53,7 +53,8 @@ new `svc:*`. Steam/gamescope/Xwayland/mesa are T37 (`pkg:*`, not this blob).
   (direct spawn). No new `svc:*`.
 - **Arcade ELF in this freeze.** Launching a title is T37
   (`pkg:gamescope` / `pkg:steam` / `pkg:xwayland`).
-- **libdbus is a library.** Do not start `dbus-daemon` for MPRIS.
+- **libdbus is a library.** Do not start a **session** `dbus-daemon`
+  for MPRIS. System bus for BlueZ is T37/`pkg:bluez`.
 - **Canto fill** is `image/install-sola-kit.sh` (guest `cargo build`
   from the Sola tree + patchelf into the live store). Image pack is
   the same ELF list in `relocate-sola.sh` / `SOLA_KIT_ELFS`.
@@ -76,7 +77,7 @@ On canto (and QEMU after rebuild):
 ## Out
 
 - `pkg:sola-mail` / splitting `pkg:sola`
-- Nested `crates/sola`, udevd, dbus-daemon
+- Nested `crates/sola`, udevd, session `dbus-daemon` / MPRIS
 - XWayland / Steam / gamescope as *this* freeze (T37)
 - A second Unix user
 - Self-watch inner loop (apply a tree you built)

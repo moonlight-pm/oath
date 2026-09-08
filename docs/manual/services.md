@@ -22,6 +22,8 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:pipewire` | `/bin/pipewire` | enabled, `restart=always` | Seat audio graph as `home`. `/run/user/1/pipewire-0`. Wants nothing. |
 | `svc:wireplumber` | `/bin/wireplumber` | enabled, `restart=always` | Session manager (`--profile main-embedded`). Wants `svc:pipewire`. |
 | `svc:pipewire-pulse` | `/bin/pipewire-pulse` | enabled, `restart=always` | Pulse compatibility for librespot. Wants `svc:pipewire`. |
+| `svc:dbus` | `/bin/dbus-daemon` | enabled, `restart=always` | System bus at `/run/dbus/system_bus_socket`. Root. No session bus. |
+| `svc:bluetoothd` | `/bin/bluetoothd` | enabled, `restart=always` | BlueZ. Wants `svc:dbus`. Root. |
 | `svc:backup` | `/lib/oath/backup-daily` + NFS spec | **off** in seed; **on** canto, `restart=always` | Sleeps until 04:00 US Mountain, then one `btrfs send` of `@` to NFS (overwrite `canto.send` + sidecar). Dest `10.0.0.12:/mnt/alpha/backup/canto`. Packs may ship `libexec/oath-backup-quiesce` / `thaw`. Manual send: `/lib/oath/backup-send`. |
 
 ## Audio
@@ -43,7 +45,9 @@ contains `sola-`, which is how that init decides to drop uid 1. Next
 `cargo make esp` packs an init that knows those names; the extra env
 is then harmless.
 
-No dbus-daemon: MPRIS / BlueZ stay quiet. HDMI heads exist as ALSA
+System D-Bus + BlueZ are `pkg:bluez` (`svc:dbus`, `svc:bluetoothd`).
+The menubar Bluetooth chip appears when `org.bluez` has an adapter
+(`hci0`). Session bus / MPRIS stay out. HDMI heads exist as ALSA
 cards but are not udev-enumerated.
 
 **Quit Sola** (flower menu) broadcasts shutdown and the session processes

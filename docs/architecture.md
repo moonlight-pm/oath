@@ -37,7 +37,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,mesa,steam,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,mesa,steam,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -61,6 +61,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        pipewire-pulse) as `home`; `/run/user/1/pipewire-0`;
                        ALSA PCH analog pinned as Built-in Audio (no udevd
                        card enum). Canto cards: Intel HDA PCH + two HDMI.
+    bluez              pkg:bluez; svc:dbus (system bus) + svc:bluetoothd;
+                       canto Apple BCM20702 `hci0` (`05ac:828d`)
     sola-terminal      /bin/sola-terminal (kit app in pkg:sola; tmux helper)
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
@@ -119,7 +121,7 @@ Socket `/oath/run/init.sock`. Seeded
 services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
 `svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`,
-`svc:pipewire-pulse`, `svc:backup` (04:00 Mountain NFS send; seed off).
+`svc:pipewire-pulse`, `svc:dbus`, `svc:bluetoothd`, `svc:backup` (04:00 Mountain NFS send; seed off).
 
 `oath apply` snapshots live `@` to sibling `@gen-N` under `/oath/run/fs`
 (btrfs top-level). Undo restores catalog documents (including `store/`)
