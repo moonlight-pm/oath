@@ -1575,11 +1575,6 @@ exec /oath/store/pkg/sola/libexec/sola-arcade "$@" >>/oath/log/sola-arcade.log 2
 WRAP
 as_root chmod 755 /oath/store/pkg/sola/bin/sola-arcade
 as_root ln -sfn /oath/store/pkg/sola/bin/sola-arcade /bin/sola-arcade
-# Packed sola-arcade (Sep 5) bakes /opt/sola/share for lucide. Not a
-# second tree: one symlink to pkg:sola until the ELF is repacked with
-# SOLA_ASSETS_DIR. Spec: do not grow /opt/sola; this is the node.
-as_root mkdir -p /opt
-as_root ln -sfn /oath/store/pkg/sola /opt/sola
 
 install_store xwayland "$stagedir/xwayland"
 install_store gamescope "$stagedir/gamescope"
