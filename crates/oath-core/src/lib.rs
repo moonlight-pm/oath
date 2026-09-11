@@ -10,6 +10,7 @@ mod index;
 mod kinds;
 mod layout;
 mod net;
+mod packhash;
 mod pkg;
 pub mod seat;
 mod seed;
@@ -25,15 +26,22 @@ pub use gpu::{drm_modifiers_available, pci_has_drm_modifiers, with_drm_modifiers
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgRequires, Ssh,
-    SshActual, Svc, SvcActual, SvcRestart,
+    Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgRealization,
+    PkgRequires, Ssh, SshActual, Svc, SvcActual, SvcRestart,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
     rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL,
 };
 pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
-pub use pkg::{check_requires, converge as converge_pkg, converge_with_link_root};
+pub use packhash::{
+    fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX, LIVE_NAME,
+};
+pub use pkg::{
+    check_requires, converge as converge_pkg, converge_with_link_root, copy_tree as copy_pack_tree,
+    ingest_file, install_tree, list_realization_ids, list_realizations, pin_desired_hash,
+    promote_slot, promote_store, resolve_tree, store_present, write_slot_links,
+};
 pub use seed::seed;
 pub use session::{is_omarchy_desk_svc, is_sola_desk_svc, session_allows};
 pub use ssh::converge as converge_ssh;

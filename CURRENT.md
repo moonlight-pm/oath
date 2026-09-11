@@ -174,14 +174,19 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    **started**: Workspaces ELF is on canto. **T35** toolchain live.
    **T30** `pkg:grok` packed. **T31** seat `home` locked (uid 1, SSH
    home, sudo ALL, `/lib/oath`, catalog env).
-6. **T20 hosting locked**, not implemented.
+6. **T20 hosting locked**, serving not implemented. **T32 hash-in-path
+   is in** (guest apply + host `.cache/oath/store`; `cargo make store`).
+   Object storage is `pkg.url` of `{origin}/pkg/{name}/{hash}.tar`.
+   Bootstrap default origin allowed (not a kind): intended
+   `https://store.oath.wicket.cloud` (not live). Canto store is still
+   old layout until the next pack.
 7. Do not add a third compositor. River is Sola; Hyprland is Omarchy
    (T39). glibc runtime is allowed **only** as `pkg:glibc` (never in
    PID 1). No udevd. No nested Sola/Omarchy process manager. No
    systemd. Do not write a real disk the operator did not name, or
    without `--confirm`.
 
-**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe|install|map` (`--build` on run/up/start).
+**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe|install|map|store` (`--build` on run/up/start).
 
 ---
 
@@ -236,11 +241,18 @@ Do not re-litigate without an explicit decision.
   `libexec/oath-backup-quiesce` / `thaw`. Dest
   `10.0.0.12:/mnt/alpha/backup/canto`. Canto live: gen 16 send; daily
   sleeper on. NFS in the next packed initrd.
-- Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
+- Packages: store `/oath/store/pkg/<name>/<hash>/` (T32; `oath-tree-v1`
+  SHA-256). `/bin` is a symlink farm; slot `live` → hash plus compat
+  `bin` → `live/bin` so RPATH/env keep working. Host cache
+  `.cache/oath/store` (`OATH_STORE` override; `cargo make store --name
+  <n> --from <dir> [--tar]`). Old layout still accepted. Canto is old
+  layout until the next pack.
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `hyprland`, `quickshell`, `omarchy`, `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
   `cmake`, `pkg-config`, `bash`, `foot`, `xwayland`, `gamescope`, `mesa`, `steam`, `bluez`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
-  canonical archive; another Oath host’s store is a valid origin. Git
+  canonical archive; another Oath host’s store is a valid origin;
+  object storage is `{origin}/pkg/{name}/{hash}.tar`. Bootstrap default
+  origin allowed (not a kind); not deployed. Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (`/bin/grok`);
   Grok does not self-update. `pkg:git`, `pkg:curl`, `pkg:pipewire`, and `pkg:thoxa` packed.
   **T35:** `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` packed
@@ -251,11 +263,12 @@ Do not re-litigate without an explicit decision.
   apply refuses on SI/virtio. `/bin/sola-arcade` not linked on canto.
   Not in the QEMU image (`cargo make build` never packs Steam /
   Xwayland / mesa / gamescope).
-  **T32 (target, not implemented):** a pack is a directory matching
-  that layout (no recipe language). Realization id is the content hash
-  of the tree. Store becomes `/oath/store/pkg/<name>/<hash>/`. Name is
-  a slot; hash is the bits. `desired.hash` is the pin; apply verifies.
-  Two runnable at once is still two names.
+  **T32 (in):** a pack is a directory matching that layout (no recipe
+  language). Realization id is SHA-256 of `oath-tree-v1`. Store is
+  `/oath/store/pkg/<name>/<hash>/`. Name is a slot; hash is the bits.
+  `desired.hash` is the pin; apply verifies. Two runnable at once is
+  still two names. Extra hashes stay on disk. Host helper prints the
+  hash (`cargo make store`). Guest `oath pack` is still out.
 - Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
   dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
@@ -346,8 +359,9 @@ Do not re-litigate without an explicit decision.
   [docs/plans/2026-08-31-sola-terminal-plan.md](docs/plans/2026-08-31-sola-terminal-plan.md)
   (complete). No T29 plan file (packed from the freeze).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
-  (T20 identity, not implemented). Pack identity: T32
+  (T20 identity; serving not implemented). Pack identity: T32
   ([docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md))
+  (hash-in-path in)
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
   (canto; QEMU image 2026-09-11); sola-workspaces packed
@@ -357,4 +371,5 @@ Do not re-litigate without an explicit decision.
   copy on nas (canto gen 16); T35 guest toolchain live on canto (gen 19);
   T37 session Steam on canto (gen 21); gamescope/arcade not on SI; other kit apps not;
   T39 Omarchy session payload (Hyprland + Quickshell packed, Sola default);
+  T32 hash-in-path in (canto old layout until next pack);
   Phase 6 metal canary (canto) dogfoodable

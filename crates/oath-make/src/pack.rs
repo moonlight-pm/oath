@@ -7,7 +7,7 @@ use anyhow::{bail, Context, Result};
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
-use oath_core::{converge_with_link_root, write_json};
+use oath_core::{converge_with_link_root, promote_store, write_json};
 
 use crate::cpio;
 use crate::tools::Tools;
@@ -479,6 +479,17 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         let _ = fs::remove_file(guest_bin.join("jq"));
         symlink("../oath/store/pkg/grim/bin/jq", guest_bin.join("jq"))?;
     }
+
+    let cache = host_store_cache(root);
+    eprintln!(">> hash-in-path store ({})", cache.display());
+    let pins = promote_store(&oath_root, Some(&cache)).map_err(|e| anyhow::anyhow!("{e}"))?;
+    for (n, h) in &pins {
+        eprintln!("   pkg:{n} {h}");
+    }
+    if oath_root.join("store/pkg/grim/bin/jq").is_file() {
+        let _ = fs::remove_file(guest_bin.join("jq"));
+    }
+    relink_present(&oath_root, &guest_bin)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -1452,11 +1463,92 @@ fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {
 }
 
 fn link_pkg(oath_root: &Path, bin_dir: &Path, name: &str, removable: bool) -> Result<()> {
-    let mut actual = converge_with_link_root(oath_root, bin_dir, Path::new("/oath"), name, true)
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let hash = desired_hash(oath_root, name);
+    let mut actual =
+        converge_with_link_root(oath_root, bin_dir, Path::new("/oath"), name, true, &hash)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
     actual.removable = removable;
     write_json(&oath_root.join("objects/pkg").join(name).join("actual.json"), &actual)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(())
+}
+
+fn desired_hash(oath_root: &Path, name: &str) -> String {
+    let p = oath_root.join("objects/pkg").join(name).join("desired.json");
+    let Ok(v) = oath_core::read_json::<serde_json::Value>(&p) else {
+        return String::new();
+    };
+    v.get("hash").and_then(|h| h.as_str()).unwrap_or("").to_string()
+}
+
+fn relink_present(oath_root: &Path, bin_dir: &Path) -> Result<()> {
+    let dir = oath_root.join("objects/pkg");
+    if !dir.is_dir() {
+        return Ok(());
+    }
+    let mut names: Vec<String> = fs::read_dir(&dir)?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_dir())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    for name in names {
+        let desired = oath_root.join("objects/pkg").join(&name).join("desired.json");
+        let Ok(v) = oath_core::read_json::<serde_json::Value>(&desired) else {
+            continue;
+        };
+        if v.get("present").and_then(|p| p.as_bool()) != Some(true) {
+            continue;
+        }
+        let removable = oath_root
+            .join("objects/pkg")
+            .join(&name)
+            .join("actual.json")
+            .exists()
+            .then(|| {
+                oath_core::read_json::<serde_json::Value>(
+                    &oath_root.join("objects/pkg").join(&name).join("actual.json"),
+                )
+                .ok()
+                .and_then(|a| a.get("removable").and_then(|x| x.as_bool()))
+                .unwrap_or(true)
+            })
+            .unwrap_or(true);
+        link_pkg(oath_root, bin_dir, &name, removable)?;
+    }
+    Ok(())
+}
+
+pub fn host_store_cache(repo: &Path) -> PathBuf {
+    std::env::var("OATH_STORE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| repo.join(".cache/oath/store"))
+}
+
+/// Install a pack directory into the host cache and print the hash.
+pub fn store_pack(repo: &Path, name: &str, from: &Path, tar: bool) -> Result<()> {
+    if name.is_empty() || name.contains('/') || name.starts_with('.') {
+        bail!("bad pkg name {name}");
+    }
+    let cache = host_store_cache(repo);
+    let hash = oath_core::hash_tree(from).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let tree = cache.join("pkg").join(name).join(&hash);
+    if !tree.is_dir() {
+        oath_core::copy_pack_tree(from, &tree).map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    println!("pkg:{name} {hash}");
+    println!("{}", tree.display());
+    if tar {
+        let tarball = cache.join("pkg").join(name).join(format!("{hash}.tar"));
+        run(Command::new("tar").args([
+            "-C",
+            tree.to_str().unwrap(),
+            "-cf",
+            tarball.to_str().unwrap(),
+            ".",
+        ]))?;
+        println!("{}", tarball.display());
+    }
     Ok(())
 }
 

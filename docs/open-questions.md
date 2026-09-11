@@ -161,17 +161,19 @@ user. Log uid + tty.
 `mutate` vs `confirm`. Halt, wipe, boot-generation (except undo last)
 need `--confirm`. Agents do not pass it unless the owner asked.
 
-### T11 — Package store — locked 2026-08-28, amended T32 2026-09-03
+### T11 — Package store — locked 2026-08-28, amended T32 2026-09-03, as-built 2026-09-11
 
-`/oath/store/pkg/<name>/` is the package tree (as-built). **T32
-target:** `/oath/store/pkg/<name>/<hash>/`. `/bin` is a symlink farm
-to that tree. No hard links. No second PATH. No unpack into `/usr`.
+`/oath/store/pkg/<name>/<hash>/` is the package tree. `/bin` is a
+symlink farm to that tree. Slot also has `live` → `<hash>` and compat
+`bin` → `live/bin` (RPATH). No hard links. No second PATH. No unpack
+into `/usr`. Old layout (`store/pkg/<name>/bin` as a real directory)
+is still accepted until the next pack.
 
-### T12 — Package surface — locked 2026-08-28, amended T32 2026-09-03
+### T12 — Package surface — locked 2026-08-28, amended T32 2026-09-03, as-built 2026-09-11
 
 Kind `pkg`. Same `oath` verbs (`set` / `apply` / `undo`). No `oath
-install`, no apt dialect. v0 field `present`. **T32 target:** also
-`hash` (the pin). No fetch, no glibc, no from-source in this slice.
+install`, no apt dialect. Fields `present` and `hash` (the pin).
+Fetch is T18/T20 (`pkg.url`).
 
 ### T13 — Phase 3 first package — locked 2026-08-28
 
@@ -213,13 +215,16 @@ the store. No package repository. No new verbs.
 virtio-gpu, `/dev/dri/card0`, `dev:card0`. gtk window when DISPLAY is
 set. Probe headless. No Wayland, River, or Sola in this slice.
 
-### T20 — Package hosting — locked 2026-08-30
+### T20 — Package hosting — locked 2026-08-30, amended 2026-09-11
 
 `pkg.url` is the origin. Another Oath host that has a store tree may
 serve those bytes; the peer sets `url` and applies. No canonical
 archive, no `repo` kind, no git-as-store. Apply does not clone.
-Serving the store, signatures, and discovery are deferred. Content-hash
-identity is T32.
+An HTTPS object `{origin}/pkg/{name}/{hash}.tar` is a valid origin
+(object storage is just HTTPS). A bootstrap default origin is allowed
+(not a kind); intended first deploy `https://store.oath.wicket.cloud`
+(not live). Serving the store from a guest, signatures, and discovery
+are deferred. Content-hash identity is T32 (in).
 
 ### T21 — Sola on Oath, River first — locked 2026-08-30
 
@@ -315,14 +320,15 @@ Unix name `home`, uid/gid 1, `HOME=/home`. Graphical stack as
 `$HOME/.profile`). Groups: `root` and `home` only. Helpers at
 `/lib/oath`. No `/usr`. No new kind.
 
-### T32 — Pack identity — locked 2026-09-03
+### T32 — Pack identity — locked 2026-09-03, as-built 2026-09-11
 
 A pack is a directory matching the store layout. No recipe language.
-Realization id is the content hash of that tree. Target store
+Realization id is SHA-256 of `oath-tree-v1`. Store
 `/oath/store/pkg/<name>/<hash>/`. Name is a slot; hash is the bits.
 `desired.hash` is the pin; apply verifies, does not choose. Same
 verbs; no new kind. Git is not the version. Two runnable at once is
-still two names (T24).
+still two names (T24). Host cache `.cache/oath/store` (`cargo make
+store`). Canto still old layout until next pack.
 
 ### T33 — Off-box backup (one NFS copy) — locked 2026-09-03, amended 2026-09-04
 
@@ -388,3 +394,5 @@ guest ELFs.
 | 2026-09-08 | T36 | system dbus + BlueZ for menubar chip; session MPRIS still out | this file |
 | 2026-09-06 | T38 | last-5 firmware boots; `oath.subvol`; current kernel/mesa; T27 menu Out lifted | this file; [specs/2026-09-06-boot-generations.md](specs/2026-09-06-boot-generations.md) |
 | 2026-09-10 | T39 | Omarchy session payload; keep Sola; `host:local.session`; Hyprland compositor | this file; [specs/2026-09-10-omarchy-session.md](specs/2026-09-10-omarchy-session.md) |
+| 2026-09-11 | T32 | hash-in-path as-built (`oath-tree-v1` SHA-256); host `.cache/oath/store` | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |
+| 2026-09-11 | T20 | object-storage tar is `pkg.url`; bootstrap origin allowed, not canonical; not deployed | this file; [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) |

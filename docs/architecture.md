@@ -83,10 +83,10 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /lib/oath/init         same ELF on disk (not exec'd after chroot)
     /lib/oath/serial-login
     /lib/oath/sudo         setuid; /bin/sudo
-    /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
+    /bin/*                 symlink farm into /oath/store/pkg/<name>/<hash>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,quickshell,omarchy,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,foot,grim,xwayland,gamescope,mesa,steam,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,quickshell,omarchy,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,foot,grim,xwayland,gamescope,mesa,steam,hello,fetchme}/<hash>/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -101,7 +101,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     quickshell         pkg:quickshell + svc:omarchy-shell (Omarchy bar +
                        menu; wants svc:hyprland; seed enabled=false)
     omarchy            pkg:omarchy tree at $OMARCHY_PATH
-                       (/oath/store/pkg/omarchy); pack-time adapt
+                       (/oath/store/pkg/omarchy/live); pack-time adapt
                        (uwsm-app / gtk-launch / xdg-terminal-exec / jq
                        shims; omarchy-pkg-* → /lib/oath/omarchy-pkg-oath);
                        share/fonts = JetBrainsMono NF + Liberation +
@@ -213,7 +213,7 @@ UTC) which calls `/lib/oath/backup-send` (T33).
 
 Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
 `oath apply` on `pkg:*` creates or removes `/bin` symlinks into
-`/oath/store/pkg/<name>/bin/`. Undo restores `store/` with the catalog
+`/oath/store/pkg/<name>/<hash>/bin/`. Undo restores `store/` with the catalog
 then converges links.
 
 Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /

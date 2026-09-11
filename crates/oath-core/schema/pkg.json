@@ -8,11 +8,15 @@
   "properties": {
     "present": {
       "type": "boolean",
-      "description": "If true, files in /oath/store/pkg/<name>/bin/ are symlinked at /bin/<basename>. If false, those links are removed. The store tree stays."
+      "description": "If true, files in /oath/store/pkg/<name>/<hash>/bin/ are symlinked at /bin/<basename>. If false, those links are removed. The store tree stays."
     },
     "url": {
       "type": "string",
-      "description": "If non-empty, apply wget's this URL into the store when present (local store wins if already there)."
+      "description": "If non-empty, apply wget's this URL into the store when present (local store wins if already there). A .tar URL is a pack tree; an origin prefix plus hash fetches {url}/pkg/{name}/{hash}.tar. Object storage is just HTTPS."
+    },
+    "hash": {
+      "type": "string",
+      "description": "Pin: realization id sha256-<64 hex> of the pack tree (oath-tree-v1). Apply verifies. Empty is discovery (fetch or unique on-disk tree reports actual.hash)."
     },
     "requires": {
       "type": "object",

@@ -584,7 +584,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -x /bin/hyprland && readlink /bin/hyprland | grep -q /oath/store/pkg/hyprland/bin/hyprland && echo HYPR_BIN",
+        "test -x /bin/hyprland && readlink /bin/hyprland | grep -q /oath/store/pkg/hyprland/sha256- && echo HYPR_BIN",
         Some("HYPR_BIN"),
         "pkg.hyprland_bin",
         Duration::from_secs(8),
@@ -616,7 +616,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -x /bin/quickshell && readlink /bin/quickshell | grep -q /oath/store/pkg/quickshell/bin/quickshell && echo QS_BIN",
+        "test -x /bin/quickshell && readlink /bin/quickshell | grep -q /oath/store/pkg/quickshell/sha256- && echo QS_BIN",
         Some("QS_BIN"),
         "pkg.quickshell_bin",
         Duration::from_secs(8),
@@ -632,7 +632,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
-        "test -x /bin/grok && readlink /bin/grok | grep -q /oath/store/pkg/grok/bin/grok && echo GROK_BIN",
+        "test -x /bin/grok && readlink /bin/grok | grep -q /oath/store/pkg/grok/sha256- && echo GROK_BIN",
         Some("GROK_BIN"),
         "pkg.grok_bin",
         Duration::from_secs(8),
@@ -1115,7 +1115,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         &mut vm,
         &mut steps,
         "readlink /bin/oath",
-        Some("/oath/store/pkg/oath/bin/oath"),
+        Some("/oath/store/pkg/oath/sha256-"),
         "pkg.oath_symlink",
         Duration::from_secs(8),
     )?;
@@ -1123,7 +1123,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         &mut vm,
         &mut steps,
         "readlink /bin/busybox",
-        Some("/oath/store/pkg/busybox/bin/busybox"),
+        Some("/oath/store/pkg/busybox/sha256-"),
         "pkg.busybox_symlink",
         Duration::from_secs(8),
     )?;
@@ -1131,7 +1131,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         &mut vm,
         &mut steps,
         "readlink /bin/btrfs",
-        Some("/oath/store/pkg/btrfs/bin/btrfs"),
+        Some("/oath/store/pkg/btrfs/sha256-"),
         "pkg.btrfs_symlink",
         Duration::from_secs(8),
     )?;
@@ -1203,7 +1203,7 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
         &mut vm,
         &mut steps,
         "readlink /bin/hello",
-        Some("/oath/store/pkg/hello/bin/hello"),
+        Some("/oath/store/pkg/hello/sha256-"),
         "pkg.symlink",
         Duration::from_secs(8),
     )?;

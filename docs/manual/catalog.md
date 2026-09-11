@@ -13,7 +13,7 @@ The catalog is the source of truth. It lives at `/oath`.
     meta.json              id, safety, status
     applied.json           `svc` only — last applied desired
   log/apply.jsonl
-  store/pkg/<name>/        package trees (not desired state; apply links /bin)
+  store/pkg/<name>/<hash>/ package trees (not desired state; apply links /bin)
   run/                     sockets, mounts — not desired state
     init.sock
     fs/                    btrfs top-level (subvolid=0)

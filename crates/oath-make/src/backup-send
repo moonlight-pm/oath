@@ -36,7 +36,8 @@ thaw_all() {
 		rev="$n $rev"
 	done
 	for name in $rev; do
-		hook=/oath/store/pkg/$name/libexec/oath-backup-thaw
+		hook=/oath/store/pkg/$name/live/libexec/oath-backup-thaw
+		[ -x "$hook" ] || hook=/oath/store/pkg/$name/libexec/oath-backup-thaw
 		if [ -x "$hook" ]; then
 			log "thaw pkg:$name"
 			"$hook" || log "thaw pkg:$name failed (continuing)"
@@ -109,7 +110,8 @@ quiesce_all() {
 	$bb touch "$quiesced_list"
 	for dir in $($bb ls /oath/objects/pkg 2>/dev/null | $bb sort); do
 		pkg_present "$dir" || continue
-		hook=/oath/store/pkg/$dir/libexec/oath-backup-quiesce
+		hook=/oath/store/pkg/$dir/live/libexec/oath-backup-quiesce
+		[ -x "$hook" ] || hook=/oath/store/pkg/$dir/libexec/oath-backup-quiesce
 		[ -x "$hook" ] || continue
 		log "quiesce pkg:$dir"
 		if ! "$hook"; then

@@ -8,6 +8,8 @@ mod qemu;
 mod tools;
 mod util;
 
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
@@ -88,6 +90,18 @@ enum Cmd {
         #[arg(long)]
         render: bool,
     },
+    /// Hash a pack directory into `.cache/oath/store` (same layout as the guest).
+    Store {
+        /// Pack directory (`bin/`, `lib/`, …).
+        #[arg(long)]
+        from: PathBuf,
+        /// Catalog slot (`pkg:<name>`).
+        #[arg(long)]
+        name: String,
+        /// Also write `{hash}.tar` next to the tree (object-storage blob).
+        #[arg(long)]
+        tar: bool,
+    },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
     Esp {
@@ -157,6 +171,7 @@ fn real() -> Result<()> {
             let tools = tools::load(&root)?;
             pack::boot_image(&root, &out, &tools)?;
         }
+        Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
         Cmd::Esp { esp, confirm, root: root_dev } => {
             install::update_esp(&root, &out, install::EspOpts { esp, confirm, root_dev })?;
         }

@@ -123,6 +123,9 @@ pub struct Pkg {
     /// If non-empty, apply wget's this into the store when `present`.
     #[serde(default)]
     pub url: String,
+    /// Pin: realization id (`sha256-` + 64 hex). Empty = discovery.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub hash: String,
     /// Hardware the bits need. Apply `present=true` is refused if unmet.
     #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
     pub requires: PkgRequires,
@@ -180,6 +183,24 @@ pub struct PkgActual {
     pub removable: bool,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub url: String,
+    /// Live realization (what `/bin` points at). Empty on old-layout
+    /// trees that have not been hashed yet.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub hash: String,
+    /// Other realizations of this name still on disk.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub realizations: Vec<PkgRealization>,
     #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
     pub requires: PkgRequires,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PkgRealization {
+    pub hash: String,
+    pub linked: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bins: Vec<String>,
+    /// First lines of pack `INDEX.md`, if present.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub index: String,
 }

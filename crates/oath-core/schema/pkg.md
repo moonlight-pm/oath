@@ -1,23 +1,32 @@
 # pkg
 
-A package. Bits live under `/oath/store/pkg/<name>/`. `/bin` is a
-symlink farm, not an unpack target. There is no `apt` and no
-`oath install`.
+A package. Bits live under `/oath/store/pkg/<name>/<hash>/`. `/bin` is
+a symlink farm, not an unpack target. There is no `apt` and no
+`oath install`. Name is a slot; hash is the bits.
 
-**When to use:** install or remove a package (`present`).
+**When to use:** install or remove a package (`present`); pin a
+realization (`hash`).
 
 **When not:** do not `ln` or `rm` in `/bin`. Do not exec from the
-store. Do not fetch; v0 payloads are already on the image. Do not set
-`present=false` on `pkg:busybox`, `pkg:btrfs`, `pkg:oath`,
-`pkg:dropbear`, or `pkg:glibc`.
+store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
+`pkg:oath`, `pkg:dropbear`, or `pkg:glibc`.
 
 ## Fields
 
-- `present` — `true` links `store/.../bin/*` into `/bin`. `false`
-  removes **this object’s** links. Store stays so re-install needs no
-  network.
-- `url` — optional. If set and the store file is missing, apply wget’s
-  it into the store then links. `pkg:fetchme` is the canary.
+- `present` — `true` links `store/.../<hash>/bin/*` into `/bin`.
+  `false` removes **this object’s** links. Store stays so re-install
+  needs no network.
+- `hash` — optional pin. Realization id is `sha256-` plus 64 lowercase
+  hex of the pack tree (`oath-tree-v1` in this schema). Apply verifies
+  bytes match; it does not choose. Empty hash is discovery: unique
+  on-disk tree or a fetch reports `actual.hash`. Two hashes of one
+  name can sit on disk; only the pin is linked.
+- `url` — optional. If set and the store is missing, apply wget’s it
+  then links. A `.tar` (or `.tar.gz`) is a pack tree (hash is of the
+  tree, not the tar). An origin prefix plus `hash` fetches
+  `{url}/pkg/{name}/{hash}.tar` — object storage is just HTTPS. A
+  single file (canary `pkg:fetchme`) becomes `bin/<name>`. Local store
+  wins if the realization is already there.
 - `requires` — optional hardware the bits need. `drm_modifiers: true`
   means apply `present=true` is refused unless a connected GPU exports
   Vulkan WSI DRM format modifiers (AMD GFX6–8 and virtio-gpu do not).
@@ -25,8 +34,15 @@ store. Do not fetch; v0 payloads are already on the image. Do not set
   allowed. `sola-arcade` lives in `pkg:sola`; apply skips that `/bin`
   link on the same GPUs rather than refusing the whole Sola blob.
 
-Actual also has `links` (basenames in `/bin`) and `removable`. If
-`removable` is false, `present=false` is refused (not `--confirm`).
+The slot also has `live` → `<hash>` and compat symlinks (`bin` →
+`live/bin`, …) so RPATH/env that still name
+`/oath/store/pkg/<name>/lib` keep working. Those wrappers are not
+part of the hash.
+
+Actual also has `links` (basenames in `/bin`), `removable`, live
+`hash`, and `realizations` (other trees for this name: hash, linked,
+`bin/` names, first lines of pack `INDEX.md`). If `removable` is
+false, `present=false` is refused (not `--confirm`).
 
 Safety: `mutate`. Apply snapshots, then converges links.
 

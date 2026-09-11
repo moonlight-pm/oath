@@ -1,8 +1,9 @@
 use std::sync::Mutex;
 
 use oath_core::{
-    converge_pkg, seed, with_drm_modifiers_override, Actor, ApplyHooks, Catalog, Error, Host,
-    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
+    converge_pkg, hash_tree, ingest_file, install_tree, is_realization_id, promote_slot, seed,
+    with_drm_modifiers_override, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks,
+    ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
 
@@ -127,10 +128,12 @@ impl ApplyHooks for MemHooks {
                 links: Vec::new(),
                 removable: true,
                 url: desired.url.clone(),
+                hash: desired.hash.clone(),
+                realizations: Vec::new(),
                 requires: desired.requires.clone(),
             });
         }
-        converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present)
+        converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present, &desired.hash)
     }
 }
 
@@ -564,8 +567,99 @@ fn sola_arcade_bin_skipped_without_drm_modifiers() {
     std::fs::write(store.join("sola-session"), "session\n").unwrap();
     std::fs::write(store.join("sola-arcade"), "arcade\n").unwrap();
     with_drm_modifiers_override(false, || {
-        converge_pkg(d.path(), &d.path().join("bin"), "sola", true).unwrap();
+        converge_pkg(d.path(), &d.path().join("bin"), "sola", true, "").unwrap();
     });
     assert!(d.path().join("bin/sola-session").symlink_metadata().unwrap().file_type().is_symlink());
     assert!(d.path().join("bin/sola-arcade").symlink_metadata().is_err());
+}
+
+#[test]
+fn pack_hash_in_path_and_pin() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let hash = promote_slot(d.path(), "hello", None).unwrap();
+    assert!(is_realization_id(&hash), "{hash}");
+    assert!(d.path().join("store/pkg/hello").join(&hash).join("bin/hello").is_file());
+    assert!(d
+        .path()
+        .join("store/pkg/hello/live")
+        .symlink_metadata()
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    let obj = cat.get(&"pkg:hello".parse().unwrap()).unwrap();
+    assert_eq!(obj.desired["hash"], json!(hash));
+
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(true));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let target = std::fs::read_link(d.path().join("bin/hello")).unwrap();
+    assert!(target.ends_with(format!("store/pkg/hello/{hash}/bin/hello")), "{target:?}");
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["hash"], json!(hash));
+    assert_eq!(obj.actual["present"], json!(true));
+}
+
+#[test]
+fn pack_second_tree_stays_unlinked() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let h1 = promote_slot(d.path(), "hello", None).unwrap();
+    let other = d.path().join("hello-wip");
+    std::fs::create_dir_all(other.join("bin")).unwrap();
+    std::fs::write(other.join("bin/hello"), "other\n").unwrap();
+    let h2 = install_tree(d.path(), "hello", &other, None, "").unwrap();
+    assert_ne!(h1, h2);
+    assert!(d.path().join("store/pkg/hello").join(&h1).join("bin/hello").is_file());
+    assert!(d.path().join("store/pkg/hello").join(&h2).join("bin/hello").is_file());
+
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(true));
+    fields.insert("hash".into(), json!(h1));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let target = std::fs::read_link(d.path().join("bin/hello")).unwrap();
+    assert!(target.to_string_lossy().contains(&h1), "{target:?}");
+    assert!(!target.to_string_lossy().contains(&h2), "{target:?}");
+
+    let mut fields = Map::new();
+    fields.insert("hash".into(), json!(h2));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let target = std::fs::read_link(d.path().join("bin/hello")).unwrap();
+    assert!(target.to_string_lossy().contains(&h2), "{target:?}");
+    assert!(d.path().join("store/pkg/hello").join(&h1).join("bin/hello").is_file());
+}
+
+#[test]
+fn pack_hash_mismatch_refuses() {
+    let (d, _cat) = tmp();
+    write_hello_store(d.path());
+    let tree = d.path().join("store/pkg/hello");
+    let err = install_tree(
+        d.path(),
+        "hello",
+        &tree,
+        None,
+        "sha256-0000000000000000000000000000000000000000000000000000000000000000",
+    )
+    .unwrap_err();
+    match err {
+        Error::Hint { message, .. } => assert!(message.contains("does not match"), "{message}"),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn ingest_file_reports_hash() {
+    let (d, _cat) = tmp();
+    let h = ingest_file(d.path(), "fetchme", b"fetched\n", None, "").unwrap();
+    assert!(is_realization_id(&h), "{h}");
+    assert_eq!(hash_tree(&d.path().join("store/pkg/fetchme").join(&h)).unwrap(), h);
+    assert!(d.path().join("store/pkg/fetchme").join(&h).join("bin/fetchme").is_file());
 }

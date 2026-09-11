@@ -6,14 +6,19 @@ patched upstream (`forks/`), and not borrowed prebuilts (`image/`).
 Each directory is the store tree for `pkg:<name>`:
 
 ```
-apps/<name>/bin/<name>  →  /oath/store/pkg/<name>/bin/<name>
+apps/<name>/bin/<name>  →  /oath/store/pkg/<name>/<hash>/bin/<name>
 ```
 
 That layout **is** the pack. Oath does not ship a recipe language;
-authors produce this tree however they want. Target identity (content
-hash, `/oath/store/pkg/<name>/<hash>/`, pin on `desired.hash`) is T32
-([docs/specs/2026-09-03-pkg-pack-identity.md](../docs/specs/2026-09-03-pkg-pack-identity.md))
-— not implemented; as-built store has no hash component.
+authors produce this tree however they want. Realization id is
+SHA-256 of `oath-tree-v1`; store is `/oath/store/pkg/<name>/<hash>/`;
+pin on `desired.hash` (T32). Host cache:
+
+```
+cargo make store --name hello --from apps/hello --tar
+```
+
+writes `.cache/oath/store/pkg/hello/<hash>/` and an optional `.tar`.
 
 Optional, next to `bin/`:
 

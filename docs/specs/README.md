@@ -27,7 +27,7 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-09-02-sola-workspaces.md](2026-09-02-sola-workspaces.md) | T29: `sola-workspaces` + `solactl` in `pkg:sola` |
 | [2026-09-02-pkg-grok.md](2026-09-02-pkg-grok.md) | T30: `pkg:grok` catalog-owned; Grok does not self-update |
 | [2026-09-02-seat-home.md](2026-09-02-seat-home.md) | T31: seat `home`; SSH home; sudo ALL; `/lib/oath`; `host.env` |
-| [2026-09-03-pkg-pack-identity.md](2026-09-03-pkg-pack-identity.md) | T32: pack identity (content hash; not implemented) |
+| [2026-09-03-pkg-pack-identity.md](2026-09-03-pkg-pack-identity.md) | T32: pack identity (content hash; hash-in-path in) |
 | [2026-09-03-pkg-thoxa.md](2026-09-03-pkg-thoxa.md) | `pkg:thoxa` login shell |
 | [2026-09-03-backup-nfs.md](2026-09-03-backup-nfs.md) | T33: one NFS copy |
 | [2026-09-04-utc-clock.md](2026-09-04-utc-clock.md) | T34: UTC system clock; `host:local.timezone` |

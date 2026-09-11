@@ -278,9 +278,10 @@ pub fn load(root: &Path) -> Result<Tools> {
             std::env::var_os("OATH_OMARCHY_FONTS").map(PathBuf::from).filter(|p| p.is_dir())
         }),
         foot: foot.filter(|p| p.is_dir()).or_else(|| opt_dir("foot")),
-        grim: grim.filter(|p| p.is_dir()).or_else(|| opt_dir("grim")).or_else(|| {
-            std::env::var_os("OATH_GRIM").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
+        grim: grim
+            .filter(|p| p.is_dir())
+            .or_else(|| opt_dir("grim"))
+            .or_else(|| std::env::var_os("OATH_GRIM").map(PathBuf::from).filter(|p| p.is_dir())),
         sola_rt,
         git,
         curl,

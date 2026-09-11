@@ -140,6 +140,6 @@ oath apply svc:backup
 
 Snapshot is crash-consistent (`sync` + btrfs CoW). Packs that need a
 freeze (postgres WAL, etc.) may ship
-`/oath/store/pkg/<name>/libexec/oath-backup-quiesce` and
+`/oath/store/pkg/<name>/live/libexec/oath-backup-quiesce` and
 `oath-backup-thaw`. No hook means skip. Reboot without a rebuilt ESP
 initrd drops nfs.ko (canto this boot loaded it by hand).

@@ -1,16 +1,12 @@
 **Date:** 2026-09-03
 **Status:** target (freeze)
-**Implementation:** not started
-**Dogfood:** none
+**Implementation:** partial (2026-09-11)
+**Dogfood:** unit tests; host `.cache/oath/store`; not yet on canto (old layout until next pack)
 **Gaps:**
-- store path is still `/oath/store/pkg/<name>/` (no hash component)
-- no `hash` field on `pkg` desired/actual
-- `oath get` does not list realizations
-- no pack-from-path helper (host `cargo make` copies trees; no hash print)
 - guest store export still T20
-- hash function + canonical tree encoding not chosen (must be
-  deterministic and written into `schema/pkg.md` when shipped)
 - signatures / signed indexes still out
+- reaping unused realizations still out
+- canto live store is still `/oath/store/pkg/<name>/` until the next image pack
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Pack identity (content hash, no recipe language)
@@ -165,8 +161,8 @@ still does not make the name mean one program.
 - New kind (`repo`, `src`) or new verbs (`oath install`, `oath pack`
   as a guest verb — a host helper may print a hash)
 - Reaping unused realizations
-- Hash function bikeshed in this freeze (implementation + schema
-  when shipped)
+- Hash function bikeshed in this freeze — shipped as SHA-256 of
+  `oath-tree-v1` (`schema/pkg.md`)
 - Signatures, canonical archive, peer discovery (T20)
 - Package dependencies
 - Changing T24 “two runnable = two names”

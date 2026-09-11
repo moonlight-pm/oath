@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -7,9 +7,9 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    converge_dev, converge_net, converge_pkg, converge_ssh, gen_subvol_name, tel, ApplyHooks, Dev,
-    DevActual, Error, Host, HostPower, Net, ObjectId, Pkg, PkgActual, Result, Ssh, SshActual,
-    BTRFS_TOP, LIVE_SUBVOL,
+    converge_dev, converge_net, converge_pkg, converge_ssh, fetch_url, gen_subvol_name,
+    ingest_file, install_tree, store_present, tel, ApplyHooks, Dev, DevActual, Error, Host,
+    HostPower, Net, ObjectId, Pkg, PkgActual, Result, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -268,9 +268,10 @@ impl ApplyHooks for Live {
             self.catalog_root.join("bin")
         };
         if desired.present && !desired.url.is_empty() {
-            fetch_pkg(&self.catalog_root, &id.name, &desired.url)?;
+            fetch_pkg(&self.catalog_root, &id.name, &desired.url, &desired.hash)?;
         }
-        let actual = converge_pkg(&self.catalog_root, &bin, &id.name, desired.present)?;
+        let actual =
+            converge_pkg(&self.catalog_root, &bin, &id.name, desired.present, &desired.hash)?;
         tel(
             "oath",
             "pkg",
@@ -284,26 +285,74 @@ impl ApplyHooks for Live {
     }
 }
 
-fn fetch_pkg(catalog_root: &Path, name: &str, url: &str) -> Result<()> {
-    let dir = catalog_root.join("store/pkg").join(name).join("bin");
-    fs::create_dir_all(&dir)?;
-    let dest = dir.join(name);
-    if dest.is_file() {
+fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Result<()> {
+    if store_present(catalog_root, name, hash) {
         return Ok(());
     }
-    let tmp = dir.join(format!(".{name}.wget"));
+    let url = fetch_url(url, name, hash);
+    if url.is_empty() {
+        return Ok(());
+    }
+    let tmpdir = catalog_root.join("store/pkg").join(format!(".{name}.wget"));
+    let _ = fs::remove_dir_all(&tmpdir);
+    fs::create_dir_all(&tmpdir)?;
+    let blob = tmpdir.join("blob");
     let st = Command::new("/bin/wget")
-        .args(["-q", "-O", tmp.to_str().unwrap(), url])
+        .args(["-q", "-O", blob.to_str().unwrap(), &url])
         .status()
         .map_err(|e| Error::Msg(format!("wget: {e}")))?;
     if !st.success() {
-        let _ = fs::remove_file(&tmp);
+        let _ = fs::remove_dir_all(&tmpdir);
         return Err(Error::hint(format!("fetch pkg:{name} failed"), "oath schema pkg"));
     }
-    use std::os::unix::fs::PermissionsExt;
-    let mut perm = fs::metadata(&tmp)?.permissions();
-    perm.set_mode(0o755);
-    fs::set_permissions(&tmp, perm)?;
-    fs::rename(&tmp, dest)?;
+    let result = if looks_like_tar(&blob) {
+        let tree = tmpdir.join("tree");
+        fs::create_dir_all(&tree)?;
+        extract_tar(&blob, &tree)?;
+        install_tree(catalog_root, name, &tree, None, hash)
+    } else {
+        let bytes = fs::read(&blob)?;
+        ingest_file(catalog_root, name, &bytes, None, hash)
+    };
+    let _ = fs::remove_dir_all(&tmpdir);
+    result.map(|_| ())
+}
+
+fn looks_like_tar(path: &Path) -> bool {
+    let Ok(mut fd) = fs::File::open(path) else {
+        return false;
+    };
+    let mut hdr = [0u8; 262];
+    let Ok(n) = fd.read(&mut hdr) else {
+        return false;
+    };
+    if n >= 2 && hdr[0] == 0x1f && hdr[1] == 0x8b {
+        return true;
+    }
+    n >= 262 && &hdr[257..262] == b"ustar"
+}
+
+fn extract_tar(blob: &Path, dest: &Path) -> Result<()> {
+    let gzip = looks_like_gzip(blob);
+    let mut cmd = Command::new("/bin/tar");
+    cmd.arg("-C").arg(dest);
+    if gzip {
+        cmd.arg("-xzf");
+    } else {
+        cmd.arg("-xf");
+    }
+    cmd.arg(blob);
+    let st = cmd.status().map_err(|e| Error::Msg(format!("tar: {e}")))?;
+    if !st.success() {
+        return Err(Error::hint("fetch pack tar extract failed", "oath schema pkg"));
+    }
     Ok(())
+}
+
+fn looks_like_gzip(path: &Path) -> bool {
+    let Ok(mut fd) = fs::File::open(path) else {
+        return false;
+    };
+    let mut b = [0u8; 2];
+    matches!(fd.read(&mut b), Ok(2) if b[0] == 0x1f && b[1] == 0x8b)
 }

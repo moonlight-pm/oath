@@ -92,7 +92,7 @@ and a loop-mount (sudo) are still external tools.
 - btrfs disk, live subvolume `@`
 - `/lib/oath/init` — PID 1 after switch-root
 - Catalog at `/oath`
-- `/oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hello}/`; `/bin` is a symlink farm
+- `/oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hello}/<hash>/`; `/bin` is a symlink farm
 - `/bin/hello` only after `pkg:hello` is present
 
 ## Telemetry

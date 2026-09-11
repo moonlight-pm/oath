@@ -1,11 +1,9 @@
 **Date:** 2026-08-30
 **Status:** target (freeze)
-**Implementation:** not started
-**Dogfood:** none (identity only; `pkg:fetchme` already fetches a URL)
-**Gaps:** no guest store export; no peer discovery; signatures still out.
-  Content-hash identity is T32
-  ([2026-09-03-pkg-pack-identity.md](2026-09-03-pkg-pack-identity.md)), not
-  implemented.
+**Implementation:** not started (serving); identity locked. T32 hash-in-path is in.
+**Dogfood:** none for a live origin (`pkg:fetchme` still QEMU wget canary)
+**Gaps:** no guest store export; no peer discovery; signatures still out;
+  bootstrap origin not deployed.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Package hosting (Oath hosts as origin)
@@ -34,6 +32,15 @@ store, pin on `desired.hash`) is T32.
 
 T18’s “no package repository” means no apt/canonical archive. This
 freeze is the identity of hosting, not a second index language.
+
+**Amended 2026-09-11:** an HTTPS object (bucket, S3, static host) of
+`{origin}/pkg/{name}/{hash}.tar` is a valid origin — that is still
+`pkg.url`. The hash is of the pack tree, not the tar. A **bootstrap
+default** origin is allowed so a new box can fill a missing pin; it is
+not a `repo` kind and not canonical. Intended first deploy: an Oath
+guest (or a static bucket of those tarballs) at
+`https://store.oath.wicket.cloud`. Host development cache is
+`.cache/oath/store` (`cargo make store --name <n> --from <dir> --tar`).
 
 ---
 

@@ -1,8 +1,11 @@
 # Packages
 
 A package is a `pkg:*` catalog object. Bits live under
-`/oath/store/pkg/<name>/`. `/bin` is a **symlink farm**, not an unpack
-target. There is no `apt` and no `oath install`.
+`/oath/store/pkg/<name>/<hash>/`. `/bin` is a **symlink farm**, not an unpack
+target. Name is a slot; hash is the bits (`sha256-` plus 64 hex of
+`oath-tree-v1`). The slot also has `live` → `<hash>` and compat
+`bin` → `live/bin` so paths like `/oath/store/pkg/<name>/lib` still
+work. There is no `apt` and no `oath install`.
 
 ## What ships
 
@@ -39,7 +42,7 @@ target. There is no `apt` and no `oath install`.
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 
 `/bin/hello` prints `hello`. The symlink target is
-`/oath/store/pkg/hello/bin/hello`. Do not exec from the store; `/bin`
+`/oath/store/pkg/hello/<hash>/bin/hello`. Do not exec from the store; `/bin`
 is how you run what is installed.
 
 `present=false` on a non-removable package is **refused** (not
@@ -55,8 +58,8 @@ Optional backup hooks in the store tree (T32/T33), not catalog
 fields:
 
 ```
-/oath/store/pkg/<name>/libexec/oath-backup-quiesce
-/oath/store/pkg/<name>/libexec/oath-backup-thaw
+/oath/store/pkg/<name>/live/libexec/oath-backup-quiesce
+/oath/store/pkg/<name>/live/libexec/oath-backup-thaw
 ```
 
 `backup-send` runs quiesce on **present** packs that shipped the
@@ -91,6 +94,21 @@ not auto-enumerated; canto pins Intel PCH analog as **Built-in Audio**
 (`hw:0,0`) in the packed `pipewire.conf.d`. `wpctl status` as `home`
 (`XDG_RUNTIME_DIR=/run/user/1`) is the check.
 
-`url` on a `pkg` object: if `present` and the store file is missing,
-apply wget’s the URL into the store then links. The appliance canary
-is `pkg:fetchme` (`http://10.0.2.2:18765/fetchme` on QEMU user net).
+`hash` on a `pkg` object is the pin. Apply verifies the tree matches.
+Empty hash is discovery (`actual.hash` is reported). Switch with
+`oath set pkg:foo hash=sha256-…` then apply. Extra hashes stay on disk.
+
+`url` on a `pkg` object: if `present` and the store is missing, apply
+wget’s the URL then links. A `.tar` is a pack tree (hash is of the
+tree). An origin prefix plus `hash` fetches
+`{url}/pkg/{name}/{hash}.tar` (object storage is just HTTPS). A single
+file (canary `pkg:fetchme`, `http://10.0.2.2:18765/fetchme` on QEMU
+user net) becomes `bin/<name>`. Local store wins if the realization is
+already there.
+
+Host development cache (same layout): `.cache/oath/store` or
+`$OATH_STORE`.
+
+```
+cargo make store --name hello --from apps/hello --tar
+```

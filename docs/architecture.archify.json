@@ -134,11 +134,11 @@
       "id": "pkg-store",
       "type": "database",
       "label": "pkg store",
-      "sublabel": "/oath/store/pkg",
+      "sublabel": "pkg/<name>/<hash>",
       "row": 2,
       "col": 2,
       "sources": [
-        { "path": "crates/oath-core/src/pkg.rs", "line": 1, "end_line": 13, "label": "/bin links" }
+        { "path": "crates/oath-core/src/pkg.rs", "line": 1, "end_line": 20, "label": "/bin links" }
       ]
     },
     {

@@ -63,6 +63,8 @@ pub trait ApplyHooks {
             links: Vec::new(),
             removable: true,
             url: desired.url.clone(),
+            hash: desired.hash.clone(),
+            realizations: Vec::new(),
             requires: desired.requires.clone(),
         })
     }

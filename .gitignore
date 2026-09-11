@@ -1,6 +1,7 @@
 /apocrypha/
 /target/
 /.worktrees/
+/.cache/
 /result
 /result-*
 /build/

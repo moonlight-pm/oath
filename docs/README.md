@@ -61,7 +61,7 @@ ask the human.
 | [`specs/2026-09-02-pkg-grok.md`](specs/2026-09-02-pkg-grok.md) | T30 `pkg:grok` (vendor-updating pkgs) | **Target** (packed; canto) |
 | [`specs/2026-09-02-seat-home.md`](specs/2026-09-02-seat-home.md) | T31 seat `home` + `/lib/oath` + env | **Target** (canto `ssh home@canto`; graphical as `home`) |
 | [`specs/2026-09-03-pkg-thoxa.md`](specs/2026-09-03-pkg-thoxa.md) | `pkg:thoxa` login shell | **Target** (canto live; QEMU image 2026-09-11) |
-| [`specs/2026-09-03-pkg-pack-identity.md`](specs/2026-09-03-pkg-pack-identity.md) | T32 pack identity (content hash, hash-in-path, pin) | **Target** (not implemented) |
+| [`specs/2026-09-03-pkg-pack-identity.md`](specs/2026-09-03-pkg-pack-identity.md) | T32 pack identity (content hash, hash-in-path, pin) | **Target** (hash-in-path in; canto old layout until next pack) |
 | [`specs/2026-09-03-backup-nfs.md`](specs/2026-09-03-backup-nfs.md) | T33 off-box backup (one NFS send, overwrite) | **Target** (partial; canto) |
 | [`specs/2026-09-04-utc-clock.md`](specs/2026-09-04-utc-clock.md) | T34 UTC system clock; `host:local.timezone` display | **Target** (partial; canto Sola clock Mountain) |
 | [`specs/2026-09-05-guest-toolchain.md`](specs/2026-09-05-guest-toolchain.md) | T35 guest toolchain (`pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config`) | **Target** (canto gen 19) |

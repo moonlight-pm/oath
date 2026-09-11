@@ -228,6 +228,11 @@ impl Catalog {
                     "present": obj.actual.get("present").cloned().unwrap_or(json!(false)),
                     "url": obj.desired.get("url").cloned().unwrap_or(json!("")),
                 });
+                if let Some(h) = obj.desired.get("hash") {
+                    if !h.as_str().unwrap_or("").is_empty() {
+                        last["hash"] = h.clone();
+                    }
+                }
                 if let Some(req) = obj.desired.get("requires") {
                     last["requires"] = req.clone();
                 }
@@ -456,6 +461,9 @@ impl Catalog {
         actual.removable = removable;
         actual.url = pkg.url.clone();
         actual.requires = pkg.requires.clone();
+        if actual.hash.is_empty() && !pkg.hash.is_empty() {
+            actual.hash = pkg.hash.clone();
+        }
         write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
         self.touch_status(id, "in-sync")?;
         Ok(())
