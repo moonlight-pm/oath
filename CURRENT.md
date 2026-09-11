@@ -195,6 +195,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ```sh
 nix-shell
+cargo make map            # as-built overview; public: https://oath.wicket.cloud/
 cargo make build
 cargo make probe
 cargo make run

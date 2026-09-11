@@ -3,8 +3,8 @@
 **Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
 **Dogfood:** Ubuntu 7.3-rc1 panicked. Live canto is **7.3.0-rc1 #4**
   + GPIO_DC-skip amdgpu (`force high` 850/1270); T39 initrd is PID 1
-  (btusb + unix_floor dbus dirs). Last-5: boot **12**,11,10,9,8.
-  **boot 7** pruned this rotate; **boot 4** (6.12.93 rescue) earlier.
+  (btusb + unix_floor dbus dirs). Last-5: boot **14**,13,12,11,10.
+  **boot 9** pruned this rotate; **boot 7** / **boot 4** (6.12 rescue) earlier.
   QEMU `run`/`probe` stay `-kernel`.
 **Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
   visible; oath-efi still paints over it. River GLES is still the

@@ -62,7 +62,7 @@ in the tree.
 
 ---
 
-## As-built (2026-09-10)
+## As-built (2026-09-11)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -226,23 +226,25 @@ dropbear, no `switch_root`. Format GPT ESP + btrfs `@`. Copy packed
 tree. Boot graphics is layered, not one path: EFI GOP splash
 (`oath-efi` as `BOOTX64.EFI`) when firmware has GOP; PID 1 defers KMS
 drivers that would kick a live firmware framebuffer (amdgpu/i915/…,
-not virtio-gpu) until just before River; River starts black until
-Sola paints. USB installer still systemd-boot + tty0. QEMU `run`
+not virtio-gpu) until just before the session compositor. Sola: River
+starts black until Sola paints. Omarchy: Hyprland + Quickshell bar.
+USB installer still systemd-boot + tty0. QEMU `run`
 is still `-kernel`. Metal `oath-efi` reads `loader/loader.conf` +
 `loader/oath-boots` (timeout 5) and `loader/entries/oath.conf` plus
 `oath-<id>.conf` archives under `/oath/boot/<id>/`. `oath.subvol=@`
 or `@boot-N`. `cargo make esp --esp --confirm` rotates without a wipe.
 Canto live kernel is vanilla **7.3.0-rc1 #4** (`image/linux.fragment`).
-Last-5 archives are boot **12** (T39 init), 11, 10, 9, 8 (boot 7
-pruned this rotate; boot 4 / 6.12 rescue earlier). systemd-boot is
+Last-5 archives are boot **14** (kvm-aware PID 1), 13, 12, 11, 10
+(boot 9 pruned this rotate; boot 7 / 4 earlier). systemd-boot is
 `BOOTX64` so the menu is visible. Ubuntu generic is not the product kernel.
 Two Broadcom `tg3` ports; live cable is MAC
 `00:3e:e1:cb:06:08` (renamed `net0`). kexec left that NIC down; EFI
 oneshot / USB installer is the working entry. After boot, PID 1 waits
 for carrier then dhcp. Dual Pitcairn amdgpu (`si_support=1`);
-`/lib/oath/run-compositor` binds River to the connected DRM card. The
-graphical stack runs as Unix user `home`. SSH is `home`; serial is root.
-sola-river picks the mode matching physical mm.
+`/lib/oath/run-compositor` binds River to the connected DRM card
+(`session=sola`). Canto live is **`session=omarchy`**: Hyprland on the
+connected card. The graphical stack runs as Unix user `home`. SSH is
+`home`; serial is root. sola-river picks the mode matching physical mm.
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-efi` (UEFI
 splash), `oath-make` (host build CLI: `cargo make`). Artifacts in
