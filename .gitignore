@@ -4,6 +4,7 @@
 /result
 /result-*
 /build/
+/docs/*.visual-check.*
 *.iso
 *.qcow2
 *.img

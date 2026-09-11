@@ -42,7 +42,7 @@ means incomplete product work. Full model:
 |------|------|------|
 | Focus | Root `CURRENT.md` | Priority, next moves, dogfood facts, locks |
 | As-built progress | `docs/capabilities.md` | Capability status + gaps |
-| As-built map | `docs/architecture.md` | Processes, trees, paths, images |
+| As-built map | `docs/architecture.md` + `architecture.html` | Processes, trees, paths, images; `cargo make map` |
 | Target design | `docs/specs/*` | Freezes (desired shape) |
 | Horizon | `docs/roadmap.md` | Phase-level program status |
 | Product docs | `docs/manual/` | Current operator user manual |
@@ -52,7 +52,8 @@ means incomplete product work. Full model:
 1. Update capability row(s) (status and/or gaps).
 2. Update `CURRENT.md` if priority or dogfood changed.
 3. Update `docs/manual/` if operator-visible **shipped** behavior changed.
-4. Update `architecture.md` if the system map changed.
+4. Update `architecture.md` if the system map changed (and the Archify
+   overview: `architecture.archify.json` + `cargo make map --render`).
 5. Flip `roadmap.md` phase status only when phase-level status changes.
 6. Follow [`.grok/skills/oath-progress-docs/SKILL.md`](.grok/skills/oath-progress-docs/SKILL.md).
 
@@ -143,6 +144,8 @@ docs/
   progress-model.md   How progress docs work
   capabilities.md     As-built capability matrix
   architecture.md     As-built system map
+  architecture.html   Interactive overview (`cargo make map`)
+  architecture.archify.json  Archify spec (rebuild with `cargo make map --render`)
   roadmap.md          Program horizon
   open-questions.md   Design forks + ask-human decisions
   specs/              Target freezes (dated)
@@ -155,7 +158,7 @@ crates/oath-core      catalog, kinds, apply/undo
 crates/oath           CLI (guest)
 crates/oath-init      PID 1 + serial-login
 crates/oath-efi       UEFI splash (native GOP, white mark, LoadImage)
-crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe
+crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe / map
 image/                tools.nix only (borrowed prebuilts)
 forks/                maintained source forks (submodules; build-time)
 apps/                 first-party pkg sources (`hello`, `fetchme`, …)

@@ -67,6 +67,9 @@ Run through every item. Mark N/A only with a reason.
 
 4. **[`docs/architecture.md`](../../../docs/architecture.md)**
    - If as-built system map changed (processes, trees, paths, images).
+   - Update [`architecture.archify.json`](../../../docs/architecture.archify.json)
+     to match, then `cargo make map --render`. Commit JSON + HTML with the
+     prose map. Do not hand-edit `architecture.html`.
 
 5. **Active freeze under `docs/specs/`**
    - Refresh Implementation / Dogfood / Gaps header if the freeze’s

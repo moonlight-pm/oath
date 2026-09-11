@@ -33,6 +33,8 @@ ask the human.
 | [`../CURRENT.md`](../CURRENT.md) | Living priority, dogfood, locks | **Focus** |
 | [`capabilities.md`](capabilities.md) | Capability status + gaps | **As-built** |
 | [`architecture.md`](architecture.md) | Processes, trees, image layout | **As-built** map |
+| [`architecture.html`](architecture.html) | Interactive overview (`cargo make map`) | **As-built** map |
+| [`architecture.archify.json`](architecture.archify.json) | Archify spec for the overview | **As-built** map |
 | [`progress-model.md`](progress-model.md) | How is / will-be / focus / manual fit | Meta |
 | [`progress-documentation-practice.md`](progress-documentation-practice.md) | Portable practice (shareable) | Meta |
 | [`roadmap.md`](roadmap.md) | Coarse multi-month phases | **Horizon** |

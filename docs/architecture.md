@@ -10,6 +10,55 @@
 | Session priority + dogfood | Root [CURRENT.md](../CURRENT.md) |
 | How docs fit together | [progress-model.md](progress-model.md) |
 | Product docs | [manual/](manual/) — current operator manual |
+| Interactive overview | [architecture.html](architecture.html) (`cargo make map`) |
+
+---
+
+## Interactive overview
+
+The 10-node as-built picture is [architecture.html](architecture.html)
+(Archify, showcase). Open it:
+
+```sh
+cargo make map                 # xdg-open the HTML
+cargo make map --print         # path only
+cargo make architecture        # alias
+```
+
+Public copy (Wicket forge workload): **https://oath.wicket.cloud/** (map at `/map`).
+Refresh that site from this tree: copy `docs/architecture.html` into
+Wicket `extras/oath/site/architecture.html`, rebuild `oath-site`, apply
+(see Wicket `extras/oath/README.md`).
+
+Prose below is the detailed map. The HTML is the overview (admin surface,
+boot/PID 1, catalog objects, seat session). Do not hand-edit the HTML.
+
+**Source spec:** [architecture.archify.json](architecture.archify.json).
+
+### Keeping it current
+
+Same authority as this file: as-built, not a roadmap. When the system map
+changes (processes, crates, boot path, catalog kinds, seat/session):
+
+1. Update this prose map first. It is the evidence.
+2. Edit `architecture.archify.json` so nodes, edges, `components[].sources`,
+   and cards match. Keep **at most 12** nodes. Do not invent topology.
+3. Set `meta.repository.revision` to a 40-character commit whose blobs match
+   those `sources` paths and line ranges (`git rev-parse HEAD` after the cited
+   code exists).
+4. Rebuild the HTML (needs Node, and Archify at `OATH_ARCHIFY` or
+   `~/.grok/skills/archify`):
+
+   ```sh
+   cargo make map --render
+   ```
+
+   Showcase must pass (9/9 checks, 0 errors, 0 warnings) or `--render` fails
+   and leaves the previous HTML.
+5. Commit **JSON + HTML + this file** in the same change as the code.
+
+`--render` does not invent a new diagram. It only delivers the spec already
+in the tree.
 
 ---
 
@@ -197,7 +246,8 @@ sola-river picks the mode matching physical mm.
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-efi` (UEFI
 splash), `oath-make` (host build CLI: `cargo make`). Artifacts in
-`build/` (gitignored).
+`build/` (gitignored). Interactive overview: `cargo make map`
+([architecture.html](architecture.html)).
 Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 
 **Target:**

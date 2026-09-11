@@ -27,6 +27,7 @@ cargo make up             # headless; serial in the run log; Ctrl-C kills QEMU
 cargo make start          # same, background
 cargo make ssh            # ssh -p 2222 home@127.0.0.1
 cargo make stop
+cargo make map            # as-built architecture overview (host HTML)
 cargo make esp --esp /dev/sda1 --confirm   # metal: only on the box that owns that ESP
 ```
 

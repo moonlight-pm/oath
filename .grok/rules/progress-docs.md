@@ -6,7 +6,7 @@ Progress docs are first-class. Incomplete meta work is incomplete product work.
 |------|------|
 | Focus | Root `CURRENT.md` only |
 | Maturity | `docs/capabilities.md` |
-| Map | `docs/architecture.md` |
+| Map | `docs/architecture.md` + `architecture.html` (`cargo make map`) |
 | Freezes | `docs/specs/` |
 | Horizon | `docs/roadmap.md` |
 | Forks | `docs/open-questions.md` |

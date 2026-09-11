@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Oath as-built structure",
+    "locale": "en",
+    "output": "architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/moonlight-pm/oath",
+      "revision": "ee9c30250218f65b174ba3089087688c01e36c0b"
+    },
+    "views": [
+      {
+        "id": "admin-surface",
+        "label": "Admin surface",
+        "focus": ["operator", "oath-cli", "catalog"],
+        "note": "Humans and agents use the same oath CLI against the live /oath catalog."
+      },
+      {
+        "id": "boot-pid1",
+        "label": "Boot and PID 1",
+        "focus": ["oath-make", "kernel", "oath-init"],
+        "note": "cargo make packs the image; /init stays PID 1 after chroot and supervises svc:*."
+      },
+      {
+        "id": "catalog-objects",
+        "label": "Catalog objects",
+        "focus": ["catalog", "pkg-store", "generations", "oath-init"],
+        "note": "apply snapshots live @, then converges pkg:* links and remaining objects."
+      },
+      {
+        "id": "seat-session",
+        "label": "Seat session",
+        "focus": ["oath-init", "compositor", "desk"],
+        "note": "One compositor: River+Sola or Hyprland+Omarchy, running as home."
+      }
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [48, 96],
+    "cols": 5,
+    "gapX": 130,
+    "gapY": 124,
+    "cellW": 120,
+    "cellH": 70
+  },
+  "components": [
+    {
+      "id": "oath-make",
+      "type": "backend",
+      "label": "oath-make",
+      "sublabel": "cargo make",
+      "row": 0,
+      "col": 0,
+      "sources": [
+        { "path": "crates/oath-make/src/main.rs", "line": 13, "end_line": 23, "label": "host CLI" }
+      ]
+    },
+    {
+      "id": "kernel",
+      "type": "cloud",
+      "label": "Kernel + initrd",
+      "sublabel": "bzImage + initrd",
+      "row": 0,
+      "col": 3,
+      "sources": [
+        { "path": "image/build-linux.sh", "line": 1, "end_line": 3, "label": "vanilla + fragment" },
+        { "path": "crates/oath-make/src/qemu.rs", "line": 18, "end_line": 29, "label": "QEMU image" },
+        { "path": "crates/oath-efi/src/main.rs", "line": 1, "end_line": 2, "label": "EFI LoadImage" }
+      ]
+    },
+    {
+      "id": "operator",
+      "type": "external",
+      "label": "Human / agent",
+      "sublabel": "SSH · serial",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "oath-cli",
+      "type": "frontend",
+      "label": "oath",
+      "sublabel": "admin surface",
+      "row": 1,
+      "col": 1,
+      "sources": [
+        { "path": "crates/oath/src/main.rs", "line": 11, "end_line": 58, "label": "verbs" }
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "database",
+      "label": "Catalog",
+      "sublabel": "/oath INDEX.md",
+      "tag": "typed objects",
+      "row": 1,
+      "col": 2,
+      "sources": [
+        { "path": "crates/oath-core/src/lib.rs", "line": 43, "end_line": 52, "label": "kinds" },
+        { "path": "crates/oath-core/src/catalog.rs", "line": 180, "end_line": 186, "label": "apply" },
+        { "path": "crates/oath-core/src/index.rs", "line": 24, "end_line": 31, "label": "INDEX.md" }
+      ]
+    },
+    {
+      "id": "oath-init",
+      "type": "backend",
+      "label": "oath-init",
+      "sublabel": "PID 1 · svc:*",
+      "tag": "init.sock",
+      "row": 1,
+      "col": 3,
+      "sources": [
+        { "path": "crates/oath-init/src/main.rs", "line": 120, "end_line": 186, "label": "boot + converge" },
+        { "path": "crates/oath-init/src/main.rs", "line": 946, "end_line": 979, "label": "svc loop" }
+      ]
+    },
+    {
+      "id": "compositor",
+      "type": "frontend",
+      "label": "Compositor",
+      "sublabel": "River | Hyprland",
+      "tag": "exclusive",
+      "row": 1,
+      "col": 4,
+      "sources": [
+        { "path": "crates/oath-core/src/session.rs", "line": 1, "end_line": 13, "label": "desk lists" },
+        { "path": "crates/oath-core/src/kinds.rs", "line": 40, "end_line": 51, "label": "host.session" }
+      ]
+    },
+    {
+      "id": "pkg-store",
+      "type": "database",
+      "label": "pkg store",
+      "sublabel": "/oath/store/pkg",
+      "row": 2,
+      "col": 2,
+      "sources": [
+        { "path": "crates/oath-core/src/pkg.rs", "line": 1, "end_line": 13, "label": "/bin links" }
+      ]
+    },
+    {
+      "id": "generations",
+      "type": "database",
+      "label": "Generations",
+      "sublabel": "@gen-N · @boot-N",
+      "row": 2,
+      "col": 3,
+      "sources": [
+        { "path": "crates/oath-core/src/layout.rs", "line": 3, "end_line": 22, "label": "btrfs subvols" }
+      ]
+    },
+    {
+      "id": "desk",
+      "type": "frontend",
+      "label": "Desk",
+      "sublabel": "Sola | Omarchy",
+      "row": 2,
+      "col": 4,
+      "sources": [
+        { "path": "crates/oath-core/src/session.rs", "line": 10, "end_line": 23, "label": "sola / omarchy" },
+        { "path": "crates/oath-core/src/seat.rs", "line": 1, "end_line": 16, "label": "home uid 1" }
+      ]
+    }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Host packer", "wraps": ["oath-make"] },
+    { "kind": "region", "label": "Catalog /oath", "wraps": ["catalog", "pkg-store"] },
+    { "kind": "security-group", "label": "Seat home uid 1", "wraps": ["compositor", "desk"] }
+  ],
+  "connections": [
+    { "id": "operator-to-cli", "from": "operator", "to": "oath-cli", "label": "oath verbs", "variant": "emphasis" },
+    { "id": "cli-to-catalog", "from": "oath-cli", "to": "catalog", "label": "INDEX.md" },
+    { "id": "catalog-to-init", "from": "catalog", "to": "oath-init", "label": "converge" },
+    { "id": "init-to-compositor", "from": "oath-init", "to": "compositor", "label": "exclusive" },
+    { "id": "compositor-to-desk", "from": "compositor", "to": "desk", "label": "Wayland", "labelDy": 24 },
+    { "id": "make-to-kernel", "from": "oath-make", "to": "kernel", "label": "pack image", "variant": "dashed" },
+    { "id": "kernel-to-init", "from": "kernel", "to": "oath-init", "label": "/init", "labelDy": 24 },
+    { "id": "catalog-to-pkg", "from": "catalog", "to": "pkg-store", "label": "/bin links", "labelDy": 24 },
+    { "id": "init-to-generations", "from": "oath-init", "to": "generations", "label": "snapshot @", "labelDy": 24 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Identity",
+      "items": [
+        "From-scratch Linux: own PID 1, own catalog, not a remix",
+        "The admin surface is oath; Unix is the substrate"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Control plane",
+      "items": [
+        "Live tree is /oath (host, svc, snap, pkg, net, ssh, dev)",
+        "oath apply snapshots @, then PID 1 converges on /oath/run/init.sock"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Seat",
+      "items": [
+        "host:local.session is sola or omarchy; one compositor",
+        "Graphical stack and SSH login are Unix user home (uid 1)"
+      ]
+    }
+  ]
+}

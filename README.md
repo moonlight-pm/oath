@@ -56,6 +56,7 @@ Nothing is a daily driver. Metal canary (canto) installs with
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).
+Public intro + as-built map: [oath.wicket.cloud](https://oath.wicket.cloud/).
 
 | | |
 |--|--|
@@ -80,6 +81,7 @@ they are not the runtime.
 ```sh
 cargo test -p oath-core
 nix-shell                 # optional: kernel, qemu, musl cc, busybox, btrfs
+cargo make map            # as-built architecture overview (browser)
 cargo make build          # sudo to loop-mount the disk
 cargo make probe          # courage test; writes build/runs/<id>/
 cargo make run            # interactive serial + run dir
@@ -96,7 +98,7 @@ See [`CURRENT.md`](CURRENT.md) and [`docs/manual/qemu.md`](docs/manual/qemu.md).
 crates/oath-core   catalog, kinds, apply/undo
 crates/oath        CLI (guest)
 crates/oath-init   PID 1 + serial login
-crates/oath-make   host build CLI (`cargo make`): pack image, QEMU run, probe
+crates/oath-make   host build CLI (`cargo make`): pack image, QEMU run, probe, map
 image/             tools.nix (borrowed kernel/busybox/qemu)
 docs/              progress model, freeze, operator manual
 ```

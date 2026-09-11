@@ -45,7 +45,7 @@ Never mix “is” and “will be” in the same paragraph without an explicit l
 |------|----------------|-------------|
 | **Focus** | Root [`CURRENT.md`](../CURRENT.md) | Priority, next moves, or dogfood/runtime facts change |
 | **As-built progress** | [`capabilities.md`](capabilities.md) | Capability status or gaps change |
-| **As-built system map** | [`architecture.md`](architecture.md) | Processes, trees, paths, image layout change |
+| **As-built system map** | [`architecture.md`](architecture.md) + [`architecture.html`](architecture.html) (`cargo make map`) | Processes, trees, paths, image layout change; keep the Archify spec in lockstep |
 | **Target design** | [`specs/`](specs/) freezes | Decisions lock or amend (**not** a changelog) |
 | **Horizon** | [`roadmap.md`](roadmap.md) | Phase-level status flips only |
 | **Open forks** | [`open-questions.md`](open-questions.md) | A fork opens or closes |
@@ -202,7 +202,7 @@ a **process failure**.
 | Item | Why deferred | When to revisit |
 |------|----------------|-----------------|
 | CI that fails if shipped capability has no manual page | Manual discipline first | After matrix has shipped rows |
-| Generate architecture diagram from the image | Hand map is enough | After a QEMU image exists |
+| Generate architecture diagram from the image | Hand map + Archify overview (`cargo make map`) is enough | After packing can emit a machine-readable tree |
 | Live catalog generated from repo specs | No catalog yet | When the object model freezes |
 
 Do not use this table as a second product tracker.

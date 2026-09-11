@@ -181,7 +181,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    systemd. Do not write a real disk the operator did not name, or
    without `--confirm`.
 
-**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe|install` (`--build` on run/up/start).
+**Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe|install|map` (`--build` on run/up/start).
 
 ---
 

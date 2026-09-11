@@ -83,6 +83,7 @@ repo/
 │   ├── progress-model.md     # project-local instance of this practice
 │   ├── capabilities.md       # AS-BUILT progress matrix
 │   ├── architecture.md       # AS-BUILT system map
+│   ├── architecture.html     # interactive overview (optional; generate from spec)
 │   ├── roadmap.md            # HORIZON (phases)
 │   ├── open-questions.md     # design forks + “ask human” decision points
 │   ├── specs/                # TARGET freezes (dated)
@@ -270,7 +271,7 @@ decision in one short paragraph — and start work (or ask the human first).
 2. Update **capability row(s)** (status and/or gaps)  
 3. Update **CURRENT** Now and/or dogfood if priority or hosts changed  
 4. **Product docs** only if operator-visible shipped behavior changed  
-5. **architecture.md** if system map changed  
+5. **architecture.md** if system map changed (and any generated overview)  
 6. **Freeze header** Implementation / Dogfood / Gaps if that freeze moved  
 7. **roadmap.md** only if a **phase-level** status flipped  
 8. **open-questions.md** if a fork opened, closed, or a decision was answered  
@@ -302,7 +303,7 @@ with a reason.
 [ ] capabilities.md — row(s): Status, Gaps, Dogfood, product-docs column
 [ ] CURRENT.md — Now / dogfood / locks if any of those changed (keep thin)
 [ ] Product docs — only if shipped (or limited partial) operator-visible UX changed
-[ ] architecture.md — if processes, packages, ports, backends, state paths changed
+[ ] architecture.md — if processes, packages, ports, backends, state paths changed (plus generated overview if the project has one)
 [ ] Active freeze header — Implementation / Dogfood / Gaps if implementation moved
 [ ] roadmap.md — only if phase-level status flipped
 [ ] open-questions.md — if a design fork opened/closed or D* was answered

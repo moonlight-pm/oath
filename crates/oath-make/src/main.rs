@@ -1,6 +1,7 @@
 mod boot;
 mod cpio;
 mod install;
+mod map;
 mod pack;
 mod probe;
 mod qemu;
@@ -77,6 +78,16 @@ enum Cmd {
     },
     /// Pack kernel + initrd + oath-efi only (no qcow, no ESP write).
     Boot,
+    /// Open the as-built architecture overview (interactive HTML).
+    #[command(visible_alias = "architecture")]
+    Map {
+        /// Print the HTML path; do not open a browser.
+        #[arg(long)]
+        print: bool,
+        /// Rebuild docs/architecture.html from the Archify spec (needs Node + Archify).
+        #[arg(long)]
+        render: bool,
+    },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
     Esp {
@@ -141,6 +152,7 @@ fn real() -> Result<()> {
                 install::Opts { target, disk, confirm, qemu, usb, hostname },
             )?;
         }
+        Cmd::Map { print, render } => map::show(&root, print, render)?,
         Cmd::Boot => {
             let tools = tools::load(&root)?;
             pack::boot_image(&root, &out, &tools)?;

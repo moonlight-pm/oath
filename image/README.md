@@ -36,6 +36,7 @@ use it.
 Host orchestration is Rust:
 
 ```
+cargo make map            # as-built architecture overview
 cargo make build
 cargo make probe
 cargo make run            # --build packs first (also up / start)
