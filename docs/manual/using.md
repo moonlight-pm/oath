@@ -68,11 +68,14 @@ Graphical desk (`host:local.session`, default `sola`):
 ```
 oath set host:local session=omarchy
 oath apply              # refused (exit 3)
-oath apply --confirm    # stops River/Sola, enables Hyprland; reboot after
-oath undo               # previous session
+sudo oath apply --confirm    # stops River/Sola, enables Hyprland
+oath undo                    # previous session
 ```
 
-River and Hyprland cannot both be enabled. Bits for both desks stay packed.
+Needs `--confirm` (kills the graphical session). Reboot if the incoming compositor
+loses the DRM race. River and Hyprland cannot both be enabled. Bits for
+both desks stay packed. `ssh home@canto /bin/busybox ash` for scripts
+(`thoxa -c` echoes a quoted script).
 
 ## Who you are
 

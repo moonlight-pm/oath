@@ -11,7 +11,11 @@
 - [x] PID 1 honors `session` (do not start the other desk).
 - [x] `pkg:hyprland` + `svc:hyprland` (enabled false); relocate nixpkgs
       Hyprland `withSystemd = false` like River (pack verified).
-- [ ] Probe: pkg present, session sola, hyprland svc off. Sola desk
-      still the graphical default (`cargo make build` + `probe`).
-- [ ] Next (not this plan): Hyprland paints; then Quickshell +
-      `$OMARCHY_PATH`; then DRM-wait live switch.
+- [x] Canto paint: `session=omarchy`, Hyprland on DP-10 1920×1080,
+      `wayland-1` (2026-09-11). Busybox tar `../` symlink strip fixed
+      in relocate (absolute guest paths).
+- [ ] Probe: pkg present, session sola default on QEMU image
+      (`cargo make build` + `probe`).
+- [ ] Next (not this plan): Quickshell + `$OMARCHY_PATH`; DRM-wait
+      live switch; ESP rotate so PID 1 is T39 init (live canto still
+      uses `sola-hypr=1` seat hint).

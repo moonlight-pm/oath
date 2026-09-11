@@ -115,16 +115,15 @@ if [[ -n ${LIBINPUT_SHARE:-} && -d $LIBINPUT_SHARE ]]; then
 fi
 
 if [[ -n ${MESA:-} ]]; then
+  # Absolute guest paths: busybox tar strips leading `../` from symlink
+  # targets, which turns `../dri_gbm.so` into a self-loop.
   if [[ -e $out/lib/libdril_dri.so ]]; then
-    ln -sf ../libdril_dri.so "$out/lib/dri/virtio_gpu_dri.so"
-    ln -sf ../libdril_dri.so "$out/lib/dri/kms_swrast_dri.so"
-    ln -sf ../libdril_dri.so "$out/lib/dri/swrast_dri.so"
-    ln -sf ../libdril_dri.so "$out/lib/dri/libdril_dri.so"
-    ln -sf ../libdril_dri.so "$out/lib/dri/radeonsi_dri.so"
-    ln -sf ../libdril_dri.so "$out/lib/dri/radeon_dri.so"
+    for n in virtio_gpu_dri.so kms_swrast_dri.so swrast_dri.so libdril_dri.so radeonsi_dri.so radeon_dri.so; do
+      ln -sfn /oath/store/pkg/hyprland/lib/libdril_dri.so "$out/lib/dri/$n"
+    done
   fi
   if [[ -e $out/lib/dri_gbm.so ]]; then
-    ln -sf ../dri_gbm.so "$out/lib/gbm/dri_gbm.so"
+    ln -sfn /oath/store/pkg/hyprland/lib/dri_gbm.so "$out/lib/gbm/dri_gbm.so"
   fi
   cat >"$out/share/glvnd/egl_vendor.d/50_mesa.json" <<EOF
 {
@@ -159,7 +158,7 @@ if [[ -e $out/lib/hyprctl ]]; then
     patchelf --set-interpreter "$interp_guest" "$out/libexec/hyprctl"
   fi
   patchelf --set-rpath "$rpath" "$out/libexec/hyprctl"
-  ln -sfn ../libexec/hyprctl "$out/bin/hyprctl"
+  ln -sfn /oath/store/pkg/hyprland/libexec/hyprctl "$out/bin/hyprctl"
 fi
 
 find "$out" -type f | while read -r f; do

@@ -45,8 +45,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     dropbear           svc:sshd, keys from ssh:local; musl OpenSSH /bin/ssh +
                        /bin/scp + /bin/sftp-server (SFTPSERVER_PATH=/bin/sftp-server)
     seatd              svc:seatd (DRM seat)
-    hyprland           pkg:hyprland + svc:hyprland (seed enabled=false;
-                       session=omarchy; NO_SYSTEMD; libudev-zero; wants seatd)
+    hyprland           pkg:hyprland + svc:hyprland (session=omarchy;
+                       NO_SYSTEMD; libudev-zero; wants seatd; canto DP-10
+                       1920×1080 Hyprland 0.52.2; seed enabled=false)
     river              svc:river as `home` (glibc, libudev-zero, socket /run/user/1;
                        gles2/radeonsi on real KMS, pixman on virtio; hardware
                        cursors unless a DRM card is virtio; packed

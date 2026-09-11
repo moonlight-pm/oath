@@ -1,10 +1,14 @@
 **Date:** 2026-09-10
 **Status:** target (freeze)
-**Implementation:** partial (catalog session + Hyprland compositor pack)
-**Dogfood:** none yet (QEMU catalog; Hyprland paint unproven on virtio/SI)
+**Implementation:** partial (catalog session + Hyprland compositor on canto)
+**Dogfood:** canto `session=omarchy`; Hyprland 0.52.2 on Pitcairn DP-10
+  1920×1080 (Philips 221V8L); `wayland-1`; River/Sola stopped
 **Gaps:** Quickshell / Omarchy tree / `omarchy` CLI not packed; live
   compositor handoff does not wait for DRM; Hyprland 0.52 (nixpkgs)
-  not Omarchy’s Lua ≥0.56 desk; canto SI not a first paint target
+  not Omarchy’s Lua ≥0.56 desk; QEMU probe not rebuilt; busybox tar
+  strips `../` from pack symlinks (relocated to absolute guest paths);
+  libdrm `amdgpu.ids` still a nix store path; no fontconfig; Xwayland
+  autostarted (SI glamor not smoked)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Omarchy as a session payload (keep Sola)
@@ -50,9 +54,9 @@ manager, not a throwaway compositor, and not uninstalling Sola.
   `wants: svc:seatd`, `restart=always`, seed **enabled=false**).
   Borrowed nixpkgs Hyprland, relocated like River. Not a `forks/`
   tree unless Oath-compat needs commits.
-- **Sola remains the default desk** until Omarchy chrome (Quickshell)
-  is packed and a probe says it painted. Canto Pitcairn is not the
-  first Hyprland paint target.
+- **Sola remains the default seed.** Canto dogfood may run
+  `session=omarchy` (Hyprland compositor painted 2026-09-11). Quickshell
+  is still later.
 - **Two CLIs stay split.** `oath` owns catalog / host / svc / pkg.
   `omarchy` (later) owns theme, bar, capture, launch. `omarchy pkg` /
   `omarchy update` wrap `oath` or are absent. `/bin/xdg-open` stays

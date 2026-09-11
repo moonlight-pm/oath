@@ -13,7 +13,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. SFTP via `/bin/sftp-server`; `/bin/scp` for legacy `scp -O`; guest client is musl OpenSSH `/bin/ssh`. |
 | `svc:seatd` | `/bin/seatd -u home -g home` | enabled, `restart=always` | Seat for DRM. Socket owned by `home`. `svc:river` and `svc:hyprland` want this. |
 | `svc:river` | `/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river` (runs as `home`): picks the DRM card with a connected connector (dual-GPU). GLES2/radeonsi on real KMS, pixman on virtio. libinput via libudev-zero. Default desk (`host:local.session=sola`). Do not enable together with `svc:hyprland`. |
-| `svc:hyprland` | `/bin/hyprland` | **off** in seed, `restart=always` | Omarchy compositor (`session=omarchy`). glibc, libudev-zero, no systemd. Wants `svc:seatd`. Packed; not started until you switch session. |
+| `svc:hyprland` | `/bin/hyprland` (canto live: `/bin/env sola-hypr=1 /bin/hyprland`) | **off** in seed, `restart=always` | Omarchy compositor (`session=omarchy`). glibc, libudev-zero, no systemd. Wants `svc:seatd`. Canto dogfood: Pitcairn DP-10 1920×1080. |
 | `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/1/sola-bus`. |
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/1/sola-call`. |
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. Wrapper retries while `pidof river` is empty so a compositor restart is not treated as Quit Sola. |
