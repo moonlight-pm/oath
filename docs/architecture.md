@@ -37,7 +37,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,mesa,steam,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,quickshell,omarchy,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,mesa,steam,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -48,6 +48,10 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     hyprland           pkg:hyprland + svc:hyprland (session=omarchy;
                        NO_SYSTEMD; libudev-zero; wants seatd; canto DP-10
                        1920×1080 Hyprland 0.52.2; seed enabled=false)
+    quickshell         pkg:quickshell + svc:omarchy-shell (Omarchy bar;
+                       wants svc:hyprland; seed enabled=false)
+    omarchy            pkg:omarchy tree at $OMARCHY_PATH
+                       (/oath/store/pkg/omarchy)
     river              svc:river as `home` (glibc, libudev-zero, socket /run/user/1;
                        gles2/radeonsi on real KMS, pixman on virtio; hardware
                        cursors unless a DRM card is virtio; packed
@@ -123,9 +127,11 @@ sshd; then amdgpu + ALSA HDA (snd deferred with KMS); wait for
 `/dev/snd` when the nodes exist); then remaining `svc:*` (River/Sola
 and pipewire as `home`).
 Socket `/oath/run/init.sock`. `host:local.session` is `sola` (default)
-or `omarchy` (T39); PID 1 starts only that desk’s compositor.
+or `omarchy` (T39); PID 1 starts only that desk’s compositor. Stopping
+River or Hyprland waits up to 3 s for the DRM owner to exit before
+starting the other.
 Seeded services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
-`svc:hyprland` (seed off),
+`svc:hyprland` (seed off), `svc:omarchy-shell` (seed off),
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
 `svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`,
 `svc:pipewire-pulse`, `svc:dbus`, `svc:bluetoothd`, `svc:backup` (04:00 Mountain NFS send; seed off).

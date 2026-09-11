@@ -68,14 +68,16 @@ Graphical desk (`host:local.session`, default `sola`):
 ```
 oath set host:local session=omarchy
 oath apply              # refused (exit 3)
-sudo oath apply --confirm    # stops River/Sola, enables Hyprland
+sudo oath apply --confirm    # stops River/Sola, enables Hyprland + omarchy-shell
 oath undo                    # previous session
 ```
 
-Needs `--confirm` (kills the graphical session). Reboot if the incoming compositor
-loses the DRM race. River and Hyprland cannot both be enabled. Bits for
-both desks stay packed. `ssh home@canto /bin/busybox ash` for scripts
-(`thoxa -c` echoes a quoted script).
+Needs `--confirm` (kills the graphical session). PID 1 waits 3 s for DRM
+release; reboot if the incoming compositor still loses the race. River and
+Hyprland cannot both be enabled. Bits for both desks stay packed (`pkg:sola`
+and `pkg:hyprland` / `pkg:quickshell` / `pkg:omarchy`). Omarchy’s bar is
+`svc:omarchy-shell` (`/bin/quickshell -p $OMARCHY_PATH/shell`). `ssh home@canto
+/bin/busybox ash` for scripts (`thoxa -c` echoes a quoted script).
 
 ## Who you are
 

@@ -30,6 +30,8 @@ pub struct Tools {
     pub glibc: Option<PathBuf>,
     pub river: Option<PathBuf>,
     pub hyprland: Option<PathBuf>,
+    pub quickshell: Option<PathBuf>,
+    pub omarchy: Option<PathBuf>,
     pub sola_rt: Option<PathBuf>,
     pub git: Option<PathBuf>,
     pub curl: Option<PathBuf>,
@@ -59,6 +61,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut glibc = std::env::var_os("OATH_GLIBC").map(PathBuf::from);
     let mut river = std::env::var_os("OATH_RIVER").map(PathBuf::from);
     let mut hyprland = std::env::var_os("OATH_HYPRLAND").map(PathBuf::from);
+    let mut quickshell = std::env::var_os("OATH_QUICKSHELL").map(PathBuf::from);
+    let mut omarchy = std::env::var_os("OATH_OMARCHY").map(PathBuf::from);
     let mut sola_rt = std::env::var_os("OATH_SOLA_RT").map(PathBuf::from);
     let mut git = std::env::var_os("OATH_GIT").map(PathBuf::from);
     let mut curl = std::env::var_os("OATH_CURL").map(PathBuf::from);
@@ -116,6 +120,14 @@ pub fn load(root: &Path) -> Result<Tools> {
         });
         hyprland = hyprland.or_else(|| {
             let p = tools.join("hyprland");
+            p.is_dir().then_some(p)
+        });
+        quickshell = quickshell.or_else(|| {
+            let p = tools.join("quickshell");
+            p.is_dir().then_some(p)
+        });
+        omarchy = omarchy.or_else(|| {
+            let p = tools.join("omarchy");
             p.is_dir().then_some(p)
         });
         sola_rt = sola_rt.or_else(|| {
@@ -202,6 +214,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     let hyprland = hyprland
         .filter(|p| p.is_dir())
         .or_else(|| std::env::var_os("OATH_HYPRLAND").map(PathBuf::from).filter(|p| p.is_dir()));
+    let quickshell = quickshell.filter(|p| p.is_dir());
+    let omarchy = omarchy.filter(|p| p.is_dir());
     let sola_rt = sola_rt.filter(|p| p.is_dir());
     let git = git.filter(|p| p.is_dir());
     let curl = curl.filter(|p| p.is_file());
@@ -249,6 +263,8 @@ pub fn load(root: &Path) -> Result<Tools> {
         glibc,
         river,
         hyprland: hyprland.or_else(|| opt_dir("hyprland")),
+        quickshell: quickshell.or_else(|| opt_dir("quickshell")),
+        omarchy: omarchy.or_else(|| opt_dir("omarchy")),
         sola_rt,
         git,
         curl,

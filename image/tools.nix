@@ -18,6 +18,8 @@ let
     wlrootsSrc = ../forks/wlroots;
   };
   hyprlandPack = pkgs.callPackage ./hyprland-pack.nix { };
+  quickshellPack = pkgs.callPackage ./quickshell-pack.nix { };
+  omarchyPack = pkgs.callPackage ./omarchy-pack.nix { };
   solaRt = pkgs.callPackage ./sola-rt.nix { };
   # Dropbear looks up sftp-server at compile time. Nixpkgs defaults that
   # to a NixOS path; point it at the Oath /bin farm. enableSCP builds the
@@ -55,6 +57,8 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${riverPack}/glibc $out/glibc
   ln -s ${riverPack}/river $out/river
   ln -s ${hyprlandPack} $out/hyprland
+  ln -s ${quickshellPack} $out/quickshell
+  ln -s ${omarchyPack} $out/omarchy
   ln -s ${solaRt} $out/sola-rt
   ln -s ${pkgs.git} $out/git
   ln -s ${pkgs.pkgsStatic.curl.bin}/bin/curl $out/curl

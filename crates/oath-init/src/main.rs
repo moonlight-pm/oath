@@ -912,14 +912,28 @@ fn pid_for(kids: &HashMap<i32, Kid>, id: &str) -> Option<i32> {
     kids.iter().find(|(_, k)| k.id == id).map(|(p, _)| *p)
 }
 
-fn stop_kid(kids: &mut HashMap<i32, Kid>, id: &str) {
+fn stop_kid(kids: &mut HashMap<i32, Kid>, id: &str) -> Option<i32> {
     if let Some(pid) = pid_for(kids, id) {
         if let Some(k) = kids.remove(&pid) {
             let _ = kill(Pid::from_raw(pid), Signal::SIGTERM);
             tel("init", "svc_stop", json!({ "id": k.id, "pid": pid }));
             let oid: ObjectId = k.id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
             write_svc_actual(&oid, "stopped", None, 0);
+            return Some(pid);
         }
+    }
+    None
+}
+
+fn wait_pid_gone(pid: i32, timeout: Duration) {
+    let start = Instant::now();
+    let p = Path::new("/proc").join(pid.to_string());
+    while start.elapsed() < timeout {
+        let _ = waitpid(Pid::from_raw(pid), Some(WaitPidFlag::WNOHANG));
+        if !p.exists() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
     }
 }
 
@@ -941,6 +955,7 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
 
     let running: Vec<(i32, String, Svc)> =
         kids.iter().map(|(p, k)| (*p, k.id.clone(), k.spec.clone())).collect();
+    let mut wait_drm: Vec<i32> = Vec::new();
     for (_pid, id, spec) in running {
         let keep = wanted
             .get(&id)
@@ -952,8 +967,19 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
             })
             .unwrap_or(false);
         if !keep {
-            stop_kid(kids, &id);
+            let compositor = id == "svc:river"
+                || id == "svc:hyprland"
+                || id.ends_with(":river")
+                || id.ends_with(":hyprland");
+            if let Some(pid) = stop_kid(kids, &id) {
+                if compositor {
+                    wait_drm.push(pid);
+                }
+            }
         }
+    }
+    for pid in wait_drm {
+        wait_pid_gone(pid, Duration::from_secs(3));
     }
 
     let items: Vec<(String, Svc)> = wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();

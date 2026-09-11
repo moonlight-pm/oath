@@ -180,6 +180,9 @@ export HOME="${HOME:-/home}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 /bin/mkdir -p "$XDG_RUNTIME_DIR"
 /bin/chmod 700 "$XDG_RUNTIME_DIR"
+export LANG="${LANG:-C.UTF-8}"
+export LC_ALL="${LC_ALL:-C.UTF-8}"
+export LOCALE_ARCHIVE="${LOCALE_ARCHIVE:-/oath/store/pkg/sola/lib/locale/locale-archive}"
 export LIBSEAT_BACKEND=seatd
 export XDG_SESSION_TYPE=tty
 export LIBGL_DRIVERS_PATH=/oath/store/pkg/hyprland/lib/dri

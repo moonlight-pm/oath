@@ -37,8 +37,8 @@ is closed (uid 1, SSH `home`, groups `root`+`home`, sudo ALL,
 `/lib/oath`, `host:local.env`). T30 `pkg:grok` identity closed.
 T29 sola-workspaces closed. **T39** Omarchy session payload closed
 2026-09-10 (`host:local.session` sola|omarchy; keep Sola; exclusive
-compositor; `pkg:hyprland` + `svc:hyprland` seed off; no
-systemd/UWSM/SDDM; Quickshell later).
+compositor; `pkg:hyprland` + `svc:hyprland` seed off; `pkg:quickshell`
++ `pkg:omarchy` + `svc:omarchy-shell` seed off; no systemd/UWSM/SDDM).
 
 ---
 

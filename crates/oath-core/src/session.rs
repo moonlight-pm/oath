@@ -10,7 +10,7 @@ use crate::{write_json, Catalog, Drift, KIND_PKG, KIND_SVC};
 pub const SOLA_DESK: &[&str] =
     &["river", "sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session", "sola-kvm"];
 
-pub const OMARCHY_DESK: &[&str] = &["hyprland"];
+pub const OMARCHY_DESK: &[&str] = &["hyprland", "omarchy-shell"];
 
 pub fn is_sola_desk_svc(id: &str) -> bool {
     let name = id.strip_prefix("svc:").unwrap_or(id);

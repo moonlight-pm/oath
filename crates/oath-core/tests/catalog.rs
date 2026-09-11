@@ -161,8 +161,11 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:glibc"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:river"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:hyprland"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:quickshell"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:omarchy"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:river"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:hyprland"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:omarchy-shell"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:seatd"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:sola"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:grok"));
@@ -205,12 +208,17 @@ fn seed_lists_host() {
     assert!(idx.contains("`pkg`"));
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
     assert_eq!(host.desired["env"]["GROK_DISABLE_AUTOUPDATER"], "1");
+    assert_eq!(host.desired["env"]["OMARCHY_PATH"], "/oath/store/pkg/omarchy");
     assert_eq!(host.desired["env"]["CC"], "/bin/cc");
     assert_eq!(host.desired["timezone"], "MST7MDT,M3.2.0,M11.1.0");
     assert_eq!(host.desired["session"], "sola");
     let hypr = cat.get(&"svc:hyprland".parse().unwrap()).unwrap();
     assert_eq!(hypr.desired["enabled"], false);
     assert_eq!(hypr.desired["exec"][0], "/bin/hyprland");
+    let omarchy_shell = cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap();
+    assert_eq!(omarchy_shell.desired["enabled"], false);
+    assert_eq!(omarchy_shell.desired["exec"][0], "/bin/quickshell");
+    assert_eq!(omarchy_shell.desired["restart"], "always");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
     assert_eq!(serial.desired["exec"][0], "/lib/oath/serial-login");
     let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();
@@ -247,10 +255,12 @@ fn session_default_and_switch() {
     assert_eq!(cat.get(&"svc:river".parse().unwrap()).unwrap().desired["enabled"], false);
     assert_eq!(cat.get(&"svc:sola-shell".parse().unwrap()).unwrap().desired["enabled"], false);
     assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], true);
+    assert_eq!(cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap().desired["enabled"], true);
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&host).unwrap().desired["session"], "sola");
     assert_eq!(cat.get(&"svc:river".parse().unwrap()).unwrap().desired["enabled"], true);
     assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], false);
+    assert_eq!(cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap().desired["enabled"], false);
 }
 
 #[test]

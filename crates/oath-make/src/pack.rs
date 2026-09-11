@@ -390,6 +390,18 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     if oath_root.join("store/pkg/hyprland/bin/hyprctl").is_file() {
         chmod_exec(&oath_root.join("store/pkg/hyprland/bin/hyprctl"))?;
     }
+    let Some(quickshell) = &tools.quickshell else {
+        bail!("OATH_QUICKSHELL / tools quickshell required (pkg:quickshell)");
+    };
+    copy_tree(quickshell, &oath_root.join("store/pkg/quickshell"))?;
+    chmod_exec(&oath_root.join("store/pkg/quickshell/bin/quickshell"))?;
+    if oath_root.join("store/pkg/quickshell/libexec/quickshell").is_file() {
+        chmod_exec(&oath_root.join("store/pkg/quickshell/libexec/quickshell"))?;
+    }
+    let Some(omarchy) = &tools.omarchy else {
+        bail!("OATH_OMARCHY / tools omarchy required (pkg:omarchy)");
+    };
+    copy_tree(omarchy, &oath_root.join("store/pkg/omarchy"))?;
     let sola = pack_sola(root, tools, out)?;
     copy_tree(&sola, &oath_root.join("store/pkg/sola"))?;
     for b in SOLA_KIT_ELFS.iter().copied().chain(std::iter::once("tmux")) {
@@ -403,6 +415,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "glibc", false)?;
     link_pkg(&oath_root, &guest_bin, "river", false)?;
     link_pkg(&oath_root, &guest_bin, "hyprland", true)?;
+    link_pkg(&oath_root, &guest_bin, "quickshell", true)?;
+    link_pkg(&oath_root, &guest_bin, "omarchy", true)?;
     link_pkg(&oath_root, &guest_bin, "sola", true)?;
     let grok = grok_elf()?;
     eprintln!("grok={}", grok.display());
@@ -438,7 +452,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     let qcow = out.join("oath.qcow2");
     let _ = fs::remove_file(&raw);
     let _ = fs::remove_file(&qcow);
-    run(Command::new(&tools.qemu_img).args(["create", "-f", "raw", raw.to_str().unwrap(), "2G"]))?;
+    // Staged store is ~4.5G (sola 1.4G + rustc 1.1G + hyprland/quickshell/omarchy).
+    run(Command::new(&tools.qemu_img).args(["create", "-f", "raw", raw.to_str().unwrap(), "8G"]))?;
     run(Command::new("mkfs.btrfs").args(["-q", "-L", "oath", raw.to_str().unwrap()]))?;
     let mnt = out.join("mnt");
     let rootfs = out.join("rootfs");

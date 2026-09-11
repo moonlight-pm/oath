@@ -1,13 +1,17 @@
 **Date:** 2026-09-10
 **Status:** target (freeze)
-**Implementation:** partial (catalog session + Hyprland compositor on canto)
+**Implementation:** partial (catalog session + Hyprland + Quickshell bar on canto)
 **Dogfood:** canto `session=omarchy`; Hyprland 0.52.2 on Pitcairn DP-10
-  1920×1080 (Philips 221V8L); `wayland-1`; River/Sola stopped
-**Gaps:** Quickshell / Omarchy tree / `omarchy` CLI not packed; live
-  compositor handoff does not wait for DRM; Hyprland 0.52 (nixpkgs)
-  not Omarchy’s Lua ≥0.56 desk; QEMU probe not rebuilt; busybox tar
-  strips `../` from pack symlinks (relocated to absolute guest paths);
-  libdrm `amdgpu.ids` still a nix store path; no fontconfig; Xwayland
+  1920×1080 (Philips 221V8L); `wayland-1`; `omarchy-bar` layer 1920×26
+  as `home`; River/Sola stopped; ESP last-5 includes T39 initrd (boot 12);
+  rebooted onto T39 `/init` (kernel 7.3.0-rc1 #4; Hyprland pid 362,
+  omarchy-shell pid 367, restarts=0)
+**Gaps:** Hyprland 0.52 (nixpkgs) not Omarchy’s Lua ≥0.56 desk; QEMU
+  image packed (8G rootfs) — T39 pack facts probe ok; later probe
+  steps fail from dbus/pipewire serial spam; no session dbus / UPower /
+  SNI / Polkit; Quickshell 0.2.1 lacks `Quickshell.Networking` and
+  `PwNodePeakMonitor`; Omarchy agent collectors need a fuller bash
+  userland; libdrm `amdgpu.ids` still a nix store path; Xwayland
   autostarted (SI glamor not smoked)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
@@ -33,30 +37,32 @@ manager, not a throwaway compositor, and not uninstalling Sola.
   `session`: `omarchy` does not start River or `svc:sola-*`; `sola`
   does not start Hyprland (or later `svc:omarchy-*`).
 - **Pack both, run one.** `pkg:sola` / `pkg:river` stay present when
-  the desk is Omarchy. `pkg:hyprland` (and later `pkg:quickshell` /
-  `pkg:omarchy`) stay present when the desk is Sola. `svc:* enabled`
-  is what runs.
+  the desk is Omarchy. `pkg:hyprland` / `pkg:quickshell` / `pkg:omarchy`
+  stay present when the desk is Sola. `svc:* enabled` is what runs.
 - **Shared seat stays up** across a switch: `svc:seatd`, pipewire
   trio, `svc:dbus` / `bluetoothd`, sshd, net. sola-kvm is Sola-only
   (River virtual pointer).
 - **`session` apply is confirm.** Switching desks kills the graphical
   session. `oath apply --confirm`. Undo restores the previous
   session and the svc flags written in that generation.
-- **Live switch v0 is apply + reboot.** PID 1 SIGTERM does not wait
-  for DRM release in the same converge. A follow-up may wait and
-  skip the reboot. Installer / seed is the same field.
+- **Live switch waits for DRM.** PID 1 SIGTERMs the outgoing
+  compositor and waits up to 3 s before starting the incoming one.
+  Reboot remains the escape if the race still loses. Installer / seed
+  is the same field.
 - **PID 1 is the only supervisor.** No UWSM, no SDDM, no user
   systemd, no nested Omarchy/Sola process manager. Hyprland is
   `NO_SYSTEMD` (`withSystemd = false`). Seat is `home` via seatd +
   libudev-zero (no udevd).
-- **This slice is the compositor.** Objects: **`pkg:hyprland`**
-  (removable glibc payload) and **`svc:hyprland`** (`/bin/hyprland`,
-  `wants: svc:seatd`, `restart=always`, seed **enabled=false**).
-  Borrowed nixpkgs Hyprland, relocated like River. Not a `forks/`
-  tree unless Oath-compat needs commits.
+- **Compositor + bar.** Objects: **`pkg:hyprland`** / **`svc:hyprland`**
+  (`/bin/hyprland`, `wants: svc:seatd`, `restart=always`, seed
+  **enabled=false**); **`pkg:quickshell`** / **`svc:omarchy-shell`**
+  (`/bin/quickshell`, `wants: svc:hyprland`, `restart=always`, seed
+  **enabled=false**); **`pkg:omarchy`** at `$OMARCHY_PATH`. Borrowed
+  nixpkgs Hyprland + Quickshell, relocated like River. Omarchy tree is
+  fetchFromGitHub (not a `forks/` tree).
 - **Sola remains the default seed.** Canto dogfood may run
-  `session=omarchy` (Hyprland compositor painted 2026-09-11). Quickshell
-  is still later.
+  `session=omarchy` (Hyprland compositor + Quickshell `omarchy-bar`
+  painted 2026-09-11).
 - **Two CLIs stay split.** `oath` owns catalog / host / svc / pkg.
   `omarchy` (later) owns theme, bar, capture, launch. `omarchy pkg` /
   `omarchy update` wrap `oath` or are absent. `/bin/xdg-open` stays
@@ -82,15 +88,15 @@ manager, not a throwaway compositor, and not uninstalling Sola.
    those catalog facts. Probe still boots the **Sola** desk.
 5. Serial and SSH still work.
 
-Hyprland **painting** (QEMU gtk or a non-SI box) is the next slice,
-not this one. Quickshell / `$OMARCHY_PATH` after that.
+Hyprland **painting** on canto is in. Quickshell `$OMARCHY_PATH/shell`
+bar is in (`svc:omarchy-shell`). Omarchy Lua Hyprland ≥0.56 config is
+not (packed compositor is 0.52 conf).
 
 ---
 
 ## Out
 
-- Quickshell, Omarchy scripts/themes, `omarchy` CLI, SDDM, UWSM,
-  NetworkManager, pacman/AUR, Limine/Snapper, Plymouth
+- SDDM, UWSM, NetworkManager, pacman/AUR, Limine/Snapper, Plymouth
 - `forks/omarchy` until the tree is vendored
 - Dual desks on one VT; two seats; udevd; systemd
 - Replacing River as the Sola compositor

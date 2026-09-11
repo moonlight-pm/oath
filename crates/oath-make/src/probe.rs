@@ -592,6 +592,38 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath get pkg:quickshell --actual",
+        Some("\"present\": true"),
+        "pkg.quickshell_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get pkg:omarchy --actual",
+        Some("\"present\": true"),
+        "pkg.omarchy_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get svc:omarchy-shell --desired",
+        Some("\"enabled\": false"),
+        "svc.omarchy_shell_off",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /bin/quickshell && readlink /bin/quickshell | grep -q /oath/store/pkg/quickshell/bin/quickshell && echo QS_BIN",
+        Some("QS_BIN"),
+        "pkg.quickshell_bin",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath get pkg:grok --actual",
         Some("\"present\": true"),
         "pkg.grok_present",

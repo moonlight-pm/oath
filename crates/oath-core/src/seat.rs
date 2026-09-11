@@ -21,6 +21,7 @@ pub fn is_seat_svc(id: &str) -> bool {
         name,
         "river"
             | "hyprland"
+            | "omarchy-shell"
             | "sola-bus"
             | "sola-call"
             | "sola-river"
@@ -132,6 +133,7 @@ mod tests {
     fn seat_svcs_are_graphical_not_seatd() {
         assert!(is_seat_svc("svc:river"));
         assert!(is_seat_svc("svc:hyprland"));
+        assert!(is_seat_svc("svc:omarchy-shell"));
         assert!(is_seat_svc("svc:sola-shell"));
         assert!(is_seat_svc("svc:sola-kvm"));
         assert!(is_seat_svc("river"));

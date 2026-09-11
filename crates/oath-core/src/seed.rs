@@ -52,6 +52,7 @@ pub fn seed(root: &Path) -> Result<()> {
         "session": "sola",
         "env": {
             "GROK_DISABLE_AUTOUPDATER": "1",
+            "OMARCHY_PATH": "/oath/store/pkg/omarchy",
             "SHELL": "/bin/thoxa",
             "THOXA_ROOT": "/oath/store/pkg/thoxa",
             "CC": "/bin/cc",
@@ -101,6 +102,8 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "glibc", true, false)?;
     seed_pkg(root, "river", true, true)?;
     seed_pkg(root, "hyprland", true, true)?;
+    seed_pkg(root, "quickshell", true, true)?;
+    seed_pkg(root, "omarchy", true, true)?;
     seed_pkg(root, "sola", true, true)?;
     seed_pkg(root, "grok", true, true)?;
     seed_pkg(root, "git", true, true)?;
@@ -193,6 +196,14 @@ pub fn seed(root: &Path) -> Result<()> {
     write_json(&root.join("objects/svc/river/applied.json"), &river_desired)?;
 
     seed_svc_full(root, "hyprland", &["/bin/hyprland"], &["svc:seatd"], "always", false)?;
+    seed_svc_full(
+        root,
+        "omarchy-shell",
+        &["/bin/quickshell"],
+        &["svc:hyprland"],
+        "always",
+        false,
+    )?;
 
     seed_svc(root, "sola-bus", &["/bin/sola-bus"], &[], "on-failure")?;
     seed_svc(root, "sola-call", &["/bin/sola-call"], &[], "on-failure")?;
