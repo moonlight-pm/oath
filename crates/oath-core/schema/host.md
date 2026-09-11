@@ -25,11 +25,11 @@ not this kind. Do not add a Unix user kind — the seat is always `home`.
   is UTC. Seed is US Mountain `MST7MDT,M3.2.0,M11.1.0`. PID 1 sets
   `TZ` on seat svcs only. Logs and `date` stay UTC.
 - `session` — which graphical desk PID 1 runs: `sola` (River + Sola
-  stack) or `omarchy` (Hyprland; Quickshell later). Default `sola`.
+  stack) or `omarchy` (Hyprland + Quickshell bar). Default `sola`.
   Both packs stay on disk; only one compositor is enabled. Apply of a
-  session change is **confirm** (it stops the other desk). v0 live
-  switch is apply + reboot. Do not enable `svc:river` and
-  `svc:hyprland` together.
+  session change is **confirm** (it stops the other desk). PID 1 waits
+  3 s for DRM release; reboot if the incoming compositor still loses.
+  Do not enable `svc:river` and `svc:hyprland` together.
 
 ## Example
 

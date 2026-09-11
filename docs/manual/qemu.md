@@ -109,13 +109,14 @@ once the disk is mounted.
 - `pkg:hello` install / remove / undo / persist across reboot
 - `pkg:grok` present; `/bin/grok --version`; store ELF root-owned
 - `pkg:git` / `pkg:curl` present; `git --version`; `curl --version`
-- `pkg:thoxa` present on next image (`/bin/thoxa` login shell; canto live this boot)
+- `pkg:thoxa` present (`/bin/thoxa` login shell)
+- `pkg:hyprland` / `pkg:quickshell` / `pkg:omarchy` present; `svc:hyprland` / `svc:omarchy-shell` off; `host:local.session` sola
 - `pkg:busybox` / `btrfs` / `oath` present and not removable
 - `dev:vda` / `net0` / `ttyS0` inventory; tmpfs + cgroup2
 - `net:net0` up / ping gateway / down / undo / reboot persist
 - SSH: inject pubkey, login, empty keys deny, undo, reboot persist
-- scp/sftp as `home` (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`; next image)
-- guest `/bin/ssh` (musl OpenSSH; canto live; QEMU next image)
+- scp/sftp as `home` (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`)
+- guest `/bin/ssh` (musl OpenSSH)
 - busybox `/bin/vi`
 - `svc:seatd` + `svc:river` (pixman on virtio-gpu); Wayland socket under `/run/user/1`
 - Sola session stack (`svc:sola-bus` / `call` / `river` / `shell` /

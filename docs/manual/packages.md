@@ -14,6 +14,9 @@ target. There is no `apt` and no `oath install`.
 | `pkg:dropbear` | `present: true` | no — dropbear, dropbearkey, musl OpenSSH `/bin/ssh` + `ssh-keygen`, dropbear `dbclient`/`scp`, sftp-server |
 | `pkg:glibc` | `present: true` | no — GNU C runtime for River and Sola; not loaded by PID 1. `libresolv.so.2` is a real DSO (tmux `__b64_pton`); Steam must not stub it to `libc.so.6`. |
 | `pkg:river` | `present: true` | yes — patched River; `/bin/river`. Packed `+xwayland` (`WLR_XWAYLAND=/bin/Xwayland`). Super+Q / Sola close SIGTERMs X11 class `steam` after WM_DELETE (hide-to-tray otherwise). |
+| `pkg:hyprland` | `present: true` | yes — nixpkgs Hyprland 0.52.2, no systemd; `/bin/hyprland`. Omarchy compositor. Seed `svc:hyprland` off. |
+| `pkg:quickshell` | `present: true` | yes — nixpkgs Quickshell 0.2.1 + Qt 6; `/bin/quickshell`. Omarchy bar. |
+| `pkg:omarchy` | `present: true` | yes — Omarchy Quattro tree at `$OMARCHY_PATH` (`/oath/store/pkg/omarchy`). Scripts + QML shell + themes. |
 | `pkg:sola` | `present: true` | yes — session stack + `sola-terminal` + `sola-browser` + `sola-workspaces` + `sola-kvm`; `/bin/sola-bus` and siblings including `sola-session`, `sola-terminal`, `sola-browser`, `sola-workspaces`, `solactl`, `sola-kvm`, `tmux`, `/bin/xdg-open` (`solactl open` → sola-browser; `x-www-browser` is the same shim; not xdg-utils). C.UTF-8 locale-archive; CEF under `cef/`; SF Pro Text + Iosevka Term Slab, with Inter / JetBrains Mono fallbacks. **`sola-arcade`** stays in this blob; `/bin/sola-arcade` is linked only when the connected GPU has Vulkan WSI DRM modifiers (not on canto Pitcairn). T36 names still not in `/bin` on canto. |
 | `pkg:grok` | `present: true` | yes — borrowed static-pie Grok ELF; `/bin/grok`. Updater off (`GROK_DISABLE_AUTOUPDATER`). State is `/home/.grok`, not the payload. |
 | `pkg:git` | `present: true` | yes — borrowed Git; `/bin/git`. HTTPS via `git-remote-http` + CA bundle in the store. |

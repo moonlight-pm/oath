@@ -18,8 +18,8 @@
 # Omarchy as a session payload (keep Sola)
 
 Oath stays the OS. Sola stays a desk. Omarchy is a second **session
-payload** — Hyprland + (later) Quickshell + the Omarchy tree — packed
-as glibc `pkg:*` and started as `svc:*`. The operator picks one desk.
+payload** — Hyprland + Quickshell + the Omarchy tree — packed as
+glibc `pkg:*` and started as `svc:*`. The operator picks one desk.
 Both sets of bits stay on the machine.
 
 This is not “become NixOS,” not systemd, not a nested process
@@ -35,7 +35,7 @@ manager, not a throwaway compositor, and not uninstalling Sola.
 - **Exclusive compositor.** One DRM owner. River and Hyprland must
   not both be enabled. Apply refuses that pair. PID 1 also keys off
   `session`: `omarchy` does not start River or `svc:sola-*`; `sola`
-  does not start Hyprland (or later `svc:omarchy-*`).
+  does not start Hyprland or `svc:omarchy-*`.
 - **Pack both, run one.** `pkg:sola` / `pkg:river` stay present when
   the desk is Omarchy. `pkg:hyprland` / `pkg:quickshell` / `pkg:omarchy`
   stay present when the desk is Sola. `svc:* enabled` is what runs.
@@ -83,9 +83,11 @@ manager, not a throwaway compositor, and not uninstalling Sola.
    Sola.
 3. `oath set svc:hyprland enabled=true` while River is still enabled
    refuses (one compositor).
-4. After `cargo make build`, `pkg:hyprland` is present and
-   `/bin/hyprland` is a symlink into the store. QEMU probe checks
-   those catalog facts. Probe still boots the **Sola** desk.
+4. After `cargo make build`, `pkg:hyprland` / `pkg:quickshell` /
+   `pkg:omarchy` are present and `/bin/hyprland` / `/bin/quickshell`
+   are store symlinks. QEMU probe checks those catalog facts
+   (`svc:hyprland` / `svc:omarchy-shell` off). Probe still boots the
+   **Sola** desk.
 5. Serial and SSH still work.
 
 Hyprland **painting** on canto is in. Quickshell `$OMARCHY_PATH/shell`
@@ -97,7 +99,7 @@ not (packed compositor is 0.52 conf).
 ## Out
 
 - SDDM, UWSM, NetworkManager, pacman/AUR, Limine/Snapper, Plymouth
-- `forks/omarchy` until the tree is vendored
+- `forks/omarchy` (the tree is `pkg:omarchy`, not a submodule)
 - Dual desks on one VT; two seats; udevd; systemd
 - Replacing River as the Sola compositor
 - Promising Hyprland on canto Pitcairn or virtio-gpu 2D

@@ -58,14 +58,15 @@ ask the human.
 | [`specs/2026-09-02-sola-workspaces.md`](specs/2026-09-02-sola-workspaces.md) | T29 sola-workspaces + solactl | **Target** (shipped; canto) |
 | [`specs/2026-09-02-pkg-grok.md`](specs/2026-09-02-pkg-grok.md) | T30 `pkg:grok` (vendor-updating pkgs) | **Target** (packed; canto) |
 | [`specs/2026-09-02-seat-home.md`](specs/2026-09-02-seat-home.md) | T31 seat `home` + `/lib/oath` + env | **Target** (canto `ssh home@canto`; graphical as `home`) |
-| [`specs/2026-09-03-pkg-thoxa.md`](specs/2026-09-03-pkg-thoxa.md) | `pkg:thoxa` login shell | **Target** (canto live; QEMU next pack) |
+| [`specs/2026-09-03-pkg-thoxa.md`](specs/2026-09-03-pkg-thoxa.md) | `pkg:thoxa` login shell | **Target** (canto live; QEMU image 2026-09-11) |
 | [`specs/2026-09-03-pkg-pack-identity.md`](specs/2026-09-03-pkg-pack-identity.md) | T32 pack identity (content hash, hash-in-path, pin) | **Target** (not implemented) |
 | [`specs/2026-09-03-backup-nfs.md`](specs/2026-09-03-backup-nfs.md) | T33 off-box backup (one NFS send, overwrite) | **Target** (partial; canto) |
 | [`specs/2026-09-04-utc-clock.md`](specs/2026-09-04-utc-clock.md) | T34 UTC system clock; `host:local.timezone` display | **Target** (partial; canto Sola clock Mountain) |
 | [`specs/2026-09-05-guest-toolchain.md`](specs/2026-09-05-guest-toolchain.md) | T35 guest toolchain (`pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config`) | **Target** (canto gen 19) |
 | [`specs/2026-09-05-sola-kit-apps.md`](specs/2026-09-05-sola-kit-apps.md) | T36 remaining kit apps in `pkg:sola` | **Target** (`/bin/sola-arcade` not on canto; other names out) |
 | [`specs/2026-09-05-arcade-steam.md`](specs/2026-09-05-arcade-steam.md) | T37 Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`) | **Target** (canto gen 21; session Steam is River `+xwayland`; gamescope/arcade gated on DRM modifiers; QEMU never packs Steam) |
-| [`specs/2026-09-06-boot-generations.md`](specs/2026-09-06-boot-generations.md) | T38 last-5 firmware boots; current kernel/mesa | **Target** (canto ESP rotated; live kernel until reboot) |
+| [`specs/2026-09-06-boot-generations.md`](specs/2026-09-06-boot-generations.md) | T38 last-5 firmware boots; current kernel/mesa | **Target** (canto ESP last-5; live **7.3.0-rc1 #4**) |
+| [`specs/2026-09-10-omarchy-session.md`](specs/2026-09-10-omarchy-session.md) | T39 Omarchy session payload; keep Sola | **Target** (canto Hyprland + Quickshell bar; seed sola) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
@@ -83,6 +84,7 @@ ask the human.
 | [`plans/2026-08-31-sola-terminal-plan.md`](plans/2026-08-31-sola-terminal-plan.md) | T26 sola-terminal | **Build** (complete) |
 | [`plans/2026-08-31-metal-canto-plan.md`](plans/2026-08-31-metal-canto-plan.md) | T27 metal canary | **Build** (complete) |
 | [`plans/2026-09-01-sola-browser-plan.md`](plans/2026-09-01-sola-browser-plan.md) | T28 sola-browser | **Build** (complete) |
+| [`plans/2026-09-10-omarchy-session-plan.md`](plans/2026-09-10-omarchy-session-plan.md) | T39 Omarchy session payload | **Build** (complete; freeze gaps remain) |
 | [`ideas/`](ideas/) | Parked thoughts | Idea |
 | [`manual/`](manual/) | Operator user manual | **Product** (current only) |
 

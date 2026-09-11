@@ -27,28 +27,30 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    (8G rootfs). Probe: T39 pack facts ok (`pkg:hyprland` /
    `quickshell` / `omarchy` present, session sola, hyprland/omarchy-shell
    off). Later probe steps fail from dbus/pipewire serial spam.
+   Remaining T39 gaps: Hyprland 0.52 cannot load Omarchy Lua ≥0.56
+   config; no session dbus/UPower/SNI; leftover `sola-` exec tokens.
    Freeze:
    [docs/specs/2026-09-10-omarchy-session.md](docs/specs/2026-09-10-omarchy-session.md).
 2. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
-   no password, groups `root`+`home` only. Graphical stack **on**
-   as `home` (River GLES2/radeonsi + Sola on amdgpu DP-10, Philips
-   1920×1080). `/dev/ptmx` is 0666 so terminal tmux/PTY works.
+   no password, groups `root`+`home` only. Graphical stack as `home`
+   is **Omarchy this boot** (Now 1); Sola/River bits stay packed and
+   are svc-off. `/dev/ptmx` is 0666 so terminal tmux/PTY works.
    Serial svc **off** (no UART). EFI mark still paints. **T30**
    `pkg:grok` packed (`/bin/grok`, updater off). Guest `/bin/xdg-open`
    is `solactl open` so Grok login can raise sola-browser. `pkg:git` and
    `pkg:curl` packed. Menubar CPU/MEM/RX LED graphs paint (image
    raster, not 1×1 canvas). Volume chip: PipeWire trio is catalog
    `svc:*` (canto gen 40) as `home`; default sink **Built-in Audio**.
-   Live PID 1 predates `pipewire` in `is_seat_svc`, so exec is
-   `/bin/env sola-audio=1 /bin/pipewire` (the `sola-` token makes
-   spawn drop uid 1). sola-shell already has a `pw-cat` meter on
+   Desired exec still has leftover `/bin/env sola-audio=1 /bin/pipewire`
+   from the pre-T39 live switch; T39 `is_seat_svc` includes pipewire.
+   sola-shell already has a `pw-cat` meter on
    that sink. Bluetooth chip: `pkg:bluez` (system dbus + bluetoothd)
    gen 41; Apple BCM20702 `hci0` (`05ac:828d`) powered
    (`bluetoothctl show`). zbus talks
    `/var/run/dbus/system_bus_socket` (symlink to `/run/dbus/…`);
    agent registered. Glyph is a 14px lucide rune **left of the
-   volume spectrum**. Modules are live this boot; ESP initrd now
-   packs `btusb`/`bluetooth` (reboot to persist). **scp / sftp** as `home@canto` (dropbear
+   volume spectrum**. ESP initrd packs `btusb`/`bluetooth` (this
+   reboot). **scp / sftp** as `home@canto` (dropbear
    `sftp-server` + `scp`; guest `/bin/ssh` is musl OpenSSH; busybox `/bin/vi`). **sola-kvm client** on
    canto (`/bin/sola-kvm listen`, UDP 4242); novus peer is canto
    10.0.0.3 1920×1080 (Mac 10.0.0.133 unconfigured from this desk).
@@ -113,8 +115,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    is `image/oath-cc-link.sh` + `zig-gnu-cc.sh`. Next: a `.pc` for
    alsa, or confirm Super+Q reaps `ubuntu12_32/steam`. Do not
    resurrect the canto gamescope nest.
-   `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` also
-   mkdirs `/run/dbus` and `/var/run/dbus` (next reboot).
+   `lo` is up this boot (`127.0.0.1`); PID 1 `unix_floor` mkdirs
+   `/run/dbus` and `/var/run/dbus` (this reboot).
    **T38** firmware boots on canto ESP: last five archives + current.
    `oath-efi` menu (metal timeout 5, QEMU EFI 0). PID 1 honors
    `oath.subvol=@` / `@boot-N` / `@gen-N`. Ubuntu mainline 7.3-rc1
@@ -184,7 +186,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 |--|---------------------|-------------------|
 | Role | Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` / `up` / `start`+`ssh` | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
-| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. `pkg:pipewire`, dropbear `scp`/`sftp-server`, and `pkg:thoxa` are in seed for the **next** `cargo make build`; the current qcow was not rebuilt with them. NFS client + `svc:backup` also next image. T39 Hyprland + Quickshell + Omarchy packs are in this qcow (8G rootfs; seed session still sola). Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. **T39 `session=omarchy`:** Hyprland 0.52.2 as `home` on DP-10 1920×1080@60 (`wayland-1`; River/Sola stopped). After ESP reboot: kernel **7.3.0-rc1 #4**, T39 `/init`, Hyprland pid 362 + omarchy-shell pid 367 (uid 1, restarts=0), `omarchy-bar` 1920×26. Desired exec still has leftover `sola-hypr=1` / `sola-omarchy=1` tokens from the live switch (harmless; T39 `is_seat_svc` drops uid). ESP last-5: oath + boots **12**–8. (uid 1; DRM/evdev/ALSA `0660` root:`home`.) Packed Sola: kvm libexec `386c9d78`; rest may still be `a6dd7c12`. **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`). **`pkg:bluez`** system dbus + bluetoothd; `hci0` powered (BCM20702). No session dbus. **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/Xwayland` `/bin/steam` + `pkg:mesa` (gen 21; **session Steam** is River `+xwayland` `:0` — user confirmed; Super+Q SIGTERMs X11 class `steam`; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy; CEF `--disable-gpu`; session X `-glamor off`; `CLONE_NEWUSER` EPERM; **gamescope / sola-arcade uninstalled** gen 39 — no DRM modifiers). **T38** ESP: systemd-boot `BOOTX64` timeout 5; live process is **7.3.0-rc1 #4** (this reboot). Slot is 7.3 + `btusb` + unix_floor dbus dirs (`subvol=@`). Last-5: **boot 12** (T39 init), 11, 10, 9, 8. Boot 7 pruned this rotate. **`pkg:mesa`** Debian **26.2.1** + libdrm 2.4.134 + 32-bit libgbm. |
+| Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. 2026-09-11 qcow (8G rootfs) packs `pkg:pipewire`, dropbear `scp`/`sftp-server`, `pkg:thoxa`, T39 Hyprland + Quickshell + Omarchy (seed session sola). Probe T39 pack facts ok; later steps fail from dbus/pipewire serial spam. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. **T39 `session=omarchy`:** Hyprland 0.52.2 as `home` on DP-10 1920×1080@60 (`wayland-1`; River/Sola stopped). After ESP reboot: kernel **7.3.0-rc1 #4**, T39 `/init`, Hyprland pid 362 + omarchy-shell pid 367 (uid 1, restarts=0), `omarchy-bar` 1920×26. Desired exec still has leftover `sola-hypr=1` / `sola-omarchy=1` tokens from the live switch (harmless; T39 `is_seat_svc` drops uid). ESP last-5: oath + boots **12**–8. (uid 1; DRM/evdev/ALSA `0660` root:`home`.) Packed Sola: kvm libexec `386c9d78`; rest may still be `a6dd7c12`. **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`). **`pkg:bluez`** system dbus + bluetoothd; `hci0` powered (BCM20702). No session dbus. **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; novus peer; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** `/bin/bash` `/bin/Xwayland` `/bin/steam` + `pkg:mesa` (gen 21; **session Steam** is River `+xwayland` `:0` — user confirmed; Super+Q SIGTERMs X11 class `steam`; 32-bit RADV + dual ICD + wayland 1.26 `wl_fixes`; GpuTopology PITCAIRN; `liboath-peercred` dlmopen copy; CEF `--disable-gpu`; session X `-glamor off`; `CLONE_NEWUSER` EPERM; **gamescope / sola-arcade uninstalled** gen 39 — no DRM modifiers). **T38** ESP: systemd-boot `BOOTX64` timeout 5; live process is **7.3.0-rc1 #4** (this reboot). Slot is 7.3 + `btusb` + unix_floor dbus dirs (`subvol=@`). Last-5: **boot 12** (T39 init), 11, 10, 9, 8. Boot 7 pruned this rotate. **`pkg:mesa`** Debian **26.2.1** + libdrm 2.4.134 + 32-bit libgbm. |
 
 ```sh
 nix-shell
@@ -253,8 +255,8 @@ Do not re-litigate without an explicit decision.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
   `svc:seatd`. `svc:hyprland` wants `svc:seatd` (seed off; T39). Sola session: `svc:sola-bus` / `sola-call` / `river` /
   `shell` / `session` (as `home` when enabled). Audio: `svc:pipewire` /
-  `wireplumber` / `pipewire-pulse` as `home` (canto gen 40; live PID 1
-  needs a `sola-` exec token to drop uid).
+  `wireplumber` / `pipewire-pulse` as `home` (canto gen 40; leftover
+  `sola-audio=1` exec tokens; T39 `is_seat_svc` includes pipewire).
 - Display: virtio-gpu `dev:card0`. gtk window when `DISPLAY` is set
   is pixman River plus the Sola menubar (software GL, McMojave
   cursor), **1280×800 1:1** (`virtio-gpu-pci,xres/yres` + gtk
@@ -296,7 +298,7 @@ Do not re-litigate without an explicit decision.
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
 - Freeze: [docs/specs/2026-09-10-omarchy-session.md](docs/specs/2026-09-10-omarchy-session.md)
-  (T39 Omarchy session payload; keep Sola; Hyprland compositor).
+  (T39 Omarchy session payload; keep Sola; Hyprland + Quickshell bar).
   [docs/specs/2026-09-06-boot-generations.md](docs/specs/2026-09-06-boot-generations.md)
   (T38 last-5 firmware boots; current kernel/mesa).
   [docs/specs/2026-09-05-arcade-steam.md](docs/specs/2026-09-05-arcade-steam.md)
@@ -342,8 +344,8 @@ Do not re-litigate without an explicit decision.
   ([docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md))
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
-  (canto; QEMU on next `cargo make build`); sola-workspaces packed
-  (canto; QEMU on next build); T31 seat `home` on canto SSH +
+  (canto; QEMU image 2026-09-11); sola-workspaces packed
+  (canto + QEMU); T31 seat `home` on canto SSH +
   graphical stack as `home`; `pkg:grok` / `pkg:git` / `pkg:curl` / `pkg:pipewire`
   packed; `pkg:thoxa` packed as the `home` login shell; T33 one NFS
   copy on nas (canto gen 16); T35 guest toolchain live on canto (gen 19);

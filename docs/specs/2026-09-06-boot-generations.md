@@ -1,10 +1,10 @@
 **Date:** 2026-09-06
 **Status:** target (freeze)
 **Implementation:** in tree + on canto ESP (picker + `oath.subvol` + ESP rotate + `cargo make esp`)
-**Dogfood:** Ubuntu 7.3-rc1 panicked. Live canto is **7.3.0-rc1 #3**
-  + GPIO_DC-skip amdgpu (`force high` 850/1270) until reboot into the
-  ESP just written (btusb + unix_floor dbus dirs). Last-5: boot
-  11,10,9,8,7. **boot 4** (6.12.93 rescue) pruned this rotate.
+**Dogfood:** Ubuntu 7.3-rc1 panicked. Live canto is **7.3.0-rc1 #4**
+  + GPIO_DC-skip amdgpu (`force high` 850/1270); T39 initrd is PID 1
+  (btusb + unix_floor dbus dirs). Last-5: boot **12**,11,10,9,8.
+  **boot 7** pruned this rotate; **boot 4** (6.12.93 rescue) earlier.
   QEMU `run`/`probe` stay `-kernel`.
 **Gaps:** metal timeout menu: systemd-boot is BOOTX64 so the list is
   visible; oath-efi still paints over it. River GLES is still the

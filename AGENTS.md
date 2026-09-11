@@ -76,7 +76,7 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
 
 Latest freeze:
 [`docs/specs/2026-09-10-omarchy-session.md`](docs/specs/2026-09-10-omarchy-session.md)
-(T39 Omarchy session payload; keep Sola; Hyprland compositor). T38:
+(T39 Omarchy session payload; keep Sola; Hyprland + Quickshell bar). T38:
 [`docs/specs/2026-09-06-boot-generations.md`](docs/specs/2026-09-06-boot-generations.md)
 (last-5 firmware boots + current kernel/mesa). T37:
 [`docs/specs/2026-09-05-arcade-steam.md`](docs/specs/2026-09-05-arcade-steam.md)

@@ -13,8 +13,8 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. SFTP via `/bin/sftp-server`; `/bin/scp` for legacy `scp -O`; guest client is musl OpenSSH `/bin/ssh`. |
 | `svc:seatd` | `/bin/seatd -u home -g home` | enabled, `restart=always` | Seat for DRM. Socket owned by `home`. `svc:river` and `svc:hyprland` want this. |
 | `svc:river` | `/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river` (runs as `home`): picks the DRM card with a connected connector (dual-GPU). GLES2/radeonsi on real KMS, pixman on virtio. libinput via libudev-zero. Default desk (`host:local.session=sola`). Do not enable together with `svc:hyprland`. |
-| `svc:hyprland` | `/bin/hyprland` (canto live: `/bin/env sola-hypr=1 /bin/hyprland` until T39 PID 1) | **off** in seed, `restart=always` | Omarchy compositor (`session=omarchy`). glibc, libudev-zero, no systemd. Wants `svc:seatd`. Canto dogfood: Pitcairn DP-10 1920×1080. PID 1 waits 3 s for DRM release when stopping River/Hyprland. |
-| `svc:omarchy-shell` | `/bin/quickshell` (canto live: `/bin/env sola-omarchy=1 … /bin/quickshell` until T39 PID 1) | **off** in seed, `restart=always` | Omarchy bar (Quickshell 0.2.1 + `$OMARCHY_PATH/shell`). Wants `svc:hyprland`. Runs as `home`. |
+| `svc:hyprland` | `/bin/hyprland` (canto desired still has leftover `sola-hypr=1` from the live switch) | **off** in seed, `restart=always` | Omarchy compositor (`session=omarchy`). glibc, libudev-zero, no systemd. Wants `svc:seatd`. Canto dogfood: Pitcairn DP-10 1920×1080. PID 1 waits 3 s for DRM release when stopping River/Hyprland. T39 `is_seat_svc` drops uid; the extra env is harmless. |
+| `svc:omarchy-shell` | `/bin/quickshell` (canto desired still has leftover `sola-omarchy=1`) | **off** in seed, `restart=always` | Omarchy bar (Quickshell 0.2.1 + `$OMARCHY_PATH/shell`). Wants `svc:hyprland`. Runs as `home`. |
 | `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/1/sola-bus`. |
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/1/sola-call`. |
 | `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. Wrapper retries while `pidof river` is empty so a compositor restart is not treated as Quit Sola. |
@@ -41,11 +41,9 @@ XDG_RUNTIME_DIR=/run/user/1 pw-dump | head
 
 On canto, `svc:pipewire` / `wireplumber` / `pipewire-pulse` are catalog
 objects (gen 40) and run as `home`. Default sink is **Built-in Audio**.
-The live PID 1 ELF predates `pipewire` in the seat list, so desired
-exec is `/bin/env sola-audio=1 /bin/…` — a no-op env var whose name
-contains `sola-`, which is how that init decides to drop uid 1. The
-ESP initrd now packs that init; after reboot the extra env is
-harmless.
+Desired exec still has leftover `/bin/env sola-audio=1 /bin/…` from
+the pre-T39 live switch. T39 PID 1 lists pipewire in `is_seat_svc`;
+the extra env is harmless.
 
 System D-Bus + BlueZ are `pkg:bluez` (`svc:dbus`, `svc:bluetoothd`).
 The menubar Bluetooth chip appears when `org.bluez` has an adapter

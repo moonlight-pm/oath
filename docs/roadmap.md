@@ -80,8 +80,8 @@ can speak. Default client can be Grok; the OS interface is not Grok.
 
 Installer, A/B or equivalent base updates, honest rollback. T27 canto
 canary is dogfoodable (EFI/USB installer, SSH courage). T38 firmware
-menu (last 5 ESP archives) is on canto ESP (timeout 5; current 7.3-rc1;
-reboot to take the new kernel).
+menu (last 5 ESP archives) is on canto ESP (timeout 5; live **7.3.0-rc1
+#4**).
 kexec on that Apple is still a gap. QEMU probe stays. T33 off-box
 backup is **partial** (one NFS send of a generation, overwrite, no
 retention; canto gen 16 on nas `alpha/backup/canto`).
