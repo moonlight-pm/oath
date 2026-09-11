@@ -271,6 +271,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("lib/oath/with-seat-tz"), include_str!("with-seat-tz"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
     fs::write(stage.join("lib/oath/backup-daily"), include_str!("backup-daily"))?;
+    fs::write(stage.join("lib/oath/omarchy-menu-toggle"), include_str!("omarchy-menu-toggle"))?;
+    fs::write(stage.join("lib/oath/omarchy-pkg-oath"), include_str!("omarchy-pkg-oath"))?;
+    fs::write(stage.join("lib/oath/uwsm-app"), include_str!("uwsm-app"))?;
+    fs::write(stage.join("lib/oath/xdg-terminal-exec"), include_str!("xdg-terminal-exec"))?;
+    fs::write(stage.join("lib/oath/gtk-launch"), include_str!("gtk-launch"))?;
+    fs::write(stage.join("lib/oath/jq-lite"), include_str!("jq-lite"))?;
+    fs::write(stage.join("lib/oath/ensure-sola-bus"), include_str!("ensure-sola-bus"))?;
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
     chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
@@ -279,11 +286,26 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     chmod_exec(&stage.join("lib/oath/backup-send"))?;
     chmod_exec(&stage.join("lib/oath/backup-daily"))?;
     chmod_exec(&stage.join("lib/oath/with-seat-tz"))?;
+    chmod_exec(&stage.join("lib/oath/omarchy-menu-toggle"))?;
+    chmod_exec(&stage.join("lib/oath/omarchy-pkg-oath"))?;
+    chmod_exec(&stage.join("lib/oath/uwsm-app"))?;
+    chmod_exec(&stage.join("lib/oath/xdg-terminal-exec"))?;
+    chmod_exec(&stage.join("lib/oath/gtk-launch"))?;
+    chmod_exec(&stage.join("lib/oath/jq-lite"))?;
+    chmod_exec(&stage.join("lib/oath/ensure-sola-bus"))?;
     fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../lib/oath/init", stage.join("sbin/init"))?;
     let _ = fs::remove_file(stage.join("bin/sudo"));
     symlink("../lib/oath/sudo", stage.join("bin/sudo"))?;
+    let _ = fs::remove_file(stage.join("bin/uwsm-app"));
+    symlink("../lib/oath/uwsm-app", stage.join("bin/uwsm-app"))?;
+    let _ = fs::remove_file(stage.join("bin/xdg-terminal-exec"));
+    symlink("../lib/oath/xdg-terminal-exec", stage.join("bin/xdg-terminal-exec"))?;
+    let _ = fs::remove_file(stage.join("bin/gtk-launch"));
+    symlink("../lib/oath/gtk-launch", stage.join("bin/gtk-launch"))?;
+    let _ = fs::remove_file(stage.join("bin/jq"));
+    symlink("../lib/oath/jq-lite", stage.join("bin/jq"))?;
     fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
     fs::write(stage.join("etc/group"), oath_core::seat::group_file())?;
     fs::write(stage.join("etc/shadow"), oath_core::seat::shadow_file())?;
@@ -402,6 +424,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         bail!("OATH_OMARCHY / tools omarchy required (pkg:omarchy)");
     };
     copy_tree(omarchy, &oath_root.join("store/pkg/omarchy"))?;
+    if let Some(fonts) = &tools.omarchy_fonts {
+        copy_tree(fonts, &oath_root.join("store/pkg/omarchy"))?;
+    }
     let sola = pack_sola(root, tools, out)?;
     copy_tree(&sola, &oath_root.join("store/pkg/sola"))?;
     for b in SOLA_KIT_ELFS.iter().copied().chain(std::iter::once("tmux")) {
@@ -446,6 +471,14 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "rustc", true)?;
     pack_script_pkg(root, out, &oath_root, "pack-bash.sh", "bash", &[])?;
     link_pkg(&oath_root, &guest_bin, "bash", true)?;
+    pack_foot(root, tools, out, &oath_root)?;
+    link_pkg(&oath_root, &guest_bin, "foot", true)?;
+    pack_grim(root, tools, out, &oath_root)?;
+    link_pkg(&oath_root, &guest_bin, "grim", true)?;
+    if oath_root.join("store/pkg/grim/bin/jq").is_file() {
+        let _ = fs::remove_file(guest_bin.join("jq"));
+        symlink("../oath/store/pkg/grim/bin/jq", guest_bin.join("jq"))?;
+    }
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
@@ -534,6 +567,7 @@ fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
                 | "sudo"
                 | "xdg-open"
                 | "x-www-browser"
+                | "open"
         ) {
             continue;
         }
@@ -1248,6 +1282,65 @@ fn pack_git(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<
     copy_file(cacert, &git_out.join("ssl/cert.pem"))?;
     copy_tree(&git_out, &oath_root.join("store/pkg/git"))?;
     chmod_exec(&oath_root.join("store/pkg/git/bin/git"))?;
+    Ok(())
+}
+
+fn pack_foot(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
+    let src = if let Some(f) = &tools.foot {
+        if f.is_dir() {
+            f.clone()
+        } else {
+            bail!("OATH_FOOT is not a dir: {}", f.display());
+        }
+    } else if out.join("foot-pack").is_dir() {
+        out.join("foot-pack")
+    } else {
+        eprintln!("nix-build image/foot-pack.nix");
+        let p = run_out(
+            Command::new("nix-build")
+                .args(["--no-out-link", root.join("image/foot-pack.nix").to_str().unwrap()]),
+        )?;
+        PathBuf::from(p.trim())
+    };
+    eprintln!(">> foot {}", src.display());
+    copy_tree(&src, &oath_root.join("store/pkg/foot"))?;
+    chmod_exec(&oath_root.join("store/pkg/foot/bin/foot"))?;
+    if oath_root.join("store/pkg/foot/libexec/foot").is_file() {
+        chmod_exec(&oath_root.join("store/pkg/foot/libexec/foot"))?;
+    }
+    Ok(())
+}
+
+fn pack_grim(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
+    let src = if let Some(g) = &tools.grim {
+        if g.is_dir() {
+            g.clone()
+        } else {
+            bail!("OATH_GRIM is not a dir: {}", g.display());
+        }
+    } else if out.join("grim-pack").is_dir() {
+        out.join("grim-pack")
+    } else {
+        eprintln!("nix-build image/capture-pack.nix");
+        let expr = format!(
+            "with import <nixpkgs> {{}}; callPackage {} {{}}",
+            root.join("image/capture-pack.nix").display()
+        );
+        let p = run_out(Command::new("nix-build").args(["--no-out-link", "-E", &expr]))?;
+        PathBuf::from(p.trim())
+    };
+    eprintln!(">> grim {}", src.display());
+    copy_tree(&src, &oath_root.join("store/pkg/grim"))?;
+    for b in ["grim", "slurp", "hyprpicker", "wl-copy", "wl-paste", "jq"] {
+        let p = oath_root.join("store/pkg/grim/bin").join(b);
+        if p.is_file() {
+            chmod_exec(&p)?;
+        }
+        let p = oath_root.join("store/pkg/grim/libexec").join(b);
+        if p.is_file() {
+            chmod_exec(&p)?;
+        }
+    }
     Ok(())
 }
 

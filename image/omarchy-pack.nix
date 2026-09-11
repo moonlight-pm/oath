@@ -1,5 +1,6 @@
 { fetchFromGitHub
 , runCommand
+, bash
 }:
 let
   src = fetchFromGitHub {
@@ -10,7 +11,10 @@ let
     sha256 = "sha256-+LF1Etj6akqmam9stdTeJJNBfoxAL+ZYyWvqo9R2P2E=";
   };
 in
-runCommand "oath-omarchy-pack" { } ''
+runCommand "oath-omarchy-pack"
+  {
+    nativeBuildInputs = [ bash ];
+  } ''
   mkdir -p $out
   for d in bin shell default themes config applications migrations install; do
     if [ -d ${src}/$d ]; then
@@ -25,4 +29,5 @@ runCommand "oath-omarchy-pack" { } ''
   chmod -R u+rwX $out
   find $out/bin -type f -exec chmod 755 {} \; 2>/dev/null || true
   echo ${src.rev} > $out/.oath-rev
+  ${bash}/bin/bash ${./adapt-omarchy.sh} "$out"
 ''

@@ -31,7 +31,7 @@ If a kind is not under `/oath/schema`, it does not exist.
 | `host` | `host:local` only | Hostname, power, `env`, `timezone` (display; system clock UTC), `session` (`sola` or `omarchy`). |
 | `svc` | `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`, `svc:hyprland`, `svc:omarchy-shell`, `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`, `svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse`, `svc:dbus`, `svc:bluetoothd`, `svc:backup` | PID 1’s only config |
 | `snap` | `snap:current`, `snap:N` | Generations |
-| `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `glibc`, `river`, `hyprland`, `quickshell`, `omarchy`, `sola`, `grok`, `git`, `curl`, `pipewire`, `bluez`, `thoxa`, `cc`, `rustc`, `cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `mesa`, `steam`, `hello`, `fetchme` | Store + `/bin` symlink farm. `gamescope` is `present: false` until a GPU with DRM modifiers applies it. `svc:hyprland` and `svc:omarchy-shell` are seeded off. |
+| `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `glibc`, `river`, `hyprland`, `quickshell`, `omarchy`, `sola`, `grok`, `git`, `curl`, `pipewire`, `bluez`, `thoxa`, `cc`, `rustc`, `cmake`, `pkg-config`, `bash`, `foot`, `grim`, `xwayland`, `gamescope`, `mesa`, `steam`, `hello`, `fetchme` | Store + `/bin` symlink farm. `gamescope` is `present: false` until a GPU with DRM modifiers applies it. `svc:hyprland` and `svc:omarchy-shell` are seeded off. |
 | `net` | `net:net0` | Static IPv4 or `dhcp` |
 | `ssh` | `ssh:local` | Home authorized keys (root SSH denied) |
 | `dev` | `vda`, `net0`, `ttyS0`, `card0`, `kbd0`, `mouse0` | Hardware inventory |

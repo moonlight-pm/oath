@@ -381,11 +381,14 @@ export FONTCONFIG_PATH=/oath/store/pkg/sola/etc/fonts
 export SOLA_ASSETS_DIR=/oath/store/pkg/sola/share
 export SOLA_CEF_DIR=/oath/store/pkg/sola/cef
 export SOLA_BROWSER=/bin/sola-browser
+export SOLA_PAINT=/bin/sola-paint
 export SSL_CERT_FILE=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
 export SSL_CERT_DIR=/oath/store/pkg/sola/etc/ssl/certs
 export CURL_CA_BUNDLE=/oath/store/pkg/sola/etc/ssl/certs/ca-certificates.crt
 export XCOMPOSEFILE=/oath/store/pkg/sola/share/X11/locale/en_US.UTF-8/Compose
-export XKB_CONFIG_ROOT=/oath/store/pkg/river/share/X11/xkb
+if [ -d /oath/store/pkg/hyprland/share/X11/xkb ]; then export XKB_CONFIG_ROOT=/oath/store/pkg/hyprland/share/X11/xkb
+else export XKB_CONFIG_ROOT=/oath/store/pkg/river/share/X11/xkb
+fi
 export XCURSOR_PATH=/oath/store/pkg/sola/share/cursors
 export XCURSOR_THEME=McMojave
 export TERMINFO=/oath/store/pkg/sola/share/terminfo
@@ -450,6 +453,9 @@ WRAP
 #!/bin/sh
 $guest_env
 /bin/mkdir -p /tmp/fontconfig /oath/log "\$HOME/.local/share" "\$HOME/.config"
+case "$b" in
+sola-paint|sola-preview) [ -f /lib/oath/ensure-sola-bus ] && . /lib/oath/ensure-sola-bus ;;
+esac
 exec /oath/store/pkg/sola/libexec/$b "\$@" >>/oath/log/$b.log 2>&1
 WRAP
   fi
@@ -482,12 +488,19 @@ if [ -z "$1" ]; then
 	echo "xdg-open: missing file or URL" >&2
 	exit 1
 fi
+export HOME="${HOME:-/home}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+export SOLA_PAINT="${SOLA_PAINT:-/bin/sola-paint}"
+[ -f /lib/oath/ensure-sola-bus ] && . /lib/oath/ensure-sola-bus
+[ -f /lib/oath/display-env.sh ] && . /lib/oath/display-env.sh
 exec /bin/solactl open "$1"
 WRAP
 chmod +x "$out/bin/xdg-open"
 # webbrowser (Grok) does not exec xdg-open unless $BROWSER is set; it
 # falls through to x-www-browser after xdg-settings fails.
 ln -sf xdg-open "$out/bin/x-www-browser"
+# Thoxa / macOS muscle memory: `open file.png`.
+ln -sf xdg-open "$out/bin/open"
 
 cat >"$out/share/applications/sola-browser.desktop" <<'DESK'
 [Desktop Entry]
@@ -498,12 +511,28 @@ Terminal=false
 MimeType=x-scheme-handler/http;x-scheme-handler/https;text/html;application/xhtml+xml;x-scheme-handler/about;
 NoDisplay=true
 DESK
+cat >"$out/share/applications/sola-paint.desktop" <<'DESK'
+[Desktop Entry]
+Type=Application
+Name=Sola Paint
+Comment=Image viewer and editor
+Exec=/bin/sola-paint %F
+Terminal=false
+Categories=Graphics;2DGraphics;RasterGraphics;
+MimeType=image/png;image/jpeg;image/gif;image/webp;image/bmp;image/tiff;image/x-tga;
+StartupNotify=true
+StartupWMClass=sola-paint
+DESK
 cat >"$out/etc/xdg/mimeapps.list" <<'MIME'
 [Default Applications]
 x-scheme-handler/http=sola-browser.desktop
 x-scheme-handler/https=sola-browser.desktop
 text/html=sola-browser.desktop
 application/xhtml+xml=sola-browser.desktop
+image/png=sola-paint.desktop
+image/jpeg=sola-paint.desktop
+image/gif=sola-paint.desktop
+image/webp=sola-paint.desktop
 MIME
 
 for b in "${kit_bins[@]}" tmux; do

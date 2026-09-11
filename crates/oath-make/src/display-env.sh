@@ -36,5 +36,5 @@ else
 fi
 # Grok (webbrowser crate) and other guests exec xdg-open / read mimeapps.
 export BROWSER="${BROWSER:-/bin/xdg-open}"
-export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/oath/store/pkg/sola/share}"
+export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/oath/store/pkg/omarchy:/oath/store/pkg/foot/share:/oath/store/pkg/sola/share}"
 export XDG_CONFIG_DIRS="${XDG_CONFIG_DIRS:-/oath/store/pkg/sola/etc/xdg}"

@@ -76,7 +76,24 @@ Needs `--confirm` (kills the graphical session). PID 1 waits 3 s for DRM
 release; reboot if the incoming compositor still loses the race. River and
 Hyprland cannot both be enabled. Bits for both desks stay packed (`pkg:sola`
 and `pkg:hyprland` / `pkg:quickshell` / `pkg:omarchy`). Omarchy’s bar is
-`svc:omarchy-shell` (`/bin/quickshell -p $OMARCHY_PATH/shell`). `ssh home@canto
+`svc:omarchy-shell` (`/bin/quickshell -p $OMARCHY_PATH/shell`). On the
+Omarchy desk (Hyprland 0.52 conf, not Lua): **Super+Return** opens
+Terminal (`pkg:foot`; sola-terminal if foot is missing), **Super+Space**
+toggles the Omarchy menu, **Super+K** lists keybindings (searchable
+overlay; Enter runs the chord), **Super+Shift+Return** opens sola-browser,
+**Super+Ctrl+C** is Omarchy’s capture menu (the documented fallback
+when there is no Print Screen — Mac keyboards). **Print** is the
+screenshot picker if the keyboard has that key; **Super+Print** is
+the color picker. Super+Shift+1–0 moves a window to that Hyprland
+workspace (Omarchy desktop groups, not Sola Workspaces). Files land
+in `~/Pictures`. In the picker, Return captures the highlighted
+window and Ctrl+Return the whole output.
+`open path.png` (or `xdg-open`) opens **sola-paint**. **Super+W** closes the focused window, Super+arrows move focus,
+Super+1–0 switch workspaces. Type is JetBrainsMono NF (fontconfig
+aliases Omarchy’s `monospace` / `JetBrainsMono Nerd Font` name);
+icons from that face plus `omarchy.ttf`. The pointer is **Yaru**
+(same default as the Omarchy ISO, not Hyprland’s built-in cursor
+and not Sola’s McMojave). `ssh home@canto
 /bin/busybox ash` for scripts (`thoxa -c` echoes a quoted script).
 
 ## Who you are

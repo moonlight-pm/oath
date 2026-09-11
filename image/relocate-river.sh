@@ -152,6 +152,13 @@ if [[ -n $loader ]]; then
   fi
 fi
 
+# glibc folded libutil into libc; DT_NEEDED libutil.so.1 still looks up
+# the SONAME. sola-terminal (and other kit ELFs) fail without it.
+if [[ -e $out/glibc/lib/libc.so.6 ]]; then
+  ln -sfn libc.so.6 "$out/glibc/lib/libutil.so"
+  ln -sfn libc.so.6 "$out/glibc/lib/libutil.so.1"
+fi
+
 find "$out" -type f | while read -r f; do
   file -b "$f" | grep -q ELF || continue
   case "$(basename "$f")" in

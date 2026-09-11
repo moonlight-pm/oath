@@ -1,0 +1,22 @@
+#!/bin/sh
+# Toggle the Omarchy Quickshell menu without jq / GNU timeout / a working
+# /bin/qs farm link. Hyprland execs this on Super+Space.
+export HOME="${HOME:-/home}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+export OMARCHY_PATH="${OMARCHY_PATH:-/oath/store/pkg/omarchy}"
+export PATH="/lib/oath:/oath/store/pkg/omarchy/bin:/bin"
+if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+	for s in "$XDG_RUNTIME_DIR"/wayland-*; do
+		[ -S "$s" ] || continue
+		case "$s" in
+		*.lock) continue ;;
+		esac
+		WAYLAND_DISPLAY=$(basename "$s")
+		export WAYLAND_DISPLAY
+		break
+	done
+fi
+route="${1:-root}"
+qs=/oath/store/pkg/quickshell/libexec/quickshell
+[ -x "$qs" ] || qs=/bin/quickshell
+exec "$qs" ipc -n -p "$OMARCHY_PATH/shell" call -- shell toggle omarchy.menu "{\"menu\":\"$route\"}"

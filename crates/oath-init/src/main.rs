@@ -723,6 +723,12 @@ fn unix_floor() {
     // glib/dbus look here. zbus defaults to /var/run/dbus/system_bus_socket.
     let _ = fs::create_dir_all("/run/dbus");
     let _ = fs::create_dir_all("/var/run/dbus");
+    // bash process substitution (`< <(find …)`) opens /dev/fd/N. Without
+    // these, Omarchy's plugin scanner emits nothing and the menu never loads.
+    let _ = std::os::unix::fs::symlink("/proc/self/fd", "/dev/fd");
+    let _ = std::os::unix::fs::symlink("/proc/self/fd/0", "/dev/stdin");
+    let _ = std::os::unix::fs::symlink("/proc/self/fd/1", "/dev/stdout");
+    let _ = std::os::unix::fs::symlink("/proc/self/fd/2", "/dev/stderr");
     if !Path::new("/etc/machine-id").is_file() {
         let _ = fs::create_dir_all("/etc");
         let _ = fs::write("/etc/machine-id", "00000000000000000000000000000001\n");

@@ -24,4 +24,6 @@ gaps live on the freeze)
 
 Not this plan (freeze gaps): Hyprland 0.52 vs Omarchy Lua ≥0.56;
 session dbus / UPower / SNI / Polkit; Quickshell.Networking /
-PwNodePeakMonitor; agent collectors.
+PwNodePeakMonitor; agent collectors; Arch fetch via
+`omarchy-pkg-add`. 0.52 conf + Super+Return/Space/K/Ctrl+C, `pkg:foot`,
+and `pkg:grim` are in (still T39).

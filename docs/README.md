@@ -66,7 +66,7 @@ ask the human.
 | [`specs/2026-09-05-sola-kit-apps.md`](specs/2026-09-05-sola-kit-apps.md) | T36 remaining kit apps in `pkg:sola` | **Target** (`/bin/sola-arcade` not on canto; other names out) |
 | [`specs/2026-09-05-arcade-steam.md`](specs/2026-09-05-arcade-steam.md) | T37 Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`) | **Target** (canto gen 21; session Steam is River `+xwayland`; gamescope/arcade gated on DRM modifiers; QEMU never packs Steam) |
 | [`specs/2026-09-06-boot-generations.md`](specs/2026-09-06-boot-generations.md) | T38 last-5 firmware boots; current kernel/mesa | **Target** (canto ESP last-5; live **7.3.0-rc1 #4**) |
-| [`specs/2026-09-10-omarchy-session.md`](specs/2026-09-10-omarchy-session.md) | T39 Omarchy session payload; keep Sola | **Target** (canto Hyprland + Quickshell bar; seed sola) |
+| [`specs/2026-09-10-omarchy-session.md`](specs/2026-09-10-omarchy-session.md) | T39 Omarchy session payload; keep Sola | **Target** (canto Hyprland desk + Quickshell bar/menu; seed sola) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

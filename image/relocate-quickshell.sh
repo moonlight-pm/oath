@@ -149,14 +149,10 @@ if patchelf --print-interpreter "$out/libexec/quickshell" >/dev/null 2>&1; then
 fi
 patchelf --set-rpath "$rpath" "$out/libexec/quickshell"
 
+# `qs` is the same ELF as quickshell (ipc CLI). A store symlink is stripped
+# to a relative target by busybox tar; write a script instead.
 if [[ -e $out/lib/qs ]]; then
-  mv "$out/lib/qs" "$out/libexec/qs"
-  chmod +x "$out/libexec/qs"
-  if patchelf --print-interpreter "$out/libexec/qs" >/dev/null 2>&1; then
-    patchelf --set-interpreter "$interp_guest" "$out/libexec/qs"
-  fi
-  patchelf --set-rpath "$rpath" "$out/libexec/qs"
-  ln -sfn /oath/store/pkg/quickshell/libexec/qs "$out/bin/qs"
+  rm -f "$out/lib/qs"
 fi
 
 # Qt Wayland bakes a nixpkgs xkeyboard-config path. Copy xkb into this pack
@@ -195,16 +191,55 @@ cat >"$out/etc/fonts/fonts.conf" <<'FC'
 <?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
 <fontconfig>
-  <dir>/oath/store/pkg/sola/share/fonts</dir>
+  <dir>/oath/store/pkg/omarchy/share/fonts</dir>
   <dir>/oath/store/pkg/omarchy/default/fonts</dir>
-  <dir>/oath/store/pkg/omarchy/default/fontconfig</dir>
+  <dir>/oath/store/pkg/sola/share/fonts</dir>
+  <cachedir>/home/.cache/fontconfig</cachedir>
+  <include ignore_missing="yes">/oath/store/pkg/omarchy/default/fontconfig/conf.avail/50-omarchy.conf</include>
+  <!-- Arch ttf-jetbrains-mono-nerd is family "JetBrainsMono Nerd Font".
+       nixpkgs nerd-fonts 3.x names the same face "JetBrainsMono NF".
+       50-omarchy aliases monospace to the Arch name; remap so Qt finds
+       the packed TTF. omarchy.ttf (U+E900+) is a last-resort PUA face. -->
+  <match target="pattern">
+    <test name="family"><string>JetBrainsMono Nerd Font</string></test>
+    <edit name="family" mode="assign" binding="strong">
+      <string>JetBrainsMono NF</string>
+    </edit>
+  </match>
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>JetBrainsMono Nerd Font</family>
+      <family>JetBrainsMono NF</family>
+    </prefer>
+    <accept>
+      <family>omarchy</family>
+      <family>Noto Color Emoji</family>
+    </accept>
+  </alias>
+  <alias>
+    <family>JetBrainsMono NF</family>
+    <accept>
+      <family>omarchy</family>
+      <family>Noto Color Emoji</family>
+    </accept>
+  </alias>
+  <match target="font">
+    <edit name="antialias" mode="assign"><bool>true</bool></edit>
+    <edit name="hinting" mode="assign"><bool>true</bool></edit>
+    <edit name="hintstyle" mode="assign"><const>hintslight</const></edit>
+    <edit name="rgba" mode="assign"><const>rgb</const></edit>
+    <edit name="lcdfilter" mode="assign"><const>lcddefault</const></edit>
+    <edit name="embeddedbitmap" mode="assign"><bool>false</bool></edit>
+  </match>
 </fontconfig>
 FC
 
 cat >"$out/bin/quickshell" <<'WRAP'
 #!/bin/sh
-export PATH="/oath/store/pkg/omarchy/bin:/bin"
+export PATH="/lib/oath:/oath/store/pkg/omarchy/bin:/bin"
 export HOME="${HOME:-/home}"
+export XDG_DATA_DIRS="/oath/store/pkg/omarchy:/oath/store/pkg/foot/share:/oath/store/pkg/sola/share"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 /bin/mkdir -p "$XDG_RUNTIME_DIR"
 /bin/chmod 700 "$XDG_RUNTIME_DIR"
@@ -265,6 +300,14 @@ fi
 exec /oath/store/pkg/quickshell/libexec/quickshell "$@" >>/oath/log/omarchy-shell.log 2>&1
 WRAP
 chmod +x "$out/bin/quickshell"
+cat >"$out/bin/qs" <<'QS'
+#!/bin/sh
+export HOME="${HOME:-/home}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+export OMARCHY_PATH="${OMARCHY_PATH:-/oath/store/pkg/omarchy}"
+exec /oath/store/pkg/quickshell/libexec/quickshell "$@"
+QS
+chmod +x "$out/bin/qs"
 [[ -x $out/libexec/quickshell ]] || {
   echo "relocate-quickshell: missing libexec/quickshell" >&2
   exit 1

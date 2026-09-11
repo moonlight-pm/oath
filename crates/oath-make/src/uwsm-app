@@ -1,0 +1,9 @@
+#!/bin/sh
+# Omarchy launches apps with `uwsm-app -- cmd`. Oath has no UWSM; exec the
+# command in the current session.
+[ "${1:-}" = "--" ] && shift
+if [ $# -eq 0 ]; then
+	echo "uwsm-app: missing command" >&2
+	exit 2
+fi
+exec "$@"

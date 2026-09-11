@@ -1,0 +1,54 @@
+#!/bin/sh
+# Omarchy default terminal. Prefer pkg:foot; sola-terminal is the fallback.
+dir="${HOME:-/home}"
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--dir=*)
+		dir="${1#--dir=}"
+		shift
+		;;
+	--dir)
+		dir="${2:-$dir}"
+		shift 2
+		;;
+	--print-id)
+		if [ -x /bin/foot ]; then
+			echo "foot.desktop"
+		else
+			echo "sola-terminal.desktop"
+		fi
+		exit 0
+		;;
+	--)
+		shift
+		break
+		;;
+	-*)
+		shift
+		;;
+	*)
+		break
+		;;
+	esac
+done
+cd "$dir" 2>/dev/null || cd "${HOME:-/home}" || true
+export HOME="${HOME:-/home}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+if [ -x /bin/foot ]; then
+	if [ $# -gt 0 ]; then
+		exec /bin/foot -D "$dir" -e "$@"
+	fi
+	exec /bin/foot -D "$dir"
+fi
+# sola-terminal's kit bus connect blocks until sola-bus exists. Omarchy PID 1
+# does not start svc:sola-*; bring the socket up for this launch only.
+if [ ! -S "$XDG_RUNTIME_DIR/sola-bus" ] && [ -x /bin/sola-bus ]; then
+	/bin/sola-bus >>/oath/log/sola-bus.log 2>&1 &
+	i=0
+	while [ "$i" -lt 25 ]; do
+		[ -S "$XDG_RUNTIME_DIR/sola-bus" ] && break
+		i=$((i + 1))
+		/bin/sleep 0.2
+	done
+fi
+exec /bin/sola-terminal

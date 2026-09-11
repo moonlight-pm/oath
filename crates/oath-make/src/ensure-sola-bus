@@ -1,0 +1,14 @@
+# Sourced by kit wrappers that need sola-bus (paint, preview, xdg-open).
+# Omarchy does not start svc:sola-bus; spawn it for this seat if missing.
+XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
+export XDG_RUNTIME_DIR
+/bin/mkdir -p "$XDG_RUNTIME_DIR"
+if [ ! -S "$XDG_RUNTIME_DIR/sola-bus" ] && [ -x /bin/sola-bus ]; then
+	/bin/sola-bus >>/oath/log/sola-bus.log 2>&1 &
+	i=0
+	while [ "$i" -lt 25 ]; do
+		[ -S "$XDG_RUNTIME_DIR/sola-bus" ] && break
+		i=$((i + 1))
+		/bin/sleep 0.2
+	done
+fi

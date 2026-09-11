@@ -1,0 +1,67 @@
+#!/bin/bash
+# Omarchy `pacman -Q/-S/-R` stand-in. Maps a few Arch names onto Oath pkg
+# objects; anything else is "not packed". Does not fetch Arch packages.
+set -euo pipefail
+
+map_pkg() {
+	case "$1" in
+	git) echo git ;;
+	curl) echo curl ;;
+	bash) echo bash ;;
+	hyprland) echo hyprland ;;
+	quickshell) echo quickshell ;;
+	omarchy) echo omarchy ;;
+	foot) echo foot ;;
+	alacritty | kitty | ghostty) echo "" ;;
+	chromium) echo "" ;;
+	pipewire | wireplumber) echo pipewire ;;
+	bluez | bluez-utils | bluez-tools) echo bluez ;;
+	steam) echo steam ;;
+	mesa) echo mesa ;;
+	xorg-xwayland | xwayland) echo xwayland ;;
+	*) echo "$1" ;;
+	esac
+}
+
+pkg_present() {
+	local name="$1"
+	local mapped
+	mapped=$(map_pkg "$name")
+	if [ -n "$mapped" ] && [ -f "/oath/objects/pkg/$mapped/desired.json" ]; then
+		grep -q '"present"[[:space:]]*:[[:space:]]*true' "/oath/objects/pkg/$mapped/desired.json"
+		return $?
+	fi
+	command -v "$name" >/dev/null 2>&1
+}
+
+verb="${1:-present}"
+shift || true
+
+case "$verb" in
+present)
+	for pkg in "$@"; do
+		pkg_present "$pkg" || exit 1
+	done
+	exit 0
+	;;
+missing)
+	for pkg in "$@"; do
+		pkg_present "$pkg" || exit 0
+	done
+	exit 1
+	;;
+add)
+	echo "omarchy-pkg-add: Oath has no pacman. Packed names are pkg:* in the catalog:" >&2
+	echo "  oath set pkg:<name> present=true && sudo oath apply" >&2
+	echo "Unmapped Omarchy/Arch names are not fetched on the fly yet." >&2
+	exit 1
+	;;
+drop | remove)
+	echo "omarchy-pkg-drop: use oath set pkg:<name> present=false && sudo oath apply" >&2
+	exit 1
+	;;
+*)
+	echo "omarchy-pkg-oath: unknown verb '$verb'" >&2
+	exit 2
+	;;
+esac

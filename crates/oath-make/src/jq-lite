@@ -1,0 +1,11 @@
+#!/bin/sh
+# Enough jq for Omarchy's menu payload (`jq -nc --arg menu "$route" '{ menu: $menu }'`).
+# Not a jq replacement.
+if [ "$1" = "-nc" ] && [ "$2" = "--arg" ] && [ $# -ge 5 ]; then
+	var="$3"
+	val="$4"
+	printf '{"%s":"%s"}\n' "$var" "$val"
+	exit 0
+fi
+echo "jq: unsupported invocation on Oath (need real jq for this call)" >&2
+exit 1

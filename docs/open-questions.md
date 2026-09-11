@@ -39,6 +39,8 @@ T29 sola-workspaces closed. **T39** Omarchy session payload closed
 2026-09-10 (`host:local.session` sola|omarchy; keep Sola; exclusive
 compositor; `pkg:hyprland` + `svc:hyprland` seed off; `pkg:quickshell`
 + `pkg:omarchy` + `svc:omarchy-shell` seed off; no systemd/UWSM/SDDM).
+**Amended 2026-09-11:** `svc:sola-kvm` is shared seat (Wayland virtual
+pointer on River or Hyprland), not Sola-only.
 
 ---
 

@@ -175,8 +175,15 @@ done
 
 cat >"$out/bin/hyprland" <<'WRAP'
 #!/bin/sh
-export PATH=/bin
+export PATH="/lib/oath:/oath/store/pkg/omarchy/bin:/oath/store/pkg/grim/bin:/bin"
 export HOME="${HOME:-/home}"
+export OMARCHY_PATH="${OMARCHY_PATH:-/oath/store/pkg/omarchy}"
+export XDG_DATA_DIRS="/oath/store/pkg/omarchy:/oath/store/pkg/omarchy/share:/oath/store/pkg/foot/share:/oath/store/pkg/sola/share"
+export XCURSOR_THEME="${XCURSOR_THEME:-Yaru}"
+export XCURSOR_SIZE="${XCURSOR_SIZE:-24}"
+export HYPRCURSOR_SIZE="${HYPRCURSOR_SIZE:-24}"
+export XCURSOR_PATH="/oath/store/pkg/omarchy/share/icons:${XCURSOR_PATH:-}"
+export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/oath/store/pkg/quickshell/etc/fonts/fonts.conf}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 /bin/mkdir -p "$XDG_RUNTIME_DIR"
 /bin/chmod 700 "$XDG_RUNTIME_DIR"

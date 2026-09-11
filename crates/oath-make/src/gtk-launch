@@ -1,0 +1,27 @@
+#!/bin/sh
+# Resolve a desktop-file id and exec its Exec= line. Omarchy AppLibrary
+# launches with `uwsm-app -- gtk-launch <id>.desktop`.
+id="${1:-}"
+id="${id%.desktop}"
+[ -n "$id" ] || {
+	echo "gtk-launch: missing desktop id" >&2
+	exit 2
+}
+shift
+for d in \
+	"${XDG_DATA_HOME:-$HOME/.local/share}/applications" \
+	/oath/store/pkg/omarchy/applications \
+	/oath/store/pkg/sola/share/applications \
+	/home/.local/share/applications; do
+	[ -n "$d" ] || continue
+	f="$d/$id.desktop"
+	[ -f "$f" ] || continue
+	exec_line=$(sed -n 's/^Exec=//p' "$f" | head -n 1)
+	[ -n "$exec_line" ] || continue
+	# Drop field codes (%f %F %u …).
+	exec_line=$(printf '%s\n' "$exec_line" | sed 's/ %[a-zA-Z]//g')
+	# shellcheck disable=SC2086
+	exec $exec_line "$@"
+done
+echo "gtk-launch: desktop file not found: $id" >&2
+exit 1

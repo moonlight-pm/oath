@@ -29,7 +29,8 @@ not this kind. Do not add a Unix user kind — the seat is always `home`.
   Both packs stay on disk; only one compositor is enabled. Apply of a
   session change is **confirm** (it stops the other desk). PID 1 waits
   3 s for DRM release; reboot if the incoming compositor still loses.
-  Do not enable `svc:river` and `svc:hyprland` together.
+  Do not enable `svc:river` and `svc:hyprland` together. `svc:sola-kvm`
+  is shared seat (injects into whichever compositor is up).
 
 ## Example
 

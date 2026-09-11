@@ -1,18 +1,29 @@
 **Date:** 2026-09-10
 **Status:** target (freeze)
-**Implementation:** partial (catalog session + Hyprland + Quickshell bar on canto)
-**Dogfood:** canto `session=omarchy`; Hyprland 0.52.2 on Pitcairn DP-10
-  1920×1080 (Philips 221V8L); `wayland-1`; `omarchy-bar` layer 1920×26
-  as `home`; River/Sola stopped; ESP last-5 includes T39 initrd (boot 12);
-  rebooted onto T39 `/init` (kernel 7.3.0-rc1 #4; Hyprland pid 362,
-  omarchy-shell pid 367, restarts=0)
-**Gaps:** Hyprland 0.52 (nixpkgs) not Omarchy’s Lua ≥0.56 desk; QEMU
-  image packed (8G rootfs) — T39 pack facts probe ok; later probe
-  steps fail from dbus/pipewire serial spam; no session dbus / UPower /
-  SNI / Polkit; Quickshell 0.2.1 lacks `Quickshell.Networking` and
-  `PwNodePeakMonitor`; Omarchy agent collectors need a fuller bash
-  userland; libdrm `amdgpu.ids` still a nix store path; Xwayland
-  autostarted (SI glamor not smoked)
+**Implementation:** partial (catalog session + Hyprland 0.52 desk +
+  Quickshell bar/menu + `pkg:foot` + `pkg:grim` capture on canto)
+**Dogfood:** canto `session=omarchy` after ESP boot **14**; Hyprland 0.52.2
+  on Pitcairn DP-10 1920×1080 (Philips 221V8L); `wayland-1`; `omarchy-bar`
+  1920×26; Super+Return maps **foot**; Super+Space `omarchy-menu`;
+  Super+K keybindings overlay; Super+Ctrl+C Capture menu
+  (Omarchy Mac/no-Print fallback; Print still bound;
+  Super+Shift+N is move-to-workspace); grim+slurp (`~/Pictures`);
+  `open` / `xdg-open` → sola-paint (bus started on demand);
+  `svc:sola-kvm` running as `home` (Hyprland virtual pointer 1920×1080);
+  JetBrainsMono NF + Liberation + Noto emoji + omarchy.ttf + Yaru cursor
+  live (fontconfig remaps Arch `JetBrainsMono Nerd Font` → nixpkgs NF);
+  Omarchy **v4.0.3** `0534987` (latest release);
+  PID 1 creates `/dev/fd`; `hyprland-boot.conf` uses `shadow { enabled = false }`
+  (no `drop_shadow`); kernel **7.3.0-rc1 #4**; last-5 boots **14**–10
+**Gaps:** Hyprland 0.52 (nixpkgs) not Omarchy’s Lua ≥0.56 desk (0.52 conf
+  ports tiling + Return/Space/Shift+Return); QEMU image packed (8G
+  rootfs) — T39 pack facts probe ok; later probe steps fail from
+  dbus/pipewire serial spam; no session dbus / UPower / SNI / Polkit;
+  Quickshell 0.2.1 lacks `Quickshell.Networking` and `PwNodePeakMonitor`;
+  Omarchy agent collectors need a fuller bash userland; libdrm
+  `amdgpu.ids` still a nix store path; Xwayland autostarted (SI glamor
+  not smoked); `omarchy-pkg-add` does not fetch Arch packages
+  (present-checks map onto `pkg:*`)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Omarchy as a session payload (keep Sola)
@@ -40,8 +51,9 @@ manager, not a throwaway compositor, and not uninstalling Sola.
   the desk is Omarchy. `pkg:hyprland` / `pkg:quickshell` / `pkg:omarchy`
   stay present when the desk is Sola. `svc:* enabled` is what runs.
 - **Shared seat stays up** across a switch: `svc:seatd`, pipewire
-  trio, `svc:dbus` / `bluetoothd`, sshd, net. sola-kvm is Sola-only
-  (River virtual pointer).
+  trio, `svc:dbus` / `bluetoothd`, sshd, net, **`svc:sola-kvm`**
+  (Wayland virtual pointer + keyboard on the active compositor;
+  River or Hyprland). Not a compositor. **Amended 2026-09-11.**
 - **`session` apply is confirm.** Switching desks kills the graphical
   session. `oath apply --confirm`. Undo restores the previous
   session and the svc flags written in that generation.

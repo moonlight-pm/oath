@@ -178,6 +178,8 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:cmake"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:pkg-config"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:bash"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:foot"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:grim"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:xwayland"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:gamescope"));
     let gs = cat.get(&"pkg:gamescope".parse().unwrap()).unwrap();
@@ -217,6 +219,9 @@ fn seed_lists_host() {
     assert_eq!(hypr.desired["exec"][0], "/bin/hyprland");
     let omarchy_shell = cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap();
     assert_eq!(omarchy_shell.desired["enabled"], false);
+    let kvm = cat.get(&"svc:sola-kvm".parse().unwrap()).unwrap();
+    assert_eq!(kvm.desired["enabled"], true);
+    assert_eq!(kvm.desired["wants"], json!(["svc:river", "svc:hyprland"]));
     assert_eq!(omarchy_shell.desired["exec"][0], "/bin/quickshell");
     assert_eq!(omarchy_shell.desired["restart"], "always");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
@@ -256,11 +261,13 @@ fn session_default_and_switch() {
     assert_eq!(cat.get(&"svc:sola-shell".parse().unwrap()).unwrap().desired["enabled"], false);
     assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], true);
     assert_eq!(cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap().desired["enabled"], true);
+    assert_eq!(cat.get(&"svc:sola-kvm".parse().unwrap()).unwrap().desired["enabled"], true);
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&host).unwrap().desired["session"], "sola");
     assert_eq!(cat.get(&"svc:river".parse().unwrap()).unwrap().desired["enabled"], true);
     assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], false);
     assert_eq!(cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap().desired["enabled"], false);
+    assert_eq!(cat.get(&"svc:sola-kvm".parse().unwrap()).unwrap().desired["enabled"], true);
 }
 
 #[test]

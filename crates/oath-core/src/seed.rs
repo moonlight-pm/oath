@@ -116,6 +116,8 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "cmake", true, true)?;
     seed_pkg(root, "pkg-config", true, true)?;
     seed_pkg(root, "bash", true, true)?;
+    seed_pkg(root, "foot", true, true)?;
+    seed_pkg(root, "grim", true, true)?;
     seed_pkg(root, "xwayland", true, true)?;
     write_object(
         root,
@@ -196,14 +198,7 @@ pub fn seed(root: &Path) -> Result<()> {
     write_json(&root.join("objects/svc/river/applied.json"), &river_desired)?;
 
     seed_svc_full(root, "hyprland", &["/bin/hyprland"], &["svc:seatd"], "always", false)?;
-    seed_svc_full(
-        root,
-        "omarchy-shell",
-        &["/bin/quickshell"],
-        &["svc:hyprland"],
-        "always",
-        false,
-    )?;
+    seed_svc_full(root, "omarchy-shell", &["/bin/quickshell"], &["svc:hyprland"], "always", false)?;
 
     seed_svc(root, "sola-bus", &["/bin/sola-bus"], &[], "on-failure")?;
     seed_svc(root, "sola-call", &["/bin/sola-call"], &[], "on-failure")?;
@@ -228,7 +223,13 @@ pub fn seed(root: &Path) -> Result<()> {
         &["svc:sola-bus", "svc:sola-call"],
         "on-failure",
     )?;
-    seed_svc(root, "sola-kvm", &["/bin/sola-kvm", "listen"], &["svc:river"], "always")?;
+    seed_svc(
+        root,
+        "sola-kvm",
+        &["/bin/sola-kvm", "listen"],
+        &["svc:river", "svc:hyprland"],
+        "always",
+    )?;
     seed_svc(root, "pipewire", &["/bin/pipewire"], &[], "always")?;
     seed_svc(root, "wireplumber", &["/bin/wireplumber"], &["svc:pipewire"], "always")?;
     seed_svc(root, "pipewire-pulse", &["/bin/pipewire-pulse"], &["svc:pipewire"], "always")?;

@@ -8,7 +8,7 @@ use crate::kinds::{HostSession, Svc};
 use crate::{write_json, Catalog, Drift, KIND_PKG, KIND_SVC};
 
 pub const SOLA_DESK: &[&str] =
-    &["river", "sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session", "sola-kvm"];
+    &["river", "sola-bus", "sola-call", "sola-river", "sola-shell", "sola-session"];
 
 pub const OMARCHY_DESK: &[&str] = &["hyprland", "omarchy-shell"];
 
@@ -113,6 +113,19 @@ impl Catalog {
             ));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kvm_runs_on_both_desks() {
+        assert!(session_allows("svc:sola-kvm", HostSession::Sola));
+        assert!(session_allows("svc:sola-kvm", HostSession::Omarchy));
+        assert!(!session_allows("svc:river", HostSession::Omarchy));
+        assert!(!session_allows("svc:hyprland", HostSession::Sola));
     }
 }
 

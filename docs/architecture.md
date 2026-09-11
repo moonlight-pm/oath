@@ -37,7 +37,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,quickshell,omarchy,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,mesa,steam,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,quickshell,omarchy,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,foot,grim,xwayland,gamescope,mesa,steam,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -47,11 +47,23 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     seatd              svc:seatd (DRM seat)
     hyprland           pkg:hyprland + svc:hyprland (session=omarchy;
                        NO_SYSTEMD; libudev-zero; wants seatd; canto DP-10
-                       1920×1080 Hyprland 0.52.2; seed enabled=false)
-    quickshell         pkg:quickshell + svc:omarchy-shell (Omarchy bar;
-                       wants svc:hyprland; seed enabled=false)
+                       1920×1080 Hyprland 0.52.2; `/lib/oath/hyprland-boot.conf`
+                       tiling + Super+Return/Space/K/Ctrl+C; seed enabled=false)
+    quickshell         pkg:quickshell + svc:omarchy-shell (Omarchy bar +
+                       menu; wants svc:hyprland; seed enabled=false)
     omarchy            pkg:omarchy tree at $OMARCHY_PATH
-                       (/oath/store/pkg/omarchy)
+                       (/oath/store/pkg/omarchy); pack-time adapt
+                       (uwsm-app / gtk-launch / xdg-terminal-exec / jq
+                       shims; omarchy-pkg-* → /lib/oath/omarchy-pkg-oath);
+                       share/fonts = JetBrainsMono NF + Liberation +
+                       Noto Color Emoji; share/icons/Yaru XCursor;
+                       fontconfig in pkg:quickshell remaps
+                       `JetBrainsMono Nerd Font` → `JetBrainsMono NF`
+    omarchy-menu-toggle /lib/oath/omarchy-menu-toggle (Super+Space → qs ipc)
+    omarchy-menu-keybindings Super+K → hyprctl binds + omarchy-menu-select
+                       (Oath select shim; no perl/gawk)
+    grim               pkg:grim — grim + slurp + hyprpicker + wl-copy + jq
+                       (Super+Ctrl+C Capture menu; Print → screenshot)
     river              svc:river as `home` (glibc, libudev-zero, socket /run/user/1;
                        gles2/radeonsi on real KMS, pixman on virtio; hardware
                        cursors unless a DRM card is virtio; packed
@@ -76,8 +88,13 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     sola-browser       /bin/sola-browser (kit app in pkg:sola; CEF under cef/)
     sola-workspaces    /bin/sola-workspaces (kit app in pkg:sola; tmux sola-ws)
     solactl            /bin/solactl (call-plane CLI in pkg:sola)
-    xdg-open           /bin/xdg-open (solactl open → sola-browser; x-www-browser same; not xdg-utils)
-    sola-kvm           svc:sola-kvm listen as `home` (UDP 4242; virtual pointer)
+    xdg-open           /bin/xdg-open and /bin/open (solactl open →
+                       sola-browser, or sola-paint for images;
+                       x-www-browser same; not xdg-utils)
+    sola-paint         /bin/sola-paint (image viewer/editor; Omarchy
+                       starts sola-bus on demand via /lib/oath/ensure-sola-bus)
+    sola-kvm           svc:sola-kvm listen as `home` (UDP 4242; virtual
+                       pointer on River or Hyprland; shared seat)
     pkg:thoxa          `/bin/thoxa` (glibc; session REPL is the `home` login shell)
     pkg:cc             `/bin/cc` (Zig; gnu default, musl-cc for Oath ELFs;
                        `zig-gnu-cc.sh` drops rustc `-fuse-ld=lld` / cc-rs `--target=`)
@@ -119,7 +136,9 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
 
 PID 1 is the initrd `/init` (stays PID 1 after chroot — that chroot is
 why `CLONE_NEWUSER` is EPERM even as root). Mount proc/sys/dev/pts
-(`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; `lo` up with
+(`ptmxmode=0666`), tmpfs `/tmp` `/dev/shm` `/run`, cgroup2; `/dev/fd` →
+`/proc/self/fd` (bash process substitution; Omarchy plugin scan);
+`lo` up with
 `127.0.0.1` + `::1` (next image; canto this boot by hand); hostname +
 `host:local.env`; seat `TZ` from `host:local.timezone`; load ethernet; **converge** `net:net0` (dhcp) + `ssh:local`;
 sshd; then amdgpu + ALSA HDA (snd deferred with KMS); wait for

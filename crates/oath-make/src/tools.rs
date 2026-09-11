@@ -32,6 +32,9 @@ pub struct Tools {
     pub hyprland: Option<PathBuf>,
     pub quickshell: Option<PathBuf>,
     pub omarchy: Option<PathBuf>,
+    pub omarchy_fonts: Option<PathBuf>,
+    pub foot: Option<PathBuf>,
+    pub grim: Option<PathBuf>,
     pub sola_rt: Option<PathBuf>,
     pub git: Option<PathBuf>,
     pub curl: Option<PathBuf>,
@@ -63,6 +66,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut hyprland = std::env::var_os("OATH_HYPRLAND").map(PathBuf::from);
     let mut quickshell = std::env::var_os("OATH_QUICKSHELL").map(PathBuf::from);
     let mut omarchy = std::env::var_os("OATH_OMARCHY").map(PathBuf::from);
+    let mut foot = std::env::var_os("OATH_FOOT").map(PathBuf::from);
+    let mut grim = std::env::var_os("OATH_GRIM").map(PathBuf::from);
     let mut sola_rt = std::env::var_os("OATH_SOLA_RT").map(PathBuf::from);
     let mut git = std::env::var_os("OATH_GIT").map(PathBuf::from);
     let mut curl = std::env::var_os("OATH_CURL").map(PathBuf::from);
@@ -128,6 +133,10 @@ pub fn load(root: &Path) -> Result<Tools> {
         });
         omarchy = omarchy.or_else(|| {
             let p = tools.join("omarchy");
+            p.is_dir().then_some(p)
+        });
+        foot = foot.or_else(|| {
+            let p = tools.join("foot");
             p.is_dir().then_some(p)
         });
         sola_rt = sola_rt.or_else(|| {
@@ -265,6 +274,13 @@ pub fn load(root: &Path) -> Result<Tools> {
         hyprland: hyprland.or_else(|| opt_dir("hyprland")),
         quickshell: quickshell.or_else(|| opt_dir("quickshell")),
         omarchy: omarchy.or_else(|| opt_dir("omarchy")),
+        omarchy_fonts: opt_dir("omarchy-fonts").or_else(|| {
+            std::env::var_os("OATH_OMARCHY_FONTS").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
+        foot: foot.filter(|p| p.is_dir()).or_else(|| opt_dir("foot")),
+        grim: grim.filter(|p| p.is_dir()).or_else(|| opt_dir("grim")).or_else(|| {
+            std::env::var_os("OATH_GRIM").map(PathBuf::from).filter(|p| p.is_dir())
+        }),
         sola_rt,
         git,
         curl,
