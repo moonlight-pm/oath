@@ -146,11 +146,7 @@ fn real() -> Result<()> {
             pack::boot_image(&root, &out, &tools)?;
         }
         Cmd::Esp { esp, confirm, root: root_dev } => {
-            install::update_esp(
-                &root,
-                &out,
-                install::EspOpts { esp, confirm, root_dev },
-            )?;
+            install::update_esp(&root, &out, install::EspOpts { esp, confirm, root_dev })?;
         }
     }
     Ok(())

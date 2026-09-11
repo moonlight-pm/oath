@@ -103,13 +103,7 @@ fn skip_bin(pkg: &str, bin: &str) -> bool {
     pkg == "sola" && bin == "sola-arcade" && !drm_modifiers_available()
 }
 
-fn unlink_ours(
-    bin_dir: &Path,
-    link_root: &Path,
-    name: &str,
-    n: &str,
-    store: &Path,
-) -> Result<()> {
+fn unlink_ours(bin_dir: &Path, link_root: &Path, name: &str, n: &str, store: &Path) -> Result<()> {
     let dest = bin_dir.join(n);
     let target = store_target(link_root, name, n);
     if dest.symlink_metadata().is_ok() && is_our_link(&dest, &target, &store.join(n)) {

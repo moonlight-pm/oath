@@ -106,6 +106,7 @@ impl ApplyHooks for MemHooks {
             power: HostPower::Run,
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
+            session: desired.session,
         })
     }
     fn notify_init(&self) -> Result<()> {
@@ -159,7 +160,9 @@ fn seed_lists_host() {
     assert!(ids.iter().any(|i| i.to_string() == "pkg:dropbear"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:glibc"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:river"));
+    assert!(ids.iter().any(|i| i.to_string() == "pkg:hyprland"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:river"));
+    assert!(ids.iter().any(|i| i.to_string() == "svc:hyprland"));
     assert!(ids.iter().any(|i| i.to_string() == "svc:seatd"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:sola"));
     assert!(ids.iter().any(|i| i.to_string() == "pkg:grok"));
@@ -204,6 +207,10 @@ fn seed_lists_host() {
     assert_eq!(host.desired["env"]["GROK_DISABLE_AUTOUPDATER"], "1");
     assert_eq!(host.desired["env"]["CC"], "/bin/cc");
     assert_eq!(host.desired["timezone"], "MST7MDT,M3.2.0,M11.1.0");
+    assert_eq!(host.desired["session"], "sola");
+    let hypr = cat.get(&"svc:hyprland".parse().unwrap()).unwrap();
+    assert_eq!(hypr.desired["enabled"], false);
+    assert_eq!(hypr.desired["exec"][0], "/bin/hyprland");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
     assert_eq!(serial.desired["exec"][0], "/lib/oath/serial-login");
     let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();
@@ -219,6 +226,45 @@ fn seed_lists_host() {
     assert!(exec.iter().any(|v| v == "-u"));
     assert!(exec.iter().any(|v| v == "-g"));
     assert!(exec.iter().any(|v| v == "home"));
+}
+
+#[test]
+fn session_default_and_switch() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let host: ObjectId = "host:local".parse().unwrap();
+    let missing: Host = serde_json::from_value(json!({"hostname":"oath","power":"run"})).unwrap();
+    assert_eq!(missing.session, oath_core::HostSession::Sola);
+
+    let mut fields = Map::new();
+    fields.insert("session".into(), json!("omarchy"));
+    cat.set_fields(&host, fields).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_CONFIRM);
+    cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
+    let host_obj = cat.get(&host).unwrap();
+    assert_eq!(host_obj.actual["session"], "omarchy");
+    assert_eq!(cat.get(&"svc:river".parse().unwrap()).unwrap().desired["enabled"], false);
+    assert_eq!(cat.get(&"svc:sola-shell".parse().unwrap()).unwrap().desired["enabled"], false);
+    assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], true);
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&host).unwrap().desired["session"], "sola");
+    assert_eq!(cat.get(&"svc:river".parse().unwrap()).unwrap().desired["enabled"], true);
+    assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], false);
+}
+
+#[test]
+fn compositor_mutex() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let mut fields = Map::new();
+    fields.insert("enabled".into(), json!(true));
+    cat.set_fields(&"svc:hyprland".parse().unwrap(), fields).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    match err {
+        Error::Hint { message, .. } => assert!(message.contains("one compositor")),
+        other => panic!("{other:?}"),
+    }
 }
 
 fn write_hello_store(root: &std::path::Path) {

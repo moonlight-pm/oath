@@ -49,6 +49,7 @@ pub fn seed(root: &Path) -> Result<()> {
         "hostname": "oath",
         "power": "run",
         "timezone": "MST7MDT,M3.2.0,M11.1.0",
+        "session": "sola",
         "env": {
             "GROK_DISABLE_AUTOUPDATER": "1",
             "SHELL": "/bin/thoxa",
@@ -99,6 +100,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "dropbear", true, false)?;
     seed_pkg(root, "glibc", true, false)?;
     seed_pkg(root, "river", true, true)?;
+    seed_pkg(root, "hyprland", true, true)?;
     seed_pkg(root, "sola", true, true)?;
     seed_pkg(root, "grok", true, true)?;
     seed_pkg(root, "git", true, true)?;
@@ -189,6 +191,8 @@ pub fn seed(root: &Path) -> Result<()> {
     });
     write_object(root, &river, "mutate", &river_desired, &river_actual)?;
     write_json(&root.join("objects/svc/river/applied.json"), &river_desired)?;
+
+    seed_svc_full(root, "hyprland", &["/bin/hyprland"], &["svc:seatd"], "always", false)?;
 
     seed_svc(root, "sola-bus", &["/bin/sola-bus"], &[], "on-failure")?;
     seed_svc(root, "sola-call", &["/bin/sola-call"], &[], "on-failure")?;

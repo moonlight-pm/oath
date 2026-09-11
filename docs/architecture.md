@@ -13,7 +13,7 @@
 
 ---
 
-## As-built (2026-09-08)
+## As-built (2026-09-10)
 
 QEMU x86_64 appliance. Serial, SSH, and (if DISPLAY) a gtk window.
 
@@ -37,7 +37,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /bin/*                 symlink farm into /oath/store/pkg/<name>/bin/
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
-    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,mesa,steam,hello,fetchme}/
+    /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,xwayland,gamescope,mesa,steam,hello,fetchme}/
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -45,6 +45,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     dropbear           svc:sshd, keys from ssh:local; musl OpenSSH /bin/ssh +
                        /bin/scp + /bin/sftp-server (SFTPSERVER_PATH=/bin/sftp-server)
     seatd              svc:seatd (DRM seat)
+    hyprland           pkg:hyprland + svc:hyprland (seed enabled=false;
+                       session=omarchy; NO_SYSTEMD; libudev-zero; wants seatd)
     river              svc:river as `home` (glibc, libudev-zero, socket /run/user/1;
                        gles2/radeonsi on real KMS, pixman on virtio; hardware
                        cursors unless a DRM card is virtio; packed
@@ -119,8 +121,10 @@ sshd; then amdgpu + ALSA HDA (snd deferred with KMS); wait for
 `/dev/dri` + `/dev/input` and chown them `0660` root:`home` (same for
 `/dev/snd` when the nodes exist); then remaining `svc:*` (River/Sola
 and pipewire as `home`).
-Socket `/oath/run/init.sock`. Seeded
-services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
+Socket `/oath/run/init.sock`. `host:local.session` is `sola` (default)
+or `omarchy` (T39); PID 1 starts only that desk’s compositor.
+Seeded services: `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`,
+`svc:hyprland` (seed off),
 `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`,
 `svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`,
 `svc:pipewire-pulse`, `svc:dbus`, `svc:bluetoothd`, `svc:backup` (04:00 Mountain NFS send; seed off).
@@ -196,4 +200,6 @@ Source forks under `forks/`: `river`, `wlroots`, `sola` (`oath-sola`).
 [specs/2026-09-04-utc-clock.md](specs/2026-09-04-utc-clock.md) ·
 [specs/2026-09-05-guest-toolchain.md](specs/2026-09-05-guest-toolchain.md) ·
 [specs/2026-09-05-sola-kit-apps.md](specs/2026-09-05-sola-kit-apps.md) ·
-[specs/2026-09-05-arcade-steam.md](specs/2026-09-05-arcade-steam.md)
+[specs/2026-09-05-arcade-steam.md](specs/2026-09-05-arcade-steam.md) ·
+[specs/2026-09-06-boot-generations.md](specs/2026-09-06-boot-generations.md) ·
+[specs/2026-09-10-omarchy-session.md](specs/2026-09-10-omarchy-session.md)

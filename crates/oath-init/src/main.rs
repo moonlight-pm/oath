@@ -791,6 +791,7 @@ fn apply_host() {
         power: oath_core::HostPower::Run,
         env: host.env,
         timezone: host.timezone,
+        session: host.session,
     };
     let dir = Path::new(DEFAULT_ROOT).join("objects/host/local");
     let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
@@ -927,6 +928,7 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
         Ok(c) => c,
         Err(_) => return,
     };
+    let session = host_session();
     let Ok(ids) = cat.ls(Some("svc")) else { return };
     let mut wanted: HashMap<String, Svc> = HashMap::new();
     for id in &ids {
@@ -942,7 +944,12 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
     for (_pid, id, spec) in running {
         let keep = wanted
             .get(&id)
-            .map(|s| s.enabled && !s.exec.is_empty() && s.exec == spec.exec)
+            .map(|s| {
+                s.enabled
+                    && oath_core::session_allows(&id, session)
+                    && !s.exec.is_empty()
+                    && s.exec == spec.exec
+            })
             .unwrap_or(false);
         if !keep {
             stop_kid(kids, &id);
@@ -964,7 +971,7 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
         if !start_seat && oath_core::seat::is_seat_svc(id) {
             continue;
         }
-        if !spec.enabled || spec.exec.is_empty() {
+        if !spec.enabled || spec.exec.is_empty() || !oath_core::session_allows(id, session) {
             oneshot_done.remove(id);
             if pid_for(kids, id).is_none() {
                 write_svc_actual(&oid, "stopped", None, 0);
@@ -1002,6 +1009,20 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
             write_svc_actual(&oid, "stopped", None, 0);
         }
     }
+}
+
+fn host_session() -> oath_core::HostSession {
+    let cat = match Catalog::open(DEFAULT_ROOT) {
+        Ok(c) => c,
+        Err(_) => return oath_core::HostSession::Sola,
+    };
+    let id = ObjectId::new("host", "local");
+    let Ok(obj) = cat.get(&id) else {
+        return oath_core::HostSession::Sola;
+    };
+    serde_json::from_value::<Host>(obj.desired)
+        .map(|h| h.session)
+        .unwrap_or(oath_core::HostSession::Sola)
 }
 
 fn host_timezone() -> Option<String> {

@@ -25,6 +25,11 @@
     "timezone": {
       "type": "string",
       "description": "Display TZ (POSIX). Empty is UTC. Seat svcs get TZ=; not env, not /etc/localtime."
+    },
+    "session": {
+      "type": "string",
+      "enum": ["sola", "omarchy"],
+      "description": "Which graphical desk runs. Default sola. River and Hyprland are exclusive. Changing session needs --confirm."
     }
   }
 }

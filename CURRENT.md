@@ -7,13 +7,22 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-09-08
+**As of:** 2026-09-10
 
 ---
 
 ## Now
 
-1. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
+1. **T39 Omarchy session payload (keep Sola).** `host:local.session`
+   = `sola` | `omarchy` (default **sola**; `--confirm` to switch).
+   Exclusive compositor: apply refuses River + Hyprland both enabled;
+   PID 1 also keys off `session`. `pkg:hyprland` + `svc:hyprland`
+   (seed **off**, `wants` seatd). No systemd, no UWSM, no Quickshell
+   yet. Next: Hyprland paint (QEMU or a non-SI box — **not canto
+   Pitcairn first**), then Quickshell + `$OMARCHY_PATH`. Live switch
+   v0 is apply + reboot. Freeze:
+   [docs/specs/2026-09-10-omarchy-session.md](docs/specs/2026-09-10-omarchy-session.md).
+2. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
    no password, groups `root`+`home` only. Graphical stack **on**
    as `home` (River GLES2/radeonsi + Sola on amdgpu DP-10, Philips
    1920×1080). `/dev/ptmx` is 0666 so terminal tmux/PTY works.
@@ -129,9 +138,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.
    Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.
    Do not `cargo make install --confirm` (wipe).
-2. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
+3. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
-3. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
+4. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto. **T37** session Steam in; `/bin/sola-arcade` **not** on canto
    (no DRM modifiers). Other kit apps still out. **Sola master**
@@ -147,15 +156,16 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pipewire-pulse` applied gen 40 as `home` (Built-in Audio);
    HDMI not auto-enumerated. System D-Bus is `pkg:bluez`; no
    session bus / MPRIS.
-4. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
+5. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. **T35** toolchain live.
    **T30** `pkg:grok` packed. **T31** seat `home` locked (uid 1, SSH
    home, sudo ALL, `/lib/oath`, catalog env).
-5. **T20 hosting locked**, not implemented.
-6. Do not add a throwaway compositor. glibc runtime is allowed
-   **only** as `pkg:glibc` for this payload (never in PID 1). No
-   udevd. No nested Sola process manager. Do not write a real disk
-   the operator did not name, or without `--confirm`.
+6. **T20 hosting locked**, not implemented.
+7. Do not add a third compositor. River is Sola; Hyprland is Omarchy
+   (T39). glibc runtime is allowed **only** as `pkg:glibc` (never in
+   PID 1). No udevd. No nested Sola/Omarchy process manager. No
+   systemd. Do not write a real disk the operator did not name, or
+   without `--confirm`.
 
 **Always allowed:** docs hygiene; tests; `cargo make build|run|up|start|stop|ssh|probe|install` (`--build` on run/up/start).
 
@@ -213,7 +223,7 @@ Do not re-litigate without an explicit decision.
   sleeper on. NFS in the next packed initrd.
 - Packages: store `/oath/store/pkg/<name>/` (as-built); `/bin` is a symlink farm;
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
-  `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
+  `hyprland`, `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
   `cmake`, `pkg-config`, `bash`, `xwayland`, `gamescope`, `mesa`, `steam`, `bluez`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin. Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (`/bin/grok`);
@@ -234,7 +244,7 @@ Do not re-litigate without an explicit decision.
 - Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
   dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
-  `svc:seatd`. Sola session: `svc:sola-bus` / `sola-call` / `river` /
+  `svc:seatd`. `svc:hyprland` wants `svc:seatd` (seed off; T39). Sola session: `svc:sola-bus` / `sola-call` / `river` /
   `shell` / `session` (as `home` when enabled). Audio: `svc:pipewire` /
   `wireplumber` / `pipewire-pulse` as `home` (canto gen 40; live PID 1
   needs a `sola-` exec token to drop uid).
@@ -246,6 +256,9 @@ Do not re-litigate without an explicit decision.
   libinput via libudev-zero (`dev:kbd0` / `dev:mouse0`). No udevd.
   Path fallback in `forks/wlroots`. Metal BOOTX64 is `oath-efi`
   (native GOP, white mark on black); Linux does not paint fb.
+- Graphical desk: `host:local.session` is `sola` (default) or
+  `omarchy`. Exclusive compositor. T39: `pkg:hyprland` + `svc:hyprland`
+  (seed off). Quickshell / Omarchy tree later. No UWSM/SDDM/systemd.
 - Sola on Oath: PID 1 is the only supervisor. River is `pkg:river` +
   `svc:river`. Session stack is T23 + T25 (`pkg:sola` + `svc:sola-bus` /
   `call` / `river` / `shell` / `session`; graphical stack as `home`). First kit app is T26
@@ -274,7 +287,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-06-boot-generations.md](docs/specs/2026-09-06-boot-generations.md)
+- Freeze: [docs/specs/2026-09-10-omarchy-session.md](docs/specs/2026-09-10-omarchy-session.md)
+  (T39 Omarchy session payload; keep Sola; Hyprland compositor).
+  [docs/specs/2026-09-06-boot-generations.md](docs/specs/2026-09-06-boot-generations.md)
   (T38 last-5 firmware boots; current kernel/mesa).
   [docs/specs/2026-09-05-arcade-steam.md](docs/specs/2026-09-05-arcade-steam.md)
   (T37 Arcade + Steam runtime).
@@ -325,4 +340,5 @@ Do not re-litigate without an explicit decision.
   packed; `pkg:thoxa` packed as the `home` login shell; T33 one NFS
   copy on nas (canto gen 16); T35 guest toolchain live on canto (gen 19);
   T37 session Steam on canto (gen 21); gamescope/arcade not on SI; other kit apps not;
+  T39 Omarchy session payload (Hyprland packed, Sola default; Quickshell later);
   Phase 6 metal canary (canto) dogfoodable

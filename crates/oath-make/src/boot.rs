@@ -112,10 +112,8 @@ pub fn parse_archive_conf_id(name: &str) -> Option<u64> {
     if name == "oath.conf" || name == "oath-install.conf" {
         return None;
     }
-    let stem = name
-        .strip_suffix(".conf")
-        .or_else(|| name.strip_suffix(".con"))
-        .unwrap_or(name.as_str());
+    let stem =
+        name.strip_suffix(".conf").or_else(|| name.strip_suffix(".con")).unwrap_or(name.as_str());
     let rest = stem.strip_prefix("oath-")?;
     if rest.is_empty() || !rest.bytes().all(|b| b.is_ascii_digit()) {
         return None;
@@ -345,7 +343,8 @@ mod tests {
         let i2 = tmp.join("i2");
         fs::write(&k2, b"newk").unwrap();
         fs::write(&i2, b"newi").unwrap();
-        let (id, prune) = apply_rotate_files(&tmp, &k2, &i2, None, "/dev/sda2", "", LOADER_CONF_METAL).unwrap();
+        let (id, prune) =
+            apply_rotate_files(&tmp, &k2, &i2, None, "/dev/sda2", "", LOADER_CONF_METAL).unwrap();
         assert_eq!(id, 1);
         assert!(prune.is_empty());
         assert_eq!(fs::read(tmp.join("vmlinuz")).unwrap(), b"newk");

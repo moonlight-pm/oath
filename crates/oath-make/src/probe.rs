@@ -560,6 +560,38 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "oath get pkg:hyprland --actual",
+        Some("\"present\": true"),
+        "pkg.hyprland_present",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get host:local --desired",
+        Some("\"session\": \"sola\""),
+        "host.session_sola",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "oath get svc:hyprland --desired",
+        Some("\"enabled\": false"),
+        "svc.hyprland_off",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
+        "test -x /bin/hyprland && readlink /bin/hyprland | grep -q /oath/store/pkg/hyprland/bin/hyprland && echo HYPR_BIN",
+        Some("HYPR_BIN"),
+        "pkg.hyprland_bin",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "oath get pkg:grok --actual",
         Some("\"present\": true"),
         "pkg.grok_present",

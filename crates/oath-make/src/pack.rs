@@ -266,6 +266,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::write(stage.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     fs::write(stage.join("lib/oath/run-compositor"), include_str!("run-compositor"))?;
     fs::write(stage.join("lib/oath/river-boot"), include_str!("river-boot"))?;
+    fs::write(stage.join("lib/oath/hyprland-boot.conf"), include_str!("hyprland-boot.conf"))?;
     fs::write(stage.join("lib/oath/display-env.sh"), include_str!("display-env.sh"))?;
     fs::write(stage.join("lib/oath/with-seat-tz"), include_str!("with-seat-tz"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
@@ -378,6 +379,17 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     if oath_root.join("store/pkg/river/libexec/river").is_file() {
         chmod_exec(&oath_root.join("store/pkg/river/libexec/river"))?;
     }
+    let Some(hyprland) = &tools.hyprland else {
+        bail!("OATH_HYPRLAND / tools hyprland required (pkg:hyprland)");
+    };
+    copy_tree(hyprland, &oath_root.join("store/pkg/hyprland"))?;
+    chmod_exec(&oath_root.join("store/pkg/hyprland/bin/hyprland"))?;
+    if oath_root.join("store/pkg/hyprland/libexec/Hyprland").is_file() {
+        chmod_exec(&oath_root.join("store/pkg/hyprland/libexec/Hyprland"))?;
+    }
+    if oath_root.join("store/pkg/hyprland/bin/hyprctl").is_file() {
+        chmod_exec(&oath_root.join("store/pkg/hyprland/bin/hyprctl"))?;
+    }
     let sola = pack_sola(root, tools, out)?;
     copy_tree(&sola, &oath_root.join("store/pkg/sola"))?;
     for b in SOLA_KIT_ELFS.iter().copied().chain(std::iter::once("tmux")) {
@@ -390,6 +402,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     link_pkg(&oath_root, &guest_bin, "dropbear", false)?;
     link_pkg(&oath_root, &guest_bin, "glibc", false)?;
     link_pkg(&oath_root, &guest_bin, "river", false)?;
+    link_pkg(&oath_root, &guest_bin, "hyprland", true)?;
     link_pkg(&oath_root, &guest_bin, "sola", true)?;
     let grok = grok_elf()?;
     eprintln!("grok={}", grok.display());

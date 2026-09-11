@@ -185,7 +185,7 @@ impl Catalog {
         hooks: &dyn ApplyHooks,
     ) -> Result<ApplyReport> {
         let drift = self.diff(None)?;
-        let selected: Vec<Drift> = if let Some(ids) = ids {
+        let mut selected: Vec<Drift> = if let Some(ids) = ids {
             drift.into_iter().filter(|d| ids.contains(&d.id)).collect()
         } else {
             drift
@@ -203,7 +203,9 @@ impl Catalog {
             )));
         }
 
+        self.expand_session_switch(&mut selected)?;
         self.check_svc_wants()?;
+        self.check_compositor_mutex()?;
 
         let parent = self.current_generation()?;
         let generation = self.next_generation()?;
@@ -475,7 +477,7 @@ impl Catalog {
         Ok(())
     }
 
-    fn obj_dir(&self, id: &ObjectId) -> PathBuf {
+    pub(crate) fn obj_dir(&self, id: &ObjectId) -> PathBuf {
         self.root.join("objects").join(&id.kind).join(&id.name)
     }
 
@@ -500,7 +502,9 @@ impl Catalog {
 
     fn needs_confirm(&self, d: &Drift) -> bool {
         if d.id.kind == KIND_HOST {
-            return d.fields.iter().any(|(k, new, _)| k == "power" && new.as_str() != Some("run"));
+            return d.fields.iter().any(|(k, new, _)| {
+                (k == "power" && new.as_str() != Some("run")) || k == "session"
+            });
         }
         if d.id.kind == KIND_SNAP && d.id.name == "current" {
             return true;
@@ -575,7 +579,7 @@ impl Catalog {
         Ok(())
     }
 
-    fn touch_status(&self, id: &ObjectId, status: &str) -> Result<()> {
+    pub(crate) fn touch_status(&self, id: &ObjectId, status: &str) -> Result<()> {
         let p = self.obj_dir(id).join("meta.json");
         let mut meta: Meta = read_json(&p)?;
         meta.status = status.into();

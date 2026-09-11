@@ -24,6 +24,12 @@ not this kind. Do not add a Unix user kind — the seat is always `home`.
 - `timezone` — POSIX TZ for **display** (Sola clock, seat apps). Empty
   is UTC. Seed is US Mountain `MST7MDT,M3.2.0,M11.1.0`. PID 1 sets
   `TZ` on seat svcs only. Logs and `date` stay UTC.
+- `session` — which graphical desk PID 1 runs: `sola` (River + Sola
+  stack) or `omarchy` (Hyprland; Quickshell later). Default `sola`.
+  Both packs stay on disk; only one compositor is enabled. Apply of a
+  session change is **confirm** (it stops the other desk). v0 live
+  switch is apply + reboot. Do not enable `svc:river` and
+  `svc:hyprland` together.
 
 ## Example
 
@@ -43,6 +49,13 @@ oath apply
 ```
 
 Restart the graphical stack (or reboot) so seat processes pick up `TZ`.
+```
+
+Switch desk (kills the graphical session; reboot after apply until DRM wait exists):
+
+```
+oath set host:local session=omarchy
+oath apply --confirm
 ```
 
 Reboot (owner asked):

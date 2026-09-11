@@ -565,7 +565,8 @@ mount --bind /esp /mnt/boot
         "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && (test -f /opt/oath-install/systemd-bootx64.efi && cp /opt/oath-install/systemd-bootx64.efi /esp/EFI/systemd/systemd-bootx64.efi || cp /opt/oath-install/BOOTX64.EFI /esp/EFI/systemd/systemd-bootx64.efi) && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
     )?;
     let entry = crate::boot::current_bls(&p2, "");
-    let loader = if opts.qemu { crate::boot::LOADER_CONF_QEMU } else { crate::boot::LOADER_CONF_METAL };
+    let loader =
+        if opts.qemu { crate::boot::LOADER_CONF_QEMU } else { crate::boot::LOADER_CONF_METAL };
     let boots = crate::boot::format_oath_boots(&[String::from("oath.conf")]);
     ssh_run(
         r,
@@ -681,13 +682,7 @@ fn snapshot_boot(id: u64) {
     if !src.is_dir() || dst.exists() {
         return;
     }
-    let _ = sudo(&[
-        "btrfs",
-        "subvolume",
-        "snapshot",
-        src.to_str().unwrap(),
-        dst.to_str().unwrap(),
-    ]);
+    let _ = sudo(&["btrfs", "subvolume", "snapshot", src.to_str().unwrap(), dst.to_str().unwrap()]);
 }
 
 fn delete_boot_snapshot(id: u64) {

@@ -63,6 +63,17 @@ confirm.
 After a reboot apply, desired `power` is set back to `run` so the box
 does not loop.
 
+Graphical desk (`host:local.session`, default `sola`):
+
+```
+oath set host:local session=omarchy
+oath apply              # refused (exit 3)
+oath apply --confirm    # stops River/Sola, enables Hyprland; reboot after
+oath undo               # previous session
+```
+
+River and Hyprland cannot both be enabled. Bits for both desks stay packed.
+
 ## Who you are
 
 Serial login is **root** (break-glass) when `svc:serial` is on.

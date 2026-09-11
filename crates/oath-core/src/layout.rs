@@ -54,11 +54,7 @@ pub fn rotate_boot_ids(existing: &[u64], keep: usize) -> (u64, Vec<u64>) {
     let mut keep_ids: Vec<u64> = existing.iter().copied().collect();
     keep_ids.sort_unstable();
     keep_ids.push(next);
-    let drop = if keep_ids.len() > keep {
-        keep_ids.len() - keep
-    } else {
-        0
-    };
+    let drop = if keep_ids.len() > keep { keep_ids.len() - keep } else { 0 };
     let prune = keep_ids.iter().copied().take(drop).collect();
     (next, prune)
 }

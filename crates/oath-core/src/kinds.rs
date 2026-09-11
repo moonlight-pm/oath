@@ -37,6 +37,26 @@ pub struct Host {
     /// from this; not `env`, not `/etc/localtime` (T34).
     #[serde(default)]
     pub timezone: String,
+    /// Which graphical desk PID 1 runs. Default sola. Exclusive compositor (T39).
+    #[serde(default)]
+    pub session: HostSession,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HostSession {
+    #[default]
+    Sola,
+    Omarchy,
+}
+
+impl HostSession {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Sola => "sola",
+            Self::Omarchy => "omarchy",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

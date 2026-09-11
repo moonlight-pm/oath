@@ -35,7 +35,10 @@ display; not `TZ` in env). T33 off-box backup closed (one NFS send, overwrite,
 hash-in-path store, pin on `desired.hash`, no recipe language). T31 seat `home`
 is closed (uid 1, SSH `home`, groups `root`+`home`, sudo ALL,
 `/lib/oath`, `host:local.env`). T30 `pkg:grok` identity closed.
-T29 sola-workspaces closed.
+T29 sola-workspaces closed. **T39** Omarchy session payload closed
+2026-09-10 (`host:local.session` sola|omarchy; keep Sola; exclusive
+compositor; `pkg:hyprland` + `svc:hyprland` seed off; no
+systemd/UWSM/SDDM; Quickshell later).
 
 ---
 
@@ -382,3 +385,4 @@ guest ELFs.
 | 2026-09-08 | T37 | QEMU never packs Steam / Xwayland / mesa / gamescope | this file |
 | 2026-09-08 | T36 | system dbus + BlueZ for menubar chip; session MPRIS still out | this file |
 | 2026-09-06 | T38 | last-5 firmware boots; `oath.subvol`; current kernel/mesa; T27 menu Out lifted | this file; [specs/2026-09-06-boot-generations.md](specs/2026-09-06-boot-generations.md) |
+| 2026-09-10 | T39 | Omarchy session payload; keep Sola; `host:local.session`; Hyprland compositor | this file; [specs/2026-09-10-omarchy-session.md](specs/2026-09-10-omarchy-session.md) |
