@@ -16,9 +16,11 @@ pin on `desired.hash` (T32). Host cache:
 
 ```
 cargo make store --name hello --from apps/hello --tar
+cargo make publish
 ```
 
-writes `.cache/oath/store/pkg/hello/<hash>/` and an optional `.tar`.
+writes `.cache/oath/store/pkg/hello/<hash>/` and an optional `.tar`,
+then copies tars into the origin tree (Wicket `extras/oath-store/site`).
 
 Optional, next to `bin/`:
 

@@ -1,9 +1,11 @@
 **Date:** 2026-08-30
 **Status:** target (freeze)
-**Implementation:** not started (serving); identity locked. T32 hash-in-path is in.
-**Dogfood:** none for a live origin (`pkg:fetchme` still QEMU wget canary)
-**Gaps:** no guest store export; no peer discovery; signatures still out;
-  bootstrap origin not deployed.
+**Implementation:** partial (2026-09-12). Origin layout + `cargo make
+publish`; Wicket `extras/oath-store` (static nginx). Public TLS apply
+in flight.
+**Dogfood:** host cache + published `hello` / `fetchme` tarballs.
+**Gaps:** public HTTPS not confirmed until Wicket apply + V1 proxy;
+  no guest store export; no peer discovery; signatures still out.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Package hosting (Oath hosts as origin)

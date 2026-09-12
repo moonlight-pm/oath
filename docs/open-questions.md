@@ -222,9 +222,10 @@ serve those bytes; the peer sets `url` and applies. No canonical
 archive, no `repo` kind, no git-as-store. Apply does not clone.
 An HTTPS object `{origin}/pkg/{name}/{hash}.tar` is a valid origin
 (object storage is just HTTPS). A bootstrap default origin is allowed
-(not a kind); intended first deploy `https://store.oath.wicket.cloud`
-(not live). Serving the store from a guest, signatures, and discovery
-are deferred. Content-hash identity is T32 (in).
+(not a kind): `https://store.oath.wicket.cloud` (Wicket extras/oath-store;
+apply in flight). Serving `/oath/store` from an Oath guest, signatures,
+and discovery are deferred. Content-hash identity is T32 (in). QEMU is
+parked.
 
 ### T21 — Sola on Oath, River first — locked 2026-08-30
 
@@ -396,3 +397,4 @@ guest ELFs.
 | 2026-09-10 | T39 | Omarchy session payload; keep Sola; `host:local.session`; Hyprland compositor | this file; [specs/2026-09-10-omarchy-session.md](specs/2026-09-10-omarchy-session.md) |
 | 2026-09-11 | T32 | hash-in-path as-built (`oath-tree-v1` SHA-256); host `.cache/oath/store` | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |
 | 2026-09-11 | T20 | object-storage tar is `pkg.url`; bootstrap origin allowed, not canonical; not deployed | this file; [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) |
+| 2026-09-12 | T20 | bootstrap origin `store.oath.wicket.cloud` (extras/oath-store); QEMU parked | this file; CURRENT |

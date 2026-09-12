@@ -1539,16 +1539,91 @@ pub fn store_pack(repo: &Path, name: &str, from: &Path, tar: bool) -> Result<()>
     println!("pkg:{name} {hash}");
     println!("{}", tree.display());
     if tar {
-        let tarball = cache.join("pkg").join(name).join(format!("{hash}.tar"));
-        run(Command::new("tar").args([
-            "-C",
-            tree.to_str().unwrap(),
-            "-cf",
-            tarball.to_str().unwrap(),
-            ".",
-        ]))?;
+        let tarball =
+            write_pack_tar(&tree, &cache.join("pkg").join(name).join(format!("{hash}.tar")))?;
         println!("{}", tarball.display());
     }
+    Ok(())
+}
+
+fn write_pack_tar(tree: &Path, tarball: &Path) -> Result<PathBuf> {
+    if let Some(p) = tarball.parent() {
+        fs::create_dir_all(p)?;
+    }
+    run(Command::new("tar").args([
+        "-C",
+        tree.to_str().unwrap(),
+        "-cf",
+        tarball.to_str().unwrap(),
+        ".",
+    ]))?;
+    Ok(tarball.to_path_buf())
+}
+
+fn default_publish_dest(repo: &Path) -> PathBuf {
+    let sibling = repo.join("../Wicket/extras/oath-store/site");
+    if sibling.is_dir() {
+        return sibling.canonicalize().unwrap_or(sibling);
+    }
+    repo.join("build/store-origin")
+}
+
+/// Copy hashed pack tarballs into an origin tree (`pkg/<name>/<hash>.tar`).
+/// Default dest is sibling Wicket `extras/oath-store/site`, else `build/store-origin`.
+pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
+    let cache = host_store_cache(repo).join("pkg");
+    if !cache.is_dir() {
+        bail!(
+            "no host store cache at {} — cargo make store --name <n> --from <dir> --tar",
+            cache.display()
+        );
+    }
+    let dest = dest.map(Path::to_path_buf).unwrap_or_else(|| default_publish_dest(repo));
+    let dest_pkg = dest.join("pkg");
+    fs::create_dir_all(&dest_pkg)?;
+    let mut rows: Vec<(String, String)> = Vec::new();
+    let mut names: Vec<String> = fs::read_dir(&cache)?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_dir())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    for name in names {
+        let slot = cache.join(&name);
+        let mut hashes: Vec<String> = fs::read_dir(&slot)?
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|n| oath_core::is_realization_id(n))
+            .collect();
+        hashes.sort();
+        for hash in hashes {
+            let tree = slot.join(&hash);
+            let tar = slot.join(format!("{hash}.tar"));
+            if !tar.is_file() {
+                write_pack_tar(&tree, &tar)?;
+            }
+            let out_dir = dest_pkg.join(&name);
+            fs::create_dir_all(&out_dir)?;
+            let out = out_dir.join(format!("{hash}.tar"));
+            fs::copy(&tar, &out)
+                .with_context(|| format!("copy {} -> {}", tar.display(), out.display()))?;
+            println!("pkg:{name} {hash}");
+            rows.push((name.clone(), hash));
+        }
+    }
+    let mut index = String::from(
+        "# Oath pack origin\n\n\
+         Not a package manager. Trees are `oath-tree-v1` (SHA-256). \
+         Fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`.\n\n\
+         | name | hash |\n\
+         |------|------|\n",
+    );
+    for (name, hash) in &rows {
+        index.push_str(&format!("| `{name}` | `{hash}` |\n"));
+    }
+    fs::write(dest.join("INDEX.md"), index)?;
+    println!("{} ({} packs)", dest.display(), rows.len());
     Ok(())
 }
 

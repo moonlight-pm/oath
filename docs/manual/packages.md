@@ -111,4 +111,9 @@ Host development cache (same layout): `.cache/oath/store` or
 
 ```
 cargo make store --name hello --from apps/hello --tar
+cargo make publish
 ```
+
+`publish` copies `{hash}.tar` files into the origin tree (sibling
+Wicket `extras/oath-store/site`, or `build/store-origin`). Public
+bootstrap: `https://store.oath.wicket.cloud/pkg/<name>/<hash>.tar`.

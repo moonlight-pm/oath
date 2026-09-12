@@ -102,6 +102,12 @@ enum Cmd {
         #[arg(long)]
         tar: bool,
     },
+    /// Copy hashed pack tarballs into an origin tree for store.oath.wicket.cloud.
+    Publish {
+        /// Destination (`pkg/<name>/<hash>.tar`). Default: sibling Wicket extras/oath-store/site.
+        #[arg(long)]
+        dest: Option<PathBuf>,
+    },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
     Esp {
@@ -172,6 +178,7 @@ fn real() -> Result<()> {
             pack::boot_image(&root, &out, &tools)?;
         }
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
+        Cmd::Publish { dest } => pack::publish_store(&root, dest.as_deref())?,
         Cmd::Esp { esp, confirm, root: root_dev } => {
             install::update_esp(&root, &out, install::EspOpts { esp, confirm, root_dev })?;
         }
