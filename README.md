@@ -43,15 +43,12 @@ compatibility promise.
 
 ## Status
 
-Phases 0–2 are done. The **x86_64 QEMU** appliance has PID 1, catalog,
-packages (store + `/bin` links, including `pkg:fetchme` wget and
-`pkg:grok`), `net:net0`,
-dropbear SSH, `dev:*` (including virtio-gpu `card0` and virtio
-keyboard/mouse), and a gtk window when `DISPLAY` is set. `svc:river`
-is the compositor (T21/T22). The Sola session stack is `pkg:sola` +
-five `svc:*` (T23/T25) plus `sola-terminal` (T26), `sola-browser`
-(T28, CEF), and `sola-workspaces` + `solactl` (T29) in that blob.
-Nothing is a daily driver. Metal canary (canto) installs with
+Phases 0–2 are done. **canto** is the metal canary (SSH `home@canto`;
+graphical Omarchy this boot). Packs are hash-in-path; bootstrap origin
+[store.oath.wicket.cloud](https://store.oath.wicket.cloud/). The
+**x86_64 QEMU** appliance still exists (PID 1, catalog, store + `/bin`
+links, `net:net0`, dropbear, virtio-gpu) but is **parked** — not the
+critical path. Nothing is a daily driver. Metal install:
 `cargo make install`.
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).

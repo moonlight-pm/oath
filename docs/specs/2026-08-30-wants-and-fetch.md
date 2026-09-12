@@ -2,8 +2,8 @@
 **Status:** target (freeze)
 **Implementation:** partial
 **Dogfood:** QEMU probe — `svc` wants order + `pkg:fetchme` wget
-**Gaps:** deps; hosting identity is T20 (not implemented here); pack
-identity (content hash) is T32 (not implemented)
+**Gaps:** deps; hosting identity is T20 (bootstrap origin live; not
+this freeze); pack identity is T32 (in; not this freeze)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Service wants and package fetch

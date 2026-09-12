@@ -11,7 +11,7 @@ runtime. Packing emits store trees
 how you build that tree is the packer’s. Target pack identity (content
 hash, hash-in-path, pin) is T32
 ([docs/specs/2026-09-03-pkg-pack-identity.md](../docs/specs/2026-09-03-pkg-pack-identity.md))
-— not implemented. Patched River is built from
+(in; canto old layout until next pack). Patched River is built from
 `forks/river` + `forks/wlroots` (Sola nixpkgs pin) and relocated into
 `pkg:glibc` + `pkg:river` (libudev-zero, no udevd) + `pkg:hyprland`
 (nixpkgs Hyprland, `withSystemd = false`, T39) + `pkg:sola`

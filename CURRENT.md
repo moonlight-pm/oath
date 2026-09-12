@@ -331,7 +331,7 @@ Do not re-litigate without an explicit decision.
   [docs/specs/2026-09-03-backup-nfs.md](docs/specs/2026-09-03-backup-nfs.md)
   (T33 one NFS copy; partial, canto).
   [docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md)
-  (T32 pack identity; not implemented).
+  (T32 pack identity; hash-in-path in; canto old layout until next pack).
   [docs/specs/2026-09-03-pkg-thoxa.md](docs/specs/2026-09-03-pkg-thoxa.md)
   (`pkg:thoxa` login shell). T31:
   [docs/specs/2026-09-02-seat-home.md](docs/specs/2026-09-02-seat-home.md)
@@ -361,9 +361,9 @@ Do not re-litigate without an explicit decision.
   [docs/plans/2026-08-31-sola-terminal-plan.md](docs/plans/2026-08-31-sola-terminal-plan.md)
   (complete). No T29 plan file (packed from the freeze).
 - Hosting: [docs/specs/2026-08-30-pkg-hosting.md](docs/specs/2026-08-30-pkg-hosting.md)
-  (T20 identity; serving not implemented). Pack identity: T32
+  (T20 bootstrap origin live: https://store.oath.wicket.cloud/). Pack identity: T32
   ([docs/specs/2026-09-03-pkg-pack-identity.md](docs/specs/2026-09-03-pkg-pack-identity.md))
-  (hash-in-path in)
+  (hash-in-path in; canto old layout until next pack)
 - Roadmap: display canary in; River as `svc`; Sola session stack +
   session manager as `svc`; sola-terminal packed; sola-browser packed
   (canto; QEMU image 2026-09-11); sola-workspaces packed
@@ -374,4 +374,5 @@ Do not re-litigate without an explicit decision.
   T37 session Steam on canto (gen 21); gamescope/arcade not on SI; other kit apps not;
   T39 Omarchy session payload (Hyprland + Quickshell packed, Sola default);
   T32 hash-in-path in (canto old layout until next pack);
+  T20 bootstrap origin live (store.oath.wicket.cloud);
   Phase 6 metal canary (canto) dogfoodable

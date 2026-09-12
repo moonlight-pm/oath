@@ -4,9 +4,9 @@ How the system works **today**. Not a roadmap. If it is not here, do not
 assume Debian, systemd, or another distro.
 
 Oath is a Linux you administer with `oath`. The live catalog is `/oath`.
-Dogfood: **x86_64 QEMU** appliance (serial, SSH, virtio-gpu window if
-`DISPLAY` is set) and **canto** (metal, SSH as `home`; graphical
-Omarchy this boot).
+Dogfood: **canto** (metal, SSH as `home`; graphical Omarchy this boot).
+The **x86_64 QEMU** appliance still exists (serial, SSH, virtio-gpu if
+`DISPLAY` is set) but is **parked**.
 
 | Page | What |
 |------|------|

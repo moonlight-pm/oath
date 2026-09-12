@@ -26,9 +26,11 @@ cargo make architecture        # alias
 ```
 
 Public copy (Wicket forge workload): **https://oath.wicket.cloud/** (map at `/map`).
-Refresh that site from this tree: copy `docs/architecture.html` into
+Pack origin: **https://store.oath.wicket.cloud/** (`pkg/<name>/<hash>.tar`).
+Refresh the map site from this tree: copy `docs/architecture.html` into
 Wicket `extras/oath/site/architecture.html`, rebuild `oath-site`, apply
-(see Wicket `extras/oath/README.md`).
+(see Wicket `extras/oath/README.md`). Refresh packs with `cargo make
+publish` into `extras/oath-store/site`.
 
 Prose below is the detailed map. The HTML is the overview (admin surface,
 boot/PID 1, catalog objects, seat session). Do not hand-edit the HTML.
