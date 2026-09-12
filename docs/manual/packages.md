@@ -116,4 +116,5 @@ cargo make publish
 
 `publish` copies `{hash}.tar` files into the origin tree (sibling
 Wicket `extras/oath-store/site`, or `build/store-origin`). Public
-bootstrap: `https://store.oath.wicket.cloud/pkg/<name>/<hash>.tar`.
+bootstrap (live):
+`https://store.oath.wicket.cloud/pkg/<name>/<hash>.tar`.

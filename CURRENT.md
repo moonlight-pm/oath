@@ -174,12 +174,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    **started**: Workspaces ELF is on canto. **T35** toolchain live.
    **T30** `pkg:grok` packed. **T31** seat `home` locked (uid 1, SSH
    home, sudo ALL, `/lib/oath`, catalog env).
-6. **T20 bootstrap origin.** Hash-in-path is in. Publish tarballs with
-   `cargo make store` + `cargo make publish` into Wicket
-   `extras/oath-store`. Intended public origin
-   `https://store.oath.wicket.cloud/pkg/<name>/<hash>.tar` (Wicket
-   workload apply in flight). Not a `repo` kind. Canto store is still
-   old layout until the next pack.
+6. **T20 bootstrap origin is live.** `https://store.oath.wicket.cloud/`
+   **200** (Wicket `extras/oath-store`, `wl-c3222462d626`, hub proxy
+   **61**). Fetch `{origin}/pkg/<name>/<hash>.tar`. Seeded `hello` +
+   `fetchme`. Publish: `cargo make store` + `cargo make publish`. Not a
+   `repo` kind. Canto store is still old layout until the next pack.
 7. **QEMU is parked.** Not on the critical path. Do not spend the
    slice on `cargo make probe` / qcow. Metal canto + the pack origin
    are the path. The appliance still exists; leave it.
@@ -254,8 +253,8 @@ Do not re-litigate without an explicit decision.
   `cmake`, `pkg-config`, `bash`, `foot`, `xwayland`, `gamescope`, `mesa`, `steam`, `bluez`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin;
   object storage is `{origin}/pkg/{name}/{hash}.tar`. Bootstrap default
-  origin `https://store.oath.wicket.cloud` (Wicket extras/oath-store;
-  apply in flight). Git
+  origin `https://store.oath.wicket.cloud` (live **200**,
+  `wl-c3222462d626`). Git
   is not the store. **T30:** `pkg:grok` is catalog-owned (`/bin/grok`);
   Grok does not self-update. `pkg:git`, `pkg:curl`, `pkg:pipewire`, and `pkg:thoxa` packed.
   **T35:** `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` packed

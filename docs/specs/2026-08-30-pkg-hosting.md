@@ -1,11 +1,11 @@
 **Date:** 2026-08-30
 **Status:** target (freeze)
 **Implementation:** partial (2026-09-12). Origin layout + `cargo make
-publish`; Wicket `extras/oath-store` (static nginx). Public TLS apply
-in flight.
-**Dogfood:** host cache + published `hello` / `fetchme` tarballs.
-**Gaps:** public HTTPS not confirmed until Wicket apply + V1 proxy;
-  no guest store export; no peer discovery; signatures still out.
+publish`; Wicket `extras/oath-store` static nginx.
+**Dogfood:** `https://store.oath.wicket.cloud/` **200**; `hello` +
+`fetchme` tarballs.
+**Gaps:** no guest store export; no peer discovery; signatures still
+out; origin is a static bucket of tars, not an Oath guest.
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Package hosting (Oath hosts as origin)
@@ -41,8 +41,10 @@ freeze is the identity of hosting, not a second index language.
 default** origin is allowed so a new box can fill a missing pin; it is
 not a `repo` kind and not canonical. Intended first deploy: an Oath
 guest (or a static bucket of those tarballs) at
-`https://store.oath.wicket.cloud`. Host development cache is
-`.cache/oath/store` (`cargo make store --name <n> --from <dir> --tar`).
+`https://store.oath.wicket.cloud` (live **200**, Wicket
+`extras/oath-store`). Host development cache is
+`.cache/oath/store` (`cargo make store --name <n> --from <dir> --tar`;
+`cargo make publish`).
 
 ---
 
