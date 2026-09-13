@@ -107,6 +107,7 @@ const SOLA_KIT_ELFS: &[&str] = &[
     "solactl",
     "sola-kvm",
     "sola-settings",
+    "sola-oath",
     "sola-monitor",
     "sola-kit",
     "sola-preview",

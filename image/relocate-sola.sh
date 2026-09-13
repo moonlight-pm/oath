@@ -69,7 +69,7 @@ enqueue() {
 kit_bins=(
   sola-bus sola-call sola-river sola-shell sola-session
   sola-terminal sola-browser sola-workspaces solactl sola-kvm
-  sola-settings sola-monitor sola-kit sola-preview sola-paint
+  sola-settings sola-oath sola-monitor sola-kit sola-preview sola-paint
   sola-mail sola-arcade sola-scope sola-spotify sola-wrapper
 )
 for b in "${kit_bins[@]}"; do
@@ -454,7 +454,7 @@ WRAP
 $guest_env
 /bin/mkdir -p /tmp/fontconfig /oath/log "\$HOME/.local/share" "\$HOME/.config"
 case "$b" in
-sola-paint|sola-preview) [ -f /lib/oath/ensure-sola-bus ] && . /lib/oath/ensure-sola-bus ;;
+sola-paint|sola-preview|sola-oath) [ -f /lib/oath/ensure-sola-bus ] && . /lib/oath/ensure-sola-bus ;;
 esac
 exec /oath/store/pkg/sola/libexec/$b "\$@" >>/oath/log/$b.log 2>&1
 WRAP

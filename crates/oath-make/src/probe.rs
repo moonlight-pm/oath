@@ -880,6 +880,14 @@ pub fn probe(root: &Path, out: &Path) -> Result<i32> {
     cmd(
         &mut vm,
         &mut steps,
+        "test -x /bin/sola-oath && echo OATH_APP",
+        Some("OATH_APP"),
+        "sola.oath_bin",
+        Duration::from_secs(8),
+    )?;
+    cmd(
+        &mut vm,
+        &mut steps,
         "test -x /bin/sola-browser -a -x /bin/xdg-open -a -x /bin/x-www-browser && echo BROWSER_BIN",
         Some("BROWSER_BIN"),
         "sola.browser_bin",

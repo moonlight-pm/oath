@@ -144,6 +144,8 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
                        x-www-browser same; not xdg-utils)
     sola-paint         /bin/sola-paint (image viewer/editor; Omarchy
                        starts sola-bus on demand via /lib/oath/ensure-sola-bus)
+    sola-oath          /bin/sola-oath (T40; kit client of `oath --json`;
+                       packages first; launcher **Oath** when on Oath)
     sola-kvm           svc:sola-kvm listen as `home` (UDP 4242; virtual
                        pointer on River or Hyprland; shared seat)
     pkg:thoxa          `/bin/thoxa` (glibc; session REPL is the `home` login shell)

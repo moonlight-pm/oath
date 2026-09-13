@@ -41,6 +41,8 @@ compositor; `pkg:hyprland` + `svc:hyprland` seed off; `pkg:quickshell`
 + `pkg:omarchy` + `svc:omarchy-shell` seed off; no systemd/UWSM/SDDM).
 **Amended 2026-09-11:** `svc:sola-kvm` is shared seat (Wayland virtual
 pointer on River or Hyprland), not Sola-only.
+**T40** `sola-oath` closed 2026-09-13 (kit ELF in `pkg:sola`; JSON
+client of `oath`; packages first; not a `sola-settings` pane; Oath-compat).
 
 ---
 
@@ -398,3 +400,4 @@ guest ELFs.
 | 2026-09-11 | T32 | hash-in-path as-built (`oath-tree-v1` SHA-256); host `.cache/oath/store` | this file; [specs/2026-09-03-pkg-pack-identity.md](specs/2026-09-03-pkg-pack-identity.md) |
 | 2026-09-11 | T20 | object-storage tar is `pkg.url`; bootstrap origin allowed, not canonical; not deployed | this file; [specs/2026-08-30-pkg-hosting.md](specs/2026-08-30-pkg-hosting.md) |
 | 2026-09-12 | T20 | bootstrap origin live `https://store.oath.wicket.cloud` (`wl-c3222462d626`); QEMU parked | this file; CURRENT |
+| 2026-09-13 | T40 | `sola-oath` kit ELF; `oath --json` client; packages first; not settings | this file; [specs/2026-09-13-sola-oath.md](specs/2026-09-13-sola-oath.md) |

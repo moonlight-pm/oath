@@ -15,7 +15,7 @@ interp=/oath/store/pkg/glibc/lib/ld-linux-x86-64.so.2
 rpath="/oath/store/pkg/glibc/lib:/oath/store/pkg/river/lib:/oath/store/pkg/sola/lib:/oath/store/pkg/sola/cef/Release:/oath/store/pkg/pipewire/lib"
 browser_rpath="/oath/store/pkg/glibc/lib:/oath/store/pkg/sola/lib:/oath/store/pkg/sola/cef/Release:/oath/store/pkg/river/lib:/oath/store/pkg/pipewire/lib"
 
-apps="sola-settings sola-monitor sola-kit sola-preview sola-paint sola-mail sola-arcade sola-scope sola-spotify sola-wrapper"
+apps="sola-settings sola-oath sola-monitor sola-kit sola-preview sola-paint sola-mail sola-arcade sola-scope sola-spotify sola-wrapper"
 
 as_root() {
 	if [ "$(id -u)" = 0 ]; then
