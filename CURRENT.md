@@ -7,7 +7,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-09-12
+**As of:** 2026-09-13
 
 ---
 
@@ -202,7 +202,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ```sh
 nix-shell
-cargo make map            # as-built overview; public: https://oath.wicket.cloud/
+cargo make map            # as-built overview; public: https://oath.wicket.cloud/map
 cargo make store --name hello --from apps/hello --tar
 cargo make publish        # origin tree → Wicket extras/oath-store/site
 ```

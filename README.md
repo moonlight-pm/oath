@@ -53,7 +53,8 @@ critical path. Nothing is a daily driver. Metal install:
 
 Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
 What next: [`CURRENT.md`](CURRENT.md).
-Public intro + as-built map: [oath.wicket.cloud](https://oath.wicket.cloud/).
+Public intro: [oath.wicket.cloud](https://oath.wicket.cloud/).
+As-built map: [oath.wicket.cloud/map](https://oath.wicket.cloud/map).
 
 | | |
 |--|--|
