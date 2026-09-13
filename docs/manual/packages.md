@@ -5,7 +5,9 @@ A package is a `pkg:*` catalog object. Bits live under
 target. Name is a slot; hash is the bits (`sha256-` plus 64 hex of
 `oath-tree-v1`). The slot also has `live` → `<hash>` and compat
 `bin` → `live/bin` so paths like `/oath/store/pkg/<name>/lib` still
-work. There is no `apt` and no `oath install`.
+work. There is no `apt` and no `oath install`. `needs` is a list of
+other `pkg:*` this pack needs at runtime (no versions). Apply refuses
+a broken graph; sola-oath stages the cascade.
 
 ## What ships
 

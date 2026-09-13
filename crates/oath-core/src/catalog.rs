@@ -206,6 +206,7 @@ impl Catalog {
         self.expand_session_switch(&mut selected)?;
         self.check_svc_wants()?;
         self.check_compositor_mutex()?;
+        self.check_pkg_needs()?;
 
         let parent = self.current_generation()?;
         let generation = self.next_generation()?;
@@ -235,6 +236,9 @@ impl Catalog {
                 }
                 if let Some(req) = obj.desired.get("requires") {
                     last["requires"] = req.clone();
+                }
+                if let Some(needs) = obj.desired.get("needs") {
+                    last["needs"] = needs.clone();
                 }
                 last
             } else if d.id.kind == KIND_NET {
@@ -461,6 +465,7 @@ impl Catalog {
         actual.removable = removable;
         actual.url = pkg.url.clone();
         actual.requires = pkg.requires.clone();
+        actual.needs = pkg.needs.clone();
         if actual.hash.is_empty() && !pkg.hash.is_empty() {
             actual.hash = pkg.hash.clone();
         }
@@ -483,6 +488,21 @@ impl Catalog {
         }
         crate::svc_start_order(&svcs)?;
         Ok(())
+    }
+
+    fn check_pkg_needs(&self) -> Result<()> {
+        let Ok(ids) = self.ls(Some(KIND_PKG)) else {
+            return Ok(());
+        };
+        let mut pkgs = Vec::new();
+        for id in ids {
+            if let Ok(obj) = self.get(&id) {
+                if let Ok(spec) = serde_json::from_value::<crate::kinds::Pkg>(obj.desired) {
+                    pkgs.push((id.to_string(), spec));
+                }
+            }
+        }
+        crate::pkg::check_needs(&pkgs)
     }
 
     pub(crate) fn obj_dir(&self, id: &ObjectId) -> PathBuf {

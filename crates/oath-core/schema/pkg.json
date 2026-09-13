@@ -28,6 +28,11 @@
           "description": "Connected GPU must export Vulkan WSI DRM format modifiers. AMD GFX6–8 (SI/CIK/Polaris) and virtio-gpu do not. pkg:gamescope always requires this even if the field is omitted."
         }
       }
+    },
+    "needs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Other pkg:* ids this pack needs at runtime (pkg:glibc, or glibc). Cycles refuse apply. present=true is refused if a need is missing; present=false is refused while another present pack still needs this. No versions. Apply does not rewrite other objects."
     }
   }
 }

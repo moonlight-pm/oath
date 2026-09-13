@@ -13,9 +13,11 @@ cat /oath/INDEX.md   full INDEX (generated, live)
 `--json` prints the same facts as JSON. Failures include a **hint**
 pointing at the next page (`oath ls`, `oath schema <kind>`, INDEX safety).
 On the Sola desk, `/bin/sola-oath` is the same verbs for `pkg:*`
-(Present toggle, Apply, Undo). It does not replace `oath`. Canto has
-the ELF live-copied; launcher **Oath** ships when `sola-shell` is
-repacked with the builtin.
+(Present toggle, Apply, Undo). Click a pack to see **Needs** (what it
+runs on) and **Used by** (what would go with it). Toggle off stages
+those dependents too; toggle on stages missing needs. Apply still
+goes through `oath`. It does not replace `oath`. Canto has the ELF
+live-copied; launcher **Oath** ships when `sola-shell` is repacked.
 
 Catalog root is `/oath`. `OATH_ROOT` / `--root` is for tests on the
 build host, not the appliance.

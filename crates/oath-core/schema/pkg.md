@@ -33,6 +33,12 @@ store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
   `pkg:gamescope` always has this requirement. Uninstall is always
   allowed. `sola-arcade` lives in `pkg:sola`; apply skips that `/bin`
   link on the same GPUs rather than refusing the whole Sola blob.
+- `needs` — optional list of other `pkg:*` ids this pack needs at
+  runtime (`pkg:glibc`, or `glibc`). No versions. Cycles refuse apply.
+  `present=true` is refused if a need is missing or unknown.
+  `present=false` is refused while another **present** pack still
+  needs this. Apply does not rewrite other objects; sola-oath stages
+  the cascade. Not a recipe language.
 
 The slot also has `live` → `<hash>` and compat symlinks (`bin` →
 `live/bin`, …) so RPATH/env that still name

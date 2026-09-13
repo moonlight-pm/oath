@@ -125,13 +125,15 @@ pub fn seed(root: &Path) -> Result<()> {
         "mutate",
         &json!({
             "present": false,
-            "requires": { "drm_modifiers": true }
+            "requires": { "drm_modifiers": true },
+            "needs": ["pkg:glibc", "pkg:mesa"]
         }),
         &json!({
             "present": false,
             "links": [],
             "removable": true,
-            "requires": { "drm_modifiers": true }
+            "requires": { "drm_modifiers": true },
+            "needs": ["pkg:glibc", "pkg:mesa"]
         }),
     )?;
     seed_pkg(root, "mesa", true, true)?;
@@ -325,13 +327,14 @@ fn seed_svc_full(
 
 fn seed_pkg(root: &Path, name: &str, present: bool, removable: bool) -> Result<()> {
     let id = ObjectId::new(KIND_PKG, name);
-    write_object(
-        root,
-        &id,
-        "mutate",
-        &json!({ "present": present }),
-        &json!({ "present": present, "links": [], "removable": removable }),
-    )
+    let needs: Vec<&str> = crate::pkg::seed_needs(name).to_vec();
+    let mut desired = json!({ "present": present });
+    let mut actual = json!({ "present": present, "links": [], "removable": removable });
+    if !needs.is_empty() {
+        desired["needs"] = json!(needs);
+        actual["needs"] = json!(needs);
+    }
+    write_object(root, &id, "mutate", &desired, &actual)
 }
 
 fn write_object(

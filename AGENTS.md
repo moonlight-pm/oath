@@ -76,8 +76,11 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-13-pkg-needs.md`](docs/specs/2026-09-13-pkg-needs.md)
+(T41 `pkg.needs` runtime graph; apply refuses a broken graph).
+T40:
 [`docs/specs/2026-09-13-sola-oath.md`](docs/specs/2026-09-13-sola-oath.md)
-(T40 `sola-oath` catalog client; keep `oath` as the only admin surface).
+(`sola-oath` catalog client; keep `oath` as the only admin surface).
 T39:
 [`docs/specs/2026-09-10-omarchy-session.md`](docs/specs/2026-09-10-omarchy-session.md)
 (Omarchy session payload; keep Sola; Hyprland + Quickshell bar). T38:

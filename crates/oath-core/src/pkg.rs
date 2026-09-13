@@ -110,6 +110,130 @@ pub fn check_requires(name: &str, desired: &Pkg) -> Result<()> {
     ))
 }
 
+pub fn normalize_need(w: &str) -> String {
+    if w.contains(':') {
+        w.to_string()
+    } else {
+        format!("pkg:{w}")
+    }
+}
+
+/// Seed-time runtime graph. Empty = none. Not versions, not ELF NEEDED.
+pub fn seed_needs(name: &str) -> &'static [&'static str] {
+    match name {
+        "river" | "hyprland" | "pipewire" | "bluez" | "thoxa" | "cc" | "cmake" | "foot"
+        | "grim" | "xwayland" | "mesa" => &["pkg:glibc"],
+        "quickshell" => &["pkg:glibc", "pkg:hyprland"],
+        "omarchy" => &["pkg:glibc", "pkg:hyprland", "pkg:quickshell", "pkg:foot", "pkg:grim"],
+        "sola" => &["pkg:glibc", "pkg:river"],
+        "rustc" => &["pkg:glibc", "pkg:cc"],
+        "gamescope" => &["pkg:glibc", "pkg:mesa"],
+        "steam" => &["pkg:glibc", "pkg:bash", "pkg:mesa", "pkg:xwayland"],
+        _ => &[],
+    }
+}
+
+/// Cycles refuse. present=true needs every need present. present=false
+/// is refused while another present pack still lists this in `needs`.
+pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
+    use std::collections::{HashMap, HashSet, VecDeque};
+
+    let by_id: HashMap<String, &Pkg> = pkgs.iter().map(|(id, p)| (id.clone(), p)).collect();
+    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+    let mut indeg: HashMap<String, usize> = HashMap::new();
+    for id in by_id.keys() {
+        adj.insert(id.clone(), Vec::new());
+        indeg.insert(id.clone(), 0);
+    }
+    for (id, spec) in pkgs {
+        let mut seen = HashSet::new();
+        for w in &spec.needs {
+            let w = normalize_need(w);
+            if w == *id {
+                return Err(Error::hint(format!("{id} needs itself"), "oath schema pkg"));
+            }
+            if !by_id.contains_key(&w) {
+                if spec.present {
+                    return Err(Error::hint(
+                        format!("{id} needs {w}, which is not in the catalog"),
+                        "oath schema pkg",
+                    ));
+                }
+                continue;
+            }
+            if !seen.insert(w.clone()) {
+                continue;
+            }
+            adj.get_mut(&w).expect("adj").push(id.clone());
+            *indeg.get_mut(id).expect("indeg") += 1;
+        }
+    }
+    let mut q: VecDeque<String> =
+        indeg.iter().filter(|(_, d)| **d == 0).map(|(id, _)| id.clone()).collect();
+    q.make_contiguous().sort();
+    let mut out = Vec::new();
+    while let Some(id) = q.pop_front() {
+        out.push(id.clone());
+        let mut nxt = adj.remove(&id).unwrap_or_default();
+        nxt.sort();
+        for n in nxt {
+            if let Some(d) = indeg.get_mut(&n) {
+                *d -= 1;
+                if *d == 0 {
+                    q.push_back(n);
+                }
+            }
+        }
+    }
+    if out.len() != by_id.len() {
+        return Err(Error::hint("pkg needs cycle", "oath schema pkg"));
+    }
+
+    for (id, spec) in pkgs {
+        if spec.present {
+            continue;
+        }
+        let mut users = Vec::new();
+        for (other, ospec) in pkgs {
+            if !ospec.present {
+                continue;
+            }
+            if ospec.needs.iter().any(|w| normalize_need(w) == *id) {
+                users.push(other.clone());
+            }
+        }
+        if !users.is_empty() {
+            users.sort();
+            return Err(Error::hint(
+                format!("{id} is needed by {}", users.join(", ")),
+                format!("oath set {} present=false", users.join(" ")),
+            ));
+        }
+    }
+
+    for (id, spec) in pkgs {
+        if !spec.present {
+            continue;
+        }
+        for w in &spec.needs {
+            let w = normalize_need(w);
+            let Some(need) = by_id.get(&w) else {
+                return Err(Error::hint(
+                    format!("{id} needs {w}, which is not in the catalog"),
+                    "oath schema pkg",
+                ));
+            };
+            if !need.present {
+                return Err(Error::hint(
+                    format!("{id} needs {w} present"),
+                    format!("oath set {w} present=true"),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn skip_bin(pkg: &str, bin: &str) -> bool {
     pkg == "sola" && bin == "sola-arcade" && !drm_modifiers_available()
 }
@@ -231,6 +355,7 @@ fn pkg_actual(
         hash,
         realizations: list_realizations(store_root, name).unwrap_or_default(),
         requires: PkgRequires::default(),
+        needs: Vec::new(),
     }
 }
 
@@ -636,4 +761,68 @@ pub fn ingest_file(
     let got = install_tree(catalog_root, name, &tmp, cache, pin);
     let _ = fs::remove_dir_all(&tmp);
     got
+}
+
+#[cfg(test)]
+mod needs_tests {
+    use super::*;
+    use crate::kinds::Pkg;
+
+    fn p(present: bool, needs: &[&str]) -> Pkg {
+        Pkg {
+            present,
+            url: String::new(),
+            hash: String::new(),
+            requires: PkgRequires::default(),
+            needs: needs.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn steam_needs_unknown_pack() {
+        let pkgs = vec![
+            ("pkg:glibc".into(), p(true, &[])),
+            ("pkg:steam".into(), p(true, &["pkg:mesa"])),
+        ];
+        let err = check_needs(&pkgs).unwrap_err().to_string();
+        assert!(err.contains("not in the catalog"), "{err}");
+    }
+
+    #[test]
+    fn mesa_off_while_steam_present() {
+        let pkgs = vec![
+            ("pkg:mesa".into(), p(false, &["pkg:glibc"])),
+            ("pkg:glibc".into(), p(true, &[])),
+            ("pkg:steam".into(), p(true, &["pkg:mesa"])),
+        ];
+        let err = check_needs(&pkgs).unwrap_err().to_string();
+        assert!(err.contains("needed by pkg:steam"), "{err}");
+    }
+
+    #[test]
+    fn both_off_ok() {
+        let pkgs = vec![
+            ("pkg:mesa".into(), p(false, &["pkg:glibc"])),
+            ("pkg:glibc".into(), p(true, &[])),
+            ("pkg:steam".into(), p(false, &["pkg:mesa"])),
+        ];
+        check_needs(&pkgs).unwrap();
+    }
+
+    #[test]
+    fn cycle_refuses() {
+        let pkgs = vec![
+            ("pkg:a".into(), p(true, &["pkg:b"])),
+            ("pkg:b".into(), p(true, &["pkg:a"])),
+        ];
+        let err = check_needs(&pkgs).unwrap_err().to_string();
+        assert!(err.contains("cycle"), "{err}");
+    }
+
+    #[test]
+    fn seed_steam_lists_mesa() {
+        assert!(seed_needs("steam").contains(&"pkg:mesa"));
+        assert!(seed_needs("sola").contains(&"pkg:river"));
+        assert!(seed_needs("hello").is_empty());
+    }
 }

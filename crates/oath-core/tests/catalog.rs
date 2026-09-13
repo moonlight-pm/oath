@@ -131,6 +131,7 @@ impl ApplyHooks for MemHooks {
                 hash: desired.hash.clone(),
                 realizations: Vec::new(),
                 requires: desired.requires.clone(),
+                needs: desired.needs.clone(),
             });
         }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present, &desired.hash)
@@ -662,4 +663,42 @@ fn ingest_file_reports_hash() {
     assert!(is_realization_id(&h), "{h}");
     assert_eq!(hash_tree(&d.path().join("store/pkg/fetchme").join(&h)).unwrap(), h);
     assert!(d.path().join("store/pkg/fetchme").join(&h).join("bin/fetchme").is_file());
+}
+
+#[test]
+fn pkg_needs_refuses_mesa_off_while_steam_present() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let mesa: ObjectId = "pkg:mesa".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(false));
+    cat.set_fields(&mesa, fields).unwrap();
+    let err = cat.apply(Some(vec![mesa]), false, &Actor::unknown(), &hooks).unwrap_err();
+    match err {
+        Error::Hint { message, hint } => {
+            assert!(message.contains("needed by"), "{message}");
+            assert!(hint.contains("steam") || hint.contains("present=false"), "{hint}");
+        }
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(cat.get(&"pkg:mesa".parse().unwrap()).unwrap().actual["present"], json!(true));
+}
+
+#[test]
+fn pkg_needs_allows_mesa_off_after_steam() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    for name in ["steam", "gamescope"] {
+        let id: ObjectId = format!("pkg:{name}").parse().unwrap();
+        let mut fields = Map::new();
+        fields.insert("present".into(), json!(false));
+        cat.set_fields(&id, fields).unwrap();
+        cat.apply(Some(vec![id]), false, &Actor::unknown(), &hooks).unwrap();
+    }
+    let mesa: ObjectId = "pkg:mesa".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(false));
+    cat.set_fields(&mesa, fields).unwrap();
+    cat.apply(Some(vec![mesa.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&mesa).unwrap().actual["present"], json!(false));
 }

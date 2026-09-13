@@ -129,6 +129,10 @@ pub struct Pkg {
     /// Hardware the bits need. Apply `present=true` is refused if unmet.
     #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
     pub requires: PkgRequires,
+    /// Other `pkg:*` this pack needs at runtime. Cycles and missing
+    /// present needs refuse apply. Empty means none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub needs: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -192,6 +196,8 @@ pub struct PkgActual {
     pub realizations: Vec<PkgRealization>,
     #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
     pub requires: PkgRequires,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub needs: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
