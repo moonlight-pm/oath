@@ -44,7 +44,7 @@ compatibility promise.
 ## Status
 
 Phases 0–2 are done. **canto** is the metal canary (SSH `home@canto`;
-graphical Omarchy this boot). Packs are hash-in-path; bootstrap origin
+graphical Sola this boot). Packs are hash-in-path; bootstrap origin
 [store.oath.wicket.cloud](https://store.oath.wicket.cloud/). The
 **x86_64 QEMU** appliance still exists (PID 1, catalog, store + `/bin`
 links, `net:net0`, dropbear, virtio-gpu) but is **parked** — not the

@@ -244,8 +244,9 @@ Two Broadcom `tg3` ports; live cable is MAC
 oneshot / USB installer is the working entry. After boot, PID 1 waits
 for carrier then dhcp. Dual Pitcairn amdgpu (`si_support=1`);
 `/lib/oath/run-compositor` binds River to the connected DRM card
-(`session=sola`). Canto live is **`session=omarchy`**: Hyprland on the
-connected card. The graphical stack runs as Unix user `home`. SSH is
+(`session=sola`). Canto live is **`session=sola`** (catalog gen 59,
+2026-09-13 switch from omarchy): River on the connected card; Hyprland
+packed, svc-off. The graphical stack runs as Unix user `home`. SSH is
 `home`; serial is root. sola-river picks the mode matching physical mm.
 
 Workspace crates: `oath-core`, `oath`, `oath-init`, `oath-efi` (UEFI

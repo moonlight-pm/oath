@@ -73,7 +73,10 @@ oath undo                    # previous session
 ```
 
 Needs `--confirm` (kills the graphical session). PID 1 waits 3 s for DRM
-release; reboot if the incoming compositor still loses the race. River and
+release; reboot if the incoming compositor still loses the race.
+`svc:sola-kvm` stays enabled but its Wayland connection dies with the
+outgoing compositor — bounce it (`restart=always`) so the pointer
+attaches to the incoming desk. River and
 Hyprland cannot both be enabled. Bits for both desks stay packed (`pkg:sola`
 and `pkg:hyprland` / `pkg:quickshell` / `pkg:omarchy`). Omarchy’s bar is
 `svc:omarchy-shell` (`/bin/quickshell -p $OMARCHY_PATH/shell`). On the

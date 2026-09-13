@@ -2,17 +2,20 @@
 **Status:** target (freeze)
 **Implementation:** partial (catalog session + Hyprland 0.52 desk +
   Quickshell bar/menu + `pkg:foot` + `pkg:grim` capture on canto)
-**Dogfood:** canto `session=omarchy` after ESP boot **14**; Hyprland 0.52.2
-  on Pitcairn DP-10 1920×1080 (Philips 221V8L); `wayland-1`; `omarchy-bar`
-  1920×26; Super+Return maps **foot**; Super+Space `omarchy-menu`;
-  Super+K keybindings overlay; Super+Ctrl+C Capture menu
-  (Omarchy Mac/no-Print fallback; Print still bound;
-  Super+Shift+N is move-to-workspace); grim+slurp (`~/Pictures`);
-  `open` / `xdg-open` → sola-paint (bus started on demand);
-  `svc:sola-kvm` running as `home` (Hyprland virtual pointer 1920×1080);
-  JetBrainsMono NF + Liberation + Noto emoji + omarchy.ttf + Yaru cursor
-  live (fontconfig remaps Arch `JetBrainsMono Nerd Font` → nixpkgs NF);
-  Omarchy **v4.0.3** `0534987` (latest release);
+**Dogfood:** canto **`session=sola`** after catalog gen 59 (2026-09-13
+  live switch from omarchy; no ESP rotate). River + Sola stack as `home`
+  on DP-10 1920×1080 `wayland-1`; Hyprland / omarchy-shell packed, svc-off.
+  Last Omarchy paint: ESP boot **14**; Hyprland 0.52.2 on Pitcairn DP-10
+  1920×1080 (Philips 221V8L); `omarchy-bar` 1920×26; Super+Return maps
+  **foot**; Super+Space `omarchy-menu`; Super+K keybindings overlay;
+  Super+Ctrl+C Capture menu (Omarchy Mac/no-Print fallback; Print still
+  bound; Super+Shift+N is move-to-workspace); grim+slurp (`~/Pictures`);
+  `open` / `xdg-open` → sola-paint (bus started on demand). `svc:sola-kvm`
+  bounced onto River after the switch (process survived Hyprland death but
+  the Wayland pipe did not; SIGTERM + `restart=always`; novus CLIP1
+  10.0.0.5). JetBrainsMono NF + Liberation + Noto emoji + omarchy.ttf +
+  Yaru cursor packed (fontconfig remaps Arch `JetBrainsMono Nerd Font` →
+  nixpkgs NF); Omarchy **v4.0.3** `0534987` (latest release);
   PID 1 creates `/dev/fd`; `hyprland-boot.conf` uses `shadow { enabled = false }`
   (no `drop_shadow`); kernel **7.3.0-rc1 #4**; last-5 boots **14**–10
 **Gaps:** Hyprland 0.52 (nixpkgs) not Omarchy’s Lua ≥0.56 desk (0.52 conf
@@ -23,7 +26,8 @@
   Omarchy agent collectors need a fuller bash userland; libdrm
   `amdgpu.ids` still a nix store path; Xwayland autostarted (SI glamor
   not smoked); `omarchy-pkg-add` does not fetch Arch packages
-  (present-checks map onto `pkg:*`)
+  (present-checks map onto `pkg:*`); `svc:sola-kvm` does not reconnect
+  to the incoming compositor across a live session switch
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Omarchy as a session payload (keep Sola)
