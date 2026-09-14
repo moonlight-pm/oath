@@ -25,7 +25,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `oath`. Not a second admin surface. Freeze:
    [docs/specs/2026-09-13-sola-oath.md](docs/specs/2026-09-13-sola-oath.md).
    Kit wrappers no longer set `SOLA_NO_SELF_WATCH` (self-reexec on
-   libexec replace). Launcher waits packed `sola-shell`.
+   libexec replace). Launcher **Oath** live (sola-shell recopied).
 4. **T39 Omarchy session payload (keep Sola).** `host:local.session`
    = `sola` | `omarchy` (seed default **sola**; `--confirm` to switch).
    Exclusive compositor. **Canto is on `sola` after catalog gen 59**
