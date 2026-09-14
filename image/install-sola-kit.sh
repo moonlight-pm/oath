@@ -152,7 +152,6 @@ export LC_ALL=C.UTF-8
 export LOCALE_ARCHIVE=/oath/store/pkg/sola/lib/locale/locale-archive
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1}"
 export XDG_CACHE_HOME=/tmp
-export SOLA_NO_SELF_WATCH=1
 export SOLA_LOG_DIR=/oath/log
 export FONTCONFIG_FILE=/oath/store/pkg/sola/etc/fonts/fonts.conf
 export FONTCONFIG_PATH=/oath/store/pkg/sola/etc/fonts

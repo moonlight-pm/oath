@@ -24,8 +24,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 3. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
    `oath`. Not a second admin surface. Freeze:
    [docs/specs/2026-09-13-sola-oath.md](docs/specs/2026-09-13-sola-oath.md).
-   Canto ELF live-copied (filter, stacked Pin, detail type);
-   launcher waits packed `sola-shell`.
+   Kit wrappers no longer set `SOLA_NO_SELF_WATCH` (self-reexec on
+   libexec replace). Launcher waits packed `sola-shell`.
 4. **T39 Omarchy session payload (keep Sola).** `host:local.session`
    = `sola` | `omarchy` (seed default **sola**; `--confirm` to switch).
    Exclusive compositor. **Canto is on `sola` after catalog gen 59**
