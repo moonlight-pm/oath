@@ -117,6 +117,13 @@ impl PkgRequires {
     }
 }
 
+/// One runtime need: slot + realization. Hash is required (T41/T43).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PkgNeed {
+    pub id: String,
+    pub hash: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Pkg {
     pub present: bool,
@@ -129,10 +136,11 @@ pub struct Pkg {
     /// Hardware the bits need. Apply `present=true` is refused if unmet.
     #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
     pub requires: PkgRequires,
-    /// Other `pkg:*` this pack needs at runtime. Cycles and missing
-    /// present needs refuse apply. Empty means none.
+    /// Other `pkg:*` this pack needs at runtime, each pinned to a
+    /// realization id. Cycles and missing present needs refuse apply.
+    /// Empty means none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub needs: Vec<String>,
+    pub needs: Vec<PkgNeed>,
     /// Short prose. Empty means none.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub description: String,
@@ -203,7 +211,7 @@ pub struct PkgActual {
     #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
     pub requires: PkgRequires,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub needs: Vec<String>,
+    pub needs: Vec<PkgNeed>,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub description: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]

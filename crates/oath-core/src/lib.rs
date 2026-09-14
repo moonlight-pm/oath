@@ -26,8 +26,8 @@ pub use gpu::{drm_modifiers_available, pci_has_drm_modifiers, with_drm_modifiers
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgRealization,
-    PkgRequires, Ssh, SshActual, Svc, SvcActual, SvcRestart,
+    Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgNeed,
+    PkgRealization, PkgRequires, Ssh, SshActual, Svc, SvcActual, SvcRestart,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
@@ -42,8 +42,10 @@ pub use pkg::{
     converge_with_link_root, copy_tree as copy_pack_tree, ingest_file, install_tree,
     list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
     pin_desired_hash, promote_slot, promote_store, resolve_tree, seed_about as pkg_seed_about,
-    seed_needs as pkg_seed_needs,
-    store_present, write_slot_links,
+    sync_need_hashes,
+    seed_need_hash as pkg_seed_need_hash, seed_needs as pkg_seed_needs,
+    seed_needs_json as pkg_seed_needs_json,
+    stamp_unhashed, store_present, write_slot_links,
 };
 pub use seed::seed;
 pub use session::{is_omarchy_desk_svc, is_sola_desk_svc, session_allows};

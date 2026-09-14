@@ -505,7 +505,15 @@ impl Catalog {
         let mut pkgs = Vec::new();
         for id in ids {
             if let Ok(obj) = self.get(&id) {
-                if let Ok(spec) = serde_json::from_value::<crate::kinds::Pkg>(obj.desired) {
+                if let Ok(mut spec) = serde_json::from_value::<crate::kinds::Pkg>(obj.desired) {
+                    if spec.hash.is_empty() {
+                        spec.hash = obj
+                            .actual
+                            .get("hash")
+                            .and_then(|h| h.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                    }
                     pkgs.push((id.to_string(), spec));
                 }
             }

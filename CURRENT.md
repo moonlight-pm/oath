@@ -13,17 +13,14 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **T42 `pkg.description` + `pkg.home`.** Catalog prose and project
+1. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
+   refuses if the needed pack’s live pin differs. sola-oath shows the
+   pin on the tree. Freeze:
+   [docs/specs/2026-09-13-pkg-needs.md](docs/specs/2026-09-13-pkg-needs.md).
+2. **T42 `pkg.description` + `pkg.home`.** Catalog prose and project
    page (not fetch `url`). sola-oath shows them pinned; Open project
    is `xdg-open`. Freeze:
    [docs/specs/2026-09-13-pkg-about.md](docs/specs/2026-09-13-pkg-about.md).
-2. **T41 `pkg.needs` + sola-oath tree.** Runtime graph on the catalog
-   (`pkg:steam` needs mesa/xwayland/bash/glibc). Apply refuses a broken
-   graph; sola-oath shows Needs / Used by and stages the cascade.
-   Canto gen 61: steam needs mesa/xwayland/bash/glibc; mesa-off
-   apply refuses. Freeze:
-   [docs/specs/2026-09-13-pkg-needs.md](docs/specs/2026-09-13-pkg-needs.md).
-   T40 `sola-oath` stays the client ELF.
 3. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
    `oath`. Not a second admin surface. Freeze:
    [docs/specs/2026-09-13-sola-oath.md](docs/specs/2026-09-13-sola-oath.md).

@@ -127,7 +127,7 @@ pub fn seed(root: &Path) -> Result<()> {
         &json!({
             "present": false,
             "requires": { "drm_modifiers": true },
-            "needs": ["pkg:glibc", "pkg:mesa"],
+            "needs": crate::pkg::seed_needs_json("gamescope"),
             "description": gs_desc,
             "home": gs_home
         }),
@@ -136,7 +136,7 @@ pub fn seed(root: &Path) -> Result<()> {
             "links": [],
             "removable": true,
             "requires": { "drm_modifiers": true },
-            "needs": ["pkg:glibc", "pkg:mesa"],
+            "needs": crate::pkg::seed_needs_json("gamescope"),
             "description": gs_desc,
             "home": gs_home
         }),
@@ -337,13 +337,13 @@ fn seed_svc_full(
 
 fn seed_pkg(root: &Path, name: &str, present: bool, removable: bool) -> Result<()> {
     let id = ObjectId::new(KIND_PKG, name);
-    let needs: Vec<&str> = crate::pkg::seed_needs(name).to_vec();
+    let needs = crate::pkg::seed_needs_json(name);
     let (description, home) = crate::pkg::seed_about(name);
     let mut desired = json!({ "present": present });
     let mut actual = json!({ "present": present, "links": [], "removable": removable });
-    if !needs.is_empty() {
-        desired["needs"] = json!(needs);
-        actual["needs"] = json!(needs);
+    if needs.as_array().map(|a| !a.is_empty()).unwrap_or(false) {
+        desired["needs"] = needs.clone();
+        actual["needs"] = needs;
     }
     if !description.is_empty() {
         desired["description"] = json!(description);

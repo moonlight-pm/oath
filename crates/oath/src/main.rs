@@ -55,6 +55,9 @@ enum Cmd {
     Log,
     #[command(hide = true)]
     Seed,
+    /// Hash old-layout store slots into actual.hash without moving trees.
+    #[command(hide = true)]
+    StampHash,
 }
 
 fn main() -> ExitCode {
@@ -99,6 +102,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Undo) => "undo",
         Some(Cmd::Log) => "log",
         Some(Cmd::Seed) => "seed",
+        Some(Cmd::StampHash) => "stamp-hash",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
     let cat = Catalog::open(&cli.root)?;
@@ -120,6 +124,22 @@ fn run() -> oath_core::Result<i32> {
         }
         Some(Cmd::Seed) => {
             seed(&cli.root)?;
+            Ok(0)
+        }
+        Some(Cmd::StampHash) => {
+            let ids = cat.ls(Some("pkg"))?;
+            let mut n = 0u32;
+            for id in ids {
+                if let Some(h) = oath_core::stamp_unhashed(&cli.root, &id.name)? {
+                    println!("{} {h}", id);
+                    n += 1;
+                }
+            }
+            if cli.json {
+                println!("{}", json!({ "stamped": n }));
+            } else if n == 0 {
+                println!("in-sync");
+            }
             Ok(0)
         }
         Some(Cmd::Ls { kind }) => {

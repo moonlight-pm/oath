@@ -10,8 +10,11 @@ use std::path::{Path, PathBuf};
 
 use crate::error::{Error, Result};
 use crate::gpu::drm_modifiers_available;
-use crate::kinds::{Pkg, PkgActual, PkgRealization, PkgRequires};
-use crate::packhash::{hash_tree, is_realization_id, realization_dir, slot_dir, LIVE_NAME};
+use crate::kinds::{Pkg, PkgActual, PkgNeed, PkgRealization, PkgRequires};
+use crate::packhash::{
+    hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX, LIVE_NAME,
+};
+use sha2::{Digest, Sha256};
 use crate::write_json;
 
 /// Create or remove this package’s `/bin` symlinks. Never clobber a
@@ -118,7 +121,7 @@ pub fn normalize_need(w: &str) -> String {
     }
 }
 
-/// Seed-time runtime graph. Empty = none. Not versions, not ELF NEEDED.
+/// Seed-time runtime graph (slot names). Hash is filled at seed/pack/live.
 pub fn seed_needs(name: &str) -> &'static [&'static str] {
     match name {
         "river" | "hyprland" | "pipewire" | "bluez" | "thoxa" | "cc" | "cmake" | "foot"
@@ -131,6 +134,26 @@ pub fn seed_needs(name: &str) -> &'static [&'static str] {
         "steam" => &["pkg:glibc", "pkg:bash", "pkg:mesa", "pkg:xwayland"],
         _ => &[],
     }
+}
+
+/// Realization id used in seed `needs[].hash` before a pack pins the
+/// needed slot. Not a tree hash. Pack/live overwrite with the live pin.
+pub fn seed_need_hash(name: &str) -> String {
+    let mut d = Sha256::new();
+    d.update(b"oath-seed-need\n");
+    d.update(name.as_bytes());
+    format!("{HASH_PREFIX}{:x}", d.finalize())
+}
+
+pub fn seed_needs_json(name: &str) -> serde_json::Value {
+    let v: Vec<serde_json::Value> = seed_needs(name)
+        .iter()
+        .map(|id| {
+            let n = id.strip_prefix("pkg:").unwrap_or(id);
+            serde_json::json!({ "id": id, "hash": seed_need_hash(n) })
+        })
+        .collect();
+    serde_json::Value::Array(v)
 }
 
 /// Seed-time description and project page. Empty strings mean none.
@@ -247,8 +270,12 @@ pub fn seed_about(name: &str) -> (&'static str, &'static str) {
     }
 }
 
-/// Cycles refuse. present=true needs every need present. present=false
-/// is refused while another present pack still lists this in `needs`.
+fn need_id(n: &PkgNeed) -> String {
+    normalize_need(&n.id)
+}
+
+/// Cycles refuse. present=true needs every need present at `need.hash`.
+/// present=false is refused while another present pack still lists this.
 pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
     use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -261,8 +288,14 @@ pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
     }
     for (id, spec) in pkgs {
         let mut seen = HashSet::new();
-        for w in &spec.needs {
-            let w = normalize_need(w);
+        for n in &spec.needs {
+            let w = need_id(n);
+            if spec.present && !is_realization_id(&n.hash) {
+                return Err(Error::hint(
+                    format!("{id} needs {w} hash (sha256-… required)"),
+                    "oath schema pkg",
+                ));
+            }
             if w == *id {
                 return Err(Error::hint(format!("{id} needs itself"), "oath schema pkg"));
             }
@@ -312,7 +345,7 @@ pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
             if !ospec.present {
                 continue;
             }
-            if ospec.needs.iter().any(|w| normalize_need(w) == *id) {
+            if ospec.needs.iter().any(|n| need_id(n) == *id) {
                 users.push(other.clone());
             }
         }
@@ -329,8 +362,14 @@ pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
         if !spec.present {
             continue;
         }
-        for w in &spec.needs {
-            let w = normalize_need(w);
+        for n in &spec.needs {
+            let w = need_id(n);
+            if !is_realization_id(&n.hash) {
+                return Err(Error::hint(
+                    format!("{id} needs {w} hash (sha256-… required)"),
+                    "oath schema pkg",
+                ));
+            }
             let Some(need) = by_id.get(&w) else {
                 return Err(Error::hint(
                     format!("{id} needs {w}, which is not in the catalog"),
@@ -341,6 +380,12 @@ pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
                 return Err(Error::hint(
                     format!("{id} needs {w} present"),
                     format!("oath set {w} present=true"),
+                ));
+            }
+            if !need.hash.is_empty() && need.hash != n.hash {
+                return Err(Error::hint(
+                    format!("{id} needs {w} at {}, live is {}", n.hash, need.hash),
+                    format!("oath set {id} needs, or pin {w} hash={}", n.hash),
                 ));
             }
         }
@@ -807,6 +852,109 @@ fn replace_symlink(path: &Path, target: &str) -> Result<()> {
     Ok(())
 }
 
+/// After packs are pinned, copy each needed slot's live hash onto
+/// `needs[].hash`. Pack-time lockfile; apply does not do this.
+pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
+    use serde_json::{json, Value};
+    let dir = catalog_root.join("objects").join("pkg");
+    if !dir.is_dir() {
+        return Ok(());
+    }
+    let mut live: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    for e in fs::read_dir(&dir)? {
+        let e = e?;
+        if !e.path().is_dir() {
+            continue;
+        }
+        let name = e.file_name().to_string_lossy().into_owned();
+        let desired = crate::read_json::<Value>(&e.path().join("desired.json")).unwrap_or(Value::Null);
+        let actual = crate::read_json::<Value>(&e.path().join("actual.json")).unwrap_or(Value::Null);
+        let h = desired
+            .get("hash")
+            .and_then(|x| x.as_str())
+            .filter(|s| !s.is_empty())
+            .or_else(|| actual.get("hash").and_then(|x| x.as_str()).filter(|s| !s.is_empty()))
+            .unwrap_or("")
+            .to_string();
+        if !h.is_empty() {
+            live.insert(format!("pkg:{name}"), h.clone());
+            live.insert(name, h);
+        }
+    }
+    for e in fs::read_dir(&dir)? {
+        let e = e?;
+        if !e.path().is_dir() {
+            continue;
+        }
+        for file in ["desired.json", "actual.json"] {
+            let p = e.path().join(file);
+            let Ok(mut v) = crate::read_json::<Value>(&p) else {
+                continue;
+            };
+            let Some(arr) = v.get_mut("needs").and_then(|n| n.as_array_mut()) else {
+                continue;
+            };
+            let mut changed = false;
+            for item in arr.iter_mut() {
+                let id = if let Some(s) = item.as_str() {
+                    normalize_need(s)
+                } else {
+                    item.get("id")
+                        .and_then(|x| x.as_str())
+                        .map(normalize_need)
+                        .unwrap_or_default()
+                };
+                if id.is_empty() {
+                    continue;
+                }
+                let Some(h) = live.get(&id) else {
+                    continue;
+                };
+                if item.is_string() {
+                    *item = json!({ "id": id, "hash": h });
+                    changed = true;
+                } else if let Some(o) = item.as_object_mut() {
+                    if o.get("hash").and_then(|x| x.as_str()) != Some(h.as_str()) {
+                        o.insert("id".into(), json!(id));
+                        o.insert("hash".into(), json!(h));
+                        changed = true;
+                    }
+                }
+            }
+            if changed {
+                write_json(&p, &v)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Record `actual.hash` / `desired.hash` for old-layout slots without
+/// moving the tree. Live pin for `needs.hash`.
+pub fn stamp_unhashed(catalog_root: &Path, name: &str) -> Result<Option<String>> {
+    let dir = catalog_root.join("objects").join("pkg").join(name);
+    let actual_p = dir.join("actual.json");
+    let mut actual: serde_json::Value = if actual_p.is_file() {
+        crate::read_json(&actual_p)?
+    } else {
+        serde_json::json!({ "present": true, "links": [], "removable": true })
+    };
+    if actual.get("hash").and_then(|h| h.as_str()).is_some_and(is_realization_id) {
+        return Ok(None);
+    }
+    let h = if let Some(id) = live_hash(catalog_root, name)? {
+        id
+    } else if is_old_layout(&slot_dir(catalog_root, name)) {
+        hash_tree(&slot_dir(catalog_root, name))?
+    } else {
+        return Ok(None);
+    };
+    actual["hash"] = serde_json::Value::String(h.clone());
+    write_json(&actual_p, &actual)?;
+    pin_desired_hash(catalog_root, name, &h)?;
+    Ok(Some(h))
+}
+
 pub fn pin_desired_hash(catalog_root: &Path, name: &str, hash: &str) -> Result<()> {
     let p = catalog_root.join("objects").join("pkg").join(name).join("desired.json");
     if !p.is_file() {
@@ -884,13 +1032,19 @@ mod needs_tests {
     use super::*;
     use crate::kinds::Pkg;
 
-    fn p(present: bool, needs: &[&str]) -> Pkg {
+    const H: &str = "sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const H2: &str = "sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    fn p(present: bool, hash: &str, needs: &[(&str, &str)]) -> Pkg {
         Pkg {
             present,
             url: String::new(),
-            hash: String::new(),
+            hash: hash.to_string(),
             requires: PkgRequires::default(),
-            needs: needs.iter().map(|s| s.to_string()).collect(),
+            needs: needs
+                .iter()
+                .map(|(id, h)| PkgNeed { id: (*id).into(), hash: (*h).into() })
+                .collect(),
             description: String::new(),
             home: String::new(),
         }
@@ -906,8 +1060,8 @@ mod needs_tests {
     #[test]
     fn steam_needs_unknown_pack() {
         let pkgs = vec![
-            ("pkg:glibc".into(), p(true, &[])),
-            ("pkg:steam".into(), p(true, &["pkg:mesa"])),
+            ("pkg:glibc".into(), p(true, H, &[])),
+            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", H)])),
         ];
         let err = check_needs(&pkgs).unwrap_err().to_string();
         assert!(err.contains("not in the catalog"), "{err}");
@@ -916,9 +1070,9 @@ mod needs_tests {
     #[test]
     fn mesa_off_while_steam_present() {
         let pkgs = vec![
-            ("pkg:mesa".into(), p(false, &["pkg:glibc"])),
-            ("pkg:glibc".into(), p(true, &[])),
-            ("pkg:steam".into(), p(true, &["pkg:mesa"])),
+            ("pkg:mesa".into(), p(false, H, &[("pkg:glibc", H)])),
+            ("pkg:glibc".into(), p(true, H, &[])),
+            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", H)])),
         ];
         let err = check_needs(&pkgs).unwrap_err().to_string();
         assert!(err.contains("needed by pkg:steam"), "{err}");
@@ -927,9 +1081,9 @@ mod needs_tests {
     #[test]
     fn both_off_ok() {
         let pkgs = vec![
-            ("pkg:mesa".into(), p(false, &["pkg:glibc"])),
-            ("pkg:glibc".into(), p(true, &[])),
-            ("pkg:steam".into(), p(false, &["pkg:mesa"])),
+            ("pkg:mesa".into(), p(false, H, &[("pkg:glibc", H)])),
+            ("pkg:glibc".into(), p(true, H, &[])),
+            ("pkg:steam".into(), p(false, H, &[("pkg:mesa", H)])),
         ];
         check_needs(&pkgs).unwrap();
     }
@@ -937,11 +1091,31 @@ mod needs_tests {
     #[test]
     fn cycle_refuses() {
         let pkgs = vec![
-            ("pkg:a".into(), p(true, &["pkg:b"])),
-            ("pkg:b".into(), p(true, &["pkg:a"])),
+            ("pkg:a".into(), p(true, H, &[("pkg:b", H)])),
+            ("pkg:b".into(), p(true, H, &[("pkg:a", H)])),
         ];
         let err = check_needs(&pkgs).unwrap_err().to_string();
         assert!(err.contains("cycle"), "{err}");
+    }
+
+    #[test]
+    fn hash_mismatch_refuses() {
+        let pkgs = vec![
+            ("pkg:mesa".into(), p(true, H2, &[])),
+            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", H)])),
+        ];
+        let err = check_needs(&pkgs).unwrap_err().to_string();
+        assert!(err.contains("live is"), "{err}");
+    }
+
+    #[test]
+    fn missing_need_hash_refuses() {
+        let pkgs = vec![
+            ("pkg:mesa".into(), p(true, H, &[])),
+            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", "")])),
+        ];
+        let err = check_needs(&pkgs).unwrap_err().to_string();
+        assert!(err.contains("hash"), "{err}");
     }
 
     #[test]

@@ -33,12 +33,12 @@ store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
   `pkg:gamescope` always has this requirement. Uninstall is always
   allowed. `sola-arcade` lives in `pkg:sola`; apply skips that `/bin`
   link on the same GPUs rather than refusing the whole Sola blob.
-- `needs` — optional list of other `pkg:*` ids this pack needs at
-  runtime (`pkg:glibc`, or `glibc`). No versions. Cycles refuse apply.
-  `present=true` is refused if a need is missing or unknown.
-  `present=false` is refused while another **present** pack still
-  needs this. Apply does not rewrite other objects; sola-oath stages
-  the cascade. Not a recipe language.
+- `needs` — optional list of `{id, hash}` this pack needs at runtime.
+  `id` is `pkg:glibc` (or `glibc`). `hash` is required (`sha256-` plus
+  64 hex). Cycles refuse apply. `present=true` is refused if a need is
+  missing or its live pin differs. `present=false` is refused while
+  another **present** pack still needs this. Apply does not rewrite
+  other objects; sola-oath stages the cascade. Not a recipe language.
 - `description` — short prose. Empty means none. Pack `INDEX.md` is
   still the store-tree note for two hashes of one name.
 - `home` — HTTPS URL of the source tree or main project page. Empty

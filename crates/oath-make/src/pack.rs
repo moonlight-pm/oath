@@ -491,6 +491,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         let _ = fs::remove_file(guest_bin.join("jq"));
     }
     relink_present(&oath_root, &guest_bin)?;
+    oath_core::sync_need_hashes(&oath_root).map_err(|e| anyhow::anyhow!("{e}"))?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");

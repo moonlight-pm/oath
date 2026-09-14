@@ -43,8 +43,9 @@ compositor; `pkg:hyprland` + `svc:hyprland` seed off; `pkg:quickshell`
 pointer on River or Hyprland), not Sola-only.
 **T40** `sola-oath` closed 2026-09-13 (kit ELF in `pkg:sola`; JSON
 client of `oath`; packages first; not a `sola-settings` pane; Oath-compat).
-**T41** `pkg.needs` closed 2026-09-13 (runtime graph, no versions;
-apply refuses; sola-oath tree + cascade). Amends T18 package-deps Out.
+**T41** `pkg.needs` closed 2026-09-13 (runtime graph; sola-oath tree +
+cascade). **Amended 2026-09-14:** each need is `{id, hash}` required;
+apply refuses a live-pin mismatch. Amends T18 package-deps Out.
 **T42** `pkg.description` + `pkg.home` closed 2026-09-13 (catalog
 prose + project page; not `pkg.url`).
 
@@ -406,4 +407,5 @@ guest ELFs.
 | 2026-09-12 | T20 | bootstrap origin live `https://store.oath.wicket.cloud` (`wl-c3222462d626`); QEMU parked | this file; CURRENT |
 | 2026-09-13 | T40 | `sola-oath` kit ELF; `oath --json` client; packages first; not settings | this file; [specs/2026-09-13-sola-oath.md](specs/2026-09-13-sola-oath.md) |
 | 2026-09-13 | T41 | `pkg.needs` runtime graph; apply refuses; sola-oath cascade | this file; [specs/2026-09-13-pkg-needs.md](specs/2026-09-13-pkg-needs.md) |
+| 2026-09-14 | T41 | `needs.hash` required; apply refuses live-pin mismatch | this file; [specs/2026-09-13-pkg-needs.md](specs/2026-09-13-pkg-needs.md) |
 | 2026-09-13 | T42 | `pkg.description` + `pkg.home` (not fetch url) | this file; [specs/2026-09-13-pkg-about.md](specs/2026-09-13-pkg-about.md) |
