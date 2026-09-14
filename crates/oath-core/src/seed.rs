@@ -119,6 +119,7 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_pkg(root, "foot", true, true)?;
     seed_pkg(root, "grim", true, true)?;
     seed_pkg(root, "xwayland", true, true)?;
+    let (gs_desc, gs_home) = crate::pkg::seed_about("gamescope");
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "gamescope"),
@@ -126,31 +127,40 @@ pub fn seed(root: &Path) -> Result<()> {
         &json!({
             "present": false,
             "requires": { "drm_modifiers": true },
-            "needs": ["pkg:glibc", "pkg:mesa"]
+            "needs": ["pkg:glibc", "pkg:mesa"],
+            "description": gs_desc,
+            "home": gs_home
         }),
         &json!({
             "present": false,
             "links": [],
             "removable": true,
             "requires": { "drm_modifiers": true },
-            "needs": ["pkg:glibc", "pkg:mesa"]
+            "needs": ["pkg:glibc", "pkg:mesa"],
+            "description": gs_desc,
+            "home": gs_home
         }),
     )?;
     seed_pkg(root, "mesa", true, true)?;
     seed_pkg(root, "steam", true, true)?;
+    let (fm_desc, fm_home) = crate::pkg::seed_about("fetchme");
     write_object(
         root,
         &ObjectId::new(KIND_PKG, "fetchme"),
         "mutate",
         &json!({
             "present": false,
-            "url": "http://10.0.2.2:18765/fetchme"
+            "url": "http://10.0.2.2:18765/fetchme",
+            "description": fm_desc,
+            "home": fm_home
         }),
         &json!({
             "present": false,
             "links": [],
             "removable": true,
-            "url": "http://10.0.2.2:18765/fetchme"
+            "url": "http://10.0.2.2:18765/fetchme",
+            "description": fm_desc,
+            "home": fm_home
         }),
     )?;
 
@@ -328,11 +338,20 @@ fn seed_svc_full(
 fn seed_pkg(root: &Path, name: &str, present: bool, removable: bool) -> Result<()> {
     let id = ObjectId::new(KIND_PKG, name);
     let needs: Vec<&str> = crate::pkg::seed_needs(name).to_vec();
+    let (description, home) = crate::pkg::seed_about(name);
     let mut desired = json!({ "present": present });
     let mut actual = json!({ "present": present, "links": [], "removable": removable });
     if !needs.is_empty() {
         desired["needs"] = json!(needs);
         actual["needs"] = json!(needs);
+    }
+    if !description.is_empty() {
+        desired["description"] = json!(description);
+        actual["description"] = json!(description);
+    }
+    if !home.is_empty() {
+        desired["home"] = json!(home);
+        actual["home"] = json!(home);
     }
     write_object(root, &id, "mutate", &desired, &actual)
 }

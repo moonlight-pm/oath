@@ -132,6 +132,8 @@ impl ApplyHooks for MemHooks {
                 realizations: Vec::new(),
                 requires: desired.requires.clone(),
                 needs: desired.needs.clone(),
+                description: desired.description.clone(),
+                home: desired.home.clone(),
             });
         }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present, &desired.hash)
@@ -654,6 +656,16 @@ fn pack_hash_mismatch_refuses() {
         Error::Hint { message, .. } => assert!(message.contains("does not match"), "{message}"),
         other => panic!("{other:?}"),
     }
+}
+
+#[test]
+fn seed_pkg_has_description_and_home() {
+    let (_d, cat) = tmp();
+    let obj = cat.get(&"pkg:steam".parse().unwrap()).unwrap();
+    let desc = obj.desired["description"].as_str().unwrap();
+    let home = obj.desired["home"].as_str().unwrap();
+    assert!(desc.contains("Steam"), "{desc}");
+    assert!(home.starts_with("https://"), "{home}");
 }
 
 #[test]

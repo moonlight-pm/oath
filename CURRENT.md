@@ -13,19 +13,23 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **T41 `pkg.needs` + sola-oath tree.** Runtime graph on the catalog
+1. **T42 `pkg.description` + `pkg.home`.** Catalog prose and project
+   page (not fetch `url`). sola-oath shows them pinned; Open project
+   is `xdg-open`. Freeze:
+   [docs/specs/2026-09-13-pkg-about.md](docs/specs/2026-09-13-pkg-about.md).
+2. **T41 `pkg.needs` + sola-oath tree.** Runtime graph on the catalog
    (`pkg:steam` needs mesa/xwayland/bash/glibc). Apply refuses a broken
    graph; sola-oath shows Needs / Used by and stages the cascade.
    Canto gen 61: steam needs mesa/xwayland/bash/glibc; mesa-off
    apply refuses. Freeze:
    [docs/specs/2026-09-13-pkg-needs.md](docs/specs/2026-09-13-pkg-needs.md).
    T40 `sola-oath` stays the client ELF.
-2. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
+3. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
    `oath`. Not a second admin surface. Freeze:
    [docs/specs/2026-09-13-sola-oath.md](docs/specs/2026-09-13-sola-oath.md).
    Canto ELF live-copied (filter + Present pinned above the tree);
    launcher waits packed `sola-shell`.
-3. **T39 Omarchy session payload (keep Sola).** `host:local.session`
+4. **T39 Omarchy session payload (keep Sola).** `host:local.session`
    = `sola` | `omarchy` (seed default **sola**; `--confirm` to switch).
    Exclusive compositor. **Canto is on `sola` after catalog gen 59**
    (2026-09-13 live switch from omarchy; no ESP rotate). River + Sola
@@ -51,9 +55,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    leftover `sola-` exec tokens; `omarchy-pkg-add` does not fetch Arch;
    kvm does not reconnect across a compositor switch. Freeze:
    [docs/specs/2026-09-10-omarchy-session.md](docs/specs/2026-09-10-omarchy-session.md).
-4. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
+5. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
    no password, groups `root`+`home` only. Graphical stack as `home`
-   is **Sola this boot** (Now 3); Hyprland/Omarchy bits stay packed and
+   is **Sola this boot** (Now 4); Hyprland/Omarchy bits stay packed and
    are svc-off. `/dev/ptmx` is 0666 so terminal tmux/PTY works.
    Serial svc **off** (no UART). EFI mark still paints. **T30**
    `pkg:grok` packed (`/bin/grok`, updater off). Guest `/bin/xdg-open`
@@ -168,9 +172,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.
    Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.
    Do not `cargo make install --confirm` (wipe).
-5. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
+6. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
-6. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
+7. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto. **T37** session Steam in; `/bin/sola-arcade` **not** on canto
    (no DRM modifiers). Other kit apps still out. **Sola master**
@@ -186,19 +190,19 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pipewire-pulse` applied gen 40 as `home` (Built-in Audio);
    HDMI not auto-enumerated. System D-Bus is `pkg:bluez`; no
    session bus / MPRIS.
-7. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
+8. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. **T35** toolchain live.
    **T30** `pkg:grok` packed. **T31** seat `home` locked (uid 1, SSH
    home, sudo ALL, `/lib/oath`, catalog env).
-8. **T20 bootstrap origin is live.** `https://store.oath.wicket.cloud/`
+9. **T20 bootstrap origin is live.** `https://store.oath.wicket.cloud/`
    **200** (Wicket `extras/oath-store`, `wl-c3222462d626`, hub proxy
    **61**). Fetch `{origin}/pkg/<name>/<hash>.tar`. Seeded `hello` +
    `fetchme`. Publish: `cargo make store` + `cargo make publish`. Not a
    `repo` kind. Canto store is still old layout until the next pack.
-9. **QEMU is parked.** Not on the critical path. Do not spend the
+10. **QEMU is parked.** Not on the critical path. Do not spend the
    slice on `cargo make probe` / qcow. Metal canto + the pack origin
    are the path. The appliance still exists; leave it.
-10. Do not add a third compositor. River is Sola; Hyprland is Omarchy
+11. Do not add a third compositor. River is Sola; Hyprland is Omarchy
    (T39). glibc runtime is allowed **only** as `pkg:glibc` (never in
    PID 1). No udevd. No nested Sola/Omarchy process manager. No
    systemd. Do not write a real disk the operator did not name, or
@@ -334,7 +338,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-13-pkg-needs.md](docs/specs/2026-09-13-pkg-needs.md)
+- Freeze: [docs/specs/2026-09-13-pkg-about.md](docs/specs/2026-09-13-pkg-about.md)
+  (T42 description + home).
+  [docs/specs/2026-09-13-pkg-needs.md](docs/specs/2026-09-13-pkg-needs.md)
   (T41 `pkg.needs`).
   [docs/specs/2026-09-13-sola-oath.md](docs/specs/2026-09-13-sola-oath.md)
   (T40 `sola-oath` catalog client).

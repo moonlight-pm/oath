@@ -7,7 +7,8 @@ target. Name is a slot; hash is the bits (`sha256-` plus 64 hex of
 `bin` → `live/bin` so paths like `/oath/store/pkg/<name>/lib` still
 work. There is no `apt` and no `oath install`. `needs` is a list of
 other `pkg:*` this pack needs at runtime (no versions). Apply refuses
-a broken graph; sola-oath stages the cascade.
+a broken graph; sola-oath stages the cascade. `description` is short
+prose; `home` is the source or project page (not the fetch `url`).
 
 ## What ships
 

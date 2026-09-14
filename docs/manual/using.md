@@ -13,8 +13,9 @@ cat /oath/INDEX.md   full INDEX (generated, live)
 `--json` prints the same facts as JSON. Failures include a **hint**
 pointing at the next page (`oath ls`, `oath schema <kind>`, INDEX safety).
 On the Sola desk, `/bin/sola-oath` is the same verbs for `pkg:*`
-(Present toggle, Apply, Undo). Filter the list; click a pack to see
-**Needs** and **Used by**. Present stays pinned above the tree.
+(Present toggle, Apply, Undo). Filter the list; click a pack for description, project page,
+**Needs**, and **Used by**. Present stays pinned above the tree.
+Open project is `xdg-open`.
 Toggle off stages dependents too; toggle on stages missing needs.
 Apply still goes through `oath`. Canto has the ELF live-copied;
 launcher **Oath** ships when `sola-shell` is repacked.

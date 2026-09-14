@@ -39,6 +39,10 @@ store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
   `present=false` is refused while another **present** pack still
   needs this. Apply does not rewrite other objects; sola-oath stages
   the cascade. Not a recipe language.
+- `description` — short prose. Empty means none. Pack `INDEX.md` is
+  still the store-tree note for two hashes of one name.
+- `home` — HTTPS URL of the source tree or main project page. Empty
+  means none. Not `url` (that fetches bits).
 
 The slot also has `live` → `<hash>` and compat symlinks (`bin` →
 `live/bin`, …) so RPATH/env that still name

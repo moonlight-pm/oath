@@ -67,6 +67,8 @@ pub trait ApplyHooks {
             realizations: Vec::new(),
             requires: desired.requires.clone(),
             needs: desired.needs.clone(),
+            description: desired.description.clone(),
+            home: desired.home.clone(),
         })
     }
     fn converge_net(&self, _id: &ObjectId, desired: &Net) -> Result<Net> {

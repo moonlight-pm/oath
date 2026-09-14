@@ -240,6 +240,12 @@ impl Catalog {
                 if let Some(needs) = obj.desired.get("needs") {
                     last["needs"] = needs.clone();
                 }
+                if let Some(d) = obj.desired.get("description") {
+                    last["description"] = d.clone();
+                }
+                if let Some(h) = obj.desired.get("home") {
+                    last["home"] = h.clone();
+                }
                 last
             } else if d.id.kind == KIND_NET {
                 json!({
@@ -466,6 +472,8 @@ impl Catalog {
         actual.url = pkg.url.clone();
         actual.requires = pkg.requires.clone();
         actual.needs = pkg.needs.clone();
+        actual.description = pkg.description.clone();
+        actual.home = pkg.home.clone();
         if actual.hash.is_empty() && !pkg.hash.is_empty() {
             actual.hash = pkg.hash.clone();
         }

@@ -33,6 +33,14 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Other pkg:* ids this pack needs at runtime (pkg:glibc, or glibc). Cycles refuse apply. present=true is refused if a need is missing; present=false is refused while another present pack still needs this. No versions. Apply does not rewrite other objects."
+    },
+    "description": {
+      "type": "string",
+      "description": "Short prose for humans and agents. Empty means none. Pack INDEX.md stays the store-tree note (two hashes of one name)."
+    },
+    "home": {
+      "type": "string",
+      "description": "HTTPS URL of the source tree or main project page. Not the fetch url."
     }
   }
 }

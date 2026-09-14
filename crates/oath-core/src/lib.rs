@@ -41,7 +41,8 @@ pub use pkg::{
     check_needs as check_pkg_needs, check_requires, converge as converge_pkg,
     converge_with_link_root, copy_tree as copy_pack_tree, ingest_file, install_tree,
     list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
-    pin_desired_hash, promote_slot, promote_store, resolve_tree, seed_needs as pkg_seed_needs,
+    pin_desired_hash, promote_slot, promote_store, resolve_tree, seed_about as pkg_seed_about,
+    seed_needs as pkg_seed_needs,
     store_present, write_slot_links,
 };
 pub use seed::seed;

@@ -76,8 +76,11 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-13-pkg-about.md`](docs/specs/2026-09-13-pkg-about.md)
+(T42 `pkg.description` + `pkg.home`; not fetch `url`).
+T41:
 [`docs/specs/2026-09-13-pkg-needs.md`](docs/specs/2026-09-13-pkg-needs.md)
-(T41 `pkg.needs` runtime graph; apply refuses a broken graph).
+(`pkg.needs` runtime graph; apply refuses a broken graph).
 T40:
 [`docs/specs/2026-09-13-sola-oath.md`](docs/specs/2026-09-13-sola-oath.md)
 (`sola-oath` catalog client; keep `oath` as the only admin surface).

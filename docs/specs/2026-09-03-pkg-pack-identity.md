@@ -74,8 +74,9 @@ libexec/oath-backup-thaw     # optional; run after that snapshot
   already this shape. Host packing (`cargo make`, relocate scripts)
   already emits it.
 - Optional `INDEX.md` is how a human or agent tells two hashes of
-  the same name apart (they may be different programs). Oath will
-  not invent a second description format.
+  the same name apart (they may be different programs). Catalog
+  `description` / `home` (T42) are object facts for `oath get` and
+  sola-oath; INDEX.md stays the store-tree note.
 - Optional `libexec/oath-backup-quiesce` / `oath-backup-thaw`: the
   pack’s way to freeze a payload (postgres WAL, etc.) across the
   snapshot. Missing = crash-consistent only. See T33.

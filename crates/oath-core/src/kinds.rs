@@ -133,6 +133,12 @@ pub struct Pkg {
     /// present needs refuse apply. Empty means none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub needs: Vec<String>,
+    /// Short prose. Empty means none.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub description: String,
+    /// Source or project page. Not the fetch `url`.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub home: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -198,6 +204,10 @@ pub struct PkgActual {
     pub requires: PkgRequires,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub needs: Vec<String>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub description: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub home: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -133,6 +133,120 @@ pub fn seed_needs(name: &str) -> &'static [&'static str] {
     }
 }
 
+/// Seed-time description and project page. Empty strings mean none.
+pub fn seed_about(name: &str) -> (&'static str, &'static str) {
+    match name {
+        "busybox" => (
+            "Unix applets in one musl ELF, including vi.",
+            "https://busybox.net/",
+        ),
+        "btrfs" => (
+            "btrfs-progs for the live @ generations.",
+            "https://btrfs.readthedocs.io/",
+        ),
+        "oath" => (
+            "Catalog CLI — the only admin surface.",
+            "https://github.com/moonlight-pm/oath",
+        ),
+        "dropbear" => (
+            "SSH server and musl OpenSSH client bits.",
+            "https://matt.ucc.asn.au/dropbear/dropbear.html",
+        ),
+        "glibc" => (
+            "GNU C runtime for glibc payloads. Never loaded by musl PID 1.",
+            "https://www.gnu.org/software/libc/",
+        ),
+        "river" => (
+            "Sola compositor (patched River).",
+            "https://codeberg.org/river/river",
+        ),
+        "hyprland" => (
+            "Omarchy compositor.",
+            "https://hypr.land/",
+        ),
+        "quickshell" => (
+            "Omarchy bar and menu (Quickshell).",
+            "https://quickshell.org/",
+        ),
+        "omarchy" => (
+            "Omarchy session payload — scripts, bar, menu.",
+            "https://omarchy.org/",
+        ),
+        "sola" => (
+            "Sola session stack and kit apps.",
+            "https://github.com/moonlight-pm/Sola",
+        ),
+        "grok" => (
+            "Grok Build CLI. Updater off; apply is how bits change.",
+            "https://grok.com/",
+        ),
+        "git" => ("Git.", "https://git-scm.com/"),
+        "curl" => ("curl with a CA bundle.", "https://curl.se/"),
+        "pipewire" => (
+            "PipeWire + WirePlumber + pipewire-pulse.",
+            "https://pipewire.org/",
+        ),
+        "bluez" => (
+            "System D-Bus and BlueZ.",
+            "https://www.bluez.org/",
+        ),
+        "thoxa" => (
+            "home login shell.",
+            "https://github.com/moonlight-pm/thoxa",
+        ),
+        "cc" => (
+            "Zig providing cc / c++ / musl-cc.",
+            "https://ziglang.org/",
+        ),
+        "rustc" => (
+            "rustc and cargo (gnu host + musl std).",
+            "https://www.rust-lang.org/",
+        ),
+        "cmake" => ("CMake and Ninja.", "https://cmake.org/"),
+        "pkg-config" => (
+            "pkg-config. The .pc farm starts empty.",
+            "https://www.freedesktop.org/wiki/Software/pkg-config/",
+        ),
+        "bash" => (
+            "GNU bash. Busybox ash is not bash.",
+            "https://www.gnu.org/software/bash/",
+        ),
+        "foot" => (
+            "Wayland terminal used on the Omarchy desk.",
+            "https://codeberg.org/dnkl/foot",
+        ),
+        "grim" => (
+            "grim + slurp capture helpers.",
+            "https://git.sr.ht/~emersion/grim",
+        ),
+        "xwayland" => (
+            "Xwayland for session Steam.",
+            "https://x.org/",
+        ),
+        "gamescope" => (
+            "Valve gamescope nest. Needs DRM modifiers.",
+            "https://github.com/ValveSoftware/gamescope",
+        ),
+        "mesa" => (
+            "Mesa GL/EGL/Vulkan. 64-bit plus 32-bit for Steam.",
+            "https://www.mesa3d.org/",
+        ),
+        "steam" => (
+            "Valve Steam launcher and steamrt3 helpers.",
+            "https://store.steampowered.com/",
+        ),
+        "hello" => (
+            "Canary ELF. /bin/hello prints hello.",
+            "https://github.com/moonlight-pm/oath",
+        ),
+        "fetchme" => (
+            "Canary wget into the store.",
+            "https://github.com/moonlight-pm/oath",
+        ),
+        _ => ("", ""),
+    }
+}
+
 /// Cycles refuse. present=true needs every need present. present=false
 /// is refused while another present pack still lists this in `needs`.
 pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
@@ -356,6 +470,8 @@ fn pkg_actual(
         realizations: list_realizations(store_root, name).unwrap_or_default(),
         requires: PkgRequires::default(),
         needs: Vec::new(),
+        description: String::new(),
+        home: String::new(),
     }
 }
 
@@ -775,7 +891,16 @@ mod needs_tests {
             hash: String::new(),
             requires: PkgRequires::default(),
             needs: needs.iter().map(|s| s.to_string()).collect(),
+            description: String::new(),
+            home: String::new(),
         }
+    }
+
+    #[test]
+    fn steam_about() {
+        let (d, h) = seed_about("steam");
+        assert!(d.contains("Steam"), "{d}");
+        assert!(h.starts_with("https://"), "{h}");
     }
 
     #[test]
