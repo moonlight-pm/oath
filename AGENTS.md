@@ -76,8 +76,11 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-15-plan-kind.md`](docs/specs/2026-09-15-plan-kind.md)
+(T43 `plan` kind; `oath build` / `oath fmt`; replicate a build).
+T42:
 [`docs/specs/2026-09-13-pkg-about.md`](docs/specs/2026-09-13-pkg-about.md)
-(T42 `pkg.description` + `pkg.home`; not fetch `url`).
+(`pkg.description` + `pkg.home`; not fetch `url`).
 T41:
 [`docs/specs/2026-09-13-pkg-needs.md`](docs/specs/2026-09-13-pkg-needs.md)
 (`pkg.needs` runtime graph; apply refuses a broken graph).
@@ -174,7 +177,8 @@ apps/                 first-party pkg sources (`hello`, `fetchme`, …)
 ```
 
 Do not invent extra kinds until CURRENT says so. `pkg`, `net`, `ssh`,
-and `dev` exist; do not add other kinds unless CURRENT says so.
+and `dev` exist; **T43** adds `plan` (spec’d, not shipped). Do not add
+other kinds unless CURRENT says so.
 Sola/River work uses existing `pkg` + `svc`. glibc is `pkg:glibc`,
 not a new kind.
 

@@ -48,6 +48,10 @@ cascade). **Amended 2026-09-14:** each need is `{id, hash}` required;
 apply refuses a live-pin mismatch. Amends T18 package-deps Out.
 **T42** `pkg.description` + `pkg.home` closed 2026-09-13 (catalog
 prose + project page; not `pkg.url`).
+**T43** `plan` kind closed 2026-09-15 (new kind; hash slot + canonical
+file; `oath build` / `oath fmt`; ad-hoc `--file`; no anonymous blobs;
+enforce netless sandbox; `built_from` not a proof). Amends T32 no
+recipe *language*.
 
 ---
 
@@ -408,4 +412,5 @@ guest ELFs.
 | 2026-09-13 | T40 | `sola-oath` kit ELF; `oath --json` client; packages first; not settings | this file; [specs/2026-09-13-sola-oath.md](specs/2026-09-13-sola-oath.md) |
 | 2026-09-13 | T41 | `pkg.needs` runtime graph; apply refuses; sola-oath cascade | this file; [specs/2026-09-13-pkg-needs.md](specs/2026-09-13-pkg-needs.md) |
 | 2026-09-14 | T41 | `needs.hash` required; apply refuses live-pin mismatch | this file; [specs/2026-09-13-pkg-needs.md](specs/2026-09-13-pkg-needs.md) |
+| 2026-09-15 | T43 | `plan` kind; `oath build`; canonical file; no anonymous blobs | this file; [specs/2026-09-15-plan-kind.md](specs/2026-09-15-plan-kind.md) |
 | 2026-09-13 | T42 | `pkg.description` + `pkg.home` (not fetch url) | this file; [specs/2026-09-13-pkg-about.md](specs/2026-09-13-pkg-about.md) |

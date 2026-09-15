@@ -45,10 +45,11 @@ provenance, not the version.
 - **Two runnable at once is still two names** (T24): `pkg:foo` and
   `pkg:foo-wip`. Hash-in-path keeps extra realizations; it does not
   put two `/bin/foo` on PATH.
-- **No recipe language. No new kind. No new verbs.** Pack guidelines
-  are the layout below. Fill is pack-from-path, or `pkg.url` (T20)
-  whose bytes must match `desired.hash`. Git is not the store; apply
-  does not clone, checkout, or speak refs (T20).
+- **No recipe *language*.** A hashed **plan file** (kind `plan`, T43)
+  is allowed; it is not a DSL. Fill is still pack-from-path, or
+  `pkg.url` (T20) whose bytes must match `desired.hash`, or
+  `oath build` of a plan. Git is not the store; apply does not clone,
+  checkout, or speak refs (T20).
 - **The pin is how you know the hash.** Apply verifies; it does not
   choose. There is no global correct hash for a name. You learn a
   pin from a place you already trust, then you write `desired.hash`.

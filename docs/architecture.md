@@ -89,6 +89,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /home                  seat home (Unix user `home`, uid 1)
     /oath/                 catalog
     /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,quickshell,omarchy,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,foot,grim,xwayland,gamescope,mesa,steam,hello,fetchme}/<hash>/
+    # Target T43 (not as-built): /oath/store/plan/<name>/<hash>/plan.plan
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
