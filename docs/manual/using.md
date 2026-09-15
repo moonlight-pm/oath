@@ -49,6 +49,18 @@ Ids are `kind:name` — `host:local`, `svc:serial`, `snap:current`,
 Plans must already be canonical (`oath fmt -w`). Build never activates
 `/bin`; that is still `oath set pkg:<name> present=true` then apply.
 
+```
+oath fmt -w apps/hello.plan
+oath build --file apps/hello.plan
+oath set plan:hello --from-file apps/hello.plan
+oath build plan:hello
+```
+
+`apps/hello.plan` compiles `apps/hello-src/hello.c` with pinned
+`pkg:cc` and `pkg:busybox`. The product is a new `pkg:hello`
+realization. A script that calls `musl-cc` without declaring
+`pkg:cc` fails inside the sandbox.
+
 ## Safety
 
 `apply` takes a filesystem snapshot first.

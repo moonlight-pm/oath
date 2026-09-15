@@ -11,8 +11,10 @@ use crate::error::{Error, Result};
 use crate::id::ObjectId;
 use crate::kinds::{Meta, PkgNeed, PlanActual};
 use crate::packhash::{fetch_url, hash_tree, is_realization_id, realization_dir, LIVE_NAME};
-use crate::plan::{file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, PlanFile, PLAN_NAME};
-use crate::pkg::{copy_tree, store_present};
+use crate::pkg::{copy_tree, resolve_tree, store_present};
+use crate::plan::{
+    file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, PlanFile, PLAN_NAME,
+};
 use crate::write_json;
 use crate::{Catalog, KIND_PKG, KIND_PLAN};
 
@@ -33,15 +35,10 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
     fs::create_dir_all(&dir)?;
     let dest = dir.join(PLAN_NAME);
     fs::write(&dest, bytes)?;
-    let extra: Vec<_> = fs::read_dir(&dir)?
-        .flatten()
-        .filter(|e| e.file_name() != PLAN_NAME)
-        .collect();
+    let extra: Vec<_> =
+        fs::read_dir(&dir)?.flatten().filter(|e| e.file_name() != PLAN_NAME).collect();
     if !extra.is_empty() {
-        return Err(Error::hint(
-            "plan store dir must contain only plan.plan",
-            "oath schema plan",
-        ));
+        return Err(Error::hint("plan store dir must contain only plan.plan", "oath schema plan"));
     }
     let dir_obj = catalog_root.join("objects/plan").join(&plan.name);
     fs::create_dir_all(&dir_obj)?;
@@ -67,12 +64,7 @@ pub fn build_pinned(catalog_root: &Path, name: &str) -> Result<BuildReport> {
     let cat = Catalog::open(catalog_root)?;
     let id = ObjectId::new(KIND_PLAN, name);
     let obj = cat.get(&id)?;
-    let hash = obj
-        .desired
-        .get("hash")
-        .and_then(|h| h.as_str())
-        .unwrap_or("")
-        .to_string();
+    let hash = obj.desired.get("hash").and_then(|h| h.as_str()).unwrap_or("").to_string();
     if !is_realization_id(&hash) {
         return Err(Error::hint(
             format!("plan:{name} is unpinned"),
@@ -133,20 +125,19 @@ fn build_inner(
     let script = fmt_plan(plan);
     let script_path = scratch.join("build.sh");
     let body = format!("#!/bin/sh\nset -eu\n{}", plan.script);
-    fs::write(&script_path, if plan.script.is_empty() { "#!/bin/sh\nset -eu\n".into() } else { body })?;
+    fs::write(
+        &script_path,
+        if plan.script.is_empty() { "#!/bin/sh\nset -eu\n".into() } else { body },
+    )?;
     let mut perm = fs::metadata(&script_path)?.permissions();
     perm.set_mode(0o755);
     fs::set_permissions(&script_path, perm)?;
 
-    let packs: Vec<(PkgNeed, PathBuf)> = plan
-        .build_needs
-        .iter()
-        .map(|n| {
-            let name = n.id.strip_prefix("pkg:").unwrap();
-            let p = realization_dir(catalog_root, name, &n.hash);
-            (n.clone(), p)
-        })
-        .collect();
+    let mut packs: Vec<(PkgNeed, PathBuf)> = Vec::new();
+    for n in &plan.build_needs {
+        let name = n.id.strip_prefix("pkg:").unwrap();
+        packs.push((n.clone(), resolve_tree(catalog_root, name, &n.hash)?));
+    }
 
     run_sandbox(&packs, &script_path, &out)?;
 
@@ -228,7 +219,8 @@ fn ensure_need(catalog_root: &Path, n: &PkgNeed) -> Result<()> {
         Error::hint(format!("build_needs id must be pkg:*, got {}", n.id), "oath schema plan")
     })?;
     if store_present(catalog_root, name, &n.hash) {
-        let got = hash_tree(&realization_dir(catalog_root, name, &n.hash))?;
+        let tree = resolve_tree(catalog_root, name, &n.hash)?;
+        let got = hash_tree(&tree)?;
         if got != n.hash {
             return Err(Error::hint(
                 format!("{} tree hash is {got}, plan wants {}", n.id, n.hash),
@@ -239,10 +231,8 @@ fn ensure_need(catalog_root: &Path, n: &PkgNeed) -> Result<()> {
     }
     let cat = Catalog::open(catalog_root)?;
     let obj = cat.get(&ObjectId::new(KIND_PKG, name)).ok();
-    let url = obj
-        .as_ref()
-        .and_then(|o| o.desired.get("url").and_then(|u| u.as_str()))
-        .unwrap_or("");
+    let url =
+        obj.as_ref().and_then(|o| o.desired.get("url").and_then(|u| u.as_str())).unwrap_or("");
     if url.is_empty() {
         return Err(Error::hint(
             format!("{} @ {} is not in the store", n.id, n.hash),
@@ -275,11 +265,7 @@ fn sandbox_child(
     let packs: Vec<(String, String, PathBuf)> = packs
         .iter()
         .map(|(n, p)| {
-            (
-                n.id.strip_prefix("pkg:").unwrap_or(&n.id).to_string(),
-                n.hash.clone(),
-                p.clone(),
-            )
+            (n.id.strip_prefix("pkg:").unwrap_or(&n.id).to_string(), n.hash.clone(), p.clone())
         })
         .collect();
     let script = script.to_path_buf();
@@ -330,10 +316,7 @@ fn sandbox_child(
             .or_else(|_| fs::read_to_string(out.join(".err")))
             .unwrap_or_default();
         return Err(Error::hint(
-            format!(
-                "sandbox exit status={st} signaled={} extra={extra}",
-                libc::WIFSIGNALED(st)
-            ),
+            format!("sandbox exit status={st} signaled={} extra={extra}", libc::WIFSIGNALED(st)),
             "oath schema plan",
         ));
     }
@@ -376,10 +359,7 @@ fn sandbox_in_child(
 ) -> Result<()> {
     let ns = libc::CLONE_NEWNS | libc::CLONE_NEWNET | libc::CLONE_NEWIPC | libc::CLONE_NEWUTS;
     if unsafe { libc::unshare(ns) } != 0 {
-        return Err(Error::hint(
-            "unshare failed (need mount/net namespaces)",
-            "oath schema plan",
-        ));
+        return Err(Error::hint("unshare failed (need mount/net namespaces)", "oath schema plan"));
     }
     if unsafe {
         libc::mount(
@@ -407,6 +387,13 @@ fn sandbox_in_child(
     }
 
     bind(out, &scratch.join("out"), false)?;
+    chmod(out, 0o0777)?;
+    let out_bin = out.join("bin");
+    if out_bin.is_dir() {
+        chmod(&out_bin, 0o0777)?;
+    }
+    chmod(&scratch.join("tmp"), 0o1777)?;
+    let _ = mount_proc(&scratch.join("proc"));
     for (name, hash, src) in packs {
         if !src.is_dir() {
             return Err(Error::hint(
@@ -418,12 +405,13 @@ fn sandbox_in_child(
         fs::create_dir_all(dest.parent().unwrap())?;
         fs::create_dir_all(&dest)?;
         bind(src, &dest, true)?;
+        slot_compat(scratch, name, hash, src)?;
         let bin = dest.join("bin");
         if bin.is_dir() {
             for e in fs::read_dir(&bin)? {
                 let e = e?;
                 let link = scratch.join("bin").join(e.file_name());
-                if link.exists() {
+                if link.symlink_metadata().is_ok() {
                     continue;
                 }
                 let target = PathBuf::from("/oath/store/pkg")
@@ -433,10 +421,6 @@ fn sandbox_in_child(
                     .join(e.file_name());
                 symlink(&target, &link)?;
             }
-        }
-        let live = scratch.join("oath/store/pkg").join(name).join(LIVE_NAME);
-        if !live.exists() {
-            let _ = symlink(Path::new(hash), &live);
         }
     }
     let build_sh = scratch.join("build.sh");
@@ -455,7 +439,7 @@ fn sandbox_in_child(
     if unsafe { libc::chroot(root_c.as_ptr()) } != 0 {
         return Err(Error::Msg("chroot failed".into()));
     }
-    std::env::set_current_dir("/")?;
+    std::env::set_current_dir("/tmp")?;
     // Drop to seat `home` only when we entered as host root (not a user ns).
     if host_root {
         unsafe {
@@ -463,26 +447,66 @@ fn sandbox_in_child(
             libc::setuid(crate::seat::UID);
         }
     }
-    std::env::set_var("PATH", "/bin");
-    std::env::set_var("HOME", "/tmp");
-    std::env::set_var("TMPDIR", "/tmp");
-    std::env::remove_var("HTTP_PROXY");
-    std::env::remove_var("http_proxy");
-    std::env::remove_var("HTTPS_PROXY");
-    std::env::remove_var("ALL_PROXY");
 
     let st = Command::new("/bin/sh")
         .arg("/build.sh")
+        .current_dir("/tmp")
         .env_clear()
         .env("PATH", "/bin")
         .env("HOME", "/tmp")
         .env("TMPDIR", "/tmp")
         .env("OUT", "/out")
+        .env("ZIG_LOCAL_CACHE_DIR", "/tmp/zig-cache")
+        .env("ZIG_GLOBAL_CACHE_DIR", "/tmp/zig-cache")
+        .env("XDG_CACHE_HOME", "/tmp")
         .stdin(Stdio::null())
         .status()?;
     if !st.success() {
         let _ = fs::write("/out/.err", format!("build.sh {st:?}"));
         return Err(Error::hint("plan script failed", "oath schema plan"));
+    }
+    Ok(())
+}
+
+/// T32 slot face so wrappers that hardcode `/oath/store/pkg/<name>/libexec`
+/// still work when the tree is bound at `<name>/<hash>`.
+fn slot_compat(scratch: &Path, name: &str, hash: &str, src: &Path) -> Result<()> {
+    let slot = scratch.join("oath/store/pkg").join(name);
+    let live = slot.join(LIVE_NAME);
+    if live.symlink_metadata().is_err() {
+        symlink(Path::new(hash), &live)?;
+    }
+    for e in fs::read_dir(src)? {
+        let e = e?;
+        let fname = e.file_name();
+        let n = fname.to_string_lossy();
+        if n == LIVE_NAME || is_realization_id(&n) {
+            continue;
+        }
+        let link = slot.join(&fname);
+        if link.symlink_metadata().is_ok() {
+            continue;
+        }
+        symlink(format!("{LIVE_NAME}/{n}"), &link)?;
+    }
+    Ok(())
+}
+
+fn chmod(path: &Path, mode: u32) -> Result<()> {
+    let mut p = fs::metadata(path)?.permissions();
+    p.set_mode(mode);
+    fs::set_permissions(path, p)?;
+    Ok(())
+}
+
+fn mount_proc(dest: &Path) -> Result<()> {
+    fs::create_dir_all(dest)?;
+    let d = cstr(dest)?;
+    let src = std::ffi::CString::new("proc").unwrap();
+    let fstype = std::ffi::CString::new("proc").unwrap();
+    let rc = unsafe { libc::mount(src.as_ptr(), d.as_ptr(), fstype.as_ptr(), 0, std::ptr::null()) };
+    if rc != 0 {
+        return Err(Error::Msg(format!("mount proc at {} failed", dest.display())));
     }
     Ok(())
 }

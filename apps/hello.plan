@@ -1,0 +1,26 @@
+#!oath-plan
+{
+  "name": "hello",
+  "produces": "pkg:hello",
+  "build_needs": [
+    {
+      "id": "pkg:busybox",
+      "hash": "sha256-a9661868d8cfe2a8e8406263f22d47a8dd913e27c404816ff20576c9ea73f5f3"
+    },
+    {
+      "id": "pkg:cc",
+      "hash": "sha256-15f0dbb7c2d794bc1fd1faab467e6707ea552a7de232c74037f1c7a0a725f1a5"
+    },
+    {
+      "id": "pkg:hello-src",
+      "hash": "sha256-590eb253ec896fb42c51c17c1de506b8e33fedbfe8a053448756675f575b1e03"
+    }
+  ],
+  "run_needs": []
+}
+---
+#!/bin/sh
+set -eu
+mkdir -p /out/bin
+musl-cc -O2 -o /out/bin/hello /oath/store/pkg/hello-src/sha256-590eb253ec896fb42c51c17c1de506b8e33fedbfe8a053448756675f575b1e03/hello.c
+chmod 0755 /out/bin/hello

@@ -18,9 +18,15 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `set --from-file`; enforce netless sandbox; no anonymous blobs.
    Freeze:
    [docs/specs/2026-09-15-plan-kind.md](docs/specs/2026-09-15-plan-kind.md).
-   Partial: `oath fmt` / `oath build` / `set --from-file`; sandbox
-   tests on the pack host. Canto has `oath schema plan` (live-copied
-   ELF + schema).
+   Partial: fmt/build/`--from-file` in `oath`; host sandbox tests.
+   Canto metal compile: `oath build --file apps/hello.plan` with
+   declared `pkg:cc` + `pkg:busybox` + `pkg:hello-src` (old-layout
+   resolve + slot-compat mounts). Product
+   `sha256-8c686eb0…a34d2b9d` in the store; `/bin/hello` still absent
+   (canary pin unchanged). `plan:hello` filed; second
+   `oath build plan:hello` skipped. Plan without `pkg:cc` fails
+   (`musl-cc: not found`). Guest `oath` live-copied. Relocate-tar
+   courage test and pre-build wget still out.
 2. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
    refuses if the needed pack’s live pin differs. sola-oath shows the
    pin on the tree. Freeze:
@@ -330,7 +336,7 @@ Do not re-litigate without an explicit decision.
   canto). glibc is sealed
   `pkg:glibc`. `forks/river` +
   `forks/wlroots` + `forks/sola`. Do not run `crates/sola`.
-  First-party pkg sources under `apps/` (`hello`, `fetchme`).
+  First-party pkg sources under `apps/` (`hello`, `hello-src`, `fetchme`).
   Sola-generic fixes cherry-pick to `moonlight-pm/Sola`, then merge
   back; Oath-compat stays on `oath-sola`. Merge Sola `master` into
   `oath-sola` regularly so the fork does not drift

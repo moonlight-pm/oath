@@ -52,8 +52,9 @@ with schema, not unit-file folklore. Freeze:
 in. `pkg:fetchme` wget canary is in. Hosting identity is T20 (`pkg.url`;
 other Oath hosts as origin; object-storage tar). Pack identity is T32
 (content hash, hash-in-path store, `desired.hash` pin, no recipe
-language) — in (canto old layout until next pack). Guest store export,
-deps, and signatures are not.
+language) — in (canto old layout until next pack). T43 `plan` files
+are in (canto compiled `apps/hello.plan`; `/bin` still apply). Guest
+store export, signed index, and pre-build wget are not.
 
 ## Phase 4 — Devices and network
 

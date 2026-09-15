@@ -35,6 +35,8 @@ snapshot (T33). No hook is the default (crash-consistent).
 | Path | Catalog | Notes |
 |------|---------|--------|
 | `hello/` | `pkg:hello` | packed into the image; removable canary |
+| `hello-src/` | `pkg:hello-src` | C source for the T43 compile plan (`apps/hello.plan`) |
+| `hello.plan` | `plan:hello` | compile `hello.c` with declared `pkg:cc` + `pkg:busybox` |
 | `fetchme/` | `pkg:fetchme` | payload the probe HTTP server wget’s |
 
 Do not put River or Sola here. Those are `forks/`.

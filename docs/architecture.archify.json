@@ -8,7 +8,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/moonlight-pm/oath",
-      "revision": "ee9c30250218f65b174ba3089087688c01e36c0b"
+      "revision": "80d788f8906fcca6b7975084483b2a33534f6709"
     },
     "views": [
       {
@@ -134,11 +134,12 @@
       "id": "pkg-store",
       "type": "database",
       "label": "pkg store",
-      "sublabel": "pkg/<name>/<hash>",
+      "sublabel": "pkg + plan hashes",
       "row": 2,
       "col": 2,
       "sources": [
-        { "path": "crates/oath-core/src/pkg.rs", "line": 1, "end_line": 20, "label": "/bin links" }
+        { "path": "crates/oath-core/src/pkg.rs", "line": 1, "end_line": 20, "label": "/bin links" },
+        { "path": "crates/oath-core/src/plan_build.rs", "line": 1, "end_line": 19, "label": "oath build" }
       ]
     },
     {
