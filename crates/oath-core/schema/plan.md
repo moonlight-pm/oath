@@ -16,4 +16,7 @@ Store `/oath/store/plan/<name>/<hash>/plan.plan`. One plan produces
 - `oath build --file <path>` — ad-hoc; does not copy into `store/plan/`.
 - `oath set plan:<name> --from-file <path>` — lint, store, pin.
 
+Missing `build_needs` packs with `url` are wget’d **before** the
+sandbox (T20). Network is off inside. `present` stays false.
+
 `built_from` on the **product** is not a proof. Hashes are.

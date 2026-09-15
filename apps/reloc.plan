@@ -1,0 +1,22 @@
+#!oath-plan
+{
+  "name": "reloc",
+  "produces": "pkg:reloc",
+  "build_needs": [
+    {
+      "id": "pkg:busybox",
+      "hash": "sha256-a9661868d8cfe2a8e8406263f22d47a8dd913e27c404816ff20576c9ea73f5f3"
+    },
+    {
+      "id": "pkg:reloc-src",
+      "hash": "sha256-77502c7f5d301bce148f40f20bd955ae9559f2644c10bcfd33a47907cbda212e"
+    }
+  ],
+  "run_needs": []
+}
+---
+#!/bin/sh
+set -eu
+mkdir -p /out/bin
+cp /oath/store/pkg/reloc-src/sha256-77502c7f5d301bce148f40f20bd955ae9559f2644c10bcfd33a47907cbda212e/hello-1.0/hello /out/bin/reloc
+chmod 0755 /out/bin/reloc

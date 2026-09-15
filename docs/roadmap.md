@@ -53,8 +53,9 @@ in. `pkg:fetchme` wget canary is in. Hosting identity is T20 (`pkg.url`;
 other Oath hosts as origin; object-storage tar). Pack identity is T32
 (content hash, hash-in-path store, `desired.hash` pin, no recipe
 language) — in (canto old layout until next pack). T43 `plan` files
-are in (canto compiled `apps/hello.plan`; `/bin` still apply). Guest
-store export, signed index, and pre-build wget are not.
+are in (canto compiled `apps/hello.plan`; relocate-tar `apps/reloc.plan`
+wget’d `pkg:reloc-src`; `/bin` still apply). Guest store export and
+signed index are not.
 
 ## Phase 4 — Devices and network
 

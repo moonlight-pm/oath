@@ -48,6 +48,8 @@ example: `apps/hello.plan` (compile `pkg:hello-src` with declared
 | `pkg:steam` | `present: true` | yes — Valve steam-launcher + ubuntu12_32 bootstrap + 32-bit loader in `lib32` + 64-bit steamrt3 SONAMEs in `lib64`. `/bin/steam` (wrapper). User state is `~/.steam` and `~/.local/share/Steam`. The wrapper creates host nodes Steam’s scripts assume: `/usr/bin/env` + `/usr/bin/bash`, `/lib64/ld-linux-x86-64.so.2`, `/lib/ld-linux.so.2` + `/lib/i386-linux-gnu`, `/etc/ssl/certs/ca-certificates.crt`, `/bin/ldd`. It must **not** rewrite `pkg:glibc` `libresolv.so.2` (Ubuntu folded resolv into libc; this glibc still ships a separate libresolv that tmux NEEDs). srt-logger gets libresolv from `pkg:steam/lib/srt`. Busybox `xz`/`tar` lack `--robot` / `--blocking-factor`; shims live in `pkg:steam/libexec` and are prepended to PATH. 32-bit `libGL` (and gtk/pulse) come from the user’s steamrt3c i386 tree, SONAME-linked beside `steamui.so` — putting 64-bit `pkg:sola` `libGL` on `LD_LIBRARY_PATH` is `wrong ELF class: ELFCLASS64`. 64-bit helpers get `liboath-glclass.so` (LD_PRELOAD) so `gldriverquery` does not load the 32-bit `libGL`. Do not patchelf live `steamui.so`. Launcher **Steam** is `~/.config/sola/shell/applications.json` (`app_id=steam`, `/bin/steam`) and a sticky bus `Application` in `state.yaml`. `/bin/steam` is a normal X11 window on River `+xwayland` (`DISPLAY=:0`). steamwebhelper does **not** use pressure-vessel (`CLONE_NEWUSER` is EPERM after PID 1 chroot); `/bin/steam` sets `STEAM_RUNTIME_STEAMRT` to `pkg:steam/libexec/pv-host` and 64-bit GLX from `pkg:mesa`. Wrapper also ensures `hosts: files dns`, `127.0.0.1 steamloopback.host`, and `/bin/lsof` (`libexec/oath-lsof`; steamui runs `lsof -P -F upnR -i TCP@…` to identify the CEF websocket). Canto this boot: launcher **Steam**; session `/bin/steam` is River `+xwayland` `:0` (user confirmed). `STEAM_FRAME_FORCE_CLOSE=1` on `:0`; Super+Q SIGTERMs X11 class `steam`. 32-bit RADV inits (GpuTopology PITCAIRN); `liboath-peercred` is loaded into steamui via a `dlmopen` copy (`steamui.oath.so`) — do not patchelf live `steamui.so` (verifier re-extracts). steamwebhelper is `--disable-gpu` (CEF GPU SIGBUS on Pitcairn). The shim is first DT_NEEDED of a `dlmopen` copy and must `dlopen` `libSDL3`/`libX11` itself (`RTLD_NEXT` is NULL in that NS). It fakes `GAMESCOPE_VIEWPORT_SUPPORTED=0`. HDR atom stays 0. SDL display queries that return 0×0 are clamped to 1920×1080. `compose.dir` aliases C.UTF-8. |
 | `pkg:hello` | `present: false` | yes — canary (image sh); canto also has a T43 compile realization |
 | `pkg:hello-src` | `present: false` | yes — `hello.c` for `plan:hello` (`apps/hello-src`; canto live) |
+| `pkg:reloc-src` | `present: false`, `url` when fetching | yes — upstream prefix for `plan:reloc` (`apps/reloc-src`) |
+| `pkg:reloc` | `present: false` | yes — relocate-tar product (`apps/reloc.plan`; `/bin` still apply) |
 | `pkg:fetchme` | `present: false`, `url` | yes — wget canary |
 
 `/bin/hello` prints `hello`. The symlink target is
@@ -108,8 +110,10 @@ Empty hash is discovery (`actual.hash` is reported). Switch with
 `oath set pkg:foo hash=sha256-…` then apply. Extra hashes stay on disk.
 
 `url` on a `pkg` object: if `present` and the store is missing, apply
-wget’s the URL then links. A `.tar` is a pack tree (hash is of the
-tree). An origin prefix plus `hash` fetches
+wget’s the URL then links. `oath build` does the same fetch **before**
+the sandbox for a missing `build_needs` pack (present stays false;
+network is off inside the sandbox). A `.tar` is a pack tree (hash is of
+the tree). An origin prefix plus `hash` fetches
 `{url}/pkg/{name}/{hash}.tar` (object storage is just HTTPS). A single
 file (canary `pkg:fetchme`, `http://10.0.2.2:18765/fetchme` on QEMU
 user net) becomes `bin/<name>`. Local store wins if the realization is

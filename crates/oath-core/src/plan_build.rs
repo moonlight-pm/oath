@@ -10,8 +10,8 @@ use serde_json::json;
 use crate::error::{Error, Result};
 use crate::id::ObjectId;
 use crate::kinds::{Meta, PkgNeed, PlanActual};
-use crate::packhash::{fetch_url, hash_tree, is_realization_id, realization_dir, LIVE_NAME};
-use crate::pkg::{copy_tree, resolve_tree, store_present};
+use crate::packhash::{hash_tree, is_realization_id, realization_dir, LIVE_NAME};
+use crate::pkg::{copy_tree, fetch_pkg, resolve_tree, store_present};
 use crate::plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, PlanFile, PLAN_NAME,
 };
@@ -544,54 +544,4 @@ fn cstr(p: &Path) -> Result<std::ffi::CString> {
     use std::os::unix::ffi::OsStrExt;
     std::ffi::CString::new(p.as_os_str().as_bytes())
         .map_err(|_| Error::Msg(format!("path contains NUL: {}", p.display())))
-}
-
-fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Result<()> {
-    if store_present(catalog_root, name, hash) {
-        return Ok(());
-    }
-    let url = fetch_url(url, name, hash);
-    if url.is_empty() {
-        return Ok(());
-    }
-    let tmpdir = catalog_root.join("store/pkg").join(format!(".{name}.wget"));
-    let _ = fs::remove_dir_all(&tmpdir);
-    fs::create_dir_all(&tmpdir)?;
-    let blob = tmpdir.join("blob");
-    let wget = ["/bin/wget", "/usr/bin/wget"]
-        .iter()
-        .map(PathBuf::from)
-        .find(|p| p.is_file())
-        .unwrap_or_else(|| PathBuf::from("wget"));
-    let st = Command::new(&wget)
-        .args(["-q", "-O", blob.to_str().unwrap(), &url])
-        .status()
-        .map_err(|e| Error::Msg(format!("wget: {e}")))?;
-    if !st.success() {
-        let _ = fs::remove_dir_all(&tmpdir);
-        return Err(Error::hint(format!("fetch pkg:{name} failed"), "oath schema pkg"));
-    }
-    let tree = tmpdir.join("tree");
-    fs::create_dir_all(&tree)?;
-    let gzip = {
-        let mut fd = fs::File::open(&blob)?;
-        let mut b = [0u8; 2];
-        matches!(std::io::Read::read(&mut fd, &mut b), Ok(2) if b == [0x1f, 0x8b])
-    };
-    let mut tar = Command::new("tar");
-    tar.arg("-C").arg(&tree);
-    if gzip {
-        tar.arg("-xzf");
-    } else {
-        tar.arg("-xf");
-    }
-    tar.arg(&blob);
-    let st = tar.status().map_err(|e| Error::Msg(format!("tar: {e}")))?;
-    if !st.success() {
-        let _ = fs::remove_dir_all(&tmpdir);
-        return Err(Error::hint("fetch pack tar extract failed", "oath schema pkg"));
-    }
-    let result = crate::pkg::install_tree(catalog_root, name, &tree, None, hash);
-    let _ = fs::remove_dir_all(&tmpdir);
-    result.map(|_| ())
 }

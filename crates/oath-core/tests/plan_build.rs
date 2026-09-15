@@ -1,7 +1,16 @@
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
-use oath_core::{build_file, file_plan, fmt_plan, hash_tree, seed, PkgNeed, PlanFile, KIND_PLAN};
+use oath_core::{
+    build_file, build_pinned, file_plan, fmt_plan, hash_tree, seed, write_json, Meta, PkgNeed,
+    PlanFile, KIND_PLAN,
+};
+use serde_json::json;
+
+static PATH_LOCK: Mutex<()> = Mutex::new(());
 
 fn tmp() -> tempfile::TempDir {
     tempfile::tempdir().unwrap()
@@ -280,4 +289,200 @@ fn old_layout_build_need() {
     let r = build_file(d.path(), &path).expect("old-layout build");
     let product = d.path().join("store/pkg/hello").join(&r.product).join("bin/hello");
     assert_eq!(std::fs::read(&product).unwrap(), b"hello-old-layout\n");
+}
+
+fn pack_upstream(root: &Path) -> (String, PathBuf) {
+    let stage = root.join("stage-reloc-src");
+    let payload = stage.join("hello-1.0");
+    std::fs::create_dir_all(&payload).unwrap();
+    let hello = payload.join("hello");
+    std::fs::write(&hello, "#!/bin/sh\nprintf 'relocated\\n'\n").unwrap();
+    let mut p = std::fs::metadata(&hello).unwrap().permissions();
+    p.set_mode(0o755);
+    std::fs::set_permissions(&hello, p).unwrap();
+    let h = hash_tree(&stage).unwrap();
+    let tar = root.join("reloc-src.tar");
+    let st = std::process::Command::new("tar")
+        .args(["-C", stage.to_str().unwrap(), "-cf", tar.to_str().unwrap(), "."])
+        .status()
+        .unwrap();
+    assert!(st.success(), "tar pack reloc-src");
+    (h, tar)
+}
+
+fn write_pkg_url(root: &Path, name: &str, url: &str, hash: &str) {
+    let dir = root.join("objects/pkg").join(name);
+    std::fs::create_dir_all(&dir).unwrap();
+    write_json(
+        &dir.join("desired.json"),
+        &json!({
+            "present": false,
+            "url": url,
+            "hash": hash,
+            "removable": true
+        }),
+    )
+    .unwrap();
+    write_json(
+        &dir.join("actual.json"),
+        &json!({
+            "present": false,
+            "links": [],
+            "removable": true
+        }),
+    )
+    .unwrap();
+    write_json(&dir.join("meta.json"), &Meta::new("pkg", name, "mutate")).unwrap();
+}
+
+fn serve_file(path: &Path) -> (String, std::thread::JoinHandle<()>) {
+    let bytes = std::fs::read(path).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let h = std::thread::spawn(move || {
+        for _ in 0..8 {
+            let Ok((mut s, _)) = listener.accept() else {
+                break;
+            };
+            let mut buf = [0u8; 8192];
+            let _ = s.read(&mut buf);
+            let hdr = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/x-tar\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                bytes.len()
+            );
+            let _ = s.write_all(hdr.as_bytes());
+            let _ = s.write_all(&bytes);
+        }
+    });
+    (format!("http://{addr}/reloc-src.tar"), h)
+}
+
+fn with_wget_shim<T>(bin: &Path, f: impl FnOnce() -> T) -> T {
+    let _guard = PATH_LOCK.lock().unwrap();
+    std::fs::create_dir_all(bin).unwrap();
+    let wget = bin.join("wget");
+    if which("wget").is_none() {
+        let curl = which("curl").expect("curl to shim wget in host tests");
+        std::fs::write(
+            &wget,
+            format!(
+                "#!/bin/sh\n\
+out=\n\
+url=\n\
+while [ $# -gt 0 ]; do\n\
+  case \"$1\" in\n\
+    -q) shift ;;\n\
+    -O) out=$2; shift 2 ;;\n\
+    -*) shift ;;\n\
+    *) url=$1; shift ;;\n\
+  esac\n\
+done\n\
+exec {} -sS -L --http1.1 -o \"$out\" \"$url\"\n",
+                curl.display()
+            ),
+        )
+        .unwrap();
+        let mut p = std::fs::metadata(&wget).unwrap().permissions();
+        p.set_mode(0o755);
+        std::fs::set_permissions(&wget, p).unwrap();
+    }
+    let old = std::env::var("PATH").unwrap_or_default();
+    std::env::set_var("PATH", format!("{}:{old}", bin.display()));
+    let r = f();
+    std::env::set_var("PATH", old);
+    r
+}
+
+fn reloc_plan(bb: &str, src: &str) -> PlanFile {
+    let script = format!(
+        "mkdir -p /out/bin\n\
+cp /oath/store/pkg/reloc-src/{src}/hello-1.0/hello /out/bin/reloc\n\
+chmod 0755 /out/bin/reloc\n"
+    );
+    PlanFile {
+        name: "reloc".into(),
+        produces: "pkg:reloc".into(),
+        build_needs: vec![
+            PkgNeed { id: "pkg:busybox".into(), hash: bb.to_string() },
+            PkgNeed { id: "pkg:reloc-src".into(), hash: src.to_string() },
+        ],
+        run_needs: vec![],
+        script,
+    }
+}
+
+#[test]
+fn prebuild_wget_relocate_file_and_skip() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_busybox(d.path());
+    let (src, tar) = pack_upstream(d.path());
+    let (url, _srv) = serve_file(&tar);
+    write_pkg_url(d.path(), "reloc-src", &url, &src);
+    let p = reloc_plan(&bb, &src);
+    let s = fmt_plan(&p);
+    let path = d.path().join("reloc.plan");
+    std::fs::write(&path, &s).unwrap();
+    let r1 = with_wget_shim(&d.path().join("host-bin"), || {
+        build_file(d.path(), &path).expect("pre-build wget + relocate")
+    });
+    assert!(!r1.skipped);
+    let product = d.path().join("store/pkg/reloc").join(&r1.product).join("bin/reloc");
+    assert!(product.is_file(), "{}", product.display());
+    let out = std::process::Command::new(&product).output().expect("run reloc");
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(out.stdout, b"relocated\n");
+    assert!(!d.path().join("bin/reloc").exists());
+    assert!(
+        !d.path().join("store/plan/reloc").exists()
+            || std::fs::read_dir(d.path().join("store/plan/reloc"))
+                .map(|rd| rd.count())
+                .unwrap_or(0)
+                == 0
+    );
+
+    let hash = file_plan(d.path(), s.as_bytes()).unwrap();
+    let r2 = build_pinned(d.path(), "reloc").expect("first pinned");
+    assert_eq!(r2.product, r1.product);
+    assert_eq!(r2.plan_hash, hash);
+    let r3 = build_pinned(d.path(), "reloc").expect("second pinned");
+    assert!(r3.skipped);
+    assert_eq!(r3.product, r1.product);
+    assert!(!d.path().join("bin/reloc").exists());
+}
+
+#[test]
+fn prebuild_missing_url_refuses() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_busybox(d.path());
+    let fake = "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    let p = reloc_plan(&bb, fake);
+    let s = fmt_plan(&p);
+    let path = d.path().join("reloc.plan");
+    std::fs::write(&path, &s).unwrap();
+    let err = build_file(d.path(), &path).unwrap_err().to_string();
+    assert!(err.contains("not in the store") || err.contains("reloc-src"), "{err}");
+}
+
+#[test]
+fn prebuild_wget_hash_mismatch_refuses() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_busybox(d.path());
+    let (_src, tar) = pack_upstream(d.path());
+    let (url, _srv) = serve_file(&tar);
+    let wrong = "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    write_pkg_url(d.path(), "reloc-src", &url, wrong);
+    let p = reloc_plan(&bb, wrong);
+    let s = fmt_plan(&p);
+    let path = d.path().join("reloc.plan");
+    std::fs::write(&path, &s).unwrap();
+    let err = with_wget_shim(&d.path().join("host-bin"), || {
+        build_file(d.path(), &path).unwrap_err().to_string()
+    });
+    assert!(
+        err.contains("hash") || err.contains("does not match") || err.contains("failed"),
+        "{err}"
+    );
 }

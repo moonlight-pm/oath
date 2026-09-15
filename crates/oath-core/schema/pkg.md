@@ -22,8 +22,10 @@ store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
   on-disk tree or a fetch reports `actual.hash`. Two hashes of one
   name can sit on disk; only the pin is linked.
 - `url` — optional. If set and the store is missing, apply wget’s it
-  then links. A `.tar` (or `.tar.gz`) is a pack tree (hash is of the
-  tree, not the tar). An origin prefix plus `hash` fetches
+  then links. `oath build` fetches a missing `build_needs` pack the
+  same way before the sandbox starts (does not set `present`). A
+  `.tar` (or `.tar.gz`) is a pack tree (hash is of the tree, not the
+  tar). An origin prefix plus `hash` fetches
   `{url}/pkg/{name}/{hash}.tar` — object storage is just HTTPS. A
   single file (canary `pkg:fetchme`) becomes `bin/<name>`. Local store
   wins if the realization is already there.

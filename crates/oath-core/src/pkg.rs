@@ -5,17 +5,19 @@
 //! and env that still name `/oath/store/pkg/<name>/lib` keep working.
 
 use std::fs;
+use std::io::Read;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use crate::error::{Error, Result};
 use crate::gpu::drm_modifiers_available;
 use crate::kinds::{Pkg, PkgActual, PkgNeed, PkgRealization, PkgRequires};
 use crate::packhash::{
-    hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX, LIVE_NAME,
+    fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX, LIVE_NAME,
 };
-use sha2::{Digest, Sha256};
 use crate::write_json;
+use sha2::{Digest, Sha256};
 
 /// Create or remove this package’s `/bin` symlinks. Never clobber a
 /// name that does not already point at this package’s store.
@@ -159,18 +161,9 @@ pub fn seed_needs_json(name: &str) -> serde_json::Value {
 /// Seed-time description and project page. Empty strings mean none.
 pub fn seed_about(name: &str) -> (&'static str, &'static str) {
     match name {
-        "busybox" => (
-            "Unix applets in one musl ELF, including vi.",
-            "https://busybox.net/",
-        ),
-        "btrfs" => (
-            "btrfs-progs for the live @ generations.",
-            "https://btrfs.readthedocs.io/",
-        ),
-        "oath" => (
-            "Catalog CLI — the only admin surface.",
-            "https://github.com/moonlight-pm/oath",
-        ),
+        "busybox" => ("Unix applets in one musl ELF, including vi.", "https://busybox.net/"),
+        "btrfs" => ("btrfs-progs for the live @ generations.", "https://btrfs.readthedocs.io/"),
+        "oath" => ("Catalog CLI — the only admin surface.", "https://github.com/moonlight-pm/oath"),
         "dropbear" => (
             "SSH server and musl OpenSSH client bits.",
             "https://matt.ucc.asn.au/dropbear/dropbear.html",
@@ -179,93 +172,38 @@ pub fn seed_about(name: &str) -> (&'static str, &'static str) {
             "GNU C runtime for glibc payloads. Never loaded by musl PID 1.",
             "https://www.gnu.org/software/libc/",
         ),
-        "river" => (
-            "Sola compositor (patched River).",
-            "https://codeberg.org/river/river",
-        ),
-        "hyprland" => (
-            "Omarchy compositor.",
-            "https://hypr.land/",
-        ),
-        "quickshell" => (
-            "Omarchy bar and menu (Quickshell).",
-            "https://quickshell.org/",
-        ),
-        "omarchy" => (
-            "Omarchy session payload — scripts, bar, menu.",
-            "https://omarchy.org/",
-        ),
-        "sola" => (
-            "Sola session stack and kit apps.",
-            "https://github.com/moonlight-pm/Sola",
-        ),
-        "grok" => (
-            "Grok Build CLI. Updater off; apply is how bits change.",
-            "https://grok.com/",
-        ),
+        "river" => ("Sola compositor (patched River).", "https://codeberg.org/river/river"),
+        "hyprland" => ("Omarchy compositor.", "https://hypr.land/"),
+        "quickshell" => ("Omarchy bar and menu (Quickshell).", "https://quickshell.org/"),
+        "omarchy" => ("Omarchy session payload — scripts, bar, menu.", "https://omarchy.org/"),
+        "sola" => ("Sola session stack and kit apps.", "https://github.com/moonlight-pm/Sola"),
+        "grok" => ("Grok Build CLI. Updater off; apply is how bits change.", "https://grok.com/"),
         "git" => ("Git.", "https://git-scm.com/"),
         "curl" => ("curl with a CA bundle.", "https://curl.se/"),
-        "pipewire" => (
-            "PipeWire + WirePlumber + pipewire-pulse.",
-            "https://pipewire.org/",
-        ),
-        "bluez" => (
-            "System D-Bus and BlueZ.",
-            "https://www.bluez.org/",
-        ),
-        "thoxa" => (
-            "home login shell.",
-            "https://github.com/moonlight-pm/thoxa",
-        ),
-        "cc" => (
-            "Zig providing cc / c++ / musl-cc.",
-            "https://ziglang.org/",
-        ),
-        "rustc" => (
-            "rustc and cargo (gnu host + musl std).",
-            "https://www.rust-lang.org/",
-        ),
+        "pipewire" => ("PipeWire + WirePlumber + pipewire-pulse.", "https://pipewire.org/"),
+        "bluez" => ("System D-Bus and BlueZ.", "https://www.bluez.org/"),
+        "thoxa" => ("home login shell.", "https://github.com/moonlight-pm/thoxa"),
+        "cc" => ("Zig providing cc / c++ / musl-cc.", "https://ziglang.org/"),
+        "rustc" => ("rustc and cargo (gnu host + musl std).", "https://www.rust-lang.org/"),
         "cmake" => ("CMake and Ninja.", "https://cmake.org/"),
         "pkg-config" => (
             "pkg-config. The .pc farm starts empty.",
             "https://www.freedesktop.org/wiki/Software/pkg-config/",
         ),
-        "bash" => (
-            "GNU bash. Busybox ash is not bash.",
-            "https://www.gnu.org/software/bash/",
-        ),
-        "foot" => (
-            "Wayland terminal used on the Omarchy desk.",
-            "https://codeberg.org/dnkl/foot",
-        ),
-        "grim" => (
-            "grim + slurp capture helpers.",
-            "https://git.sr.ht/~emersion/grim",
-        ),
-        "xwayland" => (
-            "Xwayland for session Steam.",
-            "https://x.org/",
-        ),
+        "bash" => ("GNU bash. Busybox ash is not bash.", "https://www.gnu.org/software/bash/"),
+        "foot" => ("Wayland terminal used on the Omarchy desk.", "https://codeberg.org/dnkl/foot"),
+        "grim" => ("grim + slurp capture helpers.", "https://git.sr.ht/~emersion/grim"),
+        "xwayland" => ("Xwayland for session Steam.", "https://x.org/"),
         "gamescope" => (
             "Valve gamescope nest. Needs DRM modifiers.",
             "https://github.com/ValveSoftware/gamescope",
         ),
-        "mesa" => (
-            "Mesa GL/EGL/Vulkan. 64-bit plus 32-bit for Steam.",
-            "https://www.mesa3d.org/",
-        ),
-        "steam" => (
-            "Valve Steam launcher and steamrt3 helpers.",
-            "https://store.steampowered.com/",
-        ),
-        "hello" => (
-            "Canary ELF. /bin/hello prints hello.",
-            "https://github.com/moonlight-pm/oath",
-        ),
-        "fetchme" => (
-            "Canary wget into the store.",
-            "https://github.com/moonlight-pm/oath",
-        ),
+        "mesa" => ("Mesa GL/EGL/Vulkan. 64-bit plus 32-bit for Steam.", "https://www.mesa3d.org/"),
+        "steam" => {
+            ("Valve Steam launcher and steamrt3 helpers.", "https://store.steampowered.com/")
+        }
+        "hello" => ("Canary ELF. /bin/hello prints hello.", "https://github.com/moonlight-pm/oath"),
+        "fetchme" => ("Canary wget into the store.", "https://github.com/moonlight-pm/oath"),
         _ => ("", ""),
     }
 }
@@ -867,8 +805,10 @@ pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
             continue;
         }
         let name = e.file_name().to_string_lossy().into_owned();
-        let desired = crate::read_json::<Value>(&e.path().join("desired.json")).unwrap_or(Value::Null);
-        let actual = crate::read_json::<Value>(&e.path().join("actual.json")).unwrap_or(Value::Null);
+        let desired =
+            crate::read_json::<Value>(&e.path().join("desired.json")).unwrap_or(Value::Null);
+        let actual =
+            crate::read_json::<Value>(&e.path().join("actual.json")).unwrap_or(Value::Null);
         let h = desired
             .get("hash")
             .and_then(|x| x.as_str())
@@ -899,10 +839,7 @@ pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
                 let id = if let Some(s) = item.as_str() {
                     normalize_need(s)
                 } else {
-                    item.get("id")
-                        .and_then(|x| x.as_str())
-                        .map(normalize_need)
-                        .unwrap_or_default()
+                    item.get("id").and_then(|x| x.as_str()).map(normalize_need).unwrap_or_default()
                 };
                 if id.is_empty() {
                     continue;
@@ -1004,6 +941,101 @@ pub fn store_present(catalog_root: &Path, name: &str, hash: &str) -> bool {
     }
     !list_realization_ids(catalog_root, name).ok().unwrap_or_default().is_empty()
         || is_old_layout(&slot_dir(catalog_root, name))
+}
+
+/// T20 fetch: wget `url` (or `{url}/pkg/{name}/{hash}.tar`) into the store.
+/// A `.tar` / gzip is a pack tree; a single file becomes `bin/<name>`.
+/// Plan pre-build uses this with `present` still false.
+pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Result<()> {
+    if store_present(catalog_root, name, hash) {
+        return Ok(());
+    }
+    let url = fetch_url(url, name, hash);
+    if url.is_empty() {
+        return Ok(());
+    }
+    let tmpdir = catalog_root.join("store/pkg").join(format!(".{name}.wget"));
+    let _ = fs::remove_dir_all(&tmpdir);
+    fs::create_dir_all(&tmpdir)?;
+    let blob = tmpdir.join("blob");
+    let wget = find_bin("wget");
+    let st = Command::new(&wget)
+        .args(["-q", "-O", blob.to_str().unwrap(), &url])
+        .status()
+        .map_err(|e| Error::Msg(format!("wget: {e}")))?;
+    if !st.success() {
+        let _ = fs::remove_dir_all(&tmpdir);
+        return Err(Error::hint(format!("fetch pkg:{name} failed"), "oath schema pkg"));
+    }
+    let result = if looks_like_tar(&blob) {
+        let tree = tmpdir.join("tree");
+        fs::create_dir_all(&tree)?;
+        extract_tar(&blob, &tree)?;
+        install_tree(catalog_root, name, &tree, None, hash)
+    } else {
+        let bytes = fs::read(&blob)?;
+        ingest_file(catalog_root, name, &bytes, None, hash)
+    };
+    let _ = fs::remove_dir_all(&tmpdir);
+    result.map(|_| ())
+}
+
+fn find_bin(name: &str) -> PathBuf {
+    for dir in ["/bin", "/usr/bin"] {
+        let p = PathBuf::from(dir).join(name);
+        if p.is_file() {
+            return p;
+        }
+    }
+    if let Some(p) = std::env::var_os("PATH").and_then(|path| {
+        std::env::split_paths(&path).find_map(|d| {
+            let c = d.join(name);
+            c.is_file().then_some(c)
+        })
+    }) {
+        return p;
+    }
+    PathBuf::from(name)
+}
+
+fn looks_like_tar(path: &Path) -> bool {
+    let Ok(mut fd) = fs::File::open(path) else {
+        return false;
+    };
+    let mut hdr = [0u8; 262];
+    let Ok(n) = fd.read(&mut hdr) else {
+        return false;
+    };
+    if n >= 2 && hdr[0] == 0x1f && hdr[1] == 0x8b {
+        return true;
+    }
+    n >= 262 && &hdr[257..262] == b"ustar"
+}
+
+fn looks_like_gzip(path: &Path) -> bool {
+    let Ok(mut fd) = fs::File::open(path) else {
+        return false;
+    };
+    let mut b = [0u8; 2];
+    matches!(fd.read(&mut b), Ok(2) if b[0] == 0x1f && b[1] == 0x8b)
+}
+
+fn extract_tar(blob: &Path, dest: &Path) -> Result<()> {
+    let gzip = looks_like_gzip(blob);
+    let tar = find_bin("tar");
+    let mut cmd = Command::new(&tar);
+    cmd.arg("-C").arg(dest);
+    if gzip {
+        cmd.arg("-xzf");
+    } else {
+        cmd.arg("-xf");
+    }
+    cmd.arg(blob);
+    let st = cmd.status().map_err(|e| Error::Msg(format!("tar: {e}")))?;
+    if !st.success() {
+        return Err(Error::hint("fetch pack tar extract failed", "oath schema pkg"));
+    }
+    Ok(())
 }
 
 pub fn ingest_file(

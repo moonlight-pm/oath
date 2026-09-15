@@ -11,9 +11,9 @@ mod kinds;
 mod layout;
 mod net;
 mod packhash;
+mod pkg;
 mod plan;
 mod plan_build;
-mod pkg;
 pub mod seat;
 mod seed;
 pub mod session;
@@ -41,13 +41,12 @@ pub use packhash::{
 };
 pub use pkg::{
     check_needs as check_pkg_needs, check_requires, converge as converge_pkg,
-    converge_with_link_root, copy_tree as copy_pack_tree, ingest_file, install_tree,
+    converge_with_link_root, copy_tree as copy_pack_tree, fetch_pkg, ingest_file, install_tree,
     list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
     pin_desired_hash, promote_slot, promote_store, resolve_tree, seed_about as pkg_seed_about,
-    sync_need_hashes,
     seed_need_hash as pkg_seed_need_hash, seed_needs as pkg_seed_needs,
-    seed_needs_json as pkg_seed_needs_json,
-    stamp_unhashed, store_present, write_slot_links,
+    seed_needs_json as pkg_seed_needs_json, stamp_unhashed, store_present, sync_need_hashes,
+    write_slot_links,
 };
 pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,

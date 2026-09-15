@@ -61,6 +61,13 @@ oath build plan:hello
 realization. A script that calls `musl-cc` without declaring
 `pkg:cc` fails inside the sandbox.
 
+`apps/reloc.plan` is the relocate-tar courage: hashed upstream prefix
+`pkg:reloc-src` (`url` + `hash`), script copies `hello-1.0/hello` into
+`/out/bin/reloc`. Missing `build_needs` with a `url` are wget’d before
+the sandbox (network stays off inside). File, then `oath build
+plan:reloc` — second build is a no-op. `/bin/reloc` stays absent until
+pkg apply.
+
 ## Safety
 
 `apply` takes a filesystem snapshot first.

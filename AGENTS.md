@@ -173,7 +173,7 @@ crates/oath-efi       UEFI splash (native GOP, white mark, LoadImage)
 crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe / map
 image/                tools.nix only (borrowed prebuilts)
 forks/                maintained source forks (submodules; build-time)
-apps/                 first-party pkg sources (`hello`, `hello-src`, `fetchme`, …)
+apps/                 first-party pkg sources (`hello`, `hello-src`, `hello.plan`, `reloc-src`, `reloc.plan`, `fetchme`, …)
 ```
 
 Do not invent extra kinds until CURRENT says so. `pkg`, `net`, `ssh`,

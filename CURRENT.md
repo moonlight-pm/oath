@@ -18,15 +18,19 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `set --from-file`; enforce netless sandbox; no anonymous blobs.
    Freeze:
    [docs/specs/2026-09-15-plan-kind.md](docs/specs/2026-09-15-plan-kind.md).
-   Partial: fmt/build/`--from-file` in `oath`; host sandbox tests.
-   Canto metal compile: `oath build --file apps/hello.plan` with
-   declared `pkg:cc` + `pkg:busybox` + `pkg:hello-src` (old-layout
-   resolve + slot-compat mounts). Product
+   Partial: fmt/build/`--from-file` in `oath`; host sandbox tests;
+   pre-build wget. Canto metal compile: `oath build --file
+   apps/hello.plan` with declared `pkg:cc` + `pkg:busybox` +
+   `pkg:hello-src` (old-layout resolve + slot-compat mounts). Product
    `sha256-8c686eb0…a34d2b9d` in the store; `/bin/hello` still absent
    (canary pin unchanged). `plan:hello` filed; second
    `oath build plan:hello` skipped. Plan without `pkg:cc` fails
-   (`musl-cc: not found`). Guest `oath` live-copied. Relocate-tar
-   courage test and pre-build wget still out.
+   (`musl-cc: not found`). Relocate-tar: `apps/reloc.plan` wget’d
+   missing `pkg:reloc-src` (`url` + `hash`) then relocated
+   `hello-1.0/hello` → `/out/bin/reloc`. Product
+   `sha256-d3693f6b…2047e91f`; `/bin/reloc` absent; `plan:reloc`
+   filed; second `oath build plan:reloc` cached. Guest `oath`
+   live-copied. Extra `--file` product hashes still T32 reap.
 2. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
    refuses if the needed pack’s live pin differs. sola-oath shows the
    pin on the tree. Freeze:
@@ -281,7 +285,7 @@ Do not re-litigate without an explicit decision.
   layout until the next pack.
   `busybox`/`btrfs`/`oath`/`dropbear`/`glibc` not removable; `river`,
   `hyprland`, `quickshell`, `omarchy`, `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
-  `cmake`, `pkg-config`, `bash`, `foot`, `xwayland`, `gamescope`, `mesa`, `steam`, `bluez`, `hello`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
+  `cmake`, `pkg-config`, `bash`, `foot`, `xwayland`, `gamescope`, `mesa`, `steam`, `bluez`, `hello`, `hello-src`, `reloc-src`, `reloc`, and `fetchme` are. `pkg.url` wget canary. **T20:** no
   canonical archive; another Oath host’s store is a valid origin;
   object storage is `{origin}/pkg/{name}/{hash}.tar`. Bootstrap default
   origin `https://store.oath.wicket.cloud` (live **200**,
@@ -302,6 +306,11 @@ Do not re-litigate without an explicit decision.
   `desired.hash` is the pin; apply verifies. Two runnable at once is
   still two names. Extra hashes stay on disk. Host helper prints the
   hash (`cargo make store`). Guest `oath pack` is still out.
+  **T43 (partial):** kind `plan`; store
+  `/oath/store/plan/<name>/<hash>/plan.plan` (hash of the file).
+  `oath build` writes a product tree and does not link `/bin`. Amends
+  T32 no recipe *language* (a hashed plan file is allowed). Extra
+  `--file` product hashes still T32 reap.
 - Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
   dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
@@ -413,5 +422,6 @@ Do not re-litigate without an explicit decision.
   T37 session Steam on canto (gen 21); gamescope/arcade not on SI; other kit apps not;
   T39 Omarchy session payload (Hyprland + Quickshell packed, Sola default);
   T32 hash-in-path in (canto old layout until next pack);
+  T43 `plan` kind (canto `apps/hello.plan` + relocate-tar wget; `/bin` still apply);
   T20 bootstrap origin live (store.oath.wicket.cloud);
   Phase 6 metal canary (canto) dogfoodable
