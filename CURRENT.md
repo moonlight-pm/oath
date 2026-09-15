@@ -246,8 +246,8 @@ Do not re-litigate without an explicit decision.
 
 - Oath: Linux kernel, own userspace, musl base, own PID 1.
 - Catalog `/oath`, ids `kind:name`, `oath` is the only admin surface.
-- v0 kinds `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`. Sibling
-  `@gen-N` at `/oath/run/fs`.
+- v0 kinds `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`.
+  Sibling `@gen-N` at `/oath/run/fs`.
 - Network: `net:net0` renamed NIC. Default static slirp
   `10.0.2.15/24`. `ipv4=dhcp` via udhcpc. `OATH_BRIDGE` optional.
 - SSH: **home** only, dropbear `-w`, **no baked private key**. Host

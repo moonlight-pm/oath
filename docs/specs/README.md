@@ -36,6 +36,10 @@ Prefer `YYYY-MM-DD-topic.md` with the header in
 | [2026-09-05-arcade-steam.md](2026-09-05-arcade-steam.md) | T37: Arcade + Steam runtime |
 | [2026-09-06-boot-generations.md](2026-09-06-boot-generations.md) | T38: last-5 firmware boots; current kernel/mesa |
 | [2026-09-10-omarchy-session.md](2026-09-10-omarchy-session.md) | T39: Omarchy session payload; keep Sola; Hyprland + Quickshell bar |
+| [2026-09-13-sola-oath.md](2026-09-13-sola-oath.md) | T40: `sola-oath` JSON client of `oath` |
+| [2026-09-13-pkg-needs.md](2026-09-13-pkg-needs.md) | T41: `pkg.needs` `{id, hash}` |
+| [2026-09-13-pkg-about.md](2026-09-13-pkg-about.md) | T42: `pkg.description` + `pkg.home` |
+| [2026-09-15-plan-kind.md](2026-09-15-plan-kind.md) | T43: `plan` kind; `oath build` / `oath fmt` |
 
 Open plan: none. Completed T39:
 [../plans/2026-09-10-omarchy-session-plan.md](../plans/2026-09-10-omarchy-session-plan.md).

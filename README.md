@@ -31,7 +31,7 @@ An agent that has never seen Oath is supposed to:
 
 If that loop works, this is a distro. A package archive without it is not.
 
-**Kinds now:** `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`.
+**Kinds now:** `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`.
 
 ## What this is not
 

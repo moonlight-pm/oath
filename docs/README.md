@@ -69,6 +69,10 @@ ask the human.
 | [`specs/2026-09-05-arcade-steam.md`](specs/2026-09-05-arcade-steam.md) | T37 Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`) | **Target** (canto gen 21; session Steam is River `+xwayland`; gamescope/arcade gated on DRM modifiers; QEMU never packs Steam) |
 | [`specs/2026-09-06-boot-generations.md`](specs/2026-09-06-boot-generations.md) | T38 last-5 firmware boots; current kernel/mesa | **Target** (canto ESP last-5; live **7.3.0-rc1 #4**) |
 | [`specs/2026-09-10-omarchy-session.md`](specs/2026-09-10-omarchy-session.md) | T39 Omarchy session payload; keep Sola | **Target** (canto Hyprland desk + Quickshell bar/menu; seed sola) |
+| [`specs/2026-09-13-sola-oath.md`](specs/2026-09-13-sola-oath.md) | T40 `sola-oath` catalog client | **Target** (canto live-copied; launcher **Oath**) |
+| [`specs/2026-09-13-pkg-needs.md`](specs/2026-09-13-pkg-needs.md) | T41 `pkg.needs` `{id, hash}` | **Target** (apply refuses pin mismatch) |
+| [`specs/2026-09-13-pkg-about.md`](specs/2026-09-13-pkg-about.md) | T42 `pkg.description` + `pkg.home` | **Target** (sola-oath Open project) |
+| [`specs/2026-09-15-plan-kind.md`](specs/2026-09-15-plan-kind.md) | T43 `plan` kind; `oath build` / `oath fmt` | **Target** (canto compiled `apps/hello.plan`; `/bin` unlinked) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |
@@ -100,7 +104,7 @@ ask the human.
 | `crates/` | `oath-core`, `oath`, `oath-init`, `oath-make` |
 | `image/` | `tools.nix` borrowed prebuilts |
 | `forks/` | Maintained source forks (submodules; build-time) |
-| `apps/` | First-party `pkg:*` sources (`hello`, `fetchme`) |
+| `apps/` | First-party `pkg:*` sources (`hello`, `hello-src`, `fetchme`) |
 | `apocrypha/` | Scratch / history — not built, gitignored |
 | `.grok/skills/` | `oath-session-start`, `oath-progress-docs` |
 | `.grok/rules/active-work.md` | **Pointer** to `CURRENT.md` |

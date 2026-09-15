@@ -173,12 +173,11 @@ crates/oath-efi       UEFI splash (native GOP, white mark, LoadImage)
 crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe / map
 image/                tools.nix only (borrowed prebuilts)
 forks/                maintained source forks (submodules; build-time)
-apps/                 first-party pkg sources (`hello`, `fetchme`, …)
+apps/                 first-party pkg sources (`hello`, `hello-src`, `fetchme`, …)
 ```
 
 Do not invent extra kinds until CURRENT says so. `pkg`, `net`, `ssh`,
-and `dev` exist; **T43** adds `plan` (spec’d, not shipped). Do not add
-other kinds unless CURRENT says so.
+`dev`, and `plan` exist. Do not add other kinds unless CURRENT says so.
 Sola/River work uses existing `pkg` + `svc`. glibc is `pkg:glibc`,
 not a new kind.
 

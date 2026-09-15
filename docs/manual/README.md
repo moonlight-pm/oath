@@ -13,7 +13,7 @@ The **x86_64 QEMU** appliance still exists (serial, SSH, virtio-gpu if
 | [Using `oath`](using.md) | Verbs, INDEX, safety |
 | [Catalog](catalog.md) | Objects, kinds, on-disk tree |
 | [Services](services.md) | PID 1 and `svc:*` |
-| [Packages](packages.md) | store, `/bin` links, `hello` / `fetchme` |
+| [Packages](packages.md) | store, `/bin` links, `hello` / `hello-src` / `fetchme`; `plan:hello` |
 | [Network](network.md) | `net:net0`, static or dhcp |
 | [Devices](devices.md) | `vda` / `net0` / `ttyS0` / `card0` / `kbd0` / `mouse0`; Unix floor |
 | [SSH](ssh.md) | `ssh:local` keys, dropbear, scp/sftp, no baked private key |
