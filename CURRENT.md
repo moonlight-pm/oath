@@ -18,7 +18,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `set --from-file`; enforce netless sandbox; no anonymous blobs.
    Freeze:
    [docs/specs/2026-09-15-plan-kind.md](docs/specs/2026-09-15-plan-kind.md).
-   Not implemented.
+   Partial: `oath fmt` / `oath build` / `set --from-file`; sandbox
+   tests on the pack host. Canto has `oath schema plan` (live-copied
+   ELF + schema).
 2. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
    refuses if the needed pack’s live pin differs. sola-oath shows the
    pin on the tree. Freeze:

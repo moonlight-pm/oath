@@ -11,6 +11,8 @@ mod kinds;
 mod layout;
 mod net;
 mod packhash;
+mod plan;
+mod plan_build;
 mod pkg;
 pub mod seat;
 mod seed;
@@ -27,7 +29,7 @@ pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
     Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgNeed,
-    PkgRealization, PkgRequires, Ssh, SshActual, Svc, SvcActual, SvcRestart,
+    PkgRealization, PkgRequires, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual, SvcRestart,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
@@ -47,6 +49,10 @@ pub use pkg::{
     seed_needs_json as pkg_seed_needs_json,
     stamp_unhashed, store_present, write_slot_links,
 };
+pub use plan::{
+    file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,
+};
+pub use plan_build::{build_file, build_pinned, file_plan, BuildReport};
 pub use seed::seed;
 pub use session::{is_omarchy_desk_svc, is_sola_desk_svc, session_allows};
 pub use ssh::converge as converge_ssh;
@@ -63,6 +69,8 @@ pub const KIND_PKG: &str = "pkg";
 pub const KIND_NET: &str = "net";
 pub const KIND_SSH: &str = "ssh";
 pub const KIND_DEV: &str = "dev";
+pub const KIND_PLAN: &str = "plan";
+pub const EXIT_SECURITY: i32 = 4;
 
 pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)

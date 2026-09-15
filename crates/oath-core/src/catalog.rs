@@ -9,7 +9,7 @@ use crate::id::ObjectId;
 use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, Ssh};
 use crate::{
     now_rfc3339, parse_gen_subvol, read_json, write_json, BTRFS_TOP, KIND_DEV, KIND_HOST, KIND_NET,
-    KIND_PKG, KIND_SNAP, KIND_SSH, KIND_SVC,
+    KIND_PKG, KIND_PLAN, KIND_SNAP, KIND_SSH, KIND_SVC,
 };
 
 #[derive(Clone, Debug)]
@@ -329,6 +329,15 @@ impl Catalog {
                 KIND_SSH => {
                     let ssh: Ssh = serde_json::from_value(self.get(&d.id)?.desired.clone())?;
                     let actual = hooks.converge_ssh(&d.id, &ssh)?;
+                    write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
+                    self.touch_status(&d.id, "in-sync")?;
+                }
+                KIND_PLAN => {
+                    let obj = self.get(&d.id)?;
+                    let mut actual = obj.actual.clone();
+                    if let Some(h) = obj.desired.get("hash") {
+                        actual["hash"] = h.clone();
+                    }
                     write_json(&self.obj_dir(&d.id).join("actual.json"), &actual)?;
                     self.touch_status(&d.id, "in-sync")?;
                 }

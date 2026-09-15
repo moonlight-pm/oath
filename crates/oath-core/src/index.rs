@@ -30,6 +30,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath apply [id...]   snapshot, then converge
     oath undo            restore the last apply's snapshot
     oath log             apply log
+    oath fmt <path>      canonical plan.plan
+    oath build           isolated plan build (no /bin link)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
 
@@ -63,6 +65,7 @@ fn kind_line(kind: &str) -> &'static str {
         "net" => "a network link (net0, static or dhcp)",
         "ssh" => "owner SSH public keys (home / dropbear)",
         "dev" => "a hardware device (inventory)",
+        "plan" => "a build plan (hash-pinned file; oath build)",
         _ => "see schema",
     }
 }

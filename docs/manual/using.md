@@ -36,11 +36,18 @@ build host, not the appliance.
 | `oath apply [id...]` | Snapshot, then converge listed ids or all drift |
 | `oath undo` | Restore the last apply’s generation |
 | `oath log` | Apply log (JSON lines) |
+| `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
+| `oath build plan:<name>` | Isolated netless build of a pinned plan. Does not link `/bin` |
+| `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
 
 `set` is staging. Nothing is live until `apply`.
 
 Ids are `kind:name` — `host:local`, `svc:serial`, `snap:current`,
-`pkg:hello`, `net:net0`, `ssh:local`, `dev:card0`, `dev:kbd0`.
+`pkg:hello`, `plan:hello`, `net:net0`, `ssh:local`, `dev:card0`, `dev:kbd0`.
+
+`oath set plan:<name> --from-file ./hello.plan` lints, stores, and pins.
+Plans must already be canonical (`oath fmt -w`). Build never activates
+`/bin`; that is still `oath set pkg:<name> present=true` then apply.
 
 ## Safety
 

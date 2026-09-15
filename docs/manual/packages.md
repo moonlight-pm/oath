@@ -10,6 +10,8 @@ other `pkg:*` this pack needs at runtime, each with a required
 realization `hash`. Apply refuses a broken graph or a live-pin
 mismatch; sola-oath stages the cascade. `description` is short
 prose; `home` is the source or project page (not the fetch `url`).
+A **plan** (`plan:<name>`) is a hashed `plan.plan` file that builds a
+product tree (`oath build`). It does not link `/bin`.
 
 ## What ships
 

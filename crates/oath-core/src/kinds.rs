@@ -149,6 +149,25 @@ pub struct Pkg {
     pub home: String,
 }
 
+/// Pin of a plan file. Product lives on `pkg:<name>`, not here.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Plan {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub hash: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PlanActual {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub hash: String,
+    /// Last product tree hash. Not a proof.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub product: String,
+    /// Sorted build_needs id+hash digest. Not a proof.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub inputs: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Net {
     pub up: bool,

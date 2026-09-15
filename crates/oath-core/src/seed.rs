@@ -22,6 +22,8 @@ pub const SSH_SCHEMA: &str = include_str!("../schema/ssh.json");
 pub const SSH_MD: &str = include_str!("../schema/ssh.md");
 pub const DEV_SCHEMA: &str = include_str!("../schema/dev.json");
 pub const DEV_MD: &str = include_str!("../schema/dev.md");
+pub const PLAN_SCHEMA: &str = include_str!("../schema/plan.json");
+pub const PLAN_MD: &str = include_str!("../schema/plan.md");
 
 pub fn seed(root: &Path) -> Result<()> {
     std::fs::create_dir_all(root.join("schema"))?;
@@ -43,6 +45,8 @@ pub fn seed(root: &Path) -> Result<()> {
     write(root, "schema/ssh.md", SSH_MD);
     write(root, "schema/dev.json", DEV_SCHEMA);
     write(root, "schema/dev.md", DEV_MD);
+    write(root, "schema/plan.json", PLAN_SCHEMA);
+    write(root, "schema/plan.md", PLAN_MD);
 
     let host = ObjectId::new(KIND_HOST, "local");
     let host_val = json!({

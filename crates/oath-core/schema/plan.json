@@ -1,0 +1,12 @@
+{
+  "$comment": "Kind plan. Identity plan:<name>. Pin is SHA-256 of the canonical plan.plan file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hash"],
+  "properties": {
+    "hash": {
+      "type": "string",
+      "description": "sha256- plus 64 lowercase hex of the canonical plan.plan file. Empty means unpinned (oath build plan:<name> refuses)."
+    }
+  }
+}

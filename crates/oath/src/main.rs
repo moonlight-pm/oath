@@ -3,7 +3,10 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use oath_core::{seed, tel, Actor, Catalog, Error, ObjectId, DEFAULT_ROOT, EXIT_CONFIRM};
+use oath_core::{
+    build_file, build_pinned, file_plan, fmt_plan, lint_path, parse_plan, seed, tel, Actor,
+    BuildReport, Catalog, Error, ObjectId, DEFAULT_ROOT, EXIT_CONFIRM, KIND_PLAN,
+};
 use serde_json::{json, Map, Value};
 
 mod live;
@@ -42,8 +45,22 @@ enum Cmd {
         id: String,
         #[arg(long = "from-json")]
         from_json: Option<String>,
+        #[arg(long = "from-file")]
+        from_file: Option<PathBuf>,
         #[arg(value_name = "K=V")]
         fields: Vec<String>,
+    },
+    /// Write a canonical plan.plan to stdout (or -w in place).
+    Fmt {
+        path: PathBuf,
+        #[arg(short = 'w')]
+        write: bool,
+    },
+    /// Isolated plan build. Does not link /bin.
+    Build {
+        id: Option<String>,
+        #[arg(long)]
+        file: Option<PathBuf>,
     },
     Diff {
         id: Option<String>,
@@ -97,6 +114,8 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Schema { .. }) => "schema",
         Some(Cmd::Get { .. }) => "get",
         Some(Cmd::Set { .. }) => "set",
+        Some(Cmd::Fmt { .. }) => "fmt",
+        Some(Cmd::Build { .. }) => "build",
         Some(Cmd::Diff { .. }) => "diff",
         Some(Cmd::Apply { .. }) => "apply",
         Some(Cmd::Undo) => "undo",
@@ -218,8 +237,64 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Set { id, from_json: js, fields }) => {
+        Some(Cmd::Fmt { path, write }) => {
+            let raw = std::fs::read_to_string(&path)?;
+            let parsed = parse_plan(&raw)?;
+            let out = fmt_plan(&parsed);
+            if write {
+                std::fs::write(&path, &out)?;
+            } else {
+                print!("{out}");
+            }
+            Ok(0)
+        }
+        Some(Cmd::Build { id, file }) => match (id, file) {
+            (Some(id), None) => {
+                let id: ObjectId = id.parse()?;
+                if id.kind != KIND_PLAN {
+                    return Err(Error::hint(
+                        "oath build takes plan:<name> or --file",
+                        "oath schema plan",
+                    ));
+                }
+                let r = build_pinned(&cli.root, &id.name)?;
+                print_build(&r, cli.json);
+                Ok(0)
+            }
+            (None, Some(path)) => {
+                let r = build_file(&cli.root, &path)?;
+                print_build(&r, cli.json);
+                Ok(0)
+            }
+            _ => Err(Error::hint(
+                "oath build needs plan:<name> or --file <path>",
+                "oath schema plan",
+            )),
+        },
+        Some(Cmd::Set { id, from_json: js, from_file, fields }) => {
             let id: ObjectId = id.parse()?;
+            if let Some(path) = from_file {
+                if id.kind != KIND_PLAN {
+                    return Err(Error::hint(
+                        "--from-file is for plan:<name>",
+                        "oath schema plan",
+                    ));
+                }
+                let (plan, bytes) = lint_path(&path)?;
+                if id.name != plan.name {
+                    return Err(Error::hint(
+                        format!("file name `{}` != {id}", plan.name),
+                        "oath schema plan",
+                    ));
+                }
+                let hash = file_plan(&cli.root, &bytes)?;
+                if cli.json {
+                    println!("{}", json!({ "ok": true, "id": id.to_string(), "hash": hash }));
+                } else {
+                    println!("{id} {hash}");
+                }
+                return Ok(0);
+            }
             let mut map = Map::new();
             if let Some(js) = js {
                 let v: Value = serde_json::from_str(&js)?;
@@ -329,6 +404,26 @@ fn run() -> oath_core::Result<i32> {
         ),
     }
     out
+}
+
+fn print_build(r: &BuildReport, json_mode: bool) {
+    if json_mode {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&json!({
+                "name": r.name,
+                "plan": r.plan_hash,
+                "product": r.product,
+                "inputs": r.inputs,
+                "skipped": r.skipped,
+            }))
+            .unwrap()
+        );
+    } else if r.skipped {
+        println!("pkg:{} {} (cached)", r.name, r.product);
+    } else {
+        println!("pkg:{} {}", r.name, r.product);
+    }
 }
 
 fn parse_val(s: &str) -> Value {

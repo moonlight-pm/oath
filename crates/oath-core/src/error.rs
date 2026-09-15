@@ -16,6 +16,8 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("missing {0}")]
     Missing(PathBuf),
+    #[error("security: {message}")]
+    Security { message: String, hint: String },
 }
 
 impl Error {
@@ -23,9 +25,15 @@ impl Error {
         Self::Hint { message: message.into(), hint: hint.into() }
     }
 
+    pub fn security(message: impl Into<String>, hint: impl Into<String>) -> Self {
+        Self::Security { message: message.into(), hint: hint.into() }
+    }
+
     pub fn hint_str(&self) -> Option<&str> {
         match self {
-            Self::Hint { hint, .. } | Self::Confirm(hint) => Some(hint.as_str()),
+            Self::Hint { hint, .. } | Self::Confirm(hint) | Self::Security { hint, .. } => {
+                Some(hint.as_str())
+            }
             _ => None,
         }
     }
@@ -33,6 +41,7 @@ impl Error {
     pub fn exit_code(&self) -> i32 {
         match self {
             Self::Confirm(_) => crate::EXIT_CONFIRM,
+            Self::Security { .. } => crate::EXIT_SECURITY,
             _ => 1,
         }
     }
