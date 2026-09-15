@@ -454,6 +454,7 @@ name = "oath-core"
 version = "0.0.0"
 dependencies = [
  "chrono",
+ "libc",
  "serde",
  "serde_json",
  "sha2",
