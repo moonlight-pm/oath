@@ -14,7 +14,9 @@ cat /oath/INDEX.md   full INDEX (generated, live)
 pointing at the next page (`oath ls`, `oath schema <kind>`, INDEX safety).
 On the Sola desk, `/bin/sola-oath` is the same verbs for `pkg:*`
 (Present toggle, Apply, Undo). Filter the list; click a pack for description, project page,
-**Needs** (with realization pins), and **Used by**. Present stays
+upstream `name version` (`components.json`), advisories (danger chip
+when the live hash has any), **Needs** (with realization pins), and
+**Used by**. Present stays
 pinned above the tree.
 Open project is `xdg-open`.
 Toggle off stages dependents too; toggle on stages missing needs.

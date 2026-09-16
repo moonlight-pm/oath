@@ -10,6 +10,14 @@ other `pkg:*` this pack needs at runtime, each with a required
 realization `hash`. Apply refuses a broken graph or a live-pin
 mismatch; sola-oath stages the cascade. `description` is short
 prose; `home` is the source or project page (not the fetch `url`).
+There is no slot `version`. Upstream identity is pack-root
+`components.json` (`name`, `version`, `purl`; several allowed) —
+part of the tree hash; missing means unknown. Advisories for a pin
+live at `/oath/store/adv/<name>/<hash>.json` (origin
+`{origin}/adv/<name>/<hash>.json`); they are not in the pack.
+`oath get` actual shows `components` and, when fetched, `advisories`.
+Apply wget’s the adv file when `url` is an origin; failure does not
+refuse. Empty components or advisories is not a safety proof.
 A **plan** (`plan:<name>`) is a hashed `plan.plan` file that builds a
 product tree (`oath build`). It does not link `/bin`. Canonical
 example: `apps/hello.plan` (compile `pkg:hello-src` with declared

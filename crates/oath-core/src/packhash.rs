@@ -170,6 +170,28 @@ pub fn fetch_url(url: &str, name: &str, hash: &str) -> String {
     format!("{}/pkg/{name}/{hash}.tar", u.trim_end_matches('/'))
 }
 
+/// Origin URL for a hash-keyed advisory JSON (T44).
+///
+/// A pack tar URL `…/pkg/{name}/{hash}.tar` becomes
+/// `…/adv/{name}/{hash}.json`. An origin prefix plus a pin becomes
+/// `{origin}/adv/{name}/{hash}.json`. Anything else is empty (no
+/// advisory fetch).
+pub fn fetch_adv_url(url: &str, name: &str, hash: &str) -> String {
+    let u = url.trim();
+    if u.is_empty() || hash.is_empty() || !is_realization_id(hash) {
+        return String::new();
+    }
+    let marker = format!("/pkg/{name}/");
+    if let Some(idx) = u.find(&marker) {
+        return format!("{}/adv/{name}/{hash}.json", u[..idx].trim_end_matches('/'));
+    }
+    let lower = u.to_ascii_lowercase();
+    if lower.ends_with(".tar") || lower.ends_with(".tar.gz") || lower.ends_with(".tgz") {
+        return String::new();
+    }
+    format!("{}/adv/{name}/{hash}.json", u.trim_end_matches('/'))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,5 +298,24 @@ mod tests {
             fetch_url("http://10.0.2.2:18765/fetchme", "fetchme", ""),
             "http://10.0.2.2:18765/fetchme"
         );
+    }
+
+    #[test]
+    fn fetch_adv_url_from_origin_and_tar() {
+        let h = "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        assert_eq!(
+            fetch_adv_url("https://store.oath.wicket.cloud/", "curl", h),
+            format!("https://store.oath.wicket.cloud/adv/curl/{h}.json")
+        );
+        assert_eq!(
+            fetch_adv_url(&format!("https://store.oath.wicket.cloud/pkg/curl/{h}.tar"), "curl", h),
+            format!("https://store.oath.wicket.cloud/adv/curl/{h}.json")
+        );
+        assert_eq!(
+            fetch_adv_url("http://10.0.2.2:18765/fetchme", "fetchme", h),
+            format!("http://10.0.2.2:18765/fetchme/adv/fetchme/{h}.json")
+        );
+        assert_eq!(fetch_adv_url("https://store.oath.wicket.cloud/", "curl", ""), "");
+        assert_eq!(fetch_adv_url("http://10.0.2.2:18765/fetchme", "fetchme", ""), "");
     }
 }

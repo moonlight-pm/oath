@@ -7,13 +7,23 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-09-15
+**As of:** 2026-09-16
 
 ---
 
 ## Now
 
-1. **T43 `plan` kind.** Hash-named slot + canonical `plan.plan` file;
+1. **T44 pkg security.** Hashed `components.json` (upstream name +
+   version + PURL, several per pack) plus hash-keyed advisories at
+   `/oath/store/adv/<name>/<hash>.json` and
+   `{origin}/adv/<name>/<hash>.json`. No slot `version`. No new kind
+   or verb. Guest does not call OSV/NVD. Freeze:
+   [docs/specs/2026-09-16-pkg-security.md](docs/specs/2026-09-16-pkg-security.md).
+   Partial: schema + actual fields + unit tests; pack-cc/rustc/bash
+   write `components.json`; sola-oath shows upstream + advisory chip.
+   Canto trees have no `components.json` until the next pack. Origin
+   `adv/` not published yet.
+2. **T43 `plan` kind.** Hash-named slot + canonical `plan.plan` file;
    `oath build` / `oath fmt`; ad-hoc `--file` until
    `set --from-file`; enforce netless sandbox; no anonymous blobs.
    Freeze:
@@ -31,20 +41,20 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `sha256-d3693f6b…2047e91f`; `/bin/reloc` absent; `plan:reloc`
    filed; second `oath build plan:reloc` cached. Guest `oath`
    live-copied. Extra `--file` product hashes still T32 reap.
-2. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
+3. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
    refuses if the needed pack’s live pin differs. sola-oath shows the
    pin on the tree. Freeze:
    [docs/specs/2026-09-13-pkg-needs.md](docs/specs/2026-09-13-pkg-needs.md).
-3. **T42 `pkg.description` + `pkg.home`.** Catalog prose and project
+4. **T42 `pkg.description` + `pkg.home`.** Catalog prose and project
    page (not fetch `url`). sola-oath shows them pinned; Open project
    is `xdg-open`. Freeze:
    [docs/specs/2026-09-13-pkg-about.md](docs/specs/2026-09-13-pkg-about.md).
-4. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
+5. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
    `oath`. Not a second admin surface. Freeze:
    [docs/specs/2026-09-13-sola-oath.md](docs/specs/2026-09-13-sola-oath.md).
    Kit wrappers no longer set `SOLA_NO_SELF_WATCH` (self-reexec on
    libexec replace). Launcher **Oath** live (sola-shell recopied).
-5. **T39 Omarchy session payload (keep Sola).** `host:local.session`
+6. **T39 Omarchy session payload (keep Sola).** `host:local.session`
    = `sola` | `omarchy` (seed default **sola**; `--confirm` to switch).
    Exclusive compositor. **Canto is on `sola` after catalog gen 59**
    (2026-09-13 live switch from omarchy; no ESP rotate). River + Sola
@@ -70,7 +80,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    leftover `sola-` exec tokens; `omarchy-pkg-add` does not fetch Arch;
    kvm does not reconnect across a compositor switch. Freeze:
    [docs/specs/2026-09-10-omarchy-session.md](docs/specs/2026-09-10-omarchy-session.md).
-6. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
+7. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
    no password, groups `root`+`home` only. Graphical stack as `home`
    is **Sola this boot** (Now 4); Hyprland/Omarchy bits stay packed and
    are svc-off. `/dev/ptmx` is 0666 so terminal tmux/PTY works.
@@ -187,9 +197,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    SIGBUS). Steam-runtime `compose.dir` already aliases C.UTF-8.
    Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.
    Do not `cargo make install --confirm` (wipe).
-7. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
+8. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
-8. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
+9. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto. **T37** session Steam in; `/bin/sola-arcade` **not** on canto
    (no DRM modifiers). Other kit apps still out. **Sola master**
@@ -205,19 +215,19 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pipewire-pulse` applied gen 40 as `home` (Built-in Audio);
    HDMI not auto-enumerated. System D-Bus is `pkg:bluez`; no
    session bus / MPRIS.
-9. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
+10. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. **T35** toolchain live.
    **T30** `pkg:grok` packed. **T31** seat `home` locked (uid 1, SSH
    home, sudo ALL, `/lib/oath`, catalog env).
-10. **T20 bootstrap origin is live.** `https://store.oath.wicket.cloud/`
+11. **T20 bootstrap origin is live.** `https://store.oath.wicket.cloud/`
    **200** (Wicket `extras/oath-store`, `wl-c3222462d626`, hub proxy
    **61**). Fetch `{origin}/pkg/<name>/<hash>.tar`. Seeded `hello` +
    `fetchme`. Publish: `cargo make store` + `cargo make publish`. Not a
    `repo` kind. Canto store is still old layout until the next pack.
-11. **QEMU is parked.** Not on the critical path. Do not spend the
+12. **QEMU is parked.** Not on the critical path. Do not spend the
    slice on `cargo make probe` / qcow. Metal canto + the pack origin
    are the path. The appliance still exists; leave it.
-12. Do not add a third compositor. River is Sola; Hyprland is Omarchy
+13. Do not add a third compositor. River is Sola; Hyprland is Omarchy
    (T39). glibc runtime is allowed **only** as `pkg:glibc` (never in
    PID 1). No udevd. No nested Sola/Omarchy process manager. No
    systemd. Do not write a real disk the operator did not name, or
@@ -311,6 +321,9 @@ Do not re-litigate without an explicit decision.
   `oath build` writes a product tree and does not link `/bin`. Amends
   T32 no recipe *language* (a hashed plan file is allowed). Extra
   `--file` product hashes still T32 reap.
+  **T44 (partial):** pack `components.json` is upstream identity
+  (hashed). Advisories are `/oath/store/adv/<name>/<hash>.json`, not
+  in the pack. `oath get` actual shows both. Not a version pin.
 - Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
   dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants
@@ -358,7 +371,9 @@ Do not re-litigate without an explicit decision.
 
 - Manual: [docs/manual/README.md](docs/manual/README.md)
 - Capabilities: [docs/capabilities.md](docs/capabilities.md)
-- Freeze: [docs/specs/2026-09-15-plan-kind.md](docs/specs/2026-09-15-plan-kind.md)
+- Freeze: [docs/specs/2026-09-16-pkg-security.md](docs/specs/2026-09-16-pkg-security.md)
+  (T44 components + hash-keyed advisories).
+  [docs/specs/2026-09-15-plan-kind.md](docs/specs/2026-09-15-plan-kind.md)
   (T43 `plan` kind; `oath build`).
   [docs/specs/2026-09-13-pkg-about.md](docs/specs/2026-09-13-pkg-about.md)
   (T42 description + home).
@@ -423,5 +438,6 @@ Do not re-litigate without an explicit decision.
   T39 Omarchy session payload (Hyprland + Quickshell packed, Sola default);
   T32 hash-in-path in (canto old layout until next pack);
   T43 `plan` kind (canto `apps/hello.plan` + relocate-tar wget; `/bin` still apply);
+  T44 components.json + hash-keyed advisories (host tests; canto until next pack);
   T20 bootstrap origin live (store.oath.wicket.cloud);
   Phase 6 metal canary (canto) dogfoodable

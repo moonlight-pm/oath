@@ -7,9 +7,10 @@ canto: `sh image/install-toolchain.sh`. No Nix, no rustup.
 Borrowed **image** tools (kernel, busybox, qemu) still come from
 `tools.nix` when packing a qcow from a Nix host. They are not the
 runtime. Packing emits store trees
-(`bin/` plus whatever the payload needs). There is no recipe language;
-how you build that tree is the packer’s. Target pack identity (content
-hash, hash-in-path, pin) is T32
+(`bin/` plus whatever the payload needs). Pack-root `components.json`
+(T44) names upstream `{name, version, purl}` (`image/write-components.sh`).
+There is no recipe language; how you build that tree is the packer’s.
+Target pack identity (content hash, hash-in-path, pin) is T32
 ([docs/specs/2026-09-03-pkg-pack-identity.md](../docs/specs/2026-09-03-pkg-pack-identity.md))
 (in; canto old layout until next pack). Patched River is built from
 `forks/river` + `forks/wlroots` (Sola nixpkgs pin) and relocated into

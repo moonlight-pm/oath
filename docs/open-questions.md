@@ -52,6 +52,11 @@ prose + project page; not `pkg.url`).
 file; `oath build` / `oath fmt`; ad-hoc `--file`; no anonymous blobs;
 enforce netless sandbox; `built_from` not a proof). Amends T32 no
 recipe *language*.
+**T44** pkg security closed 2026-09-16 (hashed `components.json`
+upstream list; hash-keyed `/oath/store/adv/<name>/<hash>.json`; T20
+origin `adv/` tree; no slot version; no new kind or verb; guest does
+not call OSV/NVD). Amends T32 hash identity, T42 slot prose, T20
+origin.
 
 ---
 
@@ -367,6 +372,16 @@ helper.
 no QEMU as the fill path. Default `cc` is glibc; `musl-cc` is Oath
 guest ELFs.
 
+### T44 — pkg security — locked 2026-09-16
+
+Upstream identity is pack-root `components.json` (`name`, `version`,
+`purl`, optional `cpe`; several entries). It is part of the tree
+hash. No slot `version`. Advisories are hash-keyed files
+`/oath/store/adv/<name>/<hash>.json` and T20
+`{origin}/adv/<name>/<hash>.json`, not in the pack. No new kind or
+verb. Guest does not call OSV/NVD. Empty components or advisories is
+not a safety proof.
+
 ---
 
 ## Decision log
@@ -414,3 +429,4 @@ guest ELFs.
 | 2026-09-14 | T41 | `needs.hash` required; apply refuses live-pin mismatch | this file; [specs/2026-09-13-pkg-needs.md](specs/2026-09-13-pkg-needs.md) |
 | 2026-09-15 | T43 | `plan` kind; `oath build`; canonical file; no anonymous blobs | this file; [specs/2026-09-15-plan-kind.md](specs/2026-09-15-plan-kind.md) |
 | 2026-09-13 | T42 | `pkg.description` + `pkg.home` (not fetch url) | this file; [specs/2026-09-13-pkg-about.md](specs/2026-09-13-pkg-about.md) |
+| 2026-09-16 | T44 | hashed `components.json` + hash-keyed `store/adv`; no slot version; no new kind | this file; [specs/2026-09-16-pkg-security.md](specs/2026-09-16-pkg-security.md) |

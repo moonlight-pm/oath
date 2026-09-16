@@ -76,8 +76,11 @@ Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
   one process.
 
 Latest freeze:
+[`docs/specs/2026-09-16-pkg-security.md`](docs/specs/2026-09-16-pkg-security.md)
+(T44 `components.json` + hash-keyed advisories).
+T43:
 [`docs/specs/2026-09-15-plan-kind.md`](docs/specs/2026-09-15-plan-kind.md)
-(T43 `plan` kind; `oath build` / `oath fmt`; replicate a build).
+(`plan` kind; `oath build` / `oath fmt`; replicate a build).
 T42:
 [`docs/specs/2026-09-13-pkg-about.md`](docs/specs/2026-09-13-pkg-about.md)
 (`pkg.description` + `pkg.home`; not fetch `url`).

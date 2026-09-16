@@ -90,6 +90,7 @@ QEMU -kernel bzImage -initrd initrd.gz -netdev user -device virtio-net-pci
     /oath/                 catalog
     /oath/store/pkg/{busybox,btrfs,oath,dropbear,glibc,river,hyprland,quickshell,omarchy,sola,grok,git,curl,pipewire,bluez,thoxa,cc,rustc,cmake,pkg-config,bash,foot,grim,xwayland,gamescope,mesa,steam,hello,hello-src,reloc-src,reloc,fetchme}/<hash>/
     /oath/store/plan/<name>/<hash>/plan.plan
+    /oath/store/adv/<name>/<hash>.json  hash-keyed advisories (T44; not in the pack hash)
     net0               virtio-net (QEMU user or OATH_BRIDGE)
     /dev/dri/card0     virtio-gpu (dev:card0)
     /dev/input/event*  virtio keyboard + mouse (dev:kbd0, dev:mouse0)
@@ -220,7 +221,9 @@ UTC) which calls `/lib/oath/backup-send` (T33).
 Telemetry: guest lines `oath-tel {json}` on stderr and `/oath/log/*.jsonl`.
 `oath apply` on `pkg:*` creates or removes `/bin` symlinks into
 `/oath/store/pkg/<name>/<hash>/bin/`. Undo restores `store/` with the catalog
-then converges links.
+then converges links. Pack-root `components.json` is upstream identity
+(hashed). `/oath/store/adv/<name>/<hash>.json` is the advisory file for
+that pin (T20 origin `adv/` tree; not part of the pack hash).
 
 Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 `start` / `probe`). `cargo make ssh` is hostfwd 2222.

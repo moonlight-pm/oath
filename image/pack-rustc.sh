@@ -163,6 +163,9 @@ write_cargo
 # rustc --sysroot on rustdoc/clippy too. cargo must NOT get --sysroot.
 
 printf '%s\n' "rustc $RUST_VER gnu host" "rust-std $RUST_VER musl" >"$out/REV"
+sh "$here/write-components.sh" "$out" \
+	rustc "$RUST_VER" "pkg:generic/rustc@$RUST_VER" \
+	rust-std "$RUST_VER" "pkg:generic/rust-std@$RUST_VER"
 
 cat >"$out/INDEX.md" <<'EOF'
 # pkg:rustc

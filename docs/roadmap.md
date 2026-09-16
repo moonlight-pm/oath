@@ -54,8 +54,9 @@ other Oath hosts as origin; object-storage tar). Pack identity is T32
 (content hash, hash-in-path store, `desired.hash` pin, no recipe
 language) — in (canto old layout until next pack). T43 `plan` files
 are in (canto compiled `apps/hello.plan`; relocate-tar `apps/reloc.plan`
-wget’d `pkg:reloc-src`; `/bin` still apply). Guest store export and
-signed index are not.
+wget’d `pkg:reloc-src`; `/bin` still apply). T44 upstream
+`components.json` + hash-keyed advisories are in (host tests; canto
+trees until next pack). Guest store export and signed index are not.
 
 ## Phase 4 — Devices and network
 

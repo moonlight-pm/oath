@@ -149,6 +149,25 @@ pub struct Pkg {
     pub home: String,
 }
 
+/// One upstream component in a pack tree (`components.json`).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PkgComponent {
+    pub name: String,
+    pub version: String,
+    pub purl: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub cpe: String,
+}
+
+/// One hash-keyed advisory (not part of the pack tree).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PkgAdvisory {
+    pub id: String,
+    pub url: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub summary: String,
+}
+
 /// Pin of a plan file. Product lives on `pkg:<name>`, not here.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Plan {
@@ -235,6 +254,12 @@ pub struct PkgActual {
     pub description: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub home: String,
+    /// Live pack `components.json`. Empty if the file is missing.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub components: Vec<PkgComponent>,
+    /// Advisories for the live hash. `None` = never fetched (unknown).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub advisories: Option<Vec<PkgAdvisory>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -246,4 +271,6 @@ pub struct PkgRealization {
     /// First lines of pack `INDEX.md`, if present.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub index: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub components: Vec<PkgComponent>,
 }

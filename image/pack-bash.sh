@@ -33,6 +33,8 @@ cp -a "$out/libexec/bash" "$out/bin/bash"
 chmod 755 "$out/bin/bash"
 
 printf '%s\n' "bash $BASH_VER static-musl" >"$out/REV"
+sh "$here/write-components.sh" "$out" \
+	bash "$BASH_VER" "pkg:generic/bash@$BASH_VER"
 cat >"$out/INDEX.md" <<'EOF'
 # pkg:bash
 

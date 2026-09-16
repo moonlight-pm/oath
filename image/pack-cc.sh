@@ -107,6 +107,9 @@ EOF
 chmod 755 "$out/bin/patchelf"
 
 printf '%s\n' "zig $ZIG_VER" "patchelf $PATCHELF_VER" >"$out/REV"
+sh "$here/write-components.sh" "$out" \
+	zig "$ZIG_VER" "pkg:generic/zig@$ZIG_VER" \
+	patchelf "$PATCHELF_VER" "pkg:github/NixOS/patchelf@$PATCHELF_VER"
 
 cat >"$out/INDEX.md" <<'EOF'
 # pkg:cc

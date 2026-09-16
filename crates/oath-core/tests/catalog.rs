@@ -134,6 +134,8 @@ impl ApplyHooks for MemHooks {
                 needs: desired.needs.clone(),
                 description: desired.description.clone(),
                 home: desired.home.clone(),
+                components: Vec::new(),
+                advisories: None,
             });
         }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present, &desired.hash)
@@ -656,6 +658,43 @@ fn pack_hash_mismatch_refuses() {
         Error::Hint { message, .. } => assert!(message.contains("does not match"), "{message}"),
         other => panic!("{other:?}"),
     }
+}
+
+#[test]
+fn pack_components_and_advisories_on_actual() {
+    let (d, cat) = tmp();
+    let stage = d.path().join("stage-hello");
+    std::fs::create_dir_all(stage.join("bin")).unwrap();
+    std::fs::write(stage.join("bin/hello"), b"hello\n").unwrap();
+    std::fs::write(
+        stage.join("components.json"),
+        "{\n  \"components\": [\n    {\n      \"name\": \"hello\",\n      \"version\": \"1.0\",\n      \"purl\": \"pkg:generic/hello@1.0\"\n    }\n  ]\n}\n",
+    )
+    .unwrap();
+    let h = install_tree(d.path(), "hello", &stage, None, "").unwrap();
+    let adv = d.path().join("store/adv/hello").join(format!("{h}.json"));
+    std::fs::create_dir_all(adv.parent().unwrap()).unwrap();
+    std::fs::write(
+        &adv,
+        format!(
+            "{{\n  \"hash\": \"{h}\",\n  \"pkg\": \"pkg:hello\",\n  \"advisories\": [\n    {{\n      \"id\": \"CVE-TEST-1\",\n      \"url\": \"https://example.invalid/CVE-TEST-1\"\n    }}\n  ]\n}}\n"
+        ),
+    )
+    .unwrap();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(true));
+    fields.insert("hash".into(), json!(h.clone()));
+    cat.set_fields(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let obj = cat.get(&id).unwrap();
+    let comps = obj.actual["components"].as_array().unwrap();
+    assert_eq!(comps[0]["name"], "hello");
+    assert_eq!(comps[0]["version"], "1.0");
+    assert_eq!(comps[0]["purl"], "pkg:generic/hello@1.0");
+    let advs = obj.actual["advisories"].as_array().unwrap();
+    assert_eq!(advs[0]["id"], "CVE-TEST-1");
 }
 
 #[test]

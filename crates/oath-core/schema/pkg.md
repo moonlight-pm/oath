@@ -46,14 +46,27 @@ store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
 - `home` — HTTPS URL of the source tree or main project page. Empty
   means none. Not `url` (that fetches bits).
 
+Pack-tree (not desired; part of the hash): `components.json` lists
+upstream `{name, version, purl}` (optional `cpe`). Several entries
+are allowed. Missing file means unknown, not safe. Actual copies the
+live tree’s list.
+
+Hash-keyed advisories (not desired; not in the pack):
+`/oath/store/adv/<name>/<hash>.json`. Origin
+`{origin}/adv/<name>/<hash>.json`. Actual `advisories` is that list
+for the live pin when the file exists (omitted = never fetched).
+Apply wget’s it when `url` is an origin; failure does not refuse
+apply. Guest does not call OSV/NVD. Empty list is not a safety proof.
+
 The slot also has `live` → `<hash>` and compat symlinks (`bin` →
 `live/bin`, …) so RPATH/env that still name
 `/oath/store/pkg/<name>/lib` keep working. Those wrappers are not
 part of the hash.
 
 Actual also has `links` (basenames in `/bin`), `removable`, live
-`hash`, and `realizations` (other trees for this name: hash, linked,
-`bin/` names, first lines of pack `INDEX.md`). If `removable` is
+`hash`, `components`, optional `advisories`, and `realizations`
+(other trees for this name: hash, linked, `bin/` names, first lines
+of pack `INDEX.md`, that tree’s `components`). If `removable` is
 false, `present=false` is refused (not `--confirm`).
 
 Safety: `mutate`. Apply snapshots, then converges links.

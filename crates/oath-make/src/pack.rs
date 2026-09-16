@@ -1614,10 +1614,44 @@ pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
             rows.push((name.clone(), hash));
         }
     }
+    let cache_adv = host_store_cache(repo).join("adv");
+    if cache_adv.is_dir() {
+        let dest_adv = dest.join("adv");
+        fs::create_dir_all(&dest_adv)?;
+        let mut names: Vec<String> = fs::read_dir(&cache_adv)?
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        for name in names {
+            let slot = cache_adv.join(&name);
+            let out_dir = dest_adv.join(&name);
+            fs::create_dir_all(&out_dir)?;
+            let mut files: Vec<String> = fs::read_dir(&slot)?
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().is_file())
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .filter(|n| n.ends_with(".json"))
+                .collect();
+            files.sort();
+            for file in files {
+                fs::copy(slot.join(&file), out_dir.join(&file)).with_context(|| {
+                    format!(
+                        "copy {} -> {}",
+                        slot.join(&file).display(),
+                        out_dir.join(&file).display()
+                    )
+                })?;
+                println!("adv:{name} {file}");
+            }
+        }
+    }
     let mut index = String::from(
         "# Oath pack origin\n\n\
          Not a package manager. Trees are `oath-tree-v1` (SHA-256). \
-         Fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`.\n\n\
+         Fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`. \
+         Advisories are `{origin}/adv/<name>/<hash>.json` (not part of the pack hash).\n\n\
          | name | hash |\n\
          |------|------|\n",
     );

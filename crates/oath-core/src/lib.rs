@@ -28,8 +28,9 @@ pub use gpu::{drm_modifiers_available, pci_has_drm_modifiers, with_drm_modifiers
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgNeed,
-    PkgRealization, PkgRequires, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual, SvcRestart,
+    Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgAdvisory,
+    PkgComponent, PkgNeed, PkgRealization, PkgRequires, Plan, PlanActual, Ssh, SshActual, Svc,
+    SvcActual, SvcRestart,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
@@ -37,16 +38,17 @@ pub use layout::{
 };
 pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
 pub use packhash::{
-    fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX, LIVE_NAME,
+    fetch_adv_url, fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX,
+    LIVE_NAME,
 };
 pub use pkg::{
     check_needs as check_pkg_needs, check_requires, converge as converge_pkg,
-    converge_with_link_root, copy_tree as copy_pack_tree, fetch_pkg, ingest_file, install_tree,
-    list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
-    pin_desired_hash, promote_slot, promote_store, resolve_tree, seed_about as pkg_seed_about,
-    seed_need_hash as pkg_seed_need_hash, seed_needs as pkg_seed_needs,
-    seed_needs_json as pkg_seed_needs_json, stamp_unhashed, store_present, sync_need_hashes,
-    write_slot_links,
+    converge_with_link_root, copy_tree as copy_pack_tree, fetch_adv, fetch_pkg, ingest_file,
+    install_tree, list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
+    pin_desired_hash, promote_slot, promote_store, read_advisories, read_components, resolve_tree,
+    seed_about as pkg_seed_about, seed_need_hash as pkg_seed_need_hash,
+    seed_needs as pkg_seed_needs, seed_needs_json as pkg_seed_needs_json, stamp_unhashed,
+    store_present, sync_need_hashes, write_slot_links, COMPONENTS_NAME,
 };
 pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,

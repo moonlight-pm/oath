@@ -7,9 +7,9 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    converge_dev, converge_net, converge_pkg, converge_ssh, fetch_pkg, gen_subvol_name, tel,
-    ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg, PkgActual, Result, Ssh,
-    SshActual, BTRFS_TOP, LIVE_SUBVOL,
+    converge_dev, converge_net, converge_pkg, converge_ssh, fetch_adv, fetch_pkg, gen_subvol_name,
+    tel, ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg, PkgActual, Result,
+    Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -270,8 +270,14 @@ impl ApplyHooks for Live {
         if desired.present && !desired.url.is_empty() {
             fetch_pkg(&self.catalog_root, &id.name, &desired.url, &desired.hash)?;
         }
-        let actual =
+        let mut actual =
             converge_pkg(&self.catalog_root, &bin, &id.name, desired.present, &desired.hash)?;
+        if !desired.url.is_empty() {
+            let pin =
+                if !actual.hash.is_empty() { actual.hash.as_str() } else { desired.hash.as_str() };
+            let _ = fetch_adv(&self.catalog_root, &id.name, &desired.url, pin);
+            actual.advisories = oath_core::read_advisories(&self.catalog_root, &id.name, pin);
+        }
         tel(
             "oath",
             "pkg",

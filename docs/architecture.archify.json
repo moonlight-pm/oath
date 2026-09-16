@@ -134,12 +134,13 @@
       "id": "pkg-store",
       "type": "database",
       "label": "pkg store",
-      "sublabel": "pkg + plan hashes",
+      "sublabel": "pkg + plan + adv",
       "row": 2,
       "col": 2,
       "sources": [
         { "path": "crates/oath-core/src/pkg.rs", "line": 1, "end_line": 20, "label": "/bin links" },
-        { "path": "crates/oath-core/src/plan_build.rs", "line": 1, "end_line": 19, "label": "oath build" }
+        { "path": "crates/oath-core/src/plan_build.rs", "line": 1, "end_line": 19, "label": "oath build" },
+        { "path": "crates/oath-core/src/packhash.rs", "line": 173, "end_line": 193, "label": "adv origin URL" }
       ]
     },
     {

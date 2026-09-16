@@ -12,10 +12,17 @@ use std::process::Command;
 
 use crate::error::{Error, Result};
 use crate::gpu::drm_modifiers_available;
-use crate::kinds::{Pkg, PkgActual, PkgNeed, PkgRealization, PkgRequires};
-use crate::packhash::{
-    fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX, LIVE_NAME,
+use crate::kinds::{
+    Pkg, PkgActual, PkgAdvisory, PkgComponent, PkgNeed, PkgRealization, PkgRequires,
 };
+use crate::packhash::{
+    fetch_adv_url, fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX,
+    LIVE_NAME,
+};
+
+/// Pack-root file: upstream identity for feed matching (T44). Part of
+/// the tree hash. Missing means unknown, not safe.
+pub const COMPONENTS_NAME: &str = "components.json";
 use crate::write_json;
 use sha2::{Digest, Sha256};
 
@@ -444,6 +451,14 @@ fn pkg_actual(
     store_root: &Path,
     name: &str,
 ) -> PkgActual {
+    let hashed = realization_dir(store_root, name, &hash);
+    let tree = if is_realization_id(&hash) && hashed.is_dir() {
+        hashed
+    } else {
+        slot_dir(store_root, name)
+    };
+    let components = read_components(&tree).unwrap_or_default();
+    let advisories = read_advisories(store_root, name, &hash);
     PkgActual {
         present,
         links,
@@ -455,6 +470,8 @@ fn pkg_actual(
         needs: Vec::new(),
         description: String::new(),
         home: String::new(),
+        components,
+        advisories,
     }
 }
 
@@ -522,8 +539,9 @@ pub fn list_realizations(catalog_root: &Path, name: &str) -> Result<Vec<PkgReali
             };
         let bins = bin_names(&tree.join("bin")).unwrap_or_default();
         let index = index_blurb(&tree.join("INDEX.md"));
+        let components = read_components(&tree).unwrap_or_default();
         let linked = live.as_ref().map(|l| l == &hash).unwrap_or(false);
-        out.push(PkgRealization { hash, linked, bins, index });
+        out.push(PkgRealization { hash, linked, bins, index, components });
     }
     Ok(out)
 }
@@ -943,6 +961,129 @@ pub fn store_present(catalog_root: &Path, name: &str, hash: &str) -> bool {
         || is_old_layout(&slot_dir(catalog_root, name))
 }
 
+pub fn adv_dir(catalog_root: &Path, name: &str) -> PathBuf {
+    catalog_root.join("store").join("adv").join(name)
+}
+
+pub fn adv_path(catalog_root: &Path, name: &str, hash: &str) -> PathBuf {
+    adv_dir(catalog_root, name).join(format!("{hash}.json"))
+}
+
+/// Upstream components from a pack tree. `None` if the file is absent.
+pub fn read_components(tree: &Path) -> Option<Vec<PkgComponent>> {
+    let p = tree.join(COMPONENTS_NAME);
+    if !p.is_file() {
+        return None;
+    }
+    parse_components(&fs::read_to_string(&p).ok()?)
+}
+
+fn parse_components(s: &str) -> Option<Vec<PkgComponent>> {
+    let v: serde_json::Value = serde_json::from_str(s).ok()?;
+    let arr = v.get("components")?.as_array()?;
+    let mut out = Vec::new();
+    for e in arr {
+        let name = e.get("name")?.as_str()?.trim();
+        let version = e.get("version")?.as_str()?.trim();
+        let purl = e.get("purl")?.as_str()?.trim();
+        if name.is_empty() || version.is_empty() || !purl.starts_with("pkg:") {
+            return None;
+        }
+        let cpe = e.get("cpe").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
+        out.push(PkgComponent {
+            name: name.to_string(),
+            version: version.to_string(),
+            purl: purl.to_string(),
+            cpe,
+        });
+    }
+    Some(out)
+}
+
+/// Advisories for a pack hash. `None` if never fetched.
+pub fn read_advisories(catalog_root: &Path, name: &str, hash: &str) -> Option<Vec<PkgAdvisory>> {
+    if hash.is_empty() || !is_realization_id(hash) {
+        return None;
+    }
+    let p = adv_path(catalog_root, name, hash);
+    if !p.is_file() {
+        return None;
+    }
+    parse_advisories(&fs::read_to_string(&p).ok()?, name, hash)
+}
+
+fn parse_advisories(s: &str, name: &str, hash: &str) -> Option<Vec<PkgAdvisory>> {
+    let v: serde_json::Value = serde_json::from_str(s).ok()?;
+    let file_hash = v.get("hash").and_then(|x| x.as_str()).unwrap_or("");
+    if !file_hash.is_empty() && file_hash != hash {
+        return None;
+    }
+    let file_pkg = v.get("pkg").and_then(|x| x.as_str()).unwrap_or("");
+    let expect = format!("pkg:{name}");
+    if !file_pkg.is_empty() && file_pkg != expect {
+        return None;
+    }
+    let arr = v.get("advisories")?.as_array()?;
+    let mut out = Vec::new();
+    for e in arr {
+        let id = e.get("id")?.as_str()?.trim();
+        let url = e.get("url").and_then(|x| x.as_str()).unwrap_or("").trim();
+        if id.is_empty() {
+            continue;
+        }
+        let summary = e.get("summary").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
+        out.push(PkgAdvisory { id: id.to_string(), url: url.to_string(), summary });
+    }
+    Some(out)
+}
+
+/// T44 fetch: wget `{origin}/adv/{name}/{hash}.json`. Failure is Ok
+/// (apply still converges; previous file stays).
+pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Result<()> {
+    let adv_url = fetch_adv_url(url, name, hash);
+    if adv_url.is_empty() {
+        return Ok(());
+    }
+    let tmpdir = catalog_root.join("store/adv").join(format!(".{name}.wget"));
+    let _ = fs::remove_dir_all(&tmpdir);
+    if let Err(e) = fs::create_dir_all(&tmpdir) {
+        let _ = fs::remove_dir_all(&tmpdir);
+        return Err(Error::Msg(format!("adv tmp: {e}")));
+    }
+    let blob = tmpdir.join("blob");
+    let wget = find_bin("wget");
+    let st = Command::new(&wget)
+        .args(["-q", "-O", blob.to_str().unwrap(), &adv_url])
+        .status()
+        .map_err(|e| Error::Msg(format!("wget: {e}")));
+    let st = match st {
+        Ok(s) => s,
+        Err(_) => {
+            let _ = fs::remove_dir_all(&tmpdir);
+            return Ok(());
+        }
+    };
+    if !st.success() {
+        let _ = fs::remove_dir_all(&tmpdir);
+        return Ok(());
+    }
+    let Ok(body) = fs::read_to_string(&blob) else {
+        let _ = fs::remove_dir_all(&tmpdir);
+        return Ok(());
+    };
+    if parse_advisories(&body, name, hash).is_none() {
+        let _ = fs::remove_dir_all(&tmpdir);
+        return Ok(());
+    }
+    let dest = adv_path(catalog_root, name, hash);
+    if let Some(p) = dest.parent() {
+        let _ = fs::create_dir_all(p);
+    }
+    let _ = fs::write(&dest, body);
+    let _ = fs::remove_dir_all(&tmpdir);
+    Ok(())
+}
+
 /// T20 fetch: wget `url` (or `{url}/pkg/{name}/{hash}.tar`) into the store.
 /// A `.tar` / gzip is a pack tree; a single file becomes `bin/<name>`.
 /// Plan pre-build uses this with `present` still false.
@@ -1155,5 +1296,47 @@ mod needs_tests {
         assert!(seed_needs("steam").contains(&"pkg:mesa"));
         assert!(seed_needs("sola").contains(&"pkg:river"));
         assert!(seed_needs("hello").is_empty());
+    }
+
+    #[test]
+    fn components_json_is_in_tree_hash() {
+        let d = tempfile::tempdir().unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let h1 = hash_tree(&tree).unwrap();
+        fs::write(
+            tree.join(COMPONENTS_NAME),
+            "{\n  \"components\": [\n    {\n      \"name\": \"hello\",\n      \"version\": \"1.0\",\n      \"purl\": \"pkg:generic/hello@1.0\"\n    }\n  ]\n}\n",
+        )
+        .unwrap();
+        let h2 = hash_tree(&tree).unwrap();
+        assert_ne!(h1, h2, "components.json must change the pack hash");
+        let c = read_components(&tree).expect("components");
+        assert_eq!(c.len(), 1);
+        assert_eq!(c[0].name, "hello");
+        assert_eq!(c[0].version, "1.0");
+        assert_eq!(c[0].purl, "pkg:generic/hello@1.0");
+        assert!(read_components(&d.path().join("missing")).is_none());
+    }
+
+    #[test]
+    fn advisories_keyed_by_hash() {
+        let d = tempfile::tempdir().unwrap();
+        let h = H;
+        let p = adv_path(d.path(), "curl", h);
+        fs::create_dir_all(p.parent().unwrap()).unwrap();
+        fs::write(
+            &p,
+            format!(
+                "{{\n  \"hash\": \"{h}\",\n  \"pkg\": \"pkg:curl\",\n  \"advisories\": [\n    {{\n      \"id\": \"CVE-TEST-1\",\n      \"url\": \"https://example.invalid/CVE-TEST-1\",\n      \"summary\": \"fixture\"\n    }}\n  ]\n}}\n"
+            ),
+        )
+        .unwrap();
+        let a = read_advisories(d.path(), "curl", h).expect("advisories");
+        assert_eq!(a.len(), 1);
+        assert_eq!(a[0].id, "CVE-TEST-1");
+        assert!(read_advisories(d.path(), "curl", H2).is_none());
+        assert!(read_advisories(d.path(), "hello", h).is_none());
     }
 }
