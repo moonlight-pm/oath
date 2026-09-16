@@ -54,10 +54,7 @@ pub fn parse_plan(text: &str) -> Result<PlanFile> {
         .ok_or_else(|| Error::hint("plan JSON must be an object", "oath fmt <path>"))?;
     for k in obj.keys() {
         if !matches!(k.as_str(), "name" | "produces" | "build_needs" | "run_needs") {
-            return Err(Error::hint(
-                format!("unknown plan field `{k}`"),
-                "oath fmt <path>",
-            ));
+            return Err(Error::hint(format!("unknown plan field `{k}`"), "oath fmt <path>"));
         }
     }
     for k in ["name", "produces", "build_needs", "run_needs"] {
@@ -147,10 +144,7 @@ pub fn lint_bytes(bytes: &[u8]) -> Result<PlanFile> {
     let parsed = parse_plan(text)?;
     let canon = fmt_plan(&parsed);
     if canon.as_bytes() != bytes {
-        return Err(Error::hint(
-            "plan file is not canonical",
-            "oath fmt -w <path>",
-        ));
+        return Err(Error::hint("plan file is not canonical", "oath fmt -w <path>"));
     }
     Ok(parsed)
 }
@@ -168,10 +162,12 @@ fn parse_needs(v: &serde_json::Value, field: &str) -> Result<Vec<PkgNeed>> {
     let mut out = Vec::new();
     let mut prev = "";
     for item in arr {
-        let o = item
-            .as_object()
-            .ok_or_else(|| Error::hint(format!("{field} entries must be objects"), "oath fmt <path>"))?;
-        if o.keys().any(|k| k != "id" && k != "hash") || !o.contains_key("id") || !o.contains_key("hash")
+        let o = item.as_object().ok_or_else(|| {
+            Error::hint(format!("{field} entries must be objects"), "oath fmt <path>")
+        })?;
+        if o.keys().any(|k| k != "id" && k != "hash")
+            || !o.contains_key("id")
+            || !o.contains_key("hash")
         {
             return Err(Error::hint(
                 format!("{field} entries must have id and hash only"),
@@ -197,10 +193,7 @@ fn parse_needs(v: &serde_json::Value, field: &str) -> Result<Vec<PkgNeed>> {
             ));
         }
         if !prev.is_empty() && id <= prev {
-            return Err(Error::hint(
-                format!("{field} must be sorted by id"),
-                "oath fmt <path>",
-            ));
+            return Err(Error::hint(format!("{field} must be sorted by id"), "oath fmt <path>"));
         }
         prev = id;
         out.push(PkgNeed { id: id.to_string(), hash: hash.to_string() });

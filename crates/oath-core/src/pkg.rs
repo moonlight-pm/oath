@@ -961,12 +961,13 @@ pub fn store_present(catalog_root: &Path, name: &str, hash: &str) -> bool {
         || is_old_layout(&slot_dir(catalog_root, name))
 }
 
-pub fn adv_dir(catalog_root: &Path, name: &str) -> PathBuf {
-    catalog_root.join("store").join("adv").join(name)
+pub fn adv_path(catalog_root: &Path, name: &str, hash: &str) -> PathBuf {
+    adv_path_store(&catalog_root.join("store"), name, hash)
 }
 
-pub fn adv_path(catalog_root: &Path, name: &str, hash: &str) -> PathBuf {
-    adv_dir(catalog_root, name).join(format!("{hash}.json"))
+/// Store-root helper: guest `/oath/store`, host `.cache/oath/store`.
+pub fn adv_path_store(store: &Path, name: &str, hash: &str) -> PathBuf {
+    store.join("adv").join(name).join(format!("{hash}.json"))
 }
 
 /// Upstream components from a pack tree. `None` if the file is absent.
@@ -1002,10 +1003,14 @@ fn parse_components(s: &str) -> Option<Vec<PkgComponent>> {
 
 /// Advisories for a pack hash. `None` if never fetched.
 pub fn read_advisories(catalog_root: &Path, name: &str, hash: &str) -> Option<Vec<PkgAdvisory>> {
+    read_advisories_store(&catalog_root.join("store"), name, hash)
+}
+
+pub fn read_advisories_store(store: &Path, name: &str, hash: &str) -> Option<Vec<PkgAdvisory>> {
     if hash.is_empty() || !is_realization_id(hash) {
         return None;
     }
-    let p = adv_path(catalog_root, name, hash);
+    let p = adv_path_store(store, name, hash);
     if !p.is_file() {
         return None;
     }
@@ -1035,6 +1040,41 @@ fn parse_advisories(s: &str, name: &str, hash: &str) -> Option<Vec<PkgAdvisory>>
         out.push(PkgAdvisory { id: id.to_string(), url: url.to_string(), summary });
     }
     Some(out)
+}
+
+/// Write a canonical advisory file for a pack hash (T44). Sorted by
+/// `id`. Empty list is a successful "none at last query", not unknown.
+pub fn write_advisories(
+    catalog_root: &Path,
+    name: &str,
+    hash: &str,
+    advisories: Vec<PkgAdvisory>,
+) -> Result<()> {
+    write_advisories_store(&catalog_root.join("store"), name, hash, advisories)
+}
+
+pub fn write_advisories_store(
+    store: &Path,
+    name: &str,
+    hash: &str,
+    advisories: Vec<PkgAdvisory>,
+) -> Result<()> {
+    if !is_realization_id(hash) {
+        return Err(Error::hint(format!("not a pack hash: {hash}"), "oath schema pkg"));
+    }
+    let mut advisories = advisories;
+    advisories.sort_by(|a, b| a.id.cmp(&b.id));
+    advisories.dedup_by(|a, b| a.id == b.id);
+    #[derive(serde::Serialize)]
+    struct File<'a> {
+        hash: &'a str,
+        pkg: String,
+        advisories: &'a [PkgAdvisory],
+    }
+    crate::write_json(
+        &adv_path_store(store, name, hash),
+        &File { hash, pkg: format!("pkg:{name}"), advisories: &advisories },
+    )
 }
 
 /// T44 fetch: wget `{origin}/adv/{name}/{hash}.json`. Failure is Ok
@@ -1338,5 +1378,34 @@ mod needs_tests {
         assert_eq!(a[0].id, "CVE-TEST-1");
         assert!(read_advisories(d.path(), "curl", H2).is_none());
         assert!(read_advisories(d.path(), "hello", h).is_none());
+    }
+
+    #[test]
+    fn write_advisories_canonical_and_sorted() {
+        let d = tempfile::tempdir().unwrap();
+        write_advisories(
+            d.path(),
+            "curl",
+            H,
+            vec![
+                PkgAdvisory {
+                    id: "CVE-TEST-2".into(),
+                    url: "https://example.invalid/2".into(),
+                    summary: String::new(),
+                },
+                PkgAdvisory {
+                    id: "CVE-TEST-1".into(),
+                    url: "https://example.invalid/1".into(),
+                    summary: "first".into(),
+                },
+            ],
+        )
+        .unwrap();
+        let body = fs::read_to_string(adv_path(d.path(), "curl", H)).unwrap();
+        assert!(body.starts_with("{\n  \"hash\":"), "{body}");
+        let a = read_advisories(d.path(), "curl", H).unwrap();
+        assert_eq!(a[0].id, "CVE-TEST-1");
+        assert_eq!(a[1].id, "CVE-TEST-2");
+        assert_eq!(a[0].summary, "first");
     }
 }

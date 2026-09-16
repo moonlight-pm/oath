@@ -79,6 +79,9 @@ wrap ccmake
 wrap ninja
 
 printf '%s\n' "cmake $CMAKE_VER" "ninja $NINJA_VER" >"$out/REV"
+sh "$here/write-components.sh" "$out" \
+	cmake "$CMAKE_VER" "pkg:github/Kitware/CMake@$CMAKE_VER" \
+	ninja "$NINJA_VER" "pkg:github/ninja-build/ninja@$NINJA_VER"
 
 cat >"$out/INDEX.md" <<'EOF'
 # pkg:cmake

@@ -19,10 +19,11 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `{origin}/adv/<name>/<hash>.json`. No slot `version`. No new kind
    or verb. Guest does not call OSV/NVD. Freeze:
    [docs/specs/2026-09-16-pkg-security.md](docs/specs/2026-09-16-pkg-security.md).
-   Partial: schema + actual fields + unit tests; pack-cc/rustc/bash
-   write `components.json`; sola-oath shows upstream + advisory chip.
-   Canto trees have no `components.json` until the next pack. Origin
-   `adv/` not published yet.
+   Partial: schema + actual fields + unit tests; pack-cc/rustc/bash/
+   cmake/pkg-config write `components.json`; sola-oath shows upstream
+   + advisory chip; `cargo make advisories` queries OSV into host
+   `store/adv`. Canto trees have no `components.json` until the next
+   pack. Origin `adv/` not published yet.
 2. **T43 `plan` kind.** Hash-named slot + canonical `plan.plan` file;
    `oath build` / `oath fmt`; ad-hoc `--file` until
    `set --from-file`; enforce netless sandbox; no anonymous blobs.
@@ -233,7 +234,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    systemd. Do not write a real disk the operator did not name, or
    without `--confirm`.
 
-**Always allowed:** docs hygiene; tests; `cargo make store|publish|map|install` (`esp` on canto). QEMU `build|run|probe` exists but is **parked**.
+**Always allowed:** docs hygiene; tests; `cargo make store|advisories|publish|map|install` (`esp` on canto). QEMU `build|run|probe` exists but is **parked**.
 
 ---
 
@@ -249,6 +250,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 nix-shell
 cargo make map            # as-built overview; public: https://oath.wicket.cloud/map
 cargo make store --name hello --from apps/hello --tar
+cargo make advisories     # OSV → .cache/oath/store/adv (host; guest never calls OSV)
 cargo make publish        # origin tree → Wicket extras/oath-store/site
 ```
 
@@ -323,7 +325,8 @@ Do not re-litigate without an explicit decision.
   `--file` product hashes still T32 reap.
   **T44 (partial):** pack `components.json` is upstream identity
   (hashed). Advisories are `/oath/store/adv/<name>/<hash>.json`, not
-  in the pack. `oath get` actual shows both. Not a version pin.
+  in the pack. `oath get` actual shows both. Host `cargo make
+  advisories` queries OSV (guest does not). Not a version pin.
 - Services: PID 1 converges `svc:*` in `wants` order. Ethernet then
   dhcp/sshd, then amdgpu. `svc:serial` parks if there is no UART.
   `svc:sshd` is dropbear; `svc:hold` wants serial; `svc:river` wants

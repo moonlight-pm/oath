@@ -1,3 +1,4 @@
+mod advisories;
 mod boot;
 mod cpio;
 mod install;
@@ -108,6 +109,14 @@ enum Cmd {
         #[arg(long)]
         dest: Option<PathBuf>,
     },
+    /// Query OSV for packed trees that have `components.json`; write
+    /// `.cache/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
+    /// Then `cargo make publish` copies `adv/`.
+    Advisories {
+        /// Only this slot (`curl` or `pkg:curl`). Default: every pack in the cache.
+        #[arg(long)]
+        name: Option<String>,
+    },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
     Esp {
@@ -179,6 +188,7 @@ fn real() -> Result<()> {
         }
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
         Cmd::Publish { dest } => pack::publish_store(&root, dest.as_deref())?,
+        Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
         Cmd::Esp { esp, confirm, root: root_dev } => {
             install::update_esp(&root, &out, install::EspOpts { esp, confirm, root_dev })?;
         }

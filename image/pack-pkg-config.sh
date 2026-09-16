@@ -4,6 +4,7 @@
 set -eu
 
 out=${1:?out}
+here=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 if [ -e "$out" ]; then
 	chmod -R u+w "$out" 2>/dev/null || true
@@ -36,6 +37,8 @@ chmod 755 "$out/bin/pkg-config"
 ln -s pkg-config "$out/bin/pkgconf"
 
 printf '%s\n' "pkg-config empty-farm 2.0.0" >"$out/REV"
+sh "$here/write-components.sh" "$out" \
+	pkg-config 2.0.0 "pkg:generic/oath-pkg-config@2.0.0"
 
 cat >"$out/INDEX.md" <<'EOF'
 # pkg:pkg-config

@@ -378,9 +378,10 @@ Upstream identity is pack-root `components.json` (`name`, `version`,
 `purl`, optional `cpe`; several entries). It is part of the tree
 hash. No slot `version`. Advisories are hash-keyed files
 `/oath/store/adv/<name>/<hash>.json` and T20
-`{origin}/adv/<name>/<hash>.json`, not in the pack. No new kind or
-verb. Guest does not call OSV/NVD. Empty components or advisories is
-not a safety proof.
+`{origin}/adv/<name>/<hash>.json`, not in the pack. Host
+`cargo make advisories` queries OSV from `components.json`. No new
+kind or verb. Guest does not call OSV/NVD. Empty components or
+advisories is not a safety proof.
 
 ---
 

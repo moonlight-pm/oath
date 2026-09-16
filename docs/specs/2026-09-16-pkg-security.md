@@ -1,15 +1,16 @@
 **Date:** 2026-09-16
 **Status:** target (freeze)
 **Implementation:** partial (schema + actual fields + unit tests +
-  pack-script `components.json` for cc/rustc/bash; sola-oath shows
-  components and advisories)
-**Dogfood:** host unit tests. Canto live trees are old-layout and have
-  no `components.json` until the next pack. Advisory origin tree is
-  empty until published.
+  pack-script `components.json` for cc/rustc/bash/cmake/pkg-config;
+  sola-oath shows components and advisories; `cargo make advisories`
+  queries OSV into the host store `adv/` tree)
+**Dogfood:** host unit tests (including local OSV + wget fetch). Canto
+  live trees are old-layout and have no `components.json` until the
+  next pack. Origin `adv/` empty until `advisories` + `publish`.
 **Gaps:** guest `oath` / sola-oath live-copied until next pack; most
-  pack scripts still omit `components.json`; no host OSV/NVD client;
-  origin `adv/` not published yet; extra on-disk realizations do not
-  fetch their own advisories
+  relocate/nix packs still omit `components.json`; origin `adv/` not
+  published yet; extra on-disk realizations do not fetch their own
+  advisories; no NVD client (OSV only)
 **As-built:** [../capabilities.md](../capabilities.md) · [../architecture.md](../architecture.md)
 
 # Package upstream identity and hash-keyed advisories
