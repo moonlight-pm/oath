@@ -5,8 +5,9 @@
   sola-oath shows components and advisories; `cargo make advisories`
   queries OSV into the host store `adv/` tree)
 **Dogfood:** host unit tests (including local OSV + wget fetch). Canto
-  live trees are old-layout and have no `components.json` until the
-  next pack. Origin `adv/` empty until `advisories` + `publish`.
+  guest `oath` + `schema/pkg.md` + `sola-oath` live-copied 2026-09-17.
+  Live trees are old-layout and have no `components.json`. Origin `adv/`
+  empty until `advisories` + `publish`.
 **Gaps:** guest `oath` / sola-oath live-copied until next pack; most
   relocate/nix packs still omit `components.json`; origin `adv/` not
   published yet; extra on-disk realizations do not fetch their own

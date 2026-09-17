@@ -2,9 +2,9 @@
 **Status:** target (freeze)
 **Implementation:** partial
 **Dogfood:** canto is Oath (`ssh home@canto`, `host:local` name canto,
-`net:net0` dhcp 10.0.0.3). Desk this boot is Omarchy (T39); Sola/River
-packed. QEMU-EFI rehearsal passed. QEMU probe stays. T38 firmware menu
-on ESP (live kernel **7.3.0-rc1 #4**).
+`net:net0` dhcp 10.0.0.3). Desk this boot is Sola (T39); Omarchy/Steam
+store trees reaped 2026-09-17. QEMU-EFI rehearsal passed. QEMU probe
+stays. T38 firmware menu on ESP (live kernel **7.3.0-rc1 #4**).
 **Gaps:** kexec did not bring tg3 up on this Apple (EFI oneshot / USB
 installer instead); T38 timeout menu still unsmoked (oath-efi logo
 hides the picker); DualUp native 60 Hz needs DisplayPort not HDMI
