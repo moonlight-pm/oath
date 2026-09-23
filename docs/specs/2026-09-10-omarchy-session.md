@@ -1,7 +1,7 @@
 **Date:** 2026-09-10
 **Status:** target (freeze)
-**Implementation:** partial (catalog session + Hyprland 0.52 desk +
-  Quickshell bar/menu + `pkg:foot` + `pkg:grim` capture on canto)
+**Implementation:** partial (catalog session + Hyprland 0.52 +
+  Quickshell + `pkg:foot` + `pkg:grim`; canto stores reaped 2026-09-17)
 **Dogfood:** canto **`session=sola`**. River + Sola stack as `home`
   on DP-10 1920×1080 `wayland-1`. Hyprland / Omarchy / Quickshell /
   foot / grim **store trees reaped 2026-09-17** (objects `present=false`,
