@@ -200,7 +200,11 @@ why `CLONE_NEWUSER` is EPERM even as root). Mount proc/sys/dev/pts
 sshd; then amdgpu + ALSA HDA (snd deferred with KMS); wait for
 `/dev/dri` + `/dev/input` and chown them `0660` root:`home` (same for
 `/dev/snd` when the nodes exist); then remaining `svc:*` (River/Sola
-and pipewire as `home`).
+and pipewire as `home`). `svc.user` is `root` (the default) or `home`
+(uid 1). A seat name with no `user` field still drops to `home`.
+`svc.bind_low_ports` grants `CAP_NET_BIND_SERVICE` to a non-root
+service. `svc.env` is that process's environment. Wicket uses `home`
+for its control plane and does not add Unix accounts.
 Socket `/oath/run/init.sock`. `host:local.session` is `sola` (default)
 or `omarchy` (T39); PID 1 starts only that desk’s compositor. Stopping
 River or Hyprland waits up to 3 s for the DRM owner to exit before

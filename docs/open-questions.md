@@ -431,3 +431,4 @@ advisories is not a safety proof.
 | 2026-09-15 | T43 | `plan` kind; `oath build`; canonical file; no anonymous blobs | this file; [specs/2026-09-15-plan-kind.md](specs/2026-09-15-plan-kind.md) |
 | 2026-09-13 | T42 | `pkg.description` + `pkg.home` (not fetch url) | this file; [specs/2026-09-13-pkg-about.md](specs/2026-09-13-pkg-about.md) |
 | 2026-09-16 | T44 | hashed `components.json` + hash-keyed `store/adv`; no slot version; no new kind | this file; [specs/2026-09-16-pkg-security.md](specs/2026-09-16-pkg-security.md) |
+| 2026-09-23 | Wicket O1 | `svc.user` is `root` or `home` only; no `wicket` or `postgres` account; `bind_low_ports` is `CAP_NET_BIND_SERVICE` for a non-root service | [CURRENT.md](../CURRENT.md); [schema svc](../crates/oath-core/schema/svc.md); Wicket `docs/specs/2026-09-23-oath-host.md` |

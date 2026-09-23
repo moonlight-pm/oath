@@ -77,6 +77,37 @@ impl HostPower {
     }
 }
 
+/// Unix account a service runs as. Oath has these two and no others.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SvcUser {
+    Root,
+    Home,
+}
+
+impl SvcUser {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Root => "root",
+            Self::Home => "home",
+        }
+    }
+
+    pub fn uid(self) -> u32 {
+        match self {
+            Self::Root => 0,
+            Self::Home => crate::seat::UID,
+        }
+    }
+
+    pub fn gid(self) -> u32 {
+        match self {
+            Self::Root => 0,
+            Self::Home => crate::seat::GID,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Svc {
     pub exec: Vec<String>,
@@ -84,6 +115,26 @@ pub struct Svc {
     pub wants: Vec<String>,
     pub restart: SvcRestart,
     pub enabled: bool,
+    /// Absent means "not set". Effective account is [`crate::svc_spawn`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user: Option<SvcUser>,
+    /// Extra environment for this process. Empty when the field is absent.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub env: BTreeMap<String, String>,
+    /// When true, a non-root process keeps `CAP_NET_BIND_SERVICE`.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub bind_low_ports: bool,
+}
+
+impl Svc {
+    /// Process identity. `wants`, `restart`, and `enabled` can change
+    /// without bouncing a running process.
+    pub fn same_spawn(&self, other: &Self) -> bool {
+        self.exec == other.exec
+            && self.user == other.user
+            && self.env == other.env
+            && self.bind_low_ports == other.bind_low_ports
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

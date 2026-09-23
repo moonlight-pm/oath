@@ -66,6 +66,8 @@ pub fn start_order(svcs: &[(String, Svc)]) -> Result<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
     use crate::kinds::SvcRestart;
 
@@ -75,6 +77,9 @@ mod tests {
             wants: wants.iter().map(|w| w.to_string()).collect(),
             restart: SvcRestart::Never,
             enabled: true,
+            user: None,
+            env: BTreeMap::new(),
+            bind_low_ports: false,
         }
     }
 

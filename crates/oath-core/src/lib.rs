@@ -19,6 +19,7 @@ mod seed;
 pub mod session;
 mod ssh;
 mod svc_order;
+mod svc_run;
 mod tel;
 
 pub use catalog::{diff_values, Catalog, Drift, Object};
@@ -30,7 +31,7 @@ pub use id::ObjectId;
 pub use kinds::{
     Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgAdvisory,
     PkgComponent, PkgNeed, PkgRealization, PkgRequires, Plan, PlanActual, Ssh, SshActual, Svc,
-    SvcActual, SvcRestart,
+    SvcActual, SvcRestart, SvcUser,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
@@ -59,6 +60,7 @@ pub use seed::seed;
 pub use session::{is_omarchy_desk_svc, is_sola_desk_svc, session_allows};
 pub use ssh::converge as converge_ssh;
 pub use svc_order::start_order as svc_start_order;
+pub use svc_run::{apply_svc_cred, svc_env_pairs, svc_spawn, SvcCred, SvcSpawn};
 pub use tel::tel;
 
 pub const DEFAULT_ROOT: &str = "/oath";

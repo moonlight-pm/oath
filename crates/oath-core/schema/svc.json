@@ -21,6 +21,20 @@
       "type": "string",
       "enum": ["never", "always", "on-failure"]
     },
-    "enabled": { "type": "boolean" }
+    "enabled": { "type": "boolean" },
+    "user": {
+      "type": "string",
+      "enum": ["root", "home"],
+      "description": "Unix account. Absent means root, except a seat service with no user field still runs as home (uid 1). Does not create accounts."
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Extra environment for this process. Empty when absent. Wins over host:local.env on the same name."
+    },
+    "bind_low_ports": {
+      "type": "boolean",
+      "description": "When true, a non-root process keeps CAP_NET_BIND_SERVICE and may bind ports below 1024. Root does not need this. Default false."
+    }
   }
 }

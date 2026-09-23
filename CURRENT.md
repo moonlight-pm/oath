@@ -13,7 +13,18 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **T44 pkg security.** Hashed `components.json` (upstream name +
+1. **Wicket host, O1 (supervisor as `home`).** `svc.user` is `root`
+   (default) or `home` (uid 1, gid 1). `svc.env` is a string map PID 1
+   puts in that process. `svc.bind_low_ports` grants
+   `CAP_NET_BIND_SERVICE` to a non-root service. No new Unix accounts:
+   Wicket does not add `wicket` or `postgres`. A seat service with no
+   `user` field still drops to `home`, so canto's desk does not change
+   on boot. Explicit `user` wins over that list. Not installed. Not on
+   buccina. Canto PID 1 was not live-copied. O2 (deploy-key root SSH,
+   sudo image policy, disk layout) is not started. Wicket freeze:
+   `../Wicket/docs/specs/2026-09-23-oath-host.md`. Schema:
+   `crates/oath-core/schema/svc.md`.
+2. **T44 pkg security.** Hashed `components.json` (upstream name +
    version + PURL, several per pack) plus hash-keyed advisories at
    `/oath/store/adv/<name>/<hash>.json` and
    `{origin}/adv/<name>/<hash>.json`. No slot `version`. No new kind
@@ -25,7 +36,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `store/adv`. Canto guest `oath` + schema + `sola-oath` live-copied
    2026-09-17 (T44). Pack trees still have no `components.json`.
    Origin `adv/` not published yet.
-2. **T43 `plan` kind.** Hash-named slot + canonical `plan.plan` file;
+3. **T43 `plan` kind.** Hash-named slot + canonical `plan.plan` file;
    `oath build` / `oath fmt`; ad-hoc `--file` until
    `set --from-file`; enforce netless sandbox; no anonymous blobs.
    Freeze:
@@ -43,20 +54,20 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `sha256-d3693f6b…2047e91f`; `/bin/reloc` absent; `plan:reloc`
    filed; second `oath build plan:reloc` cached. Guest `oath`
    live-copied. Extra `--file` product hashes still T32 reap.
-3. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
+4. **T41 `needs.hash` required.** Each need is `{id, hash}`; apply
    refuses if the needed pack’s live pin differs. sola-oath shows the
    pin on the tree. Freeze:
    [docs/specs/2026-09-13-pkg-needs.md](docs/specs/2026-09-13-pkg-needs.md).
-4. **T42 `pkg.description` + `pkg.home`.** Catalog prose and project
+5. **T42 `pkg.description` + `pkg.home`.** Catalog prose and project
    page (not fetch `url`). sola-oath shows them pinned; Open project
    is `xdg-open`. Freeze:
    [docs/specs/2026-09-13-pkg-about.md](docs/specs/2026-09-13-pkg-about.md).
-5. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
+6. **T40 `sola-oath` (catalog client).** `/bin/sola-oath` JSON client of
    `oath`. Not a second admin surface. Freeze:
    [docs/specs/2026-09-13-sola-oath.md](docs/specs/2026-09-13-sola-oath.md).
    Kit wrappers no longer set `SOLA_NO_SELF_WATCH` (self-reexec on
    libexec replace). Launcher **Oath** live (sola-shell recopied).
-6. **T39 Omarchy session payload (keep Sola).** `host:local.session`
+7. **T39 Omarchy session payload (keep Sola).** `host:local.session`
    = `sola` | `omarchy` (seed default **sola**; `--confirm` to switch).
    Exclusive compositor. **Canto is on `sola` after catalog gen 59**
    (2026-09-13 live switch from omarchy; no ESP rotate). River + Sola
@@ -82,7 +93,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    leftover `sola-` exec tokens; `omarchy-pkg-add` does not fetch Arch;
    kvm does not reconnect across a compositor switch. Freeze:
    [docs/specs/2026-09-10-omarchy-session.md](docs/specs/2026-09-10-omarchy-session.md).
-7. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
+8. **T31 on canto: `ssh home@canto`.** uid 1, `HOME=/home`, sudo ALL
    no password, groups `root`+`home` only. Graphical stack as `home`
    is **Sola this boot**. Omarchy/Hyprland/Steam **store trees reaped**
    2026-09-17 (objects `present=false`; svc-off). `/dev/ptmx` is 0666 so terminal tmux/PTY works.
@@ -171,9 +182,9 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `gpu_busy_percent` is ENOTSUP.
    Spare GPU idea: `docs/ideas/2026-09-07-canto-second-pitcairn.md`.
    Do not `cargo make install --confirm` (wipe).
-8. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
+9. **T27 metal canary is in.** `ssh home@canto`. `host:local` canto,
    `net:net0` dhcp 10.0.0.3.
-9. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
+10. **T26 sola-terminal in.** **T28 sola-browser in** on canto (CEF
    zygote; helper ready). **T29 sola-workspaces + solactl in** on
    canto. **T37** Steam/arcade **drawn down** (store reaped 2026-09-17); `/bin/sola-arcade` **not** on canto
    (no DRM modifiers). Other kit apps still out. **Sola master**
@@ -189,19 +200,19 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `pipewire-pulse` applied gen 40 as `home` (Built-in Audio);
    HDMI not auto-enumerated. System D-Bus is `pkg:bluez`; no
    session bus / MPRIS.
-10. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
+11. **T24 identity locked** (one `pkg:sola` blob, apply/undo). Oath-as-dev-host
    **started**: Workspaces ELF is on canto. **T35** toolchain live.
    **T30** `pkg:grok` packed. **T31** seat `home` locked (uid 1, SSH
    home, sudo ALL, `/lib/oath`, catalog env).
-11. **T20 bootstrap origin is live.** `https://store.oath.wicket.cloud/`
+12. **T20 bootstrap origin is live.** `https://store.oath.wicket.cloud/`
    **200** (Wicket `extras/oath-store`, `wl-c3222462d626`, hub proxy
    **61**). Fetch `{origin}/pkg/<name>/<hash>.tar`. Seeded `hello` +
    `fetchme`. Publish: `cargo make store` + `cargo make publish`. Not a
    `repo` kind. Canto store is still old layout until the next pack.
-12. **QEMU is parked.** Not on the critical path. Do not spend the
+13. **QEMU is parked.** Not on the critical path. Do not spend the
    slice on `cargo make probe` / qcow. Metal canto + the pack origin
    are the path. The appliance still exists; leave it.
-13. Do not add a third compositor. River is Sola; Hyprland is Omarchy
+14. Do not add a third compositor. River is Sola; Hyprland is Omarchy
    (T39). glibc runtime is allowed **only** as `pkg:glibc` (never in
    PID 1). No udevd. No nested Sola/Omarchy process manager. No
    systemd. Do not write a real disk the operator did not name, or
@@ -250,7 +261,12 @@ Do not re-litigate without an explicit decision.
   `HOME=/home`. Login shell is `/bin/thoxa` (listed in `/etc/shells`).
   Root/serial stay `/bin/sh`. Groups: `root` and `home` only. Required env is
   `host:local.env` (PID 1 injects; `/etc/profile` root-owned; not
-  `$HOME/.profile`). ESP **initrd `/init` stays PID 1** after chroot.
+  `$HOME/.profile`). `svc.user` is `root` or `home`. Absent `user` is
+  `root`, except a seat service with no `user` field still runs as
+  `home`. `svc.env` is per process. `svc.bind_low_ports` is
+  `CAP_NET_BIND_SERVICE` for a non-root service. Wicket uses this for
+  its control plane and does not add a `wicket` or `postgres` account.
+  Desk `sudo` stays. ESP **initrd `/init` stays PID 1** after chroot.
 - Clock: **T34** — system time is UTC (logs, `snap`, backup sidecar
   `…Z`). `host:local.timezone` is POSIX display TZ (seed Mountain);
   seat/`sola-shell` get `TZ`. Not `/etc/localtime`, not `host.env`.

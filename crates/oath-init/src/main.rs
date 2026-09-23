@@ -969,7 +969,7 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
                 s.enabled
                     && oath_core::session_allows(&id, session)
                     && !s.exec.is_empty()
-                    && s.exec == spec.exec
+                    && s.same_spawn(&spec)
             })
             .unwrap_or(false);
         if !keep {
@@ -1000,6 +1000,9 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
     for id in &order {
         let Some(spec) = wanted.get(id) else { continue };
         let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
+        // Desk names wait for DRM and input. `user` does not pull a seat
+        // service into the early pass, and a non-seat `user=home` service
+        // does not wait here.
         if !start_seat && oath_core::seat::is_seat_svc(id) {
             continue;
         }
@@ -1103,72 +1106,60 @@ fn ensure_seat() {
 }
 
 fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
-    let seat = oath_core::seat::is_seat_svc(id)
-        || spec.exec.iter().any(|a| {
-            a.contains("run-compositor") || a.contains("/bin/sola-") || a.contains("sola-")
-        });
+    let plan = oath_core::svc_spawn(id, spec);
     let mut cmd = Command::new(&spec.exec[0]);
     if spec.exec.len() > 1 {
         cmd.args(&spec.exec[1..]);
     }
-    let (home, xdg, user) = if seat {
-        (
-            oath_core::seat::HOME,
-            format!("/run/user/{}", oath_core::seat::UID),
-            oath_core::seat::NAME,
-        )
-    } else {
-        ("/root", "/run/user/0".into(), "root")
-    };
+    let xdg = plan.xdg_runtime_dir.clone();
     let _ = fs::create_dir_all(&xdg);
-    if seat {
-        let own = format!("{}:{}", oath_core::seat::UID, oath_core::seat::GID);
+    if plan.cred.user == oath_core::SvcUser::Home {
+        let own = format!("{}:{}", plan.cred.uid, plan.cred.gid);
         let _ = Command::new("/bin/chown").args([&own, &xdg]).status();
         let _ = Command::new("/bin/chmod").args(["700", xdg.as_str()]).status();
+    }
+    if plan.seat {
         oath_core::seat::open_device_nodes();
     }
-    let shell = if seat { "/bin/thoxa" } else { "/bin/sh" };
     cmd.env("PATH", "/bin")
-        .env("HOME", home)
-        .env("USER", user)
-        .env("LOGNAME", user)
-        .env("SHELL", shell)
+        .env("HOME", plan.home)
+        .env("USER", plan.user_name)
+        .env("LOGNAME", plan.user_name)
+        .env("SHELL", plan.shell)
         .env("PS1", "/ # ")
         .env("XDG_RUNTIME_DIR", &xdg)
         .env("SOLA_NO_SELF_WATCH", "1");
     for (k, v) in host_env() {
         cmd.env(k, v);
     }
-    if seat {
+    if plan.seat {
         if let Some(tz) = host_timezone() {
             cmd.env("TZ", tz);
         }
     }
+    // Service env wins over host:local.env and the account defaults.
+    for (k, v) in oath_core::svc_env_pairs(spec) {
+        cmd.env(k, v);
+    }
     cmd.stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
-    let drop_priv = seat;
+    let cred = plan.cred.clone();
     unsafe {
         cmd.pre_exec(move || {
             libc::setsid();
-            if drop_priv {
-                let gid = oath_core::seat::GID;
-                if libc::setgroups(1, &gid) != 0 {
-                    return Err(std::io::Error::last_os_error());
-                }
-                if libc::setgid(gid) != 0 {
-                    return Err(std::io::Error::last_os_error());
-                }
-                if libc::setuid(oath_core::seat::UID) != 0 {
-                    return Err(std::io::Error::last_os_error());
-                }
-            }
-            Ok(())
+            oath_core::apply_svc_cred(&cred)
         });
     }
     let child = cmd.spawn().map_err(|e| e.to_string())?;
     tel(
         "init",
         "svc_spawn",
-        json!({ "id": id, "seat": seat, "uid": if seat { oath_core::seat::UID } else { 0 } }),
+        json!({
+            "id": id,
+            "seat": plan.seat,
+            "uid": plan.cred.uid,
+            "user": plan.cred.user.as_str(),
+            "bind_low_ports": plan.cred.bind_low_ports,
+        }),
     );
     Ok(Pid::from_raw(child.id() as i32))
 }

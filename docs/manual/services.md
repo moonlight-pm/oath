@@ -13,7 +13,7 @@ There is no unit file, no systemd, no `/etc/init.d`.
 | `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. SFTP via `/bin/sftp-server`; `/bin/scp` for legacy `scp -O`; guest client is musl OpenSSH `/bin/ssh`. |
 | `svc:seatd` | `/bin/seatd -u home -g home` | enabled, `restart=always` | Seat for DRM. Socket owned by `home`. `svc:river` and `svc:hyprland` want this. |
 | `svc:river` | `/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river` (runs as `home`): picks the DRM card with a connected connector (dual-GPU). GLES2/radeonsi on real KMS, pixman on virtio. libinput via libudev-zero. Default desk (`host:local.session=sola`). Do not enable together with `svc:hyprland`. |
-| `svc:hyprland` | `/bin/hyprland` (canto desired still has leftover `sola-hypr=1` from the live switch) | **off** in seed, `restart=always` | Omarchy compositor (`session=omarchy`). glibc, libudev-zero, no systemd. Wants `svc:seatd`. Config is `/lib/oath/hyprland-boot.conf` (0.52; tiling + Super+Return/Space/Shift+Return). Canto dogfood: Pitcairn DP-10 1920×1080. PID 1 waits 3 s for DRM release when stopping River/Hyprland. T39 `is_seat_svc` drops uid; the extra env is harmless. |
+| `svc:hyprland` | `/bin/hyprland` (canto desired still has leftover `sola-hypr=1` from the live switch) | **off** in seed, `restart=always` | Omarchy compositor (`session=omarchy`). glibc, libudev-zero, no systemd. Wants `svc:seatd`. Config is `/lib/oath/hyprland-boot.conf` (0.52; tiling + Super+Return/Space/Shift+Return). Canto dogfood: Pitcairn DP-10 1920×1080. PID 1 waits 3 s for DRM release when stopping River/Hyprland. With no `user` field the seat list drops uid; an explicit `user` wins. The extra env is harmless. |
 | `svc:omarchy-shell` | `/bin/quickshell` (canto desired still has leftover `sola-omarchy=1`) | **off** in seed, `restart=always` | Omarchy bar + menu (Quickshell 0.2.1 + `$OMARCHY_PATH/shell`). Plugin scan needs `/dev/fd`. Wants `svc:hyprland`. Runs as `home`. |
 | `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/1/sola-bus`. |
 | `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/1/sola-call`. |
@@ -42,8 +42,9 @@ XDG_RUNTIME_DIR=/run/user/1 pw-dump | head
 On canto, `svc:pipewire` / `wireplumber` / `pipewire-pulse` are catalog
 objects (gen 40) and run as `home`. Default sink is **Built-in Audio**.
 Desired exec still has leftover `/bin/env sola-audio=1 /bin/…` from
-the pre-T39 live switch. T39 PID 1 lists pipewire in `is_seat_svc`;
-the extra env is harmless.
+the pre-T39 live switch. With no `user` field, PID 1 still treats
+pipewire as a seat service and drops to `home`. An explicit `user`
+wins. The extra env is harmless.
 
 System D-Bus + BlueZ are `pkg:bluez` (`svc:dbus`, `svc:bluetoothd`).
 The menubar Bluetooth chip appears when `org.bluez` has an adapter
@@ -86,6 +87,43 @@ converge, reaps, and restarts per policy (`never` / `always` /
 
 `wants` is start order: enabled wanted services start first. Cycles
 refuse apply. `svc:hold` wants `svc:serial`.
+
+## Account, environment, low ports
+
+Oath has two Unix accounts: `root` and `home` (uid 1, gid 1). A
+service runs as one of those. `user` is `root` or `home`. When the
+field is absent the process runs as `root`, which is what `svc:sshd`,
+`svc:seatd`, `svc:dbus`, and `svc:hold` do today. River, Hyprland, the
+Omarchy shell, the Sola stack, and PipeWire still run as `home` when
+`user` is absent, so a desk catalog does not change on boot. Set
+`user` explicitly when that process should use the other account.
+
+```
+oath set svc:caddy user=home
+oath set svc:caddy bind_low_ports=true
+oath set svc:caddy env='{"WICKET_STATE_DIR":"/var/lib/wicket"}'
+oath apply svc:caddy
+```
+
+`env` is a string map. PID 1 puts it in the process environment after
+`host:local.env`. The same name on the service wins.
+
+`bind_low_ports` lets a `home` service bind ports below 1024
+(`CAP_NET_BIND_SERVICE`). Caddy on a Wicket image uses it for ports 80
+and 443. A `home` service without the field cannot bind those ports.
+Root can bind them either way. Changing `user`, `env`, or
+`bind_low_ports` restarts the process.
+
+Wicket runs its control plane, Caddy, and Postgres as `home`. That
+image does not add a `wicket` user or a `postgres` user. Nothing here
+installs that image. Deploy-key SSH for root, the Wicket disk layout,
+and rootless Podman are later slices.
+
+Desk services still wait for DRM and input before they start. A
+`user=home` service that is not one of those seat names starts with
+sshd, and it does not chmod `/dev/dri`. The seat name list still
+decides that wait. An exec argument containing `run-compositor` or
+`sola-` still selects the seat drop when `user` is absent.
 
 ## Start / stop
 
