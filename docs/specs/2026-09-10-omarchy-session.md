@@ -2,9 +2,10 @@
 **Status:** target (freeze)
 **Implementation:** partial (catalog session + Hyprland 0.52 desk +
   Quickshell bar/menu + `pkg:foot` + `pkg:grim` capture on canto)
-**Dogfood:** canto **`session=sola`** after catalog gen 59 (2026-09-13
-  live switch from omarchy; no ESP rotate). River + Sola stack as `home`
-  on DP-10 1920×1080 `wayland-1`; Hyprland / omarchy-shell packed, svc-off.
+**Dogfood:** canto **`session=sola`**. River + Sola stack as `home`
+  on DP-10 1920×1080 `wayland-1`. Hyprland / Omarchy / Quickshell /
+  foot / grim **store trees reaped 2026-09-17** (objects `present=false`,
+  svc-off).
   Last Omarchy paint: ESP boot **14**; Hyprland 0.52.2 on Pitcairn DP-10
   1920×1080 (Philips 221V8L); `omarchy-bar` 1920×26; Super+Return maps
   **foot**; Super+Space `omarchy-menu`; Super+K keybindings overlay;

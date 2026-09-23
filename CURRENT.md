@@ -7,7 +7,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-09-17
+**As of:** 2026-09-23
 
 ---
 
@@ -279,12 +279,12 @@ Do not re-litigate without an explicit decision.
   Grok does not self-update. `pkg:git`, `pkg:curl`, `pkg:pipewire`, and `pkg:thoxa` packed.
   **T35:** `pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` packed
   on canto (gen 19; official tarballs; no Nix, no rustup).
-  **T37:** `pkg:bash` / `pkg:xwayland` / `pkg:mesa` / `pkg:steam`
-  packed on canto (gen 21). Session `/bin/steam` is River `+xwayland`.
-  `pkg:gamescope` seed `present: false` + `requires.drm_modifiers`;
-  apply refuses on SI/virtio. `/bin/sola-arcade` not linked on canto.
-  Not in the QEMU image (`cargo make build` never packs Steam /
-  Xwayland / mesa / gamescope).
+  **T37:** packs exist (`pkg:bash` / `xwayland` / `mesa` / `steam` /
+  `gamescope`). Canto live **drawn down 2026-09-17** (those stores
+  reaped except `pkg:bash`; session Steam off). `pkg:gamescope` seed
+  `present: false` + `requires.drm_modifiers`; apply refuses on
+  SI/virtio. `/bin/sola-arcade` not linked on canto. QEMU never packs
+  Steam / Xwayland / mesa / gamescope.
   **T32 (in):** a pack is a directory matching that layout (no recipe
   language). Realization id is SHA-256 of `oath-tree-v1`. Store is
   `/oath/store/pkg/<name>/<hash>/`. Name is a slot; hash is the bits.
@@ -410,8 +410,9 @@ Do not re-litigate without an explicit decision.
   graphical stack as `home`; `pkg:grok` / `pkg:git` / `pkg:curl` / `pkg:pipewire`
   packed; `pkg:thoxa` packed as the `home` login shell; T33 one NFS
   copy on nas (canto gen 16); T35 guest toolchain live on canto (gen 19);
-  T37 session Steam on canto (gen 21); gamescope/arcade not on SI; other kit apps not;
-  T39 Omarchy session payload (Hyprland + Quickshell packed, Sola default);
+  T37 Steam/Omarchy drawn down on canto (2026-09-17; bash stays);
+  gamescope/arcade not on SI; other kit apps not;
+  T39 Omarchy session payload (Sola default; Hyprland store reaped on canto);
   T32 hash-in-path in (canto old layout until next pack);
   T43 `plan` kind (canto `apps/hello.plan` + relocate-tar wget; `/bin` still apply);
   T44 components.json + hash-keyed advisories (host tests; canto until next pack);

@@ -66,14 +66,14 @@ ask the human.
 | [`specs/2026-09-04-utc-clock.md`](specs/2026-09-04-utc-clock.md) | T34 UTC system clock; `host:local.timezone` display | **Target** (partial; canto Sola clock Mountain) |
 | [`specs/2026-09-05-guest-toolchain.md`](specs/2026-09-05-guest-toolchain.md) | T35 guest toolchain (`pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config`) | **Target** (canto gen 19) |
 | [`specs/2026-09-05-sola-kit-apps.md`](specs/2026-09-05-sola-kit-apps.md) | T36 remaining kit apps in `pkg:sola` | **Target** (`/bin/sola-arcade` not on canto; other names out) |
-| [`specs/2026-09-05-arcade-steam.md`](specs/2026-09-05-arcade-steam.md) | T37 Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`) | **Target** (canto gen 21; session Steam is River `+xwayland`; gamescope/arcade gated on DRM modifiers; QEMU never packs Steam) |
+| [`specs/2026-09-05-arcade-steam.md`](specs/2026-09-05-arcade-steam.md) | T37 Arcade + Steam runtime (`pkg:bash` / `pkg:xwayland` / `pkg:gamescope` / `pkg:mesa` / `pkg:steam`) | **Target** (canto **drawn down** 2026-09-17, bash stays; gamescope/arcade gated on DRM modifiers; QEMU never packs Steam) |
 | [`specs/2026-09-06-boot-generations.md`](specs/2026-09-06-boot-generations.md) | T38 last-5 firmware boots; current kernel/mesa | **Target** (canto ESP last-5; live **7.3.0-rc1 #4**) |
-| [`specs/2026-09-10-omarchy-session.md`](specs/2026-09-10-omarchy-session.md) | T39 Omarchy session payload; keep Sola | **Target** (canto Hyprland desk + Quickshell bar/menu; seed sola) |
+| [`specs/2026-09-10-omarchy-session.md`](specs/2026-09-10-omarchy-session.md) | T39 Omarchy session payload; keep Sola | **Target** (canto desk **Sola**; Hyprland/Omarchy store reaped 2026-09-17; seed sola) |
 | [`specs/2026-09-13-sola-oath.md`](specs/2026-09-13-sola-oath.md) | T40 `sola-oath` catalog client | **Target** (canto live-copied; launcher **Oath**) |
 | [`specs/2026-09-13-pkg-needs.md`](specs/2026-09-13-pkg-needs.md) | T41 `pkg.needs` `{id, hash}` | **Target** (apply refuses pin mismatch) |
 | [`specs/2026-09-13-pkg-about.md`](specs/2026-09-13-pkg-about.md) | T42 `pkg.description` + `pkg.home` | **Target** (sola-oath Open project) |
 | [`specs/2026-09-15-plan-kind.md`](specs/2026-09-15-plan-kind.md) | T43 `plan` kind; `oath build` / `oath fmt` | **Target** (canto `apps/hello.plan` + relocate-tar wget `pkg:reloc-src`; `/bin` unlinked) |
-| [`specs/2026-09-16-pkg-security.md`](specs/2026-09-16-pkg-security.md) | T44 components + hash-keyed advisories | **Target** (host tests; canto until next pack) |
+| [`specs/2026-09-16-pkg-security.md`](specs/2026-09-16-pkg-security.md) | T44 components + hash-keyed advisories | **Target** (host tests; canto `oath`/`sola-oath` live-copied 2026-09-17; packs until next image) |
 | [`plans/`](plans/) | Implementation checklists | Build |
 | [`plans/2026-08-27-qemu-skeleton-plan.md`](plans/2026-08-27-qemu-skeleton-plan.md) | Phase 1 QEMU skeleton | **Build** (complete) |
 | [`plans/2026-08-28-svc-loop-plan.md`](plans/2026-08-28-svc-loop-plan.md) | Phase 2 svc loop | **Build** (complete) |

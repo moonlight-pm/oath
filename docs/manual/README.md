@@ -32,8 +32,9 @@ that are not there.
 
 Sola terminal, browser, and workspaces (`solactl`) are packed;
 other kit apps (mail, wrapper, spotify, arcade on SI, …) are not.
-Steam/Xwayland/mesa are separate packages. Session Steam is a River
-X11 window. `pkg:gamescope` and `/bin/sola-arcade` need a GPU with
+Steam/Xwayland/mesa are separate packages (canto live **off**, stores
+reaped 2026-09-17; when present, session Steam is a River X11 window).
+`pkg:gamescope` and `/bin/sola-arcade` need a GPU with
 DRM modifiers (not canto). Packages: sealed
 `busybox` / `btrfs` / `oath` / `dropbear` / `glibc`, plus `river`,
 `sola`, `grok`, `git`, `curl`, `pipewire`, `thoxa`, `cc`, `rustc`,
