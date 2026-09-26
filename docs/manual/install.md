@@ -46,6 +46,31 @@ DPM patches apply from `image/linux-patches` when compiling.
 5. Reboot. Courage is **SSH as `home`** with those keys, then
    `oath ls`. (`sudo` has no password.)
 
+Wicket image (not the desk, not installed on buccina):
+
+```sh
+cargo make install --wicket --target root@host --disk /dev/sda --confirm --hostname buccina
+```
+
+Same wipe confirm. Differences from the desk install:
+
+- One btrfs filesystem after the ESP. Subvolumes `@` (`/`),
+  `@wicket-state` (`/var/lib/wicket`), `@appdata`
+  (`/var/lib/wicket-appdata`). No `@nix`.
+- If `@wicket-state` is already on that pool, the installer does not
+  format it. It deletes and recreates `@` and leaves the other two
+  subvolumes.
+- No `/bin/sudo`.
+- SSH is **root**, with the public key in
+  `~/.config/wicket/deploy/wicket-deploy.pub` (`WICKET_DEPLOY_PUB`
+  overrides the path). Passwords stay off. `ssh:local` on this image
+  is that root key. Seat services are seeded off.
+- A DHCP install records `net:net0` `ipv4=dhcp`. The leased address
+  is not written into the catalog.
+
+`--wicket --qemu --disk /dev/vda --confirm` is the rehearsal. It does
+not touch a real disk. `--wicket` is not the USB stick writer.
+
 QEMU rehearsal (no real host):
 
 ```sh

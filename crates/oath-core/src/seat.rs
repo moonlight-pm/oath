@@ -15,23 +15,24 @@ pub const GID: u32 = 1;
 pub const HOME: &str = "/home";
 pub const HELPERS: &str = "/lib/oath";
 
+pub const SEAT_SVC_NAMES: &[&str] = &[
+    "river",
+    "hyprland",
+    "omarchy-shell",
+    "sola-bus",
+    "sola-call",
+    "sola-river",
+    "sola-shell",
+    "sola-session",
+    "sola-kvm",
+    "pipewire",
+    "wireplumber",
+    "pipewire-pulse",
+];
+
 pub fn is_seat_svc(id: &str) -> bool {
     let name = id.strip_prefix("svc:").unwrap_or(id);
-    matches!(
-        name,
-        "river"
-            | "hyprland"
-            | "omarchy-shell"
-            | "sola-bus"
-            | "sola-call"
-            | "sola-river"
-            | "sola-shell"
-            | "sola-session"
-            | "sola-kvm"
-            | "pipewire"
-            | "wireplumber"
-            | "pipewire-pulse"
-    )
+    SEAT_SVC_NAMES.contains(&name)
 }
 
 pub fn passwd_file() -> String {

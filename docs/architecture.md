@@ -236,7 +236,13 @@ Host runs live under `build/runs/<id>/` (`cargo make run` / `up` /
 /dev/sda --confirm` (`--qemu` OVMF rehearsal; `--usb --disk /dev/sdd`
 writes an EFI installer stick). Installer ramdisk: `oath.install=1`,
 dropbear, no `switch_root`. Format GPT ESP + btrfs `@`. Copy packed
-tree. Boot graphics is layered, not one path: EFI GOP splash
+tree. **Wicket image** (`cargo make install --wicket`, not canto):
+same ESP, one btrfs pool, sibling subvolumes `@`, `@wicket-state`
+(`/var/lib/wicket`), `@appdata` (`/var/lib/wicket-appdata`). Reinstall
+keeps the pool when `@wicket-state` is already present and replaces
+`@` only. No `/bin/sudo`. Dropbear allows root with the Wicket deploy
+key; passwords stay off. `svc:wicketd` waits until `/var/lib/wicket`
+is a mount. Boot graphics is layered, not one path: EFI GOP splash
 (`oath-efi` as `BOOTX64.EFI`) when firmware has GOP; PID 1 defers KMS
 drivers that would kick a live firmware framebuffer (amdgpu/i915/…,
 not virtio-gpu) until just before the session compositor. Sola: River

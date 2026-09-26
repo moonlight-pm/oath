@@ -13,17 +13,18 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Wicket host, O1 (supervisor as `home`).** `svc.user` is `root`
-   (default) or `home` (uid 1, gid 1). `svc.env` is a string map PID 1
-   puts in that process. `svc.bind_low_ports` grants
-   `CAP_NET_BIND_SERVICE` to a non-root service. No new Unix accounts:
-   Wicket does not add `wicket` or `postgres`. A seat service with no
-   `user` field still drops to `home`, so canto's desk does not change
-   on boot. Explicit `user` wins over that list. Not installed. Not on
-   buccina. Canto PID 1 was not live-copied. O2 (deploy-key root SSH,
-   sudo image policy, disk layout) is not started. Wicket freeze:
-   `../Wicket/docs/specs/2026-09-23-oath-host.md`. Schema:
-   `crates/oath-core/schema/svc.md`.
+1. **Wicket host, O2 (image, not installed).** `cargo make install
+   --wicket` builds the server image beside the desk image. Root SSH
+   uses `~/.config/wicket/deploy/wicket-deploy.pub` (passwords stay
+   off). No `/bin/sudo`. Disk is ESP plus one btrfs pool: `@` at `/`,
+   `@wicket-state` at `/var/lib/wicket`, `@appdata` at
+   `/var/lib/wicket-appdata`. A pool that already has `@wicket-state`
+   is not formatted again; `@` is replaced. `svc:wicketd` does not
+   start until that mount exists. DHCP stays `ipv4=dhcp`. Seat
+   services are seeded off on that image. Not installed. Not on
+   buccina. Desk image and canto are unchanged. Next in the Wicket
+   plan is W1 (Wicket repo), then packs (W2). Freeze:
+   `../Wicket/docs/specs/2026-09-23-oath-host.md`.
 2. **T44 pkg security.** Hashed `components.json` (upstream name +
    version + PURL, several per pack) plus hash-keyed advisories at
    `/oath/store/adv/<name>/<hash>.json` and
@@ -266,7 +267,10 @@ Do not re-litigate without an explicit decision.
   `home`. `svc.env` is per process. `svc.bind_low_ports` is
   `CAP_NET_BIND_SERVICE` for a non-root service. Wicket uses this for
   its control plane and does not add a `wicket` or `postgres` account.
-  Desk `sudo` stays. ESP **initrd `/init` stays PID 1** after chroot.
+  Desk `sudo` stays. The Wicket image omits `/bin/sudo`, allows root
+  SSH with the deploy key, and uses one btrfs pool after the ESP
+  (`@`, `@wicket-state`, `@appdata`). ESP **initrd `/init` stays PID 1**
+  after chroot.
 - Clock: **T34** — system time is UTC (logs, `snap`, backup sidecar
   `…Z`). `host:local.timezone` is POSIX display TZ (seed Mountain);
   seat/`sola-shell` get `TZ`. Not `/etc/localtime`, not `host.env`.

@@ -1,13 +1,16 @@
 # SSH
 
-SSH login is **home** (uid 1, `HOME=/home`). Root SSH is denied.
-`sudo` has no password. Serial is root when that svc is enabled
-(canto has no UART, so `svc:serial` is off). There is **no password**
-and **no private key in the image**.
+SSH login on the desk image is **home** (uid 1, `HOME=/home`). Root
+SSH is denied. `sudo` has no password. Serial is root when that svc
+is enabled. The Wicket image (`cargo make install --wicket`) is the
+other case: root login with the Wicket deploy key, passwords off, no
+`sudo`. See [Install](install.md). Canto has no UART, so `svc:serial`
+is off. There is **no password** and **no private key in the image**.
 
 Host keys are generated on first boot under `/oath/ssh/`. Login keys
-are `ssh:local` `authorized` (OpenSSH public key lines). Apply writes
-`/home/.ssh/authorized_keys`.
+are `ssh:local` `authorized` (OpenSSH public key lines). On the desk
+image, apply writes `/home/.ssh/authorized_keys`. On the Wicket image,
+the same field writes `/root/.ssh/authorized_keys`.
 
 `svc:sshd` is dropbear (`pkg:dropbear`, not removable). The same
 package ships musl OpenSSH `/bin/ssh` and `/bin/ssh-keygen`,

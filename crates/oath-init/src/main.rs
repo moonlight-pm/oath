@@ -150,6 +150,7 @@ fn real_main() -> Result<(), String> {
     let _ = fs::create_dir_all("/tmp");
     let _ = fs::create_dir_all("/root");
     mount_toplevel();
+    mount_wicket_volumes();
 
     if !Path::new("/oath/INDEX.md").exists() {
         let _ = seed(Path::new(DEFAULT_ROOT));
@@ -742,6 +743,33 @@ fn unix_floor() {
     let _ = Command::new("/bin/ip").args(["addr", "add", "::1/128", "dev", "lo"]).status();
 }
 
+/// Wicket image: sibling subvolumes on the same pool as `@`.
+fn mount_wicket_volumes() {
+    if !oath_core::is_wicket_image() {
+        return;
+    }
+    let dev = root_dev();
+    mount_subvol(&dev, oath_core::STATE_SUBVOL, oath_core::STATE_MOUNT);
+    mount_subvol(&dev, oath_core::APPDATA_SUBVOL, oath_core::APPDATA_MOUNT);
+}
+
+fn mount_subvol(dev: &str, subvol: &str, target: &str) {
+    let _ = fs::create_dir_all(target);
+    let data = format!("subvol={subvol}");
+    match mount(Some(dev), target, Some("btrfs"), MsFlags::empty(), Some(data.as_str())) {
+        Ok(()) => {
+            let _ = Command::new("/bin/chown").args(["1:1", target]).status();
+            log(&format!("mounted {subvol} on {target}"));
+        }
+        Err(e) => log(&format!("mount {subvol} on {target}: {e}")),
+    }
+}
+
+fn mount_point_active(target: &str) -> bool {
+    let text = fs::read_to_string("/proc/self/mountinfo").unwrap_or_default();
+    oath_core::mountinfo_has(&text, target)
+}
+
 /// Mount btrfs subvolid=0 so generations can be sibling `@gen-N`, not nested on `@`.
 fn mount_toplevel() {
     let top = Path::new(BTRFS_TOP);
@@ -1004,6 +1032,13 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
         // service into the early pass, and a non-seat `user=home` service
         // does not wait here.
         if !start_seat && oath_core::seat::is_seat_svc(id) {
+            continue;
+        }
+        if oath_core::wicketd_needs_state(id) && !mount_point_active(oath_core::STATE_MOUNT) {
+            log("svc:wicketd waiting for /var/lib/wicket");
+            if pid_for(kids, id).is_none() {
+                write_svc_actual(&oid, "stopped", None, 0);
+            }
             continue;
         }
         if !spec.enabled || spec.exec.is_empty() || !oath_core::session_allows(id, session) {

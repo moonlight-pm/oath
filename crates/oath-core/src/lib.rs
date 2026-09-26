@@ -6,6 +6,7 @@ mod error;
 mod gpu;
 mod hooks;
 mod id;
+mod image;
 mod index;
 mod kinds;
 mod layout;
@@ -28,6 +29,11 @@ pub use error::{Error, Result};
 pub use gpu::{drm_modifiers_available, pci_has_drm_modifiers, with_drm_modifiers_override};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
+pub use image::{
+    adjust_wicket_svc, dhcp_net_document, is_wicket_image, is_wicket_text, mountinfo_has, ssh_home,
+    ssh_key_file, sshd_exec, wicketd_needs_state, APPDATA_MOUNT, APPDATA_SUBVOL, IMAGE_PATH,
+    IMAGE_WICKET, STATE_MOUNT, STATE_SUBVOL,
+};
 pub use kinds::{
     Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgAdvisory,
     PkgComponent, PkgNeed, PkgRealization, PkgRequires, Plan, PlanActual, Ssh, SshActual, Svc,

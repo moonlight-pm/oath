@@ -78,6 +78,10 @@ enum Cmd {
         /// `host:local` hostname after install (default: oath; canto: pass canto).
         #[arg(long)]
         hostname: Option<String>,
+        /// Wicket image: root deploy key, no sudo, one btrfs pool.
+        /// Desk installs omit this.
+        #[arg(long)]
+        wicket: bool,
     },
     /// Pack kernel + initrd + oath-efi only (no qcow, no ESP write).
     Boot,
@@ -174,11 +178,11 @@ fn real() -> Result<()> {
             let rc = probe::probe(&root, &out)?;
             std::process::exit(rc);
         }
-        Cmd::Install { target, disk, confirm, qemu, usb, hostname } => {
+        Cmd::Install { target, disk, confirm, qemu, usb, hostname, wicket } => {
             install::run_install(
                 &root,
                 &out,
-                install::Opts { target, disk, confirm, qemu, usb, hostname },
+                install::Opts { target, disk, confirm, qemu, usb, hostname, wicket },
             )?;
         }
         Cmd::Map { print, render } => map::show(&root, print, render)?,
