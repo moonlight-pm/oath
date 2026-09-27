@@ -55,8 +55,19 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     if !out.join("initramfs-install/init").is_file() {
         pack::build(root, out, &tools)?;
     }
-    let keys =
+    let mut keys =
         qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
+    if opts.wicket {
+        if let Ok(line) = wicket_deploy_pubkey() {
+            if !keys.contains(line.trim()) {
+                if !keys.ends_with('\n') {
+                    keys.push('\n');
+                }
+                keys.push_str(line.trim());
+                keys.push('\n');
+            }
+        }
+    }
     pack::bake_install_keys(out, &keys)?;
     if opts.usb && opts.wicket {
         bail!("--wicket is the installed image, not the USB stick writer");
@@ -223,6 +234,12 @@ fn assert_usb_stick(dev: &str) -> Result<()> {
 
 fn ssh_base(r: &Remote) -> Command {
     let mut c = Command::new("ssh");
+    // Offer the Wicket deploy key first. Buccina's current NixOS root, and
+    // the installed Wicket image, accept that key. Default keys are still
+    // tried so the installer ramdisk (baked from ~/.ssh) keeps working.
+    if let Some(key) = wicket_deploy_privkey() {
+        c.arg("-i").arg(key);
+    }
     c.args([
         "-o",
         "StrictHostKeyChecking=no",
@@ -238,6 +255,18 @@ fn ssh_base(r: &Remote) -> Command {
         &format!("{}@{}", r.user, r.host),
     ]);
     c
+}
+
+fn wicket_deploy_privkey() -> Option<PathBuf> {
+    if let Ok(path) = std::env::var("WICKET_DEPLOY_KEY") {
+        let path = PathBuf::from(path);
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    let home = std::env::var("HOME").ok()?;
+    let path = PathBuf::from(home).join(".config/wicket/deploy/wicket-deploy");
+    path.is_file().then_some(path)
 }
 
 fn ssh_run(r: &Remote, remote_cmd: &str) -> Result<()> {
@@ -281,7 +310,7 @@ fn scp_root(r: &Remote, src: &Path, dest: &str) -> Result<()> {
     let remote = if r.sudo {
         format!("sudo -n tee {dest} >/dev/null")
     } else {
-        format!("/bin/busybox cat > {dest}")
+        format!("(if [ -x /bin/busybox ]; then /bin/busybox cat; else cat; fi) > {dest}")
     };
     let mut ssh = ssh_base(r);
     ssh.arg(&remote).stdin(Stdio::piped());
