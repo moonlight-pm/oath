@@ -541,6 +541,66 @@ fn finish_wicket_root(out: &Path, r: &Remote) -> Result<()> {
             key = sh_quote(&key),
         ),
     )?;
+    install_wicket_bits(out, r)?;
+    Ok(())
+}
+
+/// Wrappers under `/lib/oath`, and `build/wicket-pack` when that directory exists.
+fn install_wicket_bits(out: &Path, r: &Remote) -> Result<()> {
+    let lib = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../image/wicket");
+    ssh_run(r, "mkdir -p /mnt/lib/oath /mnt/bin /mnt/oath/store/pkg")?;
+    if lib.is_dir() {
+        for ent in fs::read_dir(&lib)? {
+            let ent = ent?;
+            if !ent.file_type()?.is_file() {
+                continue;
+            }
+            let name = ent.file_name();
+            let name = name.to_string_lossy();
+            let dest = format!("/mnt/lib/oath/{name}");
+            scp_root(r, &ent.path(), &dest)?;
+            ssh_run(r, &format!("/bin/busybox chmod 755 {dest}"))?;
+        }
+    }
+    let bin = out.join("wicket-pack/bin");
+    if bin.is_dir() {
+        for ent in fs::read_dir(&bin)? {
+            let ent = ent?;
+            if !ent.file_type()?.is_file() {
+                continue;
+            }
+            let name = ent.file_name();
+            let name = name.to_string_lossy();
+            let dest = format!("/mnt/bin/{name}");
+            scp_root(r, &ent.path(), &dest)?;
+            ssh_run(r, &format!("/bin/busybox chmod 755 {dest}"))?;
+        }
+    }
+    let pg = out.join("wicket-pack/postgresql");
+    if pg.is_dir() {
+        ssh_run(r, "mkdir -p /mnt/oath/store/pkg/postgresql")?;
+        let mut tar = Command::new("tar");
+        tar.args(["-C", pg.to_str().unwrap(), "-cf", "-", "."]);
+        let mut ssh = ssh_base(r);
+        let remote = if r.sudo {
+            "sudo -n tar -C /mnt/oath/store/pkg/postgresql -xf -"
+        } else {
+            "tar -C /mnt/oath/store/pkg/postgresql -xf -"
+        };
+        ssh.arg(remote).stdin(Stdio::piped());
+        let mut child = ssh.spawn().context("ssh postgres tar")?;
+        {
+            let mut stdin = child.stdin.take().context("ssh stdin")?;
+            let mut src = tar.stdout(Stdio::piped()).spawn().context("tar postgres")?;
+            let mut outp = src.stdout.take().context("tar stdout")?;
+            std::io::copy(&mut outp, &mut stdin).context("pipe postgres")?;
+            let _ = src.wait();
+        }
+        let st = child.wait()?;
+        if !st.success() {
+            bail!("remote postgres extract failed");
+        }
+    }
     Ok(())
 }
 

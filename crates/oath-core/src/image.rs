@@ -24,7 +24,111 @@ pub fn is_wicket_image() -> bool {
 
 /// `svc:wicketd` stays stopped until L1 is a real mount, not a directory on `@`.
 pub fn wicketd_needs_state(id: &str) -> bool {
-    id == "svc:wicketd" || id == "wicketd"
+    svc_wait_mount(id) == Some(STATE_MOUNT)
+}
+
+/// Mount that must be real before this service starts. `None` means no wait.
+pub fn svc_wait_mount(id: &str) -> Option<&'static str> {
+    let name = id.strip_prefix("svc:").unwrap_or(id);
+    match name {
+        "wicketd" | "wicket-idp" | "wicket-admin" | "wicket-setup" | "caddy" | "postgres" => {
+            Some(STATE_MOUNT)
+        }
+        "postgres-appdata" => Some(APPDATA_MOUNT),
+        _ => None,
+    }
+}
+
+/// Enabled Wicket-image service document. The desk seed stores the same
+/// document with `enabled` false so canto does not start these processes.
+pub fn wicket_svc_desired(name: &str) -> Option<Value> {
+    let doc = match name {
+        "wicketd" => json!({
+            "exec": ["/bin/wicketd", "serve", "--listen", "127.0.0.1:8080"],
+            "wants": ["svc:postgres", "svc:wicket-idp"],
+            "restart": "on-failure",
+            "enabled": true,
+            "user": "home",
+            "bind_low_ports": false,
+            "env": {
+                "WICKET_HOST_OS": "oath",
+                "WICKET_STATE_DIR": STATE_MOUNT,
+                "WICKET_IDP_ADMIN_URL": "http://127.0.0.1:8081"
+            }
+        }),
+        "wicket-idp" => json!({
+            "exec": ["/lib/oath/wicket-idp-run"],
+            "wants": [],
+            "restart": "on-failure",
+            "enabled": true,
+            "user": "home",
+            "bind_low_ports": false,
+            "env": {
+                "WICKET_HOST_OS": "oath",
+                "WICKET_STATE_DIR": STATE_MOUNT
+            }
+        }),
+        "wicket-admin" => json!({
+            "exec": ["/bin/wicket-admin", "serve", "--listen", "127.0.0.1:8090"],
+            "wants": ["svc:wicketd"],
+            "restart": "on-failure",
+            "enabled": true,
+            "user": "home",
+            "bind_low_ports": false,
+            "env": {
+                "WICKET_HOST_OS": "oath",
+                "WICKET_STATE_DIR": STATE_MOUNT,
+                "WICKET_ADMIN_LISTEN": "127.0.0.1:8090",
+                "WICKET_CONTROL_URL": "http://127.0.0.1:8080",
+                "WICKET_IDP_ADMIN_URL": "http://127.0.0.1:8081"
+            }
+        }),
+        "wicket-setup" => json!({
+            "exec": ["/bin/wicket-setup", "serve", "--listen", "127.0.0.1:8082"],
+            "wants": ["svc:wicketd"],
+            "restart": "on-failure",
+            "enabled": true,
+            "user": "home",
+            "bind_low_ports": false,
+            "env": {
+                "WICKET_HOST_OS": "oath",
+                "WICKET_STATE_DIR": STATE_MOUNT,
+                "WICKET_SETUP_LISTEN": "127.0.0.1:8082",
+                "WICKET_CONTROL_URL": "http://127.0.0.1:8080"
+            }
+        }),
+        "caddy" => json!({
+            "exec": ["/lib/oath/wicket-caddy-run"],
+            "wants": ["svc:wicketd"],
+            "restart": "on-failure",
+            "enabled": true,
+            "user": "home",
+            "bind_low_ports": true,
+            "env": {
+                "WICKET_STATE_DIR": STATE_MOUNT
+            }
+        }),
+        "postgres" => json!({
+            "exec": ["/lib/oath/wicket-postgres-run"],
+            "wants": [],
+            "restart": "on-failure",
+            "enabled": true,
+            "user": "home",
+            "bind_low_ports": false,
+            "env": {}
+        }),
+        "postgres-appdata" => json!({
+            "exec": ["/lib/oath/wicket-postgres-appdata-run"],
+            "wants": [],
+            "restart": "on-failure",
+            "enabled": true,
+            "user": "home",
+            "bind_low_ports": false,
+            "env": {}
+        }),
+        _ => return None,
+    };
+    Some(doc)
 }
 
 pub fn mountinfo_has(mountinfo: &str, target: &str) -> bool {
@@ -70,6 +174,10 @@ pub fn dhcp_net_document(observed_lease: &str) -> String {
 /// Wicket catalog adjustments for one `svc` desired document.
 /// Returns whether the document changed.
 pub fn adjust_wicket_svc(name: &str, desired: &mut Value) -> bool {
+    if let Some(spec) = wicket_svc_desired(name) {
+        *desired = spec;
+        return true;
+    }
     let mut changed = false;
     if name == "sshd" {
         desired["exec"] = json!(sshd_exec(true));
@@ -134,5 +242,26 @@ mod tests {
         let mut hold = json!({"exec": ["/bin/sleep"], "enabled": true});
         assert!(!adjust_wicket_svc("hold", &mut hold));
         assert_eq!(hold["enabled"], true);
+    }
+
+    #[test]
+    fn wicket_services_run_as_home_and_l2_waits() {
+        let mut stub =
+            json!({"exec": ["/bin/true"], "enabled": false, "wants": [], "restart": "never"});
+        assert!(adjust_wicket_svc("wicketd", &mut stub));
+        assert_eq!(stub["enabled"], true);
+        assert_eq!(stub["user"], "home");
+        assert_eq!(stub["env"]["WICKET_HOST_OS"], "oath");
+        assert_eq!(stub["exec"][0], "/bin/wicketd");
+
+        let mut caddy = json!({});
+        assert!(adjust_wicket_svc("caddy", &mut caddy));
+        assert_eq!(caddy["bind_low_ports"], true);
+        assert_eq!(caddy["user"], "home");
+
+        assert_eq!(svc_wait_mount("svc:postgres-appdata"), Some(APPDATA_MOUNT));
+        assert_eq!(svc_wait_mount("svc:wicket-idp"), Some(STATE_MOUNT));
+        assert!(svc_wait_mount("svc:sshd").is_none());
+        assert!(wicket_svc_desired("postgres").unwrap()["user"] == "home");
     }
 }

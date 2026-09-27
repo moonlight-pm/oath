@@ -13,17 +13,17 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Wicket host, O2 (image, not installed).** `cargo make install
-   --wicket` builds the server image beside the desk image. Root SSH
-   uses `~/.config/wicket/deploy/wicket-deploy.pub` (passwords stay
-   off). No `/bin/sudo`. Disk is ESP plus one btrfs pool: `@` at `/`,
-   `@wicket-state` at `/var/lib/wicket`, `@appdata` at
-   `/var/lib/wicket-appdata`. A pool that already has `@wicket-state`
-   is not formatted again; `@` is replaced. `svc:wicketd` does not
-   start until that mount exists. DHCP stays `ipv4=dhcp`. Seat
-   services are seeded off on that image. Not installed. Not on
-   buccina. Desk image and canto are unchanged. Next in the Wicket
-   plan is W1 (Wicket repo), then packs (W2). Freeze:
+1. **Wicket host, W2 services (not installed).** Desk seed has
+   `svc:wicketd`, `wicket-idp`, `wicket-admin`, `wicket-setup`,
+   `caddy`, `postgres`, and `postgres-appdata` with `enabled` false.
+   `cargo make install --wicket` turns them on as `home`, with
+   `WICKET_HOST_OS=oath` on `wicketd`. Caddy gets
+   `bind_low_ports`. `postgres-appdata` waits for
+   `/var/lib/wicket-appdata`. Wrappers live in `image/wicket/`.
+   `sh image/pack-wicket.sh` fills `build/wicket-pack` (musl bins,
+   static caddy, optional `POSTGRES_PREFIX`); the installer copies
+   it. Not installed. Not on buccina. Desk image and canto are
+   unchanged. Freeze:
    `../Wicket/docs/specs/2026-09-23-oath-host.md`.
 2. **T44 pkg security.** Hashed `components.json` (upstream name +
    version + PURL, several per pack) plus hash-keyed advisories at

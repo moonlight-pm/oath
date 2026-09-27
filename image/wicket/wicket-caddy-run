@@ -1,0 +1,21 @@
+#!/bin/sh
+# Caddy on :80. A missing Caddyfile gets the waiting page. Admin reload uses :2019.
+set -e
+STATE="${WICKET_STATE_DIR:-/var/lib/wicket}"
+FD="$STATE/frontdoor"
+mkdir -p "$FD/data" "$FD/config"
+if [ ! -f "$FD/Caddyfile.managed" ] && [ ! -f "$FD/Caddyfile" ]; then
+    cat > "$FD/Caddyfile" <<'EOF'
+{
+	auto_https off
+	admin localhost:2019
+}
+
+:80 {
+	respond "Configure a public hostname in the Wicket admin console." 503
+}
+EOF
+fi
+export XDG_DATA_HOME="$FD/data"
+export XDG_CONFIG_HOME="$FD/config"
+exec /bin/caddy run --config "$FD/Caddyfile" --adapter caddyfile

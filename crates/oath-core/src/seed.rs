@@ -251,6 +251,23 @@ pub fn seed(root: &Path) -> Result<()> {
     seed_svc(root, "pipewire-pulse", &["/bin/pipewire-pulse"], &["svc:pipewire"], "always")?;
     seed_svc(root, "dbus", &["/bin/dbus-daemon"], &[], "always")?;
     seed_svc(root, "bluetoothd", &["/bin/bluetoothd"], &["svc:dbus"], "always")?;
+    for name in [
+        "wicketd",
+        "wicket-idp",
+        "wicket-admin",
+        "wicket-setup",
+        "caddy",
+        "postgres",
+        "postgres-appdata",
+    ] {
+        let mut desired = crate::image::wicket_svc_desired(name).expect("wicket svc");
+        desired["enabled"] = json!(false);
+        seed_svc_doc(root, name, &desired)?;
+    }
+    seed_pkg(root, "wicket", false, true)?;
+    seed_pkg(root, "caddy", false, true)?;
+    seed_pkg(root, "postgresql", false, true)?;
+    seed_pkg(root, "postgis", false, true)?;
     seed_svc_full(
         root,
         "backup",
@@ -312,6 +329,18 @@ fn seed_dev(root: &Path, name: &str, class: &str, node: &str) -> Result<()> {
 
 fn seed_svc(root: &Path, name: &str, exec: &[&str], wants: &[&str], restart: &str) -> Result<()> {
     seed_svc_full(root, name, exec, wants, restart, true)
+}
+
+fn seed_svc_doc(root: &Path, name: &str, desired: &serde_json::Value) -> Result<()> {
+    let id = ObjectId::new(KIND_SVC, name);
+    let actual = json!({
+        "state": "stopped",
+        "pid": null,
+        "restarts": 0
+    });
+    write_object(root, &id, "mutate", desired, &actual)?;
+    write_json(&root.join("objects/svc").join(name).join("applied.json"), desired)?;
+    Ok(())
 }
 
 fn seed_svc_full(

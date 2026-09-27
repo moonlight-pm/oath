@@ -1034,12 +1034,14 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
         if !start_seat && oath_core::seat::is_seat_svc(id) {
             continue;
         }
-        if oath_core::wicketd_needs_state(id) && !mount_point_active(oath_core::STATE_MOUNT) {
-            log("svc:wicketd waiting for /var/lib/wicket");
-            if pid_for(kids, id).is_none() {
-                write_svc_actual(&oid, "stopped", None, 0);
+        if let Some(mount) = oath_core::svc_wait_mount(id) {
+            if !mount_point_active(mount) {
+                log(&format!("{id} waiting for {mount}"));
+                if pid_for(kids, id).is_none() {
+                    write_svc_actual(&oid, "stopped", None, 0);
+                }
+                continue;
             }
-            continue;
         }
         if !spec.enabled || spec.exec.is_empty() || !oath_core::session_allows(id, session) {
             oneshot_done.remove(id);

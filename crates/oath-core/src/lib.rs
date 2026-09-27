@@ -31,8 +31,8 @@ pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use image::{
     adjust_wicket_svc, dhcp_net_document, is_wicket_image, is_wicket_text, mountinfo_has, ssh_home,
-    ssh_key_file, sshd_exec, wicketd_needs_state, APPDATA_MOUNT, APPDATA_SUBVOL, IMAGE_PATH,
-    IMAGE_WICKET, STATE_MOUNT, STATE_SUBVOL,
+    ssh_key_file, sshd_exec, svc_wait_mount, wicket_svc_desired, wicketd_needs_state,
+    APPDATA_MOUNT, APPDATA_SUBVOL, IMAGE_PATH, IMAGE_WICKET, STATE_MOUNT, STATE_SUBVOL,
 };
 pub use kinds::{
     Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgAdvisory,

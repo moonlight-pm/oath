@@ -67,9 +67,20 @@ Same wipe confirm. Differences from the desk install:
   is that root key. Seat services are seeded off.
 - A DHCP install records `net:net0` `ipv4=dhcp`. The leased address
   is not written into the catalog.
+- Before the install, `sh image/pack-wicket.sh` fills
+  `build/wicket-pack` (musl `wicketd`, IdP, admin, setup, a static
+  `caddy`, and `POSTGRES_PREFIX` when you have a relocated Postgres
+  tree). The installer copies that directory and the wrappers in
+  `image/wicket/` onto the new root. Without the pack, the services
+  are enabled and the binaries are absent.
+- `svc:wicketd`, `wicket-idp`, `wicket-admin`, `wicket-setup`,
+  `caddy`, and `postgres` run as `home`. `wicketd` sets
+  `WICKET_HOST_OS=oath`. Caddy may bind port 80. `postgres-appdata`
+  waits until `/var/lib/wicket-appdata` is mounted. The desk catalog
+  has the same services with `enabled` false.
 
-`--wicket --qemu --disk /dev/vda --confirm` is the rehearsal. It does
-not touch a real disk. `--wicket` is not the USB stick writer.
+`--wicket` is not the USB stick writer. The trial is the named disk
+when you are present for the wipe.
 
 QEMU rehearsal (no real host):
 
