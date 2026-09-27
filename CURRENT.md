@@ -20,10 +20,10 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
    `WICKET_HOST_OS=oath` on `wicketd`. Caddy gets
    `bind_low_ports`. `postgres-appdata` waits for
    `/var/lib/wicket-appdata`. Wrappers live in `image/wicket/`.
-   `sh image/pack-wicket.sh` fills `build/wicket-pack` (musl bins,
-   static caddy, optional `POSTGRES_PREFIX`); the installer copies
-   it. Not installed. Not on buccina. Desk image and canto are
-   unchanged. Freeze:
+   `build/wicket-pack` is assembled (musl control plane, static
+   Caddy 2.10.2, Postgres 18.4 + PostGIS as a `/nix/store` copy).
+   The installer copies it. Not installed. Not on buccina. Desk
+   image and canto are unchanged. Freeze:
    `../Wicket/docs/specs/2026-09-23-oath-host.md`.
 2. **T44 pkg security.** Hashed `components.json` (upstream name +
    version + PURL, several per pack) plus hash-keyed advisories at

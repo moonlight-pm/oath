@@ -3,7 +3,9 @@
 set -e
 if [ -x /oath/store/pkg/postgresql/bin/postgres ]; then
     export PATH="/oath/store/pkg/postgresql/bin:$PATH"
-    export LD_LIBRARY_PATH="/oath/store/pkg/postgresql/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    if [ -e /oath/store/pkg/postgresql/lib/libpq.so ]; then
+        export LD_LIBRARY_PATH="/oath/store/pkg/postgresql/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
 fi
 DATA=/var/lib/postgresql
 RUN="$DATA/run"

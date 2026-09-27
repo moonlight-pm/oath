@@ -576,6 +576,31 @@ fn install_wicket_bits(out: &Path, r: &Remote) -> Result<()> {
             ssh_run(r, &format!("/bin/busybox chmod 755 {dest}"))?;
         }
     }
+    let nix_store = out.join("wicket-pack/nix-store");
+    if nix_store.is_dir() {
+        ssh_run(r, "mkdir -p /mnt/nix/store")?;
+        let mut tar = Command::new("tar");
+        tar.args(["-C", nix_store.to_str().unwrap(), "-cf", "-", "."]);
+        let mut ssh = ssh_base(r);
+        let remote = if r.sudo {
+            "sudo -n tar -C /mnt/nix/store -xf -"
+        } else {
+            "tar -C /mnt/nix/store -xf -"
+        };
+        ssh.arg(remote).stdin(Stdio::piped());
+        let mut child = ssh.spawn().context("ssh nix-store tar")?;
+        {
+            let mut stdin = child.stdin.take().context("ssh stdin")?;
+            let mut src = tar.stdout(Stdio::piped()).spawn().context("tar nix-store")?;
+            let mut outp = src.stdout.take().context("tar stdout")?;
+            std::io::copy(&mut outp, &mut stdin).context("pipe nix-store")?;
+            let _ = src.wait();
+        }
+        let st = child.wait()?;
+        if !st.success() {
+            bail!("remote nix-store extract failed");
+        }
+    }
     let pg = out.join("wicket-pack/postgresql");
     if pg.is_dir() {
         ssh_run(r, "mkdir -p /mnt/oath/store/pkg/postgresql")?;
