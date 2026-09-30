@@ -13,20 +13,27 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Wicket host — image written, host not up.** Desk seed has
-   `svc:wicketd`, `wicket-idp`, `wicket-admin`, `wicket-setup`,
-   `caddy`, `postgres`, and `postgres-appdata` with `enabled` false.
-   `cargo make install --wicket` turns them on as `home`, with
-   `WICKET_HOST_OS=oath` on `wicketd`. Caddy gets
+1. **Wicket host — image on disk, kernel mismatch, host not up.**
+   Desk seed has `svc:wicketd`, `wicket-idp`, `wicket-admin`,
+   `wicket-setup`, `caddy`, `postgres`, and `postgres-appdata` with
+   `enabled` false. `cargo make install --wicket` turns them on as
+   `home`, with `WICKET_HOST_OS=oath` on `wicketd`. Caddy gets
    `bind_low_ports`. `postgres-appdata` waits for
    `/var/lib/wicket-appdata`. Wrappers live in `image/wicket/`.
    `build/wicket-pack` is assembled (musl control plane, static
    Caddy 2.10.2, Postgres 18.4 + PostGIS as a `/nix/store` copy).
    The installer copies it. On 2026-09-27 that image was written to
-   buccina `nvme0n1` (ESP + `@`, `@wicket-state`, `@appdata`). After
-   reboot the machine did not answer on 10.0.0.149. Courage checks
-   are open. Desk image and canto are unchanged. `aulos` and `exit`
-   stay NixOS. Freeze:
+   buccina `nvme0n1` (ESP + `@`, `@wicket-state`, `@appdata`).
+   Firmware `Boot0000` already loads `\EFI\Boot\BootX64.efi`.
+   The ESP `vmlinuz` is NixOS **7.1.2**; `initrd.gz` modules are
+   **7.3.0-rc1**, so PID 1 never loads `e1000e` or `btrfs`.
+   On 2026-09-30 the USB installer answered at 10.0.0.149 (MAC
+   `08:92:04:e3:29:15`). `BOOTX64.EFI` is now systemd-boot;
+   `oath-efi` is saved at `EFI/oath/oath-efi.efi`. Reboot after
+   that swap did not bring the NIC back. Next, from the USB
+   installer: copy `build/linux/vmlinuz` (7.3.0-rc1 #4) over the
+   ESP `vmlinuz`. Courage checks are open. Desk image and canto
+   are unchanged. `aulos` and `exit` stay NixOS. Freeze:
    `../Wicket/docs/specs/2026-09-23-oath-host.md`.
 2. **T44 pkg security.** Hashed `components.json` (upstream name +
    version + PURL, several per pack) plus hash-keyed advisories at
