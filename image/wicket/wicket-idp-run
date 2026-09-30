@@ -7,11 +7,14 @@ mkdir -p "$IDP"
 SECRETS="$IDP/secrets.env"
 if [ ! -f "$SECRETS" ]; then
     umask 077
-    if ! secret=$(dd if=/dev/urandom bs=64 count=1 2>/dev/null | base64 | tr -d '\n'); then
-        echo "wicket-idp-run: base64 is required to mint the cookie secret" >&2
+    # ash has no pipefail. A missing base64 still lets `tr` succeed and
+    # would persist an empty secret the IdP then refuses forever.
+    secret=$(dd if=/dev/urandom bs=64 count=1 2>/dev/null | /bin/base64 | /bin/tr -d '\n' || true)
+    token=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | /bin/base64 | /bin/tr -d '\n' || true)
+    if [ "${#secret}" -lt 80 ] || [ "${#token}" -lt 40 ]; then
+        echo "wicket-idp-run: cookie secret mint failed" >&2
         exit 1
     fi
-    token=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d '\n')
     printf 'WICKET_IDP_COOKIE_SECRET=%s\nWICKET_IDP_ADMIN_TOKEN=%s\n' "$secret" "$token" > "$SECRETS"
 fi
 set -a

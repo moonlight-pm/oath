@@ -13,28 +13,22 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 
 ## Now
 
-1. **Wicket host — image on disk, kernel mismatch, host not up.**
-   Desk seed has `svc:wicketd`, `wicket-idp`, `wicket-admin`,
-   `wicket-setup`, `caddy`, `postgres`, and `postgres-appdata` with
-   `enabled` false. `cargo make install --wicket` turns them on as
-   `home`, with `WICKET_HOST_OS=oath` on `wicketd`. Caddy gets
-   `bind_low_ports`. `postgres-appdata` waits for
-   `/var/lib/wicket-appdata`. Wrappers live in `image/wicket/`.
-   `build/wicket-pack` is assembled (musl control plane, static
-   Caddy 2.10.2, Postgres 18.4 + PostGIS as a `/nix/store` copy).
-   The installer copies it. On 2026-09-27 that image was written to
-   buccina `nvme0n1` (ESP + `@`, `@wicket-state`, `@appdata`).
-   Firmware `Boot0000` already loads `\EFI\Boot\BootX64.efi`.
-   The ESP `vmlinuz` is NixOS **7.1.2**; `initrd.gz` modules are
-   **7.3.0-rc1**, so PID 1 never loads `e1000e` or `btrfs`.
-   On 2026-09-30 the USB installer answered at 10.0.0.149 (MAC
-   `08:92:04:e3:29:15`). `BOOTX64.EFI` is now systemd-boot;
-   `oath-efi` is saved at `EFI/oath/oath-efi.efi`. Reboot after
-   that swap did not bring the NIC back. Next, from the USB
-   installer: copy `build/linux/vmlinuz` (7.3.0-rc1 #4) over the
-   ESP `vmlinuz`. Courage checks are open. Desk image and canto
-   are unchanged. `aulos` and `exit` stay NixOS. Freeze:
-   `../Wicket/docs/specs/2026-09-23-oath-host.md`.
+1. **Wicket host — buccina is up.** `root@10.0.0.149` with the
+   deploy key (`~/.config/wicket/deploy/wicket-deploy`). Hostname
+   `buccina`, image `wicket`, kernel **7.3.0-rc1 #4**. The
+   2026-09-27 ESP had NixOS **7.1.2** `vmlinuz` against a
+   **7.3.0-rc1** initrd, so `e1000e` never loaded. `BOOTX64.EFI`
+   is systemd-boot; `oath-efi` is at `EFI/oath/oath-efi.efi`;
+   `vmlinuz` was replaced from `build/linux/vmlinuz`. `wicketd`
+   :8080, IdP :8081, admin :8090, setup :8082 (200), caddy :80
+   (503 until a public hostname is set), platform Postgres
+   :5432, and `postgres-appdata` are running as `home`. `psql`
+   as `home` sees SQL role `wicket`. `net:net0` desired stays
+   dhcp; the lease `10.0.0.149/24` shows as drift. `oath undo`
+   was not run. A fresh `install --wicket` still writes the Nix
+   7.1.2 `bzImage` unless `OATH_KERNEL` is `build/linux/vmlinuz`.
+   Desk image and canto are unchanged. `aulos` and `exit` stay
+   NixOS. Freeze: `../Wicket/docs/specs/2026-09-23-oath-host.md`.
 2. **T44 pkg security.** Hashed `components.json` (upstream name +
    version + PURL, several per pack) plus hash-keyed advisories at
    `/oath/store/adv/<name>/<hash>.json` and
@@ -240,6 +234,8 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 | Role | **Parked.** Serial + SSH + virtio-gpu appliance | First metal canary |
 | How | `cargo make build` then `probe` / `run` (not the path) | `ssh` / `scp` / `sftp` `home@canto` (10.0.0.3) |
 | Notes | `dev:card0` + gtk Sola menubar if DISPLAY, 1280×800 1:1 (`dev:kbd0` / `dev:mouse0`, no udevd). Virtio: pixman + SW cursor + `LIBGL_ALWAYS_SOFTWARE`. Menubar panels are card-sized (software GL). Window menu + Super+K from current Sola. Launcher Terminal is `/bin/sola-terminal`. Workspaces + `solactl` packed. Guest SSH is `home`. Host SSH keys on up/start. 2026-09-11 qcow (8G rootfs) packs `pkg:pipewire`, dropbear `scp`/`sftp-server`, `pkg:thoxa`, T39 Hyprland + Quickshell + Omarchy (seed session sola). Probe T39 pack facts ok; later steps fail from dbus/pipewire serial spam. Manual: `docs/manual/`. | GPT `/dev/sda` ESP+btrfs `@`. Dual Pitcairn (`1002:6810`) via amdgpu `si_support=1`. HDMI `card1` DP-10. **Now:** Philips 221V8L 1920×1080@75. DualUp native 2560×2880 is 30 Hz on HDMI (60 Hz on the LG’s DP). T31 seat `home`. **T39 `session=sola` (catalog gen 59):** River + Sola stack as `home` on DP-10 1920×1080 (`wayland-1`; Hyprland/omarchy-shell stopped). sola-shell cached output 1920×1080 and restored windows. After ESP reboot: kernel **7.3.0-rc1 #4**, T39 `/init`. Last Omarchy paint: boot 14 Hyprland 0.52.2 + omarchy-bar. **This boot (live):** `/dev/fd` linked; hyprland/omarchy-shell exec is seed (gen 64). **sola-kvm** respawned onto River (virtual pointer 1920×1080; novus CLIP1). ESP last-5: oath + boots **14**–10. (uid 1; DRM/evdev/ALSA `0660` root:`home`.) Packed Sola: kvm libexec `386c9d78`; rest may still be `a6dd7c12`. **`pkg:grok`** `/bin/grok` (updater off). **`pkg:git`** `/bin/git`. **`pkg:curl`** `/bin/curl`. **`pkg:pipewire`** this boot (Built-in Audio PCH; WirePlumber `main-embedded`). **`pkg:bluez`** system dbus + bluetoothd; `hci0` powered (BCM20702). No session dbus. **`pkg:thoxa`** `/bin/thoxa` this boot (hand-copied store Thoxa `c42c9a6` session-rc-split; home passwd `/bin/thoxa`; `/etc/shells` lists it; `host:local.env` `SHELL`; sola wrappers default `$SHELL` to `/bin/thoxa`). EFI splash: white mark on black at GOP 1920×1080 (`oath-efi` as BOOTX64). `/bin/sola-workspaces` + `/bin/solactl` packed. Magic Keyboard + Razer Taipan. `net:net0` dhcp 10.0.0.3. Kit fonts: SF Pro Text + Iosevka Term Slab. `/bin/sola-browser` + CEF in `pkg:sola`. **scp/sftp** live (`/bin/scp`, `/bin/sftp-server` in `pkg:dropbear`). Editor: busybox `/bin/vi`. **sola-kvm listen** this boot (UDP 4242; River virtual pointer after gen 59 bounce; novus CLIP1; libexec hand-copied for Super-up + drop kernel auto-repeat). **T33 backup** this boot: `canto.send` on nas `10.0.0.12:/mnt/alpha/backup/canto` (gen 16, 2056610447 bytes, checksum match); `svc:backup` daily sleeper. NFS modules insmod’d live. **T34** `host:local.timezone` Mountain; Sola clock MDT; `date` UTC. **T35** `/bin/cc` `/bin/rustc` `/bin/cargo` `/bin/cmake` `/bin/ninja` `/bin/pkg-config` (gen 19; Zig 0.16 + rustc 1.98.1; empty `.pc` farm). **T37** Steam/Omarchy **drawn down** 2026-09-17 gen 64 (store trees reaped; `pkg:bash` stays). **T38** ESP: systemd-boot `BOOTX64` timeout 5; live process is **7.3.0-rc1 #4** (this reboot). Slot is 7.3 + `btusb` + unix_floor dbus dirs (`subvol=@`). Last-5: **boot 14** (kvm-aware PID 1), 13, 12, 11, 10. Boot 9 pruned this rotate. |
+
+**buccina (Wicket trial, 2026-09-30):** up at 10.0.0.149. SSH is root with the Wicket deploy key. Kernel **7.3.0-rc1 #4**. Subvolumes `@`, `@wicket-state`, `@appdata` are mounted. First boot needed Nix store paths the pack missed (ICU, `libgcc_s`, PAM, tzdata) and Postgres invoked from its store path. Those paths are on this disk. `image/pack-wicket.sh` and the `image/wicket` run scripts are fixed in the tree; the image was not rebuilt.
 
 ```sh
 nix-shell

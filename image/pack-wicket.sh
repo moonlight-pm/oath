@@ -48,6 +48,9 @@ if [ -n "${POSTGRES_PREFIX:-}" ] && [ -d "$POSTGRES_PREFIX/bin" ]; then
     {
         for name in postgres initdb psql pg_dump pg_restore pg_ctl; do
             printf '%s\n' "$POSTGRES_PREFIX/bin/$name"
+            # The 16KB `postgres` next to this is a Nix wrapper. ldd of
+            # the wrapper only sees libc. The real server is the sibling.
+            printf '%s\n' "$POSTGRES_PREFIX/bin/.$name-wrapped"
         done
         find "$POSTGRES_PREFIX/lib" -name 'postgis-*.so' -o -name 'postgis.so'
     } | while read -r obj; do
@@ -75,6 +78,39 @@ if [ -n "${POSTGRES_PREFIX:-}" ] && [ -d "$POSTGRES_PREFIX/bin" ]; then
         echo "${wrapped%/bin/postgres}" >> "$bases"
     fi
     sort -u "$bases" -o "$bases"
+    # ldd names libgcc_s inside gcc-lib. That file is a symlink into a
+    # second store path. tzdata is not a DT_NEEDED, but initdb opens it.
+    extra=$(mktemp)
+    pass=0
+    while [ "$pass" -lt 3 ]; do
+        pass=$((pass + 1))
+        : > "$extra"
+        while read -r store; do
+            [ -d "$store" ] || continue
+            find "$store" -type l -print | while read -r link; do
+                target=$(readlink -f "$link" 2>/dev/null || true)
+                case "$target" in
+                    /nix/store/*)
+                        top=${target#/nix/store/}
+                        top=${top%%/*}
+                        printf '%s\n' "/nix/store/$top"
+                        ;;
+                esac
+            done
+        done < "$bases" >> "$extra"
+        real_pg=$(readlink -f "$POSTGRES_PREFIX/bin/.postgres-wrapped" 2>/dev/null || true)
+        if [ -n "$real_pg" ] && [ -e "$real_pg" ]; then
+            nix-store -q --references "$real_pg" 2>/dev/null | while read -r ref; do
+                case "$ref" in
+                    *tzdata*) printf '%s\n' "$ref" ;;
+                esac
+            done >> "$extra"
+        fi
+        sort -u "$extra" -o "$extra"
+        cat "$extra" >> "$bases"
+        sort -u "$bases" -o "$bases"
+    done
+    rm -f "$extra"
     while read -r store; do
         [ -d "$store" ] || continue
         name=$(basename "$store")

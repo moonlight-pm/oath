@@ -7,12 +7,44 @@ if [ -x /oath/store/pkg/postgresql/bin/postgres ]; then
         export LD_LIBRARY_PATH="/oath/store/pkg/postgresql/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     fi
 fi
+# Postgres finds share/ and lib/ from argv0. The pack copies the Nix
+# wrapper onto /bin, and that argv0 looks for /share. Follow the pack
+# symlink to the store binary.
+pg() {
+    name=$1
+    fallback=/bin/$name
+    link=/oath/store/pkg/postgresql/bin/$name
+    if [ ! -e "$link" ]; then
+        printf '%s\n' "$fallback"
+        return
+    fi
+    target=$(/bin/busybox readlink -f "$link" 2>/dev/null || true)
+    dir=$(/bin/busybox dirname "$target")
+    wrapped=$dir/.$name-wrapped
+    if [ -e "$wrapped" ]; then
+        real=$(/bin/busybox readlink -f "$wrapped" 2>/dev/null || true)
+        case "$real" in
+            /nix/store/*)
+                printf '%s\n' "$real"
+                return
+                ;;
+        esac
+    fi
+    case "$target" in
+        /nix/store/*/bin/$name)
+            printf '%s\n' "$target"
+            return
+            ;;
+    esac
+    printf '%s\n' "$fallback"
+}
 DATA=/var/lib/postgresql
 RUN="$DATA/run"
-mkdir -p "$DATA" "$RUN"
+mkdir -p "$DATA"
 if [ ! -f "$DATA/PG_VERSION" ]; then
-    /bin/initdb -D "$DATA" --encoding=UTF8 --locale=C --auth-local=peer --auth-host=reject
+    "$(pg initdb)" -D "$DATA" --encoding=UTF8 --locale=C --auth-local=peer --auth-host=reject
 fi
+mkdir -p "$RUN"
 cat > "$DATA/pg_ident.conf" <<'EOF'
 wicket home wicket
 EOF
@@ -23,7 +55,7 @@ local all all scram-sha-256
 host all all 127.0.0.1/32 scram-sha-256
 host all all ::1/128 scram-sha-256
 EOF
-/bin/postgres -D "$DATA" -k "$RUN" -c listen_addresses=localhost -c unix_socket_directories="$RUN" &
+"$(pg postgres)" -D "$DATA" -k "$RUN" -c listen_addresses=localhost -c unix_socket_directories="$RUN" &
 pid=$!
 trap 'kill "$pid" 2>/dev/null; wait "$pid"' TERM INT
 i=0
@@ -34,5 +66,5 @@ while [ "$i" -lt 50 ]; do
     i=$((i + 1))
     sleep 0.2
 done
-/bin/psql -h "$RUN" -U home -d postgres -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'wicket') THEN CREATE ROLE wicket SUPERUSER LOGIN; END IF; END \$\$;" || true
+"$(pg psql)" -h "$RUN" -U home -d postgres -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'wicket') THEN CREATE ROLE wicket SUPERUSER LOGIN; END IF; END \$\$;" || true
 wait "$pid"

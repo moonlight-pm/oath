@@ -76,6 +76,11 @@ Same wipe confirm. Differences from the desk install:
   installer places at `/nix/store`. The installer also copies the
   wrappers in `image/wicket/`. Without the pack, the services are
   enabled and the binaries are absent.
+- The ESP `vmlinuz` the installer writes is `image/tools.nix`'s
+  `bzImage` unless `OATH_KERNEL` is set. The initrd's modules come
+  from the Oath kernel under `build/linux`. Those two versions have
+  to match or the NIC modules do not load. For the current tree set
+  `OATH_KERNEL=build/linux/vmlinuz` (7.3.0-rc1).
 - `svc:wicketd`, `wicket-idp`, `wicket-admin`, `wicket-setup`,
   `caddy`, and `postgres` run as `home`. `wicketd` sets
   `WICKET_HOST_OS=oath`. Caddy may bind port 80. `postgres-appdata`
