@@ -46,7 +46,7 @@ DPM patches apply from `image/linux-patches` when compiling.
 5. Reboot. Courage is **SSH as `home`** with those keys, then
    `oath ls`. (`sudo` has no password.)
 
-Wicket image (not the desk, not installed on buccina):
+Wicket image (not the desk):
 
 ```sh
 cargo make install --wicket --target root@host --disk /dev/sda --confirm --hostname buccina
@@ -64,15 +64,18 @@ Same wipe confirm. Differences from the desk install:
 - SSH is **root**, with the public key in
   `~/.config/wicket/deploy/wicket-deploy.pub` (`WICKET_DEPLOY_PUB`
   overrides the path). Passwords stay off. `ssh:local` on this image
-  is that root key. Seat services are seeded off.
+  is that root key. Seat services are seeded off. The copy onto the
+  live host offers `~/.config/wicket/deploy/wicket-deploy`
+  (`WICKET_DEPLOY_KEY` overrides the path) before the default keys,
+  and uses `cat` when `/bin/busybox` is absent.
 - A DHCP install records `net:net0` `ipv4=dhcp`. The leased address
   is not written into the catalog.
 - Before the install, `sh image/pack-wicket.sh` fills
-  `build/wicket-pack` (musl `wicketd`, IdP, admin, setup, a static
-  `caddy`, and `POSTGRES_PREFIX` when you have a relocated Postgres
-  tree). The installer copies that directory and the wrappers in
-  `image/wicket/` onto the new root. Without the pack, the services
-  are enabled and the binaries are absent.
+  `build/wicket-pack`: musl `wicketd`, IdP, admin, setup, static
+  Caddy 2.10.2, and Postgres with PostGIS as a Nix store copy the
+  installer places at `/nix/store`. The installer also copies the
+  wrappers in `image/wicket/`. Without the pack, the services are
+  enabled and the binaries are absent.
 - `svc:wicketd`, `wicket-idp`, `wicket-admin`, `wicket-setup`,
   `caddy`, and `postgres` run as `home`. `wicketd` sets
   `WICKET_HOST_OS=oath`. Caddy may bind port 80. `postgres-appdata`

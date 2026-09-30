@@ -242,7 +242,11 @@ same ESP, one btrfs pool, sibling subvolumes `@`, `@wicket-state`
 keeps the pool when `@wicket-state` is already present and replaces
 `@` only. No `/bin/sudo`. Dropbear allows root with the Wicket deploy
 key; passwords stay off. `svc:wicketd` waits until `/var/lib/wicket`
-is a mount. Boot graphics is layered, not one path: EFI GOP splash
+is a mount. `install --wicket` enables `wicketd`, `wicket-idp`,
+`wicket-admin`, `wicket-setup`, `caddy`, `postgres`, and
+`postgres-appdata` as `home` and copies `build/wicket-pack`
+(Postgres and PostGIS stay on `/nix/store`). The interactive overview
+stays the desk picture. Boot graphics is layered, not one path: EFI GOP splash
 (`oath-efi` as `BOOTX64.EFI`) when firmware has GOP; PID 1 defers KMS
 drivers that would kick a live firmware framebuffer (amdgpu/i915/…,
 not virtio-gpu) until just before the session compositor. Sola: River

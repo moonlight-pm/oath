@@ -117,8 +117,9 @@ Root can bind them either way. Changing `user`, `env`, or
 Wicket runs its control plane, Caddy, and Postgres as `home`. That
 image does not add a `wicket` user or a `postgres` user. `svc:wicketd`
 does not start until `/var/lib/wicket` is a mount (`@wicket-state`).
-The image is `cargo make install --wicket` and is not installed on a
-machine yet. Packs and rootless Podman are later slices.
+The image is `cargo make install --wicket`. The installer copies
+`build/wicket-pack` onto that root, including the Postgres Nix store
+under `/nix/store`. Rootless Podman is a later slice.
 
 Desk services still wait for DRM and input before they start. A
 `user=home` service that is not one of those seat names starts with
