@@ -6,8 +6,9 @@ DHCP lease by default. Root is privilege, not a login: `home` uses
 `sudo`, and the serial console is the root break-glass.
 
 **Status:** partly built. DHCP, static addresses, SSH keys, host keys,
-the `home` account and `sudo` are built. DHCP as a supervised service,
-probation for lockout-class changes, and a stricter `sudo` are the
+the `home` account and `sudo` are built. Changes that can cut off SSH
+need `--confirm` (built 2026-10-13). DHCP as a supervised service,
+probation with automatic rollback, and a stricter `sudo` are the
 target.
 
 Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
@@ -25,8 +26,9 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 - `dhcp` runs busybox `udhcpc` once (`/lib/oath/udhcpc.script` applies
   the lease) and records `lease` in actual. `lease` is not a desired
   field.
-- `up: false` downs the link. That is not confirm-class; serial still
-  works.
+- Any change to `up`, `ipv4` or `gateway` is confirm-class: `oath apply`
+  exits 3 without `--confirm`, because it can cut the machine off from
+  SSH. Serial still works.
 - PID 1 brings `lo` up itself. Loopback is not a catalog object.
 - The base profile seeds DHCP. QEMU user networking hands out
   10.0.2.15 and forwards host port 2222 (`OATH_SSH_PORT`) to guest 22.
@@ -37,8 +39,12 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 { "authorized": ["ssh-ed25519 AAAA… owner@laptop"] }
 ```
 
-- `authorized` is a list of OpenSSH public key lines. Converge writes
-  them to `/home/.ssh/authorized_keys`, owned by `home`, mode 600.
+- `authorized` is a list of OpenSSH public key lines (each starts
+  `ssh-`, `ecdsa-` or `sk-`; `set` refuses anything else). Converge
+  writes them to `/home/.ssh/authorized_keys`, owned by `home`, mode
+  600. At boot PID 1 applies the keys last applied (`actual`), not
+  pending desired.
+- `oath undo` never restores `/oath/ssh/`: host keys do not roll back.
 - The host key is generated on first converge at
   `/oath/ssh/host_ed25519` with `dropbearkey`. No image ships a private
   key.
@@ -69,8 +75,11 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   caller's environment through.
 - DHCP runs inside `net` converge, once. A lease that expires, or a
   link that comes up late, is not renewed.
-- Changing `ssh:local`, `svc:sshd` or `net:net0` can lock the owner out
-  with no automatic recovery.
+- Changing `ssh:local`, `svc:sshd` or `net:net0` with `--confirm` can
+  still lock the owner out; nothing rolls it back automatically. Without
+  `--confirm` apply refuses: `svc:sshd` disabled, removed, or its
+  `exec`, `user` or `env` changed; `ssh:local` `authorized` becoming
+  empty; any `net:net0` `up`, `ipv4` or `gateway` change.
 
 ## Target
 

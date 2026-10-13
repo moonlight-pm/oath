@@ -27,18 +27,26 @@ kernel with a vermagic check. `esp` refuses non-Oath hosts.
 `cargo make check`: headless QEMU running the README loop and the
 known failure cases over SSH from a data file. Installs are gated on it.
 
-## 3. Catalog safety — active
+## 3. Catalog safety — done (2026-10-13)
 
-Locked atomic writes (R4), spec/status/log/store split, validate before
-snapshot, log every outcome, undo restores spec only, `oath new` /
-`oath rm`, typed `set`, schemas generated from the Rust types, id
-grammar, probation apply for lockout-class changes.
+Built: locked atomic writes (R4), typed `set`, id grammar, validation
+before the snapshot, every outcome logged (`ok` / `error` /
+`refused`), a stack undo that restores only the touched objects' spec
+(never log, store or host keys), `oath new` / `oath rm` through apply,
+`--confirm` for changes that can cut off SSH, PID 1 running only
+applied specs, no reseed of an existing catalog.
 
-## 4. PID 1 — planned
+Not done, carried forward: schemas generated from the Rust types,
+probation apply with automatic rollback, a physical spec/status
+directory split (undo already touches spec only), a store integrity
+check at boot.
+
+## 4. PID 1 — active
 
 Per-service log ring and `oath logs`, exit codes, backoff, failed
-state, cgroups, shutdown, `switch_root`, panic hook, cycle isolation,
-DHCP as a service, modalias loading.
+state, cgroups, a shutdown sequence (plain `reboot` is the remaining
+gap case), `switch_root`, panic hook, DHCP as a service, modalias
+loading. Cycle isolation is already in (phase 3).
 
 ## 5. Native base — planned
 

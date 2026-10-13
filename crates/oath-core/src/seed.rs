@@ -145,6 +145,7 @@ pub fn seed(root: &Path) -> Result<()> {
 /// Write a fresh catalog at `root` from a built-in profile.
 pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
     let p = Profile::load(profile)?;
+    let _lock = crate::Catalog::open(root)?.lock()?;
     for d in ["schema", "objects", "log", "run"] {
         std::fs::create_dir_all(root.join(d))?;
     }
@@ -164,10 +165,14 @@ pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
     Ok(())
 }
 
-/// Merge an overlay file into the catalog at `root`. Existing objects get
-/// the patch on `desired` (actual is left for the next apply or boot).
-/// New objects are created with a first actual. Returns the ids touched.
+/// Merge an overlay into the catalog at `root` before it first boots.
+/// Each patch lands in `desired` and counts as applied: svc `applied`,
+/// and host / net / ssh `actual` (PID 1 boots from those). Packages keep
+/// their actual; a package an overlay turns on is linked by the first
+/// `oath apply`. New objects get a first actual. Returns the ids touched.
 pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
+    let cat = crate::Catalog::open(root)?;
+    let _lock = cat.lock()?;
     let file: ProfileFile = serde_json::from_value(overlay.clone())
         .map_err(|e| Error::hint(format!("overlay: {e}"), "{\"objects\": {\"kind:name\": {…}}}"))?;
     if file.extends.is_some() || !file.fixed.is_empty() || !file.actual.is_empty() {
@@ -182,21 +187,31 @@ pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
         let oid: ObjectId = id.parse()?;
         let dir = root.join("objects").join(&oid.kind).join(&oid.name);
         let path = dir.join("desired.json");
-        if path.is_file() {
-            let cur: Value = crate::read_json(&path)?;
-            let desired = merge_patch(cur, patch);
+        let exists = path.is_file();
+        let base = if exists { crate::read_json(&path)? } else { json!({}) };
+        let desired = merge_patch(base, patch);
+        cat.validate(&oid, &desired)?;
+        if exists {
             write_json(&path, &desired)?;
-            if oid.kind == KIND_SVC {
-                write_json(&dir.join("applied.json"), &desired)?;
+            match oid.kind.as_str() {
+                KIND_SVC => write_json(&dir.join("applied.json"), &desired)?,
+                crate::KIND_HOST | crate::KIND_NET => {
+                    write_json(&dir.join("actual.json"), &desired)?
+                }
+                KIND_SSH => {
+                    let mut a: Value = crate::read_json(&dir.join("actual.json"))?;
+                    a["authorized"] = desired["authorized"].clone();
+                    write_json(&dir.join("actual.json"), &a)?;
+                }
+                _ => {}
             }
         } else {
-            let desired = merge_patch(json!({}), patch);
             let actual = first_actual(&oid, &desired, false);
             write_object(root, &oid, &desired, &actual)?;
         }
         touched.push(oid);
     }
-    crate::Catalog::open(root)?.write_index()?;
+    cat.write_index()?;
     Ok(touched)
 }
 

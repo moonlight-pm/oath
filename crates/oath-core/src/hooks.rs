@@ -47,8 +47,11 @@ pub struct ApplyReport {
 }
 
 pub trait ApplyHooks {
+    /// Keep a read-only copy of the catalog as it is now, as `generation`.
     fn snapshot(&self, generation: u64) -> Result<()>;
-    fn restore_snapshot(&self, generation: u64) -> Result<()>;
+    /// The catalog root inside `generation`'s snapshot (read-only). Undo
+    /// copies spec files out of it.
+    fn snapshot_catalog(&self, generation: u64) -> Result<std::path::PathBuf>;
     fn converge_host(&self, desired: &Host) -> Result<Host>;
     fn notify_init(&self) -> Result<()>;
     fn reboot(&self) -> Result<()>;
@@ -101,8 +104,8 @@ impl ApplyHooks for NullHooks {
     fn snapshot(&self, _generation: u64) -> Result<()> {
         Ok(())
     }
-    fn restore_snapshot(&self, _generation: u64) -> Result<()> {
-        Ok(())
+    fn snapshot_catalog(&self, generation: u64) -> Result<std::path::PathBuf> {
+        Err(crate::Error::Msg(format!("no snapshot of generation {generation} (NullHooks)")))
     }
     fn converge_host(&self, desired: &Host) -> Result<Host> {
         Ok(Host {

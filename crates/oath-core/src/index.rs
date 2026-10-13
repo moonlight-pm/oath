@@ -21,14 +21,16 @@ Do **not** edit `/etc` or random files. Use `oath`.
 
 ## Verbs
 
-    oath                 short INDEX (this file is {index})
+    oath                 this INDEX (the file is {index})
     oath ls              list objects  (optional --kind)
     oath schema [kind]   kinds, or one kind's schema + prose
     oath get <id>        desired + actual
-    oath set <id> k=v    write desired only
+    oath set <id> k=v    write desired only (checked against the kind's type)
+    oath new <id> k=v    create a svc or pkg (runs after apply)
+    oath rm <id>         remove a svc or pkg (after apply)
     oath diff [id]       drift
-    oath apply [id...]   snapshot, then converge
-    oath undo            restore the catalog from the last apply's snapshot
+    oath apply [id...]   check, snapshot, then converge
+    oath undo            put back the spec the last apply changed, and converge
     oath log             apply log
     oath fmt <path>      canonical plan.plan
     oath build           isolated plan build (no /bin link)
@@ -41,9 +43,11 @@ Do **not** edit `/etc` or random files. Use `oath`.
 
 ## Safety
 
-`oath apply` takes a filesystem snapshot first. Halt, wipe, and boot
-generation changes (other than `oath undo`) need `--confirm`. Do **not**
-pass `--confirm` unless the owner asked for that class of change.
+`oath apply` checks everything first (a refusal changes nothing), then
+takes a filesystem snapshot. Halt, reboot, boot generation changes
+(other than `oath undo`) and changes that can cut off SSH need
+`--confirm`. Do **not** pass `--confirm` unless the owner asked for that
+class of change.
 
 ## Where you are
 
@@ -52,9 +56,10 @@ Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
 `home` account's directory. There is no `/usr`; helpers are
 `/lib/oath`.
 
-New objects come from the seed profile or an install overlay
-(`oath seed`, build and install time only). `oath set` changes
-objects that exist.
+`oath new` makes a `svc` or `pkg`; `oath rm` removes one. Both, like
+`set`, only change the spec: nothing happens until `oath apply`, and
+`oath undo` takes back the last apply. Changes that can cut off SSH
+(sshd, `ssh:local` keys, `net:net0`) need `--confirm`.
 "#,
         index = cat.root().join("INDEX.md").display(),
         kinds = kinds_block.trim_end(),

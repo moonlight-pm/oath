@@ -51,6 +51,18 @@ enum Cmd {
         #[arg(value_name = "K=V")]
         fields: Vec<String>,
     },
+    /// Create a svc or pkg. Nothing runs until `oath apply`.
+    New {
+        id: String,
+        #[arg(long = "from-json")]
+        from_json: Option<String>,
+        #[arg(value_name = "K=V")]
+        fields: Vec<String>,
+    },
+    /// Mark a svc or pkg for removal; `oath apply` stops or unlinks it.
+    Rm {
+        id: String,
+    },
     /// Write a canonical plan.plan to stdout (or -w in place).
     Fmt {
         path: PathBuf,
@@ -121,6 +133,8 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Schema { .. }) => "schema",
         Some(Cmd::Get { .. }) => "get",
         Some(Cmd::Set { .. }) => "set",
+        Some(Cmd::New { .. }) => "new",
+        Some(Cmd::Rm { .. }) => "rm",
         Some(Cmd::Fmt { .. }) => "fmt",
         Some(Cmd::Build { .. }) => "build",
         Some(Cmd::Diff { .. }) => "diff",
@@ -300,30 +314,29 @@ fn run() -> oath_core::Result<i32> {
                 }
                 return Ok(0);
             }
-            let mut map = Map::new();
-            if let Some(js) = js {
-                let v: Value = serde_json::from_str(&js)?;
-                if let Some(o) = v.as_object() {
-                    map.extend(o.clone());
-                } else {
-                    return Err(Error::hint(
-                        "set --json needs an object",
-                        format!("oath schema {}", id.kind),
-                    ));
-                }
-            }
-            for f in fields {
-                let Some((k, v)) = f.split_once('=') else {
-                    return Err(Error::hint(
-                        format!("not k=v: {f}"),
-                        format!("oath schema {}", id.kind),
-                    ));
-                };
-                map.insert(k.to_string(), parse_val(v));
-            }
-            cat.set_fields(&id, map)?;
+            cat.set_fields(&id, field_map(&id, js, fields)?)?;
             if cli.json {
                 println!("{}", json!({"ok": true, "id": id.to_string()}));
+            }
+            Ok(0)
+        }
+        Some(Cmd::New { id, from_json, fields }) => {
+            let id: ObjectId = id.parse()?;
+            cat.new_object(&id, field_map(&id, from_json, fields)?)?;
+            if cli.json {
+                println!("{}", json!({"ok": true, "id": id.to_string()}));
+            } else {
+                println!("{id} created; `oath apply {id}` starts it");
+            }
+            Ok(0)
+        }
+        Some(Cmd::Rm { id }) => {
+            let id: ObjectId = id.parse()?;
+            cat.remove_object(&id)?;
+            if cli.json {
+                println!("{}", json!({"ok": true, "id": id.to_string()}));
+            } else {
+                println!("{id} marked for removal; `oath apply {id}` removes it");
             }
             Ok(0)
         }
@@ -429,6 +442,32 @@ fn print_build(r: &BuildReport, json_mode: bool) {
     } else {
         println!("pkg:{} {}", r.name, r.product);
     }
+}
+
+/// `--from-json '{…}'` plus `k=v` pairs (v is JSON if it parses, else a string).
+fn field_map(
+    id: &ObjectId,
+    js: Option<String>,
+    fields: Vec<String>,
+) -> oath_core::Result<Map<String, Value>> {
+    let mut map = Map::new();
+    if let Some(js) = js {
+        let v: Value = serde_json::from_str(&js)?;
+        let Some(o) = v.as_object() else {
+            return Err(Error::hint(
+                "--from-json needs an object",
+                format!("oath schema {}", id.kind),
+            ));
+        };
+        map.extend(o.clone());
+    }
+    for f in fields {
+        let Some((k, v)) = f.split_once('=') else {
+            return Err(Error::hint(format!("not k=v: {f}"), format!("oath schema {}", id.kind)));
+        };
+        map.insert(k.to_string(), parse_val(v));
+    }
+    Ok(map)
 }
 
 fn parse_val(s: &str) -> Value {

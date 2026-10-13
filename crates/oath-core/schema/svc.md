@@ -6,8 +6,9 @@ that converges `svc:*`. There is no unit file.
 **When to use:** start, stop, or change a supervised process.
 
 **When not:** do not hand-write init dialects. Do not add a service by
-editing `/etc`. `oath set` cannot create a new `svc` object; new
-objects come from the seed profile or an install overlay.
+editing `/etc`. Create one with `oath new svc:<name>` (every required
+field: `exec`, `restart`, `enabled`), remove one with `oath rm`; both
+take effect at `oath apply`.
 
 ## Fields
 
@@ -35,13 +36,15 @@ Actual is runtime: `state` (`running`, `stopped`, or `failed`), `pid`,
 `restarts`. Drift is desired against `applied.json` (the last applied
 desired), not against actual.
 
-Safety: `mutate`. Apply writes `applied.json`, then notifies PID 1.
+Safety: `mutate`, except `svc:sshd`: disabling or removing it, or
+changing its `exec`, `user` or `env`, needs `--confirm`. Apply checks
+the document, writes `applied.json`, then notifies PID 1. PID 1 runs
+only `applied.json`: a `set` without `apply` never reaches a running
+service, and a file it cannot read leaves the process running. A
+`wants` cycle that reaches PID 1 skips only the services in it.
 
-Known gaps (scheduled): PID 1 reads `desired.json`, not
-`applied.json`, so a `set` without `apply` reaches PID 1 at the next
-converge or boot. A `wants` cycle that reaches PID 1 that way starts
-no services at all, `svc:sshd` included. There are no per-service
-logs and no exit codes in actual.
+Known gaps (scheduled): no per-service logs, no exit codes in actual,
+no restart backoff.
 
 ## Example
 

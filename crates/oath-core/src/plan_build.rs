@@ -29,6 +29,7 @@ pub struct BuildReport {
 
 /// Copy a linted plan file into the store and pin `plan:<name>`.
 pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
+    let _lock = Catalog::open(catalog_root)?.lock()?;
     let plan = lint_bytes(bytes)?;
     let hash = file_hash(bytes);
     let dir = catalog_root.join("store/plan").join(&plan.name).join(&hash);
@@ -56,12 +57,14 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
 }
 
 pub fn build_file(catalog_root: &Path, path: &Path) -> Result<BuildReport> {
+    let _lock = Catalog::open(catalog_root)?.lock()?;
     let (plan, bytes) = lint_path(path)?;
     build_inner(catalog_root, &plan, &file_hash(&bytes), None)
 }
 
 pub fn build_pinned(catalog_root: &Path, name: &str) -> Result<BuildReport> {
     let cat = Catalog::open(catalog_root)?;
+    let _lock = cat.lock()?;
     let id = ObjectId::new(KIND_PLAN, name);
     let obj = cat.get(&id)?;
     let hash = obj.desired.get("hash").and_then(|h| h.as_str()).unwrap_or("").to_string();
@@ -201,7 +204,7 @@ fn ensure_pkg_object(catalog_root: &Path, plan: &PlanFile, product: &str) -> Res
         return Ok(());
     }
     fs::create_dir_all(&dir)?;
-    let mut desired = json!({ "present": false, "hash": product, "removable": true });
+    let mut desired = json!({ "present": false, "hash": product });
     if !plan.run_needs.is_empty() {
         desired["needs"] = serde_json::to_value(&plan.run_needs)?;
     }

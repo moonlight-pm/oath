@@ -499,6 +499,7 @@ dependencies = [
  "libc",
  "nix",
  "oath-core",
+ "serde",
  "serde_json",
 ]
 

@@ -27,24 +27,29 @@ record (`generation`, `parent`, `time`, `reason`). Do not `set` `snap:N`.
 
 ## Apply and undo
 
-`oath apply` checks `wants` cycles and the package `needs` graph,
-snapshots `@` to `@gen-N`, then converges. `N` is never reused (it is
-`max(existing)+1`).
+`oath apply` first checks everything it can without touching the
+machine: every selected object parses as its kind, confirm-class
+changes have `--confirm`, there is no `wants` cycle, and the package
+`needs` graph holds. A refusal takes no generation, changes nothing,
+and is logged with `"result":"refused"`. Then it snapshots `@` to
+`@gen-N` (holding what was applied before, not your pending edits) and
+converges. `N` is never reused (it is `max(existing)+1`). The log line
+says `ok`, or `error` if converging failed after the snapshot.
 
-`oath undo` copies the catalog back from the last successful apply's
-generation — `objects`, `schema`, `log`, `INDEX.md`, `store`, and
-`ssh` — then converges `host:local`, `pkg:*` links, `net:net0`,
-`ssh:local` and `dev:*` from the restored desired, and notifies PID 1
-for `svc:*`. It does not replace `/oath/run` (mounts and the init socket
-stay).
+`oath undo` works like a stack. It takes the newest apply, `ok` or
+`error`, that has not been undone yet, and puts back the spec of the
+objects that apply touched from its `@gen-N`. An object that apply
+created (`oath new`) is removed; one it removed (`oath rm`) comes back.
+Then it converges those objects (hostname, `pkg:*` links, `net:net0`,
+`ssh:local`, `dev:*`, and `svc:*` through PID 1), sets `snap:current`
+back, and logs `undo:N`. Run it again to step back one more apply.
 
-Known gaps (scheduled):
+Undo does not touch the apply log, the package store, the SSH host
+keys, or objects the apply did not touch. A pending `oath set` on some
+other object survives an undo.
 
-- A failed apply is not logged. `oath undo` after a failure reverts
-  the previous **good** apply instead.
-- Per-field checks run after the snapshot, so a refused apply can
-  still leave a generation behind.
-- Undo restores `log` and `store` along with the objects.
+A reboot through the catalog (`power=reboot`) is itself an apply and
+takes a generation.
 
 ## Boot menu
 
@@ -58,8 +63,8 @@ it was archived. systemd-boot stays at `EFI/systemd/` as a fallback.
 the kernel and initrd, archives the live ESP kernel as a new boot,
 keeps five, snapshots `@` to `@boot-<id>`, and copies the new bits. It
 does not format anything. It mounts the node you name **on the
-machine where you run it**. Nothing stops that being the build host's
-own ESP: never run it on the build host with that host's ESP.
+machine where you run it**, so it refuses to run on a machine that is
+not Oath (no `/oath/INDEX.md`), such as the build host.
 
 QEMU `cargo make run` / `up` / `start` boot with `-kernel` and have no
 menu. `cargo make install --qemu` boots through OVMF with a 0 s

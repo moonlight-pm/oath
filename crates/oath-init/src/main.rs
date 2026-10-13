@@ -149,10 +149,22 @@ fn real_main() -> Result<(), String> {
     let _ = fs::create_dir_all("/root");
     mount_toplevel();
 
-    if !Path::new("/oath/INDEX.md").exists() {
+    // Seed only a machine with no catalog at all. A missing INDEX.md is
+    // regenerated, never a reason to throw the catalog away.
+    if !Path::new("/oath/objects").is_dir() {
         let _ = seed(Path::new(DEFAULT_ROOT));
         log("seeded empty catalog");
         tel("init", "seeded", json!({}));
+    }
+    // Boot-time catalog writes hold the lock; svc status later does not.
+    let boot_lock = Catalog::open(DEFAULT_ROOT).and_then(|c| c.lock());
+    if let Err(e) = &boot_lock {
+        log(&format!("catalog lock: {e}"));
+    }
+    if !Path::new("/oath/INDEX.md").exists() {
+        if let Ok(c) = Catalog::open(DEFAULT_ROOT) {
+            let _ = c.write_index();
+        }
     }
 
     apply_host();
@@ -165,6 +177,7 @@ fn real_main() -> Result<(), String> {
     ensure_home();
     inject_ssh_from_host();
     apply_ssh();
+    drop(boot_lock);
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     let mut oneshot_done: HashSet<String> = HashSet::new();
     // sshd and DHCP first, then the deferred KMS and sound modules.
@@ -679,6 +692,15 @@ fn mount_toplevel() {
     }
 }
 
+/// What was last applied: `actual` for host, net and ssh (apply writes it
+/// after converging), else `desired` on a catalog that has never booted.
+/// Pending `oath set` edits do not take effect until `oath apply`.
+fn applied<T: serde::de::DeserializeOwned>(obj: &oath_core::Object) -> Option<T> {
+    serde_json::from_value(obj.actual.clone())
+        .ok()
+        .or_else(|| serde_json::from_value(obj.desired.clone()).ok())
+}
+
 fn apply_host() {
     let cat = match Catalog::open(DEFAULT_ROOT) {
         Ok(c) => c,
@@ -689,7 +711,7 @@ fn apply_host() {
     };
     let id = ObjectId::new("host", "local");
     let Ok(obj) = cat.get(&id) else { return };
-    let Ok(host) = serde_json::from_value::<Host>(obj.desired) else { return };
+    let Some(host) = applied::<Host>(&obj) else { return };
     if sethostname(host.hostname.as_str()).is_err() {
         log("sethostname failed");
         tel("init", "hostname", json!({ "ok": false, "name": host.hostname }));
@@ -721,7 +743,7 @@ fn apply_net() {
     };
     let id = ObjectId::new("net", "net0");
     let Ok(obj) = cat.get(&id) else { return };
-    let Ok(net) = serde_json::from_value::<oath_core::Net>(obj.desired) else { return };
+    let Some(net) = applied::<oath_core::Net>(&obj) else { return };
     match oath_core::converge_net(&net) {
         Ok(actual) => {
             tel("init", "net", json!({ "ok": true, "up": actual.up, "ipv4": actual.ipv4 }));
@@ -792,8 +814,13 @@ fn inject_ssh_from_host() {
     if n == 0 {
         return;
     }
+    // Boot applies ssh from actual, so the keys go in both.
     let dir = Path::new(DEFAULT_ROOT).join("objects/ssh/local");
     let _ = oath_core::write_json(&dir.join("desired.json"), &ssh);
+    if let Ok(mut a) = oath_core::read_json::<serde_json::Value>(&dir.join("actual.json")) {
+        a["authorized"] = json!(ssh.authorized);
+        let _ = oath_core::write_json(&dir.join("actual.json"), &a);
+    }
     tel("init", "ssh_inject", json!({ "added": n, "total": ssh.authorized.len() }));
     log(&format!("injected {n} host SSH public key(s)"));
 }
@@ -805,7 +832,7 @@ fn apply_ssh() {
     };
     let id = ObjectId::new("ssh", "local");
     let Ok(obj) = cat.get(&id) else { return };
-    let Ok(ssh) = serde_json::from_value::<oath_core::Ssh>(obj.desired) else { return };
+    let Some(ssh) = applied::<oath_core::Ssh>(&obj) else { return };
     match oath_core::converge_ssh(&ssh) {
         Ok(actual) => {
             tel("init", "ssh", json!({ "ok": true, "host_key": actual.host_key }));
@@ -859,11 +886,23 @@ fn converge(kids: &mut HashMap<i32, Kid>, oneshot_done: &mut HashSet<String>) {
         Err(_) => return,
     };
     let Ok(ids) = cat.ls(Some("svc")) else { return };
+    // PID 1 runs what was applied (`applied.json`), never pending desired.
+    // A spec it cannot read leaves a running service alone.
     let mut wanted: HashMap<String, Svc> = HashMap::new();
     for id in &ids {
-        if let Ok(obj) = cat.get(id) {
-            if let Ok(spec) = serde_json::from_value::<Svc>(obj.desired) {
+        let dir = Path::new(DEFAULT_ROOT).join("objects/svc").join(&id.name);
+        let applied = dir.join("applied.json");
+        let path = if applied.is_file() { applied } else { dir.join("desired.json") };
+        match oath_core::read_json::<Svc>(&path) {
+            Ok(spec) => {
                 wanted.insert(id.to_string(), spec);
+            }
+            Err(e) => {
+                log(&format!("{id}: cannot read {}: {e}", path.display()));
+                tel("init", "svc_spec", json!({ "id": id.to_string(), "ok": false }));
+                if let Some(k) = kids.values().find(|k| k.id == id.to_string()) {
+                    wanted.insert(id.to_string(), k.spec.clone());
+                }
             }
         }
     }
@@ -883,14 +922,17 @@ fn converge(kids: &mut HashMap<i32, Kid>, oneshot_done: &mut HashSet<String>) {
     }
 
     let items: Vec<(String, Svc)> = wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();
-    let order = match oath_core::svc_start_order(&items) {
-        Ok(o) => o,
-        Err(e) => {
-            log(&format!("svc wants: {e}"));
-            tel("init", "svc_wants", json!({ "ok": false, "err": e.to_string() }));
-            Vec::new()
+    // A wants cycle skips the services in it (and those waiting on it);
+    // everything else, sshd included, still starts.
+    let (order, stuck) = oath_core::svc_start_order_lenient(&items);
+    for id in &stuck {
+        log(&format!("{id} not started: wants cycle"));
+        tel("init", "svc_wants", json!({ "ok": false, "id": id, "err": "cycle" }));
+        if pid_for(kids, id).is_none() {
+            let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
+            write_svc_actual(&oid, "stopped", None, 0);
         }
-    };
+    }
     for id in &order {
         let Some(spec) = wanted.get(id) else { continue };
         let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
@@ -939,7 +981,7 @@ fn host_env() -> Vec<(String, String)> {
     let Some(cat) = cat else { return Vec::new() };
     let id = ObjectId::new("host", "local");
     let Ok(obj) = cat.get(&id) else { return Vec::new() };
-    let Ok(host) = serde_json::from_value::<Host>(obj.desired) else {
+    let Some(host) = applied::<Host>(&obj) else {
         return Vec::new();
     };
     oath_core::seat::login_env(&host)
@@ -1043,6 +1085,10 @@ fn reap(kids: &mut HashMap<i32, Kid>, oneshot_done: &mut HashSet<String>) {
 
 fn write_svc_actual(id: &ObjectId, state: &str, pid: Option<i32>, restarts: u32) {
     let dir = Path::new(DEFAULT_ROOT).join("objects").join(&id.kind).join(&id.name);
+    // `oath rm` deleted it; do not bring back a half object.
+    if !dir.join("desired.json").is_file() {
+        return;
+    }
     let mut v = serde_json::json!({ "state": state, "pid": pid, "restarts": restarts });
     let last = dir.join("last.json");
     if let Ok(extra) = oath_core::read_json::<serde_json::Value>(&last) {

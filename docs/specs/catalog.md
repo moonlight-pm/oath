@@ -7,9 +7,12 @@ observed). `oath set` writes desired, `oath apply` takes a btrfs
 generation and converges, and `oath undo` rolls back. Humans and agents
 use the same verbs.
 
-**Status:** partly built. The loop works. Writes are not yet safe
-against concurrent writers or crashes, and undo is wrong after a failed
-apply. Those fixes are the target below.
+**Status:** partly built. Phase 3 (catalog safety) landed 2026-10-13:
+locked atomic writes, typed `set`, validation before the snapshot, a
+logged outcome for every apply, a spec-only stack undo, `oath new` /
+`oath rm`, an id grammar and a confirm gate on changes that can cut off
+SSH. Generated schemas, probation with auto-revert, a physical
+spec/status split and a store integrity check are still the target.
 
 Replaces: T1 (catalog and `oath` surface), the catalog parts of T7, T24,
 T34.
@@ -25,8 +28,12 @@ T34.
     desired.json            owner intent
     actual.json             engine-owned observation
     meta.json               id, safety, status, last generation
-    applied.json            svc only: last desired that converged
-  log/apply.jsonl           one line per apply or undo
+    applied.json            svc only: the spec PID 1 runs
+    new                     marker: made by `oath new`, not applied yet
+    remove                  marker: `oath rm` pending
+  log/apply.jsonl           one line per apply (ok, error, refused) or undo
+  .lock                     writers' exclusive flock
+  .gens/<n>/objects/        copy snapshots (only off btrfs or under --root)
   run/                      sockets; init.sock; fs/ (btrfs top-level mount)
   store/                    packages and plans (see packages.md)
   ssh/                      host keys
@@ -37,28 +44,44 @@ exists only if `schema/<kind>.json` exists. Today's kinds: `host`,
 `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`. No kind is added
 without a recorded decision.
 
-`status` in `meta.json` is `in-sync`, `drift`, `applying` or `error`.
+`status`, as `oath get` reports it, is `in-sync`, `drift`, `new`,
+`removing`, `applying` or `error`.
+
+Every JSON document is written to a temporary file in the same
+directory, fsynced, renamed over the target, and the directory is
+fsynced. A reader or a crash sees the old file or the new one, never
+half. The apply log is appended and fsynced.
+
+Every writer of spec or log takes an exclusive `flock` on
+`/oath/.lock` (R4) and waits up to 30 s for another writer: `oath set`,
+`new`, `rm`, `apply`, `undo`, `build`, `seed`, and PID 1 during its
+boot-time catalog work. PID 1 writes svc status (`actual.json`) without
+the lock; that file has one writer, and the write is atomic. Readers
+(`get`, `ls`, `diff`) take no lock.
 
 ## Identity
 
 An id is `kind:name`. There is exactly one `host:local`.
 
-Target grammar (not enforced yet): kind `[a-z][a-z0-9-]*`, name
-`[a-z0-9][a-z0-9.-]*`. Today the parser only splits on `:` and checks
-that both halves are non-empty.
+The grammar is enforced wherever an id is parsed: kind is `a-z`, at
+most 16 characters; name is letters, digits, `.`, `_` and `-`, at most
+64 characters, and does not start with `.`. A name becomes a directory
+under `objects/<kind>/`, so it can never climb out of it.
 
 ## Verbs (built)
 
 | Verb | Does |
 |------|------|
-| `oath` | Short INDEX and the path to the full one |
+| `oath` | The whole INDEX |
 | `oath ls [--kind k]` | Ids |
 | `oath schema [kind]` | Kinds, or one kind's schema and prose |
 | `oath get <id> [--desired\|--actual]` | Desired, actual, meta |
-| `oath set <id> k=v…` / `--from-json` / `--from-file` | Merge into desired |
+| `oath set <id> k=v…` / `--from-json` / `--from-file` | Merge into desired; the result must parse as the kind's type |
+| `oath new <id> k=v…` / `--from-json` | Create a `svc` or `pkg` |
+| `oath rm <id>` | Mark a `svc` or `pkg` for removal |
 | `oath diff [id]` | Drift; exit 0 when none |
-| `oath apply [id…] [--confirm]` | Generation, then converge |
-| `oath undo` | Roll back the last apply |
+| `oath apply [id…] [--confirm]` | Check, generation, then converge |
+| `oath undo` | Put back the spec the newest not-undone apply changed |
 | `oath log` | Apply log |
 | `oath build`, `oath fmt` | Plans (see builds.md) |
 
@@ -77,7 +100,8 @@ at build and install time only (see boot-and-install.md).
 a root-owned `/etc/profile`. `timezone` is a POSIX TZ string; when set,
 every service and login gets `TZ` from it unless `env.TZ` is set. The
 system clock stays UTC, and recorded timestamps are RFC 3339 with `Z`.
-A `power` other than `run` needs `--confirm`.
+A `power` other than `run` needs `--confirm`. A hostname is letters,
+digits, `-` and `.`, at most 63 characters.
 
 **`snap:current`** — the live generation number. Changing it directly
 needs `--confirm`; `oath undo` is the normal path.
@@ -85,66 +109,82 @@ needs `--confirm`; `oath undo` is the normal path.
 Other kinds: `svc` in services.md, `pkg` in packages.md, `plan` in
 builds.md, `net` and `ssh` in network-and-ssh.md, `dev` in devices.md.
 
+## Set, new and rm (built)
+
+`oath set` merges fields into desired. Each key must be in the kind's
+schema, and the merged document must parse as the kind's Rust type and
+pass its checks: a host name; a `svc` that is enabled has an `exec`; a
+`pkg` hash is `sha256-` and 64 hex digits; `net` `ipv4` is `dhcp` or
+`a.b.c.d/n`; `ssh` keys start `ssh-`, `ecdsa-` or `sk-`; `snap:current`
+has a numeric generation. A refusal names the fields being set.
+
+`oath new <id>` creates a `svc` or `pkg` from the given fields (same
+checks; no defaults are filled in). It is marked `new` and does nothing
+until `oath apply`. `oath rm <id>` marks a `svc` or `pkg` `removing`;
+`oath apply` stops or unlinks it and deletes the object. An object that
+was never applied is deleted at once. Base packages, and `host`, `net`,
+`ssh`, `snap` and `dev` objects, cannot be created or removed.
+
 ## Apply and undo (built)
 
 `oath apply`:
 
 1. Compute drift for the selected ids (or all). Nothing to do: exit 0.
-2. If any change is confirm-class and `--confirm` is absent: exit 3.
-3. Check the `svc` wants graph and the `pkg` needs graph.
-4. Snapshot the live `@` subvolume as `@gen-N` from the top-level mount.
-5. Converge each object through its kind handler; refresh actual.
-6. Append a log line: time, actor (uid, tty), ids, generation, parent,
-   result. Regenerate INDEX.
+2. Check before touching anything: every selected document parses as
+   its type; confirm-class changes have `--confirm`; the `svc` wants
+   graph has no cycle; the `pkg` needs graph holds. A refusal takes no
+   generation, changes nothing, and is logged `refused` with
+   `generation: null`.
+3. Write last-good spec into the selected objects, snapshot the live
+   `@` subvolume as `@gen-N` from the top-level mount, then put the
+   pending spec back. The snapshot holds what was applied before.
+4. Converge each object through its kind handler; refresh actual. svc:
+   write `applied.json`, notify PID 1, wait for running or stopped.
+   Removals stop or unlink, then delete the object directory.
+5. Log the outcome: `ok`, or `error` with the message if converging
+   failed after the snapshot (the generation exists). Regenerate INDEX.
 
-`oath undo` finds the last log line with `result: ok`, restores
-`objects/`, `schema/`, `log/`, `INDEX.md`, `store/` and `ssh/` from its
-parent generation, and converges.
+Confirm-class (exit 3 without `--confirm`): `host:local` `power` other
+than `run`; `snap:current`; and changes that can cut this machine off
+from SSH — `svc:sshd` disabled, removed, or its `exec`, `user` or `env`
+changed; `ssh:local` `authorized` becoming empty; any change to
+`net:net0` `up`, `ipv4` or `gateway`.
 
-Known defects, from the 2026-10-13 review:
+`oath undo` is a stack. It takes the newest log line with a generation
+and result `ok` or `error` that no `undo:N` line has undone yet. From
+that generation's snapshot it puts back the spec of the objects that
+apply touched: `desired`, and `applied` for a `svc`. An object the apply
+created is stopped or unlinked and removed; an object it removed comes
+back. It then converges those objects, sets `snap:current` to the
+apply's parent and appends an `undo:N` line. Undo never touches `log/`,
+`store/`, `ssh/` host keys, or objects that apply did not touch, so a
+pending `set` elsewhere survives it. Status is recomputed by converging,
+not copied back.
 
-- Files are rewritten in place with no lock. A reader can see half a
-  file, and PID 1 stops any service whose desired it cannot parse.
-- A failed apply writes no log line, so undo reverts the previous
-  successful apply instead.
-- Typed validation happens after the snapshot is taken.
-- Undo copies `log/` and `store/` back, so it erases history and can
-  pull package trees out from under running processes.
-- `set` checks key names only, not types, and apply does not parse a
-  `svc` either: `restart=sometimes` applies cleanly, then PID 1 cannot
-  parse the service and stops it.
-- Nothing can create or delete an object except the seed.
-- A missing `INDEX.md` at boot makes PID 1 reseed the catalog.
+The snapshot comes from the hooks: `ApplyHooks::snapshot(n)` keeps the
+catalog, and `snapshot_catalog(n)` returns the catalog root inside it
+(`/oath/run/fs/@gen-N/oath` on btrfs, `<root>/.gens/<n>` for a copy
+snapshot, which keeps only `objects/`).
+
+`oath seed --overlay` (build and install time) validates each patch and
+counts it as applied: svc `applied.json`, host and net `actual.json`,
+and ssh `actual.authorized`, because PID 1 boots from applied state.
 
 ## Target
 
-- **Writes (proposed, awaiting the owner — D4).** Every writer (`oath`
-  and PID 1) takes an exclusive `flock` on `/oath/.lock`, writes to a
-  temporary file, fsyncs, and renames over the target. Readers never
-  see a partial document. The alternative, PID 1 as the only writer,
-  is rejected unless the owner prefers it, because `oath --root /mnt`
-  must work with no PID 1.
-- **State split.** Spec (desired documents) is what generations and
-  undo restore. Status (actual, meta) is engine-owned and recomputed.
-  The log is append-only and never rolled back. The store is
-  content-addressed and never rolled back; a generation pins hashes.
-- **Validate first.** Parse every selected desired into its Rust type
-  and check every graph before allocating a generation.
-- **Log every outcome.** `ok`, `error` and `refused` all get a line.
-  Undo reverts the most recent apply, whatever its result.
-- **Apply is the commit point.** PID 1 reads `applied`, never
-  `desired`, so an un-applied `set` cannot change a running service.
-- **Create and delete.** `oath new <id>` makes an object from schema
-  defaults; `oath rm <id>` deletes one. Both go through apply.
-- **Typed `set`.** Values are parsed against the kind's type. Schemas
-  are generated from the Rust types and embedded, so code and schema
-  cannot drift.
-- **Id grammar** as above, enforced at parse.
-- **Probation apply.** Changes that can lock the owner out (`ssh:local`,
-  `svc:sshd`, `net:net0`) apply on a timer and roll back unless
-  confirmed from a new session. Mechanism to be designed.
-- **Boot never reseeds** an existing catalog. A missing INDEX is
-  regenerated.
+- **Probation apply.** Changes that can lock the owner out apply on a
+  timer and roll back unless confirmed from a new session. Today they
+  need `--confirm` and nothing rolls them back.
+- **Generated schemas.** `schema/<kind>.json` is still hand-written.
+  It will be generated from the Rust types and embedded, so code and
+  schema cannot drift.
+- **Physical state split.** Spec and status still share an object
+  directory and both are inside the `@` snapshot; undo reads only spec.
+  Status may move out of the snapshotted tree.
+- **Store integrity.** Boot does not yet re-hash store trees against
+  their pins.
+- **Defaults for `oath new`.** Fields with schema defaults could be
+  filled in; today every required field must be given.
 
 ## INDEX
 
@@ -152,12 +192,15 @@ Known defects, from the 2026-10-13 review:
 are on Oath, not another distro; do not edit `/etc`, use `oath`; the
 verbs; the kinds present with a pointer to `oath schema <kind>`; safety
 (apply snapshots, `--confirm` only when the owner asked); how you got
-here. Bare `oath` prints a short form and the path.
+here. Bare `oath` prints all of it. PID 1 regenerates a missing
+`INDEX.md` at boot; it never reseeds an existing catalog (it seeds only
+when `/oath/objects` is missing).
 
 ## Courage test
 
 On a fresh install, an agent that has never seen Oath reads INDEX,
 runs `oath ls`, `oath schema host`, `oath get host:local`, sets a new
 hostname, diffs, applies, reboots, sees the name in actual, and undoes
-it. Target additions: a torn file, a failed apply followed by undo, and
-a lockout attempt each behave as described above.
+it. `cargo make check` runs this loop plus a refused apply, a failed
+apply followed by undo, `oath new`, `oath rm`, a lockout attempt, a torn
+file and a wants cycle at boot (`check/cases.toml`); all pass.

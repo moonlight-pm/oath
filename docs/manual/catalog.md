@@ -11,8 +11,10 @@ The catalog is the source of truth. It lives at `/oath`.
     desired.json
     actual.json
     meta.json              id, safety, status
-    applied.json           svc only — last applied desired
-  log/apply.jsonl
+    applied.json           svc only — the spec PID 1 runs
+    new / remove           markers for a pending `oath new` / `oath rm`
+  log/apply.jsonl          every apply (ok, error, refused) and undo
+  .lock                    held by whoever is writing the catalog
   store/pkg/<name>/<hash>/ package trees (apply links /bin)
   store/plan/<name>/<hash>/plan.plan
   ssh/                     host keys
@@ -23,7 +25,8 @@ The catalog is the source of truth. It lives at `/oath`.
 
 Desired and actual are separate files. You may `cat` any of these;
 `oath get` is the supported way. If a kind is not under
-`/oath/schema`, it does not exist.
+`/oath/schema`, it does not exist. Every file is replaced atomically
+(temp file, fsync, rename), so a reader never sees half of one.
 
 ## Kinds
 
@@ -47,23 +50,27 @@ That text is the same as `crates/oath-core/schema/` in the repo.
 
 ## Where objects come from
 
-`oath set` changes objects that already exist. It cannot create a
-`svc` or `pkg`, and nothing deletes objects. Objects are made at
-build and install time:
+On the box, `oath new <id>` creates a `svc` or `pkg` and `oath rm <id>`
+removes one; both take effect at `oath apply`, and `oath undo` of that
+apply reverses them. `host`, `net`, `ssh`, `snap` and `dev` objects,
+and the base packages, cannot be created or removed. Before the box
+first boots, objects come from:
 
 - **Seed profiles** — `crates/oath-core/seed/<profile>.json`, compiled
-  into `oath`. `base` is a headless machine you reach over SSH. `dev`
-  extends `base` with `pkg:cc` and `CC` / `CXX` / `AR` in
-  `host:local.env`. `cargo make build --profile <name>` seeds the image
-  from one; a profile lists the first desired document of each object,
-  the packages that can never be removed (`fixed`), and any first
-  actual that differs from the default.
+  into `oath`. `base` (the only one today) is a headless machine you
+  reach over SSH. A profile can `extend` another. `cargo make build
+  --profile <name>` seeds the image from one; a profile lists the first
+  desired document of each object, the packages that can never be
+  removed (`fixed`), and any first actual that differs from the
+  default.
 - **Overlays** — `{"objects": {"kind:name": {…}}}`. Each object is a
   JSON merge patch (RFC 7386) on the current desired: objects merge
   key by key, `null` deletes a key, anything else replaces. A new id
-  creates the object. `cargo make install --overlay <file.json>`
-  merges one into the installed catalog, after the hostname and the
-  SSH keys the installer writes.
+  creates the object. Each patched document must pass the same checks
+  as `oath set`. An overlay counts as applied: PID 1 boots with it.
+  `cargo make install --overlay <file.json>` merges one into the
+  installed catalog, after the hostname and the SSH keys the installer
+  writes.
 - **Plans** — `oath set plan:<name> --from-file` files a plan, and
   `oath build` creates the product's `pkg` object if it is missing.
 

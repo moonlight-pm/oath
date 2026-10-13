@@ -13,14 +13,16 @@ and `/bin/udhcpc`.
 
 ```
 oath get net:net0
-oath set net:net0 ipv4=192.168.1.20/24 gateway=192.168.1.1
-oath apply
-oath set net:net0 ipv4=dhcp
-oath apply
+sudo oath set net:net0 ipv4=192.168.1.20/24 gateway=192.168.1.1
+sudo oath apply --confirm
+sudo oath set net:net0 ipv4=dhcp
+sudo oath apply --confirm
 ```
 
-Downing the link or changing the address over SSH cuts your session.
-Serial still works.
+`ipv4` is `dhcp` or `a.b.c.d/n`; `set` refuses anything else. Any
+change to `up`, `ipv4` or `gateway` can cut your SSH session, so
+`oath apply` refuses it (exit 3) without `--confirm`. Serial still
+works. Nothing rolls a bad address back for you.
 
 On QEMU, user networking hands out `10.0.2.15` by DHCP and forwards
 host `127.0.0.1:2222` to guest port 22 (`OATH_SSH_PORT`).
@@ -43,13 +45,18 @@ are `ssh:local` `authorized` (OpenSSH public key lines); apply writes
 
 ```
 oath get ssh:local
-oath set ssh:local --from-json '{"authorized":["ssh-ed25519 AAAA…"]}'
-oath apply
+sudo oath set ssh:local --from-json '{"authorized":["ssh-ed25519 AAAA…"]}'
+sudo oath apply
 ```
 
-Empty `authorized` means nobody can log in over SSH. Undo restores the
-last keys. Replacing the list with keys you do not hold locks you out;
-apply does not ask for `--confirm` and nothing rolls it back.
+Each key must start `ssh-`, `ecdsa-` or `sk-`. Empty `authorized`
+means nobody can log in over SSH, so emptying it needs
+`oath apply --confirm`. Undo restores the last keys; it never rolls
+back the host keys under `/oath/ssh/`. Replacing the list with keys you
+do not hold still locks you out, and nothing rolls that back.
+
+Disabling or removing `svc:sshd`, or changing its `exec`, `user` or
+`env`, also needs `--confirm`.
 
 Where the first keys come from:
 
@@ -57,7 +64,8 @@ Where the first keys come from:
   (`~/.ssh/*.pub`, default identities without a `.pub`, `ssh-add -L`,
   or `OATH_SSH_PUBKEY`) into `ssh:local`.
 - `cargo make run` / `up` / `start` pass the same keys to the QEMU
-  guest, and PID 1 adds them to `ssh:local` at boot.
+  guest, and PID 1 adds them to `ssh:local` (desired and applied) at
+  boot. `cargo make check` passes its own throwaway key the same way.
 
 `svc:sshd` is dropbear (`pkg:dropbear`, not removable). The same
 package ships `/bin/ssh` and `/bin/ssh-keygen` (OpenSSH client),

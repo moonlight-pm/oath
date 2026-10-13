@@ -13,13 +13,15 @@ generated on first boot.
 
 ## Fields
 
-- `authorized` — list of OpenSSH public key lines (`ssh-ed25519 …`).
-  Apply writes `/home/.ssh/authorized_keys`.
+- `authorized` — list of OpenSSH public key lines (`ssh-ed25519 …`;
+  each starts `ssh-`, `ecdsa-` or `sk-`). Apply writes
+  `/home/.ssh/authorized_keys`.
 
-Safety: `mutate`.
+Safety: `mutate`; emptying `authorized` is **confirm**
+(`oath apply --confirm`). Undo never restores the host keys.
 
-Known gap: replacing `authorized` with keys you do not hold locks you
-out over SSH. Apply does not ask for `--confirm` or roll back.
+Known gap: replacing `authorized` with keys you do not hold still locks
+you out over SSH, and nothing rolls it back.
 
 ## Example
 

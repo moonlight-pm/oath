@@ -1,4 +1,3 @@
-use std::fs;
 use std::io::Write;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
@@ -26,54 +25,11 @@ impl Live {
         Path::new(BTRFS_TOP).join(gen_subvol_name(generation))
     }
 
+    /// Off btrfs (or `--root` elsewhere), a snapshot is a copy of
+    /// `objects/` under `<root>/.gens/<n>`.
     fn copy_fallback_dir(&self, generation: u64) -> PathBuf {
         self.catalog_root.join(".gens").join(generation.to_string())
     }
-
-    fn copy_dir(src: &Path, dst: &Path) -> Result<()> {
-        if dst.exists() {
-            let _ = fs::remove_dir_all(dst);
-        }
-        copy_recursive(src, dst)
-    }
-
-    /// Restore catalog documents without touching `/oath/run` (mounts, socket).
-    fn restore_catalog(src_oath: &Path, dst_oath: &Path) -> Result<()> {
-        for name in ["objects", "schema", "log", "INDEX.md", "store", "ssh"] {
-            let from = src_oath.join(name);
-            let to = dst_oath.join(name);
-            if from.is_dir() {
-                Self::copy_dir(&from, &to)?;
-            } else if from.is_file() {
-                if let Some(p) = to.parent() {
-                    fs::create_dir_all(p)?;
-                }
-                fs::copy(&from, &to)?;
-            }
-        }
-        Ok(())
-    }
-}
-
-fn copy_recursive(src: &Path, dst: &Path) -> Result<()> {
-    fs::create_dir_all(dst)?;
-    for e in fs::read_dir(src)? {
-        let e = e?;
-        let to = dst.join(e.file_name());
-        let from = e.path();
-        let meta = from.symlink_metadata()?;
-        if meta.file_type().is_dir() {
-            copy_recursive(&from, &to)?;
-        } else if meta.file_type().is_symlink() {
-            let t = fs::read_link(&from)?;
-            let _ = fs::remove_file(&to);
-            std::os::unix::fs::symlink(&t, &to)
-                .map_err(|err| Error::Msg(format!("symlink {}: {err}", to.display())))?;
-        } else if meta.file_type().is_file() {
-            fs::copy(&from, &to)?;
-        }
-    }
-    Ok(())
 }
 
 impl ApplyHooks for Live {
@@ -102,8 +58,7 @@ impl ApplyHooks for Live {
             }
         }
         let dest = self.copy_fallback_dir(generation);
-        fs::create_dir_all(dest.parent().unwrap_or(Path::new(".")))?;
-        Self::copy_dir(&self.catalog_root, &dest)?;
+        oath_core::copy_objects(&self.catalog_root, &dest)?;
         tel(
             "oath",
             "snapshot",
@@ -112,38 +67,16 @@ impl ApplyHooks for Live {
         Ok(())
     }
 
-    fn restore_snapshot(&self, generation: u64) -> Result<()> {
+    fn snapshot_catalog(&self, generation: u64) -> Result<PathBuf> {
         let sibling = Self::sibling_gen(generation).join("oath");
-        if sibling.is_dir() {
-            Self::restore_catalog(&sibling, Path::new("/oath"))?;
-            tel(
-                "oath",
-                "restore",
-                json!({ "generation": generation, "from": sibling.display().to_string() }),
-            );
-            return Ok(());
+        if self.catalog_root == Path::new("/oath") && sibling.join("objects").is_dir() {
+            return Ok(sibling);
         }
-        let dest = self.copy_fallback_dir(generation);
-        let catalog_in_snap = dest.join("oath");
-        if catalog_in_snap.is_dir() {
-            Self::restore_catalog(&catalog_in_snap, Path::new("/oath"))?;
-            tel(
-                "oath",
-                "restore",
-                json!({ "generation": generation, "from": catalog_in_snap.display().to_string() }),
-            );
-            return Ok(());
+        let copy = self.copy_fallback_dir(generation);
+        if copy.join("objects").is_dir() {
+            return Ok(copy);
         }
-        if dest.is_dir() {
-            Self::restore_catalog(&dest, &self.catalog_root)?;
-            tel(
-                "oath",
-                "restore",
-                json!({ "generation": generation, "from": dest.display().to_string() }),
-            );
-            return Ok(());
-        }
-        Err(Error::Msg(format!("no generation {generation} at {}", dest.display())))
+        Err(Error::Msg(format!("no snapshot of generation {generation}")))
     }
 
     fn converge_host(&self, desired: &Host) -> Result<Host> {

@@ -7,8 +7,10 @@ systemd. PID 1 itself is not an object; it is the engine that
 converges `svc`.
 
 **Status:** partly built. Supervision, ordering, restart policy and
-accounts are built. Logs, exit codes, backoff, a failed state, cgroups,
-an orderly shutdown and crash handling are the target.
+accounts are built. Since 2026-10-13 PID 1 runs only applied specs and
+a `wants` cycle no longer stops everything. Logs, exit codes, backoff, a
+failed state, cgroups, an orderly shutdown and crash handling are the
+target (phase 4).
 
 Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 
@@ -25,7 +27,8 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 
 - `exec` — argv with an absolute program path.
 - `wants` — services that should start first. Ordering only: an
-  unknown or disabled want is ignored. A cycle refuses apply.
+  unknown or disabled want is ignored. A cycle refuses apply (logged
+  `refused`).
 - `restart` — `never`, `always` or `on-failure`.
 - `enabled` — when false, the process is not running.
 - `user` — `root` (the default when absent) or `home`. Oath has these
@@ -36,7 +39,10 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
   Ignored for root.
 
 Actual: `state` (`stopped`, `running`, `failed`), `pid`, `restarts`.
-`applied.json` holds the last desired that converged.
+`applied.json` is the spec PID 1 runs: `oath apply` writes it after the
+document passes its checks, and `oath undo` puts back the previous one.
+Desired is what the owner is staging; PID 1 never reads it while an
+`applied.json` exists.
 
 The base profile seeds `svc:serial` (root shell on the serial console),
 `svc:sshd`, and `svc:hold` (a canary that wants `svc:serial`).
@@ -57,30 +63,37 @@ drops to its account, and execs.
 3. Load the early modules, mount the root subvolume, and enter it.
 4. Mount the btrfs top level at `/oath/run/fs` so generations are
    siblings of `@`.
-5. Converge `host:local`, `net:net0`, `dev:*`, `ssh:local`.
-6. Start enabled services in `wants` order.
-7. Load the deferred modules (display and sound), then listen on
+5. Seed only if `/oath/objects` is missing; regenerate a missing
+   `INDEX.md`. Take the catalog lock for the boot-time writes.
+6. Converge `host:local`, `net:net0` and `ssh:local` from their applied
+   state (`actual.json`), not from pending desired; probe `dev:*`.
+   Release the lock.
+7. Start enabled services in `wants` order.
+8. Load the deferred modules (display and sound), then listen on
    `/oath/run/init.sock`. `oath apply` writes to that socket to ask
    PID 1 to converge services again.
 
 The main loop reaps children and restarts them according to `restart`.
-On converge, a running service whose spec changed, or that is disabled
-or gone, is stopped with SIGTERM and replaced.
+On converge, PID 1 reads each `applied.json` (falling back to desired
+only when there is none). A running service whose applied spec changed,
+or that is disabled or gone, is stopped with SIGTERM and replaced. A
+spec PID 1 cannot read leaves the running process alone and is logged.
+Services in a `wants` cycle, and services waiting on one, are skipped
+and recorded `stopped`; every other service, `svc:sshd` included, still
+starts. PID 1 does not recreate the status file of an object `oath rm`
+deleted.
 
 ## Known defects (from the 2026-10-13 review)
 
-- PID 1 reads `desired`, so an un-applied `set` can change a running
-  service at the next converge.
-- A desired document PID 1 cannot parse is treated as gone, and the
-  running service is stopped.
-- A `wants` cycle makes the start order empty, so nothing starts,
-  sshd included.
 - Service output goes to the console. There is no per-service log, no
   exit code in actual, and `restarts` is not a real counter.
 - Restarts have a fixed 200 ms delay and no backoff, so a crashing
   service spins.
 - No cgroup per service; stopping a service leaves its children.
 - No shutdown sequence: reboot does not stop services or sync in order.
+  Plain `reboot` (busybox, which signals PID 1) does nothing; only
+  `oath` `power=reboot` reboots. This is the one gap case left in
+  `check/cases.toml`.
 - The root is entered with `chroot`, not `switch_root`, so the initrd
   stays pinned in memory.
 - If PID 1 panics or errors at boot it runs `/bin/sh` and then sleeps
@@ -88,7 +101,6 @@ or gone, is stopped with SIGTERM and replaced.
 
 ## Target
 
-- **Read `applied` only.** Apply is the commit point (catalog.md).
 - **Logs.** A ring buffer per service in PID 1, persisted under
   `/oath/log/svc/<name>`, read with `oath logs svc:<name>`.
 - **Exit status.** Actual records the last exit code or signal, a true
@@ -104,15 +116,17 @@ or gone, is stopped with SIGTERM and replaced.
 - **Crash path.** A panic hook logs, syncs, and reboots; metal kernels
   boot with `panic=10`. A rescue shell is still offered on the serial
   console.
-- **Isolate bad specs.** A service that fails to parse or sits in a
-  `wants` cycle is marked `failed` with a reason; every other service
-  still starts.
+- **Isolate bad specs, with a reason.** Today a skipped service is
+  `stopped` and the reason is only in the console log. It will be
+  `failed` with the reason in actual.
 - **DHCP as a service.** The lease client runs as a supervised service
   instead of inside `net` converge (network-and-ssh.md).
 
 ## Courage test
 
 Disable `svc:hold`, apply, see it stopped; enable it, apply, see it
-running; undo restores the previous state. Target additions: a
-crashing service backs off and reaches `failed`; `oath logs` shows its
-last lines; a cycle between two services leaves sshd running.
+running; undo restores the previous state. `cargo make check` also
+covers a torn `desired.json` (the service keeps running) and a cycle at
+boot (sshd still starts). Target additions: a crashing service backs off
+and reaches `failed`; `oath logs` shows its last lines; plain `reboot`
+shuts down in order.

@@ -45,7 +45,11 @@ of T24, and D3 (seed as data).
   installer initrd.
 - A **host overlay** is the same JSON shape with only `objects`; each
   object is a JSON merge patch on desired. Machine facts live there
-  (hostname, timezone, a backup target), never in a profile.
+  (hostname, timezone, a backup target), never in a profile. Each
+  patched document must pass the `oath set` checks, and the overlay
+  counts as applied (svc `applied`, host and net `actual`, ssh
+  `actual.authorized`), because PID 1 boots from applied state. A
+  package an overlay turns on is linked by the first `oath apply`.
 
 ## Boot path (built)
 

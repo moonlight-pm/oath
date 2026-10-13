@@ -1,8 +1,10 @@
 # snap
 
 Filesystem generations. `oath apply` snapshots the live btrfs root
-before it converges. `oath undo` restores the catalog from the last
-apply's snapshot.
+before it converges (after checking everything; a refused apply takes
+no generation). `oath undo` puts back, from the newest not-undone
+apply's snapshot, the spec of the objects that apply changed, and
+converges them. Repeat to step further back.
 
 **When to use:** look at generations; undo the last apply. Do not pick
 an old generation as the boot default unless the owner asked
@@ -20,9 +22,10 @@ an old generation as the boot default unless the owner asked
 Generation 0 is the image as first booted (no `snap:0` file until
 something snapshots).
 
-Known gaps (scheduled): a failed apply is not logged, so `oath undo`
-after a failure reverts the previous good apply. Undo also restores
-`/oath/log` and `/oath/store`, not only the objects.
+Every apply is logged: `ok`, `error` (converging failed after the
+snapshot; undo reverts it), or `refused` (no generation). Undo never
+rewinds `/oath/log`, `/oath/store` or the SSH host keys, and leaves
+objects the apply did not touch alone.
 
 ## Example
 

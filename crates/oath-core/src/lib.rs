@@ -20,7 +20,7 @@ mod svc_order;
 mod svc_run;
 mod tel;
 
-pub use catalog::{diff_values, Catalog, Drift, Object};
+pub use catalog::{copy_objects, diff_values, Catalog, CatalogLock, Drift, Object};
 pub use dev::converge as converge_dev;
 pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
@@ -54,7 +54,9 @@ pub use seed::{
     apply_overlay, merge_patch, seed, seed_profile, Profile, DEFAULT_PROFILE, PROFILES,
 };
 pub use ssh::converge as converge_ssh;
-pub use svc_order::start_order as svc_start_order;
+pub use svc_order::{
+    start_order as svc_start_order, start_order_lenient as svc_start_order_lenient,
+};
 pub use svc_run::{apply_svc_cred, svc_env_pairs, svc_spawn, SvcCred, SvcSpawn};
 pub use tel::tel;
 
@@ -75,16 +77,37 @@ pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
+/// Pretty JSON, written atomically: temp file, fsync, rename, fsync dir.
+/// A reader (or a crash) sees the old file or the new one, never half.
 pub fn write_json(path: &std::path::Path, value: &impl serde::Serialize) -> Result<()> {
-    if let Some(p) = path.parent() {
-        std::fs::create_dir_all(p)?;
-    }
     let mut s = serde_json::to_string_pretty(value)?;
     if !s.ends_with('\n') {
         s.push('\n');
     }
-    std::fs::write(path, s)?;
-    Ok(())
+    write_atomic(path, s.as_bytes())
+}
+
+/// Replace `path` with `bytes` atomically (see [`write_json`]).
+pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> Result<()> {
+    use std::io::Write;
+    let dir = path.parent().unwrap_or(std::path::Path::new("."));
+    std::fs::create_dir_all(dir)?;
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let tmp = dir.join(format!(".{name}.tmp.{}", std::process::id()));
+    let result = (|| -> Result<()> {
+        let mut f = std::fs::File::create(&tmp)?;
+        f.write_all(bytes)?;
+        f.sync_all()?;
+        std::fs::rename(&tmp, path)?;
+        if let Ok(d) = std::fs::File::open(dir) {
+            let _ = d.sync_all();
+        }
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
 }
 
 pub fn read_json<T: serde::de::DeserializeOwned>(path: &std::path::Path) -> Result<T> {

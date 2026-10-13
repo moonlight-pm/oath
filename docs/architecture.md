@@ -18,8 +18,11 @@ firmware ── ESP: BOOTX64.EFI (systemd-boot today; oath-efi is the menu/mark)
     insmod the packed module list (net and disk first, KMS and sound later)
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware, chroot
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
-    apply host, net (udhcpc for dhcp), dev, ssh from the catalog
-    start svc:* in `wants` order; listen on /oath/run/init.sock; reap
+    seed only if /oath/objects is missing; regenerate a missing INDEX.md
+    under /oath/.lock: apply host, net (udhcpc for dhcp), ssh from their
+      applied state (actual.json); probe dev
+    start svc:* from applied.json in `wants` order (a cycle skips only
+      its members); listen on /oath/run/init.sock; reap
 ```
 
 QEMU (`cargo make run|up|start`) boots the same kernel and initrd with
@@ -31,7 +34,8 @@ QEMU (`cargo make run|up|start`) boots the same kernel and initrd with
 GPT  1: ESP (vfat, 512M)     2: btrfs "oath"
 btrfs
   @           live root
-  @gen-N      read-only snapshot taken by each apply (undo target)
+  @gen-N      read-only snapshot taken by each apply; undo copies the
+              touched objects' spec back out of @gen-N/oath/objects
   @boot-N     snapshot taken when `cargo make esp` archives a boot
 ```
 
@@ -47,7 +51,10 @@ btrfs
   INDEX.md                 generated; what an agent reads first
   schema/<kind>.json|.md   per-kind schema and prose
   objects/<kind>/<name>/   desired.json actual.json meta.json [applied.json]
-  log/apply.jsonl          one line per successful apply or undo
+                           [new | remove markers for oath new / oath rm]
+  log/apply.jsonl          one line per apply (ok, error, refused) or undo
+  .lock                    exclusive flock held by catalog writers
+  .gens/<n>/objects/       copy snapshots (off btrfs or under --root only)
   store/pkg/<name>/<hash>/ package trees; `live` → the linked hash
   store/plan/<name>/<hash>/plan.plan
   store/adv/<name>/<hash>.json   advisories

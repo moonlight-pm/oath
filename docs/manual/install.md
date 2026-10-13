@@ -56,7 +56,10 @@ the object. See [Catalog](catalog.md).
 ```
 
 An overlay that sets `ssh:local.authorized` replaces the build host's
-keys rather than adding to them.
+keys rather than adding to them. Each patched object must pass the same
+checks as `oath set`, and the overlay counts as applied: the machine
+boots with it, no `oath apply` needed (except to link a package an
+overlay turns on).
 
 ## Rehearse in QEMU
 

@@ -1,16 +1,18 @@
 use std::sync::Mutex;
 
 use oath_core::{
-    converge_pkg, hash_tree, ingest_file, install_tree, is_realization_id, promote_slot, seed,
-    Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId, Pkg, PkgActual,
-    Result, EXIT_CONFIRM,
+    converge_pkg, copy_objects, hash_tree, ingest_file, install_tree, is_realization_id,
+    promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId,
+    Pkg, PkgActual, Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
 
+/// Hooks for tests: snapshots are copies of `objects/` under a scratch
+/// directory, the hostname lives in memory, packages link for real.
 struct MemHooks {
     hostname: Mutex<String>,
-    snaps: Mutex<Vec<(u64, Vec<u8>)>>,
     root: std::path::PathBuf,
+    snaps: tempfile::TempDir,
     reboots: Mutex<u32>,
 }
 
@@ -18,87 +20,24 @@ impl MemHooks {
     fn new(root: std::path::PathBuf) -> Self {
         Self {
             hostname: Mutex::new("oath".into()),
-            snaps: Mutex::new(Vec::new()),
             root,
+            snaps: tempfile::tempdir().unwrap(),
             reboots: Mutex::new(0),
         }
     }
-
-    fn tar(root: &std::path::Path) -> Vec<u8> {
-        let mut buf = Vec::new();
-        for e in walkdir(root) {
-            let rel = e.strip_prefix(root).unwrap();
-            if rel.as_os_str().is_empty() {
-                continue;
-            }
-            if rel.components().next().is_some_and(|c| c.as_os_str() == "bin") {
-                continue;
-            }
-            if e.is_file() {
-                buf.extend_from_slice(rel.to_string_lossy().as_bytes());
-                buf.push(0);
-                let data = std::fs::read(&e).unwrap();
-                buf.extend_from_slice(&(data.len() as u32).to_le_bytes());
-                buf.extend_from_slice(&data);
-            }
-        }
-        buf
-    }
-
-    fn untar(root: &std::path::Path, buf: &[u8]) {
-        let _ = std::fs::remove_dir_all(root.join("objects"));
-        let _ = std::fs::remove_dir_all(root.join("log"));
-        let mut i = 0;
-        while i < buf.len() {
-            let z = buf[i..].iter().position(|b| *b == 0).unwrap();
-            let rel = std::str::from_utf8(&buf[i..i + z]).unwrap();
-            i += z + 1;
-            let len = u32::from_le_bytes(buf[i..i + 4].try_into().unwrap()) as usize;
-            i += 4;
-            let data = &buf[i..i + len];
-            i += len;
-            let p = root.join(rel);
-            if let Some(d) = p.parent() {
-                std::fs::create_dir_all(d).unwrap();
-            }
-            std::fs::write(p, data).unwrap();
-        }
-    }
-}
-
-fn walkdir(root: &std::path::Path) -> Vec<std::path::PathBuf> {
-    let mut out = Vec::new();
-    fn rec(p: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
-        if let Ok(rd) = std::fs::read_dir(p) {
-            for e in rd.flatten() {
-                let p = e.path();
-                if p.is_dir() {
-                    rec(&p, out);
-                } else {
-                    out.push(p);
-                }
-            }
-        }
-    }
-    rec(root, &mut out);
-    out
 }
 
 impl ApplyHooks for MemHooks {
     fn snapshot(&self, generation: u64) -> Result<()> {
-        self.snaps.lock().unwrap().push((generation, Self::tar(&self.root)));
-        Ok(())
+        copy_objects(&self.root, &self.snaps.path().join(generation.to_string()))
     }
-    fn restore_snapshot(&self, generation: u64) -> Result<()> {
-        let snaps = self.snaps.lock().unwrap();
-        let buf = snaps
-            .iter()
-            .find(|(g, _)| *g == generation)
-            .map(|(_, b)| b.clone())
-            .ok_or_else(|| Error::Msg(format!("no snap {generation}")))?;
-        drop(snaps);
-        Self::untar(&self.root, &buf);
-        Ok(())
+    fn snapshot_catalog(&self, generation: u64) -> Result<std::path::PathBuf> {
+        let p = self.snaps.path().join(generation.to_string());
+        if p.is_dir() {
+            Ok(p)
+        } else {
+            Err(Error::Msg(format!("no snap {generation}")))
+        }
     }
     fn converge_host(&self, desired: &Host) -> Result<Host> {
         *self.hostname.lock().unwrap() = desired.hostname.clone();
@@ -383,7 +322,9 @@ fn net_up_down_undo() {
     let mut fields = Map::new();
     fields.insert("up".into(), json!(false));
     cat.set_fields(&id, fields).unwrap();
-    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let err = cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_CONFIRM, "net changes can cut off SSH");
+    cat.apply(Some(vec![id.clone()]), true, &Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().actual["up"], json!(false));
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().desired["up"], json!(true));
@@ -625,4 +566,166 @@ fn pkg_needs_allows_need_off_after_user() {
         cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
         assert_eq!(cat.get(&id).unwrap().actual["present"], json!(false));
     }
+}
+
+fn set(cat: &Catalog, id: &str, k: &str, v: serde_json::Value) -> Result<()> {
+    let mut m = Map::new();
+    m.insert(k.into(), v);
+    cat.set_fields(&id.parse().unwrap(), m)
+}
+
+fn results(cat: &Catalog) -> Vec<(String, Option<u64>)> {
+    cat.log_lines()
+        .unwrap()
+        .iter()
+        .map(|r| (r["result"].as_str().unwrap().to_string(), r["generation"].as_u64()))
+        .collect()
+}
+
+#[test]
+fn set_refuses_a_value_of_the_wrong_type() {
+    let (_d, cat) = tmp();
+    assert!(set(&cat, "svc:hold", "restart", json!("sometimes")).is_err());
+    assert!(set(&cat, "svc:hold", "enabled", json!("yes")).is_err());
+    assert!(set(&cat, "host:local", "hostname", json!("no spaces")).is_err());
+    assert!(set(&cat, "net:net0", "ipv4", json!("10.0.0.300/24")).is_err());
+    assert!(set(&cat, "pkg:hello", "hash", json!("abc")).is_err());
+    set(&cat, "net:net0", "ipv4", json!("10.0.0.3/24")).unwrap();
+    let hold = cat.get(&"svc:hold".parse().unwrap()).unwrap();
+    assert_eq!(hold.desired["restart"], "always");
+}
+
+#[test]
+fn refused_apply_changes_nothing_and_is_logged() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "host:local", "hostname", json!("bad")).unwrap();
+    set(&cat, "svc:serial", "wants", json!(["svc:hold"])).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert!(err.to_string().contains("cycle"), "{err}");
+    assert_eq!(*hooks.hostname.lock().unwrap(), "oath");
+    assert_eq!(results(&cat), vec![("refused".into(), None)]);
+    let snap = cat.get(&"snap:current".parse().unwrap()).unwrap();
+    assert_eq!(snap.actual["generation"], 0);
+}
+
+#[test]
+fn failed_apply_is_logged_and_undo_reverts_it_not_the_one_before() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "host:local", "hostname", json!("good")).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    // Valid spec, fails while converging: the hello tree is not in the store.
+    write_hello_store(d.path());
+    set(&cat, "pkg:hello", "present", json!(true)).unwrap();
+    set(&cat, "pkg:hello", "hash", json!(format!("sha256-{}", "0".repeat(64)))).unwrap();
+    assert!(cat.apply(None, false, &Actor::unknown(), &hooks).is_err());
+    assert_eq!(results(&cat), vec![("ok".into(), Some(1)), ("error".into(), Some(2))]);
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(*hooks.hostname.lock().unwrap(), "good");
+    let hello = cat.get(&"pkg:hello".parse().unwrap()).unwrap();
+    assert_eq!(hello.desired["present"], false);
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(*hooks.hostname.lock().unwrap(), "oath");
+    assert!(cat.undo(&Actor::unknown(), &hooks).is_err(), "nothing left to undo");
+    // The log keeps every apply and every undo.
+    let r = results(&cat);
+    assert_eq!(r.len(), 4);
+    assert_eq!(r[0], ("ok".into(), Some(1)));
+}
+
+#[test]
+fn undo_restores_spec_not_log_or_other_objects() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "host:local", "hostname", json!("one")).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    // A pending edit on an object the undone apply did not touch survives.
+    set(&cat, "svc:hold", "restart", json!("never")).unwrap();
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    let hold = cat.get(&"svc:hold".parse().unwrap()).unwrap();
+    assert_eq!(hold.desired["restart"], "never");
+    let host = cat.get(&"host:local".parse().unwrap()).unwrap();
+    assert_eq!(host.desired["hostname"], "oath");
+    assert_eq!(cat.log_lines().unwrap().len(), 2);
+}
+
+#[test]
+fn new_and_rm_go_through_apply_and_undo() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let tick: ObjectId = "svc:tick".parse().unwrap();
+    let spec =
+        json!({"exec": ["/bin/sleep", "9"], "wants": [], "restart": "always", "enabled": true});
+    assert!(cat.new_object(&"host:other".parse().unwrap(), Map::new()).is_err());
+    assert!(cat.new_object(&tick, json!({"exec": []}).as_object().unwrap().clone()).is_err());
+    cat.new_object(&tick, spec.as_object().unwrap().clone()).unwrap();
+    assert!(cat.new_object(&tick, spec.as_object().unwrap().clone()).is_err(), "exists");
+    assert_eq!(cat.get(&tick).unwrap().meta.status, "new");
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&tick).unwrap().meta.status, "in-sync");
+
+    // Undo of the apply that created it takes it out again.
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert!(cat.get(&tick).is_err());
+
+    // rm of something applied waits for apply; undo brings it back.
+    cat.new_object(&tick, spec.as_object().unwrap().clone()).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    cat.remove_object(&tick).unwrap();
+    assert_eq!(cat.get(&tick).unwrap().meta.status, "removing");
+    assert!(set(&cat, "svc:tick", "enabled", json!(false)).is_err());
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert!(cat.get(&tick).is_err());
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&tick).unwrap().desired["exec"][1], "9");
+    assert_eq!(cat.get(&tick).unwrap().meta.status, "in-sync");
+
+    // rm of something never applied is immediate; base packages refuse.
+    let late: ObjectId = "svc:late".parse().unwrap();
+    cat.new_object(&late, spec.as_object().unwrap().clone()).unwrap();
+    cat.remove_object(&late).unwrap();
+    assert!(cat.get(&late).is_err());
+    assert!(cat.remove_object(&"pkg:busybox".parse().unwrap()).is_err());
+    assert!(cat.remove_object(&"host:local".parse().unwrap()).is_err());
+}
+
+#[test]
+fn lockout_changes_need_confirm() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "svc:sshd", "enabled", json!(false)).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_CONFIRM);
+    set(&cat, "svc:sshd", "enabled", json!(true)).unwrap();
+    set(&cat, "ssh:local", "authorized", json!([])).unwrap();
+    assert!(cat.diff(None).unwrap().is_empty(), "authorized was already empty");
+    set(&cat, "ssh:local", "authorized", json!(["ssh-ed25519 AAAA one"])).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    set(&cat, "ssh:local", "authorized", json!([])).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_CONFIRM);
+}
+
+#[test]
+fn the_lock_excludes_a_second_writer() {
+    let (_d, cat) = tmp();
+    let held = cat.lock().unwrap();
+    let other = cat.clone();
+    let done = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let flag = done.clone();
+    let t = std::thread::spawn(move || {
+        set(&other, "host:local", "hostname", json!("waited")).unwrap();
+        flag.store(true, std::sync::atomic::Ordering::SeqCst);
+    });
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    assert!(!done.load(std::sync::atomic::Ordering::SeqCst), "set ran while the lock was held");
+    drop(held);
+    t.join().unwrap();
+    assert_eq!(cat.get(&"host:local".parse().unwrap()).unwrap().desired["hostname"], "waited");
+}
+
+#[test]
+fn ids_cannot_leave_the_catalog() {
+    assert!("svc:../../etc".parse::<ObjectId>().is_err());
 }

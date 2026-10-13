@@ -81,10 +81,31 @@ steps = [
 ]
 
 [[case]]
-name = "wants-cycle-refused"
-about = "apply refuses a wants cycle."
+name = "refused-apply-changes-nothing"
+about = "An apply that fails its checks converges nothing, takes no generation, and is logged."
 steps = [
-  { run = "sudo oath set svc:serial --from-json '{\"wants\":[\"svc:hold\"]}' && sudo oath apply", fails = true, expect = ["cycle"] },
+  { run = "sudo oath set host:local hostname=bad && sudo oath set svc:serial --from-json '{\"wants\":[\"svc:hold\"]}' && sudo oath apply", fails = true, expect = ["cycle"] },
+  { run = "hostname; oath get snap:current", reject = ["bad", "generation: 1"] },
+  { run = "oath log", expect = ["\"result\":\"refused\""] },
+]
+
+[[case]]
+name = "failed-apply-then-undo"
+about = "A failure while converging is logged; undo reverts that apply, not the good one before it."
+steps = [
+  { run = "sudo oath set host:local hostname=good && sudo oath apply", expect = ["applied generation 1"] },
+  { run = "sudo oath set pkg:fetchme present=true hash=sha256-0000000000000000000000000000000000000000000000000000000000000000 && sudo oath apply", fails = true },
+  { run = "oath log", expect = ["\"result\":\"error\""] },
+  { run = "sudo oath undo && hostname && oath get pkg:fetchme", expect = ["undid to generation 1", "good", "present: false"] },
+  { run = "sudo oath undo && hostname", expect = ["undid to generation 0", "oath"] },
+]
+
+[[case]]
+name = "oath-rm-and-undo"
+about = "rm goes through apply; undo brings the service back."
+steps = [
+  { run = "sudo oath rm svc:hold && sudo oath apply svc:hold && sleep 1 && ! pidof sleep && ! oath get svc:hold" },
+  { run = "sudo oath undo && sleep 1 && pidof sleep && oath get svc:hold", expect = ["in-sync"] },
 ]
 
 [[case]]
@@ -95,30 +116,19 @@ steps = [
   { run = "ip -4 addr show net0", expect = ["10.0.2.15"] },
 ]
 
-# ---- Known gaps (acceptance tests for later phases) ------------------
-
-[[case]]
-name = "failed-apply-changes-nothing"
-about = "An apply that fails validation must not converge anything or take a generation."
-gap = "phase 3: validate before snapshot, log every outcome"
-steps = [
-  { run = "sudo oath set host:local hostname=bad && sudo oath set svc:hold restart=sometimes; sudo oath apply", fails = true },
-  { run = "hostname", reject = ["bad"] },
-  { run = "oath log", expect = ["error"] },
-]
+# ---- Phase 3: catalog safety -----------------------------------------
 
 [[case]]
 name = "typed-set"
 about = "set refuses a value of the wrong type."
-gap = "phase 3: typed set"
 steps = [
-  { run = "sudo oath set svc:hold restart=sometimes", fails = true },
+  { run = "sudo oath set svc:hold restart=sometimes", fails = true, expect = ["restart"] },
+  { run = "oath get svc:hold", expect = ["\"always\""] },
 ]
 
 [[case]]
 name = "oath-new"
 about = "An agent can create a service."
-gap = "phase 3: oath new / oath rm"
 steps = [
   { run = "sudo oath new svc:tick --from-json '{\"exec\":[\"/bin/sleep\",\"1000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tick && sleep 1 && oath get svc:tick", expect = ["running"] },
 ]
@@ -126,16 +136,14 @@ steps = [
 [[case]]
 name = "undo-keeps-the-log"
 about = "Undo restores the spec, not the apply log."
-gap = "phase 3: undo restores spec only"
 steps = [
   { run = "sudo oath set host:local hostname=one && sudo oath apply && sudo oath undo" },
-  { run = "oath log", expect = ["\"generation\":1", "undo"] },
+  { run = "oath log", expect = ["\"generation\":1", "undo:1"] },
 ]
 
 [[case]]
 name = "sshd-lockout-needs-confirm"
-about = "Turning off sshd needs --confirm (or reverts on its own)."
-gap = "phase 3: probation apply for lockout-class changes"
+about = "Turning off sshd needs --confirm."
 steps = [
   { run = "sudo oath set svc:sshd enabled=false && sudo oath apply svc:sshd", fails = true, expect = ["confirm"] },
   { run = "true" },
@@ -143,8 +151,7 @@ steps = [
 
 [[case]]
 name = "torn-svc-file"
-about = "A half-written desired.json does not stop a running service."
-gap = "phase 3/4: atomic writes, PID 1 reads applied"
+about = "A half-written desired.json does not stop a running service: PID 1 runs applied specs."
 steps = [
   { run = "sudo sh -c 'printf \"{\\\"exec\\\": [\" > /oath/objects/svc/hold/desired.json'" },
   { reboot = "force" },
@@ -154,12 +161,13 @@ steps = [
 [[case]]
 name = "cycle-at-boot-keeps-sshd"
 about = "A wants cycle that reaches PID 1 skips only the services in it."
-gap = "phase 4: a cycle isolates one service"
 steps = [
-  { run = "sudo sh -c 'printf \"%s\\n\" \"{\\\"exec\\\":[\\\"/lib/oath/serial-login\\\"],\\\"wants\\\":[\\\"svc:hold\\\"],\\\"restart\\\":\\\"always\\\",\\\"enabled\\\":true}\" > /oath/objects/svc/serial/desired.json'" },
+  { run = "sudo sh -c 'printf \"%s\\n\" \"{\\\"exec\\\":[\\\"/lib/oath/serial-login\\\"],\\\"wants\\\":[\\\"svc:hold\\\"],\\\"restart\\\":\\\"always\\\",\\\"enabled\\\":true}\" > /oath/objects/svc/serial/applied.json'" },
   { reboot = "force" },
-  { run = "true" },
+  { run = "oath get svc:hold --actual", expect = ["stopped"] },
 ]
+
+# ---- Known gaps (acceptance tests for later phases) ------------------
 
 [[case]]
 name = "reboot-command"

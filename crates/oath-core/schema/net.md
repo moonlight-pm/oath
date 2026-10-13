@@ -12,15 +12,17 @@ static address.
 ## Fields
 
 - `up` — link up with an address and default route, or down.
-- `ipv4` — `dhcp` (the default) or a static CIDR (`192.168.1.20/24`).
+- `ipv4` — `dhcp` (the default) or a static CIDR (`192.168.1.20/24`);
+  `set` refuses anything else.
 - `gateway` — IPv4 default gateway for a static address. Ignored for
   `dhcp`.
 
 Actual may carry `lease` (the address DHCP gave). It is not a desired
 field.
 
-Safety: `mutate`. Apply snapshots, then converges with `/bin/ip` and,
-for `dhcp`, `/bin/udhcpc`.
+Safety: `mutate`, but any change to `up`, `ipv4` or `gateway` can cut
+off SSH, so `oath apply` needs `--confirm` for it. Apply snapshots, then
+converges with `/bin/ip` and, for `dhcp`, `/bin/udhcpc`.
 
 Known gap: DHCP runs once at converge. It is not a supervised
 service, so a lease is not renewed.
@@ -30,9 +32,9 @@ service, so a lease is not renewed.
 ```
 oath get net:net0
 oath set net:net0 ipv4=192.168.1.20/24 gateway=192.168.1.1
-oath apply
+oath apply --confirm
 oath set net:net0 ipv4=dhcp
-oath apply
+oath apply --confirm
 ```
 
 Downing the link over SSH cuts you off. Serial still works.
