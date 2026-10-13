@@ -22,12 +22,12 @@ Remove the desk, T37, T39, Wicket, the probe and the diary docs. Seed
 as data with profiles and host overlays. One own-built
 kernel with a vermagic check. `esp` refuses non-Oath hosts.
 
-## 2. Harness — active
+## 2. Harness — done (2026-10-13)
 
 `cargo make check`: headless QEMU running the README loop and the
 known failure cases over SSH from a data file. Installs are gated on it.
 
-## 3. Catalog safety — planned
+## 3. Catalog safety — active
 
 Locked atomic writes (R4), spec/status/log/store split, validate before
 snapshot, log every outcome, undo restores spec only, `oath new` /

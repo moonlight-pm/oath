@@ -7,9 +7,9 @@ names, packed on the build host. Installing wipes a named disk through
 an installer ramdisk and writes machine facts from a host overlay.
 
 **Status:** partly built. The kernel pin and version check, the menu,
-boot rotation, profiles, overlays and the install flow are built. An
-immutable build output, a build-host guard, and a headless test
-harness that gates installs are the target.
+boot rotation, profiles, overlays, the install flow, the `esp`
+build-host guard and the test harness that gates installs are built. An
+immutable build output with a manifest is the target.
 
 Replaces: T27 (metal install), T38 (boot generations), the image parts
 of T24, and D3 (seed as data).
@@ -105,14 +105,26 @@ Optional `--hostname` and `--overlay <file.json>`.
   manifest (profile, kernel release, every package pin). Install and
   `esp` take an output id, verify the manifest, and never read a
   mutable stage.
-- **Build-host guard.** `esp` and `install` refuse to touch a disk or
-  partition that the build host has mounted or booted from.
-- **Harness gate.** `cargo make check` boots the image headless in
-  QEMU and runs the catalog loop and the failure cases over SSH from a
-  data file. Install refuses an output that has not passed it.
+- **Build-host guard (install).** `install` refuses a target that is
+  the build host. (`esp` already refuses to run on a machine that is
+  not Oath.)
 - **Crash reboot.** Metal entries carry `panic=10`.
 - **Native tools.** The installer's tools (sgdisk, mkfs.fat, btrfs,
   dropbear, tar) become native packages (packages.md).
+
+## Test harness (built)
+
+`cargo make check` boots `build/oath.qcow2` once per case in headless
+QEMU (four at a time, 1 GiB each, a throwaway SSH key over fw_cfg),
+serves the `pkg:fetchme` canary at the guest's 10.0.2.2:18765, and runs
+the steps in `check/cases.toml` over SSH as `home`. A `reboot` step
+reboots through the catalog, `reboot -f`, or plain `reboot`, waits for
+QEMU to exit (it runs with `-no-reboot`) and boots the same disk again.
+A case marked `gap` is a known failure assigned to a phase; it may fail,
+and the run fails if it starts passing so the mark gets removed. A clean
+full run writes `build/check-pass` (sha256 of kernel, initrd and image);
+`cargo make install` refuses an image without a matching stamp unless
+given `--unchecked`. `install --qemu` is itself a test and is not gated.
 
 ## Courage test
 

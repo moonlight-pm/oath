@@ -1,5 +1,6 @@
 mod advisories;
 mod boot;
+mod check;
 mod cpio;
 mod install;
 mod kernel;
@@ -53,6 +54,19 @@ enum Cmd {
     },
     /// Stop a VM started with `start`.
     Stop,
+    /// Boot the built image in QEMU and run check/cases.toml over SSH.
+    /// A clean run is required before `install`.
+    Check {
+        /// Pack the image first (sudo for the loop-mount).
+        #[arg(long)]
+        build: bool,
+        /// Run only these cases.
+        #[arg(long = "case")]
+        only: Vec<String>,
+        /// VMs at a time.
+        #[arg(short, long, default_value_t = 4)]
+        jobs: usize,
+    },
     /// SSH to the QEMU guest (`home@127.0.0.1`, port `OATH_SSH_PORT` / 2222).
     Ssh {
         /// Extra ssh(1) args (`-i key`, a remote command, …).
@@ -83,6 +97,9 @@ enum Cmd {
         /// the installed catalog. Machine-specific facts live here, not in the seed.
         #[arg(long)]
         overlay: Option<PathBuf>,
+        /// Install even though `cargo make check` has not passed this image.
+        #[arg(long)]
+        unchecked: bool,
     },
     /// Pack kernel + initrd + oath-efi only (no qcow, no ESP write).
     Boot,
@@ -161,15 +178,22 @@ fn real() -> Result<()> {
             qemu::start(&root, &out)?;
         }
         Cmd::Stop => qemu::stop(&out)?,
+        Cmd::Check { build, only, jobs } => {
+            if build {
+                pack_image(&root, &out, oath_core::DEFAULT_PROFILE)?;
+            }
+            let rc = check::run_check(&root, &out, check::Opts { only, jobs })?;
+            std::process::exit(rc);
+        }
         Cmd::Ssh { args } => {
             let rc = qemu::ssh(&out, &args)?;
             std::process::exit(rc);
         }
-        Cmd::Install { target, disk, confirm, qemu, usb, hostname, overlay } => {
+        Cmd::Install { target, disk, confirm, qemu, usb, hostname, overlay, unchecked } => {
             install::run_install(
                 &root,
                 &out,
-                install::Opts { target, disk, confirm, qemu, usb, hostname, overlay },
+                install::Opts { target, disk, confirm, qemu, usb, hostname, overlay, unchecked },
             )?;
         }
         Cmd::Boot => {

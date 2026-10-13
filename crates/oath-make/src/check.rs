@@ -1,0 +1,564 @@
+//! `cargo make check`: boot the built image in QEMU and run `check/cases.toml`
+//! over SSH. Every case gets a fresh VM from `build/oath.qcow2`; cases run
+//! in parallel. A case with `gap` is a known failure scheduled for a phase:
+//! it may fail without failing the run, and if it starts passing the run
+//! fails so the gap gets removed. A clean run writes `build/check-pass`,
+//! which `cargo make install` requires.
+
+use std::collections::VecDeque;
+use std::fs;
+use std::io::{Read, Write};
+use std::net::TcpListener;
+use std::path::{Path, PathBuf};
+use std::process::{Child, Command, Stdio};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::{Duration, Instant};
+
+use anyhow::{bail, Context, Result};
+use serde::Deserialize;
+use serde_json::json;
+
+use crate::qemu::{self, Image, SerialMode, VmSpec};
+use crate::tools::Tools;
+use crate::util::{sha256_file, utc_rfc3339, utc_stamp, write_pretty};
+
+/// Guest-visible fetch canary: `pkg:fetchme` has `url` http://10.0.2.2:18765/fetchme.
+const FETCH_PORT: u16 = 18765;
+const FIRST_SSH_PORT: u16 = 2300;
+const BOOT_WAIT: Duration = Duration::from_secs(90);
+const REBOOT_WAIT: Duration = Duration::from_secs(45);
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CaseFile {
+    case: Vec<Case>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Case {
+    pub name: String,
+    /// What the case shows, one line.
+    #[serde(default)]
+    pub about: String,
+    /// Known failure: the phase and finding that will fix it.
+    #[serde(default)]
+    pub gap: Option<String>,
+    pub steps: Vec<Step>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Step {
+    /// Shell command run over SSH as `home`.
+    #[serde(default)]
+    pub run: Option<String>,
+    /// The command must exit non-zero (default: must exit 0).
+    #[serde(default)]
+    pub fails: bool,
+    /// Substrings that must appear in stdout + stderr.
+    #[serde(default)]
+    pub expect: Vec<String>,
+    /// Substrings that must not appear.
+    #[serde(default)]
+    pub reject: Vec<String>,
+    /// `catalog` (power=reboot + apply --confirm), `force` (`reboot -f`),
+    /// or `signal` (plain `reboot`, which asks PID 1). Waits for QEMU to
+    /// exit, boots the same disk again and waits for SSH.
+    #[serde(default)]
+    pub reboot: Option<String>,
+    #[serde(default = "default_timeout")]
+    pub timeout: u64,
+}
+
+fn default_timeout() -> u64 {
+    60
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Verdict {
+    Pass,
+    Fail,
+    /// Known gap, still failing.
+    Gap,
+    /// Known gap that now passes: remove the gap.
+    Fixed,
+}
+
+impl Verdict {
+    fn word(self) -> &'static str {
+        match self {
+            Self::Pass => "PASS",
+            Self::Fail => "FAIL",
+            Self::Gap => "GAP",
+            Self::Fixed => "FIXED",
+        }
+    }
+
+    fn ok(self) -> bool {
+        matches!(self, Self::Pass | Self::Gap)
+    }
+}
+
+pub fn verdict(gap: bool, passed: bool) -> Verdict {
+    match (gap, passed) {
+        (false, true) => Verdict::Pass,
+        (false, false) => Verdict::Fail,
+        (true, false) => Verdict::Gap,
+        (true, true) => Verdict::Fixed,
+    }
+}
+
+pub struct Opts {
+    pub only: Vec<String>,
+    pub jobs: usize,
+}
+
+struct Ctx {
+    tools: Tools,
+    img: Image,
+    key: PathBuf,
+    key_pub: PathBuf,
+    dir: PathBuf,
+}
+
+struct Outcome {
+    name: String,
+    about: String,
+    gap: Option<String>,
+    verdict: Verdict,
+    detail: String,
+}
+
+pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
+    let cases = load_cases(&root.join("check/cases.toml"))?;
+    let cases: Vec<Case> = if opts.only.is_empty() {
+        cases
+    } else {
+        let picked: Vec<Case> =
+            cases.into_iter().filter(|c| opts.only.iter().any(|o| o == &c.name)).collect();
+        if picked.is_empty() {
+            bail!("no case named {:?}", opts.only);
+        }
+        picked
+    };
+    let tools = crate::tools::load(root)?;
+    let img = qemu::load_image(out)?;
+    let base = out.join("check");
+    fs::create_dir_all(&base)?;
+    let (key, key_pub) = harness_key(&base)?;
+    let dir = base.join(utc_stamp());
+    fs::create_dir_all(&dir)?;
+    let fetchme = fs::read(root.join("apps/fetchme/bin/fetchme")).context("apps/fetchme")?;
+    serve_fetchme(fetchme)?;
+
+    eprintln!("check: {} cases, {} at a time, logs in {}", cases.len(), opts.jobs, dir.display());
+    let ctx = Arc::new(Ctx { tools, img, key, key_pub, dir: dir.clone() });
+    let queue = Arc::new(Mutex::new(cases.into_iter().collect::<VecDeque<_>>()));
+    let results = Arc::new(Mutex::new(Vec::new()));
+    let mut workers = Vec::new();
+    for w in 0..opts.jobs.max(1) {
+        let (ctx, queue, results) = (ctx.clone(), queue.clone(), results.clone());
+        workers.push(thread::spawn(move || loop {
+            let Some(case) = queue.lock().unwrap().pop_front() else { break };
+            let port = FIRST_SSH_PORT + w as u16;
+            let outcome = run_case(&ctx, &case, port);
+            eprintln!(
+                "{:5}  {}{}",
+                outcome.verdict.word(),
+                outcome.name,
+                if outcome.detail.is_empty() {
+                    String::new()
+                } else {
+                    format!(" — {}", outcome.detail)
+                }
+            );
+            results.lock().unwrap().push(outcome);
+        }));
+    }
+    for w in workers {
+        let _ = w.join();
+    }
+    let mut results = std::mem::take(&mut *results.lock().unwrap());
+    results.sort_by(|a, b| a.name.cmp(&b.name));
+
+    let report: Vec<_> = results
+        .iter()
+        .map(|r| {
+            json!({
+                "case": r.name,
+                "about": r.about,
+                "verdict": r.verdict.word(),
+                "gap": r.gap,
+                "detail": r.detail,
+            })
+        })
+        .collect();
+    write_pretty(&dir.join("report.json"), &json!({ "time": utc_rfc3339(), "cases": report }))?;
+
+    let count = |v: Verdict| results.iter().filter(|r| r.verdict == v).count();
+    println!();
+    for r in &results {
+        let note = match (&r.gap, r.verdict) {
+            (Some(g), Verdict::Gap) => format!("  (known gap: {g})"),
+            (Some(g), Verdict::Fixed) => format!("  (passes now: remove gap \"{g}\")"),
+            _ => String::new(),
+        };
+        println!("{:5}  {}{note}", r.verdict.word(), r.name);
+    }
+    println!(
+        "\n{} pass, {} fail, {} known gaps, {} fixed gaps — {}",
+        count(Verdict::Pass),
+        count(Verdict::Fail),
+        count(Verdict::Gap),
+        count(Verdict::Fixed),
+        dir.display()
+    );
+    let all_ok = results.iter().all(|r| r.verdict.ok());
+    let stamp = out.join("check-pass");
+    let _ = fs::remove_file(&stamp);
+    if all_ok && opts.only.is_empty() {
+        write_pretty(&stamp, &image_stamp(&ctx.img)?)?;
+        println!("image checked: {}", stamp.display());
+    }
+    Ok(if all_ok { 0 } else { 1 })
+}
+
+/// What a clean check vouches for. `install` compares this with what it ships.
+pub fn image_stamp(img: &Image) -> Result<serde_json::Value> {
+    Ok(json!({
+        "kernel": sha256_file(&img.kernel)?,
+        "initrd": sha256_file(&img.initrd)?,
+        "image": sha256_file(&img.backing)?,
+    }))
+}
+
+/// Refuse to install an image that `cargo make check` has not passed.
+pub fn require_checked(out: &Path) -> Result<()> {
+    let stamp = out.join("check-pass");
+    let Ok(text) = fs::read_to_string(&stamp) else {
+        bail!("this image has not passed `cargo make check` (no {})", stamp.display());
+    };
+    let want: serde_json::Value = serde_json::from_str(&text)?;
+    let have = image_stamp(&qemu::load_image(out)?)?;
+    for k in ["kernel", "initrd", "image"] {
+        if want[k] != have[k] {
+            bail!("the {k} changed since the last `cargo make check`; run it again");
+        }
+    }
+    Ok(())
+}
+
+pub fn load_cases(path: &Path) -> Result<Vec<Case>> {
+    let text = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    parse_cases(&text).with_context(|| format!("parse {}", path.display()))
+}
+
+pub fn parse_cases(text: &str) -> Result<Vec<Case>> {
+    let file: CaseFile = toml::from_str(text)?;
+    let mut seen = std::collections::HashSet::new();
+    for c in &file.case {
+        if !seen.insert(c.name.clone()) {
+            bail!("case `{}` appears twice", c.name);
+        }
+        for (i, s) in c.steps.iter().enumerate() {
+            match (&s.run, &s.reboot) {
+                (Some(_), None) | (None, Some(_)) => {}
+                _ => bail!("case `{}` step {}: give exactly one of run or reboot", c.name, i + 1),
+            }
+            if let Some(r) = &s.reboot {
+                if !matches!(r.as_str(), "catalog" | "force" | "signal") {
+                    bail!("case `{}` step {}: reboot is catalog, force or signal", c.name, i + 1);
+                }
+            }
+        }
+    }
+    Ok(file.case)
+}
+
+fn harness_key(base: &Path) -> Result<(PathBuf, PathBuf)> {
+    let key = base.join("key");
+    let key_pub = base.join("key.pub");
+    if !key.is_file() || !key_pub.is_file() {
+        let _ = fs::remove_file(&key);
+        let _ = fs::remove_file(&key_pub);
+        let st = Command::new("ssh-keygen")
+            .args(["-q", "-t", "ed25519", "-N", "", "-C", "oath-check", "-f"])
+            .arg(&key)
+            .stdin(Stdio::null())
+            .status()
+            .context("ssh-keygen")?;
+        if !st.success() {
+            bail!("ssh-keygen failed");
+        }
+    }
+    Ok((key, key_pub))
+}
+
+/// HTTP for the fetch canary. Thread lives for the rest of the process.
+fn serve_fetchme(body: Vec<u8>) -> Result<()> {
+    let listener = TcpListener::bind(("127.0.0.1", FETCH_PORT))
+        .with_context(|| format!("127.0.0.1:{FETCH_PORT} is busy (the fetch canary needs it)"))?;
+    thread::spawn(move || {
+        for conn in listener.incoming().flatten() {
+            let mut conn = conn;
+            let mut buf = [0u8; 2048];
+            let n = conn.read(&mut buf).unwrap_or(0);
+            let req = String::from_utf8_lossy(&buf[..n]);
+            let path = req.split_whitespace().nth(1).unwrap_or("");
+            let resp = if path == "/fetchme" {
+                let mut r = format!(
+                    "HTTP/1.0 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    body.len()
+                )
+                .into_bytes();
+                r.extend_from_slice(&body);
+                r
+            } else {
+                b"HTTP/1.0 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec()
+            };
+            let _ = conn.write_all(&resp);
+        }
+    });
+    Ok(())
+}
+
+struct Vm {
+    child: Child,
+    port: u16,
+}
+
+impl Vm {
+    fn boot(ctx: &Ctx, dir: &Path, port: u16, boot_no: u32) -> Result<Self> {
+        let overlay = qemu::overlay_disk(&ctx.tools, dir, &ctx.img.backing)?;
+        let serial_log = dir.join(format!("serial-{boot_no}.log"));
+        let qemu_log = dir.join(format!("qemu-{boot_no}.log"));
+        let args = qemu::qemu_args(
+            &ctx.tools,
+            &ctx.img,
+            &VmSpec {
+                overlay: &overlay,
+                serial_log: &serial_log,
+                qemu_log: &qemu_log,
+                serial: SerialMode::File,
+                inject_authorized: Some(&ctx.key_pub),
+                window: false,
+                ssh_port: port,
+                mem_mb: 1024,
+            },
+        );
+        fs::write(dir.join("qemu.cmd"), args.join(" ") + "\n")?;
+        let child = qemu::qemu_command(&args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .context("qemu")?;
+        Ok(Self { child, port })
+    }
+
+    fn exited_within(&mut self, wait: Duration) -> bool {
+        let deadline = Instant::now() + wait;
+        while Instant::now() < deadline {
+            if let Ok(Some(_)) = self.child.try_wait() {
+                return true;
+            }
+            thread::sleep(Duration::from_millis(200));
+        }
+        false
+    }
+
+    fn kill(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+impl Drop for Vm {
+    fn drop(&mut self) {
+        self.kill();
+    }
+}
+
+struct Shell {
+    code: i32,
+    text: String,
+}
+
+fn ssh(ctx: &Ctx, port: u16, cmd: &str, timeout: Duration) -> Shell {
+    let mut c = Command::new("ssh");
+    c.arg("-i").arg(&ctx.key).args([
+        "-p",
+        &port.to_string(),
+        "-o",
+        "StrictHostKeyChecking=no",
+        "-o",
+        "UserKnownHostsFile=/dev/null",
+        "-o",
+        "GlobalKnownHostsFile=/dev/null",
+        "-o",
+        "IdentitiesOnly=yes",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=5",
+        "-o",
+        "LogLevel=ERROR",
+        "home@127.0.0.1",
+        "--",
+        cmd,
+    ]);
+    c.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    let Ok(mut child) = c.spawn() else {
+        return Shell { code: -1, text: "could not run ssh".into() };
+    };
+    // One reader per stream: a full stderr pipe must never block stdout.
+    let drain = |pipe: Option<Box<dyn Read + Send>>| {
+        thread::spawn(move || {
+            let mut buf = Vec::new();
+            if let Some(mut p) = pipe {
+                let _ = p.read_to_end(&mut buf);
+            }
+            buf
+        })
+    };
+    let out = drain(child.stdout.take().map(|p| Box::new(p) as Box<dyn Read + Send>));
+    let err = drain(child.stderr.take().map(|p| Box::new(p) as Box<dyn Read + Send>));
+    let deadline = Instant::now() + timeout;
+    let code = loop {
+        match child.try_wait() {
+            Ok(Some(st)) => break st.code().unwrap_or(-1),
+            Ok(None) if Instant::now() < deadline => thread::sleep(Duration::from_millis(50)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                break -2;
+            }
+        }
+    };
+    let mut raw = out.join().unwrap_or_default();
+    raw.extend(err.join().unwrap_or_default());
+    let text = String::from_utf8_lossy(&raw)
+        .lines()
+        .filter(|l| !l.starts_with("oath-tel "))
+        .collect::<Vec<_>>()
+        .join("\n");
+    Shell { code, text }
+}
+
+fn wait_ssh(ctx: &Ctx, port: u16, wait: Duration) -> bool {
+    let deadline = Instant::now() + wait;
+    while Instant::now() < deadline {
+        if ssh(ctx, port, "test -f /oath/INDEX.md", Duration::from_secs(10)).code == 0 {
+            return true;
+        }
+        thread::sleep(Duration::from_secs(1));
+    }
+    false
+}
+
+fn run_case(ctx: &Ctx, case: &Case, port: u16) -> Outcome {
+    let dir = ctx.dir.join(&case.name);
+    let mut log = String::new();
+    let result = (|| -> Result<(), String> {
+        fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let mut boot_no = 1;
+        let mut vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
+        if !wait_ssh(ctx, vm.port, BOOT_WAIT) {
+            return Err("no SSH after boot".into());
+        }
+        for (i, step) in case.steps.iter().enumerate() {
+            let n = i + 1;
+            if let Some(how) = &step.reboot {
+                let cmd = match how.as_str() {
+                    "catalog" => {
+                        "sudo oath set host:local power=reboot && sudo oath apply --confirm host:local"
+                    }
+                    "force" => "sync; sudo reboot -f",
+                    _ => "sudo reboot",
+                };
+                log.push_str(&format!("## step {n}: reboot ({how})\n$ {cmd}\n"));
+                let r = ssh(ctx, vm.port, cmd, Duration::from_secs(20));
+                log.push_str(&format!("{}\n[exit {}]\n", r.text, r.code));
+                if !vm.exited_within(REBOOT_WAIT) {
+                    return Err(format!("step {n}: the VM did not reboot ({how})"));
+                }
+                boot_no += 1;
+                vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
+                if !wait_ssh(ctx, vm.port, BOOT_WAIT) {
+                    return Err(format!("step {n}: no SSH after reboot"));
+                }
+                continue;
+            }
+            let cmd = step.run.as_deref().unwrap_or("");
+            let r = ssh(ctx, vm.port, cmd, Duration::from_secs(step.timeout));
+            log.push_str(&format!("## step {n}\n$ {cmd}\n{}\n[exit {}]\n", r.text, r.code));
+            if r.code == 255 || r.code < 0 {
+                return Err(format!("step {n}: lost SSH (`{cmd}`)"));
+            }
+            if step.fails && r.code == 0 {
+                return Err(format!("step {n}: expected failure, got exit 0 (`{cmd}`)"));
+            }
+            if !step.fails && r.code != 0 {
+                return Err(format!("step {n}: exit {} (`{cmd}`)", r.code));
+            }
+            for want in &step.expect {
+                if !r.text.contains(want.as_str()) {
+                    return Err(format!("step {n}: missing {want:?} (`{cmd}`)"));
+                }
+            }
+            for bad in &step.reject {
+                if r.text.contains(bad.as_str()) {
+                    return Err(format!("step {n}: unexpected {bad:?} (`{cmd}`)"));
+                }
+            }
+        }
+        Ok(())
+    })();
+    let _ = fs::write(dir.join("steps.log"), &log);
+    let passed = result.is_ok();
+    Outcome {
+        name: case.name.clone(),
+        about: case.about.clone(),
+        gap: case.gap.clone(),
+        verdict: verdict(case.gap.is_some(), passed),
+        detail: result.err().unwrap_or_default(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn repo_cases_parse() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../check/cases.toml");
+        let cases = load_cases(&root).unwrap();
+        assert!(cases.len() >= 5);
+        assert!(cases.iter().any(|c| c.gap.is_none()));
+    }
+
+    #[test]
+    fn step_needs_run_or_reboot() {
+        assert!(parse_cases("[[case]]\nname='a'\nsteps=[{}]").is_err());
+        assert!(parse_cases("[[case]]\nname='a'\nsteps=[{run='x', reboot='force'}]").is_err());
+        assert!(parse_cases("[[case]]\nname='a'\nsteps=[{reboot='soon'}]").is_err());
+        assert!(parse_cases(
+            "[[case]]\nname='a'\nsteps=[{run='true'}]\n[[case]]\nname='a'\nsteps=[{run='true'}]"
+        )
+        .is_err());
+        assert!(parse_cases("[[case]]\nname='a'\nsteps=[{run='true', bogus=1}]").is_err());
+        let c = parse_cases("[[case]]\nname='a'\nsteps=[{run='true'},{reboot='force'}]").unwrap();
+        assert_eq!(c[0].steps[0].timeout, 60);
+    }
+
+    #[test]
+    fn gaps_flip_when_fixed() {
+        assert_eq!(verdict(false, true), Verdict::Pass);
+        assert_eq!(verdict(false, false), Verdict::Fail);
+        assert_eq!(verdict(true, false), Verdict::Gap);
+        assert_eq!(verdict(true, true), Verdict::Fixed);
+        assert!(Verdict::Gap.ok() && !Verdict::Fixed.ok() && !Verdict::Fail.ok());
+    }
+}

@@ -25,6 +25,8 @@ pub struct Opts {
     pub hostname: Option<String>,
     /// Catalog overlay merged into the installed catalog (`oath seed --overlay`).
     pub overlay: Option<PathBuf>,
+    /// Install an image that has not passed `cargo make check`.
+    pub unchecked: bool,
 }
 
 pub struct EspOpts {
@@ -54,6 +56,14 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     }
     if !out.join("initramfs-install/init").is_file() {
         pack::build(root, out, &tools, oath_core::DEFAULT_PROFILE)?;
+    }
+    if !opts.qemu {
+        if opts.unchecked {
+            eprintln!("warning: installing an image that `cargo make check` has not passed");
+        } else {
+            crate::check::require_checked(out)
+                .context("pass --unchecked to install anyway (Joshua's call)")?;
+        }
     }
     let keys =
         qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
@@ -783,6 +793,7 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         usb: false,
         hostname: opts.hostname.clone().or_else(|| Some("oath".into())),
         overlay: opts.overlay.clone(),
+        unchecked: true,
     };
     if let Err(e) = format_and_copy(out, tools, &qopts, &inst) {
         let _ = child.kill();

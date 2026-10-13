@@ -1,0 +1,171 @@
+# cargo make check — each case boots a fresh VM from build/oath.qcow2.
+#
+# A step either runs a shell command over SSH as `home` (`run`) or
+# reboots (`reboot = "catalog" | "force" | "signal"`) and waits for SSH.
+# `run` must exit 0 unless `fails = true`; `expect` / `reject` are
+# substrings of stdout + stderr; `timeout` is seconds (default 60).
+#
+# `gap` marks a known failure and names the phase that fixes it. A gap
+# that starts passing fails the run until the `gap` line is removed.
+
+# ---- The README loop -------------------------------------------------
+
+[[case]]
+name = "index"
+about = "A new agent can read the INDEX and list objects."
+steps = [
+  { run = "oath", expect = ["You are on **Oath**", "## Kinds here", "`svc`"] },
+  { run = "oath ls", expect = ["host:local", "svc:sshd", "pkg:busybox", "net:net0"] },
+  { run = "oath diff", expect = ["in-sync"] },
+  { run = "oath schema host", expect = ["hostname"] },
+]
+
+[[case]]
+name = "hostname-apply-undo"
+about = "set and apply a hostname, then undo it."
+steps = [
+  { run = "sudo oath set host:local hostname=check1 && sudo oath apply", expect = ["applied generation 1"] },
+  { run = "hostname", expect = ["check1"] },
+  { run = "sudo oath undo", expect = ["undid to generation 0"] },
+  { run = "hostname; oath get host:local", expect = ["oath", "in-sync"], reject = ["check1"] },
+]
+
+[[case]]
+name = "hostname-survives-reboot"
+about = "An applied hostname survives a reboot through the catalog (power=reboot)."
+steps = [
+  { run = "sudo oath set host:local hostname=check2 && sudo oath apply", expect = ["applied generation 1"] },
+  { reboot = "catalog" },
+  { run = "hostname; oath get host:local; oath get snap:current", expect = ["check2", "power: \"run\"", "generation: 2"] },
+]
+
+[[case]]
+name = "pkg-hello"
+about = "A package from the store links into /bin and unlinks again."
+steps = [
+  { run = "test ! -e /bin/hello" },
+  { run = "sudo oath set pkg:hello present=true && sudo oath apply pkg:hello && hello", expect = ["hello"] },
+  { run = "sudo oath set pkg:hello present=false && sudo oath apply pkg:hello && test ! -e /bin/hello" },
+]
+
+[[case]]
+name = "pkg-fetch"
+about = "A package fetched over HTTP from its url."
+steps = [
+  { run = "sudo oath set pkg:fetchme present=true && sudo oath apply pkg:fetchme && fetchme", expect = ["fetched"] },
+]
+
+[[case]]
+name = "pkg-base-not-removable"
+about = "Base packages refuse present=false."
+steps = [
+  { run = "sudo oath set pkg:busybox present=false && sudo oath apply pkg:busybox", fails = true, expect = ["not removable"] },
+  { run = "test -x /bin/busybox" },
+]
+
+[[case]]
+name = "svc-stop-start"
+about = "Disabling and enabling a service through the catalog."
+steps = [
+  { run = "pidof sleep" },
+  { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sleep 1 && ! pidof sleep" },
+  { run = "sudo oath set svc:hold enabled=true && sudo oath apply svc:hold && sleep 1 && pidof sleep" },
+]
+
+[[case]]
+name = "svc-status-after-undo"
+about = "After undo re-enables a service, svc actual names the process that is running."
+steps = [
+  { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sudo oath undo && sleep 2" },
+  { run = "p=$(pidof sleep) && oath get svc:hold --actual | grep \"\\\"pid\\\": $p\"" },
+]
+
+[[case]]
+name = "wants-cycle-refused"
+about = "apply refuses a wants cycle."
+steps = [
+  { run = "sudo oath set svc:serial --from-json '{\"wants\":[\"svc:hold\"]}' && sudo oath apply", fails = true, expect = ["cycle"] },
+]
+
+[[case]]
+name = "net-dhcp"
+about = "net:net0 gets a DHCP lease and the guest reaches the host."
+steps = [
+  { run = "oath get net:net0", expect = ["dhcp"] },
+  { run = "ip -4 addr show net0", expect = ["10.0.2.15"] },
+]
+
+# ---- Known gaps (acceptance tests for later phases) ------------------
+
+[[case]]
+name = "failed-apply-changes-nothing"
+about = "An apply that fails validation must not converge anything or take a generation."
+gap = "phase 3: validate before snapshot, log every outcome"
+steps = [
+  { run = "sudo oath set host:local hostname=bad && sudo oath set svc:hold restart=sometimes; sudo oath apply", fails = true },
+  { run = "hostname", reject = ["bad"] },
+  { run = "oath log", expect = ["error"] },
+]
+
+[[case]]
+name = "typed-set"
+about = "set refuses a value of the wrong type."
+gap = "phase 3: typed set"
+steps = [
+  { run = "sudo oath set svc:hold restart=sometimes", fails = true },
+]
+
+[[case]]
+name = "oath-new"
+about = "An agent can create a service."
+gap = "phase 3: oath new / oath rm"
+steps = [
+  { run = "sudo oath new svc:tick --from-json '{\"exec\":[\"/bin/sleep\",\"1000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tick && sleep 1 && oath get svc:tick", expect = ["running"] },
+]
+
+[[case]]
+name = "undo-keeps-the-log"
+about = "Undo restores the spec, not the apply log."
+gap = "phase 3: undo restores spec only"
+steps = [
+  { run = "sudo oath set host:local hostname=one && sudo oath apply && sudo oath undo" },
+  { run = "oath log", expect = ["\"generation\":1", "undo"] },
+]
+
+[[case]]
+name = "sshd-lockout-needs-confirm"
+about = "Turning off sshd needs --confirm (or reverts on its own)."
+gap = "phase 3: probation apply for lockout-class changes"
+steps = [
+  { run = "sudo oath set svc:sshd enabled=false && sudo oath apply svc:sshd", fails = true, expect = ["confirm"] },
+  { run = "true" },
+]
+
+[[case]]
+name = "torn-svc-file"
+about = "A half-written desired.json does not stop a running service."
+gap = "phase 3/4: atomic writes, PID 1 reads applied"
+steps = [
+  { run = "sudo sh -c 'printf \"{\\\"exec\\\": [\" > /oath/objects/svc/hold/desired.json'" },
+  { reboot = "force" },
+  { run = "sleep 2; pidof sleep" },
+]
+
+[[case]]
+name = "cycle-at-boot-keeps-sshd"
+about = "A wants cycle that reaches PID 1 skips only the services in it."
+gap = "phase 4: a cycle isolates one service"
+steps = [
+  { run = "sudo sh -c 'printf \"%s\\n\" \"{\\\"exec\\\":[\\\"/lib/oath/serial-login\\\"],\\\"wants\\\":[\\\"svc:hold\\\"],\\\"restart\\\":\\\"always\\\",\\\"enabled\\\":true}\" > /oath/objects/svc/serial/desired.json'" },
+  { reboot = "force" },
+  { run = "true" },
+]
+
+[[case]]
+name = "reboot-command"
+about = "Plain `reboot` shuts down through PID 1."
+gap = "phase 4: shutdown sequence"
+steps = [
+  { reboot = "signal" },
+  { run = "true" },
+]

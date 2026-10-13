@@ -77,7 +77,12 @@ cargo make build [--profile base]
   build/oath.qcow2        btrfs @ with the stage
   build/initrd.gz, build/initrd-install.gz (installer ramdisk: dropbear,
                           sgdisk, mkfs, oath)
+cargo make check
+  one QEMU per case in check/cases.toml (4 at a time), SSH as home with
+  build/check/key; serves pkg:fetchme on 127.0.0.1:18765; a clean run
+  writes build/check-pass (kernel, initrd, image sha256)
 cargo make install --target … --disk … --overlay hosts/<name>.json --confirm
+  refuses an image without a matching build/check-pass
   kexec or EFI-boot the installer, format, copy the stage, write the
   overlay with `oath seed --overlay`, write the ESP, reboot
 ```

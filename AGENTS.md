@@ -50,7 +50,8 @@ is the `oath-docs` skill (`.claude/skills/oath-docs/`).
 
 **Do without asking:** read, search and edit project files; docs
 hygiene; normal git on `master` (status, diff, log, add, commit);
-`cargo test`; `cargo make build`; local QEMU of images this repo built.
+`cargo test`; `cargo make build`; `cargo make check`; local QEMU of
+images this repo built.
 
 **Ask first:** force-push or hard reset of published history; writing
 to a real disk or USB stick Joshua did not ask for (`cargo make
@@ -69,6 +70,7 @@ crates/oath-init  PID 1, serial-login, sudo
 crates/oath-efi   UEFI boot menu and mark
 crates/oath-make  host build tool (`cargo make build|run|up|start|stop|ssh|install|esp|store|publish|advisories`)
 image/            kernel build (build-linux.sh, linux.fragment, linux-patches/), pkg:cc pack, tools.nix (temporary)
+check/            cases.toml for `cargo make check` (the QEMU harness)
 apps/             first-party package sources and example plans
 forks/            submodules for the future native desk (sola, river, wlroots)
 apocrypha/        gitignored scratch — never a source of truth

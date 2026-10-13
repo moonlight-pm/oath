@@ -39,16 +39,15 @@ pub fn overlay_disk(tools: &Tools, run: &Path, backing: &Path) -> Result<PathBuf
     let overlay = run.join("disk.qcow2");
     if !overlay.is_file() {
         let backing = fs::canonicalize(backing)?;
-        crate::util::run(Command::new(&tools.qemu_img).args([
-            "create",
-            "-f",
-            "qcow2",
-            "-F",
-            "qcow2",
-            "-b",
-            backing.to_str().unwrap(),
-            overlay.to_str().unwrap(),
-        ]))?;
+        let o = Command::new(&tools.qemu_img)
+            .args(["create", "-q", "-f", "qcow2", "-F", "qcow2", "-b"])
+            .arg(&backing)
+            .arg(&overlay)
+            .output()
+            .context("qemu-img")?;
+        if !o.status.success() {
+            bail!("qemu-img create: {}", String::from_utf8_lossy(&o.stderr));
+        }
     }
     Ok(overlay)
 }
@@ -88,30 +87,36 @@ pub enum SerialMode {
     File,
 }
 
-pub fn qemu_args(
-    tools: &Tools,
-    img: &Image,
-    overlay: &Path,
-    serial_log: &Path,
-    qemu_log: &Path,
-    serial: SerialMode,
-    inject_authorized: Option<&Path>,
-    window: bool,
-) -> Vec<String> {
+/// One VM: its disk, logs, console, keys and host-side SSH port.
+pub struct VmSpec<'a> {
+    pub overlay: &'a Path,
+    pub serial_log: &'a Path,
+    pub qemu_log: &'a Path,
+    pub serial: SerialMode,
+    /// Public keys handed to the guest over fw_cfg (`opt/oath/authorized`).
+    pub inject_authorized: Option<&'a Path>,
+    pub window: bool,
+    /// Host port forwarded to guest :22 (ignored on `OATH_BRIDGE`).
+    pub ssh_port: u16,
+    pub mem_mb: u32,
+}
+
+pub fn qemu_args(tools: &Tools, img: &Image, vm: &VmSpec) -> Vec<String> {
+    let (overlay, serial_log, qemu_log) = (vm.overlay, vm.serial_log, vm.qemu_log);
     let mut a = vec![tools.qemu.display().to_string(), "-machine".into(), "q35".into()];
     if kvm() {
         a.push("-enable-kvm".into());
     }
     a.extend([
         "-m".into(),
-        "4096".into(),
+        vm.mem_mb.to_string(),
         "-monitor".into(),
         "none".into(),
         "-vga".into(),
         "none".into(),
     ]);
-    a.extend(["-display".into(), display_backend(window)]);
-    match serial {
+    a.extend(["-display".into(), display_backend(vm.window)]);
+    match vm.serial {
         SerialMode::Stdio => {
             a.extend([
                 "-chardev".into(),
@@ -132,7 +137,7 @@ pub fn qemu_args(
         "-append".into(),
         format!("{QUIET_BOOT} console=ttyS0 panic=10"),
         "-netdev".into(),
-        netdev(),
+        netdev(vm.ssh_port),
         "-device".into(),
         "virtio-net-pci,netdev=n0".into(),
         "-device".into(),
@@ -151,7 +156,7 @@ pub fn qemu_args(
         qemu_log.display().to_string(),
         "-no-reboot".into(),
     ]);
-    if let Some(p) = inject_authorized {
+    if let Some(p) = vm.inject_authorized {
         a.extend(["-fw_cfg".into(), format!("name=opt/oath/authorized,file={}", p.display())]);
     }
     a
@@ -327,10 +332,10 @@ pub fn ssh(out: &Path, extra: &[String]) -> Result<i32> {
     Ok(status.code().unwrap_or(1))
 }
 
-fn netdev() -> String {
+fn netdev(port: u16) -> String {
     match std::env::var("OATH_BRIDGE") {
         Ok(br) if !br.is_empty() => format!("bridge,id=n0,br={br}"),
-        _ => format!("user,id=n0,hostfwd=tcp:127.0.0.1:{}-:22", ssh_port()),
+        _ => format!("user,id=n0,hostfwd=tcp:127.0.0.1:{port}-:22"),
     }
 }
 
@@ -341,15 +346,20 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, "int")?;
     let inject = write_host_authorized(&run.join("host.authorized"));
+    let (serial_log, qemu_log) = (run.join("serial.log"), run.join("qemu.log"));
     let args = qemu_args(
         &tools,
         &img,
-        &overlay,
-        &run.join("serial.log"),
-        &run.join("qemu.log"),
-        SerialMode::Stdio,
-        inject.as_deref(),
-        host_wants_window(),
+        &VmSpec {
+            overlay: &overlay,
+            serial_log: &serial_log,
+            qemu_log: &qemu_log,
+            serial: SerialMode::Stdio,
+            inject_authorized: inject.as_deref(),
+            window: host_wants_window(),
+            ssh_port: ssh_port(),
+            mem_mb: 4096,
+        },
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
     eprintln!("run: {}", run.display());
@@ -440,15 +450,20 @@ fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<Strin
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, label)?;
     let inject = write_host_authorized(&run.join("host.authorized"));
+    let (serial_log, qemu_log) = (run.join("serial.log"), run.join("qemu.log"));
     let args = qemu_args(
         &tools,
         &img,
-        &overlay,
-        &run.join("serial.log"),
-        &run.join("qemu.log"),
-        SerialMode::File,
-        inject.as_deref(),
-        host_wants_window(),
+        &VmSpec {
+            overlay: &overlay,
+            serial_log: &serial_log,
+            qemu_log: &qemu_log,
+            serial: SerialMode::File,
+            inject_authorized: inject.as_deref(),
+            window: host_wants_window(),
+            ssh_port: ssh_port(),
+            mem_mb: 4096,
+        },
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
     Ok((tools, args, run))

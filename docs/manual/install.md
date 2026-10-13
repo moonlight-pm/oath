@@ -14,7 +14,10 @@ OS on that host must be reachable over SSH as root, or as a user with
 
 ## What it does
 
-1. Reads and checks `--overlay` against a scratch catalog, before
+1. Refuses an image that has not passed `cargo make check` (the stamp
+   in `build/check-pass` must match the kernel, initrd and image).
+   `--unchecked` skips this; `--qemu` rehearsals are not gated.
+   Reads and checks `--overlay` against a scratch catalog, before
    anything is wiped.
 2. Boots an **installer ramdisk** on the target (`oath.install=1`,
    dropbear, the build host's keys for root). On EFI machines this is

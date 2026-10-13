@@ -9,35 +9,31 @@ append history (git has it).
 
 ## Now
 
-1. **Cut (review phase 1) — done 2026-10-13.** Desk, T37, T39, Wicket,
-   probe and the doc diary are out (tag `t37-t39-final`). Headless
-   `base` image (38 MB qcow) boots in QEMU on the own-built kernel;
-   SSH as `home`, set/apply/undo, `pkg:hello`, `svc:hold` and reboot
-   persistence checked by hand; a fresh boot is in-sync. Next: nothing;
-   the harness below turns these hand checks into a gate.
-2. **Harness (phase 2, R5).** `cargo make check`: boot headless QEMU,
-   run the README loop and the known failure cases over SSH from a
-   data file, exit non-zero on any miss. Cases that fail today
-   (torn write, wants cycle, failed apply then undo, sshd lockout)
-   become the acceptance tests for 3 and 4. It must also serve
-   `pkg:fetchme` at 10.0.2.2:18765 (the probe used to). Next: write
-   `check/cases.toml` and the runner in `crates/oath-make`.
-3. **Catalog safety (phase 3).** Locked temp-file-then-rename
-   writes; validate before snapshot; log every outcome; undo restores
-   spec only; `oath new` / `oath rm`; typed `set`; id grammar;
-   probation apply for lockout-class changes. R4 (flock + rename) is
-   decided. Next: after the harness.
-4. **PID 1 (phase 4).** Log ring + `oath logs`, exit codes, backoff,
-   failed state, cgroups, shutdown, `switch_root`, panic hook, a
-   cycle skips one service, DHCP as a service, modalias loading.
-   Next: after 3.
-5. **Native base (phase 5, R7).** Every package is built from source
-   by an Oath plan or is the vendor's release pinned by sha256.
-   Today `image/tools.nix` still supplies busybox, btrfs-progs,
-   dropbear, openssh client bits, curl, sgdisk, mkfs.fat, kexec, tar,
-   systemd-boot, firmware and OVMF. Next: Joshua confirms Clang/LLVM
-   (proposed) over GCC; then stage-0 LLVM on novus and busybox as the
-   first plan. No Zig (R9).
+1. **Catalog safety (phase 3) — active.** Gate: the phase 3 gap cases
+   in `check/cases.toml` turn PASS. In order: catalog file lock (R4,
+   decided) and temp-file-then-rename writes; typed validation of every
+   selected object before the snapshot; log every outcome, failures
+   included; undo restores spec only (not `log/` or `store/`);
+   `oath new` / `oath rm`; typed `set`; id grammar; probation apply
+   for lockout-class changes (sshd, net). Next: the lock and atomic
+   writes in `oath-core`.
+2. **PID 1 (phase 4).** Reads `applied` only; log ring + `oath logs`,
+   exit codes, backoff, failed state, cgroups, shutdown on `reboot`,
+   `switch_root`, panic hook, a cycle isolates one service, DHCP as a
+   service, modalias loading. Gate: the phase 4 gap cases.
+3. **Native base (phase 5, R7).** Needs Joshua's yes on Clang/LLVM as
+   the system compiler (decisions.md). Then stage-0 LLVM on novus and
+   busybox as the first plan; retire `image/tools.nix` piece by piece.
+4. **Reinstall canto and buccina (phase 6)** from the native base,
+   then run the harness cases against them over SSH. Only when Joshua
+   asks.
+
+Done 2026-10-13: the cut (tag `t37-t39-final`), Zig removed, and the
+harness: `cargo make check` boots one QEMU per case, 10 pass and 8
+known gaps (phase 3–4), and `install` requires its stamp. Correction:
+an earlier hand "reboot persistence" check never rebooted (QEMU runs
+`-no-reboot`, plain `reboot` does nothing); the harness now checks a
+real catalog reboot and it passes.
 
 ## Machines
 

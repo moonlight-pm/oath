@@ -110,7 +110,9 @@ Known defects, from the 2026-10-13 review:
 - Typed validation happens after the snapshot is taken.
 - Undo copies `log/` and `store/` back, so it erases history and can
   pull package trees out from under running processes.
-- `set` checks key names only, not types.
+- `set` checks key names only, not types, and apply does not parse a
+  `svc` either: `restart=sometimes` applies cleanly, then PID 1 cannot
+  parse the service and stops it.
 - Nothing can create or delete an object except the seed.
 - A missing `INDEX.md` at boot makes PID 1 reseed the catalog.
 
