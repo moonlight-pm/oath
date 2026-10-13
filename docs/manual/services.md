@@ -6,128 +6,36 @@ There is no unit file, no systemd, no `/etc/init.d`.
 
 ## What ships
 
+The `base` profile:
+
 | Id | Exec | Default | Notes |
 |----|------|---------|-------|
-| `svc:serial` | `/lib/oath/serial-login` | enabled, `restart=always` | Root shell on serial (`ttyS0` / `hvc0`). It does not take the graphical VT; that stays on the boot mark. Do not disable it unless you have another console. |
-| `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless sleeper for start/stop. |
-| `svc:sshd` | dropbear | enabled, `restart=always` | Keys in `ssh:local`. Password off. SFTP via `/bin/sftp-server`; `/bin/scp` for legacy `scp -O`; guest client is musl OpenSSH `/bin/ssh`. |
-| `svc:seatd` | `/bin/seatd -u home -g home` | enabled, `restart=always` | Seat for DRM. Socket owned by `home`. `svc:river` and `svc:hyprland` want this. |
-| `svc:river` | `/lib/oath/run-compositor` | enabled, `restart=always` | Wrapper around `/bin/river` (runs as `home`): picks the DRM card with a connected connector (dual-GPU). GLES2/radeonsi on real KMS, pixman on virtio. libinput via libudev-zero. Default desk (`host:local.session=sola`). Do not enable together with `svc:hyprland`. |
-| `svc:hyprland` | `/bin/hyprland` (canto desired still has leftover `sola-hypr=1` from the live switch) | **off** in seed, `restart=always` | Omarchy compositor (`session=omarchy`). glibc, libudev-zero, no systemd. Wants `svc:seatd`. Config is `/lib/oath/hyprland-boot.conf` (0.52; tiling + Super+Return/Space/Shift+Return). Canto dogfood: Pitcairn DP-10 1920×1080. PID 1 waits 3 s for DRM release when stopping River/Hyprland. With no `user` field the seat list drops uid; an explicit `user` wins. The extra env is harmless. |
-| `svc:omarchy-shell` | `/bin/quickshell` (canto desired still has leftover `sola-omarchy=1`) | **off** in seed, `restart=always` | Omarchy bar + menu (Quickshell 0.2.1 + `$OMARCHY_PATH/shell`). Plugin scan needs `/dev/fd`. Wants `svc:hyprland`. Runs as `home`. |
-| `svc:sola-bus` | `/bin/sola-bus` | enabled, `restart=on-failure` | Sola IPC bus. Socket `/run/user/1/sola-bus`. |
-| `svc:sola-call` | `/bin/sola-call` | enabled, `restart=on-failure` | Sola call host. Socket `/run/user/1/sola-call`. |
-| `svc:sola-river` | `/bin/sola-river` | enabled, `restart=on-failure` | Bridge (bus ↔ Wayland). Wants `svc:river` + bus + call. Not the compositor. Wrapper retries while `pidof river` is empty so a compositor restart is not treated as Quit Sola. |
-| `svc:sola-shell` | `/bin/sola-shell` | enabled, `restart=on-failure` | Iced menubar / launcher / window menu / Super+K / Super+Tab. Wants river + bus + call + the bridge. wgpu/gl; llvmpipe only on virtio KMS; gles2/radeonsi on metal. Same compositor-retry wrapper as the bridge. |
-| `svc:sola-session` | `/bin/sola-session` | enabled, `restart=on-failure` | LaunchApp / CloseApp owner. Wants bus + call. Direct spawn (no systemd). Kit apps in `pkg:sola`: `/bin/sola-terminal` (tmux, `$SHELL` default `/bin/thoxa`; first tab `$HOME`), `/bin/sola-browser` (CEF), `/bin/sola-workspaces` (`solactl` helper; same `$SHELL`). `/bin/xdg-open` is `solactl open` (Grok login; `/bin/x-www-browser` is the same shim; not xdg-utils). |
-| `svc:sola-kvm` | `/bin/sola-kvm listen` | enabled, `restart=always` | Linux KVM **client** as `home`. UDP 4242 injects via Wayland virtual pointer/keyboard on the **active compositor** (River or Hyprland). Super+Tab confirms on Super-up; kernel auto-repeat is not injected. CLIP1 TCP on the same port syncs text and `image/png` on Enter/Leave. Wants `svc:river` and `svc:hyprland` (disabled wants are ignored). Shared seat — stays **enabled** across a session switch; the Wayland connection dies with the outgoing compositor, so bounce the process (`restart=always`) to attach to the incoming desk. |
-| `svc:pipewire` | `/bin/pipewire` | enabled, `restart=always` | Seat audio graph as `home`. `/run/user/1/pipewire-0`. Wants nothing. |
-| `svc:wireplumber` | `/bin/wireplumber` | enabled, `restart=always` | Session manager (`--profile main-embedded`). Wants `svc:pipewire`. |
-| `svc:pipewire-pulse` | `/bin/pipewire-pulse` | enabled, `restart=always` | Pulse compatibility for librespot. Wants `svc:pipewire`. |
-| `svc:dbus` | `/bin/dbus-daemon` | enabled, `restart=always` | System bus at `/run/dbus/system_bus_socket`. Root. No session bus. |
-| `svc:bluetoothd` | `/bin/bluetoothd` | enabled, `restart=always` | BlueZ. Wants `svc:dbus`. Root. |
-| `svc:backup` | `/lib/oath/backup-daily` + NFS spec | **off** in seed; **on** canto, `restart=always` | Sleeps until 04:00 US Mountain, then one `btrfs send` of `@` to NFS (overwrite `canto.send` + sidecar). Dest `10.0.0.12:/mnt/alpha/backup/canto`. Packs may ship `libexec/oath-backup-quiesce` / `thaw`. Manual send: `/lib/oath/backup-send`. |
+| `svc:serial` | `/lib/oath/serial-login` | enabled, `restart=always` | Root shell on the serial console (`ttyS0` / `hvc0`). Do not disable it unless you have another way in. |
+| `svc:sshd` | `/bin/dropbear -F -E -s -w -r /oath/ssh/host_ed25519 -p 22` | enabled, `restart=always` | Keys in `ssh:local`. Passwords off (`-s`), root login off (`-w`). |
+| `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless process for start/stop. Wants `svc:serial`. |
 
-## Audio
+Other services are added with an install overlay (see
+[Catalog](catalog.md)).
 
-The menubar volume chip appears only when `pw-dump` works. Default sink
-on canto is **Built-in Audio** (Intel HDA PCH analog). The 12-band LED
-spectrum is a `pw-cat` tap on that sink. `wpctl` changes volume.
+## Boot and converge
 
-```
-XDG_RUNTIME_DIR=/run/user/1 wpctl status
-XDG_RUNTIME_DIR=/run/user/1 pw-dump | head
-```
+At boot PID 1 mounts the floor, mounts the root subvolume `@` and the
+btrfs top level at `/oath/run/fs`, sets the hostname from
+`host:local`, loads the early kernel modules, brings up `net:net0`,
+refreshes `dev:*`, writes `ssh:local` keys, then starts every enabled
+service in `wants` order. The KMS and sound modules load after that,
+so `svc:sshd` is up before any GPU driver.
 
-On canto, `svc:pipewire` / `wireplumber` / `pipewire-pulse` are catalog
-objects (gen 40) and run as `home`. Default sink is **Built-in Audio**.
-Desired exec still has leftover `/bin/env sola-audio=1 /bin/…` from
-the pre-T39 live switch. With no `user` field, PID 1 still treats
-pipewire as a seat service and drops to `home`. An explicit `user`
-wins. The extra env is harmless.
+PID 1 then reaps children and restarts them per `restart`
+(`never` / `always` / `on-failure`). It stops services that are
+disabled or whose spec changed.
 
-System D-Bus + BlueZ are `pkg:bluez` (`svc:dbus`, `svc:bluetoothd`).
-The menubar Bluetooth chip appears when `org.bluez` has an adapter
-(`hci0`). sola-shell’s zbus client uses
-`/var/run/dbus/system_bus_socket` (symlink to `/run/dbus/…`).
-Session bus / MPRIS stay out. HDMI heads exist as ALSA
-cards but are not udev-enumerated.
-
-**Quit Sola** (flower menu) broadcasts shutdown and the session processes
-exit 0. PID 1 does **not** restart them (`on-failure` only). River the
-compositor, serial, and SSH stay. Reboot or `oath apply` (while they
-remain `enabled=true`) starts the session again. To leave it off across
-reboot: `oath set svc:sola-shell enabled=false` (and bus, call, bridge,
-session) then `oath apply`.
-
-If **River the compositor** dies, sola-river/shell used to exit 0 as
-well (the Wayland loop ended cleanly). PID 1 then left the window
-manager down, and the glass stays River-black (`xdg_surface has never
-been configured` for nests). The packed `/bin/sola-river` and
-`/bin/sola-shell` wrappers retry while `pidof river` is empty **or**
-while river is already back and the rest of the session is still up
-(Steam can kill the compositor faster than the wrapper
-notices; `restart=always` races). They still exit 0 when river is up
-and the peer session process is gone (flower Quit). A stopped
-`svc:sola-river` with `enabled=true` is Quit-shaped: plain `oath apply`
-does not start it — bounce `enabled=false` then `true`. Next sola
-pack: the ELFs themselves exit 1 on compositor death.
-
-**Restart Computer** / **Shut Down** (flower menu) are `host:local`
-`power=reboot` / `power=halt`. The click is the owner's confirm:
-`sudo oath apply --confirm host:local`. There is no logind.
-
-PID 1 starts enabled services at boot, **stops disabled ones** on
-converge, reaps, and restarts per policy (`never` / `always` /
-`on-failure`).
-
-`oath apply` on a `svc` writes desired, notifies PID 1 on
+`oath apply` on a `svc` writes `applied.json`, notifies PID 1 on
 `/oath/run/init.sock`, and waits until actual `state` is `running` or
 `stopped`. `oath undo` notifies PID 1 after restoring the catalog.
 
-`wants` is start order: enabled wanted services start first. Cycles
-refuse apply. `svc:hold` wants `svc:serial`.
-
-## Account, environment, low ports
-
-Oath has two Unix accounts: `root` and `home` (uid 1, gid 1). A
-service runs as one of those. `user` is `root` or `home`. When the
-field is absent the process runs as `root`, which is what `svc:sshd`,
-`svc:seatd`, `svc:dbus`, and `svc:hold` do today. River, Hyprland, the
-Omarchy shell, the Sola stack, and PipeWire still run as `home` when
-`user` is absent, so a desk catalog does not change on boot. Set
-`user` explicitly when that process should use the other account.
-
-```
-oath set svc:caddy user=home
-oath set svc:caddy bind_low_ports=true
-oath set svc:caddy env='{"WICKET_STATE_DIR":"/var/lib/wicket"}'
-oath apply svc:caddy
-```
-
-`env` is a string map. PID 1 puts it in the process environment after
-`host:local.env`. The same name on the service wins.
-
-`bind_low_ports` lets a `home` service bind ports below 1024
-(`CAP_NET_BIND_SERVICE`). Caddy on a Wicket image uses it for ports 80
-and 443. A `home` service without the field cannot bind those ports.
-Root can bind them either way. Changing `user`, `env`, or
-`bind_low_ports` restarts the process.
-
-Wicket runs its control plane, Caddy, and Postgres as `home`. That
-image does not add a `wicket` user or a `postgres` user. `svc:wicketd`
-does not start until `/var/lib/wicket` is a mount (`@wicket-state`).
-The image is `cargo make install --wicket`. The installer copies
-`build/wicket-pack` onto that root, including the Postgres Nix store
-under `/nix/store`. Rootless Podman is a later slice.
-
-Desk services still wait for DRM and input before they start. A
-`user=home` service that is not one of those seat names starts with
-sshd, and it does not chmod `/dev/dri`. The seat name list still
-decides that wait. An exec argument containing `run-compositor` or
-`sola-` still selects the seat drop when `user` is absent.
-
-## Start / stop
+`wants` is start order: enabled wanted services start first. Disabled
+or unknown wants are skipped. Cycles refuse apply.
 
 ```
 oath ls --kind svc
@@ -138,48 +46,68 @@ oath get svc:hold --actual
 oath undo
 ```
 
-Actual `state` is `stopped` | `starting` | `running` | `failed`.
+Actual `state` is `running`, `stopped`, or `failed` (the spawn itself
+failed).
 
-## Backup (NFS)
+## Account, environment, low ports
 
-One off-box copy of the live `@` subvolume. Not a second undo.
-Schedule and dest live on `svc:backup`.
+Oath has two Unix accounts: `root` and `home` (uid 1, gid 1). `user`
+is `root` or `home`; absent means `root`.
 
-```
-oath get svc:backup
-cat /oath/objects/svc/backup/last.json
-```
+Every service gets `PATH=/bin`, `HOME`, `USER`, `LOGNAME`,
+`SHELL=/bin/sh` and `XDG_RUNTIME_DIR` for its account, then
+`host:local.env`, then `TZ` from `host:local.timezone` (unless `env`
+already sets `TZ`), then its own `env`. The service's `env` wins on
+the same name.
 
-Canto dest is `10.0.0.12:/mnt/alpha/backup/canto` (NAS share `alpha`,
-folder `backup/canto`). After a send:
-
-| File | What |
-|------|------|
-| `canto.send` | `btrfs send` stream of that generation (overwritten) |
-| `canto.json` | hostname, generation, **UTC** time (`…Z`), size, sha256 |
-
-The sleeper is `/lib/oath/backup-daily`. It waits until **04:00 US
-Mountain** (POSIX TZ inside that process only) then runs
-`backup-send`. The **system clock stays UTC** — `date` on the box is
-Zulu. Seed leaves `svc:backup` **off** so QEMU does not hit the NAS.
-Canto has it **on**.
-
-Send now (overwrites the one NAS copy; previous file kept until the
-new send finishes):
+`bind_low_ports` lets a `home` service bind ports below 1024
+(`CAP_NET_BIND_SERVICE`). Root can bind them either way. On a
+service an overlay added (here `svc:web`):
 
 ```
-sudo /lib/oath/backup-send 10.0.0.12:/mnt/alpha/backup/canto
+oath set svc:web user=home bind_low_ports=true
+oath set svc:web --from-json '{"env":{"WEB_ROOT":"/home/site"}}'
+oath apply svc:web
 ```
 
-Stop the daily sleeper:
+Changing `user`, `env`, or `bind_low_ports` restarts the process.
 
-```
-oath set svc:backup enabled=false
-oath apply svc:backup
+## Off-box backup
+
+The image ships two helpers, not a service:
+
+- `/lib/oath/backup-send host:/export/path` — snapshot `@`, mount the
+  NFS export, write `<hostname>.send` (one `btrfs send` stream,
+  overwritten each time) and `<hostname>.json` (generation, UTC time,
+  size, sha256). It is not a second undo; `oath undo` never reads it.
+- `/lib/oath/backup-daily host:/export/path` — sleep until 04:00 US
+  Mountain (hard-coded in the script), run `backup-send`, repeat.
+
+To run it daily, add a service in the machine's install overlay:
+
+```json
+{"objects": {"svc:backup": {
+  "exec": ["/lib/oath/backup-daily", "nas:/export/backup/canto"],
+  "wants": [], "restart": "always", "enabled": true}}}
 ```
 
-Snapshot is crash-consistent (`sync` + btrfs CoW). Packs that need a
-freeze (postgres WAL, etc.) may ship
+A present package may ship
 `/oath/store/pkg/<name>/live/libexec/oath-backup-quiesce` and
-`oath-backup-thaw`. No hook means skip. Reboot without a rebuilt ESP
-initrd drops nfs.ko (canto this boot loaded it by hand).
+`oath-backup-thaw`; `backup-send` runs them around the snapshot.
+Without them the copy is crash-consistent (`sync` plus btrfs CoW).
+
+## Known gaps
+
+- PID 1 reads `desired.json`, not `applied.json`. A `set` without
+  `apply` reaches it at the next converge or boot.
+- A `wants` cycle that reaches PID 1 that way starts **no** services,
+  `svc:sshd` included.
+- A `desired.json` PID 1 cannot parse (a torn write) is dropped, and
+  that service is stopped.
+- No per-service log, no exit code in actual, no real restart count,
+  no backoff (a crashing `restart=always` service respawns every
+  200 ms), no cgroup per service.
+- No ordered shutdown: reboot and halt do not stop services first.
+- If PID 1 itself fails, it runs `/bin/sh` on the console and then
+  sleeps forever. Metal boots without `panic=`, so a kernel panic
+  does not reboot.

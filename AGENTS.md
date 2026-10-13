@@ -1,261 +1,95 @@
-# Oath — Contributor & Agent Guide
+# Oath — contributor and agent guide
 
-Oath is a **new Linux distribution**. Linux kernel, own userspace. Not a remix
-of Debian, Arch, NixOS, Alpine, or Ubuntu. Principles: **Independence**,
-**simplicity**, **openness**, **courage**.
+Oath is a **new Linux distribution**: the Linux kernel and our own
+userspace, not a remix of Debian, Arch, NixOS, Alpine or Ubuntu.
+Principles: **independence, simplicity, openness, courage.**
 
-The product is **AI-first**: the sysadmin is an agent. The running system must
-teach a model that has never seen Oath how to find things and change them.
-Unix is the substrate, not the admin interface.
+The product is **AI-first**: the sysadmin is an agent. A running
+machine must teach a model that has never seen Oath where things are
+and how to change them. Its identity is a typed, live catalog at
+`/oath` and one admin surface, `oath`, which humans and agents share.
+We write PID 1. Unix is the substrate, not the admin interface.
+
+- **Is not:** a kernel project, a chatbot in PID 1, or systemd with a skin.
+- **Libc:** musl. glibc never shares a process with musl.
+- **Packages:** native only — built from source by an Oath `plan`, or
+  the vendor's own release pinned by sha256. Never another distro's
+  packages (R7 in [docs/decisions.md](docs/decisions.md)).
+- **License:** MIT, copyright Joshua Kifer. Upstream files keep theirs.
 
 ## Session start
 
 1. This file.
-2. [`CURRENT.md`](CURRENT.md) — living priority and dogfood/runtime state.
-3. [`docs/capabilities.md`](docs/capabilities.md) — as-built maturity for the
-   slice you will touch.
-4. [`docs/open-questions.md`](docs/open-questions.md) — any **Decision points**
-   for the slice? If yes, **ask the human**; do not invent product policy.
-5. Only the freeze or plan needed for the active domain.
+2. [CURRENT.md](CURRENT.md) — the slice, the machines, the don'ts.
+3. [docs/decisions.md](docs/decisions.md) — if your slice touches an
+   **Open** decision, ask Joshua; do not invent product policy.
+4. The spec for your domain in [docs/specs/](docs/specs/), and its row
+   in [docs/capabilities.md](docs/capabilities.md).
 
-If the user signals go-ahead without a new task ("go", "ok go", "continue",
-etc.), execute **CURRENT.md → Now** — do not re-plan from scratch.
+"go", "ok go", "continue" with no new task means: do CURRENT → Now,
+item 1. Do not re-plan from scratch.
 
-Update `CURRENT.md` and `docs/capabilities.md` when direction, capability
-status, or known runtime state changes. **No** one-off handoff files.
-[`.grok/rules/active-work.md`](.grok/rules/active-work.md) is only a
-pointer to `CURRENT.md` (auto-load reminder).
+## Docs (same change as the code)
 
-**Skills (Grok):** `.grok/skills/` —
+| File | Holds | Rule |
+|------|-------|------|
+| `CURRENT.md` | priority, next steps, machines | ≤ 80 lines, ≤ 5 Now items, replace don't append |
+| `docs/capabilities.md` | what works, main gaps | ≤ 800 words, one row per capability |
+| `docs/decisions.md` | standing decisions, open questions | ask before acting on Open |
+| `docs/specs/` | target design, one file per domain | label "is" vs "will be" |
+| `docs/manual/` | how to use what ships today | shipped behavior only |
+| `docs/roadmap.md` | phase status | flip only at phase level |
+| `docs/architecture.md` | as-built map: processes, trees, paths | |
+| `hosts/<name>.md` + `.json` | one machine's facts and install overlay | overwrite, no diary |
 
-- `oath-session-start` — boot order above
-- `oath-progress-docs` — **mandatory** end-of-slice doc updates
-
-## Progress documentation is first-class (mandatory)
-
-Describing the system and its progress is **paramount**. Incomplete meta work
-means incomplete product work. Full model:
-[`docs/progress-model.md`](docs/progress-model.md). Portable practice:
-[`docs/progress-documentation-practice.md`](docs/progress-documentation-practice.md).
-
-| Kind | Home | Role |
-|------|------|------|
-| Focus | Root `CURRENT.md` | Priority, next moves, dogfood facts, locks |
-| As-built progress | `docs/capabilities.md` | Capability status + gaps |
-| As-built map | `docs/architecture.md` + `architecture.html` | Processes, trees, paths, images; `cargo make map` |
-| Target design | `docs/specs/*` | Freezes (desired shape) |
-| Horizon | `docs/roadmap.md` | Phase-level program status |
-| Product docs | `docs/manual/` | Current operator user manual |
-
-**End of every real product slice (same change as code):**
-
-1. Update capability row(s) (status and/or gaps).
-2. Update `CURRENT.md` if priority or dogfood changed.
-3. Update `docs/manual/` if operator-visible **shipped** behavior changed.
-4. Update `architecture.md` if the system map changed (and the Archify
-   overview: `architecture.archify.json` + `cargo make map --render`).
-5. Flip `roadmap.md` phase status only when phase-level status changes.
-6. Follow [`.grok/skills/oath-progress-docs/SKILL.md`](.grok/skills/oath-progress-docs/SKILL.md).
-
-Do not invent `STATUS.md` / `HANDOFF.md` / session diaries. Deferred
-*improvements* to this meta system are listed only in
-[`docs/progress-model.md`](docs/progress-model.md#deferred-meta-work).
-
-**Code wins** over stale docs — then fix the docs immediately.
-
-## What this is (and is not)
-
-- **Is:** a from-scratch Linux distribution whose identity is a typed, live
-  catalog an agent can read, plus one admin surface (`oath`) that is the same
-  API humans and agents use. We **write PID 1**.
-- **Is not:** a kernel project, a remix of another distro, a chatbot in
-  PID 1, or systemd/dinit with a skin.
-- **License:** MIT. [`LICENSE`](LICENSE). Copyright (c) Joshua Kifer.
-  Upstream files keep their own licenses.
-- **Libc:** musl base; glibc only as a runtime object. Never two libcs in
-  one process.
-
-Latest freeze:
-[`docs/specs/2026-09-16-pkg-security.md`](docs/specs/2026-09-16-pkg-security.md)
-(T44 `components.json` + hash-keyed advisories).
-T43:
-[`docs/specs/2026-09-15-plan-kind.md`](docs/specs/2026-09-15-plan-kind.md)
-(`plan` kind; `oath build` / `oath fmt`; replicate a build).
-T42:
-[`docs/specs/2026-09-13-pkg-about.md`](docs/specs/2026-09-13-pkg-about.md)
-(`pkg.description` + `pkg.home`; not fetch `url`).
-T41:
-[`docs/specs/2026-09-13-pkg-needs.md`](docs/specs/2026-09-13-pkg-needs.md)
-(`pkg.needs` runtime graph; apply refuses a broken graph).
-T40:
-[`docs/specs/2026-09-13-sola-oath.md`](docs/specs/2026-09-13-sola-oath.md)
-(`sola-oath` catalog client; keep `oath` as the only admin surface).
-T39:
-[`docs/specs/2026-09-10-omarchy-session.md`](docs/specs/2026-09-10-omarchy-session.md)
-(Omarchy session payload; keep Sola; Hyprland + Quickshell bar). T38:
-[`docs/specs/2026-09-06-boot-generations.md`](docs/specs/2026-09-06-boot-generations.md)
-(last-5 firmware boots + current kernel/mesa). T37:
-[`docs/specs/2026-09-05-arcade-steam.md`](docs/specs/2026-09-05-arcade-steam.md)
-(Arcade + Steam runtime). T36:
-[`docs/specs/2026-09-05-sola-kit-apps.md`](docs/specs/2026-09-05-sola-kit-apps.md)
-(remaining kit apps in `pkg:sola`). T35:
-[`docs/specs/2026-09-05-guest-toolchain.md`](docs/specs/2026-09-05-guest-toolchain.md)
-(guest toolchain; `pkg:cc` / `pkg:rustc` / `pkg:cmake` /
-`pkg:pkg-config`). T34:
-[`docs/specs/2026-09-04-utc-clock.md`](docs/specs/2026-09-04-utc-clock.md)
-(UTC system clock; `host:local.timezone` display).
-[`docs/specs/2026-09-03-backup-nfs.md`](docs/specs/2026-09-03-backup-nfs.md)
-(T33 one NFS copy; partial, canto).
-[`docs/specs/2026-09-03-pkg-pack-identity.md`](docs/specs/2026-09-03-pkg-pack-identity.md)
-(T32 pack identity; hash-in-path in; canto old layout until next pack).
-[`docs/specs/2026-09-03-pkg-thoxa.md`](docs/specs/2026-09-03-pkg-thoxa.md)
-(`pkg:thoxa` login shell). T31:
-[`docs/specs/2026-09-02-seat-home.md`](docs/specs/2026-09-02-seat-home.md)
-(T31 seat `home`). T30:
-[`docs/specs/2026-09-02-pkg-grok.md`](docs/specs/2026-09-02-pkg-grok.md)
-(`pkg:grok` packed). T29:
-[`docs/specs/2026-09-02-sola-workspaces.md`](docs/specs/2026-09-02-sola-workspaces.md)
-(sola-workspaces). T28:
-[`docs/specs/2026-09-01-sola-browser.md`](docs/specs/2026-09-01-sola-browser.md)
-(sola-browser). T27:
-[`docs/specs/2026-08-31-metal-canto.md`](docs/specs/2026-08-31-metal-canto.md)
-(metal canary). T26:
-[`docs/specs/2026-08-31-sola-terminal.md`](docs/specs/2026-08-31-sola-terminal.md)
-(sola-terminal). T25:
-[`docs/specs/2026-08-31-sola-session.md`](docs/specs/2026-08-31-sola-session.md)
-(session manager). T24:
-[`docs/specs/2026-08-31-sola-dev.md`](docs/specs/2026-08-31-sola-dev.md)
-(identity; Oath-as-dev-host started; inner loop still Nix). T23:
-[`docs/specs/2026-08-30-oath-sola.md`](docs/specs/2026-08-30-oath-sola.md)
-(session stack). T22:
-[`docs/specs/2026-08-30-libinput.md`](docs/specs/2026-08-30-libinput.md)
-(shipped).
-
-Locks: root [`CURRENT.md`](CURRENT.md). Closed Decision points:
-[`docs/open-questions.md`](docs/open-questions.md).
+Code wins over a stale doc; then fix the doc. No session diaries,
+handoff files or status files beyond these. The end-of-slice checklist
+is the `oath-docs` skill (`.claude/skills/oath-docs/`).
 
 ## Agent autonomy
 
-**Do without asking:** read/search/list/edit project files; docs hygiene;
-normal git (status, diff, log, add, commit, local branch); local QEMU of
-images this repo built, once those exist.
+**Do without asking:** read, search and edit project files; docs
+hygiene; normal git on `master` (status, diff, log, add, commit);
+`cargo test`; `cargo make build`; local QEMU of images this repo built.
 
-**Still confirm or stop before:** force-push / hard reset of published
-history; writing to a real disk / USB installer the user did not request;
-changing the build machine’s OS as if it were Oath; committing secrets;
-inventing answers to Decision points.
-
-Never ask permission to read or search this repository.
+**Ask first:** force-push or hard reset of published history; writing
+to a real disk or USB stick Joshua did not ask for (`cargo make
+install --confirm`, `--usb`); changing novus (the NixOS build host);
+committing secrets; answering an Open decision.
 
 ## Tree
 
 ```
-AGENTS.md             Contributor + agent guide
-CURRENT.md            Living session focus (only handoff)
-LICENSE               MIT (Joshua Kifer)
-README.md             What this repo is
-docs/
-  README.md           Docs map + session boot
-  progress-model.md   How progress docs work
-  capabilities.md     As-built capability matrix
-  architecture.md     As-built system map
-  architecture.html   Interactive overview (`cargo make map`)
-  architecture.archify.json  Archify spec (rebuild with `cargo make map --render`)
-  roadmap.md          Program horizon
-  open-questions.md   Design forks + ask-human decisions
-  specs/              Target freezes (dated)
-  plans/              Implementation checklists
-  ideas/              Parked thoughts
-  manual/             Operator user manual (current behavior)
-.grok/skills/         oath-session-start, oath-progress-docs
-apocrypha/            gitignored scratch/history — not product
-crates/oath-core      catalog, kinds, apply/undo
-crates/oath           CLI (guest)
-crates/oath-init      PID 1 + serial-login
-crates/oath-efi       UEFI splash (native GOP, white mark, LoadImage)
-crates/oath-make      host build CLI (`cargo make`) — pack / QEMU / probe / map
-image/                tools.nix only (borrowed prebuilts)
-forks/                maintained source forks (submodules; build-time)
-apps/                 first-party pkg sources (`hello`, `hello-src`, `hello.plan`, `reloc-src`, `reloc.plan`, `fetchme`, …)
+AGENTS.md  CURRENT.md  README.md  LICENSE
+hosts/            one file pair per machine: facts (.md) + install overlay (.json)
+docs/             decisions, capabilities, roadmap, architecture, specs/, manual/
+crates/oath-core  catalog, kinds, apply/undo, seed profiles (seed/*.json)
+crates/oath       the `oath` CLI
+crates/oath-init  PID 1, serial-login, sudo
+crates/oath-efi   UEFI boot menu and mark
+crates/oath-make  host build tool (`cargo make build|run|up|start|stop|ssh|install|esp|store|publish|advisories`)
+image/            kernel build (build-linux.sh, linux.fragment, linux-patches/), pkg:cc pack, tools.nix (temporary)
+apps/             first-party package sources and example plans
+forks/            submodules for the future native desk (sola, river, wlroots)
+apocrypha/        gitignored scratch — never a source of truth
 ```
 
-Do not invent extra kinds until CURRENT says so. `pkg`, `net`, `ssh`,
-`dev`, and `plan` exist. Do not add other kinds unless CURRENT says so.
-Sola/River work uses existing `pkg` + `svc`. glibc is `pkg:glibc`,
-not a new kind.
-
-## Driver patches are first-class
-
-When the bug is a **generation gap** (SI DPM, modeset, GET tiling lies),
-**patch the driver first**: amdgpu in `image/linux-patches/`. Gate on
-`gfx_level` / chip family so one kernel still ships everywhere. Vulkan
-layers, X11 property fakes, and CPU detile are for **proving the hop**,
-not the product fix.
-
-T37 lesson: gamescope on SI/Pitcairn was parked. Pool-layer GET/SET/CEF
-clamps and RADV LINEAR_ALIGNED export did not make a product nest.
-Session Steam is host Xwayland. `pkg:gamescope` / `sola-arcade` require
-Vulkan WSI DRM modifiers; apply refuses on GFX6–8 and virtio. Do not
-resurrect the canto nest science.
+Kinds are `host svc snap pkg net ssh dev plan`. Do not add a kind
+without a decision in `docs/decisions.md`.
 
 ## Workflow
 
-- Living progress: `CURRENT.md`. Specs/plans under `docs/` when a phase or
-  slice starts.
-- Work on `master` unless told otherwise. Small logical commits. Commit
-  product + meta together.
-- Never commit secrets. Never treat `apocrypha/` as source of truth.
-- Do not mix “is” and “will be” in the same paragraph without a label.
-- Do not assume Debian/Arch/NixOS conventions apply to the *product*.
+- Work on `master`. Small commits; product and docs together.
+- Never commit secrets.
+- Do not assume Debian/Arch/NixOS conventions apply to the product.
+- **Driver patches first.** A generation-gap GPU bug (SI DPM, modeset)
+  is fixed in `image/linux-patches/`, gated by chip family, so one
+  kernel ships everywhere. Userspace workarounds only prove the hop.
 
-## Sola fork — generic fixes vs Oath-compat
+## Forks
 
-`forks/sola` is **oath-sola** (`moonlight-pm/oath-sola`). The NixOS
-daily driver is **Sola** (`moonlight-pm/Sola`). T23: pull Sola into the
-fork; never push **Oath-compat** the other way. Commands:
-[`forks/README.md`](forks/README.md).
-
-Oath QEMU will surface real Sola bugs the host GPU hid. Classify every
-`forks/sola` commit:
-
-| Class | What | Where it lands |
-|-------|------|----------------|
-| **Sola-generic** | Overlay sizing, kit, bridge, anything that belongs on the NixOS desk | Cherry-pick onto `moonlight-pm/Sola` `master`, then merge Sola `master` into `oath-sola` |
-| **Oath-compat** | `/oath` vs `/opt/sola`, refuse `crates/sola` when `/oath/INDEX.md` exists, PID 1 env, packing | `oath-sola` only |
-
-When a change is mixed, **two commits** (generic first, then Oath-compat)
-so the cherry-pick is clean. Do not mention Oath catalog / PID 1 on Sola
-main; software-GL wording is fine.
-
-**Keep `oath-sola` current.** Merge Sola `master` into `oath-sola`
-`master` regularly so the fork does not drift — at session start when
-the slice touches `forks/sola`, and after every Sola-generic land. Drift
-is the failure mode, not extra merge commits.
-
-```sh
-cd forks/sola
-git remote add sola git@github.com:moonlight-pm/Sola.git   # once
-git fetch sola
-# Regular sync (no cherry-pick needed):
-git merge sola/master
-git push origin master
-# Sola-generic land — prefer a worktree so this submodule stays on
-# oath-sola master:
-git worktree add /tmp/sola-up sola/master
-cd /tmp/sola-up
-git cherry-pick -x <generic-commit>
-git push sola HEAD:master
-cd - && git worktree remove /tmp/sola-up
-git fetch sola && git merge sola/master
-git push origin master
-```
-
-Do not force-push Sola `master`. After the Sola land (or a sync that
-changes packed ELFs), pack the appliance from `oath-sola` (`cargo make
-build`).
-
-## Grok tooling
-
-- Project permissions: `.grok/config.toml` (no secrets there either), when
-  it exists.
-- Rules under `.grok/rules/` are pointers, not a second handoff.
+`forks/sola` is **oath-sola**; Joshua's NixOS desk runs **Sola**
+(`moonlight-pm/Sola`). Pull Sola into the fork; never push
+Oath-compat changes the other way. A mixed change is two commits
+(generic first). Commands: [forks/README.md](forks/README.md). The
+desk is out of the image until it builds natively (roadmap phase 8).

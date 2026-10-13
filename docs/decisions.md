@@ -1,0 +1,86 @@
+# Decisions
+
+What has been decided, and what still needs Joshua. Agents ask before
+acting on anything under **Open**. Replaces `open-questions.md`
+(history in git, tag `t37-t39-final`).
+
+## Open — ask the human
+
+- **R4 confirmation: how writers share the catalog.** Proposed:
+  every writer (`oath`, PID 1) takes an exclusive `flock` on
+  `/oath/.lock` and writes temp-file-then-rename; PID 1 reads only
+  `applied`. The alternative is PID 1 as the only writer with `oath`
+  sending requests over the socket (breaks `oath --root /mnt` and
+  offline repair). Blocks phase 3.
+- **Bootstrap compiler for native packages.** Zig (`pkg:cc`, the
+  vendor's static release, clang + musl inside) or GCC + binutils +
+  musl built from source with the build host's compiler. Blocks the
+  first native plan.
+- **Kernel line.** The pinned kernel is 7.3-rc1 (what canto runs).
+  Move to a stable release when it covers GFX6, or stay?
+- **Steam + Minecraft desk.** Which machine, and when. Not before the
+  native desk exists.
+
+## 2026-10-13 review (briefing D1–D8)
+
+| ID | Decision | Status |
+|----|----------|--------|
+| R1 | Wicket leaves the core. Products wait for Oath to mature, then bundle themselves with the package standard. | Done in the cut |
+| R2 | Delete T37 (Steam, gamescope, sola-arcade) and T39 (Omarchy/Hyprland). Tag `t37-t39-final`. A Steam + Minecraft desk is a future requirement. | Done in the cut |
+| R3 | The seed is data: profiles `base` and `dev`; machine facts are install overlays. | Done in the cut |
+| R4 | Writers: flock + rename (proposed). | Open, see above |
+| R5 | Delete the probe; add a headless QEMU harness that gates installs. | Probe deleted; harness next |
+| R6 | One kernel: own-built, sha256-pinned, vermagic-checked. No Nix kernel. | Done in the cut |
+| R7 | Native packages from the outset: built from source by an Oath plan, or the vendor's release pinned by sha256. Never another distro's packages. Build-host compilers bootstrap only. | Direction set; work is phase 5 |
+| R8 | Reset the progress docs ("slash and burn"). | Done in the cut |
+
+## Standing
+
+- **Shape.** x86_64. Linux kernel, own userspace, own PID 1 in Rust.
+  musl base; never two libcs in one process. MIT.
+- **Catalog.** `/oath`, objects `kind:name`, pretty JSON
+  `desired` / `actual` / `meta` (+ `applied` for svc), JSON Schema
+  per kind with Markdown prose, `INDEX.md` at the root. Kinds:
+  `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`. No new
+  kind without a decision here.
+- **One admin surface.** `oath` verbs, text by default, `--json`
+  the same facts. Agents do not edit `/etc`.
+- **Confirm class.** Halt, wipe and boot-generation changes need
+  `--confirm`; agents pass it only when the owner asked.
+- **Generations.** btrfs `@` with sibling `@gen-N`; `snap:current`.
+  Undo is the snapshot. qcow snapshots are host debugging only.
+- **Principal.** Serial console is root (break-glass). SSH and daily
+  use are Unix user `home` (uid 1, `HOME=/home`). The agent is not a
+  third user. Root SSH is off (`dropbear -w`).
+- **Packages.** Store `/oath/store/pkg/<name>/<hash>/`, hash is
+  SHA-256 of `oath-tree-v1`; `/bin` is a symlink farm; `desired.hash`
+  pins and apply verifies. Base packages are not removable. `needs`
+  is `{id, hash}`; apply refuses a broken graph. `description` /
+  `home` are prose. `components.json` is in the tree hash;
+  advisories are hash-keyed files; the guest never calls OSV.
+  `pkg.url` / `{origin}/pkg/<name>/<hash>.tar` fetch; no repository
+  kind. Builds are `plan` objects, netless sandbox, pinned inputs.
+- **Network and SSH.** `net:net0` is the one NIC (dhcp by default).
+  Host keys live under `/oath/ssh/`; owner public keys in `ssh:local`.
+  No baked private keys.
+- **Devices.** `dev` is inventory; no udev; the catalog does not load
+  modules.
+- **Time.** Kernel, logs and catalog are UTC. `host:local.timezone`
+  is exported as `TZ` to services and logins; `/etc/localtime` is not
+  truth.
+- **Boot.** ESP keeps the current boot plus the last five archives
+  (`cargo make esp`, run on the Oath machine); `oath-efi` is the
+  boot menu and mark.
+- **Driver patches first.** A generation-gap GPU bug is fixed in
+  `image/linux-patches/`, gated by chip family, not worked around
+  in userspace.
+
+## Superseded
+
+Borrowed prebuilts in phase 1 (D8 2026-08-27) → R7. Sola/River on
+Oath (T21–T29, T36, T40), seat device rules (T22, T31 parts), Grok
+and Thoxa packs (T30, `pkg:thoxa`), the glibc runtime pack, T35's
+glibc-default `cc` → removed with the desk; returns as native
+packages. T37, T39 → R2. Package hosting on Wicket (T20 origin
+default) → no default origin. T33 backup → kept as a script and a
+canto overlay, not a seed default.

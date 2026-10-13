@@ -1,100 +1,67 @@
 # Roadmap
 
-**Program horizon** — coarse phase status over months.
-Day-to-day maturity: [capabilities.md](capabilities.md).
-Session priority: root [CURRENT.md](../CURRENT.md).
+Phase-level status. Feature detail is in [capabilities.md](capabilities.md);
+the current slice is in [CURRENT.md](../CURRENT.md). The order below
+comes from the 2026-10-13 review ([decisions.md](decisions.md)).
 
-| Status | Meaning |
-|--------|---------|
-| **done** | Good enough to build on; polish ok |
-| **partial** | Scaffold or subset shipped; important gaps remain |
-| **active** | Current focus (`CURRENT.md`) |
-| **next** | Queued after active |
-| **planned** | Intended; not started |
-| **unplanned** | Not scheduled; capture only |
+**Status:** done · active · next · planned
 
-Update phase status only when a **phase-level** flip happens.
-Prefer capability rows for feature-level progress.
+## Done before the review (2026-08-27 → 2026-09-30)
 
----
+A QEMU appliance and then canto booted our PID 1 and catalog: hostname,
+services, packages, network, SSH and devices as objects; btrfs
+generations with undo; hash-identified packages; `plan` builds; an
+installer; an ESP boot menu. A River/Sola desk, a Steam runtime, an
+Omarchy session and a Wicket host image were layered on top using
+relocated Nix packages. The review found the core unsafe in places and
+the payload tangled into it.
 
-## Phase 0 — Charter
+## 1. Cut — active
 
-**Status: done**
+Remove the desk, T37, T39, Wicket, the probe and the diary docs. Seed
+as data with `base`/`dev` profiles and host overlays. One own-built
+kernel with a vermagic check. `esp` refuses non-Oath hosts.
 
-Founding D1–D9 and catalog technical locks T1–T10 are closed. Freeze:
-[specs/2026-08-27-catalog-and-oath-surface.md](specs/2026-08-27-catalog-and-oath-surface.md).
+## 2. Harness — next
 
-## Phase 1 — Skeleton boot
+`cargo make check`: headless QEMU running the README loop and the
+known failure cases over SSH from a data file. Installs are gated on it.
 
-**Status: done**
+## 3. Catalog safety — planned
 
-QEMU boots our PID 1 and catalog. Courage test (hostname apply, undo,
-reboot) passes. Generations are sibling `@gen-N` subvolumes. Plan:
-[plans/2026-08-27-qemu-skeleton-plan.md](plans/2026-08-27-qemu-skeleton-plan.md).
+Locked atomic writes (R4), spec/status/log/store split, validate before
+snapshot, log every outcome, undo restores spec only, `oath new` /
+`oath rm`, typed `set`, schemas generated from the Rust types, id
+grammar, probation apply for lockout-class changes.
 
-## Phase 2 — Closed admin loop
+## 4. PID 1 — planned
 
-**Status: done**
+Per-service log ring and `oath logs`, exit codes, backoff, failed
+state, cgroups, shutdown, `switch_root`, panic hook, cycle isolation,
+DHCP as a service, modalias loading.
 
-Hostname and `svc:hold` start/stop through the catalog, with undo and
-reboot persist. Plan:
-[plans/2026-08-28-svc-loop-plan.md](plans/2026-08-28-svc-loop-plan.md).
+## 5. Native base — planned
 
-## Phase 3 — Packages and services as objects
+Bootstrap compiler, then busybox, btrfs-progs, dropbear, curl, sgdisk,
+dosfstools, firmware and the boot loader as plans. Retire
+`image/tools.nix` for anything that ships. Immutable build outputs
+with a manifest; publish allowlist with a license per package.
 
-**Status: partial**
+## 6. Reinstall — planned
 
-Install/remove/query packages through the catalog. Services are objects
-with schema, not unit-file folklore. Freeze:
-[specs/2026-08-28-packages.md](specs/2026-08-28-packages.md). Canary
-`pkg:hello` plus sealed `busybox` / `btrfs` / `oath` / `dropbear` are
-in. `pkg:fetchme` wget canary is in. Hosting identity is T20 (`pkg.url`;
-other Oath hosts as origin; object-storage tar). Pack identity is T32
-(content hash, hash-in-path store, `desired.hash` pin, no recipe
-language) — in (canto old layout until next pack). T43 `plan` files
-are in (canto compiled `apps/hello.plan`; relocate-tar `apps/reloc.plan`
-wget’d `pkg:reloc-src`; `/bin` still apply). T44 upstream
-`components.json` + hash-keyed advisories are in (host tests; canto
-trees until next pack). Guest store export and signed index are not.
+Wipe canto and buccina, install the native base from a clean build,
+run the harness against both over SSH.
 
-## Phase 4 — Devices and network
+## 7. Agent surface — planned
 
-**Status: partial**
+MCP and agent tooling over `oath --json` (the old "Phase 5").
 
-Hardware inventory as objects. One network model. The agent does not run
-`lspci` / `ip` / `udevadm` and guess. Net canary:
-[specs/2026-08-29-net.md](specs/2026-08-29-net.md),
-[specs/2026-08-30-ssh-and-dhcp.md](specs/2026-08-30-ssh-and-dhcp.md)
-(`net:net0` + SSH + `dev` inventory + virtio-gpu). DHCP, `OATH_BRIDGE`,
-Unix floor, `svc` wants, and URL fetch exist. Module-as-catalog
-and guest store export do not. Wayland is T21 River as `svc`; input
-is T22 libinput via libudev-zero (no udevd).
+## 8. Native desk — planned
 
-## Phase 5 — Agent as a system component
+River, wlroots, mesa, input, audio, fonts and Sola built natively.
+Sola-compat rules from the old fork workflow still apply.
 
-**Status: planned**
+## 9. Steam + Minecraft desk — planned
 
-A resident agent that boots into the catalog, with a protocol any model
-can speak. Default client can be Grok; the OS interface is not Grok.
-
-## Phase 6 — Disk install and updates
-
-**Status: active**
-
-Installer, A/B or equivalent base updates, honest rollback. T27 canto
-canary is dogfoodable (EFI/USB installer, SSH courage). T38 firmware
-menu (last 5 ESP archives) is on canto ESP (timeout 5; live **7.3.0-rc1
-#4**).
-kexec on that Apple is still a gap. QEMU probe stays. T33 off-box
-backup is **partial** (one NFS send of a generation, overwrite, no
-retention; canto gen 16 on nas `alpha/backup/canto`).
-
-## Later (unplanned)
-
-- Broad ABI compatibility for random Linux binaries
-- Large binary repository
-- Bare-metal diversity
-- Remaining kit apps (T36 packing list in; T37 Steam drawn down on canto;
-  gamescope/arcade not on SI; guest cargo of spotify still failed on `alsa.pc`);
-  first finished guest `cargo build` of Oath/Sola/Thoxa
+A desk for Joshua's daughter that launches Steam and runs Minecraft.
+Needs phase 8, Steam's runtime (vendor release) and a JVM.

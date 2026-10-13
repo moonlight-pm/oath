@@ -4,110 +4,79 @@ Wipe a named disk and copy the packed Oath tree onto it.
 
 ```sh
 cargo make build
-cargo make install --target user@host --disk /dev/sda --confirm --hostname canto
+cargo make install --target user@host --disk /dev/sda --confirm \
+  --hostname canto --overlay hosts/canto.json
 ```
 
 `--confirm` is required. `--disk` is the **whole disk** (GPT). The live
-OS on that host must be reachable over SSH (`sudo -n` if you are not
-root).
+OS on that host must be reachable over SSH as root, or as a user with
+`sudo -n`.
 
-What it does:
+## What it does
 
-1. Boot an **installer ramdisk** on the target (`oath.install=1`,
-   dropbear, no `switch_root`). On EFI machines this is a one-shot
-   loader entry or a USB stick (`--usb`). kexec is tried when there
-   is no EFI loader; it did not bring canto’s Broadcom `tg3` up.
-2. Format GPT: 512M ESP + rest btrfs subvolume `@`.
-3. Copy the packed root, write `oath-efi` as `BOOTX64.EFI` (white
-   mark on black at native GOP, then a 5 s boot menu on metal, then
-   the kernel), keep systemd-boot at `EFI/systemd/` as fallback,
-   kernel, initrd, `loader/entries/oath.conf` plus `loader/oath-boots`.
-   Apple/OEM firmware splash is not ours to paint. The USB installer
-   still uses systemd-boot + tty0.
+1. Reads and checks `--overlay` against a scratch catalog, before
+   anything is wiped.
+2. Boots an **installer ramdisk** on the target (`oath.install=1`,
+   dropbear, the build host's keys for root). On EFI machines this is
+   a one-shot loader entry; kexec is the fallback.
+3. Partitions GPT: a 512 MiB ESP, then btrfs with subvolume `@`.
+4. Copies the packed root tree.
+5. Merges the catalog overlay with the ramdisk's `oath`
+   (`oath --root /mnt/oath seed --overlay`): `host:local.hostname`
+   (default `oath`), the build host's public keys as `ssh:local`, then
+   your `--overlay` on top.
+6. Writes the ESP: `oath-efi` as `EFI/BOOT/BOOTX64.EFI`, systemd-boot
+   at `EFI/systemd/` as a fallback, `vmlinuz`, `initrd.gz`,
+   `loader/entries/oath.conf`, and `loader/oath-boots`. The kernel and
+   the initrd modules are the same checked build.
+7. Reboots and waits for SSH as `home`, then runs `oath ls`.
 
-Later kernel/initrd/efi updates (no wipe):
+`net:net0` stays `dhcp` from the seed.
 
-```sh
-cargo make boot
-cargo make esp --esp /dev/sda1 --confirm --root /dev/sda2
+## The overlay
+
+Machine-specific facts live in an overlay, not in the seed. Each
+object is a JSON merge patch on the seeded desired; a new id creates
+the object. See [Catalog](catalog.md).
+
+```json
+{
+  "objects": {
+    "host:local": { "timezone": "MST7MDT,M3.2.0,M11.1.0" },
+    "svc:serial": { "enabled": false },
+    "svc:backup": {
+      "exec": ["/lib/oath/backup-daily", "nas:/export/backup/canto"],
+      "wants": [], "restart": "always", "enabled": true
+    }
+  }
+}
 ```
 
-`--esp` is the VFAT node **on the machine you run the command on**.
-Do not pass the build host’s `/dev/sda1` when the ESP lives on
-canto — pack on the desk (`cargo make boot` with `OATH_KERNEL` /
-`OATH_MODULES` / `OATH_FIRMWARE` / `OATH_BUSYBOX`), copy
-`vmlinuz` + `initrd.gz` to canto, rotate there. That archives the
-live ESP kernel as `oath/boot/<id>/`, keeps five archives, snapshots
-`@` to `@boot-<id>`, and copies the new bits. Reboot; the firmware
-menu can pick the archive if the new kernel fails. Pitcairn
-`amdgpu/*.bin` must be in the initrd (`image/build-linux.sh`). SI
-DPM patches apply from `image/linux-patches` when compiling.
-4. Set `host:local` hostname, `net:net0` dhcp, owner SSH pubkeys.
-5. Reboot. Courage is **SSH as `home`** with those keys, then
-   `oath ls`. (`sudo` has no password.)
+An overlay that sets `ssh:local.authorized` replaces the build host's
+keys rather than adding to them.
 
-Wicket image (not the desk):
-
-```sh
-cargo make install --wicket --target root@host --disk /dev/sda --confirm --hostname buccina
-```
-
-Same wipe confirm. Differences from the desk install:
-
-- One btrfs filesystem after the ESP. Subvolumes `@` (`/`),
-  `@wicket-state` (`/var/lib/wicket`), `@appdata`
-  (`/var/lib/wicket-appdata`). No `@nix`.
-- If `@wicket-state` is already on that pool, the installer does not
-  format it. It deletes and recreates `@` and leaves the other two
-  subvolumes.
-- No `/bin/sudo`.
-- SSH is **root**, with the public key in
-  `~/.config/wicket/deploy/wicket-deploy.pub` (`WICKET_DEPLOY_PUB`
-  overrides the path). Passwords stay off. `ssh:local` on this image
-  is that root key. Seat services are seeded off. The copy onto the
-  live host offers `~/.config/wicket/deploy/wicket-deploy`
-  (`WICKET_DEPLOY_KEY` overrides the path) before the default keys,
-  and uses `cat` when `/bin/busybox` is absent.
-- A DHCP install records `net:net0` `ipv4=dhcp`. The leased address
-  is not written into the catalog.
-- Before the install, `sh image/pack-wicket.sh` fills
-  `build/wicket-pack`: musl `wicketd`, IdP, admin, setup, static
-  Caddy 2.10.2, and Postgres with PostGIS as a Nix store copy the
-  installer places at `/nix/store`. The installer also copies the
-  wrappers in `image/wicket/`. Without the pack, the services are
-  enabled and the binaries are absent.
-- The ESP `vmlinuz` the installer writes is `image/tools.nix`'s
-  `bzImage` unless `OATH_KERNEL` is set. The initrd's modules come
-  from the Oath kernel under `build/linux`. Those two versions have
-  to match or the NIC modules do not load. For the current tree set
-  `OATH_KERNEL=build/linux/vmlinuz` (7.3.0-rc1).
-- `svc:wicketd`, `wicket-idp`, `wicket-admin`, `wicket-setup`,
-  `caddy`, and `postgres` run as `home`. `wicketd` sets
-  `WICKET_HOST_OS=oath`. Caddy may bind port 80. `postgres-appdata`
-  waits until `/var/lib/wicket-appdata` is mounted. The desk catalog
-  has the same services with `enabled` false.
-
-`--wicket` is not the USB stick writer. The trial is the named disk
-when you are present for the wipe.
-
-QEMU rehearsal (no real host):
+## Rehearse in QEMU
 
 ```sh
 cargo make install --qemu --disk /dev/vda --confirm
 ```
 
-USB installer stick (must be removable USB):
+That runs the same steps against a fresh qcow2 in QEMU with OVMF, then
+boots it through the EFI loader.
+
+## USB installer stick
 
 ```sh
 cargo make install --usb --disk /dev/sdd --confirm
 ```
 
-Hold Option on a Mac, boot the EFI entry. The ramdisk gets a shell on
-`tty0` and DHCP on the NIC that has carrier. Then run the `--target`
-command from the build machine; it sees `/run/oath-install/ready` and
-skips the enter-installer step.
+The disk must be a removable USB device. Boot the stick's EFI entry
+(hold Option on a Mac). The ramdisk gets a shell on `tty0` and DHCP on
+the NIC with carrier. Then run the `--target` command from the build
+host; it sees `/run/oath-install/ready` and skips step 2.
 
-QEMU sets `SOLA_OUTPUT_PICK=preferred` so virtio-gpu stays 1280×800.
-Metal unsets that so sola-river can match the panel. After install,
-SSH is `home` and the graphical stack runs as `home` (River waits
-for DRM + `/dev/input`, then chowns those nodes `0660` root:`home`).
+## Later kernel and initrd updates
+
+`cargo make esp` rotates a new kernel and initrd onto an existing ESP
+without wiping. See [Generations](generations.md) for what it does and
+why it must not be pointed at the build host's own ESP.

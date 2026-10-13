@@ -1,0 +1,14 @@
+{
+  "objects": {
+    "host:local": {
+      "hostname": "canto",
+      "timezone": "MST7MDT,M3.2.0,M11.1.0"
+    },
+    "svc:backup": {
+      "exec": ["/lib/oath/backup-daily", "10.0.0.12:/mnt/alpha/backup/canto"],
+      "wants": [],
+      "restart": "always",
+      "enabled": true
+    }
+  }
+}

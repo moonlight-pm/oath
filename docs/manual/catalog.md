@@ -11,36 +11,83 @@ The catalog is the source of truth. It lives at `/oath`.
     desired.json
     actual.json
     meta.json              id, safety, status
-    applied.json           `svc` only — last applied desired
+    applied.json           svc only — last applied desired
   log/apply.jsonl
-  store/pkg/<name>/<hash>/ package trees (not desired state; apply links /bin)
-  run/                     sockets, mounts — not desired state
+  store/pkg/<name>/<hash>/ package trees (apply links /bin)
+  store/plan/<name>/<hash>/plan.plan
+  ssh/                     host keys
+  run/                     sockets and mounts, not desired state
     init.sock
-    fs/                    btrfs top-level (subvolid=0)
+    fs/                    btrfs top level (subvolid=0)
 ```
 
-Desired and actual are separate files. Do not mix is and will-be.
-You may `cat` any of these; `oath get` is the supported way.
+Desired and actual are separate files. You may `cat` any of these;
+`oath get` is the supported way. If a kind is not under
+`/oath/schema`, it does not exist.
 
-If a kind is not under `/oath/schema`, it does not exist.
+## Kinds
 
-## Kinds (v0)
+| Kind | Ids in the `base` profile | Role |
+|------|---------------------------|------|
+| `host` | `host:local` | Hostname, power, `env`, `timezone` |
+| `svc` | `svc:serial`, `svc:sshd`, `svc:hold` | PID 1's only config |
+| `snap` | `snap:current`, then `snap:N` | Generations |
+| `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `curl`, `hello`, `fetchme` | Store + `/bin` symlink farm |
+| `net` | `net:net0` | The link: `dhcp` or a static address |
+| `ssh` | `ssh:local` | Keys that may log in as `home` |
+| `dev` | `dev:vda`, `dev:net0`, `dev:ttyS0` | Hardware inventory |
+| `plan` | none until you file one | Hashed `plan.plan`; `oath build` writes a pkg tree |
 
-| Kind | Ids | Role |
-|------|-----|------|
-| `host` | `host:local` only | Hostname, power, `env`, `timezone` (display; system clock UTC), `session` (`sola` or `omarchy`). |
-| `svc` | `svc:serial`, `svc:hold`, `svc:sshd`, `svc:seatd`, `svc:river`, `svc:hyprland`, `svc:omarchy-shell`, `svc:sola-bus`, `svc:sola-call`, `svc:sola-river`, `svc:sola-shell`, `svc:sola-session`, `svc:sola-kvm`, `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse`, `svc:dbus`, `svc:bluetoothd`, `svc:backup` | PID 1’s only config |
-| `snap` | `snap:current`, `snap:N` | Generations |
-| `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `glibc`, `river`, `hyprland`, `quickshell`, `omarchy`, `sola`, `grok`, `git`, `curl`, `pipewire`, `bluez`, `thoxa`, `cc`, `rustc`, `cmake`, `pkg-config`, `bash`, `foot`, `grim`, `xwayland`, `gamescope`, `mesa`, `steam`, `hello`, `hello-src`, `reloc-src`, `reloc`, `fetchme` | Store + `/bin` symlink farm. `gamescope` is `present: false` until a GPU with DRM modifiers applies it. `svc:hyprland` and `svc:omarchy-shell` are seeded off. |
-| `net` | `net:net0` | Static IPv4 or `dhcp` |
-| `ssh` | `ssh:local` | Home authorized keys (root SSH denied) |
-| `dev` | `vda`, `net0`, `ttyS0`, `card0`, `kbd0`, `mouse0` | Hardware inventory |
-| `plan` | `plan:hello`, `plan:reloc` | Hashed `plan.plan`; `oath build` writes a pkg tree, does not link `/bin` |
+`host` and `net` share a schema between desired and actual. `svc`
+actual is runtime (`state`, `pid`, `restarts`); drift is desired
+against `applied.json`, not against `actual.json`.
 
-`host` and `snap:current` share schema between desired and actual.
-`svc` actual is runtime (`state`, `pid`, `restarts`); drift is desired
-vs `applied.json`, not vs `actual.json`.
+`oath schema <kind>` on the box gives fields, safety, and examples.
+That text is the same as `crates/oath-core/schema/` in the repo.
 
-See `oath schema <kind>` on the box for fields, safety, and examples.
-The Markdown there is the same text shipped in this repo under
-`crates/oath-core/schema/`.
+## Where objects come from
+
+`oath set` changes objects that already exist. It cannot create a
+`svc` or `pkg`, and nothing deletes objects. Objects are made at
+build and install time:
+
+- **Seed profiles** — `crates/oath-core/seed/<profile>.json`, compiled
+  into `oath`. `base` is a headless machine you reach over SSH. `dev`
+  extends `base` with `pkg:cc` and `CC` / `CXX` / `AR` in
+  `host:local.env`. `cargo make build --profile <name>` seeds the image
+  from one; a profile lists the first desired document of each object,
+  the packages that can never be removed (`fixed`), and any first
+  actual that differs from the default.
+- **Overlays** — `{"objects": {"kind:name": {…}}}`. Each object is a
+  JSON merge patch (RFC 7386) on the current desired: objects merge
+  key by key, `null` deletes a key, anything else replaces. A new id
+  creates the object. `cargo make install --overlay <file.json>`
+  merges one into the installed catalog, after the hostname and the
+  SSH keys the installer writes.
+- **Plans** — `oath set plan:<name> --from-file` files a plan, and
+  `oath build` creates the product's `pkg` object if it is missing.
+
+`oath seed` is the build- and install-time tool behind the first two.
+It is hidden from `oath --help`:
+
+```
+oath --root ./stage/oath seed --profile base
+oath --root /mnt/oath seed --overlay overlay.json
+```
+
+A fresh root gets the profile (default `base`). An existing catalog
+only takes `--overlay`; `--profile` on it is refused.
+
+## Devices
+
+`dev:*` is the hardware inventory. `/dev` is nodes from devtmpfs, not
+the admin UI. There is no udevd. `dev:vda` (root disk), `dev:net0`
+(the NIC; `net:net0` is the link) and `dev:ttyS0` are seeded, are not
+removable, and get their actual refreshed at boot. The names are
+fixed and QEMU-shaped; on metal with `/dev/sda`, `dev:vda` shows as
+absent.
+
+PID 1 also mounts, outside the catalog: `/proc`, `/sys`, devtmpfs
+`/dev` with `/dev/pts`, tmpfs `/tmp`, `/dev/shm` and `/run`, and
+cgroup2 at `/sys/fs/cgroup`. `/etc/hosts` has `localhost` and the
+hostname.

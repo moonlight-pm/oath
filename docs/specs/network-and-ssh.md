@@ -1,0 +1,93 @@
+# Network, SSH and the accounts
+
+An Oath box is reached over SSH as the account `home`, with keys listed
+in the catalog. There is one NIC object, `net:net0`, which takes a
+DHCP lease by default. Root is privilege, not a login: `home` uses
+`sudo`, and the serial console is the root break-glass.
+
+**Status:** partly built. DHCP, static addresses, SSH keys, host keys,
+the `home` account and `sudo` are built. DHCP as a supervised service,
+probation for lockout-class changes, and a stricter `sudo` are the
+target.
+
+Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
+
+## `net:net0` (built)
+
+```json
+{ "up": true, "ipv4": "dhcp", "gateway": "", "lease": null }
+```
+
+- Converge finds the sole non-loopback interface and renames it `net0`.
+  The agent never hunts for `eth0` or `ens3`.
+- `ipv4` is `dhcp` or a CIDR. With a CIDR, `gateway` sets the default
+  route.
+- `dhcp` runs busybox `udhcpc` once (`/lib/oath/udhcpc.script` applies
+  the lease) and records `lease` in actual. `lease` is not a desired
+  field.
+- `up: false` downs the link. That is not confirm-class; serial still
+  works.
+- PID 1 brings `lo` up itself. Loopback is not a catalog object.
+- The base profile seeds DHCP. QEMU user networking hands out
+  10.0.2.15 and forwards host port 2222 (`OATH_SSH_PORT`) to guest 22.
+
+## `ssh:local` (built)
+
+```json
+{ "authorized": ["ssh-ed25519 AAAA… owner@laptop"] }
+```
+
+- `authorized` is a list of OpenSSH public key lines. Converge writes
+  them to `/home/.ssh/authorized_keys`, owned by `home`, mode 600.
+- The host key is generated on first converge at
+  `/oath/ssh/host_ed25519` with `dropbearkey`. No image ships a private
+  key.
+- `svc:sshd` runs dropbear in the foreground with `-s` (no passwords)
+  and `-w` (no root login). `pkg:dropbear` is fixed (not removable).
+  The package also carries the OpenSSH `ssh`, `ssh-keygen` and
+  `sftp-server` binaries.
+- The installer writes the build host's public keys into `ssh:local`
+  through the install overlay (boot-and-install.md).
+
+## Accounts (built)
+
+- `root` (uid 0) and `home` (uid 1, gid 1, `HOME=/home`, shell
+  `/bin/sh`). There are no others and no user kind. `/etc/passwd`,
+  `/etc/group`, `/etc/shadow` and `/etc/shells` are written at pack
+  time; `/etc/hostname`, `/etc/hosts` and `/etc/profile` are side
+  effects of converging `host:local`.
+- `home` runs `sudo <cmd>` with no password. `/bin/sudo` is a setuid
+  helper at `/lib/oath/sudo`, not PAM and not a package. Applying is
+  `sudo oath apply`.
+- The serial console logs in as root. The installer ramdisk accepts
+  root over SSH with the baked host keys; the installed system does not.
+
+## Known defects (from the 2026-10-13 review)
+
+- `sudo` drops every leading `-` argument, ignores the return values of
+  `setgid` and `setuid`, never calls `setgroups`, and passes the
+  caller's environment through.
+- DHCP runs inside `net` converge, once. A lease that expires, or a
+  link that comes up late, is not renewed.
+- Changing `ssh:local`, `svc:sshd` or `net:net0` can lock the owner out
+  with no automatic recovery.
+
+## Target
+
+- **Probation.** Lockout-class changes apply on a timer and roll back
+  unless confirmed from a fresh SSH session (catalog.md).
+- **DHCP as a service.** `net:net0` with `ipv4: dhcp` makes PID 1
+  supervise a long-running lease client; actual reports the current
+  lease. Static addresses stay in converge.
+- **`sudo`.** Parse only `--`; check every credential call; set
+  supplementary groups to root's; clear the environment except a
+  short allowlist (`TERM`, `LANG`, `TZ`), and set `PATH=/bin`.
+- **More NICs.** Naming beyond `net0` waits until a machine needs it.
+- **Root SSH as a field.** A payload that needs root over SSH gets a
+  generic `ssh:local` toggle, off by default (scope.md).
+
+## Courage test
+
+From the build host: `ssh -p 2222 home@127.0.0.1 oath get net:net0`
+shows a lease. Adding a second key to `ssh:local` and applying lets
+that key log in. `sudo oath apply` works; `ssh root@…` is refused.

@@ -1,102 +1,87 @@
 # Oath
 
-A new Linux distribution: Linux kernel, our own userspace. Not a remix of
-Debian, Arch, NixOS, Alpine, or Ubuntu.
+A new Linux distribution: the Linux kernel and our own userspace. Not a
+remix of Debian, Arch, NixOS, Alpine or Ubuntu.
 
 **Independence. Simplicity. Openness. Courage.**
 
-The sysadmin is an **AI agent**. A novel OS has no Stack Overflow and no
-training data, so the running system has to teach a model that has never
-seen it. Unix is the substrate. The admin interface is not bash folklore
-and not a chatbot in PID 1.
+The sysadmin is an **AI agent**. A new OS has no Stack Overflow and no
+training data, so the running system has to teach a model that has
+never seen it. Unix is the substrate. The admin interface is not bash
+folklore and not a chatbot in PID 1.
 
-License: MIT. [`LICENSE`](LICENSE). Copyright (c) Joshua Kifer.
+License: MIT. [LICENSE](LICENSE). Copyright (c) Joshua Kifer.
 
----
-
-## What this is
+## What it is
 
 A small number of typed **objects** in a live catalog at `/oath`. One
 command, `oath`, is how humans and agents inspect and change them. PID 1
-is ours; its only service config is `svc` objects. Apply takes a
-**btrfs** snapshot first so change is undoable.
+is ours; its only service config is `svc` objects. Apply snapshots the
+root to a btrfs generation first, so a change can be undone.
 
-An agent that has never seen Oath is supposed to:
+An agent that has never seen Oath should be able to:
 
-1. Read `/oath/INDEX.md` (or run `oath` with no arguments).
+1. Read `/oath/INDEX.md` (or run `oath`).
 2. `oath ls` · `oath schema host` · `oath get host:local`
 3. `oath set host:local hostname=…` · `oath diff` · `oath apply`
-4. Reboot. The name is still there. `oath undo` restores the previous
-   generation.
+4. Reboot; the name is still there. `oath undo` goes back a generation.
 
-If that loop works, this is a distro. A package archive without it is not.
+Kinds: `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`.
 
-**Kinds now:** `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`.
+## Status (2026-10-13)
 
-## What this is not
+Early and not a daily driver. A review on 2026-10-13 cut the desk, the
+Steam and Omarchy experiments and the Wicket host image out of the core
+and set the order of work: a test harness, catalog safety, PID 1, then
+a **native** base where every package is built from source by an Oath
+`plan` or is the vendor's own pinned release.
 
-A kernel project. A skin over another distro. systemd or dinit with a
-new coat of paint. English as an OS API. A year-one glibc/FHS
-compatibility promise.
+What is true today:
 
----
+- PID 1, the catalog, `oath`, the package store and the installer are
+  ours, in Rust, statically linked against musl.
+- The kernel is vanilla kernel.org source, pinned by sha256 and built by
+  `image/build-linux.sh`.
+- The other userspace tools in the image (busybox, btrfs-progs,
+  dropbear, curl, partitioning tools) and the boot loader still come
+  from nixpkgs through `image/tools.nix`. Replacing them is roadmap
+  phase 5.
 
-## Status
-
-Phases 0–2 are done. **canto** is the metal canary (SSH `home@canto`;
-graphical Sola this boot). Packs are hash-in-path; bootstrap origin
-[store.oath.wicket.cloud](https://store.oath.wicket.cloud/). The
-**x86_64 QEMU** appliance still exists (PID 1, catalog, store + `/bin`
-links, `net:net0`, dropbear, virtio-gpu) but is **parked** — not the
-critical path. Nothing is a daily driver. Metal install:
-`cargo make install`.
-
-Operator manual: [`docs/manual/README.md`](docs/manual/README.md).
-What next: [`CURRENT.md`](CURRENT.md).
-Public intro: [oath.wicket.cloud](https://oath.wicket.cloud/).
-As-built map: [oath.wicket.cloud/map](https://oath.wicket.cloud/map).
-
-| | |
-|--|--|
-| Living focus | [`CURRENT.md`](CURRENT.md) |
-| Operator manual | [`docs/manual/README.md`](docs/manual/README.md) |
-| Agent / contributor guide | [`AGENTS.md`](AGENTS.md) |
-| Catalog freeze | [`docs/specs/2026-08-27-catalog-and-oath-surface.md`](docs/specs/2026-08-27-catalog-and-oath-surface.md) |
-| Package freeze | [`docs/specs/2026-08-28-packages.md`](docs/specs/2026-08-28-packages.md) |
-| Net freeze | [`docs/specs/2026-08-29-net.md`](docs/specs/2026-08-29-net.md) |
-| SSH freeze | [`docs/specs/2026-08-30-ssh-and-dhcp.md`](docs/specs/2026-08-30-ssh-and-dhcp.md) |
-| Devices freeze | [`docs/specs/2026-08-30-devices.md`](docs/specs/2026-08-30-devices.md) |
-| Display freeze | [`docs/specs/2026-08-30-display.md`](docs/specs/2026-08-30-display.md) |
-| Docs map | [`docs/README.md`](docs/README.md) |
+Focus: [CURRENT.md](CURRENT.md). Decisions: [docs/decisions.md](docs/decisions.md).
+Maturity: [docs/capabilities.md](docs/capabilities.md). Manual:
+[docs/manual/](docs/manual/README.md). Contributor and agent guide:
+[AGENTS.md](AGENTS.md).
 
 ## Build
 
-Needs a Rust toolchain with `x86_64-unknown-linux-musl`, and (for the
-image) QEMU, btrfs-progs, a Linux bzImage plus matching modules, and a
-static busybox. A Nix `shell.nix` can provide the borrowed build tools;
-they are not the runtime.
+Needs Rust with the `x86_64-unknown-linux-musl` target, Nix (for the
+temporary build tools), sudo (to loop-mount the image) and QEMU.
 
 ```sh
-cargo test -p oath-core
-nix-shell                 # optional: kernel, qemu, musl cc, busybox, btrfs
-cargo make map            # as-built architecture overview (browser)
-cargo make build          # sudo to loop-mount the disk
-cargo make probe          # courage test; writes build/runs/<id>/
-cargo make run            # interactive serial + run dir
-cargo make run --build    # pack first (also on up / start)
-cargo make up             # headless; Ctrl-C kills QEMU
-cargo make start && cargo make ssh && cargo make stop
+cargo test
+nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'   # the kernel, once
+cargo make build                 # headless base image (sudo for the loop mount)
+cargo make build --profile dev   # base + the C compiler
+cargo make run                   # serial console in this terminal
+cargo make up | start | ssh | stop
 ```
 
-See [`CURRENT.md`](CURRENT.md) and [`docs/manual/qemu.md`](docs/manual/qemu.md).
+Install to a machine (wipes the disk; needs the target's SSH):
+
+```sh
+cargo make install --target user@host --disk /dev/sda --hostname name \
+  --overlay hosts/name.json --confirm
+```
 
 ## Repo
 
 ```
-crates/oath-core   catalog, kinds, apply/undo
-crates/oath        CLI (guest)
-crates/oath-init   PID 1 + serial login
-crates/oath-make   host build CLI (`cargo make`): pack image, QEMU run, probe, map
-image/             tools.nix (borrowed kernel/busybox/qemu)
-docs/              progress model, freeze, operator manual
+crates/oath-core   catalog, kinds, apply/undo, seed profiles
+crates/oath        the oath CLI
+crates/oath-init   PID 1, serial login, sudo
+crates/oath-efi    UEFI boot menu
+crates/oath-make   host build tool (cargo make)
+image/             kernel build, pkg:cc pack, temporary nix tools
+hosts/             per-machine facts and install overlays
+docs/              decisions, capabilities, roadmap, specs, manual
 ```
