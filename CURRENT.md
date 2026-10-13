@@ -7,7 +7,7 @@ Capability maturity: [docs/capabilities.md](docs/capabilities.md).
 **Decisions agents must ask about:**
 [docs/open-questions.md](docs/open-questions.md).
 
-**As of:** 2026-09-30
+**As of:** 2026-10-13
 
 ---
 
