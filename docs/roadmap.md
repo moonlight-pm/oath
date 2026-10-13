@@ -16,13 +16,13 @@ Omarchy session and a Wicket host image were layered on top using
 relocated Nix packages. The review found the core unsafe in places and
 the payload tangled into it.
 
-## 1. Cut — active
+## 1. Cut — done (2026-10-13)
 
 Remove the desk, T37, T39, Wicket, the probe and the diary docs. Seed
 as data with `base`/`dev` profiles and host overlays. One own-built
 kernel with a vermagic check. `esp` refuses non-Oath hosts.
 
-## 2. Harness — next
+## 2. Harness — active
 
 `cargo make check`: headless QEMU running the README loop and the
 known failure cases over SSH from a data file. Installs are gated on it.

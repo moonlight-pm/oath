@@ -9,20 +9,18 @@ append history (git has it).
 
 ## Now
 
-1. **Cut (review phase 1) — landing.** The desk, T37 Steam, T39
-   Omarchy, the Wicket image, the probe and the progress-doc diary
-   are out (tag `t37-t39-final` keeps them). The image is a headless
-   `base` profile; `dev` adds `pkg:cc`. Seed is data
-   (`crates/oath-core/seed/*.json`); host facts are overlays
-   (`hosts/*.json`, `cargo make install --overlay`). One kernel:
-   `image/build-linux.sh`, sha256-pinned; pack checks vermagic.
-   Next: boot the base image in QEMU (`cargo make run`), log in as
-   `home`, run the README loop.
+1. **Cut (review phase 1) — done 2026-10-13.** Desk, T37, T39, Wicket,
+   probe and the doc diary are out (tag `t37-t39-final`). Headless
+   `base` image (38 MB qcow) boots in QEMU on the own-built kernel;
+   SSH as `home`, set/apply/undo, `pkg:hello`, `svc:hold` and reboot
+   persistence checked by hand; a fresh boot is in-sync. Next: nothing;
+   the harness below turns these hand checks into a gate.
 2. **Harness (phase 2, R5).** `cargo make check`: boot headless QEMU,
    run the README loop and the known failure cases over SSH from a
    data file, exit non-zero on any miss. Cases that fail today
    (torn write, wants cycle, failed apply then undo, sshd lockout)
-   become the acceptance tests for 3 and 4. Next: write
+   become the acceptance tests for 3 and 4. It must also serve
+   `pkg:fetchme` at 10.0.2.2:18765 (the probe used to). Next: write
    `check/cases.toml` and the runner in `crates/oath-make`.
 3. **Catalog safety (phase 3).** Locked temp-file-then-rename
    writes; validate before snapshot; log every outcome; undo restores
