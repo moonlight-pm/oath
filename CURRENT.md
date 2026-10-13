@@ -9,33 +9,30 @@ append history (git has it).
 
 ## Now
 
-1. **PID 1 (phase 4) — active.** Gate: the `reboot-command` gap case
-   in `check/cases.toml` turns PASS, plus new cases for each item. In
-   order: a log ring per service and `oath logs svc:<name>`; exit code,
-   a real restart count, backoff and a `failed` state in actual; a
-   shutdown sequence (plain `reboot` and `power=reboot` stop services
-   in reverse `wants` order, sync, unmount); one cgroup per service;
-   `switch_root` instead of `chroot`; a panic hook and `panic=10` on
-   metal; DHCP as a supervised service; modules by modalias. Next: the
-   log ring and `oath logs`.
-2. **Native base (phase 5, R7).** Needs Joshua's yes on Clang/LLVM as
-   the system compiler (decisions.md). Then stage-0 LLVM on novus and
-   busybox as the first plan; retire `image/tools.nix` piece by piece.
-3. **Reinstall canto and buccina (phase 6)** from the native base,
-   then run the harness cases against them over SSH. Only when Joshua
-   asks.
+1. **Native base (phase 5, R7) — next, blocked.** Needs Joshua's yes on
+   Clang/LLVM as the system compiler (decisions.md; Zig is out). Once
+   confirmed: build stage-0 LLVM (clang, lld, compiler-rt, libunwind,
+   libc++) on novus against musl, then busybox as the first `plan`,
+   then btrfs-progs, dropbear, curl, sgdisk, dosfstools and firmware;
+   retire `image/tools.nix` piece by piece, keeping `cargo make check`
+   green. Next: ask Joshua to confirm the compiler.
+2. **Reinstall canto and buccina (phase 6)** from the native base, then
+   run the harness cases against them over SSH, and add modalias module
+   loading with metal in hand. Only when Joshua asks.
 
 Done 2026-10-13: the cut (tag `t37-t39-final`), Zig removed, the
 harness (`cargo make check`, one QEMU per case, `install` requires its
-stamp), and catalog safety (phase 3): locked atomic writes, typed
-`set`, id grammar, checks before the snapshot, every outcome logged,
-a stack undo of spec only, `oath new` / `oath rm`, `--confirm` for
-changes that can cut off SSH, PID 1 running only applied specs, cycle
-isolation at boot. 19 cases: 18 pass, 1 known gap (plain `reboot`).
-Carried forward from phase 3: generated schemas, probation with
-auto-revert, store integrity at boot. Correction: an early hand
-"reboot persistence" check never rebooted (QEMU runs `-no-reboot`);
-the harness checks a real catalog reboot and it passes.
+stamp), catalog safety (phase 3: locked atomic writes, typed `set`, id
+grammar, checks before the snapshot, every outcome logged, a stack undo
+of spec only, `oath new` / `oath rm`, `--confirm` for changes that can
+cut off SSH, PID 1 running only applied specs), and PID 1 (phase 4:
+`oath logs`, exit codes, backoff into `failed`, a cgroup per service,
+orderly shutdown on `reboot` / `poweroff`, switch_root, `panic=10`, a
+supervised DHCP client, apply waiting for PID 1). 26 cases, all pass.
+Carried forward: generated schemas, probation with auto-revert, store
+integrity at boot, modalias loading, reverse-`wants` shutdown order.
+Correction: an early hand "reboot persistence" check never rebooted
+(QEMU runs `-no-reboot`); the harness checks real reboots and they pass.
 
 ## Machines
 
@@ -52,7 +49,7 @@ Build host: **novus** (NixOS). Not an Oath machine.
 ## Do not
 
 - `cargo make install --confirm` (wipes a disk) unless Joshua asks.
-- Write a USB stick or real disk he did not ask for.
+- Write a USB stick or real disk Joshua did not ask for.
 - Change novus's OS as if it were Oath.
 - Invent answers to open decisions in [docs/decisions.md](docs/decisions.md).
 

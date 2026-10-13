@@ -94,7 +94,7 @@ pub fn archive_bls(id: u64, root_dev: &str, extra_options: &str) -> String {
 
 pub fn kernel_options(root_dev: &str, subvol: &str, extra: &str) -> String {
     let mut opts = format!(
-        "console=ttyS0,115200 console=tty0 amdgpu.si_support=1 radeon.si_support=0 oath.root={root_dev} oath.subvol={subvol}"
+        "console=ttyS0,115200 console=tty0 panic=10 amdgpu.si_support=1 radeon.si_support=0 oath.root={root_dev} oath.subvol={subvol}"
     );
     for tok in extra.split_whitespace() {
         if tok.starts_with("oath.root=") || tok.starts_with("oath.subvol=") {

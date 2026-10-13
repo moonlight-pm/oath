@@ -92,12 +92,14 @@ virtio-gpu. The image has no desktop, so use serial or SSH.
 
 Ctrl-D leaves the **shell**; `svc:serial` is `restart=always`, so PID 1
 starts a new one. There is no QEMU monitor, and Ctrl-C goes to the
-guest under `run`. To stop the VM, halt it from inside:
+guest under `run`. To stop the VM, power it off from inside:
 
 ```
-oath set host:local power=halt
-oath apply --confirm
+sudo poweroff
 ```
+
+(or `oath set host:local power=halt` and `oath apply --confirm`). PID 1
+stops the services, syncs and remounts `/` read-only first.
 
 `run` also exits when the guest reboots (`-no-reboot`). If the prompt
 is dead, `pkill -f qemu-system-x86_64` from another terminal.

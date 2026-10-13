@@ -15,20 +15,20 @@ booted on metal since the cut)
 | Capability | Status | Works | Main gaps |
 |---|---|---|---|
 | Catalog | partial | `kind:name` objects with desired/actual/meta; JSON Schema per kind; generated `INDEX.md`; locked atomic writes; typed `set`; id grammar; `oath new` / `oath rm` (svc, pkg) | Schemas are hand-written, not generated from the types; `new` fills no defaults |
-| `oath` CLI | partial | `ls get set new rm diff apply undo log schema fmt build`, `--json`; bare `oath` prints the INDEX | No `logs` |
+| `oath` CLI | shipped | `ls get set new rm diff apply undo log logs schema fmt build`, `--json`; bare `oath` prints the INDEX; apply returns after PID 1 converged | MCP adapter is roadmap phase 7 |
 | Generations | partial | checks before the snapshot (`refused` changes nothing); every outcome logged; undo is a stack that restores only the touched objects' spec; survives a catalog reboot | Lockout-class changes need `--confirm` but nothing auto-reverts them; a catalog reboot takes a generation |
-| Services (PID 1) | partial | `svc` exec/wants/restart/enabled/user/env/bind_low_ports; TZ from `host:local.timezone`; runs only applied specs; a wants cycle skips only its members | No service logs or exit codes; no backoff or failed state; no cgroups; plain `reboot` does nothing; `chroot` not `switch_root`; fallback shell never reaps |
+| Services (PID 1) | partial | runs only applied specs; per-service logs (`oath logs`); exit codes, restart count, backoff, `failed`; a cgroup per service (`keep_children` for sshd); orderly shutdown on `reboot`/`poweroff`; a wants cycle skips only its members | Modules load from a fixed list, not by modalias; shutdown is not in reverse `wants` order |
 | Packages | partial | hash-in-path store, `/bin` farm, pins, `needs` graph, description/home, `components.json` + advisories, fetch by `url` | Store integrity is assumed, not verified at boot; publish has no allowlist; RPATHs go through `live` |
 | Plans (builds) | partial | `plan` kind, `oath fmt`, `oath build`, netless sandbox, pinned inputs | Cache key ignores the plan hash; no package in the image is built by a plan yet |
-| Network | partial | `net:net0` dhcp (default) or static; NIC renamed to `net0` | DHCP runs inside apply, not as a service; one NIC only |
+| Network | partial | `net:net0` dhcp (default) or static; NIC renamed to `net0`; supervised DHCP client renews the lease | `actual.lease` is the first lease only; one NIC only |
 | SSH | shipped | dropbear as `home`, keys from `ssh:local`, root denied, sudo for `home` | `sudo` helper is minimal (no setgroups, keeps env) |
 | Devices | partial | `dev:vda`, `dev:net0`, `dev:ttyS0` inventory | Names are hard-coded; modules load from a fixed list, not by modalias |
 | Seed and overlays | shipped | profile `base` (`crates/oath-core/seed/`), profiles can extend each other; `oath seed --overlay`; `install --overlay` | An overlay that turns a `pkg` on leaves it for the first `oath apply` to link |
 | Kernel | shipped | one kernel from `image/build-linux.sh` (7.3-rc1, sha256-pinned, Oath fragment and patches); pack refuses a release/vermagic mismatch | Built by hand before `cargo make build`; not yet a plan |
-| Boot | partial | initrd from our PID 1 + busybox; `oath-efi`; ESP keeps current + last 5 boots; `cargo make esp` runs only on an Oath machine | No panic hook or `panic=` on metal; plain `reboot` does nothing (PID 1 ignores the signal; use `oath` power=reboot) |
+| Boot | partial | initrd from our PID 1 + busybox; switch_root into `@`; `oath-efi`; ESP keeps current + last 5 boots; panic hook and `panic=10`; `cargo make esp` runs only on an Oath machine | Not yet booted on metal since the cut |
 | Image build | partial | `cargo make build [--profile base]`, QEMU `run/up/start/ssh` | Userspace tools come from `image/tools.nix` (Nix); output is not immutable or manifest-checked |
 | Install | partial | installer ramdisk over SSH, GPT + ESP + btrfs `@`, `--overlay`, `--qemu` rehearsal, `--usb` stick; refuses an image `cargo make check` has not passed | Copies the mutable `build/stage`; not yet a manifest-checked output |
-| Test harness | shipped | `cargo make check`: one QEMU per case from `check/cases.toml`, real reboots, known gaps marked per phase, `build/check-pass` stamp | 19 cases, 18 pass; 1 known gap (plain `reboot`, phase 4) |
+| Test harness | shipped | `cargo make check`: one QEMU per case from `check/cases.toml`, real reboots, known gaps marked per phase, `build/check-pass` stamp | 26 cases, all pass; no known gaps |
 
 ## Payload (outside core)
 

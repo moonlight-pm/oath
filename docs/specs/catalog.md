@@ -139,7 +139,8 @@ was never applied is deleted at once. Base packages, and `host`, `net`,
    `@` subvolume as `@gen-N` from the top-level mount, then put the
    pending spec back. The snapshot holds what was applied before.
 4. Converge each object through its kind handler; refresh actual. svc:
-   write `applied.json`, notify PID 1, wait for running or stopped.
+   write `applied.json`, notify PID 1 and wait for its reply (sent
+   after it converged), then check for running or stopped.
    Removals stop or unlink, then delete the object directory.
 5. Log the outcome: `ok`, or `error` with the message if converging
    failed after the snapshot (the generation exists). Regenerate INDEX.

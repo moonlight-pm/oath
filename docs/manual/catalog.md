@@ -14,12 +14,15 @@ The catalog is the source of truth. It lives at `/oath`.
     applied.json           svc only — the spec PID 1 runs
     new / remove           markers for a pending `oath new` / `oath rm`
   log/apply.jsonl          every apply (ok, error, refused) and undo
+  log/init.log             PID 1's messages
+  log/svc/<name>.log       each service's output (`oath logs svc:<name>`)
+  log/net/net0.log         the DHCP client
   .lock                    held by whoever is writing the catalog
   store/pkg/<name>/<hash>/ package trees (apply links /bin)
   store/plan/<name>/<hash>/plan.plan
   ssh/                     host keys
   run/                     sockets and mounts, not desired state
-    init.sock
+    init.sock              `oath apply` asks PID 1 to converge here
     fs/                    btrfs top level (subvolid=0)
 ```
 

@@ -12,17 +12,21 @@ tree changes.
 firmware ── ESP: BOOTX64.EFI (systemd-boot today; oath-efi is the menu/mark)
             loader/entries/oath.conf  + oath-N.conf (last 5 boots)
             vmlinuz (own build, 7.3.0-rc1) + initrd.gz
-  kernel cmdline: oath.root=<dev> oath.subvol=@ console=ttyS0 …
+  kernel cmdline: oath.root=<dev> oath.subvol=@ console=ttyS0 panic=10 …
   initrd /init = oath-init (PID 1, static musl)
+    catch SIGTERM/SIGINT (reboot), SIGUSR1 (halt), SIGUSR2 (poweroff)
     mount /proc /sys /dev /dev/pts; tmpfs /tmp /run /dev/shm; cgroup2
     insmod the packed module list (net and disk first, KMS and sound later)
-    mount <root> subvol=@ at /newroot, bind initrd modules+firmware, chroot
+    mount <root> subvol=@ at /newroot, bind initrd modules+firmware
+    switch_root: move /dev /proc /sys /run into it, move it over /, chroot
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
     seed only if /oath/objects is missing; regenerate a missing INDEX.md
-    under /oath/.lock: apply host, net (udhcpc for dhcp), ssh from their
-      applied state (actual.json); probe dev
-    start svc:* from applied.json in `wants` order (a cycle skips only
-      its members); listen on /oath/run/init.sock; reap
+    under /oath/.lock: apply host, net (one-shot udhcpc for dhcp), ssh
+      from their applied state (actual.json); probe dev
+    listen on /oath/run/init.sock; start svc:* from applied.json in
+      `wants` order (a cycle skips only its members) and the DHCP client
+    main loop: shutdown request? reap, pump logs, start due restarts,
+      answer converge requests
 ```
 
 QEMU (`cargo make run|up|start`) boots the same kernel and initrd with
@@ -53,6 +57,10 @@ btrfs
   objects/<kind>/<name>/   desired.json actual.json meta.json [applied.json]
                            [new | remove markers for oath new / oath rm]
   log/apply.jsonl          one line per apply (ok, error, refused) or undo
+  log/init.log             PID 1's messages (`oath logs`)
+  log/svc/<name>.log       each service's stdout+stderr, UTC-stamped,
+                           rotated to .1 past 256 KiB (`oath logs svc:<name>`)
+  log/net/net0.log         the DHCP client (`oath logs net:net0`)
   .lock                    exclusive flock held by catalog writers
   .gens/<n>/objects/       copy snapshots (off btrfs or under --root only)
   store/pkg/<name>/<hash>/ package trees; `live` → the linked hash
@@ -67,10 +75,23 @@ btrfs
 | Process | From | Runs as |
 |---------|------|---------|
 | `oath-init` | initrd `/init` | PID 1, root |
-| `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused) |
+| `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused); `keep_children` |
 | `svc:serial` | `/lib/oath/serial-login` on ttyS0 | root (break-glass) |
 | `svc:hold` | `/bin/sleep` | root (canary service) |
-| `udhcpc` | run by PID 1 during net apply | root, exits after the lease |
+| DHCP client | `udhcpc -f -i net0`, supervised by PID 1 as `net:net0` | root; renews the lease |
+
+Every supervised process has its own cgroup,
+`/sys/fs/cgroup/oath/<kind>-<name>`, and writes stdout+stderr into a
+pipe PID 1 drains into its log. Stopping a service signals the whole
+cgroup (only the main process with `keep_children`), waits up to 5 s,
+then `cgroup.kill`s the rest.
+
+## Shutdown
+
+`reboot`, `halt`, `poweroff`, Ctrl-Alt-Del and `oath` `power=` all
+signal PID 1. It stops every service (TERM, 5 s, KILL), signals
+everything else, syncs, lazily unmounts `/oath/run/fs`, remounts `/`
+read-only, then calls `reboot(2)`.
 
 ## Host side (novus)
 

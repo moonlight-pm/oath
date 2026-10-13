@@ -12,7 +12,8 @@
       "exec": ["/bin/dropbear", "-F", "-E", "-s", "-w", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
       "wants": [],
       "restart": "always",
-      "enabled": true
+      "enabled": true,
+      "keep_children": true
     },
     "svc:hold": {
       "exec": ["/bin/sleep", "86400000"],

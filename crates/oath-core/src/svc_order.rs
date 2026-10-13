@@ -97,6 +97,7 @@ mod tests {
             user: None,
             env: BTreeMap::new(),
             bind_low_ports: false,
+            keep_children: false,
         }
     }
 

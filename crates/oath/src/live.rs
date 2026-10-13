@@ -32,6 +32,17 @@ impl Live {
     }
 }
 
+/// Ask our PID 1 for a clean shutdown (it stops services, syncs and
+/// remounts read-only first). Without it, sync and call the kernel.
+fn power(sig: libc::c_int, fallback: RebootMode) -> Result<()> {
+    if Path::new("/oath/run/init.sock").exists() && unsafe { libc::kill(1, sig) } == 0 {
+        return Ok(());
+    }
+    sync();
+    reboot(fallback).map_err(|e| Error::Msg(format!("reboot: {e}")))?;
+    Ok(())
+}
+
 impl ApplyHooks for Live {
     fn snapshot(&self, generation: u64) -> Result<()> {
         let src = Self::sibling_live();
@@ -100,7 +111,14 @@ impl ApplyHooks for Live {
         let mut s =
             UnixStream::connect(sock).map_err(|e| Error::Msg(format!("init socket: {e}")))?;
         s.write_all(b"converge\n").ok();
-        Ok(())
+        // PID 1 answers once it has converged, so apply returns after the
+        // change has happened (sshd restarted, a service stopped).
+        let _ = s.set_read_timeout(Some(std::time::Duration::from_secs(60)));
+        let mut reply = [0u8; 8];
+        match std::io::Read::read(&mut s, &mut reply) {
+            Ok(n) if n > 0 => Ok(()),
+            _ => Err(Error::hint("PID 1 did not answer the converge request", "oath logs")),
+        }
     }
 
     fn wait_converge(&self, id: &ObjectId, enabled: bool) -> Result<()> {
@@ -121,19 +139,14 @@ impl ApplyHooks for Live {
     }
 
     fn reboot(&self) -> Result<()> {
-        sync();
         tel("oath", "reboot", json!({}));
-        reboot(RebootMode::RB_AUTOBOOT).map_err(|e| Error::Msg(format!("reboot: {e}")))?;
-        Ok(())
+        power(libc::SIGTERM, RebootMode::RB_AUTOBOOT)
     }
 
     fn halt(&self) -> Result<()> {
-        sync();
         tel("oath", "halt", json!({}));
-        // POWER_OFF, not HALT_SYSTEM: halt leaves QEMU running with stdio
-        // attached (the host serial looks "stuck"). Power-off makes QEMU exit.
-        reboot(RebootMode::RB_POWER_OFF).map_err(|e| Error::Msg(format!("halt: {e}")))?;
-        Ok(())
+        // Power off, not halt: halt leaves QEMU (and a machine) sitting there.
+        power(libc::SIGUSR2, RebootMode::RB_POWER_OFF)
     }
 
     fn converge_dev(&self, id: &ObjectId, desired: &Dev) -> Result<DevActual> {

@@ -8,8 +8,9 @@ an installer ramdisk and writes machine facts from a host overlay.
 
 **Status:** partly built. The kernel pin and version check, the menu,
 boot rotation, profiles, overlays, the install flow, the `esp`
-build-host guard and the test harness that gates installs are built. An
-immutable build output with a manifest is the target.
+build-host guard, the test harness that gates installs, switch_root,
+`panic=10` and the orderly shutdown are built. An immutable build output
+with a manifest is the target.
 
 Replaces: T27 (metal install), T38 (boot generations), the image parts
 of T24, and D3 (seed as data).
@@ -61,7 +62,17 @@ of T24, and D3 (seed as data).
   metal, 0 in QEMU), and starts the kernel with `LoadImage`.
 - The kernel command line names the root device (`oath.root=`) and
   subvolume (`oath.subvol=`): `@`, `@boot-N` or `@gen-N`. Anything else
-  falls back to `@`.
+  falls back to `@`. Metal BLS entries and QEMU both carry `panic=10`,
+  so a PID 1 panic reboots after ten seconds instead of hanging.
+- The initrd's `/init` is PID 1. It mounts the root subvolume and
+  switch_roots into it (moves `/dev`, `/proc`, `/sys`, `/run` across,
+  moves the root over `/`, chroots): no `/newroot` is left behind. The
+  initramfs modules and firmware stay bind-mounted for the deferred
+  driver pass (services.md).
+- Shutdown is PID 1's: busybox `reboot`, `halt`, `poweroff`,
+  Ctrl-Alt-Del and `oath` `power=` all signal it, and it stops
+  services, syncs, unmounts the btrfs top level and remounts `/`
+  read-only before calling the kernel.
 - **Last five boots.** `cargo make esp --esp <part> --confirm`, run on
   the Oath machine, archives the current kernel and initrd under
   `/oath/boot/<id>/`, snapshots `@` as `@boot-<id>`, writes the new
@@ -96,12 +107,8 @@ Optional `--hostname` and `--overlay <file.json>`.
 
 - Install copies whatever `build/stage` holds, which may be stale or
   from another profile.
-- `cargo make esp` mounts a local ESP and snapshots the local `@`. On
-  the build host it would write the build host's own ESP; only a note
-  in the docs prevents that.
 - The build is not reproducible from a clean checkout: tools come from
   a floating nixpkgs and the store cache is reused.
-- Metal kernels boot without `panic=`, so a PID 1 failure hangs.
 
 ## Target
 
@@ -112,7 +119,6 @@ Optional `--hostname` and `--overlay <file.json>`.
 - **Build-host guard (install).** `install` refuses a target that is
   the build host. (`esp` already refuses to run on a machine that is
   not Oath.)
-- **Crash reboot.** Metal entries carry `panic=10`.
 - **Native tools.** The installer's tools (sgdisk, mkfs.fat, btrfs,
   dropbear, tar) become native packages (packages.md).
 

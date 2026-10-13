@@ -1,23 +1,23 @@
 //! PID 1. Mounts, hostname from the catalog, supervises svc:*, reaps.
 
-use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixListener;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::time::{Duration, Instant};
 
 use nix::mount::{mount, MsFlags};
-use nix::sys::signal::{kill, Signal};
-use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
+use nix::sys::wait::{waitpid, WaitStatus};
 use nix::unistd::{sethostname, Pid};
-use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, BTRFS_TOP, DEFAULT_ROOT};
+use oath_core::{seed, tel, Catalog, Host, ObjectId, BTRFS_TOP, DEFAULT_ROOT};
 use serde_json::json;
 
 mod gpu;
+mod shutdown;
+mod supervise;
 
 /// Fallback if packed `load-order` is missing. Deps before users.
 const MODULES: &[&str] = &[
@@ -107,8 +107,11 @@ const MODULES: &[&str] = &[
     "kernel/fs/nfs/nfsv4.ko",
 ];
 
+/// To the console, and to `/oath/log/init.log` once the catalog is mounted
+/// (`oath logs`).
 pub(crate) fn log(msg: &str) {
     let _ = writeln!(std::io::stderr(), "oath-init: {msg}");
+    supervise::append_log("init", format!("{} {msg}\n", oath_core::now_rfc3339()).as_bytes());
 }
 
 fn kver() -> String {
@@ -116,6 +119,13 @@ fn kver() -> String {
 }
 
 fn main() {
+    // A panic in PID 1 panics the kernel; `panic=` on the command line
+    // then reboots. Say why first.
+    std::panic::set_hook(Box::new(|info| {
+        log(&format!("panic: {info}"));
+        tel("init", "panic", json!({ "msg": info.to_string() }));
+    }));
+    shutdown::install();
     if let Err(e) = real_main() {
         log(&format!("fatal: {e}"));
         tel("init", "fatal", json!({ "err": e }));
@@ -178,29 +188,34 @@ fn real_main() -> Result<(), String> {
     inject_ssh_from_host();
     apply_ssh();
     drop(boot_lock);
-    let mut kids: HashMap<i32, Kid> = HashMap::new();
-    let mut oneshot_done: HashSet<String> = HashSet::new();
-    // sshd and DHCP first, then the deferred KMS and sound modules.
-    converge(&mut kids, &mut oneshot_done);
-    load_modules(false);
-
+    // Listen before the first service starts: an `oath apply` that comes
+    // in over SSH while boot finishes waits in the backlog, not lost.
     let sock_path = "/oath/run/init.sock";
     let _ = fs::remove_file(sock_path);
     let listener = UnixListener::bind(sock_path).map_err(|e| e.to_string())?;
     let _ = listener.set_nonblocking(true);
+    let mut sup = supervise::Supervisor::new();
+    // sshd and DHCP first, then the deferred KMS and sound modules.
+    sup.converge();
+    load_modules(false);
 
     log("ready");
-    tel("init", "ready", json!({ "svcs": kids.len(), "kver": kver() }));
+    tel("init", "ready", json!({ "kver": kver() }));
     loop {
-        reap(&mut kids, &mut oneshot_done);
+        if let Some(mode) = shutdown::requested() {
+            shutdown::finish(&mut sup, mode);
+        }
+        sup.reap();
+        sup.pump_logs();
+        sup.start_due();
         if let Ok((mut s, _)) = listener.accept() {
             let mut buf = [0u8; 64];
             let n = s.read(&mut buf).unwrap_or(0);
             tel("init", "converge", json!({ "bytes": n }));
-            converge(&mut kids, &mut oneshot_done);
+            sup.converge();
             let _ = s.write_all(b"ok\n");
         }
-        std::thread::sleep(Duration::from_millis(200));
+        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -217,7 +232,9 @@ fn ensure_mount(fstype: &str, target: &str, source: &str) {
 fn mount_devpts() {
     let _ = fs::create_dir_all("/dev/pts");
     let opts = "mode=0666,ptmxmode=0666";
-    let _ = mount(Some("devpts"), "/dev/pts", Some("devpts"), MsFlags::empty(), Some(opts));
+    if !mounted("/dev/pts") {
+        let _ = mount(Some("devpts"), "/dev/pts", Some("devpts"), MsFlags::empty(), Some(opts));
+    }
     let _ = mount(Some("devpts"), "/dev/pts", Some("devpts"), MsFlags::MS_REMOUNT, Some(opts));
     let _ = fs::set_permissions("/dev/ptmx", fs::Permissions::from_mode(0o666));
     for n in ["/dev/null", "/dev/zero", "/dev/tty", "/dev/random", "/dev/urandom"] {
@@ -609,9 +626,23 @@ fn mount_root(dev: &str, subvol: &str) -> Result<(), String> {
         first.map_err(|e| format!("mount root {dev} {subvol}: {e}"))?;
     }
     keep_initrd_mods("/newroot");
-    // Switch into the disk. Keep this process as PID 1.
+    // switch_root: move the API filesystems into the disk root, move the
+    // disk root over `/`, and chroot into it, so `/` really is the disk.
+    // The initramfs stays in memory: its modules and firmware are bind
+    // mounted into the new root for the deferred KMS pass.
+    for m in ["/dev", "/proc", "/sys", "/run"] {
+        let target = format!("/newroot{m}");
+        let _ = fs::create_dir_all(&target);
+        if let Err(e) =
+            mount(Some(m), target.as_str(), None::<&str>, MsFlags::MS_MOVE, None::<&str>)
+        {
+            log(&format!("move {m}: {e}"));
+        }
+    }
     std::env::set_current_dir("/newroot").map_err(|e| e.to_string())?;
-    nix::unistd::chroot("/newroot").map_err(|e| format!("chroot: {e}"))?;
+    mount(Some("."), "/", None::<&str>, MsFlags::MS_MOVE, None::<&str>)
+        .map_err(|e| format!("move root to /: {e}"))?;
+    nix::unistd::chroot(".").map_err(|e| format!("chroot: {e}"))?;
     std::env::set_current_dir("/").ok();
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
@@ -635,14 +666,23 @@ fn keep_initrd_mods(newroot: &str) {
     }
 }
 
+/// Is `target` a mount point already (after switch_root, /dev/shm and
+/// /run came along from the initramfs)?
+fn mounted(target: &str) -> bool {
+    fs::read_to_string("/proc/self/mountinfo")
+        .unwrap_or_default()
+        .lines()
+        .any(|l| l.split_whitespace().nth(4) == Some(target))
+}
+
 fn unix_floor() {
     let flags = MsFlags::MS_NOSUID | MsFlags::MS_NODEV;
-    let _ = fs::create_dir_all("/tmp");
-    let _ = mount(Some("tmpfs"), "/tmp", Some("tmpfs"), flags, Some("mode=1777"));
-    let _ = fs::create_dir_all("/dev/shm");
-    let _ = mount(Some("tmpfs"), "/dev/shm", Some("tmpfs"), flags, Some("mode=1777"));
-    let _ = fs::create_dir_all("/run");
-    let _ = mount(Some("tmpfs"), "/run", Some("tmpfs"), flags, Some("mode=755"));
+    for (dir, mode) in [("/tmp", "mode=1777"), ("/dev/shm", "mode=1777"), ("/run", "mode=755")] {
+        let _ = fs::create_dir_all(dir);
+        if !mounted(dir) {
+            let _ = mount(Some("tmpfs"), dir, Some("tmpfs"), flags, Some(mode));
+        }
+    }
     let _ = fs::create_dir_all("/run/user/0");
     let _ = fs::set_permissions("/run/user/0", std::fs::Permissions::from_mode(0o700));
     let xdg = format!("/run/user/{}", oath_core::seat::UID);
@@ -846,150 +886,6 @@ fn apply_ssh() {
     }
 }
 
-struct Kid {
-    id: String,
-    spec: Svc,
-}
-
-fn pid_for(kids: &HashMap<i32, Kid>, id: &str) -> Option<i32> {
-    kids.iter().find(|(_, k)| k.id == id).map(|(p, _)| *p)
-}
-
-fn stop_kid(kids: &mut HashMap<i32, Kid>, id: &str) -> Option<i32> {
-    if let Some(pid) = pid_for(kids, id) {
-        if let Some(k) = kids.remove(&pid) {
-            let _ = kill(Pid::from_raw(pid), Signal::SIGTERM);
-            tel("init", "svc_stop", json!({ "id": k.id, "pid": pid }));
-            let oid: ObjectId = k.id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
-            write_svc_actual(&oid, "stopped", None, 0);
-            return Some(pid);
-        }
-    }
-    None
-}
-
-fn wait_pid_gone(pid: i32, timeout: Duration) {
-    let start = Instant::now();
-    let p = Path::new("/proc").join(pid.to_string());
-    while start.elapsed() < timeout {
-        let _ = waitpid(Pid::from_raw(pid), Some(WaitPidFlag::WNOHANG));
-        if !p.exists() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    }
-}
-
-fn converge(kids: &mut HashMap<i32, Kid>, oneshot_done: &mut HashSet<String>) {
-    let cat = match Catalog::open(DEFAULT_ROOT) {
-        Ok(c) => c,
-        Err(_) => return,
-    };
-    let Ok(ids) = cat.ls(Some("svc")) else { return };
-    // PID 1 runs what was applied (`applied.json`), never pending desired.
-    // A spec it cannot read leaves a running service alone.
-    let mut wanted: HashMap<String, Svc> = HashMap::new();
-    for id in &ids {
-        let dir = Path::new(DEFAULT_ROOT).join("objects/svc").join(&id.name);
-        let applied = dir.join("applied.json");
-        let path = if applied.is_file() { applied } else { dir.join("desired.json") };
-        match oath_core::read_json::<Svc>(&path) {
-            Ok(spec) => {
-                wanted.insert(id.to_string(), spec);
-            }
-            Err(e) => {
-                log(&format!("{id}: cannot read {}: {e}", path.display()));
-                tel("init", "svc_spec", json!({ "id": id.to_string(), "ok": false }));
-                if let Some(k) = kids.values().find(|k| k.id == id.to_string()) {
-                    wanted.insert(id.to_string(), k.spec.clone());
-                }
-            }
-        }
-    }
-
-    let running: Vec<(i32, String, Svc)> =
-        kids.iter().map(|(p, k)| (*p, k.id.clone(), k.spec.clone())).collect();
-    for (_pid, id, spec) in running {
-        let keep = wanted
-            .get(&id)
-            .map(|s| s.enabled && !s.exec.is_empty() && s.same_spawn(&spec))
-            .unwrap_or(false);
-        if !keep {
-            if let Some(pid) = stop_kid(kids, &id) {
-                wait_pid_gone(pid, Duration::from_secs(3));
-            }
-        }
-    }
-
-    let items: Vec<(String, Svc)> = wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();
-    // A wants cycle skips the services in it (and those waiting on it);
-    // everything else, sshd included, still starts.
-    let (order, stuck) = oath_core::svc_start_order_lenient(&items);
-    for id in &stuck {
-        log(&format!("{id} not started: wants cycle"));
-        tel("init", "svc_wants", json!({ "ok": false, "id": id, "err": "cycle" }));
-        if pid_for(kids, id).is_none() {
-            let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
-            write_svc_actual(&oid, "stopped", None, 0);
-        }
-    }
-    for id in &order {
-        let Some(spec) = wanted.get(id) else { continue };
-        let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
-        if !spec.enabled || spec.exec.is_empty() {
-            oneshot_done.remove(id);
-            if pid_for(kids, id).is_none() {
-                write_svc_actual(&oid, "stopped", None, 0);
-            }
-            continue;
-        }
-        if pid_for(kids, id).is_some() {
-            continue;
-        }
-        if spec.restart == oath_core::SvcRestart::Never && oneshot_done.contains(id) {
-            continue;
-        }
-        match spawn(id, spec) {
-            Ok(pid) => {
-                tel("init", "svc_start", json!({ "id": id, "pid": pid.as_raw() }));
-                write_svc_actual(&oid, "running", Some(pid.as_raw()), 0);
-                if spec.restart == oath_core::SvcRestart::Never {
-                    oneshot_done.insert(id.clone());
-                }
-                kids.insert(pid.as_raw(), Kid { id: id.clone(), spec: spec.clone() });
-            }
-            Err(e) => {
-                log(&format!("{id} spawn: {e}"));
-                tel("init", "svc_fail", json!({ "id": id, "err": e }));
-                write_svc_actual(&oid, "failed", None, 0);
-            }
-        }
-    }
-    for (id, spec) in &wanted {
-        if spec.enabled {
-            continue;
-        }
-        let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
-        if pid_for(kids, id).is_none() {
-            write_svc_actual(&oid, "stopped", None, 0);
-        }
-    }
-}
-
-fn host_env() -> Vec<(String, String)> {
-    let cat = Catalog::open(DEFAULT_ROOT).ok();
-    let Some(cat) = cat else { return Vec::new() };
-    let id = ObjectId::new("host", "local");
-    let Ok(obj) = cat.get(&id) else { return Vec::new() };
-    let Some(host) = applied::<Host>(&obj) else {
-        return Vec::new();
-    };
-    oath_core::seat::login_env(&host)
-        .into_iter()
-        .filter(|(k, v)| oath_core::seat::valid_env_name(k) && !v.contains('\n'))
-        .collect()
-}
-
 /// `/home` and `/home/.ssh` exist and belong to `home`.
 fn ensure_home() {
     use oath_core::seat;
@@ -1002,111 +898,26 @@ fn ensure_home() {
     let _ = Command::new("/bin/chmod").args(["700", &ssh.to_string_lossy()]).status();
 }
 
-fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
-    let plan = oath_core::svc_spawn(id, spec);
-    let mut cmd = Command::new(&spec.exec[0]);
-    if spec.exec.len() > 1 {
-        cmd.args(&spec.exec[1..]);
-    }
-    let xdg = plan.xdg_runtime_dir.clone();
-    let _ = fs::create_dir_all(&xdg);
-    if plan.cred.user == oath_core::SvcUser::Home {
-        let own = format!("{}:{}", plan.cred.uid, plan.cred.gid);
-        let _ = Command::new("/bin/chown").args([&own, &xdg]).status();
-        let _ = Command::new("/bin/chmod").args(["700", xdg.as_str()]).status();
-    }
-    cmd.env("PATH", "/bin")
-        .env("HOME", plan.home)
-        .env("USER", plan.user_name)
-        .env("LOGNAME", plan.user_name)
-        .env("SHELL", plan.shell)
-        .env("PS1", "/ # ")
-        .env("XDG_RUNTIME_DIR", &xdg);
-    for (k, v) in host_env() {
-        cmd.env(k, v);
-    }
-    // Service env wins over host:local.env and the account defaults.
-    for (k, v) in oath_core::svc_env_pairs(spec) {
-        cmd.env(k, v);
-    }
-    cmd.stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
-    let cred = plan.cred.clone();
-    unsafe {
-        cmd.pre_exec(move || {
-            libc::setsid();
-            oath_core::apply_svc_cred(&cred)
-        });
-    }
-    let child = cmd.spawn().map_err(|e| e.to_string())?;
-    tel(
-        "init",
-        "svc_spawn",
-        json!({
-            "id": id,
-            "uid": plan.cred.uid,
-            "user": plan.cred.user.as_str(),
-            "bind_low_ports": plan.cred.bind_low_ports,
-        }),
-    );
-    Ok(Pid::from_raw(child.id() as i32))
-}
-
-fn reap(kids: &mut HashMap<i32, Kid>, oneshot_done: &mut HashSet<String>) {
-    loop {
-        let (pid, failed) = match waitpid(Pid::from_raw(-1), Some(WaitPidFlag::WNOHANG)) {
-            Ok(WaitStatus::Exited(pid, code)) => (pid, code != 0),
-            Ok(WaitStatus::Signaled(pid, _, _)) => (pid, true),
-            Ok(WaitStatus::StillAlive) | Err(_) => break,
-            Ok(_) => continue,
-        };
-        let raw = pid.as_raw();
-        let Some(k) = kids.remove(&raw) else { continue };
-        tel("init", "svc_reap", json!({ "id": k.id, "failed": failed }));
-        let restart = match k.spec.restart {
-            oath_core::SvcRestart::Never => false,
-            oath_core::SvcRestart::Always => true,
-            oath_core::SvcRestart::OnFailure => failed,
-        };
-        let id: ObjectId = k.id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
-        if k.spec.restart == oath_core::SvcRestart::Never {
-            oneshot_done.insert(k.id.clone());
-        }
-        if restart {
-            std::thread::sleep(Duration::from_millis(200));
-            if let Ok(npid) = spawn(&k.id, &k.spec) {
-                write_svc_actual(&id, "running", Some(npid.as_raw()), 1);
-                kids.insert(npid.as_raw(), Kid { id: k.id, spec: k.spec });
-            }
-        } else {
-            write_svc_actual(&id, "stopped", None, 0);
-        }
-    }
-}
-
-fn write_svc_actual(id: &ObjectId, state: &str, pid: Option<i32>, restarts: u32) {
-    let dir = Path::new(DEFAULT_ROOT).join("objects").join(&id.kind).join(&id.name);
-    // `oath rm` deleted it; do not bring back a half object.
-    if !dir.join("desired.json").is_file() {
-        return;
-    }
-    let mut v = serde_json::json!({ "state": state, "pid": pid, "restarts": restarts });
-    let last = dir.join("last.json");
-    if let Ok(extra) = oath_core::read_json::<serde_json::Value>(&last) {
-        if let Some(obj) = extra.as_object() {
-            for (k, val) in obj {
-                if v.get(k).is_none() {
-                    v[k] = val.clone();
-                }
-            }
-        }
-    }
-    let _ = oath_core::write_json(&dir.join("actual.json"), &v);
-}
-
+/// Boot failed: a root shell on the console, again whenever it exits,
+/// reaping every child so nothing piles up as a zombie.
 fn fallback() {
-    log("dropping to /bin/sh");
-    let _ = Command::new("/bin/sh").status();
     loop {
-        std::thread::sleep(Duration::from_secs(60));
+        log("dropping to /bin/sh");
+        let shell = Command::new("/bin/sh").spawn();
+        let Ok(child) = shell else {
+            std::thread::sleep(Duration::from_secs(5));
+            continue;
+        };
+        let pid = Pid::from_raw(child.id() as i32);
+        loop {
+            match waitpid(Pid::from_raw(-1), None) {
+                Ok(WaitStatus::Exited(p, _)) | Ok(WaitStatus::Signaled(p, _, _)) if p == pid => {
+                    break
+                }
+                Ok(_) => {}
+                Err(_) => std::thread::sleep(Duration::from_secs(1)),
+            }
+        }
+        std::thread::sleep(Duration::from_secs(1));
     }
 }

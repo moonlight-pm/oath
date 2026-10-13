@@ -17,15 +17,16 @@ static address.
 - `gateway` — IPv4 default gateway for a static address. Ignored for
   `dhcp`.
 
-Actual may carry `lease` (the address DHCP gave). It is not a desired
-field.
+Actual may carry `lease` (the first address DHCP gave; renewals are
+not written back). It is not a desired field.
 
 Safety: `mutate`, but any change to `up`, `ipv4` or `gateway` can cut
 off SSH, so `oath apply` needs `--confirm` for it. Apply snapshots, then
 converges with `/bin/ip` and, for `dhcp`, `/bin/udhcpc`.
 
-Known gap: DHCP runs once at converge. It is not a supervised
-service, so a lease is not renewed.
+For `dhcp`, converge takes the first lease once; PID 1 then keeps
+`udhcpc -f -i net0` running so the lease renews (its log: `oath logs
+net:net0`). A static address stops that client.
 
 ## Example
 

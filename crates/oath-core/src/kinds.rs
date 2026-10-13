@@ -104,6 +104,11 @@ pub struct Svc {
     /// When true, a non-root process keeps `CAP_NET_BIND_SERVICE`.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub bind_low_ports: bool,
+    /// When true, stopping or restarting signals only the main process;
+    /// its children (sshd's login sessions) keep running. Otherwise the
+    /// whole process tree (the service's cgroup) is stopped.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub keep_children: bool,
 }
 
 impl Svc {

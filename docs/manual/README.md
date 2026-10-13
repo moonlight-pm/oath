@@ -25,11 +25,9 @@ arguments). That file is generated from the live catalog.
 
 These are real today and scheduled to be fixed. Plan around them.
 
-- Plain `reboot` does nothing: PID 1 ignores the signal and has no
-  shutdown sequence. Reboot with `oath set host:local power=reboot`
-  and `oath apply --confirm`.
-- There are no per-service logs and no exit codes in actual; a
-  crashing service restarts every 200 ms with no backoff.
+- Kernel modules load from a fixed list, not by the devices present.
+- The DHCP client renews the lease, but `net:net0` actual shows only
+  the first lease.
 - Changes that can cut off SSH (`svc:sshd`, `ssh:local`, `net:net0`)
   need `--confirm`, but once applied nothing rolls them back for you.
 - `oath new` fills in no defaults: give every required field.

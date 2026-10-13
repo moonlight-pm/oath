@@ -29,8 +29,12 @@ host `127.0.0.1:2222` to guest port 22 (`OATH_SSH_PORT`).
 `OATH_BRIDGE=br0` attaches the guest to a host bridge instead (needs
 `qemu-bridge-helper` and `/etc/qemu/bridge.conf`; no port forward).
 
-Known gap: DHCP runs once when `net:net0` converges. It is not a
-supervised service, so the lease is never renewed.
+With `ipv4: dhcp`, converge takes the first lease with a one-shot
+`udhcpc`, and PID 1 keeps `udhcpc -f -i net0` running so the lease
+renews. That client is PID 1's, not a `svc` object; it restarts with
+backoff like a service, and its log is `oath logs net:net0`. Setting a
+static address stops it. Known gap: `actual.lease` is the first lease;
+renewals are not written back.
 
 ## SSH
 

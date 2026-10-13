@@ -83,6 +83,14 @@ enum Cmd {
     },
     Undo,
     Log,
+    /// Output of a service (`svc:<name>`), the DHCP client (`net:net0`), or
+    /// PID 1 itself (no id).
+    Logs {
+        id: Option<String>,
+        /// Last N lines.
+        #[arg(short = 'n', long, default_value_t = 50)]
+        lines: usize,
+    },
     /// Write a fresh catalog from a built-in profile, or merge overlays
     /// into an existing one. Build and install time only.
     #[command(hide = true)]
@@ -141,6 +149,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Apply { .. }) => "apply",
         Some(Cmd::Undo) => "undo",
         Some(Cmd::Log) => "log",
+        Some(Cmd::Logs { .. }) => "logs",
         Some(Cmd::Seed { .. }) => "seed",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
@@ -398,6 +407,34 @@ fn run() -> oath_core::Result<i32> {
                 println!("{}", json!({"generation": r.generation}));
             } else {
                 println!("undid to generation {}", r.generation);
+            }
+            Ok(0)
+        }
+        Some(Cmd::Logs { id, lines }) => {
+            let path = match &id {
+                Some(id) => {
+                    let id: ObjectId = id.parse()?;
+                    cli.root.join("log").join(&id.kind).join(format!("{}.log", id.name))
+                }
+                None => cli.root.join("log/init.log"),
+            };
+            let mut text = String::new();
+            let mut old = path.clone().into_os_string();
+            old.push(".1");
+            for p in [std::path::PathBuf::from(old), path.clone()] {
+                if let Ok(t) = std::fs::read_to_string(&p) {
+                    text.push_str(&t);
+                }
+            }
+            if text.is_empty() && !path.is_file() {
+                return Err(Error::hint(
+                    format!("no log at {}", path.display()),
+                    "services log to /oath/log/svc/<name>.log once they have run",
+                ));
+            }
+            let all: Vec<&str> = text.lines().collect();
+            for l in &all[all.len().saturating_sub(lines)..] {
+                println!("{l}");
             }
             Ok(0)
         }

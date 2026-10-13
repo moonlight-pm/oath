@@ -45,6 +45,9 @@ pub fn converge(desired: &Net) -> Result<Net> {
                     "-t",
                     "5",
                 ])
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
                 .status()
                 .map_err(|e| Error::Msg(format!("udhcpc: {e}")))?;
             if !st.success() {

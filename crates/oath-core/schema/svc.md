@@ -28,12 +28,22 @@ take effect at `oath apply`.
 - `bind_low_ports` — boolean, false when absent. When true, a service
   that runs as `home` keeps `CAP_NET_BIND_SERVICE` and may bind ports
   below 1024. Root can already bind them.
+- `keep_children` — boolean, false when absent. Each service runs in
+  its own cgroup, and stopping it stops the whole process tree. When
+  true, stop and restart signal only the main process and its children
+  keep running (`svc:sshd` sets this so login sessions survive).
 
-Changing `user`, `env`, or `bind_low_ports` restarts the process on
-the next converge.
+Changing `exec`, `user`, `env`, or `bind_low_ports` restarts the
+process on the next converge.
 
-Actual is runtime: `state` (`running`, `stopped`, or `failed`), `pid`,
-`restarts`. Drift is desired against `applied.json` (the last applied
+Actual is runtime: `state` (`running`, `restarting`, `stopped`, or
+`failed`), `pid`, `restarts` (how many times PID 1 restarted it this
+boot), `last_exit` (`{"code": n}` or `{"signal": n}`), and `since`.
+A process that exits is restarted after 1, 2, 4, 8 s when it keeps
+dying within 10 s of starting; after five quick failures in a row it
+is `failed` and stays down until its applied spec changes. Its output
+(stdout and stderr) is in `/oath/log/svc/<name>.log`: `oath logs
+svc:<name>`. Drift is desired against `applied.json` (the last applied
 desired), not against actual.
 
 Safety: `mutate`, except `svc:sshd`: disabling or removing it, or
@@ -43,9 +53,6 @@ only `applied.json`: a `set` without `apply` never reaches a running
 service, and a file it cannot read leaves the process running. A
 `wants` cycle that reaches PID 1 skips only the services in it.
 
-Known gaps (scheduled): no per-service logs, no exit codes in actual,
-no restart backoff.
-
 ## Example
 
 ```
@@ -54,6 +61,7 @@ oath get svc:hold
 oath set svc:hold enabled=false
 oath apply svc:hold
 oath get svc:hold --actual
+oath logs svc:hold
 oath undo
 ```
 

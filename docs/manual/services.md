@@ -11,7 +11,7 @@ The `base` profile:
 | Id | Exec | Default | Notes |
 |----|------|---------|-------|
 | `svc:serial` | `/lib/oath/serial-login` | enabled, `restart=always` | Root shell on the serial console (`ttyS0` / `hvc0`). Do not disable it unless you have another way in. |
-| `svc:sshd` | `/bin/dropbear -F -E -s -w -r /oath/ssh/host_ed25519 -p 22` | enabled, `restart=always` | Keys in `ssh:local`. Passwords off (`-s`), root login off (`-w`). |
+| `svc:sshd` | `/bin/dropbear -F -E -s -w -r /oath/ssh/host_ed25519 -p 22` | enabled, `restart=always`, `keep_children` | Keys in `ssh:local`. Passwords off (`-s`), root login off (`-w`). Restarting it keeps open sessions. |
 | `svc:hold` | `/bin/sleep 86400000` | enabled, `restart=always` | Harmless process for start/stop. Wants `svc:serial`. |
 
 Add a service on the box with `oath new` and `oath apply` (below), or
@@ -19,11 +19,12 @@ at install time with an overlay (see [Catalog](catalog.md)).
 
 ## Boot and converge
 
-At boot PID 1 mounts the floor, mounts the root subvolume `@` and the
-btrfs top level at `/oath/run/fs`, sets the hostname from
+At boot PID 1 mounts the floor, switch_roots into the root subvolume
+`@`, mounts the btrfs top level at `/oath/run/fs`, sets the hostname from
 `host:local`, loads the early kernel modules, brings up `net:net0`,
 refreshes `dev:*`, writes `ssh:local` keys, then starts every enabled
-service in `wants` order. Host, network and keys come from what was
+service in `wants` order (and the DHCP client, see
+[Network](network.md)). Host, network and keys come from what was
 last applied, not from pending `oath set` edits. The KMS and sound modules load after that,
 so `svc:sshd` is up before any GPU driver.
 
@@ -34,12 +35,15 @@ PID 1 cannot read (a torn file) leaves the running process alone.
 
 PID 1 reaps children and restarts them per `restart`
 (`never` / `always` / `on-failure`). It stops services that are
-disabled or whose applied spec changed.
+disabled or whose applied spec changed. Each service runs in its own
+cgroup (`/sys/fs/cgroup/oath/svc-<name>`): stopping it sends SIGTERM to
+every process in it, waits up to 5 s, then kills what is left. With
+`keep_children` (as on `svc:sshd`) only the main process is signalled.
 
 `oath apply` on a `svc` writes `applied.json`, notifies PID 1 on
-`/oath/run/init.sock`, and waits until actual `state` is `running` or
-`stopped`. `oath undo` puts back the previous `applied.json` and does
-the same.
+`/oath/run/init.sock`, waits for PID 1 to answer that it has
+converged, then checks that actual `state` is `running` or `stopped`.
+`oath undo` puts back the previous `applied.json` and does the same.
 
 `wants` is start order: enabled wanted services start first. Disabled
 or unknown wants are skipped. A cycle refuses apply. If a cycle reaches
@@ -55,8 +59,32 @@ oath get svc:hold --actual
 oath undo
 ```
 
-Actual `state` is `running`, `stopped`, or `failed` (the spawn itself
-failed).
+## State, restarts and logs
+
+```
+oath get svc:hold --actual
+oath logs svc:hold          # last 50 lines; -n 200 for more
+oath logs                   # PID 1's own log
+```
+
+Actual has `state`, `pid`, `restarts` (restarts this boot),
+`last_exit` (`{"code": 3}` or `{"signal": 15}`) and `since` (UTC).
+`state` is:
+
+- `running` — the process is up.
+- `restarting` — it exited and waits for its backoff.
+- `stopped` — disabled, a finished `restart=never` run, or skipped
+  because it is in a `wants` cycle (the reason is in `oath logs`).
+- `failed` — it could not be started, or it died within 10 s of
+  starting five times in a row. Restarts wait 1, 2, 4, then 8 s between
+  those quick failures; a run of 10 s or more restarts at once. A
+  `failed` service stays down until its applied spec changes: fix it
+  with `oath set` and `oath apply`.
+
+A service's stdout and stderr go to `/oath/log/svc/<name>.log`, one
+line each with a UTC time in front, rotated to `<name>.log.1` past
+256 KiB. PID 1 writes its own messages to `/oath/log/init.log`; the
+DHCP client writes to `/oath/log/net/net0.log` (`oath logs net:net0`).
 
 ## Add and remove a service
 
@@ -96,7 +124,17 @@ oath set svc:web --from-json '{"env":{"WEB_ROOT":"/home/site"}}'
 oath apply svc:web
 ```
 
-Changing `user`, `env`, or `bind_low_ports` restarts the process.
+Changing `exec`, `user`, `env`, or `bind_low_ports` restarts the
+process.
+
+## Reboot and power off
+
+`sudo reboot`, `sudo poweroff` and `sudo halt` ask PID 1 to shut down,
+and so does `oath set host:local power=reboot` (or `halt`) with
+`oath apply --confirm`. PID 1 stops every service (SIGTERM, up to 5 s,
+then SIGKILL), stops everything else, syncs, unmounts the btrfs top
+level, remounts `/` read-only, then reboots or powers off. Ctrl-Alt-Del
+on the console reboots the same way.
 
 ## Off-box backup
 
@@ -125,13 +163,10 @@ Without them the copy is crash-consistent (`sync` plus btrfs CoW).
 
 ## Known gaps
 
-- No per-service log, no exit code in actual, no real restart count,
-  no backoff (a crashing `restart=always` service respawns every
-  200 ms), no cgroup per service.
+- Kernel modules load from a fixed list, not by the devices present.
 - A service skipped for a `wants` cycle shows `stopped`; the reason is
-  only on the console.
-- No ordered shutdown: plain `reboot` does nothing, and a catalog
-  reboot or halt does not stop services first.
-- If PID 1 itself fails, it runs `/bin/sh` on the console and then
-  sleeps forever. Metal boots without `panic=`, so a kernel panic
-  does not reboot.
+  only in `oath logs`.
+- At shutdown every service gets SIGTERM at once, not in reverse
+  `wants` order.
+- A panic in PID 1 panics the kernel; `panic=10` reboots the machine
+  ten seconds later.

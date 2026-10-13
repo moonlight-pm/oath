@@ -41,19 +41,28 @@ probation apply with automatic rollback, a physical spec/status
 directory split (undo already touches spec only), a store integrity
 check at boot.
 
-## 4. PID 1 — active
+## 4. PID 1 — done (2026-10-13)
 
-Per-service log ring and `oath logs`, exit codes, backoff, failed
-state, cgroups, a shutdown sequence (plain `reboot` is the remaining
-gap case), `switch_root`, panic hook, DHCP as a service, modalias
-loading. Cycle isolation is already in (phase 3).
+Built: per-service logs and `oath logs`, exit codes and a real restart
+count, backoff into a `failed` state, one cgroup per service
+(`keep_children` for sshd), an orderly shutdown on `reboot` / `halt` /
+`poweroff` and `oath` power changes, switch_root, a panic hook with
+`panic=10` on metal, a fallback shell that reaps, a supervised DHCP
+client that renews the lease, and `oath apply` waiting for PID 1 to
+converge. All 25 harness cases pass.
 
-## 5. Native base — planned
+Not done, carried forward: module loading by modalias (with metal, in
+phase 6), shutdown in reverse `wants` order, the cycle reason in actual,
+surviving a supervisor panic.
+
+## 5. Native base — next
 
 Bootstrap compiler, then busybox, btrfs-progs, dropbear, curl, sgdisk,
 dosfstools, firmware and the boot loader as plans. Retire
 `image/tools.nix` for anything that ships. Immutable build outputs
 with a manifest; publish allowlist with a license per package.
+Blocked on Joshua confirming Clang/LLVM as the system compiler
+(decisions.md).
 
 ## 6. Reinstall — planned
 

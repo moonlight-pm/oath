@@ -49,7 +49,8 @@ keys, or objects the apply did not touch. A pending `oath set` on some
 other object survives an undo.
 
 A reboot through the catalog (`power=reboot`) is itself an apply and
-takes a generation.
+takes a generation; PID 1 then shuts down cleanly. Plain `sudo reboot`
+reboots the same way without one.
 
 ## Boot menu
 

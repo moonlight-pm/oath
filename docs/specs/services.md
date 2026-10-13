@@ -6,11 +6,11 @@ configuration: there are no unit files, no init scripts, and no
 systemd. PID 1 itself is not an object; it is the engine that
 converges `svc`.
 
-**Status:** partly built. Supervision, ordering, restart policy and
-accounts are built. Since 2026-10-13 PID 1 runs only applied specs and
-a `wants` cycle no longer stops everything. Logs, exit codes, backoff, a
-failed state, cgroups, an orderly shutdown and crash handling are the
-target (phase 4).
+**Status:** built, except module loading by modalias (still a fixed
+list) and a supervisor that survives its own panic. Since 2026-10-13
+PID 1 runs only applied specs, isolates a `wants` cycle, logs every
+service, restarts with backoff into a `failed` state, gives each service
+a cgroup, shuts down in order, and switch_roots into the disk.
 
 Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 
@@ -37,8 +37,13 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
   `host:local.env`.
 - `bind_low_ports` — a `home` process keeps `CAP_NET_BIND_SERVICE`.
   Ignored for root.
+- `keep_children` — stop and restart signal only the main process; its
+  children keep running. Default false: the whole process tree stops.
+  `svc:sshd` sets it so login sessions survive an sshd restart.
 
-Actual: `state` (`stopped`, `running`, `failed`), `pid`, `restarts`.
+Actual: `state` (`running`, `restarting`, `stopped`, `failed`), `pid`,
+`restarts` (restarts this boot), `last_exit` (`{"code": n}` or
+`{"signal": n}`), `since`.
 `applied.json` is the spec PID 1 runs: `oath apply` writes it after the
 document passes its checks, and `oath undo` puts back the previous one.
 Desired is what the owner is staging; PID 1 never reads it while an
@@ -51,16 +56,24 @@ The base profile seeds `svc:serial` (root shell on the serial console),
 
 Every service gets `PATH=/bin`, `HOME`, `USER`, `LOGNAME`, `SHELL=/bin/sh`,
 `XDG_RUNTIME_DIR=/run/user/<uid>`, then `host:local.env` plus `TZ` from
-`host:local.timezone`, then its own `env`. The child calls `setsid`,
-drops to its account, and execs.
+`host:local.timezone`, then its own `env`. stdin is `/dev/null`; stdout
+and stderr are one pipe to PID 1. The child calls `setsid`, joins its
+cgroup (`/sys/fs/cgroup/oath/<kind>-<name>`), drops to its account, and
+execs.
 
 ## Boot sequence (built)
 
 1. Mount `/proc`, `/sys`, `/dev`, `/dev/pts`; tmpfs on `/tmp`,
    `/dev/shm` and `/run`; cgroup2 on `/sys/fs/cgroup`; bring up `lo`.
+   PID 1 catches the shutdown signals and turns Ctrl-Alt-Del into one.
 2. In install mode (`oath.install` on the command line), start the
    installer ramdisk instead (see boot-and-install.md).
-3. Load the early modules, mount the root subvolume, and enter it.
+3. Load the early modules and mount the root subvolume at `/newroot`.
+   **switch_root:** move `/dev`, `/proc`, `/sys` and `/run` into it,
+   move it over `/` and chroot there. No `/newroot` remains, and each of
+   `/tmp`, `/dev/shm`, `/run`, `/dev/pts` is mounted once. The initramfs
+   stays in memory: its modules and firmware are bind-mounted into the
+   new root for the deferred pass.
 4. Mount the btrfs top level at `/oath/run/fs` so generations are
    siblings of `@`.
 5. Seed only if `/oath/objects` is missing; regenerate a missing
@@ -68,65 +81,74 @@ drops to its account, and execs.
 6. Converge `host:local`, `net:net0` and `ssh:local` from their applied
    state (`actual.json`), not from pending desired; probe `dev:*`.
    Release the lock.
-7. Start enabled services in `wants` order.
-8. Load the deferred modules (display and sound), then listen on
-   `/oath/run/init.sock`. `oath apply` writes to that socket to ask
-   PID 1 to converge services again.
+7. Listen on `/oath/run/init.sock`, then start enabled services in
+   `wants` order (and the DHCP client, below).
+8. Load the deferred modules (display and sound), then enter the main
+   loop.
 
-The main loop reaps children and restarts them according to `restart`.
+## Supervision (built)
+
+The main loop handles shutdown requests, reaps children, moves their
+output into logs, starts restarts whose backoff is over, and answers
+`/oath/run/init.sock`. `oath apply` writes `converge` there and waits
+for the reply, which PID 1 sends after converging, so apply returns
+after the change has happened.
+
 On converge, PID 1 reads each `applied.json` (falling back to desired
 only when there is none). A running service whose applied spec changed,
-or that is disabled or gone, is stopped with SIGTERM and replaced. A
-spec PID 1 cannot read leaves the running process alone and is logged.
-Services in a `wants` cycle, and services waiting on one, are skipped
-and recorded `stopped`; every other service, `svc:sshd` included, still
-starts. PID 1 does not recreate the status file of an object `oath rm`
-deleted.
+or that is disabled or gone, is stopped and replaced. A spec PID 1
+cannot read leaves the running process alone and is logged. Services in
+a `wants` cycle, and services waiting on one, are skipped and recorded
+`stopped`; every other service, `svc:sshd` included, still starts. PID
+1 does not recreate the status file of an object `oath rm` deleted.
 
-## Known defects (from the 2026-10-13 review)
-
-- Service output goes to the console. There is no per-service log, no
-  exit code in actual, and `restarts` is not a real counter.
-- Restarts have a fixed 200 ms delay and no backoff, so a crashing
-  service spins.
-- No cgroup per service; stopping a service leaves its children.
-- No shutdown sequence: reboot does not stop services or sync in order.
-  Plain `reboot` (busybox, which signals PID 1) does nothing; only
-  `oath` `power=reboot` reboots. This is the one gap case left in
-  `check/cases.toml`.
-- The root is entered with `chroot`, not `switch_root`, so the initrd
-  stays pinned in memory.
-- If PID 1 panics or errors at boot it runs `/bin/sh` and then sleeps
-  forever, and metal has no `panic=` to reboot.
+- **Logs.** Each service's stdout and stderr go to
+  `/oath/log/svc/<name>.log`, one UTC-stamped line at a time, rotated to
+  `.1` past 256 KiB (one old file kept). PID 1's own messages go to
+  `/oath/log/init.log`. `oath logs svc:<name>` and `oath logs` read
+  them (`-n` lines, default 50).
+- **Exit and restart.** Actual records the last exit code or signal.
+  `restart` decides whether it runs again. A run of 10 s or more
+  restarts at once; quick failures wait 1, 2, 4 then 8 s. After five
+  quick failures in a row the service is `failed` and stays down until
+  its applied spec changes. A spawn error is also `failed`.
+- **Cgroups.** One cgroup per service under `/sys/fs/cgroup/oath/`.
+  Stop sends SIGTERM to every process in it, waits up to 5 s, then
+  `cgroup.kill`s the rest; an exit cleans up leftover children the same
+  way. With `keep_children`, only the main process is signalled.
+- **Shutdown.** SIGTERM or SIGINT (busybox `reboot`, Ctrl-Alt-Del)
+  reboots; SIGUSR1 (`halt`) halts; SIGUSR2 (`poweroff`) powers off. An
+  `oath` `power=reboot` or `halt` apply sends the same signal. PID 1
+  stops every service (TERM, up to 5 s, KILL), signals everything else,
+  syncs, unmounts `/oath/run/fs`, remounts `/` read-only, then calls
+  the kernel.
+- **DHCP client.** When the applied `net:net0` is up and `dhcp`, PID 1
+  runs `udhcpc -f -i net0` as an internal service (id `net:net0`, not a
+  catalog `svc`, log `/oath/log/net/net0.log`) with the same restart
+  and backoff, so the lease renews. See network-and-ssh.md.
+- **Crash path.** A panic is logged (`init.log`, console) and panics
+  the kernel; `panic=10` on the kernel command line (QEMU and metal)
+  reboots it. If boot itself fails, PID 1 runs a root shell on the
+  console and respawns it, reaping every child.
 
 ## Target
 
-- **Logs.** A ring buffer per service in PID 1, persisted under
-  `/oath/log/svc/<name>`, read with `oath logs svc:<name>`.
-- **Exit status.** Actual records the last exit code or signal, a true
-  restart count, and the time of the last start.
-- **Backoff and failed.** Exponential restart backoff with a cap. After
-  N fast failures the service is `failed` and stays down until the
-  next apply touches it.
-- **Cgroups.** One cgroup per service under `/sys/fs/cgroup/oath/`.
-  Stop kills the whole group.
-- **Shutdown.** `power=reboot` or `halt` stops services in reverse
-  `wants` order with a timeout, syncs, unmounts, then reboots.
-- **switch_root** into the real root; the initrd is freed.
-- **Crash path.** A panic hook logs, syncs, and reboots; metal kernels
-  boot with `panic=10`. A rescue shell is still offered on the serial
-  console.
-- **Isolate bad specs, with a reason.** Today a skipped service is
-  `stopped` and the reason is only in the console log. It will be
-  `failed` with the reason in actual.
-- **DHCP as a service.** The lease client runs as a supervised service
-  instead of inside `net` converge (network-and-ssh.md).
+- **Modules by modalias.** Load drivers from the devices present
+  instead of a fixed list (devices.md). With metal, in the reinstall
+  phase.
+- **Reason in actual.** A service skipped for a cycle is `stopped`, and
+  why is only in `init.log`. It will be `failed` with the reason in
+  actual.
+- **Shutdown order.** Today every service gets SIGTERM at once; reverse
+  `wants` order is the target.
+- **Survive a panic.** A supervisor panic reboots the machine; keeping
+  services up through it is not designed yet.
 
 ## Courage test
 
-Disable `svc:hold`, apply, see it stopped; enable it, apply, see it
-running; undo restores the previous state. `cargo make check` also
-covers a torn `desired.json` (the service keeps running) and a cycle at
-boot (sshd still starts). Target additions: a crashing service backs off
-and reaches `failed`; `oath logs` shows its last lines; plain `reboot`
-shuts down in order.
+`cargo make check` covers it: disable and enable `svc:hold`; undo; a
+torn `desired.json` (the service keeps running); a cycle at boot (sshd
+still starts); a crashing service that backs off to `failed` with exit
+code 3; `oath logs`; stopping a service that forked; an sshd restart
+that keeps this SSH session; the DHCP client; switch_root; and plain
+`reboot`.

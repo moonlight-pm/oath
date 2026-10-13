@@ -7,9 +7,9 @@ DHCP lease by default. Root is privilege, not a login: `home` uses
 
 **Status:** partly built. DHCP, static addresses, SSH keys, host keys,
 the `home` account and `sudo` are built. Changes that can cut off SSH
-need `--confirm` (built 2026-10-13). DHCP as a supervised service,
-probation with automatic rollback, and a stricter `sudo` are the
-target.
+need `--confirm`, and a supervised DHCP client renews the lease (both
+built 2026-10-13). Probation with automatic rollback and a stricter
+`sudo` are the target.
 
 Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
@@ -23,9 +23,14 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   The agent never hunts for `eth0` or `ens3`.
 - `ipv4` is `dhcp` or a CIDR. With a CIDR, `gateway` sets the default
   route.
-- `dhcp` runs busybox `udhcpc` once (`/lib/oath/udhcpc.script` applies
-  the lease) and records `lease` in actual. `lease` is not a desired
-  field.
+- `dhcp`: converge runs busybox `udhcpc` once for the first lease
+  (`/lib/oath/udhcpc.script` applies it; its output stays out of
+  `oath apply`) and records `lease` in actual. `lease` is not a desired
+  field. While the applied `net:net0` is up and `dhcp`, PID 1 also runs
+  `udhcpc -f -i net0` as an internal service (id `net:net0`, not a
+  catalog `svc`), restarted with backoff, so the lease renews. Its log is
+  `/oath/log/net/net0.log` (`oath logs net:net0`). A static address
+  stops it.
 - Any change to `up`, `ipv4` or `gateway` is confirm-class: `oath apply`
   exits 3 without `--confirm`, because it can cut the machine off from
   SSH. Serial still works.
@@ -49,7 +54,9 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   `/oath/ssh/host_ed25519` with `dropbearkey`. No image ships a private
   key.
 - `svc:sshd` runs dropbear in the foreground with `-s` (no passwords)
-  and `-w` (no root login). `pkg:dropbear` is fixed (not removable).
+  and `-w` (no root login), with `keep_children`: restarting sshd
+  signals only the listener, so open login sessions survive (and `oath
+  apply` waits for PID 1 to have restarted it). `pkg:dropbear` is fixed (not removable).
   The package also carries the OpenSSH `ssh`, `ssh-keygen` and
   `sftp-server` binaries.
 - The installer writes the build host's public keys into `ssh:local`
@@ -73,8 +80,8 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 - `sudo` drops every leading `-` argument, ignores the return values of
   `setgid` and `setuid`, never calls `setgroups`, and passes the
   caller's environment through.
-- DHCP runs inside `net` converge, once. A lease that expires, or a
-  link that comes up late, is not renewed.
+- `actual.lease` is the first lease; renewals by the DHCP client are
+  not written back.
 - Changing `ssh:local`, `svc:sshd` or `net:net0` with `--confirm` can
   still lock the owner out; nothing rolls it back automatically. Without
   `--confirm` apply refuses: `svc:sshd` disabled, removed, or its
@@ -85,9 +92,8 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
 - **Probation.** Lockout-class changes apply on a timer and roll back
   unless confirmed from a fresh SSH session (catalog.md).
-- **DHCP as a service.** `net:net0` with `ipv4: dhcp` makes PID 1
-  supervise a long-running lease client; actual reports the current
-  lease. Static addresses stay in converge.
+- **Current lease in actual.** The DHCP client's script records each
+  renewal in `net:net0` actual.
 - **`sudo`.** Parse only `--`; check every credential call; set
   supplementary groups to root's; clear the environment except a
   short allowlist (`TERM`, `LANG`, `TZ`), and set `PATH=/bin`.
@@ -98,5 +104,5 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 ## Courage test
 
 From the build host: `ssh -p 2222 home@127.0.0.1 oath get net:net0`
-shows a lease. Adding a second key to `ssh:local` and applying lets
+shows a lease, and `ps` shows `udhcpc -f`. Adding a second key to `ssh:local` and applying lets
 that key log in. `sudo oath apply` works; `ssh root@…` is refused.

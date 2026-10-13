@@ -167,13 +167,75 @@ steps = [
   { run = "oath get svc:hold --actual", expect = ["stopped"] },
 ]
 
-# ---- Known gaps (acceptance tests for later phases) ------------------
+# ---- Phase 4: PID 1 --------------------------------------------------
 
 [[case]]
 name = "reboot-command"
-about = "Plain `reboot` shuts down through PID 1."
-gap = "phase 4: shutdown sequence"
+about = "Plain `reboot` shuts down through PID 1 and the machine comes back."
 steps = [
+  { run = "sudo oath set host:local hostname=kept && sudo oath apply" },
   { reboot = "signal" },
-  { run = "true" },
+  { run = "hostname; oath logs", expect = ["kept", "shutdown: Reboot"] },
 ]
+
+[[case]]
+name = "service-logs"
+about = "A service's output lands in its log; PID 1 has one too."
+steps = [
+  { run = "sudo oath new svc:talk --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo hello-from-talk; sleep 1000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:talk && sleep 1" },
+  { run = "oath logs svc:talk", expect = ["hello-from-talk"] },
+  { run = "oath logs", expect = ["ready"] },
+]
+
+[[case]]
+name = "crash-backoff-failed"
+about = "A service that keeps dying backs off, records its exit code, and ends up failed."
+steps = [
+  { run = "sudo oath new svc:crash --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo dying; exit 3\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}'; sudo oath apply svc:crash; sleep 25; oath get svc:crash --actual", expect = ["\"failed\"", "\"code\": 3"], timeout = 60 },
+  { run = "oath logs svc:crash | grep -c dying", expect = ["5"] },
+]
+
+[[case]]
+name = "stop-takes-the-tree"
+about = "Stopping a service stops the processes it forked."
+steps = [
+  { run = "sudo oath new svc:tree --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"sleep 777 & sleep 778\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tree && sleep 1 && ps | grep -v grep | grep -c 'sleep 77'", expect = ["2"] },
+  { run = "sudo oath set svc:tree enabled=false && sudo oath apply svc:tree && sleep 1; ps | grep -v grep | grep -c 'sleep 77'", fails = true, expect = ["0"] },
+]
+
+[[case]]
+name = "sshd-restart-keeps-sessions"
+about = "Changing sshd (with --confirm) restarts it without dropping this session."
+steps = [
+  { run = "sudo oath set svc:sshd --from-json '{\"env\":{\"OATH_CHECK\":\"1\"}}' && sudo oath apply --confirm svc:sshd; echo SURVIVED", expect = ["SURVIVED"] },
+  { run = "oath get svc:sshd --actual", expect = ["running"] },
+]
+
+[[case]]
+name = "dhcp-client-runs"
+about = "net:net0 dhcp keeps a client running that renews the lease, with a log."
+steps = [
+  { run = "ps | grep -v grep | grep 'udhcpc -f'" },
+  { run = "oath logs net:net0", expect = ["lease of"] },
+]
+
+[[case]]
+name = "switch-root"
+about = "PID 1 switch_roots into the disk: no /newroot left in the mount table."
+steps = [
+  { run = "! grep -q newroot /proc/self/mountinfo && awk '$5 == \"/\" { for (i = 6; i < NF; i++) if ($i == \"-\") print $(i + 1) }' /proc/self/mountinfo", expect = ["btrfs"] },
+  { run = "for m in /run /dev/shm /dev/pts; do awk -v m=$m '$5 == m' /proc/self/mountinfo | wc -l; done", expect = ["1\n1\n1"] },
+]
+
+[[case]]
+name = "sudo"
+about = "sudo gives root with a clean environment and refuses options it does not know."
+steps = [
+  { run = "FOO=leak sudo -n -- sh -c 'id -u; id -G; echo FOO=$FOO'", expect = ["0\n0\nFOO="], reject = ["leak"] },
+  { run = "sudo -E true", fails = true, expect = ["not supported"] },
+]
+
+# ---- Known gaps (acceptance tests for later phases) ------------------
+#
+# None today. Add a case with `gap = "phase N: …"` when a defect is found
+# before it is fixed.
