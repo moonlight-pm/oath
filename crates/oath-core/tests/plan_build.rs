@@ -486,3 +486,38 @@ fn prebuild_wget_hash_mismatch_refuses() {
         "{err}"
     );
 }
+
+#[test]
+fn a_changed_plan_rebuilds_even_with_the_same_inputs() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_busybox(d.path());
+    let src = pack_src(d.path(), b"hello-from-src\n");
+    let plan = |extra: &str| {
+        PlanFile {
+        name: "hello".into(),
+        produces: "pkg:hello".into(),
+        build_needs: vec![
+            PkgNeed { id: "pkg:busybox".into(), hash: bb.clone() },
+            PkgNeed { id: "pkg:hello-src".into(), hash: src.clone() },
+        ],
+        run_needs: vec![],
+        script: format!(
+            "mkdir -p /out/bin\ncp /oath/store/pkg/hello-src/{src}/bin/hello /out/bin/hello\nchmod 0755 /out/bin/hello\n{extra}"
+        ),
+    }
+    };
+    let one = fmt_plan(&plan(""));
+    file_plan(d.path(), one.as_bytes()).unwrap();
+    let r1 = build_pinned(d.path(), "hello").unwrap();
+    assert!(!r1.skipped);
+    assert!(build_pinned(d.path(), "hello").unwrap().skipped, "same plan, same inputs: cached");
+
+    // New script, same inputs: must build again, and the different product
+    // is not a "plan is not closed" error.
+    let two = fmt_plan(&plan("printf 'v2\\n' > /out/bin/version\n"));
+    file_plan(d.path(), two.as_bytes()).unwrap();
+    let r2 = build_pinned(d.path(), "hello").unwrap();
+    assert!(!r2.skipped);
+    assert_ne!(r2.product, r1.product);
+}

@@ -44,9 +44,13 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
     let dir_obj = catalog_root.join("objects/plan").join(&plan.name);
     fs::create_dir_all(&dir_obj)?;
     write_json(&dir_obj.join("desired.json"), &json!({ "hash": hash }))?;
+    // A new pin forgets the last build: its product says nothing about
+    // this plan file.
     let actual = if dir_obj.join("actual.json").is_file() {
         let mut a: PlanActual = crate::read_json(&dir_obj.join("actual.json"))?;
-        a.hash = hash.clone();
+        if a.hash != hash {
+            a = PlanActual { hash: hash.clone(), product: String::new(), inputs: String::new() };
+        }
         a
     } else {
         PlanActual { hash: hash.clone(), product: String::new(), inputs: String::new() }
@@ -100,9 +104,11 @@ fn build_inner(
     let inputs = input_set_hash(&plan.build_needs);
     if let Some(id) = plan_id {
         if let Ok(obj) = Catalog::open(catalog_root)?.get(id) {
+            let prev_h = obj.actual.get("hash").and_then(|v| v.as_str()).unwrap_or("");
             let prev_p = obj.actual.get("product").and_then(|v| v.as_str()).unwrap_or("");
             let prev_i = obj.actual.get("inputs").and_then(|v| v.as_str()).unwrap_or("");
-            if prev_i == inputs && is_realization_id(prev_p) {
+            // The cache key is the plan file and its inputs, both.
+            if prev_h == plan_hash && prev_i == inputs && is_realization_id(prev_p) {
                 let dest = realization_dir(catalog_root, &plan.name, prev_p);
                 if dest.is_dir() {
                     return Ok(BuildReport {
@@ -147,9 +153,14 @@ fn build_inner(
     let product = hash_tree(&out)?;
     if let Some(id) = plan_id {
         if let Ok(obj) = Catalog::open(catalog_root)?.get(id) {
+            let prev_h = obj.actual.get("hash").and_then(|v| v.as_str()).unwrap_or("");
             let prev_p = obj.actual.get("product").and_then(|v| v.as_str()).unwrap_or("");
             let prev_i = obj.actual.get("inputs").and_then(|v| v.as_str()).unwrap_or("");
-            if prev_i == inputs && is_realization_id(prev_p) && prev_p != product {
+            if prev_h == plan_hash
+                && prev_i == inputs
+                && is_realization_id(prev_p)
+                && prev_p != product
+            {
                 return Err(Error::security(
                     format!(
                         "plan:{} rebuilt to {product}, previous product was {prev_p}",
