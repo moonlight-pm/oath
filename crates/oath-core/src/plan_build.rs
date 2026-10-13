@@ -456,8 +456,6 @@ fn sandbox_in_child(
         .env("HOME", "/tmp")
         .env("TMPDIR", "/tmp")
         .env("OUT", "/out")
-        .env("ZIG_LOCAL_CACHE_DIR", "/tmp/zig-cache")
-        .env("ZIG_GLOBAL_CACHE_DIR", "/tmp/zig-cache")
         .env("XDG_CACHE_HOME", "/tmp")
         .stdin(Stdio::null())
         .status()?;

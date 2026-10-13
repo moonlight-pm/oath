@@ -78,10 +78,11 @@ reuses the old product.
 
 The direction, from D7:
 
-- **Stage 0.** `pkg:cc` is the Zig release from ziglang.org, pinned by
-  sha256. It is a static binary. Its `cc`, `c++` and `musl-cc` wrappers
-  all target `x86_64-linux-musl`. With busybox it is enough to build C
-  from source inside the sandbox.
+- **Compiler.** Clang/LLVM (clang, lld, compiler-rt, libunwind,
+  libc++) on musl is the proposed system toolchain: one compiler for
+  every target, and mesa needs LLVM anyway. Stage 0 is built on the
+  build host with the host's compiler and never ships; stage 1 rebuilds
+  it with itself as an Oath plan. Zig is not used.
 - **Build where.** The same `oath build` runs on the build host (under
   a user namespace, against a scratch catalog) to produce the image's
   packages, and on Oath itself to rebuild them. The host's own
@@ -96,9 +97,8 @@ The direction, from D7:
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans.
 
-Open: whether the long-term system C compiler stays Zig (clang) or
-becomes GCC built from source. Record the choice in decisions when it
-is made.
+Open: Joshua has not yet confirmed Clang/LLVM over GCC
+([decisions](../decisions.md)).
 
 ## Target fixes
 

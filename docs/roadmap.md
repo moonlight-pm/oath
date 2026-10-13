@@ -19,7 +19,7 @@ the payload tangled into it.
 ## 1. Cut — done (2026-10-13)
 
 Remove the desk, T37, T39, Wicket, the probe and the diary docs. Seed
-as data with `base`/`dev` profiles and host overlays. One own-built
+as data with profiles and host overlays. One own-built
 kernel with a vermagic check. `esp` refuses non-Oath hosts.
 
 ## 2. Harness — active

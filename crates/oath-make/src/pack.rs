@@ -124,7 +124,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let wanted =
         oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
     for name in &wanted {
-        if !matches!(name.as_str(), "busybox" | "btrfs" | "oath" | "dropbear" | "curl" | "cc") {
+        if !matches!(name.as_str(), "busybox" | "btrfs" | "oath" | "dropbear" | "curl") {
             bail!("profile {profile} wants pkg:{name}, which this build cannot pack yet");
         }
     }
@@ -338,13 +338,6 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     link_pkg(&oath_root, &guest_bin, "dropbear", false)?;
     pack_curl(&oath_root, tools)?;
     link_pkg(&oath_root, &guest_bin, "curl", true)?;
-    if wanted.iter().any(|n| n == "cc") {
-        let cc_pack = pack_cc(root, out)?;
-        copy_tree(&cc_pack, &oath_root.join("store/pkg/cc"))?;
-        chmod_exec(&oath_root.join("store/pkg/cc/libexec/zig/zig"))?;
-        chmod_exec(&oath_root.join("store/pkg/cc/libexec/patchelf"))?;
-        link_pkg(&oath_root, &guest_bin, "cc", true)?;
-    }
 
     let cache = host_store_cache(root);
     eprintln!(">> hash-in-path store ({})", cache.display());
@@ -917,16 +910,6 @@ fn pack_curl(oath_root: &Path, tools: &Tools) -> Result<()> {
     )?;
     chmod_exec(&dest.join("bin/curl"))?;
     Ok(())
-}
-
-fn pack_cc(root: &Path, out: &Path) -> Result<PathBuf> {
-    let dest = out.join("cc-pack");
-    eprintln!(">> pack cc (zig)");
-    run(Command::new("sh")
-        .arg(root.join("image/pack-cc.sh"))
-        .arg(&dest)
-        .env("OATH_FETCH", out.join("fetch")))?;
-    Ok(dest)
 }
 
 fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {

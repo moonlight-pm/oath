@@ -68,7 +68,7 @@ btrfs
 ## Host side (novus)
 
 ```
-cargo make build [--profile base|dev]
+cargo make build [--profile base]
   cargo build oath, oath-init (musl), oath-efi (uefi)
   kernel + modules from build/linux (image/build-linux.sh), vermagic checked
   busybox, btrfs, dropbear, … from image/tools.nix (temporary, phase 5)

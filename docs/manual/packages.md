@@ -23,10 +23,8 @@ The `base` profile:
 | `pkg:hello` | absent; bits in the store | yes — canary; `/bin/hello` prints `hello` |
 | `pkg:fetchme` | absent; `url` | yes — fetch canary from `http://10.0.2.2:18765/fetchme` (the QEMU host) |
 
-The `dev` profile adds `pkg:cc` (present, removable): official Zig as
-`cc`, `gcc`, `musl-cc`, `c++`, `g++`, plus `ar`, `ranlib`, and
-`patchelf` built with Zig. Every compiler wrapper targets
-`x86_64-linux-musl`. There is no glibc on Oath.
+There is no C compiler on the box yet; it arrives with the native
+toolchain (roadmap phase 5). There is no glibc on Oath.
 
 PID 1 stays at `/lib/oath/init`; it is not a package.
 

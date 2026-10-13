@@ -25,8 +25,8 @@ append history (git has it).
 3. **Catalog safety (phase 3).** Locked temp-file-then-rename
    writes; validate before snapshot; log every outcome; undo restores
    spec only; `oath new` / `oath rm`; typed `set`; id grammar;
-   probation apply for lockout-class changes. Next: confirm R4
-   (flock + rename vs PID 1 as sole writer) with Joshua.
+   probation apply for lockout-class changes. R4 (flock + rename) is
+   decided. Next: after the harness.
 4. **PID 1 (phase 4).** Log ring + `oath logs`, exit codes, backoff,
    failed state, cgroups, shutdown, `switch_root`, panic hook, a
    cycle skips one service, DHCP as a service, modalias loading.
@@ -35,9 +35,9 @@ append history (git has it).
    by an Oath plan or is the vendor's release pinned by sha256.
    Today `image/tools.nix` still supplies busybox, btrfs-progs,
    dropbear, openssh client bits, curl, sgdisk, mkfs.fat, kexec, tar,
-   systemd-boot, firmware and OVMF. Next: choose the bootstrap
-   compiler (Zig `pkg:cc` vs GCC from source) with Joshua, then
-   build busybox natively as the first plan.
+   systemd-boot, firmware and OVMF. Next: Joshua confirms Clang/LLVM
+   (proposed) over GCC; then stage-0 LLVM on novus and busybox as the
+   first plan. No Zig (R9).
 
 ## Machines
 

@@ -53,8 +53,7 @@ const SCHEMAS: &[(&str, &str)] = &[
 ];
 
 /// Built-in profiles. `base` is a headless machine you reach over SSH.
-pub const PROFILES: &[(&str, &str)] =
-    &[("base", include_str!("../seed/base.json")), ("dev", include_str!("../seed/dev.json"))];
+pub const PROFILES: &[(&str, &str)] = &[("base", include_str!("../seed/base.json"))];
 
 pub const DEFAULT_PROFILE: &str = "base";
 
@@ -81,8 +80,12 @@ pub struct Profile {
 
 impl Profile {
     pub fn load(name: &str) -> Result<Self> {
+        Self::load_from(name, PROFILES)
+    }
+
+    fn load_from(name: &str, profiles: &[(&str, &str)]) -> Result<Self> {
         let mut seen = Vec::new();
-        Self::load_inner(name, &mut seen)
+        Self::load_inner(name, profiles, &mut seen)
     }
 
     /// `pkg:*` objects the profile wants present. The image packs these.
@@ -94,13 +97,13 @@ impl Profile {
             .collect()
     }
 
-    fn load_inner(name: &str, seen: &mut Vec<String>) -> Result<Self> {
+    fn load_inner(name: &str, profiles: &[(&str, &str)], seen: &mut Vec<String>) -> Result<Self> {
         if seen.iter().any(|s| s == name) {
             return Err(Error::Msg(format!("seed profile `{name}` extends itself")));
         }
         seen.push(name.to_string());
-        let Some((_, text)) = PROFILES.iter().find(|(n, _)| *n == name) else {
-            let names: Vec<&str> = PROFILES.iter().map(|(n, _)| *n).collect();
+        let Some((_, text)) = profiles.iter().find(|(n, _)| *n == name) else {
+            let names: Vec<&str> = profiles.iter().map(|(n, _)| *n).collect();
             return Err(Error::hint(
                 format!("no seed profile `{name}`"),
                 format!("profiles: {}", names.join(", ")),
@@ -109,7 +112,7 @@ impl Profile {
         let file: ProfileFile = serde_json::from_str(text)
             .map_err(|e| Error::Msg(format!("seed profile {name}: {e}")))?;
         let mut out = match &file.extends {
-            Some(parent) => Self::load_inner(parent, seen)?,
+            Some(parent) => Self::load_inner(parent, profiles, seen)?,
             None => Self::default(),
         };
         out.layer(file)?;
@@ -292,15 +295,22 @@ mod tests {
     }
 
     #[test]
-    fn dev_extends_base() {
-        let p = Profile::load("dev").unwrap();
-        assert!(p.objects.contains_key("pkg:cc"));
+    fn a_profile_extends_another() {
+        let extra = r#"{"extends": "base", "objects": {
+            "host:local": {"env": {"EDITOR": "vi"}},
+            "pkg:extra": {"present": true}
+        }}"#;
+        let looped = r#"{"extends": "looped"}"#;
+        let profiles = [PROFILES[0], ("extra", extra), ("looped", looped)];
+        let p = Profile::load_from("extra", &profiles).unwrap();
         assert!(p.objects.contains_key("pkg:busybox"));
         assert_eq!(p.objects["host:local"]["hostname"], "oath");
-        assert_eq!(p.objects["host:local"]["env"]["CC"], "/bin/cc");
+        assert_eq!(p.objects["host:local"]["env"]["EDITOR"], "vi");
         assert!(p.fixed.contains("pkg:oath"));
-        assert!(p.present_pkgs().contains(&"cc".to_string()));
+        assert!(p.present_pkgs().contains(&"extra".to_string()));
         assert!(!p.present_pkgs().contains(&"hello".to_string()));
+        assert!(Profile::load_from("looped", &profiles).is_err());
+        assert!(Profile::load_from("nope", &profiles).is_err());
     }
 
     #[test]

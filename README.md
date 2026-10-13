@@ -61,7 +61,6 @@ temporary build tools), sudo (to loop-mount the image) and QEMU.
 cargo test
 nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'   # the kernel, once
 cargo make build                 # headless base image (sudo for the loop mount)
-cargo make build --profile dev   # base + the C compiler
 cargo make run                   # serial console in this terminal
 cargo make up | start | ssh | stop
 ```

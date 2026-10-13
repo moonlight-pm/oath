@@ -6,18 +6,12 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 ## Open — ask the human
 
-- **R4 confirmation: how writers share the catalog.** Proposed:
-  every writer (`oath`, PID 1) takes an exclusive `flock` on
-  `/oath/.lock` and writes temp-file-then-rename; PID 1 reads only
-  `applied`. The alternative is PID 1 as the only writer with `oath`
-  sending requests over the socket (breaks `oath --root /mnt` and
-  offline repair). Blocks phase 3.
-- **Bootstrap compiler for native packages.** Zig (`pkg:cc`, the
-  vendor's static release, clang + musl inside) or GCC + binutils +
-  musl built from source with the build host's compiler. Blocks the
-  first native plan.
-- **Kernel line.** The pinned kernel is 7.3-rc1 (what canto runs).
-  Move to a stable release when it covers GFX6, or stay?
+- **System compiler: Clang/LLVM or GCC.** Proposed 2026-10-13:
+  Clang/LLVM (clang, lld, compiler-rt, libunwind, libc++) on musl —
+  one toolchain for every target, and mesa needs LLVM anyway. GCC is
+  the smaller standalone build but means a second toolchain later.
+  Tiny compilers (tcc, cproc) cannot build the kernel or C++. Zig is
+  ruled out. Awaiting Joshua's confirmation; blocks phase 5.
 - **Steam + Minecraft desk.** Which machine, and when. Not before the
   native desk exists.
 
@@ -28,11 +22,13 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R1 | Wicket leaves the core. Products wait for Oath to mature, then bundle themselves with the package standard. | Done in the cut |
 | R2 | Delete T37 (Steam, gamescope, sola-arcade) and T39 (Omarchy/Hyprland). Tag `t37-t39-final`. A Steam + Minecraft desk is a future requirement. | Done in the cut |
 | R3 | The seed is data: profiles `base` and `dev`; machine facts are install overlays. | Done in the cut |
-| R4 | Writers: flock + rename (proposed). | Open, see above |
+| R4 | Every catalog writer takes an exclusive file lock (`flock`) and writes temp-file-then-rename; PID 1 reads only `applied`. | Decided 2026-10-13; phase 3 |
 | R5 | Delete the probe; add a headless QEMU harness that gates installs. | Probe deleted; harness next |
 | R6 | One kernel: own-built, sha256-pinned, vermagic-checked. No Nix kernel. | Done in the cut |
 | R7 | Native packages from the outset: built from source by an Oath plan, or the vendor's release pinned by sha256. Never another distro's packages. Build-host compilers bootstrap only. | Direction set; work is phase 5 |
 | R8 | Reset the progress docs ("slash and burn"). | Done in the cut |
+| R9 | No Zig anywhere in Oath (Joshua, 2026-10-13). `pkg:cc` and the `dev` profile were removed. | Done |
+| R10 | Keep the pinned 7.3-rc1 kernel for now. | Decided 2026-10-13 |
 
 ## Standing
 

@@ -29,7 +29,7 @@ struct Cli {
 enum Cmd {
     /// Pack initramfs + btrfs qcow (needs sudo for loop-mount).
     Build {
-        /// Seed profile: `base` (headless, SSH) or `dev` (adds the C compiler).
+        /// Seed profile (`base`: headless, reached over SSH).
         #[arg(long, default_value = oath_core::DEFAULT_PROFILE)]
         profile: String,
     },

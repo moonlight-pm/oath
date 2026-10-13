@@ -96,7 +96,7 @@ cached tarballs and advisories into an origin tree.
 ## Native packages (policy, D7)
 
 - Every package is either built from source by an Oath plan, or is the
-  vendor's own binary release pinned by sha256 (examples: Zig, the Rust
+  vendor's own binary release pinned by sha256 (examples: the Rust
   toolchain, linux-firmware, Steam, CEF).
 - Never another distribution's packages: no Nix closures, no `.deb`,
   no Arch packages, no third-party rebuilds of an upstream.
@@ -106,8 +106,7 @@ cached tarballs and advisories into an origin tree.
 As built, the image still takes busybox, btrfs-progs, dropbear, the
 OpenSSH client and sftp-server, curl, the CA bundle, sgdisk, mkfs.fat,
 GNU tar and the systemd-boot fallback from nixpkgs (`image/tools.nix`).
-`pkg:cc` (Zig) is already a vendor release. The native-base phase
-replaces the rest with plans.
+The native-base phase replaces them with plans.
 
 ## Target
 

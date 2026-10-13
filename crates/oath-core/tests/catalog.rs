@@ -193,17 +193,6 @@ fn seed_lists_host() {
     assert_eq!(curl.actual["removable"], true);
 }
 
-#[test]
-fn dev_profile_adds_the_compiler() {
-    let d = tempfile::tempdir().unwrap();
-    oath_core::seed_profile(d.path(), "dev").unwrap();
-    let cat = Catalog::open(d.path()).unwrap();
-    let cc = cat.get(&"pkg:cc".parse().unwrap()).unwrap();
-    assert_eq!(cc.desired["present"], true);
-    let host = cat.get(&"host:local".parse().unwrap()).unwrap();
-    assert_eq!(host.desired["env"]["CC"], "/bin/cc");
-}
-
 fn write_hello_store(root: &std::path::Path) {
     let p = root.join("store/pkg/hello/bin/hello");
     std::fs::create_dir_all(p.parent().unwrap()).unwrap();

@@ -37,7 +37,7 @@ of T24, and D3 (seed as data).
   layers profiles. `fixed` lists packages that can never be removed.
 - `base` is a headless machine reached over SSH: host, net (DHCP), ssh,
   serial, sshd, busybox, btrfs, oath, dropbear, curl, and the
-  `pkg:hello` and `pkg:fetchme` canaries. `dev` adds `pkg:cc`.
+  `pkg:hello` and `pkg:fetchme` canaries.
 - `cargo make build --profile <p>` builds the musl binaries, packs the
   profile's present packages, seeds `stage/oath` with
   `oath seed --profile <p>`, hashes the store, and writes a btrfs `@`

@@ -35,7 +35,6 @@ Needs: Rust with `x86_64-unknown-linux-musl` and `x86_64-unknown-uefi`,
 
 ```sh
 cargo make build                  # profile base
-cargo make build --profile dev    # adds pkg:cc
 cargo make boot                   # kernel + initrd + oath-efi only
 ```
 

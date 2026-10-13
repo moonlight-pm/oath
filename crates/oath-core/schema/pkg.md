@@ -76,6 +76,5 @@ The `base` profile ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`, and
 `pkg:dropbear` present and not removable; `pkg:curl` present and
 removable; `pkg:hello` absent with its bits already in the store
 (`/bin/hello` prints `hello`); and `pkg:fetchme` absent with a `url`
-on the QEMU host. The `dev` profile adds `pkg:cc` (Zig: `cc`, `c++`,
-`musl-cc`, `ar`, `ranlib`, `patchelf`, all targeting musl). Busybox
-applets are one package. There is no glibc.
+on the QEMU host. Busybox applets are one package. There is no glibc and
+no C compiler on the box yet.

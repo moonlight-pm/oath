@@ -23,10 +23,10 @@ booted on metal since the cut)
 | Network | partial | `net:net0` dhcp (default) or static; NIC renamed to `net0` | DHCP runs inside apply, not as a service; one NIC only |
 | SSH | shipped | dropbear as `home`, keys from `ssh:local`, root denied, sudo for `home` | `sudo` helper is minimal (no setgroups, keeps env) |
 | Devices | partial | `dev:vda`, `dev:net0`, `dev:ttyS0` inventory | Names are hard-coded; modules load from a fixed list, not by modalias |
-| Seed and overlays | shipped | profiles `base`, `dev` (`crates/oath-core/seed/`); `oath seed --overlay`; `install --overlay` | PID 1 reseeds if `INDEX.md` is missing |
+| Seed and overlays | shipped | profile `base` (`crates/oath-core/seed/`), profiles can extend each other; `oath seed --overlay`; `install --overlay` | PID 1 reseeds if `INDEX.md` is missing |
 | Kernel | shipped | one kernel from `image/build-linux.sh` (7.3-rc1, sha256-pinned, Oath fragment and patches); pack refuses a release/vermagic mismatch | Built by hand before `cargo make build`; not yet a plan |
 | Boot | partial | initrd from our PID 1 + busybox; `oath-efi`; ESP keeps current + last 5 boots; `cargo make esp` runs only on an Oath machine | No panic hook or `panic=` on metal |
-| Image build | partial | `cargo make build --profile base|dev`, QEMU `run/up/start/ssh` | Userspace tools come from `image/tools.nix` (Nix); output is not immutable or manifest-checked |
+| Image build | partial | `cargo make build [--profile base]`, QEMU `run/up/start/ssh` | Userspace tools come from `image/tools.nix` (Nix); output is not immutable or manifest-checked |
 | Install | partial | installer ramdisk over SSH, GPT + ESP + btrfs `@`, `--overlay`, `--qemu` rehearsal, `--usb` stick | Not gated on a test run; uses the current `build/stage` without checking it is fresh |
 | Test harness | target | — | `cargo make check` (phase 2) |
 

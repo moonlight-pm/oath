@@ -18,8 +18,7 @@ not this kind. Do not add a Unix user kind — the accounts are always
   desired is set back to `run` so the box does not loop.
 - `env` — `NAME=value` map. PID 1 puts these in every `svc` spawn.
   Root-owned `/etc/profile` exports them for logins. Do not write
-  `$HOME/.profile`. Empty in the `base` profile; the `dev` profile sets
-  `CC`, `CXX`, and `AR`.
+  `$HOME/.profile`. Empty in the `base` profile.
 - `timezone` — POSIX TZ string (`MST7MDT,M3.2.0,M11.1.0`). Empty is UTC.
   Every service and every login gets `TZ` from this, unless `env` sets
   `TZ` itself. The system clock and logs stay UTC.
