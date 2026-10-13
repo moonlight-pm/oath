@@ -10,6 +10,7 @@ name = "oath-make"
 path = "src/main.rs"
 
 [dependencies]
+tempfile = "3"
 oath-core = { path = "../oath-core" }
 anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
@@ -21,5 +22,3 @@ serde_json = "1"
 sha2 = "0.10"
 libc = "0.2"
 
-[dev-dependencies]
-tempfile = "3"

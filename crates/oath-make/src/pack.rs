@@ -11,7 +11,7 @@ use oath_core::{converge_with_link_root, promote_store, write_json};
 
 use crate::cpio;
 use crate::tools::Tools;
-use crate::util::{chmod_exec, copy_file, copy_tree, out_dir, run, run_out, sudo};
+use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
 
 /// Drivers we need. Transitive deps (led-class, ptp, nvme-auth, af_packet, …)
 /// are pulled from `modules.dep` at pack time so insmod order is valid.
@@ -94,33 +94,8 @@ const MODULE_ROOTS: &[&str] = &[
     "kernel/fs/nfs/nfsv4.ko.xz",
 ];
 
-/// Session + kit app ELFs packed into `pkg:sola`.
-const SOLA_KIT_ELFS: &[&str] = &[
-    "sola-bus",
-    "sola-call",
-    "sola-river",
-    "sola-shell",
-    "sola-session",
-    "sola-terminal",
-    "sola-browser",
-    "sola-workspaces",
-    "solactl",
-    "sola-kvm",
-    "sola-settings",
-    "sola-oath",
-    "sola-monitor",
-    "sola-kit",
-    "sola-preview",
-    "sola-paint",
-    "sola-mail",
-    "sola-arcade",
-    "sola-scope",
-    "sola-spotify",
-    "sola-wrapper",
-];
-
 /// Kernel + initrd + `oath-efi` only. Used by `cargo make esp` on metal
-/// (no qcow, no qemu, no nix river pack).
+/// (no qcow, no qemu).
 pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::create_dir_all(out)?;
     eprintln!("kernel={}", tools.kernel.display());
@@ -143,8 +118,18 @@ pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     write_initrd(root, out, tools, &init)
 }
 
-pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
+/// Pack the image for one seed profile (`base`, `dev`). The profile's
+/// present packages are packed; anything else it names stays absent.
+pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()> {
+    let wanted =
+        oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
+    for name in &wanted {
+        if !matches!(name.as_str(), "busybox" | "btrfs" | "oath" | "dropbear" | "curl" | "cc") {
+            bail!("profile {profile} wants pkg:{name}, which this build cannot pack yet");
+        }
+    }
     fs::create_dir_all(out)?;
+    eprintln!("profile={profile}");
     eprintln!("kernel={}", tools.kernel.display());
     eprintln!("modules={}", tools.modules.display());
     eprintln!("busybox={}", tools.busybox.display());
@@ -205,6 +190,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         copy_file(mk, &ir_install.join("bin/mkfs.btrfs"))?;
         chmod_exec(&ir_install.join("bin/mkfs.btrfs"))?;
     }
+    // The installer writes the new catalog with `oath seed --overlay`.
+    copy_file(&bin.join("oath"), &ir_install.join("bin/oath"))?;
+    chmod_exec(&ir_install.join("bin/oath"))?;
     if let Some(gt) = &tools.gnutar {
         let _ = fs::remove_file(ir_install.join("bin/tar"));
         copy_file(gt, &ir_install.join("bin/tar"))?;
@@ -265,48 +253,18 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     copy_file(&bin.join("serial-login"), &stage.join("lib/oath/serial-login"))?;
     copy_file(&bin.join("sudo"), &stage.join("lib/oath/sudo"))?;
     fs::write(stage.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
-    fs::write(stage.join("lib/oath/run-compositor"), include_str!("run-compositor"))?;
-    fs::write(stage.join("lib/oath/river-boot"), include_str!("river-boot"))?;
-    fs::write(stage.join("lib/oath/hyprland-boot.conf"), include_str!("hyprland-boot.conf"))?;
-    fs::write(stage.join("lib/oath/display-env.sh"), include_str!("display-env.sh"))?;
-    fs::write(stage.join("lib/oath/with-seat-tz"), include_str!("with-seat-tz"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
     fs::write(stage.join("lib/oath/backup-daily"), include_str!("backup-daily"))?;
-    fs::write(stage.join("lib/oath/omarchy-menu-toggle"), include_str!("omarchy-menu-toggle"))?;
-    fs::write(stage.join("lib/oath/omarchy-pkg-oath"), include_str!("omarchy-pkg-oath"))?;
-    fs::write(stage.join("lib/oath/uwsm-app"), include_str!("uwsm-app"))?;
-    fs::write(stage.join("lib/oath/xdg-terminal-exec"), include_str!("xdg-terminal-exec"))?;
-    fs::write(stage.join("lib/oath/gtk-launch"), include_str!("gtk-launch"))?;
-    fs::write(stage.join("lib/oath/jq-lite"), include_str!("jq-lite"))?;
-    fs::write(stage.join("lib/oath/ensure-sola-bus"), include_str!("ensure-sola-bus"))?;
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
     chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
-    chmod_exec(&stage.join("lib/oath/run-compositor"))?;
-    chmod_exec(&stage.join("lib/oath/river-boot"))?;
     chmod_exec(&stage.join("lib/oath/backup-send"))?;
     chmod_exec(&stage.join("lib/oath/backup-daily"))?;
-    chmod_exec(&stage.join("lib/oath/with-seat-tz"))?;
-    chmod_exec(&stage.join("lib/oath/omarchy-menu-toggle"))?;
-    chmod_exec(&stage.join("lib/oath/omarchy-pkg-oath"))?;
-    chmod_exec(&stage.join("lib/oath/uwsm-app"))?;
-    chmod_exec(&stage.join("lib/oath/xdg-terminal-exec"))?;
-    chmod_exec(&stage.join("lib/oath/gtk-launch"))?;
-    chmod_exec(&stage.join("lib/oath/jq-lite"))?;
-    chmod_exec(&stage.join("lib/oath/ensure-sola-bus"))?;
     fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../lib/oath/init", stage.join("sbin/init"))?;
     let _ = fs::remove_file(stage.join("bin/sudo"));
     symlink("../lib/oath/sudo", stage.join("bin/sudo"))?;
-    let _ = fs::remove_file(stage.join("bin/uwsm-app"));
-    symlink("../lib/oath/uwsm-app", stage.join("bin/uwsm-app"))?;
-    let _ = fs::remove_file(stage.join("bin/xdg-terminal-exec"));
-    symlink("../lib/oath/xdg-terminal-exec", stage.join("bin/xdg-terminal-exec"))?;
-    let _ = fs::remove_file(stage.join("bin/gtk-launch"));
-    symlink("../lib/oath/gtk-launch", stage.join("bin/gtk-launch"))?;
-    let _ = fs::remove_file(stage.join("bin/jq"));
-    symlink("../lib/oath/jq-lite", stage.join("bin/jq"))?;
     fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
     fs::write(stage.join("etc/group"), oath_core::seat::group_file())?;
     fs::write(stage.join("etc/shadow"), oath_core::seat::shadow_file())?;
@@ -316,21 +274,6 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         "passwd: files\ngroup: files\nshadow: files\nhosts: files dns\n",
     )?;
     fs::write(stage.join("etc/hosts"), "127.0.0.1 localhost\n::1 localhost\n127.0.1.1 oath\n")?;
-    fs::write(
-        stage.join("etc/profile"),
-        oath_core::seat::profile_body(&{
-            let mut m = std::collections::BTreeMap::new();
-            m.insert("GROK_DISABLE_AUTOUPDATER".into(), "1".into());
-            m.insert("SHELL".into(), "/bin/thoxa".into());
-            m.insert("THOXA_ROOT".into(), "/oath/store/pkg/thoxa".into());
-            m.insert("CC".into(), "/bin/cc".into());
-            m.insert("CXX".into(), "/bin/c++".into());
-            m.insert("AR".into(), "/bin/ar".into());
-            m.insert("CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER".into(), "/bin/musl-cc".into());
-            m.insert("CMAKE_GENERATOR".into(), "Ninja".into());
-            m
-        }),
-    )?;
     fs::create_dir_all(stage.join("etc/ssh"))?;
     fs::write(
         stage.join("etc/ssh/ssh_config"),
@@ -345,6 +288,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         "--root",
         stage.join("oath").to_str().unwrap(),
         "seed",
+        "--profile",
+        profile,
     ]))?;
 
     let oath_root = stage.join("oath");
@@ -387,98 +332,18 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
         sftp_server,
     )?;
     write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
-    let Some(glibc) = &tools.glibc else {
-        bail!("OATH_GLIBC / tools glibc required (pkg:glibc)");
-    };
-    let Some(river) = &tools.river else {
-        bail!("OATH_RIVER / tools river required (pkg:river)");
-    };
-    copy_tree(glibc, &oath_root.join("store/pkg/glibc"))?;
-    copy_tree(river, &oath_root.join("store/pkg/river"))?;
-    chmod_exec(&oath_root.join("store/pkg/river/bin/river"))?;
-    if oath_root.join("store/pkg/river/bin/seatd").is_file() {
-        chmod_exec(&oath_root.join("store/pkg/river/bin/seatd"))?;
-    }
-    if oath_root.join("store/pkg/river/libexec/river").is_file() {
-        chmod_exec(&oath_root.join("store/pkg/river/libexec/river"))?;
-    }
-    let Some(hyprland) = &tools.hyprland else {
-        bail!("OATH_HYPRLAND / tools hyprland required (pkg:hyprland)");
-    };
-    copy_tree(hyprland, &oath_root.join("store/pkg/hyprland"))?;
-    chmod_exec(&oath_root.join("store/pkg/hyprland/bin/hyprland"))?;
-    if oath_root.join("store/pkg/hyprland/libexec/Hyprland").is_file() {
-        chmod_exec(&oath_root.join("store/pkg/hyprland/libexec/Hyprland"))?;
-    }
-    if oath_root.join("store/pkg/hyprland/bin/hyprctl").is_file() {
-        chmod_exec(&oath_root.join("store/pkg/hyprland/bin/hyprctl"))?;
-    }
-    let Some(quickshell) = &tools.quickshell else {
-        bail!("OATH_QUICKSHELL / tools quickshell required (pkg:quickshell)");
-    };
-    copy_tree(quickshell, &oath_root.join("store/pkg/quickshell"))?;
-    chmod_exec(&oath_root.join("store/pkg/quickshell/bin/quickshell"))?;
-    if oath_root.join("store/pkg/quickshell/libexec/quickshell").is_file() {
-        chmod_exec(&oath_root.join("store/pkg/quickshell/libexec/quickshell"))?;
-    }
-    let Some(omarchy) = &tools.omarchy else {
-        bail!("OATH_OMARCHY / tools omarchy required (pkg:omarchy)");
-    };
-    copy_tree(omarchy, &oath_root.join("store/pkg/omarchy"))?;
-    if let Some(fonts) = &tools.omarchy_fonts {
-        copy_tree(fonts, &oath_root.join("store/pkg/omarchy"))?;
-    }
-    let sola = pack_sola(root, tools, out)?;
-    copy_tree(&sola, &oath_root.join("store/pkg/sola"))?;
-    for b in SOLA_KIT_ELFS.iter().copied().chain(std::iter::once("tmux")) {
-        chmod_exec(&oath_root.join("store/pkg/sola/bin").join(b))?;
-        chmod_exec(&oath_root.join("store/pkg/sola/libexec").join(b))?;
-    }
     link_pkg(&oath_root, &guest_bin, "busybox", false)?;
     link_pkg(&oath_root, &guest_bin, "btrfs", false)?;
     link_pkg(&oath_root, &guest_bin, "oath", false)?;
     link_pkg(&oath_root, &guest_bin, "dropbear", false)?;
-    link_pkg(&oath_root, &guest_bin, "glibc", false)?;
-    link_pkg(&oath_root, &guest_bin, "river", false)?;
-    link_pkg(&oath_root, &guest_bin, "hyprland", true)?;
-    link_pkg(&oath_root, &guest_bin, "quickshell", true)?;
-    link_pkg(&oath_root, &guest_bin, "omarchy", true)?;
-    link_pkg(&oath_root, &guest_bin, "sola", true)?;
-    let grok = grok_elf()?;
-    eprintln!("grok={}", grok.display());
-    write_bin_store(&oath_root, "grok", &grok)?;
-    link_pkg(&oath_root, &guest_bin, "grok", true)?;
     pack_curl(&oath_root, tools)?;
     link_pkg(&oath_root, &guest_bin, "curl", true)?;
-    pack_git(root, tools, out, &oath_root)?;
-    link_pkg(&oath_root, &guest_bin, "git", true)?;
-    pack_pipewire(root, tools, out, &oath_root)?;
-    link_pkg(&oath_root, &guest_bin, "pipewire", true)?;
-    pack_bluez(root, tools, out, &oath_root)?;
-    link_pkg(&oath_root, &guest_bin, "bluez", true)?;
-    pack_thoxa(root, out, &oath_root)?;
-    link_pkg(&oath_root, &guest_bin, "thoxa", true)?;
-    let cc_pack = pack_cc(root, out)?;
-    copy_tree(&cc_pack, &oath_root.join("store/pkg/cc"))?;
-    chmod_exec(&oath_root.join("store/pkg/cc/libexec/zig/zig"))?;
-    chmod_exec(&oath_root.join("store/pkg/cc/libexec/patchelf"))?;
-    link_pkg(&oath_root, &guest_bin, "cc", true)?;
-    let patchelf = oath_root.join("store/pkg/cc/libexec/patchelf");
-    pack_script_pkg(root, out, &oath_root, "pack-pkg-config.sh", "pkg-config", &[])?;
-    link_pkg(&oath_root, &guest_bin, "pkg-config", true)?;
-    pack_script_pkg(root, out, &oath_root, "pack-cmake.sh", "cmake", &[("PATCHELF", &patchelf)])?;
-    link_pkg(&oath_root, &guest_bin, "cmake", true)?;
-    pack_script_pkg(root, out, &oath_root, "pack-rustc.sh", "rustc", &[("PATCHELF", &patchelf)])?;
-    link_pkg(&oath_root, &guest_bin, "rustc", true)?;
-    pack_script_pkg(root, out, &oath_root, "pack-bash.sh", "bash", &[])?;
-    link_pkg(&oath_root, &guest_bin, "bash", true)?;
-    pack_foot(root, tools, out, &oath_root)?;
-    link_pkg(&oath_root, &guest_bin, "foot", true)?;
-    pack_grim(root, tools, out, &oath_root)?;
-    link_pkg(&oath_root, &guest_bin, "grim", true)?;
-    if oath_root.join("store/pkg/grim/bin/jq").is_file() {
-        let _ = fs::remove_file(guest_bin.join("jq"));
-        symlink("../oath/store/pkg/grim/bin/jq", guest_bin.join("jq"))?;
+    if wanted.iter().any(|n| n == "cc") {
+        let cc_pack = pack_cc(root, out)?;
+        copy_tree(&cc_pack, &oath_root.join("store/pkg/cc"))?;
+        chmod_exec(&oath_root.join("store/pkg/cc/libexec/zig/zig"))?;
+        chmod_exec(&oath_root.join("store/pkg/cc/libexec/patchelf"))?;
+        link_pkg(&oath_root, &guest_bin, "cc", true)?;
     }
 
     let cache = host_store_cache(root);
@@ -487,19 +352,16 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     for (n, h) in &pins {
         eprintln!("   pkg:{n} {h}");
     }
-    if oath_root.join("store/pkg/grim/bin/jq").is_file() {
-        let _ = fs::remove_file(guest_bin.join("jq"));
-    }
     relink_present(&oath_root, &guest_bin)?;
     oath_core::sync_need_hashes(&oath_root).map_err(|e| anyhow::anyhow!("{e}"))?;
+    settle_pkg_actuals(&oath_root)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = out.join("root.raw");
     let qcow = out.join("oath.qcow2");
     let _ = fs::remove_file(&raw);
     let _ = fs::remove_file(&qcow);
-    // Staged store is ~4.5G (sola 1.4G + rustc 1.1G + hyprland/quickshell/omarchy).
-    run(Command::new(&tools.qemu_img).args(["create", "-f", "raw", raw.to_str().unwrap(), "8G"]))?;
+    run(Command::new(&tools.qemu_img).args(["create", "-f", "raw", raw.to_str().unwrap(), "4G"]))?;
     run(Command::new("mkfs.btrfs").args(["-q", "-L", "oath", raw.to_str().unwrap()]))?;
     let mnt = out.join("mnt");
     let rootfs = out.join("rootfs");
@@ -553,7 +415,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     copy_file(&tools.kernel, &bz)?;
     eprintln!("image {}", qcow.display());
     eprintln!("kernel {}", bz.display());
-    eprintln!("next: cargo make probe");
+    eprintln!("next: cargo make run");
     Ok(())
 }
 
@@ -620,141 +482,6 @@ fn write_dropbear_store(
     Ok(())
 }
 
-fn pack_sola(root: &Path, tools: &Tools, out: &Path) -> Result<PathBuf> {
-    let bins = sola_release_bins(root)?;
-    let Some(rt) = &tools.sola_rt else {
-        bail!("OATH_SOLA_RT / tools sola-rt required (pkg:sola)");
-    };
-    let sola_out = out.join("sola-pack");
-    let _ = fs::remove_dir_all(&sola_out);
-    eprintln!(">> relocate sola");
-    let script = root.join("image/relocate-sola.sh");
-    let mut cmd = Command::new("bash");
-    cmd.arg(&script)
-        .arg(&sola_out)
-        .env("SOLA_BINS", &bins)
-        .env("SOLA_SRC", root.join("forks/sola"));
-    let share = PathBuf::from("/opt/sola/share");
-    if share.is_dir() {
-        cmd.env("SOLA_SHARE", &share);
-    }
-    for (key, name) in [
-        ("WAYLAND", "wayland"),
-        ("XKBCOMMON", "xkbcommon"),
-        ("LIBFFI", "libffi"),
-        ("LIBGLVND", "libglvnd"),
-        ("VULKAN_LOADER", "vulkan-loader"),
-        ("FONTCONFIG", "fontconfig"),
-        ("FREETYPE", "freetype"),
-        ("INTER", "inter"),
-        ("TMUX_BIN", "tmux"),
-        ("NCURSES", "ncurses"),
-        ("LOCALES", "locales"),
-        ("JETBRAINS_MONO", "jetbrains-mono"),
-        ("IOSEVKA_TERM_SLAB", "iosevka-term-slab"),
-        ("CACERT", "cacert"),
-        ("LIBX11", "libx11"),
-    ] {
-        let p = rt.join(name);
-        if p.exists() {
-            cmd.env(key, p);
-        }
-    }
-    if let Some(sf) = sola_sf_fonts(root) {
-        cmd.env("SOLA_SF_FONTS", sf);
-    }
-    if let Some(cef) = sola_cef_dir(root) {
-        cmd.env("CEF_DIR", cef);
-    }
-    run(&mut cmd)?;
-    Ok(sola_out)
-}
-
-/// Host `cargo make install-cef` cache. Not in git.
-fn sola_cef_dir(root: &Path) -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("SOLA_CEF_DIR").or_else(|| std::env::var_os("CEF_DIR")) {
-        let p = PathBuf::from(p);
-        if p.join("Release").join("libcef.so").is_file() || p.join("libcef.so").is_file() {
-            return Some(p);
-        }
-    }
-    let ver = fs::read_to_string(root.join("forks/sola/cef-version")).ok()?;
-    let ver = ver.trim();
-    if ver.is_empty() {
-        return None;
-    }
-    let home = std::env::var_os("HOME")?;
-    let p = PathBuf::from(home).join(".cache/sola").join(format!("cef-{ver}"));
-    (p.join("Release").join("libcef.so").is_file() || p.join("libcef.so").is_file()).then_some(p)
-}
-
-/// Licensed SF Pro Text faces. Not in git; pack from the operator stash.
-fn sola_sf_fonts(root: &Path) -> Option<PathBuf> {
-    let mut cands = Vec::new();
-    if let Some(p) = std::env::var_os("SOLA_SF_FONTS") {
-        cands.push(PathBuf::from(p));
-    }
-    if let Some(home) = std::env::var_os("HOME") {
-        cands.push(PathBuf::from(home).join(".local/share/fonts/sola-sf"));
-    }
-    cands.push(root.join("forks/sola/.local/fonts/SF"));
-    cands.into_iter().find(|p| {
-        p.is_dir()
-            && fs::read_dir(p).ok().is_some_and(|rd| {
-                rd.filter_map(|e| e.ok())
-                    .any(|e| e.file_name().to_string_lossy().starts_with("SF-Pro-Text-"))
-            })
-    })
-}
-
-fn sola_release_bins(root: &Path) -> Result<PathBuf> {
-    if let Some(p) = std::env::var_os("OATH_SOLA_BINS") {
-        let p = PathBuf::from(p);
-        if p.join("sola-bus").is_file() {
-            return Ok(p);
-        }
-        bail!("OATH_SOLA_BINS missing sola-bus: {}", p.display());
-    }
-    let src = root.join("forks/sola");
-    if !src.join("Cargo.toml").is_file() {
-        bail!("forks/sola missing (git submodule?)");
-    }
-    let target = out_dir(root).join("sola-target");
-    fs::create_dir_all(&target)?;
-    let wt = ensure_sola_worktree(&src)?;
-    eprintln!(">> cargo build sola session ({})", wt.display());
-    let mut args = vec!["build".to_string(), "--release".to_string()];
-    for n in SOLA_KIT_ELFS {
-        args.push("-p".to_string());
-        args.push((*n).to_string());
-    }
-    run(Command::new("cargo").current_dir(&wt).env("CARGO_TARGET_DIR", &target).args(&args))?;
-    let bins = target.join("release");
-    for n in SOLA_KIT_ELFS {
-        if !bins.join(n).is_file() {
-            bail!("missing sola {n} in {}", bins.display());
-        }
-    }
-    Ok(bins)
-}
-
-fn ensure_sola_worktree(src: &Path) -> Result<PathBuf> {
-    let wt = std::env::temp_dir().join("oath-sola-build");
-    let head = run_out(Command::new("git").current_dir(src).args(["rev-parse", "HEAD"]))?;
-    if wt.join("Cargo.toml").is_file() {
-        run(Command::new("git").current_dir(&wt).args(["checkout", "--detach", "--quiet", &head]))?;
-    } else {
-        run(Command::new("git").current_dir(src).args([
-            "worktree",
-            "add",
-            "--detach",
-            wt.to_str().unwrap(),
-            &head,
-        ]))?;
-    }
-    Ok(wt)
-}
-
 fn build_efi(root: &Path) -> Result<PathBuf> {
     eprintln!(">> uefi oath-efi");
     run(Command::new("cargo").current_dir(root).args([
@@ -793,11 +520,8 @@ fn write_initrd(root: &Path, out: &Path, tools: &Tools, init: &Path) -> Result<(
     let _ = fs::remove_file(ir.join("bin/sh"));
     symlink("busybox", ir.join("bin/sh"))?;
 
-    let kver = std::env::var("OATH_KVER")
-        .ok()
-        .filter(|s| !s.is_empty())
-        .or_else(|| first_dir(&tools.modules))
-        .context("no kver under modules")?;
+    let kver = crate::kernel::check(&tools.kernel, &tools.modules)?;
+    eprintln!("kernel release {kver} (bzImage, modules and vermagic agree)");
     let kdir = tools.modules.join(&kver);
     let mdst = ir.join("lib/modules").join(&kver);
     let order = module_load_order(&kdir)?;
@@ -846,7 +570,7 @@ fn zstd_bin() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("zstd"))
 }
 
-fn find_module(kdir: &Path, rel: &str) -> Option<PathBuf> {
+pub(crate) fn find_module(kdir: &Path, rel: &str) -> Option<PathBuf> {
     let rel = ko_path(rel);
     for cand in [rel.clone(), format!("{rel}.xz"), format!("{rel}.zst"), format!("{rel}.gz")] {
         let p = kdir.join(&cand);
@@ -857,7 +581,7 @@ fn find_module(kdir: &Path, rel: &str) -> Option<PathBuf> {
     None
 }
 
-fn decompress_module(src: &Path) -> Result<Vec<u8>> {
+pub(crate) fn decompress_module(src: &Path) -> Result<Vec<u8>> {
     let name = src.file_name().and_then(|s| s.to_str()).unwrap_or("");
     if name.ends_with(".zst") {
         let out = Command::new(zstd_bin()).args(["-d", "-c"]).arg(src).output().context("zstd")?;
@@ -1195,184 +919,6 @@ fn pack_curl(oath_root: &Path, tools: &Tools) -> Result<()> {
     Ok(())
 }
 
-fn pack_pipewire(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
-    let pw = dir_or_nix(tools.pipewire.as_ref(), "pipewire")?;
-    let wp = dir_or_nix(tools.wireplumber.as_ref(), "wireplumber")?;
-    let alsa = dir_or_nix(tools.alsa_lib.as_ref(), "alsa-lib")?;
-    let pulse = dir_or_nix(tools.libpulse.as_ref(), "libpulseaudio")?;
-    let pw_out = out.join("pipewire-pack");
-    let _ = fs::remove_dir_all(&pw_out);
-    eprintln!(">> relocate pipewire");
-    run(Command::new("bash")
-        .arg(root.join("image/relocate-pipewire.sh"))
-        .arg(&pw_out)
-        .env("PIPEWIRE", &pw)
-        .env("WIREPLUMBER", &wp)
-        .env("ALSA_LIB", &alsa)
-        .env("LIBPULSE", &pulse))?;
-    copy_tree(&pw_out, &oath_root.join("store/pkg/pipewire"))?;
-    for b in [
-        "pipewire",
-        "pipewire-pulse",
-        "wireplumber",
-        "wpctl",
-        "pw-dump",
-        "pw-cat",
-        "pw-cli",
-        "pw-play",
-        "pw-record",
-    ] {
-        chmod_exec(&oath_root.join("store/pkg/pipewire/bin").join(b))?;
-        let libexec = oath_root.join("store/pkg/pipewire/libexec").join(b);
-        if libexec.is_file() && !libexec.symlink_metadata()?.file_type().is_symlink() {
-            chmod_exec(&libexec)?;
-        }
-    }
-    Ok(())
-}
-
-fn pack_bluez(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
-    let dbus = dir_or_nix(tools.dbus.as_ref(), "dbus")?;
-    let bluez = dir_or_nix(tools.bluez.as_ref(), "bluez")?;
-    let bz_out = out.join("bluez-pack");
-    let _ = fs::remove_dir_all(&bz_out);
-    eprintln!(">> relocate bluez");
-    run(Command::new("bash")
-        .arg(root.join("image/relocate-bluez.sh"))
-        .arg(&bz_out)
-        .env("DBUS", &dbus)
-        .env("BLUEZ", &bluez))?;
-    copy_tree(&bz_out, &oath_root.join("store/pkg/bluez"))?;
-    for b in ["dbus-daemon", "bluetoothd", "bluetoothctl", "dbus-send"] {
-        chmod_exec(&oath_root.join("store/pkg/bluez/bin").join(b))?;
-        let libexec = oath_root.join("store/pkg/bluez/libexec").join(b);
-        if libexec.is_file() && !libexec.symlink_metadata()?.file_type().is_symlink() {
-            chmod_exec(&libexec)?;
-        }
-    }
-    Ok(())
-}
-
-fn dir_or_nix(have: Option<&PathBuf>, attr: &str) -> Result<PathBuf> {
-    if let Some(p) = have {
-        if p.is_dir() {
-            return Ok(p.clone());
-        }
-    }
-    let key = format!("OATH_{}", attr.to_ascii_uppercase().replace('-', "_"));
-    if let Some(p) = std::env::var_os(&key) {
-        let p = PathBuf::from(p);
-        if p.is_dir() {
-            return Ok(p);
-        }
-    }
-    eprintln!("nix-build <nixpkgs> -A {attr}");
-    let out = run_out(Command::new("nix-build").args(["--no-out-link", "<nixpkgs>", "-A", attr]))?;
-    let p = PathBuf::from(out.trim());
-    if !p.is_dir() && !p.is_file() {
-        bail!("{attr} nix-build is not a path: {}", p.display());
-    }
-    // alsa-lib / libpulseaudio / pipewire are store dirs.
-    if p.is_file() {
-        return p
-            .parent()
-            .map(|d| d.to_path_buf())
-            .with_context(|| format!("{attr} is a file with no parent"));
-    }
-    Ok(p)
-}
-
-fn pack_git(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
-    let git = tools.git.as_ref().context("OATH_GIT / tools git required (pkg:git)")?;
-    let cacert = tools.cacert.as_ref().context("OATH_CACERT / tools ca-bundle required")?;
-    let git_out = out.join("git-pack");
-    let _ = fs::remove_dir_all(&git_out);
-    eprintln!(">> relocate git");
-    run(Command::new("bash")
-        .arg(root.join("image/relocate-git.sh"))
-        .arg(&git_out)
-        .env("GIT", git))?;
-    copy_file(cacert, &git_out.join("ssl/cert.pem"))?;
-    copy_tree(&git_out, &oath_root.join("store/pkg/git"))?;
-    chmod_exec(&oath_root.join("store/pkg/git/bin/git"))?;
-    Ok(())
-}
-
-fn pack_foot(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
-    let src = if let Some(f) = &tools.foot {
-        if f.is_dir() {
-            f.clone()
-        } else {
-            bail!("OATH_FOOT is not a dir: {}", f.display());
-        }
-    } else if out.join("foot-pack").is_dir() {
-        out.join("foot-pack")
-    } else {
-        eprintln!("nix-build image/foot-pack.nix");
-        let p = run_out(
-            Command::new("nix-build")
-                .args(["--no-out-link", root.join("image/foot-pack.nix").to_str().unwrap()]),
-        )?;
-        PathBuf::from(p.trim())
-    };
-    eprintln!(">> foot {}", src.display());
-    copy_tree(&src, &oath_root.join("store/pkg/foot"))?;
-    chmod_exec(&oath_root.join("store/pkg/foot/bin/foot"))?;
-    if oath_root.join("store/pkg/foot/libexec/foot").is_file() {
-        chmod_exec(&oath_root.join("store/pkg/foot/libexec/foot"))?;
-    }
-    Ok(())
-}
-
-fn pack_grim(root: &Path, tools: &Tools, out: &Path, oath_root: &Path) -> Result<()> {
-    let src = if let Some(g) = &tools.grim {
-        if g.is_dir() {
-            g.clone()
-        } else {
-            bail!("OATH_GRIM is not a dir: {}", g.display());
-        }
-    } else if out.join("grim-pack").is_dir() {
-        out.join("grim-pack")
-    } else {
-        eprintln!("nix-build image/capture-pack.nix");
-        let expr = format!(
-            "with import <nixpkgs> {{}}; callPackage {} {{}}",
-            root.join("image/capture-pack.nix").display()
-        );
-        let p = run_out(Command::new("nix-build").args(["--no-out-link", "-E", &expr]))?;
-        PathBuf::from(p.trim())
-    };
-    eprintln!(">> grim {}", src.display());
-    copy_tree(&src, &oath_root.join("store/pkg/grim"))?;
-    for b in ["grim", "slurp", "hyprpicker", "wl-copy", "wl-paste", "jq"] {
-        let p = oath_root.join("store/pkg/grim/bin").join(b);
-        if p.is_file() {
-            chmod_exec(&p)?;
-        }
-        let p = oath_root.join("store/pkg/grim/libexec").join(b);
-        if p.is_file() {
-            chmod_exec(&p)?;
-        }
-    }
-    Ok(())
-}
-
-fn thoxa_src(root: &Path) -> Result<PathBuf> {
-    if let Some(p) = std::env::var_os("OATH_THOXA") {
-        let p = PathBuf::from(p);
-        if p.join("crates/compiler/Cargo.toml").is_file() {
-            return Ok(p);
-        }
-        bail!("OATH_THOXA missing crates/compiler: {}", p.display());
-    }
-    let sibling = root.join("../Thoxa");
-    if sibling.join("crates/compiler/Cargo.toml").is_file() {
-        return fs::canonicalize(&sibling)
-            .with_context(|| format!("canonicalize {}", sibling.display()));
-    }
-    bail!("Thoxa tree not found (set OATH_THOXA or put Thoxa next to Oath)")
-}
-
 fn pack_cc(root: &Path, out: &Path) -> Result<PathBuf> {
     let dest = out.join("cc-pack");
     eprintln!(">> pack cc (zig)");
@@ -1381,79 +927,6 @@ fn pack_cc(root: &Path, out: &Path) -> Result<PathBuf> {
         .arg(&dest)
         .env("OATH_FETCH", out.join("fetch")))?;
     Ok(dest)
-}
-
-fn pack_script_pkg(
-    root: &Path,
-    out: &Path,
-    oath_root: &Path,
-    script: &str,
-    name: &str,
-    extra: &[(&str, &PathBuf)],
-) -> Result<()> {
-    let dest = out.join(format!("{name}-pack"));
-    eprintln!(">> pack {name}");
-    let mut cmd = Command::new("sh");
-    cmd.arg(root.join("image").join(script)).arg(&dest).env("OATH_FETCH", out.join("fetch"));
-    for (k, v) in extra {
-        cmd.env(*k, v);
-    }
-    run(&mut cmd)?;
-    copy_tree(&dest, &oath_root.join("store/pkg").join(name))?;
-    Ok(())
-}
-
-fn pack_thoxa(root: &Path, out: &Path, oath_root: &Path) -> Result<()> {
-    let src = thoxa_src(root)?;
-    eprintln!(">> cargo build thoxa ({})", src.display());
-    run(Command::new("cargo").current_dir(&src).args(["build", "--release", "-p", "thoxa"]))?;
-    let bin = src.join("target/rust/release/thoxa");
-    if !bin.is_file() {
-        bail!("missing thoxa ELF at {}", bin.display());
-    }
-    // Session steps link this archive; build it if cargo didn't.
-    if !src.join("target/c/libthoxa_rt.a").is_file() {
-        eprintln!(">> cargo make runtime");
-        run(Command::new("cargo").current_dir(&src).args(["make", "runtime"]))?;
-    }
-    let thoxa_out = out.join("thoxa-pack");
-    let _ = fs::remove_dir_all(&thoxa_out);
-    eprintln!(">> relocate thoxa");
-    run(Command::new("bash")
-        .arg(root.join("image/relocate-thoxa.sh"))
-        .arg(&thoxa_out)
-        .env("THOXA_SRC", &src)
-        .env("THOXA_BIN", &bin))?;
-    copy_tree(&thoxa_out, &oath_root.join("store/pkg/thoxa"))?;
-    chmod_exec(&oath_root.join("store/pkg/thoxa/bin/thoxa"))?;
-    chmod_exec(&oath_root.join("store/pkg/thoxa/libexec/thoxa"))?;
-    Ok(())
-}
-
-/// Borrowed static-pie Grok ELF (T30). Not in nix; not in `pkg:sola`.
-fn grok_elf() -> Result<PathBuf> {
-    let mut cands = Vec::new();
-    if let Some(p) = std::env::var_os("OATH_GROK") {
-        cands.push(PathBuf::from(p));
-    }
-    if let Ok(out) = Command::new("sh").args(["-c", "command -v grok"]).output() {
-        if out.status.success() {
-            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !s.is_empty() {
-                cands.push(PathBuf::from(s));
-            }
-        }
-    }
-    if let Some(h) = std::env::var_os("HOME") {
-        cands.push(PathBuf::from(h).join(".grok/bin/grok"));
-    }
-    for p in cands {
-        if p.is_file() {
-            return fs::canonicalize(&p)
-                .with_context(|| format!("canonicalize grok ELF {}", p.display()));
-        }
-    }
-    bail!("OATH_GROK: no grok ELF (set OATH_GROK or put grok on PATH)")
 }
 
 fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {
@@ -1521,6 +994,30 @@ fn relink_present(oath_root: &Path, bin_dir: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Give every `pkg` actual the prose and pin its desired doc has, the way
+/// apply would, so a fresh image starts in sync instead of drifting.
+fn settle_pkg_actuals(oath_root: &Path) -> Result<()> {
+    let dir = oath_root.join("objects/pkg");
+    for e in fs::read_dir(&dir)?.flatten() {
+        let d = e.path();
+        let desired: serde_json::Value = oath_core::read_json(&d.join("desired.json"))
+            .map_err(|e| anyhow::anyhow!("{}: {e}", d.display()))?;
+        let mut actual: serde_json::Value = oath_core::read_json(&d.join("actual.json"))
+            .map_err(|e| anyhow::anyhow!("{}: {e}", d.display()))?;
+        for k in ["url", "needs", "description", "home"] {
+            if let Some(v) = desired.get(k) {
+                actual[k] = v.clone();
+            }
+        }
+        let pin = desired.get("hash").and_then(|h| h.as_str()).unwrap_or("");
+        if !pin.is_empty() && actual.get("hash").and_then(|h| h.as_str()).unwrap_or("").is_empty() {
+            actual["hash"] = serde_json::json!(pin);
+        }
+        write_json(&d.join("actual.json"), &actual).map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    Ok(())
+}
+
 pub fn host_store_cache(repo: &Path) -> PathBuf {
     std::env::var("OATH_STORE")
         .map(PathBuf::from)
@@ -1562,17 +1059,8 @@ fn write_pack_tar(tree: &Path, tarball: &Path) -> Result<PathBuf> {
     Ok(tarball.to_path_buf())
 }
 
-fn default_publish_dest(repo: &Path) -> PathBuf {
-    let sibling = repo.join("../Wicket/extras/oath-store/site");
-    if sibling.is_dir() {
-        return sibling.canonicalize().unwrap_or(sibling);
-    }
-    repo.join("build/store-origin")
-}
-
 /// Copy hashed pack tarballs into an origin tree (`pkg/<name>/<hash>.tar`).
-/// Default dest is sibling Wicket `extras/oath-store/site`, else `build/store-origin`.
-pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
+pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
     let cache = host_store_cache(repo).join("pkg");
     if !cache.is_dir() {
         bail!(
@@ -1580,7 +1068,6 @@ pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
             cache.display()
         );
     }
-    let dest = dest.map(Path::to_path_buf).unwrap_or_else(|| default_publish_dest(repo));
     let dest_pkg = dest.join("pkg");
     fs::create_dir_all(&dest_pkg)?;
     let mut rows: Vec<(String, String)> = Vec::new();
@@ -1661,17 +1148,6 @@ pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
     fs::write(dest.join("INDEX.md"), index)?;
     println!("{} ({} packs)", dest.display(), rows.len());
     Ok(())
-}
-
-fn first_dir(modules: &Path) -> Option<String> {
-    let mut names: Vec<String> = fs::read_dir(modules)
-        .ok()?
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_dir())
-        .map(|e| e.file_name().to_string_lossy().into_owned())
-        .collect();
-    names.sort();
-    names.into_iter().next()
 }
 
 fn host_mount() -> String {

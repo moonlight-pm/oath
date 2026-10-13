@@ -1,0 +1,13 @@
+{
+  "extends": "base",
+  "objects": {
+    "host:local": {
+      "env": { "CC": "/bin/cc", "CXX": "/bin/c++", "AR": "/bin/ar" }
+    },
+    "pkg:cc": {
+      "present": true,
+      "description": "Zig providing cc / c++ / musl-cc.",
+      "home": "https://ziglang.org/"
+    }
+  }
+}

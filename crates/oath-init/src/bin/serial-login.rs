@@ -32,7 +32,7 @@ fn main() {
 }
 
 fn open_tty() -> Option<std::fs::File> {
-    // Graphical VTs stay on the splash. The shell is serial only.
+    // The login shell is serial only.
     for p in ["/dev/ttyS0", "/dev/hvc0"] {
         if let Ok(f) = OpenOptions::new().read(true).write(true).open(p) {
             return Some(f);

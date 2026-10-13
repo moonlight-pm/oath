@@ -9,14 +9,17 @@ home.
 
 **When not:** do not edit `/home/.ssh` as admin. Do not put a private
 key in the catalog. Host keys live under `/oath/ssh/` and are
-generated on first apply. Serial is still how you reach a box with
-empty `authorized`.
+generated on first boot.
 
 ## Fields
 
 - `authorized` — list of OpenSSH public key lines (`ssh-ed25519 …`).
+  Apply writes `/home/.ssh/authorized_keys`.
 
 Safety: `mutate`.
+
+Known gap: replacing `authorized` with keys you do not hold locks you
+out over SSH. Apply does not ask for `--confirm` or roll back.
 
 ## Example
 
@@ -26,4 +29,5 @@ oath set ssh:local --from-json '{"authorized":["ssh-ed25519 AAAA…"]}'
 oath apply
 ```
 
-From the QEMU host (user net): `ssh -p 2222 -i <key> home@127.0.0.1`
+The installer writes the build host's public keys here. From the QEMU
+host: `ssh -p 2222 home@127.0.0.1` (or `cargo make ssh`).

@@ -2,8 +2,8 @@ use std::sync::Mutex;
 
 use oath_core::{
     converge_pkg, hash_tree, ingest_file, install_tree, is_realization_id, promote_slot, seed,
-    with_drm_modifiers_override, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks,
-    ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
+    Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId, Pkg, PkgActual,
+    Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
 
@@ -107,7 +107,6 @@ impl ApplyHooks for MemHooks {
             power: HostPower::Run,
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
-            session: desired.session,
         })
     }
     fn notify_init(&self) -> Result<()> {
@@ -130,7 +129,6 @@ impl ApplyHooks for MemHooks {
                 url: desired.url.clone(),
                 hash: desired.hash.clone(),
                 realizations: Vec::new(),
-                requires: desired.requires.clone(),
                 needs: desired.needs.clone(),
                 description: desired.description.clone(),
                 home: desired.home.clone(),
@@ -153,143 +151,57 @@ fn tmp() -> (tempfile::TempDir, Catalog) {
 #[test]
 fn seed_lists_host() {
     let (_d, cat) = tmp();
-    let ids = cat.ls(None).unwrap();
-    assert!(ids.iter().any(|i| i.to_string() == "host:local"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:serial"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:hold"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:hello"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:busybox"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:btrfs"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:oath"));
-    assert!(ids.iter().any(|i| i.to_string() == "net:net0"));
-    assert!(ids.iter().any(|i| i.to_string() == "ssh:local"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:sshd"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:backup"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:dropbear"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:glibc"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:river"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:hyprland"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:quickshell"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:omarchy"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:river"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:hyprland"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:omarchy-shell"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:seatd"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:sola"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:grok"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:git"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:curl"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:pipewire"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:thoxa"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:cc"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:rustc"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:cmake"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:pkg-config"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:bash"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:foot"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:grim"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:xwayland"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:gamescope"));
-    let gs = cat.get(&"pkg:gamescope".parse().unwrap()).unwrap();
-    assert_eq!(gs.desired["present"], json!(false));
-    assert_eq!(gs.desired["requires"]["drm_modifiers"], json!(true));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:mesa"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:steam"));
-    assert!(ids.iter().any(|i| i.to_string() == "pkg:bluez"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:wireplumber"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:pipewire-pulse"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:dbus"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:bluetoothd"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-bus"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-call"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-river"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-shell"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-session"));
-    assert!(ids.iter().any(|i| i.to_string() == "svc:sola-kvm"));
-    assert!(ids.iter().any(|i| i.to_string() == "dev:vda"));
-    assert!(ids.iter().any(|i| i.to_string() == "dev:net0"));
-    assert!(ids.iter().any(|i| i.to_string() == "dev:ttyS0"));
-    assert!(ids.iter().any(|i| i.to_string() == "dev:card0"));
-    assert!(ids.iter().any(|i| i.to_string() == "dev:kbd0"));
-    assert!(ids.iter().any(|i| i.to_string() == "dev:mouse0"));
+    let ids: Vec<String> = cat.ls(None).unwrap().iter().map(|i| i.to_string()).collect();
+    for want in [
+        "host:local",
+        "svc:serial",
+        "svc:sshd",
+        "svc:hold",
+        "pkg:busybox",
+        "pkg:btrfs",
+        "pkg:oath",
+        "pkg:dropbear",
+        "pkg:curl",
+        "pkg:hello",
+        "pkg:fetchme",
+        "net:net0",
+        "ssh:local",
+        "dev:vda",
+        "dev:net0",
+        "dev:ttyS0",
+        "snap:current",
+    ] {
+        assert!(ids.iter().any(|i| i == want), "missing {want}");
+    }
+    assert_eq!(ids.len(), 17, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
-    assert_eq!(host.desired["env"]["GROK_DISABLE_AUTOUPDATER"], "1");
-    assert_eq!(host.desired["env"]["OMARCHY_PATH"], "/oath/store/pkg/omarchy");
-    assert_eq!(host.desired["env"]["CC"], "/bin/cc");
-    assert_eq!(host.desired["timezone"], "MST7MDT,M3.2.0,M11.1.0");
-    assert_eq!(host.desired["session"], "sola");
-    let hypr = cat.get(&"svc:hyprland".parse().unwrap()).unwrap();
-    assert_eq!(hypr.desired["enabled"], false);
-    assert_eq!(hypr.desired["exec"][0], "/bin/hyprland");
-    let omarchy_shell = cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap();
-    assert_eq!(omarchy_shell.desired["enabled"], false);
-    let kvm = cat.get(&"svc:sola-kvm".parse().unwrap()).unwrap();
-    assert_eq!(kvm.desired["enabled"], true);
-    assert_eq!(kvm.desired["wants"], json!(["svc:river", "svc:hyprland"]));
-    assert_eq!(omarchy_shell.desired["exec"][0], "/bin/quickshell");
-    assert_eq!(omarchy_shell.desired["restart"], "always");
+    assert_eq!(host.desired, json!({"hostname": "oath", "power": "run"}));
+    let net = cat.get(&"net:net0".parse().unwrap()).unwrap();
+    assert_eq!(net.desired["ipv4"], "dhcp");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
     assert_eq!(serial.desired["exec"][0], "/lib/oath/serial-login");
     let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();
     let exec = sshd.desired["exec"].as_array().unwrap();
     assert!(exec.iter().any(|v| v == "-w"));
     assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
-    let backup = cat.get(&"svc:backup".parse().unwrap()).unwrap();
-    assert_eq!(backup.desired["enabled"], false);
-    assert_eq!(backup.desired["restart"], "always");
-    assert_eq!(backup.desired["exec"][0], "/lib/oath/backup-daily");
-    let seatd = cat.get(&"svc:seatd".parse().unwrap()).unwrap();
-    let exec = seatd.desired["exec"].as_array().unwrap();
-    assert!(exec.iter().any(|v| v == "-u"));
-    assert!(exec.iter().any(|v| v == "-g"));
-    assert!(exec.iter().any(|v| v == "home"));
+    let oath = cat.get(&"pkg:oath".parse().unwrap()).unwrap();
+    assert_eq!(oath.actual["removable"], false);
+    let curl = cat.get(&"pkg:curl".parse().unwrap()).unwrap();
+    assert_eq!(curl.actual["removable"], true);
 }
 
 #[test]
-fn session_default_and_switch() {
-    let (d, cat) = tmp();
-    let hooks = MemHooks::new(d.path().to_path_buf());
-    let host: ObjectId = "host:local".parse().unwrap();
-    let missing: Host = serde_json::from_value(json!({"hostname":"oath","power":"run"})).unwrap();
-    assert_eq!(missing.session, oath_core::HostSession::Sola);
-
-    let mut fields = Map::new();
-    fields.insert("session".into(), json!("omarchy"));
-    cat.set_fields(&host, fields).unwrap();
-    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
-    assert_eq!(err.exit_code(), EXIT_CONFIRM);
-    cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
-    let host_obj = cat.get(&host).unwrap();
-    assert_eq!(host_obj.actual["session"], "omarchy");
-    assert_eq!(cat.get(&"svc:river".parse().unwrap()).unwrap().desired["enabled"], false);
-    assert_eq!(cat.get(&"svc:sola-shell".parse().unwrap()).unwrap().desired["enabled"], false);
-    assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], true);
-    assert_eq!(cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap().desired["enabled"], true);
-    assert_eq!(cat.get(&"svc:sola-kvm".parse().unwrap()).unwrap().desired["enabled"], true);
-    cat.undo(&Actor::unknown(), &hooks).unwrap();
-    assert_eq!(cat.get(&host).unwrap().desired["session"], "sola");
-    assert_eq!(cat.get(&"svc:river".parse().unwrap()).unwrap().desired["enabled"], true);
-    assert_eq!(cat.get(&"svc:hyprland".parse().unwrap()).unwrap().desired["enabled"], false);
-    assert_eq!(cat.get(&"svc:omarchy-shell".parse().unwrap()).unwrap().desired["enabled"], false);
-    assert_eq!(cat.get(&"svc:sola-kvm".parse().unwrap()).unwrap().desired["enabled"], true);
-}
-
-#[test]
-fn compositor_mutex() {
-    let (d, cat) = tmp();
-    let hooks = MemHooks::new(d.path().to_path_buf());
-    let mut fields = Map::new();
-    fields.insert("enabled".into(), json!(true));
-    cat.set_fields(&"svc:hyprland".parse().unwrap(), fields).unwrap();
-    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
-    match err {
-        Error::Hint { message, .. } => assert!(message.contains("one compositor")),
-        other => panic!("{other:?}"),
-    }
+fn dev_profile_adds_the_compiler() {
+    let d = tempfile::tempdir().unwrap();
+    oath_core::seed_profile(d.path(), "dev").unwrap();
+    let cat = Catalog::open(d.path()).unwrap();
+    let cc = cat.get(&"pkg:cc".parse().unwrap()).unwrap();
+    assert_eq!(cc.desired["present"], true);
+    let host = cat.get(&"host:local".parse().unwrap()).unwrap();
+    assert_eq!(host.desired["env"]["CC"], "/bin/cc");
 }
 
 fn write_hello_store(root: &std::path::Path) {
@@ -541,44 +453,6 @@ fn write_json_present_false(root: &std::path::Path, name: &str) {
 }
 
 #[test]
-fn gamescope_apply_refuses_without_drm_modifiers() {
-    let (d, cat) = tmp();
-    let hooks = MemHooks::new(d.path().to_path_buf());
-    let store = d.path().join("store/pkg/gamescope/bin/gamescope");
-    std::fs::create_dir_all(store.parent().unwrap()).unwrap();
-    std::fs::write(&store, "gamescope-payload\n").unwrap();
-    let id: ObjectId = "pkg:gamescope".parse().unwrap();
-    let mut fields = Map::new();
-    fields.insert("present".into(), json!(true));
-    cat.set_fields(&id, fields).unwrap();
-    let err = with_drm_modifiers_override(false, || {
-        cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err()
-    });
-    match err {
-        Error::Hint { message, hint } => {
-            assert!(message.contains("DRM format modifiers"), "{message}");
-            assert!(hint.contains("schema"));
-        }
-        other => panic!("{other:?}"),
-    }
-    assert!(!d.path().join("bin/gamescope").exists());
-}
-
-#[test]
-fn sola_arcade_bin_skipped_without_drm_modifiers() {
-    let (d, _cat) = tmp();
-    let store = d.path().join("store/pkg/sola/bin");
-    std::fs::create_dir_all(&store).unwrap();
-    std::fs::write(store.join("sola-session"), "session\n").unwrap();
-    std::fs::write(store.join("sola-arcade"), "arcade\n").unwrap();
-    with_drm_modifiers_override(false, || {
-        converge_pkg(d.path(), &d.path().join("bin"), "sola", true, "").unwrap();
-    });
-    assert!(d.path().join("bin/sola-session").symlink_metadata().unwrap().file_type().is_symlink());
-    assert!(d.path().join("bin/sola-arcade").symlink_metadata().is_err());
-}
-
-#[test]
 fn pack_hash_in_path_and_pin() {
     let (d, cat) = tmp();
     write_hello_store(d.path());
@@ -700,10 +574,10 @@ fn pack_components_and_advisories_on_actual() {
 #[test]
 fn seed_pkg_has_description_and_home() {
     let (_d, cat) = tmp();
-    let obj = cat.get(&"pkg:steam".parse().unwrap()).unwrap();
+    let obj = cat.get(&"pkg:curl".parse().unwrap()).unwrap();
     let desc = obj.desired["description"].as_str().unwrap();
     let home = obj.desired["home"].as_str().unwrap();
-    assert!(desc.contains("Steam"), "{desc}");
+    assert!(desc.contains("curl"), "{desc}");
     assert!(home.starts_with("https://"), "{home}");
 }
 
@@ -716,40 +590,50 @@ fn ingest_file_reports_hash() {
     assert!(d.path().join("store/pkg/fetchme").join(&h).join("bin/fetchme").is_file());
 }
 
-#[test]
-fn pkg_needs_refuses_mesa_off_while_steam_present() {
+/// Seed plus `pkg:libfoo` and `pkg:app`, where app needs libfoo.
+fn tmp_with_needs() -> (tempfile::TempDir, Catalog) {
     let (d, cat) = tmp();
-    let hooks = MemHooks::new(d.path().to_path_buf());
-    let mesa: ObjectId = "pkg:mesa".parse().unwrap();
-    let mut fields = Map::new();
-    fields.insert("present".into(), json!(false));
-    cat.set_fields(&mesa, fields).unwrap();
-    let err = cat.apply(Some(vec![mesa]), false, &Actor::unknown(), &hooks).unwrap_err();
-    match err {
-        Error::Hint { message, hint } => {
-            assert!(message.contains("needed by"), "{message}");
-            assert!(hint.contains("steam") || hint.contains("present=false"), "{hint}");
-        }
-        other => panic!("{other:?}"),
-    }
-    assert_eq!(cat.get(&"pkg:mesa".parse().unwrap()).unwrap().actual["present"], json!(true));
+    let h = format!("sha256-{}", "a".repeat(64));
+    oath_core::apply_overlay(
+        d.path(),
+        &json!({"objects": {
+            "pkg:libfoo": {"present": true, "hash": h},
+            "pkg:app": {"present": true, "hash": h, "needs": [{"id": "pkg:libfoo", "hash": h}]}
+        }}),
+    )
+    .unwrap();
+    (d, cat)
 }
 
 #[test]
-fn pkg_needs_allows_mesa_off_after_steam() {
-    let (d, cat) = tmp();
+fn pkg_needs_refuses_need_off_while_user_present() {
+    let (d, cat) = tmp_with_needs();
     let hooks = MemHooks::new(d.path().to_path_buf());
-    for name in ["steam", "gamescope"] {
+    let lib: ObjectId = "pkg:libfoo".parse().unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(false));
+    cat.set_fields(&lib, fields).unwrap();
+    let err = cat.apply(Some(vec![lib.clone()]), false, &Actor::unknown(), &hooks).unwrap_err();
+    match err {
+        Error::Hint { message, hint } => {
+            assert!(message.contains("needed by"), "{message}");
+            assert!(hint.contains("app") || hint.contains("present=false"), "{hint}");
+        }
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(cat.get(&lib).unwrap().actual["present"], json!(true));
+}
+
+#[test]
+fn pkg_needs_allows_need_off_after_user() {
+    let (d, cat) = tmp_with_needs();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    for name in ["app", "libfoo"] {
         let id: ObjectId = format!("pkg:{name}").parse().unwrap();
         let mut fields = Map::new();
         fields.insert("present".into(), json!(false));
         cat.set_fields(&id, fields).unwrap();
-        cat.apply(Some(vec![id]), false, &Actor::unknown(), &hooks).unwrap();
+        cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+        assert_eq!(cat.get(&id).unwrap().actual["present"], json!(false));
     }
-    let mesa: ObjectId = "pkg:mesa".parse().unwrap();
-    let mut fields = Map::new();
-    fields.insert("present".into(), json!(false));
-    cat.set_fields(&mesa, fields).unwrap();
-    cat.apply(Some(vec![mesa.clone()]), false, &Actor::unknown(), &hooks).unwrap();
-    assert_eq!(cat.get(&mesa).unwrap().actual["present"], json!(false));
 }

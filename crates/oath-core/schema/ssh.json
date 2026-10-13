@@ -4,12 +4,16 @@
   "title": "ssh",
   "type": "object",
   "additionalProperties": false,
-  "required": ["authorized"],
+  "required": [
+    "authorized"
+  ],
   "properties": {
     "authorized": {
       "type": "array",
-      "items": { "type": "string" },
-      "description": "OpenSSH public key lines for root. Empty means nobody can log in. No passwords. No baked private key."
+      "items": {
+        "type": "string"
+      },
+      "description": "OpenSSH public key lines that may log in as home. Empty means nobody can log in over SSH. No passwords. No private key in the catalog."
     }
   }
 }

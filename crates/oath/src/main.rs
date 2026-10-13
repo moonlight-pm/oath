@@ -4,8 +4,9 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use oath_core::{
-    build_file, build_pinned, file_plan, fmt_plan, lint_path, parse_plan, seed, tel, Actor,
-    BuildReport, Catalog, Error, ObjectId, DEFAULT_ROOT, EXIT_CONFIRM, KIND_PLAN,
+    apply_overlay, build_file, build_pinned, file_plan, fmt_plan, lint_path, parse_plan,
+    seed_profile, tel, Actor, BuildReport, Catalog, Error, ObjectId, DEFAULT_PROFILE, DEFAULT_ROOT,
+    EXIT_CONFIRM, KIND_PLAN,
 };
 use serde_json::{json, Map, Value};
 
@@ -70,11 +71,17 @@ enum Cmd {
     },
     Undo,
     Log,
+    /// Write a fresh catalog from a built-in profile, or merge overlays
+    /// into an existing one. Build and install time only.
     #[command(hide = true)]
-    Seed,
-    /// Hash old-layout store slots into actual.hash without moving trees.
-    #[command(hide = true)]
-    StampHash,
+    Seed {
+        /// Built-in profile for a fresh catalog (`base`, `dev`).
+        #[arg(long)]
+        profile: Option<String>,
+        /// Overlay JSON (`{"objects": {"kind:name": {…}}}`), applied in order.
+        #[arg(long)]
+        overlay: Vec<PathBuf>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -120,44 +127,45 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Apply { .. }) => "apply",
         Some(Cmd::Undo) => "undo",
         Some(Cmd::Log) => "log",
-        Some(Cmd::Seed) => "seed",
-        Some(Cmd::StampHash) => "stamp-hash",
+        Some(Cmd::Seed { .. }) => "seed",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
     let cat = Catalog::open(&cli.root)?;
     let out: oath_core::Result<i32> = match cli.cmd {
         None => {
+            // The INDEX is the teaching surface; print all of it.
             let text = cat.index_text()?;
-            let short: String = text.lines().take(24).collect::<Vec<_>>().join("\n");
             if cli.json {
                 println!(
                     "{}",
                     json!({ "index": cat.root().join("INDEX.md").display().to_string(), "text": text })
                 );
             } else {
-                println!("{short}");
-                println!();
-                println!("full INDEX: {}", cat.root().join("INDEX.md").display());
-            }
-            Ok(0)
-        }
-        Some(Cmd::Seed) => {
-            seed(&cli.root)?;
-            Ok(0)
-        }
-        Some(Cmd::StampHash) => {
-            let ids = cat.ls(Some("pkg"))?;
-            let mut n = 0u32;
-            for id in ids {
-                if let Some(h) = oath_core::stamp_unhashed(&cli.root, &id.name)? {
-                    println!("{} {h}", id);
-                    n += 1;
+                print!("{text}");
+                if !text.ends_with('\n') {
+                    println!();
                 }
             }
-            if cli.json {
-                println!("{}", json!({ "stamped": n }));
-            } else if n == 0 {
-                println!("in-sync");
+            Ok(0)
+        }
+        Some(Cmd::Seed { profile, overlay }) => {
+            let fresh = !cli.root.join("INDEX.md").exists();
+            if fresh {
+                seed_profile(&cli.root, profile.as_deref().unwrap_or(DEFAULT_PROFILE))?;
+            } else if profile.is_some() {
+                return Err(Error::hint(
+                    format!("a catalog already exists at {}", cli.root.display()),
+                    "reseeding discards it; pass only --overlay to merge",
+                ));
+            } else if overlay.is_empty() {
+                return Err(Error::hint("nothing to do", "oath seed --overlay <file.json>"));
+            }
+            for path in &overlay {
+                let text = std::fs::read_to_string(path)?;
+                let v: Value = serde_json::from_str(&text)?;
+                for id in apply_overlay(&cli.root, &v)? {
+                    println!("{id}");
+                }
             }
             Ok(0)
         }
@@ -275,10 +283,7 @@ fn run() -> oath_core::Result<i32> {
             let id: ObjectId = id.parse()?;
             if let Some(path) = from_file {
                 if id.kind != KIND_PLAN {
-                    return Err(Error::hint(
-                        "--from-file is for plan:<name>",
-                        "oath schema plan",
-                    ));
+                    return Err(Error::hint("--from-file is for plan:<name>", "oath schema plan"));
                 }
                 let (plan, bytes) = lint_path(&path)?;
                 if id.name != plan.name {

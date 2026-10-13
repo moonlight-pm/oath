@@ -65,7 +65,6 @@ pub trait ApplyHooks {
             url: desired.url.clone(),
             hash: desired.hash.clone(),
             realizations: Vec::new(),
-            requires: desired.requires.clone(),
             needs: desired.needs.clone(),
             description: desired.description.clone(),
             home: desired.home.clone(),
@@ -111,7 +110,6 @@ impl ApplyHooks for NullHooks {
             power: crate::kinds::HostPower::Run,
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
-            session: desired.session,
         })
     }
     fn notify_init(&self) -> Result<()> {

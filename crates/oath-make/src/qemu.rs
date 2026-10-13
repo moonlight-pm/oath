@@ -82,7 +82,7 @@ pub fn write_meta(
 
 #[derive(Clone, Copy)]
 pub enum SerialMode {
-    /// Guest serial on this process stdio (interactive / probe).
+    /// Guest serial on this process stdio (interactive).
     Stdio,
     /// Guest serial only in `serial_log` (headless; Ctrl-C / stop kill QEMU).
     File,
@@ -158,8 +158,8 @@ pub fn qemu_args(
 }
 
 /// Guest framebuffer + gtk window. virtio-gpu without `xres`/`yres` often
-/// advertises a large preferred mode; gtk `zoom-to-fit` then shrinks it
-/// and Sola chrome looks tiny. Pin both to the same size, 1:1.
+/// advertises a large preferred mode; gtk `zoom-to-fit` then shrinks it.
+/// Pin both to the same size, 1:1.
 pub const DEFAULT_DISPLAY_WIDTH: u32 = 1280;
 pub const DEFAULT_DISPLAY_HEIGHT: u32 = 800;
 

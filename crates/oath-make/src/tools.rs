@@ -27,24 +27,8 @@ pub struct Tools {
     pub ovmf_code: Option<PathBuf>,
     pub ovmf_vars: Option<PathBuf>,
     pub firmware: Option<PathBuf>,
-    pub glibc: Option<PathBuf>,
-    pub river: Option<PathBuf>,
-    pub hyprland: Option<PathBuf>,
-    pub quickshell: Option<PathBuf>,
-    pub omarchy: Option<PathBuf>,
-    pub omarchy_fonts: Option<PathBuf>,
-    pub foot: Option<PathBuf>,
-    pub grim: Option<PathBuf>,
-    pub sola_rt: Option<PathBuf>,
-    pub git: Option<PathBuf>,
     pub curl: Option<PathBuf>,
     pub cacert: Option<PathBuf>,
-    pub pipewire: Option<PathBuf>,
-    pub wireplumber: Option<PathBuf>,
-    pub alsa_lib: Option<PathBuf>,
-    pub libpulse: Option<PathBuf>,
-    pub dbus: Option<PathBuf>,
-    pub bluez: Option<PathBuf>,
     pub qemu: PathBuf,
     pub qemu_img: PathBuf,
 }
@@ -61,27 +45,23 @@ pub fn load(root: &Path) -> Result<Tools> {
     let mut openssh_ssh = std::env::var_os("OATH_OPENSSH_SSH").map(PathBuf::from);
     let mut openssh_ssh_keygen = std::env::var_os("OATH_OPENSSH_SSH_KEYGEN").map(PathBuf::from);
     let mut sftp_server = std::env::var_os("OATH_SFTP_SERVER").map(PathBuf::from);
-    let mut glibc = std::env::var_os("OATH_GLIBC").map(PathBuf::from);
-    let mut river = std::env::var_os("OATH_RIVER").map(PathBuf::from);
-    let mut hyprland = std::env::var_os("OATH_HYPRLAND").map(PathBuf::from);
-    let mut quickshell = std::env::var_os("OATH_QUICKSHELL").map(PathBuf::from);
-    let mut omarchy = std::env::var_os("OATH_OMARCHY").map(PathBuf::from);
-    let mut foot = std::env::var_os("OATH_FOOT").map(PathBuf::from);
-    let mut grim = std::env::var_os("OATH_GRIM").map(PathBuf::from);
-    let mut sola_rt = std::env::var_os("OATH_SOLA_RT").map(PathBuf::from);
-    let mut git = std::env::var_os("OATH_GIT").map(PathBuf::from);
     let mut curl = std::env::var_os("OATH_CURL").map(PathBuf::from);
     let mut cacert = std::env::var_os("OATH_CACERT").map(PathBuf::from);
 
-    if kernel.is_none() || modules.is_none() || busybox.is_none() {
+    // The one kernel is our own build (image/build-linux.sh), never Nix's.
+    let own = root.join("build/linux");
+    kernel = kernel.or_else(|| Some(own.join("vmlinuz")).filter(|p| p.is_file()));
+    modules = modules.or_else(|| Some(own.join("modules")).filter(|p| p.is_dir()));
+
+    let mut tools_dir: Option<PathBuf> = None;
+    if busybox.is_none() {
         eprintln!("loading tools via nix-build image/tools.nix ...");
         let tools = PathBuf::from(run_out(
             Command::new("nix-build")
                 .args([root.join("image/tools.nix").to_str().unwrap(), "--no-out-link"]),
         )?);
         prepend_path(&tools.join("bin"));
-        kernel = kernel.or_else(|| Some(tools.join("bzImage")));
-        modules = modules.or_else(|| Some(tools.join("modules")));
+        tools_dir = Some(tools.clone());
         busybox = busybox.or_else(|| Some(tools.join("busybox")));
         btrfs = btrfs.or_else(|| {
             let p = tools.join("btrfs");
@@ -115,38 +95,6 @@ pub fn load(root: &Path) -> Result<Tools> {
             let p = tools.join("sftp-server");
             p.is_file().then_some(p)
         });
-        glibc = glibc.or_else(|| {
-            let p = tools.join("glibc");
-            p.is_dir().then_some(p)
-        });
-        river = river.or_else(|| {
-            let p = tools.join("river");
-            p.is_dir().then_some(p)
-        });
-        hyprland = hyprland.or_else(|| {
-            let p = tools.join("hyprland");
-            p.is_dir().then_some(p)
-        });
-        quickshell = quickshell.or_else(|| {
-            let p = tools.join("quickshell");
-            p.is_dir().then_some(p)
-        });
-        omarchy = omarchy.or_else(|| {
-            let p = tools.join("omarchy");
-            p.is_dir().then_some(p)
-        });
-        foot = foot.or_else(|| {
-            let p = tools.join("foot");
-            p.is_dir().then_some(p)
-        });
-        sola_rt = sola_rt.or_else(|| {
-            let p = tools.join("sola-rt");
-            p.is_dir().then_some(p)
-        });
-        git = git.or_else(|| {
-            let p = tools.join("git");
-            p.is_dir().then_some(p)
-        });
         curl = curl.or_else(|| {
             let p = tools.join("curl");
             p.is_file().then_some(p)
@@ -164,8 +112,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     }
 
     // `cargo make boot` / `esp` have no qemu. NixOS has no `/bin/true`;
-    // `true` lives on PATH (`/run/current-system/sw/bin/true`). Probe/run
-    // still need the real bins.
+    // `true` lives on PATH (`/run/current-system/sw/bin/true`). `run` and
+    // `up` still need the real bins.
     let qemu = which("qemu-system-x86_64")
         .or_else(|| std::env::var_os("QEMU").map(PathBuf::from))
         .or_else(|| which("true"))
@@ -173,8 +121,10 @@ pub fn load(root: &Path) -> Result<Tools> {
     let qemu_img =
         which("qemu-img").or_else(|| which("true")).unwrap_or_else(|| PathBuf::from("/bin/true"));
 
-    let kernel = kernel.context("OATH_KERNEL")?;
-    let modules = modules.context("OATH_MODULES")?;
+    const BUILD_KERNEL: &str =
+        "build the kernel first: nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'";
+    let kernel = kernel.context(BUILD_KERNEL)?;
+    let modules = modules.context(BUILD_KERNEL)?;
     let busybox = busybox.context("OATH_BUSYBOX")?;
     if !kernel.is_file() {
         bail!("kernel not a file: {}", kernel.display());
@@ -218,18 +168,8 @@ pub fn load(root: &Path) -> Result<Tools> {
             p.is_file().then_some(p)
         })
     });
-    let glibc = glibc.filter(|p| p.is_dir());
-    let river = river.filter(|p| p.is_dir());
-    let hyprland = hyprland
-        .filter(|p| p.is_dir())
-        .or_else(|| std::env::var_os("OATH_HYPRLAND").map(PathBuf::from).filter(|p| p.is_dir()));
-    let quickshell = quickshell.filter(|p| p.is_dir());
-    let omarchy = omarchy.filter(|p| p.is_dir());
-    let sola_rt = sola_rt.filter(|p| p.is_dir());
-    let git = git.filter(|p| p.is_dir());
     let curl = curl.filter(|p| p.is_file());
     let cacert = cacert.filter(|p| p.is_file());
-    let tools_dir = kernel.parent().map(|p| p.to_path_buf());
     let opt_file = |name: &str| -> Option<PathBuf> {
         let p = tools_dir.as_ref()?.join(name);
         p.is_file().then_some(p)
@@ -263,45 +203,14 @@ pub fn load(root: &Path) -> Result<Tools> {
         systemd_boot: opt_file("systemd-bootx64.efi"),
         ovmf_code: opt_file("OVMF_CODE.fd"),
         ovmf_vars: opt_file("OVMF_VARS.fd"),
-        firmware: opt_dir("firmware")
-            .or_else(|| std::env::var_os("OATH_FIRMWARE").map(PathBuf::from).filter(|p| p.is_dir()))
-            .or_else(|| {
-                let p = PathBuf::from("/lib/firmware");
-                p.is_dir().then_some(p)
-            }),
-        glibc,
-        river,
-        hyprland: hyprland.or_else(|| opt_dir("hyprland")),
-        quickshell: quickshell.or_else(|| opt_dir("quickshell")),
-        omarchy: omarchy.or_else(|| opt_dir("omarchy")),
-        omarchy_fonts: opt_dir("omarchy-fonts").or_else(|| {
-            std::env::var_os("OATH_OMARCHY_FONTS").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
-        foot: foot.filter(|p| p.is_dir()).or_else(|| opt_dir("foot")),
-        grim: grim
+        // Never the build host's /lib/firmware.
+        firmware: std::env::var_os("OATH_FIRMWARE")
+            .map(PathBuf::from)
             .filter(|p| p.is_dir())
-            .or_else(|| opt_dir("grim"))
-            .or_else(|| std::env::var_os("OATH_GRIM").map(PathBuf::from).filter(|p| p.is_dir())),
-        sola_rt,
-        git,
+            .or_else(|| opt_dir("firmware"))
+            .or_else(|| Some(own.join("firmware")).filter(|p| p.is_dir())),
         curl,
         cacert,
-        pipewire: opt_dir("pipewire").or_else(|| {
-            std::env::var_os("OATH_PIPEWIRE").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
-        wireplumber: opt_dir("wireplumber").or_else(|| {
-            std::env::var_os("OATH_WIREPLUMBER").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
-        alsa_lib: opt_dir("alsa-lib").or_else(|| {
-            std::env::var_os("OATH_ALSA_LIB").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
-        libpulse: opt_dir("libpulseaudio").or_else(|| {
-            std::env::var_os("OATH_LIBPULSEAUDIO").map(PathBuf::from).filter(|p| p.is_dir())
-        }),
-        dbus: opt_dir("dbus")
-            .or_else(|| std::env::var_os("OATH_DBUS").map(PathBuf::from).filter(|p| p.is_dir())),
-        bluez: opt_dir("bluez")
-            .or_else(|| std::env::var_os("OATH_BLUEZ").map(PathBuf::from).filter(|p| p.is_dir())),
         qemu,
         qemu_img,
     })

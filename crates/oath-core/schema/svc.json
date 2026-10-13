@@ -4,32 +4,52 @@
   "title": "svc",
   "type": "object",
   "additionalProperties": false,
-  "required": ["exec", "wants", "restart", "enabled"],
+  "required": [
+    "exec",
+    "wants",
+    "restart",
+    "enabled"
+  ],
   "properties": {
     "exec": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "argv; absolute path in exec[0]."
     },
     "wants": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Other svc ids that should be up first."
     },
     "restart": {
       "type": "string",
-      "enum": ["never", "always", "on-failure"]
+      "enum": [
+        "never",
+        "always",
+        "on-failure"
+      ]
     },
-    "enabled": { "type": "boolean" },
+    "enabled": {
+      "type": "boolean"
+    },
     "user": {
       "type": "string",
-      "enum": ["root", "home"],
-      "description": "Unix account. Absent means root, except a seat service with no user field still runs as home (uid 1). Does not create accounts."
+      "enum": [
+        "root",
+        "home"
+      ],
+      "description": "Unix account: root or home (uid 1). Absent means root. Does not create accounts."
     },
     "env": {
       "type": "object",
-      "additionalProperties": { "type": "string" },
+      "additionalProperties": {
+        "type": "string"
+      },
       "description": "Extra environment for this process. Empty when absent. Wins over host:local.env on the same name."
     },
     "bind_low_ports": {

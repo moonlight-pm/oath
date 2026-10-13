@@ -1,5 +1,8 @@
 #!/bin/sh
-# Compile vanilla kernel.org Linux with the Oath fragment (not Ubuntu generic).
+# Compile the one Oath kernel: vanilla kernel.org Linux, pinned by sha256,
+# plus image/linux-patches and the Oath config fragment. `cargo make`
+# reads build/linux/ and refuses a bzImage whose release does not match
+# the modules.
 #
 # Host deps (elfutils/gelf.h, bison, pahole, …):
 #   nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'
@@ -7,9 +10,7 @@
 #   sh image/build-linux.sh [outdir]
 #
 # CPU: nice(10) + half the cores (this desk is 32, so -j16). Override with
-# OATH_LINUX_JOBS. Then:
-#   OATH_KERNEL=$out/vmlinuz OATH_MODULES=$out/modules \
-#     cargo make esp --esp /dev/sda1 --confirm --root /dev/sda2
+# OATH_LINUX_JOBS.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
@@ -17,7 +18,9 @@ here=$root/image
 out=${1:-$root/build/linux}
 src=${OATH_LINUX_SRC:-$root/build/linux-src}
 jobs=${OATH_LINUX_JOBS:-}
-kver=${OATH_LINUX_KVER:-7.3-rc1}
+# Bump both together. rc tarballs are Linus's git.kernel.org/torvalds/t/ ones.
+kver=7.3-rc1
+ksha=8d36fbfc7c8906ccfa1ebacc30f84998406504c3f13733a040bb3a3fbe8ac270
 fetch=$here/fetch-url.sh
 cache=${OATH_FETCH:-$root/build/fetch}
 fragment=$here/linux.fragment
@@ -31,16 +34,16 @@ fi
 mkdir -p "$cache" "$out" "$src"
 
 tarball=$cache/linux-$kver.tar.gz
-url=${OATH_LINUX_URL:-https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$kver.tar.gz}
+url=https://git.kernel.org/torvalds/t/linux-$kver.tar.gz
 
-if [ ! -f "$src/Makefile" ]; then
-	if [ ! -f "$tarball" ]; then
-		sh "$fetch" "$url" "$tarball"
-	fi
+# The source tree remembers which tarball it came from; a new pin re-extracts.
+if [ "$(cat "$src/.oath-tarball" 2>/dev/null)" != "$ksha" ]; then
+	sh "$fetch" "$url" "$tarball" "$ksha"
 	echo "extract $tarball"
 	rm -rf "$src"
 	mkdir -p "$src"
 	tar -xzf "$tarball" -C "$src" --strip-components=1
+	echo "$ksha" >"$src/.oath-tarball"
 fi
 
 cd "$src"

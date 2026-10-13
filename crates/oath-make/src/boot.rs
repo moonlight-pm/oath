@@ -6,13 +6,14 @@ use oath_core::{boot_subvol_name, rotate_boot_ids, BOOT_ARCHIVES};
 use std::fs;
 use std::path::Path;
 
-/// QEMU EFI rehearsal must not wait on a menu (`cargo make probe` is
+/// QEMU EFI rehearsal must not wait on a menu (`cargo make run` is
 /// still `-kernel`; this is for `install --qemu` only).
 pub const LOADER_CONF_QEMU: &str = "default oath.conf\ntimeout 0\neditor no\nconsole-mode auto\n";
 
 /// Metal: five seconds to pick an archived boot.
 pub const LOADER_CONF_METAL: &str = "default oath.conf\ntimeout 5\neditor no\nconsole-mode auto\n";
 
+#[cfg(test)]
 pub struct BlsEntry {
     pub title: String,
     pub linux: String,
@@ -20,6 +21,7 @@ pub struct BlsEntry {
     pub options: String,
 }
 
+#[cfg(test)]
 pub fn parse_loader_conf(text: &str) -> (String, u32) {
     let mut default = String::from("oath.conf");
     let mut timeout = 0u32;
@@ -34,6 +36,7 @@ pub fn parse_loader_conf(text: &str) -> (String, u32) {
     (default, timeout)
 }
 
+#[cfg(test)]
 pub fn parse_bls(text: &str) -> BlsEntry {
     let mut e = BlsEntry {
         title: String::from("Oath"),
@@ -56,6 +59,7 @@ pub fn parse_bls(text: &str) -> BlsEntry {
     e
 }
 
+#[cfg(test)]
 pub fn parse_oath_boots(text: &str) -> Vec<String> {
     text.lines()
         .map(str::trim)
@@ -154,6 +158,7 @@ pub fn existing_archive_slot_ids(boot_dir: &Path) -> Vec<u64> {
 pub struct RotatePlan {
     pub new_id: u64,
     pub prune: Vec<u64>,
+    #[cfg_attr(not(test), allow(dead_code))]
     pub boots: Vec<String>,
 }
 

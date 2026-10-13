@@ -4,7 +4,10 @@
   "title": "host",
   "type": "object",
   "additionalProperties": false,
-  "required": ["hostname", "power"],
+  "required": [
+    "hostname",
+    "power"
+  ],
   "properties": {
     "hostname": {
       "type": "string",
@@ -14,22 +17,23 @@
     },
     "power": {
       "type": "string",
-      "enum": ["run", "reboot", "halt"],
+      "enum": [
+        "run",
+        "reboot",
+        "halt"
+      ],
       "description": "run is steady state. reboot and halt require --confirm on apply."
     },
     "env": {
       "type": "object",
-      "additionalProperties": { "type": "string" },
-      "description": "Process environment PID 1 injects into svc spawn and login. Catalog is truth; /etc/profile is a side effect."
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Environment PID 1 puts in every svc spawn. Also written to root-owned /etc/profile for logins. Catalog is truth; /etc/profile is a side effect."
     },
     "timezone": {
       "type": "string",
-      "description": "Display TZ (POSIX). Empty is UTC. Seat svcs get TZ=; not env, not /etc/localtime."
-    },
-    "session": {
-      "type": "string",
-      "enum": ["sola", "omarchy"],
-      "description": "Which graphical desk runs. Default sola. River and Hyprland are exclusive. Changing session needs --confirm."
+      "description": "Local timezone (POSIX TZ string). Empty is UTC. Every svc and every login gets TZ from this unless env sets TZ. The system clock stays UTC."
     }
   }
 }

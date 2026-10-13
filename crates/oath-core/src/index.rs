@@ -28,7 +28,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath set <id> k=v    write desired only
     oath diff [id]       drift
     oath apply [id...]   snapshot, then converge
-    oath undo            restore the last apply's snapshot
+    oath undo            restore the catalog from the last apply's snapshot
     oath log             apply log
     oath fmt <path>      canonical plan.plan
     oath build           isolated plan build (no /bin link)
@@ -47,9 +47,14 @@ pass `--confirm` unless the owner asked for that class of change.
 
 ## Where you are
 
-Serial is **root** (break-glass). SSH is **home** (`HOME=/home`).
-The catalog lives at `/oath`. Do not confuse `/home` (seat) with
-`/usr` (gone — helpers are `/lib/oath`).
+Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
+`sudo` has no password. The catalog lives at `/oath`. `/home` is the
+`home` account's directory. There is no `/usr`; helpers are
+`/lib/oath`.
+
+New objects come from the seed profile or an install overlay
+(`oath seed`, build and install time only). `oath set` changes
+objects that exist.
 "#,
         index = cat.root().join("INDEX.md").display(),
         kinds = kinds_block.trim_end(),
@@ -58,12 +63,12 @@ The catalog lives at `/oath`. Do not confuse `/home` (seat) with
 
 fn kind_line(kind: &str) -> &'static str {
     match kind {
-        "host" => "this machine (hostname, power, env, display timezone, graphical session)",
+        "host" => "this machine (hostname, power, env, timezone)",
         "svc" => "a process PID 1 supervises",
         "snap" => "btrfs generations (apply / undo)",
         "pkg" => "a package (store + /bin links)",
-        "net" => "a network link (net0, static or dhcp)",
-        "ssh" => "owner SSH public keys (home / dropbear)",
+        "net" => "a network link (net0, dhcp or static)",
+        "ssh" => "owner SSH public keys (login as home)",
         "dev" => "a hardware device (inventory)",
         "plan" => "a build plan (hash-pinned file; oath build)",
         _ => "see schema",

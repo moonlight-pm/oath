@@ -2,9 +2,8 @@ mod advisories;
 mod boot;
 mod cpio;
 mod install;
-mod map;
+mod kernel;
 mod pack;
-mod probe;
 mod qemu;
 mod tools;
 mod util;
@@ -29,7 +28,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Cmd {
     /// Pack initramfs + btrfs qcow (needs sudo for loop-mount).
-    Build,
+    Build {
+        /// Seed profile: `base` (headless, SSH) or `dev` (adds the C compiler).
+        #[arg(long, default_value = oath_core::DEFAULT_PROFILE)]
+        profile: String,
+    },
     /// Interactive serial QEMU; writes build/runs/<id>/.
     Run {
         /// Pack the image first (sudo for the loop-mount).
@@ -56,8 +59,6 @@ enum Cmd {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
-    /// Scripted courage test + telemetry.
-    Probe,
     /// Wipe `--disk` on `--target` (or `--qemu` OVMF rehearsal). Requires `--confirm`.
     Install {
         /// `user@host` or `user@host:port`. Ignored with `--qemu`.
@@ -75,26 +76,16 @@ enum Cmd {
         /// Write an EFI installer to `--disk` (must be a removable USB). No `--target`.
         #[arg(long)]
         usb: bool,
-        /// `host:local` hostname after install (default: oath; canto: pass canto).
+        /// `host:local` hostname after install (default: oath).
         #[arg(long)]
         hostname: Option<String>,
-        /// Wicket image: root deploy key, no sudo, one btrfs pool.
-        /// Desk installs omit this.
+        /// Catalog overlay JSON (`{"objects": {"kind:name": {…}}}`) merged into
+        /// the installed catalog. Machine-specific facts live here, not in the seed.
         #[arg(long)]
-        wicket: bool,
+        overlay: Option<PathBuf>,
     },
     /// Pack kernel + initrd + oath-efi only (no qcow, no ESP write).
     Boot,
-    /// Open the as-built architecture overview (interactive HTML).
-    #[command(visible_alias = "architecture")]
-    Map {
-        /// Print the HTML path; do not open a browser.
-        #[arg(long)]
-        print: bool,
-        /// Rebuild docs/architecture.html from the Archify spec (needs Node + Archify).
-        #[arg(long)]
-        render: bool,
-    },
     /// Hash a pack directory into `.cache/oath/store` (same layout as the guest).
     Store {
         /// Pack directory (`bin/`, `lib/`, …).
@@ -107,11 +98,11 @@ enum Cmd {
         #[arg(long)]
         tar: bool,
     },
-    /// Copy hashed pack tarballs into an origin tree for store.oath.wicket.cloud.
+    /// Copy hashed pack tarballs into a store origin tree (`pkg/<name>/<hash>.tar`).
     Publish {
-        /// Destination (`pkg/<name>/<hash>.tar`). Default: sibling Wicket extras/oath-store/site.
+        /// Destination directory.
         #[arg(long)]
-        dest: Option<PathBuf>,
+        dest: PathBuf,
     },
     /// Query OSV for packed trees that have `components.json`; write
     /// `.cache/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
@@ -148,24 +139,24 @@ fn real() -> Result<()> {
     let root = util::repo_root();
     let out = util::out_dir(&root);
     match cli.cmd {
-        Cmd::Build => pack_image(&root, &out)?,
+        Cmd::Build { profile } => pack_image(&root, &out, &profile)?,
         Cmd::Run { build } => {
             if build {
-                pack_image(&root, &out)?;
+                pack_image(&root, &out, oath_core::DEFAULT_PROFILE)?;
             }
             let rc = qemu::run_interactive(&root, &out)?;
             std::process::exit(rc);
         }
         Cmd::Up { build } => {
             if build {
-                pack_image(&root, &out)?;
+                pack_image(&root, &out, oath_core::DEFAULT_PROFILE)?;
             }
             let rc = qemu::run_up(&root, &out)?;
             std::process::exit(rc);
         }
         Cmd::Start { build } => {
             if build {
-                pack_image(&root, &out)?;
+                pack_image(&root, &out, oath_core::DEFAULT_PROFILE)?;
             }
             qemu::start(&root, &out)?;
         }
@@ -174,24 +165,19 @@ fn real() -> Result<()> {
             let rc = qemu::ssh(&out, &args)?;
             std::process::exit(rc);
         }
-        Cmd::Probe => {
-            let rc = probe::probe(&root, &out)?;
-            std::process::exit(rc);
-        }
-        Cmd::Install { target, disk, confirm, qemu, usb, hostname, wicket } => {
+        Cmd::Install { target, disk, confirm, qemu, usb, hostname, overlay } => {
             install::run_install(
                 &root,
                 &out,
-                install::Opts { target, disk, confirm, qemu, usb, hostname, wicket },
+                install::Opts { target, disk, confirm, qemu, usb, hostname, overlay },
             )?;
         }
-        Cmd::Map { print, render } => map::show(&root, print, render)?,
         Cmd::Boot => {
             let tools = tools::load(&root)?;
             pack::boot_image(&root, &out, &tools)?;
         }
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
-        Cmd::Publish { dest } => pack::publish_store(&root, dest.as_deref())?,
+        Cmd::Publish { dest } => pack::publish_store(&root, &dest)?,
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
         Cmd::Esp { esp, confirm, root: root_dev } => {
             install::update_esp(&root, &out, install::EspOpts { esp, confirm, root_dev })?;
@@ -200,7 +186,7 @@ fn real() -> Result<()> {
     Ok(())
 }
 
-fn pack_image(root: &std::path::Path, out: &std::path::Path) -> Result<()> {
+fn pack_image(root: &std::path::Path, out: &std::path::Path, profile: &str) -> Result<()> {
     let tools = tools::load(root)?;
-    pack::build(root, out, &tools)
+    pack::build(root, out, &tools, profile)
 }

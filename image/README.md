@@ -1,49 +1,17 @@
-# Image bits
+# image/
 
-Guest toolchain packs (`pkg:cc`, `pkg:rustc`, `pkg:cmake`,
-`pkg:pkg-config`) fetch **official tarballs** (`image/pack-*.sh`). On
-canto: `sh image/install-toolchain.sh`. No Nix, no rustup.
+Inputs to `cargo make build` that are not Rust.
 
-Borrowed **image** tools (kernel, busybox, qemu) still come from
-`tools.nix` when packing a qcow from a Nix host. They are not the
-runtime. Packing emits store trees
-(`bin/` plus whatever the payload needs). Pack-root `components.json`
-(T44) names upstream `{name, version, purl}` (`image/write-components.sh`).
-Host `cargo make advisories` queries OSV from that file and writes
-`.cache/oath/store/adv/<name>/<hash>.json`; `cargo make publish` copies
-`adv/`. The guest never calls OSV.
-There is no recipe language; how you build that tree is the packer’s.
-Target pack identity (content hash, hash-in-path, pin) is T32
-([docs/specs/2026-09-03-pkg-pack-identity.md](../docs/specs/2026-09-03-pkg-pack-identity.md))
-(in; canto old layout until next pack). Patched River is built from
-`forks/river` + `forks/wlroots` (Sola nixpkgs pin) and relocated into
-`pkg:glibc` + `pkg:river` (libudev-zero, no udevd) + `pkg:hyprland`
-(nixpkgs Hyprland, `withSystemd = false`, T39) + `pkg:sola`
-(session stack including sola-session, sola-terminal + tmux,
-sola-browser + CEF, workspaces, kvm, and remaining kit apps; host
-`cargo build --release` from `forks/sola`). Canto live-add:
-`sh image/install-sola-kit.sh`. Steam runtime (T37):
-`sh image/install-bash.sh`,
-`bash image/install-arcade-runtime.sh` (session X11 Steam; gamescope /
-sola-arcade only if the GPU has DRM modifiers). Bluetooth:
-`bash image/install-bluez.sh` (system dbus + bluetoothd). Mesa-only refresh:
-`bash image/pack-mesa.sh`. Metal kernel: vanilla kernel.org + Oath fragment
-(`nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'`,
-half the host cores, nice 10). Then
-`OATH_KERNEL=build/linux/vmlinuz OATH_MODULES=build/linux/modules cargo make esp`
-(and `OATH_FIRMWARE=build/linux/firmware` or a `firmware/` dir next to
-the vmlinuz so Pitcairn `amdgpu/*.bin` lands in the initrd). SI DPM
-patches: `image/linux-patches`.
-`image/fetch-linux-mainline.sh` is the old Ubuntu-deb shortcut; do not
-use it.
+| File | What |
+|------|------|
+| `build-linux.sh` | The one kernel: kernel.org tarball pinned by sha256, `linux-patches/`, `linux.fragment`. Output `build/linux/{vmlinuz,modules,firmware}`. Run with `nix-shell linux-build.nix --run 'sh image/build-linux.sh'`. |
+| `linux.fragment` | Config merged over `defconfig`. |
+| `linux-patches/` | Driver fixes (SI DPM on Pitcairn), gated by chip family. |
+| `linux-build.nix` | Host compilers for the kernel build. Build-time only. |
+| `pack-cc.sh` | `pkg:cc`: the Zig release (sha256-pinned) plus patchelf built from source; every wrapper targets musl. `dev` profile only. |
+| `write-components.sh` | Writes a pack's `components.json` (upstream name, version, purl). |
+| `fetch-url.sh` | Download with an optional sha256 check. |
+| `tools.nix` | **Temporary.** Busybox, btrfs-progs, dropbear, OpenSSH client bits, curl, CA bundle, sgdisk, mkfs.fat, kexec, tar, systemd-boot, firmware and OVMF from nixpkgs. Each is replaced by a native plan in roadmap phase 5. |
 
-Host orchestration is Rust:
-
-```
-cargo make map            # as-built architecture overview
-cargo make build
-cargo make probe
-cargo make run            # --build packs first (also up / start)
-cargo make up
-cargo make start && cargo make ssh && cargo make stop
-```
+`cargo make build` refuses a kernel whose bzImage release, module
+directory and module vermagic disagree.

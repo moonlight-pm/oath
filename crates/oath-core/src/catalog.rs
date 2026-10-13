@@ -185,7 +185,7 @@ impl Catalog {
         hooks: &dyn ApplyHooks,
     ) -> Result<ApplyReport> {
         let drift = self.diff(None)?;
-        let mut selected: Vec<Drift> = if let Some(ids) = ids {
+        let selected: Vec<Drift> = if let Some(ids) = ids {
             drift.into_iter().filter(|d| ids.contains(&d.id)).collect()
         } else {
             drift
@@ -203,9 +203,7 @@ impl Catalog {
             )));
         }
 
-        self.expand_session_switch(&mut selected)?;
         self.check_svc_wants()?;
-        self.check_compositor_mutex()?;
         self.check_pkg_needs()?;
 
         let parent = self.current_generation()?;
@@ -233,9 +231,6 @@ impl Catalog {
                     if !h.as_str().unwrap_or("").is_empty() {
                         last["hash"] = h.clone();
                     }
-                }
-                if let Some(req) = obj.desired.get("requires") {
-                    last["requires"] = req.clone();
                 }
                 if let Some(needs) = obj.desired.get("needs") {
                     last["needs"] = needs.clone();
@@ -475,11 +470,9 @@ impl Catalog {
         if !pkg.present && !removable {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
-        crate::pkg::check_requires(&id.name, &pkg)?;
         let mut actual = hooks.converge_pkg(id, &pkg)?;
         actual.removable = removable;
         actual.url = pkg.url.clone();
-        actual.requires = pkg.requires.clone();
         actual.needs = pkg.needs.clone();
         actual.description = pkg.description.clone();
         actual.home = pkg.home.clone();
@@ -555,9 +548,7 @@ impl Catalog {
 
     fn needs_confirm(&self, d: &Drift) -> bool {
         if d.id.kind == KIND_HOST {
-            return d.fields.iter().any(|(k, new, _)| {
-                (k == "power" && new.as_str() != Some("run")) || k == "session"
-            });
+            return d.fields.iter().any(|(k, new, _)| k == "power" && new.as_str() != Some("run"));
         }
         if d.id.kind == KIND_SNAP && d.id.name == "current" {
             return true;

@@ -23,8 +23,8 @@ pub struct Opts {
     pub qemu: bool,
     pub usb: bool,
     pub hostname: Option<String>,
-    /// Wicket server image. Desk installs leave this false.
-    pub wicket: bool,
+    /// Catalog overlay merged into the installed catalog (`oath seed --overlay`).
+    pub overlay: Option<PathBuf>,
 }
 
 pub struct EspOpts {
@@ -50,30 +50,16 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     }
     let tools = tools::load(root)?;
     if !out.join("stage/oath/INDEX.md").is_file() {
-        pack::build(root, out, &tools)?;
+        pack::build(root, out, &tools, oath_core::DEFAULT_PROFILE)?;
     }
     if !out.join("initramfs-install/init").is_file() {
-        pack::build(root, out, &tools)?;
+        pack::build(root, out, &tools, oath_core::DEFAULT_PROFILE)?;
     }
-    let mut keys =
+    let keys =
         qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
-    if opts.wicket {
-        if let Ok(line) = wicket_deploy_pubkey() {
-            if !keys.contains(line.trim()) {
-                if !keys.ends_with('\n') {
-                    keys.push('\n');
-                }
-                keys.push_str(line.trim());
-                keys.push('\n');
-            }
-        }
-    }
     pack::bake_install_keys(out, &keys)?;
-    if opts.usb && opts.wicket {
-        bail!("--wicket is the installed image, not the USB stick writer");
-    }
-    if opts.wicket {
-        wicket_deploy_pubkey()?;
+    if let Some(p) = &opts.overlay {
+        read_overlay(p)?;
     }
     if opts.usb {
         return write_usb_installer(out, &tools, &opts);
@@ -234,12 +220,8 @@ fn assert_usb_stick(dev: &str) -> Result<()> {
 
 fn ssh_base(r: &Remote) -> Command {
     let mut c = Command::new("ssh");
-    // Offer the Wicket deploy key first. Buccina's current NixOS root, and
-    // the installed Wicket image, accept that key. Default keys are still
-    // tried so the installer ramdisk (baked from ~/.ssh) keeps working.
-    if let Some(key) = wicket_deploy_privkey() {
-        c.arg("-i").arg(key);
-    }
+    // The installer ramdisk makes a new host key every boot, so there is
+    // nothing to pin. Only the keys baked from ~/.ssh can log in.
     c.args([
         "-o",
         "StrictHostKeyChecking=no",
@@ -255,18 +237,6 @@ fn ssh_base(r: &Remote) -> Command {
         &format!("{}@{}", r.user, r.host),
     ]);
     c
-}
-
-fn wicket_deploy_privkey() -> Option<PathBuf> {
-    if let Ok(path) = std::env::var("WICKET_DEPLOY_KEY") {
-        let path = PathBuf::from(path);
-        if path.is_file() {
-            return Some(path);
-        }
-    }
-    let home = std::env::var("HOME").ok()?;
-    let path = PathBuf::from(home).join(".config/wicket/deploy/wicket-deploy");
-    path.is_file().then_some(path)
 }
 
 fn ssh_run(r: &Remote, remote_cmd: &str) -> Result<()> {
@@ -514,156 +484,83 @@ fn wait_ssh(r: &Remote, timeout: Duration) -> Result<()> {
     bail!("timed out waiting for installer SSH")
 }
 
-fn wicket_deploy_pubkey() -> Result<String> {
-    let path = match std::env::var("WICKET_DEPLOY_PUB") {
-        Ok(p) => PathBuf::from(p),
-        Err(_) => {
-            let home = std::env::var("HOME").context("HOME")?;
-            PathBuf::from(home).join(".config/wicket/deploy/wicket-deploy.pub")
-        }
-    };
-    let body = fs::read_to_string(&path)
-        .with_context(|| format!("Wicket deploy public key {}", path.display()))?;
-    let line = body
-        .lines()
-        .map(str::trim)
-        .find(|l| l.starts_with("ssh-") || l.starts_with("ecdsa-"))
-        .context("deploy pubkey has no ssh line")?;
-    Ok(line.to_string())
-}
+fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Result<()> {
+    let (p1, p2) = parts(&opts.disk);
+    let hostname = opts.hostname.clone().unwrap_or_else(|| "oath".into());
+    eprintln!("format {} -> ESP {p1} + btrfs {p2}", opts.disk);
+    let script = format_disk_script(&opts.disk, &p1, &p2);
+    ssh_run(r, &format!("PATH=/bin sh -c {}", sh_quote(&script)))?;
 
-fn finish_wicket_root(out: &Path, r: &Remote) -> Result<()> {
-    ssh_run(r, "mkdir -p /mnt/lib/oath && printf '%s\\n' wicket > /mnt/lib/oath/image")?;
-    ssh_run(r, "/bin/busybox chown 1:1 /mnt/var/lib/wicket /mnt/var/lib/wicket-appdata || true")?;
-    let svc = out.join("stage/oath/objects/svc");
-    if svc.is_dir() {
-        for ent in fs::read_dir(&svc)? {
-            let ent = ent?;
-            if !ent.file_type()?.is_dir() {
-                continue;
-            }
-            let name = ent.file_name();
-            let name = name.to_string_lossy();
-            let desired_path = ent.path().join("desired.json");
-            if !desired_path.is_file() {
-                continue;
-            }
-            let mut value: serde_json::Value = serde_json::from_slice(&fs::read(&desired_path)?)?;
-            if !oath_core::adjust_wicket_svc(&name, &mut value) {
-                continue;
-            }
-            let body = serde_json::to_string(&value)?;
-            for which in ["desired.json", "applied.json"] {
-                let remote = format!("/mnt/oath/objects/svc/{name}/{which}");
-                ssh_run(
-                    r,
-                    &format!("printf '%s\\n' {} > {remote}", sh_quote(&body), remote = remote),
-                )?;
-            }
-        }
+    eprintln!("copy packed root");
+    let stage = out.join("stage");
+    let mut tar = Command::new("tar");
+    tar.args([
+        "-C",
+        stage.to_str().unwrap(),
+        "--format=gnu",
+        "--numeric-owner",
+        "--owner=0",
+        "--group=0",
+        "-cf",
+        "-",
+    ]);
+    tar.arg(".");
+    let mut ssh = ssh_base(r);
+    let remote = if r.sudo { "sudo -n tar -C /mnt -xf -" } else { "tar -C /mnt -xf -" };
+    ssh.arg(remote).stdin(Stdio::piped());
+    let mut child = ssh.spawn().context("ssh tar")?;
+    {
+        let mut stdin = child.stdin.take().context("ssh stdin")?;
+        let mut src = tar.stdout(Stdio::piped()).spawn().context("tar")?;
+        let mut outp = src.stdout.take().context("tar stdout")?;
+        std::io::copy(&mut outp, &mut stdin).context("pipe tar")?;
+        let _ = src.wait();
     }
-    let key = wicket_deploy_pubkey()?;
+    let st = child.wait()?;
+    if !st.success() {
+        bail!("remote tar extract failed");
+    }
     ssh_run(
         r,
         &format!(
-            "mkdir -p /mnt/root/.ssh && printf '%s\\n' {key} > /mnt/root/.ssh/authorized_keys && /bin/busybox chmod 700 /mnt/root/.ssh && /bin/busybox chmod 600 /mnt/root/.ssh/authorized_keys && /bin/busybox chown -R 0:0 /mnt/root/.ssh",
-            key = sh_quote(&key),
+            "/bin/busybox chown -R 0:0 /mnt && /bin/busybox chmod 755 /mnt && /bin/busybox chmod 700 /mnt/root && /bin/busybox mkdir -p /mnt/root/.ssh /mnt/home/.ssh && /bin/busybox chown -R {uid}:{gid} /mnt/home && /bin/busybox chmod 755 /mnt/home && /bin/busybox chmod 700 /mnt/home/.ssh && /bin/busybox chmod 4755 /mnt/lib/oath/sudo",
+            uid = oath_core::seat::UID,
+            gid = oath_core::seat::GID,
         ),
     )?;
-    install_wicket_bits(out, r)?;
+
+    write_catalog_overlay(opts, &hostname, r)?;
+
+    ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/EFI/systemd /esp/loader/entries")?;
+    ssh_run(
+        r,
+        "test -f /opt/oath-install/BOOTX64.EFI && test -f /opt/oath-install/vmlinuz && test -f /opt/oath-install/initrd.gz",
+    )?;
+    ssh_run(
+        r,
+        "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && (test -f /opt/oath-install/systemd-bootx64.efi && cp /opt/oath-install/systemd-bootx64.efi /esp/EFI/systemd/systemd-bootx64.efi || cp /opt/oath-install/BOOTX64.EFI /esp/EFI/systemd/systemd-bootx64.efi) && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
+    )?;
+    let entry = crate::boot::current_bls(&p2, "");
+    let loader =
+        if opts.qemu { crate::boot::LOADER_CONF_QEMU } else { crate::boot::LOADER_CONF_METAL };
+    let boots = crate::boot::format_oath_boots(&[String::from("oath.conf")]);
+    ssh_run(
+        r,
+        &format!(
+            "printf '%s' {q} > /esp/loader/loader.conf && printf '%s' {e} > /esp/loader/entries/oath.conf && printf '%s' {b} > /esp/loader/oath-boots",
+            q = sh_quote(loader),
+            e = sh_quote(&entry),
+            b = sh_quote(&boots),
+        ),
+    )?;
+    ssh_run(r, "sync; umount /mnt/boot /mnt /esp || true")?;
+    eprintln!("disk written; reboot");
     Ok(())
 }
 
-/// Wrappers under `/lib/oath`, and `build/wicket-pack` when that directory exists.
-fn install_wicket_bits(out: &Path, r: &Remote) -> Result<()> {
-    let lib = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../image/wicket");
-    ssh_run(r, "mkdir -p /mnt/lib/oath /mnt/bin /mnt/oath/store/pkg")?;
-    if lib.is_dir() {
-        for ent in fs::read_dir(&lib)? {
-            let ent = ent?;
-            if !ent.file_type()?.is_file() {
-                continue;
-            }
-            let name = ent.file_name();
-            let name = name.to_string_lossy();
-            let dest = format!("/mnt/lib/oath/{name}");
-            scp_root(r, &ent.path(), &dest)?;
-            ssh_run(r, &format!("/bin/busybox chmod 755 {dest}"))?;
-        }
-    }
-    let bin = out.join("wicket-pack/bin");
-    if bin.is_dir() {
-        for ent in fs::read_dir(&bin)? {
-            let ent = ent?;
-            if !ent.file_type()?.is_file() {
-                continue;
-            }
-            let name = ent.file_name();
-            let name = name.to_string_lossy();
-            let dest = format!("/mnt/bin/{name}");
-            scp_root(r, &ent.path(), &dest)?;
-            ssh_run(r, &format!("/bin/busybox chmod 755 {dest}"))?;
-        }
-    }
-    let nix_store = out.join("wicket-pack/nix-store");
-    if nix_store.is_dir() {
-        ssh_run(r, "mkdir -p /mnt/nix/store")?;
-        let mut tar = Command::new("tar");
-        tar.args(["-C", nix_store.to_str().unwrap(), "-cf", "-", "."]);
-        let mut ssh = ssh_base(r);
-        let remote = if r.sudo {
-            "sudo -n tar -C /mnt/nix/store -xf -"
-        } else {
-            "tar -C /mnt/nix/store -xf -"
-        };
-        ssh.arg(remote).stdin(Stdio::piped());
-        let mut child = ssh.spawn().context("ssh nix-store tar")?;
-        {
-            let mut stdin = child.stdin.take().context("ssh stdin")?;
-            let mut src = tar.stdout(Stdio::piped()).spawn().context("tar nix-store")?;
-            let mut outp = src.stdout.take().context("tar stdout")?;
-            std::io::copy(&mut outp, &mut stdin).context("pipe nix-store")?;
-            let _ = src.wait();
-        }
-        let st = child.wait()?;
-        if !st.success() {
-            bail!("remote nix-store extract failed");
-        }
-    }
-    let pg = out.join("wicket-pack/postgresql");
-    if pg.is_dir() {
-        ssh_run(r, "mkdir -p /mnt/oath/store/pkg/postgresql")?;
-        let mut tar = Command::new("tar");
-        tar.args(["-C", pg.to_str().unwrap(), "-cf", "-", "."]);
-        let mut ssh = ssh_base(r);
-        let remote = if r.sudo {
-            "sudo -n tar -C /mnt/oath/store/pkg/postgresql -xf -"
-        } else {
-            "tar -C /mnt/oath/store/pkg/postgresql -xf -"
-        };
-        ssh.arg(remote).stdin(Stdio::piped());
-        let mut child = ssh.spawn().context("ssh postgres tar")?;
-        {
-            let mut stdin = child.stdin.take().context("ssh stdin")?;
-            let mut src = tar.stdout(Stdio::piped()).spawn().context("tar postgres")?;
-            let mut outp = src.stdout.take().context("tar stdout")?;
-            std::io::copy(&mut outp, &mut stdin).context("pipe postgres")?;
-            let _ = src.wait();
-        }
-        let st = child.wait()?;
-        if !st.success() {
-            bail!("remote postgres extract failed");
-        }
-    }
-    Ok(())
-}
-
-/// Desk installs always format. A Wicket reinstall keeps the pool when
-/// `@wicket-state` is already there and replaces `@` only.
-fn format_disk_script(disk: &str, p1: &str, p2: &str, wicket: bool) -> String {
-    if !wicket {
-        return format!(
-            r#"
+fn format_disk_script(disk: &str, p1: &str, p2: &str) -> String {
+    format!(
+        r#"
 set -e
 DISK={disk}
 P1={p1}
@@ -689,212 +586,53 @@ mount -o subvol=@ "$P2" /mnt
 mount -t vfat "$P1" /esp
 mkdir -p /mnt/boot
 mount --bind /esp /mnt/boot
-"#,
-            disk = disk,
-            p1 = p1,
-            p2 = p2,
-        );
-    }
-    format!(
-        r#"
-set -e
-DISK={disk}
-P1={p1}
-P2={p2}
-preserve=0
-mkdir -p /mnt /esp
-if [ -b "$P2" ] && mount -t btrfs "$P2" /mnt 2>/dev/null; then
-  if btrfs subvolume list /mnt | awk '{{print $NF}}' | grep -qx '@wicket-state'; then
-    preserve=1
-  fi
-  umount /mnt
-fi
-if [ "$preserve" = 1 ]; then
-  mount -t btrfs "$P2" /mnt
-  if [ -d /mnt/@ ]; then
-    btrfs subvolume delete /mnt/@
-  fi
-  btrfs subvolume create /mnt/@
-  if ! btrfs subvolume list /mnt | awk '{{print $NF}}' | grep -qx '@appdata'; then
-    btrfs subvolume create /mnt/@appdata
-  fi
-  umount /mnt
-else
-  sgdisk -Z "$DISK" || true
-  sgdisk -n 1:0:+512M -t 1:ef00 -c 1:ESP "$DISK"
-  sgdisk -n 2:0:0 -t 2:8300 -c 2:oath "$DISK"
-  blockdev --rereadpt "$DISK" || true
-  mdev -s || true
-  for i in 1 2 3 4 5 6 7 8 9 10; do
-    [ -b "$P1" ] && [ -b "$P2" ] && break
-    mdev -s || true
-    sleep 1
-  done
-  [ -b "$P1" ] && [ -b "$P2" ]
-  mkfs.fat -F 32 -n OATHESP "$P1"
-  mkfs.btrfs -f -L oath "$P2"
-  mount "$P2" /mnt
-  btrfs subvolume create /mnt/@
-  btrfs subvolume create /mnt/@wicket-state
-  btrfs subvolume create /mnt/@appdata
-  umount /mnt
-fi
-mount -o subvol=@ "$P2" /mnt
-mkdir -p /mnt/var/lib/wicket /mnt/var/lib/wicket-appdata
-mount -o subvol=@wicket-state "$P2" /mnt/var/lib/wicket
-mount -o subvol=@appdata "$P2" /mnt/var/lib/wicket-appdata
-mount -t vfat "$P1" /esp
-mkdir -p /mnt/boot
-mount --bind /esp /mnt/boot
-"#,
-        disk = disk,
-        p1 = p1,
-        p2 = p2,
+"#
     )
 }
 
-fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Result<()> {
-    let (p1, p2) = parts(&opts.disk);
-    let hostname = opts.hostname.clone().unwrap_or_else(|| "oath".into());
-    eprintln!(
-        "format {} -> ESP {p1} + btrfs {p2}{}",
-        opts.disk,
-        if opts.wicket { " (wicket pool)" } else { "" }
-    );
-    let script = format_disk_script(&opts.disk, &p1, &p2, opts.wicket);
-    ssh_run(r, &format!("PATH=/bin sh -c {}", sh_quote(&script)))?;
-
-    eprintln!("copy packed root");
-    let stage = out.join("stage");
-    let mut tar = Command::new("tar");
-    tar.args([
-        "-C",
-        stage.to_str().unwrap(),
-        "--format=gnu",
-        "--numeric-owner",
-        "--owner=0",
-        "--group=0",
-        "-cf",
-        "-",
-    ]);
-    if opts.wicket {
-        tar.args(["--exclude=./bin/sudo", "--exclude=./lib/oath/sudo"]);
-    }
-    tar.arg(".");
-    let mut ssh = ssh_base(r);
-    let remote = if r.sudo { "sudo -n tar -C /mnt -xf -" } else { "tar -C /mnt -xf -" };
-    ssh.arg(remote).stdin(Stdio::piped());
-    let mut child = ssh.spawn().context("ssh tar")?;
-    {
-        let mut stdin = child.stdin.take().context("ssh stdin")?;
-        let mut src = tar.stdout(Stdio::piped()).spawn().context("tar")?;
-        let mut outp = src.stdout.take().context("tar stdout")?;
-        std::io::copy(&mut outp, &mut stdin).context("pipe tar")?;
-        let _ = src.wait();
-    }
-    let st = child.wait()?;
-    if !st.success() {
-        bail!("remote tar extract failed");
-    }
-    ssh_run(
-        r,
-        &format!(
-            "/bin/busybox chown -R 0:0 /mnt && /bin/busybox chmod 755 /mnt && /bin/busybox chmod 700 /mnt/root && /bin/busybox mkdir -p /mnt/root/.ssh /mnt/home/.ssh && /bin/busybox chown -R {uid}:{gid} /mnt/home && /bin/busybox chmod 755 /mnt/home && /bin/busybox chmod 700 /mnt/home/.ssh{sudo_bit}",
-            uid = oath_core::seat::UID,
-            gid = oath_core::seat::GID,
-            sudo_bit = if opts.wicket {
-                ""
-            } else {
-                " && /bin/busybox chmod 4755 /mnt/lib/oath/sudo"
-            },
-        ),
-    )?;
-    if opts.wicket {
-        finish_wicket_root(out, r)?;
-    }
-
-    patch_catalog(out, opts, &hostname, r)?;
-
-    ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/EFI/systemd /esp/loader/entries")?;
-    ssh_run(
-        r,
-        "test -f /opt/oath-install/BOOTX64.EFI && test -f /opt/oath-install/vmlinuz && test -f /opt/oath-install/initrd.gz",
-    )?;
-    ssh_run(
-        r,
-        "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && (test -f /opt/oath-install/systemd-bootx64.efi && cp /opt/oath-install/systemd-bootx64.efi /esp/EFI/systemd/systemd-bootx64.efi || cp /opt/oath-install/BOOTX64.EFI /esp/EFI/systemd/systemd-bootx64.efi) && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
-    )?;
-    let entry = crate::boot::current_bls(&p2, "");
-    let loader =
-        if opts.qemu { crate::boot::LOADER_CONF_QEMU } else { crate::boot::LOADER_CONF_METAL };
-    let boots = crate::boot::format_oath_boots(&[String::from("oath.conf")]);
-    ssh_run(
-        r,
-        &format!(
-            "printf '%s' {q} > /esp/loader/loader.conf && printf '%s' {e} > /esp/loader/entries/oath.conf && printf '%s' {b} > /esp/loader/oath-boots",
-            q = sh_quote(loader),
-            e = sh_quote(&entry),
-            b = sh_quote(&boots),
-        ),
-    )?;
-    if opts.wicket {
-        ssh_run(
-            r,
-            "sync; umount /mnt/var/lib/wicket-appdata /mnt/var/lib/wicket /mnt/boot /mnt /esp || true",
-        )?;
-    } else {
-        ssh_run(r, "sync; umount /mnt/boot /mnt /esp || true")?;
-    }
-    eprintln!("disk written; reboot");
-    Ok(())
+/// Read and check `--overlay` before anything is wiped.
+fn read_overlay(path: &Path) -> Result<serde_json::Value> {
+    let text = fs::read_to_string(path).with_context(|| format!("overlay {}", path.display()))?;
+    let v: serde_json::Value =
+        serde_json::from_str(&text).with_context(|| format!("overlay {}", path.display()))?;
+    let scratch = tempfile::tempdir()?;
+    oath_core::seed(scratch.path()).map_err(|e| anyhow::anyhow!("{e}"))?;
+    oath_core::apply_overlay(scratch.path(), &v)
+        .map_err(|e| anyhow::anyhow!("overlay {}: {e}", path.display()))?;
+    Ok(v)
 }
 
-fn patch_catalog(out: &Path, opts: &Opts, hostname: &str, r: &Remote) -> Result<()> {
-    // Hostname + dhcp on the installed catalog. Keys already in desired via tar + extra write.
-    let host_json = format!(
-        r#"{{"hostname":"{hostname}","power":"run","timezone":"MST7MDT,M3.2.0,M11.1.0","env":{{"GROK_DISABLE_AUTOUPDATER":"1","SHELL":"/bin/thoxa","THOXA_ROOT":"/oath/store/pkg/thoxa"}}}}"#
-    );
-    let observed =
-        ssh_out(r, "ip -o -4 addr show scope global | awk '{print $4; exit}'").unwrap_or_default();
-    let net_json = oath_core::dhcp_net_document(observed.trim());
-    ssh_run(
-        r,
-        &format!(
-            "printf '%s\\n' {h} > /mnt/oath/objects/host/local/desired.json && printf '%s\\n' {n} > /mnt/oath/objects/net/net0/desired.json && printf '%s\\n' {h} > /mnt/oath/objects/host/local/actual.json && printf '%s\\n' {n} > /mnt/oath/objects/net/net0/actual.json",
-            h = sh_quote(&host_json),
-            n = sh_quote(&net_json),
-        ),
-    )?;
-    let keys = if opts.wicket {
-        wicket_deploy_pubkey()?
-    } else {
-        qemu::host_pubkeys_body().unwrap_or_default()
-    };
-    let arr: Vec<String> = keys
+/// What the installer writes into the new catalog: hostname, the host's
+/// SSH public keys for `home`, then the user's overlay on top.
+fn catalog_overlay(
+    hostname: &str,
+    keys: &str,
+    user: Option<&serde_json::Value>,
+) -> serde_json::Value {
+    let authorized: Vec<&str> = keys
         .lines()
+        .map(str::trim)
         .filter(|l| l.starts_with("ssh-") || l.starts_with("ecdsa-"))
-        .map(|l| format!("\"{}\"", l.replace('\\', "\\\\").replace('"', "\\\"")))
         .collect();
-    let ssh_json = format!(r#"{{"authorized":[{}]}}"#, arr.join(","));
-    ssh_run(
-        r,
-        &format!(
-            "printf '%s\\n' {s} > /mnt/oath/objects/ssh/local/desired.json",
-            s = sh_quote(&ssh_json)
-        ),
-    )?;
-    // QEMU pins SOLA_OUTPUT_PICK=preferred (1280×800 virtio). Metal
-    // unsets it so sola-river can match the connected panel.
-    if !opts.qemu {
-        ssh_run(
-            r,
-            r#"w=/mnt/oath/store/pkg/sola/bin/sola-river
-[ -f "$w" ] && /bin/busybox sed -i 's/^export SOLA_OUTPUT_PICK=preferred/# export SOLA_OUTPUT_PICK=preferred/' "$w"
-true"#,
-        )?;
+    let base = serde_json::json!({"objects": {
+        "host:local": {"hostname": hostname},
+        "ssh:local": {"authorized": authorized}
+    }});
+    match user {
+        Some(u) => oath_core::merge_patch(base, u),
+        None => base,
     }
-    let _ = out;
-    Ok(())
+}
+
+fn write_catalog_overlay(opts: &Opts, hostname: &str, r: &Remote) -> Result<()> {
+    let keys = qemu::host_pubkeys_body().unwrap_or_default();
+    let user = match &opts.overlay {
+        Some(p) => Some(read_overlay(p)?),
+        None => None,
+    };
+    let overlay = catalog_overlay(hostname, &keys, user.as_ref());
+    put_text(r, "/tmp/oath-overlay.json", &serde_json::to_string_pretty(&overlay)?)?;
+    ssh_run(r, "/bin/oath --root /mnt/oath seed --overlay /tmp/oath-overlay.json")
 }
 
 fn sh_quote(s: &str) -> String {
@@ -903,8 +641,22 @@ fn sh_quote(s: &str) -> String {
 
 /// Non-destructive ESP write: archive the live kernel+initrd, copy the
 /// packed image, keep five boots. Does not format.
+/// `cargo make esp` mounts a local ESP and snapshots the local `@`, so it
+/// only makes sense on the Oath machine itself, never on the build host.
+fn require_oath_system(sys_root: &Path) -> Result<()> {
+    if !sys_root.join("oath/INDEX.md").is_file() {
+        bail!(
+            "this machine is not Oath ({} missing); `esp` writes the boot partition of \
+             the machine it runs on. Run it on the Oath host.",
+            sys_root.join("oath/INDEX.md").display()
+        );
+    }
+    Ok(())
+}
+
 pub fn update_esp(repo: &Path, out: &Path, opts: EspOpts) -> Result<()> {
     crate::boot::require_confirm(opts.confirm)?;
+    require_oath_system(Path::new("/"))?;
     if !opts.esp.starts_with("/dev/") {
         bail!("--esp must be a /dev/ node (got {:?})", opts.esp);
     }
@@ -976,7 +728,7 @@ fn install_remote(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<
     format_and_copy(out, tools, opts, &inst)?;
     eprintln!("disk written; reboot");
     let _ = ssh_reboot(&inst);
-    let live = wait_oath_ssh(&r.host, r.port, Duration::from_secs(300), opts.wicket)?;
+    let live = wait_oath_ssh(&r.host, r.port, Duration::from_secs(300))?;
     let ls = ssh_out(&live, "/bin/oath ls")?;
     eprintln!("oath ls ({}@{}):\n{ls}", live.user, live.host);
     if !ls.contains("host:local") {
@@ -1030,7 +782,7 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         qemu: true,
         usb: false,
         hostname: opts.hostname.clone().or_else(|| Some("oath".into())),
-        wicket: opts.wicket,
+        overlay: opts.overlay.clone(),
     };
     if let Err(e) = format_and_copy(out, tools, &qopts, &inst) {
         let _ = child.kill();
@@ -1066,7 +818,7 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         dump_serial(&serial_boot);
         bail!("OVMF qemu exited immediately: {st}");
     }
-    let wait = wait_oath_ssh("127.0.0.1", port, Duration::from_secs(180), opts.wicket);
+    let wait = wait_oath_ssh("127.0.0.1", port, Duration::from_secs(180));
     let ok = wait.is_ok();
     if ok {
         let live = wait.as_ref().expect("ok");
@@ -1149,24 +901,16 @@ fn reboot_remote_cmd(r: &Remote) -> String {
     }
 }
 
-fn wait_oath_ssh(host: &str, port: u16, timeout: Duration, root_first: bool) -> Result<Remote> {
+fn wait_oath_ssh(host: &str, port: u16, timeout: Duration) -> Result<Remote> {
     let home = Remote { user: "home".into(), host: host.into(), port, sudo: false };
-    let root = Remote { user: "root".into(), host: host.into(), port, sudo: false };
-    let candidates = if root_first { [root, home] } else { [home, root] };
     let deadline = Instant::now() + timeout;
-    eprintln!(
-        "waiting for installed SSH at {host}:{port} ({})",
-        if root_first { "root, then home" } else { "home, then root" }
-    );
+    eprintln!("waiting for installed SSH at home@{host}:{port}");
     while Instant::now() < deadline {
-        for c in &candidates {
-            if ssh_out(c, "test -f /oath/INDEX.md && echo YES")
-                .map(|s| s.contains("YES"))
-                .unwrap_or(false)
-            {
-                eprintln!("installed SSH is {}@{host}", c.user);
-                return Ok(c.clone());
-            }
+        if ssh_out(&home, "test -f /oath/INDEX.md && echo YES")
+            .map(|s| s.contains("YES"))
+            .unwrap_or(false)
+        {
+            return Ok(home);
         }
         thread::sleep(Duration::from_secs(3));
     }
@@ -1194,29 +938,33 @@ mod tests {
     }
 
     #[test]
-    fn desk_format_is_esp_plus_at_only() {
-        let script = format_disk_script("/dev/sda", "/dev/sda1", "/dev/sda2", false);
+    fn esp_refuses_a_non_oath_host() {
+        let d = tempfile::tempdir().unwrap();
+        assert!(require_oath_system(d.path()).is_err());
+        fs::create_dir_all(d.path().join("oath")).unwrap();
+        fs::write(d.path().join("oath/INDEX.md"), "# Oath\n").unwrap();
+        assert!(require_oath_system(d.path()).is_ok());
+    }
+
+    #[test]
+    fn format_is_esp_plus_one_pool() {
+        let script = format_disk_script("/dev/sda", "/dev/sda1", "/dev/sda2");
         assert!(script.contains("mkfs.btrfs -f -L oath"));
         assert!(script.contains("btrfs subvolume create /mnt/@\n"));
-        assert!(!script.contains("@wicket-state"));
-        assert!(!script.contains("@appdata"));
         assert!(!script.contains("preserve"));
     }
 
     #[test]
-    fn wicket_format_preserves_state_subvolume() {
-        let script = format_disk_script("/dev/nvme0n1", "/dev/nvme0n1p1", "/dev/nvme0n1p2", true);
-        assert!(script.contains("preserve=0"));
-        assert!(script.contains("awk '{print $NF}'"));
-        assert!(script.contains("grep -qx '@wicket-state'"));
-        assert!(script.contains("btrfs subvolume delete /mnt/@"));
-        assert!(script.contains("btrfs subvolume create /mnt/@wicket-state"));
-        assert!(script.contains("btrfs subvolume create /mnt/@appdata"));
-        assert!(script.contains("mount -o subvol=@wicket-state"));
-        assert!(script.contains("mount -o subvol=@appdata"));
-        let preserve = script.find("preserve=1").unwrap();
-        let mkfs = script.find("mkfs.btrfs -f -L oath").unwrap();
-        assert!(preserve < mkfs);
-        assert!(!script.contains("@nix"));
+    fn overlay_has_hostname_keys_and_user_patch() {
+        let user = serde_json::json!({"objects": {
+            "host:local": {"timezone": "MST7MDT"},
+            "svc:backup": {"enabled": false}
+        }});
+        let o = catalog_overlay("canto", "ssh-ed25519 AAAA me\nnot a key\n", Some(&user));
+        assert_eq!(o["objects"]["host:local"]["hostname"], "canto");
+        assert_eq!(o["objects"]["host:local"]["timezone"], "MST7MDT");
+        assert_eq!(o["objects"]["ssh:local"]["authorized"][0], "ssh-ed25519 AAAA me");
+        assert_eq!(o["objects"]["ssh:local"]["authorized"].as_array().unwrap().len(), 1);
+        assert_eq!(o["objects"]["svc:backup"]["enabled"], false);
     }
 }

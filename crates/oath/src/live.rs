@@ -156,7 +156,6 @@ impl ApplyHooks for Live {
             power: HostPower::Run,
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
-            session: desired.session,
         })
     }
 

@@ -33,30 +33,10 @@ pub struct Host {
     /// Injected into every svc spawn; `/etc/profile` is a side effect.
     #[serde(default)]
     pub env: BTreeMap<String, String>,
-    /// Display timezone (POSIX TZ). Empty = UTC. Seat processes get `TZ`
-    /// from this; not `env`, not `/etc/localtime` (T34).
+    /// Local timezone (POSIX TZ). Empty = UTC. Every service and login
+    /// gets `TZ` from this; the system clock stays UTC (T34).
     #[serde(default)]
     pub timezone: String,
-    /// Which graphical desk PID 1 runs. Default sola. Exclusive compositor (T39).
-    #[serde(default)]
-    pub session: HostSession,
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum HostSession {
-    #[default]
-    Sola,
-    Omarchy,
-}
-
-impl HostSession {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Sola => "sola",
-            Self::Omarchy => "omarchy",
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -154,20 +134,6 @@ pub struct SvcActual {
     pub restarts: u32,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PkgRequires {
-    /// Vulkan WSI DRM format modifiers on the connected GPU.
-    /// AMD GFX6–8 and virtio-gpu do not have them (gamescope nest).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub drm_modifiers: bool,
-}
-
-impl PkgRequires {
-    pub fn is_none(&self) -> bool {
-        !self.drm_modifiers
-    }
-}
-
 /// One runtime need: slot + realization. Hash is required (T41/T43).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PkgNeed {
@@ -184,9 +150,6 @@ pub struct Pkg {
     /// Pin: realization id (`sha256-` + 64 hex). Empty = discovery.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub hash: String,
-    /// Hardware the bits need. Apply `present=true` is refused if unmet.
-    #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
-    pub requires: PkgRequires,
     /// Other `pkg:*` this pack needs at runtime, each pinned to a
     /// realization id. Cycles and missing present needs refuse apply.
     /// Empty means none.
@@ -297,8 +260,6 @@ pub struct PkgActual {
     /// Other realizations of this name still on disk.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub realizations: Vec<PkgRealization>,
-    #[serde(default, skip_serializing_if = "PkgRequires::is_none")]
-    pub requires: PkgRequires,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub needs: Vec<PkgNeed>,
     #[serde(default, skip_serializing_if = "String::is_empty")]

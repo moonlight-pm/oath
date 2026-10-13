@@ -1,29 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 let
-  # Same newest-kernel pick as shell.nix. 7.3-rc is linuxPackages_testing
-  # on current nixpkgs; fall back to latest if the attr is missing.
-  k =
-    if pkgs ? linuxPackages_testing then pkgs.linuxPackages_testing.kernel
-    else if pkgs ? linuxPackages_7_3 then pkgs.linuxPackages_7_3.kernel
-    else if pkgs ? linuxPackages_7_2 then pkgs.linuxPackages_7_2.kernel
-    else pkgs.linuxPackages_latest.kernel;
   muslCC = pkgs.pkgsStatic.stdenv.cc;
-  # Same nixpkgs pin Sola uses so River 0.4.5 + wlroots 0.20 match the forks.
-  pinned = import (builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/d233902339c02a9c334e7e593de68855ad26c4cb.tar.gz";
-    sha256 = "sha256-30sZNZoA1cqF5JNO9fVX+wgiQYjB7HJqqJ4ztCDeBZE=";
-  }) {};
-  riverPack = pinned.callPackage ./river-pack.nix {
-    riverSrc = ../forks/river;
-    wlrootsSrc = ../forks/wlroots;
-  };
-  hyprlandPack = pkgs.callPackage ./hyprland-pack.nix { };
-  quickshellPack = pkgs.callPackage ./quickshell-pack.nix { };
-  omarchyPack = pkgs.callPackage ./omarchy-pack.nix { };
-  omarchyFontsPack = pkgs.callPackage ./omarchy-fonts-pack.nix { };
-  footPack = pkgs.callPackage ./foot-pack.nix { };
-  capturePack = pkgs.callPackage ./capture-pack.nix { };
-  solaRt = pkgs.callPackage ./sola-rt.nix { };
   # Dropbear looks up sftp-server at compile time. Nixpkgs defaults that
   # to a NixOS path; point it at the Oath /bin farm. enableSCP builds the
   # legacy scp helper so `scp -O` works too (modern scp uses SFTP).
@@ -37,8 +14,6 @@ let
 in
 pkgs.runCommand "oath-build-tools" { } ''
   mkdir -p $out/bin $out/firmware
-  ln -s ${k}/bzImage $out/bzImage
-  ln -s ${k.modules}/lib/modules $out/modules
   ln -s ${pkgs.pkgsStatic.busybox}/bin/busybox $out/busybox
   ln -s ${pkgs.pkgsStatic.btrfs-progs}/bin/btrfs $out/btrfs
   ln -s ${pkgs.pkgsStatic.btrfs-progs}/bin/mkfs.btrfs $out/mkfs.btrfs
@@ -57,24 +32,8 @@ pkgs.runCommand "oath-build-tools" { } ''
   ln -s ${pkgs.OVMF.firmware} $out/OVMF_CODE.fd
   ln -s ${pkgs.OVMF.variables} $out/OVMF_VARS.fd
   ln -s ${muslCC}/bin/${muslCC.targetPrefix}cc $out/musl-cc
-  ln -s ${riverPack}/glibc $out/glibc
-  ln -s ${riverPack}/river $out/river
-  ln -s ${hyprlandPack} $out/hyprland
-  ln -s ${quickshellPack} $out/quickshell
-  ln -s ${omarchyPack} $out/omarchy
-  ln -s ${omarchyFontsPack} $out/omarchy-fonts
-  ln -s ${footPack} $out/foot
-  ln -s ${capturePack} $out/grim
-  ln -s ${solaRt} $out/sola-rt
-  ln -s ${pkgs.git} $out/git
   ln -s ${pkgs.pkgsStatic.curl.bin}/bin/curl $out/curl
   ln -s ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/ca-bundle.crt
-  ln -s ${pkgs.pipewire} $out/pipewire
-  ln -s ${pkgs.wireplumber} $out/wireplumber
-  ln -s ${pkgs.alsa-lib} $out/alsa-lib
-  ln -s ${pkgs.libpulseaudio} $out/libpulseaudio
-  ln -s ${pkgs.dbus} $out/dbus
-  ln -s ${pkgs.bluez} $out/bluez
   if [ -d ${pkgs.linux-firmware}/lib/firmware/tigon ]; then
     cp -a ${pkgs.linux-firmware}/lib/firmware/tigon $out/firmware/tigon
   fi

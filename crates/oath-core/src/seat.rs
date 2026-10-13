@@ -2,8 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::os::unix::fs::{chown, FileTypeExt, PermissionsExt};
-use std::path::Path;
+use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
 use crate::error::Result;
@@ -15,33 +14,13 @@ pub const GID: u32 = 1;
 pub const HOME: &str = "/home";
 pub const HELPERS: &str = "/lib/oath";
 
-pub const SEAT_SVC_NAMES: &[&str] = &[
-    "river",
-    "hyprland",
-    "omarchy-shell",
-    "sola-bus",
-    "sola-call",
-    "sola-river",
-    "sola-shell",
-    "sola-session",
-    "sola-kvm",
-    "pipewire",
-    "wireplumber",
-    "pipewire-pulse",
-];
-
-pub fn is_seat_svc(id: &str) -> bool {
-    let name = id.strip_prefix("svc:").unwrap_or(id);
-    SEAT_SVC_NAMES.contains(&name)
-}
-
 pub fn passwd_file() -> String {
-    format!("root:x:0:0:root:/root:/bin/sh\n{NAME}:x:{UID}:{GID}:{NAME}:{HOME}:/bin/thoxa\n")
+    format!("root:x:0:0:root:/root:/bin/sh\n{NAME}:x:{UID}:{GID}:{NAME}:{HOME}:/bin/sh\n")
 }
 
 /// Dropbear (and getusershell) reject logins whose pw_shell is not listed here.
 pub fn shells_file() -> String {
-    "/bin/sh\n/bin/thoxa\n".into()
+    "/bin/sh\n".into()
 }
 
 pub fn group_file() -> String {
@@ -59,9 +38,19 @@ pub fn write_side_effects(desired: &Host) -> Result<()> {
         "/etc/hosts",
         format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", desired.hostname),
     )?;
-    write_profile(&desired.env)?;
+    write_profile(&login_env(desired))?;
     fs::write("/etc/shells", shells_file())?;
     Ok(())
+}
+
+/// `host:local.env` plus `TZ` from `timezone` (an explicit `env.TZ` wins).
+pub fn login_env(host: &Host) -> BTreeMap<String, String> {
+    let mut env = host.env.clone();
+    let tz = host.timezone.trim();
+    if !tz.is_empty() {
+        env.entry("TZ".into()).or_insert_with(|| tz.to_string());
+    }
+    env
 }
 
 pub fn write_profile(env: &BTreeMap<String, String>) -> Result<()> {
@@ -110,8 +99,7 @@ mod tests {
     fn home_is_uid_1() {
         assert_eq!(UID, 1);
         assert_eq!(GID, 1);
-        assert!(passwd_file().contains("home:x:1:1:home:/home:/bin/thoxa"));
-        assert!(shells_file().contains("/bin/thoxa"));
+        assert!(passwd_file().contains("home:x:1:1:home:/home:/bin/sh"));
         assert!(shells_file().contains("/bin/sh"));
         let g = group_file();
         assert!(g.contains("home:x:1:"));
@@ -123,106 +111,26 @@ mod tests {
     #[test]
     fn profile_is_root_owned_copy() {
         let mut env = BTreeMap::new();
-        env.insert("GROK_DISABLE_AUTOUPDATER".into(), "1".into());
+        env.insert("EDITOR".into(), "vi".into());
         let b = profile_body(&env);
         assert!(b.contains("host:local env"));
-        assert!(b.contains("GROK_DISABLE_AUTOUPDATER='1'"));
+        assert!(b.contains("EDITOR='vi'"));
         assert!(!b.contains("/home"));
     }
 
     #[test]
-    fn seat_svcs_are_graphical_not_seatd() {
-        assert!(is_seat_svc("svc:river"));
-        assert!(is_seat_svc("svc:hyprland"));
-        assert!(is_seat_svc("svc:omarchy-shell"));
-        assert!(is_seat_svc("svc:sola-shell"));
-        assert!(is_seat_svc("svc:sola-kvm"));
-        assert!(is_seat_svc("river"));
-        assert!(is_seat_svc("svc:pipewire"));
-        assert!(is_seat_svc("svc:wireplumber"));
-        assert!(is_seat_svc("svc:pipewire-pulse"));
-        assert!(!is_seat_svc("svc:seatd"));
-        assert!(!is_seat_svc("svc:sshd"));
-        assert!(!is_seat_svc("svc:serial"));
-    }
-
-    #[test]
-    fn prefix_scan_finds_card_and_event() {
-        let d = tempfile::tempdir().unwrap();
-        fs::write(d.path().join("card2"), b"").unwrap();
-        fs::write(d.path().join("renderD128"), b"").unwrap();
-        assert!(dir_has_prefix(d.path(), "card"));
-        assert!(!dir_has_prefix(d.path(), "event"));
-        fs::write(d.path().join("event0"), b"").unwrap();
-        assert!(dir_has_prefix(d.path(), "event"));
-    }
-}
-
-/// DRM, evdev, and ALSA nodes the seat compositor / PipeWire must open (no udevd).
-/// Kernel/mdev default gid is often 44/14 (`video`/`input` folklore).
-pub fn open_device_nodes() {
-    let _ = fs::create_dir_all("/dev/dri");
-    let _ = fs::create_dir_all("/dev/input");
-    chmod_tree("/dev/dri", 0o660, 0, GID);
-    chmod_tree("/dev/input", 0o660, 0, GID);
-    let _ = fs::create_dir_all("/dev/snd");
-    chmod_tree("/dev/snd", 0o660, 0, GID);
-    // mdev -s after amdgpu resets these to 0660 root:root.
-    for n in [
-        "/dev/null",
-        "/dev/zero",
-        "/dev/full",
-        "/dev/tty",
-        "/dev/ptmx",
-        "/dev/random",
-        "/dev/urandom",
-    ] {
-        let _ = fs::set_permissions(n, fs::Permissions::from_mode(0o666));
-    }
-}
-
-pub fn drm_nodes_ready() -> bool {
-    dir_has_prefix(Path::new("/dev/dri"), "card")
-}
-
-pub fn input_nodes_ready() -> bool {
-    dir_has_prefix(Path::new("/dev/input"), "event")
-}
-
-/// River/Sola wrappers append under `/oath/log`. Existing root-owned files
-/// make the seat fail at shell redirection (crash-loop before wlroots).
-pub fn chown_logs() {
-    let _ = fs::create_dir_all("/oath/log");
-    let _ = fs::set_permissions("/oath/log", fs::Permissions::from_mode(0o1777));
-    let Ok(rd) = fs::read_dir("/oath/log") else { return };
-    for e in rd.flatten() {
-        let p = e.path();
-        if p.is_file() {
-            let _ = chown(&p, Some(UID), Some(GID));
-        }
-    }
-}
-
-fn dir_has_prefix(dir: &Path, prefix: &str) -> bool {
-    let Ok(rd) = fs::read_dir(dir) else {
-        return false;
-    };
-    rd.flatten().any(|e| e.file_name().to_string_lossy().starts_with(prefix))
-}
-
-fn chmod_tree(dir: &str, mode: u32, uid: u32, gid: u32) {
-    let Ok(rd) = fs::read_dir(dir) else { return };
-    for e in rd.flatten() {
-        let p = e.path();
-        let Ok(ft) = e.file_type() else { continue };
-        if ft.is_dir() {
-            chmod_tree(&p.to_string_lossy(), mode, uid, gid);
-            continue;
-        }
-        if !ft.is_char_device() {
-            continue;
-        }
-        let _ = fs::set_permissions(&p, fs::Permissions::from_mode(mode));
-        let _ = chown(&p, Some(uid), Some(gid));
+    fn timezone_becomes_tz_unless_env_sets_it() {
+        let mut host = Host {
+            hostname: "oath".into(),
+            power: crate::kinds::HostPower::Run,
+            env: BTreeMap::new(),
+            timezone: "MST7MDT".into(),
+        };
+        assert_eq!(login_env(&host).get("TZ").map(String::as_str), Some("MST7MDT"));
+        host.env.insert("TZ".into(), "UTC".into());
+        assert_eq!(login_env(&host).get("TZ").map(String::as_str), Some("UTC"));
+        host.timezone.clear();
+        host.env.clear();
+        assert!(login_env(&host).get("TZ").is_none());
     }
 }

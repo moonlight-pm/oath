@@ -3,10 +3,8 @@
 mod catalog;
 mod dev;
 mod error;
-mod gpu;
 mod hooks;
 mod id;
-mod image;
 mod index;
 mod kinds;
 mod layout;
@@ -17,7 +15,6 @@ mod plan;
 mod plan_build;
 pub mod seat;
 mod seed;
-pub mod session;
 mod ssh;
 mod svc_order;
 mod svc_run;
@@ -26,18 +23,11 @@ mod tel;
 pub use catalog::{diff_values, Catalog, Drift, Object};
 pub use dev::converge as converge_dev;
 pub use error::{Error, Result};
-pub use gpu::{drm_modifiers_available, pci_has_drm_modifiers, with_drm_modifiers_override};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
-pub use image::{
-    adjust_wicket_svc, dhcp_net_document, is_wicket_image, is_wicket_text, mountinfo_has, ssh_home,
-    ssh_key_file, sshd_exec, svc_wait_mount, wicket_svc_desired, wicketd_needs_state,
-    APPDATA_MOUNT, APPDATA_SUBVOL, IMAGE_PATH, IMAGE_WICKET, STATE_MOUNT, STATE_SUBVOL,
-};
 pub use kinds::{
-    Dev, DevActual, Host, HostPower, HostSession, Meta, Net, Pkg, PkgActual, PkgAdvisory,
-    PkgComponent, PkgNeed, PkgRealization, PkgRequires, Plan, PlanActual, Ssh, SshActual, Svc,
-    SvcActual, SvcRestart, SvcUser,
+    Dev, DevActual, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory, PkgComponent, PkgNeed,
+    PkgRealization, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual, SvcRestart, SvcUser,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
@@ -49,21 +39,20 @@ pub use packhash::{
     LIVE_NAME,
 };
 pub use pkg::{
-    check_needs as check_pkg_needs, check_requires, converge as converge_pkg,
-    converge_with_link_root, copy_tree as copy_pack_tree, fetch_adv, fetch_pkg, ingest_file,
-    install_tree, list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
+    check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root,
+    copy_tree as copy_pack_tree, fetch_adv, fetch_pkg, ingest_file, install_tree,
+    list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
     pin_desired_hash, promote_slot, promote_store, read_advisories, read_advisories_store,
-    read_components, resolve_tree, seed_about as pkg_seed_about,
-    seed_need_hash as pkg_seed_need_hash, seed_needs as pkg_seed_needs,
-    seed_needs_json as pkg_seed_needs_json, stamp_unhashed, store_present, sync_need_hashes,
-    write_advisories, write_advisories_store, write_slot_links, COMPONENTS_NAME,
+    read_components, resolve_tree, store_present, sync_need_hashes, write_advisories,
+    write_advisories_store, write_slot_links, COMPONENTS_NAME,
 };
 pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,
 };
 pub use plan_build::{build_file, build_pinned, file_plan, BuildReport};
-pub use seed::seed;
-pub use session::{is_omarchy_desk_svc, is_sola_desk_svc, session_allows};
+pub use seed::{
+    apply_overlay, merge_patch, seed, seed_profile, Profile, DEFAULT_PROFILE, PROFILES,
+};
 pub use ssh::converge as converge_ssh;
 pub use svc_order::start_order as svc_start_order;
 pub use svc_run::{apply_svc_cred, svc_env_pairs, svc_spawn, SvcCred, SvcSpawn};

@@ -22,9 +22,8 @@ pub fn converge(desired: &Ssh) -> Result<SshActual> {
             return Err(Error::hint("dropbearkey failed", "oath get pkg:dropbear"));
         }
     }
-    let wicket = crate::image::is_wicket_image();
-    let home = crate::image::ssh_home(wicket);
-    let authorized = if wicket { crate::image::ssh_key_file(true) } else { AUTHORIZED };
+    let home = crate::seat::HOME;
+    let authorized = AUTHORIZED;
     let ssh_dir = format!("{home}/.ssh");
     fs::create_dir_all(&ssh_dir)?;
     let mut body = String::new();
@@ -36,12 +35,9 @@ pub fn converge(desired: &Ssh) -> Result<SshActual> {
         }
     }
     fs::write(authorized, &body)?;
-    let (uid, gid) = if wicket { (0, 0) } else { (crate::seat::UID, crate::seat::GID) };
-    let own = format!("{uid}:{gid}");
+    let own = format!("{}:{}", crate::seat::UID, crate::seat::GID);
     let _ = Command::new("/bin/chown").args(["-R", &own, home]).status();
-    if !wicket {
-        let _ = Command::new("/bin/chmod").args(["755", home]).status();
-    }
+    let _ = Command::new("/bin/chmod").args(["755", home]).status();
     let _ = Command::new("/bin/chmod").args(["700", &ssh_dir]).status();
     let _ = Command::new("/bin/chmod").args(["600", authorized]).status();
     Ok(SshActual { authorized: desired.authorized.clone(), host_key: host.is_file() })

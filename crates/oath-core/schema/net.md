@@ -1,29 +1,38 @@
 # net
 
-A network link. v0 has one object: `net:net0`. The appliance NIC is
-renamed to `net0`. Do not hunt `eth0` or `ens3`. There is no
-`ifcfg`, NetworkManager, or `dhclient`.
+A network link. There is one object: `net:net0`. PID 1 renames the
+machine's only non-loopback NIC to `net0`. Do not hunt `eth0` or
+`ens3`. There is no `ifcfg`, NetworkManager, or `dhclient`.
 
-**When to use:** bring the link up or down; set the static address.
+**When to use:** bring the link up or down; switch between DHCP and a
+static address.
 
-**When not:** do not run `ip` / `ifconfig` by hand as admin. Do not
-expect SSH. DHCP is not this kind (yet). Serial is how you reach the
-box.
+**When not:** do not run `ip` / `ifconfig` by hand as admin.
 
 ## Fields
 
-- `up` — link up with address + default route, or down.
-- `ipv4` — CIDR (appliance default `10.0.2.15/24`) or `dhcp`.
-- `gateway` — IPv4 (appliance default `10.0.2.2`). Ignored for dhcp.
+- `up` — link up with an address and default route, or down.
+- `ipv4` — `dhcp` (the default) or a static CIDR (`192.168.1.20/24`).
+- `gateway` — IPv4 default gateway for a static address. Ignored for
+  `dhcp`.
 
-Safety: `mutate`. Apply snapshots, then converges with `/bin/ip`.
+Actual may carry `lease` (the address DHCP gave). It is not a desired
+field.
+
+Safety: `mutate`. Apply snapshots, then converges with `/bin/ip` and,
+for `dhcp`, `/bin/udhcpc`.
+
+Known gap: DHCP runs once at converge. It is not a supervised
+service, so a lease is not renewed.
 
 ## Example
 
 ```
-oath ls --kind net
 oath get net:net0
-oath set net:net0 up=false
+oath set net:net0 ipv4=192.168.1.20/24 gateway=192.168.1.1
 oath apply
-oath undo
+oath set net:net0 ipv4=dhcp
+oath apply
 ```
+
+Downing the link over SSH cuts you off. Serial still works.

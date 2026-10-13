@@ -3,7 +3,7 @@
 use std::io;
 
 use crate::kinds::{Svc, SvcUser};
-use crate::seat::{self, is_seat_svc};
+use crate::seat;
 
 /// `CAP_NET_BIND_SERVICE` — bind a port below 1024.
 const CAP_NET_BIND_SERVICE: u32 = 10;
@@ -38,28 +38,15 @@ pub struct SvcCred {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SvcSpawn {
     pub cred: SvcCred,
-    /// Desk process: device nodes and display `TZ`. The seat name list
-    /// (and the sola / run-compositor exec heuristic) still selects this
-    /// when the effective account is `home`.
-    pub seat: bool,
     pub home: &'static str,
     pub user_name: &'static str,
     pub shell: &'static str,
     pub xdg_runtime_dir: String,
 }
 
-/// Effective account for `spec`.
-///
-/// An explicit `user` is the account. When the field is absent, a seat
-/// service still runs as `home` so an existing desk catalog keeps today's
-/// boot. Every other absent field runs as `root`.
-pub fn svc_spawn(id: &str, spec: &Svc) -> SvcSpawn {
-    let legacy = legacy_seat(id, spec);
-    let user = match spec.user {
-        Some(user) => user,
-        None if legacy => SvcUser::Home,
-        None => SvcUser::Root,
-    };
+/// Effective account for `spec`: the `user` field, or `root` when absent.
+pub fn svc_spawn(_id: &str, spec: &Svc) -> SvcSpawn {
+    let user = spec.user.unwrap_or(SvcUser::Root);
     let as_home = user == SvcUser::Home;
     SvcSpawn {
         cred: SvcCred {
@@ -68,10 +55,9 @@ pub fn svc_spawn(id: &str, spec: &Svc) -> SvcSpawn {
             gid: user.gid(),
             bind_low_ports: as_home && spec.bind_low_ports,
         },
-        seat: legacy && as_home,
         home: if as_home { seat::HOME } else { "/root" },
         user_name: if as_home { seat::NAME } else { "root" },
-        shell: if as_home { "/bin/thoxa" } else { "/bin/sh" },
+        shell: "/bin/sh",
         xdg_runtime_dir: format!("/run/user/{}", user.uid()),
     }
 }
@@ -175,16 +161,6 @@ fn capset(permitted: u32, effective: u32, inheritable: u32) -> io::Result<()> {
     Err(io::Error::last_os_error())
 }
 
-/// Seat name list, plus the exec strings PID 1 already treated as the desk
-/// (compositor wrapper and `sola-*` argv). Used only when `user` is absent,
-/// and for seat setup when the effective account is still `home`.
-fn legacy_seat(id: &str, spec: &Svc) -> bool {
-    is_seat_svc(id)
-        || spec.exec.iter().any(|arg| {
-            arg.contains("run-compositor") || arg.contains("/bin/sola-") || arg.contains("sola-")
-        })
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -213,46 +189,31 @@ mod tests {
         assert_eq!(spawn.cred.uid, 0);
         assert_eq!(spawn.cred.gid, 0);
         assert!(!spawn.cred.bind_low_ports);
-        assert!(!spawn.seat);
         assert_eq!(spawn.home, "/root");
         assert_eq!(spawn.user_name, "root");
     }
 
     #[test]
     fn user_home_is_uid_1() {
-        let mut spec = bare(&["/bin/wicketd"]);
+        let mut spec = bare(&["/bin/app"]);
         spec.user = Some(SvcUser::Home);
-        let spawn = svc_spawn("svc:wicketd", &spec);
+        let spawn = svc_spawn("svc:app", &spec);
         assert_eq!(spawn.cred.user, SvcUser::Home);
         assert_eq!(spawn.cred.uid, 1);
         assert_eq!(spawn.cred.uid, seat::UID);
         assert_eq!(spawn.cred.gid, seat::GID);
         assert_eq!(spawn.home, "/home");
         assert_eq!(spawn.user_name, "home");
-        assert!(!spawn.seat);
         assert!(!spawn.cred.bind_low_ports);
     }
 
     #[test]
-    fn absent_seat_stays_home_and_explicit_user_wins() {
-        let spec = bare(&["/bin/river"]);
-        let spawn = svc_spawn("svc:river", &spec);
-        assert_eq!(spawn.cred.uid, 1);
-        assert!(spawn.seat);
-
-        let mut rooted = spec.clone();
-        rooted.user = Some(SvcUser::Root);
-        let spawn = svc_spawn("svc:river", &rooted);
-        assert_eq!(spawn.cred.uid, 0);
-        assert!(!spawn.seat);
-
-        let mut wrapped = bare(&["/lib/oath/run-compositor"]);
-        assert_eq!(svc_spawn("svc:custom", &wrapped).cred.uid, 1);
-        wrapped.user = Some(SvcUser::Root);
-        assert_eq!(svc_spawn("svc:custom", &wrapped).cred.uid, 0);
-
-        let hinted = bare(&["/bin/env", "sola-audio=1", "/bin/pipewire"]);
-        assert_eq!(svc_spawn("svc:not-a-seat-name", &hinted).cred.user, SvcUser::Home);
+    fn absent_user_is_root_and_explicit_user_wins() {
+        let spec = bare(&["/bin/app"]);
+        assert_eq!(svc_spawn("svc:app", &spec).cred.uid, 0);
+        let mut home = spec.clone();
+        home.user = Some(SvcUser::Home);
+        assert_eq!(svc_spawn("svc:app", &home).cred.uid, 1);
     }
 
     #[test]
@@ -269,22 +230,16 @@ mod tests {
         let spawn = svc_spawn("svc:caddy", &root);
         assert_eq!(spawn.cred.user, SvcUser::Root);
         assert!(!spawn.cred.bind_low_ports);
-
-        let mut seat = bare(&["/bin/river"]);
-        seat.bind_low_ports = false;
-        assert!(!svc_spawn("svc:river", &seat).cred.bind_low_ports);
-        seat.bind_low_ports = true;
-        assert!(svc_spawn("svc:river", &seat).cred.bind_low_ports);
     }
 
     #[test]
     fn env_pairs_skip_invalid_names() {
         let mut spec = bare(&["/bin/true"]);
-        spec.env.insert("WICKET_STATE_DIR".into(), "/var/lib/wicket".into());
+        spec.env.insert("APP_STATE_DIR".into(), "/var/lib/app".into());
         spec.env.insert("BAD-NAME".into(), "x".into());
         spec.env.insert("HAS_NL".into(), "a\nb".into());
         let pairs = svc_env_pairs(&spec);
-        assert_eq!(pairs, vec![("WICKET_STATE_DIR".into(), "/var/lib/wicket".into())]);
+        assert_eq!(pairs, vec![("APP_STATE_DIR".into(), "/var/lib/app".into())]);
     }
 
     #[test]
@@ -482,7 +437,7 @@ mod tests {
         assert!(back.get("env").is_none());
         assert!(back.get("bind_low_ports").is_none());
         let bad =
-            r#"{"exec":["/bin/true"],"wants":[],"restart":"never","enabled":true,"user":"wicket"}"#;
+            r#"{"exec":["/bin/true"],"wants":[],"restart":"never","enabled":true,"user":"app"}"#;
         assert!(serde_json::from_str::<Svc>(bad).is_err());
         let bad = r#"{"exec":["/bin/true"],"wants":[],"restart":"never","enabled":true,"user":"postgres"}"#;
         assert!(serde_json::from_str::<Svc>(bad).is_err());

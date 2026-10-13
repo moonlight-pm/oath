@@ -19,13 +19,13 @@ fn catalog_accepts_fields_and_old_documents() {
     let mut fields = Map::new();
     fields.insert("user".into(), json!("home"));
     fields.insert("bind_low_ports".into(), json!(true));
-    fields.insert("env".into(), json!({"WICKET_STATE_DIR": "/var/lib/wicket"}));
+    fields.insert("env".into(), json!({"APP_STATE_DIR": "/var/lib/app"}));
     cat.set_fields(&id, fields).unwrap();
     let desired = cat.get(&id).unwrap().desired;
     let spec: Svc = serde_json::from_value(desired).unwrap();
     assert_eq!(spec.user, Some(SvcUser::Home));
     assert!(spec.bind_low_ports);
-    assert_eq!(spec.env.get("WICKET_STATE_DIR").map(String::as_str), Some("/var/lib/wicket"));
+    assert_eq!(spec.env.get("APP_STATE_DIR").map(String::as_str), Some("/var/lib/app"));
     assert_eq!(svc_spawn("svc:hold", &spec).cred.uid, 1);
     assert!(svc_spawn("svc:hold", &spec).cred.bind_low_ports);
 

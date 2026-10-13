@@ -18,8 +18,6 @@ use oath_core::{seed, tel, Catalog, Host, ObjectId, Svc, BTRFS_TOP, DEFAULT_ROOT
 use serde_json::json;
 
 mod gpu;
-#[allow(dead_code)]
-mod splash;
 
 /// Fallback if packed `load-order` is missing. Deps before users.
 const MODULES: &[&str] = &[
@@ -150,7 +148,6 @@ fn real_main() -> Result<(), String> {
     let _ = fs::create_dir_all("/tmp");
     let _ = fs::create_dir_all("/root");
     mount_toplevel();
-    mount_wicket_volumes();
 
     if !Path::new("/oath/INDEX.md").exists() {
         let _ = seed(Path::new(DEFAULT_ROOT));
@@ -165,18 +162,14 @@ fn real_main() -> Result<(), String> {
     load_modules(true);
     apply_net();
     apply_dev();
-    ensure_seat();
+    ensure_home();
     inject_ssh_from_host();
     apply_ssh();
-    hold_graphics();
     let mut kids: HashMap<i32, Kid> = HashMap::new();
     let mut oneshot_done: HashSet<String> = HashSet::new();
-    // sshd/dhcp first. River as `home` on amdgpu crash-loops if it starts
-    // before KMS and /dev/input exist (libinput ENOENT, WLR on simpledrm).
-    converge(&mut kids, false, &mut oneshot_done);
+    // sshd and DHCP first, then the deferred KMS and sound modules.
+    converge(&mut kids, &mut oneshot_done);
     load_modules(false);
-    wait_seat_devices(Duration::from_secs(10));
-    converge(&mut kids, true, &mut oneshot_done);
 
     let sock_path = "/oath/run/init.sock";
     let _ = fs::remove_file(sock_path);
@@ -185,18 +178,13 @@ fn real_main() -> Result<(), String> {
 
     log("ready");
     tel("init", "ready", json!({ "svcs": kids.len(), "kver": kver() }));
-    let mut last_dev = Instant::now();
     loop {
         reap(&mut kids, &mut oneshot_done);
-        if last_dev.elapsed() >= Duration::from_secs(2) {
-            oath_core::seat::open_device_nodes();
-            last_dev = Instant::now();
-        }
         if let Ok((mut s, _)) = listener.accept() {
             let mut buf = [0u8; 64];
             let n = s.read(&mut buf).unwrap_or(0);
             tel("init", "converge", json!({ "bytes": n }));
-            converge(&mut kids, true, &mut oneshot_done);
+            converge(&mut kids, &mut oneshot_done);
             let _ = s.write_all(b"ok\n");
         }
         std::thread::sleep(Duration::from_millis(200));
@@ -255,9 +243,6 @@ fn load_modules(defer_kms: bool) {
         }
     }
     let _ = Command::new("/bin/busybox").args(["mdev", "-s"]).status();
-    if !defer {
-        wait_drm(Duration::from_secs(5));
-    }
 }
 
 /// KMS takeover plus ALSA. HDMI audio sits on the GPU function; load
@@ -271,77 +256,6 @@ fn module_already_loaded(rel: &str) -> bool {
     let stem = Path::new(rel).file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let name = stem.replace('-', "_");
     Path::new("/sys/module").join(name).exists()
-}
-
-fn wait_drm(wait: Duration) {
-    let deadline = Instant::now() + wait;
-    while Instant::now() < deadline {
-        if drm_has_connected() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    }
-}
-
-fn wait_seat_devices(wait: Duration) {
-    let _ = fs::create_dir_all("/dev/input");
-    let _ = fs::create_dir_all("/dev/dri");
-    let deadline = Instant::now() + wait;
-    loop {
-        oath_core::seat::open_device_nodes();
-        let drm = oath_core::seat::drm_nodes_ready();
-        let input = oath_core::seat::input_nodes_ready();
-        if drm && input {
-            log("seat devices ready");
-            tel("init", "seat_devices", json!({ "drm": drm, "input": input, "ok": true }));
-            return;
-        }
-        if Instant::now() >= deadline {
-            log(&format!("seat devices timeout drm={drm} input={input}"));
-            tel("init", "seat_devices", json!({ "drm": drm, "input": input, "ok": false }));
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    }
-}
-
-fn drm_has_connected() -> bool {
-    let Ok(cards) = fs::read_dir("/sys/class/drm") else {
-        return false;
-    };
-    for e in cards.flatten() {
-        let p = e.path();
-        let name = p.file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-        if !name.contains('-') {
-            continue;
-        }
-        if fs::read_to_string(p.join("status")).ok().is_some_and(|s| s.trim() == "connected") {
-            return true;
-        }
-    }
-    false
-}
-
-fn hold_graphics() {
-    let _ = fs::write("/proc/sys/kernel/printk", "0 0 0 0\n");
-    let _ = fs::write("/sys/class/graphics/fbcon/cursor_blink", b"0");
-    if let Ok(vt) = fs::read_dir("/sys/class/vtconsole") {
-        for e in vt.flatten() {
-            let _ = fs::write(e.path().join("bind"), b"0");
-        }
-    }
-    unsafe {
-        let fd = libc::open(c"/dev/tty0".as_ptr(), libc::O_RDWR);
-        if fd >= 0 {
-            libc::ioctl(fd, 0x4B3A as libc::Ioctl, 1);
-            libc::close(fd);
-        }
-        let fd = libc::open(c"/dev/tty1".as_ptr(), libc::O_RDWR);
-        if fd >= 0 {
-            libc::ioctl(fd, 0x4B3A as libc::Ioctl, 1);
-            libc::close(fd);
-        }
-    }
 }
 
 fn module_load_order(base: &Path) -> Vec<String> {
@@ -694,7 +608,7 @@ fn mount_root(dev: &str, subvol: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Keep initrd modules/firmware after chroot so amdgpu can load just before River.
+/// Keep initrd modules/firmware after chroot so the deferred KMS pass can load them.
 fn keep_initrd_mods(newroot: &str) {
     for rel in ["lib/modules", "lib/firmware"] {
         let src = Path::new("/").join(rel);
@@ -721,11 +635,7 @@ fn unix_floor() {
     let xdg = format!("/run/user/{}", oath_core::seat::UID);
     let _ = fs::create_dir_all(&xdg);
     let _ = fs::set_permissions(&xdg, std::fs::Permissions::from_mode(0o700));
-    // glib/dbus look here. zbus defaults to /var/run/dbus/system_bus_socket.
-    let _ = fs::create_dir_all("/run/dbus");
-    let _ = fs::create_dir_all("/var/run/dbus");
-    // bash process substitution (`< <(find …)`) opens /dev/fd/N. Without
-    // these, Omarchy's plugin scanner emits nothing and the menu never loads.
+    // Shell process substitution opens /dev/fd/N.
     let _ = std::os::unix::fs::symlink("/proc/self/fd", "/dev/fd");
     let _ = std::os::unix::fs::symlink("/proc/self/fd/0", "/dev/stdin");
     let _ = std::os::unix::fs::symlink("/proc/self/fd/1", "/dev/stdout");
@@ -737,37 +647,10 @@ fn unix_floor() {
     let _ = fs::create_dir_all("/sys/fs/cgroup");
     let _ =
         mount(Some("cgroup2"), "/sys/fs/cgroup", Some("cgroup2"), MsFlags::empty(), None::<&str>);
-    // Steam/CEF bind 127.0.0.1. net:net0 is the NIC; lo is not a catalog object.
+    // net:net0 is the NIC; lo is not a catalog object.
     let _ = Command::new("/bin/ip").args(["link", "set", "lo", "up"]).status();
     let _ = Command::new("/bin/ip").args(["addr", "add", "127.0.0.1/8", "dev", "lo"]).status();
     let _ = Command::new("/bin/ip").args(["addr", "add", "::1/128", "dev", "lo"]).status();
-}
-
-/// Wicket image: sibling subvolumes on the same pool as `@`.
-fn mount_wicket_volumes() {
-    if !oath_core::is_wicket_image() {
-        return;
-    }
-    let dev = root_dev();
-    mount_subvol(&dev, oath_core::STATE_SUBVOL, oath_core::STATE_MOUNT);
-    mount_subvol(&dev, oath_core::APPDATA_SUBVOL, oath_core::APPDATA_MOUNT);
-}
-
-fn mount_subvol(dev: &str, subvol: &str, target: &str) {
-    let _ = fs::create_dir_all(target);
-    let data = format!("subvol={subvol}");
-    match mount(Some(dev), target, Some("btrfs"), MsFlags::empty(), Some(data.as_str())) {
-        Ok(()) => {
-            let _ = Command::new("/bin/chown").args(["1:1", target]).status();
-            log(&format!("mounted {subvol} on {target}"));
-        }
-        Err(e) => log(&format!("mount {subvol} on {target}: {e}")),
-    }
-}
-
-fn mount_point_active(target: &str) -> bool {
-    let text = fs::read_to_string("/proc/self/mountinfo").unwrap_or_default();
-    oath_core::mountinfo_has(&text, target)
 }
 
 /// Mount btrfs subvolid=0 so generations can be sibling `@gen-N`, not nested on `@`.
@@ -825,7 +708,6 @@ fn apply_host() {
         power: oath_core::HostPower::Run,
         env: host.env,
         timezone: host.timezone,
-        session: host.session,
     };
     let dir = Path::new(DEFAULT_ROOT).join("objects/host/local");
     let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
@@ -971,12 +853,11 @@ fn wait_pid_gone(pid: i32, timeout: Duration) {
     }
 }
 
-fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut HashSet<String>) {
+fn converge(kids: &mut HashMap<i32, Kid>, oneshot_done: &mut HashSet<String>) {
     let cat = match Catalog::open(DEFAULT_ROOT) {
         Ok(c) => c,
         Err(_) => return,
     };
-    let session = host_session();
     let Ok(ids) = cat.ls(Some("svc")) else { return };
     let mut wanted: HashMap<String, Svc> = HashMap::new();
     for id in &ids {
@@ -989,31 +870,16 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
 
     let running: Vec<(i32, String, Svc)> =
         kids.iter().map(|(p, k)| (*p, k.id.clone(), k.spec.clone())).collect();
-    let mut wait_drm: Vec<i32> = Vec::new();
     for (_pid, id, spec) in running {
         let keep = wanted
             .get(&id)
-            .map(|s| {
-                s.enabled
-                    && oath_core::session_allows(&id, session)
-                    && !s.exec.is_empty()
-                    && s.same_spawn(&spec)
-            })
+            .map(|s| s.enabled && !s.exec.is_empty() && s.same_spawn(&spec))
             .unwrap_or(false);
         if !keep {
-            let compositor = id == "svc:river"
-                || id == "svc:hyprland"
-                || id.ends_with(":river")
-                || id.ends_with(":hyprland");
             if let Some(pid) = stop_kid(kids, &id) {
-                if compositor {
-                    wait_drm.push(pid);
-                }
+                wait_pid_gone(pid, Duration::from_secs(3));
             }
         }
-    }
-    for pid in wait_drm {
-        wait_pid_gone(pid, Duration::from_secs(3));
     }
 
     let items: Vec<(String, Svc)> = wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();
@@ -1028,22 +894,7 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
     for id in &order {
         let Some(spec) = wanted.get(id) else { continue };
         let oid: ObjectId = id.parse().unwrap_or_else(|_| ObjectId::new("svc", "x"));
-        // Desk names wait for DRM and input. `user` does not pull a seat
-        // service into the early pass, and a non-seat `user=home` service
-        // does not wait here.
-        if !start_seat && oath_core::seat::is_seat_svc(id) {
-            continue;
-        }
-        if let Some(mount) = oath_core::svc_wait_mount(id) {
-            if !mount_point_active(mount) {
-                log(&format!("{id} waiting for {mount}"));
-                if pid_for(kids, id).is_none() {
-                    write_svc_actual(&oid, "stopped", None, 0);
-                }
-                continue;
-            }
-        }
-        if !spec.enabled || spec.exec.is_empty() || !oath_core::session_allows(id, session) {
+        if !spec.enabled || spec.exec.is_empty() {
             oneshot_done.remove(id);
             if pid_for(kids, id).is_none() {
                 write_svc_actual(&oid, "stopped", None, 0);
@@ -1083,33 +934,6 @@ fn converge(kids: &mut HashMap<i32, Kid>, start_seat: bool, oneshot_done: &mut H
     }
 }
 
-fn host_session() -> oath_core::HostSession {
-    let cat = match Catalog::open(DEFAULT_ROOT) {
-        Ok(c) => c,
-        Err(_) => return oath_core::HostSession::Sola,
-    };
-    let id = ObjectId::new("host", "local");
-    let Ok(obj) = cat.get(&id) else {
-        return oath_core::HostSession::Sola;
-    };
-    serde_json::from_value::<Host>(obj.desired)
-        .map(|h| h.session)
-        .unwrap_or(oath_core::HostSession::Sola)
-}
-
-fn host_timezone() -> Option<String> {
-    let cat = Catalog::open(DEFAULT_ROOT).ok()?;
-    let id = ObjectId::new("host", "local");
-    let obj = cat.get(&id).ok()?;
-    let host: Host = serde_json::from_value(obj.desired).ok()?;
-    let tz = host.timezone.trim();
-    if tz.is_empty() {
-        None
-    } else {
-        Some(tz.to_string())
-    }
-}
-
 fn host_env() -> Vec<(String, String)> {
     let cat = Catalog::open(DEFAULT_ROOT).ok();
     let Some(cat) = cat else { return Vec::new() };
@@ -1118,28 +942,22 @@ fn host_env() -> Vec<(String, String)> {
     let Ok(host) = serde_json::from_value::<Host>(obj.desired) else {
         return Vec::new();
     };
-    host.env
+    oath_core::seat::login_env(&host)
         .into_iter()
         .filter(|(k, v)| oath_core::seat::valid_env_name(k) && !v.contains('\n'))
         .collect()
 }
 
-fn ensure_seat() {
+/// `/home` and `/home/.ssh` exist and belong to `home`.
+fn ensure_home() {
     use oath_core::seat;
     let home = Path::new(seat::HOME);
     let ssh = home.join(".ssh");
-    let xdg = format!("/run/user/{}", seat::UID);
-    let _ = fs::create_dir_all(home);
     let _ = fs::create_dir_all(&ssh);
-    let _ = fs::create_dir_all(&xdg);
-    let _ = fs::create_dir_all("/oath/log");
     let own = format!("{}:{}", seat::UID, seat::GID);
     let _ = Command::new("/bin/chown").args(["-R", &own, seat::HOME]).status();
     let _ = Command::new("/bin/chmod").args(["755", seat::HOME]).status();
     let _ = Command::new("/bin/chmod").args(["700", &ssh.to_string_lossy()]).status();
-    let _ = Command::new("/bin/chown").args([&own, &xdg]).status();
-    let _ = Command::new("/bin/chmod").args(["700", &xdg]).status();
-    oath_core::seat::chown_logs();
 }
 
 fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
@@ -1155,24 +973,15 @@ fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
         let _ = Command::new("/bin/chown").args([&own, &xdg]).status();
         let _ = Command::new("/bin/chmod").args(["700", xdg.as_str()]).status();
     }
-    if plan.seat {
-        oath_core::seat::open_device_nodes();
-    }
     cmd.env("PATH", "/bin")
         .env("HOME", plan.home)
         .env("USER", plan.user_name)
         .env("LOGNAME", plan.user_name)
         .env("SHELL", plan.shell)
         .env("PS1", "/ # ")
-        .env("XDG_RUNTIME_DIR", &xdg)
-        .env("SOLA_NO_SELF_WATCH", "1");
+        .env("XDG_RUNTIME_DIR", &xdg);
     for (k, v) in host_env() {
         cmd.env(k, v);
-    }
-    if plan.seat {
-        if let Some(tz) = host_timezone() {
-            cmd.env("TZ", tz);
-        }
     }
     // Service env wins over host:local.env and the account defaults.
     for (k, v) in oath_core::svc_env_pairs(spec) {
@@ -1192,7 +1001,6 @@ fn spawn(id: &str, spec: &Svc) -> Result<Pid, String> {
         "svc_spawn",
         json!({
             "id": id,
-            "seat": plan.seat,
             "uid": plan.cred.uid,
             "user": plan.cred.user.as_str(),
             "bind_low_ports": plan.cred.bind_low_ports,

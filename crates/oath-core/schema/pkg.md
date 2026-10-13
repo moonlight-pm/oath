@@ -9,72 +9,55 @@ realization (`hash`).
 
 **When not:** do not `ln` or `rm` in `/bin`. Do not exec from the
 store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
-`pkg:oath`, `pkg:dropbear`, or `pkg:glibc`.
+`pkg:oath`, or `pkg:dropbear`. `oath set` cannot create a new `pkg`
+object; `oath build` creates the product's object, and an install
+overlay can add others.
 
 ## Fields
 
 - `present` — `true` links `store/.../<hash>/bin/*` into `/bin`.
-  `false` removes **this object’s** links. Store stays so re-install
-  needs no network.
+  `false` removes **this object's** links. The store tree stays, so a
+  re-install needs no network.
 - `hash` — optional pin. Realization id is `sha256-` plus 64 lowercase
-  hex of the pack tree (`oath-tree-v1` in this schema). Apply verifies
-  bytes match; it does not choose. Empty hash is discovery: unique
-  on-disk tree or a fetch reports `actual.hash`. Two hashes of one
+  hex of the pack tree (`oath-tree-v1`). Apply verifies the bytes
+  match; it does not choose. Empty hash is discovery: the unique
+  on-disk tree, or a fetch, reports `actual.hash`. Two hashes of one
   name can sit on disk; only the pin is linked.
-- `url` — optional. If set and the store is missing, apply wget’s it
+- `url` — optional. If set and the store is missing, apply fetches it
   then links. `oath build` fetches a missing `build_needs` pack the
-  same way before the sandbox starts (does not set `present`). A
-  `.tar` (or `.tar.gz`) is a pack tree (hash is of the tree, not the
-  tar). An origin prefix plus `hash` fetches
-  `{url}/pkg/{name}/{hash}.tar` — object storage is just HTTPS. A
-  single file (canary `pkg:fetchme`) becomes `bin/<name>`. Local store
-  wins if the realization is already there.
-- `requires` — optional hardware the bits need. `drm_modifiers: true`
-  means apply `present=true` is refused unless a connected GPU exports
-  Vulkan WSI DRM format modifiers (AMD GFX6–8 and virtio-gpu do not).
-  `pkg:gamescope` always has this requirement. Uninstall is always
-  allowed. `sola-arcade` lives in `pkg:sola`; apply skips that `/bin`
-  link on the same GPUs rather than refusing the whole Sola blob.
+  same way before the sandbox starts (it does not set `present`). A
+  `.tar` (or `.tar.gz`) is a pack tree; the hash is of the tree, not
+  the tar. An origin prefix plus `hash` fetches
+  `{url}/pkg/{name}/{hash}.tar`. A single file becomes `bin/<name>`.
+  Local store wins if the realization is already there.
 - `needs` — optional list of `{id, hash}` this pack needs at runtime.
-  `id` is `pkg:glibc` (or `glibc`). `hash` is required (`sha256-` plus
-  64 hex). Cycles refuse apply. `present=true` is refused if a need is
-  missing or its live pin differs. `present=false` is refused while
-  another **present** pack still needs this. Apply does not rewrite
-  other objects; sola-oath stages the cascade. Not a recipe language.
-- `description` — short prose. Empty means none. Pack `INDEX.md` is
-  still the store-tree note for two hashes of one name.
-- `home` — HTTPS URL of the source tree or main project page. Empty
-  means none. Not `url` (that fetches bits).
+  `hash` is required. Cycles refuse apply. `present=true` is refused
+  if a need is missing or its live pin differs. `present=false` is
+  refused while another **present** pack still needs this. Apply does
+  not rewrite other objects.
+- `description` — short prose. Empty means none.
+- `home` — HTTPS URL of the source or project page. Not `url`.
 
-Pack-tree (not desired; part of the hash): `components.json` lists
-upstream `{name, version, purl}` (optional `cpe`). Several entries
-are allowed. Missing file means unknown, not safe. Actual copies the
-live tree’s list.
+Pack tree (not desired; part of the hash): `components.json` lists
+upstream `{name, version, purl}` (optional `cpe`). Missing means
+unknown, not safe. Actual copies the live tree's list.
 
-Hash-keyed advisories (not desired; not in the pack):
-`/oath/store/adv/<name>/<hash>.json`. Origin
-`{origin}/adv/<name>/<hash>.json`. Actual `advisories` is that list
-for the live pin when the file exists (omitted = never fetched).
-Apply wget’s it when `url` is an origin; failure does not refuse
-apply. Guest does not call OSV/NVD. Empty list is not a safety proof.
+Advisories (not desired; not in the pack):
+`/oath/store/adv/<name>/<hash>.json`, fetched from
+`{origin}/adv/<name>/<hash>.json` when `url` is an origin. A failed
+fetch does not refuse apply. Actual `advisories` is omitted when never
+fetched. An empty list is not a safety proof. The box never calls
+OSV or NVD.
 
-The slot also has `live` → `<hash>` and compat symlinks (`bin` →
-`live/bin`, …) so RPATH/env that still name
-`/oath/store/pkg/<name>/lib` keep working. Those wrappers are not
-part of the hash.
+The slot has `live` → `<hash>` and compatibility links (`bin` →
+`live/bin`, …) that are not part of the hash.
 
 Actual also has `links` (basenames in `/bin`), `removable`, live
-`hash`, `components`, optional `advisories`, and `realizations`
-(other trees for this name: hash, linked, `bin/` names, first lines
-of pack `INDEX.md`, that tree’s `components`). If `removable` is
-false, `present=false` is refused (not `--confirm`).
+`hash`, `components`, optional `advisories`, and `realizations` (other
+trees for this name). If `removable` is false, `present=false` is
+refused (not `--confirm`).
 
 Safety: `mutate`. Apply snapshots, then converges links.
-
-Optional store files (not schema fields):
-`libexec/oath-backup-quiesce` and `libexec/oath-backup-thaw`. The
-off-box backup helper runs them on **present** packs before/after the
-generation snapshot. Missing = skip.
 
 ## Example
 
@@ -89,19 +72,10 @@ oath apply
 oath undo
 ```
 
-The appliance ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`,
-`pkg:dropbear`, and `pkg:glibc` already present (not removable),
-`pkg:river` present (removable), `pkg:sola` present (removable; session
-ELFs plus `sola-terminal` and `tmux`), `pkg:grok` present (removable;
-borrowed static-pie; updater off), `pkg:git` and `pkg:curl` present
-(removable), and
-`pkg:hello` absent until you apply. `/bin/hello` prints `hello`.
-Busybox applets are one package. `pkg:glibc` is the GNU C runtime
-for glibc payloads (River, Sola, rustc). Never load it into musl PID 1.
-`pkg:cc` / `pkg:rustc` / `pkg:cmake` / `pkg:pkg-config` are the guest
-toolchain (T35). `pkg:bash` / `pkg:xwayland` / `pkg:gamescope` /
-`pkg:steam` are the Arcade runtime (T37). `pkg:gamescope` is
-`present: false` until a GPU with DRM modifiers applies it;
-`sola-arcade` is not linked on cards that cannot run the nest.
-`pkg:bluez` is the system D-Bus plus BlueZ (`/bin/dbus-daemon`,
-`/bin/bluetoothd`). Session bus / MPRIS stay out.
+The `base` profile ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`, and
+`pkg:dropbear` present and not removable; `pkg:curl` present and
+removable; `pkg:hello` absent with its bits already in the store
+(`/bin/hello` prints `hello`); and `pkg:fetchme` absent with a `url`
+on the QEMU host. The `dev` profile adds `pkg:cc` (Zig: `cc`, `c++`,
+`musl-cc`, `ar`, `ranlib`, `patchelf`, all targeting musl). Busybox
+applets are one package. There is no glibc.

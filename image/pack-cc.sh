@@ -1,8 +1,7 @@
 #!/bin/sh
 # Pack pkg:cc from the official Zig linux tarball (static musl ELF).
 # Product face is cc / c++ / ar / ranlib / musl-cc / patchelf.
-# Default cc target is x86_64-linux-gnu (Sola / Thoxa / rustc host).
-# musl-cc is x86_64-linux-musl (Oath guest ELFs).
+# Every compiler wrapper targets x86_64-linux-musl. Oath has no glibc.
 set -eu
 
 out=${1:?out}
@@ -37,37 +36,20 @@ if [ -f "$src/LICENSE" ]; then
 	cp -a "$src/LICENSE" "$out/libexec/zig/LICENSE"
 fi
 
-# Wrappers always point at the guest store (same as relocate-git / thoxa).
-# glibc ELFs must use pkg:glibc's loader; Oath has no /lib64.
-# rustc 1.98 passes -fuse-ld=lld; Zig 0.16 cannot combine that with
-# --dynamic-linker. image/zig-gnu-cc.sh drops those flags.
-cp "$here/zig-gnu-cc.sh" "$out/libexec/zig-gnu-cc.sh"
-chmod 755 "$out/libexec/zig-gnu-cc.sh"
-write_cc() {
+# Wrappers always point at the guest store.
+write_zig() {
 	cat >"$out/bin/$1" <<EOF
 #!/bin/sh
-exec $guest/libexec/zig-gnu-cc.sh cc "\$@"
-EOF
-	chmod 755 "$out/bin/$1"
-}
-write_cxx() {
-	cat >"$out/bin/$1" <<EOF
-#!/bin/sh
-exec $guest/libexec/zig-gnu-cc.sh c++ "\$@"
+exec $zigdir/zig $2 -target x86_64-linux-musl "\$@"
 EOF
 	chmod 755 "$out/bin/$1"
 }
 
-write_cc cc
-write_cc gcc
-write_cxx c++
-write_cxx g++
-
-cat >"$out/bin/musl-cc" <<EOF
-#!/bin/sh
-exec $zigdir/zig cc -target x86_64-linux-musl "\$@"
-EOF
-chmod 755 "$out/bin/musl-cc"
+write_zig cc cc
+write_zig gcc cc
+write_zig musl-cc cc
+write_zig c++ c++
+write_zig g++ c++
 
 cat >"$out/bin/ar" <<EOF
 #!/bin/sh
@@ -117,11 +99,10 @@ cat >"$out/INDEX.md" <<'EOF'
 C toolchain for Oath-as-dev-host. Bits are official Zig (static musl)
 plus patchelf built with `zig c++`.
 
-`/bin/cc` and `/bin/c++` target **glibc** (`x86_64-linux-gnu`) so Sola
-and the rustc host link. `/bin/musl-cc` targets musl for Oath guest
-ELFs. `/bin/ar`, `/bin/ranlib`, `/bin/patchelf`.
+`/bin/cc`, `/bin/c++` and `/bin/musl-cc` all target musl
+(`x86_64-linux-musl`). `/bin/ar`, `/bin/ranlib`, `/bin/patchelf`.
 
-Not a second libc in PID 1. Zig is the compiler, not a new kind.
+Zig is the compiler, not a new kind.
 EOF
 
 chmod -R u+rwX "$out"

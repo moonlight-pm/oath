@@ -11,20 +11,15 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::error::{Error, Result};
-use crate::gpu::drm_modifiers_available;
-use crate::kinds::{
-    Pkg, PkgActual, PkgAdvisory, PkgComponent, PkgNeed, PkgRealization, PkgRequires,
-};
+use crate::kinds::{Pkg, PkgActual, PkgAdvisory, PkgComponent, PkgNeed, PkgRealization};
 use crate::packhash::{
-    fetch_adv_url, fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX,
-    LIVE_NAME,
+    fetch_adv_url, fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, LIVE_NAME,
 };
 
 /// Pack-root file: upstream identity for feed matching (T44). Part of
 /// the tree hash. Missing means unknown, not safe.
 pub const COMPONENTS_NAME: &str = "components.json";
 use crate::write_json;
-use sha2::{Digest, Sha256};
 
 /// Create or remove this package’s `/bin` symlinks. Never clobber a
 /// name that does not already point at this package’s store.
@@ -66,10 +61,6 @@ pub fn converge_with_link_root(
     if present {
         let mut links = Vec::new();
         for n in &names {
-            if skip_bin(name, n) {
-                unlink_ours(bin_dir, link_root, store_root, name, n, &tree)?;
-                continue;
-            }
             let target = store_target(link_root, name, n, &tree, store_root);
             let dest = bin_dir.join(n);
             if dest.symlink_metadata().is_ok() {
@@ -101,121 +92,11 @@ pub fn converge_with_link_root(
     }
 }
 
-/// Refuse `present=true` when the package needs GPU features this
-/// machine does not have. Uninstall (`present=false`) is always ok.
-pub fn check_requires(name: &str, desired: &Pkg) -> Result<()> {
-    if !desired.present {
-        return Ok(());
-    }
-    let needs = desired.requires.drm_modifiers || name == "gamescope";
-    if !needs {
-        return Ok(());
-    }
-    if drm_modifiers_available() {
-        return Ok(());
-    }
-    Err(Error::hint(
-        format!(
-            "pkg:{name} needs a GPU with DRM format modifiers (Vulkan WSI); this card does not"
-        ),
-        "oath schema pkg",
-    ))
-}
-
 pub fn normalize_need(w: &str) -> String {
     if w.contains(':') {
         w.to_string()
     } else {
         format!("pkg:{w}")
-    }
-}
-
-/// Seed-time runtime graph (slot names). Hash is filled at seed/pack/live.
-pub fn seed_needs(name: &str) -> &'static [&'static str] {
-    match name {
-        "river" | "hyprland" | "pipewire" | "bluez" | "thoxa" | "cc" | "cmake" | "foot"
-        | "grim" | "xwayland" | "mesa" => &["pkg:glibc"],
-        "quickshell" => &["pkg:glibc", "pkg:hyprland"],
-        "omarchy" => &["pkg:glibc", "pkg:hyprland", "pkg:quickshell", "pkg:foot", "pkg:grim"],
-        "sola" => &["pkg:glibc", "pkg:river"],
-        "rustc" => &["pkg:glibc", "pkg:cc"],
-        "gamescope" => &["pkg:glibc", "pkg:mesa"],
-        "steam" => &["pkg:glibc", "pkg:bash", "pkg:mesa", "pkg:xwayland"],
-        _ => &[],
-    }
-}
-
-/// Realization id used in seed `needs[].hash` before a pack pins the
-/// needed slot. Not a tree hash. Pack/live overwrite with the live pin.
-pub fn seed_need_hash(name: &str) -> String {
-    let mut d = Sha256::new();
-    d.update(b"oath-seed-need\n");
-    d.update(name.as_bytes());
-    format!("{HASH_PREFIX}{:x}", d.finalize())
-}
-
-pub fn seed_needs_json(name: &str) -> serde_json::Value {
-    let v: Vec<serde_json::Value> = seed_needs(name)
-        .iter()
-        .map(|id| {
-            let n = id.strip_prefix("pkg:").unwrap_or(id);
-            serde_json::json!({ "id": id, "hash": seed_need_hash(n) })
-        })
-        .collect();
-    serde_json::Value::Array(v)
-}
-
-/// Seed-time description and project page. Empty strings mean none.
-pub fn seed_about(name: &str) -> (&'static str, &'static str) {
-    match name {
-        "busybox" => ("Unix applets in one musl ELF, including vi.", "https://busybox.net/"),
-        "btrfs" => ("btrfs-progs for the live @ generations.", "https://btrfs.readthedocs.io/"),
-        "oath" => ("Catalog CLI — the only admin surface.", "https://github.com/moonlight-pm/oath"),
-        "dropbear" => (
-            "SSH server and musl OpenSSH client bits.",
-            "https://matt.ucc.asn.au/dropbear/dropbear.html",
-        ),
-        "glibc" => (
-            "GNU C runtime for glibc payloads. Never loaded by musl PID 1.",
-            "https://www.gnu.org/software/libc/",
-        ),
-        "river" => ("Sola compositor (patched River).", "https://codeberg.org/river/river"),
-        "hyprland" => ("Omarchy compositor.", "https://hypr.land/"),
-        "quickshell" => ("Omarchy bar and menu (Quickshell).", "https://quickshell.org/"),
-        "omarchy" => ("Omarchy session payload — scripts, bar, menu.", "https://omarchy.org/"),
-        "sola" => ("Sola session stack and kit apps.", "https://github.com/moonlight-pm/Sola"),
-        "grok" => ("Grok Build CLI. Updater off; apply is how bits change.", "https://grok.com/"),
-        "git" => ("Git.", "https://git-scm.com/"),
-        "curl" => ("curl with a CA bundle.", "https://curl.se/"),
-        "wicket" => ("Wicket control plane: wicketd, IdP, admin, setup.", "https://wicket.cloud/"),
-        "caddy" => ("HTTP and TLS front door.", "https://caddyserver.com/"),
-        "postgresql" => ("Platform Postgres server and clients.", "https://www.postgresql.org/"),
-        "postgis" => ("PostGIS extension for the workload cluster.", "https://postgis.net/"),
-        "pipewire" => ("PipeWire + WirePlumber + pipewire-pulse.", "https://pipewire.org/"),
-        "bluez" => ("System D-Bus and BlueZ.", "https://www.bluez.org/"),
-        "thoxa" => ("home login shell.", "https://github.com/moonlight-pm/thoxa"),
-        "cc" => ("Zig providing cc / c++ / musl-cc.", "https://ziglang.org/"),
-        "rustc" => ("rustc and cargo (gnu host + musl std).", "https://www.rust-lang.org/"),
-        "cmake" => ("CMake and Ninja.", "https://cmake.org/"),
-        "pkg-config" => (
-            "pkg-config. The .pc farm starts empty.",
-            "https://www.freedesktop.org/wiki/Software/pkg-config/",
-        ),
-        "bash" => ("GNU bash. Busybox ash is not bash.", "https://www.gnu.org/software/bash/"),
-        "foot" => ("Wayland terminal used on the Omarchy desk.", "https://codeberg.org/dnkl/foot"),
-        "grim" => ("grim + slurp capture helpers.", "https://git.sr.ht/~emersion/grim"),
-        "xwayland" => ("Xwayland for session Steam.", "https://x.org/"),
-        "gamescope" => (
-            "Valve gamescope nest. Needs DRM modifiers.",
-            "https://github.com/ValveSoftware/gamescope",
-        ),
-        "mesa" => ("Mesa GL/EGL/Vulkan. 64-bit plus 32-bit for Steam.", "https://www.mesa3d.org/"),
-        "steam" => {
-            ("Valve Steam launcher and steamrt3 helpers.", "https://store.steampowered.com/")
-        }
-        "hello" => ("Canary ELF. /bin/hello prints hello.", "https://github.com/moonlight-pm/oath"),
-        "fetchme" => ("Canary wget into the store.", "https://github.com/moonlight-pm/oath"),
-        _ => ("", ""),
     }
 }
 
@@ -342,10 +223,6 @@ pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
     Ok(())
 }
 
-fn skip_bin(pkg: &str, bin: &str) -> bool {
-    pkg == "sola" && bin == "sola-arcade" && !drm_modifiers_available()
-}
-
 fn unlink_ours(
     bin_dir: &Path,
     link_root: &Path,
@@ -470,7 +347,6 @@ fn pkg_actual(
         url: String::new(),
         hash,
         realizations: list_realizations(store_root, name).unwrap_or_default(),
-        requires: PkgRequires::default(),
         needs: Vec::new(),
         description: String::new(),
         home: String::new(),
@@ -888,32 +764,6 @@ pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Record `actual.hash` / `desired.hash` for old-layout slots without
-/// moving the tree. Live pin for `needs.hash`.
-pub fn stamp_unhashed(catalog_root: &Path, name: &str) -> Result<Option<String>> {
-    let dir = catalog_root.join("objects").join("pkg").join(name);
-    let actual_p = dir.join("actual.json");
-    let mut actual: serde_json::Value = if actual_p.is_file() {
-        crate::read_json(&actual_p)?
-    } else {
-        serde_json::json!({ "present": true, "links": [], "removable": true })
-    };
-    if actual.get("hash").and_then(|h| h.as_str()).is_some_and(is_realization_id) {
-        return Ok(None);
-    }
-    let h = if let Some(id) = live_hash(catalog_root, name)? {
-        id
-    } else if is_old_layout(&slot_dir(catalog_root, name)) {
-        hash_tree(&slot_dir(catalog_root, name))?
-    } else {
-        return Ok(None);
-    };
-    actual["hash"] = serde_json::Value::String(h.clone());
-    write_json(&actual_p, &actual)?;
-    pin_desired_hash(catalog_root, name, &h)?;
-    Ok(Some(h))
-}
-
 pub fn pin_desired_hash(catalog_root: &Path, name: &str, hash: &str) -> Result<()> {
     let p = catalog_root.join("objects").join("pkg").join(name).join("desired.json");
     if !p.is_file() {
@@ -1257,7 +1107,6 @@ mod needs_tests {
             present,
             url: String::new(),
             hash: hash.to_string(),
-            requires: PkgRequires::default(),
             needs: needs
                 .iter()
                 .map(|(id, h)| PkgNeed { id: (*id).into(), hash: (*h).into() })
@@ -1268,39 +1117,32 @@ mod needs_tests {
     }
 
     #[test]
-    fn steam_about() {
-        let (d, h) = seed_about("steam");
-        assert!(d.contains("Steam"), "{d}");
-        assert!(h.starts_with("https://"), "{h}");
-    }
-
-    #[test]
-    fn steam_needs_unknown_pack() {
+    fn needs_unknown_pack() {
         let pkgs = vec![
-            ("pkg:glibc".into(), p(true, H, &[])),
-            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", H)])),
+            ("pkg:curl".into(), p(true, H, &[])),
+            ("pkg:app".into(), p(true, H, &[("pkg:libfoo", H)])),
         ];
         let err = check_needs(&pkgs).unwrap_err().to_string();
         assert!(err.contains("not in the catalog"), "{err}");
     }
 
     #[test]
-    fn mesa_off_while_steam_present() {
+    fn need_off_while_user_present() {
         let pkgs = vec![
-            ("pkg:mesa".into(), p(false, H, &[("pkg:glibc", H)])),
-            ("pkg:glibc".into(), p(true, H, &[])),
-            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", H)])),
+            ("pkg:libgl".into(), p(false, H, &[("pkg:libc", H)])),
+            ("pkg:libc".into(), p(true, H, &[])),
+            ("pkg:game".into(), p(true, H, &[("pkg:libgl", H)])),
         ];
         let err = check_needs(&pkgs).unwrap_err().to_string();
-        assert!(err.contains("needed by pkg:steam"), "{err}");
+        assert!(err.contains("needed by pkg:game"), "{err}");
     }
 
     #[test]
     fn both_off_ok() {
         let pkgs = vec![
-            ("pkg:mesa".into(), p(false, H, &[("pkg:glibc", H)])),
-            ("pkg:glibc".into(), p(true, H, &[])),
-            ("pkg:steam".into(), p(false, H, &[("pkg:mesa", H)])),
+            ("pkg:libgl".into(), p(false, H, &[("pkg:libc", H)])),
+            ("pkg:libc".into(), p(true, H, &[])),
+            ("pkg:game".into(), p(false, H, &[("pkg:libgl", H)])),
         ];
         check_needs(&pkgs).unwrap();
     }
@@ -1318,8 +1160,8 @@ mod needs_tests {
     #[test]
     fn hash_mismatch_refuses() {
         let pkgs = vec![
-            ("pkg:mesa".into(), p(true, H2, &[])),
-            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", H)])),
+            ("pkg:libgl".into(), p(true, H2, &[])),
+            ("pkg:game".into(), p(true, H, &[("pkg:libgl", H)])),
         ];
         let err = check_needs(&pkgs).unwrap_err().to_string();
         assert!(err.contains("live is"), "{err}");
@@ -1328,18 +1170,11 @@ mod needs_tests {
     #[test]
     fn missing_need_hash_refuses() {
         let pkgs = vec![
-            ("pkg:mesa".into(), p(true, H, &[])),
-            ("pkg:steam".into(), p(true, H, &[("pkg:mesa", "")])),
+            ("pkg:libgl".into(), p(true, H, &[])),
+            ("pkg:game".into(), p(true, H, &[("pkg:libgl", "")])),
         ];
         let err = check_needs(&pkgs).unwrap_err().to_string();
         assert!(err.contains("hash"), "{err}");
-    }
-
-    #[test]
-    fn seed_steam_lists_mesa() {
-        assert!(seed_needs("steam").contains(&"pkg:mesa"));
-        assert!(seed_needs("sola").contains(&"pkg:river"));
-        assert!(seed_needs("hello").is_empty());
     }
 
     #[test]

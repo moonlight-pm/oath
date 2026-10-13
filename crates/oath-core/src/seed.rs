@@ -1,12 +1,20 @@
+//! First catalog from a profile (`seed/*.json`), plus overlays.
+//!
+//! A profile names objects and their first desired document. `extends`
+//! pulls in another profile first. `fixed` lists packages that can never
+//! be removed. `actual` gives a first actual document where the default
+//! one is wrong. An overlay is the same shape without `extends`; each of
+//! its objects is a JSON merge patch (RFC 7386) on the current desired.
+
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
-use serde_json::json;
+use serde::Deserialize;
+use serde_json::{json, Value};
 
+use crate::error::{Error, Result};
 use crate::kinds::Meta;
-use crate::{
-    write_json, ObjectId, Result, KIND_DEV, KIND_HOST, KIND_NET, KIND_PKG, KIND_SNAP, KIND_SSH,
-    KIND_SVC,
-};
+use crate::{write_json, ObjectId, KIND_PKG, KIND_SSH, KIND_SVC};
 
 pub const HOST_SCHEMA: &str = include_str!("../schema/host.json");
 pub const HOST_MD: &str = include_str!("../schema/host.md");
@@ -25,381 +33,317 @@ pub const DEV_MD: &str = include_str!("../schema/dev.md");
 pub const PLAN_SCHEMA: &str = include_str!("../schema/plan.json");
 pub const PLAN_MD: &str = include_str!("../schema/plan.md");
 
-pub fn seed(root: &Path) -> Result<()> {
-    std::fs::create_dir_all(root.join("schema"))?;
-    std::fs::create_dir_all(root.join("objects"))?;
-    std::fs::create_dir_all(root.join("log"))?;
-    std::fs::create_dir_all(root.join("run"))?;
+const SCHEMAS: &[(&str, &str)] = &[
+    ("host.json", HOST_SCHEMA),
+    ("host.md", HOST_MD),
+    ("svc.json", SVC_SCHEMA),
+    ("svc.md", SVC_MD),
+    ("snap.json", SNAP_SCHEMA),
+    ("snap.md", SNAP_MD),
+    ("pkg.json", PKG_SCHEMA),
+    ("pkg.md", PKG_MD),
+    ("net.json", NET_SCHEMA),
+    ("net.md", NET_MD),
+    ("ssh.json", SSH_SCHEMA),
+    ("ssh.md", SSH_MD),
+    ("dev.json", DEV_SCHEMA),
+    ("dev.md", DEV_MD),
+    ("plan.json", PLAN_SCHEMA),
+    ("plan.md", PLAN_MD),
+];
 
-    write(root, "schema/host.json", HOST_SCHEMA);
-    write(root, "schema/host.md", HOST_MD);
-    write(root, "schema/svc.json", SVC_SCHEMA);
-    write(root, "schema/svc.md", SVC_MD);
-    write(root, "schema/snap.json", SNAP_SCHEMA);
-    write(root, "schema/snap.md", SNAP_MD);
-    write(root, "schema/pkg.json", PKG_SCHEMA);
-    write(root, "schema/pkg.md", PKG_MD);
-    write(root, "schema/net.json", NET_SCHEMA);
-    write(root, "schema/net.md", NET_MD);
-    write(root, "schema/ssh.json", SSH_SCHEMA);
-    write(root, "schema/ssh.md", SSH_MD);
-    write(root, "schema/dev.json", DEV_SCHEMA);
-    write(root, "schema/dev.md", DEV_MD);
-    write(root, "schema/plan.json", PLAN_SCHEMA);
-    write(root, "schema/plan.md", PLAN_MD);
+/// Built-in profiles. `base` is a headless machine you reach over SSH.
+pub const PROFILES: &[(&str, &str)] =
+    &[("base", include_str!("../seed/base.json")), ("dev", include_str!("../seed/dev.json"))];
 
-    let host = ObjectId::new(KIND_HOST, "local");
-    let host_val = json!({
-        "hostname": "oath",
-        "power": "run",
-        "timezone": "MST7MDT,M3.2.0,M11.1.0",
-        "session": "sola",
-        "env": {
-            "GROK_DISABLE_AUTOUPDATER": "1",
-            "OMARCHY_PATH": "/oath/store/pkg/omarchy",
-            "SHELL": "/bin/thoxa",
-            "THOXA_ROOT": "/oath/store/pkg/thoxa",
-            "CC": "/bin/cc",
-            "CXX": "/bin/c++",
-            "AR": "/bin/ar",
-            "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER": "/bin/musl-cc",
-            "CMAKE_GENERATOR": "Ninja"
+pub const DEFAULT_PROFILE: &str = "base";
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProfileFile {
+    #[serde(default)]
+    extends: Option<String>,
+    #[serde(default)]
+    fixed: Vec<String>,
+    #[serde(default)]
+    objects: BTreeMap<String, Value>,
+    #[serde(default)]
+    actual: BTreeMap<String, Value>,
+}
+
+/// A resolved profile: every object's first desired and actual.
+#[derive(Debug, Default)]
+pub struct Profile {
+    fixed: BTreeSet<String>,
+    objects: BTreeMap<String, Value>,
+    actual: BTreeMap<String, Value>,
+}
+
+impl Profile {
+    pub fn load(name: &str) -> Result<Self> {
+        let mut seen = Vec::new();
+        Self::load_inner(name, &mut seen)
+    }
+
+    /// `pkg:*` objects the profile wants present. The image packs these.
+    pub fn present_pkgs(&self) -> Vec<String> {
+        self.objects
+            .iter()
+            .filter(|(id, v)| id.starts_with("pkg:") && v["present"] == json!(true))
+            .map(|(id, _)| id["pkg:".len()..].to_string())
+            .collect()
+    }
+
+    fn load_inner(name: &str, seen: &mut Vec<String>) -> Result<Self> {
+        if seen.iter().any(|s| s == name) {
+            return Err(Error::Msg(format!("seed profile `{name}` extends itself")));
         }
-    });
-    write_object(root, &host, "mutate", &host_val, &host_val)?;
-
-    let serial = ObjectId::new(KIND_SVC, "serial");
-    let serial_desired = json!({
-        "exec": ["/lib/oath/serial-login"],
-        "wants": [],
-        "restart": "always",
-        "enabled": true
-    });
-    let serial_actual = json!({
-        "state": "stopped",
-        "pid": null,
-        "restarts": 0
-    });
-    write_object(root, &serial, "mutate", &serial_desired, &serial_actual)?;
-    write_json(&root.join("objects/svc/serial/applied.json"), &serial_desired)?;
-
-    let hold = ObjectId::new(KIND_SVC, "hold");
-    let hold_desired = json!({
-        "exec": ["/bin/sleep", "86400000"],
-        "wants": ["svc:serial"],
-        "restart": "always",
-        "enabled": true
-    });
-    let hold_actual = json!({
-        "state": "stopped",
-        "pid": null,
-        "restarts": 0
-    });
-    write_object(root, &hold, "mutate", &hold_desired, &hold_actual)?;
-    write_json(&root.join("objects/svc/hold/applied.json"), &hold_desired)?;
-
-    seed_pkg(root, "hello", false, true)?;
-    seed_pkg(root, "busybox", true, false)?;
-    seed_pkg(root, "btrfs", true, false)?;
-    seed_pkg(root, "oath", true, false)?;
-    seed_pkg(root, "dropbear", true, false)?;
-    seed_pkg(root, "glibc", true, false)?;
-    seed_pkg(root, "river", true, true)?;
-    seed_pkg(root, "hyprland", true, true)?;
-    seed_pkg(root, "quickshell", true, true)?;
-    seed_pkg(root, "omarchy", true, true)?;
-    seed_pkg(root, "sola", true, true)?;
-    seed_pkg(root, "grok", true, true)?;
-    seed_pkg(root, "git", true, true)?;
-    seed_pkg(root, "curl", true, true)?;
-    seed_pkg(root, "pipewire", true, true)?;
-    seed_pkg(root, "bluez", true, true)?;
-    seed_pkg(root, "thoxa", true, true)?;
-    seed_pkg(root, "cc", true, true)?;
-    seed_pkg(root, "rustc", true, true)?;
-    seed_pkg(root, "cmake", true, true)?;
-    seed_pkg(root, "pkg-config", true, true)?;
-    seed_pkg(root, "bash", true, true)?;
-    seed_pkg(root, "foot", true, true)?;
-    seed_pkg(root, "grim", true, true)?;
-    seed_pkg(root, "xwayland", true, true)?;
-    let (gs_desc, gs_home) = crate::pkg::seed_about("gamescope");
-    write_object(
-        root,
-        &ObjectId::new(KIND_PKG, "gamescope"),
-        "mutate",
-        &json!({
-            "present": false,
-            "requires": { "drm_modifiers": true },
-            "needs": crate::pkg::seed_needs_json("gamescope"),
-            "description": gs_desc,
-            "home": gs_home
-        }),
-        &json!({
-            "present": false,
-            "links": [],
-            "removable": true,
-            "requires": { "drm_modifiers": true },
-            "needs": crate::pkg::seed_needs_json("gamescope"),
-            "description": gs_desc,
-            "home": gs_home
-        }),
-    )?;
-    seed_pkg(root, "mesa", true, true)?;
-    seed_pkg(root, "steam", true, true)?;
-    let (fm_desc, fm_home) = crate::pkg::seed_about("fetchme");
-    write_object(
-        root,
-        &ObjectId::new(KIND_PKG, "fetchme"),
-        "mutate",
-        &json!({
-            "present": false,
-            "url": "http://10.0.2.2:18765/fetchme",
-            "description": fm_desc,
-            "home": fm_home
-        }),
-        &json!({
-            "present": false,
-            "links": [],
-            "removable": true,
-            "url": "http://10.0.2.2:18765/fetchme",
-            "description": fm_desc,
-            "home": fm_home
-        }),
-    )?;
-
-    let sshd = ObjectId::new(KIND_SVC, "sshd");
-    let sshd_desired = json!({
-        "exec": ["/bin/dropbear", "-F", "-E", "-s", "-w", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
-        "wants": [],
-        "restart": "always",
-        "enabled": true
-    });
-    let sshd_actual = json!({
-        "state": "stopped",
-        "pid": null,
-        "restarts": 0
-    });
-    write_object(root, &sshd, "mutate", &sshd_desired, &sshd_actual)?;
-    write_json(&root.join("objects/svc/sshd/applied.json"), &sshd_desired)?;
-
-    let seatd = ObjectId::new(KIND_SVC, "seatd");
-    let seatd_desired = json!({
-        "exec": ["/bin/seatd", "-u", "home", "-g", "home"],
-        "wants": [],
-        "restart": "always",
-        "enabled": true
-    });
-    let seatd_actual = json!({
-        "state": "stopped",
-        "pid": null,
-        "restarts": 0
-    });
-    write_object(root, &seatd, "mutate", &seatd_desired, &seatd_actual)?;
-    write_json(&root.join("objects/svc/seatd/applied.json"), &seatd_desired)?;
-
-    let river = ObjectId::new(KIND_SVC, "river");
-    let river_desired = json!({
-        "exec": ["/lib/oath/run-compositor"],
-        "wants": ["svc:seatd"],
-        "restart": "always",
-        "enabled": true
-    });
-    let river_actual = json!({
-        "state": "stopped",
-        "pid": null,
-        "restarts": 0
-    });
-    write_object(root, &river, "mutate", &river_desired, &river_actual)?;
-    write_json(&root.join("objects/svc/river/applied.json"), &river_desired)?;
-
-    seed_svc_full(root, "hyprland", &["/bin/hyprland"], &["svc:seatd"], "always", false)?;
-    seed_svc_full(root, "omarchy-shell", &["/bin/quickshell"], &["svc:hyprland"], "always", false)?;
-
-    seed_svc(root, "sola-bus", &["/bin/sola-bus"], &[], "on-failure")?;
-    seed_svc(root, "sola-call", &["/bin/sola-call"], &[], "on-failure")?;
-    seed_svc(
-        root,
-        "sola-river",
-        &["/bin/sola-river"],
-        &["svc:river", "svc:sola-bus", "svc:sola-call"],
-        "on-failure",
-    )?;
-    seed_svc(
-        root,
-        "sola-shell",
-        &["/bin/sola-shell"],
-        &["svc:river", "svc:sola-bus", "svc:sola-call", "svc:sola-river"],
-        "on-failure",
-    )?;
-    seed_svc(
-        root,
-        "sola-session",
-        &["/bin/sola-session"],
-        &["svc:sola-bus", "svc:sola-call"],
-        "on-failure",
-    )?;
-    seed_svc(
-        root,
-        "sola-kvm",
-        &["/bin/sola-kvm", "listen"],
-        &["svc:river", "svc:hyprland"],
-        "always",
-    )?;
-    seed_svc(root, "pipewire", &["/bin/pipewire"], &[], "always")?;
-    seed_svc(root, "wireplumber", &["/bin/wireplumber"], &["svc:pipewire"], "always")?;
-    seed_svc(root, "pipewire-pulse", &["/bin/pipewire-pulse"], &["svc:pipewire"], "always")?;
-    seed_svc(root, "dbus", &["/bin/dbus-daemon"], &[], "always")?;
-    seed_svc(root, "bluetoothd", &["/bin/bluetoothd"], &["svc:dbus"], "always")?;
-    for name in [
-        "wicketd",
-        "wicket-idp",
-        "wicket-admin",
-        "wicket-setup",
-        "caddy",
-        "postgres",
-        "postgres-appdata",
-    ] {
-        let mut desired = crate::image::wicket_svc_desired(name).expect("wicket svc");
-        desired["enabled"] = json!(false);
-        seed_svc_doc(root, name, &desired)?;
+        seen.push(name.to_string());
+        let Some((_, text)) = PROFILES.iter().find(|(n, _)| *n == name) else {
+            let names: Vec<&str> = PROFILES.iter().map(|(n, _)| *n).collect();
+            return Err(Error::hint(
+                format!("no seed profile `{name}`"),
+                format!("profiles: {}", names.join(", ")),
+            ));
+        };
+        let file: ProfileFile = serde_json::from_str(text)
+            .map_err(|e| Error::Msg(format!("seed profile {name}: {e}")))?;
+        let mut out = match &file.extends {
+            Some(parent) => Self::load_inner(parent, seen)?,
+            None => Self::default(),
+        };
+        out.layer(file)?;
+        Ok(out)
     }
-    seed_pkg(root, "wicket", false, true)?;
-    seed_pkg(root, "caddy", false, true)?;
-    seed_pkg(root, "postgresql", false, true)?;
-    seed_pkg(root, "postgis", false, true)?;
-    seed_svc_full(
-        root,
-        "backup",
-        &["/lib/oath/backup-daily", "10.0.0.12:/mnt/alpha/backup/canto"],
-        &[],
-        "always",
-        false,
-    )?;
 
-    let ssh = ObjectId::new(KIND_SSH, "local");
-    let ssh_desired = json!({ "authorized": [] });
-    let ssh_actual = json!({ "authorized": [], "host_key": false });
-    write_object(root, &ssh, "mutate", &ssh_desired, &ssh_actual)?;
+    fn layer(&mut self, file: ProfileFile) -> Result<()> {
+        for id in file.fixed {
+            check_id(&id)?;
+            self.fixed.insert(id);
+        }
+        for (id, patch) in file.objects {
+            check_id(&id)?;
+            let base = self.objects.remove(&id).unwrap_or_else(|| json!({}));
+            self.objects.insert(id, merge_patch(base, &patch));
+        }
+        for (id, a) in file.actual {
+            check_id(&id)?;
+            self.actual.insert(id, a);
+        }
+        Ok(())
+    }
+}
 
-    let net = ObjectId::new(KIND_NET, "net0");
-    let net_val = serde_json::to_value(crate::net::appliance_desired())?;
-    write_object(root, &net, "mutate", &net_val, &net_val)?;
+/// Seed the default profile.
+pub fn seed(root: &Path) -> Result<()> {
+    seed_profile(root, DEFAULT_PROFILE)
+}
 
-    seed_dev(root, "vda", "block", "/dev/vda")?;
-    seed_dev(root, "net0", "net", "/sys/class/net/net0")?;
-    seed_dev(root, "ttyS0", "tty", "/dev/ttyS0")?;
-    seed_dev(root, "card0", "drm", "/dev/dri/card0")?;
-    seed_dev(root, "kbd0", "input", "")?;
-    seed_dev(root, "mouse0", "input", "")?;
-
-    let cur = ObjectId::new(KIND_SNAP, "current");
-    let gen0 = json!({ "generation": 0 });
-    write_object(root, &cur, "mutate", &gen0, &gen0)?;
-
+/// Write a fresh catalog at `root` from a built-in profile.
+pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
+    let p = Profile::load(profile)?;
+    for d in ["schema", "objects", "log", "run"] {
+        std::fs::create_dir_all(root.join(d))?;
+    }
+    for (name, body) in SCHEMAS {
+        write_text(&root.join("schema").join(name), body)?;
+    }
+    for (id, desired) in &p.objects {
+        let oid: ObjectId = id.parse()?;
+        let actual = match p.actual.get(id) {
+            Some(a) => a.clone(),
+            None => first_actual(&oid, desired, p.fixed.contains(id)),
+        };
+        write_object(root, &oid, desired, &actual)?;
+    }
     std::fs::write(root.join("log/apply.jsonl"), "")?;
-
-    let cat = crate::Catalog::open(root)?;
-    cat.write_index()?;
+    crate::Catalog::open(root)?.write_index()?;
     Ok(())
 }
 
-fn write(root: &Path, rel: &str, body: &str) {
-    let p = root.join(rel);
-    if let Some(d) = p.parent() {
-        let _ = std::fs::create_dir_all(d);
+/// Merge an overlay file into the catalog at `root`. Existing objects get
+/// the patch on `desired` (actual is left for the next apply or boot).
+/// New objects are created with a first actual. Returns the ids touched.
+pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
+    let file: ProfileFile = serde_json::from_value(overlay.clone())
+        .map_err(|e| Error::hint(format!("overlay: {e}"), "{\"objects\": {\"kind:name\": {…}}}"))?;
+    if file.extends.is_some() || !file.fixed.is_empty() || !file.actual.is_empty() {
+        return Err(Error::hint(
+            "an overlay has only `objects`",
+            "profiles use extends/fixed/actual; overlays patch desired",
+        ));
     }
-    let mut b = body.to_string();
-    if !b.ends_with('\n') {
-        b.push('\n');
+    let mut touched = Vec::new();
+    for (id, patch) in &file.objects {
+        check_id(id)?;
+        let oid: ObjectId = id.parse()?;
+        let dir = root.join("objects").join(&oid.kind).join(&oid.name);
+        let path = dir.join("desired.json");
+        if path.is_file() {
+            let cur: Value = crate::read_json(&path)?;
+            let desired = merge_patch(cur, patch);
+            write_json(&path, &desired)?;
+            if oid.kind == KIND_SVC {
+                write_json(&dir.join("applied.json"), &desired)?;
+            }
+        } else {
+            let desired = merge_patch(json!({}), patch);
+            let actual = first_actual(&oid, &desired, false);
+            write_object(root, &oid, &desired, &actual)?;
+        }
+        touched.push(oid);
     }
-    let _ = std::fs::write(p, b);
+    crate::Catalog::open(root)?.write_index()?;
+    Ok(touched)
 }
 
-fn seed_dev(root: &Path, name: &str, class: &str, node: &str) -> Result<()> {
-    let id = ObjectId::new(KIND_DEV, name);
-    write_object(
-        root,
-        &id,
-        "mutate",
-        &json!({ "present": true }),
-        &json!({ "present": true, "class": class, "node": node }),
-    )
+/// RFC 7386: objects merge key by key, `null` deletes, anything else replaces.
+pub fn merge_patch(mut target: Value, patch: &Value) -> Value {
+    let Value::Object(p) = patch else {
+        return patch.clone();
+    };
+    if !target.is_object() {
+        target = json!({});
+    }
+    let t = target.as_object_mut().expect("object");
+    for (k, v) in p {
+        if v.is_null() {
+            t.remove(k);
+        } else {
+            let cur = t.remove(k).unwrap_or(Value::Null);
+            t.insert(k.clone(), merge_patch(cur, v));
+        }
+    }
+    target
 }
 
-fn seed_svc(root: &Path, name: &str, exec: &[&str], wants: &[&str], restart: &str) -> Result<()> {
-    seed_svc_full(root, name, exec, wants, restart, true)
-}
-
-fn seed_svc_doc(root: &Path, name: &str, desired: &serde_json::Value) -> Result<()> {
-    let id = ObjectId::new(KIND_SVC, name);
-    let actual = json!({
-        "state": "stopped",
-        "pid": null,
-        "restarts": 0
-    });
-    write_object(root, &id, "mutate", desired, &actual)?;
-    write_json(&root.join("objects/svc").join(name).join("applied.json"), desired)?;
+fn check_id(id: &str) -> Result<()> {
+    let oid: ObjectId = id.parse()?;
+    let known = [
+        crate::KIND_HOST,
+        crate::KIND_SVC,
+        crate::KIND_SNAP,
+        crate::KIND_PKG,
+        crate::KIND_NET,
+        crate::KIND_SSH,
+        crate::KIND_DEV,
+        crate::KIND_PLAN,
+    ];
+    if !known.contains(&oid.kind.as_str()) {
+        return Err(Error::hint(format!("unknown kind in `{id}`"), "oath schema"));
+    }
     Ok(())
 }
 
-fn seed_svc_full(
-    root: &Path,
-    name: &str,
-    exec: &[&str],
-    wants: &[&str],
-    restart: &str,
-    enabled: bool,
-) -> Result<()> {
-    let id = ObjectId::new(KIND_SVC, name);
-    let desired = json!({
-        "exec": exec,
-        "wants": wants,
-        "restart": restart,
-        "enabled": enabled
-    });
-    let actual = json!({
-        "state": "stopped",
-        "pid": null,
-        "restarts": 0
-    });
-    write_object(root, &id, "mutate", &desired, &actual)?;
-    write_json(&root.join("objects/svc").join(name).join("applied.json"), &desired)?;
-    Ok(())
+/// The actual document an object starts with before anything converges.
+fn first_actual(id: &ObjectId, desired: &Value, fixed: bool) -> Value {
+    match id.kind.as_str() {
+        KIND_SVC => json!({ "state": "stopped", "pid": null, "restarts": 0 }),
+        KIND_SSH => json!({ "authorized": [], "host_key": false }),
+        KIND_PKG => {
+            let mut a = json!({
+                "present": desired.get("present").cloned().unwrap_or(json!(false)),
+                "links": [],
+                "removable": !fixed,
+            });
+            for k in ["url", "needs", "description", "home"] {
+                if let Some(v) = desired.get(k) {
+                    a[k] = v.clone();
+                }
+            }
+            a
+        }
+        _ => desired.clone(),
+    }
 }
 
-fn seed_pkg(root: &Path, name: &str, present: bool, removable: bool) -> Result<()> {
-    let id = ObjectId::new(KIND_PKG, name);
-    let needs = crate::pkg::seed_needs_json(name);
-    let (description, home) = crate::pkg::seed_about(name);
-    let mut desired = json!({ "present": present });
-    let mut actual = json!({ "present": present, "links": [], "removable": removable });
-    if needs.as_array().map(|a| !a.is_empty()).unwrap_or(false) {
-        desired["needs"] = needs.clone();
-        actual["needs"] = needs;
-    }
-    if !description.is_empty() {
-        desired["description"] = json!(description);
-        actual["description"] = json!(description);
-    }
-    if !home.is_empty() {
-        desired["home"] = json!(home);
-        actual["home"] = json!(home);
-    }
-    write_object(root, &id, "mutate", &desired, &actual)
-}
-
-fn write_object(
-    root: &Path,
-    id: &ObjectId,
-    safety: &str,
-    desired: &serde_json::Value,
-    actual: &serde_json::Value,
-) -> Result<()> {
+fn write_object(root: &Path, id: &ObjectId, desired: &Value, actual: &Value) -> Result<()> {
     let dir = root.join("objects").join(&id.kind).join(&id.name);
     std::fs::create_dir_all(&dir)?;
     write_json(&dir.join("desired.json"), desired)?;
     write_json(&dir.join("actual.json"), actual)?;
-    write_json(&dir.join("meta.json"), &Meta::new(&id.kind, &id.name, safety))?;
+    write_json(&dir.join("meta.json"), &Meta::new(&id.kind, &id.name, "mutate"))?;
+    if id.kind == KIND_SVC {
+        write_json(&dir.join("applied.json"), desired)?;
+    }
     Ok(())
+}
+
+fn write_text(path: &Path, body: &str) -> Result<()> {
+    let mut b = body.to_string();
+    if !b.ends_with('\n') {
+        b.push('\n');
+    }
+    std::fs::write(path, b)?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_profile_loads() {
+        for (name, _) in PROFILES {
+            let p = Profile::load(name).unwrap();
+            assert!(p.objects.contains_key("host:local"), "{name}");
+            assert!(p.objects.contains_key("svc:sshd"), "{name}");
+        }
+    }
+
+    #[test]
+    fn dev_extends_base() {
+        let p = Profile::load("dev").unwrap();
+        assert!(p.objects.contains_key("pkg:cc"));
+        assert!(p.objects.contains_key("pkg:busybox"));
+        assert_eq!(p.objects["host:local"]["hostname"], "oath");
+        assert_eq!(p.objects["host:local"]["env"]["CC"], "/bin/cc");
+        assert!(p.fixed.contains("pkg:oath"));
+        assert!(p.present_pkgs().contains(&"cc".to_string()));
+        assert!(!p.present_pkgs().contains(&"hello".to_string()));
+    }
+
+    #[test]
+    fn base_is_headless() {
+        let p = Profile::load("base").unwrap();
+        for id in p.objects.keys() {
+            for word in ["river", "sola", "wicket", "steam", "hyprland", "omarchy"] {
+                assert!(!id.contains(word), "{id}");
+            }
+        }
+    }
+
+    #[test]
+    fn merge_patch_follows_rfc_7386() {
+        let t = json!({"a": 1, "b": {"c": 2, "d": 3}, "e": [1]});
+        let p = json!({"a": null, "b": {"c": 9}, "e": [2], "f": "x"});
+        assert_eq!(merge_patch(t, &p), json!({"b": {"c": 9, "d": 3}, "e": [2], "f": "x"}));
+    }
+
+    #[test]
+    fn overlay_patches_and_creates() {
+        let d = tempfile::tempdir().unwrap();
+        seed(d.path()).unwrap();
+        let ov = json!({"objects": {
+            "host:local": {"hostname": "canto", "timezone": "MST7MDT,M3.2.0,M11.1.0"},
+            "svc:backup": {"exec": ["/lib/oath/backup-daily", "nas:/backup"], "wants": [],
+                           "restart": "always", "enabled": false}
+        }});
+        let ids = apply_overlay(d.path(), &ov).unwrap();
+        assert_eq!(ids.len(), 2);
+        let host: Value =
+            crate::read_json(&d.path().join("objects/host/local/desired.json")).unwrap();
+        assert_eq!(host["hostname"], "canto");
+        assert_eq!(host["power"], "run");
+        let a: Value = crate::read_json(&d.path().join("objects/svc/backup/actual.json")).unwrap();
+        assert_eq!(a["state"], "stopped");
+    }
+
+    #[test]
+    fn overlay_refuses_profile_fields() {
+        let d = tempfile::tempdir().unwrap();
+        seed(d.path()).unwrap();
+        assert!(apply_overlay(d.path(), &json!({"extends": "base"})).is_err());
+        assert!(apply_overlay(d.path(), &json!({"objects": {"nope:x": {}}})).is_err());
+    }
 }

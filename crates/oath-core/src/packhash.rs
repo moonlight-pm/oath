@@ -287,8 +287,8 @@ mod tests {
     fn fetch_url_origin_and_file() {
         let h = "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
         assert_eq!(
-            fetch_url("https://store.oath.wicket.cloud/", "hello", h),
-            format!("https://store.oath.wicket.cloud/pkg/hello/{h}.tar")
+            fetch_url("https://store.example/", "hello", h),
+            format!("https://store.example/pkg/hello/{h}.tar")
         );
         assert_eq!(
             fetch_url("https://bucket/pkg/hello/foo.tar", "hello", h),
@@ -304,18 +304,18 @@ mod tests {
     fn fetch_adv_url_from_origin_and_tar() {
         let h = "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
         assert_eq!(
-            fetch_adv_url("https://store.oath.wicket.cloud/", "curl", h),
-            format!("https://store.oath.wicket.cloud/adv/curl/{h}.json")
+            fetch_adv_url("https://store.example/", "curl", h),
+            format!("https://store.example/adv/curl/{h}.json")
         );
         assert_eq!(
-            fetch_adv_url(&format!("https://store.oath.wicket.cloud/pkg/curl/{h}.tar"), "curl", h),
-            format!("https://store.oath.wicket.cloud/adv/curl/{h}.json")
+            fetch_adv_url(&format!("https://store.example/pkg/curl/{h}.tar"), "curl", h),
+            format!("https://store.example/adv/curl/{h}.json")
         );
         assert_eq!(
             fetch_adv_url("http://10.0.2.2:18765/fetchme", "fetchme", h),
             format!("http://10.0.2.2:18765/fetchme/adv/fetchme/{h}.json")
         );
-        assert_eq!(fetch_adv_url("https://store.oath.wicket.cloud/", "curl", ""), "");
+        assert_eq!(fetch_adv_url("https://store.example/", "curl", ""), "");
         assert_eq!(fetch_adv_url("http://10.0.2.2:18765/fetchme", "fetchme", ""), "");
     }
 }

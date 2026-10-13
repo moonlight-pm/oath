@@ -4,11 +4,13 @@
   "title": "dev",
   "type": "object",
   "additionalProperties": false,
-  "required": ["present"],
+  "required": [
+    "present"
+  ],
   "properties": {
     "present": {
       "type": "boolean",
-      "description": "Whether this hardware is in the inventory. v0 QEMU devices cannot be set false."
+      "description": "Whether this hardware is in the inventory. The seeded devices cannot be set false."
     }
   }
 }

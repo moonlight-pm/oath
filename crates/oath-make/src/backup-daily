@@ -1,7 +1,8 @@
 #!/bin/sh
-# Run backup-send every day at 04:00 US Mountain (MST/MDT).
+# Run backup-send every day at 04:00 local time.
 # Usage: backup-daily host:/export/path
-# POSIX TZ — no tzdata. DST: second Sunday March → first Sunday November.
+# Local time is TZ, which PID 1 sets from host:local.timezone (POSIX TZ,
+# no tzdata). With no timezone set, 04:00 is UTC.
 set -eu
 
 spec=${1:?nfs spec (host:/path)}
@@ -13,7 +14,7 @@ if [ ! -x "$send" ]; then
 	exit 1
 fi
 
-export TZ=MST7MDT,M3.2.0,M11.1.0
+export TZ="${TZ:-UTC0}"
 
 log() { echo "backup-daily: $*" >&2; }
 
