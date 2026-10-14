@@ -256,7 +256,7 @@ mod tests {
                         .into(),
                 },
                 PkgNeed {
-                    id: "pkg:cc".into(),
+                    id: "pkg:llvm".into(),
                     hash: "sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
                         .into(),
                 },
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn lint_rejects_unsorted() {
-        let s = "#!oath-plan\n{\n  \"name\": \"hello\",\n  \"produces\": \"pkg:hello\",\n  \"build_needs\": [\n    {\n      \"id\": \"pkg:cc\",\n      \"hash\": \"sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n    },\n    {\n      \"id\": \"pkg:busybox\",\n      \"hash\": \"sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n    }\n  ],\n  \"run_needs\": []\n}\n---\n#!/bin/sh\nset -eu\n";
+        let s = "#!oath-plan\n{\n  \"name\": \"hello\",\n  \"produces\": \"pkg:hello\",\n  \"build_needs\": [\n    {\n      \"id\": \"pkg:llvm\",\n      \"hash\": \"sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n    },\n    {\n      \"id\": \"pkg:busybox\",\n      \"hash\": \"sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n    }\n  ],\n  \"run_needs\": []\n}\n---\n#!/bin/sh\nset -eu\n";
         let err = parse_plan(s).unwrap_err().to_string();
         assert!(err.contains("sorted"), "{err}");
     }

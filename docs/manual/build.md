@@ -1,16 +1,31 @@
 # Build and QEMU
 
 Everything is built on the build host with `cargo make` (crate
-`oath-make`). Run it from a plain shell, not `nix-shell`: `shell.nix`
-sets `OATH_BUSYBOX`, which skips the `image/tools.nix` build that
-supplies dropbear and the other borrowed tools.
+`oath-make`), from a plain shell.
 
-Built here: the kernel, PID 1 (`oath-init`, `serial-login`, `sudo`),
-`oath`, and the UEFI loader `oath-efi`, all from this repo. Borrowed
-from Nix at build time (`nix-build image/tools.nix`), until the native
-base replaces them: busybox, btrfs-progs, dropbear and the OpenSSH
-client bits, curl and its CA bundle, sgdisk, mkfs.fat, kexec, GNU tar,
-systemd-boot (fallback loader), OVMF (QEMU only), and firmware blobs.
+Built here, from source: the kernel; the toolchain (clang, lld, musl,
+libc++); every package in the image (`pkgs/`); PID 1 (`oath-init`,
+`serial-login`, `sudo`), `oath`, and the UEFI loader `oath-efi`. The
+only thing taken from Nix is QEMU and its UEFI firmware for running
+images on the build host (`image/host.nix`), plus the host compilers
+that build the kernel and stage 0 of the toolchain. None of it ships.
+
+## The toolchain and packages
+
+```sh
+cargo make bootstrap        # once: stage 0 + stage 1 toolchain (an hour or more)
+cargo make pkgs             # every package, in dependency order
+cargo make pkgs --list      # versions, licences, what pkgs/lock.json pins
+cargo make pkgs curl        # one package (and what it builds with)
+```
+
+`bootstrap` builds clang/lld targeting musl with the host's gcc (stage
+0), then a static musl toolchain, busybox and make with stage 0 (stage
+1): `pkg:llvm`, `pkg:busybox`, `pkg:make`. `pkgs` builds each
+`pkgs/<name>/` as an `oath build` plan in the sandbox (no network, only
+the declared packs), writes the exact plan to `pkgs/<name>/<name>.plan`
+and the product to `pkgs/lock.json`. The image takes every userspace
+package from the lock. How packages are written: `pkgs/README.md`.
 
 ## The kernel
 
@@ -22,16 +37,20 @@ fragment `image/linux.fragment`.
 nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'
 ```
 
-That writes `build/linux/vmlinuz`, `build/linux/modules/<release>/`,
-and `build/linux/firmware/`. `cargo make` reads those (or
-`OATH_KERNEL` / `OATH_MODULES` / `OATH_FIRMWARE`). Packing refuses a
-bzImage whose release does not match the module directory or the
-`vermagic` of `btrfs.ko`. Bump the version and the sha256 together.
+That writes `build/linux/vmlinuz` and `build/linux/modules/<release>/`.
+`cargo make` reads those (or `OATH_KERNEL` / `OATH_MODULES`). Firmware
+for the initrd comes from `pkg:firmware`, not the kernel build. Packing
+refuses a bzImage whose release does not match the module directory or
+the `vermagic` of `btrfs.ko`. Bump the version and the sha256 together.
+The kernel is still compiled by the build host's gcc
+(`image/linux-build.nix`).
 
 ## The image
 
-Needs: Rust with `x86_64-unknown-linux-musl` and `x86_64-unknown-uefi`,
-`sudo` for the loop mount, `mkfs.btrfs` on the host.
+Needs: Rust with `x86_64-unknown-linux-musl` and `x86_64-unknown-uefi`
+(linked with `rust-lld` and musl's self-contained crt,
+`.cargo/config.toml`), `sudo` for the loop mount, `mkfs.btrfs` on the
+host (`shell.nix` has it), and the packs in `pkgs/lock.json`.
 
 ```sh
 cargo make build                  # profile base

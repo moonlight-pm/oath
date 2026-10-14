@@ -35,9 +35,15 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   second pass runs after services start.
 - amdgpu gets `si_support=1 cik_support=1` so Southern Islands and Sea
   Islands cards use it.
-- Firmware is copied into the initrd and bind-mounted over the root's
-  `/lib/firmware` so the deferred pass can load it.
-- `mdev -s` populates `/dev`. There is no udev.
+- Firmware is `pkg:firmware`: linux-firmware blobs from tag 20260916,
+  each pinned by sha256 in `pkgs/firmware/pkg.toml` (today tg3 and SI
+  Pitcairn for amdgpu and radeon). It is copied into the initrd and
+  bind-mounted over the root's `/lib/firmware` so the deferred pass can
+  load it. A machine that needs another blob gets a line there.
+- `mdev -s` populates `/dev`. There is no udev. After every `mdev -s`
+  PID 1 sets `/dev/null`, `zero`, `full`, `tty`, `ptmx`, `random` and
+  `urandom` back to mode 0666, because `mdev -s` recreates them
+  root-only.
 
 ## Unix floor (built)
 
@@ -52,7 +58,6 @@ Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
   network.
 - `dev` objects are seeded with QEMU names, so a metal catalog lies
   until someone edits it.
-- Firmware comes from nixpkgs' linux-firmware, filtered by hand.
 
 ## Target
 
@@ -68,8 +73,6 @@ Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
 - **Rules as fields.** Ownership and mode of device nodes (for a future
   graphical seat) and filesystems to mount (for a payload's data
   volume) become fields on catalog objects, not code in PID 1.
-- **Firmware** is a package: linux-firmware as a vendor release pinned
-  by sha256, trimmed by a list in the plan.
 
 ## Courage test
 

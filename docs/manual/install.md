@@ -21,17 +21,20 @@ OS on that host must be reachable over SSH as root, or as a user with
    anything is wiped.
 2. Boots an **installer ramdisk** on the target (`oath.install=1`,
    dropbear, the build host's keys for root). On EFI machines this is
-   a one-shot loader entry; kexec is the fallback.
-3. Partitions GPT: a 512 MiB ESP, then btrfs with subvolume `@`.
-4. Copies the packed root tree.
+   a one-shot loader entry; kexec is the fallback (Oath's own static
+   `kexec`, copied to the target, so the live OS needs none).
+3. Partitions GPT with the ramdisk's native tools (`wipefs`, `sfdisk`):
+   a 512 MiB ESP (`mkfs.fat`), then btrfs (`mkfs.btrfs`) with subvolume
+   `@`.
+4. Copies the packed root tree (busybox `tar`).
 5. Merges the catalog overlay with the ramdisk's `oath`
    (`oath --root /mnt/oath seed --overlay`): `host:local.hostname`
    (default `oath`), the build host's public keys as `ssh:local`, then
    your `--overlay` on top.
-6. Writes the ESP: `oath-efi` as `EFI/BOOT/BOOTX64.EFI`, systemd-boot
-   at `EFI/systemd/` as a fallback, `vmlinuz`, `initrd.gz`,
-   `loader/entries/oath.conf`, and `loader/oath-boots`. The kernel and
-   the initrd modules are the same checked build.
+6. Writes the ESP: `oath-efi` as `EFI/BOOT/BOOTX64.EFI` (the only
+   loader), `vmlinuz`, `initrd.gz`, `loader/entries/oath.conf`, and
+   `loader/oath-boots`. The kernel and the initrd modules are the same
+   checked build.
 7. Reboots and waits for SSH as `home`, then runs `oath ls`.
 
 `net:net0` stays `dhcp` from the seed.
@@ -68,7 +71,7 @@ cargo make install --qemu --disk /dev/vda --confirm
 ```
 
 That runs the same steps against a fresh qcow2 in QEMU with OVMF, then
-boots it through the EFI loader.
+boots it through `oath-efi`.
 
 ## USB installer stick
 

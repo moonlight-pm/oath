@@ -1,7 +1,10 @@
+# Oath binaries are static musl, linked by rust-lld with the musl target's
+# self-contained startup files: no C toolchain from the build host.
 [target.x86_64-unknown-linux-musl]
-rustflags = ["-C", "target-feature=+crt-static"]
+linker = "rust-lld"
+rustflags = ["-C", "target-feature=+crt-static", "-C", "link-self-contained=yes"]
 
-# Host build CLI (xtask-style). `cargo make build|run|up|start|stop|ssh|install|esp` runs oath-make.
+# Host build CLI (xtask-style). `cargo make build|run|up|start|stop|ssh|check|install|esp|bootstrap|pkgs` runs oath-make.
 # Bare `cargo make` prints the tool help. `cargo make --help` is Cargo's alias help.
 [alias]
 make = ["run", "--package", "oath-make", "--"]

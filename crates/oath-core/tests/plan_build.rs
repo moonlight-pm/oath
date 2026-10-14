@@ -80,12 +80,12 @@ fn pack_c_src(root: &Path) -> String {
     h
 }
 
-fn pack_cc(root: &Path) -> String {
-    let stage = root.join("stage-cc");
+fn pack_llvm(root: &Path) -> String {
+    let stage = root.join("stage-llvm");
     let bin = stage.join("bin");
     std::fs::create_dir_all(&bin).unwrap();
     if let Some(cc) = which("cc").or_else(|| which("gcc")) {
-        copy_exec(&cc, &bin.join("musl-cc"));
+        copy_exec(&cc, &bin.join("cc"));
     } else {
         let body = "#!/bin/sh\n\
 out=\n\
@@ -98,13 +98,13 @@ while [ $# -gt 0 ]; do\n\
 done\n\
 printf '#!/bin/sh\\nprintf hello\\\\n\\n' > \"$out\"\n\
 chmod 0755 \"$out\"\n";
-        std::fs::write(bin.join("musl-cc"), body).unwrap();
-        let mut p = std::fs::metadata(bin.join("musl-cc")).unwrap().permissions();
+        std::fs::write(bin.join("cc"), body).unwrap();
+        let mut p = std::fs::metadata(bin.join("cc")).unwrap().permissions();
         p.set_mode(0o755);
-        std::fs::set_permissions(bin.join("musl-cc"), p).unwrap();
+        std::fs::set_permissions(bin.join("cc"), p).unwrap();
     }
     let h = hash_tree(&stage).unwrap();
-    let dest = root.join("store/pkg/cc").join(&h);
+    let dest = root.join("store/pkg/llvm").join(&h);
     oath_core::copy_pack_tree(&stage, &dest).unwrap();
     h
 }
@@ -236,19 +236,19 @@ fn compile_with_declared_cc() {
     let d = tmp();
     seed(d.path()).unwrap();
     let bb = pack_busybox(d.path());
-    let cc = pack_cc(d.path());
+    let cc = pack_llvm(d.path());
     let src = pack_c_src(d.path());
     let src_hash = src.clone();
     let script = format!(
-        "musl-cc -O2 -o /out/bin/hello /oath/store/pkg/hello-src/{src_hash}/hello.c\nchmod 0755 /out/bin/hello\n"
+        "cc -O2 -o /out/bin/hello /oath/store/pkg/hello-src/{src_hash}/hello.c\nchmod 0755 /out/bin/hello\n"
     );
     let p = PlanFile {
         name: "hello".into(),
         produces: "pkg:hello".into(),
         build_needs: vec![
             PkgNeed { id: "pkg:busybox".into(), hash: bb },
-            PkgNeed { id: "pkg:cc".into(), hash: cc },
             PkgNeed { id: "pkg:hello-src".into(), hash: src },
+            PkgNeed { id: "pkg:llvm".into(), hash: cc },
         ],
         run_needs: vec![],
         script,

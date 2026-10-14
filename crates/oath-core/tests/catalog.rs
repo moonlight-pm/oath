@@ -100,6 +100,9 @@ fn seed_lists_host() {
         "pkg:btrfs",
         "pkg:oath",
         "pkg:dropbear",
+        "pkg:openssh",
+        "pkg:util-linux",
+        "pkg:dosfstools",
         "pkg:curl",
         "pkg:hello",
         "pkg:fetchme",
@@ -112,7 +115,7 @@ fn seed_lists_host() {
     ] {
         assert!(ids.iter().any(|i| i == want), "missing {want}");
     }
-    assert_eq!(ids.len(), 17, "{ids:?}");
+    assert_eq!(ids.len(), 20, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));

@@ -56,8 +56,8 @@ of T24, and D3 (seed as data).
 
 - ESP: `EFI/BOOT/BOOTX64.EFI` is `oath-efi`; `vmlinuz` and `initrd.gz`
   are the current boot; `loader/loader.conf`, `loader/entries/*.conf`
-  (BLS) and `loader/oath-boots` list the choices; systemd-boot is kept
-  only as a fallback binary.
+  (BLS) and `loader/oath-boots` list the choices. `oath-efi` is the
+  only loader on the ESP, USB stick and installer.
 - `oath-efi` draws the mark with GOP, shows the menu (timeout 5 s on
   metal, 0 in QEMU), and starts the kernel with `LoadImage`.
 - The kernel command line names the root device (`oath.root=`) and
@@ -91,12 +91,14 @@ Optional `--hostname` and `--overlay <file.json>`.
    overlay before anything is wiped.
 2. Bake the build host's SSH public keys into the installer initrd.
 3. Enter the installer on the target: an EFI one-shot boot entry when
-   the target has one, otherwise kexec. The installer is the same
+   the target has one, otherwise kexec (the native `pkg:kexec` binary,
+   copied to the target). The installer is the same
    kernel with `oath.install`; PID 1 brings up a NIC with DHCP, starts
    dropbear for root, and waits.
-4. Over SSH: GPT with a 512 MiB ESP and a btrfs partition holding `@`;
-   copy the staged root with tar; fix ownership and the setuid bit on
-   `/lib/oath/sudo`.
+4. Over SSH, with the installer's native tools: `wipefs` and `sfdisk`
+   write a GPT with a 512 MiB ESP and a btrfs partition; `mkfs.fat` and
+   `mkfs.btrfs` format them; `@` gets the staged root through busybox
+   `tar`; fix ownership and the setuid bit on `/lib/oath/sudo`.
 5. Write the catalog overlay (hostname, the build host's keys for
    `home`, then the user's overlay) with
    `oath --root /mnt/oath seed --overlay`.
@@ -107,8 +109,10 @@ Optional `--hostname` and `--overlay <file.json>`.
 
 - Install copies whatever `build/stage` holds, which may be stale or
   from another profile.
-- The build is not reproducible from a clean checkout: tools come from
-  a floating nixpkgs and the store cache is reused.
+- The kernel and stage 0 of the toolchain are compiled with a floating
+  nixpkgs (`image/linux-build.nix`, `pkgs/bootstrap.nix`). Userspace is
+  pinned: every pack comes from `pkgs/lock.json` and rebuilds
+  bit-identically (builds.md).
 
 ## Target
 
@@ -119,8 +123,8 @@ Optional `--hostname` and `--overlay <file.json>`.
 - **Build-host guard (install).** `install` refuses a target that is
   the build host. (`esp` already refuses to run on a machine that is
   not Oath.)
-- **Native tools.** The installer's tools (sgdisk, mkfs.fat, btrfs,
-  dropbear, tar) become native packages (packages.md).
+- **Kernel by plan.** The kernel is built by an `oath build` plan with
+  `pkg:llvm` instead of the host's gcc (builds.md).
 
 ## Test harness (built)
 

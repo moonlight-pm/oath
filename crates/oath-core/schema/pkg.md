@@ -73,9 +73,12 @@ oath apply
 oath undo
 ```
 
-The `base` profile ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`, and
-`pkg:dropbear` present and not removable; `pkg:curl` present and
-removable; `pkg:hello` absent with its bits already in the store
-(`/bin/hello` prints `hello`); and `pkg:fetchme` absent with a `url`
-on the QEMU host. Busybox applets are one package. There is no glibc and
-no C compiler on the box yet.
+The `base` profile ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`,
+`pkg:dropbear`, `pkg:openssh`, `pkg:util-linux` and `pkg:dosfstools`
+present and not removable; `pkg:curl` present and removable; `pkg:hello`
+absent with its bits already in the store (`/bin/hello` prints
+`hello`); and `pkg:fetchme` absent with a `url` on the QEMU host.
+Busybox applets are one package. All but `pkg:oath` (built by cargo)
+and the two canaries come from plans in `pkgs/`: built from source,
+static, musl, Clang. There is no glibc and no C compiler on the box
+yet.

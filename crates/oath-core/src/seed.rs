@@ -88,6 +88,12 @@ impl Profile {
         Self::load_inner(name, profiles, &mut seen)
     }
 
+    /// Whether `id` (`pkg:busybox` or `busybox`) can never be removed.
+    pub fn is_fixed(&self, name: &str) -> bool {
+        let id = if name.contains(':') { name.to_string() } else { format!("pkg:{name}") };
+        self.fixed.contains(&id)
+    }
+
     /// `pkg:*` objects the profile wants present. The image packs these.
     pub fn present_pkgs(&self) -> Vec<String> {
         self.objects

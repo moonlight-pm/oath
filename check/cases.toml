@@ -235,6 +235,19 @@ steps = [
   { run = "sudo -E true", fails = true, expect = ["not supported"] },
 ]
 
+# ---- Phase 5: native packages ----------------------------------------
+
+[[case]]
+name = "native-userland"
+about = "The base tools are the native builds: static, and they work (curl's CA bundle included)."
+steps = [
+  { run = "echo x > /dev/null && head -c 16 /dev/urandom > /dev/null && stat -c '%a %n' /dev/null /dev/zero /dev/urandom /dev/ptmx", expect = ["666 /dev/null", "666 /dev/urandom"] },
+  { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux"] },
+  { run = "for b in busybox curl dropbear ssh btrfs sfdisk mkfs.fat; do head -c 2000 $(readlink -f /bin/$b) | grep -q 'ld-musl' && echo DYNAMIC $b; done; echo checked", expect = ["checked"], reject = ["DYNAMIC"] },
+  { run = "ssh-keygen -q -t ed25519 -N '' -f /tmp/k && test -s /tmp/k.pub && test -x /bin/sftp-server && echo KEYGEN_OK", expect = ["KEYGEN_OK"] },
+  { run = "curl -sS -o /dev/null -w '%{http_code}\\n' https://curl.se/", expect = ["200"] },
+]
+
 # ---- Known gaps (acceptance tests for later phases) ------------------
 #
 # None today. Add a case with `gap = "phase N: …"` when a defect is found

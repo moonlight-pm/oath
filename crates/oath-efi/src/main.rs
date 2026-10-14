@@ -107,7 +107,8 @@ fn efi_main() -> Status {
     let _ = draw_mark();
     match boot_linux() {
         Ok(()) => Status::SUCCESS,
-        Err(_) => boot_systemd_boot().unwrap_or(Status::LOAD_ERROR),
+        // Back to the firmware, which tries its next boot option.
+        Err(_) => Status::LOAD_ERROR,
     }
 }
 
@@ -295,17 +296,6 @@ fn start_kernel(kernel_path: &str, initrd_path: &str, options: &str) -> Result<(
     set_cmdline(khandle, &cmdline)?;
     boot::start_image(khandle).map_err(|_| ())?;
     Ok(())
-}
-
-fn boot_systemd_boot() -> Result<Status, ()> {
-    let bytes = read_path("\\EFI\\systemd\\systemd-bootx64.efi").map_err(|_| ())?;
-    let handle = boot::load_image(
-        boot::image_handle(),
-        LoadImageSource::FromBuffer { buffer: &bytes, file_path: None },
-    )
-    .map_err(|_| ())?;
-    boot::start_image(handle).map_err(|_| ())?;
-    Ok(Status::SUCCESS)
 }
 
 fn quiet_cmdline(options: &str) -> String {

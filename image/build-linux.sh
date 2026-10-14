@@ -83,24 +83,8 @@ mv "$out/modules-root/lib/modules/$rel" "$out/modules/$rel"
 rm -rf "$out/modules-root"
 cp -a "$src/arch/x86/boot/bzImage" "$out/vmlinuz"
 
-# Pitcairn firmware next to the kernel so `cargo make boot` packs it
-# without nix-build tools.nix (OATH_KERNEL parent dir).
-if [ ! -d "$out/firmware/amdgpu" ]; then
-	src_fw=${OATH_FIRMWARE:-}
-	if [ -z "$src_fw" ] || [ ! -d "$src_fw" ]; then
-		src_fw=$here/../build/linux/firmware
-	fi
-	if [ -d "$src_fw/amdgpu" ]; then
-		mkdir -p "$out/firmware"
-		cp -a "$src_fw/." "$out/firmware/"
-	fi
-fi
-
 echo "kernel $out/vmlinuz"
 echo "modules $out/modules/$rel"
 echo "OATH_KERNEL=$out/vmlinuz"
 echo "OATH_MODULES=$out/modules"
 echo "OATH_KVER=$rel"
-if [ -d "$out/firmware/amdgpu" ]; then
-	echo "OATH_FIRMWARE=$out/firmware"
-fi

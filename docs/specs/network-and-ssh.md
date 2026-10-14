@@ -8,8 +8,8 @@ DHCP lease by default. Root is privilege, not a login: `home` uses
 **Status:** partly built. DHCP, static addresses, SSH keys, host keys,
 the `home` account and `sudo` are built. Changes that can cut off SSH
 need `--confirm`, and a supervised DHCP client renews the lease (both
-built 2026-10-13). Probation with automatic rollback and a stricter
-`sudo` are the target.
+built 2026-10-13). `sudo` was hardened on 2026-10-13. Probation with
+automatic rollback is the target.
 
 Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
@@ -56,9 +56,12 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 - `svc:sshd` runs dropbear in the foreground with `-s` (no passwords)
   and `-w` (no root login), with `keep_children`: restarting sshd
   signals only the listener, so open login sessions survive (and `oath
-  apply` waits for PID 1 to have restarted it). `pkg:dropbear` is fixed (not removable).
-  The package also carries the OpenSSH `ssh`, `ssh-keygen` and
-  `sftp-server` binaries.
+  apply` waits for PID 1 to have restarted it). `pkg:dropbear` is
+  fixed (not removable) and carries only `dropbear` and `dropbearkey`.
+- The OpenSSH client tools are `pkg:openssh` (OpenSSH 10.6p1, built
+  without OpenSSL; present and removable): `ssh`, `scp`, `sftp`,
+  `ssh-keygen` and `sftp-server`. Dropbear is built to run
+  `/bin/sftp-server` for SFTP.
 - The installer writes the build host's public keys into `ssh:local`
   through the install overlay (boot-and-install.md).
 
@@ -71,15 +74,15 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   effects of converging `host:local`.
 - `home` runs `sudo <cmd>` with no password. `/bin/sudo` is a setuid
   helper at `/lib/oath/sudo`, not PAM and not a package. Applying is
-  `sudo oath apply`.
+  `sudo oath apply`. `sudo [-n] [--] command [args…]` refuses any
+  other option, sets groups, gid and uid to root and checks each call,
+  and runs the command with a clean root environment (`PATH=/bin`,
+  `HOME=/root`), keeping only `TERM` and `TZ`.
 - The serial console logs in as root. The installer ramdisk accepts
   root over SSH with the baked host keys; the installed system does not.
 
 ## Known defects (from the 2026-10-13 review)
 
-- `sudo` drops every leading `-` argument, ignores the return values of
-  `setgid` and `setuid`, never calls `setgroups`, and passes the
-  caller's environment through.
 - `actual.lease` is the first lease; renewals by the DHCP client are
   not written back.
 - Changing `ssh:local`, `svc:sshd` or `net:net0` with `--confirm` can
@@ -94,9 +97,6 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   unless confirmed from a fresh SSH session (catalog.md).
 - **Current lease in actual.** The DHCP client's script records each
   renewal in `net:net0` actual.
-- **`sudo`.** Parse only `--`; check every credential call; set
-  supplementary groups to root's; clear the environment except a
-  short allowlist (`TERM`, `LANG`, `TZ`), and set `PATH=/bin`.
 - **More NICs.** Naming beyond `net0` waits until a machine needs it.
 - **Root SSH as a field.** A payload that needs root over SSH gets a
   generic `ssh:local` toggle, off by default (scope.md).

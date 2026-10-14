@@ -6,10 +6,11 @@ network and only the declared inputs, then hashes `/out` into the
 store. The same plan bytes and the same input hashes must give the
 same product hash. Plans are how Oath makes native packages.
 
-**Status:** partly built. The plan kind, `oath fmt`, `oath build`
-(pinned and `--file`) and the sandbox are built. Native packages built
-by plans are the target; today only canaries (`apps/hello.plan`,
-`apps/reloc.plan`) use it.
+**Status:** partly built. The plan kind, `oath fmt`,
+`oath build` (pinned and `--file`), the sandbox and the native
+toolchain are built; every userspace package in the image is a plan
+product (`pkgs/`, via `cargo make pkgs`). Still target: `pkg:llvm` and
+the kernel as plans, immutable outputs, build logs.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -32,7 +33,7 @@ Replaces: T43, and the toolchain parts of T35.
   "produces": "pkg:hello",
   "build_needs": [
     {"id": "pkg:busybox", "hash": "sha256-…"},
-    {"id": "pkg:cc", "hash": "sha256-…"}
+    {"id": "pkg:llvm", "hash": "sha256-…"}
   ],
   "run_needs": []
 }
@@ -70,39 +71,50 @@ A rebuild of the same plan and inputs that yields a different product
 hash is a security error: nothing is recorded, the live pin does not
 move, and both trees stay.
 
-Known defect: the skip-if-built check compares only the input set, not
-the plan hash, so editing a filed plan without changing its inputs
-reuses the old product.
+The skip-if-built check is keyed on the plan hash and the input set,
+so an edited plan always rebuilds.
 
-## Native toolchain (target)
+The sandbox does not see `/nix/store`; only the crate's unit tests opt
+in (`OATH_SANDBOX_NIX_STORE`).
 
-The direction, from D7:
+## Native toolchain (built)
 
-- **Compiler.** Clang/LLVM (clang, lld, compiler-rt, libunwind,
-  libc++) on musl is the proposed system toolchain: one compiler for
-  every target, and mesa needs LLVM anyway. Stage 0 is built on the
-  build host with the host's compiler and never ships; stage 1 rebuilds
-  it with itself as an Oath plan. Zig is not used.
-- **Build where.** The same `oath build` runs on the build host (under
-  a user namespace, against a scratch catalog) to produce the image's
-  packages, and on Oath itself to rebuild them. The host's own
-  compilers are not inputs.
-- **First native set (the headless base).** musl, busybox, btrfs-progs
-  and its libraries (util-linux libuuid and libblkid, zlib, lzo, zstd),
-  dropbear, curl with a CA bundle, dosfstools, a GPT tool, and
-  linux-firmware as a vendor release. The kernel is already built from
-  a pinned kernel.org tarball (boot-and-install.md).
-- **Rust.** The vendor's `x86_64-unknown-linux-musl` toolchain release,
-  pinned. The Oath crates are static musl binaries already.
+Clang/LLVM 23.1.3 (clang, lld, compiler-rt, libunwind, libc++) on musl
+1.2.6 is the system toolchain (R11 in [decisions](../decisions.md)).
+Zig is not used (R9).
+
+- **Stage 0** (`cargo make bootstrap`, `pkgs/bootstrap.sh`): clang and
+  lld targeting `x86_64-unknown-linux-musl`, plus a sysroot (Linux UAPI
+  headers from the pinned kernel tarball, musl, compiler-rt builtins,
+  libunwind, libc++abi, libc++), built by the build host's gcc. It
+  runs only on the build host and never ships.
+- **Stage 1**, built by stage 0: a static musl `pkg:llvm` (clang, lld,
+  the LLVM binutils, its own sysroot; `bin/clang.cfg` points at that
+  sysroot and links statically by default), static busybox and make.
+- **Stage 2** (`cargo make pkgs`): every package in `pkgs/` is a plan
+  pinned to its source pack (`pkg:<name>-src`) and to the build packs in
+  `pkgs/lock.json`, built by the same `oath build` in a user-namespace
+  sandbox against the build catalog at `.cache/oath`. The host's
+  compilers are not inputs. How a package is written: `pkgs/README.md`.
+- **Fixed point.** Rebuilding stage 2 with stage-2 tools gives
+  bit-identical products; busybox rebuilt by itself is identical too.
+- **The headless base** (15 plan products): busybox, make, pkgconf,
+  zlib, zstd, lzo, util-linux, btrfs-progs, dropbear, OpenSSH (no
+  OpenSSL), mbedTLS, curl (mbedTLS, pinned CA bundle), dosfstools,
+  kexec-tools and linux-firmware blobs pinned one by one.
+- **Rust.** The Oath crates are static musl binaries linked by
+  `rust-lld` with musl's self-contained crt. The Rust toolchain itself
+  is still the build host's; the vendor's pinned release as a pack is
+  target.
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
-  the base, as plans.
+  the base, as plans (phase 8).
 
-Open: Joshua has not yet confirmed Clang/LLVM over GCC
-([decisions](../decisions.md)).
+Target: `pkg:llvm` rebuilt by a plan (needs cmake, ninja and python
+packs); the kernel built by a plan with `pkg:llvm` instead of the host's
+gcc; upstream signature checks on top of the sha256 pins.
 
 ## Target fixes
 
-- Cache key is `(plan hash, input-set hash)`.
 - Plan outputs are immutable; a build never writes into a tree that
   already exists.
 - Builds log to `/oath/log` and `oath build` prints where.

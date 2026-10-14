@@ -18,13 +18,18 @@ The `base` profile:
 | `pkg:busybox` | present | no — all applets, including `/bin/vi`, `/bin/ip`, `/bin/udhcpc` |
 | `pkg:btrfs` | present | no — `/bin/btrfs` |
 | `pkg:oath` | present | no — `/bin/oath` |
-| `pkg:dropbear` | present | no — `dropbear`, `dropbearkey`, `dbclient`, `scp`, `sftp-server`, and the OpenSSH client `ssh` + `ssh-keygen` |
-| `pkg:curl` | present | yes — static curl with a CA bundle in the store |
+| `pkg:dropbear` | present | no — the SSH server: `dropbear`, `dropbearkey` |
+| `pkg:openssh` | present | yes — OpenSSH client tools: `ssh`, `scp`, `sftp`, `ssh-keygen`, `sftp-server` |
+| `pkg:util-linux` | present | yes — `sfdisk`, `wipefs`, `blkid`, `lsblk` |
+| `pkg:dosfstools` | present | yes — `mkfs.fat`, `mkfs.vfat`, `fsck.fat` |
+| `pkg:curl` | present | yes — static curl (mbedTLS) with a CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem` |
 | `pkg:hello` | absent; bits in the store | yes — canary; `/bin/hello` prints `hello` |
 | `pkg:fetchme` | absent; `url` | yes — fetch canary from `http://10.0.2.2:18765/fetchme` (the QEMU host) |
 
-There is no C compiler on the box yet; it arrives with the native
-toolchain (roadmap phase 5). There is no glibc on Oath.
+Every pack above except `pkg:oath` is built from pinned source on the
+build host (`pkgs/`, [Build](build.md)). There is no C compiler on the
+box yet: the toolchain (`pkg:llvm`) exists on the build host but is not
+in the base profile. There is no glibc on Oath.
 
 PID 1 stays at `/lib/oath/init`; it is not a package.
 
@@ -90,11 +95,12 @@ oath apply
 A missing `build_needs` pack is fetched first when its `pkg` object
 has a `url`. The second build of an unchanged input set is a no-op.
 
-Known gaps: the base image does not carry the inputs for
-`apps/hello.plan` (`pkg:cc`, `pkg:hello-src`), and the pins in
-`apps/*.plan` name realizations from an older image. The build cache
-is keyed on the input set only, so changing a plan's script without
-changing its inputs does not rebuild.
+The build cache is keyed on the plan hash and the input set, so an
+edited script always rebuilds.
+
+Known gap: the base image does not carry `pkg:llvm`, so
+`apps/hello.plan` builds on the build host (in `.cache/oath`), not on
+the box. The plans in `pkgs/` are the larger examples.
 
 ## Host store cache and publishing
 
@@ -108,8 +114,9 @@ cargo make publish --dest <dir>  # copies pkg/<name>/<hash>.tar and adv/
 ```
 
 `publish` copies every pack in the cache. There is no allowlist or
-license check yet, so check the cache before publishing anywhere
-public.
+license check yet (`pkgs/lock.json` records each package's licence, but
+`publish` does not read it), so check the cache before publishing
+anywhere public.
 
 Optional backup hooks in a pack (not catalog fields):
 `libexec/oath-backup-quiesce` and `libexec/oath-backup-thaw`. See

@@ -71,11 +71,12 @@ Where the first keys come from:
   guest, and PID 1 adds them to `ssh:local` (desired and applied) at
   boot. `cargo make check` passes its own throwaway key the same way.
 
-`svc:sshd` is dropbear (`pkg:dropbear`, not removable). The same
-package ships `/bin/ssh` and `/bin/ssh-keygen` (OpenSSH client),
-`/bin/sftp-server`, `/bin/scp`, and `/bin/dbclient`. Guest
-`/etc/ssh/ssh_config` is `StrictHostKeyChecking accept-new`. `scp`
-and `sftp` as `home` work:
+`svc:sshd` is dropbear (`pkg:dropbear`, not removable: `dropbear` and
+`dropbearkey` only). The OpenSSH client tools are `pkg:openssh`
+(removable, built without OpenSSL): `/bin/ssh`, `/bin/scp`,
+`/bin/sftp`, `/bin/ssh-keygen`, and `/bin/sftp-server`, which dropbear
+runs for SFTP (removing `pkg:openssh` turns SFTP off). Guest `/etc/ssh/ssh_config` is
+`StrictHostKeyChecking accept-new`. `scp` and `sftp` as `home` work:
 
 ```
 scp ./file home@host:/home/file

@@ -38,12 +38,27 @@
     },
     "pkg:dropbear": {
       "present": true,
-      "description": "SSH server and musl OpenSSH client bits.",
+      "description": "Dropbear SSH server and dropbearkey.",
       "home": "https://matt.ucc.asn.au/dropbear/dropbear.html"
+    },
+    "pkg:openssh": {
+      "present": true,
+      "description": "OpenSSH client tools: ssh, scp, sftp, ssh-keygen, and sftp-server for dropbear. Built without OpenSSL (ed25519).",
+      "home": "https://www.openssh.com/portable.html"
+    },
+    "pkg:util-linux": {
+      "present": true,
+      "description": "Disk tools (sfdisk, wipefs, blkid, lsblk) and libuuid, libblkid, libfdisk, libmount.",
+      "home": "https://github.com/util-linux/util-linux"
+    },
+    "pkg:dosfstools": {
+      "present": true,
+      "description": "mkfs.fat and fsck.fat for the EFI system partition.",
+      "home": "https://github.com/dosfstools/dosfstools"
     },
     "pkg:curl": {
       "present": true,
-      "description": "curl with a CA bundle.",
+      "description": "curl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca).",
       "home": "https://curl.se/"
     },
     "pkg:hello": {

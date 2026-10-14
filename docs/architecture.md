@@ -4,12 +4,12 @@ What runs and where things live today. Target design is in
 [specs/](specs/README.md). Update this file when a process, path or
 tree changes.
 
-**As of:** 2026-10-13, base profile, booted in QEMU.
+**As of:** 2026-10-14, base profile, booted in QEMU.
 
 ## Boot
 
 ```
-firmware ── ESP: BOOTX64.EFI (systemd-boot today; oath-efi is the menu/mark)
+firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loader)
             loader/entries/oath.conf  + oath-N.conf (last 5 boots)
             vmlinuz (own build, 7.3.0-rc1) + initrd.gz
   kernel cmdline: oath.root=<dev> oath.subvol=@ console=ttyS0 panic=10 …
@@ -96,21 +96,33 @@ read-only, then calls `reboot(2)`.
 ## Host side (novus)
 
 ```
+cargo make bootstrap
+  stage 0 (host gcc, nix-shell pkgs/bootstrap.nix): clang/lld + musl sysroot,
+    under build/bootstrap/, never ships
+  stage 1 (by stage 0): pkg:llvm, pkg:busybox, pkg:make into the build catalog
+cargo make pkgs [names]
+  pkgs/<name>/pkg.toml + build.sh → source pack pkg:<name>-src
+    + pkgs/<name>/<name>.plan (build packs pinned from pkgs/lock.json)
+  `oath build` in the sandbox of the build catalog at .cache/oath
+  product hash, version, licence, plan hash → pkgs/lock.json
 cargo make build [--profile base]
-  cargo build oath, oath-init (musl), oath-efi (uefi)
+  cargo build oath, oath-init (musl, rust-lld), oath-efi (uefi)
   kernel + modules from build/linux (image/build-linux.sh), vermagic checked
-  busybox, btrfs, dropbear, … from image/tools.nix (temporary, phase 5)
+  every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)
+    from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)
   build/stage/            the root tree; `oath seed --profile` writes /oath
   .cache/oath/store/      host copy of every packed tree, by hash
   build/oath.qcow2        btrfs @ with the stage
   build/initrd.gz, build/initrd-install.gz (installer ramdisk: dropbear,
-                          sgdisk, mkfs, oath)
+                          sfdisk, wipefs, mkfs.fat, mkfs.btrfs, btrfs,
+                          busybox tar, oath, oath-efi)
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
   build/check/key; serves pkg:fetchme on 127.0.0.1:18765; a clean run
   writes build/check-pass (kernel, initrd, image sha256)
 cargo make install --target … --disk … --overlay hosts/<name>.json --confirm
   refuses an image without a matching build/check-pass
-  kexec or EFI-boot the installer, format, copy the stage, write the
-  overlay with `oath seed --overlay`, write the ESP, reboot
+  kexec (native pkg:kexec, copied to the target) or EFI-boot the
+  installer, partition (sfdisk, wipefs), format, copy the stage, write
+  the overlay with `oath seed --overlay`, write the ESP, reboot
 ```

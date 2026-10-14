@@ -236,8 +236,21 @@ fn mount_devpts() {
         let _ = mount(Some("devpts"), "/dev/pts", Some("devpts"), MsFlags::empty(), Some(opts));
     }
     let _ = mount(Some("devpts"), "/dev/pts", Some("devpts"), MsFlags::MS_REMOUNT, Some(opts));
-    let _ = fs::set_permissions("/dev/ptmx", fs::Permissions::from_mode(0o666));
-    for n in ["/dev/null", "/dev/zero", "/dev/tty", "/dev/random", "/dev/urandom"] {
+    open_dev_nodes();
+}
+
+/// The nodes every user needs (`/dev/null`, `/dev/urandom`, …) are 0666.
+/// `mdev -s` recreates them root-only, so this runs after every pass.
+fn open_dev_nodes() {
+    for n in [
+        "/dev/null",
+        "/dev/zero",
+        "/dev/full",
+        "/dev/tty",
+        "/dev/ptmx",
+        "/dev/random",
+        "/dev/urandom",
+    ] {
         let _ = fs::set_permissions(n, fs::Permissions::from_mode(0o666));
     }
 }
@@ -273,6 +286,7 @@ fn load_modules(defer_kms: bool) {
         }
     }
     let _ = Command::new("/bin/busybox").args(["mdev", "-s"]).status();
+    open_dev_nodes();
 }
 
 /// KMS takeover plus ALSA. HDMI audio sits on the GPU function; load

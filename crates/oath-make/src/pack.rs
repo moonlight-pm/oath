@@ -100,7 +100,6 @@ pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
     fs::create_dir_all(out)?;
     eprintln!("kernel={}", tools.kernel.display());
     eprintln!("modules={}", tools.modules.display());
-    eprintln!("busybox={}", tools.busybox.display());
     eprintln!(">> musl oath-init");
     run(Command::new("cargo").current_dir(root).args([
         "build",
@@ -124,7 +123,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let wanted =
         oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
     for name in &wanted {
-        if !matches!(name.as_str(), "busybox" | "btrfs" | "oath" | "dropbear" | "curl") {
+        if name != "oath" && name != "hello" && !tools.packs.contains_key(name) {
             bail!("profile {profile} wants pkg:{name}, which this build cannot pack yet");
         }
     }
@@ -132,7 +131,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     eprintln!("profile={profile}");
     eprintln!("kernel={}", tools.kernel.display());
     eprintln!("modules={}", tools.modules.display());
-    eprintln!("busybox={}", tools.busybox.display());
+    eprintln!("packs={}", tools.packs.keys().cloned().collect::<Vec<_>>().join(" "));
 
     eprintln!(">> musl binaries");
     run(Command::new("cargo").current_dir(root).args([
@@ -158,80 +157,38 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let ir_install = out.join("initramfs-install");
     let _ = fs::remove_dir_all(&ir_install);
     copy_tree(&out.join("initramfs"), &ir_install)?;
-    if let Some(db) = &tools.dropbear {
-        copy_file(db, &ir_install.join("bin/dropbear"))?;
-        chmod_exec(&ir_install.join("bin/dropbear"))?;
-    }
-    if let Some(dk) = &tools.dropbearkey {
-        copy_file(dk, &ir_install.join("bin/dropbearkey"))?;
-        chmod_exec(&ir_install.join("bin/dropbearkey"))?;
-    }
-    if let Some(scp) = &tools.dropbear_scp {
-        copy_file(scp, &ir_install.join("bin/scp"))?;
-        chmod_exec(&ir_install.join("bin/scp"))?;
-    }
-    if let Some(sftp) = &tools.sftp_server {
-        copy_file(sftp, &ir_install.join("bin/sftp-server"))?;
-        chmod_exec(&ir_install.join("bin/sftp-server"))?;
-    }
-    if let Some(sg) = &tools.sgdisk {
-        copy_file(sg, &ir_install.join("bin/sgdisk"))?;
-        chmod_exec(&ir_install.join("bin/sgdisk"))?;
-    }
-    if let Some(fat) = &tools.mkfs_fat {
-        copy_file(fat, &ir_install.join("bin/mkfs.fat"))?;
-        chmod_exec(&ir_install.join("bin/mkfs.fat"))?;
-    }
-    if let Some(btrfs) = &tools.btrfs {
-        copy_file(btrfs, &ir_install.join("bin/btrfs"))?;
-        chmod_exec(&ir_install.join("bin/btrfs"))?;
-    }
-    if let Some(mk) = &tools.mkfs_btrfs {
-        copy_file(mk, &ir_install.join("bin/mkfs.btrfs"))?;
-        chmod_exec(&ir_install.join("bin/mkfs.btrfs"))?;
+    // Native tools the installer runs over SSH (static binaries).
+    for (pack, file) in [
+        ("dropbear", "dropbear"),
+        ("dropbear", "dropbearkey"),
+        ("btrfs", "btrfs"),
+        ("btrfs", "mkfs.btrfs"),
+        ("util-linux", "sfdisk"),
+        ("util-linux", "wipefs"),
+        ("dosfstools", "mkfs.fat"),
+    ] {
+        let dest = ir_install.join("bin").join(file);
+        let _ = fs::remove_file(&dest);
+        copy_file(&tools.bin(pack, file)?, &dest)?;
+        chmod_exec(&dest)?;
     }
     // The installer writes the new catalog with `oath seed --overlay`.
     copy_file(&bin.join("oath"), &ir_install.join("bin/oath"))?;
     chmod_exec(&ir_install.join("bin/oath"))?;
-    if let Some(gt) = &tools.gnutar {
-        let _ = fs::remove_file(ir_install.join("bin/tar"));
-        copy_file(gt, &ir_install.join("bin/tar"))?;
-        chmod_exec(&ir_install.join("bin/tar"))?;
-    } else {
-        let _ = fs::remove_file(ir_install.join("bin/tar"));
-        symlink("busybox", ir_install.join("bin/tar"))?;
-    }
+    let _ = fs::remove_file(ir_install.join("bin/tar"));
+    symlink("busybox", ir_install.join("bin/tar"))?;
     // busybox applets used by the host install script over SSH
     fs::create_dir_all(ir_install.join("opt/oath-install"))?;
     copy_file(&out.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
     copy_file(&tools.kernel, &ir_install.join("opt/oath-install/vmlinuz"))?;
-    if let Some(boot) = &tools.systemd_boot {
-        copy_file(boot, &ir_install.join("opt/oath-install/systemd-bootx64.efi"))?;
-    }
-    let splash = root.join("target/x86_64-unknown-uefi/release/oath-efi.efi");
-    if splash.is_file() {
-        copy_file(&splash, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
-    } else if let Some(boot) = &tools.systemd_boot {
-        copy_file(boot, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
-    }
+    // oath-efi is the boot loader (menu, BLS entries, kernel + initrd).
+    copy_file(&build_efi(root)?, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
     fs::create_dir_all(ir_install.join("lib/oath"))?;
     fs::write(ir_install.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     chmod_exec(&ir_install.join("lib/oath/udhcpc.script"))?;
     for a in [
-        "ip",
-        "udhcpc",
-        "mount",
-        "umount",
-        "mkdir",
-        "mdev",
-        "mkfs.vfat",
-        "blockdev",
-        "reboot",
-        "sync",
-        "sleep",
-        "cp",
-        "cat",
-        "sh",
+        "ip", "udhcpc", "mount", "umount", "mkdir", "mdev", "blockdev", "reboot", "sync", "sleep",
+        "cp", "cat", "sh",
     ] {
         let _ = fs::remove_file(ir_install.join("bin").join(a));
         symlink("busybox", ir_install.join("bin").join(a))?;
@@ -294,50 +251,17 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
 
     let oath_root = stage.join("oath");
     let guest_bin = stage.join("bin");
-    write_busybox_store(&oath_root, &tools.busybox)?;
-    let Some(btrfs) = &tools.btrfs else {
-        bail!("OATH_BTRFS / tools btrfs required (pkg:btrfs)");
-    };
-    write_bin_store(&oath_root, "btrfs", btrfs)?;
+    // The profile's packages: native packs (pkgs/lock.json) as they are,
+    // plus oath itself and the hello canary from this tree.
     write_bin_store(&oath_root, "oath", &bin.join("oath"))?;
-    let Some(dropbear) = &tools.dropbear else {
-        bail!("OATH_DROPBEAR / tools dropbear required (pkg:dropbear)");
-    };
-    let Some(dropbearkey) = &tools.dropbearkey else {
-        bail!("OATH_DROPBEARKEY / tools dropbearkey required");
-    };
-    let Some(dropbear_dbclient) = &tools.dropbear_dbclient else {
-        bail!("OATH_DROPBEAR_DBCLIENT / tools dropbear-dbclient required");
-    };
-    let Some(dropbear_scp) = &tools.dropbear_scp else {
-        bail!("OATH_DROPBEAR_SCP / tools dropbear-scp required (pkg:dropbear scp)");
-    };
-    let Some(openssh_ssh) = &tools.openssh_ssh else {
-        bail!("OATH_OPENSSH_SSH / tools openssh-ssh required (guest /bin/ssh)");
-    };
-    let Some(openssh_ssh_keygen) = &tools.openssh_ssh_keygen else {
-        bail!("OATH_OPENSSH_SSH_KEYGEN / tools openssh-ssh-keygen required");
-    };
-    let Some(sftp_server) = &tools.sftp_server else {
-        bail!("OATH_SFTP_SERVER / tools sftp-server required (pkg:dropbear sftp)");
-    };
-    write_dropbear_store(
-        &oath_root,
-        dropbear,
-        dropbearkey,
-        dropbear_dbclient,
-        dropbear_scp,
-        openssh_ssh,
-        openssh_ssh_keygen,
-        sftp_server,
-    )?;
     write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
-    link_pkg(&oath_root, &guest_bin, "busybox", false)?;
-    link_pkg(&oath_root, &guest_bin, "btrfs", false)?;
-    link_pkg(&oath_root, &guest_bin, "oath", false)?;
-    link_pkg(&oath_root, &guest_bin, "dropbear", false)?;
-    pack_curl(&oath_root, tools)?;
-    link_pkg(&oath_root, &guest_bin, "curl", true)?;
+    let fixed = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
+    for name in &wanted {
+        if name != "oath" {
+            copy_tree(tools.pack(name)?, &oath_root.join("store/pkg").join(name))?;
+        }
+        link_pkg(&oath_root, &guest_bin, name, !fixed.is_fixed(name))?;
+    }
 
     let cache = host_store_cache(root);
     eprintln!(">> hash-in-path store ({})", cache.display());
@@ -412,70 +336,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     Ok(())
 }
 
-fn write_busybox_store(oath_root: &Path, busybox: &Path) -> Result<()> {
-    let dir = oath_root.join("store/pkg/busybox/bin");
-    fs::create_dir_all(&dir)?;
-    copy_file(busybox, &dir.join("busybox"))?;
-    chmod_exec(&dir.join("busybox"))?;
-    let list = crate::util::run_out(Command::new(busybox).arg("--list"))?;
-    for a in list.split_whitespace() {
-        if matches!(
-            a,
-            "busybox"
-                | "hello"
-                | "btrfs"
-                | "oath"
-                | "dropbear"
-                | "dropbearkey"
-                | "dbclient"
-                | "ssh"
-                | "ssh-keygen"
-                | "scp"
-                | "sftp-server"
-                | "sudo"
-                | "xdg-open"
-                | "x-www-browser"
-                | "open"
-        ) {
-            continue;
-        }
-        let dest = dir.join(a);
-        let _ = fs::remove_file(&dest);
-        symlink("busybox", dest)?;
-    }
-    Ok(())
-}
-
-fn write_dropbear_store(
-    oath_root: &Path,
-    dropbear: &Path,
-    dropbearkey: &Path,
-    dbclient: &Path,
-    scp: &Path,
-    ssh: &Path,
-    ssh_keygen: &Path,
-    sftp_server: &Path,
-) -> Result<()> {
-    let dir = oath_root.join("store/pkg/dropbear/bin");
-    fs::create_dir_all(&dir)?;
-    copy_file(dropbear, &dir.join("dropbear"))?;
-    copy_file(dropbearkey, &dir.join("dropbearkey"))?;
-    copy_file(dbclient, &dir.join("dbclient"))?;
-    copy_file(ssh, &dir.join("ssh"))?;
-    copy_file(ssh_keygen, &dir.join("ssh-keygen"))?;
-    copy_file(scp, &dir.join("scp"))?;
-    copy_file(sftp_server, &dir.join("sftp-server"))?;
-    chmod_exec(&dir.join("dropbear"))?;
-    chmod_exec(&dir.join("dropbearkey"))?;
-    chmod_exec(&dir.join("dbclient"))?;
-    chmod_exec(&dir.join("ssh"))?;
-    chmod_exec(&dir.join("ssh-keygen"))?;
-    chmod_exec(&dir.join("scp"))?;
-    chmod_exec(&dir.join("sftp-server"))?;
-    Ok(())
-}
-
-fn build_efi(root: &Path) -> Result<PathBuf> {
+pub(crate) fn build_efi(root: &Path) -> Result<PathBuf> {
     eprintln!(">> uefi oath-efi");
     run(Command::new("cargo").current_dir(root).args([
         "build",
@@ -508,7 +369,7 @@ fn write_initrd(root: &Path, out: &Path, tools: &Tools, init: &Path) -> Result<(
     }
     copy_file(init, &ir.join("init"))?;
     chmod_exec(&ir.join("init"))?;
-    copy_file(&tools.busybox, &ir.join("bin/busybox"))?;
+    copy_file(&tools.bin("busybox", "busybox")?, &ir.join("bin/busybox"))?;
     chmod_exec(&ir.join("bin/busybox"))?;
     let _ = fs::remove_file(ir.join("bin/sh"));
     symlink("busybox", ir.join("bin/sh"))?;
@@ -779,10 +640,8 @@ fn write_cpio_gz(tree: &Path, dest: &Path) -> Result<PathBuf> {
 }
 
 fn copy_firmware(tools: &Tools, ir: &Path) -> Result<()> {
-    if let Some(fw) = &tools.firmware {
-        if fw.is_dir() {
-            copy_tree(fw, &ir.join("lib/firmware"))?;
-        }
+    if let Some(fw) = tools.firmware() {
+        copy_tree(&fw, &ir.join("lib/firmware"))?;
     }
     Ok(())
 }
@@ -892,24 +751,6 @@ pub(crate) fn resolve_load_order(dep_text: &str, roots: &[&str]) -> Vec<String> 
         }
     }
     order.into_iter().map(|p| ko_path(&p)).collect()
-}
-
-fn pack_curl(oath_root: &Path, tools: &Tools) -> Result<()> {
-    let curl = tools.curl.as_ref().context("OATH_CURL / tools curl required (pkg:curl)")?;
-    let cacert = tools.cacert.as_ref().context("OATH_CACERT / tools ca-bundle required")?;
-    let dest = oath_root.join("store/pkg/curl");
-    fs::create_dir_all(dest.join("bin"))?;
-    fs::create_dir_all(dest.join("libexec"))?;
-    fs::create_dir_all(dest.join("ssl"))?;
-    copy_file(curl, &dest.join("libexec/curl"))?;
-    chmod_exec(&dest.join("libexec/curl"))?;
-    copy_file(cacert, &dest.join("ssl/cert.pem"))?;
-    fs::write(
-        dest.join("bin/curl"),
-        "#!/bin/sh\nexport CURL_CA_BUNDLE=\"${CURL_CA_BUNDLE:-/oath/store/pkg/curl/ssl/cert.pem}\"\nexport SSL_CERT_FILE=\"${SSL_CERT_FILE:-/oath/store/pkg/curl/ssl/cert.pem}\"\nexec /oath/store/pkg/curl/libexec/curl \"$@\"\n",
-    )?;
-    chmod_exec(&dest.join("bin/curl"))?;
-    Ok(())
 }
 
 fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {

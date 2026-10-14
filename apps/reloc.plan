@@ -5,7 +5,7 @@
   "build_needs": [
     {
       "id": "pkg:busybox",
-      "hash": "sha256-a9661868d8cfe2a8e8406263f22d47a8dd913e27c404816ff20576c9ea73f5f3"
+      "hash": "sha256-5c07428c094578850fa4fbf5ab3eb123d4d563178885cb4b32fae5deaa951d35"
     },
     {
       "id": "pkg:reloc-src",

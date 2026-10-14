@@ -7,9 +7,10 @@ Every package is native: built from source by an Oath plan, or the
 vendor's own release pinned by sha256.
 
 **Status:** partly built. The store, pins, needs graph, descriptions,
-components and advisories are built. The native rule is policy; most
-base tools in the image still come from nixpkgs until the native base
-replaces them.
+components and advisories are built. The native rule holds for the
+image: every userspace package in it is built from pinned source by an
+Oath plan (`pkgs/`, [builds.md](builds.md)). The publish allowlist and
+the pack manifest are target.
 
 Replaces: T11, T12, T18, T20, T32, T41, T42, T44, and the packaging
 parts of T24 and T35.
@@ -103,10 +104,16 @@ cached tarballs and advisories into an origin tree.
 - A build host's compiler may bootstrap the first toolchain. It never
   ships.
 
-As built, the image still takes busybox, btrfs-progs, dropbear, the
-OpenSSH client and sftp-server, curl, the CA bundle, sgdisk, mkfs.fat,
-GNU tar and the systemd-boot fallback from nixpkgs (`image/tools.nix`).
-The native-base phase replaces them with plans.
+As built (2026-10-14), `pkgs/lock.json` pins 16 packs, each with its
+version, SPDX licence, how it was built, plan hash and product hash.
+`pkg:llvm` is built by the bootstrap script until it can be a plan. The
+other 15 are plan products: busybox, make, pkgconf, zlib, zstd, lzo,
+util-linux, btrfs-progs (`pkg:btrfs`), dropbear, OpenSSH (client, scp,
+sftp, ssh-keygen, sftp-server; no OpenSSL), mbedTLS, curl (with the CA
+bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`), dosfstools,
+kexec-tools (`pkg:kexec`) and firmware (individual linux-firmware
+blobs). The image takes every userspace package from the lock;
+nothing in it comes from nixpkgs.
 
 ## Target
 

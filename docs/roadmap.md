@@ -55,16 +55,29 @@ Not done, carried forward: module loading by modalias (with metal, in
 phase 6), shutdown in reverse `wants` order, the cycle reason in actual,
 surviving a supervisor panic.
 
-## 5. Native base — next
+## 5. Native base — done (2026-10-14)
 
-Bootstrap compiler, then busybox, btrfs-progs, dropbear, curl, sgdisk,
-dosfstools, firmware and the boot loader as plans. Retire
-`image/tools.nix` for anything that ships. Immutable build outputs
-with a manifest; publish allowlist with a license per package.
-Blocked on Joshua confirming Clang/LLVM as the system compiler
-(decisions.md).
+Built: Clang/LLVM 23.1.3 on musl 1.2.6 as the system toolchain (R11).
+`cargo make bootstrap` builds stage 0 with the build host's gcc (never
+ships) and stage 1 with stage 0: a static `pkg:llvm` with its own
+sysroot, busybox and make. `cargo make pkgs` turns `pkgs/<name>/`
+(sha256-pinned sources, SPDX licence, `build.sh`) into pinned plans and
+builds them in the sandbox; `pkgs/lock.json` records each product. 15
+packages by plan: busybox, make, pkgconf, zlib, zstd, lzo, util-linux,
+btrfs-progs, dropbear, OpenSSH, mbedTLS, curl, dosfstools, kexec-tools
+and pinned firmware. Rebuilding with the stage-2 tools gives
+bit-identical products. The image takes every userspace package from
+`lock.json`; `image/tools.nix` and systemd-boot are gone (oath-efi is
+the only loader); the installer uses sfdisk, wipefs and native mkfs.
+27 harness cases and the `install --qemu` rehearsal pass.
 
-## 6. Reinstall — planned
+Not done, carried forward: `pkg:llvm` rebuilt by a plan (needs cmake,
+ninja and python packs), the kernel built by a plan with our compiler,
+upstream signature checks (sources are sha256-pinned), a publish
+allowlist that reads the licences in `lock.json`, immutable build
+outputs with a manifest.
+
+## 6. Reinstall — next
 
 Wipe canto and buccina, install the native base from a clean build,
 run the harness against both over SSH.

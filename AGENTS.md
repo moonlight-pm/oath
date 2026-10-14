@@ -68,8 +68,9 @@ crates/oath-core  catalog, kinds, apply/undo, seed profiles (seed/*.json)
 crates/oath       the `oath` CLI
 crates/oath-init  PID 1, serial-login, sudo
 crates/oath-efi   UEFI boot menu and mark
-crates/oath-make  host build tool (`cargo make build|run|up|start|stop|ssh|install|esp|store|publish|advisories`)
-image/            kernel build (build-linux.sh, linux.fragment, linux-patches/), pkg:cc pack, tools.nix (temporary)
+crates/oath-make  host build tool (`cargo make bootstrap|pkgs|build|check|run|up|start|stop|ssh|install|esp|store|publish|advisories`)
+pkgs/             every package that ships: pkg.toml + build.sh per package, lock.json, the toolchain bootstrap
+image/            kernel build (build-linux.sh, linux.fragment, linux-patches/), host.nix (QEMU + OVMF, build host only)
 check/            cases.toml for `cargo make check` (the QEMU harness)
 apps/             first-party package sources and example plans
 forks/            submodules for the future native desk (sola, river, wlroots)

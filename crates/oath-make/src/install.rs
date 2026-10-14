@@ -2,6 +2,7 @@
 
 use std::fs;
 use std::io;
+use std::io::Write;
 use std::net::{TcpStream, ToSocketAddrs};
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -72,7 +73,7 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
         read_overlay(p)?;
     }
     if opts.usb {
-        return write_usb_installer(out, &tools, &opts);
+        return write_usb_installer(root, out, &tools, &opts);
     }
     if opts.qemu {
         return install_qemu(root, out, &tools, &opts);
@@ -110,27 +111,26 @@ fn parts(disk: &str) -> (String, String) {
     (p1, p2)
 }
 
-fn write_usb_installer(out: &Path, tools: &Tools, opts: &Opts) -> Result<()> {
+fn write_usb_installer(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<()> {
     assert_usb_stick(&opts.disk)?;
-    let boot = tools.systemd_boot.as_ref().context("systemd-bootx64.efi missing")?;
-    let mkfat = tools.mkfs_fat.as_ref().context("mkfs.fat missing")?;
-    let sgdisk = tools.sgdisk.as_ref().context("sgdisk missing")?;
+    let boot = crate::pack::build_efi(root)?;
+    let mkfat = tools.bin("dosfstools", "mkfs.fat")?;
+    let sfdisk = tools.bin("util-linux", "sfdisk")?;
     let (p1, _) = parts(&opts.disk);
     eprintln!("USB installer -> {} (wipe GPT, ESP, installer ramdisk)", opts.disk);
     let _ = sudo(&["umount", &p1]);
     let _ = sudo(&["umount", &opts.disk]);
-    let _ = sudo(&["wipefs", "-a", &opts.disk]);
-    let _ = sudo(&[sgdisk.to_str().unwrap(), "-Z", &opts.disk]);
-    sudo(&[
-        sgdisk.to_str().unwrap(),
-        "-n",
-        "1:0:+1G",
-        "-t",
-        "1:ef00",
-        "-c",
-        "1:OATHUSB",
-        &opts.disk,
-    ])?;
+    let mut part = Command::new("sudo");
+    part.arg(&sfdisk).args(["--wipe", "always", "--quiet", &opts.disk]).stdin(Stdio::piped());
+    let mut child = part.spawn().context("sudo sfdisk")?;
+    child
+        .stdin
+        .take()
+        .context("sfdisk stdin")?
+        .write_all(b"label: gpt\nsize=1GiB, type=uefi, name=OATHUSB\n")?;
+    if !child.wait()?.success() {
+        bail!("sfdisk {} failed", opts.disk);
+    }
     let _ = sudo(&["blockdev", "--rereadpt", &opts.disk]);
     let _ = sudo(&["partprobe", &opts.disk]);
     for _ in 0..20 {
@@ -148,15 +148,10 @@ fn write_usb_installer(out: &Path, tools: &Tools, opts: &Opts) -> Result<()> {
     fs::create_dir_all(&mnt)?;
     sudo(&["mount", &p1, mnt.to_str().unwrap()])?;
     let result = (|| -> Result<()> {
-        for d in ["EFI/BOOT", "EFI/systemd", "loader/entries", "oath-install"] {
+        for d in ["EFI/BOOT", "loader/entries", "oath-install"] {
             sudo(&["mkdir", "-p", mnt.join(d).to_str().unwrap()])?;
         }
         sudo(&["cp", boot.to_str().unwrap(), mnt.join("EFI/BOOT/BOOTX64.EFI").to_str().unwrap()])?;
-        sudo(&[
-            "cp",
-            boot.to_str().unwrap(),
-            mnt.join("EFI/systemd/systemd-bootx64.efi").to_str().unwrap(),
-        ])?;
         sudo(&[
             "cp",
             tools.kernel.to_str().unwrap(),
@@ -384,8 +379,8 @@ fn efi_oneshot_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) ->
     let entry = format!(
         "title Oath installer\nlinux /oath-install/vmlinuz\ninitrd /oath-install/initrd.gz\noptions {cmdline}\n"
     );
-    // oath-efi (BOOTX64) reads only loader/entries/oath.conf — not loader.conf
-    // default / oneshot. systemd-boot fallback still gets a separate entry.
+    // oath-efi (BOOTX64) boots the entries `loader/oath-boots` names, else
+    // loader.conf's default; oath.conf covers an ESP that has oath-boots.
     put_text(r, "/boot/loader/entries/oath.conf", &entry)?;
     put_text(r, "/boot/loader/entries/oath-install.conf", &entry)?;
     put_text(r, "/boot/loader/loader.conf", "default oath-install.conf\ntimeout 1\n")?;
@@ -412,9 +407,9 @@ fn efi_oneshot_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) ->
 }
 
 fn kexec_into_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) -> Result<()> {
-    let kexec = tools.kexec.as_ref().context("kexec tool missing from tools.nix")?;
+    let kexec = tools.bin("kexec", "kexec")?;
     ssh_run(r, "mkdir -p /tmp/oath-install")?;
-    scp_root(r, kexec, "/tmp/oath-install/kexec")?;
+    scp_root(r, &kexec, "/tmp/oath-install/kexec")?;
     scp_root(r, &tools.kernel, "/tmp/oath-install/vmlinuz")?;
     scp_root(r, &out.join("initrd-install.gz"), "/tmp/oath-install/initrd.gz")?;
     ssh_run(r, "chmod +x /tmp/oath-install/kexec")?;
@@ -541,14 +536,14 @@ fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Resul
 
     write_catalog_overlay(opts, &hostname, r)?;
 
-    ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/EFI/systemd /esp/loader/entries")?;
+    ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/loader/entries")?;
     ssh_run(
         r,
         "test -f /opt/oath-install/BOOTX64.EFI && test -f /opt/oath-install/vmlinuz && test -f /opt/oath-install/initrd.gz",
     )?;
     ssh_run(
         r,
-        "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && (test -f /opt/oath-install/systemd-bootx64.efi && cp /opt/oath-install/systemd-bootx64.efi /esp/EFI/systemd/systemd-bootx64.efi || cp /opt/oath-install/BOOTX64.EFI /esp/EFI/systemd/systemd-bootx64.efi) && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
+        "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
     )?;
     let entry = crate::boot::current_bls(&p2, "");
     let loader =
@@ -575,9 +570,8 @@ set -e
 DISK={disk}
 P1={p1}
 P2={p2}
-sgdisk -Z "$DISK" || true
-sgdisk -n 1:0:+512M -t 1:ef00 -c 1:ESP "$DISK"
-sgdisk -n 2:0:0 -t 2:8300 -c 2:oath "$DISK"
+wipefs -a "$DISK" || true
+printf 'label: gpt\nsize=512MiB, type=uefi, name=ESP\ntype=linux, name=oath\n' | sfdisk --wipe always --quiet "$DISK"
 blockdev --rereadpt "$DISK" || true
 mdev -s || true
 for i in 1 2 3 4 5 6 7 8 9 10; do

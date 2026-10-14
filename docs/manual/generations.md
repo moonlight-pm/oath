@@ -58,7 +58,8 @@ On metal, `EFI/BOOT/BOOTX64.EFI` is `oath-efi`. It sets the native GOP
 mode, paints the Oath mark, and shows a 5 s menu: the current kernel
 plus the last five archived kernel+initrd pairs. Up/Down/Enter. An
 archive boots `oath.subvol=@boot-N`, the userspace snapshot taken when
-it was archived. systemd-boot stays at `EFI/systemd/` as a fallback.
+it was archived. `oath-efi` is the only loader; there is no fallback
+loader on the ESP.
 
 `cargo make esp --esp <vfat node> --confirm [--root /dev/sda2]` packs
 the kernel and initrd, archives the live ESP kernel as a new boot,

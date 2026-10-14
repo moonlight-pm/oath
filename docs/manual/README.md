@@ -31,6 +31,6 @@ These are real today and scheduled to be fixed. Plan around them.
 - Changes that can cut off SSH (`svc:sshd`, `ssh:local`, `net:net0`)
   need `--confirm`, but once applied nothing rolls them back for you.
 - `oath new` fills in no defaults: give every required field.
-- Busybox, btrfs-progs, dropbear, the OpenSSH client bits, curl,
-  sgdisk, mkfs.fat and the firmware are still borrowed from Nix at
-  build time. The kernel, PID 1 and `oath` are built here.
+- The kernel is compiled by the build host's gcc, not yet by Oath's
+  own Clang/LLVM. Every userspace package is built here from pinned
+  source.
