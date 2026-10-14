@@ -6,12 +6,6 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 ## Open — ask the human
 
-- **System compiler: Clang/LLVM or GCC.** Proposed 2026-10-13:
-  Clang/LLVM (clang, lld, compiler-rt, libunwind, libc++) on musl —
-  one toolchain for every target, and mesa needs LLVM anyway. GCC is
-  the smaller standalone build but means a second toolchain later.
-  Tiny compilers (tcc, cproc) cannot build the kernel or C++. Zig is
-  ruled out. Awaiting Joshua's confirmation; blocks phase 5.
 - **Steam + Minecraft desk.** Which machine, and when. Not before the
   native desk exists.
 
@@ -29,6 +23,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R8 | Reset the progress docs ("slash and burn"). | Done in the cut |
 | R9 | No Zig anywhere in Oath (Joshua, 2026-10-13). `pkg:cc` and the `dev` profile were removed. | Done |
 | R10 | Keep the pinned 7.3-rc1 kernel for now. | Decided 2026-10-13 |
+| R11 | The system toolchain is Clang/LLVM (clang, lld, compiler-rt, libunwind, libc++) on musl, built from source: stage 0 by the build host's gcc, stage 1 (`pkg:llvm`) by stage 0. One toolchain for every target; mesa needs LLVM anyway. | Decided 2026-10-14 |
 
 ## Standing
 

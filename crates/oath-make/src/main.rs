@@ -5,6 +5,7 @@ mod cpio;
 mod install;
 mod kernel;
 mod pack;
+mod pkgs;
 mod qemu;
 mod tools;
 mod util;
@@ -103,6 +104,21 @@ enum Cmd {
     },
     /// Pack kernel + initrd + oath-efi only (no qcow, no ESP write).
     Boot,
+    /// Build the toolchain from source on this host (stage 0 and 1) and
+    /// store pkg:llvm, pkg:busybox and pkg:make. Hours, not minutes.
+    Bootstrap {
+        /// Parallel jobs (default: half the cores).
+        #[arg(short, long)]
+        jobs: Option<usize>,
+    },
+    /// Build native packages from pkgs/ as sandboxed `oath build` plans,
+    /// in dependency order. No names: every package.
+    Pkgs {
+        names: Vec<String>,
+        /// List packages, versions, licences and what the lock pins.
+        #[arg(long)]
+        list: bool,
+    },
     /// Hash a pack directory into `.cache/oath/store` (same layout as the guest).
     Store {
         /// Pack directory (`bin/`, `lib/`, …).
@@ -199,6 +215,17 @@ fn real() -> Result<()> {
         Cmd::Boot => {
             let tools = tools::load(&root)?;
             pack::boot_image(&root, &out, &tools)?;
+        }
+        Cmd::Bootstrap { jobs } => {
+            let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2);
+            pkgs::bootstrap(&root, jobs.unwrap_or(n / 2).max(1))?
+        }
+        Cmd::Pkgs { names, list } => {
+            if list {
+                pkgs::list(&root)?
+            } else {
+                pkgs::build(&root, &names)?
+            }
         }
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
         Cmd::Publish { dest } => pack::publish_store(&root, &dest)?,

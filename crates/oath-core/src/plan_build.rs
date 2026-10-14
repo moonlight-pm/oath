@@ -393,9 +393,10 @@ fn sandbox_in_child(
     fs::create_dir_all(scratch.join("tmp"))?;
     fs::create_dir_all(scratch.join("dev"))?;
     fs::create_dir_all(scratch.join("oath/store/pkg"))?;
-    // Host tests copy dynamically linked /bin/sh from NixOS. Appliance
-    // packs are musl/static or declare pkg:glibc. /nix/store is absent on Oath.
-    if Path::new("/nix/store").is_dir() {
+    // Nothing from the build host is visible: only the declared packs.
+    // The unit tests copy the host's dynamically linked /bin/sh into packs,
+    // and only they set OATH_SANDBOX_NIX_STORE to see /nix/store.
+    if std::env::var_os("OATH_SANDBOX_NIX_STORE").is_some() && Path::new("/nix/store").is_dir() {
         fs::create_dir_all(scratch.join("nix/store"))?;
         bind(Path::new("/nix/store"), &scratch.join("nix/store"), true)?;
     }

@@ -1,0 +1,139 @@
+# Firmware blobs the base kernel loads: tg3 (tigon) for canto's Broadcom
+# NIC and SI Pitcairn (amdgpu, radeon) for canto's GPUs. Vendor files from
+# linux-firmware tag 20260916, pinned one by one. Add a blob here when a
+# machine needs it.
+version = "20260916"
+license = "LicenseRef-linux-firmware"
+description = "Firmware blobs from linux-firmware for the machines Oath runs on."
+home = "https://gitlab.com/kernel-firmware/linux-firmware"
+build = ["busybox"]
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_ce.bin?h=20260916"
+sha256 = "04027c3a7c875aaf581ca438ae5ff93ec90002e0e057dc107e7b47048331ee3c"
+file = "firmware/amdgpu/pitcairn_ce.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_k_smc.bin?h=20260916"
+sha256 = "7a5a05c16936d9918759a51ec2caed0db65de64e5957efb6dcb32a2bbefaeebe"
+file = "firmware/amdgpu/pitcairn_k_smc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_mc.bin?h=20260916"
+sha256 = "620ba6469d8c0fe6948733d1a7743d8b96585bcb98d8ee118adaed45e9aa46f9"
+file = "firmware/amdgpu/pitcairn_mc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_me.bin?h=20260916"
+sha256 = "87617358bb876187786c422c3456fef1d072e6532382ecace0847259045131cb"
+file = "firmware/amdgpu/pitcairn_me.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_pfp.bin?h=20260916"
+sha256 = "aabdb871219fe135cb125c4e38adababdd27a02519324f5534abc00f46b24b5b"
+file = "firmware/amdgpu/pitcairn_pfp.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_rlc.bin?h=20260916"
+sha256 = "929f722b65558862b24569f1397ba1f9db2ef301b66440533ebed0a2195ee92c"
+file = "firmware/amdgpu/pitcairn_rlc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_smc.bin?h=20260916"
+sha256 = "c0b51d6622328248cbd32fdd44f7037ec9e31dd77cbf91d28f74dac705d9b3cd"
+file = "firmware/amdgpu/pitcairn_smc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_uvd.bin?h=20260916"
+sha256 = "f3e166c905343b5cc04663354f492aededf0c99d32dd39e7ff18d5b88d4d96e5"
+file = "firmware/amdgpu/pitcairn_uvd.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/pitcairn_ce.bin?h=20260916"
+sha256 = "7614b51e9a8f6dcfeda88bcf0612dc1a3e229e4eba4a07dfbee83ba202859c04"
+file = "firmware/radeon/pitcairn_ce.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/PITCAIRN_ce.bin?h=20260916"
+sha256 = "ff33893f2264ba1bfc070695f9460a533a76f05c34384010718d83f6f564b1d6"
+file = "firmware/radeon/PITCAIRN_ce.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/pitcairn_k_smc.bin?h=20260916"
+sha256 = "7a5a05c16936d9918759a51ec2caed0db65de64e5957efb6dcb32a2bbefaeebe"
+file = "firmware/radeon/pitcairn_k_smc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/PITCAIRN_mc2.bin?h=20260916"
+sha256 = "581fb0dbb3d3a99e80abe177281b68fdf59249d97d47f3a8dd674acf3a21b569"
+file = "firmware/radeon/PITCAIRN_mc2.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/pitcairn_mc.bin?h=20260916"
+sha256 = "620ba6469d8c0fe6948733d1a7743d8b96585bcb98d8ee118adaed45e9aa46f9"
+file = "firmware/radeon/pitcairn_mc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/PITCAIRN_mc.bin?h=20260916"
+sha256 = "cda77c1cbc61ff40dda4675d131aca53b46954b04073e1be57364fe346629539"
+file = "firmware/radeon/PITCAIRN_mc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/pitcairn_me.bin?h=20260916"
+sha256 = "bbbfeb6faab2240e02522fc8e5cd854666b81e34a5dcd7c483c72636c6daa1b3"
+file = "firmware/radeon/pitcairn_me.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/PITCAIRN_me.bin?h=20260916"
+sha256 = "935832c3f400058cef156a0e00746849d34c054000e66aa5dd672310a9f1c47e"
+file = "firmware/radeon/PITCAIRN_me.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/pitcairn_pfp.bin?h=20260916"
+sha256 = "247f2a4547c0151b1a969fa53d35584a01300f481106b9a19afe9fc44b61d07c"
+file = "firmware/radeon/pitcairn_pfp.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/PITCAIRN_pfp.bin?h=20260916"
+sha256 = "5aff5ef8efda66332358ddb45c6b3b0d87fe9f06afc48f0ecbc24d00363b4ff5"
+file = "firmware/radeon/PITCAIRN_pfp.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/pitcairn_rlc.bin?h=20260916"
+sha256 = "2fdfddd71125eaddd7e2aad9e54e4f5477009351d1afff16de0b5c174d263560"
+file = "firmware/radeon/pitcairn_rlc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/PITCAIRN_rlc.bin?h=20260916"
+sha256 = "7b204d50e500425750de017d2dba4fa17c2802b9e50daa29e160215234a16622"
+file = "firmware/radeon/PITCAIRN_rlc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/pitcairn_smc.bin?h=20260916"
+sha256 = "c0b51d6622328248cbd32fdd44f7037ec9e31dd77cbf91d28f74dac705d9b3cd"
+file = "firmware/radeon/pitcairn_smc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/radeon/PITCAIRN_smc.bin?h=20260916"
+sha256 = "40d287b068b799350ca299784b1572349a59a5d0aff75cce32832d13970f04a8"
+file = "firmware/radeon/PITCAIRN_smc.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/tigon/tg357766.bin?h=20260916"
+sha256 = "7b99e2110443767f0dd7d18b7db28370f7b3c46ed0701eeceec70a9e72db117b"
+file = "firmware/tigon/tg357766.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/tigon/tg3.bin?h=20260916"
+sha256 = "8c2d7ba213e319b88d047fbaa218c9e5d974c8ec1931865580aa120aa59541fa"
+file = "firmware/tigon/tg3.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/tigon/tg3_tso5.bin?h=20260916"
+sha256 = "bbe0b8b8e5d53dae4f56675aacbb88f01b473ed7978bcc8b192ecdf39b60ba03"
+file = "firmware/tigon/tg3_tso5.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/tigon/tg3_tso.bin?h=20260916"
+sha256 = "519197f0b5431733845b9542c5d94972639c6b9475a3091e06aabb0491c8a8ea"
+file = "firmware/tigon/tg3_tso.bin"

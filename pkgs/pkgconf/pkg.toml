@@ -1,0 +1,9 @@
+version = "3.0.8"
+license = "ISC"
+description = "pkg-config. A build tool; not in the base image."
+home = "https://github.com/pkgconf/pkgconf"
+build = ["llvm", "busybox", "make"]
+
+[[source]]
+url = "https://distfiles.ariadne.space/pkgconf/pkgconf-3.0.8.tar.xz"
+sha256 = "943f0bc88bcaeceb630b00262e2a8ad5ea4fac3fba72a4267d8b9ec6b35d1194"

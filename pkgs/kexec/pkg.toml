@@ -1,0 +1,10 @@
+version = "2.0.32"
+license = "GPL-2.0-only"
+description = "kexec: boot another kernel from a running one (the installer uses it)."
+home = "https://kernel.org/pub/linux/utils/kernel/kexec/"
+purl = "pkg:generic/kexec-tools@2.0.32"
+build = ["llvm", "busybox", "make", "zlib"]
+
+[[source]]
+url = "https://www.kernel.org/pub/linux/utils/kernel/kexec/kexec-tools-2.0.32.tar.xz"
+sha256 = "8f81422a5fd2362cf6cb001b511e535565ed0f32c2f4451fb5eb68fed6710a5d"

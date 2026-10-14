@@ -1,0 +1,23 @@
+# The toolchain: clang, lld and the LLVM binutils, static musl binaries,
+# with a sysroot of musl, Linux UAPI headers, compiler-rt, libunwind,
+# libc++abi and libc++. Built by pkgs/bootstrap.sh (stage 1) until cmake,
+# ninja and python exist as packs to rebuild it as a plan.
+version = "23.1.3"
+license = "Apache-2.0 WITH LLVM-exception AND MIT AND GPL-2.0-only WITH Linux-syscall-note"
+description = "Clang, lld and LLVM tools with a musl sysroot. cc / c++ build static by default."
+home = "https://llvm.org/"
+purl = "pkg:github/llvm/llvm-project@llvmorg-23.1.3"
+bootstrap = true
+
+[[source]]
+url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.3/llvm-project-23.1.3.src.tar.xz"
+sha256 = "c44186a7762ed28954be72e5ff6df9808e0779d4f1bf014ecc4e7e211d31ee34"
+
+[[source]]
+url = "https://musl.libc.org/releases/musl-1.2.6.tar.gz"
+sha256 = "d585fd3b613c66151fc3249e8ed44f77020cb5e6c1e635a616d3f9f82460512a"
+
+# Same pinned tarball as image/build-linux.sh; only `headers_install` is used.
+[[source]]
+url = "https://git.kernel.org/torvalds/t/linux-7.3-rc1.tar.gz"
+sha256 = "8d36fbfc7c8906ccfa1ebacc30f84998406504c3f13733a040bb3a3fbe8ac270"

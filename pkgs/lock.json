@@ -1,0 +1,114 @@
+{
+  "btrfs": {
+    "version": "7.1",
+    "license": "GPL-2.0-only",
+    "by": "plan",
+    "plan": "sha256-922f2c6e5ad701256c2c46c42e1664906efc35c6216b7726157fe6cfbcbcafa8",
+    "product": "sha256-4cdc8b9786cbbad92cb43c6645fbda20435895596ac764c7075d503c831d7db1"
+  },
+  "busybox": {
+    "version": "1.38.0",
+    "license": "GPL-2.0-only",
+    "by": "plan",
+    "plan": "sha256-2a419c6fed24b8afc90aa2955b650b63cfe6e40197d92bff025f5a2516e17d29",
+    "product": "sha256-5c07428c094578850fa4fbf5ab3eb123d4d563178885cb4b32fae5deaa951d35"
+  },
+  "curl": {
+    "version": "8.23.0",
+    "license": "curl AND MPL-2.0",
+    "by": "plan",
+    "plan": "sha256-26086da2b9191c20cf57f73b14e8ddf7162735382d46fe9df72bad7fbabe1705",
+    "product": "sha256-594a24c1bd62307ea6817ef8cc76757d1a6f44726323cb695522874620804a4b"
+  },
+  "dosfstools": {
+    "version": "4.2",
+    "license": "GPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-e0531c809d40076557082ba68548516a1abc33d1fd7a29cd7f72a87921d763ee",
+    "product": "sha256-1bea995187702309a0da53919eb1ec838d5e86eb30eefe0649bfd7958efecd36"
+  },
+  "dropbear": {
+    "version": "2026.94",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-9279e6a5fba60cdcbc850f3f87045e507cc2c8a53edebbac19a06beac44aec75",
+    "product": "sha256-f2703ad9c9fa6a3197589d68c18706cdb4222e7cde65aeebbbcca1552220952a"
+  },
+  "firmware": {
+    "version": "20260916",
+    "license": "LicenseRef-linux-firmware",
+    "by": "plan",
+    "plan": "sha256-b4f723f8bdacbc66e27626d2e69bd87bb3c2c88ad2963f805eaf01f517274f26",
+    "product": "sha256-9e7eafd45d7b1a8d7e72b54e26ae01d8e8a8cee941f7500312540d0bd8636298"
+  },
+  "kexec": {
+    "version": "2.0.32",
+    "license": "GPL-2.0-only",
+    "by": "plan",
+    "plan": "sha256-0192fe29f4af2381e0120a66e3463590aa852371d16f7b6eab25821470d4775d",
+    "product": "sha256-310a203520760f4d9d827a1d1cd3190ef0a01f84b382c31ff1a7a080111fa677"
+  },
+  "llvm": {
+    "version": "23.1.3",
+    "license": "Apache-2.0 WITH LLVM-exception AND MIT AND GPL-2.0-only WITH Linux-syscall-note",
+    "by": "bootstrap",
+    "plan": "",
+    "product": "sha256-bd45ef91795b5c3fe371714d4e13ef1b61e5d167d78040011f091dce30baebbd"
+  },
+  "lzo": {
+    "version": "2.10",
+    "license": "GPL-2.0-or-later",
+    "by": "plan",
+    "plan": "sha256-f8f3b5b828ac5f14868626b7ec4cd8c98f716395d2cdef403a23777545800868",
+    "product": "sha256-d2e9142bd847416cad1be1475a0a4a32bb95df0b8cdad4334d1c6df03c8cb356"
+  },
+  "make": {
+    "version": "4.4.1",
+    "license": "GPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-93e3a75012aac52c16694b1dbccc8c5f0db24e461cc9f684f30d75d1c4821911",
+    "product": "sha256-2c418177b4f53e3f953eed1b2364d992ded9c736a065c07ed09ca35a2c2e7682"
+  },
+  "mbedtls": {
+    "version": "3.6.7",
+    "license": "Apache-2.0 OR GPL-2.0-or-later",
+    "by": "plan",
+    "plan": "sha256-874882b6f8e3c05bf95d38db09516719d67fdaa768cfc0a6d669e7518bc15f98",
+    "product": "sha256-f2ccfd9bbb7a3abd6861bcc4782057d764c17e3b7f8588a9e107b097666d00b2"
+  },
+  "openssh": {
+    "version": "10.6p1",
+    "license": "BSD-2-Clause AND BSD-3-Clause AND ISC AND MIT",
+    "by": "plan",
+    "plan": "sha256-8f0ceb293e1db1383ea033c4236a6110106e33a19232502ca3370aa738425bac",
+    "product": "sha256-7546d7ff15cb1b1796b23a5d8620d713478503092e6968e1fbcd64c3d5c67588"
+  },
+  "pkgconf": {
+    "version": "3.0.8",
+    "license": "ISC",
+    "by": "plan",
+    "plan": "sha256-40ae34b2340c4dc0e8c45ae859b9d239e98bb0b53fd9ddf885fa825d12f78f36",
+    "product": "sha256-eb9325fa126e30568dcb853e965ecfdeff383a36758c1bf17a76f366e0248966"
+  },
+  "util-linux": {
+    "version": "2.42.4",
+    "license": "GPL-2.0-or-later AND LGPL-2.1-or-later AND BSD-3-Clause",
+    "by": "plan",
+    "plan": "sha256-9bf1e5a1f4ce610e0df66874ba66326e984fac15a535175d7970d990782f6854",
+    "product": "sha256-313936c67a49e5c40c21efd58dbad26525f2f63cfba4ba4d3ba3bb6dc6b311ec"
+  },
+  "zlib": {
+    "version": "1.3.2",
+    "license": "Zlib",
+    "by": "plan",
+    "plan": "sha256-9791ca1d1d00290781ed7e803b1e6f18e1893748fde0c6cfdec56d2c1685d7d9",
+    "product": "sha256-76e8393d62de1b255b9bc9568abca9773a48af56073a1e1c78e288ff2a986bfd"
+  },
+  "zstd": {
+    "version": "1.5.7",
+    "license": "BSD-3-Clause OR GPL-2.0-only",
+    "by": "plan",
+    "plan": "sha256-92b72827be1039b20376db280f3f96f46b4a58d7aeae197d47421b0deec1d49f",
+    "product": "sha256-bf09d9b9810eac3e10d584959f769135d0be7ee1fa64b1feaaf5b260f81177eb"
+  }
+}

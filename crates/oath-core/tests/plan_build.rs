@@ -13,6 +13,8 @@ use serde_json::json;
 static PATH_LOCK: Mutex<()> = Mutex::new(());
 
 fn tmp() -> tempfile::TempDir {
+    // These tests build packs from the host's (dynamically linked) tools.
+    unsafe { std::env::set_var("OATH_SANDBOX_NIX_STORE", "1") };
     tempfile::tempdir().unwrap()
 }
 
