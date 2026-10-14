@@ -73,9 +73,9 @@ the only loader); the installer uses sfdisk, wipefs and native mkfs.
 
 Not done, carried forward: `pkg:llvm` rebuilt by a plan (needs cmake,
 ninja and python packs), the kernel built by a plan with our compiler,
-upstream signature checks (sources are sha256-pinned), a publish
-allowlist that reads the licences in `lock.json`, immutable build
-outputs with a manifest.
+the Rust toolchain as a pinned vendor pack, upstream signature checks
+(sources are sha256-pinned), a publish allowlist that reads the
+licences in `lock.json`, immutable build outputs with a manifest.
 
 ## 6. Reinstall — next
 

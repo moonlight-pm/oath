@@ -8,9 +8,10 @@ same product hash. Plans are how Oath makes native packages.
 
 **Status:** partly built. The plan kind, `oath fmt`,
 `oath build` (pinned and `--file`), the sandbox and the native
-toolchain are built; every userspace package in the image is a plan
-product (`pkgs/`, via `cargo make pkgs`). Still target: `pkg:llvm` and
-the kernel as plans, immutable outputs, build logs.
+toolchain are built; every C package in the image is a plan product
+(`pkgs/`, via `cargo make pkgs`). Still target: `pkg:llvm`, the kernel
+and the Rust toolchain as packs built or pinned by Oath, immutable
+outputs, build logs.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -103,9 +104,10 @@ Zig is not used (R9).
   OpenSSL), mbedTLS, curl (mbedTLS, pinned CA bundle), dosfstools,
   kexec-tools and linux-firmware blobs pinned one by one.
 - **Rust.** The Oath crates are static musl binaries linked by
-  `rust-lld` with musl's self-contained crt. The Rust toolchain itself
-  is still the build host's; the vendor's pinned release as a pack is
-  target.
+  `rust-lld` with the Rust musl target's self-contained crt and libc
+  (Rust's bundled musl, not `pkg:llvm`'s 1.2.6). The Rust toolchain
+  itself is still the build host's; the vendor's pinned release as a
+  pack is target.
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans (phase 8).
 

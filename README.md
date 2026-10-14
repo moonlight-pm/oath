@@ -46,8 +46,9 @@ What is true today:
   dropbear, OpenSSH, curl, dosfstools, kexec-tools, firmware) is built
   from pinned source in `pkgs/` by our own Clang/LLVM on musl, and
   rebuilds bit-identically. The boot loader is `oath-efi`.
-- Still compiled by the build host: the kernel (host gcc) and stage 0
-  of the toolchain. QEMU and its UEFI firmware come from Nix to run
+- Still compiled by the build host: the kernel (host gcc), stage 0 of
+  the toolchain, and the Oath crates (host rustc, with Rust's bundled
+  musl). QEMU and its UEFI firmware come from Nix to run
   images on the build host. None of that ships.
 
 Focus: [CURRENT.md](CURRENT.md). Decisions: [docs/decisions.md](docs/decisions.md).

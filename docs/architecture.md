@@ -106,7 +106,7 @@ cargo make pkgs [names]
   `oath build` in the sandbox of the build catalog at .cache/oath
   product hash, version, licence, plan hash → pkgs/lock.json
 cargo make build [--profile base]
-  cargo build oath, oath-init (musl, rust-lld), oath-efi (uefi)
+  cargo build oath, oath-init (host rustc, musl, rust-lld), oath-efi (uefi)
   kernel + modules from build/linux (image/build-linux.sh), vermagic checked
   every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)
