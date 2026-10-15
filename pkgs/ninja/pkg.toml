@@ -1,0 +1,11 @@
+version = "1.13.2"
+license = "Apache-2.0"
+description = "Ninja. A build tool; not in the base image."
+home = "https://ninja-build.org/"
+purl = "pkg:github/ninja-build/ninja@v1.13.2"
+build = ["llvm", "busybox", "make", "cmake"]
+
+[[source]]
+url = "https://github.com/ninja-build/ninja/archive/refs/tags/v1.13.2.tar.gz"
+sha256 = "974d6b2f4eeefa25625d34da3cb36bdcebe7fbce40f4c16ac0835fd1c0cbae17"
+file = "ninja-1.13.2.tar.gz"

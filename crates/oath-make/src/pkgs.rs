@@ -4,7 +4,8 @@
 //! an `oath build` plan pinned to its source pack and to the exact build
 //! packs in `pkgs/lock.json`, writes the plan to `pkgs/<name>/<name>.plan`,
 //! and builds it in the sandbox. `cargo make bootstrap` makes the first
-//! three packs (llvm, busybox, make) with `pkgs/bootstrap.sh` on the host.
+//! three packs (llvm, busybox, make) with `pkgs/bootstrap.sh` on the host;
+//! after that their plans rebuild them with themselves.
 //!
 //! Builds run in the catalog at `.cache/oath` (its store is the host store
 //! cache the image build reads).
@@ -41,9 +42,6 @@ pub struct PkgToml {
     /// Packs needed at runtime.
     #[serde(default)]
     pub run: Vec<String>,
-    /// Built by pkgs/bootstrap.sh on the build host, not by a plan.
-    #[serde(default)]
-    pub bootstrap: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -161,9 +159,10 @@ fn sha256(p: &Path) -> Result<String> {
 }
 
 /// Topological order of `names` and everything they build or run with.
-/// Tools that build each other (busybox and make, each built with the
-/// other) form a cycle; a cycle through a package the lock already has is
-/// broken by using the locked product.
+/// Tools that build each other (busybox and make; llvm and python) form a
+/// cycle; a cycle through a package the lock already has is broken by
+/// using the locked product, so the name asked for is built last
+/// (`cargo make pkgs llvm` builds python first, with the locked llvm).
 fn order(all: &BTreeMap<String, PkgToml>, names: &[String], locked: &Lock) -> Result<Vec<String>> {
     fn visit(
         n: &str,
@@ -180,7 +179,7 @@ fn order(all: &BTreeMap<String, PkgToml>, names: &[String], locked: &Lock) -> Re
             if locked.contains_key(n) {
                 return Ok(());
             }
-            bail!("package cycle through {n}");
+            bail!("package cycle through {n} (`cargo make bootstrap` makes the first llvm, busybox and make)");
         }
         let p = all.get(n).with_context(|| format!("no pkgs/{n}/pkg.toml"))?;
         stack.push(n.to_string());
@@ -252,24 +251,15 @@ fn product(lock: &Lock, name: &str) -> Result<String> {
 }
 
 /// `cargo make pkgs [names]`: build in dependency order; with no names,
-/// every package that is not bootstrap-only.
+/// every package.
 pub fn build(repo: &Path, names: &[String]) -> Result<()> {
     let all = load(repo)?;
     let cat = build_catalog(repo)?;
     let mut lock = read_lock(repo)?;
-    let wanted: Vec<String> = if names.is_empty() {
-        all.iter().filter(|(_, p)| !p.bootstrap).map(|(n, _)| n.clone()).collect()
-    } else {
-        names.to_vec()
-    };
+    let wanted: Vec<String> =
+        if names.is_empty() { all.keys().cloned().collect() } else { names.to_vec() };
     for name in order(&all, &wanted, &lock)? {
         let p = &all[&name];
-        if p.bootstrap {
-            if !lock.contains_key(&name) {
-                bail!("pkg:{name} comes from `cargo make bootstrap`, which has not run");
-            }
-            continue;
-        }
         let files = fetch(repo, p)?;
         let src = source_pack(repo, &cat, &name, &files)?;
         let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.clone() }];
@@ -440,7 +430,6 @@ mod tests {
             source: Vec::new(),
             build: build.iter().map(|s| s.to_string()).collect(),
             run: Vec::new(),
-            bootstrap: false,
         }
     }
 
@@ -466,17 +455,15 @@ mod tests {
     fn repo_packages_parse() {
         let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let all = load(&repo).unwrap();
-        assert!(all.get("llvm").is_some_and(|p| p.bootstrap));
         for (name, p) in &all {
             for s in &p.source {
                 assert_eq!(s.sha256.len(), 64, "{name}: {}", s.url);
             }
-            if !p.bootstrap {
-                assert!(
-                    pkgs_dir(&repo).join(name).join("build.sh").is_file(),
-                    "pkgs/{name}/build.sh"
-                );
-            }
+            assert!(pkgs_dir(&repo).join(name).join("build.sh").is_file(), "pkgs/{name}/build.sh");
+        }
+        // The bootstrap's three rebuild themselves.
+        for name in ["llvm", "busybox", "make"] {
+            assert!(all[name].build.iter().any(|b| b == name), "pkgs/{name} builds with itself");
         }
     }
 }

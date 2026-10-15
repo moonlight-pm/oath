@@ -26,8 +26,9 @@ sources in `llvm/pkg.toml`, `busybox/pkg.toml` and `make/pkg.toml`:
    `cc` / `c++` find the sysroot through `bin/clang.cfg` and link
    statically by default.
 
-`pkg:llvm` stays a bootstrap product until cmake, ninja and python are
-packs and LLVM can be rebuilt by a plan.
+After that, `llvm/build.sh` is stage 1 as a plan: the previous
+`pkg:llvm`, with the `cmake`, `ninja` and `python` packs, builds a fresh
+sysroot and the tools in the sandbox.
 
 ## Stage 2
 
@@ -36,9 +37,11 @@ fetch and verify the sources; put them (and the package's extra files)
 in a `pkg:<name>-src` pack; write `<name>.plan` with the source pack and
 the build packs from `lock.json` pinned by hash; run `oath build` in the
 catalog at `.cache/oath`; record the product in `lock.json`. A package
-whose plan has not changed is not rebuilt. busybox and make are rebuilt
-here by their stage-1 selves; run `cargo make pkgs` again and they
-rebuild with the stage-2 tools.
+whose plan has not changed is not rebuilt. llvm, busybox and make are
+rebuilt here by their stage-1 selves; run `cargo make pkgs` again and
+everything rebuilds with the stage-2 tools. Packages that build each
+other (llvm and python) use the locked product of the one asked for, so
+`cargo make pkgs llvm` builds python first.
 
 The generated script starts with `SRC` (the tarballs), `FILES`,
 `SOURCES`, `VERSION`, `JOBS`, `LIVE` (the slot path the pack is used at,
