@@ -2,9 +2,9 @@
 
 Devices are hardware the system found, recorded as `dev:*` objects, and
 the kernel modules and firmware that make them work. Today this is a
-small fixed inventory and hard-coded module lists. The target is
-discovery: modules load by modalias, devices appear as objects on
-their own, and device-node and mount rules are fields.
+small fixed inventory, and modules load by modalias. The target is
+discovery: devices appear as objects on their own, and device-node and
+mount rules are fields.
 
 **Status:** partly built. The `dev` kind and modalias loading are
 built. Hotplug and discovery are the target.

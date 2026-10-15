@@ -24,7 +24,9 @@ cargo make pkgs curl        # one package (and what it builds with)
 1): `pkg:llvm`, `pkg:busybox`, `pkg:make`. `pkgs` builds each
 `pkgs/<name>/` as an `oath build` plan in the sandbox (no network, only
 the declared packs), writes the exact plan to `pkgs/<name>/<name>.plan`
-and the product to `pkgs/lock.json`. The image takes every userspace
+and the product to `pkgs/lock.json`. `pkg:llvm` is one of them: it
+rebuilds itself with the `cmake`, `ninja` and `python` packs, which
+are build-only and not in the image. The image takes every userspace
 package from the lock. How packages are written: `pkgs/README.md`.
 
 ## The kernel

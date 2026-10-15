@@ -6,11 +6,12 @@ configuration: there are no unit files, no init scripts, and no
 systemd. PID 1 itself is not an object; it is the engine that
 converges `svc`.
 
-**Status:** built, except module loading by modalias (still a fixed
-list) and a supervisor that survives its own panic. Since 2026-10-13
-PID 1 runs only applied specs, isolates a `wants` cycle, logs every
-service, restarts with backoff into a `failed` state, gives each service
-a cgroup, shuts down in order, and switch_roots into the disk.
+**Status:** built, except the targets at the end (the cycle reason in
+actual, reverse `wants` shutdown, surviving its own panic). Since
+2026-10-13 PID 1 runs only applied specs, isolates a `wants` cycle,
+logs every service, restarts with backoff into a `failed` state, gives
+each service a cgroup, shuts down in order, and switch_roots into the
+disk. Since 2026-10-14 it loads modules by modalias (devices.md).
 
 Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 
@@ -68,7 +69,8 @@ execs.
    PID 1 catches the shutdown signals and turns Ctrl-Alt-Del into one.
 2. In install mode (`oath.install` on the command line), start the
    installer ramdisk instead (see boot-and-install.md).
-3. Load the early modules and mount the root subvolume at `/newroot`.
+3. Coldplug modules by modalias, holding back display and sound
+   (devices.md), and mount the root subvolume at `/newroot`.
    **switch_root:** move `/dev`, `/proc`, `/sys` and `/run` into it,
    move it over `/` and chroot there. No `/newroot` remains, and each of
    `/tmp`, `/dev/shm`, `/run`, `/dev/pts` is mounted once. The initramfs
@@ -133,9 +135,6 @@ a `wants` cycle, and services waiting on one, are skipped and recorded
 
 ## Target
 
-- **Modules by modalias.** Load drivers from the devices present
-  instead of a fixed list (devices.md). With metal, in the reinstall
-  phase.
 - **Reason in actual.** A service skipped for a cycle is `stopped`, and
   why is only in `init.log`. It will be `failed` with the reason in
   actual.

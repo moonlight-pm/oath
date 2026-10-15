@@ -28,7 +28,7 @@ An agent that has never seen Oath should be able to:
 
 Kinds: `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`.
 
-## Status (2026-10-14)
+## Status (2026-10-15)
 
 Early and not a daily driver. A review on 2026-10-13 cut the desk, the
 Steam and Omarchy experiments and the Wicket host image out of the core
@@ -45,7 +45,8 @@ What is true today:
 - Every other package in the image (busybox, util-linux, btrfs-progs,
   dropbear, OpenSSH, curl, dosfstools, kexec-tools, firmware) is built
   from pinned source in `pkgs/` by our own Clang/LLVM on musl, and
-  rebuilds bit-identically. The boot loader is `oath-efi`.
+  rebuilds bit-identically. That Clang/LLVM is a plan product too and
+  rebuilds itself. The boot loader is `oath-efi`.
 - Still compiled by the build host: the kernel (host gcc), stage 0 of
   the toolchain, and the Oath crates (host rustc, with Rust's bundled
   musl). QEMU and its UEFI firmware come from Nix to run

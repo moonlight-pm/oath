@@ -4,7 +4,7 @@ What runs and where things live today. Target design is in
 [specs/](specs/README.md). Update this file when a process, path or
 tree changes.
 
-**As of:** 2026-10-14, base profile, booted in QEMU.
+**As of:** 2026-10-15, base profile, booted in QEMU and on canto.
 
 ## Boot
 

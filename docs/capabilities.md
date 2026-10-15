@@ -35,6 +35,6 @@ reinstalled)
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (River, Sola) | target | Returns when River, wlroots, mesa, Sola and their deps build natively. canto still runs the 2026-09 desk image. |
+| Desk (River, Sola) | target | Returns when River, wlroots, mesa, Sola and their deps build natively. |
 | Wicket host | target | Left core (R1); Wicket will ship its own packages and overlay. buccina still runs the trial image. |
 | Steam + Minecraft desk | target | Future requirement (R2): native desk, Steam runtime, JVM. |
