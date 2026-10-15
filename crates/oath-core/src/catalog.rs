@@ -842,14 +842,15 @@ impl Catalog {
             KIND_PKG => {
                 let mut last = json!({
                     "present": obj.actual.get("present").cloned().unwrap_or(json!(false)),
-                    "url": obj.desired.get("url").cloned().unwrap_or(json!("")),
                 });
                 if let Some(h) = obj.actual.get("hash") {
                     if !h.as_str().unwrap_or("").is_empty() {
                         last["hash"] = h.clone();
                     }
                 }
-                for k in ["needs", "description", "home"] {
+                // Only fields the spec has: an invented `url: ""` would
+                // drift after undo against an actual that has none.
+                for k in ["url", "needs", "description", "home"] {
                     if let Some(v) = obj.desired.get(k) {
                         last[k] = v.clone();
                     }

@@ -272,6 +272,29 @@ fn pkg_present_links_and_undo() {
     assert_eq!(obj.actual["present"], json!(true));
 }
 
+/// Undoing every apply puts the object back exactly as seeded: no field
+/// the seed did not have (a long-lived machine checks `oath diff` after).
+#[test]
+fn pkg_undo_to_start_is_in_sync() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let seeded = cat.get(&id).unwrap().desired;
+    for present in [true, false] {
+        let mut fields = Map::new();
+        fields.insert("present".into(), json!(present));
+        cat.set_fields(&id, fields).unwrap();
+        cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    }
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    let drift = cat.diff(Some(&id)).unwrap();
+    assert!(drift.is_empty(), "{:?}", drift.iter().map(|d| &d.fields).collect::<Vec<_>>());
+    let desired = cat.get(&id).unwrap().desired;
+    assert_eq!(desired.get("url"), seeded.get("url"));
+}
+
 #[test]
 fn pkg_collision_refuses() {
     let (d, cat) = tmp();
