@@ -705,6 +705,22 @@ fn new_and_rm_go_through_apply_and_undo() {
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert!(cat.get(&tick).is_err());
 
+    // A package made absent is in-sync from the start, but it is still new
+    // until an apply takes it; undo of that apply removes it.
+    let later: ObjectId = "pkg:later".parse().unwrap();
+    cat.new_object(&later, json!({"present": false}).as_object().unwrap().clone()).unwrap();
+    assert_eq!(cat.get(&later).unwrap().meta.status, "new");
+    let r = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(r.ids, vec!["pkg:later"]);
+    assert_eq!(cat.get(&later).unwrap().meta.status, "in-sync");
+    assert!(cat.diff(None).unwrap().is_empty());
+    set(&cat, "pkg:later", "present", json!(true)).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&later).unwrap().desired, json!({"present": false}));
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert!(cat.get(&later).is_err());
+
     // rm of something applied waits for apply; undo brings it back.
     cat.new_object(&tick, spec.as_object().unwrap().clone()).unwrap();
     cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();

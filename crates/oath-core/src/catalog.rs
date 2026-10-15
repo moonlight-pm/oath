@@ -223,10 +223,10 @@ impl Catalog {
         let obj = Object { id: id.clone(), meta: meta.clone(), desired, actual };
         meta.status = if dir.join(REMOVE_MARK).exists() {
             "removing".into()
-        } else if self.drift_fields(&obj)?.is_empty() {
-            "in-sync".into()
         } else if dir.join(NEW_MARK).exists() {
             "new".into()
+        } else if self.drift_fields(&obj)?.is_empty() {
+            "in-sync".into()
         } else {
             "drift".into()
         };
@@ -332,7 +332,12 @@ impl Catalog {
                 continue;
             }
             let obj = self.get(&id)?;
-            let fields = self.drift_fields(&obj)?;
+            let mut fields = self.drift_fields(&obj)?;
+            // A new object is drift until an apply takes it, even one that
+            // starts in-sync (a pkg made absent): undo of that apply removes it.
+            if fields.is_empty() && self.is_new(&id) {
+                fields.push(("new".into(), json!(true), Value::Null));
+            }
             if !fields.is_empty() {
                 out.push(Drift { id, fields });
             }
