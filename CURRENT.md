@@ -9,17 +9,14 @@ append history (git has it).
 
 ## Now
 
-1. **Prove modalias loading on canto (phase 6).** Built and passing in
-   QEMU: PID 1 loads drivers by `modules.alias` and is the kernel's
-   modprobe helper. canto is off the network since its cable moved to
-   the first port (the NIC is chosen at boot). Next: Joshua
-   power-cycles it; pin its key for its new address, reinstall it, and
-   run `cargo make check --target`; confirm `/proc/modules` holds tg3
-   and no virtio.
-2. **Fixtures out of the product seed.** `base` ships `svc:hold`,
+1. **Fixtures out of the product seed.** `base` ships `svc:hold`,
    `pkg:hello`, `pkg:fetchme` (a QEMU URL) and `svc:serial` to every
-   machine. Next: have the QEMU harness add its fixtures, so the image
-   it checks is still the one `install` ships.
+   machine; on canto `svc:serial` ends `failed`. Next: have the QEMU
+   harness add its fixtures, so the image it checks is still the one
+   `install` ships.
+2. **Clock.** Nothing syncs time; canto ran 102 s fast on 2026-10-15.
+   Next: ask Joshua which source (the router, a public pool) before
+   adding a time service to the seed.
 3. **Native base leftovers (phase 5).** `pkg:llvm` is still a bootstrap
    product; the kernel is built by the host's gcc and the Oath crates by
    the host's rustc (with Rust's bundled musl); sources are
@@ -34,16 +31,16 @@ append history (git has it).
 
 **State:** phases 1–5 are done; phase 6 is active
 ([docs/roadmap.md](docs/roadmap.md)). The image is the native headless
-base. canto was wiped and reinstalled over SSH on 2026-10-14 and passes
-all 22 `metal` harness cases (`cargo make check --target`). Modules
-load by modalias since 2026-10-15 (QEMU only so far). 29 QEMU cases and
-the `install --qemu` rehearsal pass.
+base. Modules load by modalias. canto was reinstalled over SSH,
+unattended, on 2026-10-15 and passes all 23 `metal` harness cases
+(`cargo make check --target`). 29 QEMU cases and the `install --qemu`
+rehearsal pass.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | off the network until power-cycled (cable moved) | Mac Pro 2013; native base since 2026-10-14; key pinned for 10.0.0.108 in `build/known_hosts`; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013; native base with modalias loading since 2026-10-15; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

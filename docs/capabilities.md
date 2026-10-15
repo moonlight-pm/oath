@@ -7,8 +7,8 @@ this file under 800 words. Update a row in the same change as the code.
 **Status:** `shipped` works and is tested · `partial` works with listed
 gaps · `target` designed, not built.
 
-**As of:** 2026-10-15 (canto runs the native base and passes the
-metal cases; buccina is not reinstalled yet)
+**As of:** 2026-10-15 (canto passes the metal cases; buccina not
+reinstalled)
 
 ## Core
 
@@ -21,7 +21,7 @@ metal cases; buccina is not reinstalled yet)
 | Packages | partial | hash-in-path store, `/bin` farm, pins, `needs` graph, `components.json` + advisories, fetch by `url` | Store integrity not verified at boot; publish has no licence allowlist |
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; sandbox with no network and nothing from the build host; cache keyed on plan and inputs; every C package in the image is a plan product | — |
 | Toolchain and native packages | partial | `cargo make bootstrap`: Clang/LLVM 23.1.3 + musl 1.2.6 from source; `cargo make pkgs`: 15 packages from `pkgs/` (pinned sources, SPDX licences, `pkgs/lock.json`); rebuilds are bit-identical | `pkg:llvm` comes from the bootstrap script, not a plan; the Oath crates use the host's rustc and Rust's bundled musl; upstream signatures not verified |
-| Network | partial | `net:net0` dhcp (default) or static; NIC renamed to `net0`; a supervised DHCP client renews the lease | `actual.lease` shows the first lease; one NIC, chosen at boot |
+| Network | partial | `net:net0` dhcp (default) or static; NIC renamed to `net0`; a supervised DHCP client renews the lease | `actual.lease` shows the first lease; one NIC, chosen at boot; no clock sync |
 | SSH | shipped | dropbear server as `home`, keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` for `home` (clean env, groups dropped) | — |
 | Devices | partial | modules load by modalias at boot and on kernel request; `dev:net0`, `dev:ttyS0` inventory | No hotplug; no discovery (disks are not listed) |
 | Seed and overlays | partial | profile `base`; profiles extend each other; `oath seed --overlay`; `install --overlay` | `base` ships harness fixtures (`svc:hold`, `pkg:hello`, `pkg:fetchme`) and `svc:serial`, which fails on a machine with no UART |

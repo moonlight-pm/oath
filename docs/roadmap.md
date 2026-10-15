@@ -87,8 +87,9 @@ installed machine and undoes back after each; install works through
 any login shell and pins the new host key; the seed lost QEMU's
 `dev:vda`. canto was reinstalled unattended on 2026-10-14 and passes
 every metal case. PID 1 loads modules by modalias and is the kernel's
-modprobe helper; every built module ships with depmod's index (QEMU so
-far). Left: modalias on canto, buccina (parked).
+modprobe helper; every built module ships with depmod's index. canto
+loads exactly its own drivers and passes all 23 metal cases
+(2026-10-15). Left: buccina (parked by Joshua).
 
 ## 7. Agent surface — planned
 
