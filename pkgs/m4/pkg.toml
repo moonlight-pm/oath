@@ -1,0 +1,9 @@
+version = "1.4.21"
+license = "GPL-3.0-or-later"
+description = "GNU m4. A build tool (flex and bison run it); not in the base image."
+home = "https://www.gnu.org/software/m4/"
+build = ["llvm", "busybox", "make"]
+
+[[source]]
+url = "https://ftp.gnu.org/gnu/m4/m4-1.4.21.tar.xz"
+sha256 = "f25c6ab51548a73a75558742fb031e0625d6485fe5f9155949d6486a2408ab66"

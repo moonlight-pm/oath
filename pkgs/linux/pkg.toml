@@ -1,0 +1,16 @@
+# The one Oath kernel (R6, R10): kernel.org Linux, patches/ and
+# linux.fragment over defconfig, built by pkg:llvm (LLVM=1). Booted from
+# the ESP and the initrd, not installed as a package. Bump the version
+# and the pin together (pkgs/llvm takes its UAPI headers from the same
+# tarball).
+version = "7.3-rc1"
+license = "GPL-2.0-only WITH Linux-syscall-note"
+description = "The Linux kernel: boot/vmlinuz and lib/modules/<release>/."
+home = "https://www.kernel.org/"
+purl = "pkg:generic/linux@7.3-rc1"
+build = ["llvm", "busybox", "make", "m4", "flex", "bison", "perl", "pkgconf", "zlib", "elfutils"]
+
+# rc tarballs are Linus's git.kernel.org/torvalds/t/ ones.
+[[source]]
+url = "https://git.kernel.org/torvalds/t/linux-7.3-rc1.tar.gz"
+sha256 = "8d36fbfc7c8906ccfa1ebacc30f84998406504c3f13733a040bb3a3fbe8ac270"

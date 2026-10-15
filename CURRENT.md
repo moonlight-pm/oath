@@ -9,23 +9,28 @@ append history (git has it).
 
 ## Now
 
-1. **Native base leftovers (phase 5).** `pkg:llvm` is a plan product
-   that rebuilds itself (cmake, ninja and python are packs). Left: the
-   kernel is built by the host's gcc and the Oath crates by the host's
-   rustc (with Rust's bundled musl); sources are sha256-pinned but
-   upstream signatures are not checked; nothing enforces a licence
-   allowlist on publish; build outputs have no manifest. Next: a plan
-   that builds the kernel with `pkg:llvm` (`LLVM=1`), packaging what
-   `image/linux-build.nix` supplies and busybox lacks (at least flex,
-   bison, bc, and libelf for objtool).
-2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+1. **canto on the LLVM kernel.** The kernel is a plan product,
+   `pkg:linux` (`pkgs/linux`), built by `pkg:llvm` with `LLVM=1`; the
+   image and the QEMU harness use it. canto still runs the gcc-built
+   kernel. Next: ask Joshua, then reinstall canto from this image
+   (`hosts/canto.md` has the command) and run
+   `cargo make check --target home@10.0.0.3`; watch amdgpu on the SI
+   card.
+2. **Native base leftovers (phase 5).** The Oath crates are built by
+   the host's rustc (with Rust's bundled musl); sources are
+   sha256-pinned but upstream signatures are not checked; nothing
+   enforces a licence allowlist on publish; build outputs have no
+   manifest. Next: the vendor's Rust release pinned by sha256 as a
+   pack, so `cargo make build` stops using the host's rustc.
+3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
    `cargo make install --usb` stick.
 
 **State:** phases 1–5 are done; phase 6 is active
 ([docs/roadmap.md](docs/roadmap.md)). The image is the native headless
-base, and its seed carries no test fixtures: the harness checks the
+base, its kernel and every package are plan products of `pkgs/`, and
+its seed carries no test fixtures: the harness checks the
 image `install` ships, and each case makes what it needs with
 `oath new`. Modules load by modalias; `svc:time` keeps the clock from
 pool.ntp.org. canto was reinstalled over SSH, unattended, from that image on

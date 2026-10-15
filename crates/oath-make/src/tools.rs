@@ -1,7 +1,7 @@
-//! What `cargo make` builds images from: the one kernel (image/build-linux.sh),
-//! the native packs pinned in pkgs/lock.json (built by `cargo make bootstrap`
-//! and `cargo make pkgs`), and build-host tools that never ship (QEMU and
-//! its UEFI firmware, from image/host.nix).
+//! What `cargo make` builds images from: the native packs pinned in
+//! pkgs/lock.json (built by `cargo make bootstrap` and `cargo make pkgs`),
+//! the one kernel among them (`pkg:linux`), and build-host tools that never
+//! ship (QEMU and its UEFI firmware, from image/host.nix).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -47,22 +47,6 @@ impl Tools {
 }
 
 pub fn load(root: &Path) -> Result<Tools> {
-    const BUILD_KERNEL: &str =
-        "build the kernel first: nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'";
-    // The one kernel is our own build (image/build-linux.sh).
-    let own = root.join("build/linux");
-    let kernel = std::env::var_os("OATH_KERNEL")
-        .map(PathBuf::from)
-        .or_else(|| Some(own.join("vmlinuz")).filter(|p| p.is_file()))
-        .context(BUILD_KERNEL)?;
-    let modules = std::env::var_os("OATH_MODULES")
-        .map(PathBuf::from)
-        .or_else(|| Some(own.join("modules")).filter(|p| p.is_dir()))
-        .context(BUILD_KERNEL)?;
-    if !kernel.is_file() || !modules.is_dir() {
-        bail!("{BUILD_KERNEL}");
-    }
-
     let store = crate::pack::host_store_cache(root).join("pkg");
     let mut packs = BTreeMap::new();
     for (name, e) in crate::pkgs::read_lock(root)? {
@@ -70,6 +54,22 @@ pub fn load(root: &Path) -> Result<Tools> {
         if tree.is_dir() {
             packs.insert(name, tree);
         }
+    }
+
+    // The one kernel is pkg:linux, unless OATH_KERNEL and OATH_MODULES
+    // name another build.
+    const BUILD_KERNEL: &str = "build the kernel first: cargo make pkgs linux";
+    let linux = packs.get("linux");
+    let kernel = std::env::var_os("OATH_KERNEL")
+        .map(PathBuf::from)
+        .or_else(|| linux.map(|p| p.join("boot/vmlinuz")))
+        .context(BUILD_KERNEL)?;
+    let modules = std::env::var_os("OATH_MODULES")
+        .map(PathBuf::from)
+        .or_else(|| linux.map(|p| p.join("lib/modules")))
+        .context(BUILD_KERNEL)?;
+    if !kernel.is_file() || !modules.is_dir() {
+        bail!("{BUILD_KERNEL}");
     }
 
     eprintln!("loading host tools via nix-build image/host.nix ...");

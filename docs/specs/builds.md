@@ -9,9 +9,9 @@ same product hash. Plans are how Oath makes native packages.
 **Status:** partly built. The plan kind, `oath fmt`,
 `oath build` (pinned and `--file`), the sandbox and the native
 toolchain are built; every C package in the image is a plan product
-(`pkgs/`, via `cargo make pkgs`), and so is `pkg:llvm`. Still target:
-the kernel and the Rust toolchain as packs built or pinned by Oath,
-immutable outputs, build logs.
+(`pkgs/`, via `cargo make pkgs`), and so are `pkg:llvm` and the kernel
+(`pkg:linux`). Still target: the Rust toolchain as a pack pinned by
+Oath, upstream signature checks, immutable outputs, build logs.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -60,9 +60,10 @@ product's `pkg.needs`.
 2. Pre-build: every `build_needs` package must be in the store at its
    hash. Missing ones with a `url` are fetched and verified. This is
    the only step that uses the network.
-3. Sandbox: new user, mount, network, IPC and UTS namespaces; a chroot
-   holding only the input packages and an empty `/out`; `PATH=/bin`;
-   the script runs as `home` when the builder entered as root.
+3. Sandbox: new user, mount, network, IPC, UTS and PID namespaces; a
+   chroot holding only the input packages and an empty `/out`;
+   `PATH=/bin`; the script is PID 1 there, with a `/proc` that shows
+   only the build, and runs as `home` when the builder entered as root.
 4. Hash `/out` and write `/oath/store/pkg/<name>/<product>/`. Build
    never sets `present` and never links `/bin`; that is still
    `oath set` plus `oath apply`.
@@ -109,9 +110,28 @@ Zig is not used (R9).
   in (no `_ctypes`, `_decimal` or `_ssl`: no libffi, libmpdec or
   OpenSSL pack). A product must not name its compiler's store path:
   CPython's `-g` DWARF did, so its binary is stripped of debug info.
+  For the kernel: GNU m4 1.4.21, flex 2.6.4, Bison 3.8.2, Perl 5.44.0
+  (static, every core XS module linked in; it generates the OID
+  registry) and libelf from elfutils 0.196 (only libelf: the rest needs
+  argp, fts and obstack, which musl lacks).
+- **The kernel** (`pkgs/linux`): kernel.org 7.3-rc1, `patches/` and
+  `linux.fragment` over `defconfig`, `make LLVM=1` with `pkg:llvm`;
+  host tools (objtool, modpost) link statically. Build user, host,
+  time and counter are fixed. busybox's `depmod` is the small one, so
+  the plan writes `modules.dep`, `modules.alias` and `modules.softdep`
+  from each module's `.modinfo` with `llvm-objcopy`. The signed
+  wireless regdb and the trusted keyring are off: nothing else wanted
+  the keyring, and its `extract-cert` needs OpenSSL. defconfig's
+  `WERROR` is off: a compiler newer than the rc warns where the rc did
+  not (amdgpu's DML stack frames). `patches/` also
+  carries a kbuild fix for a parallel-build race in 7.3-rc1 (the
+  asm-headers sweep deleted another rule's temp file).
 - **Fixed point.** Rebuilding stage 2 with stage-2 tools gives
   bit-identical products: `pkg:llvm` rebuilt by itself is identical
-  (2026-10-15), and a second `cargo make pkgs` rebuilds nothing.
+  (2026-10-15), and a second `cargo make pkgs` rebuilds nothing. The
+  kernel and its build tools rebuild identically too (2026-10-15).
+  Configure scripts that record time, host or user (perl's, the
+  kernel's) get fixed values.
 - **The headless base** (15 plan products): busybox, make, pkgconf,
   zlib, zstd, lzo, util-linux, btrfs-progs, dropbear, OpenSSH (no
   OpenSSL), mbedTLS, curl (mbedTLS, pinned CA bundle), dosfstools,
@@ -124,8 +144,7 @@ Zig is not used (R9).
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans (phase 8).
 
-Target: the kernel built by a plan with `pkg:llvm` instead of the
-host's gcc; upstream signature checks on top of the sha256 pins.
+Target: upstream signature checks on top of the sha256 pins.
 
 ## Target fixes
 

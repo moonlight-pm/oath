@@ -31,21 +31,26 @@ package from the lock. How packages are written: `pkgs/README.md`.
 
 ## The kernel
 
-There is one kernel: vanilla kernel.org Linux, pinned by sha256 in
-`image/build-linux.sh`, plus `image/linux-patches/` and the config
-fragment `image/linux.fragment`.
+There is one kernel, `pkg:linux`: vanilla kernel.org Linux, pinned by
+sha256 in `pkgs/linux/pkg.toml`, plus `pkgs/linux/patches/` and the
+config fragment `pkgs/linux/linux.fragment` over `defconfig`. It is a
+plan product like every other package, built by `pkg:llvm`
+(`LLVM=1`) with the `flex`, `bison`, `m4`, `perl` and `elfutils`
+(libelf, for objtool) packs, which are build-only.
 
 ```sh
-nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'
+cargo make pkgs linux
 ```
 
-That writes `build/linux/vmlinuz` and `build/linux/modules/<release>/`.
-`cargo make` reads those (or `OATH_KERNEL` / `OATH_MODULES`). Firmware
-for the initrd comes from `pkg:firmware`, not the kernel build. Packing
-refuses a bzImage whose release does not match the module directory or
-the `vermagic` of `btrfs.ko`. Bump the version and the sha256 together.
-The kernel is still compiled by the build host's gcc
-(`image/linux-build.nix`).
+The product holds `boot/vmlinuz`, `boot/config` and
+`lib/modules/<release>/` with the depmod index (`modules.dep`,
+`modules.alias`, `modules.softdep`) written from each module's
+`.modinfo`. `cargo make` takes it from `pkgs/lock.json` (or
+`OATH_KERNEL` / `OATH_MODULES`). Firmware for the initrd comes from
+`pkg:firmware`, not the kernel build. Packing refuses a bzImage whose
+release does not match the module directory or the `vermagic` of
+`btrfs.ko`. Bump the version and the sha256 together (`pkgs/llvm` takes
+its UAPI headers from the same tarball).
 
 ## The image
 

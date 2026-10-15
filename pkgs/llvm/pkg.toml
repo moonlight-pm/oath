@@ -17,7 +17,7 @@ sha256 = "c44186a7762ed28954be72e5ff6df9808e0779d4f1bf014ecc4e7e211d31ee34"
 url = "https://musl.libc.org/releases/musl-1.2.6.tar.gz"
 sha256 = "d585fd3b613c66151fc3249e8ed44f77020cb5e6c1e635a616d3f9f82460512a"
 
-# Same pinned tarball as image/build-linux.sh; only `headers_install` is used.
+# Same pinned tarball as pkgs/linux; only the UAPI headers are used.
 [[source]]
 url = "https://git.kernel.org/torvalds/t/linux-7.3-rc1.tar.gz"
 sha256 = "8d36fbfc7c8906ccfa1ebacc30f84998406504c3f13733a040bb3a3fbe8ac270"

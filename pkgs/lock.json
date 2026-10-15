@@ -1,4 +1,11 @@
 {
+  "bison": {
+    "version": "3.8.2",
+    "license": "GPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-1c66066a7ed314d2dae82f176efbda32f6f487759304b2bbee6720509d84401b",
+    "product": "sha256-8bbf52ac2d6249d1a8cd8b5c98499007092c43fc431ceed4a64c208f3e46b394"
+  },
   "btrfs": {
     "version": "7.1",
     "license": "GPL-2.0-only",
@@ -41,6 +48,13 @@
     "plan": "sha256-e19e11f8fd0c8efe068c4c18ea0358859fddf2906d4c8d75cdb4dd22297432f1",
     "product": "sha256-f1471ea64d29dc860c609a834eecd11e609d69fa1160018394022c925fce1f02"
   },
+  "elfutils": {
+    "version": "0.196",
+    "license": "GPL-2.0-or-later OR LGPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-4d2994cc4839a113707df01aa13e45eb28c800378e328ee3ce6fcfc57a7a6463",
+    "product": "sha256-bacbef74a0ed8e80679909af4732e35269d9e53fa6016ea37ec11fd7f9a0956d"
+  },
   "firmware": {
     "version": "20260916",
     "license": "LicenseRef-linux-firmware",
@@ -48,12 +62,26 @@
     "plan": "sha256-b4f723f8bdacbc66e27626d2e69bd87bb3c2c88ad2963f805eaf01f517274f26",
     "product": "sha256-9e7eafd45d7b1a8d7e72b54e26ae01d8e8a8cee941f7500312540d0bd8636298"
   },
+  "flex": {
+    "version": "2.6.4",
+    "license": "BSD-3-Clause-flex",
+    "by": "plan",
+    "plan": "sha256-ddf3c3e2f1828975c387108a870aa3f33e61845b24d30dd8e5c556c6ac536ec2",
+    "product": "sha256-ae3f1b497b471eb6c5a8f22cd67838bcd22f3a015f6f3b13877b334fed61b268"
+  },
   "kexec": {
     "version": "2.0.32",
     "license": "GPL-2.0-only",
     "by": "plan",
     "plan": "sha256-327451fb62770496aa2a36e22387e58803406f223176502a8c7f19f5acbec4e8",
     "product": "sha256-d03ff1b5b893a4f31bf8a1f17805e0ab95c09e5ce99ba406935057585242dee0"
+  },
+  "linux": {
+    "version": "7.3-rc1",
+    "license": "GPL-2.0-only WITH Linux-syscall-note",
+    "by": "plan",
+    "plan": "sha256-18cf7c249cb45c6b1f75a7146676402a24525aef263dbf2ae2ffee45b3056a48",
+    "product": "sha256-1fe2a9194c2b34d3bcebc35382f7dafb3d042768620bd3ad9058ea09737b9dc3"
   },
   "llvm": {
     "version": "23.1.3",
@@ -68,6 +96,13 @@
     "by": "plan",
     "plan": "sha256-ebc76eb4b48f97fb7e98834e6750957e7843ceeec8b5481d42ff34492cba6337",
     "product": "sha256-d2e9142bd847416cad1be1475a0a4a32bb95df0b8cdad4334d1c6df03c8cb356"
+  },
+  "m4": {
+    "version": "1.4.21",
+    "license": "GPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-cf3f6fd2941c2c0deccc8a1f3b1cfbab5b284b0f31d1976a0cc1c7b99eb5f20e",
+    "product": "sha256-9751d30db82ab34c9c291dcb09dd4fd688e67025ff87e51dfb8451e8210e9c08"
   },
   "make": {
     "version": "4.4.1",
@@ -96,6 +131,13 @@
     "by": "plan",
     "plan": "sha256-b750bb523fee13f42ee27eb332aeae2ac393a38e04865e9569393b7b00373720",
     "product": "sha256-a2d5a653d2ee489f22f5d6a6d58b6f4ed804cdea95bedec0c99ed36efd33ce2c"
+  },
+  "perl": {
+    "version": "5.44.0",
+    "license": "Artistic-1.0-Perl OR GPL-1.0-or-later",
+    "by": "plan",
+    "plan": "sha256-a89d60e157d396f1ba2a7e5b2b5033d6f69ae129c22379c06eae152d28cd7cd7",
+    "product": "sha256-6153dbbcdb730f2232c0a9570ffd0cd467ab7509df1373ace29b092302536de2"
   },
   "pkgconf": {
     "version": "3.0.8",

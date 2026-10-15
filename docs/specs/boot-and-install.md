@@ -17,18 +17,19 @@ of T24, and D3 (seed as data).
 
 ## The one kernel (built)
 
-- `image/build-linux.sh` fetches `linux-<kver>.tar.gz` from
-  git.kernel.org, checks it against the sha256 pinned in the script,
-  applies `image/linux-patches/*.patch`, merges `image/linux.fragment`
-  into `defconfig`, and installs `vmlinuz`, `modules/<release>/` and
-  firmware into `build/linux/`. The pin and version change together.
-- `cargo make` reads only `build/linux/` (or `OATH_KERNEL` and
-  `OATH_MODULES`). There is no Nix kernel fallback.
+- `pkg:linux` is a plan (`pkgs/linux/`): `linux-<kver>.tar.gz` from
+  git.kernel.org pinned by sha256, `patches/*.patch`, and
+  `linux.fragment` merged into `defconfig`, built by `pkg:llvm`
+  (`LLVM=1`) in the build sandbox. The product is `boot/vmlinuz`,
+  `boot/config` and `lib/modules/<release>/` with the depmod index. The
+  pin and version change together.
+- `cargo make` takes the kernel from `pkgs/lock.json` (or `OATH_KERNEL`
+  and `OATH_MODULES`). There is no Nix kernel fallback.
 - Pack reads the release string from the bzImage header and refuses
   the image unless `modules/<release>/` exists and a module's vermagic
   names the same release.
 - Driver patches are first-class: a generation gap in a driver is fixed
-  in `image/linux-patches/`, gated on chip family so one kernel ships
+  in `pkgs/linux/patches/`, gated on chip family so one kernel ships
   everywhere.
 
 ## Images and profiles (built)
@@ -116,10 +117,10 @@ not matter (canto's September image logged `home` into Thoxa).
 
 - Install copies whatever `build/stage` holds, which may be stale or
   from another profile.
-- The kernel and stage 0 of the toolchain are compiled with a floating
-  nixpkgs (`image/linux-build.nix`, `pkgs/bootstrap.nix`). Userspace is
-  pinned: every pack comes from `pkgs/lock.json` and rebuilds
-  bit-identically (builds.md).
+- Stage 0 of the toolchain is compiled with a floating nixpkgs
+  (`pkgs/bootstrap.nix`), and Oath's own crates by the host's rustc.
+  Everything else that ships, the kernel included, is a pinned plan
+  product from `pkgs/lock.json` (builds.md).
 
 ## Target
 
@@ -130,8 +131,6 @@ not matter (canto's September image logged `home` into Thoxa).
 - **Build-host guard (install).** `install` refuses a target that is
   the build host. (`esp` already refuses to run on a machine that is
   not Oath.)
-- **Kernel by plan.** The kernel is built by an `oath build` plan with
-  `pkg:llvm` instead of the host's gcc (builds.md).
 
 ## Test harness (built)
 

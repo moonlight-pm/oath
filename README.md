@@ -40,17 +40,16 @@ What is true today:
 
 - PID 1, the catalog, `oath`, the package store and the installer are
   ours, in Rust, statically linked against musl.
-- The kernel is vanilla kernel.org source, pinned by sha256 and built by
-  `image/build-linux.sh`.
-- Every other package in the image (busybox, util-linux, btrfs-progs,
+- The kernel is vanilla kernel.org source, pinned by sha256, and every
+  other package in the image (busybox, util-linux, btrfs-progs,
   dropbear, OpenSSH, curl, dosfstools, kexec-tools, firmware) is built
   from pinned source in `pkgs/` by our own Clang/LLVM on musl, and
   rebuilds bit-identically. That Clang/LLVM is a plan product too and
   rebuilds itself. The boot loader is `oath-efi`.
-- Still compiled by the build host: the kernel (host gcc), stage 0 of
-  the toolchain, and the Oath crates (host rustc, with Rust's bundled
-  musl). QEMU and its UEFI firmware come from Nix to run
-  images on the build host. None of that ships.
+- Still compiled by the build host: stage 0 of the toolchain, and the
+  Oath crates (host rustc, with Rust's bundled musl). QEMU and its UEFI
+  firmware come from Nix to run images on the build host. None of that
+  ships.
 
 Focus: [CURRENT.md](CURRENT.md). Decisions: [docs/decisions.md](docs/decisions.md).
 Maturity: [docs/capabilities.md](docs/capabilities.md). Manual:
@@ -59,15 +58,14 @@ Maturity: [docs/capabilities.md](docs/capabilities.md). Manual:
 
 ## Build
 
-Needs Rust with the `x86_64-unknown-linux-musl` target, Nix (for the
-kernel's and stage 0's host compilers, and QEMU), sudo (to loop-mount
+Needs Rust with the `x86_64-unknown-linux-musl` target, Nix (for
+stage 0's host compilers, and QEMU), sudo (to loop-mount
 the image) and `mkfs.btrfs`. Details: [docs/manual/build.md](docs/manual/build.md).
 
 ```sh
 cargo test
 cargo make bootstrap             # the toolchain, once (an hour or more)
-cargo make pkgs                  # every package in pkgs/, from source
-nix-shell image/linux-build.nix --run 'sh image/build-linux.sh'   # the kernel, once
+cargo make pkgs                  # every package in pkgs/ (the kernel too), from source
 cargo make build                 # headless base image (sudo for the loop mount)
 cargo make check                 # the QEMU harness
 cargo make run                   # serial console in this terminal

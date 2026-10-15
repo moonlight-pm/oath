@@ -213,7 +213,8 @@ fn components(name: &str, p: &PkgToml) -> serde_json::Value {
 }
 
 /// Hash a source pack into the store: the verbatim tarballs under `src/`,
-/// and the package's own extra files (configs, patches) under `files/`.
+/// and the package's own extra files and directories (configs, patches)
+/// under `files/`.
 fn source_pack(repo: &Path, cat: &Path, name: &str, files: &[(String, PathBuf)]) -> Result<String> {
     let stage = repo.join("build/pkgs/src").join(name);
     let _ = fs::remove_dir_all(&stage);
@@ -227,8 +228,12 @@ fn source_pack(repo: &Path, cat: &Path, name: &str, files: &[(String, PathBuf)])
     for e in fs::read_dir(pkgs_dir(repo).join(name))? {
         let e = e?;
         let n = e.file_name().to_string_lossy().into_owned();
-        if e.path().is_file() && n != "pkg.toml" && n != "build.sh" && !n.ends_with(".plan") {
-            fs::copy(e.path(), stage.join("files").join(&n))?;
+        let to = stage.join("files").join(&n);
+        if e.path().is_dir() {
+            crate::util::copy_tree(&e.path(), &to)?;
+        } else if e.path().is_file() && n != "pkg.toml" && n != "build.sh" && !n.ends_with(".plan")
+        {
+            fs::copy(e.path(), to)?;
         }
     }
     store(cat, &format!("{name}-src"), &stage)

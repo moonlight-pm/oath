@@ -1,8 +1,12 @@
-# Oath x86_64 kernel fragment. Merged onto `defconfig` by image/build-linux.sh.
+# Oath x86_64 kernel fragment. Merged onto `defconfig` by pkgs/linux/build.sh.
 # Drivers we pack (initrd MODULE_ROOTS) plus EFI stub, 32-bit Steam, canto metal.
 # Not a distro generic config.
 
 CONFIG_EXPERT=y
+# defconfig makes warnings errors. pkg:llvm is newer than what an rc was
+# tested with (under clang 23 amdgpu's DML frames pass 2048 bytes), so
+# warnings stay warnings, in the build log.
+CONFIG_WERROR=n
 CONFIG_MODULES=y
 CONFIG_MODULE_UNLOAD=y
 CONFIG_SMP=y
@@ -45,6 +49,13 @@ CONFIG_INET=y
 CONFIG_IPV6=y
 CONFIG_PACKET=y
 CONFIG_NETFILTER=n
+# No wireless regdb ships, and its signature check is the only thing
+# that wants the trusted keyring, whose certs/extract-cert needs OpenSSL.
+# The check can only be turned off with CERTIFICATION_ONUS, and
+# defconfig has already set the keyring, so it is turned off by name.
+CONFIG_CFG80211_CERTIFICATION_ONUS=y
+CONFIG_CFG80211_REQUIRE_SIGNED_REGDB=n
+CONFIG_SYSTEM_TRUSTED_KEYRING=n
 
 # Steam 32-bit ubuntu12 ELF
 CONFIG_IA32_EMULATION=y

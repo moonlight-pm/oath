@@ -107,10 +107,12 @@ cargo make pkgs [names]
   `oath build` in the sandbox of the build catalog at .cache/oath
   product hash, version, licence, plan hash → pkgs/lock.json
   llvm, busybox and make rebuild themselves; cmake, ninja and python
-    are build-only packs (llvm's plan needs them)
+    are build-only packs (llvm's plan needs them), and so are m4, flex,
+    bison, perl and elfutils (libelf), which the kernel's plan needs
+  pkg:linux: boot/vmlinuz, boot/config, lib/modules/<release>/
 cargo make build [--profile base]
   cargo build oath, oath-init (host rustc, musl, rust-lld), oath-efi (uefi)
-  kernel + modules from build/linux (image/build-linux.sh), vermagic checked
+  kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)
   build/stage/            the root tree; `oath seed --profile` writes /oath

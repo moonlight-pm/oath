@@ -1,0 +1,28 @@
+From: Oath <oath@local>
+Subject: kbuild: asm-headers: leave other rules' temp files alone
+
+The stale-wrapper sweep lists $(obj)/*.h with find, which also matches
+the .tmp_<name>.h file a parallel filechk (cpufeaturemasks.h on x86) is
+writing in the same directory. The sweep removes it and filechk's mv
+fails:
+
+  REMOVE  arch/x86/include/generated/asm/.tmp_cpufeaturemasks.h
+  mv: can't rename 'arch/x86/include/generated/asm/.tmp_cpufeaturemasks.h'
+
+Quote the pattern and skip dotfiles. Not driver-specific; every
+architecture builds the same.
+
+--- a/scripts/Makefile.asm-headers
++++ b/scripts/Makefile.asm-headers
+@@ -47,8 +47,9 @@
+ syscall-y   := $(addprefix $(obj)/, $(syscall-y))
+ generated-y := $(addprefix $(obj)/, $(generated-y))
+ 
+-# Remove stale wrappers when the corresponding files are removed from generic-y
+-old-headers := $(shell test -d $(obj) && find $(obj) -name *.h)
++# Remove stale wrappers when the corresponding files are removed from generic-y.
++# Skip dotfiles: a parallel filechk may be writing its .tmp_<name>.h here.
++old-headers := $(shell test -d $(obj) && find $(obj) -name '*.h' ! -name '.*')
+ unwanted    := $(filter-out $(generic-y) $(generated-y) $(syscall-y),$(old-headers))
+ 
+ filechk_wrap = echo "\#include <asm-generic/$*.h>"

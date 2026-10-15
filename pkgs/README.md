@@ -7,7 +7,7 @@ Every package that ships in Oath is built from source here (R7 in
 |------|------|
 | `<name>/pkg.toml` | version, licence (SPDX), description, upstream sources pinned by sha256, the packs it builds with (`build`) and needs at runtime (`run`) |
 | `<name>/build.sh` | the build, run by `oath build` in the sandbox: no network, nothing from the build host, only the declared packs |
-| `<name>/*` (other files) | configs and patches; the plan sees them under `$FILES` |
+| `<name>/*` (other files and directories) | configs and patches; the plan sees them under `$FILES` |
 | `<name>/<name>.plan` | generated: the exact plan that was built (source pack and every build pack pinned by hash) |
 | `lock.json` | what each name resolves to: version, licence, how it was built, plan hash, product hash |
 | `bootstrap.sh`, `bootstrap.nix` | stage 0 and stage 1 on the build host |
@@ -54,4 +54,6 @@ with every `pkg:llvm`: strip debug info from anything built with `-g`
 (python does).
 
 `cargo make pkgs --list` shows every package, its licence and its pins.
-`cargo make build` packs the image from the products in `lock.json`.
+`cargo make build` packs the image from the products in `lock.json`:
+the profile's packages, and the kernel and its modules from
+`pkg:linux` (`linux/`: the fragment and `patches/`).

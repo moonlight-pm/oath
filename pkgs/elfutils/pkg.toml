@@ -1,0 +1,13 @@
+# Only libelf is built: objtool, which every x86_64 kernel build runs,
+# links it. The rest of elfutils needs argp, fts and obstack, which musl
+# does not have and Oath does not package.
+version = "0.196"
+license = "GPL-2.0-or-later OR LGPL-3.0-or-later"
+description = "libelf from elfutils (static, for builds)."
+home = "https://sourceware.org/elfutils/"
+purl = "pkg:generic/elfutils@0.196"
+build = ["llvm", "busybox", "make", "pkgconf", "zlib"]
+
+[[source]]
+url = "https://sourceware.org/elfutils/ftp/0.196/elfutils-0.196.tar.bz2"
+sha256 = "fd5cc6b77ad6773cac93cb3f415f9318ac3b3455eecf801f6b4a742c4f6c7209"

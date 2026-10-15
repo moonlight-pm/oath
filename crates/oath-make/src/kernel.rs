@@ -1,6 +1,6 @@
 //! The one kernel: vanilla kernel.org source, pinned by sha256 and
-//! compiled by `image/build-linux.sh`. Pack refuses a bzImage whose
-//! release does not match the module tree it ships with.
+//! built by its plan (`pkgs/linux`, `pkg:linux`). Pack refuses a bzImage
+//! whose release does not match the module tree it ships with.
 
 use std::fs;
 use std::path::Path;
@@ -43,7 +43,7 @@ pub fn check(kernel: &Path, modules: &Path) -> Result<String> {
     let kdir = modules.join(&release);
     if !kdir.is_dir() {
         bail!(
-            "kernel {} is {release} but {} has no {release}/ — rebuild with image/build-linux.sh",
+            "kernel {} is {release} but {} has no {release}/ — rebuild with `cargo make pkgs linux`",
             kernel.display(),
             modules.display()
         );
