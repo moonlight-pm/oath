@@ -1,4 +1,4 @@
-//! Root shell on the QEMU serial. `svc:serial` execs this.
+//! Root shell on the serial console (break-glass). `svc:serial` execs this.
 
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -8,7 +8,9 @@ use std::process::Command;
 
 fn main() {
     let Some(f) = open_tty() else {
-        // No UART. Stay up so restart=always does not spam tty0.
+        // No UART. Say so once, then stay up so restart=always does not
+        // back off to `failed` on a machine that has none.
+        eprintln!("serial-login: no serial console (no UART at ttyS0, no hvc0); idle");
         loop {
             std::thread::sleep(std::time::Duration::from_secs(3600));
         }
@@ -33,10 +35,23 @@ fn main() {
 
 fn open_tty() -> Option<std::fs::File> {
     // The login shell is serial only.
-    for p in ["/dev/ttyS0", "/dev/hvc0"] {
-        if let Ok(f) = OpenOptions::new().read(true).write(true).open(p) {
+    for name in ["ttyS0", "hvc0"] {
+        if !has_uart(name) {
+            continue;
+        }
+        if let Ok(f) = OpenOptions::new().read(true).write(true).open(format!("/dev/{name}")) {
             return Some(f);
         }
     }
     None
+}
+
+/// The 8250 driver makes ttyS0–3 whether or not a UART answers, and the
+/// node opens; sysfs `type` 0 (PORT_UNKNOWN) says nothing is there. A tty
+/// with no `type` (hvc0) counts as present.
+fn has_uart(name: &str) -> bool {
+    match std::fs::read_to_string(format!("/sys/class/tty/{name}/type")) {
+        Ok(t) => t.trim() != "0",
+        Err(_) => true,
+    }
 }

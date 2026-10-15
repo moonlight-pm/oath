@@ -9,12 +9,12 @@ fn catalog_accepts_fields_and_old_documents() {
     let dir = tempfile::tempdir().unwrap();
     seed(dir.path()).unwrap();
     let cat = Catalog::open(dir.path()).unwrap();
-    let id: ObjectId = "svc:hold".parse().unwrap();
+    let id: ObjectId = "svc:time".parse().unwrap();
     let spec: Svc = serde_json::from_value(cat.get(&id).unwrap().desired).unwrap();
     assert!(spec.user.is_none());
     assert!(spec.env.is_empty());
     assert!(!spec.bind_low_ports);
-    assert_eq!(svc_spawn("svc:hold", &spec).cred.user, SvcUser::Root);
+    assert_eq!(svc_spawn("svc:time", &spec).cred.user, SvcUser::Root);
 
     let mut fields = Map::new();
     fields.insert("user".into(), json!("home"));
@@ -26,8 +26,8 @@ fn catalog_accepts_fields_and_old_documents() {
     assert_eq!(spec.user, Some(SvcUser::Home));
     assert!(spec.bind_low_ports);
     assert_eq!(spec.env.get("APP_STATE_DIR").map(String::as_str), Some("/var/lib/app"));
-    assert_eq!(svc_spawn("svc:hold", &spec).cred.uid, 1);
-    assert!(svc_spawn("svc:hold", &spec).cred.bind_low_ports);
+    assert_eq!(svc_spawn("svc:time", &spec).cred.uid, 1);
+    assert!(svc_spawn("svc:time", &spec).cred.bind_low_ports);
 
     let mut unknown = Map::new();
     unknown.insert("postgres".into(), json!(true));

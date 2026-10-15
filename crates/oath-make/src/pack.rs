@@ -42,7 +42,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let wanted =
         oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
     for name in &wanted {
-        if name != "oath" && name != "hello" && !tools.packs.contains_key(name) {
+        if name != "oath" && !tools.packs.contains_key(name) {
             bail!("profile {profile} wants pkg:{name}, which this build cannot pack yet");
         }
     }
@@ -175,9 +175,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let oath_root = stage.join("oath");
     let guest_bin = stage.join("bin");
     // The profile's packages: native packs (pkgs/lock.json) as they are,
-    // plus oath itself and the hello canary from this tree.
+    // plus oath itself from this tree.
     write_bin_store(&oath_root, "oath", &bin.join("oath"))?;
-    write_bin_store(&oath_root, "hello", &root.join("apps/hello/bin/hello"))?;
     let fixed = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
     for name in &wanted {
         if name != "oath" {

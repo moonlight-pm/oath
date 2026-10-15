@@ -23,8 +23,6 @@ The `base` profile:
 | `pkg:util-linux` | present | yes — `sfdisk`, `wipefs`, `blkid`, `lsblk` |
 | `pkg:dosfstools` | present | yes — `mkfs.fat`, `mkfs.vfat`, `fsck.fat` |
 | `pkg:curl` | present | yes — static curl (mbedTLS) with a CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem` |
-| `pkg:hello` | absent; bits in the store | yes — canary; `/bin/hello` prints `hello` |
-| `pkg:fetchme` | absent; `url` | yes — fetch canary from `http://10.0.2.2:18765/fetchme` (the QEMU host) |
 
 Every pack above except `pkg:oath` is built from pinned source on the
 build host (`pkgs/`, [Build](build.md)). There is no C compiler on the
@@ -37,14 +35,14 @@ PID 1 stays at `/lib/oath/init`; it is not a package.
 
 ```
 oath ls --kind pkg
-oath get pkg:hello
-oath set pkg:hello present=true
+oath get pkg:dosfstools
+oath set pkg:dosfstools present=false
 oath apply
-hello
-readlink /bin/hello
+ls /oath/store/pkg/dosfstools     # the tree stays
 
-oath set pkg:hello present=false
+oath set pkg:dosfstools present=true
 oath apply
+readlink /bin/mkfs.fat
 oath undo
 ```
 

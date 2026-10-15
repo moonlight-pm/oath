@@ -36,9 +36,9 @@ Desired and actual are separate files. You may `cat` any of these;
 | Kind | Ids in the `base` profile | Role |
 |------|---------------------------|------|
 | `host` | `host:local` | Hostname, power, `env`, `timezone` |
-| `svc` | `svc:serial`, `svc:sshd`, `svc:hold` | PID 1's only config |
+| `svc` | `svc:serial`, `svc:sshd`, `svc:time` | PID 1's only config |
 | `snap` | `snap:current`, then `snap:N` | Generations |
-| `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `curl`, `hello`, `fetchme` | Store + `/bin` symlink farm |
+| `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `openssh`, `util-linux`, `dosfstools`, `curl` | Store + `/bin` symlink farm |
 | `net` | `net:net0` | The link: `dhcp` or a static address |
 | `ssh` | `ssh:local` | Keys that may log in as `home` |
 | `dev` | `dev:net0`, `dev:ttyS0` | Hardware inventory |

@@ -49,8 +49,8 @@ document passes its checks, and `oath undo` puts back the previous one.
 Desired is what the owner is staging; PID 1 never reads it while an
 `applied.json` exists.
 
-The base profile seeds `svc:serial` (root shell on the serial console),
-`svc:sshd`, and `svc:hold` (a canary that wants `svc:serial`).
+The base profile seeds `svc:serial` (root shell on the serial console;
+it idles on a machine with no UART), `svc:sshd`, and `svc:time`.
 
 ## Spawn environment (built)
 
@@ -146,7 +146,7 @@ a `wants` cycle, and services waiting on one, are skipped and recorded
 
 ## Courage test
 
-`cargo make check` covers it: disable and enable `svc:hold`; undo; a
+`cargo make check` covers it: make, disable and enable `svc:hold`; undo; a
 torn `desired.json` (the service keeps running); a cycle at boot (sshd
 still starts); a crashing service that backs off to `failed` with exit
 code 3; `oath logs`; stopping a service that forked; an sshd restart

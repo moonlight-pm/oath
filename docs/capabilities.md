@@ -24,12 +24,12 @@ reinstalled)
 | Network | partial | `net:net0` dhcp (default) or static; NIC renamed to `net0`; a supervised DHCP client renews the lease; time from pool.ntp.org (`svc:time`) | `actual.lease` shows the first lease; one NIC, chosen at boot |
 | SSH | shipped | dropbear server as `home`, keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` for `home` (clean env, groups dropped) | — |
 | Devices | partial | modules load by modalias at boot and on kernel request; `dev:net0`, `dev:ttyS0` inventory | No hotplug; no discovery (disks are not listed) |
-| Seed and overlays | partial | profile `base`; profiles extend each other; `oath seed --overlay`; `install --overlay` | `base` ships harness fixtures (`svc:hold`, `pkg:hello`, `pkg:fetchme`) and `svc:serial`, which fails on a machine with no UART |
+| Seed and overlays | shipped | profile `base`, free of test fixtures; `svc:serial` idles with no UART; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | one kernel from `image/build-linux.sh` (7.3-rc1, sha256-pinned, Oath fragment and patches); pack refuses a vermagic mismatch | Built with the host's gcc; not yet a plan |
 | Boot | partial | initrd from our PID 1 + native busybox and firmware; switch_root into `@`; `oath-efi` is the only loader; ESP keeps current + last 5 boots; `panic=10`; boots canto through Apple firmware | `cargo make esp` runs only on the Oath machine; no remote update but reinstall |
 | Image build | partial | `cargo make build` packs every userspace package from `pkgs/lock.json`; Rust links with rust-lld; QEMU and OVMF from `image/host.nix` (host only) | Output is not immutable or manifest-checked |
 | Install | partial | installer ramdisk over SSH (any login shell); GPT + ESP + btrfs `@`; `--overlay`; makes and pins the host key; `--qemu` rehearsal; `--usb` stick; gated on `cargo make check`; canto reinstalled unattended | Copies the mutable `build/stage`, not a manifest-checked output |
-| Test harness | shipped | `cargo make check`: one QEMU per case, real reboots, known gaps per phase, `build/check-pass` stamp; `--target`: the 22 `metal` cases on an installed machine, undone after each | 27 QEMU cases pass; canto passes all metal cases |
+| Test harness | shipped | `cargo make check`: one QEMU per case, real reboots, known gaps per phase, `build/check-pass` stamp; cases make their own fixtures with `oath new`; `--target`: the `metal` cases on an installed machine at any generation, undone after each | — |
 
 ## Payload (outside core)
 

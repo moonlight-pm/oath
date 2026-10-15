@@ -64,21 +64,18 @@ Safety: `mutate`. Apply snapshots, then converges links.
 
 ```
 oath ls --kind pkg
-oath get pkg:hello
-oath set pkg:hello present=true
-oath apply
-hello
-oath set pkg:hello present=false
-oath apply
+oath get pkg:dosfstools
+oath set pkg:dosfstools present=false
+oath apply pkg:dosfstools
+oath set pkg:dosfstools present=true
+oath apply pkg:dosfstools
 oath undo
 ```
 
-The `base` profile ships `pkg:busybox`, `pkg:btrfs`, `pkg:oath`,
-`pkg:dropbear`, `pkg:openssh`, `pkg:util-linux` and `pkg:dosfstools`
-present and not removable; `pkg:curl` present and removable; `pkg:hello`
-absent with its bits already in the store (`/bin/hello` prints
-`hello`); and `pkg:fetchme` absent with a `url` on the QEMU host.
-Busybox applets are one package. All but `pkg:oath` (built by cargo)
-and the two canaries come from plans in `pkgs/`: built from source,
-static, musl, Clang. There is no glibc and no C compiler on the box
+The `base` profile ships every package present: `pkg:busybox`,
+`pkg:btrfs`, `pkg:oath` and `pkg:dropbear` not removable;
+`pkg:openssh`, `pkg:util-linux`, `pkg:dosfstools` and `pkg:curl`
+removable. Busybox applets are one package. All but `pkg:oath` (built
+by cargo) come from plans in `pkgs/`: built from source, static, musl,
+Clang. There is no glibc and no C compiler on the box
 yet.

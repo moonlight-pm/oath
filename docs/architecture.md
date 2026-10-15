@@ -77,8 +77,7 @@ btrfs
 |---------|------|---------|
 | `oath-init` | initrd `/init` | PID 1, root |
 | `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused); `keep_children` |
-| `svc:serial` | `/lib/oath/serial-login` on ttyS0 | root (break-glass) |
-| `svc:hold` | `/bin/sleep` | root (canary service) |
+| `svc:serial` | `/lib/oath/serial-login` on ttyS0 (idles with no UART) | root (break-glass) |
 | `svc:time` | `/bin/ntpd -n` against `0`–`3.pool.ntp.org` | root |
 | DHCP client | `udhcpc -f -i net0`, supervised by PID 1 as `net:net0` | root; renews the lease |
 
@@ -120,7 +119,8 @@ cargo make build [--profile base]
                           busybox tar, oath, oath-efi)
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
-  build/check/key; serves pkg:fetchme on 127.0.0.1:18765; a clean run
+  build/check/key; serves the fetch canary on 127.0.0.1:18765; cases
+  make their own fixtures (`oath new`); a clean run
   writes build/check-pass (kernel, initrd, image sha256)
 cargo make check --target home@<host>
   the `metal` cases on an installed machine, one at a time, host key

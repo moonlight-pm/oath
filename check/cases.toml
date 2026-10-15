@@ -13,6 +13,11 @@
 #
 # `gap` marks a known failure and names the phase that fixes it. A gap
 # that starts passing fails the run until the `gap` line is removed.
+#
+# The image under test is the one `install` ships: the seed carries no
+# fixtures. A case makes what it needs with `oath new` (the canary
+# `svc:hold`, the fetch canary `pkg:fetchme`); on metal the restore
+# undoes it.
 
 # ---- The README loop -------------------------------------------------
 
@@ -34,7 +39,7 @@ metal = true
 steps = [
   { run = "sudo oath set host:local hostname=check1 && sudo oath apply", expect = ["applied generation"] },
   { run = "hostname", expect = ["check1"] },
-  { run = "sudo oath undo", expect = ["undid to generation 0"] },
+  { run = "sudo oath undo", expect = ["undid to generation"] },
   { run = "hostname; oath get host:local", expect = ["in-sync"], reject = ["check1"] },
 ]
 
@@ -49,20 +54,20 @@ steps = [
 ]
 
 [[case]]
-name = "pkg-hello"
-about = "A package from the store links into /bin and unlinks again."
+name = "pkg-unlink-relink"
+about = "A removable package unlinks from /bin, keeps its store tree, and links again."
 metal = true
 steps = [
-  { run = "test ! -e /bin/hello" },
-  { run = "sudo oath set pkg:hello present=true && sudo oath apply pkg:hello && hello", expect = ["hello"] },
-  { run = "sudo oath set pkg:hello present=false && sudo oath apply pkg:hello && test ! -e /bin/hello" },
+  { run = "test -x /bin/mkfs.fat && oath --json get pkg:dosfstools", expect = ["\"removable\": true"] },
+  { run = "sudo oath set pkg:dosfstools present=false && sudo oath apply pkg:dosfstools && test ! -e /bin/mkfs.fat && ls /oath/store/pkg/dosfstools", expect = ["sha256-"] },
+  { run = "sudo oath set pkg:dosfstools present=true && sudo oath apply pkg:dosfstools && test -x /bin/mkfs.fat" },
 ]
 
 [[case]]
 name = "pkg-fetch"
 about = "A package fetched over HTTP from its url."
 steps = [
-  { run = "sudo oath set pkg:fetchme present=true && sudo oath apply pkg:fetchme && fetchme", expect = ["fetched"] },
+  { run = "sudo oath new pkg:fetchme --from-json '{\"present\":true,\"url\":\"http://10.0.2.2:18765/fetchme\"}' && sudo oath apply pkg:fetchme && fetchme", expect = ["fetched"] },
 ]
 
 [[case]]
@@ -80,7 +85,7 @@ name = "svc-stop-start"
 about = "Disabling and enabling a service through the catalog."
 metal = true
 steps = [
-  { run = "pidof sleep" },
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold && sleep 1 && pidof sleep" },
   { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sleep 1 && ! pidof sleep" },
   { run = "sudo oath set svc:hold enabled=true && sudo oath apply svc:hold && sleep 1 && pidof sleep" },
 ]
@@ -90,6 +95,7 @@ name = "svc-status-after-undo"
 about = "After undo re-enables a service, svc actual names the process that is running."
 metal = true
 steps = [
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold" },
   { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sudo oath undo && sleep 2" },
   { run = "p=$(pidof sleep) && oath get svc:hold --actual | grep \"\\\"pid\\\": $p\"" },
 ]
@@ -99,10 +105,10 @@ name = "refused-apply-changes-nothing"
 about = "An apply that fails its checks converges nothing, takes no generation, and is logged."
 metal = true
 steps = [
-  { run = "sudo oath set host:local hostname=bad && sudo oath set svc:serial --from-json '{\"wants\":[\"svc:hold\"]}' && sudo oath apply", fails = true, expect = ["cycle"] },
-  { run = "hostname; oath get snap:current", reject = ["bad", "generation: 1"] },
+  { run = "oath get snap:current --actual > /tmp/gen.before && sudo oath set host:local hostname=bad && sudo oath new svc:ping --from-json '{\"exec\":[\"/bin/sleep\",\"1000\"],\"wants\":[\"svc:pong\"],\"restart\":\"always\",\"enabled\":true}' && sudo oath new svc:pong --from-json '{\"exec\":[\"/bin/sleep\",\"1000\"],\"wants\":[\"svc:ping\"],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply", fails = true, expect = ["cycle"] },
+  { run = "hostname; oath get snap:current --actual | diff /tmp/gen.before - && echo SAME_GENERATION; oath get svc:ping --actual", expect = ["SAME_GENERATION"], reject = ["bad", "running"] },
   { run = "oath log", expect = ["\"result\":\"refused\""] },
-  { run = "sudo oath set host:local hostname=$(hostname) && sudo oath set svc:serial --from-json '{\"wants\":[]}' && oath diff", expect = ["in-sync"] },
+  { run = "sudo oath set host:local hostname=$(hostname) && sudo oath rm svc:ping && sudo oath rm svc:pong && oath diff", expect = ["in-sync"] },
 ]
 
 [[case]]
@@ -110,9 +116,9 @@ name = "failed-apply-then-undo"
 about = "A failure while converging is logged; undo reverts that apply, not the good one before it."
 steps = [
   { run = "sudo oath set host:local hostname=good && sudo oath apply", expect = ["applied generation 1"] },
-  { run = "sudo oath set pkg:fetchme present=true hash=sha256-0000000000000000000000000000000000000000000000000000000000000000 && sudo oath apply", fails = true },
+  { run = "sudo oath new pkg:fetchme --from-json '{\"present\":true,\"hash\":\"sha256-0000000000000000000000000000000000000000000000000000000000000000\",\"url\":\"http://10.0.2.2:18765/fetchme\"}' && sudo oath apply", fails = true },
   { run = "oath log", expect = ["\"result\":\"error\""] },
-  { run = "sudo oath undo && hostname && oath get pkg:fetchme", expect = ["undid to generation 1", "good", "present: false"] },
+  { run = "sudo oath undo && hostname && ! oath get pkg:fetchme", expect = ["undid to generation 1", "good", "no object pkg:fetchme"] },
   { run = "sudo oath undo && hostname", expect = ["undid to generation 0", "oath"] },
 ]
 
@@ -121,6 +127,7 @@ name = "oath-rm-and-undo"
 about = "rm goes through apply; undo brings the service back."
 metal = true
 steps = [
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold && sleep 1 && pidof sleep" },
   { run = "sudo oath rm svc:hold && sudo oath apply svc:hold && sleep 1 && ! pidof sleep && ! oath get svc:hold" },
   { run = "sudo oath undo && sleep 1 && pidof sleep && oath get svc:hold", expect = ["in-sync"] },
 ]
@@ -141,8 +148,8 @@ name = "typed-set"
 about = "set refuses a value of the wrong type."
 metal = true
 steps = [
-  { run = "sudo oath set svc:hold restart=sometimes", fails = true, expect = ["restart"] },
-  { run = "oath get svc:hold", expect = ["\"always\""] },
+  { run = "sudo oath set svc:time restart=sometimes", fails = true, expect = ["restart"] },
+  { run = "oath get svc:time", expect = ["\"always\""] },
 ]
 
 [[case]]
@@ -174,6 +181,7 @@ steps = [
 name = "torn-svc-file"
 about = "A half-written desired.json does not stop a running service: PID 1 runs applied specs."
 steps = [
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold" },
   { run = "sudo sh -c 'printf \"{\\\"exec\\\": [\" > /oath/objects/svc/hold/desired.json'" },
   { reboot = "force" },
   { run = "sleep 2; pidof sleep" },
@@ -183,6 +191,7 @@ steps = [
 name = "cycle-at-boot-keeps-sshd"
 about = "A wants cycle that reaches PID 1 skips only the services in it."
 steps = [
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[\"svc:serial\"],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold" },
   { run = "sudo sh -c 'printf \"%s\\n\" \"{\\\"exec\\\":[\\\"/lib/oath/serial-login\\\"],\\\"wants\\\":[\\\"svc:hold\\\"],\\\"restart\\\":\\\"always\\\",\\\"enabled\\\":true}\" > /oath/objects/svc/serial/applied.json'" },
   { reboot = "force" },
   { run = "oath get svc:hold --actual", expect = ["stopped"] },
@@ -215,8 +224,8 @@ name = "crash-backoff-failed"
 about = "A service that keeps dying backs off, records its exit code, and ends up failed."
 metal = true
 steps = [
-  { run = "sudo oath new svc:crash --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo dying; exit 3\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}'; sudo oath apply svc:crash; sleep 25; oath get svc:crash --actual", expect = ["\"failed\"", "\"code\": 3"], timeout = 60 },
-  { run = "oath logs svc:crash | grep -c dying", expect = ["5"] },
+  { run = "oath logs svc:crash -n 100000 2>/dev/null | grep -c dying > /tmp/crash.before; sudo oath new svc:crash --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo dying; exit 3\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}'; sudo oath apply svc:crash; sleep 25; oath get svc:crash --actual", expect = ["\"failed\"", "\"code\": 3"], timeout = 60 },
+  { run = "echo DIED=$(( $(oath logs svc:crash -n 100000 | grep -c dying) - $(cat /tmp/crash.before) ))", expect = ["DIED=5"] },
 ]
 
 [[case]]

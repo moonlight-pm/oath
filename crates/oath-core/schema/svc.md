@@ -15,7 +15,7 @@ take effect at `oath apply`.
 - `exec` — argv, `exec[0]` absolute.
 - `wants` — other `svc` ids that should be up first. PID 1 starts them
   in that order. Cycles refuse `oath apply`. Disabled or unknown wants
-  are skipped (ordering, not Requires). `svc:hold` wants `svc:serial`.
+  are skipped (ordering, not Requires).
 - `restart` — `never` | `always` | `on-failure`. `never` is a oneshot:
   PID 1 starts it when enabled and does not start it again after it
   exits, until `enabled` goes false then true (or the next boot).
@@ -57,15 +57,17 @@ service, and a file it cannot read leaves the process running. A
 
 ```
 oath ls --kind svc
-oath get svc:hold
-oath set svc:hold enabled=false
-oath apply svc:hold
-oath get svc:hold --actual
-oath logs svc:hold
+oath get svc:time --actual
+oath logs svc:time
+oath new svc:tick --from-json '{"exec":["/bin/sleep","86400000"],"restart":"always","enabled":true}'
+oath apply svc:tick
+oath set svc:tick enabled=false
+oath apply svc:tick
 oath undo
 ```
 
 The `base` profile ships `svc:serial` (root shell on the serial
-console), `svc:sshd` (dropbear; login as `home`), and `svc:hold`
-(`/bin/sleep 86400000`, a harmless process for start/stop). Do not
-disable `svc:serial` unless you have another way in.
+console; it idles, and says so in its log, on a machine with no UART),
+`svc:sshd` (dropbear; login as `home`), and `svc:time` (busybox `ntpd`
+against pool.ntp.org). Do not disable `svc:serial` unless you have
+another way in.

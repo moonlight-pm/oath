@@ -15,12 +15,6 @@
       "enabled": true,
       "keep_children": true
     },
-    "svc:hold": {
-      "exec": ["/bin/sleep", "86400000"],
-      "wants": ["svc:serial"],
-      "restart": "always",
-      "enabled": true
-    },
     "svc:time": {
       "exec": [
         "/bin/ntpd", "-n", "-S", "/lib/oath/ntp-event",
@@ -69,17 +63,6 @@
       "present": true,
       "description": "curl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca).",
       "home": "https://curl.se/"
-    },
-    "pkg:hello": {
-      "present": false,
-      "description": "Canary ELF. /bin/hello prints hello.",
-      "home": "https://github.com/moonlight-pm/oath"
-    },
-    "pkg:fetchme": {
-      "present": false,
-      "url": "http://10.0.2.2:18765/fetchme",
-      "description": "Canary fetch into the store from the QEMU host.",
-      "home": "https://github.com/moonlight-pm/oath"
     },
     "ssh:local": { "authorized": [] },
     "net:net0": { "up": true, "ipv4": "dhcp", "gateway": "", "lease": null },

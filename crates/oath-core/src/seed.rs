@@ -329,7 +329,7 @@ mod tests {
         assert_eq!(p.objects["host:local"]["env"]["EDITOR"], "vi");
         assert!(p.fixed.contains("pkg:oath"));
         assert!(p.present_pkgs().contains(&"extra".to_string()));
-        assert!(!p.present_pkgs().contains(&"hello".to_string()));
+        assert!(!p.present_pkgs().contains(&"util".to_string()));
         assert!(Profile::load_from("looped", &profiles).is_err());
         assert!(Profile::load_from("nope", &profiles).is_err());
     }
@@ -342,6 +342,16 @@ mod tests {
                 assert!(!id.contains(word), "{id}");
             }
         }
+    }
+
+    #[test]
+    fn base_carries_no_harness_fixtures() {
+        let p = Profile::load("base").unwrap();
+        for id in ["svc:hold", "pkg:hello", "pkg:fetchme"] {
+            assert!(!p.objects.contains_key(id), "{id}");
+        }
+        let text = serde_json::to_string(&p.objects).unwrap();
+        assert!(!text.contains("10.0.2."), "base names the QEMU host");
     }
 
     #[test]

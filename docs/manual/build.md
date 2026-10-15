@@ -69,11 +69,12 @@ packs the profile's packages into the hashed store (also cached under
 ```sh
 cargo make check              # every case in check/cases.toml
 cargo make check --build      # pack first
-cargo make check --case index --case pkg-hello
+cargo make check --case index --case pkg-fetch
 ```
 
 Each case boots its own VM from `build/oath.qcow2` (four at a time) and
-runs its steps over SSH as `home`. The summary marks each case PASS,
+runs its steps over SSH as `home`. The image is the one `install`
+ships; a case makes any fixture it needs with `oath new`. The summary marks each case PASS,
 FAIL, GAP (a known failure; the `gap` line names the phase that fixes
 it) or FIXED (a gap that now passes; remove its `gap` line). Logs, the
 serial console of every boot and `report.json` are under

@@ -34,12 +34,12 @@ around its snapshot. No hook is the default (crash-consistent).
 
 | Path | Catalog | Notes |
 |------|---------|--------|
-| `hello/` | `pkg:hello` | packed into the image; removable canary |
+| `hello/` | `pkg:hello` | example pack tree for `cargo make store` (not in the image) |
 | `hello-src/` | `pkg:hello-src` | C source for the compile plan (`apps/hello.plan`) |
 | `hello.plan` | `plan:hello` | compile `hello.c` with declared `pkg:llvm` + `pkg:busybox` |
 | `reloc-src/` | `pkg:reloc-src` | upstream prefix tree for the relocate plan |
 | `reloc.plan` | `plan:reloc` | relocate `hello-1.0/hello` into `/out/bin/reloc` |
-| `fetchme/` | `pkg:fetchme` | single-file payload for the fetch canary (`pkg:fetchme.url` points at the QEMU host, `10.0.2.2:18765`) |
+| `fetchme/` | `pkg:fetchme` | single-file payload the harness serves; fetch cases make `pkg:fetchme` with `url` `http://10.0.2.2:18765/fetchme` |
 
 The pins in `hello.plan` and `reloc.plan` name the packs in
 `pkgs/lock.json`. Build them on the build host with `cargo make store`

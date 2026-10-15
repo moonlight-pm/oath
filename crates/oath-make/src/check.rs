@@ -29,7 +29,8 @@ use crate::qemu::{self, Image, SerialMode, VmSpec};
 use crate::tools::Tools;
 use crate::util::{sha256_file, utc_rfc3339, utc_stamp, write_pretty};
 
-/// Guest-visible fetch canary: `pkg:fetchme` has `url` http://10.0.2.2:18765/fetchme.
+/// The fetch canary. Cases make `pkg:fetchme` with `url`
+/// http://10.0.2.2:18765/fetchme, which QEMU's user net sends here.
 const FETCH_PORT: u16 = 18765;
 const FIRST_SSH_PORT: u16 = 2300;
 const BOOT_WAIT: Duration = Duration::from_secs(90);
@@ -767,8 +768,17 @@ mod tests {
         for c in cases.iter().filter(|c| c.metal) {
             for s in &c.steps {
                 let text = format!("{:?} {:?} {:?}", s.run, s.expect, s.reject);
-                for qemu in ["10.0.2.", "fetchme", "applied generation 1", "/oath/objects/"] {
+                for qemu in ["10.0.2.", "fetchme", "/oath/objects/"] {
                     assert!(!text.contains(qemu), "metal case `{}` uses {qemu:?}", c.name);
+                }
+                // A machine is at whatever generation it is at.
+                for (i, _) in text.match_indices("generation") {
+                    let rest = text[i + "generation".len()..].trim_start_matches([':', ' ']);
+                    assert!(
+                        !rest.starts_with(|ch: char| ch.is_ascii_digit()),
+                        "metal case `{}` names a generation number",
+                        c.name
+                    );
                 }
             }
         }

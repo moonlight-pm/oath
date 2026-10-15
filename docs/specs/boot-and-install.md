@@ -37,8 +37,9 @@ of T24, and D3 (seed as data).
   of a fresh catalog and their first desired documents. `extends`
   layers profiles. `fixed` lists packages that can never be removed.
 - `base` is a headless machine reached over SSH: host, net (DHCP), ssh,
-  serial, sshd, busybox, btrfs, oath, dropbear, curl, and the
-  `pkg:hello` and `pkg:fetchme` canaries.
+  serial, sshd, time, busybox, btrfs, oath, dropbear, openssh,
+  util-linux, dosfstools, curl. It carries no test fixtures: the image
+  the harness checks is the image `install` ships.
 - `cargo make build --profile <p>` builds the musl binaries, packs the
   profile's present packages, seeds `stage/oath` with
   `oath seed --profile <p>`, hashes the store, and writes a btrfs `@`
@@ -136,10 +137,12 @@ not matter (canto's September image logged `home` into Thoxa).
 
 `cargo make check` boots `build/oath.qcow2` once per case in headless
 QEMU (four at a time, 1 GiB each, a throwaway SSH key over fw_cfg),
-serves the `pkg:fetchme` canary at the guest's 10.0.2.2:18765, and runs
-the steps in `check/cases.toml` over SSH as `home`. A `reboot` step
-reboots through the catalog, `reboot -f`, or plain `reboot`, waits for
-QEMU to exit (it runs with `-no-reboot`) and boots the same disk again.
+serves the fetch canary at the guest's 10.0.2.2:18765, and runs the
+steps in `check/cases.toml` over SSH as `home`. A case makes the
+objects it needs with `oath new` (`svc:hold`, `pkg:fetchme`); the seed
+has none. A `reboot` step reboots through the catalog, `reboot -f`, or
+plain `reboot`, waits for QEMU to exit (it runs with `-no-reboot`) and
+boots the same disk again.
 A case marked `gap` is a known failure assigned to a phase; it may fail,
 and the run fails if it starts passing so the mark gets removed. A clean
 full run writes `build/check-pass` (sha256 of kernel, initrd and image);

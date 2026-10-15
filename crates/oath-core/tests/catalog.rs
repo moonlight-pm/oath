@@ -1,8 +1,8 @@
 use std::sync::Mutex;
 
 use oath_core::{
-    converge_pkg, copy_objects, hash_tree, ingest_file, install_tree, is_realization_id,
-    promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId,
+    apply_overlay, converge_pkg, copy_objects, hash_tree, ingest_file, install_tree,
+    is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId,
     Pkg, PkgActual, Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
@@ -79,7 +79,20 @@ impl ApplyHooks for MemHooks {
     }
 }
 
+/// A seeded catalog plus what these tests act on. The product seed has no
+/// fixtures; a test adds them the way a machine overlay would.
 fn tmp() -> (tempfile::TempDir, Catalog) {
+    let (d, cat) = seeded();
+    let fixtures = json!({"objects": {
+        "svc:hold": {"exec": ["/bin/sleep", "86400000"], "wants": ["svc:serial"],
+                     "restart": "always", "enabled": true},
+        "pkg:hello": {"present": false, "description": "Canary. /bin/hello prints hello."}
+    }});
+    apply_overlay(d.path(), &fixtures).unwrap();
+    (d, cat)
+}
+
+fn seeded() -> (tempfile::TempDir, Catalog) {
     let d = tempfile::tempdir().unwrap();
     let root = d.path().to_path_buf();
     seed(&root).unwrap();
@@ -89,13 +102,12 @@ fn tmp() -> (tempfile::TempDir, Catalog) {
 
 #[test]
 fn seed_lists_host() {
-    let (_d, cat) = tmp();
+    let (_d, cat) = seeded();
     let ids: Vec<String> = cat.ls(None).unwrap().iter().map(|i| i.to_string()).collect();
     for want in [
         "host:local",
         "svc:serial",
         "svc:sshd",
-        "svc:hold",
         "svc:time",
         "pkg:busybox",
         "pkg:btrfs",
@@ -105,8 +117,6 @@ fn seed_lists_host() {
         "pkg:util-linux",
         "pkg:dosfstools",
         "pkg:curl",
-        "pkg:hello",
-        "pkg:fetchme",
         "net:net0",
         "ssh:local",
         "dev:net0",
@@ -115,7 +125,7 @@ fn seed_lists_host() {
     ] {
         assert!(ids.iter().any(|i| i == want), "missing {want}");
     }
-    assert_eq!(ids.len(), 20, "{ids:?}");
+    assert_eq!(ids.len(), 17, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
