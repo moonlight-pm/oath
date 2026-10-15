@@ -2,6 +2,7 @@
 
 use std::fs;
 use std::os::unix::fs::{symlink, PermissionsExt};
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -371,9 +372,18 @@ fn sandbox_in_child(
     scratch: &Path,
     host_root: bool,
 ) -> Result<()> {
-    let ns = libc::CLONE_NEWNS | libc::CLONE_NEWNET | libc::CLONE_NEWIPC | libc::CLONE_NEWUTS;
+    // The script is PID 1 of its own PID namespace: it mounts a /proc that
+    // shows only the build, and everything left over dies with it.
+    let ns = libc::CLONE_NEWNS
+        | libc::CLONE_NEWNET
+        | libc::CLONE_NEWIPC
+        | libc::CLONE_NEWUTS
+        | libc::CLONE_NEWPID;
     if unsafe { libc::unshare(ns) } != 0 {
-        return Err(Error::hint("unshare failed (need mount/net namespaces)", "oath schema plan"));
+        return Err(Error::hint(
+            "unshare failed (need mount/net/pid namespaces)",
+            "oath schema plan",
+        ));
     }
     if unsafe {
         libc::mount(
@@ -408,7 +418,7 @@ fn sandbox_in_child(
         chmod(&out_bin, 0o0777)?;
     }
     chmod(&scratch.join("tmp"), 0o1777)?;
-    let _ = mount_proc(&scratch.join("proc"));
+    fs::create_dir_all(scratch.join("proc"))?;
     for (name, hash, src) in packs {
         if !src.is_dir() {
             return Err(Error::hint(
@@ -463,7 +473,22 @@ fn sandbox_in_child(
         }
     }
 
-    let st = Command::new("/bin/sh")
+    let mut cmd = Command::new("/bin/sh");
+    // SAFETY: mount(2) is async-signal-safe; nothing else runs between
+    // fork and exec. Builds that need no /proc still run without it.
+    unsafe {
+        cmd.pre_exec(|| {
+            libc::mount(
+                c"proc".as_ptr(),
+                c"/proc".as_ptr(),
+                c"proc".as_ptr(),
+                libc::MS_NOSUID | libc::MS_NODEV | libc::MS_NOEXEC,
+                std::ptr::null(),
+            );
+            Ok(())
+        });
+    }
+    let st = cmd
         .arg("/build.sh")
         .current_dir("/tmp")
         .env_clear()
@@ -509,18 +534,6 @@ fn chmod(path: &Path, mode: u32) -> Result<()> {
     let mut p = fs::metadata(path)?.permissions();
     p.set_mode(mode);
     fs::set_permissions(path, p)?;
-    Ok(())
-}
-
-fn mount_proc(dest: &Path) -> Result<()> {
-    fs::create_dir_all(dest)?;
-    let d = cstr(dest)?;
-    let src = std::ffi::CString::new("proc").unwrap();
-    let fstype = std::ffi::CString::new("proc").unwrap();
-    let rc = unsafe { libc::mount(src.as_ptr(), d.as_ptr(), fstype.as_ptr(), 0, std::ptr::null()) };
-    if rc != 0 {
-        return Err(Error::Msg(format!("mount proc at {} failed", dest.display())));
-    }
     Ok(())
 }
 

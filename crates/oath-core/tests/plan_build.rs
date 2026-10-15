@@ -180,6 +180,30 @@ fn sandbox_relocate_and_cache() {
 }
 
 #[test]
+fn sandbox_has_its_own_proc() {
+    // The kernel's objtool reads /proc/self/maps. The script is PID 1 of
+    // the build's own PID namespace.
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_busybox(d.path());
+    let p = PlanFile {
+        name: "procs".into(),
+        produces: "pkg:procs".into(),
+        build_needs: vec![PkgNeed { id: "pkg:busybox".into(), hash: bb }],
+        run_needs: vec![],
+        script: "mkdir -p /out\ncat /proc/self/maps >/out/maps\ncat /proc/1/cmdline >/out/pid1\n"
+            .into(),
+    };
+    let path = d.path().join("procs.plan");
+    std::fs::write(&path, fmt_plan(&p)).unwrap();
+    let r = build_file(d.path(), &path).expect("build");
+    let tree = d.path().join("store/pkg/procs").join(&r.product);
+    assert!(!std::fs::read(tree.join("maps")).unwrap().is_empty());
+    let pid1 = std::fs::read(tree.join("pid1")).unwrap();
+    assert!(pid1.ends_with(b"/build.sh\0"), "{}", String::from_utf8_lossy(&pid1));
+}
+
+#[test]
 fn undeclared_cc_fails() {
     let d = tmp();
     seed(d.path()).unwrap();
