@@ -853,10 +853,10 @@ impl Catalog {
                         last["hash"] = h.clone();
                     }
                 }
-                // Only fields the spec has: an invented `url: ""` would
-                // drift after undo against an actual that has none.
+                // What was applied, which actual mirrors. Actual leaves out
+                // empty fields, so undo invents no `url: ""` either.
                 for k in ["url", "needs", "description", "home"] {
-                    if let Some(v) = obj.desired.get(k) {
+                    if let Some(v) = obj.actual.get(k) {
                         last[k] = v.clone();
                     }
                 }

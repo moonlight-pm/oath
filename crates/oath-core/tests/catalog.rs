@@ -687,6 +687,21 @@ fn undo_restores_spec_not_log_or_other_objects() {
 }
 
 #[test]
+fn pkg_undo_puts_url_and_prose_back() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let before = cat.get(&id).unwrap().desired;
+    set(&cat, "pkg:hello", "description", json!("changed")).unwrap();
+    set(&cat, "pkg:hello", "url", json!("https://origin.example/")).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["url"], "https://origin.example/");
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired, before);
+    assert!(cat.diff(None).unwrap().is_empty());
+}
+
+#[test]
 fn new_and_rm_go_through_apply_and_undo() {
     let (d, cat) = tmp();
     let hooks = MemHooks::new(d.path().to_path_buf());
