@@ -289,6 +289,15 @@ steps = [
 ]
 
 [[case]]
+name = "clock-sync"
+about = "svc:time keeps the clock from pool.ntp.org and logs when ntpd settles on a stratum."
+metal = true
+steps = [
+  { run = "oath get svc:time --actual", expect = ["running"] },
+  { run = "for i in $(seq 1 40); do oath logs svc:time | grep -q 'time: stratum' && break; sleep 2; done; oath logs svc:time", expect = ["time: stratum stratum="], timeout = 120 },
+]
+
+[[case]]
 name = "modprobe-helper"
 about = "The kernel loads a filesystem module on demand through /lib/oath/modprobe."
 metal = true

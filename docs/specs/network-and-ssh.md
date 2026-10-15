@@ -65,6 +65,14 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 - The installer writes the build host's public keys into `ssh:local`
   through the install overlay (boot-and-install.md).
 
+## Time (built)
+
+- `svc:time` in the `base` seed runs `/bin/ntpd -n -S
+  /lib/oath/ntp-event -p 0.pool.ntp.org … -p 3.pool.ntp.org` as root
+  (R12). busybox `ntpd` steps an offset over one second and slews
+  smaller ones; `ntp-event` writes one log line per event.
+- The RTC is not written; every boot steps the clock again.
+
 ## Accounts (built)
 
 - `root` (uid 0) and `home` (uid 1, gid 1, `HOME=/home`, shell

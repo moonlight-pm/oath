@@ -36,6 +36,23 @@ backoff like a service, and its log is `oath logs net:net0`. Setting a
 static address stops it. Known gap: `actual.lease` is the first lease;
 renewals are not written back.
 
+## Time
+
+`svc:time` is busybox `ntpd` against `0`–`3.pool.ntp.org` (decision
+R12). At boot it steps a clock that is off by more than a second, then
+slews. Its log has one `time:` line per event (a step, a new stratum,
+losing sync, and every 11 minutes) plus ntpd's own complaints about
+bad peers:
+
+```
+oath logs svc:time
+… time: step stratum=16 offset=-102.361823s poll=32s
+… time: stratum stratum=3 offset=-0.002908s poll=32s
+```
+
+To use other servers, change its `exec` (`oath set svc:time
+--from-json '{"exec": […]}'` and `oath apply`).
+
 ## SSH
 
 SSH login is **home** (uid 1, `HOME=/home`, shell `/bin/sh`). Root SSH

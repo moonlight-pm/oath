@@ -79,6 +79,7 @@ btrfs
 | `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused); `keep_children` |
 | `svc:serial` | `/lib/oath/serial-login` on ttyS0 | root (break-glass) |
 | `svc:hold` | `/bin/sleep` | root (canary service) |
+| `svc:time` | `/bin/ntpd -n` against `0`–`3.pool.ntp.org` | root |
 | DHCP client | `udhcpc -f -i net0`, supervised by PID 1 as `net:net0` | root; renews the lease |
 
 Every supervised process has its own cgroup,

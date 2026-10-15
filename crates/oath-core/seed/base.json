@@ -21,6 +21,15 @@
       "restart": "always",
       "enabled": true
     },
+    "svc:time": {
+      "exec": [
+        "/bin/ntpd", "-n", "-S", "/lib/oath/ntp-event",
+        "-p", "0.pool.ntp.org", "-p", "1.pool.ntp.org", "-p", "2.pool.ntp.org", "-p", "3.pool.ntp.org"
+      ],
+      "wants": [],
+      "restart": "always",
+      "enabled": true
+    },
     "pkg:busybox": {
       "present": true,
       "description": "Unix applets in one musl ELF, including vi.",

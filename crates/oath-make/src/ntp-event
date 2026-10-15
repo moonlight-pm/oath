@@ -1,0 +1,4 @@
+#!/bin/sh
+# svc:time runs busybox ntpd with -S this script: one log line per event
+# (step, stratum, unsync, and periodic every 11 minutes).
+echo "time: $1 stratum=$stratum offset=${offset}s poll=${poll_interval}s"

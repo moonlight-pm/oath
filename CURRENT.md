@@ -5,7 +5,7 @@ items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
 **As of:** 2026-10-15 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R11 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R12 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -14,27 +14,24 @@ append history (git has it).
    machine; on canto `svc:serial` ends `failed`. Next: have the QEMU
    harness add its fixtures, so the image it checks is still the one
    `install` ships.
-2. **Clock.** Nothing syncs time; canto ran 102 s fast on 2026-10-15.
-   Next: ask Joshua which source (the router, a public pool) before
-   adding a time service to the seed.
-3. **Native base leftovers (phase 5).** `pkg:llvm` is still a bootstrap
+2. **Native base leftovers (phase 5).** `pkg:llvm` is still a bootstrap
    product; the kernel is built by the host's gcc and the Oath crates by
    the host's rustc (with Rust's bundled musl); sources are
    sha256-pinned but upstream signatures are not checked; nothing
    enforces a licence allowlist on publish; build outputs have no
    manifest. Next: package cmake, ninja and python so LLVM can be
    rebuilt by a plan.
-4. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
    `cargo make install --usb` stick.
 
 **State:** phases 1–5 are done; phase 6 is active
 ([docs/roadmap.md](docs/roadmap.md)). The image is the native headless
-base. Modules load by modalias. canto was reinstalled over SSH,
-unattended, on 2026-10-15 and passes all 23 `metal` harness cases
-(`cargo make check --target`). 29 QEMU cases and the `install --qemu`
-rehearsal pass.
+base. Modules load by modalias; `svc:time` keeps the clock from
+pool.ntp.org. canto was reinstalled over SSH, unattended, on 2026-10-15
+and passes all 24 `metal` harness cases (`cargo make check --target`).
+30 QEMU cases and the `install --qemu` rehearsal pass.
 
 ## Machines
 

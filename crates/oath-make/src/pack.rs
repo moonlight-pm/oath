@@ -129,11 +129,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     copy_file(&bin.join("serial-login"), &stage.join("lib/oath/serial-login"))?;
     copy_file(&bin.join("sudo"), &stage.join("lib/oath/sudo"))?;
     fs::write(stage.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
+    fs::write(stage.join("lib/oath/ntp-event"), include_str!("ntp-event"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
     fs::write(stage.join("lib/oath/backup-daily"), include_str!("backup-daily"))?;
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
     chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
+    chmod_exec(&stage.join("lib/oath/ntp-event"))?;
     chmod_exec(&stage.join("lib/oath/backup-send"))?;
     chmod_exec(&stage.join("lib/oath/backup-daily"))?;
     fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;

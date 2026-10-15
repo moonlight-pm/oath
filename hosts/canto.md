@@ -18,7 +18,7 @@ Overwrite this file when facts change; do not append a diary.
   2026-10-15 from this tree with `cargo make install --target
   home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
   hosts/canto.json --confirm`, unattended. Kernel 7.3.0-rc1. Passes all
-  23 `metal` cases (`cargo make check --target home@10.0.0.3`).
+  24 `metal` cases (`cargo make check --target home@10.0.0.3`).
 - **Modules:** at boot ahci, sd_mod, tg3, xhci_pci, ehci_pci, usbhid,
   hid_apple, hid_generic, btusb, i2c_i801, x86_pkg_temp_thermal; after
   services start amdgpu (both GPUs) and snd_hda_intel with the Cirrus
@@ -29,4 +29,4 @@ Overwrite this file when facts change; do not append a diary.
   `image/linux-patches/`.
 - **Known noise:** `svc:serial` backs off to `failed` (no UART). amdgpu
   logs a missing `amdgpu/vce_1_0_0.bin` (video encode; not packed). The
-  clock was 102 s ahead of novus on 2026-10-15 (nothing syncs it).
+  RTC runs about 100 s fast; `svc:time` steps it back at every boot.
