@@ -9,11 +9,11 @@
     },
     {
       "id": "pkg:cmake",
-      "hash": "sha256-93a9d5c508634b74f0edfe57b785239e489bd735b06fbfdf1fc66ccb74bc0657"
+      "hash": "sha256-fe3a080e37f9d14bc988b0f186ceede5d663783c9b05f9b917ea01dbeca892cd"
     },
     {
       "id": "pkg:llvm",
-      "hash": "sha256-bd45ef91795b5c3fe371714d4e13ef1b61e5d167d78040011f091dce30baebbd"
+      "hash": "sha256-1a5d6cad24b01b2dcef476d260fb3a108471708948d661767e249d2653ed65ea"
     },
     {
       "id": "pkg:llvm-src",
@@ -21,15 +21,15 @@
     },
     {
       "id": "pkg:make",
-      "hash": "sha256-2c418177b4f53e3f953eed1b2364d992ded9c736a065c07ed09ca35a2c2e7682"
+      "hash": "sha256-ade99e47287653412c2bfabcf7495c787598975dbe6155109cba2c81ae1431cf"
     },
     {
       "id": "pkg:ninja",
-      "hash": "sha256-e1c1964937c62b97f6e667e481a3c336d345d24e67bc254bf4f3ba42906b85b7"
+      "hash": "sha256-5bc16314b4fd4b440c7b9fbe8b7a2da8666ab21194d8daadcd2376294fadb422"
     },
     {
       "id": "pkg:python",
-      "hash": "sha256-645e0c0a8c8bb408b0d82b86fd44b97211ab923911c712bd96b91606b1c9eaf5"
+      "hash": "sha256-0d9ca4d5b471b54ef7d8094f9ad69759cec90921fabdaa9d5b903f66d837ec6e"
     }
   ],
   "run_needs": []

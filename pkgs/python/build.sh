@@ -6,6 +6,9 @@ MODULE_BUILDTYPE=static ./configure --prefix=/ --disable-shared \
 	--without-ensurepip --disable-test-modules
 make -j"$JOBS"
 make install DESTDIR=/out
+# CPython compiles with -g, and its DWARF names the compiler's store
+# path: drop it, or the binary changes with every pkg:llvm hash.
+strip --strip-debug /out/bin/python$(echo "$VERSION" | cut -d. -f1,2)
 # The interpreter is the product: nothing can embed or extend a static
 # python, so libpython (installed twice) goes, and so do IDLE and
 # tkinter (_tkinter is not built).

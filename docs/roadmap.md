@@ -71,8 +71,7 @@ bit-identical products. The image takes every userspace package from
 the only loader); the installer uses sfdisk, wipefs and native mkfs.
 27 harness cases and the `install --qemu` rehearsal pass.
 
-Not done, carried forward: `pkg:llvm` rebuilt by a plan (needs cmake,
-ninja and python packs), the kernel built by a plan with our compiler,
+Not done, carried forward: the kernel built by a plan with our compiler,
 the Rust toolchain as a pinned vendor pack, upstream signature checks
 (sources are sha256-pinned), a publish allowlist that reads the
 licences in `lock.json`, immutable build outputs with a manifest.

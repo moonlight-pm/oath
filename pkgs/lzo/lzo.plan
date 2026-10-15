@@ -9,7 +9,7 @@
     },
     {
       "id": "pkg:llvm",
-      "hash": "sha256-bd45ef91795b5c3fe371714d4e13ef1b61e5d167d78040011f091dce30baebbd"
+      "hash": "sha256-1a5d6cad24b01b2dcef476d260fb3a108471708948d661767e249d2653ed65ea"
     },
     {
       "id": "pkg:lzo-src",
@@ -17,7 +17,7 @@
     },
     {
       "id": "pkg:make",
-      "hash": "sha256-2c418177b4f53e3f953eed1b2364d992ded9c736a065c07ed09ca35a2c2e7682"
+      "hash": "sha256-ade99e47287653412c2bfabcf7495c787598975dbe6155109cba2c81ae1431cf"
     }
   ],
   "run_needs": []

@@ -9,13 +9,15 @@ append history (git has it).
 
 ## Now
 
-1. **Native base leftovers (phase 5).** `pkg:llvm` is still a bootstrap
-   product; the kernel is built by the host's gcc and the Oath crates by
-   the host's rustc (with Rust's bundled musl); sources are
-   sha256-pinned but upstream signatures are not checked; nothing
-   enforces a licence allowlist on publish; build outputs have no
-   manifest. Next: package cmake, ninja and python so LLVM can be
-   rebuilt by a plan.
+1. **Native base leftovers (phase 5).** `pkg:llvm` is a plan product
+   that rebuilds itself (cmake, ninja and python are packs). Left: the
+   kernel is built by the host's gcc and the Oath crates by the host's
+   rustc (with Rust's bundled musl); sources are sha256-pinned but
+   upstream signatures are not checked; nothing enforces a licence
+   allowlist on publish; build outputs have no manifest. Next: a plan
+   that builds the kernel with `pkg:llvm` (`LLVM=1`), packaging what
+   `image/linux-build.nix` supplies and busybox lacks (at least flex,
+   bison, bc, and libelf for objtool).
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a

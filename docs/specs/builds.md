@@ -9,9 +9,9 @@ same product hash. Plans are how Oath makes native packages.
 **Status:** partly built. The plan kind, `oath fmt`,
 `oath build` (pinned and `--file`), the sandbox and the native
 toolchain are built; every C package in the image is a plan product
-(`pkgs/`, via `cargo make pkgs`). Still target: `pkg:llvm`, the kernel
-and the Rust toolchain as packs built or pinned by Oath, immutable
-outputs, build logs.
+(`pkgs/`, via `cargo make pkgs`), and so is `pkg:llvm`. Still target:
+the kernel and the Rust toolchain as packs built or pinned by Oath,
+immutable outputs, build logs.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -97,8 +97,21 @@ Zig is not used (R9).
   `pkgs/lock.json`, built by the same `oath build` in a user-namespace
   sandbox against the build catalog at `.cache/oath`. The host's
   compilers are not inputs. How a package is written: `pkgs/README.md`.
+- **`pkg:llvm` by plan.** `pkgs/llvm/build.sh` is stage 1 in the
+  sandbox: the previous `pkg:llvm` builds a fresh sysroot (UAPI headers
+  through `make headers`, musl, compiler-rt, libunwind, libc++abi,
+  libc++) and then the tools. The bootstrap pack's binaries carry stage
+  0's git revision in `.comment` and build-host paths in libc++abi's
+  assertion strings; the plan's carry only sandbox paths.
+- **Build tools** (plan products, not in the image): CMake 4.4.4
+  (bundled third-party libraries, curl without TLS), Ninja 1.13.2 and
+  CPython 3.15.0, one static binary with every stdlib extension linked
+  in (no `_ctypes`, `_decimal` or `_ssl`: no libffi, libmpdec or
+  OpenSSL pack). A product must not name its compiler's store path:
+  CPython's `-g` DWARF did, so its binary is stripped of debug info.
 - **Fixed point.** Rebuilding stage 2 with stage-2 tools gives
-  bit-identical products; busybox rebuilt by itself is identical too.
+  bit-identical products: `pkg:llvm` rebuilt by itself is identical
+  (2026-10-15), and a second `cargo make pkgs` rebuilds nothing.
 - **The headless base** (15 plan products): busybox, make, pkgconf,
   zlib, zstd, lzo, util-linux, btrfs-progs, dropbear, OpenSSH (no
   OpenSSL), mbedTLS, curl (mbedTLS, pinned CA bundle), dosfstools,
@@ -111,9 +124,8 @@ Zig is not used (R9).
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans (phase 8).
 
-Target: `pkg:llvm` rebuilt by a plan (needs cmake, ninja and python
-packs); the kernel built by a plan with `pkg:llvm` instead of the host's
-gcc; upstream signature checks on top of the sha256 pins.
+Target: the kernel built by a plan with `pkg:llvm` instead of the
+host's gcc; upstream signature checks on top of the sha256 pins.
 
 ## Target fixes
 

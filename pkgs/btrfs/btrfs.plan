@@ -13,7 +13,7 @@
     },
     {
       "id": "pkg:llvm",
-      "hash": "sha256-bd45ef91795b5c3fe371714d4e13ef1b61e5d167d78040011f091dce30baebbd"
+      "hash": "sha256-1a5d6cad24b01b2dcef476d260fb3a108471708948d661767e249d2653ed65ea"
     },
     {
       "id": "pkg:lzo",
@@ -21,15 +21,15 @@
     },
     {
       "id": "pkg:make",
-      "hash": "sha256-2c418177b4f53e3f953eed1b2364d992ded9c736a065c07ed09ca35a2c2e7682"
+      "hash": "sha256-ade99e47287653412c2bfabcf7495c787598975dbe6155109cba2c81ae1431cf"
     },
     {
       "id": "pkg:pkgconf",
-      "hash": "sha256-eb9325fa126e30568dcb853e965ecfdeff383a36758c1bf17a76f366e0248966"
+      "hash": "sha256-23e847146c7242dd8504d8fb68822ecb5baa652498283f680b8d61617984cf8c"
     },
     {
       "id": "pkg:util-linux",
-      "hash": "sha256-313936c67a49e5c40c21efd58dbad26525f2f63cfba4ba4d3ba3bb6dc6b311ec"
+      "hash": "sha256-a1dab6316f23467d17871bc0650dfc4b95c43e52df7895bbb16634e922218d46"
     },
     {
       "id": "pkg:zlib",

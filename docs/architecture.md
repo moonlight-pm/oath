@@ -106,6 +106,8 @@ cargo make pkgs [names]
     + pkgs/<name>/<name>.plan (build packs pinned from pkgs/lock.json)
   `oath build` in the sandbox of the build catalog at .cache/oath
   product hash, version, licence, plan hash → pkgs/lock.json
+  llvm, busybox and make rebuild themselves; cmake, ninja and python
+    are build-only packs (llvm's plan needs them)
 cargo make build [--profile base]
   cargo build oath, oath-init (host rustc, musl, rust-lld), oath-efi (uefi)
   kernel + modules from build/linux (image/build-linux.sh), vermagic checked

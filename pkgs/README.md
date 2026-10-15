@@ -48,7 +48,10 @@ The generated script starts with `SRC` (the tarballs), `FILES`,
 `/oath/store/pkg/<name>/live`), `CC=cc` and friends, and `CPPFLAGS`,
 `LDFLAGS` and `PKG_CONFIG_PATH` covering every library pack it builds
 with. Library packs install under `$LIVE` so their `.pc` files work in
-the next sandbox. Write the result to `/out`.
+the next sandbox. Write the result to `/out`. A product must not name
+its compiler's store path (`/oath/store/pkg/llvm/<hash>`), or it changes
+with every `pkg:llvm`: strip debug info from anything built with `-g`
+(python does).
 
 `cargo make pkgs --list` shows every package, its licence and its pins.
 `cargo make build` packs the image from the products in `lock.json`.
