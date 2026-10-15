@@ -10,7 +10,8 @@ cargo make install --target user@host --disk /dev/sda --confirm \
 
 `--confirm` is required. `--disk` is the **whole disk** (GPT). The live
 OS on that host must be reachable over SSH as root, or as a user with
-`sudo -n`.
+`sudo -n`. Every command is fed to the target's `/bin/sh` on stdin and
+files are written with `dd`, so the user's login shell does not matter.
 
 ## What it does
 
@@ -30,12 +31,14 @@ OS on that host must be reachable over SSH as root, or as a user with
 5. Merges the catalog overlay with the ramdisk's `oath`
    (`oath --root /mnt/oath seed --overlay`): `host:local.hostname`
    (default `oath`), the build host's public keys as `ssh:local`, then
-   your `--overlay` on top.
+   your `--overlay` on top. Makes the new system's SSH host key
+   (`/oath/ssh/host_ed25519`) and pins it in `build/known_hosts`.
 6. Writes the ESP: `oath-efi` as `EFI/BOOT/BOOTX64.EFI` (the only
    loader), `vmlinuz`, `initrd.gz`, `loader/entries/oath.conf`, and
    `loader/oath-boots`. The kernel and the initrd modules are the same
    checked build.
-7. Reboots and waits for SSH as `home`, then runs `oath ls`.
+7. Reboots and waits for SSH as `home`, accepting only the pinned host
+   key, then runs `oath ls`.
 
 `net:net0` stays `dhcp` from the seed.
 
@@ -63,6 +66,15 @@ keys rather than adding to them. Each patched object must pass the same
 checks as `oath set`, and the overlay counts as applied: the machine
 boots with it, no `oath apply` needed (except to link a package an
 overlay turns on).
+
+## Check the installed machine
+
+```sh
+cargo make check --target home@10.0.0.108
+```
+
+Runs the harness cases marked `metal` on the machine, one at a time,
+over SSH with the key pinned at install. See [Build](build.md).
 
 ## Rehearse in QEMU
 

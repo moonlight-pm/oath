@@ -80,6 +80,19 @@ serial console of every boot and `report.json` are under
 `build/check/<time>/<case>/`. A clean full run writes `build/check-pass`,
 which `cargo make install` requires.
 
+```sh
+cargo make check --target home@10.0.0.108
+```
+
+`--target` runs the cases marked `metal = true` on an installed machine
+instead: one at a time, as `home`, trusting only the host key that
+`install` pinned in `build/known_hosts`. The machine must start
+in-sync (`oath diff`). After each case the harness runs `oath undo`
+back to the generation the case started from and requires `oath diff`
+to say `in-sync` again; if it does not, the run stops there. A reboot
+step waits up to five minutes for a new boot id. Logs are under
+`build/check/<time>-<host>/`. No stamp is written.
+
 ## Run it in QEMU
 
 ```sh

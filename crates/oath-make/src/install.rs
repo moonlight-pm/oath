@@ -37,11 +37,20 @@ pub struct EspOpts {
 }
 
 #[derive(Clone)]
-struct Remote {
-    user: String,
-    host: String,
-    port: u16,
+pub struct Remote {
+    pub user: String,
+    pub host: String,
+    pub port: u16,
     sudo: bool,
+    /// Pinned host keys. `None` takes any key: the installer ramdisk and
+    /// the system being replaced have nothing worth pinning.
+    known_hosts: Option<PathBuf>,
+}
+
+/// Host keys of the machines this tree installed, written by `install`
+/// and read by `check --target`.
+pub fn known_hosts(out: &Path) -> PathBuf {
+    out.join("known_hosts")
 }
 
 pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
@@ -83,7 +92,7 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     install_remote(out, &tools, &opts, &remote)
 }
 
-fn parse_target(s: &str) -> Result<Remote> {
+pub fn parse_target(s: &str) -> Result<Remote> {
     let (userhost, port) = match s.rsplit_once(':') {
         Some((uh, p)) if p.chars().all(|c| c.is_ascii_digit()) => {
             (uh, p.parse::<u16>().unwrap_or(22))
@@ -94,7 +103,7 @@ fn parse_target(s: &str) -> Result<Remote> {
         Some((u, h)) => (u.to_string(), h.to_string()),
         None => ("root".into(), userhost.to_string()),
     };
-    Ok(Remote { sudo: user != "root", user, host, port })
+    Ok(Remote { sudo: user != "root", user, host, port, known_hosts: None })
 }
 
 fn parts(disk: &str) -> (String, String) {
@@ -225,17 +234,21 @@ fn assert_usb_stick(dev: &str) -> Result<()> {
 
 fn ssh_base(r: &Remote) -> Command {
     let mut c = Command::new("ssh");
-    // The installer ramdisk makes a new host key every boot, so there is
-    // nothing to pin. Only the keys baked from ~/.ssh can log in.
+    match &r.known_hosts {
+        Some(f) => c
+            .args(["-o", "StrictHostKeyChecking=yes", "-o"])
+            .arg(format!("UserKnownHostsFile={}", f.display())),
+        // The installer ramdisk makes a new host key every boot, so there is
+        // nothing to pin. Only the keys baked from ~/.ssh can log in.
+        None => c.args(["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]),
+    };
     c.args([
-        "-o",
-        "StrictHostKeyChecking=no",
-        "-o",
-        "UserKnownHostsFile=/dev/null",
         "-o",
         "BatchMode=yes",
         "-o",
         "ConnectTimeout=8",
+        "-o",
+        "LogLevel=ERROR",
         "-T",
         "-p",
         &r.port.to_string(),
@@ -244,30 +257,72 @@ fn ssh_base(r: &Remote) -> Command {
     c
 }
 
-fn ssh_run(r: &Remote, remote_cmd: &str) -> Result<()> {
-    let cmd = if r.sudo { format!("sudo -n {remote_cmd}") } else { remote_cmd.to_string() };
-    let st = ssh_base(r).arg(&cmd).status().context("ssh")?;
+/// `script` runs in the target's `/bin/sh`, fed on stdin, so the login
+/// shell never parses it (canto's old image logs `home` into Thoxa). With
+/// a non-root user the whole script runs under `sudo -n`.
+fn sh_command(r: &Remote) -> Command {
+    let mut c = ssh_base(r);
+    sh_tail(&mut c, r);
+    c
+}
+
+fn sh_tail(c: &mut Command, r: &Remote) {
+    c.arg(if r.sudo { "sudo -n /bin/sh -s" } else { "/bin/sh -s" });
+    c.stdin(Stdio::piped());
+}
+
+fn feed(child: &mut std::process::Child, script: &str) -> Result<()> {
+    let mut stdin = child.stdin.take().context("ssh stdin")?;
+    stdin.write_all(script.as_bytes()).context("ssh stdin")
+}
+
+fn ssh_run(r: &Remote, script: &str) -> Result<()> {
+    let mut child = sh_command(r).spawn().context("ssh")?;
+    feed(&mut child, script)?;
+    let st = child.wait()?;
     if !st.success() {
-        bail!("ssh {cmd} failed: {st}");
+        bail!("ssh `{script}` failed: {st}");
     }
     Ok(())
+}
+
+fn ssh_out(r: &Remote, script: &str) -> Result<String> {
+    let mut child =
+        sh_command(r).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().context("ssh")?;
+    feed(&mut child, script)?;
+    let o = child.wait_with_output()?;
+    if !o.status.success() {
+        bail!("ssh `{script}` failed: {}\n{}", o.status, String::from_utf8_lossy(&o.stderr));
+    }
+    Ok(String::from_utf8_lossy(&o.stdout).trim().to_string())
+}
+
+/// Start `script` (a reboot or kexec) and give up on the session after a
+/// few seconds: the connection dies with the kernel and never returns cleanly.
+fn ssh_fire(r: &Remote, script: &str) {
+    let mut c = Command::new("ssh");
+    c.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=2"]);
+    c.args(ssh_base(r).get_args());
+    sh_tail(&mut c, r);
+    let Ok(mut child) = c.spawn() else { return };
+    let _ = feed(&mut child, script);
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) | Err(_) => break,
+            Ok(None) if start.elapsed() > Duration::from_secs(8) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                break;
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(200)),
+        }
+    }
 }
 
 fn ssh_reboot(r: &Remote) -> Result<()> {
-    let mut c = ssh_base(r);
-    c.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=2"]);
-    c.arg("/bin/busybox reboot -f");
-    let _ = c.status();
+    ssh_fire(r, "/bin/busybox reboot -f");
     Ok(())
-}
-
-fn ssh_out(r: &Remote, remote_cmd: &str) -> Result<String> {
-    let cmd = if r.sudo { format!("sudo -n {remote_cmd}") } else { remote_cmd.to_string() };
-    let o = ssh_base(r).arg(&cmd).output().context("ssh")?;
-    if !o.status.success() {
-        bail!("ssh {cmd} failed: {}\n{}", o.status, String::from_utf8_lossy(&o.stderr));
-    }
-    Ok(String::from_utf8_lossy(&o.stdout).trim().to_string())
 }
 
 fn put_text(r: &Remote, dest: &str, body: &str) -> Result<()> {
@@ -281,12 +336,9 @@ fn put_text(r: &Remote, dest: &str, body: &str) -> Result<()> {
 
 fn scp_root(r: &Remote, src: &Path, dest: &str) -> Result<()> {
     // Stream bytes over ssh so the first hop does not depend on guest
-    // scp/sftp. `sudo tee` because `sudo cat > dest` redirects as the user.
-    let remote = if r.sudo {
-        format!("sudo -n tee {dest} >/dev/null")
-    } else {
-        format!("(if [ -x /bin/busybox ]; then /bin/busybox cat; else cat; fi) > {dest}")
-    };
+    // scp/sftp. `dd of=` needs no redirect, so any login shell can run it.
+    let dd = format!("dd of={dest} bs=65536 status=none");
+    let remote = if r.sudo { format!("sudo -n {dd}") } else { dd };
     let mut ssh = ssh_base(r);
     ssh.arg(&remote).stdin(Stdio::piped());
     let mut child = ssh.spawn().context("ssh put")?;
@@ -386,23 +438,7 @@ fn efi_oneshot_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) ->
     put_text(r, "/boot/loader/loader.conf", "default oath-install.conf\ntimeout 1\n")?;
     let _ = ssh_run(r, "sync");
     eprintln!("rebooting into installer (firmware re-inits PCI)");
-    let mut c = ssh_base(r);
-    c.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=2"]);
-    c.arg(&reboot_remote_cmd(r));
-    if let Ok(mut child) = c.spawn() {
-        let start = Instant::now();
-        loop {
-            if start.elapsed() > Duration::from_secs(8) {
-                let _ = child.kill();
-                break;
-            }
-            match child.try_wait() {
-                Ok(Some(_)) => break,
-                Ok(None) => thread::sleep(Duration::from_millis(200)),
-                Err(_) => break,
-            }
-        }
-    }
+    ssh_fire(r, REBOOT_SCRIPT);
     Ok(())
 }
 
@@ -424,28 +460,7 @@ fn kexec_into_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) -> 
     )?;
     eprintln!("kexec -e (SSH will drop)");
     // kexec replaces the kernel: the SSH session never returns cleanly.
-    // Time it out so we can wait for the installer ramdisk.
-    let mut c = ssh_base(r);
-    c.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=2"]);
-    c.arg(if r.sudo {
-        "sudo -n /tmp/oath-install/kexec --force --no-ifdown -e"
-    } else {
-        "/tmp/oath-install/kexec --force --no-ifdown -e"
-    });
-    if let Ok(mut child) = c.spawn() {
-        let start = Instant::now();
-        loop {
-            if start.elapsed() > Duration::from_secs(8) {
-                let _ = child.kill();
-                break;
-            }
-            match child.try_wait() {
-                Ok(Some(_)) => break,
-                Ok(None) => thread::sleep(Duration::from_millis(200)),
-                Err(_) => break,
-            }
-        }
-    }
+    ssh_fire(r, "/tmp/oath-install/kexec --force --no-ifdown -e");
     Ok(())
 }
 
@@ -489,7 +504,10 @@ fn wait_ssh(r: &Remote, timeout: Duration) -> Result<()> {
     bail!("timed out waiting for installer SSH")
 }
 
-fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Result<()> {
+/// Partition, copy the packed root, write the catalog and the ESP. Returns
+/// the installed system's SSH host key (`ssh-ed25519 AAAA…`), made here so
+/// the first login to the new system can be checked against it.
+fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Result<String> {
     let (p1, p2) = parts(&opts.disk);
     let hostname = opts.hostname.clone().unwrap_or_else(|| "oath".into());
     eprintln!("format {} -> ESP {p1} + btrfs {p2}", opts.disk);
@@ -535,6 +553,7 @@ fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Resul
     )?;
 
     write_catalog_overlay(opts, &hostname, r)?;
+    let host_key = make_host_key(r)?;
 
     ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/loader/entries")?;
     ssh_run(
@@ -560,7 +579,40 @@ fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Resul
     )?;
     ssh_run(r, "sync; umount /mnt/boot /mnt /esp || true")?;
     eprintln!("disk written; reboot");
-    Ok(())
+    Ok(host_key)
+}
+
+/// The installer's dropbearkey writes the key PID 1 would otherwise make
+/// at first boot (`oath_core::SSH_HOST_KEY`).
+fn make_host_key(r: &Remote) -> Result<String> {
+    let key = format!("/mnt{}", oath_core::SSH_HOST_KEY);
+    let dir = key.rsplit_once('/').map(|(d, _)| d).unwrap_or("/mnt/oath/ssh");
+    let out = ssh_out(
+        r,
+        &format!(
+            "mkdir -p {dir} && rm -f {key} && dropbearkey -t ed25519 -f {key} >/dev/null 2>&1 && dropbearkey -y -f {key}"
+        ),
+    )?;
+    let line = out
+        .lines()
+        .find(|l| l.starts_with("ssh-ed25519 "))
+        .context("dropbearkey printed no public key")?;
+    // known_hosts wants `type blob`; drop dropbear's `root@host` comment.
+    let mut words = line.split_whitespace();
+    Ok(format!("{} {}", words.next().unwrap_or(""), words.next().unwrap_or("")))
+}
+
+/// Replace `host`'s line in a known_hosts file with `key`.
+pub fn pin_host_key(file: &Path, host: &str, port: u16, key: &str) -> Result<()> {
+    let name = if port == 22 { host.to_string() } else { format!("[{host}]:{port}") };
+    let old = fs::read_to_string(file).unwrap_or_default();
+    let mut body: String = old
+        .lines()
+        .filter(|l| l.split_whitespace().next() != Some(name.as_str()))
+        .map(|l| format!("{l}\n"))
+        .collect();
+    body.push_str(&format!("{name} {key}\n"));
+    fs::write(file, body).with_context(|| format!("write {}", file.display()))
 }
 
 fn format_disk_script(disk: &str, p1: &str, p2: &str) -> String {
@@ -727,12 +779,20 @@ fn install_remote(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<
     } else {
         eprintln!("already in installer ramdisk");
     }
-    let inst = Remote { user: "root".into(), host: r.host.clone(), port: 22, sudo: false };
+    let inst = Remote {
+        user: "root".into(),
+        host: r.host.clone(),
+        port: 22,
+        sudo: false,
+        known_hosts: None,
+    };
     wait_ssh(&inst, Duration::from_secs(300))?;
-    format_and_copy(out, tools, opts, &inst)?;
-    eprintln!("disk written; reboot");
+    let key = format_and_copy(out, tools, opts, &inst)?;
+    let pins = known_hosts(out);
+    pin_host_key(&pins, &r.host, r.port, &key)?;
+    eprintln!("host key for {} pinned in {}", r.host, pins.display());
     let _ = ssh_reboot(&inst);
-    let live = wait_oath_ssh(&r.host, r.port, Duration::from_secs(300))?;
+    let live = wait_oath_ssh(&r.host, r.port, &pins, Duration::from_secs(300))?;
     let ls = ssh_out(&live, "/bin/oath ls")?;
     eprintln!("oath ls ({}@{}):\n{ls}", live.user, live.host);
     if !ls.contains("host:local") {
@@ -773,7 +833,13 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
     ]);
     eprintln!(">> installer qemu {}", run_dir.display());
     let mut child = qemu_cmd.spawn().context("qemu installer")?;
-    let inst = Remote { user: "root".into(), host: "127.0.0.1".into(), port, sudo: false };
+    let inst = Remote {
+        user: "root".into(),
+        host: "127.0.0.1".into(),
+        port,
+        sudo: false,
+        known_hosts: None,
+    };
     if let Err(e) = wait_ssh(&inst, Duration::from_secs(90)) {
         let _ = child.kill();
         dump_serial(&serial);
@@ -789,11 +855,17 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         overlay: opts.overlay.clone(),
         unchecked: true,
     };
-    if let Err(e) = format_and_copy(out, tools, &qopts, &inst) {
-        let _ = child.kill();
-        dump_serial(&serial);
-        return Err(e);
-    }
+    let key = match format_and_copy(out, tools, &qopts, &inst) {
+        Ok(k) => k,
+        Err(e) => {
+            let _ = child.kill();
+            dump_serial(&serial);
+            return Err(e);
+        }
+    };
+    // The rehearsal pins too, so the first login proves the key it wrote.
+    let pins = run_dir.join("known_hosts");
+    pin_host_key(&pins, "127.0.0.1", port, &key)?;
     let _ = child.kill();
     let _ = child.wait();
 
@@ -823,7 +895,7 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         dump_serial(&serial_boot);
         bail!("OVMF qemu exited immediately: {st}");
     }
-    let wait = wait_oath_ssh("127.0.0.1", port, Duration::from_secs(180));
+    let wait = wait_oath_ssh("127.0.0.1", port, &pins, Duration::from_secs(180));
     let ok = wait.is_ok();
     if ok {
         let live = wait.as_ref().expect("ok");
@@ -885,29 +957,19 @@ fn dump_serial(path: &Path) {
     }
 }
 
-fn reboot_remote_cmd(r: &Remote) -> String {
-    let inner = if ssh_out(r, "test -x /bin/oath && echo YES")
-        .map(|s| s.contains("YES"))
-        .unwrap_or(false)
-    {
-        "oath set host:local power=reboot && oath apply --confirm".to_string()
-    } else if ssh_out(r, "command -v systemctl >/dev/null && echo YES")
-        .map(|s| s.contains("YES"))
-        .unwrap_or(false)
-    {
-        "systemctl reboot".into()
-    } else {
-        "/bin/reboot -f".into()
-    };
-    if r.sudo {
-        format!("sudo -n {inner}")
-    } else {
-        inner
-    }
-}
+/// Reboot into the installer entry. The disk is about to be wiped, so a
+/// clean shutdown buys nothing; flushing the ESP is what matters, and a
+/// forced reboot does not depend on the old system's PID 1.
+const REBOOT_SCRIPT: &str = "sync; umount /boot 2>/dev/null; sync; reboot -f\n";
 
-fn wait_oath_ssh(host: &str, port: u16, timeout: Duration) -> Result<Remote> {
-    let home = Remote { user: "home".into(), host: host.into(), port, sudo: false };
+fn wait_oath_ssh(host: &str, port: u16, pins: &Path, timeout: Duration) -> Result<Remote> {
+    let home = Remote {
+        user: "home".into(),
+        host: host.into(),
+        port,
+        sudo: false,
+        known_hosts: Some(pins.to_path_buf()),
+    };
     let deadline = Instant::now() + timeout;
     eprintln!("waiting for installed SSH at home@{host}:{port}");
     while Instant::now() < deadline {
@@ -931,6 +993,20 @@ mod tests {
         assert_eq!(parts("/dev/vda"), ("/dev/vda1".into(), "/dev/vda2".into()));
         assert_eq!(parts("/dev/sda"), ("/dev/sda1".into(), "/dev/sda2".into()));
         assert_eq!(parts("/dev/nvme0n1"), ("/dev/nvme0n1p1".into(), "/dev/nvme0n1p2".into()));
+    }
+
+    #[test]
+    fn pin_replaces_only_that_host() {
+        let d = tempfile::tempdir().unwrap();
+        let f = d.path().join("known_hosts");
+        fs::write(&f, "10.0.0.2 ssh-ed25519 OTHER\n10.0.0.3 ssh-ed25519 OLD\n").unwrap();
+        pin_host_key(&f, "10.0.0.3", 22, "ssh-ed25519 NEW").unwrap();
+        pin_host_key(&f, "127.0.0.1", 2222, "ssh-ed25519 VM").unwrap();
+        let s = fs::read_to_string(&f).unwrap();
+        assert_eq!(
+            s,
+            "10.0.0.2 ssh-ed25519 OTHER\n10.0.0.3 ssh-ed25519 NEW\n[127.0.0.1]:2222 ssh-ed25519 VM\n"
+        );
     }
 
     #[test]

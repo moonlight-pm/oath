@@ -4,6 +4,11 @@
 //! it may fail without failing the run, and if it starts passing the run
 //! fails so the gap gets removed. A clean run writes `build/check-pass`,
 //! which `cargo make install` requires.
+//!
+//! `--target user@host` runs the cases marked `metal` against a real
+//! machine instead, one at a time. After each case the harness undoes back
+//! to the generation the case started from and requires `oath diff` to be
+//! in-sync; a machine left otherwise stops the run.
 
 use std::collections::VecDeque;
 use std::fs;
@@ -19,6 +24,7 @@ use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use serde_json::json;
 
+use crate::install::Remote;
 use crate::qemu::{self, Image, SerialMode, VmSpec};
 use crate::tools::Tools;
 use crate::util::{sha256_file, utc_rfc3339, utc_stamp, write_pretty};
@@ -45,6 +51,10 @@ pub struct Case {
     /// Known failure: the phase and finding that will fix it.
     #[serde(default)]
     pub gap: Option<String>,
+    /// Also runs on a real machine (`check --target`): it expects nothing
+    /// QEMU-specific and leaves no change that `oath undo` cannot take back.
+    #[serde(default)]
+    pub metal: bool,
     pub steps: Vec<Step>,
 }
 
@@ -113,6 +123,8 @@ pub fn verdict(gap: bool, passed: bool) -> Verdict {
 pub struct Opts {
     pub only: Vec<String>,
     pub jobs: usize,
+    /// `user@host[:port]`: run the `metal` cases on this machine, not QEMU.
+    pub target: Option<String>,
 }
 
 struct Ctx {
@@ -143,6 +155,9 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
         }
         picked
     };
+    if let Some(target) = &opts.target {
+        return run_target(out, cases, target);
+    }
     let tools = crate::tools::load(root)?;
     let img = qemu::load_image(out)?;
     let base = out.join("check");
@@ -182,7 +197,18 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     }
     let mut results = std::mem::take(&mut *results.lock().unwrap());
     results.sort_by(|a, b| a.name.cmp(&b.name));
+    let all_ok = summarize(&results, &dir)?;
+    let stamp = out.join("check-pass");
+    let _ = fs::remove_file(&stamp);
+    if all_ok && opts.only.is_empty() {
+        write_pretty(&stamp, &image_stamp(&ctx.img)?)?;
+        println!("image checked: {}", stamp.display());
+    }
+    Ok(if all_ok { 0 } else { 1 })
+}
 
+/// Write `report.json`, print one line per case and the totals.
+fn summarize(results: &[Outcome], dir: &Path) -> Result<bool> {
     let report: Vec<_> = results
         .iter()
         .map(|r| {
@@ -199,7 +225,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
 
     let count = |v: Verdict| results.iter().filter(|r| r.verdict == v).count();
     println!();
-    for r in &results {
+    for r in results {
         let note = match (&r.gap, r.verdict) {
             (Some(g), Verdict::Gap) => format!("  (known gap: {g})"),
             (Some(g), Verdict::Fixed) => format!("  (passes now: remove gap \"{g}\")"),
@@ -215,14 +241,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
         count(Verdict::Fixed),
         dir.display()
     );
-    let all_ok = results.iter().all(|r| r.verdict.ok());
-    let stamp = out.join("check-pass");
-    let _ = fs::remove_file(&stamp);
-    if all_ok && opts.only.is_empty() {
-        write_pretty(&stamp, &image_stamp(&ctx.img)?)?;
-        println!("image checked: {}", stamp.display());
-    }
-    Ok(if all_ok { 0 } else { 1 })
+    Ok(results.iter().all(|r| r.verdict.ok()))
 }
 
 /// What a clean check vouches for. `install` compares this with what it ships.
@@ -326,7 +345,6 @@ fn serve_fetchme(body: Vec<u8>) -> Result<()> {
 
 struct Vm {
     child: Child,
-    port: u16,
 }
 
 impl Vm {
@@ -355,7 +373,7 @@ impl Vm {
             .stderr(Stdio::null())
             .spawn()
             .context("qemu")?;
-        Ok(Self { child, port })
+        Ok(Self { child })
     }
 
     fn exited_within(&mut self, wait: Duration) -> bool {
@@ -386,29 +404,69 @@ struct Shell {
     text: String,
 }
 
-fn ssh(ctx: &Ctx, port: u16, cmd: &str, timeout: Duration) -> Shell {
+/// How to reach a machine: the ssh(1) arguments that go before the command.
+struct Conn {
+    args: Vec<String>,
+}
+
+impl Conn {
+    /// A check VM: the harness key, any host key (every VM makes a new one).
+    fn vm(key: &Path, port: u16) -> Self {
+        let mut args: Vec<String> = vec!["-i".into(), key.display().to_string()];
+        args.extend(
+            [
+                "-p",
+                &port.to_string(),
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+                "-o",
+                "IdentitiesOnly=yes",
+            ]
+            .map(String::from),
+        );
+        Self::finish(args, "home@127.0.0.1")
+    }
+
+    /// A real machine: the operator's keys, and only the host key `install`
+    /// pinned for it.
+    fn target(r: &Remote, pins: &Path) -> Self {
+        let args = [
+            "-p".to_string(),
+            r.port.to_string(),
+            "-o".into(),
+            "StrictHostKeyChecking=yes".into(),
+            "-o".into(),
+            format!("UserKnownHostsFile={}", pins.display()),
+        ]
+        .to_vec();
+        Self::finish(args, &format!("{}@{}", r.user, r.host))
+    }
+
+    fn finish(mut args: Vec<String>, dest: &str) -> Self {
+        args.extend(
+            [
+                "-o",
+                "GlobalKnownHostsFile=/dev/null",
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=5",
+                "-o",
+                "LogLevel=ERROR",
+                dest,
+                "--",
+            ]
+            .map(String::from),
+        );
+        Self { args }
+    }
+}
+
+fn ssh(conn: &Conn, cmd: &str, timeout: Duration) -> Shell {
     let mut c = Command::new("ssh");
-    c.arg("-i").arg(&ctx.key).args([
-        "-p",
-        &port.to_string(),
-        "-o",
-        "StrictHostKeyChecking=no",
-        "-o",
-        "UserKnownHostsFile=/dev/null",
-        "-o",
-        "GlobalKnownHostsFile=/dev/null",
-        "-o",
-        "IdentitiesOnly=yes",
-        "-o",
-        "BatchMode=yes",
-        "-o",
-        "ConnectTimeout=5",
-        "-o",
-        "LogLevel=ERROR",
-        "home@127.0.0.1",
-        "--",
-        cmd,
-    ]);
+    c.args(&conn.args).arg(cmd);
     c.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     let Ok(mut child) = c.spawn() else {
         return Shell { code: -1, text: "could not run ssh".into() };
@@ -447,10 +505,10 @@ fn ssh(ctx: &Ctx, port: u16, cmd: &str, timeout: Duration) -> Shell {
     Shell { code, text }
 }
 
-fn wait_ssh(ctx: &Ctx, port: u16, wait: Duration) -> bool {
+fn wait_ssh(conn: &Conn, wait: Duration) -> bool {
     let deadline = Instant::now() + wait;
     while Instant::now() < deadline {
-        if ssh(ctx, port, "test -f /oath/INDEX.md", Duration::from_secs(10)).code == 0 {
+        if ssh(conn, "test -f /oath/INDEX.md", Duration::from_secs(10)).code == 0 {
             return true;
         }
         thread::sleep(Duration::from_secs(1));
@@ -458,65 +516,81 @@ fn wait_ssh(ctx: &Ctx, port: u16, wait: Duration) -> bool {
     false
 }
 
+/// The command a `reboot` step sends.
+fn reboot_cmd(how: &str) -> &'static str {
+    match how {
+        "catalog" => {
+            "sudo oath set host:local power=reboot && sudo oath apply --confirm host:local"
+        }
+        "force" => "sync; sudo reboot -f",
+        _ => "sudo reboot",
+    }
+}
+
+/// Run one `run` step and judge its output.
+fn run_step(conn: &Conn, n: usize, step: &Step, log: &mut String) -> Result<(), String> {
+    let cmd = step.run.as_deref().unwrap_or("");
+    let r = ssh(conn, cmd, Duration::from_secs(step.timeout));
+    log.push_str(&format!("## step {n}\n$ {cmd}\n{}\n[exit {}]\n", r.text, r.code));
+    if r.code == 255 || r.code < 0 {
+        return Err(format!("step {n}: lost SSH (`{cmd}`)"));
+    }
+    if step.fails && r.code == 0 {
+        return Err(format!("step {n}: expected failure, got exit 0 (`{cmd}`)"));
+    }
+    if !step.fails && r.code != 0 {
+        return Err(format!("step {n}: exit {} (`{cmd}`)", r.code));
+    }
+    for want in &step.expect {
+        if !r.text.contains(want.as_str()) {
+            return Err(format!("step {n}: missing {want:?} (`{cmd}`)"));
+        }
+    }
+    for bad in &step.reject {
+        if r.text.contains(bad.as_str()) {
+            return Err(format!("step {n}: unexpected {bad:?} (`{cmd}`)"));
+        }
+    }
+    Ok(())
+}
+
 fn run_case(ctx: &Ctx, case: &Case, port: u16) -> Outcome {
     let dir = ctx.dir.join(&case.name);
+    let conn = Conn::vm(&ctx.key, port);
     let mut log = String::new();
     let result = (|| -> Result<(), String> {
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let mut boot_no = 1;
         let mut vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
-        if !wait_ssh(ctx, vm.port, BOOT_WAIT) {
+        if !wait_ssh(&conn, BOOT_WAIT) {
             return Err("no SSH after boot".into());
         }
         for (i, step) in case.steps.iter().enumerate() {
             let n = i + 1;
-            if let Some(how) = &step.reboot {
-                let cmd = match how.as_str() {
-                    "catalog" => {
-                        "sudo oath set host:local power=reboot && sudo oath apply --confirm host:local"
-                    }
-                    "force" => "sync; sudo reboot -f",
-                    _ => "sudo reboot",
-                };
-                log.push_str(&format!("## step {n}: reboot ({how})\n$ {cmd}\n"));
-                let r = ssh(ctx, vm.port, cmd, Duration::from_secs(20));
-                log.push_str(&format!("{}\n[exit {}]\n", r.text, r.code));
-                if !vm.exited_within(REBOOT_WAIT) {
-                    return Err(format!("step {n}: the VM did not reboot ({how})"));
-                }
-                boot_no += 1;
-                vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
-                if !wait_ssh(ctx, vm.port, BOOT_WAIT) {
-                    return Err(format!("step {n}: no SSH after reboot"));
-                }
+            let Some(how) = &step.reboot else {
+                run_step(&conn, n, step, &mut log)?;
                 continue;
+            };
+            let cmd = reboot_cmd(how);
+            log.push_str(&format!("## step {n}: reboot ({how})\n$ {cmd}\n"));
+            let r = ssh(&conn, cmd, Duration::from_secs(20));
+            log.push_str(&format!("{}\n[exit {}]\n", r.text, r.code));
+            if !vm.exited_within(REBOOT_WAIT) {
+                return Err(format!("step {n}: the VM did not reboot ({how})"));
             }
-            let cmd = step.run.as_deref().unwrap_or("");
-            let r = ssh(ctx, vm.port, cmd, Duration::from_secs(step.timeout));
-            log.push_str(&format!("## step {n}\n$ {cmd}\n{}\n[exit {}]\n", r.text, r.code));
-            if r.code == 255 || r.code < 0 {
-                return Err(format!("step {n}: lost SSH (`{cmd}`)"));
-            }
-            if step.fails && r.code == 0 {
-                return Err(format!("step {n}: expected failure, got exit 0 (`{cmd}`)"));
-            }
-            if !step.fails && r.code != 0 {
-                return Err(format!("step {n}: exit {} (`{cmd}`)", r.code));
-            }
-            for want in &step.expect {
-                if !r.text.contains(want.as_str()) {
-                    return Err(format!("step {n}: missing {want:?} (`{cmd}`)"));
-                }
-            }
-            for bad in &step.reject {
-                if r.text.contains(bad.as_str()) {
-                    return Err(format!("step {n}: unexpected {bad:?} (`{cmd}`)"));
-                }
+            boot_no += 1;
+            vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
+            if !wait_ssh(&conn, BOOT_WAIT) {
+                return Err(format!("step {n}: no SSH after reboot"));
             }
         }
         Ok(())
     })();
     let _ = fs::write(dir.join("steps.log"), &log);
+    outcome(case, result)
+}
+
+fn outcome(case: &Case, result: Result<(), String>) -> Outcome {
     let passed = result.is_ok();
     Outcome {
         name: case.name.clone(),
@@ -525,6 +599,152 @@ fn run_case(ctx: &Ctx, case: &Case, port: u16) -> Outcome {
         verdict: verdict(case.gap.is_some(), passed),
         detail: result.err().unwrap_or_default(),
     }
+}
+
+// ---- real machines (`--target`) ----------------------------------------
+
+/// A real machine is slower to come back than a VM (firmware, POST).
+const METAL_BOOT_WAIT: Duration = Duration::from_secs(300);
+
+fn run_target(out: &Path, cases: Vec<Case>, target: &str) -> Result<i32> {
+    let r = crate::install::parse_target(target)?;
+    let pins = crate::install::known_hosts(out);
+    if !pins.is_file() {
+        bail!(
+            "no pinned host keys ({}): `cargo make install` writes the key of each machine it installs",
+            pins.display()
+        );
+    }
+    let conn = Conn::target(&r, &pins);
+    let diff = ssh(&conn, "oath diff", Duration::from_secs(30));
+    if diff.code != 0 {
+        bail!("`oath diff` on {target} failed (exit {}): {}", diff.code, diff.text);
+    }
+    if diff.text.trim() != "in-sync" {
+        bail!(
+            "{target} has pending changes; check runs only on an in-sync machine:\n{}",
+            diff.text
+        );
+    }
+    let cases: Vec<Case> = cases.into_iter().filter(|c| c.metal).collect();
+    if cases.is_empty() {
+        bail!("none of the chosen cases is marked `metal`");
+    }
+    let dir = out.join("check").join(format!("{}-{}", utc_stamp(), r.host));
+    fs::create_dir_all(&dir)?;
+    eprintln!("check: {} cases on {target}, one at a time, logs in {}", cases.len(), dir.display());
+    let mut results = Vec::new();
+    for case in &cases {
+        let (o, left) = run_target_case(&conn, case, &dir);
+        eprintln!(
+            "{:5}  {}{}",
+            o.verdict.word(),
+            o.name,
+            if o.detail.is_empty() { String::new() } else { format!(" — {}", o.detail) }
+        );
+        results.push(o);
+        if let Err(why) = left {
+            eprintln!("stopping: {target} is not as `{}` found it: {why}", case.name);
+            break;
+        }
+    }
+    let all_ok = summarize(&results, &dir)? && results.len() == cases.len();
+    Ok(if all_ok { 0 } else { 1 })
+}
+
+/// Run a case, then put the machine back. The second result says whether
+/// the machine is as the case found it.
+fn run_target_case(conn: &Conn, case: &Case, dir: &Path) -> (Outcome, Result<(), String>) {
+    let dir = dir.join(&case.name);
+    let _ = fs::create_dir_all(&dir);
+    let mut log = String::new();
+    let start = generation(conn);
+    let result = (|| -> Result<(), String> {
+        start.clone()?;
+        for (i, step) in case.steps.iter().enumerate() {
+            let n = i + 1;
+            let Some(how) = &step.reboot else {
+                run_step(conn, n, step, &mut log)?;
+                continue;
+            };
+            let before = boot_id(conn)?;
+            let cmd = reboot_cmd(how);
+            log.push_str(&format!("## step {n}: reboot ({how})\n$ {cmd}\n"));
+            let r = ssh(conn, cmd, Duration::from_secs(20));
+            log.push_str(&format!("{}\n[exit {}]\n", r.text, r.code));
+            if !rebooted(conn, &before, METAL_BOOT_WAIT) {
+                return Err(format!(
+                    "step {n}: no new boot within {}s ({how})",
+                    METAL_BOOT_WAIT.as_secs()
+                ));
+            }
+        }
+        Ok(())
+    })();
+    let left = start.and_then(|g| restore(conn, g, &mut log));
+    let _ = fs::write(dir.join("steps.log"), &log);
+    (outcome(case, result), left)
+}
+
+/// `snap:current`'s generation.
+fn generation(conn: &Conn) -> Result<u64, String> {
+    let r = ssh(conn, "oath --json get snap:current", Duration::from_secs(30));
+    let v: serde_json::Value = serde_json::from_str(r.text.trim())
+        .map_err(|e| format!("oath get snap:current: {e}: {}", r.text))?;
+    v["actual"]["generation"].as_u64().ok_or_else(|| format!("no generation in {}", r.text))
+}
+
+/// Undo back to generation `start`, then require nothing pending.
+fn restore(conn: &Conn, start: u64, log: &mut String) -> Result<(), String> {
+    for _ in 0..20 {
+        let g = generation(conn)?;
+        if g == start {
+            break;
+        }
+        let r = ssh(conn, "sudo oath undo", Duration::from_secs(120));
+        log.push_str(&format!(
+            "## restore (generation {g} -> {start})\n$ sudo oath undo\n{}\n[exit {}]\n",
+            r.text, r.code
+        ));
+        if r.code != 0 {
+            return Err(format!("undo at generation {g} failed: {}", r.text));
+        }
+    }
+    let g = generation(conn)?;
+    if g != start {
+        return Err(format!("generation is {g}, the case started at {start}"));
+    }
+    let d = ssh(conn, "oath diff", Duration::from_secs(30));
+    log.push_str(&format!("## restore: oath diff\n{}\n", d.text));
+    if d.code != 0 || d.text.trim() != "in-sync" {
+        return Err(format!("pending changes left: {}", d.text));
+    }
+    Ok(())
+}
+
+fn boot_id(conn: &Conn) -> Result<String, String> {
+    let r = ssh(conn, "cat /proc/sys/kernel/random/boot_id", Duration::from_secs(15));
+    if r.code != 0 {
+        return Err(format!("read boot_id: {}", r.text));
+    }
+    Ok(r.text.trim().to_string())
+}
+
+/// Wait until the machine answers with a different boot id and a catalog.
+fn rebooted(conn: &Conn, before: &str, wait: Duration) -> bool {
+    let deadline = Instant::now() + wait;
+    while Instant::now() < deadline {
+        let r = ssh(
+            conn,
+            "test -f /oath/INDEX.md && cat /proc/sys/kernel/random/boot_id",
+            Duration::from_secs(10),
+        );
+        if r.code == 0 && !r.text.trim().is_empty() && r.text.trim() != before {
+            return true;
+        }
+        thread::sleep(Duration::from_secs(3));
+    }
+    false
 }
 
 #[cfg(test)]
@@ -537,6 +757,21 @@ mod tests {
         let cases = load_cases(&root).unwrap();
         assert!(cases.len() >= 5);
         assert!(cases.iter().any(|c| c.gap.is_none()));
+    }
+
+    #[test]
+    fn metal_cases_expect_nothing_from_qemu() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../check/cases.toml");
+        let cases = load_cases(&root).unwrap();
+        assert!(cases.iter().any(|c| c.metal));
+        for c in cases.iter().filter(|c| c.metal) {
+            for s in &c.steps {
+                let text = format!("{:?} {:?} {:?}", s.run, s.expect, s.reject);
+                for qemu in ["10.0.2.", "fetchme", "applied generation 1", "/oath/objects/"] {
+                    assert!(!text.contains(qemu), "metal case `{}` uses {qemu:?}", c.name);
+                }
+            }
+        }
     }
 
     #[test]

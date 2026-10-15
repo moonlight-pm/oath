@@ -13,13 +13,15 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
 
 ## `dev` kind (built)
 
-- Seeded objects: `dev:vda`, `dev:net0`, `dev:ttyS0`. Desired is
+- Seeded objects: `dev:net0`, `dev:ttyS0`. Desired is
   `{ "present": true }`; `present: false` is refused.
 - Actual is `present`, `class` (`block`, `net`, `tty`) and `node`
-  (`/dev/vda`, `/sys/class/net/net0`, `/dev/ttyS0`). Converge probes
-  `/dev` and sysfs for that name. It does not load modules.
-- The names are QEMU's. On metal the seeded `vda` is absent. Unknown
-  names are probed as `/dev/<name>`.
+  (`/sys/class/net/net0`, `/dev/ttyS0`). Converge probes `/dev` and
+  sysfs for that name. It does not load modules. Unknown names are
+  probed as `/dev/<name>`.
+- The seed had `dev:vda`, QEMU's disk, until 2026-10-14: on metal it
+  was absent, so a fresh install was never in-sync. Disks are not
+  listed until discovery.
 - `net:net0` is the link configuration; `dev:net0` is the inventory
   entry for the same NIC.
 
@@ -56,8 +58,7 @@ Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
 - Two hard-coded module lists (one in pack, a fallback in PID 1) decide
   what hardware works. A machine with a NIC outside the list has no
   network.
-- `dev` objects are seeded with QEMU names, so a metal catalog lies
-  until someone edits it.
+- The inventory is two fixed names; the disk is not in it.
 
 ## Target
 

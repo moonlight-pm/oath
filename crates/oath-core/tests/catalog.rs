@@ -108,14 +108,13 @@ fn seed_lists_host() {
         "pkg:fetchme",
         "net:net0",
         "ssh:local",
-        "dev:vda",
         "dev:net0",
         "dev:ttyS0",
         "snap:current",
     ] {
         assert!(ids.iter().any(|i| i == want), "missing {want}");
     }
-    assert_eq!(ids.len(), 20, "{ids:?}");
+    assert_eq!(ids.len(), 19, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -379,7 +378,7 @@ fn svc_wants_cycle_refuses_apply() {
 #[test]
 fn dev_not_removable() {
     let (_d, cat) = tmp();
-    let id: ObjectId = "dev:vda".parse().unwrap();
+    let id: ObjectId = "dev:net0".parse().unwrap();
     let mut fields = Map::new();
     fields.insert("present".into(), json!(false));
     let err = cat.set_fields(&id, fields).unwrap_err();

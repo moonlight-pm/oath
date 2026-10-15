@@ -86,7 +86,6 @@ pub trait ApplyHooks {
             return Err(crate::Error::hint(format!("{id} is not removable"), "oath schema dev"));
         }
         let (class, node) = match id.name.as_str() {
-            "vda" => ("block", "/dev/vda"),
             "net0" => ("net", "/sys/class/net/net0"),
             "ttyS0" => ("tty", "/dev/ttyS0"),
             "card0" => ("drm", "/dev/dri/card0"),

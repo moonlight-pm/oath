@@ -120,9 +120,14 @@ cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
   build/check/key; serves pkg:fetchme on 127.0.0.1:18765; a clean run
   writes build/check-pass (kernel, initrd, image sha256)
+cargo make check --target home@<host>
+  the `metal` cases on an installed machine, one at a time, host key
+  from build/known_hosts; undo back after each case; logs in
+  build/check/<time>-<host>/
 cargo make install --target … --disk … --overlay hosts/<name>.json --confirm
   refuses an image without a matching build/check-pass
   kexec (native pkg:kexec, copied to the target) or EFI-boot the
   installer, partition (sfdisk, wipefs), format, copy the stage, write
-  the overlay with `oath seed --overlay`, write the ESP, reboot
+  the overlay with `oath seed --overlay`, make the host key and pin it
+  in build/known_hosts, write the ESP, reboot
 ```

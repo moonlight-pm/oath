@@ -2,6 +2,12 @@
 #
 # A step either runs a shell command over SSH as `home` (`run`) or
 # reboots (`reboot = "catalog" | "force" | "signal"`) and waits for SSH.
+#
+# `metal = true` also runs the case on a real machine
+# (`cargo make check --target home@host`). Such a case expects nothing
+# QEMU-specific (addresses, the fetch canary, the hostname `oath`, a
+# particular generation number) and leaves nothing `oath undo` cannot take
+# back: a `set` that is never applied must be set back in a later step.
 # `run` must exit 0 unless `fails = true`; `expect` / `reject` are
 # substrings of stdout + stderr; `timeout` is seconds (default 60).
 #
@@ -13,6 +19,7 @@
 [[case]]
 name = "index"
 about = "A new agent can read the INDEX and list objects."
+metal = true
 steps = [
   { run = "oath", expect = ["You are on **Oath**", "## Kinds here", "`svc`"] },
   { run = "oath ls", expect = ["host:local", "svc:sshd", "pkg:busybox", "net:net0"] },
@@ -23,25 +30,28 @@ steps = [
 [[case]]
 name = "hostname-apply-undo"
 about = "set and apply a hostname, then undo it."
+metal = true
 steps = [
-  { run = "sudo oath set host:local hostname=check1 && sudo oath apply", expect = ["applied generation 1"] },
+  { run = "sudo oath set host:local hostname=check1 && sudo oath apply", expect = ["applied generation"] },
   { run = "hostname", expect = ["check1"] },
   { run = "sudo oath undo", expect = ["undid to generation 0"] },
-  { run = "hostname; oath get host:local", expect = ["oath", "in-sync"], reject = ["check1"] },
+  { run = "hostname; oath get host:local", expect = ["in-sync"], reject = ["check1"] },
 ]
 
 [[case]]
 name = "hostname-survives-reboot"
 about = "An applied hostname survives a reboot through the catalog (power=reboot)."
+metal = true
 steps = [
-  { run = "sudo oath set host:local hostname=check2 && sudo oath apply", expect = ["applied generation 1"] },
+  { run = "sudo oath set host:local hostname=check2 && sudo oath apply", expect = ["applied generation"] },
   { reboot = "catalog" },
-  { run = "hostname; oath get host:local; oath get snap:current", expect = ["check2", "power: \"run\"", "generation: 2"] },
+  { run = "hostname; oath get host:local", expect = ["check2", "power: \"run\""] },
 ]
 
 [[case]]
 name = "pkg-hello"
 about = "A package from the store links into /bin and unlinks again."
+metal = true
 steps = [
   { run = "test ! -e /bin/hello" },
   { run = "sudo oath set pkg:hello present=true && sudo oath apply pkg:hello && hello", expect = ["hello"] },
@@ -58,14 +68,17 @@ steps = [
 [[case]]
 name = "pkg-base-not-removable"
 about = "Base packages refuse present=false."
+metal = true
 steps = [
   { run = "sudo oath set pkg:busybox present=false && sudo oath apply pkg:busybox", fails = true, expect = ["not removable"] },
   { run = "test -x /bin/busybox" },
+  { run = "sudo oath set pkg:busybox present=true && oath diff", expect = ["in-sync"] },
 ]
 
 [[case]]
 name = "svc-stop-start"
 about = "Disabling and enabling a service through the catalog."
+metal = true
 steps = [
   { run = "pidof sleep" },
   { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sleep 1 && ! pidof sleep" },
@@ -75,6 +88,7 @@ steps = [
 [[case]]
 name = "svc-status-after-undo"
 about = "After undo re-enables a service, svc actual names the process that is running."
+metal = true
 steps = [
   { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sudo oath undo && sleep 2" },
   { run = "p=$(pidof sleep) && oath get svc:hold --actual | grep \"\\\"pid\\\": $p\"" },
@@ -83,10 +97,12 @@ steps = [
 [[case]]
 name = "refused-apply-changes-nothing"
 about = "An apply that fails its checks converges nothing, takes no generation, and is logged."
+metal = true
 steps = [
   { run = "sudo oath set host:local hostname=bad && sudo oath set svc:serial --from-json '{\"wants\":[\"svc:hold\"]}' && sudo oath apply", fails = true, expect = ["cycle"] },
   { run = "hostname; oath get snap:current", reject = ["bad", "generation: 1"] },
   { run = "oath log", expect = ["\"result\":\"refused\""] },
+  { run = "sudo oath set host:local hostname=$(hostname) && sudo oath set svc:serial --from-json '{\"wants\":[]}' && oath diff", expect = ["in-sync"] },
 ]
 
 [[case]]
@@ -103,6 +119,7 @@ steps = [
 [[case]]
 name = "oath-rm-and-undo"
 about = "rm goes through apply; undo brings the service back."
+metal = true
 steps = [
   { run = "sudo oath rm svc:hold && sudo oath apply svc:hold && sleep 1 && ! pidof sleep && ! oath get svc:hold" },
   { run = "sudo oath undo && sleep 1 && pidof sleep && oath get svc:hold", expect = ["in-sync"] },
@@ -110,10 +127,11 @@ steps = [
 
 [[case]]
 name = "net-dhcp"
-about = "net:net0 gets a DHCP lease and the guest reaches the host."
+about = "net:net0 gets a DHCP lease."
+metal = true
 steps = [
   { run = "oath get net:net0", expect = ["dhcp"] },
-  { run = "ip -4 addr show net0", expect = ["10.0.2.15"] },
+  { run = "ip -4 addr show net0", expect = ["inet "] },
 ]
 
 # ---- Phase 3: catalog safety -----------------------------------------
@@ -121,6 +139,7 @@ steps = [
 [[case]]
 name = "typed-set"
 about = "set refuses a value of the wrong type."
+metal = true
 steps = [
   { run = "sudo oath set svc:hold restart=sometimes", fails = true, expect = ["restart"] },
   { run = "oath get svc:hold", expect = ["\"always\""] },
@@ -129,6 +148,7 @@ steps = [
 [[case]]
 name = "oath-new"
 about = "An agent can create a service."
+metal = true
 steps = [
   { run = "sudo oath new svc:tick --from-json '{\"exec\":[\"/bin/sleep\",\"1000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tick && sleep 1 && oath get svc:tick", expect = ["running"] },
 ]
@@ -144,9 +164,10 @@ steps = [
 [[case]]
 name = "sshd-lockout-needs-confirm"
 about = "Turning off sshd needs --confirm."
+metal = true
 steps = [
   { run = "sudo oath set svc:sshd enabled=false && sudo oath apply svc:sshd", fails = true, expect = ["confirm"] },
-  { run = "true" },
+  { run = "sudo oath set svc:sshd enabled=true && oath diff", expect = ["in-sync"] },
 ]
 
 [[case]]
@@ -172,6 +193,7 @@ steps = [
 [[case]]
 name = "reboot-command"
 about = "Plain `reboot` shuts down through PID 1 and the machine comes back."
+metal = true
 steps = [
   { run = "sudo oath set host:local hostname=kept && sudo oath apply" },
   { reboot = "signal" },
@@ -181,6 +203,7 @@ steps = [
 [[case]]
 name = "service-logs"
 about = "A service's output lands in its log; PID 1 has one too."
+metal = true
 steps = [
   { run = "sudo oath new svc:talk --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo hello-from-talk; sleep 1000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:talk && sleep 1" },
   { run = "oath logs svc:talk", expect = ["hello-from-talk"] },
@@ -190,6 +213,7 @@ steps = [
 [[case]]
 name = "crash-backoff-failed"
 about = "A service that keeps dying backs off, records its exit code, and ends up failed."
+metal = true
 steps = [
   { run = "sudo oath new svc:crash --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo dying; exit 3\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}'; sudo oath apply svc:crash; sleep 25; oath get svc:crash --actual", expect = ["\"failed\"", "\"code\": 3"], timeout = 60 },
   { run = "oath logs svc:crash | grep -c dying", expect = ["5"] },
@@ -198,6 +222,7 @@ steps = [
 [[case]]
 name = "stop-takes-the-tree"
 about = "Stopping a service stops the processes it forked."
+metal = true
 steps = [
   { run = "sudo oath new svc:tree --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"sleep 777 & sleep 778\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tree && sleep 1 && ps | grep -v grep | grep -c 'sleep 77'", expect = ["2"] },
   { run = "sudo oath set svc:tree enabled=false && sudo oath apply svc:tree && sleep 1; ps | grep -v grep | grep -c 'sleep 77'", fails = true, expect = ["0"] },
@@ -206,6 +231,7 @@ steps = [
 [[case]]
 name = "sshd-restart-keeps-sessions"
 about = "Changing sshd (with --confirm) restarts it without dropping this session."
+metal = true
 steps = [
   { run = "sudo oath set svc:sshd --from-json '{\"env\":{\"OATH_CHECK\":\"1\"}}' && sudo oath apply --confirm svc:sshd; echo SURVIVED", expect = ["SURVIVED"] },
   { run = "oath get svc:sshd --actual", expect = ["running"] },
@@ -214,6 +240,7 @@ steps = [
 [[case]]
 name = "dhcp-client-runs"
 about = "net:net0 dhcp keeps a client running that renews the lease, with a log."
+metal = true
 steps = [
   { run = "ps | grep -v grep | grep 'udhcpc -f'" },
   { run = "oath logs net:net0", expect = ["lease of"] },
@@ -222,6 +249,7 @@ steps = [
 [[case]]
 name = "switch-root"
 about = "PID 1 switch_roots into the disk: no /newroot left in the mount table."
+metal = true
 steps = [
   { run = "! grep -q newroot /proc/self/mountinfo && awk '$5 == \"/\" { for (i = 6; i < NF; i++) if ($i == \"-\") print $(i + 1) }' /proc/self/mountinfo", expect = ["btrfs"] },
   { run = "for m in /run /dev/shm /dev/pts; do awk -v m=$m '$5 == m' /proc/self/mountinfo | wc -l; done", expect = ["1\n1\n1"] },
@@ -230,6 +258,7 @@ steps = [
 [[case]]
 name = "sudo"
 about = "sudo gives root with a clean environment and refuses options it does not know."
+metal = true
 steps = [
   { run = "FOO=leak sudo -n -- sh -c 'id -u; id -G; echo FOO=$FOO'", expect = ["0\n0\nFOO="], reject = ["leak"] },
   { run = "sudo -E true", fails = true, expect = ["not supported"] },
@@ -240,6 +269,7 @@ steps = [
 [[case]]
 name = "native-userland"
 about = "The base tools are the native builds: static, and they work (curl's CA bundle included)."
+metal = true
 steps = [
   { run = "echo x > /dev/null && head -c 16 /dev/urandom > /dev/null && stat -c '%a %n' /dev/null /dev/zero /dev/urandom /dev/ptmx", expect = ["666 /dev/null", "666 /dev/urandom"] },
   { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux"] },

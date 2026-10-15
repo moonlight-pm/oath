@@ -22,7 +22,6 @@ pub fn converge(id: &ObjectId, desired: &Dev) -> Result<DevActual> {
 
 pub fn probe(name: &str) -> DevActual {
     match name {
-        "vda" => fixed("block", "/dev/vda"),
         "net0" => fixed("net", "/sys/class/net/net0"),
         "ttyS0" => fixed("tty", "/dev/ttyS0"),
         "card0" => fixed("drm", "/dev/dri/card0"),

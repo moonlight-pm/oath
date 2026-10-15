@@ -46,7 +46,7 @@ not. Writers take a lock on `/oath/.lock`, so two `oath` commands never
 interleave; the second waits up to 30 s.
 
 Ids are `kind:name` — `host:local`, `svc:sshd`, `snap:current`,
-`pkg:hello`, `net:net0`, `ssh:local`, `dev:vda`, `plan:hello`. Names
+`pkg:hello`, `net:net0`, `ssh:local`, `dev:net0`, `plan:hello`. Names
 are letters, digits, `.`, `_` and `-` (at most 64, not starting with
 `.`).
 

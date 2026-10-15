@@ -56,7 +56,8 @@ enum Cmd {
     /// Stop a VM started with `start`.
     Stop,
     /// Boot the built image in QEMU and run check/cases.toml over SSH.
-    /// A clean run is required before `install`.
+    /// A clean run is required before `install`. With `--target`, run the
+    /// `metal` cases on an installed machine instead.
     Check {
         /// Pack the image first (sudo for the loop-mount).
         #[arg(long)]
@@ -67,6 +68,10 @@ enum Cmd {
         /// VMs at a time.
         #[arg(short, long, default_value_t = 4)]
         jobs: usize,
+        /// `user@host[:port]` of a machine `install` wrote (its host key is
+        /// pinned in build/known_hosts). Runs the `metal` cases, one at a time.
+        #[arg(long)]
+        target: Option<String>,
     },
     /// SSH to the QEMU guest (`home@127.0.0.1`, port `OATH_SSH_PORT` / 2222).
     Ssh {
@@ -194,11 +199,11 @@ fn real() -> Result<()> {
             qemu::start(&root, &out)?;
         }
         Cmd::Stop => qemu::stop(&out)?,
-        Cmd::Check { build, only, jobs } => {
+        Cmd::Check { build, only, jobs, target } => {
             if build {
                 pack_image(&root, &out, oath_core::DEFAULT_PROFILE)?;
             }
-            let rc = check::run_check(&root, &out, check::Opts { only, jobs })?;
+            let rc = check::run_check(&root, &out, check::Opts { only, jobs, target })?;
             std::process::exit(rc);
         }
         Cmd::Ssh { args } => {

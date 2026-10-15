@@ -177,7 +177,6 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     chmod_exec(&ir_install.join("bin/oath"))?;
     let _ = fs::remove_file(ir_install.join("bin/tar"));
     symlink("busybox", ir_install.join("bin/tar"))?;
-    // busybox applets used by the host install script over SSH
     fs::create_dir_all(ir_install.join("opt/oath-install"))?;
     copy_file(&out.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
     copy_file(&tools.kernel, &ir_install.join("opt/oath-install/vmlinuz"))?;
@@ -186,9 +185,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     fs::create_dir_all(ir_install.join("lib/oath"))?;
     fs::write(ir_install.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     chmod_exec(&ir_install.join("lib/oath/udhcpc.script"))?;
+    // busybox applets the install steps run over SSH (`dd` writes files).
     for a in [
         "ip", "udhcpc", "mount", "umount", "mkdir", "mdev", "blockdev", "reboot", "sync", "sleep",
-        "cp", "cat", "sh",
+        "cp", "cat", "sh", "dd", "rm",
     ] {
         let _ = fs::remove_file(ir_install.join("bin").join(a));
         symlink("busybox", ir_install.join("bin").join(a))?;

@@ -9,9 +9,8 @@ devtmpfs, not the admin UI. There is no udevd.
 `/dev`. Loading kernel modules is not this kind. `net:net0` is the
 link; `dev:net0` is the NIC.
 
-The `base` profile seeds `dev:vda` (root disk), `dev:net0`, and
-`dev:ttyS0`. They are not removable. PID 1 refreshes their actual at
-boot.
+The `base` profile seeds `dev:net0` and `dev:ttyS0`. They are not
+removable. PID 1 refreshes their actual at boot.
 
 ## Fields
 
@@ -19,12 +18,12 @@ boot.
 
 Actual also has `class` (`block` / `net` / `tty`) and `node`.
 
-Known gap: the names are fixed and QEMU-shaped. A metal machine with
-`/dev/sda` still has `dev:vda` (absent in actual).
+Known gap: the inventory is fixed, not discovered. Disks are not
+listed; any other `dev:<name>` probes `/dev/<name>`.
 
 ## Example
 
 ```
 oath ls --kind dev
-oath get dev:vda
+oath get dev:net0
 ```

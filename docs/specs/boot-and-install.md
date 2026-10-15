@@ -85,7 +85,10 @@ of T24, and D3 (seed as data).
 `cargo make install --disk <node> --confirm` with `--target user@host`,
 `--qemu` (OVMF rehearsal on a scratch qcow2) or `--usb` (write an EFI
 installer to a removable stick, which the tool checks is removable).
-Optional `--hostname` and `--overlay <file.json>`.
+Optional `--hostname` and `--overlay <file.json>`. Every command on the
+target is a script fed to its `/bin/sh` on stdin (under `sudo -n` for a
+non-root user) and files go over with `dd of=`, so the login shell does
+not matter (canto's September image logged `home` into Thoxa).
 
 1. Refuse without `--confirm` and a `/dev/` node. Read and test the
    overlay before anything is wiped.
@@ -101,9 +104,12 @@ Optional `--hostname` and `--overlay <file.json>`.
    `tar`; fix ownership and the setuid bit on `/lib/oath/sudo`.
 5. Write the catalog overlay (hostname, the build host's keys for
    `home`, then the user's overlay) with
-   `oath --root /mnt/oath seed --overlay`.
+   `oath --root /mnt/oath seed --overlay`. Make the new system's host
+   key with the installer's `dropbearkey` and pin it in
+   `build/known_hosts`.
 6. Write the ESP and BLS, unmount, reboot, and wait for
-   `home@<host>` to answer with an INDEX.
+   `home@<host>` to answer with an INDEX, accepting only the pinned
+   host key.
 
 ## Known defects (from the 2026-10-13 review)
 
@@ -140,10 +146,21 @@ full run writes `build/check-pass` (sha256 of kernel, initrd and image);
 `cargo make install` refuses an image without a matching stamp unless
 given `--unchecked`. `install --qemu` is itself a test and is not gated.
 
+`cargo make check --target user@host` runs the cases marked `metal` on
+an installed machine, one at a time, trusting only the host key in
+`build/known_hosts`. The machine must start in-sync. After each case the
+harness undoes back to the generation the case started from and
+requires `oath diff` to be in-sync again, or it stops. A reboot step
+waits for a new `boot_id`. canto (Mac Pro 2013) passed all 22 metal
+cases on 2026-10-15.
+
 ## Courage test
 
 `cargo make install --qemu --disk /dev/vda --confirm` formats a scratch
 disk, boots it through OVMF, and the installed system answers
-`oath ls` over SSH as `home`. On metal, the menu lists the current boot
+`oath ls` over SSH as `home`. On metal (canto, 2026-10-14) the same
+command run over SSH from the build host wipes the machine, reboots it
+into the installer through the firmware, and the installed system passes
+`cargo make check --target` unattended. The menu lists the current boot
 and at least one archive after the first `cargo make esp`, and choosing
 an archive boots that kernel with its `@boot-N`.

@@ -41,7 +41,7 @@ Desired and actual are separate files. You may `cat` any of these;
 | `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `curl`, `hello`, `fetchme` | Store + `/bin` symlink farm |
 | `net` | `net:net0` | The link: `dhcp` or a static address |
 | `ssh` | `ssh:local` | Keys that may log in as `home` |
-| `dev` | `dev:vda`, `dev:net0`, `dev:ttyS0` | Hardware inventory |
+| `dev` | `dev:net0`, `dev:ttyS0` | Hardware inventory |
 | `plan` | none until you file one | Hashed `plan.plan`; `oath build` writes a pkg tree |
 
 `host` and `net` share a schema between desired and actual. `svc`
@@ -91,11 +91,10 @@ only takes `--overlay`; `--profile` on it is refused.
 ## Devices
 
 `dev:*` is the hardware inventory. `/dev` is nodes from devtmpfs, not
-the admin UI. There is no udevd. `dev:vda` (root disk), `dev:net0`
-(the NIC; `net:net0` is the link) and `dev:ttyS0` are seeded, are not
-removable, and get their actual refreshed at boot. The names are
-fixed and QEMU-shaped; on metal with `/dev/sda`, `dev:vda` shows as
-absent.
+the admin UI. There is no udevd. `dev:net0` (the NIC; `net:net0` is
+the link) and `dev:ttyS0` are seeded, are not removable, and get their
+actual refreshed at boot. Disks are not listed yet; discovery is the
+target ([devices spec](../specs/devices.md)).
 
 PID 1 also mounts, outside the catalog: `/proc`, `/sys`, devtmpfs
 `/dev` with `/dev/pts`, tmpfs `/tmp`, `/dev/shm` and `/run`, and
