@@ -16,102 +16,29 @@ use oath_core::{seed, tel, Catalog, Host, ObjectId, BTRFS_TOP, DEFAULT_ROOT};
 use serde_json::json;
 
 mod gpu;
+mod modules;
 mod shutdown;
 mod supervise;
 
-/// Fallback if packed `load-order` is missing. Deps before users.
-const MODULES: &[&str] = &[
-    "kernel/drivers/virtio/virtio.ko",
-    "kernel/drivers/virtio/virtio_ring.ko",
-    "kernel/drivers/virtio/virtio_pci_legacy_dev.ko",
-    "kernel/drivers/virtio/virtio_pci_modern_dev.ko",
-    "kernel/drivers/virtio/virtio_pci.ko",
-    "kernel/drivers/block/virtio_blk.ko",
-    "kernel/drivers/virtio/virtio_dma_buf.ko",
-    "kernel/drivers/gpu/drm/virtio/virtio-gpu.ko",
-    "kernel/drivers/input/evdev.ko",
-    "kernel/drivers/virtio/virtio_input.ko",
-    "kernel/net/core/failover.ko",
-    "kernel/drivers/net/net_failover.ko",
-    "kernel/drivers/net/virtio_net.ko",
-    "kernel/net/packet/af_packet.ko",
-    "kernel/drivers/char/hw_random/rng-core.ko",
-    "kernel/drivers/char/hw_random/virtio-rng.ko",
-    "kernel/drivers/firmware/qemu_fw_cfg.ko",
-    "kernel/crypto/crc32c_generic.ko",
-    "kernel/lib/libcrc32c.ko",
-    "kernel/crypto/xor.ko",
-    "kernel/lib/raid6/raid6_pq.ko",
-    "kernel/fs/btrfs/btrfs.ko",
-    "kernel/fs/fat/fat.ko",
-    "kernel/fs/fat/vfat.ko",
-    "kernel/fs/nls/nls_cp437.ko",
-    "kernel/fs/nls/nls_iso8859-1.ko",
-    "kernel/fs/nls/nls_utf8.ko",
-    "kernel/drivers/scsi/scsi_common.ko",
-    "kernel/drivers/scsi/scsi_mod.ko",
-    "kernel/drivers/scsi/sd_mod.ko",
-    "kernel/drivers/ata/libata.ko",
-    "kernel/drivers/ata/libahci.ko",
-    "kernel/drivers/ata/ahci.ko",
-    "kernel/drivers/nvme/common/nvme-auth.ko",
-    "kernel/drivers/nvme/host/nvme-core.ko",
-    "kernel/drivers/nvme/host/nvme.ko",
-    "kernel/drivers/leds/led-class.ko",
-    "kernel/drivers/pps/pps_core.ko",
-    "kernel/drivers/ptp/ptp.ko",
-    "kernel/drivers/dca/dca.ko",
-    "kernel/drivers/i2c/algos/i2c-algo-bit.ko",
-    "kernel/drivers/net/phy/libphy.ko",
-    "kernel/drivers/net/mdio/fwnode_mdio.ko",
-    "kernel/drivers/net/phy/fixed_phy.ko",
-    "kernel/drivers/net/mdio/of_mdio.ko",
-    "kernel/drivers/net/phy/mdio_devres.ko",
-    "kernel/drivers/net/ethernet/broadcom/tg3.ko",
-    "kernel/drivers/net/ethernet/intel/e1000e/e1000e.ko",
-    "kernel/drivers/net/ethernet/intel/igb/igb.ko",
-    "kernel/drivers/net/ethernet/realtek/r8169.ko",
-    "kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko",
-    "kernel/drivers/usb/host/xhci-hcd.ko",
-    "kernel/drivers/usb/host/xhci-pci.ko",
-    "kernel/drivers/usb/host/ehci-hcd.ko",
-    "kernel/drivers/usb/host/ehci-pci.ko",
-    "kernel/drivers/hid/hid.ko",
-    "kernel/drivers/hid/hid-generic.ko",
-    "kernel/drivers/hid/hid-apple.ko",
-    "kernel/drivers/hid/usbhid/usbhid.ko",
-    "kernel/sound/pci/hda/snd-hda-intel.ko",
-    "kernel/sound/pci/hda/snd-hda-codec-hdmi.ko",
-    "kernel/sound/pci/hda/snd-hda-codec-cirrus.ko",
-    "kernel/sound/pci/hda/snd-hda-codec-generic.ko",
-    "kernel/sound/usb/snd-usb-audio.ko",
-    "kernel/sound/virtio/virtio_snd.ko",
-    "kernel/net/rfkill/rfkill.ko",
-    "kernel/crypto/kpp.ko",
-    "kernel/crypto/ecc.ko",
-    "kernel/crypto/ecdh_generic.ko",
-    "kernel/net/bluetooth/bluetooth.ko",
-    "kernel/drivers/bluetooth/btbcm.ko",
-    "kernel/drivers/bluetooth/btrtl.ko",
-    "kernel/drivers/bluetooth/btintel.ko",
-    "kernel/drivers/bluetooth/btusb.ko",
-    "kernel/net/bluetooth/rfcomm/rfcomm.ko",
-    "kernel/net/bluetooth/hidp/hidp.ko",
-    "kernel/net/sunrpc/sunrpc.ko",
-    "kernel/fs/nfs_common/grace.ko",
-    "kernel/fs/netfs/netfs.ko",
-    "kernel/fs/nfs_common/nfs_localio.ko",
-    "kernel/fs/lockd/lockd.ko",
-    "kernel/fs/nfs/nfs.ko",
-    "kernel/net/dns_resolver/dns_resolver.ko",
-    "kernel/fs/nfs/nfsv4.ko",
-];
+/// Lines logged before `/oath/log` exists (the initrd stage), written out
+/// ahead of the first line that can be.
+static EARLY: std::sync::Mutex<Vec<u8>> = std::sync::Mutex::new(Vec::new());
+const EARLY_MAX: usize = 64 * 1024;
 
 /// To the console, and to `/oath/log/init.log` once the catalog is mounted
 /// (`oath logs`).
 pub(crate) fn log(msg: &str) {
     let _ = writeln!(std::io::stderr(), "oath-init: {msg}");
-    supervise::append_log("init", format!("{} {msg}\n", oath_core::now_rfc3339()).as_bytes());
+    let line = format!("{} {msg}\n", oath_core::now_rfc3339());
+    let Ok(mut early) = EARLY.lock() else { return };
+    if !Path::new(supervise::LOG_ROOT).is_dir() {
+        if early.len() + line.len() <= EARLY_MAX {
+            early.extend_from_slice(line.as_bytes());
+        }
+        return;
+    }
+    early.extend_from_slice(line.as_bytes());
+    supervise::append_log("init", &std::mem::take(&mut *early));
 }
 
 fn kver() -> String {
@@ -119,6 +46,11 @@ fn kver() -> String {
 }
 
 fn main() {
+    // The kernel runs this binary as its modprobe helper too.
+    let mut args = std::env::args();
+    if args.next().is_some_and(|a| a.rsplit('/').next() == Some("modprobe")) {
+        std::process::exit(modules::modprobe_main(&args.collect::<Vec<_>>()));
+    }
     // A panic in PID 1 panics the kernel; `panic=` on the command line
     // then reboots. Say why first.
     std::panic::set_hook(Box::new(|info| {
@@ -138,6 +70,8 @@ fn real_main() -> Result<(), String> {
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
+    // Filesystems and code pages load when the kernel asks for them.
+    let _ = fs::write("/proc/sys/kernel/modprobe", modules::HELPER);
     mount_devpts();
     unix_floor();
 
@@ -255,63 +189,23 @@ fn open_dev_nodes() {
     }
 }
 
+/// Coldplug by modalias; with `defer_kms`, display and sound wait.
 fn load_modules(defer_kms: bool) {
-    let defer = defer_kms;
-    let rel = kver();
-    let base = Path::new("/lib/modules").join(&rel);
-    let list = module_load_order(&base);
-    for m in list {
-        if defer && load_late(&m) {
-            continue;
+    match modules::Index::open(&modules::base()) {
+        Some(idx) => {
+            let (loaded, failed) = idx.coldplug(defer_kms);
+            if !loaded.is_empty() {
+                log(&format!("modules: {}", loaded.join(" ")));
+            }
+            for e in &failed {
+                log(&format!("module {e}"));
+            }
+            tel("init", "modules", json!({ "loaded": loaded, "failed": failed }));
         }
-        if module_already_loaded(&m) {
-            continue;
-        }
-        let p = base.join(&m);
-        if !p.exists() {
-            log(&format!("no module {m}"));
-            tel("init", "module", json!({ "name": m, "ok": false, "err": "missing" }));
-            continue;
-        }
-        let mut cmd = Command::new("/bin/busybox");
-        cmd.arg("insmod").arg(p.to_str().unwrap());
-        if m.ends_with("amdgpu.ko") {
-            cmd.args(["si_support=1", "cik_support=1"]);
-        }
-        let st = cmd.status();
-        let ok = matches!(st, Ok(s) if s.success());
-        if !ok {
-            tel("init", "module", json!({ "name": m, "ok": false }));
-            log(&format!("insmod {m} -> {st:?}"));
-        }
+        None => log(&format!("no module index in {}", modules::base().display())),
     }
     let _ = Command::new("/bin/busybox").args(["mdev", "-s"]).status();
     open_dev_nodes();
-}
-
-/// KMS takeover plus ALSA. HDMI audio sits on the GPU function; load
-/// snd after amdgpu so the HDA controller is there. Analog Intel HDA
-/// can wait the same two seconds.
-fn load_late(rel: &str) -> bool {
-    gpu::takes_over_firmware_fb(rel) || rel.contains("/sound/")
-}
-
-fn module_already_loaded(rel: &str) -> bool {
-    let stem = Path::new(rel).file_stem().and_then(|s| s.to_str()).unwrap_or("");
-    let name = stem.replace('-', "_");
-    Path::new("/sys/module").join(name).exists()
-}
-
-fn module_load_order(base: &Path) -> Vec<String> {
-    let p = base.join("load-order");
-    if let Ok(s) = fs::read_to_string(&p) {
-        let v: Vec<String> =
-            s.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).map(|l| l.to_string()).collect();
-        if !v.is_empty() {
-            return v;
-        }
-    }
-    MODULES.iter().map(|s| (*s).to_string()).collect()
 }
 
 fn cmdline() -> String {

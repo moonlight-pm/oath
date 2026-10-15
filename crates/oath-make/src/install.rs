@@ -622,6 +622,8 @@ set -e
 DISK={disk}
 P1={p1}
 P2={p2}
+# The ramdisk loads drivers by modalias; filesystems are named here.
+/lib/oath/modprobe -q -- btrfs vfat || true
 wipefs -a "$DISK" || true
 printf 'label: gpt\nsize=512MiB, type=uefi, name=ESP\ntype=linux, name=oath\n' | sfdisk --wipe always --quiet "$DISK"
 blockdev --rereadpt "$DISK" || true
@@ -635,10 +637,10 @@ done
 mkfs.fat -F 32 -n OATHESP "$P1"
 mkfs.btrfs -f -L oath "$P2"
 mkdir -p /mnt /esp
-mount "$P2" /mnt
+mount -t btrfs "$P2" /mnt
 btrfs subvolume create /mnt/@
 umount /mnt
-mount -o subvol=@ "$P2" /mnt
+mount -t btrfs -o subvol=@ "$P2" /mnt
 mount -t vfat "$P1" /esp
 mkdir -p /mnt/boot
 mount --bind /esp /mnt/boot

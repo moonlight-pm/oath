@@ -59,30 +59,11 @@ have_fs() {
 	$bb grep -q "$1" /proc/filesystems 2>/dev/null
 }
 
-ins() {
-	kver=$($bb uname -r)
-	rel=$1
-	p=/lib/modules/$kver/$rel
-	stem=$($bb basename "$rel" .ko)
-	name=$($bb echo "$stem" | $bb tr '-' '_')
-	[ -d "/sys/module/$name" ] && return 0
-	[ -f "$p" ] || return 0
-	$bb insmod "$p" 2>/dev/null || true
-}
-
 load_nfs() {
 	have_fs nfs && have_fs nfs4 && return 0
-	ins kernel/net/sunrpc/sunrpc.ko
-	ins kernel/fs/nfs_common/grace.ko
-	ins kernel/fs/netfs/netfs.ko
-	ins kernel/fs/nfs_common/nfs_localio.ko
-	ins kernel/fs/lockd/lockd.ko
-	ins kernel/fs/nfs/nfs.ko
-	ins kernel/net/dns_resolver/dns_resolver.ko
-	ins kernel/fs/nfs/nfsv4.ko
-	ins kernel/fs/nfs_common/nfs_acl.ko
-	ins kernel/fs/nfs/nfsv3.ko
-	have_fs nfs || have_fs nfs4 || die "nfs filesystem not available (insmod?)"
+	# PID 1's modprobe helper loads each module after what it needs.
+	/lib/oath/modprobe -q -- nfsv4 nfsv3 || true
+	have_fs nfs || have_fs nfs4 || die "nfs filesystem not available"
 }
 
 next_gen() {

@@ -21,12 +21,13 @@ at install time with an overlay (see [Catalog](catalog.md)).
 
 At boot PID 1 mounts the floor, switch_roots into the root subvolume
 `@`, mounts the btrfs top level at `/oath/run/fs`, sets the hostname from
-`host:local`, loads the early kernel modules, brings up `net:net0`,
+`host:local`, loads the drivers its devices ask for, brings up `net:net0`,
 refreshes `dev:*`, writes `ssh:local` keys, then starts every enabled
 service in `wants` order (and the DHCP client, see
 [Network](network.md)). Host, network and keys come from what was
-last applied, not from pending `oath set` edits. The KMS and sound modules load after that,
-so `svc:sshd` is up before any GPU driver.
+last applied, not from pending `oath set` edits. Display and sound
+drivers load after that, so `svc:sshd` is up before any GPU driver.
+`oath logs` lists the modules each pass loaded.
 
 PID 1 runs only what was applied: each service's `applied.json`, which
 `oath apply` writes after the spec passes its checks. A `set` without
@@ -163,7 +164,8 @@ Without them the copy is crash-consistent (`sync` plus btrfs CoW).
 
 ## Known gaps
 
-- Kernel modules load from a fixed list, not by the devices present.
+- A device plugged in after boot gets no driver until the next boot
+  (no hotplug yet).
 - A service skipped for a `wants` cycle shows `stopped`; the reason is
   only in `oath logs`.
 - At shutdown every service gets SIGTERM at once, not in reverse

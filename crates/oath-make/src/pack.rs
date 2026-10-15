@@ -13,87 +13,6 @@ use crate::cpio;
 use crate::tools::Tools;
 use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
 
-/// Drivers we need. Transitive deps (led-class, ptp, nvme-auth, af_packet, …)
-/// are pulled from `modules.dep` at pack time so insmod order is valid.
-const MODULE_ROOTS: &[&str] = &[
-    "kernel/drivers/virtio/virtio.ko.xz",
-    "kernel/drivers/virtio/virtio_ring.ko.xz",
-    "kernel/drivers/virtio/virtio_pci_legacy_dev.ko.xz",
-    "kernel/drivers/virtio/virtio_pci_modern_dev.ko.xz",
-    "kernel/drivers/virtio/virtio_pci.ko.xz",
-    "kernel/drivers/block/virtio_blk.ko.xz",
-    "kernel/drivers/virtio/virtio_dma_buf.ko.xz",
-    "kernel/drivers/gpu/drm/virtio/virtio-gpu.ko.xz",
-    "kernel/drivers/input/evdev.ko.xz",
-    "kernel/drivers/virtio/virtio_input.ko.xz",
-    "kernel/net/core/failover.ko.xz",
-    "kernel/drivers/net/net_failover.ko.xz",
-    "kernel/drivers/net/virtio_net.ko.xz",
-    "kernel/net/packet/af_packet.ko.xz",
-    "kernel/drivers/char/hw_random/rng-core.ko.xz",
-    "kernel/drivers/char/hw_random/virtio-rng.ko.xz",
-    "kernel/drivers/firmware/qemu_fw_cfg.ko.xz",
-    "kernel/crypto/crc32c_generic.ko.xz",
-    "kernel/lib/libcrc32c.ko.xz",
-    "kernel/crypto/xor.ko.xz",
-    "kernel/lib/raid6/raid6_pq.ko.xz",
-    // 7.3 moved raid helpers
-    "kernel/lib/raid/xor/xor.ko.xz",
-    "kernel/lib/raid/raid6/raid6_pq.ko.xz",
-    "kernel/fs/btrfs/btrfs.ko.xz",
-    "kernel/fs/fat/vfat.ko.xz",
-    "kernel/fs/nls/nls_cp437.ko.xz",
-    "kernel/fs/nls/nls_iso8859-1.ko.xz",
-    "kernel/fs/nls/nls_utf8.ko.xz",
-    "kernel/drivers/scsi/scsi_common.ko.xz",
-    "kernel/drivers/scsi/scsi_mod.ko.xz",
-    "kernel/drivers/scsi/sd_mod.ko.xz",
-    "kernel/drivers/ata/libata.ko.xz",
-    "kernel/drivers/ata/libahci.ko.xz",
-    "kernel/drivers/ata/ahci.ko.xz",
-    "kernel/drivers/nvme/host/nvme-core.ko.xz",
-    "kernel/drivers/nvme/host/nvme.ko.xz",
-    "kernel/drivers/net/phy/libphy.ko.xz",
-    "kernel/drivers/net/ethernet/broadcom/tg3.ko.xz",
-    "kernel/drivers/net/ethernet/intel/e1000e/e1000e.ko.xz",
-    "kernel/drivers/net/ethernet/intel/igb/igb.ko.xz",
-    "kernel/drivers/net/ethernet/realtek/r8169.ko.xz",
-    "kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko.xz",
-    "kernel/drivers/usb/host/xhci-pci.ko.xz",
-    "kernel/drivers/usb/host/ehci-pci.ko.xz",
-    "kernel/drivers/hid/hid.ko.xz",
-    "kernel/drivers/hid/hid-generic.ko.xz",
-    "kernel/drivers/hid/hid-apple.ko.xz",
-    "kernel/drivers/hid/usbhid/usbhid.ko.xz",
-    // Canto: Intel HDA 8086:1d20 (Cirrus) + Pitcairn HDMI 1002:aab0.
-    // QEMU: virtio_snd. USB: headset. Transitive snd-* from modules.dep.
-    "kernel/sound/pci/hda/snd-hda-intel.ko.xz",
-    "kernel/sound/pci/hda/snd-hda-codec-hdmi.ko.xz",
-    "kernel/sound/pci/hda/snd-hda-codec-cirrus.ko.xz",
-    "kernel/sound/pci/hda/snd-hda-codec-generic.ko.xz",
-    // 7.3 HDA layout (canto Cirrus + Pitcairn HDMI)
-    "kernel/sound/hda/controllers/snd-hda-intel.ko.xz",
-    "kernel/sound/hda/codecs/hdmi/snd-hda-codec-hdmi.ko.xz",
-    "kernel/sound/hda/codecs/cirrus/snd-hda-codec-cs420x.ko.xz",
-    "kernel/sound/hda/codecs/cirrus/snd-hda-codec-cs421x.ko.xz",
-    "kernel/sound/hda/codecs/snd-hda-codec-generic.ko.xz",
-    "kernel/sound/usb/snd-usb-audio.ko.xz",
-    "kernel/sound/virtio/virtio_snd.ko.xz",
-    // Canto Apple BCM20702 (05ac:828d). bluetooth.ko is the core.
-    "kernel/net/rfkill/rfkill.ko.xz",
-    "kernel/net/bluetooth/bluetooth.ko.xz",
-    "kernel/net/bluetooth/rfcomm/rfcomm.ko.xz",
-    "kernel/net/bluetooth/hidp/hidp.ko.xz",
-    "kernel/drivers/bluetooth/btbcm.ko.xz",
-    "kernel/drivers/bluetooth/btrtl.ko.xz",
-    "kernel/drivers/bluetooth/btintel.ko.xz",
-    "kernel/drivers/bluetooth/btusb.ko.xz",
-    // T33: NFS client for off-box btrfs send. Deps (sunrpc, lockd, netfs, …)
-    // come from modules.dep.
-    "kernel/fs/nfs/nfs.ko.xz",
-    "kernel/fs/nfs/nfsv4.ko.xz",
-];
-
 /// Kernel + initrd + `oath-efi` only. Used by `cargo make esp` on metal
 /// (no qcow, no qemu).
 pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
@@ -220,6 +139,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;
     let _ = fs::remove_file(stage.join("sbin/init"));
     symlink("../lib/oath/init", stage.join("sbin/init"))?;
+    let _ = fs::remove_file(stage.join("lib/oath/modprobe"));
+    symlink("init", stage.join("lib/oath/modprobe"))?;
     let _ = fs::remove_file(stage.join("bin/sudo"));
     symlink("../lib/oath/sudo", stage.join("bin/sudo"))?;
     fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
@@ -377,21 +298,11 @@ fn write_initrd(root: &Path, out: &Path, tools: &Tools, init: &Path) -> Result<(
     let kver = crate::kernel::check(&tools.kernel, &tools.modules)?;
     eprintln!("kernel release {kver} (bzImage, modules and vermagic agree)");
     let kdir = tools.modules.join(&kver);
-    let mdst = ir.join("lib/modules").join(&kver);
-    let order = module_load_order(&kdir)?;
-    let mut copied = Vec::new();
-    for rel in &order {
-        let Some(src) = find_module(&kdir, rel) else {
-            eprintln!("warn: missing module {rel}");
-            continue;
-        };
-        let dst = mdst.join(ko_path(rel));
-        fs::create_dir_all(dst.parent().unwrap())?;
-        let bytes = decompress_module(&src)?;
-        fs::write(&dst, bytes)?;
-        copied.push(ko_path(rel));
-    }
-    fs::write(mdst.join("load-order"), copied.join("\n") + "\n")?;
+    let n = copy_modules(&kdir, &ir.join("lib/modules").join(&kver))?;
+    eprintln!("{n} modules with their index (PID 1 loads by modalias)");
+    // The kernel's modprobe helper is PID 1's own binary.
+    fs::create_dir_all(ir.join("lib/oath"))?;
+    symlink("/init", ir.join("lib/oath/modprobe"))?;
 
     copy_firmware(tools, &ir)?;
     let initrd = write_cpio_gz(&ir, &out.join("initrd.gz"))?;
@@ -461,174 +372,39 @@ pub(crate) fn decompress_module(src: &Path) -> Result<Vec<u8>> {
     fs::read(src).with_context(|| format!("read {}", src.display()))
 }
 
-fn module_load_order(kdir: &Path) -> Result<Vec<String>> {
-    let load_order = kdir.join("load-order");
-    if load_order.is_file() {
-        let text = fs::read_to_string(&load_order).context("load-order")?;
-        let rows: Vec<String> = text
-            .lines()
-            .map(str::trim)
-            .filter(|l| !l.is_empty() && !l.starts_with('#'))
-            .map(ko_path)
-            .collect();
-        if !rows.is_empty() {
-            return Ok(rows);
-        }
+/// Every module the kernel config builds (`modules.order`), uncompressed,
+/// with depmod's index. `modules.dep` names the uncompressed paths.
+fn copy_modules(kdir: &Path, dst: &Path) -> Result<usize> {
+    let order = fs::read_to_string(kdir.join("modules.order")).context("modules.order")?;
+    let mut n = 0;
+    for rel in order.lines().map(str::trim).filter(|l| !l.is_empty()) {
+        let src = find_module(kdir, rel)
+            .with_context(|| format!("{rel} is in modules.order but missing"))?;
+        let to = dst.join(ko_path(rel));
+        fs::create_dir_all(to.parent().context("module path")?)?;
+        fs::write(&to, decompress_module(&src)?)?;
+        n += 1;
     }
-    let dep_path = kdir.join("modules.dep");
-    if dep_path.is_file() {
-        let text = fs::read_to_string(&dep_path).context("modules.dep")?;
-        if dep_graph_useful(&text) {
-            return Ok(resolve_load_order(&text, MODULE_ROOTS));
-        }
+    let dep = fs::read_to_string(kdir.join("modules.dep")).context("modules.dep")?;
+    fs::write(dst.join("modules.dep"), plain_dep(&dep))?;
+    for f in ["modules.alias", "modules.softdep", "modules.builtin"] {
+        copy_file(&kdir.join(f), &dst.join(f)).with_context(|| f.to_string())?;
     }
-    resolve_by_modinfo(kdir, MODULE_ROOTS)
+    Ok(n)
 }
 
-fn dep_graph_useful(text: &str) -> bool {
-    text.lines().any(|l| {
-        l.split_once(':')
-            .map(|(_, rest)| rest.split_whitespace().any(|t| t.contains(".ko")))
-            .unwrap_or(false)
-    })
-}
-
-fn index_modules(kdir: &Path) -> Result<std::collections::HashMap<String, PathBuf>> {
-    use std::collections::HashMap;
-    let mut map = HashMap::new();
-    let kernel = kdir.join("kernel");
-    if !kernel.is_dir() {
-        return Ok(map);
-    }
-    fn walk(dir: &Path, kdir: &Path, map: &mut HashMap<String, PathBuf>) -> Result<()> {
-        for e in fs::read_dir(dir)? {
-            let e = e?;
-            let p = e.path();
-            if p.is_dir() {
-                walk(&p, kdir, map)?;
-                continue;
+/// `modules.dep` with `.ko.xz` / `.ko.zst` paths cut to `.ko`.
+fn plain_dep(dep: &str) -> String {
+    dep.lines()
+        .map(|l| match l.split_once(':') {
+            Some((m, deps)) => {
+                let deps: String =
+                    deps.split_whitespace().map(|d| format!(" {}", ko_path(d))).collect();
+                format!("{}:{deps}\n", ko_path(m))
             }
-            let name = e.file_name().to_string_lossy().into_owned();
-            let base = ko_path(&name);
-            if !base.ends_with(".ko") {
-                continue;
-            }
-            let stem = base.trim_end_matches(".ko").to_string();
-            let rel = p.strip_prefix(kdir).unwrap_or(&p).to_path_buf();
-            map.entry(stem).or_insert(rel);
-        }
-        Ok(())
-    }
-    walk(&kernel, kdir, &mut map)?;
-    Ok(map)
-}
-
-fn modinfo_depends(bytes: &[u8]) -> Vec<String> {
-    let mut out = Vec::new();
-    for chunk in bytes.split(|b| *b == 0) {
-        let Ok(s) = std::str::from_utf8(chunk) else { continue };
-        let Some(rest) = s.strip_prefix("depends=") else { continue };
-        if rest.is_empty() {
-            continue;
-        }
-        out.extend(rest.split(',').filter(|x| !x.is_empty()).map(|s| s.to_string()));
-    }
-    out
-}
-
-/// Ubuntu mainline (and others) ship `.ko.zst` without `modules.dep`.
-/// Walk `depends=` from the modules we actually copy.
-fn resolve_by_modinfo(kdir: &Path, roots: &[&str]) -> Result<Vec<String>> {
-    use std::collections::{HashMap, HashSet, VecDeque};
-    let index = index_modules(kdir)?;
-    let mut rel_of: HashMap<String, String> = HashMap::new();
-    let mut q = VecDeque::new();
-    for r in roots {
-        let rel = ko_path(r);
-        let stem = Path::new(&rel)
-            .file_name()
-            .and_then(|s| s.to_str())
-            .unwrap_or(&rel)
-            .trim_end_matches(".ko")
-            .to_string();
-        if find_module(kdir, &rel).is_some() {
-            q.push_back(rel.clone());
-            rel_of.insert(stem, rel);
-        } else if let Some(p) = index.get(&stem) {
-            let r = p.to_string_lossy().into_owned();
-            q.push_back(ko_path(&r));
-            rel_of.insert(stem, ko_path(&r));
-        }
-    }
-    let mut need: HashSet<String> = HashSet::new();
-    let mut deps_of: HashMap<String, Vec<String>> = HashMap::new();
-    while let Some(rel) = q.pop_front() {
-        let rel = ko_path(&rel);
-        if !need.insert(rel.clone()) {
-            continue;
-        }
-        let Some(src) = find_module(kdir, &rel) else {
-            eprintln!("warn: missing module {rel}");
-            continue;
-        };
-        let bytes = decompress_module(&src)?;
-        let mut deps = Vec::new();
-        for name in modinfo_depends(&bytes) {
-            if let Some(p) = index.get(&name) {
-                let drel = ko_path(&p.to_string_lossy());
-                deps.push(drel.clone());
-                if !need.contains(&drel) {
-                    q.push_back(drel);
-                }
-            } else {
-                eprintln!("warn: dep {name} of {rel} not in tree");
-            }
-        }
-        deps_of.insert(rel, deps);
-    }
-    // deps before users
-    let mut indeg: HashMap<String, usize> = need.iter().map(|n| (n.clone(), 0)).collect();
-    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
-    for (n, deps) in &deps_of {
-        for d in deps {
-            if need.contains(d) {
-                adj.entry(d.clone()).or_default().push(n.clone());
-                *indeg.get_mut(n).unwrap() += 1;
-            }
-        }
-    }
-    let mut zero: Vec<String> =
-        indeg.iter().filter(|(_, d)| **d == 0).map(|(k, _)| k.clone()).collect();
-    zero.sort();
-    let mut order = Vec::new();
-    while let Some(n) = {
-        if zero.is_empty() {
-            None
-        } else {
-            Some(zero.remove(0))
-        }
-    } {
-        order.push(n.clone());
-        if let Some(children) = adj.get(&n) {
-            let mut next = children.clone();
-            next.sort();
-            for m in next {
-                if let Some(e) = indeg.get_mut(&m) {
-                    *e = e.saturating_sub(1);
-                    if *e == 0 {
-                        zero.push(m);
-                        zero.sort();
-                    }
-                }
-            }
-        }
-    }
-    for n in &need {
-        if !order.iter().any(|x| x == n) {
-            order.push(n.clone());
-        }
-    }
-    Ok(order)
+            None => format!("{l}\n"),
+        })
+        .collect()
 }
 
 fn write_cpio_gz(tree: &Path, dest: &Path) -> Result<PathBuf> {
@@ -666,92 +442,6 @@ pub fn bake_install_keys(out: &Path, keys: &str) -> Result<PathBuf> {
 
 /// Transitive closure + topological load order from `modules.dep`.
 /// Output paths have `.xz` stripped (pack stores uncompressed `.ko`).
-pub(crate) fn resolve_load_order(dep_text: &str, roots: &[&str]) -> Vec<String> {
-    use std::collections::{HashMap, HashSet, VecDeque};
-
-    let mut graph: HashMap<String, Vec<String>> = HashMap::new();
-    for line in dep_text.lines() {
-        let Some((key, rest)) = line.split_once(':') else {
-            continue;
-        };
-        let key = ko_path(key.trim());
-        if key.is_empty() {
-            continue;
-        }
-        graph.insert(key, rest.split_whitespace().map(ko_path).collect());
-    }
-
-    let mut rank: HashMap<String, usize> = HashMap::new();
-    let mut need: HashSet<String> = HashSet::new();
-    let mut q = VecDeque::new();
-    for r in roots {
-        q.push_back(ko_path(r));
-    }
-    let mut next_rank = 0usize;
-    while let Some(n) = q.pop_front() {
-        if !need.insert(n.clone()) {
-            continue;
-        }
-        rank.entry(n.clone()).or_insert_with(|| {
-            let r = next_rank;
-            next_rank += 1;
-            r
-        });
-        if let Some(deps) = graph.get(&n) {
-            for d in deps {
-                if !need.contains(d) {
-                    q.push_back(d.clone());
-                }
-            }
-        }
-    }
-
-    let mut indeg: HashMap<String, usize> = need.iter().map(|n| (n.clone(), 0)).collect();
-    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
-    for n in &need {
-        if let Some(deps) = graph.get(n) {
-            for d in deps {
-                if need.contains(d) {
-                    adj.entry(d.clone()).or_default().push(n.clone());
-                    *indeg.get_mut(n).unwrap() += 1;
-                }
-            }
-        }
-    }
-
-    let mut zero: Vec<String> =
-        indeg.iter().filter(|(_, d)| **d == 0).map(|(k, _)| k.clone()).collect();
-    zero.sort_by_key(|n| rank.get(n).copied().unwrap_or(usize::MAX));
-    let mut order = Vec::new();
-    while let Some(n) = {
-        if zero.is_empty() {
-            None
-        } else {
-            Some(zero.remove(0))
-        }
-    } {
-        order.push(n.clone());
-        if let Some(children) = adj.get(&n) {
-            let mut next = children.clone();
-            next.sort_by_key(|m| rank.get(m).copied().unwrap_or(usize::MAX));
-            for m in next {
-                if let Some(e) = indeg.get_mut(&m) {
-                    *e = e.saturating_sub(1);
-                    if *e == 0 {
-                        zero.push(m);
-                        zero.sort_by_key(|x| rank.get(x).copied().unwrap_or(usize::MAX));
-                    }
-                }
-            }
-        }
-    }
-    for n in &need {
-        if !order.iter().any(|x| x == n) {
-            order.push(n.clone());
-        }
-    }
-    order.into_iter().map(|p| ko_path(&p)).collect()
-}
 
 fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {
     let dest = oath_root.join("store/pkg").join(name).join("bin").join(name);
@@ -1010,19 +700,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn resolve_load_order_deps_before_user() {
-        let dep = "\
-a.ko.xz: b.ko.xz c.ko.xz
-b.ko.xz: c.ko.xz
-c.ko.xz:
-d.ko.xz: a.ko.xz
-";
-        let order = resolve_load_order(dep, &["a.ko.xz", "d.ko.xz"]);
-        let pos = |n: &str| order.iter().position(|x| x == n).unwrap();
-        assert!(pos("c.ko") < pos("b.ko"));
-        assert!(pos("b.ko") < pos("a.ko"));
-        assert!(pos("a.ko") < pos("d.ko"));
-        assert_eq!(order.len(), 4);
+    fn plain_dep_cuts_compressed_paths() {
+        let dep = "kernel/a.ko.xz: kernel/b.ko.xz kernel/c.ko\nkernel/b.ko.xz:\n";
+        assert_eq!(plain_dep(dep), "kernel/a.ko: kernel/b.ko kernel/c.ko\nkernel/b.ko:\n");
     }
 
     #[test]
@@ -1030,45 +710,5 @@ d.ko.xz: a.ko.xz
         assert_eq!(ko_path("kernel/foo.ko.zst"), "kernel/foo.ko");
         assert_eq!(ko_path("kernel/foo.ko.xz"), "kernel/foo.ko");
         assert_eq!(ko_path("kernel/foo.ko"), "kernel/foo.ko");
-    }
-
-    #[test]
-    fn resolve_load_order_zst_keys() {
-        let dep = "\
-a.ko.zst: b.ko.zst
-b.ko.zst:
-";
-        let order = resolve_load_order(dep, &["a.ko.xz"]);
-        let pos = |n: &str| order.iter().position(|x| x == n).unwrap();
-        assert!(pos("b.ko") < pos("a.ko"));
-    }
-
-    #[test]
-    fn dep_graph_empty_deps_is_useless() {
-        let dep = "a.ko.zst:\nb.ko.zst:\n";
-        assert!(!dep_graph_useful(dep));
-        let dep = "a.ko.zst: b.ko.zst\n";
-        assert!(dep_graph_useful(dep));
-    }
-
-    #[test]
-    fn resolve_load_order_af_packet_and_libphy() {
-        let dep = "\
-kernel/drivers/net/phy/libphy.ko.xz: kernel/drivers/leds/led-class.ko.xz
-kernel/drivers/leds/led-class.ko.xz:
-kernel/net/packet/af_packet.ko.xz:
-kernel/drivers/net/virtio_net.ko.xz:
-";
-        let order = resolve_load_order(
-            dep,
-            &[
-                "kernel/drivers/net/virtio_net.ko.xz",
-                "kernel/net/packet/af_packet.ko.xz",
-                "kernel/drivers/net/phy/libphy.ko.xz",
-            ],
-        );
-        let pos = |n: &str| order.iter().position(|x| x == n).unwrap();
-        assert!(pos("kernel/drivers/leds/led-class.ko") < pos("kernel/drivers/net/phy/libphy.ko"));
-        assert!(order.iter().any(|x| x == "kernel/net/packet/af_packet.ko"));
     }
 }

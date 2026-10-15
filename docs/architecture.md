@@ -16,7 +16,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
   initrd /init = oath-init (PID 1, static musl)
     catch SIGTERM/SIGINT (reboot), SIGUSR1 (halt), SIGUSR2 (poweroff)
     mount /proc /sys /dev /dev/pts; tmpfs /tmp /run /dev/shm; cgroup2
-    insmod the packed module list (net and disk first, KMS and sound later)
+    kernel modprobe helper = /lib/oath/modprobe (this binary)
+    coldplug by modalias (display and sound wait until services start)
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)

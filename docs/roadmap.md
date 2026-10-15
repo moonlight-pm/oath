@@ -86,7 +86,9 @@ Built: `cargo make check --target` runs the 22 `metal` cases on an
 installed machine and undoes back after each; install works through
 any login shell and pins the new host key; the seed lost QEMU's
 `dev:vda`. canto was reinstalled unattended on 2026-10-14 and passes
-every metal case. Left: buccina, modalias loading.
+every metal case. PID 1 loads modules by modalias and is the kernel's
+modprobe helper; every built module ships with depmod's index (QEMU so
+far). Left: modalias on canto, buccina (parked).
 
 ## 7. Agent surface — planned
 

@@ -278,6 +278,25 @@ steps = [
   { run = "curl -sS -o /dev/null -w '%{http_code}\\n' https://curl.se/", expect = ["200"] },
 ]
 
+# ---- Phase 6: metal -------------------------------------------------
+
+[[case]]
+name = "modules-by-modalias"
+about = "PID 1 loads the drivers this machine's devices ask for, and no others."
+steps = [
+  { run = "cut -d' ' -f1 /proc/modules", expect = ["virtio_net", "virtio_blk", "btrfs"], reject = ["tg3", "e1000e", "igb", "r8169", "nvme", "amdgpu", "hid_apple"] },
+  { run = "oath logs", expect = ["modules: "], reject = ["no module index"] },
+]
+
+[[case]]
+name = "modprobe-helper"
+about = "The kernel loads a filesystem module on demand through /lib/oath/modprobe."
+metal = true
+steps = [
+  { run = "cat /proc/sys/kernel/modprobe", expect = ["/lib/oath/modprobe"] },
+  { run = "mkdir -p /tmp/m; sudo mount -t vfat /dev/null /tmp/m; grep -w vfat /proc/filesystems", expect = ["vfat"] },
+]
+
 # ---- Known gaps (acceptance tests for later phases) ------------------
 #
 # None today. Add a case with `gap = "phase N: …"` when a defect is found

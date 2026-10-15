@@ -25,7 +25,8 @@ arguments). That file is generated from the live catalog.
 
 These are real today and scheduled to be fixed. Plan around them.
 
-- Kernel modules load from a fixed list, not by the devices present.
+- A device plugged in after boot gets no driver until the next boot
+  (no hotplug yet).
 - The DHCP client renews the lease, but `net:net0` actual shows only
   the first lease.
 - Changes that can cut off SSH (`svc:sshd`, `ssh:local`, `net:net0`)
