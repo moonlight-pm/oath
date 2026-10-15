@@ -16,13 +16,7 @@ append history (git has it).
    enforces a licence allowlist on publish; build outputs have no
    manifest. Next: package cmake, ninja and python so LLVM can be
    rebuilt by a plan.
-2. **canto runs the image from before the fixture cut.** Its catalog
-   matches `base` (fixtures removed with `oath rm`), but its
-   `serial-login` predates the no-UART fix, so `svc:serial` is
-   `failed`. Next, when Joshua says so: reinstall canto
-   (`cargo make install --target home@10.0.0.3 --disk /dev/sda
-   --hostname canto --overlay hosts/canto.json --confirm`).
-3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
    `cargo make install --usb` stick.
@@ -32,15 +26,16 @@ append history (git has it).
 base, and its seed carries no test fixtures: the harness checks the
 image `install` ships, and each case makes what it needs with
 `oath new`. Modules load by modalias; `svc:time` keeps the clock from
-pool.ntp.org. canto was reinstalled over SSH, unattended, on 2026-10-15
-and passes all 24 `metal` harness cases (`cargo make check --target`).
+pool.ntp.org. canto was reinstalled over SSH, unattended, from that image on
+2026-10-15 and passes all 24 `metal` harness cases
+(`cargo make check --target`).
 30 QEMU cases and the `install --qemu` rehearsal pass.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013; native base with modalias loading since 2026-10-15; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013; native base without fixtures since 2026-10-15; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

@@ -154,8 +154,8 @@ an installed machine, one at a time, trusting only the host key in
 `build/known_hosts`. The machine must start in-sync. After each case the
 harness undoes back to the generation the case started from and
 requires `oath diff` to be in-sync again, or it stops. A reboot step
-waits for a new `boot_id`. canto (Mac Pro 2013) passed all 22 metal
-cases on 2026-10-15.
+waits for a new `boot_id`. canto (Mac Pro 2013), installed from the
+image without fixtures, passed all 24 metal cases on 2026-10-15.
 
 ## Courage test
 

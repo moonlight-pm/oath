@@ -82,7 +82,7 @@ licences in `lock.json`, immutable build outputs with a manifest.
 Wipe canto and buccina, install the native base from a clean build,
 run the harness against both over SSH, load modules by modalias.
 
-Built: `cargo make check --target` runs the 22 `metal` cases on an
+Built: `cargo make check --target` runs the `metal` cases on an
 installed machine and undoes back after each; install works through
 any login shell and pins the new host key; the seed lost QEMU's
 `dev:vda`. canto was reinstalled unattended on 2026-10-14 and passes
