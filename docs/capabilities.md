@@ -7,7 +7,7 @@ this file under 800 words. Update a row in the same change as the code.
 **Status:** `shipped` works and is tested · `partial` works with listed
 gaps · `target` designed, not built.
 
-**As of:** 2026-10-15 (canto passes the metal cases; buccina not
+**As of:** 2026-10-16 (canto passes the metal cases; buccina not
 reinstalled)
 
 ## Core
@@ -25,7 +25,7 @@ reinstalled)
 | SSH | shipped | dropbear server as `home`, keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` for `home` (clean env, groups dropped) | — |
 | Devices | partial | modules load by modalias at boot and on kernel request; `dev:net0`, `dev:ttyS0` inventory | No hotplug; no discovery (disks are not listed) |
 | Seed and overlays | shipped | profile `base`, free of test fixtures; `svc:serial` idles with no UART; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
-| Kernel | shipped | one kernel, `pkg:linux`: a plan built by `pkg:llvm` (`LLVM=1`; 7.3-rc1, sha256-pinned, Oath fragment and patches; depmod index from `.modinfo`); pack refuses a vermagic mismatch | canto still runs the gcc-built kernel |
+| Kernel | shipped | one kernel, `pkg:linux`: a plan built by `pkg:llvm` (`LLVM=1`; 7.3-rc1, sha256-pinned, Oath fragment and patches; depmod index from `.modinfo`); pack refuses a vermagic mismatch; canto runs it | — |
 | Boot | partial | initrd from our PID 1 + native busybox and firmware; switch_root into `@`; `oath-efi` is the only loader; ESP keeps current + last 5 boots; `panic=10`; boots canto through Apple firmware | `cargo make esp` runs only on the Oath machine; no remote update but reinstall |
 | Image build | partial | `cargo make build` packs every userspace package from `pkgs/lock.json`; Rust links with rust-lld; QEMU and OVMF from `image/host.nix` (host only) | Output is not immutable or manifest-checked |
 | Install | partial | installer ramdisk over SSH (any login shell); GPT + ESP + btrfs `@`; `--overlay`; makes and pins the host key; `--qemu` rehearsal; `--usb` stick; gated on `cargo make check`; canto reinstalled unattended | Copies the mutable `build/stage`, not a manifest-checked output |
