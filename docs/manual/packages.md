@@ -113,7 +113,7 @@ The build host keeps the same layout under `.cache/oath/store` (or
 ```
 cargo make store --name hello --from apps/hello --tar
 cargo make advisories            # OSV lookup from components.json
-cargo make publish --dest <dir>  # the profiles' packages: pkg/, adv/, INDEX.md
+cargo make publish --dest <dir>  # the profiles' packages and their sources: pkg/, plan/, adv/, INDEX.md
 ```
 
 `publish` copies only the packages a seed profile names (today the
@@ -122,10 +122,13 @@ product in `pkgs/lock.json`, or `pkg:oath`'s last `cargo make build`.
 Each needs a licence on record: `lock.json`'s, or for `pkg:oath` the
 workspace licence AND every crate's in its `components.json`. It
 refuses, before copying anything, a package that is not built, has no
-licence, or needs a package no profile names. `INDEX.md` lists name,
-hash and licence. Source packs, build tools (`llvm`, `rust`, ...),
-test packs and other hashes in the cache are never published; the
-last line names what was left out. A pack made with `cargo make store`
+licence, or needs a package no profile names. Each pack goes out with
+its source: the plan that built it (`plan/<name>/<plan hash>.plan`)
+and the source pack the plan pins (`pkg/<name>-src/<hash>.tar`); a
+pack whose plan is missing or does not match the record is refused.
+`INDEX.md` lists name, hash, licence, plan and source. Build tools
+(`llvm`, `rust`, ...), test packs and other hashes in the cache are
+never published; the last line names what was left out. A pack made with `cargo make store`
 is published only if a profile names it.
 
 Optional backup hooks in a pack (not catalog fields):

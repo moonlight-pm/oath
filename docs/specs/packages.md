@@ -135,10 +135,15 @@ in the image comes from nixpkgs.
 names (present or not), at the hash the tree records (`pkgs/lock.json`,
 or `pkg:oath`'s last build), each with a licence on record: the SPDX
 expression in `lock.json`, or for `pkg:oath` the workspace licence AND
-every crate's from its `components.json`. It refuses the whole publish
-if one is not built, has no licence, or has a `run` need that no
-profile names. `INDEX.md` lists name, hash and licence. Source packs
-are not published (open question in decisions.md: GPL source).
+every crate's from its `components.json`. Beside each pack it puts
+what built it (R13): the plan, at `plan/<name>/<plan hash>.plan`, and
+the source pack that plan pins, at `pkg/<name>-src/<hash>.tar` (the
+verbatim upstream files, patches and `build.sh` inputs). It refuses the
+whole publish if one is not built, has no licence, has no plan whose
+hash matches the record, or has a `run` need that no profile names.
+`INDEX.md` lists name, hash, licence, plan and source. The build packs
+a plan pins (`pkg:llvm`, `pkg:make`, `pkg:rust`, ...) are not
+published.
 
 ## Pack manifest (built)
 

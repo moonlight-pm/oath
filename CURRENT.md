@@ -5,14 +5,11 @@ items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
 **As of:** 2026-10-16 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R12 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R13 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **GPL source on origins (Open).** `cargo make publish` puts GPL
-   binaries on an origin without their `-src` packs. Next: Joshua
-   decides (docs/decisions.md); until then origins stay private.
-2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+1. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
    `cargo make install --usb` stick.

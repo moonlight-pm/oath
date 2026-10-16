@@ -8,12 +8,9 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 - **Steam + Minecraft desk.** Which machine, and when. Not before the
   native desk exists.
-- **GPL source on origins.** `cargo make publish` puts GPL binaries
-  (busybox, btrfs, util-linux, dosfstools) on an origin without their
-  source. Should it also publish each package's `-src` pack and plan
-  (the exact sources, patches and build script) beside it? Until
-  decided, publish to private origins only. Joshua (2026-10-16) would
-  like permissive alternatives to the GPL packages some day; not now.
+- **Permissive alternatives.** Joshua (2026-10-16) would like
+  permissive replacements for the GPL packages (busybox, btrfs-progs,
+  util-linux, dosfstools) some day; not now.
 
 ## 2026-10-13 review (briefing D1–D8)
 
@@ -31,6 +28,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R10 | Keep the pinned 7.3-rc1 kernel for now. | Decided 2026-10-13 |
 | R11 | The system toolchain is Clang/LLVM (clang, lld, compiler-rt, libunwind, libc++) on musl, built from source: stage 0 by the build host's gcc, stage 1 (`pkg:llvm`) by stage 0. One toolchain for every target; mesa needs LLVM anyway. | Decided 2026-10-14 |
 | R12 | Time comes from pool.ntp.org (`0`–`3.pool.ntp.org`): busybox `ntpd` as `svc:time` in the `base` seed. | Decided by Joshua 2026-10-15; done |
+| R13 | An origin carries each package's source beside it: `cargo make publish` copies the plan that built a pack and the `-src` pack that plan pins, for every published package, GPL or not. | Decided by Joshua 2026-10-16; done |
 
 ## Standing
 
