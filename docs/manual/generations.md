@@ -48,6 +48,11 @@ Undo does not touch the apply log, the package store, the SSH host
 keys, or objects the apply did not touch. A pending `oath set` on some
 other object survives an undo.
 
+An apply that can cut off SSH is on probation (`/oath/probation.json`)
+until a new session runs `oath keep`. If its time runs out, or the
+machine boots again first, PID 1 runs the same undo itself (logged
+with tty `probation`).
+
 A reboot through the catalog (`power=reboot`) is itself an apply and
 takes a generation; PID 1 then shuts down cleanly. Plain `sudo reboot`
 reboots the same way without one.

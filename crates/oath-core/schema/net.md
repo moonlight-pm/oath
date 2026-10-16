@@ -21,8 +21,11 @@ Actual may carry `lease` (the first address DHCP gave; renewals are
 not written back). It is not a desired field.
 
 Safety: `mutate`, but any change to `up`, `ipv4` or `gateway` can cut
-off SSH, so `oath apply` needs `--confirm` for it. Apply snapshots, then
-converges with `/bin/ip` and, for `dhcp`, `/bin/udhcpc`.
+off SSH, so `oath apply` needs `--confirm` for it, and the change goes
+on probation: a new SSH session (at the new address) runs `sudo oath
+keep`, or PID 1 undoes it after 180 s or at the next boot. Apply
+snapshots, then converges with `/bin/ip` and, for `dhcp`,
+`/bin/udhcpc`.
 
 For `dhcp`, converge takes the first lease once; PID 1 then keeps
 `udhcpc -f -i net0` running so the lease renews (its log: `oath logs
@@ -34,8 +37,7 @@ net:net0`). A static address stops that client.
 oath get net:net0
 oath set net:net0 ipv4=192.168.1.20/24 gateway=192.168.1.1
 oath apply --confirm
-oath set net:net0 ipv4=dhcp
-oath apply --confirm
+ssh home@192.168.1.20 sudo oath keep
 ```
 
 Downing the link over SSH cuts you off. Serial still works.

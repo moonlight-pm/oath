@@ -30,6 +30,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath rm <id>         remove a svc or pkg (after apply)
     oath diff [id]       drift
     oath apply [id...]   check, snapshot, then converge
+    oath keep            keep an apply on probation (from a new SSH session)
     oath undo            put back the spec the last apply changed, and converge
     oath log             apply log
     oath logs [id]       output of svc:<name>, net:net0, a plan's last build
@@ -38,7 +39,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath build           isolated plan build (no /bin link; log in /oath/log/plan/)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
-
+{probation}
 ## Kinds here
 
 {kinds}
@@ -49,7 +50,10 @@ Do **not** edit `/etc` or random files. Use `oath`.
 takes a filesystem snapshot. Halt, reboot, boot generation changes
 (other than `oath undo`) and changes that can cut off SSH need
 `--confirm`. Do **not** pass `--confirm` unless the owner asked for that
-class of change.
+class of change. A change that can cut off SSH then goes on probation:
+PID 1 undoes it after 180 s (`--probation <secs>`), or at the next
+boot, unless `sudo oath keep` runs in an SSH session opened after the
+apply. Nothing else applies while it is open.
 
 ## Where you are
 
@@ -65,7 +69,28 @@ Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
 "#,
         index = cat.root().join("INDEX.md").display(),
         kinds = kinds_block.trim_end(),
+        probation = probation_block(cat),
     ))
+}
+
+/// An open probation, said where an agent looks first.
+fn probation_block(cat: &Catalog) -> String {
+    let Some(p) = crate::probation::read(cat.root()) else { return String::new() };
+    let until = chrono::DateTime::parse_from_rfc3339(&p.applied)
+        .map(|t| {
+            (t + chrono::Duration::seconds(p.seconds as i64))
+                .with_timezone(&chrono::Utc)
+                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+        })
+        .unwrap_or_else(|_| format!("{} s after {}", p.seconds, p.applied));
+    format!(
+        "\n## Probation\n\n\
+         Generation {} ({}) can cut off SSH and is on probation until {until}. \
+         Open a **new** SSH session and run `sudo oath keep` there to keep it; \
+         otherwise PID 1 undoes it. `sudo oath undo` takes it back now.\n",
+        p.generation,
+        p.ids.join(", "),
+    )
 }
 
 fn kind_line(kind: &str) -> &'static str {

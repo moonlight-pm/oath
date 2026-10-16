@@ -44,6 +44,8 @@ pub struct ApplyReport {
     pub ids: Vec<String>,
     pub rebooting: bool,
     pub halting: bool,
+    /// Seconds the apply is on probation (it can cut off SSH), if it is.
+    pub probation: Option<u64>,
 }
 
 pub trait ApplyHooks {

@@ -8,8 +8,9 @@ DHCP lease by default. Root is privilege, not a login: `home` uses
 **Status:** partly built. DHCP, static addresses, SSH keys, host keys,
 the `home` account and `sudo` are built. Changes that can cut off SSH
 need `--confirm`, and a supervised DHCP client renews the lease (both
-built 2026-10-13). `sudo` was hardened on 2026-10-13. Probation with
-automatic rollback is the target.
+built 2026-10-13). `sudo` was hardened on 2026-10-13. Those changes go
+on probation and PID 1 rolls them back unless a new session keeps them
+(built 2026-10-16, catalog.md).
 
 Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
@@ -101,8 +102,6 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
 ## Target
 
-- **Probation.** Lockout-class changes apply on a timer and roll back
-  unless confirmed from a fresh SSH session (catalog.md).
 - **Current lease in actual.** The DHCP client's script records each
   renewal in `net:net0` actual.
 - **More NICs.** Naming beyond `net0` waits until a machine needs it.

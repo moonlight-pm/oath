@@ -13,7 +13,8 @@ The catalog is the source of truth. It lives at `/oath`.
     meta.json              id, safety, status
     applied.json           svc only — the spec PID 1 runs
     new / remove           markers for a pending `oath new` / `oath rm`
-  log/apply.jsonl          every apply (ok, error, refused) and undo
+  log/apply.jsonl          every apply (ok, error, refused), undo and keep
+  probation.json           an apply that can cut off SSH, until `oath keep`
   log/init.log             PID 1's messages
   log/svc/<name>.log       each service's output (`oath logs svc:<name>`)
   log/net/net0.log         the DHCP client

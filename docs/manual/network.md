@@ -15,14 +15,15 @@ and `/bin/udhcpc`.
 oath get net:net0
 sudo oath set net:net0 ipv4=192.168.1.20/24 gateway=192.168.1.1
 sudo oath apply --confirm
-sudo oath set net:net0 ipv4=dhcp
-sudo oath apply --confirm
+ssh home@192.168.1.20 sudo oath keep
 ```
 
 `ipv4` is `dhcp` or `a.b.c.d/n`; `set` refuses anything else. Any
 change to `up`, `ipv4` or `gateway` can cut your SSH session, so
-`oath apply` refuses it (exit 3) without `--confirm`. Serial still
-works. Nothing rolls a bad address back for you.
+`oath apply` refuses it (exit 3) without `--confirm`, and once applied
+it is on probation: unless a **new** SSH session runs `sudo oath keep`
+within 180 s (`--probation <secs>`), or if the machine reboots first,
+PID 1 undoes it. A bad address rolls itself back. Serial still works.
 
 On QEMU, user networking hands out `10.0.2.15` by DHCP and forwards
 host `127.0.0.1:2222` to guest port 22 (`OATH_SSH_PORT`).
@@ -70,14 +71,15 @@ sudo oath set ssh:local --from-json '{"authorized":["ssh-ed25519 AAAA…"]}'
 sudo oath apply
 ```
 
-Each key must start `ssh-`, `ecdsa-` or `sk-`. Empty `authorized`
-means nobody can log in over SSH, so emptying it needs
-`oath apply --confirm`. Undo restores the last keys; it never rolls
-back the host keys under `/oath/ssh/`. Replacing the list with keys you
-do not hold still locks you out, and nothing rolls that back.
+Each key must start `ssh-`, `ecdsa-` or `sk-`. Adding a key is a plain
+apply. Dropping one (or emptying the list) can lock you out, so it
+needs `oath apply --confirm` and goes on probation: log in with a key
+that is still listed and run `sudo oath keep`, or PID 1 puts the old
+list back. Undo restores the last keys; it never rolls back the host
+keys under `/oath/ssh/`.
 
 Disabling or removing `svc:sshd`, or changing its `exec`, `user` or
-`env`, also needs `--confirm`.
+`env`, also needs `--confirm` and goes on probation.
 
 Where the first keys come from:
 

@@ -17,11 +17,11 @@ generated on first boot.
   each starts `ssh-`, `ecdsa-` or `sk-`). Apply writes
   `/home/.ssh/authorized_keys`.
 
-Safety: `mutate`; emptying `authorized` is **confirm**
-(`oath apply --confirm`). Undo never restores the host keys.
-
-Known gap: replacing `authorized` with keys you do not hold still locks
-you out over SSH, and nothing rolls it back.
+Safety: `mutate` to add keys. Dropping a key (or emptying the list) is
+**confirm** (`oath apply --confirm`) and goes on probation: log in
+again with a key that is still listed and run `sudo oath keep`, or PID
+1 puts the old list back after 180 s. Undo never restores the host
+keys.
 
 ## Example
 

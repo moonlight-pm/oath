@@ -178,6 +178,27 @@ steps = [
 ]
 
 [[case]]
+name = "probation-rolls-back"
+about = "A change that can cut off SSH, applied with --confirm, is undone by PID 1 when nobody keeps it."
+metal = true
+steps = [
+  { run = "sudo oath set svc:sshd --from-json '{\"env\":{\"OATH_CHECK\":\"2\"}}' && sudo oath apply --confirm --probation 10 svc:sshd", expect = ["on probation for 10 s"] },
+  { run = "oath | grep -A2 '## Probation'; sudo oath set host:local hostname=blocked && sudo oath apply host:local", fails = true, expect = ["## Probation", "is on probation"] },
+  { run = "sudo oath set host:local hostname=$(hostname) && sleep 15 && oath log | tail -1 && oath logs | grep probation:", expect = ["undo:", "\"tty\":\"probation\"", "without `oath keep`"], timeout = 60 },
+  { run = "oath get svc:sshd --desired; oath diff", expect = ["in-sync"], reject = ["OATH_CHECK"] },
+]
+
+[[case]]
+name = "probation-kept-from-a-new-session"
+about = "`oath keep` refuses the session that applied; a new SSH session keeps the change."
+metal = true
+steps = [
+  { run = "sudo oath set svc:sshd --from-json '{\"env\":{\"OATH_CHECK\":\"3\"}}' && sudo oath apply --confirm --probation 60 svc:sshd && sudo oath keep", fails = true, expect = ["older than the apply"] },
+  { run = "sudo oath keep", expect = ["kept generation"] },
+  { run = "sleep 2; oath log | tail -1; oath get svc:sshd --desired; oath diff", expect = ["keep:", "OATH_CHECK", "in-sync"] },
+]
+
+[[case]]
 name = "torn-svc-file"
 about = "A half-written desired.json does not stop a running service: PID 1 runs applied specs."
 steps = [

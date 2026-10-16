@@ -11,8 +11,9 @@ use the same verbs.
 locked atomic writes, typed `set`, validation before the snapshot, a
 logged outcome for every apply, a spec-only stack undo, `oath new` /
 `oath rm`, an id grammar and a confirm gate on changes that can cut off
-SSH. Generated schemas, probation with auto-revert, a physical
-spec/status split and a store integrity check are still the target.
+SSH. Probation with automatic rollback was built 2026-10-16. Generated
+schemas, a physical spec/status split and a store integrity check are
+still the target.
 
 Replaces: T1 (catalog and `oath` surface), the catalog parts of T7, T24,
 T34.
@@ -31,7 +32,8 @@ T34.
     applied.json            svc only: the spec PID 1 runs
     new                     marker: made by `oath new`, not applied yet
     remove                  marker: `oath rm` pending
-  log/apply.jsonl           one line per apply (ok, error, refused) or undo
+  log/apply.jsonl           one line per apply (ok, error, refused), undo or keep
+  probation.json            the apply on probation, while one is open
   .lock                     writers' exclusive flock
   .gens/<n>/objects/        copy snapshots (only off btrfs or under --root)
   run/                      sockets; init.sock; fs/ (btrfs top-level mount)
@@ -80,7 +82,8 @@ under `objects/<kind>/`, so it can never climb out of it.
 | `oath new <id> k=v…` / `--from-json` | Create a `svc` or `pkg` |
 | `oath rm <id>` | Mark a `svc` or `pkg` for removal |
 | `oath diff [id]` | Drift; exit 0 when none |
-| `oath apply [id…] [--confirm]` | Check, generation, then converge |
+| `oath apply [id…] [--confirm] [--probation s]` | Check, generation, then converge |
+| `oath keep` | Keep the apply on probation (from a session opened after it) |
 | `oath undo` | Put back the spec the newest not-undone apply changed |
 | `oath log` | Apply log |
 | `oath build`, `oath fmt` | Plans (see builds.md) |
@@ -147,9 +150,34 @@ was never applied is deleted at once. Base packages, and `host`, `net`,
 
 Confirm-class (exit 3 without `--confirm`): `host:local` `power` other
 than `run`; `snap:current`; and changes that can cut this machine off
-from SSH — `svc:sshd` disabled, removed, or its `exec`, `user` or `env`
-changed; `ssh:local` `authorized` becoming empty; any change to
-`net:net0` `up`, `ipv4` or `gateway`.
+from SSH (lockout class) — `svc:sshd` disabled, removed, or its
+`exec`, `user` or `env` changed; `ssh:local` `authorized` losing a key
+(compared by key blob) or becoming empty; any change to `net:net0`
+`up`, `ipv4` or `gateway`. Adding a key is not confirm-class.
+
+## Probation (built)
+
+A lockout-class apply goes on probation, whether it converged or
+failed. Apply writes `probation.json` (generation, ids, the boot's
+`boot_id`, seconds since boot when it finished, and the length:
+180 s, or `--probation` 10–3600). While it is open, every other apply
+is refused and logged `refused`; INDEX says so in a `## Probation`
+section.
+
+- `oath keep` ends it and logs `keep:N` (no generation; undo skips
+  it). The CLI first checks that the caller is a new session: every
+  ancestor process below PID 1's own children (sshd's per-connection
+  process, the login shell, `sudo`) must have started after the apply.
+  The session that applied cannot keep it; a fresh login proves the
+  change left the machine reachable.
+- `oath undo` of that generation ends it at once.
+- Otherwise PID 1, which checks once a second, runs
+  `oath undo --expired` when the time is up, or after the next boot
+  (another `boot_id`) if the machine restarts first. That undo takes
+  the lock, undoes only the apply on probation (if it is still the
+  newest not-undone apply), logs `undo:N` with actor tty `probation`,
+  and clears the record. A failed rollback is retried every 30 s and
+  logged in `init.log`.
 
 `oath undo` is a stack. It takes the newest log line with a generation
 and result `ok` or `error` that no `undo:N` line has undone yet. From
@@ -173,9 +201,6 @@ and ssh `actual.authorized`, because PID 1 boots from applied state.
 
 ## Target
 
-- **Probation apply.** Changes that can lock the owner out apply on a
-  timer and roll back unless confirmed from a new session. Today they
-  need `--confirm` and nothing rolls them back.
 - **Generated schemas.** `schema/<kind>.json` is still hand-written.
   It will be generated from the Rust types and embedded, so code and
   schema cannot drift.
@@ -203,5 +228,6 @@ On a fresh install, an agent that has never seen Oath reads INDEX,
 runs `oath ls`, `oath schema host`, `oath get host:local`, sets a new
 hostname, diffs, applies, reboots, sees the name in actual, and undoes
 it. `cargo make check` runs this loop plus a refused apply, a failed
-apply followed by undo, `oath new`, `oath rm`, a lockout attempt, a torn
-file and a wants cycle at boot (`check/cases.toml`); all pass.
+apply followed by undo, `oath new`, `oath rm`, a lockout attempt, a
+probation that rolls back and one kept from a new session, a torn file
+and a wants cycle at boot (`check/cases.toml`); all pass.

@@ -10,6 +10,7 @@ use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
 use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, Plan, Ssh, Svc};
+use crate::probation;
 use crate::{
     now_rfc3339, parse_gen_subvol, read_json, write_atomic, write_json, BTRFS_TOP, KIND_DEV,
     KIND_HOST, KIND_NET, KIND_PKG, KIND_PLAN, KIND_SNAP, KIND_SSH, KIND_SVC,
@@ -356,6 +357,29 @@ impl Catalog {
         actor: &Actor,
         hooks: &dyn ApplyHooks,
     ) -> Result<ApplyReport> {
+        self.apply_with(ids, confirm, probation::DEFAULT_SECS, actor, hooks)
+    }
+
+    /// [`Catalog::apply`], with the seconds a change that can cut off SSH
+    /// stays on probation before PID 1 undoes it (unless `oath keep`).
+    pub fn apply_with(
+        &self,
+        ids: Option<Vec<ObjectId>>,
+        confirm: bool,
+        probation_secs: u64,
+        actor: &Actor,
+        hooks: &dyn ApplyHooks,
+    ) -> Result<ApplyReport> {
+        if !(probation::MIN_SECS..=probation::MAX_SECS).contains(&probation_secs) {
+            return Err(Error::hint(
+                format!(
+                    "probation must be {}..={} seconds, not {probation_secs}",
+                    probation::MIN_SECS,
+                    probation::MAX_SECS
+                ),
+                "oath apply --confirm --probation <secs>",
+            ));
+        }
         let _lock = self.lock()?;
         let drift = self.diff(None)?;
         let selected: Vec<Drift> = if let Some(ids) = ids {
@@ -374,6 +398,19 @@ impl Catalog {
         let id_list: Vec<String> = selected.iter().map(|d| d.id.to_string()).collect();
         let parent = self.current_generation()?;
 
+        if let Some(p) = probation::read(&self.root) {
+            let e = Error::hint(
+                format!(
+                    "generation {} ({}) is on probation; nothing else applies until it is kept \
+                     or undone",
+                    p.generation,
+                    p.ids.join(", ")
+                ),
+                "from a new SSH session: sudo oath keep; or sudo oath undo",
+            );
+            self.append_log(actor, None, parent, &id_list, "refused", Some(&e.to_string()))?;
+            return Err(e);
+        }
         if let Err(e) = self.preflight(&selected, confirm) {
             self.append_log(actor, None, parent, &id_list, "refused", Some(&e.to_string()))?;
             return Err(e);
@@ -401,9 +438,27 @@ impl Catalog {
         }
         self.record_generation(generation, parent, &selected)?;
 
-        let mut report =
-            ApplyReport { generation, ids: id_list.clone(), rebooting: false, halting: false };
-        if let Err(e) = self.converge_selected(&selected, hooks, &mut report) {
+        let mut report = ApplyReport {
+            generation,
+            ids: id_list.clone(),
+            rebooting: false,
+            halting: false,
+            probation: None,
+        };
+        // A change that can cut off SSH is undone unless a new session
+        // keeps it, failed or not: a half-converged net is just as likely
+        // to have locked the owner out.
+        let lockout: Vec<String> =
+            selected.iter().filter(|d| self.lockout(d)).map(|d| d.id.to_string()).collect();
+        let converged = self.converge_selected(&selected, hooks, &mut report);
+        if !lockout.is_empty() {
+            probation::write(
+                &self.root,
+                &probation::Probation::open(generation, lockout, probation_secs),
+            )?;
+            report.probation = Some(probation_secs);
+        }
+        if let Err(e) = converged {
             self.append_log(
                 actor,
                 Some(generation),
@@ -431,8 +486,62 @@ impl Catalog {
     /// them. Status, the log, the store and host keys stay as they are.
     pub fn undo(&self, actor: &Actor, hooks: &dyn ApplyHooks) -> Result<ApplyReport> {
         let _lock = self.lock()?;
-        let (generation, parent, ids) =
+        let target =
             self.undo_target()?.ok_or_else(|| Error::hint("nothing to undo", "oath log"))?;
+        self.undo_locked(target, actor, hooks)
+    }
+
+    /// PID 1's rollback: undo the apply on probation if its time has run
+    /// out and nothing has kept or undone it since. `None` when there is
+    /// nothing to do.
+    pub fn undo_expired(
+        &self,
+        actor: &Actor,
+        hooks: &dyn ApplyHooks,
+    ) -> Result<Option<ApplyReport>> {
+        let _lock = self.lock()?;
+        let Some(p) = probation::read(&self.root) else { return Ok(None) };
+        if !p.expired() {
+            return Ok(None);
+        }
+        match self.undo_target()? {
+            Some(target) if target.0 == p.generation => {
+                self.undo_locked(target, actor, hooks).map(Some)
+            }
+            // Already undone some other way: the record is stale.
+            _ => {
+                probation::clear(&self.root)?;
+                Ok(None)
+            }
+        }
+    }
+
+    /// Confirm the apply on probation: it stays, and applies work again.
+    /// The caller checks that this is a new session
+    /// ([`probation::check_new_session`]).
+    pub fn keep(&self, actor: &Actor) -> Result<u64> {
+        let _lock = self.lock()?;
+        let p = probation::read(&self.root)
+            .ok_or_else(|| Error::hint("no apply is on probation", "oath log"))?;
+        if p.expired() {
+            return Err(Error::hint(
+                format!("generation {}'s probation ran out; PID 1 is undoing it", p.generation),
+                "oath log; apply it again and keep it in time",
+            ));
+        }
+        probation::clear(&self.root)?;
+        let ids = vec![format!("keep:{}", p.generation)];
+        self.append_log(actor, None, p.generation, &ids, "ok", None)?;
+        self.write_index()?;
+        Ok(p.generation)
+    }
+
+    fn undo_locked(
+        &self,
+        (generation, parent, ids): (u64, u64, Vec<ObjectId>),
+        actor: &Actor,
+        hooks: &dyn ApplyHooks,
+    ) -> Result<ApplyReport> {
         let snap = hooks.snapshot_catalog(generation)?;
         let mut back = Vec::new();
         for id in &ids {
@@ -492,6 +601,9 @@ impl Catalog {
             hooks.wait_converge(&id, enabled)?;
         }
 
+        if probation::read(&self.root).is_some_and(|p| p.generation == generation) {
+            probation::clear(&self.root)?;
+        }
         let ids = vec![format!("undo:{generation}")];
         self.append_log(actor, Some(parent), generation, &ids, "ok", None)?;
         self.write_index()?;
@@ -973,18 +1085,40 @@ impl Catalog {
 
     /// Power, the boot generation, and changes that can cut off SSH.
     fn needs_confirm(&self, d: &Drift) -> bool {
+        let changed = |k: &str| d.fields.iter().find(|(f, _, _)| f == k).map(|(_, new, _)| new);
+        match (d.id.kind.as_str(), d.id.name.as_str()) {
+            (KIND_HOST, _) => changed("power").is_some_and(|p| p.as_str() != Some("run")),
+            (KIND_SNAP, "current") => true,
+            _ => self.lockout(d),
+        }
+    }
+
+    /// Changes that can cut this machine off from SSH: they need
+    /// `--confirm` and go on probation.
+    fn lockout(&self, d: &Drift) -> bool {
         let id = &d.id;
         let changed = |k: &str| d.fields.iter().find(|(f, _, _)| f == k).map(|(_, new, _)| new);
         match (id.kind.as_str(), id.name.as_str()) {
-            (KIND_HOST, _) => changed("power").is_some_and(|p| p.as_str() != Some("run")),
-            (KIND_SNAP, "current") => true,
             (KIND_SVC, "sshd") => {
                 self.removing(id)
                     || changed("enabled") == Some(&json!(false))
                     || ["exec", "user", "env"].iter().any(|k| changed(k).is_some())
             }
-            (KIND_SSH, "local") => changed("authorized")
-                .is_some_and(|a| a.as_array().map(|a| a.is_empty()).unwrap_or(true)),
+            // Dropping a key can drop the one the owner logs in with.
+            (KIND_SSH, "local") => {
+                d.fields.iter().find(|(f, _, _)| f == "authorized").is_some_and(|(_, new, old)| {
+                    let blobs = |v: &Value| -> Vec<String> {
+                        v.as_array()
+                            .into_iter()
+                            .flatten()
+                            .filter_map(|k| k.as_str()?.split_whitespace().nth(1))
+                            .map(str::to_string)
+                            .collect()
+                    };
+                    let kept = blobs(new);
+                    kept.is_empty() || blobs(old).iter().any(|k| !kept.contains(k))
+                })
+            }
             (KIND_NET, "net0") => ["up", "ipv4", "gateway"].iter().any(|k| changed(k).is_some()),
             _ => false,
         }

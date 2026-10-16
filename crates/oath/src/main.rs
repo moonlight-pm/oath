@@ -80,8 +80,20 @@ enum Cmd {
     },
     Apply {
         ids: Vec<String>,
+        /// Seconds a change that can cut off SSH stays on probation before
+        /// PID 1 undoes it (unless `oath keep`).
+        #[arg(long, default_value_t = oath_core::probation::DEFAULT_SECS)]
+        probation: u64,
     },
-    Undo,
+    /// Keep the apply on probation. Run it from an SSH session opened
+    /// after that apply: the new login is the proof.
+    Keep,
+    Undo {
+        /// PID 1's rollback: undo only the apply on probation, and only once
+        /// its time has run out.
+        #[arg(long, hide = true)]
+        expired: bool,
+    },
     Log,
     /// Output of a service (`svc:<name>`), the DHCP client (`net:net0`), the
     /// last build of a plan (`plan:<name>`), or PID 1 itself (no id).
@@ -147,7 +159,8 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Build { .. }) => "build",
         Some(Cmd::Diff { .. }) => "diff",
         Some(Cmd::Apply { .. }) => "apply",
-        Some(Cmd::Undo) => "undo",
+        Some(Cmd::Keep) => "keep",
+        Some(Cmd::Undo { .. }) => "undo",
         Some(Cmd::Log) => "log",
         Some(Cmd::Logs { .. }) => "logs",
         Some(Cmd::Seed { .. }) => "seed",
@@ -377,32 +390,63 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Apply { ids }) => {
+        Some(Cmd::Apply { ids, probation }) => {
             let ids = if ids.is_empty() {
                 None
             } else {
                 Some(ids.into_iter().map(|s| s.parse()).collect::<oath_core::Result<Vec<_>>>()?)
             };
             let hooks = live::Live { catalog_root: cli.root.clone() };
-            let r = cat.apply(ids, cli.confirm, &Actor::current(), &hooks)?;
+            let r = cat.apply_with(ids, cli.confirm, probation, &Actor::current(), &hooks)?;
             if cli.json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&json!({
                         "generation": r.generation,
                         "ids": r.ids,
+                        "probation": r.probation,
                     }))?
                 );
             } else if r.ids.is_empty() {
                 println!("in-sync");
             } else {
                 println!("applied generation {} ({})", r.generation, r.ids.join(", "));
+                if let Some(secs) = r.probation {
+                    println!(
+                        "on probation for {secs} s: open a new SSH session and run \
+                         `sudo oath keep` there, or PID 1 undoes generation {}",
+                        r.generation
+                    );
+                }
             }
             Ok(0)
         }
-        Some(Cmd::Undo) => {
+        Some(Cmd::Keep) => {
+            let p = oath_core::probation::read(&cli.root)
+                .ok_or_else(|| Error::hint("no apply is on probation", "oath log"))?;
+            oath_core::probation::check_new_session(&p)?;
+            let g = cat.keep(&Actor::current())?;
+            if cli.json {
+                println!("{}", json!({"kept": g}));
+            } else {
+                println!("kept generation {g}");
+            }
+            Ok(0)
+        }
+        Some(Cmd::Undo { expired }) => {
             let hooks = live::Live { catalog_root: cli.root.clone() };
-            let r = cat.undo(&Actor::current(), &hooks)?;
+            let r = if expired {
+                let actor = Actor { uid: 0, tty: "probation".into() };
+                match cat.undo_expired(&actor, &hooks)? {
+                    Some(r) => r,
+                    None => {
+                        println!("nothing on probation has run out");
+                        return Ok(0);
+                    }
+                }
+            } else {
+                cat.undo(&Actor::current(), &hooks)?
+            };
             if cli.json {
                 println!("{}", json!({"generation": r.generation}));
             } else {

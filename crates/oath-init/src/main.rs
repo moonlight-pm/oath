@@ -17,6 +17,7 @@ use serde_json::json;
 
 mod gpu;
 mod modules;
+mod probation;
 mod shutdown;
 mod supervise;
 
@@ -135,6 +136,7 @@ fn real_main() -> Result<(), String> {
 
     log("ready");
     tel("init", "ready", json!({ "kver": kver() }));
+    let mut probation = probation::Watch::default();
     loop {
         if let Some(mode) = shutdown::requested() {
             shutdown::finish(&mut sup, mode);
@@ -142,6 +144,7 @@ fn real_main() -> Result<(), String> {
         sup.reap();
         sup.pump_logs();
         sup.start_due();
+        probation.tick(&mut sup);
         if let Ok((mut s, _)) = listener.accept() {
             let mut buf = [0u8; 64];
             let n = s.read(&mut buf).unwrap_or(0);

@@ -13,6 +13,7 @@ mod packhash;
 mod pkg;
 mod plan;
 mod plan_build;
+pub mod probation;
 pub mod seat;
 mod seed;
 mod ssh;
@@ -49,6 +50,7 @@ pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,
 };
 pub use plan_build::{build_file, build_log, build_pinned, file_plan, BuildReport};
+pub use probation::Probation;
 pub use seed::{
     apply_overlay, merge_patch, seed, seed_profile, Profile, DEFAULT_PROFILE, PROFILES,
 };

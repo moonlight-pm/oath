@@ -28,8 +28,9 @@ for build and install tooling on the build host.
 | `oath rm <id>` | Mark a `svc` or `pkg` for removal. Removed at `apply` |
 | `oath diff [id]` | Drift between desired and actual (or last applied, for `svc`) |
 | `oath apply [id...]` | Check, snapshot, then converge the listed ids or all drift |
+| `oath keep` | Keep an apply that is on probation. Run it from a new SSH session |
 | `oath undo` | Put back what the last apply changed (repeat to go further back) |
-| `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N` |
+| `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N`, `keep:N` |
 | `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50 |
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
 | `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin` |
@@ -61,8 +62,8 @@ takes a filesystem snapshot and converges.
   go.
 - **confirm** — halt, reboot, picking an old boot generation (not
   `undo`), and anything that can cut this machine off from SSH:
-  disabling, removing or changing `svc:sshd`, emptying `ssh:local`,
-  changing `net:net0`. `oath apply` without `--confirm` exits **3** and
+  disabling, removing or changing `svc:sshd`, dropping a key from
+  `ssh:local`, changing `net:net0`. `oath apply` without `--confirm` exits **3** and
   explains. Do not pass `--confirm` unless the owner asked for that
   class of change.
 
@@ -81,8 +82,20 @@ does not loop. The apply asks PID 1 for the reboot; PID 1 stops the
 services, syncs and remounts `/` read-only first. Plain `sudo reboot`
 and `sudo poweroff` do the same without a generation.
 
-Once a confirm-class change is applied, nothing rolls it back for you.
-Keep the serial console or a second session until you have checked.
+A change that can cut off SSH goes on **probation** once applied:
+
+```
+sudo oath set net:net0 ipv4=192.168.1.20/24 gateway=192.168.1.1
+sudo oath apply --confirm              # on probation for 180 s
+ssh home@192.168.1.20 sudo oath keep   # a new session: kept
+```
+
+If no new session runs `sudo oath keep` in time (`--probation <secs>`,
+10–3600, default 180), PID 1 undoes the apply and logs `undo:N` by
+`probation`. A reboot before `keep` undoes it too. The session you
+applied from cannot keep it: only a login made after the apply proves
+the machine is still reachable. While a probation is open nothing else
+applies; `sudo oath undo` takes it back at once.
 
 `oath undo` puts back the spec of the objects the newest apply changed
 (an apply that failed counts), converges them, and logs `undo:N`. Run

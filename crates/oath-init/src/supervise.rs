@@ -83,6 +83,12 @@ pub struct Supervisor {
     /// Gave up on this spec; a different applied spec tries again.
     failed: HashMap<String, Svc>,
     history: HashMap<String, History>,
+    /// One-shot helpers PID 1 runs for itself (the probation rollback), by
+    /// pid. Their output goes to `init.log`.
+    tasks: HashMap<i32, String>,
+    /// How each helper last ended, by name, until [`Supervisor::task_exit`]
+    /// takes it.
+    task_exits: HashMap<String, bool>,
 }
 
 impl Supervisor {
@@ -161,6 +167,11 @@ impl Supervisor {
                 Ok(WaitStatus::StillAlive) | Err(_) => break,
                 Ok(_) => continue,
             };
+            if let Some(name) = self.tasks.remove(&pid.as_raw()) {
+                log(&format!("{name}: exit {exit:?}"));
+                self.task_exits.insert(name, !exit.failed());
+                continue;
+            }
             let Some(mut kid) = self.kids.remove(&pid.as_raw()) else { continue };
             pump(&mut kid);
             let ran = kid.started.elapsed();
@@ -215,6 +226,36 @@ impl Supervisor {
                 self.write_actual(&kid.id, "restarting", None);
             }
         }
+    }
+
+    /// Run a one-shot helper as root with PID 1's environment, its output
+    /// appended to `init.log`. `reap` collects it.
+    pub fn run_task(&mut self, name: &str, argv: &[&str]) {
+        let mut cmd = Command::new(argv[0]);
+        cmd.args(&argv[1..]).env_clear().env("PATH", "/bin").env("HOME", "/root");
+        let out = fs::OpenOptions::new().create(true).append(true).open(log_path("init"));
+        match out.and_then(|f| Ok((f.try_clone()?, f))) {
+            Ok((o, e)) => cmd.stdin(Stdio::null()).stdout(o).stderr(e),
+            Err(_) => cmd.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()),
+        };
+        match cmd.spawn() {
+            Ok(child) => {
+                self.tasks.insert(child.id() as i32, name.to_string());
+            }
+            Err(e) => {
+                log(&format!("{name}: cannot start {}: {e}", argv[0]));
+                self.task_exits.insert(name.to_string(), false);
+            }
+        }
+    }
+
+    pub fn task_running(&self, name: &str) -> bool {
+        self.tasks.values().any(|n| n == name)
+    }
+
+    /// Whether helper `name` succeeded, once, after it has ended.
+    pub fn task_exit(&mut self, name: &str) -> Option<bool> {
+        self.task_exits.remove(name)
     }
 
     /// Start restarts whose backoff is over.

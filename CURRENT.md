@@ -9,7 +9,13 @@ append history (git has it).
 
 ## Now
 
-1. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+1. **Target sweep before phase 7.** Joshua (2026-10-16): close every
+   target in the specs short of phase 8. Done: R13 source on origins,
+   probation with rollback. Left: cycle reason and shutdown order,
+   current lease and root SSH as a field, store integrity, generated
+   schemas and `new` defaults, hotplug and discovery, surviving a PID 1
+   panic, remote update, install's build-host guard. Next: services.
+2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
    `cargo make install --usb` stick.

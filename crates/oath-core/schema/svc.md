@@ -47,7 +47,9 @@ svc:<name>`. Drift is desired against `applied.json` (the last applied
 desired), not against actual.
 
 Safety: `mutate`, except `svc:sshd`: disabling or removing it, or
-changing its `exec`, `user` or `env`, needs `--confirm`. Apply checks
+changing its `exec`, `user` or `env`, needs `--confirm` and goes on
+probation (a new SSH session runs `sudo oath keep`, or PID 1 undoes it
+after 180 s). Apply checks
 the document, writes `applied.json`, then notifies PID 1. PID 1 runs
 only `applied.json`: a `set` without `apply` never reaches a running
 service, and a file it cannot read leaves the process running. A

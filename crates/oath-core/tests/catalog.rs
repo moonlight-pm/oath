@@ -769,6 +769,14 @@ fn lockout_changes_need_confirm() {
     assert!(cat.diff(None).unwrap().is_empty(), "authorized was already empty");
     set(&cat, "ssh:local", "authorized", json!(["ssh-ed25519 AAAA one"])).unwrap();
     cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    // Adding a key is safe; dropping or replacing one can lock the owner out.
+    set(&cat, "ssh:local", "authorized", json!(["ssh-ed25519 AAAA one", "ssh-ed25519 BBBB two"]))
+        .unwrap();
+    let r = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(r.probation, None);
+    set(&cat, "ssh:local", "authorized", json!(["ssh-ed25519 AAAA renamed"])).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_CONFIRM);
     set(&cat, "ssh:local", "authorized", json!([])).unwrap();
     let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
     assert_eq!(err.exit_code(), EXIT_CONFIRM);
@@ -795,4 +803,87 @@ fn the_lock_excludes_a_second_writer() {
 #[test]
 fn ids_cannot_leave_the_catalog() {
     assert!("svc:../../etc".parse::<ObjectId>().is_err());
+}
+
+fn sshd_env(cat: &Catalog, v: &str) {
+    set(cat, "svc:sshd", "env", json!({ "OATH_CHECK": v })).unwrap();
+}
+
+#[test]
+fn lockout_apply_goes_on_probation_until_kept() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    sshd_env(&cat, "1");
+    let r = cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(r.probation, Some(oath_core::probation::DEFAULT_SECS));
+    let p = oath_core::probation::read(d.path()).unwrap();
+    assert_eq!((p.generation, p.ids.clone()), (r.generation, vec!["svc:sshd".to_string()]));
+    assert!(cat.index_text().unwrap().contains("## Probation"));
+
+    // Nothing else applies while it is open, and the refusal is logged.
+    set(&cat, "host:local", "hostname", json!("later")).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert!(err.to_string().contains("on probation"), "{err}");
+    assert_eq!(results(&cat).last().unwrap(), &("refused".to_string(), None));
+
+    assert_eq!(cat.keep(&Actor::unknown()).unwrap(), r.generation);
+    assert!(oath_core::probation::read(d.path()).is_none());
+    assert!(!cat.index_text().unwrap().contains("## Probation"));
+    assert!(cat.keep(&Actor::unknown()).is_err(), "nothing left to keep");
+    let ok = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(ok.probation, None);
+
+    // A keep is not an apply: undo takes the hostname, then sshd.
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(*hooks.hostname.lock().unwrap(), "oath");
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();
+    assert!(sshd.desired.get("env").is_none_or(|e| e.get("OATH_CHECK").is_none()));
+}
+
+#[test]
+fn undo_takes_a_probation_back_at_once() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "net:net0", "ipv4", json!("10.0.0.3/24")).unwrap();
+    cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
+    assert!(oath_core::probation::read(d.path()).is_some());
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert!(oath_core::probation::read(d.path()).is_none());
+    assert_eq!(cat.get(&"net:net0".parse().unwrap()).unwrap().desired["ipv4"], "dhcp");
+}
+
+#[test]
+fn an_expired_probation_is_undone_and_cannot_be_kept() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let actor = Actor { uid: 0, tty: "probation".into() };
+    assert!(cat.apply_with(None, true, 5, &Actor::unknown(), &hooks).is_err(), "under 10 s");
+    sshd_env(&cat, "2");
+    let r = cat.apply_with(None, true, 30, &Actor::unknown(), &hooks).unwrap();
+    assert!(cat.undo_expired(&actor, &hooks).unwrap().is_none(), "still running");
+
+    let mut p = oath_core::probation::read(d.path()).unwrap();
+    p.applied_uptime -= 31.0;
+    oath_core::write_json(&d.path().join(oath_core::probation::PROBATION_FILE), &p).unwrap();
+    assert!(cat.keep(&Actor::unknown()).unwrap_err().to_string().contains("ran out"));
+    let undone = cat.undo_expired(&actor, &hooks).unwrap().unwrap();
+    assert_eq!(undone.ids, vec![format!("undo:{}", r.generation)]);
+    assert!(oath_core::probation::read(d.path()).is_none());
+    assert!(cat.undo_expired(&actor, &hooks).unwrap().is_none(), "only once");
+    let last = cat.log_lines().unwrap().pop().unwrap();
+    assert_eq!(last["actor"]["tty"], "probation");
+}
+
+#[test]
+fn a_reboot_ends_a_probation() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    sshd_env(&cat, "3");
+    cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
+    let mut p = oath_core::probation::read(d.path()).unwrap();
+    p.boot_id = "an-earlier-boot".into();
+    oath_core::write_json(&d.path().join(oath_core::probation::PROBATION_FILE), &p).unwrap();
+    let actor = Actor { uid: 0, tty: "probation".into() };
+    assert!(cat.undo_expired(&actor, &hooks).unwrap().is_some());
 }

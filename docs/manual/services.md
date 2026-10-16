@@ -102,7 +102,9 @@ Until `oath apply`, a new service has status `new` and does not run;
 `oath rm` before that deletes it at once.
 
 `svc:sshd` changes that can cut off SSH (disabling or removing it, or
-changing its `exec`, `user` or `env`) need `oath apply --confirm`.
+changing its `exec`, `user` or `env`) need `oath apply --confirm` and
+go on probation: a new SSH session runs `sudo oath keep`, or PID 1
+undoes the change after 180 s.
 
 ## Account, environment, low ports
 

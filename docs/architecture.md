@@ -27,6 +27,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     listen on /oath/run/init.sock; start svc:* from applied.json in
       `wants` order (a cycle skips only its members) and the DHCP client
     main loop: shutdown request? reap, pump logs, start due restarts,
+      the probation timer (runs `oath undo --expired` once it is up),
       answer converge requests
 ```
 
@@ -58,7 +59,8 @@ btrfs
   schema/<kind>.json|.md   per-kind schema and prose
   objects/<kind>/<name>/   desired.json actual.json meta.json [applied.json]
                            [new | remove markers for oath new / oath rm]
-  log/apply.jsonl          one line per apply (ok, error, refused) or undo
+  log/apply.jsonl          one line per apply (ok, error, refused), undo or keep
+  probation.json           the apply on probation (lockout class), while open
   log/init.log             PID 1's messages (`oath logs`)
   log/svc/<name>.log       each service's stdout+stderr, UTC-stamped,
                            rotated to .1 past 256 KiB (`oath logs svc:<name>`)
