@@ -83,7 +83,8 @@ cached tarballs and advisories into an origin tree.
 ## Components and advisories (built)
 
 - `components.json` at the root of a tree lists the upstreams in it:
-  `{name, version, purl}` and optional `cpe`, sorted by `purl`. It is
+  `{name, version, purl}` and optional `cpe`, sorted by `purl`, as a
+  bare list (what `cargo make pkgs` writes) or under `components`. It is
   part of the tree hash. It is a claim, not a proof. A missing file
   means unknown, not safe.
 - There is no `version` field on the slot; a name can hold unrelated

@@ -833,9 +833,13 @@ pub fn read_components(tree: &Path) -> Option<Vec<PkgComponent>> {
     parse_components(&fs::read_to_string(&p).ok()?)
 }
 
+/// `{"components": [...]}`, or the bare list `cargo make pkgs` writes.
 fn parse_components(s: &str) -> Option<Vec<PkgComponent>> {
     let v: serde_json::Value = serde_json::from_str(s).ok()?;
-    let arr = v.get("components")?.as_array()?;
+    let arr = match v.as_array() {
+        Some(arr) => arr,
+        None => v.get("components")?.as_array()?,
+    };
     let mut out = Vec::new();
     for e in arr {
         let name = e.get("name")?.as_str()?.trim();
@@ -1197,6 +1201,14 @@ mod needs_tests {
         assert_eq!(c[0].version, "1.0");
         assert_eq!(c[0].purl, "pkg:generic/hello@1.0");
         assert!(read_components(&d.path().join("missing")).is_none());
+        // Plan products from pkgs/ write the list without the wrapper.
+        fs::write(
+            tree.join(COMPONENTS_NAME),
+            "[\n  {\n    \"name\": \"zlib\",\n    \"purl\": \"pkg:generic/zlib@1.3.2\",\n    \"version\": \"1.3.2\"\n  }\n]\n",
+        )
+        .unwrap();
+        let c = read_components(&tree).expect("bare list");
+        assert_eq!(c[0].purl, "pkg:generic/zlib@1.3.2");
     }
 
     #[test]
