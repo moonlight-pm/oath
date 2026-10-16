@@ -23,13 +23,13 @@ use crate::util::write_pretty;
 const CRATES_IO: &str = "registry+https://github.com/rust-lang/crates.io-index";
 
 /// What the tree is packed from, relative to the repo.
-const TREE: &[&str] =
+pub(crate) const TREE: &[&str] =
     &["Cargo.toml", "Cargo.lock", ".cargo/config.toml", "crates", "brand/logo-white.png"];
 
 #[derive(Default, Serialize, Deserialize)]
-struct Built {
-    plan: String,
-    product: String,
+pub(crate) struct Built {
+    pub plan: String,
+    pub product: String,
 }
 
 /// Build pkg:oath from this tree (or reuse the last build of the same
@@ -83,13 +83,12 @@ pub fn build(repo: &Path) -> Result<PathBuf> {
     Ok(tree(&r.product))
 }
 
-/// pkg:oath's product from its last build (`build/pkgs/oath.json`).
-pub fn built(repo: &Path) -> Result<String> {
+/// pkg:oath's last build: its plan and product (`build/pkgs/oath.json`).
+pub(crate) fn built(repo: &Path) -> Result<Built> {
     let record = repo.join("build/pkgs/oath.json");
-    let last: Built = serde_json::from_str(&fs::read_to_string(&record).with_context(|| {
+    Ok(serde_json::from_str(&fs::read_to_string(&record).with_context(|| {
         format!("{}: pkg:oath is not built yet (cargo make build)", record.display())
-    })?)?;
-    Ok(last.product)
+    })?)?)
 }
 
 /// pkg:oath's licence: the workspace's, AND every crate's in its
@@ -148,7 +147,7 @@ fn spdx_term(l: &str) -> String {
 }
 
 /// The workspace version (`crates/oath`).
-fn version(repo: &Path) -> Result<String> {
+pub(crate) fn version(repo: &Path) -> Result<String> {
     let text = fs::read_to_string(repo.join("crates/oath/Cargo.toml"))?;
     let v: toml::Value = toml::from_str(&text)?;
     v.get("package")

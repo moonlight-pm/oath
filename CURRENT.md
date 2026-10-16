@@ -13,10 +13,11 @@ append history (git has it).
    checks upstream OpenPGP signatures against keys in `pkgs/keys/`
    (Python and Perl sign only with Sigstore, unchecked), and
    `cargo make publish` carries only the profiles' packages, each with
-   its licence. Open for Joshua: publish GPL source beside the
-   binaries? The image has no manifest. Next: `cargo make build`
-   writes `build/manifest.json`, every pack the image ships with its
-   source pins, hash and licence.
+   its licence; `build/manifest.json` lists every pack the image ships
+   with its pins, keys and licence. Open for Joshua: publish GPL source
+   beside the binaries? Build outputs are still overwritten in place.
+   Next: `cargo make build` writes `build/out/<id>/` (id: the
+   manifest's hash) and `install` takes that id.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a

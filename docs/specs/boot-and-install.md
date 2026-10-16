@@ -9,8 +9,9 @@ an installer ramdisk and writes machine facts from a host overlay.
 **Status:** partly built. The kernel pin and version check, the menu,
 boot rotation, profiles, overlays, the install flow, the `esp`
 build-host guard, the test harness that gates installs, switch_root,
-`panic=10` and the orderly shutdown are built. An immutable build output
-with a manifest is the target.
+`panic=10` and the orderly shutdown are built. `cargo make build` writes
+`build/manifest.json`; an immutable output that install and `esp`
+verify is the target.
 
 Replaces: T27 (metal install), T38 (boot generations), the image parts
 of T24, and D3 (seed as data).
@@ -123,10 +124,11 @@ not matter (canto's September image logged `home` into Thoxa).
 
 ## Target
 
-- **Immutable outputs.** Each build writes `build/out/<id>/` with a
-  manifest (profile, kernel release, every package pin). Install and
-  `esp` take an output id, verify the manifest, and never read a
-  mutable stage.
+- **Immutable outputs.** Each build writes `build/out/<id>/` with its
+  manifest (built today as `build/manifest.json`: profile, kernel
+  release, every pack's pin, licence and sources). Install and `esp`
+  take an output id, verify the manifest, and never read a mutable
+  stage.
 - **Build-host guard (install).** `install` refuses a target that is
   the build host. (`esp` already refuses to run on a machine that is
   not Oath.)

@@ -128,6 +128,8 @@ cargo make build [--profile base]
   build/initrd.gz, build/initrd-install.gz (installer ramdisk: dropbear,
                           sfdisk, wipefs, mkfs.fat, mkfs.btrfs, btrfs,
                           busybox tar, oath, oath-efi)
+  build/manifest.json     every shipped pack: hash, licence, plan, where
+                          it ships, source pins and keys
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
   build/check/key; serves the fetch canary on 127.0.0.1:18765; cases

@@ -4,6 +4,7 @@ mod check;
 mod cpio;
 mod install;
 mod kernel;
+mod manifest;
 mod oath_pkg;
 mod openpgp;
 mod pack;

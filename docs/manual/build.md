@@ -75,8 +75,17 @@ writes the boot initrd and the
 installer initrd, stages the root tree, seeds `/oath` from the profile,
 packs the profile's packages into the hashed store (also cached under
 `.cache/oath/store`), and writes `build/oath.qcow2` (btrfs, subvolume
-`@`) plus `build/bzImage`, `build/initrd.gz`, and
-`build/initrd-install.gz`.
+`@`) plus `build/bzImage`, `build/initrd.gz`,
+`build/initrd-install.gz`, and `build/manifest.json`.
+
+`build/manifest.json` lists every pack the image ships: its hash,
+version, licence and plan hash; where it ships (`rootfs` for the
+profile's store, `initrd`, `installer` for the install initramfs's own
+tools, `esp`); and its sources, each with its sha256 and signing key
+(`pkgs/keys/…`) or why it is unsigned. `pkg:oath` records the commit
+of this tree instead, with `-dirty` when its sources had uncommitted
+changes. The manifest is rewritten by every build; install and `esp`
+do not read it yet.
 
 ## Test it
 

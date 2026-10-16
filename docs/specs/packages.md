@@ -9,8 +9,8 @@ vendor's own release pinned by sha256.
 **Status:** partly built. The store, pins, needs graph, descriptions,
 components and advisories are built. The native rule holds for the
 image: every userspace package in it is built from pinned source by an
-Oath plan (`pkgs/`, [builds.md](builds.md)). The publish allowlist is
-built; the pack manifest is target.
+Oath plan (`pkgs/`, [builds.md](builds.md)). The publish allowlist and
+the pack manifest are built.
 
 Replaces: T11, T12, T18, T20, T32, T41, T42, T44, and the packaging
 parts of T24 and T35.
@@ -122,8 +122,6 @@ nothing in it comes from nixpkgs.
   and the store is never rolled back by undo.
 - **RPATHs** inside packs point at hash paths, not at `live`, so a
   re-pin cannot change a running program's libraries.
-- **Pack manifest.** Every pack the image ships is listed with its
-  source, pin and license in one file.
 - Out of scope for now: signatures on Oath's own packs and indexes
   (upstream sources are signature-checked at build time, see
   builds.md), reaping unused realizations, peer discovery.
@@ -138,6 +136,14 @@ every crate's from its `components.json`. It refuses the whole publish
 if one is not built, has no licence, or has a `run` need that no
 profile names. `INDEX.md` lists name, hash and licence. Source packs
 are not published (open question in decisions.md: GPL source).
+
+## Pack manifest (built)
+
+`cargo make build` writes `build/manifest.json`: every pack the image
+ships (the profile's store, the initrd, the installer's tools, the
+ESP), each with its hash, version, licence, plan hash, where it ships,
+and its source pins with signing keys or unsigned reasons; `pkg:oath`
+with the commit it was built from.
 
 ## Pack layout
 

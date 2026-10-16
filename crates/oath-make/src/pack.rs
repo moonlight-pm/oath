@@ -25,6 +25,18 @@ pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<PathBuf> {
     Ok(oath)
 }
 
+/// Native tools the installer runs over SSH (static binaries): pack and
+/// file under its `bin/`.
+pub(crate) const INSTALLER_TOOLS: &[(&str, &str)] = &[
+    ("dropbear", "dropbear"),
+    ("dropbear", "dropbearkey"),
+    ("btrfs", "btrfs"),
+    ("btrfs", "mkfs.btrfs"),
+    ("util-linux", "sfdisk"),
+    ("util-linux", "wipefs"),
+    ("dosfstools", "mkfs.fat"),
+];
+
 /// Pack the image for one seed profile (`base`, `dev`). The profile's
 /// present packages are packed; anything else it names stays absent.
 pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()> {
@@ -50,16 +62,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let ir_install = out.join("initramfs-install");
     let _ = fs::remove_dir_all(&ir_install);
     copy_tree(&out.join("initramfs"), &ir_install)?;
-    // Native tools the installer runs over SSH (static binaries).
-    for (pack, file) in [
-        ("dropbear", "dropbear"),
-        ("dropbear", "dropbearkey"),
-        ("btrfs", "btrfs"),
-        ("btrfs", "mkfs.btrfs"),
-        ("util-linux", "sfdisk"),
-        ("util-linux", "wipefs"),
-        ("dosfstools", "mkfs.fat"),
-    ] {
+    for &(pack, file) in INSTALLER_TOOLS {
         let dest = ir_install.join("bin").join(file);
         let _ = fs::remove_file(&dest);
         copy_file(&tools.bin(pack, file)?, &dest)?;
@@ -224,8 +227,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let bz = out.join("bzImage");
     let _ = fs::remove_file(&bz);
     copy_file(&tools.kernel, &bz)?;
+    crate::manifest::write(root, out, tools, profile)?;
     eprintln!("image {}", qcow.display());
     eprintln!("kernel {}", bz.display());
+    eprintln!("manifest {}", out.join("manifest.json").display());
     eprintln!("next: cargo make run");
     Ok(())
 }
@@ -539,7 +544,7 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
     let mut rows: Vec<(String, String, String)> = Vec::new();
     for name in &named {
         let (hash, license) = if name == "oath" {
-            let hash = crate::oath_pkg::built(repo)?;
+            let hash = crate::oath_pkg::built(repo)?.product;
             let tree = cache.join("pkg/oath").join(&hash);
             (hash, crate::oath_pkg::license(repo, &tree)?)
         } else {
