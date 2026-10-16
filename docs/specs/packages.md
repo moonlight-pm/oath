@@ -10,7 +10,8 @@ vendor's own release pinned by sha256.
 components and advisories are built. The native rule holds for the
 image: every userspace package in it is built from pinned source by an
 Oath plan (`pkgs/`, [builds.md](builds.md)). The publish allowlist and
-the pack manifest are built.
+the pack manifest are built, and so is the store integrity check
+(2026-10-16).
 
 Replaces: T11, T12, T18, T20, T32, T41, T42, T44, and the packaging
 parts of T24 and T35.
@@ -35,6 +36,22 @@ parts of T24 and T35.
 - One live realization per name. Other hashes of the same name may stay
   on disk. Two programs runnable at once are two names
   (`pkg:foo`, `pkg:foo-wip`).
+- The store is never rolled back: undo restores a package's spec and
+  relinks, and the trees stay as they are.
+
+## Integrity (built)
+
+- Before linking a present package, apply hashes its realization again
+  and refuses one that no longer hashes to its name ("the store is
+  damaged"); actual `verified` (`ok`, `at`, and `got` on a mismatch)
+  records the check.
+- `oath verify [pkg:…]` hashes every linked tree (or the ones named)
+  again. As root it writes `verified` into each actual and regenerates
+  INDEX, which lists damaged packages under `## Store damage`; a
+  damaged package's status is `error`. It exits 1 if any is damaged.
+  Without the lock it only reports.
+- PID 1 runs `oath verify` once per boot, after `ready`, as a task: the
+  hashing never delays boot, and its report goes to `init.log`.
 
 ## Object (built)
 
@@ -121,10 +138,13 @@ in the image comes from nixpkgs.
 
 ## Target
 
-- **Integrity.** Apply re-verifies the live tree hash before linking,
-  and the store is never rolled back by undo.
 - **RPATHs** inside packs point at hash paths, not at `live`, so a
-  re-pin cannot change a running program's libraries.
+  re-pin cannot change a running program's libraries. No shipped pack
+  has an RPATH or loader path today (the base is static; the harness
+  checks it); `pkg:rust`, build-only, names its loader under `live`. A
+  pack cannot name its own hash, so this needs hash-modulo-self
+  rewriting, which waits for the first dynamic packs (the desk, phase
+  8).
 - Out of scope for now: signatures on Oath's own packs and indexes
   (upstream sources are signature-checked at build time, see
   builds.md), reaping unused realizations, peer discovery.

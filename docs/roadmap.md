@@ -38,8 +38,8 @@ applied specs, no reseed of an existing catalog.
 
 Not done, carried forward: schemas generated from the Rust types,
 a physical spec/status directory split (undo already touches spec
-only), a store integrity check at boot. Since: probation apply with
-automatic rollback (2026-10-16).
+only). Since: probation apply with automatic rollback and the store
+integrity check (2026-10-16).
 
 ## 4. PID 1 — done (2026-10-13)
 

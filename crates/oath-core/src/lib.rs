@@ -21,15 +21,15 @@ mod svc_order;
 mod svc_run;
 mod tel;
 
-pub use catalog::{copy_objects, diff_values, Catalog, CatalogLock, Drift, Object};
+pub use catalog::{copy_objects, diff_values, Catalog, CatalogLock, Drift, Object, Verified};
 pub use dev::converge as converge_dev;
 pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
     Dev, DevActual, DhcpLease, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory,
-    PkgComponent, PkgNeed, PkgRealization, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual,
-    SvcRestart, SvcUser,
+    PkgComponent, PkgNeed, PkgRealization, PkgVerified, Plan, PlanActual, Ssh, SshActual, Svc,
+    SvcActual, SvcRestart, SvcUser,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
@@ -47,7 +47,8 @@ pub use pkg::{
     fetch_pkg, ingest_file, install_tree, list_realization_ids, list_realizations,
     normalize_need as normalize_pkg_need, pin_desired_hash, promote_slot, promote_store, put_tree,
     read_advisories, read_advisories_store, read_components, resolve_tree, store_present,
-    sync_need_hashes, write_advisories, write_advisories_store, write_slot_links, COMPONENTS_NAME,
+    sync_need_hashes, verify_tree, write_advisories, write_advisories_store, write_slot_links,
+    COMPONENTS_NAME,
 };
 pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,

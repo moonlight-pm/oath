@@ -335,6 +335,24 @@ steps = [
   { run = "oath logs plan:echo && ls -a /oath/store/pkg /oath/store/pkg/echo", expect = ["# oath build plan:echo", "built-on-the-box", "# product sha256-"], reject = [".part"] },
 ]
 
+[[case]]
+name = "store-verified-at-boot"
+about = "PID 1 hashes every linked package tree again after boot and records it."
+metal = true
+steps = [
+  { run = "for i in $(seq 1 30); do oath logs -n 1000 | grep -q 'verify: exit' && break; sleep 1; done; oath logs -n 1000 | grep -E 'damaged|verify: exit'", expect = [", 0 damaged", "verify: exit Code(0)"] },
+  { run = "oath get pkg:busybox --actual", expect = ["\"verified\"", "\"ok\": true"] },
+]
+
+[[case]]
+name = "store-damage-is-caught"
+about = "A package tree changed behind the catalog's back is reported damaged, shown in INDEX, and not linked again."
+steps = [
+  { run = "sudo sh -c 'echo x > /oath/store/pkg/dosfstools/live/bin/extra'; sudo oath verify; echo exit=$?", expect = ["pkg:dosfstools DAMAGED", "exit=1"] },
+  { run = "oath | grep -A4 'Store damage'; oath get pkg:dosfstools", expect = ["pkg:dosfstools", "status=error"] },
+  { run = "sudo oath set pkg:dosfstools present=false && sudo oath apply pkg:dosfstools && sudo oath set pkg:dosfstools present=true && sudo oath apply pkg:dosfstools", fails = true, expect = ["store is damaged"] },
+]
+
 # ---- Phase 6: metal -------------------------------------------------
 
 [[case]]

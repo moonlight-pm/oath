@@ -11,9 +11,9 @@ use the same verbs.
 locked atomic writes, typed `set`, validation before the snapshot, a
 logged outcome for every apply, a spec-only stack undo, `oath new` /
 `oath rm`, an id grammar and a confirm gate on changes that can cut off
-SSH. Probation with automatic rollback was built 2026-10-16. Generated
-schemas, a physical spec/status split and a store integrity check are
-still the target.
+SSH. Probation with automatic rollback and the store integrity check
+were built 2026-10-16. Generated schemas and a physical spec/status
+split are still the target.
 
 Replaces: T1 (catalog and `oath` surface), the catalog parts of T7, T24,
 T34.
@@ -85,6 +85,7 @@ under `objects/<kind>/`, so it can never climb out of it.
 | `oath apply [id…] [--confirm] [--probation s]` | Check, generation, then converge |
 | `oath keep` | Keep the apply on probation (from a session opened after it) |
 | `oath undo` | Put back the spec the newest not-undone apply changed |
+| `oath verify [pkg:…]` | Hash linked package trees again (packages.md) |
 | `oath log` | Apply log |
 | `oath build`, `oath fmt` | Plans (see builds.md) |
 
@@ -207,8 +208,6 @@ and ssh `actual.authorized`, because PID 1 boots from applied state.
 - **Physical state split.** Spec and status still share an object
   directory and both are inside the `@` snapshot; undo reads only spec.
   Status may move out of the snapshotted tree.
-- **Store integrity.** Boot does not yet re-hash store trees against
-  their pins.
 - **Defaults for `oath new`.** Fields with schema defaults could be
   filled in; today every required field must be given.
 

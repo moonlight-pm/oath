@@ -54,7 +54,8 @@ package is refused (not `--confirm`).
 
 ## Fields in practice
 
-- `hash` is the pin. Apply verifies the tree matches. Empty hash is
+- `hash` is the pin. Apply hashes the tree again before linking it and
+  refuses one that changed on disk. Empty hash is
   discovery (`actual.hash` reports what is live). Switch with
   `oath set pkg:foo hash=sha256-…`, then apply. Other hashes stay on
   disk.

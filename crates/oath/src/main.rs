@@ -88,6 +88,11 @@ enum Cmd {
     /// Keep the apply on probation. Run it from an SSH session opened
     /// after that apply: the new login is the proof.
     Keep,
+    /// Hash linked package trees again against the hash they are linked
+    /// as (all packages, or the ids given). Exit 1 if any is damaged.
+    Verify {
+        ids: Vec<String>,
+    },
     Undo {
         /// PID 1's rollback: undo only the apply on probation, and only once
         /// its time has run out.
@@ -160,6 +165,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Diff { .. }) => "diff",
         Some(Cmd::Apply { .. }) => "apply",
         Some(Cmd::Keep) => "keep",
+        Some(Cmd::Verify { .. }) => "verify",
         Some(Cmd::Undo { .. }) => "undo",
         Some(Cmd::Log) => "log",
         Some(Cmd::Logs { .. }) => "logs",
@@ -432,6 +438,32 @@ fn run() -> oath_core::Result<i32> {
                 println!("kept generation {g}");
             }
             Ok(0)
+        }
+        Some(Cmd::Verify { ids }) => {
+            let ids = if ids.is_empty() {
+                None
+            } else {
+                Some(ids.into_iter().map(|s| s.parse()).collect::<oath_core::Result<Vec<_>>>()?)
+            };
+            let results = cat.verify(ids)?;
+            let damaged = results.iter().filter(|r| !r.verified.ok).count();
+            if cli.json {
+                let v: Vec<Value> = results
+                    .iter()
+                    .map(|r| json!({ "id": r.id.to_string(), "hash": r.hash, "verified": r.verified }))
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&v)?);
+            } else {
+                for r in &results {
+                    if r.verified.ok {
+                        println!("{} ok {}", r.id, r.hash);
+                    } else {
+                        println!("{} DAMAGED: {} hashes to {}", r.id, r.hash, r.verified.got);
+                    }
+                }
+                println!("{} verified, {damaged} damaged", results.len());
+            }
+            Ok(if damaged > 0 { 1 } else { 0 })
         }
         Some(Cmd::Undo { expired }) => {
             let hooks = live::Live { catalog_root: cli.root.clone() };

@@ -11,7 +11,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::error::{Error, Result};
-use crate::kinds::{Pkg, PkgActual, PkgAdvisory, PkgComponent, PkgNeed, PkgRealization};
+use crate::kinds::{
+    Pkg, PkgActual, PkgAdvisory, PkgComponent, PkgNeed, PkgRealization, PkgVerified,
+};
 use crate::packhash::{
     fetch_adv_url, fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, LIVE_NAME,
 };
@@ -50,10 +52,22 @@ pub fn converge_with_link_root(
         ));
     }
     let live_hash = tree_hash_id(store_root, name, &tree)?;
+    let mut verified = None;
     if present
         && is_realization_id(&live_hash)
         && realization_dir(store_root, name, &live_hash).is_dir()
     {
+        // Never link a tree that no longer is what its name says.
+        verified = Some(verify_tree(store_root, name, &live_hash)?);
+        if let Some(v) = verified.as_ref().filter(|v| !v.ok) {
+            return Err(Error::hint(
+                format!(
+                    "pkg:{name} store tree {live_hash} now hashes to {}: the store is damaged",
+                    v.got
+                ),
+                format!("oath verify; fetch pkg:{name} again (url) or reinstall"),
+            ));
+        }
         write_slot_links(store_root, name, &live_hash)?;
     }
     fs::create_dir_all(bin_dir)?;
@@ -83,7 +97,9 @@ pub fn converge_with_link_root(
             })?;
             links.push(n.clone());
         }
-        Ok(pkg_actual(true, links, live_hash, store_root, name))
+        let mut actual = pkg_actual(true, links, live_hash, store_root, name);
+        actual.verified = verified;
+        Ok(actual)
     } else {
         for n in &names {
             unlink_ours(bin_dir, link_root, store_root, name, n, &tree)?;
@@ -352,6 +368,7 @@ fn pkg_actual(
         home: String::new(),
         components,
         advisories,
+        verified: None,
     }
 }
 
@@ -435,6 +452,17 @@ fn index_blurb(path: &Path) -> String {
         lines.truncate(240);
     }
     lines
+}
+
+/// Hash realization `hash` of `name` again.
+pub fn verify_tree(store_root: &Path, name: &str, hash: &str) -> Result<PkgVerified> {
+    let got = hash_tree(&realization_dir(store_root, name, hash))?;
+    let ok = got == hash;
+    Ok(PkgVerified {
+        ok,
+        at: crate::now_rfc3339(),
+        got: if ok { String::new() } else { got },
+    })
 }
 
 fn live_hash(catalog_root: &Path, name: &str) -> Result<Option<String>> {

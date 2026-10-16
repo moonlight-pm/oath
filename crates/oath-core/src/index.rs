@@ -32,6 +32,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath apply [id...]   check, snapshot, then converge
     oath keep            keep an apply on probation (from a new SSH session)
     oath undo            put back the spec the last apply changed, and converge
+    oath verify          hash linked package trees again against their pins
     oath log             apply log
     oath logs [id]       output of svc:<name>, net:net0, a plan's last build
                          (plan:<name>), or PID 1 (no id)
@@ -39,7 +40,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath build           isolated plan build (no /bin link; log in /oath/log/plan/)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
-{probation}
+{probation}{damage}
 ## Kinds here
 
 {kinds}
@@ -70,6 +71,7 @@ Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
         index = cat.root().join("INDEX.md").display(),
         kinds = kinds_block.trim_end(),
         probation = probation_block(cat),
+        damage = damage_block(cat),
     ))
 }
 
@@ -90,6 +92,28 @@ fn probation_block(cat: &Catalog) -> String {
          otherwise PID 1 undoes it. `sudo oath undo` takes it back now.\n",
         p.generation,
         p.ids.join(", "),
+    )
+}
+
+/// Packages whose store tree no longer hashes to its pin.
+fn damage_block(cat: &Catalog) -> String {
+    let mut bad = Vec::new();
+    for id in cat.ls(Some("pkg")).unwrap_or_default() {
+        let Ok(obj) = cat.get(&id) else { continue };
+        if obj.actual.pointer("/verified/ok") == Some(&serde_json::json!(false)) {
+            let got = obj.actual.pointer("/verified/got").and_then(|g| g.as_str()).unwrap_or("");
+            bad.push(format!("- `{id}` hashes to `{got}`, not its pin\n"));
+        }
+    }
+    if bad.is_empty() {
+        return String::new();
+    }
+    format!(
+        "\n## Store damage\n\n\
+         These package trees changed on disk since they were stored. Do not trust \
+         what they run. Fetch them again (`url`) or reinstall; `oath verify` checks \
+         again.\n\n{}",
+        bad.concat()
     )
 }
 

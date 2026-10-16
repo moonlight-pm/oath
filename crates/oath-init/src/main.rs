@@ -149,6 +149,9 @@ fn real_main() -> Result<(), String> {
 
     log("ready");
     tel("init", "ready", json!({ "kver": kver() }));
+    // The store's integrity, once a boot, off the boot path: every linked
+    // package tree is hashed again against its pin.
+    sup.run_task("verify", &["/bin/oath", "verify"]);
     let mut probation = probation::Watch::default();
     loop {
         if let Some(mode) = shutdown::requested() {

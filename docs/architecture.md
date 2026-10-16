@@ -25,7 +25,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     under /oath/.lock: apply host, net (one-shot udhcpc for dhcp), ssh
       from their applied state (actual.json); probe dev
     listen on /oath/run/init.sock; start svc:* from applied.json in
-      `wants` order (a cycle skips only its members) and the DHCP client
+      `wants` order (a cycle skips only its members) and the DHCP client;
+      after `ready`, run `oath verify` once (re-hash the linked store)
     main loop: shutdown request? reap, pump logs, start due restarts,
       the probation timer (runs `oath undo --expired` once it is up),
       answer converge requests

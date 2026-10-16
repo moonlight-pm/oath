@@ -38,6 +38,15 @@ pub struct Object {
     pub actual: Value,
 }
 
+/// One package's tree, hashed again by [`Catalog::verify`].
+#[derive(Clone, Debug)]
+pub struct Verified {
+    pub id: ObjectId,
+    /// What it is linked as.
+    pub hash: String,
+    pub verified: crate::PkgVerified,
+}
+
 #[derive(Clone, Debug)]
 pub struct Drift {
     pub id: ObjectId,
@@ -226,6 +235,9 @@ impl Catalog {
             "removing".into()
         } else if dir.join(NEW_MARK).exists() {
             "new".into()
+        } else if obj.actual.pointer("/verified/ok") == Some(&json!(false)) {
+            // A package whose stored tree no longer hashes to its pin.
+            "error".into()
         } else if self.drift_fields(&obj)?.is_empty() {
             "in-sync".into()
         } else {
@@ -608,6 +620,47 @@ impl Catalog {
         self.append_log(actor, Some(parent), generation, &ids, "ok", None)?;
         self.write_index()?;
         Ok(ApplyReport { generation: parent, ids, ..Default::default() })
+    }
+
+    /// Hash every linked package tree (all, or `ids`) again against the
+    /// hash it is linked as. With the lock (root), the outcome goes into
+    /// each actual as `verified` (a damaged package's status is `error`)
+    /// and INDEX lists the damage; without it, this only reports.
+    /// Returns each package with what its tree hashes to now.
+    pub fn verify(&self, ids: Option<Vec<ObjectId>>) -> Result<Vec<Verified>> {
+        let ids = match ids {
+            Some(ids) => ids,
+            None => self.ls(Some(KIND_PKG))?,
+        };
+        let mut out = Vec::new();
+        for id in ids {
+            if id.kind != KIND_PKG {
+                return Err(Error::hint(format!("{id} is not a package"), "oath verify [pkg:…]"));
+            }
+            let obj = self.get(&id)?;
+            let hash = obj.actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
+            if obj.actual.get("present") != Some(&json!(true))
+                || !crate::is_realization_id(hash)
+                || !crate::realization_dir(&self.root, &id.name, hash).is_dir()
+            {
+                continue;
+            }
+            let v = crate::verify_tree(&self.root, &id.name, hash)?;
+            out.push(Verified { id, hash: hash.to_string(), verified: v });
+        }
+        let Ok(_lock) = self.lock() else { return Ok(out) };
+        for r in &out {
+            let p = self.obj_dir(&r.id).join("actual.json");
+            let mut actual: Value = read_json(&p)?;
+            // Linked as something else since it was hashed: leave it.
+            if actual.get("hash").and_then(|h| h.as_str()) != Some(r.hash.as_str()) {
+                continue;
+            }
+            actual["verified"] = serde_json::to_value(&r.verified)?;
+            write_json(&p, &actual)?;
+        }
+        self.write_index()?;
+        Ok(out)
     }
 
     pub fn log_lines(&self) -> Result<Vec<Value>> {

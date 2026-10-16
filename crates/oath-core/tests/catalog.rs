@@ -2,8 +2,8 @@ use std::sync::Mutex;
 
 use oath_core::{
     apply_overlay, converge_pkg, copy_objects, hash_tree, ingest_file, install_tree,
-    is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower, NullHooks, ObjectId,
-    Pkg, PkgActual, Result, EXIT_CONFIRM,
+    is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower,
+    NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
 
@@ -73,6 +73,7 @@ impl ApplyHooks for MemHooks {
                 home: desired.home.clone(),
                 components: Vec::new(),
                 advisories: None,
+                verified: None,
             });
         }
         converge_pkg(&self.root, &self.root.join("bin"), &id.name, desired.present, &desired.hash)
@@ -886,4 +887,40 @@ fn a_reboot_ends_a_probation() {
     oath_core::write_json(&d.path().join(oath_core::probation::PROBATION_FILE), &p).unwrap();
     let actor = Actor { uid: 0, tty: "probation".into() };
     assert!(cat.undo_expired(&actor, &hooks).unwrap().is_some());
+}
+
+#[test]
+fn a_damaged_store_tree_is_not_linked_and_verify_says_so() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let hash = promote_slot(d.path(), "hello", None).unwrap();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    set(&cat, "pkg:hello", "present", json!(true)).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["verified"]["ok"], true);
+    let r = cat.verify(None).unwrap();
+    assert!(r.iter().any(|v| v.id == id && v.verified.ok), "{r:?}");
+
+    // Something writes into the stored tree behind the catalog's back.
+    let file = d.path().join("store/pkg/hello").join(&hash).join("bin/hello");
+    let mut perm = std::fs::metadata(&file).unwrap().permissions();
+    #[allow(clippy::permissions_set_readonly_false)]
+    perm.set_readonly(false);
+    std::fs::set_permissions(&file, perm).unwrap();
+    std::fs::write(&file, "tampered\n").unwrap();
+
+    let r = cat.verify(Some(vec![id.clone()])).unwrap();
+    assert!(!r[0].verified.ok && r[0].verified.got != hash, "{r:?}");
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.meta.status, "error");
+    assert_eq!(obj.actual["verified"]["ok"], false);
+    assert!(cat.index_text().unwrap().contains("## Store damage"));
+
+    // Apply refuses to link it again.
+    set(&cat, "pkg:hello", "present", json!(false)).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    set(&cat, "pkg:hello", "present", json!(true)).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert!(err.to_string().contains("store is damaged"), "{err}");
 }

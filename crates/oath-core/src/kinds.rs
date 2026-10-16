@@ -300,6 +300,21 @@ pub struct PkgActual {
     /// Advisories for the live hash. `None` = never fetched (unknown).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub advisories: Option<Vec<PkgAdvisory>>,
+    /// The last time the linked tree was hashed again against `hash`
+    /// (apply, `oath verify`, boot).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verified: Option<PkgVerified>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PkgVerified {
+    /// The tree still hashes to `hash`.
+    pub ok: bool,
+    /// RFC 3339.
+    pub at: String,
+    /// What the tree hashes to now, when that is not `hash`.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub got: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

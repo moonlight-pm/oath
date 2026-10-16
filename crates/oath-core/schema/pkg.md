@@ -54,9 +54,15 @@ The slot has `live` → `<hash>` and compatibility links (`bin` →
 `live/bin`, …) that are not part of the hash.
 
 Actual also has `links` (basenames in `/bin`), `removable`, live
-`hash`, `components`, optional `advisories`, and `realizations` (other
-trees for this name). If `removable` is false, `present=false` is
-refused (not `--confirm`).
+`hash`, `components`, optional `advisories`, `realizations` (other
+trees for this name), and `verified` (`ok`, `at`; `got` when the tree
+no longer hashes to `hash`). If `removable` is false, `present=false`
+is refused (not `--confirm`).
+
+Integrity: apply hashes the tree again before linking and refuses a
+changed one. `oath verify` re-hashes every linked tree (PID 1 runs it
+after each boot); a damaged package has status `error` and INDEX lists
+it. Fetch it again (`url`) or reinstall.
 
 Safety: `mutate`. Apply snapshots, then converges links.
 
