@@ -102,6 +102,8 @@ cargo make bootstrap
     under build/bootstrap/, never ships
   stage 1 (by stage 0): pkg:llvm, pkg:busybox, pkg:make into the build catalog
 cargo make pkgs [names]
+  sources → build/fetch (sha256 pin; upstream signature, cached under
+    build/fetch/sig/, checked against pkgs/keys/<key>.asc)
   pkgs/<name>/pkg.toml + build.sh → source pack pkg:<name>-src
     + pkgs/<name>/<name>.plan (build packs pinned from pkgs/lock.json)
   `oath build` in the sandbox of the build catalog at .cache/oath

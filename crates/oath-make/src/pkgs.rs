@@ -7,13 +7,17 @@
 //! three packs (llvm, busybox, make) with `pkgs/bootstrap.sh` on the host;
 //! after that their plans rebuild them with themselves.
 //!
+//! A source with `sig` is checked against its upstream's OpenPGP
+//! signature, by a key pinned in `pkgs/keys/<key>.asc`, on every fetch; a
+//! source without one says why (`unsigned`).
+//!
 //! Builds run in the catalog at `.cache/oath` (its store is the host store
 //! cache the image build reads).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use oath_core::{fmt_plan, PkgNeed, PlanFile};
@@ -22,7 +26,7 @@ use serde_json::json;
 
 use crate::util::run;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PkgToml {
     pub version: String,
@@ -42,9 +46,12 @@ pub struct PkgToml {
     /// Packs needed at runtime.
     #[serde(default)]
     pub run: Vec<String>,
+    /// Why the sources without `sig` have no signature to check.
+    #[serde(default)]
+    pub unsigned: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Source {
     pub url: String,
@@ -52,6 +59,23 @@ pub struct Source {
     /// File name in the source pack (default: the URL's last segment).
     #[serde(default)]
     pub file: Option<String>,
+    /// URL of the upstream's detached OpenPGP signature over the file (or
+    /// over `sums`, or over the file after `decompress`).
+    #[serde(default)]
+    pub sig: Option<String>,
+    /// The signing key: `pkgs/keys/<key>.asc`.
+    #[serde(default)]
+    pub key: Option<String>,
+    /// URL of a `sha256sum` list that `sig` signs and that must name this
+    /// file with its `sha256`.
+    #[serde(default)]
+    pub sums: Option<String>,
+    /// `xz`: `sig` signs the decompressed file (kernel.org's `.tar.sign`).
+    #[serde(default)]
+    pub decompress: Option<String>,
+    /// Why there is no signature to check.
+    #[serde(default)]
+    pub unsigned: Option<String>,
 }
 
 impl Source {
@@ -107,9 +131,45 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
         let text = fs::read_to_string(&toml_p)?;
         let p: PkgToml =
             toml::from_str(&text).with_context(|| format!("parse {}", toml_p.display()))?;
+        for s in &p.source {
+            check_signed(repo, &p, s)
+                .with_context(|| format!("pkgs/{name}/pkg.toml: {}", s.url))?;
+        }
         out.insert(name, p);
     }
     Ok(out)
+}
+
+/// A source names its signature and key, or says why it has none.
+fn check_signed(repo: &Path, pkg: &PkgToml, s: &Source) -> Result<()> {
+    match (&s.sig, &s.key) {
+        (Some(_), Some(key)) => {
+            if s.unsigned.is_some() {
+                bail!("has both sig and unsigned");
+            }
+            let k = key_file(repo, key);
+            if !k.is_file() {
+                bail!("{} is missing", k.display());
+            }
+        }
+        (Some(_), None) => bail!("sig without key"),
+        (None, _) => {
+            if s.key.is_some() || s.sums.is_some() || s.decompress.is_some() {
+                bail!("key, sums and decompress need sig");
+            }
+            if s.unsigned.as_ref().or(pkg.unsigned.as_ref()).is_none_or(|r| r.is_empty()) {
+                bail!("no sig; say why with unsigned");
+            }
+        }
+    }
+    if let Some(d) = s.decompress.as_deref().filter(|d| *d != "xz") {
+        bail!("decompress = {d:?}; only xz is supported");
+    }
+    Ok(())
+}
+
+fn key_file(repo: &Path, key: &str) -> PathBuf {
+    pkgs_dir(repo).join("keys").join(format!("{key}.asc"))
 }
 
 pub fn read_lock(repo: &Path) -> Result<Lock> {
@@ -127,31 +187,104 @@ fn write_lock(repo: &Path, lock: &Lock) -> Result<()> {
     Ok(())
 }
 
-/// Download (once) and verify every source of `pkg`. Returns each
-/// source's path under `src/` and its file in build/fetch.
+/// Download (once) and verify every source of `pkg`: its sha256 pin and,
+/// when it has one, its upstream signature. Returns each source's path
+/// under `src/` and its file in build/fetch.
 pub fn fetch(repo: &Path, pkg: &PkgToml) -> Result<Vec<(String, PathBuf)>> {
     let dir = repo.join("build/fetch");
     let mut out = Vec::new();
     for s in &pkg.source {
+        check_signed(repo, pkg, s).with_context(|| s.url.clone())?;
         let rel = s.file();
         if rel.split('/').any(|c| c.is_empty() || c == "..") {
             bail!("bad source file name {rel}");
         }
         let dest = dir.join(&rel);
         fs::create_dir_all(dest.parent().context("parent")?)?;
-        if !(dest.is_file() && sha256(&dest)? == s.sha256) {
+        let fresh = !(dest.is_file() && sha256(&dest)? == s.sha256);
+        if fresh {
             eprintln!(">> fetch {}", s.url);
-            let tmp = dest.with_extension("part");
-            run(Command::new("curl").args(["-fL", "--retry", "3", "-o"]).arg(&tmp).arg(&s.url))?;
-            fs::rename(&tmp, &dest)?;
+            download(&s.url, &dest, false)?;
         }
         let got = sha256(&dest)?;
         if got != s.sha256 {
             bail!("{}: sha256 {got}, pkg.toml pins {}", dest.display(), s.sha256);
         }
+        if s.sig.is_some() {
+            let key = format!("pkgs/keys/{}.asc", s.key.as_deref().unwrap_or(""));
+            let who = verify_sig(repo, s, &dest)
+                .with_context(|| format!("signature of {} (checked against {key})", s.url))?;
+            if fresh {
+                eprintln!(">> signed by {who} ({key})");
+            }
+        } else if fresh {
+            let why = s.unsigned.as_ref().or(pkg.unsigned.as_ref()).map_or("", |w| w.as_str());
+            eprintln!(">> unsigned: {why}");
+        }
         out.push((rel, dest));
     }
     Ok(out)
+}
+
+fn download(url: &str, dest: &Path, quiet: bool) -> Result<()> {
+    fs::create_dir_all(dest.parent().context("parent")?)?;
+    let tmp = dest.with_extension("part");
+    let mut curl = Command::new("curl");
+    if quiet {
+        curl.arg("-sS");
+    }
+    run(curl.args(["-fL", "--retry", "3", "-o"]).arg(&tmp).arg(url))?;
+    fs::rename(&tmp, dest)?;
+    Ok(())
+}
+
+/// Check `file` against `s.sig` and the key it names; returns the signing
+/// key's fingerprint. Signatures and sums lists are fetched once, to
+/// build/fetch/sig/<host>/<path>.
+fn verify_sig(repo: &Path, s: &Source, file: &Path) -> Result<String> {
+    let (Some(sig_url), Some(key)) = (&s.sig, &s.key) else { bail!("no sig") };
+    let keys = fs::read(key_file(repo, key))?;
+    let cached = |url: &str| -> Result<Vec<u8>> {
+        let rel = url.split_once("://").map_or(url, |(_, r)| r);
+        if rel.contains('?') || rel.split('/').any(|c| c.is_empty() || c == "..") {
+            bail!("bad signature URL {url}");
+        }
+        let p = repo.join("build/fetch/sig").join(rel);
+        if !p.is_file() {
+            download(url, &p, true)?;
+        }
+        Ok(fs::read(p)?)
+    };
+    let sig = cached(sig_url)?;
+    match (&s.sums, s.decompress.as_deref()) {
+        (Some(sums_url), _) => {
+            let sums = cached(sums_url)?;
+            let who = crate::openpgp::verify(&keys, &sig, &sums[..])?;
+            let name = s.url.rsplit('/').next().unwrap_or("");
+            if !lists(&String::from_utf8_lossy(&sums), name, &s.sha256) {
+                bail!("{sums_url} does not list {name} with sha256 {}", s.sha256);
+            }
+            Ok(who)
+        }
+        (None, Some(_)) => {
+            let mut xz = Command::new("xz").arg("-dc").arg(file).stdout(Stdio::piped()).spawn()?;
+            let r = crate::openpgp::verify(&keys, &sig, xz.stdout.take().context("xz")?);
+            if !xz.wait()?.success() {
+                bail!("xz -dc {} failed", file.display());
+            }
+            r
+        }
+        (None, None) => crate::openpgp::verify(&keys, &sig, fs::File::open(file)?),
+    }
+}
+
+/// Whether a `sha256sum` list names `name` with `sha256`.
+fn lists(sums: &str, name: &str, sha256: &str) -> bool {
+    sums.lines().any(|l| {
+        let mut f = l.split_whitespace();
+        matches!((f.next(), f.next()), (Some(h), Some(n))
+            if h.eq_ignore_ascii_case(sha256) && n.trim_start_matches('*') == name)
+    })
 }
 
 fn sha256(p: &Path) -> Result<String> {
@@ -356,6 +489,22 @@ pub fn list(repo: &Path) -> Result<()> {
         if !p.description.is_empty() {
             println!("{:12} {} {}", "", p.description, p.home);
         }
+        let keys: BTreeSet<&str> = p.source.iter().filter_map(|s| s.key.as_deref()).collect();
+        let unsigned: Vec<String> =
+            p.source.iter().filter(|s| s.sig.is_none()).map(Source::file).collect();
+        let mut sig = Vec::new();
+        if !keys.is_empty() {
+            sig.push(format!(
+                "signed by keys/{}",
+                keys.into_iter().collect::<Vec<_>>().join(", keys/")
+            ));
+        }
+        match unsigned.len() {
+            0 => {}
+            1..=2 => sig.push(format!("unsigned: {}", unsigned.join(", "))),
+            n => sig.push(format!("{n} sources unsigned")),
+        }
+        println!("{:12} {}", "", sig.join("; "));
     }
     Ok(())
 }
@@ -429,12 +578,8 @@ mod tests {
         PkgToml {
             version: "1".into(),
             license: "MIT".into(),
-            description: String::new(),
-            home: String::new(),
-            purl: String::new(),
-            source: Vec::new(),
             build: build.iter().map(|s| s.to_string()).collect(),
-            run: Vec::new(),
+            ..Default::default()
         }
     }
 
@@ -454,6 +599,15 @@ mod tests {
         let mut locked = Lock::new();
         locked.insert("a".into(), LockEntry::default());
         assert_eq!(order(&all, &["a".into()], &locked).unwrap(), vec!["b", "a"]);
+    }
+
+    #[test]
+    fn sums_lists_name_and_hash() {
+        let sums = "abcd  other.tar.gz\nBD24  cmake-4.4.4.tar.gz\nffff *bin.tar.gz\n";
+        assert!(lists(sums, "cmake-4.4.4.tar.gz", "bd24"));
+        assert!(lists(sums, "bin.tar.gz", "ffff"));
+        assert!(!lists(sums, "cmake-4.4.4.tar.gz", "abcd"));
+        assert!(!lists(sums, "cmake-4.4.4.tar", "bd24"));
     }
 
     #[test]

@@ -23,3 +23,14 @@ publish = false
 lto = true
 codegen-units = 1
 strip = "symbols"
+
+# oath-make hashes gigabytes of sources (sha256 pins, upstream signatures)
+# under `cargo make`, a dev build: optimize the hash and bignum crates.
+[profile.dev.package.sha1]
+opt-level = 3
+
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.num-bigint-dig]
+opt-level = 3

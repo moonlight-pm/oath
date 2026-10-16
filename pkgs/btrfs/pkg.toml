@@ -8,3 +8,7 @@ build = ["llvm", "busybox", "make", "pkgconf", "zlib", "zstd", "lzo", "util-linu
 [[source]]
 url = "https://www.kernel.org/pub/linux/kernel/people/kdave/btrfs-progs/btrfs-progs-v7.1.tar.xz"
 sha256 = "d1f55cc2971398c9142eaa79d203e63d586a3b4b867f956664a1d68322cd4e34"
+# kernel.org signs the uncompressed tar.
+sig = "https://www.kernel.org/pub/linux/kernel/people/kdave/btrfs-progs/btrfs-progs-v7.1.tar.sign"
+key = "btrfs"
+decompress = "xz"

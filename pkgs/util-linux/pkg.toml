@@ -7,3 +7,7 @@ build = ["llvm", "busybox", "make", "pkgconf"]
 [[source]]
 url = "https://www.kernel.org/pub/linux/utils/util-linux/v2.42/util-linux-2.42.4.tar.xz"
 sha256 = "fbd62a100ab7bb8746ba0661255c3c48185b1e9021507c624da01fbc696330ec"
+# kernel.org signs the uncompressed tar.
+sig = "https://www.kernel.org/pub/linux/utils/util-linux/v2.42/util-linux-2.42.4.tar.sign"
+key = "util-linux"
+decompress = "xz"

@@ -11,8 +11,9 @@ same product hash. Plans are how Oath makes native packages.
 toolchain are built; every package in the image is a plan product: the
 C packages, `pkg:llvm` and the kernel (`pkg:linux`) from `pkgs/` via
 `cargo make pkgs`, and the Oath binaries (`pkg:oath`) from this tree,
-built by the vendor's Rust release (`pkg:rust`). Still target: upstream
-signature checks, immutable outputs, build logs.
+built by the vendor's Rust release (`pkg:rust`), and sources are checked
+against their upstreams' OpenPGP signatures. Still target: immutable
+outputs, build logs, Sigstore signatures.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -94,6 +95,19 @@ Zig is not used (R9).
 - **Stage 1**, built by stage 0: a static musl `pkg:llvm` (clang, lld,
   the LLVM binutils, its own sysroot; `bin/clang.cfg` points at that
   sysroot and links statically by default), static busybox and make.
+- **Sources** (`cargo make pkgs` and `bootstrap`, on the build host):
+  every source is pinned by sha256 and, where its upstream signs, by an
+  OpenPGP signature checked on every fetch against one key per upstream
+  in `pkgs/keys/<key>.asc`. The key is the trust pin: a release signed
+  by another key fails until a person adds that key. kernel.org signs
+  the uncompressed tar (`decompress = "xz"`); CMake signs a sha256 list
+  (`sums`). 22 sources are signed by 19 keys. The rest say why not
+  (`unsigned`): Python and Perl sign only with Sigstore, which is not
+  checked yet; Linus's rc tarball and the firmware blobs are cgit
+  output; lzo, mbedTLS, Ninja, patchelf, pkgconf and the CA bundle
+  publish no signature; crates are pinned by `Cargo.lock`. The verifier
+  is `oath-make`'s own (v4 signatures, RSA and DSA, SHA-1 and SHA-2);
+  it does not check expiry or revocation.
 - **Stage 2** (`cargo make pkgs`): every package in `pkgs/` is a plan
   pinned to its source pack (`pkg:<name>-src`) and to the build packs in
   `pkgs/lock.json`, built by the same `oath build` in a user-namespace
@@ -174,7 +188,8 @@ Zig is not used (R9).
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans (phase 8).
 
-Target: upstream signature checks on top of the sha256 pins.
+Target: Sigstore bundles for the upstreams that sign only that way
+(Python, Perl).
 
 ## Target fixes
 

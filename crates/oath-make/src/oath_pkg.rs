@@ -117,17 +117,13 @@ fn fetch_crates(repo: &Path) -> Result<Vec<(String, PathBuf)>> {
             url: format!("https://static.crates.io/crates/{name}/{name}-{version}.crate"),
             sha256: sum.to_string(),
             file: Some(format!("crates/{name}-{version}.crate")),
+            ..Default::default()
         });
     }
     let pkg = PkgToml {
-        version: String::new(),
-        license: String::new(),
-        description: String::new(),
-        home: String::new(),
-        purl: String::new(),
         source,
-        build: Vec::new(),
-        run: Vec::new(),
+        unsigned: Some("crates.io crates are pinned by Cargo.lock's checksums".into()),
+        ..Default::default()
     };
     pkgs::fetch(repo, &pkg)
 }

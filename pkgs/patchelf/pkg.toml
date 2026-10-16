@@ -7,3 +7,4 @@ build = ["llvm", "busybox", "make"]
 [[source]]
 url = "https://github.com/NixOS/patchelf/releases/download/0.19.2/patchelf-0.19.2.tar.gz"
 sha256 = "78cb26bda2b89fababfe189c2f6507240340f1aa45dec2eb49a39473a50ceea1"
+unsigned = "upstream publishes no signature"

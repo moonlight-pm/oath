@@ -126,7 +126,9 @@ nothing in it comes from nixpkgs.
   license on record, can be published.
 - **Pack manifest.** Every pack the image ships is listed with its
   source, pin and license in one file.
-- Out of scope for now: signatures and signed indexes, reaping unused
+- Out of scope for now: signatures on Oath's own packs and indexes
+  (upstream sources are signature-checked at build time, see
+  builds.md), reaping unused
   realizations, peer discovery.
 
 ## Pack layout

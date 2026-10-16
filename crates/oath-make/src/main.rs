@@ -5,6 +5,7 @@ mod cpio;
 mod install;
 mod kernel;
 mod oath_pkg;
+mod openpgp;
 mod pack;
 mod pkgs;
 mod qemu;

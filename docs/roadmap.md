@@ -73,11 +73,12 @@ the only loader); the installer uses sfdisk, wipefs and native mkfs.
 
 Since: the kernel is a plan built by `pkg:llvm` (2026-10-15), and the
 Oath binaries are `pkg:oath`, built by the vendor's Rust pack
-`pkg:rust` and linked against `pkg:llvm`'s musl (2026-10-16).
+`pkg:rust` and linked against `pkg:llvm`'s musl (2026-10-16). Sources
+are checked against upstream OpenPGP signatures by keys pinned in
+`pkgs/keys/` (2026-10-16).
 
-Not done, carried forward: upstream signature checks (sources are
-sha256-pinned), a publish allowlist that reads the licences in
-`lock.json`, immutable build outputs with a manifest.
+Not done, carried forward: a publish allowlist that reads the licences
+in `lock.json`, immutable build outputs with a manifest.
 
 ## 6. Reinstall — active
 

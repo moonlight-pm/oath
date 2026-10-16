@@ -7,6 +7,7 @@ license = "LicenseRef-linux-firmware"
 description = "Firmware blobs from linux-firmware for the machines Oath runs on."
 home = "https://gitlab.com/kernel-firmware/linux-firmware"
 build = ["busybox"]
+unsigned = "cgit serves single blobs; linux-firmware signs only its git tags"
 
 [[source]]
 url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_ce.bin?h=20260916"

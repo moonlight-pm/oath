@@ -10,12 +10,44 @@ Every package that ships in Oath is built from source here (R7 in
 | `<name>/*` (other files and directories) | configs and patches; the plan sees them under `$FILES` |
 | `<name>/<name>.plan` | generated: the exact plan that was built (source pack and every build pack pinned by hash) |
 | `lock.json` | what each name resolves to: version, licence, how it was built, plan hash, product hash |
+| `keys/<key>.asc` | one upstream's OpenPGP signing key, armored, with where it came from in its `Comment:` |
 | `bootstrap.sh`, `bootstrap.nix` | stage 0 and stage 1 on the build host |
+
+## Signatures
+
+Every `[[source]]` either names its upstream's signature or says why it
+has none:
+
+```toml
+[[source]]
+url = "https://ftp.gnu.org/gnu/m4/m4-1.4.21.tar.xz"
+sha256 = "f25c…"
+sig = "https://ftp.gnu.org/gnu/m4/m4-1.4.21.tar.xz.sig"
+key = "m4"                 # pkgs/keys/m4.asc
+```
+
+- `decompress = "xz"`: the signature is over the uncompressed file
+  (kernel.org's `.tar.sign`).
+- `sums = "<url>"`: the signature is over a `sha256sum` list, which
+  must name the file with its `sha256` (CMake).
+- `unsigned = "<why>"`: no signature to check. A package-level
+  `unsigned` covers all of its sources that have no `sig` (firmware).
+
+Every fetch checks the sha256 pin, then the signature (cached under
+`build/fetch/sig/`). A key file holds exactly the key that signs the
+pinned release, exported minimal from the upstream's own published
+key where there is one, else from keyserver.ubuntu.com. To bump a
+version, change `url`, `sha256` and `sig` together. If the new release
+is signed by a different key, the fetch fails and names that key. A
+person adds the key to `keys/<key>.asc` from the upstream's published
+list; that is the trust decision, and an agent does not make it alone.
+`cargo make pkgs --list` shows each package's keys and its unsigned
+sources.
 
 ## Bootstrap
 
 `cargo make bootstrap` (hours) builds the toolchain from the pinned
-sources in `llvm/pkg.toml`, `busybox/pkg.toml` and `make/pkg.toml`:
+(and signature-checked) sources in `llvm/pkg.toml`, `busybox/pkg.toml` and `make/pkg.toml`:
 
 1. **Stage 0**, with the build host's gcc (`nix-shell bootstrap.nix`):
    clang and lld targeting `x86_64-unknown-linux-musl`, and a sysroot of

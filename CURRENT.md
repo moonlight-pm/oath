@@ -9,13 +9,13 @@ append history (git has it).
 
 ## Now
 
-1. **Native base leftovers (phase 5).** One musl ships: since
-   2026-10-16 `pkg:oath` is linked by `pkg:llvm`'s clang against its
-   musl 1.2.6 and libunwind, and its plan fails on any gcc-built
-   object. Sources are sha256-pinned but upstream signatures are not
-   checked; nothing enforces a licence allowlist on publish; build
-   outputs have no manifest. Next: verify upstream signatures in
-   `cargo make pkgs`'s fetch, against signing keys pinned in `pkgs/`.
+1. **Native base leftovers (phase 5).** Since 2026-10-16 every fetch
+   checks upstream OpenPGP signatures against one key per upstream in
+   `pkgs/keys/` (22 sources, 19 keys); the rest say why not in
+   `unsigned` (Python and Perl: Sigstore only). Nothing enforces a
+   licence allowlist on publish; build outputs have no manifest. Next:
+   `cargo make publish` refuses a package that no profile names or
+   whose `lock.json` licence is empty.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
