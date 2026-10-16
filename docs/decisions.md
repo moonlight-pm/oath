@@ -12,7 +12,8 @@ acting on anything under **Open**. Replaces `open-questions.md`
   (busybox, btrfs, util-linux, dosfstools) on an origin without their
   source. Should it also publish each package's `-src` pack and plan
   (the exact sources, patches and build script) beside it? Until
-  decided, publish to private origins only.
+  decided, publish to private origins only. Joshua (2026-10-16) would
+  like permissive alternatives to the GPL packages some day; not now.
 
 ## 2026-10-13 review (briefing D1–D8)
 

@@ -15,9 +15,13 @@ files are written with `dd`, so the user's login shell does not matter.
 
 ## What it does
 
-1. Refuses an image that has not passed `cargo make check` (the stamp
-   in `build/check-pass` must match the kernel, initrd and image).
-   `--unchecked` skips this; `--qemu` rehearsals are not gated.
+1. Picks a build output: `--output <id>`, else the newest one that
+   passed `cargo make check` (its `check-pass` must match the kernel,
+   initrd and image). `--unchecked` takes the latest output without
+   that; `--qemu` rehearsals take the latest and are not gated.
+   Everything below comes from that one output; the build host's keys
+   are baked into a copy of its installer ramdisk under
+   `build/runs/<time>-install/`, never into the output.
    Reads and checks `--overlay` against a scratch catalog, before
    anything is wiped.
 2. Boots an **installer ramdisk** on the target (`oath.install=1`,
@@ -98,6 +102,7 @@ host; it sees `/run/oath-install/ready` and skips step 2.
 
 ## Later kernel and initrd updates
 
-`cargo make esp` rotates a new kernel and initrd onto an existing ESP
-without wiping. See [Generations](generations.md) for what it does and
+`cargo make esp` rotates an output's kernel, initrd and `oath-efi` onto
+an existing ESP without wiping (`--output <id>`, else the newest
+checked output). See [Generations](generations.md) for what it does and
 why it must not be pointed at the build host's own ESP.

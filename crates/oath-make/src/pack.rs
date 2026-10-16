@@ -11,19 +11,9 @@ use flate2::Compression;
 use oath_core::{converge_with_link_root, promote_store, write_json};
 
 use crate::cpio;
+use crate::output::{self, Output};
 use crate::tools::Tools;
 use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
-
-/// Kernel + initrd only. Used by `cargo make esp` on metal (no qcow, no
-/// qemu). Returns pkg:oath's tree, which holds `oath-efi`.
-pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<PathBuf> {
-    fs::create_dir_all(out)?;
-    eprintln!("kernel={}", tools.kernel.display());
-    eprintln!("modules={}", tools.modules.display());
-    let oath = crate::oath_pkg::build(root)?;
-    write_initrd(root, out, tools, &oath.join("lib/oath/init"))?;
-    Ok(oath)
-}
 
 /// Native tools the installer runs over SSH (static binaries): pack and
 /// file under its `bin/`.
@@ -37,9 +27,11 @@ pub(crate) const INSTALLER_TOOLS: &[(&str, &str)] = &[
     ("dosfstools", "mkfs.fat"),
 ];
 
-/// Pack the image for one seed profile (`base`, `dev`). The profile's
-/// present packages are packed; anything else it names stays absent.
-pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()> {
+/// Pack the image for one seed profile (`base`, `dev`) into a build output
+/// (`build/out/<id>/`, see output.rs), or reuse the output of an unchanged
+/// tree. The profile's present packages are packed; anything else it
+/// names stays absent. `out` is the build directory.
+pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Output> {
     let wanted =
         oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
     for name in &wanted {
@@ -47,21 +39,27 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
             bail!("profile {profile} wants pkg:{name}, which this build cannot pack yet");
         }
     }
-    fs::create_dir_all(out)?;
-    eprintln!("profile={profile}");
+    // The Oath binaries: pkg:oath, this tree built by pkg:rust.
+    let oath = crate::oath_pkg::build(root)?;
+    let manifest = crate::manifest::make(root, tools, profile)?;
+    let id = output::id(&manifest);
+    if let Some(o) = output::reuse(out, &id)? {
+        eprintln!("output {} (unchanged tree)", o.dir.display());
+        return Ok(o);
+    }
+    let dir = output::begin(out, &id)?;
+    eprintln!("profile={profile} output={id}");
     eprintln!("kernel={}", tools.kernel.display());
     eprintln!("modules={}", tools.modules.display());
     eprintln!("packs={}", tools.packs.keys().cloned().collect::<Vec<_>>().join(" "));
 
-    // The Oath binaries: pkg:oath, this tree built by pkg:rust.
-    let oath = crate::oath_pkg::build(root)?;
     let lib = oath.join("lib/oath");
-    write_initrd(root, out, tools, &lib.join("init"))?;
+    write_initrd(&dir, tools, &lib.join("init"))?;
 
     eprintln!(">> installer initramfs");
-    let ir_install = out.join("initramfs-install");
+    let ir_install = dir.join("initramfs-install");
     let _ = fs::remove_dir_all(&ir_install);
-    copy_tree(&out.join("initramfs"), &ir_install)?;
+    copy_tree(&dir.join("initramfs"), &ir_install)?;
     for &(pack, file) in INSTALLER_TOOLS {
         let dest = ir_install.join("bin").join(file);
         let _ = fs::remove_file(&dest);
@@ -74,7 +72,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let _ = fs::remove_file(ir_install.join("bin/tar"));
     symlink("busybox", ir_install.join("bin/tar"))?;
     fs::create_dir_all(ir_install.join("opt/oath-install"))?;
-    copy_file(&out.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
+    copy_file(&dir.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
     copy_file(&tools.kernel, &ir_install.join("opt/oath-install/vmlinuz"))?;
     // oath-efi is the boot loader (menu, BLS entries, kernel + initrd).
     copy_file(&efi(&oath), &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
@@ -90,11 +88,11 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
         symlink("busybox", ir_install.join("bin").join(a))?;
     }
     fs::create_dir_all(ir_install.join("root/.ssh"))?;
-    let initrd_install = write_cpio_gz(&ir_install, &out.join("initrd-install.gz"))?;
+    let initrd_install = write_cpio_gz(&ir_install, &dir.join("initrd-install.gz"))?;
     eprintln!("initrd-install {}", initrd_install.display());
 
     eprintln!(">> stage rootfs");
-    let stage = out.join("stage");
+    let stage = dir.join("stage");
     let _ = fs::remove_dir_all(&stage);
     for d in [
         "bin", "sbin", "lib/oath", "etc", "root", "home", "tmp", "proc", "sys", "dev", "run",
@@ -171,14 +169,14 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     settle_pkg_actuals(&oath_root)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
-    let raw = out.join("root.raw");
-    let qcow = out.join("oath.qcow2");
+    let raw = dir.join("root.raw");
+    let qcow = dir.join("oath.qcow2");
     let _ = fs::remove_file(&raw);
     let _ = fs::remove_file(&qcow);
     run(Command::new(&tools.qemu_img).args(["create", "-f", "raw", raw.to_str().unwrap(), "4G"]))?;
     run(Command::new("mkfs.btrfs").args(["-q", "-L", "oath", raw.to_str().unwrap()]))?;
-    let mnt = out.join("mnt");
-    let rootfs = out.join("rootfs");
+    let mnt = dir.join("mnt");
+    let rootfs = dir.join("rootfs");
     fs::create_dir_all(&mnt)?;
     fs::create_dir_all(&rootfs)?;
     // nix-shell puts busybox `mount` first; that binary does not
@@ -223,16 +221,20 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     let _ = fs::remove_file(&raw);
     let uid = format!("{}", nix_uid());
     let gid = format!("{}", nix_gid());
-    let _ = sudo(&["chown", "-R", &format!("{uid}:{gid}"), out.to_str().unwrap()]);
-    let bz = out.join("bzImage");
+    let _ = sudo(&["chown", "-R", &format!("{uid}:{gid}"), dir.to_str().unwrap()]);
+    let bz = dir.join("bzImage");
     let _ = fs::remove_file(&bz);
     copy_file(&tools.kernel, &bz)?;
-    crate::manifest::write(root, out, tools, profile)?;
-    eprintln!("image {}", qcow.display());
-    eprintln!("kernel {}", bz.display());
-    eprintln!("manifest {}", out.join("manifest.json").display());
-    eprintln!("next: cargo make run");
-    Ok(())
+    copy_file(&efi(&oath), &dir.join("BOOTX64.EFI"))?;
+    crate::util::write_pretty(&dir.join("manifest.json"), &manifest)?;
+    // Packing scratch: the boot initrd's tree and the mount points.
+    for scratch in ["initramfs", "mnt", "rootfs"] {
+        let _ = fs::remove_dir_all(dir.join(scratch));
+    }
+    let o = output::finish(out, &id, &dir)?;
+    eprintln!("output {}", o.dir.display());
+    eprintln!("next: cargo make check, then cargo make install");
+    Ok(o)
 }
 
 /// `oath-efi` inside pkg:oath's tree.
@@ -240,8 +242,7 @@ pub(crate) fn efi(oath: &Path) -> PathBuf {
     oath.join("boot/BOOTX64.EFI")
 }
 
-fn write_initrd(root: &Path, out: &Path, tools: &Tools, init: &Path) -> Result<()> {
-    let _ = root;
+fn write_initrd(out: &Path, tools: &Tools, init: &Path) -> Result<()> {
     eprintln!(">> initramfs");
     let ir = out.join("initramfs");
     let _ = fs::remove_dir_all(&ir);
@@ -382,12 +383,14 @@ fn copy_firmware(tools: &Tools, ir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn bake_install_keys(out: &Path, keys: &str) -> Result<PathBuf> {
-    let tree = out.join("initramfs-install");
+/// The output's installer initrd with `keys` as root's authorized keys,
+/// written to `run/initrd-install.gz` (the output stays as it is).
+pub fn bake_install_keys(o: &Output, run: &Path, keys: &str) -> Result<PathBuf> {
+    let tree = o.file("initramfs-install");
     if !tree.join("init").is_file() {
-        bail!("missing installer initramfs (run cargo make build)");
+        bail!("output {} has no installer initramfs", o.id);
     }
-    let baked = out.join("initramfs-install-keys");
+    let baked = run.join("initramfs-install-keys");
     let _ = fs::remove_dir_all(&baked);
     copy_tree(&tree, &baked)?;
     fs::create_dir_all(baked.join("root/.ssh"))?;
@@ -397,7 +400,9 @@ pub fn bake_install_keys(out: &Path, keys: &str) -> Result<PathBuf> {
         baked.join("root/.ssh/authorized_keys"),
         fs::Permissions::from_mode(0o600),
     )?;
-    write_cpio_gz(&baked, &out.join("initrd-install.gz"))
+    let gz = write_cpio_gz(&baked, &run.join("initrd-install.gz"))?;
+    let _ = fs::remove_dir_all(&baked);
+    Ok(gz)
 }
 
 /// Transitive closure + topological load order from `modules.dep`.

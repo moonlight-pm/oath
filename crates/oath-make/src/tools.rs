@@ -82,7 +82,7 @@ pub fn load(root: &Path) -> Result<Tools> {
         let p = host.join(name);
         p.is_file().then_some(p)
     };
-    // `cargo make boot` / `esp` need no QEMU; NixOS has no /bin/true.
+    // `cargo make esp` needs no QEMU; NixOS has no /bin/true.
     let qemu = which("qemu-system-x86_64")
         .or_else(|| which("true"))
         .unwrap_or_else(|| PathBuf::from("/bin/true"));

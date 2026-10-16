@@ -78,11 +78,9 @@ are checked against upstream OpenPGP signatures by keys pinned in
 `pkgs/keys/` (2026-10-16).
 
 `cargo make publish` carries only the packages a seed profile names,
-each with its licence, and `cargo make build` lists every shipped pack
-in `build/manifest.json` (2026-10-16).
-
-Not done, carried forward: immutable build outputs that install
-verifies.
+each with its licence, and `cargo make build` writes immutable outputs
+(`build/out/<id>/`, with a manifest of every shipped pack) that install
+and `esp` take by id (2026-10-16).
 
 ## 6. Reinstall — active
 

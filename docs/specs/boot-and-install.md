@@ -9,9 +9,8 @@ an installer ramdisk and writes machine facts from a host overlay.
 **Status:** partly built. The kernel pin and version check, the menu,
 boot rotation, profiles, overlays, the install flow, the `esp`
 build-host guard, the test harness that gates installs, switch_root,
-`panic=10` and the orderly shutdown are built. `cargo make build` writes
-`build/manifest.json`; an immutable output that install and `esp`
-verify is the target.
+`panic=10` and the orderly shutdown are built, and so are immutable
+build outputs that install and `esp` take by id.
 
 Replaces: T27 (metal install), T38 (boot generations), the image parts
 of T24, and D3 (seed as data).
@@ -45,8 +44,8 @@ of T24, and D3 (seed as data).
 - `cargo make build --profile <p>` builds the musl binaries, packs the
   profile's present packages, seeds `stage/oath` with
   `oath seed --profile <p>`, hashes the store, and writes a btrfs `@`
-  into `build/oath.qcow2`. It also writes the boot initrd and the
-  installer initrd.
+  into a build output's `oath.qcow2` (`build/out/<id>/`, below), with
+  the boot initrd and the installer initrd.
 - A **host overlay** is the same JSON shape with only `objects`; each
   object is a JSON merge patch on desired. Machine facts live there
   (hostname, timezone, a backup target), never in a profile. Each
@@ -116,26 +115,35 @@ not matter (canto's September image logged `home` into Thoxa).
 
 ## Known defects (from the 2026-10-13 review)
 
-- Install copies whatever `build/stage` holds, which may be stale or
-  from another profile.
 - Stage 0 of the toolchain is compiled with a floating nixpkgs
   (`pkgs/bootstrap.nix`). Everything that ships, the kernel and the
   Oath binaries included, is a pinned plan product (builds.md).
 
 ## Target
 
-- **Immutable outputs.** Each build writes `build/out/<id>/` with its
-  manifest (built today as `build/manifest.json`: profile, kernel
-  release, every pack's pin, licence and sources). Install and `esp`
-  take an output id, verify the manifest, and never read a mutable
-  stage.
 - **Build-host guard (install).** `install` refuses a target that is
   the build host. (`esp` already refuses to run on a machine that is
   not Oath.)
 
+## Build outputs (built)
+
+`cargo make build` packs into `build/out/.<id>.part/` and renames it to
+`build/out/<id>/` when complete: `manifest.json` (profile, kernel
+release, every pack's pin, licence and sources), the qcow, kernel,
+initrds, `oath-efi`, the installer tree and the stage. The id is the
+manifest's hash without the commit, so an unchanged tree reuses its
+output. Nothing writes into an output afterwards except a clean
+`check`, which adds `check-pass`. `install` and `esp` take
+`--output <id>` (default: the newest checked output; `install --qemu`
+and `--unchecked` take the latest) and read only that output; install
+bakes the host's keys into a copy of the installer ramdisk in its run
+directory. `run`, `up`, `start` and `check` boot `build/out/latest`.
+Five outputs are kept, and the newest checked one.
+
 ## Test harness (built)
 
-`cargo make check` boots `build/oath.qcow2` once per case in headless
+`cargo make check` boots an output's `oath.qcow2` (the latest, or
+`--output <id>`) once per case in headless
 QEMU (four at a time, 1 GiB each, a throwaway SSH key over fw_cfg),
 serves the fetch canary at the guest's 10.0.2.2:18765, and runs the
 steps in `check/cases.toml` over SSH as `home`. A case makes the
@@ -145,9 +153,9 @@ plain `reboot`, waits for QEMU to exit (it runs with `-no-reboot`) and
 boots the same disk again.
 A case marked `gap` is a known failure assigned to a phase; it may fail,
 and the run fails if it starts passing so the mark gets removed. A clean
-full run writes `build/check-pass` (sha256 of kernel, initrd and image);
-`cargo make install` refuses an image without a matching stamp unless
-given `--unchecked`. `install --qemu` is itself a test and is not gated.
+full run writes `check-pass` into that output (sha256 of kernel, initrd
+and image); `cargo make install` refuses an output without a matching
+stamp unless given `--unchecked`. `install --qemu` is itself a test and is not gated.
 
 `cargo make check --target user@host` runs the cases marked `metal` on
 an installed machine, one at a time, trusting only the host key in

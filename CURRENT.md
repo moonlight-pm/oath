@@ -9,15 +9,14 @@ append history (git has it).
 
 ## Now
 
-1. **Native base leftovers (phase 5).** Since 2026-10-16 every fetch
-   checks upstream OpenPGP signatures against keys in `pkgs/keys/`
-   (Python and Perl sign only with Sigstore, unchecked), and
-   `cargo make publish` carries only the profiles' packages, each with
-   its licence; `build/manifest.json` lists every pack the image ships
-   with its pins, keys and licence. Open for Joshua: publish GPL source
-   beside the binaries? Build outputs are still overwritten in place.
-   Next: `cargo make build` writes `build/out/<id>/` (id: the
-   manifest's hash) and `install` takes that id.
+1. **Build integrity (phase 5 follow-ups).** Sources are checked
+   against upstream OpenPGP signatures (Python and Perl sign only with
+   Sigstore, unchecked); publish carries only the profiles' licensed
+   packages; `cargo make build` writes immutable outputs
+   (`build/out/<id>/`, with a manifest) that install and `esp` take by
+   id. Open for Joshua: GPL source on origins (decisions.md). Next:
+   `oath build` refuses to write into a store tree that exists and logs
+   each build under `/oath/log` (builds.md, Target fixes).
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a

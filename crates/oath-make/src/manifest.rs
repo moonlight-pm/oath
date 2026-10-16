@@ -1,7 +1,7 @@
-//! `build/manifest.json`, written by `cargo make build` beside the image:
-//! every pack the image ships, where it ships, and what it was built from
-//! (hash, version, licence, plan, and its source pins with their signing
-//! keys, or for pkg:oath the commit of this tree).
+//! An output's `manifest.json` (`build/out/<id>/`): every pack the image
+//! ships, where it ships, and what it was built from (hash, version,
+//! licence, plan, and its source pins with their signing keys, or for
+//! pkg:oath the commit of this tree). Its hash is the output's id.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -12,9 +12,11 @@ use serde_json::{json, Value};
 
 use crate::pack::INSTALLER_TOOLS;
 use crate::tools::Tools;
-use crate::util::{run_out, write_pretty};
+use crate::util::run_out;
 
-pub fn write(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()> {
+/// The manifest of the image `cargo make build` would pack now. pkg:oath
+/// must be built.
+pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
     // Where each pack ships: `rootfs` (the profile's store), `initrd`,
     // `installer` (the install initramfs's own tools), `esp`.
     let mut ships: BTreeMap<String, BTreeSet<&str>> = BTreeMap::new();
@@ -32,7 +34,8 @@ pub fn write(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
         at("firmware", "initrd");
     }
     // OATH_KERNEL / OATH_MODULES may name a kernel that is not pkg:linux.
-    if tools.packs.get("linux").is_some_and(|p| tools.kernel.starts_with(p)) {
+    let own_kernel = tools.packs.get("linux").is_some_and(|p| tools.kernel.starts_with(p));
+    if own_kernel {
         at("linux", "initrd");
         at("linux", "esp");
     }
@@ -86,10 +89,14 @@ pub fn write(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
         packs.insert(name, entry);
     }
     let kernel = crate::kernel::check(&tools.kernel, &tools.modules)?;
-    write_pretty(
-        &out.join("manifest.json"),
-        &json!({ "profile": profile, "kernel": kernel, "packs": packs }),
-    )
+    let mut m = json!({ "profile": profile, "kernel": kernel, "packs": packs });
+    if !own_kernel {
+        m["kernel_override"] = json!({
+            "vmlinuz": crate::util::sha256_file(&tools.kernel)?,
+            "modules": oath_core::hash_tree(&tools.modules).map_err(|e| anyhow::anyhow!("{e}"))?,
+        });
+    }
+    Ok(m)
 }
 
 /// HEAD of this tree, with `-dirty` when what pkg:oath packs has changed.

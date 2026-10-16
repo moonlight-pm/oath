@@ -15,12 +15,16 @@ pub struct Image {
     pub backing: PathBuf,
 }
 
-pub fn load_image(out: &Path) -> Result<Image> {
-    let kernel =
-        std::env::var_os("OATH_KERNEL").map(PathBuf::from).unwrap_or_else(|| out.join("bzImage"));
-    let backing =
-        std::env::var_os("OATH_IMAGE").map(PathBuf::from).unwrap_or_else(|| out.join("oath.qcow2"));
-    let initrd = out.join("initrd.gz");
+/// The image of a build output (`build/out/<id>/`). `OATH_KERNEL` and
+/// `OATH_IMAGE` override its kernel and disk.
+pub fn load_image(output: &Path) -> Result<Image> {
+    let kernel = std::env::var_os("OATH_KERNEL")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| output.join("bzImage"));
+    let backing = std::env::var_os("OATH_IMAGE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| output.join("oath.qcow2"));
+    let initrd = output.join("initrd.gz");
     for p in [&kernel, &backing, &initrd] {
         if !p.is_file() {
             bail!("missing {} — run: cargo make build", p.display());
@@ -341,7 +345,7 @@ fn netdev(port: u16) -> String {
 
 pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     let tools = crate::tools::load(root)?;
-    let img = load_image(out)?;
+    let img = load_image(&crate::output::latest(out)?.dir)?;
     let run = new_run(out, "int")?;
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, "int")?;
@@ -445,7 +449,7 @@ fn print_reachability(run: &Path) {
 
 fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<String>, PathBuf)> {
     let tools = crate::tools::load(root)?;
-    let img = load_image(out)?;
+    let img = load_image(&crate::output::latest(out)?.dir)?;
     let run = new_run(out, label)?;
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, label)?;

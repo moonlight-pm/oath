@@ -26,9 +26,9 @@ gaps · `target` designed, not built.
 | Seed and overlays | shipped | profile `base`, free of test fixtures; `svc:serial` idles with no UART; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | one kernel, `pkg:linux`: a plan built by `pkg:llvm` (`LLVM=1`; 7.3-rc1, sha256-pinned, Oath fragment and patches; depmod index from `.modinfo`); pack refuses a vermagic mismatch; canto runs it | — |
 | Boot | partial | initrd from our PID 1 + native busybox and firmware; switch_root into `@`; `oath-efi` is the only loader; ESP keeps current + last 5 boots; `panic=10`; boots canto through Apple firmware | `cargo make esp` runs only on the Oath machine; no remote update but reinstall |
-| Image build | partial | `cargo make build` packs `pkg:oath` and the locked packages; `build/manifest.json` lists every shipped pack; QEMU and OVMF from `image/host.nix` | Output is mutable; install ignores the manifest |
-| Install | partial | installer ramdisk over SSH (any login shell); GPT + ESP + btrfs `@`; `--overlay`; makes and pins the host key; `--qemu` rehearsal; `--usb` stick; gated on `cargo make check`; canto reinstalled unattended | Copies the mutable `build/stage`, not a manifest-checked output |
-| Test harness | shipped | `cargo make check`: one QEMU per case, real reboots, known gaps per phase, `build/check-pass` stamp; cases make their own fixtures with `oath new`; `--target`: the `metal` cases on an installed machine at any generation, undone after each | — |
+| Image build | shipped | `cargo make build` packs `pkg:oath` and the locked packages into an immutable `build/out/<id>/` with a manifest of every shipped pack; install and `esp` take its id | — |
+| Install | partial | installer ramdisk over SSH (any login shell); GPT + ESP + btrfs `@`; `--overlay`; makes and pins the host key; `--qemu` rehearsal; `--usb` stick; installs one checked build output; canto reinstalled unattended | — |
+| Test harness | shipped | `cargo make check`: one QEMU per case, real reboots, known gaps per phase, `check-pass` stamp per output; cases make their own fixtures with `oath new`; `--target`: the `metal` cases on an installed machine at any generation, undone after each | — |
 
 ## Payload (outside core)
 

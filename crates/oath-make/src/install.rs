@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
 
+use crate::output;
 use crate::pack;
 use crate::qemu;
 use crate::tools::{self, Tools};
@@ -28,12 +29,26 @@ pub struct Opts {
     pub overlay: Option<PathBuf>,
     /// Install an image that has not passed `cargo make check`.
     pub unchecked: bool,
+    /// The build output to install (default: the newest checked one; the
+    /// latest with `--qemu` or `--unchecked`).
+    pub output: Option<String>,
 }
 
 pub struct EspOpts {
     pub esp: String,
     pub confirm: bool,
     pub root_dev: String,
+    pub output: Option<String>,
+    pub unchecked: bool,
+}
+
+/// What an install writes, all from one build output, with this host's
+/// SSH keys baked into the installer initrd of this run.
+struct Payload {
+    kernel: PathBuf,
+    initrd_install: PathBuf,
+    stage: PathBuf,
+    efi: PathBuf,
 }
 
 #[derive(Clone)]
@@ -61,35 +76,42 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
         bail!("--disk must be a /dev/ node (got {:?})", opts.disk);
     }
     let tools = tools::load(root)?;
-    if !out.join("stage/oath/INDEX.md").is_file() {
-        pack::build(root, out, &tools, oath_core::DEFAULT_PROFILE)?;
-    }
-    if !out.join("initramfs-install/init").is_file() {
-        pack::build(root, out, &tools, oath_core::DEFAULT_PROFILE)?;
-    }
+    let o = match &opts.output {
+        Some(id) => output::open(out, id)?,
+        None => output::pick(out, None, !(opts.qemu || opts.unchecked))
+            .context("pass --unchecked to install the latest output anyway (Joshua's call)")?,
+    };
+    eprintln!("output {}", o.dir.display());
     if !opts.qemu {
         if opts.unchecked {
             eprintln!("warning: installing an image that `cargo make check` has not passed");
         } else {
-            crate::check::require_checked(out)
+            crate::check::require_checked(&o.dir)
                 .context("pass --unchecked to install anyway (Joshua's call)")?;
         }
     }
-    let keys =
-        qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
-    pack::bake_install_keys(out, &keys)?;
     if let Some(p) = &opts.overlay {
         read_overlay(p)?;
     }
+    let keys =
+        qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
+    let run_dir = out.join("runs").join(format!("{}-install", utc_stamp()));
+    fs::create_dir_all(&run_dir)?;
+    let p = Payload {
+        kernel: o.file("bzImage"),
+        initrd_install: pack::bake_install_keys(&o, &run_dir, &keys)?,
+        stage: o.file("stage"),
+        efi: o.file("BOOTX64.EFI"),
+    };
     if opts.usb {
-        return write_usb_installer(root, out, &tools, &opts);
+        return write_usb_installer(out, &tools, &p, &opts);
     }
     if opts.qemu {
-        return install_qemu(root, out, &tools, &opts);
+        return install_qemu(&run_dir, &tools, &p, &opts);
     }
     let target = opts.target.as_deref().context("--target user@host (or --qemu or --usb)")?;
     let remote = parse_target(target)?;
-    install_remote(out, &tools, &opts, &remote)
+    install_remote(out, &tools, &p, &opts, &remote)
 }
 
 pub fn parse_target(s: &str) -> Result<Remote> {
@@ -120,9 +142,9 @@ fn parts(disk: &str) -> (String, String) {
     (p1, p2)
 }
 
-fn write_usb_installer(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<()> {
+fn write_usb_installer(out: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Result<()> {
     assert_usb_stick(&opts.disk)?;
-    let boot = crate::pack::efi(&crate::oath_pkg::build(root)?);
+    let boot = &p.efi;
     let mkfat = tools.bin("dosfstools", "mkfs.fat")?;
     let sfdisk = tools.bin("util-linux", "sfdisk")?;
     let (p1, _) = parts(&opts.disk);
@@ -163,12 +185,12 @@ fn write_usb_installer(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> R
         sudo(&["cp", boot.to_str().unwrap(), mnt.join("EFI/BOOT/BOOTX64.EFI").to_str().unwrap()])?;
         sudo(&[
             "cp",
-            tools.kernel.to_str().unwrap(),
+            p.kernel.to_str().unwrap(),
             mnt.join("oath-install/vmlinuz").to_str().unwrap(),
         ])?;
         sudo(&[
             "cp",
-            out.join("initrd-install.gz").to_str().unwrap(),
+            p.initrd_install.to_str().unwrap(),
             mnt.join("oath-install/initrd.gz").to_str().unwrap(),
         ])?;
         let loader = "default oath-install.conf\ntimeout 5\n";
@@ -360,7 +382,7 @@ fn already_installer(r: &Remote) -> bool {
         .unwrap_or(false)
 }
 
-fn enter_installer(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<()> {
+fn enter_installer(tools: &Tools, p: &Payload, opts: &Opts, r: &Remote) -> Result<()> {
     // kexec on this Apple box jumps and never brings tg3 up. Firmware reboot
     // re-inits PCI; QEMU rehearsal does not use this path.
     if ssh_out(r, "test -d /sys/firmware/efi && echo YES")
@@ -374,11 +396,11 @@ fn enter_installer(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result
             .map(|s| s.contains("YES"))
             .unwrap_or(false)
         {
-            return efi_oneshot_installer(out, tools, opts, r);
+            return efi_oneshot_installer(p, r);
         }
         eprintln!("EFI but no loader entries; kexec fallback");
     }
-    kexec_into_installer(out, tools, opts, r)
+    kexec_into_installer(tools, p, r)
 }
 
 fn mount_esp(r: &Remote, opts: &Opts) -> Result<()> {
@@ -422,12 +444,12 @@ fn discover_mac(r: &Remote, nic: &str) -> Result<String> {
     Ok(s.to_lowercase())
 }
 
-fn efi_oneshot_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) -> Result<()> {
+fn efi_oneshot_installer(p: &Payload, r: &Remote) -> Result<()> {
     let cmdline = installer_cmdline(r)?;
     eprintln!("EFI oneshot installer cmdline: {cmdline}");
     ssh_run(r, "mkdir -p /boot/oath-install /boot/loader/entries")?;
-    scp_root(r, &tools.kernel, "/boot/oath-install/vmlinuz")?;
-    scp_root(r, &out.join("initrd-install.gz"), "/boot/oath-install/initrd.gz")?;
+    scp_root(r, &p.kernel, "/boot/oath-install/vmlinuz")?;
+    scp_root(r, &p.initrd_install, "/boot/oath-install/initrd.gz")?;
     let entry = format!(
         "title Oath installer\nlinux /oath-install/vmlinuz\ninitrd /oath-install/initrd.gz\noptions {cmdline}\n"
     );
@@ -442,12 +464,12 @@ fn efi_oneshot_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) ->
     Ok(())
 }
 
-fn kexec_into_installer(out: &Path, tools: &Tools, _opts: &Opts, r: &Remote) -> Result<()> {
+fn kexec_into_installer(tools: &Tools, p: &Payload, r: &Remote) -> Result<()> {
     let kexec = tools.bin("kexec", "kexec")?;
     ssh_run(r, "mkdir -p /tmp/oath-install")?;
     scp_root(r, &kexec, "/tmp/oath-install/kexec")?;
-    scp_root(r, &tools.kernel, "/tmp/oath-install/vmlinuz")?;
-    scp_root(r, &out.join("initrd-install.gz"), "/tmp/oath-install/initrd.gz")?;
+    scp_root(r, &p.kernel, "/tmp/oath-install/vmlinuz")?;
+    scp_root(r, &p.initrd_install, "/tmp/oath-install/initrd.gz")?;
     ssh_run(r, "chmod +x /tmp/oath-install/kexec")?;
     let cmdline = installer_cmdline(r)?;
     eprintln!("kexec cmdline: {cmdline}");
@@ -507,7 +529,7 @@ fn wait_ssh(r: &Remote, timeout: Duration) -> Result<()> {
 /// Partition, copy the packed root, write the catalog and the ESP. Returns
 /// the installed system's SSH host key (`ssh-ed25519 AAAA…`), made here so
 /// the first login to the new system can be checked against it.
-fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Result<String> {
+fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
     let (p1, p2) = parts(&opts.disk);
     let hostname = opts.hostname.clone().unwrap_or_else(|| "oath".into());
     eprintln!("format {} -> ESP {p1} + btrfs {p2}", opts.disk);
@@ -515,7 +537,7 @@ fn format_and_copy(out: &Path, _tools: &Tools, opts: &Opts, r: &Remote) -> Resul
     ssh_run(r, &format!("PATH=/bin sh -c {}", sh_quote(&script)))?;
 
     eprintln!("copy packed root");
-    let stage = out.join("stage");
+    let stage = &p.stage;
     let mut tar = Command::new("tar");
     tar.args([
         "-C",
@@ -712,14 +734,18 @@ fn require_oath_system(sys_root: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn update_esp(repo: &Path, out: &Path, opts: EspOpts) -> Result<()> {
+pub fn update_esp(out: &Path, opts: EspOpts) -> Result<()> {
     crate::boot::require_confirm(opts.confirm)?;
     require_oath_system(Path::new("/"))?;
     if !opts.esp.starts_with("/dev/") {
         bail!("--esp must be a /dev/ node (got {:?})", opts.esp);
     }
-    let tools = tools::load(repo)?;
-    let efi = pack::efi(&pack::boot_image(repo, out, &tools)?);
+    let o = output::pick(out, opts.output.as_deref(), !opts.unchecked)?;
+    if !opts.unchecked {
+        crate::check::require_checked(&o.dir).context("pass --unchecked to write it anyway")?;
+    }
+    eprintln!("output {}", o.dir.display());
+    let efi = o.file("BOOTX64.EFI");
     let mnt = out.join("esp-mnt");
     let _ = fs::create_dir_all(&mnt);
     let _ = sudo(&["umount", mnt.to_str().unwrap()]);
@@ -730,8 +756,8 @@ pub fn update_esp(repo: &Path, out: &Path, opts: EspOpts) -> Result<()> {
     let result = (|| -> Result<u64> {
         let (id, prune) = crate::boot::apply_rotate_files(
             &mnt,
-            &tools.kernel,
-            &out.join("initrd.gz"),
+            &o.file("bzImage"),
+            &o.file("initrd.gz"),
             efi.is_file().then_some(efi.as_path()),
             &opts.root_dev,
             "",
@@ -766,9 +792,9 @@ fn delete_boot_snapshot(id: u64) {
     }
 }
 
-fn install_remote(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<()> {
+fn install_remote(out: &Path, tools: &Tools, p: &Payload, opts: &Opts, r: &Remote) -> Result<()> {
     if !already_installer(r) {
-        enter_installer(out, tools, opts, r)?;
+        enter_installer(tools, p, opts, r)?;
     } else {
         eprintln!("already in installer ramdisk");
     }
@@ -780,7 +806,7 @@ fn install_remote(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<
         known_hosts: None,
     };
     wait_ssh(&inst, Duration::from_secs(300))?;
-    let key = format_and_copy(out, tools, opts, &inst)?;
+    let key = format_and_copy(p, opts, &inst)?;
     let pins = known_hosts(out);
     pin_host_key(&pins, &r.host, r.port, &key)?;
     eprintln!("host key for {} pinned in {}", r.host, pins.display());
@@ -794,11 +820,9 @@ fn install_remote(out: &Path, tools: &Tools, opts: &Opts, r: &Remote) -> Result<
     Ok(())
 }
 
-fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<()> {
+fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Result<()> {
     let ovmf_code = tools.ovmf_code.as_ref().context("OVMF_CODE.fd missing")?;
     let ovmf_vars_src = tools.ovmf_vars.as_ref().context("OVMF_VARS.fd missing")?;
-    let run_dir = out.join("runs").join(format!("{}-install", utc_stamp()));
-    fs::create_dir_all(&run_dir)?;
     let disk = run_dir.join("disk.qcow2");
     run(Command::new(&tools.qemu_img).args([
         "create",
@@ -818,9 +842,9 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
     }
     qemu_cmd.args([
         "-kernel",
-        tools.kernel.to_str().unwrap(),
+        p.kernel.to_str().unwrap(),
         "-initrd",
-        out.join("initrd-install.gz").to_str().unwrap(),
+        p.initrd_install.to_str().unwrap(),
         "-append",
         "console=ttyS0 oath.install=1 oath.nic=eth0 oath.ip=10.0.2.15/24 oath.gw=10.0.2.2",
     ]);
@@ -847,8 +871,9 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         hostname: opts.hostname.clone().or_else(|| Some("oath".into())),
         overlay: opts.overlay.clone(),
         unchecked: true,
+        output: opts.output.clone(),
     };
-    let key = match format_and_copy(out, tools, &qopts, &inst) {
+    let key = match format_and_copy(p, &qopts, &inst) {
         Ok(k) => k,
         Err(e) => {
             let _ = child.kill();
@@ -909,7 +934,6 @@ fn install_qemu(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<(
         return wait.map(|_| ());
     }
     eprintln!("QEMU-EFI rehearsal ok  {}", run_dir.display());
-    let _ = root;
     Ok(())
 }
 

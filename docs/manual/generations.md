@@ -61,8 +61,10 @@ archive boots `oath.subvol=@boot-N`, the userspace snapshot taken when
 it was archived. `oath-efi` is the only loader; there is no fallback
 loader on the ESP.
 
-`cargo make esp --esp <vfat node> --confirm [--root /dev/sda2]` packs
-the kernel and initrd, archives the live ESP kernel as a new boot,
+`cargo make esp --esp <vfat node> --confirm [--root /dev/sda2]
+[--output <id>]` takes the kernel, initrd and `oath-efi` of a build
+output (default: the newest one `cargo make check` passed;
+`--unchecked` for another), archives the live ESP kernel as a new boot,
 keeps five, snapshots `@` to `@boot-<id>`, and copies the new bits. It
 does not format anything. It mounts the node you name **on the
 machine where you run it**, so it refuses to run on a machine that is

@@ -1,9 +1,10 @@
 //! `cargo make check`: boot the built image in QEMU and run `check/cases.toml`
-//! over SSH. Every case gets a fresh VM from `build/oath.qcow2`; cases run
+//! over SSH. Every case gets a fresh VM from a build output's `oath.qcow2`
+//! (the latest, or `--output <id>`); cases run
 //! in parallel. A case with `gap` is a known failure scheduled for a phase:
 //! it may fail without failing the run, and if it starts passing the run
-//! fails so the gap gets removed. A clean run writes `build/check-pass`,
-//! which `cargo make install` requires.
+//! fails so the gap gets removed. A clean run writes `check-pass` into the
+//! output, which `cargo make install` requires.
 //!
 //! `--target user@host` runs the cases marked `metal` against a real
 //! machine instead, one at a time. After each case the harness undoes back
@@ -126,6 +127,8 @@ pub struct Opts {
     pub jobs: usize,
     /// `user@host[:port]`: run the `metal` cases on this machine, not QEMU.
     pub target: Option<String>,
+    /// The build output to boot (default: the latest).
+    pub output: Option<String>,
 }
 
 struct Ctx {
@@ -160,7 +163,8 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
         return run_target(out, cases, target);
     }
     let tools = crate::tools::load(root)?;
-    let img = qemu::load_image(out)?;
+    let output = crate::output::pick(out, opts.output.as_deref(), false)?;
+    let img = qemu::load_image(&output.dir)?;
     let base = out.join("check");
     fs::create_dir_all(&base)?;
     let (key, key_pub) = harness_key(&base)?;
@@ -169,7 +173,13 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     let fetchme = fs::read(root.join("apps/fetchme/bin/fetchme")).context("apps/fetchme")?;
     serve_fetchme(fetchme)?;
 
-    eprintln!("check: {} cases, {} at a time, logs in {}", cases.len(), opts.jobs, dir.display());
+    eprintln!(
+        "check: output {}, {} cases, {} at a time, logs in {}",
+        output.id,
+        cases.len(),
+        opts.jobs,
+        dir.display()
+    );
     let ctx = Arc::new(Ctx { tools, img, key, key_pub, dir: dir.clone() });
     let queue = Arc::new(Mutex::new(cases.into_iter().collect::<VecDeque<_>>()));
     let results = Arc::new(Mutex::new(Vec::new()));
@@ -199,7 +209,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     let mut results = std::mem::take(&mut *results.lock().unwrap());
     results.sort_by(|a, b| a.name.cmp(&b.name));
     let all_ok = summarize(&results, &dir)?;
-    let stamp = out.join("check-pass");
+    let stamp = output.file("check-pass");
     let _ = fs::remove_file(&stamp);
     if all_ok && opts.only.is_empty() {
         write_pretty(&stamp, &image_stamp(&ctx.img)?)?;
@@ -254,14 +264,14 @@ pub fn image_stamp(img: &Image) -> Result<serde_json::Value> {
     }))
 }
 
-/// Refuse to install an image that `cargo make check` has not passed.
-pub fn require_checked(out: &Path) -> Result<()> {
-    let stamp = out.join("check-pass");
+/// Refuse to install an output that `cargo make check` has not passed.
+pub fn require_checked(output: &Path) -> Result<()> {
+    let stamp = output.join("check-pass");
     let Ok(text) = fs::read_to_string(&stamp) else {
         bail!("this image has not passed `cargo make check` (no {})", stamp.display());
     };
     let want: serde_json::Value = serde_json::from_str(&text)?;
-    let have = image_stamp(&qemu::load_image(out)?)?;
+    let have = image_stamp(&qemu::load_image(output)?)?;
     for k in ["kernel", "initrd", "image"] {
         if want[k] != have[k] {
             bail!("the {k} changed since the last `cargo make check`; run it again");

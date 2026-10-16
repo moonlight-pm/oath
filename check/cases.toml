@@ -1,4 +1,4 @@
-# cargo make check — each case boots a fresh VM from build/oath.qcow2.
+# cargo make check — each case boots a fresh VM from build/out/latest/oath.qcow2.
 #
 # A step either runs a shell command over SSH as `home` (`run`) or
 # reboots (`reboot = "catalog" | "force" | "signal"`) and waits for SSH.

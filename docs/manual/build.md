@@ -62,8 +62,7 @@ for the loop mount, and `mkfs.btrfs` on the host (`shell.nix` has it).
 The build host's Rust compiles only `oath-make`.
 
 ```sh
-cargo make build                  # profile base
-cargo make boot                   # kernel + initrd + oath-efi only
+cargo make build                  # profile base → build/out/<id>/
 ```
 
 `build` builds `pkg:oath` from this tree: it packs the workspace and
@@ -74,18 +73,32 @@ rebuilt; `cargo make pkgs oath` does this step alone. Then `build`
 writes the boot initrd and the
 installer initrd, stages the root tree, seeds `/oath` from the profile,
 packs the profile's packages into the hashed store (also cached under
-`.cache/oath/store`), and writes `build/oath.qcow2` (btrfs, subvolume
-`@`) plus `build/bzImage`, `build/initrd.gz`,
-`build/initrd-install.gz`, and `build/manifest.json`.
+`.cache/oath/store`), and writes a **build output**:
 
-`build/manifest.json` lists every pack the image ships: its hash,
-version, licence and plan hash; where it ships (`rootfs` for the
-profile's store, `initrd`, `installer` for the install initramfs's own
-tools, `esp`); and its sources, each with its sha256 and signing key
+```
+build/out/<id>/
+  manifest.json          what the image ships; its hash is <id>
+  oath.qcow2             btrfs, subvolume @
+  bzImage  initrd.gz  BOOTX64.EFI (oath-efi)
+  initrd-install.gz  initramfs-install/   the installer ramdisk
+  stage/                 the root tree install copies
+  check-pass             written by a clean `cargo make check`
+build/out/latest -> <id>
+```
+
+A build packs into `build/out/.<id>.part/` and renames it when it is
+complete; after that only `check` adds `check-pass`. The id is the
+first 12 hex digits of the manifest's SHA-256 (without the commit), so
+a tree that has not changed reuses its output in seconds. The newest
+five outputs are kept, and the newest checked one.
+
+`manifest.json` lists every pack the image ships: its hash, version,
+licence and plan hash; where it ships (`rootfs` for the profile's
+store, `initrd`, `installer` for the install initramfs's own tools,
+`esp`); and its sources, each with its sha256 and signing key
 (`pkgs/keys/…`) or why it is unsigned. `pkg:oath` records the commit
 of this tree instead, with `-dirty` when its sources had uncommitted
-changes. The manifest is rewritten by every build; install and `esp`
-do not read it yet.
+changes.
 
 ## Test it
 
@@ -95,14 +108,14 @@ cargo make check --build      # pack first
 cargo make check --case index --case pkg-fetch
 ```
 
-Each case boots its own VM from `build/oath.qcow2` (four at a time) and
-runs its steps over SSH as `home`. The image is the one `install`
-ships; a case makes any fixture it needs with `oath new`. The summary marks each case PASS,
+Each case boots its own VM from the latest output's `oath.qcow2`
+(`--output <id>` for another; four at a time) and runs its steps over
+SSH as `home`. The image is the one `install` ships; a case makes any fixture it needs with `oath new`. The summary marks each case PASS,
 FAIL, GAP (a known failure; the `gap` line names the phase that fixes
 it) or FIXED (a gap that now passes; remove its `gap` line). Logs, the
 serial console of every boot and `report.json` are under
-`build/check/<time>/<case>/`. A clean full run writes `build/check-pass`,
-which `cargo make install` requires.
+`build/check/<time>/<case>/`. A clean full run writes `check-pass` into
+the output it booted, which `cargo make install` requires.
 
 ```sh
 cargo make check --target home@10.0.0.108

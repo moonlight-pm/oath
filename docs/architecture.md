@@ -31,7 +31,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
 ```
 
 QEMU (`cargo make run|up|start`) boots the same kernel and initrd with
-`-kernel` against `build/oath.qcow2` and forwards SSH to 127.0.0.1:2222.
+`-kernel` against `build/out/latest/oath.qcow2` (through an overlay in
+`build/runs/`) and forwards SSH to 127.0.0.1:2222.
 
 ## Disk
 
@@ -122,25 +123,32 @@ cargo make build [--profile base]
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)
-  build/stage/            the root tree; `oath seed --profile` writes /oath
   .cache/oath/store/      host copy of every packed tree, by hash
-  build/oath.qcow2        btrfs @ with the stage
-  build/initrd.gz, build/initrd-install.gz (installer ramdisk: dropbear,
-                          sfdisk, wipefs, mkfs.fat, mkfs.btrfs, btrfs,
-                          busybox tar, oath, oath-efi)
-  build/manifest.json     every shipped pack: hash, licence, plan, where
+  build/out/<id>/         one build output, written once (<id>: the
+                          manifest's hash; an unchanged tree reuses it;
+                          build/out/latest names the newest; five kept)
+    manifest.json         every shipped pack: hash, licence, plan, where
                           it ships, source pins and keys
+    stage/                the root tree; `oath seed --profile` writes /oath
+    oath.qcow2            btrfs @ with the stage
+    bzImage, initrd.gz, BOOTX64.EFI
+    initrd-install.gz     installer ramdisk: dropbear, sfdisk, wipefs,
+                          mkfs.fat, mkfs.btrfs, btrfs, busybox tar, oath,
+                          oath-efi (install bakes keys into a copy)
+    check-pass            a clean `cargo make check` of this output
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
   build/check/key; serves the fetch canary on 127.0.0.1:18765; cases
-  make their own fixtures (`oath new`); a clean run
-  writes build/check-pass (kernel, initrd, image sha256)
+  make their own fixtures (`oath new`); a clean run writes
+  build/out/<id>/check-pass (kernel, initrd, image sha256)
 cargo make check --target home@<host>
   the `metal` cases on an installed machine, one at a time, host key
   from build/known_hosts; undo back after each case; logs in
   build/check/<time>-<host>/
 cargo make install --target … --disk … --overlay hosts/<name>.json --confirm
-  refuses an image without a matching build/check-pass
+  takes --output <id> or the newest checked output; refuses one
+  without a matching check-pass; bakes keys into a copy of its
+  installer ramdisk in build/runs/<time>-install/
   kexec (native pkg:kexec, copied to the target) or EFI-boot the
   installer, partition (sfdisk, wipefs), format, copy the stage, write
   the overlay with `oath seed --overlay`, make the host key and pin it

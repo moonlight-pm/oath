@@ -7,6 +7,7 @@ mod kernel;
 mod manifest;
 mod oath_pkg;
 mod openpgp;
+mod output;
 mod pack;
 mod pkgs;
 mod qemu;
@@ -32,7 +33,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Pack initramfs + btrfs qcow (needs sudo for loop-mount).
+    /// Pack the image into a build output, `build/out/<id>/` (needs sudo
+    /// for the loop-mount). An unchanged tree reuses its output.
     Build {
         /// Seed profile (`base`: headless, reached over SSH).
         #[arg(long, default_value = oath_core::DEFAULT_PROFILE)]
@@ -75,6 +77,9 @@ enum Cmd {
         /// pinned in build/known_hosts). Runs the `metal` cases, one at a time.
         #[arg(long)]
         target: Option<String>,
+        /// Build output to boot (`build/out/<id>`; default: the latest).
+        #[arg(long)]
+        output: Option<String>,
     },
     /// SSH to the QEMU guest (`home@127.0.0.1`, port `OATH_SSH_PORT` / 2222).
     Ssh {
@@ -109,9 +114,11 @@ enum Cmd {
         /// Install even though `cargo make check` has not passed this image.
         #[arg(long)]
         unchecked: bool,
+        /// Build output to install (`build/out/<id>`; default: the newest
+        /// one `check` passed, or the latest with `--qemu` / `--unchecked`).
+        #[arg(long)]
+        output: Option<String>,
     },
-    /// Pack kernel + initrd + oath-efi only (no qcow, no ESP write).
-    Boot,
     /// Build the toolchain from source on this host (stage 0 and 1) and
     /// store pkg:llvm, pkg:busybox and pkg:make. Hours, not minutes.
     Bootstrap {
@@ -167,6 +174,12 @@ enum Cmd {
         /// Root device the BLS `oath.root=` option should name (`/dev/sda2`).
         #[arg(long, default_value = "/dev/sda2")]
         root: String,
+        /// Build output to write (default: the newest one `check` passed).
+        #[arg(long)]
+        output: Option<String>,
+        /// Write an output that `cargo make check` has not passed.
+        #[arg(long)]
+        unchecked: bool,
     },
 }
 
@@ -204,27 +217,33 @@ fn real() -> Result<()> {
             qemu::start(&root, &out)?;
         }
         Cmd::Stop => qemu::stop(&out)?,
-        Cmd::Check { build, only, jobs, target } => {
+        Cmd::Check { build, only, jobs, target, output } => {
             if build {
                 pack_image(&root, &out, oath_core::DEFAULT_PROFILE)?;
             }
-            let rc = check::run_check(&root, &out, check::Opts { only, jobs, target })?;
+            let rc = check::run_check(&root, &out, check::Opts { only, jobs, target, output })?;
             std::process::exit(rc);
         }
         Cmd::Ssh { args } => {
             let rc = qemu::ssh(&out, &args)?;
             std::process::exit(rc);
         }
-        Cmd::Install { target, disk, confirm, qemu, usb, hostname, overlay, unchecked } => {
+        Cmd::Install { target, disk, confirm, qemu, usb, hostname, overlay, unchecked, output } => {
             install::run_install(
                 &root,
                 &out,
-                install::Opts { target, disk, confirm, qemu, usb, hostname, overlay, unchecked },
+                install::Opts {
+                    target,
+                    disk,
+                    confirm,
+                    qemu,
+                    usb,
+                    hostname,
+                    overlay,
+                    unchecked,
+                    output,
+                },
             )?;
-        }
-        Cmd::Boot => {
-            let tools = tools::load(&root)?;
-            pack::boot_image(&root, &out, &tools)?;
         }
         Cmd::Bootstrap { jobs } => {
             let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2);
@@ -248,8 +267,11 @@ fn real() -> Result<()> {
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
         Cmd::Publish { dest } => pack::publish_store(&root, &dest)?,
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
-        Cmd::Esp { esp, confirm, root: root_dev } => {
-            install::update_esp(&root, &out, install::EspOpts { esp, confirm, root_dev })?;
+        Cmd::Esp { esp, confirm, root: root_dev, output, unchecked } => {
+            install::update_esp(
+                &out,
+                install::EspOpts { esp, confirm, root_dev, output, unchecked },
+            )?;
         }
     }
     Ok(())
@@ -257,5 +279,5 @@ fn real() -> Result<()> {
 
 fn pack_image(root: &std::path::Path, out: &std::path::Path, profile: &str) -> Result<()> {
     let tools = tools::load(root)?;
-    pack::build(root, out, &tools, profile)
+    pack::build(root, out, &tools, profile).map(|_| ())
 }
