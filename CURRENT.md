@@ -9,18 +9,10 @@ append history (git has it).
 
 ## Now
 
-1. **canto runs older bits.** It was installed on 2026-10-16 from
-   commit `8468eb5`: Oath binaries from the host rustc, and none of
-   the build-integrity work since (signature-checked sources, immutable
-   outputs, build logs). The newest checked output in `build/out/`
-   has all of it. Next, when Joshua says so (it wipes canto's disk):
-   `cargo make install --target home@10.0.0.3 --disk /dev/sda
-   --hostname canto --overlay hosts/canto.json --confirm`, then
-   `cargo make check --target home@10.0.0.3`.
-2. **GPL source on origins (Open).** `cargo make publish` puts GPL
+1. **GPL source on origins (Open).** `cargo make publish` puts GPL
    binaries on an origin without their `-src` packs. Next: Joshua
    decides (docs/decisions.md); until then origins stay private.
-3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
    `cargo make install --usb` stick.
@@ -32,11 +24,10 @@ products, and its seed carries no test fixtures: the harness checks
 the image `install` ships, and each case makes what it needs with
 `oath new`. Modules load by modalias; `svc:time` keeps the clock from
 pool.ntp.org. canto was reinstalled over SSH, unattended, on
-2026-10-16 from the image with the kernel built by `pkg:llvm` (its Oath
-binaries were still the host rustc's) and passes all 24 `metal`
-harness cases (`cargo make check --target`); it has not run `pkg:oath`
-yet. The latest checked output passes 31 QEMU cases (among them a
-build on the box) and the `install --qemu` rehearsal.
+2026-10-16 from build output `97c1f7409deb` (`pkg:oath` by `pkg:rust`,
+signature-checked sources) and passes all 24 `metal` harness cases
+(`cargo make check --target`). That output passes 31 QEMU cases (among
+them a build on the box) and the `install --qemu` rehearsal.
 
 ## Machines
 

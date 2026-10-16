@@ -14,13 +14,14 @@ Overwrite this file when facts change; do not append a diary.
   `ssh home@10.0.0.3`, host key pinned in `build/known_hosts`.
 - **Overlay:** [canto.json](canto.json) — hostname, Mountain time,
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
-- **Running now:** the native base with the kernel built by
-  `pkg:llvm` (`pkg:linux`, clang 23.1.3), installed 2026-10-16 from
-  this tree (commit `8468eb5`) with `cargo make install --target
+- **Running now:** build output `97c1f7409deb` (commit `55657b5`):
+  the kernel built by `pkg:llvm` and `pkg:oath`
+  (`sha256-56159860…`) built by `pkg:rust` against `pkg:llvm`'s musl.
+  Installed 2026-10-16 with `cargo make install --target
   home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
-  hosts/canto.json --confirm`, unattended. Passes all 24 `metal` cases
-  (`cargo make check --target home@10.0.0.3`). SI DPM initializes on
-  both GPUs.
+  hosts/canto.json --confirm`, unattended (EFI one-shot installer
+  entry). Passes all 24 `metal` cases (`cargo make check --target
+  home@10.0.0.3`). SI DPM initializes on both GPUs.
 - **Modules:** at boot ahci, sd_mod, tg3, xhci_pci, ehci_pci, usbhid,
   hid_apple, hid_generic, btusb, i2c_i801, x86_pkg_temp_thermal; after
   services start amdgpu (both GPUs) and snd_hda_intel with the Cirrus
