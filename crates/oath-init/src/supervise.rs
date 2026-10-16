@@ -67,6 +67,8 @@ struct History {
     restarts: u32,
     quick: u32,
     last_exit: Option<Exit>,
+    /// Why it is `failed`, for actual.
+    why: Option<String>,
 }
 
 struct Pending {
@@ -125,11 +127,11 @@ impl Supervisor {
         let items: Vec<(String, Svc)> =
             wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();
         let (order, stuck) = oath_core::svc_start_order_lenient(&items);
-        for id in &stuck {
-            log(&format!("{id} not started: wants cycle"));
-            tel("init", "svc_wants", json!({ "ok": false, "id": id, "err": "cycle" }));
-            if !self.running(id) {
-                self.write_actual(id, "stopped", None);
+        for (id, why) in oath_core::svc_stuck_reasons(&items, &stuck) {
+            log(&format!("{id} not started: {why}"));
+            tel("init", "svc_wants", json!({ "ok": false, "id": id, "err": why }));
+            if !self.running(&id) {
+                self.write_actual_why(&id, "failed", None, Some(&why));
             }
         }
         for id in &order {
@@ -139,7 +141,8 @@ impl Supervisor {
                 continue;
             }
             if self.failed.contains_key(id) {
-                self.write_actual(id, "failed", None);
+                let why = self.history.get(id.as_str()).and_then(|h| h.why.clone());
+                self.write_actual_why(id, "failed", None, why.as_deref());
                 continue;
             }
             if spec.restart == SvcRestart::Never && self.oneshot_done.contains(id) {
@@ -202,8 +205,13 @@ impl Supervisor {
                     "{}: {quick} quick failures in a row; giving up until the spec changes",
                     kid.id
                 ));
+                let why = format!(
+                    "exited within {} s {quick} times in a row; waits for a new spec",
+                    QUICK.as_secs()
+                );
+                self.history.entry(kid.id.clone()).or_default().why = Some(why.clone());
                 self.failed.insert(kid.id.clone(), kid.spec.clone());
-                self.write_actual(&kid.id, "failed", None);
+                self.write_actual_why(&kid.id, "failed", None, Some(&why));
             } else {
                 // 1 s, 2 s, 4 s, 8 s after quick failures; at once after a long run.
                 let delay = if quick == 0 {
@@ -281,22 +289,28 @@ impl Supervisor {
         }
     }
 
-    /// Stop everything for shutdown: TERM, wait, then KILL.
+    /// Stop everything for shutdown, in reverse `wants` order: a service
+    /// stops before the ones it wants. Each layer gets TERM, up to 5 s,
+    /// then KILL.
     pub fn stop_all(&mut self) {
-        let ids: Vec<String> = self.kids.values().map(|k| k.id.clone()).collect();
-        for id in &ids {
-            signal_tree(id, Signal::SIGTERM);
-        }
-        let deadline = Instant::now() + STOP_WAIT;
-        while !self.kids.is_empty() && Instant::now() < deadline {
+        let running: Vec<(String, Svc)> =
+            self.kids.values().map(|k| (k.id.clone(), k.spec.clone())).collect();
+        for layer in oath_core::svc_stop_layers(&running) {
+            log(&format!("shutdown: stopping {}", layer.join(" ")));
+            for id in &layer {
+                signal_tree(id, Signal::SIGTERM);
+            }
+            let deadline = Instant::now() + STOP_WAIT;
+            while self.kids.values().any(|k| layer.contains(&k.id)) && Instant::now() < deadline {
+                self.reap_quietly();
+                self.pump_logs();
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            for id in &layer {
+                kill_cgroup(id);
+            }
             self.reap_quietly();
-            self.pump_logs();
-            std::thread::sleep(Duration::from_millis(50));
         }
-        for id in &ids {
-            kill_cgroup(id);
-        }
-        self.reap_quietly();
     }
 
     fn reap_quietly(&mut self) {
@@ -337,9 +351,12 @@ impl Supervisor {
                 log(&format!("{id} spawn: {e}"));
                 tel("init", "svc_fail", json!({ "id": id, "err": e }));
                 append_log(id, format!("oath-init: cannot start: {e}\n").as_bytes());
-                self.history.entry(id.to_string()).or_default().quick += 1;
+                let why = format!("cannot start {}: {e}", spec.exec[0]);
+                let h = self.history.entry(id.to_string()).or_default();
+                h.quick += 1;
+                h.why = Some(why.clone());
                 self.failed.insert(id.to_string(), spec.clone());
-                self.write_actual(id, "failed", None);
+                self.write_actual_why(id, "failed", None, Some(&why));
             }
         }
     }
@@ -385,6 +402,11 @@ impl Supervisor {
     }
 
     fn write_actual(&self, id: &str, state: &str, pid: Option<i32>) {
+        self.write_actual_why(id, state, pid, None)
+    }
+
+    /// Actual for `id`; a `failed` service says why in `reason`.
+    fn write_actual_why(&self, id: &str, state: &str, pid: Option<i32>, why: Option<&str>) {
         let Ok(oid) = id.parse::<ObjectId>() else { return };
         if oid.kind != "svc" {
             return;
@@ -402,6 +424,9 @@ impl Supervisor {
             "last_exit": h.and_then(|h| h.last_exit).map(Exit::json),
             "since": now_rfc3339(),
         });
+        if let Some(why) = why {
+            v["reason"] = json!(why);
+        }
         if let Ok(extra) = oath_core::read_json::<Value>(&dir.join("last.json")) {
             if let Some(obj) = extra.as_object() {
                 for (k, val) in obj {

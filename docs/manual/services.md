@@ -74,10 +74,10 @@ Actual has `state`, `pid`, `restarts` (restarts this boot),
 
 - `running` — the process is up.
 - `restarting` — it exited and waits for its backoff.
-- `stopped` — disabled, a finished `restart=never` run, or skipped
-  because it is in a `wants` cycle (the reason is in `oath logs`).
-- `failed` — it could not be started, or it died within 10 s of
-  starting five times in a row. Restarts wait 1, 2, 4, then 8 s between
+- `stopped` — disabled, or a finished `restart=never` run.
+- `failed` — it could not be started, it is in a `wants` cycle (or
+  waits on one), or it died within 10 s of starting five times in a
+  row; `reason` in actual says which. Restarts wait 1, 2, 4, then 8 s between
   those quick failures; a run of 10 s or more restarts at once. A
   `failed` service stays down until its applied spec changes: fix it
   with `oath set` and `oath apply`.
@@ -168,9 +168,5 @@ Without them the copy is crash-consistent (`sync` plus btrfs CoW).
 
 - A device plugged in after boot gets no driver until the next boot
   (no hotplug yet).
-- A service skipped for a `wants` cycle shows `stopped`; the reason is
-  only in `oath logs`.
-- At shutdown every service gets SIGTERM at once, not in reverse
-  `wants` order.
 - A panic in PID 1 panics the kernel; `panic=10` reboots the machine
   ten seconds later.

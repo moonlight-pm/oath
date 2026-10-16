@@ -6,8 +6,9 @@ configuration: there are no unit files, no init scripts, and no
 systemd. PID 1 itself is not an object; it is the engine that
 converges `svc`.
 
-**Status:** built, except the targets at the end (the cycle reason in
-actual, reverse `wants` shutdown, surviving its own panic). Since
+**Status:** built, except the target at the end (surviving its own
+panic). Since 2026-10-16 a service PID 1 skips or gives up on says
+why in actual, and shutdown runs in reverse `wants` order. Since
 2026-10-13 PID 1 runs only applied specs, isolates a `wants` cycle,
 logs every service, restarts with backoff into a `failed` state, gives
 each service a cgroup, shuts down in order, and switch_roots into the
@@ -44,7 +45,9 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 
 Actual: `state` (`running`, `restarting`, `stopped`, `failed`), `pid`,
 `restarts` (restarts this boot), `last_exit` (`{"code": n}` or
-`{"signal": n}`), `since`.
+`{"signal": n}`), `since`, and for `failed` a `reason` (in a wants
+cycle and with whom, waiting on one, quick failures, or the spawn
+error).
 `applied.json` is the spec PID 1 runs: `oath apply` writes it after the
 document passes its checks, and `oath undo` puts back the previous one.
 Desired is what the owner is staging; PID 1 never reads it while an
@@ -101,7 +104,9 @@ only when there is none). A running service whose applied spec changed,
 or that is disabled or gone, is stopped and replaced. A spec PID 1
 cannot read leaves the running process alone and is logged. Services in
 a `wants` cycle, and services waiting on one, are skipped and recorded
-`stopped`; every other service, `svc:sshd` included, still starts. PID
+`failed` with the reason (`wants cycle with svc:b`, `waits on a wants
+cycle among svc:a, svc:b`); every other service, `svc:sshd` included,
+still starts. PID
 1 does not recreate the status file of an object `oath rm` deleted.
 
 - **Logs.** Each service's stdout and stderr go to
@@ -121,9 +126,11 @@ a `wants` cycle, and services waiting on one, are skipped and recorded
 - **Shutdown.** SIGTERM or SIGINT (busybox `reboot`, Ctrl-Alt-Del)
   reboots; SIGUSR1 (`halt`) halts; SIGUSR2 (`poweroff`) powers off. An
   `oath` `power=reboot` or `halt` apply sends the same signal. PID 1
-  stops every service (TERM, up to 5 s, KILL), signals everything else,
-  syncs, unmounts `/oath/run/fs`, remounts `/` read-only, then calls
-  the kernel.
+  stops the services in reverse `wants` order: in layers, each a set
+  that nothing still running wants, so a service stops before the ones
+  it wants (TERM to the layer, up to 5 s, KILL; `shutdown: stopping …`
+  in `init.log`). Then it signals everything else, syncs, unmounts
+  `/oath/run/fs`, remounts `/` read-only, and calls the kernel.
 - **DHCP client.** When the applied `net:net0` is up and `dhcp`, PID 1
   runs `udhcpc -f -i net0` as an internal service (id `net:net0`, not a
   catalog `svc`, log `/oath/log/net/net0.log`) with the same restart
@@ -135,11 +142,6 @@ a `wants` cycle, and services waiting on one, are skipped and recorded
 
 ## Target
 
-- **Reason in actual.** A service skipped for a cycle is `stopped`, and
-  why is only in `init.log`. It will be `failed` with the reason in
-  actual.
-- **Shutdown order.** Today every service gets SIGTERM at once; reverse
-  `wants` order is the target.
 - **Survive a panic.** A supervisor panic reboots the machine; keeping
   services up through it is not designed yet.
 
@@ -147,7 +149,8 @@ a `wants` cycle, and services waiting on one, are skipped and recorded
 
 `cargo make check` covers it: make, disable and enable `svc:hold`; undo; a
 torn `desired.json` (the service keeps running); a cycle at boot (sshd
-still starts); a crashing service that backs off to `failed` with exit
+still starts; the cycle's members are `failed` with the reason);
+shutdown in reverse `wants` order; a crashing service that backs off to `failed` with exit
 code 3; `oath logs`; stopping a service that forked; an sshd restart
 that keeps this SSH session; the DHCP client; switch_root; and plain
 `reboot`.

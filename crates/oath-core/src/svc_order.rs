@@ -39,6 +39,91 @@ pub fn start_order_lenient(svcs: &[(String, Svc)]) -> (Vec<String>, Vec<String>)
     order_and_stuck(svcs)
 }
 
+/// Why each service [`start_order_lenient`] skips is not started: it is in
+/// a wants cycle (with whom), or it waits on one.
+pub fn stuck_reasons(svcs: &[(String, Svc)], stuck: &[String]) -> Vec<(String, String)> {
+    let wants: HashMap<&str, Vec<String>> = svcs
+        .iter()
+        .filter(|(id, _)| stuck.contains(id))
+        .map(|(id, s)| {
+            let w = s.wants.iter().map(|w| normalize_want(w)).filter(|w| stuck.contains(w));
+            (id.as_str(), w.collect())
+        })
+        .collect();
+    // What each skipped service reaches through skipped wants.
+    let reach = |id: &str| -> HashSet<String> {
+        let mut seen = HashSet::new();
+        let mut todo = wants.get(id).cloned().unwrap_or_default();
+        while let Some(w) = todo.pop() {
+            if seen.insert(w.clone()) {
+                todo.extend(wants.get(w.as_str()).cloned().unwrap_or_default());
+            }
+        }
+        seen
+    };
+    let reaches: HashMap<&str, HashSet<String>> =
+        stuck.iter().map(|id| (id.as_str(), reach(id))).collect();
+    let cyclic = |id: &str| reaches[id].contains(id);
+    stuck
+        .iter()
+        .map(|id| {
+            let mut with: Vec<&str> = stuck
+                .iter()
+                .filter(|w| *w != id && reaches[id.as_str()].contains(*w))
+                .filter(|w| reaches[w.as_str()].contains(id) || !cyclic(id) && cyclic(w))
+                .map(String::as_str)
+                .collect();
+            with.sort();
+            let why = if !cyclic(id) {
+                format!("waits on a wants cycle among {}", with.join(", "))
+            } else if with.is_empty() {
+                "wants itself".to_string()
+            } else {
+                format!("wants cycle with {}", with.join(", "))
+            };
+            (id.clone(), why)
+        })
+        .collect()
+}
+
+/// Running services grouped for shutdown: the first group wants nothing
+/// that anyone in a later group wants, so each group stops before what it
+/// wants. Within a group the ids are sorted; a cycle lands in one group.
+pub fn stop_layers(svcs: &[(String, Svc)]) -> Vec<Vec<String>> {
+    let ids: HashSet<&str> = svcs.iter().map(|(id, _)| id.as_str()).collect();
+    let mut depth: HashMap<&str, usize> = svcs.iter().map(|(id, _)| (id.as_str(), 0)).collect();
+    // Longest wants chain below each service; n rounds settle any DAG and
+    // bound a cycle.
+    for _ in 0..svcs.len() {
+        let mut changed = false;
+        for (id, spec) in svcs {
+            for w in &spec.wants {
+                let w = normalize_want(w);
+                let Some(w) = ids.get(w.as_str()) else { continue };
+                let d = (depth[w] + 1).min(svcs.len());
+                if d > depth[id.as_str()] {
+                    depth.insert(id.as_str(), d);
+                    changed = true;
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    let top = depth.values().copied().max().unwrap_or(0);
+    (0..=top)
+        .rev()
+        .map(|d| {
+            let mut layer: Vec<String> =
+                depth.iter().filter(|(_, v)| **v == d).map(|(id, _)| id.to_string()).collect();
+            layer.sort();
+            layer
+        })
+        .filter(|l| !l.is_empty())
+        .collect()
+}
+
 fn order_and_stuck(svcs: &[(String, Svc)]) -> (Vec<String>, Vec<String>) {
     let enabled: HashMap<String, &Svc> =
         svcs.iter().filter(|(_, s)| s.enabled).map(|(id, s)| (id.clone(), s)).collect();
@@ -138,5 +223,28 @@ mod tests {
         let (order, stuck) = start_order_lenient(&svcs);
         assert_eq!(order, vec!["svc:sshd"]);
         assert_eq!(stuck, vec!["svc:a", "svc:b", "svc:c", "svc:self"]);
+        let why: HashMap<String, String> = stuck_reasons(&svcs, &stuck).into_iter().collect();
+        assert!(why["svc:a"].starts_with("wants cycle with"), "{}", why["svc:a"]);
+        assert!(why["svc:c"].starts_with("waits on a wants cycle"), "{}", why["svc:c"]);
+        assert_eq!(why["svc:a"], "wants cycle with svc:b");
+        assert_eq!(why["svc:c"], "waits on a wants cycle among svc:a, svc:b");
+        assert_eq!(why["svc:self"], "wants itself");
+    }
+
+    #[test]
+    fn stop_layers_take_wanters_first() {
+        let svcs = vec![
+            ("svc:app".into(), s(&["svc:db", "svc:log"])),
+            ("svc:db".into(), s(&["svc:log"])),
+            ("svc:log".into(), s(&[])),
+            ("svc:sshd".into(), s(&[])),
+            ("svc:x".into(), s(&["svc:gone"])),
+        ];
+        assert_eq!(
+            stop_layers(&svcs),
+            vec![vec!["svc:app"], vec!["svc:db"], vec!["svc:log", "svc:sshd", "svc:x"]]
+        );
+        let cyc = vec![("svc:a".into(), s(&["svc:b"])), ("svc:b".into(), s(&["svc:a"]))];
+        assert_eq!(stop_layers(&cyc).concat().len(), 2);
     }
 }

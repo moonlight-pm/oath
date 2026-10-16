@@ -52,8 +52,8 @@ client that renews the lease, and `oath apply` waiting for PID 1 to
 converge. All 25 harness cases pass.
 
 Not done, carried forward: module loading by modalias (with metal, in
-phase 6), shutdown in reverse `wants` order, the cycle reason in actual,
-surviving a supervisor panic.
+phase 6), surviving a supervisor panic. Since: the cycle reason in
+actual and shutdown in reverse `wants` order (2026-10-16).
 
 ## 5. Native base — done (2026-10-14)
 

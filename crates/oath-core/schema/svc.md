@@ -38,7 +38,8 @@ process on the next converge.
 
 Actual is runtime: `state` (`running`, `restarting`, `stopped`, or
 `failed`), `pid`, `restarts` (how many times PID 1 restarted it this
-boot), `last_exit` (`{"code": n}` or `{"signal": n}`), and `since`.
+boot), `last_exit` (`{"code": n}` or `{"signal": n}`), `since`, and
+for `failed` the `reason`.
 A process that exits is restarted after 1, 2, 4, 8 s when it keeps
 dying within 10 s of starting; after five quick failures in a row it
 is `failed` and stays down until its applied spec changes. Its output
@@ -53,7 +54,9 @@ after 180 s). Apply checks
 the document, writes `applied.json`, then notifies PID 1. PID 1 runs
 only `applied.json`: a `set` without `apply` never reaches a running
 service, and a file it cannot read leaves the process running. A
-`wants` cycle that reaches PID 1 skips only the services in it.
+`wants` cycle that reaches PID 1 skips only the services in it (they
+are `failed`, `reason` names the cycle). At shutdown a service stops
+before the services it wants.
 
 ## Example
 

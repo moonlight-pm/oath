@@ -215,7 +215,7 @@ steps = [
   { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[\"svc:serial\"],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold" },
   { run = "sudo sh -c 'printf \"%s\\n\" \"{\\\"exec\\\":[\\\"/lib/oath/serial-login\\\"],\\\"wants\\\":[\\\"svc:hold\\\"],\\\"restart\\\":\\\"always\\\",\\\"enabled\\\":true}\" > /oath/objects/svc/serial/applied.json'" },
   { reboot = "force" },
-  { run = "oath get svc:hold --actual", expect = ["stopped"] },
+  { run = "oath get svc:hold --actual; oath get svc:sshd --actual", expect = ["\"failed\"", "wants cycle with svc:serial", "running"] },
 ]
 
 # ---- Phase 4: PID 1 --------------------------------------------------
@@ -228,6 +228,16 @@ steps = [
   { run = "sudo oath set host:local hostname=kept && sudo oath apply" },
   { reboot = "signal" },
   { run = "hostname; oath logs", expect = ["kept", "shutdown: Reboot"] },
+]
+
+[[case]]
+name = "shutdown-in-wants-order"
+about = "Shutdown stops a service before the one it wants."
+metal = true
+steps = [
+  { run = '''sudo oath new svc:base --from-json '{"exec":["/bin/sh","-c","touch /run/base.up; trap \"rm -f /run/base.up; exit 0\" TERM; while :; do sleep 1; done"],"wants":[],"restart":"always","enabled":true}' && sudo oath new svc:top --from-json '{"exec":["/bin/sh","-c","trap \"sleep 1; if [ -e /run/base.up ]; then echo base-still-up; else echo base-gone; fi; exit 0\" TERM; while :; do sleep 1; done"],"wants":["svc:base"],"restart":"always","enabled":true}' && sudo oath apply svc:base svc:top && sleep 1 && test -e /run/base.up''' },
+  { reboot = "signal" },
+  { run = "oath logs svc:top; oath logs | grep 'shutdown: stopping'", expect = ["base-still-up", "shutdown: stopping svc:top"], reject = ["base-gone"] },
 ]
 
 [[case]]

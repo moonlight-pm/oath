@@ -95,7 +95,8 @@ then `cgroup.kill`s the rest.
 ## Shutdown
 
 `reboot`, `halt`, `poweroff`, Ctrl-Alt-Del and `oath` `power=` all
-signal PID 1. It stops every service (TERM, 5 s, KILL), signals
+signal PID 1. It stops the services in reverse `wants` order, a layer
+at a time (TERM, 5 s, KILL), signals
 everything else, syncs, lazily unmounts `/oath/run/fs`, remounts `/`
 read-only, then calls `reboot(2)`.
 
