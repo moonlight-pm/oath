@@ -287,6 +287,14 @@ steps = [
   { run = "curl -sS -o /dev/null -w '%{http_code}\\n' https://curl.se/", expect = ["200"] },
 ]
 
+[[case]]
+name = "build-on-the-box"
+about = "oath build runs a busybox-only plan in the sandbox on the box, stores the product and logs to /oath/log/plan/."
+steps = [
+  { run = "h=$(readlink /oath/store/pkg/busybox/live)\ncat >/tmp/echo.plan <<EOF\n#!oath-plan\n{\"name\": \"echo\", \"produces\": \"pkg:echo\", \"build_needs\": [{\"id\": \"pkg:busybox\", \"hash\": \"$h\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-on-the-box\nmkdir -p /out/bin\necho hi >/out/bin/hi\nEOF\noath fmt -w /tmp/echo.plan && sudo oath build --file /tmp/echo.plan", expect = ["pkg:echo sha256-", "log /oath/log/plan/echo.log"], reject = ["built-on-the-box"] },
+  { run = "oath logs plan:echo && ls -a /oath/store/pkg /oath/store/pkg/echo", expect = ["# oath build plan:echo", "built-on-the-box", "# product sha256-"], reject = [".part"] },
+]
+
 # ---- Phase 6: metal -------------------------------------------------
 
 [[case]]

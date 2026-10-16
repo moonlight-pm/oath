@@ -63,6 +63,8 @@ btrfs
   log/svc/<name>.log       each service's stdout+stderr, UTC-stamped,
                            rotated to .1 past 256 KiB (`oath logs svc:<name>`)
   log/net/net0.log         the DHCP client (`oath logs net:net0`)
+  log/plan/<name>.log      the last `oath build` of a plan, .1 the one
+                           before (`oath logs plan:<name>`)
   .lock                    exclusive flock held by catalog writers
   .gens/<n>/objects/       copy snapshots (off btrfs or under --root only)
   store/pkg/<name>/<hash>/ package trees; `live` → the linked hash

@@ -75,7 +75,11 @@ pub fn build(repo: &Path) -> Result<PathBuf> {
         eprintln!("== pkg:oath {} (cached)", last.product);
         return Ok(tree(&last.product));
     }
-    eprintln!("== pkg:oath {version} building (pkg:rust {})", pkgs::product(&lock, "rust")?);
+    eprintln!(
+        "== pkg:oath {version} building (pkg:rust {}), log {}",
+        pkgs::product(&lock, "rust")?,
+        oath_core::build_log(&cat, "oath").display()
+    );
     let r =
         oath_core::build_file(&cat, &plan_path).map_err(|e| anyhow::anyhow!("pkg:oath: {e}"))?;
     eprintln!("== pkg:oath {}", r.product);

@@ -47,8 +47,7 @@ fn pack_busybox(root: &Path) -> String {
         }
     }
     let h = hash_tree(&stage).unwrap();
-    let dest = root.join("store/pkg/busybox").join(&h);
-    oath_core::copy_pack_tree(&stage, &dest).unwrap();
+    oath_core::put_tree(&root.join("store/pkg/busybox"), &h, &stage).unwrap();
     h
 }
 
@@ -61,8 +60,7 @@ fn pack_src(root: &Path, body: &[u8]) -> String {
     p.set_mode(0o755);
     std::fs::set_permissions(bin.join("hello"), p).unwrap();
     let h = hash_tree(&stage).unwrap();
-    let dest = root.join("store/pkg/hello-src").join(&h);
-    oath_core::copy_pack_tree(&stage, &dest).unwrap();
+    oath_core::put_tree(&root.join("store/pkg/hello-src"), &h, &stage).unwrap();
     h
 }
 
@@ -75,8 +73,7 @@ fn pack_c_src(root: &Path) -> String {
     )
     .unwrap();
     let h = hash_tree(&stage).unwrap();
-    let dest = root.join("store/pkg/hello-src").join(&h);
-    oath_core::copy_pack_tree(&stage, &dest).unwrap();
+    oath_core::put_tree(&root.join("store/pkg/hello-src"), &h, &stage).unwrap();
     h
 }
 
@@ -104,8 +101,7 @@ chmod 0755 \"$out\"\n";
         std::fs::set_permissions(bin.join("cc"), p).unwrap();
     }
     let h = hash_tree(&stage).unwrap();
-    let dest = root.join("store/pkg/llvm").join(&h);
-    oath_core::copy_pack_tree(&stage, &dest).unwrap();
+    oath_core::put_tree(&root.join("store/pkg/llvm"), &h, &stage).unwrap();
     h
 }
 
@@ -201,6 +197,77 @@ fn sandbox_has_its_own_proc() {
     assert!(!std::fs::read(tree.join("maps")).unwrap().is_empty());
     let pid1 = std::fs::read(tree.join("pid1")).unwrap();
     assert!(pid1.ends_with(b"/build.sh\0"), "{}", String::from_utf8_lossy(&pid1));
+}
+
+#[test]
+fn a_build_logs_its_output_and_rotates() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_busybox(d.path());
+    let plan = |name: &str, script: &str| {
+        let p = PlanFile {
+            name: name.into(),
+            produces: format!("pkg:{name}"),
+            build_needs: vec![PkgNeed { id: "pkg:busybox".into(), hash: bb.clone() }],
+            run_needs: vec![],
+            script: script.into(),
+        };
+        let path = d.path().join(format!("{name}.plan"));
+        std::fs::write(&path, fmt_plan(&p)).unwrap();
+        path
+    };
+    let r = build_file(
+        d.path(),
+        &plan(
+            "talk",
+            "printf 'said-out\\n'\nprintf 'said-err\\n' >&2\nmkdir -p /out\nprintf x >/out/x\n",
+        ),
+    )
+    .expect("build");
+    assert_eq!(r.log, d.path().join("log/plan/talk.log"));
+    let log = std::fs::read_to_string(&r.log).unwrap();
+    assert!(log.starts_with("# oath build plan:talk "), "{log}");
+    assert!(log.contains("said-out") && log.contains("said-err"), "{log}");
+    assert!(log.contains(&format!("# product {}", r.product)), "{log}");
+
+    // A failing build of the same name keeps the last log as .1 and says
+    // where its own is, with the tail.
+    let err = build_file(d.path(), &plan("talk", "printf 'about-to-fail\\n'\nexit 3\n"))
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("plan:talk failed") && err.contains("about-to-fail"), "{err}");
+    assert!(err.contains("log/plan/talk.log"), "{err}");
+    let old = std::fs::read_to_string(d.path().join("log/plan/talk.log.1")).unwrap();
+    assert!(old.contains("said-out"), "{old}");
+    let new = std::fs::read_to_string(d.path().join("log/plan/talk.log")).unwrap();
+    assert!(new.contains("about-to-fail") && new.contains("# failed"), "{new}");
+}
+
+#[test]
+fn put_tree_is_whole_or_nothing() {
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("src");
+    std::fs::create_dir_all(src.join("bin")).unwrap();
+    std::fs::write(src.join("bin/x"), b"x").unwrap();
+    let h = hash_tree(&src).unwrap();
+    let slot = d.path().join("store/pkg/x");
+    let dest = oath_core::put_tree(&slot, &h, &src).unwrap();
+    assert_eq!(dest, slot.join(&h));
+    assert_eq!(hash_tree(&dest).unwrap(), h);
+    // An existing realization is never written into.
+    std::fs::write(src.join("bin/x"), b"changed").unwrap();
+    oath_core::put_tree(&slot, &h, &src).unwrap();
+    assert_eq!(std::fs::read(dest.join("bin/x")).unwrap(), b"x");
+    // Bits that do not hash to the id are not stored, and leave no part.
+    let other = "sha256-0000000000000000000000000000000000000000000000000000000000000000";
+    assert!(oath_core::put_tree(&slot, other, &src).is_err());
+    assert!(!slot.join(other).exists());
+    let leftovers: Vec<_> = std::fs::read_dir(d.path().join("store/pkg"))
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().starts_with('.'))
+        .collect();
+    assert!(leftovers.is_empty());
 }
 
 #[test]

@@ -518,6 +518,35 @@ fn parse_pin(pin: &str) -> Result<()> {
     }
 }
 
+/// Put the pack tree `src` into `slot` (a `store/pkg/<name>` directory) as
+/// realization `hash`, whole or not at all: it is copied beside the slot
+/// (`.<name>.<hash>.part`), hashed again, and renamed into place. A
+/// realization that exists is never written into.
+pub fn put_tree(slot: &Path, hash: &str, src: &Path) -> Result<PathBuf> {
+    parse_pin(hash)?;
+    let dest = slot.join(hash);
+    if dest.is_dir() {
+        return Ok(dest);
+    }
+    let (Some(parent), Some(name)) = (slot.parent(), slot.file_name()) else {
+        return Err(Error::Msg(format!("bad store slot {}", slot.display())));
+    };
+    let part = parent.join(format!(".{}.{hash}.part", name.to_string_lossy()));
+    let _ = fs::remove_dir_all(&part);
+    copy_tree(src, &part)?;
+    let got = hash_tree(&part)?;
+    if got != hash {
+        let _ = fs::remove_dir_all(&part);
+        return Err(Error::security(
+            format!("a copy of {} hashes to {got}, not {hash}", src.display()),
+            "the tree changed while it was copied; nothing was stored",
+        ));
+    }
+    fs::create_dir_all(slot)?;
+    fs::rename(&part, &dest)?;
+    Ok(dest)
+}
+
 /// Copy `src` (a pack directory) into the hashed store. Also writes
 /// `live` + slot compat links. Optional host cache gets the same tree.
 pub fn install_tree(
@@ -540,15 +569,9 @@ pub fn install_tree(
             "oath schema pkg",
         ));
     }
-    let dest = realization_dir(catalog_root, name, &got);
-    if !dest.is_dir() {
-        copy_tree(src, &dest)?;
-    }
+    let dest = put_tree(&slot_dir(catalog_root, name), &got, src)?;
     if let Some(cache) = cache {
-        let c = cache.join("pkg").join(name).join(&got);
-        if !c.is_dir() {
-            copy_tree(&dest, &c)?;
-        }
+        put_tree(&cache.join("pkg").join(name), &got, &dest)?;
     }
     write_slot_links(catalog_root, name, &got)?;
     if !pin.is_empty() {
@@ -574,10 +597,8 @@ pub fn promote_slot(catalog_root: &Path, name: &str, cache: Option<&Path>) -> Re
             write_slot_links(catalog_root, name, &ids[0])?;
             pin_desired_hash(catalog_root, name, &ids[0])?;
             if let Some(cache) = cache {
-                let c = cache.join("pkg").join(name).join(&ids[0]);
-                if !c.is_dir() {
-                    copy_tree(&realization_dir(catalog_root, name, &ids[0]), &c)?;
-                }
+                let tree = realization_dir(catalog_root, name, &ids[0]);
+                put_tree(&cache.join("pkg").join(name), &ids[0], &tree)?;
             }
             return Ok(ids[0].clone());
         }
@@ -605,10 +626,7 @@ pub fn promote_slot(catalog_root: &Path, name: &str, cache: Option<&Path>) -> Re
         fs::rename(&stage, &dest)?;
     }
     if let Some(cache) = cache {
-        let c = cache.join("pkg").join(name).join(&got);
-        if !c.is_dir() {
-            copy_tree(&dest, &c)?;
-        }
+        put_tree(&cache.join("pkg").join(name), &got, &dest)?;
     }
     write_slot_links(catalog_root, name, &got)?;
     pin_desired_hash(catalog_root, name, &got)?;

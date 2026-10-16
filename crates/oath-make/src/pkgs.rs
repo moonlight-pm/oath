@@ -375,10 +375,8 @@ fn source_pack(repo: &Path, cat: &Path, name: &str, files: &[(String, PathBuf)])
 /// Put a pack tree into the build catalog's store; returns its hash.
 pub fn store(cat: &Path, name: &str, tree: &Path) -> Result<String> {
     let hash = oath_core::hash_tree(tree).map_err(|e| anyhow::anyhow!("{e}"))?;
-    let dest = cat.join("store/pkg").join(name).join(&hash);
-    if !dest.is_dir() {
-        oath_core::copy_pack_tree(tree, &dest).map_err(|e| anyhow::anyhow!("{e}"))?;
-    }
+    oath_core::put_tree(&cat.join("store/pkg").join(name), &hash, tree)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(hash)
 }
 
@@ -458,7 +456,11 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
                 continue;
             }
         }
-        eprintln!("== pkg:{name} {} building", p.version);
+        eprintln!(
+            "== pkg:{name} {} building, log {}",
+            p.version,
+            oath_core::build_log(&cat, &name).display()
+        );
         let r = oath_core::build_file(&cat, &plan_path)
             .map_err(|e| anyhow::anyhow!("pkg:{name}: {e}"))?;
         eprintln!("== pkg:{name} {}", r.product);

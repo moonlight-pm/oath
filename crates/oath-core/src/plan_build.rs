@@ -1,6 +1,8 @@
-//! Isolated `oath build` (T43). Network off. Product to the pkg store only.
+//! Isolated `oath build` (T43). Network off. Product to the pkg store only,
+//! whole or not at all; the script's output to `log/plan/<name>.log`.
 
 use std::fs;
+use std::io::Write;
 use std::os::unix::fs::{symlink, PermissionsExt};
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -11,8 +13,8 @@ use serde_json::json;
 use crate::error::{Error, Result};
 use crate::id::ObjectId;
 use crate::kinds::{Meta, PkgNeed, PlanActual};
-use crate::packhash::{hash_tree, is_realization_id, realization_dir, LIVE_NAME};
-use crate::pkg::{copy_tree, fetch_pkg, resolve_tree, store_present};
+use crate::packhash::{hash_tree, is_realization_id, realization_dir, slot_dir, LIVE_NAME};
+use crate::pkg::{fetch_pkg, put_tree, resolve_tree, store_present};
 use crate::plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, PlanFile, PLAN_NAME,
 };
@@ -26,6 +28,22 @@ pub struct BuildReport {
     pub product: String,
     pub inputs: String,
     pub skipped: bool,
+    /// The build's output (`build_log`); a skipped build wrote none.
+    pub log: PathBuf,
+}
+
+/// Where a build of plan `name` writes its script's output:
+/// `log/plan/<name>.log` in the catalog (`/oath/log/plan/<name>.log`). The
+/// build before it is `<name>.log.1`. `oath logs plan:<name>` reads both.
+pub fn build_log(catalog_root: &Path, name: &str) -> PathBuf {
+    catalog_root.join("log/plan").join(format!("{name}.log"))
+}
+
+/// The last `n` lines of a log, for an error message.
+fn tail(path: &Path, n: usize) -> String {
+    let text = fs::read_to_string(path).unwrap_or_default();
+    let lines: Vec<&str> = text.lines().collect();
+    lines[lines.len().saturating_sub(n)..].join("\n")
 }
 
 /// Copy a linted plan file into the store and pin `plan:<name>`.
@@ -118,6 +136,7 @@ fn build_inner(
                         product: prev_p.to_string(),
                         inputs,
                         skipped: true,
+                        log: build_log(catalog_root, &plan.name),
                     });
                 }
             }
@@ -149,7 +168,27 @@ fn build_inner(
         packs.push((n.clone(), resolve_tree(catalog_root, name, &n.hash)?));
     }
 
-    run_sandbox(&packs, &script_path, &out)?;
+    let log_path = build_log(catalog_root, &plan.name);
+    fs::create_dir_all(log_path.parent().unwrap())?;
+    if log_path.is_file() {
+        let mut old = log_path.clone().into_os_string();
+        old.push(".1");
+        fs::rename(&log_path, old)?;
+    }
+    let mut log = fs::File::create(&log_path)?;
+    writeln!(log, "# oath build plan:{} {plan_hash} at {}", plan.name, crate::now_rfc3339())?;
+    if let Err(e) = run_sandbox(&packs, &script_path, &out, &log) {
+        let _ = writeln!(log, "# failed: {e}");
+        return Err(Error::hint(
+            format!(
+                "plan:{} failed: {e}\n--- last lines of {} ---\n{}",
+                plan.name,
+                log_path.display(),
+                tail(&log_path, 25)
+            ),
+            format!("oath logs plan:{} -n 200", plan.name),
+        ));
+    }
 
     let product = hash_tree(&out)?;
     if let Some(id) = plan_id {
@@ -183,8 +222,9 @@ fn build_inner(
             ));
         }
     } else {
-        copy_tree(&out, &dest)?;
+        put_tree(&slot_dir(catalog_root, &plan.name), &product, &out)?;
     }
+    writeln!(log, "# product {product}")?;
 
     ensure_pkg_object(catalog_root, plan, &product)?;
     if let Some(id) = plan_id {
@@ -207,6 +247,7 @@ fn build_inner(
         product,
         inputs,
         skipped: false,
+        log: log_path,
     })
 }
 
@@ -264,10 +305,15 @@ fn ensure_need(catalog_root: &Path, n: &PkgNeed) -> Result<()> {
     Ok(())
 }
 
-fn run_sandbox(packs: &[(PkgNeed, PathBuf)], script: &Path, out: &Path) -> Result<()> {
+fn run_sandbox(
+    packs: &[(PkgNeed, PathBuf)],
+    script: &Path,
+    out: &Path,
+    log: &fs::File,
+) -> Result<()> {
     let scratch = out.parent().unwrap().join("root");
     fs::create_dir_all(&scratch)?;
-    sandbox_child(packs, script, out, &scratch)?;
+    sandbox_child(packs, script, out, &scratch, log)?;
     Ok(())
 }
 
@@ -276,6 +322,7 @@ fn sandbox_child(
     script: &Path,
     out: &Path,
     scratch: &Path,
+    log: &fs::File,
 ) -> Result<bool> {
     let packs: Vec<(String, String, PathBuf)> = packs
         .iter()
@@ -354,11 +401,11 @@ fn sandbox_child(
         libc::close(pipe_b[0]);
     }
 
-    let log = scratch.join("err");
-    let code = match sandbox_in_child(&packs, &script, &out, &scratch, host_root) {
+    let err = scratch.join("err");
+    let code = match sandbox_in_child(&packs, &script, &out, &scratch, host_root, log) {
         Ok(()) => 0,
         Err(e) => {
-            let _ = fs::write(&log, format!("{e}"));
+            let _ = fs::write(&err, format!("{e}"));
             1
         }
     };
@@ -371,6 +418,7 @@ fn sandbox_in_child(
     out: &Path,
     scratch: &Path,
     host_root: bool,
+    log: &fs::File,
 ) -> Result<()> {
     // The script is PID 1 of its own PID namespace: it mounts a /proc that
     // shows only the build, and everything left over dies with it.
@@ -498,6 +546,8 @@ fn sandbox_in_child(
         .env("OUT", "/out")
         .env("XDG_CACHE_HOME", "/tmp")
         .stdin(Stdio::null())
+        .stdout(Stdio::from(log.try_clone()?))
+        .stderr(Stdio::from(log.try_clone()?))
         .status()?;
     if !st.success() {
         let _ = fs::write("/out/.err", format!("build.sh {st:?}"));

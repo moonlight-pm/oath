@@ -502,10 +502,8 @@ pub fn store_pack(repo: &Path, name: &str, from: &Path, tar: bool) -> Result<()>
     }
     let cache = host_store_cache(repo);
     let hash = oath_core::hash_tree(from).map_err(|e| anyhow::anyhow!("{e}"))?;
-    let tree = cache.join("pkg").join(name).join(&hash);
-    if !tree.is_dir() {
-        oath_core::copy_pack_tree(from, &tree).map_err(|e| anyhow::anyhow!("{e}"))?;
-    }
+    let tree = oath_core::put_tree(&cache.join("pkg").join(name), &hash, from)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     println!("pkg:{name} {hash}");
     println!("{}", tree.display());
     if tar {

@@ -83,8 +83,8 @@ enum Cmd {
     },
     Undo,
     Log,
-    /// Output of a service (`svc:<name>`), the DHCP client (`net:net0`), or
-    /// PID 1 itself (no id).
+    /// Output of a service (`svc:<name>`), the DHCP client (`net:net0`), the
+    /// last build of a plan (`plan:<name>`), or PID 1 itself (no id).
     Logs {
         id: Option<String>,
         /// Last N lines.
@@ -429,7 +429,8 @@ fn run() -> oath_core::Result<i32> {
             if text.is_empty() && !path.is_file() {
                 return Err(Error::hint(
                     format!("no log at {}", path.display()),
-                    "services log to /oath/log/svc/<name>.log once they have run",
+                    "services log to /oath/log/svc/<name>.log once they have run, \
+                     builds to /oath/log/plan/<name>.log",
                 ));
             }
             let all: Vec<&str> = text.lines().collect();
@@ -471,6 +472,7 @@ fn print_build(r: &BuildReport, json_mode: bool) {
                 "product": r.product,
                 "inputs": r.inputs,
                 "skipped": r.skipped,
+                "log": r.log,
             }))
             .unwrap()
         );
@@ -478,6 +480,7 @@ fn print_build(r: &BuildReport, json_mode: bool) {
         println!("pkg:{} {} (cached)", r.name, r.product);
     } else {
         println!("pkg:{} {}", r.name, r.product);
+        println!("log {}", r.log.display());
     }
 }
 

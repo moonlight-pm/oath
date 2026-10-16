@@ -39,17 +39,16 @@ pub use packhash::{
     LIVE_NAME,
 };
 pub use pkg::{
-    check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root,
-    copy_tree as copy_pack_tree, fetch_adv, fetch_pkg, ingest_file, install_tree,
-    list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
-    pin_desired_hash, promote_slot, promote_store, read_advisories, read_advisories_store,
-    read_components, resolve_tree, store_present, sync_need_hashes, write_advisories,
-    write_advisories_store, write_slot_links, COMPONENTS_NAME,
+    check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root, fetch_adv,
+    fetch_pkg, ingest_file, install_tree, list_realization_ids, list_realizations,
+    normalize_need as normalize_pkg_need, pin_desired_hash, promote_slot, promote_store, put_tree,
+    read_advisories, read_advisories_store, read_components, resolve_tree, store_present,
+    sync_need_hashes, write_advisories, write_advisories_store, write_slot_links, COMPONENTS_NAME,
 };
 pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,
 };
-pub use plan_build::{build_file, build_pinned, file_plan, BuildReport};
+pub use plan_build::{build_file, build_log, build_pinned, file_plan, BuildReport};
 pub use seed::{
     apply_overlay, merge_patch, seed, seed_profile, Profile, DEFAULT_PROFILE, PROFILES,
 };

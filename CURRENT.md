@@ -14,9 +14,10 @@ append history (git has it).
    Sigstore, unchecked); publish carries only the profiles' licensed
    packages; `cargo make build` writes immutable outputs
    (`build/out/<id>/`, with a manifest) that install and `esp` take by
-   id. Open for Joshua: GPL source on origins (decisions.md). Next:
-   `oath build` refuses to write into a store tree that exists and logs
-   each build under `/oath/log` (builds.md, Target fixes).
+   id; `oath build` stores products whole or not at all and logs to
+   `/oath/log/plan/<name>.log`. Open for Joshua: GPL source on origins
+   (decisions.md). Next: verify Python's and Perl's Sigstore bundles
+   (their identity and Rekor entry) in `cargo make pkgs`'s fetch.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
@@ -32,7 +33,8 @@ pool.ntp.org. canto was reinstalled over SSH, unattended, on
 2026-10-16 from the image with the kernel built by `pkg:llvm` (its Oath
 binaries were still the host rustc's) and passes all 24 `metal`
 harness cases (`cargo make check --target`); it has not run `pkg:oath`
-yet. 30 QEMU cases and the `install --qemu` rehearsal pass with it.
+yet. The latest checked output passes 31 QEMU cases (among them a
+build on the box) and the `install --qemu` rehearsal.
 
 ## Machines
 

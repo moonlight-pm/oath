@@ -93,6 +93,10 @@ oath apply
 
 A missing `build_needs` pack is fetched first when its `pkg` object
 has a `url`. The second build of an unchanged input set is a no-op.
+The script's output goes to `/oath/log/plan/<name>.log`, not the
+terminal: `oath build` prints the path (and a failed build the last
+lines), and `oath logs plan:hello` reads it. The previous build's log
+is `hello.log.1`.
 
 The build cache is keyed on the plan hash and the input set, so an
 edited script always rebuilds.

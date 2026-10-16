@@ -27,7 +27,8 @@ parts of T24 and T35.
 
 - A realization id is `sha256-` plus 64 hex: SHA-256 of a canonical
   listing of the tree (`oath-tree-v1`). Same bits, same hash. A hash is
-  never overwritten with other contents.
+  never overwritten with other contents, and never half there: a tree
+  is copied beside its slot, hashed, and renamed into place.
 - `/bin` is a symlink farm. `/bin/<file>` points at
   `/oath/store/pkg/<name>/<hash>/bin/<file>`. There is no `/usr` and no
   second PATH. Two packages that ship the same `/bin` name refuse.

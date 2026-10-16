@@ -12,8 +12,9 @@ toolchain are built; every package in the image is a plan product: the
 C packages, `pkg:llvm` and the kernel (`pkg:linux`) from `pkgs/` via
 `cargo make pkgs`, and the Oath binaries (`pkg:oath`) from this tree,
 built by the vendor's Rust release (`pkg:rust`), and sources are checked
-against their upstreams' OpenPGP signatures. Still target: immutable
-outputs, build logs, Sigstore signatures.
+against their upstreams' OpenPGP signatures. Products reach the store
+whole or not at all, and every build logs to `/oath/log/plan/<name>.log`.
+Still target: Sigstore signatures.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -191,11 +192,19 @@ Zig is not used (R9).
 Target: Sigstore bundles for the upstreams that sign only that way
 (Python, Perl).
 
-## Target fixes
+## Products and logs (built)
 
-- Plan outputs are immutable; a build never writes into a tree that
-  already exists.
-- Builds log to `/oath/log` and `oath build` prints where.
+- The script writes `/out` in a scratch directory. The product is
+  copied beside its slot (`store/pkg/.<name>.<hash>.part`), hashed
+  again and renamed into place, so a realization is whole or absent;
+  one that exists is verified, never written into. Every store writer
+  (install, fetch, promote, the host cache) goes through the same step.
+- The script's stdout and stderr go to `log/plan/<name>.log` in the
+  catalog (`/oath/log/plan/<name>.log`; `.cache/oath/log/plan/` for
+  `cargo make pkgs`), headed by the plan hash and time and ended by the
+  product or the failure. The build before is `<name>.log.1`.
+  `oath build` prints the log's path, a failed build the log's last
+  lines, and `oath logs plan:<name>` reads it.
 
 ## Out
 
