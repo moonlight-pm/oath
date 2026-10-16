@@ -13,7 +13,6 @@ pub const LOADER_CONF_QEMU: &str = "default oath.conf\ntimeout 0\neditor no\ncon
 /// Metal: five seconds to pick an archived boot.
 pub const LOADER_CONF_METAL: &str = "default oath.conf\ntimeout 5\neditor no\nconsole-mode auto\n";
 
-#[cfg(test)]
 pub struct BlsEntry {
     pub title: String,
     pub linux: String,
@@ -36,7 +35,6 @@ pub fn parse_loader_conf(text: &str) -> (String, u32) {
     (default, timeout)
 }
 
-#[cfg(test)]
 pub fn parse_bls(text: &str) -> BlsEntry {
     let mut e = BlsEntry {
         title: String::from("Oath"),

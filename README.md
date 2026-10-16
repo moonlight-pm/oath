@@ -81,6 +81,12 @@ cargo make install --target user@host --disk /dev/sda --hostname name \
   --overlay hosts/name.json --confirm
 ```
 
+Move an installed machine to a newer build output without wiping it:
+
+```sh
+cargo make update --target home@host --confirm --reboot
+```
+
 ## Repo
 
 ```

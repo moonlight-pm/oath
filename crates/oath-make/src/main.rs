@@ -13,6 +13,7 @@ mod pkgs;
 mod qemu;
 mod sigstore;
 mod tools;
+mod update;
 mod util;
 
 use std::path::PathBuf;
@@ -163,6 +164,34 @@ enum Cmd {
         #[arg(long)]
         name: Option<String>,
     },
+    /// Move an installed machine to a build output without wiping it:
+    /// ship missing packs, apply the output's pins (one generation), replace
+    /// /lib/oath, archive the old boot and write the new one to its ESP.
+    /// Requires `--confirm`.
+    Update {
+        /// `home@host[:port]` of a machine `install` wrote (its host key is
+        /// pinned in build/known_hosts).
+        #[arg(long)]
+        target: Option<String>,
+        /// Rehearse in QEMU: `install --qemu` this older output, then update it.
+        #[arg(long, value_name = "OUTPUT")]
+        qemu: Option<String>,
+        /// Required. Writes the machine's boot files.
+        #[arg(long)]
+        confirm: bool,
+        /// Reboot into the new boot and check it.
+        #[arg(long)]
+        reboot: bool,
+        /// The target's ESP node (default: partition 1 of its root disk).
+        #[arg(long)]
+        esp: Option<String>,
+        /// Build output to update to (default: the newest one `check` passed).
+        #[arg(long)]
+        output: Option<String>,
+        /// Update to an output that `cargo make check` has not passed.
+        #[arg(long)]
+        unchecked: bool,
+    },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
     Esp {
@@ -268,6 +297,13 @@ fn real() -> Result<()> {
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
         Cmd::Publish { dest } => pack::publish_store(&root, &dest)?,
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
+        Cmd::Update { target, qemu, confirm, reboot, esp, output, unchecked } => {
+            update::run_update(
+                &root,
+                &out,
+                update::Opts { target, qemu, output, unchecked, confirm, reboot, esp },
+            )?;
+        }
         Cmd::Esp { esp, confirm, root: root_dev, output, unchecked } => {
             install::update_esp(
                 &out,

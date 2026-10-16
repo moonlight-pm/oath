@@ -56,10 +56,10 @@ pub struct Remote {
     pub user: String,
     pub host: String,
     pub port: u16,
-    sudo: bool,
+    pub(crate) sudo: bool,
     /// Pinned host keys. `None` takes any key: the installer ramdisk and
     /// the system being replaced have nothing worth pinning.
-    known_hosts: Option<PathBuf>,
+    pub(crate) known_hosts: Option<PathBuf>,
 }
 
 /// Host keys of the machines this tree installed, written by `install`
@@ -254,7 +254,7 @@ fn assert_usb_stick(dev: &str) -> Result<()> {
     Ok(())
 }
 
-fn ssh_base(r: &Remote) -> Command {
+pub(crate) fn ssh_base(r: &Remote) -> Command {
     let mut c = Command::new("ssh");
     match &r.known_hosts {
         Some(f) => c
@@ -298,7 +298,7 @@ fn feed(child: &mut std::process::Child, script: &str) -> Result<()> {
     stdin.write_all(script.as_bytes()).context("ssh stdin")
 }
 
-fn ssh_run(r: &Remote, script: &str) -> Result<()> {
+pub(crate) fn ssh_run(r: &Remote, script: &str) -> Result<()> {
     let mut child = sh_command(r).spawn().context("ssh")?;
     feed(&mut child, script)?;
     let st = child.wait()?;
@@ -308,7 +308,7 @@ fn ssh_run(r: &Remote, script: &str) -> Result<()> {
     Ok(())
 }
 
-fn ssh_out(r: &Remote, script: &str) -> Result<String> {
+pub(crate) fn ssh_out(r: &Remote, script: &str) -> Result<String> {
     let mut child =
         sh_command(r).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().context("ssh")?;
     feed(&mut child, script)?;
@@ -321,7 +321,7 @@ fn ssh_out(r: &Remote, script: &str) -> Result<String> {
 
 /// Start `script` (a reboot or kexec) and give up on the session after a
 /// few seconds: the connection dies with the kernel and never returns cleanly.
-fn ssh_fire(r: &Remote, script: &str) {
+pub(crate) fn ssh_fire(r: &Remote, script: &str) {
     let mut c = Command::new("ssh");
     c.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=2"]);
     c.args(ssh_base(r).get_args());
@@ -356,7 +356,7 @@ fn put_text(r: &Remote, dest: &str, body: &str) -> Result<()> {
     res
 }
 
-fn scp_root(r: &Remote, src: &Path, dest: &str) -> Result<()> {
+pub(crate) fn scp_root(r: &Remote, src: &Path, dest: &str) -> Result<()> {
     // Stream bytes over ssh so the first hop does not depend on guest
     // scp/sftp. `dd of=` needs no redirect, so any login shell can run it.
     let dd = format!("dd of={dest} bs=65536 status=none");
@@ -503,7 +503,7 @@ fn discover_ip_gw(r: &Remote, nic: &str) -> Result<(String, String)> {
     Ok((ip, gw))
 }
 
-fn wait_ssh(r: &Remote, timeout: Duration) -> Result<()> {
+pub(crate) fn wait_ssh(r: &Remote, timeout: Duration) -> Result<()> {
     let deadline = Instant::now() + timeout;
     let addr = format!("{}:{}", r.host, r.port);
     eprintln!("waiting for installer SSH at {addr}");
@@ -792,7 +792,29 @@ fn delete_boot_snapshot(id: u64) {
     }
 }
 
+/// `install` wipes the target's disk, so it refuses a target that is the
+/// machine running it (the build host): the same running kernel answers
+/// with the same `boot_id`.
+pub(crate) fn refuse_build_host(r: &Remote) -> Result<()> {
+    let here = fs::read_to_string("/proc/sys/kernel/random/boot_id").unwrap_or_default();
+    let there = ssh_out(r, "cat /proc/sys/kernel/random/boot_id")?;
+    if same_machine(&here, &there) {
+        bail!(
+            "--target {} is this machine (its boot_id is ours): install would wipe the build \
+             host's disk",
+            r.host
+        );
+    }
+    Ok(())
+}
+
+fn same_machine(here: &str, there: &str) -> bool {
+    let (here, there) = (here.trim(), there.trim());
+    !here.is_empty() && here == there
+}
+
 fn install_remote(out: &Path, tools: &Tools, p: &Payload, opts: &Opts, r: &Remote) -> Result<()> {
+    refuse_build_host(r)?;
     if !already_installer(r) {
         enter_installer(tools, p, opts, r)?;
     } else {
@@ -937,7 +959,7 @@ fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Resu
     Ok(())
 }
 
-fn qemu_headless(cmd: &mut Command, serial: &Path, netdev: &str, drive: &str) {
+pub(crate) fn qemu_headless(cmd: &mut Command, serial: &Path, netdev: &str, drive: &str) {
     cmd.args([
         "-machine",
         "q35",
@@ -963,7 +985,7 @@ fn qemu_headless(cmd: &mut Command, serial: &Path, netdev: &str, drive: &str) {
     ]);
 }
 
-fn dump_serial(path: &Path) {
+pub(crate) fn dump_serial(path: &Path) {
     match fs::read_to_string(path) {
         Ok(s) => {
             let lines: Vec<&str> = s.lines().collect();
@@ -979,7 +1001,12 @@ fn dump_serial(path: &Path) {
 /// forced reboot does not depend on the old system's PID 1.
 const REBOOT_SCRIPT: &str = "sync; umount /boot 2>/dev/null; sync; reboot -f\n";
 
-fn wait_oath_ssh(host: &str, port: u16, pins: &Path, timeout: Duration) -> Result<Remote> {
+pub(crate) fn wait_oath_ssh(
+    host: &str,
+    port: u16,
+    pins: &Path,
+    timeout: Duration,
+) -> Result<Remote> {
     let home = Remote {
         user: "home".into(),
         host: host.into(),
@@ -1003,6 +1030,14 @@ fn wait_oath_ssh(host: &str, port: u16, pins: &Path, timeout: Duration) -> Resul
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn same_boot_id_is_the_same_machine() {
+        let id = "3f1e9c1e-5b7a-4c1d-9d3e-1a2b3c4d5e6f";
+        assert!(same_machine(&format!("{id}\n"), id));
+        assert!(!same_machine(id, "a-different-boot"));
+        assert!(!same_machine("", ""), "an unreadable boot_id proves nothing");
+    }
+
     use super::*;
 
     #[test]

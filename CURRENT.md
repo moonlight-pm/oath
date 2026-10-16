@@ -13,9 +13,9 @@ append history (git has it).
    target in the specs short of phase 8. Done: R13 source on origins,
    probation with rollback, the cycle reason and shutdown order, DHCP
    renewals in actual, store integrity (`oath verify`), schemas
-   generated from the types with `oath new` defaults. Left: install's
-   build-host guard, remote update, hotplug and discovery, surviving a
-   PID 1 panic. Next: the guard and `cargo make update`.
+   generated from the types with `oath new` defaults, install's
+   build-host guard, `cargo make update` (QEMU rehearsal passed). Left:
+   hotplug and discovery, surviving a PID 1 panic. Next: devices.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
@@ -45,6 +45,8 @@ Build host: **novus** (NixOS). Not an Oath machine.
 ## Do not
 
 - `cargo make install --confirm` (wipes a disk) unless Joshua asks.
+- `cargo make update --target` (writes a real machine's ESP and store)
+  unless Joshua asks; `--qemu` rehearsals are fine.
 - Write a USB stick or real disk Joshua did not ask for.
 - Change novus's OS as if it were Oath.
 - Invent answers to open decisions in [docs/decisions.md](docs/decisions.md).

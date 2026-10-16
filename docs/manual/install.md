@@ -23,7 +23,8 @@ files are written with `dd`, so the user's login shell does not matter.
    are baked into a copy of its installer ramdisk under
    `build/runs/<time>-install/`, never into the output.
    Reads and checks `--overlay` against a scratch catalog, before
-   anything is wiped.
+   anything is wiped, and refuses a `--target` that is the machine it
+   runs on (the same `boot_id`).
 2. Boots an **installer ramdisk** on the target (`oath.install=1`,
    dropbear, the build host's keys for root). On EFI machines this is
    a one-shot loader entry; kexec is the fallback (Oath's own static
@@ -100,9 +101,36 @@ The disk must be a removable USB device. Boot the stick's EFI entry
 the NIC with carrier. Then run the `--target` command from the build
 host; it sees `/run/oath-install/ready` and skips step 2.
 
-## Later kernel and initrd updates
+## Update an installed machine
 
-`cargo make esp` rotates an output's kernel, initrd and `oath-efi` onto
-an existing ESP without wiping (`--output <id>`, else the newest
-checked output). See [Generations](generations.md) for what it does and
-why it must not be pointed at the build host's own ESP.
+From the build host, without wiping:
+
+```sh
+cargo make update --target home@canto --confirm --reboot
+cargo make update --qemu <older output> --confirm   # rehearsal in QEMU
+```
+
+It takes the newest output `cargo make check` passed (`--output <id>`,
+`--unchecked`), and refuses a machine that is not Oath, is this machine,
+has pending changes, or has an apply on probation. Then it:
+
+1. snapshots `@` as `@boot-<id>` before changing anything;
+2. ships the output's store packs the machine lacks;
+3. sets each package the machine has to the output's pin and runs
+   `oath apply` once (`oath undo` takes it back; packages the output
+   has and the machine does not are listed, not created);
+4. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
+   and `/bin/sudo`;
+5. archives the ESP's kernel and initrd as boot `<id>` (with the
+   snapshot from step 1) and writes the new kernel, initrd and
+   `oath-efi`, keeping five archives (`--esp`, default partition 1 of
+   the root disk);
+6. with `--reboot`, reboots through PID 1 and requires the output's
+   PID 1 and an in-sync catalog.
+
+If the new boot fails, pick the archived boot in the firmware menu: it
+is the old kernel with the old userspace.
+
+`cargo make esp` does steps 1 and 5 on the Oath machine itself, for an
+ESP you mount there. See [Generations](generations.md) for why it must
+not be pointed at the build host's own ESP.

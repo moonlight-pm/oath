@@ -93,7 +93,10 @@ non-root user) and files go over with `dd of=`, so the login shell does
 not matter (canto's September image logged `home` into Thoxa).
 
 1. Refuse without `--confirm` and a `/dev/` node. Read and test the
-   overlay before anything is wiped.
+   overlay before anything is wiped. Refuse a `--target` that is the
+   build host itself: its `/proc/sys/kernel/random/boot_id` matches
+   ours (built 2026-10-16). (`esp` already refuses to run on a machine
+   that is not Oath.)
 2. Bake the build host's SSH public keys into the installer initrd.
 3. Enter the installer on the target: an EFI one-shot boot entry when
    the target has one, otherwise kexec (the native `pkg:kexec` binary,
@@ -119,11 +122,44 @@ not matter (canto's September image logged `home` into Thoxa).
   (`pkgs/bootstrap.nix`). Everything that ships, the kernel and the
   Oath binaries included, is a pinned plan product (builds.md).
 
+## Update (built)
+
+`cargo make update --target home@host --confirm [--reboot] [--esp
+<node>] [--output <id>]` moves an installed machine to a build output
+without wiping it (built 2026-10-16), over SSH as `home` with `sudo`,
+trusting only the host key `install` pinned:
+
+1. Refuse unless the output passed `check` (or `--unchecked`), the
+   target has `/oath/INDEX.md`, is not this machine (`boot_id`), is
+   in-sync, and has nothing on probation.
+2. Mount the ESP (default: partition 1 of the disk in `oath.root=`),
+   plan the rotation as `esp` does, and snapshot `@` as `@boot-<id>`
+   first, so the archived boot pairs the old kernel with the old
+   userspace.
+3. Ship every store realization of the output that the machine lacks:
+   a tar stream into `<slot>/.<hash>.part`, renamed into place.
+4. `oath set pkg:<name> hash=<pin>` for each package the machine has
+   whose pin differs from the output's seed, then one `oath apply`:
+   one generation, undoable, and apply re-hashes each tree before
+   linking it. Packages the machine lacks are reported, not created.
+5. Replace the image's files outside the catalog (`/lib/oath`,
+   `/etc/passwd`, `group`, `shadow`, `shells`, `nsswitch.conf`,
+   `ssh/ssh_config`, `/sbin/init`, `/bin/sudo`), each written beside
+   itself and renamed over.
+6. Archive the ESP's kernel and initrd as boot `<id>`, prune beyond
+   five (and their `@boot-*`), write the new kernel, initrd, `oath-efi`
+   and entries.
+7. With `--reboot`: reboot through PID 1, wait for a new `boot_id`,
+   require `/proc/1/exe` to be the output's PID 1 and `oath diff` to be
+   in-sync.
+
+`--qemu <older output>` rehearses it: `install --qemu` of the older
+output, an OVMF boot, the update, a reboot and the checks. On
+2026-10-16 it moved `30ae9c0094cd` to `7d6e132eb1cb`.
+
 ## Target
 
-- **Build-host guard (install).** `install` refuses a target that is
-  the build host. (`esp` already refuses to run on a machine that is
-  not Oath.)
+None open short of the desk (phase 8).
 
 ## Build outputs (built)
 

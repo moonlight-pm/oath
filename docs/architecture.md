@@ -4,7 +4,7 @@ What runs and where things live today. Target design is in
 [specs/](specs/README.md). Update this file when a process, path or
 tree changes.
 
-**As of:** 2026-10-15, base profile, booted in QEMU and on canto.
+**As of:** 2026-10-16, base profile, booted in QEMU and on canto.
 
 ## Boot
 
@@ -161,5 +161,11 @@ cargo make install --target … --disk … --overlay hosts/<name>.json --confirm
   kexec (native pkg:kexec, copied to the target) or EFI-boot the
   installer, partition (sfdisk, wipefs), format, copy the stage, write
   the overlay with `oath seed --overlay`, make the host key and pin it
-  in build/known_hosts, write the ESP, reboot
+  in build/known_hosts, write the ESP, reboot; refuses the build host
+cargo make update --target home@<host> --confirm [--reboot]
+  over SSH with the pinned key: snapshot @ as @boot-<id>, tar the
+  missing store packs into /oath/store, `oath set` the output's pins
+  and one `oath apply`, replace /lib/oath and the static /etc files,
+  rotate the ESP (archive the old boot), reboot and check PID 1;
+  `--qemu <older output>` rehearses it in build/runs/<time>-install/
 ```

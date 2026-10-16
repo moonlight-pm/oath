@@ -55,7 +55,8 @@ images this repo built.
 
 **Ask first:** force-push or hard reset of published history; writing
 to a real disk or USB stick Joshua did not ask for (`cargo make
-install --confirm`, `--usb`); changing novus (the NixOS build host);
+install --confirm`, `--usb`, `cargo make update --target`); changing
+novus (the NixOS build host);
 committing secrets; answering an Open decision.
 
 ## Tree
@@ -68,7 +69,7 @@ crates/oath-core  catalog, kinds, apply/undo, seed profiles (seed/*.json)
 crates/oath       the `oath` CLI
 crates/oath-init  PID 1, serial-login, sudo
 crates/oath-efi   UEFI boot menu and mark
-crates/oath-make  host build tool (`cargo make bootstrap|pkgs|build|check|run|up|start|stop|ssh|install|esp|store|publish|advisories`)
+crates/oath-make  host build tool (`cargo make bootstrap|pkgs|build|check|run|up|start|stop|ssh|install|update|esp|store|publish|advisories`)
 pkgs/             every package that ships: pkg.toml + build.sh per package, lock.json, the toolchain bootstrap;
                   pkgs/linux is the kernel (linux.fragment, patches/); pkgs/keys the upstream signing keys
 image/            host.nix (QEMU + OVMF, build host only)
