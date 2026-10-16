@@ -69,10 +69,13 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
                 .iter()
                 .map(|s| {
                     let mut v = json!({ "url": s.url, "sha256": s.sha256 });
-                    match (&s.key, s.unsigned.as_ref().or(p.unsigned.as_ref())) {
-                        (Some(k), _) => v["key"] = json!(format!("pkgs/keys/{k}.asc")),
-                        (None, Some(why)) => v["unsigned"] = json!(why),
-                        (None, None) => {}
+                    match (&s.key, &s.identity, s.unsigned.as_ref().or(p.unsigned.as_ref())) {
+                        (Some(k), _, _) => v["key"] = json!(format!("pkgs/keys/{k}.asc")),
+                        (None, Some(who), _) => {
+                            v["sigstore"] = json!({ "identity": who, "issuer": s.issuer })
+                        }
+                        (None, None, Some(why)) => v["unsigned"] = json!(why),
+                        (None, None, None) => {}
                     }
                     v
                 })

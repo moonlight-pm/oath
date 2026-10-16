@@ -11,6 +11,7 @@ Every package that ships in Oath is built from source here (R7 in
 | `<name>/<name>.plan` | generated: the exact plan that was built (source pack and every build pack pinned by hash) |
 | `lock.json` | what each name resolves to: version, licence, how it was built, plan hash, product hash |
 | `keys/<key>.asc` | one upstream's OpenPGP signing key, armored, with where it came from in its `Comment:` |
+| `keys/sigstore.json` | Sigstore's trusted root (Fulcio CAs, Rekor keys), verbatim from `sigstore/root-signing` (`targets/trusted_root.json`) |
 | `bootstrap.sh`, `bootstrap.nix` | stage 0 and stage 1 on the build host |
 
 ## Signatures
@@ -30,6 +31,13 @@ key = "m4"                 # pkgs/keys/m4.asc
   (kernel.org's `.tar.sign`).
 - `sums = "<url>"`: the signature is over a `sha256sum` list, which
   must name the file with its `sha256` (CMake).
+- `sigstore = "<url>"`, `identity = "<email or URI>"`,
+  `issuer = "<OIDC issuer>"`: an upstream that signs only with
+  Sigstore (Python). The bundle's certificate must chain to a Fulcio CA
+  in `keys/sigstore.json` and name that identity and issuer, its key
+  must have signed the pinned sha256, and Rekor's key must have signed
+  the log entry (made while the certificate was valid) and the
+  checkpoint its inclusion proof leads to.
 - `unsigned = "<why>"`: no signature to check. A package-level
   `unsigned` covers all of its sources that have no `sig` (firmware).
 
@@ -41,7 +49,9 @@ version, change `url`, `sha256` and `sig` together. If the new release
 is signed by a different key, the fetch fails and names that key. A
 person adds the key to `keys/<key>.asc` from the upstream's published
 list; that is the trust decision, and an agent does not make it alone.
-`cargo make pkgs --list` shows each package's keys and its unsigned
+A Sigstore identity is pinned the same way: a release signed by
+someone else fails and names who signed it. `cargo make pkgs --list`
+shows each package's keys or Sigstore identities and its unsigned
 sources.
 
 ## Bootstrap

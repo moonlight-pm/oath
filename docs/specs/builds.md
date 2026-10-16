@@ -12,9 +12,9 @@ toolchain are built; every package in the image is a plan product: the
 C packages, `pkg:llvm` and the kernel (`pkg:linux`) from `pkgs/` via
 `cargo make pkgs`, and the Oath binaries (`pkg:oath`) from this tree,
 built by the vendor's Rust release (`pkg:rust`), and sources are checked
-against their upstreams' OpenPGP signatures. Products reach the store
-whole or not at all, and every build logs to `/oath/log/plan/<name>.log`.
-Still target: Sigstore signatures.
+against their upstreams' OpenPGP or Sigstore signatures. Products reach
+the store whole or not at all, and every build logs to
+`/oath/log/plan/<name>.log`.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -102,13 +102,20 @@ Zig is not used (R9).
   in `pkgs/keys/<key>.asc`. The key is the trust pin: a release signed
   by another key fails until a person adds that key. kernel.org signs
   the uncompressed tar (`decompress = "xz"`); CMake signs a sha256 list
-  (`sums`). 22 sources are signed by 19 keys. The rest say why not
-  (`unsigned`): Python and Perl sign only with Sigstore, which is not
-  checked yet; Linus's rc tarball and the firmware blobs are cgit
-  output; lzo, mbedTLS, Ninja, patchelf, pkgconf and the CA bundle
-  publish no signature; crates are pinned by `Cargo.lock`. The verifier
-  is `oath-make`'s own (v4 signatures, RSA and DSA, SHA-1 and SHA-2);
-  it does not check expiry or revocation.
+  (`sums`). 22 sources are signed by 19 keys. Python signs only with
+  Sigstore: its bundle is checked against Sigstore's trusted root
+  (`pkgs/keys/sigstore.json`) and the identity pinned in `pkg.toml`
+  (`hugo@python.org` via GitHub): Fulcio chain, identity and issuer,
+  the signature over the pinned sha256, Rekor's signed entry timestamp,
+  the entry's inclusion proof up to a checkpoint Rekor signed, and the
+  certificate's validity at the time it was logged. The rest say why not
+  (`unsigned`): Perl's `.tar.xz` bundle signs its `.tar.gz` (upstream
+  error); Linus's rc tarball and the firmware blobs are cgit output;
+  lzo, mbedTLS, Ninja, patchelf, pkgconf and the CA bundle publish no
+  signature; crates are pinned by `Cargo.lock`. Both verifiers are
+  `oath-make`'s own (OpenPGP v4 with RSA and DSA over SHA-1 and SHA-2;
+  Sigstore bundles with ECDSA, Rekor v1 `hashedrekord`); neither checks
+  revocation.
 - **Stage 2** (`cargo make pkgs`): every package in `pkgs/` is a plan
   pinned to its source pack (`pkg:<name>-src`) and to the build packs in
   `pkgs/lock.json`, built by the same `oath build` in a user-namespace
@@ -188,9 +195,6 @@ Zig is not used (R9).
   Rust compiles only `oath-make`.
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans (phase 8).
-
-Target: Sigstore bundles for the upstreams that sign only that way
-(Python, Perl).
 
 ## Products and logs (built)
 

@@ -75,7 +75,7 @@ Since: the kernel is a plan built by `pkg:llvm` (2026-10-15), and the
 Oath binaries are `pkg:oath`, built by the vendor's Rust pack
 `pkg:rust` and linked against `pkg:llvm`'s musl (2026-10-16). Sources
 are checked against upstream OpenPGP signatures by keys pinned in
-`pkgs/keys/` (2026-10-16).
+`pkgs/keys/`, and Python's against its Sigstore bundle (2026-10-16).
 
 `cargo make publish` carries only the packages a seed profile names,
 each with its licence, and `cargo make build` writes immutable outputs

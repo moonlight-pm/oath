@@ -9,16 +9,18 @@ append history (git has it).
 
 ## Now
 
-1. **Build integrity (phase 5 follow-ups).** Sources are checked
-   against upstream OpenPGP signatures (Python and Perl sign only with
-   Sigstore, unchecked); publish carries only the profiles' licensed
-   packages; `cargo make build` writes immutable outputs
-   (`build/out/<id>/`, with a manifest) that install and `esp` take by
-   id; `oath build` stores products whole or not at all and logs to
-   `/oath/log/plan/<name>.log`. Open for Joshua: GPL source on origins
-   (decisions.md). Next: verify Python's and Perl's Sigstore bundles
-   (their identity and Rekor entry) in `cargo make pkgs`'s fetch.
-2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+1. **canto runs older bits.** It was installed on 2026-10-16 from
+   commit `8468eb5`: Oath binaries from the host rustc, and none of
+   the build-integrity work since (signature-checked sources, immutable
+   outputs, build logs). The newest checked output in `build/out/`
+   has all of it. Next, when Joshua says so (it wipes canto's disk):
+   `cargo make install --target home@10.0.0.3 --disk /dev/sda
+   --hostname canto --overlay hosts/canto.json --confirm`, then
+   `cargo make check --target home@10.0.0.3`.
+2. **GPL source on origins (Open).** `cargo make publish` puts GPL
+   binaries on an origin without their `-src` packs. Next: Joshua
+   decides (docs/decisions.md); until then origins stay private.
+3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
    `cargo make install --usb` stick.

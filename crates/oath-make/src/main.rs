@@ -11,6 +11,7 @@ mod output;
 mod pack;
 mod pkgs;
 mod qemu;
+mod sigstore;
 mod tools;
 mod util;
 

@@ -322,7 +322,7 @@ fn dearmor(data: &[u8]) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn base64(s: &str) -> Result<Vec<u8>> {
+pub(crate) fn base64(s: &str) -> Result<Vec<u8>> {
     let mut out = Vec::with_capacity(s.len() / 4 * 3);
     let (mut acc, mut bits) = (0u32, 0);
     for c in s.bytes() {
@@ -390,6 +390,9 @@ mod tests {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../pkgs/keys");
         for e in std::fs::read_dir(dir).unwrap() {
             let p = e.unwrap().path();
+            if p.extension().is_none_or(|x| x != "asc") {
+                continue;
+            }
             let keys = parse_keys(&dearmor(&std::fs::read(&p).unwrap()).unwrap()).unwrap();
             assert!(!keys.is_empty(), "{}", p.display());
         }

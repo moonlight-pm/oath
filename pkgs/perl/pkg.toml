@@ -7,4 +7,7 @@ build = ["llvm", "busybox", "make"]
 [[source]]
 url = "https://www.cpan.org/src/5.0/perl-5.44.0.tar.xz"
 sha256 = "505cf43912e9480495c344c70260452e32aa2a73c546a026b3f100053b23ce91"
-unsigned = "signed with Sigstore only (.sigstore.bundle); Oath checks OpenPGP"
+# perl-5.44.0.tar.xz.sigstore.bundle (fawaka@gmail.com) signs the .tar.gz
+# (sha256 3b855066…), not this file; switch to the .tar.gz with the next
+# version if upstream does not fix it.
+unsigned = "its Sigstore bundle signs the .tar.gz, not the .tar.xz (upstream error)"

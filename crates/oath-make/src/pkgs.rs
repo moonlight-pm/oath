@@ -73,6 +73,16 @@ pub struct Source {
     /// `xz`: `sig` signs the decompressed file (kernel.org's `.tar.sign`).
     #[serde(default)]
     pub decompress: Option<String>,
+    /// URL of the upstream's Sigstore bundle, for upstreams that sign only
+    /// with Sigstore. Checked against `pkgs/keys/sigstore.json`.
+    #[serde(default)]
+    pub sigstore: Option<String>,
+    /// The bundle's signer: the certificate's email or URI.
+    #[serde(default)]
+    pub identity: Option<String>,
+    /// The signer's OIDC issuer (`https://github.com/login/oauth`).
+    #[serde(default)]
+    pub issuer: Option<String>,
     /// Why there is no signature to check.
     #[serde(default)]
     pub unsigned: Option<String>,
@@ -140,25 +150,41 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
     Ok(out)
 }
 
-/// A source names its signature and key, or says why it has none.
+/// A source names its OpenPGP signature and key, or its Sigstore bundle
+/// and signer, or says why it has none.
 fn check_signed(repo: &Path, pkg: &PkgToml, s: &Source) -> Result<()> {
-    match (&s.sig, &s.key) {
-        (Some(_), Some(key)) => {
-            if s.unsigned.is_some() {
-                bail!("has both sig and unsigned");
+    let pgp = s.key.is_some() || s.sums.is_some() || s.decompress.is_some();
+    let store = s.identity.is_some() || s.issuer.is_some();
+    match (&s.sig, &s.sigstore) {
+        (Some(_), Some(_)) => bail!("has both sig and sigstore"),
+        (Some(_), None) => {
+            let Some(key) = &s.key else { bail!("sig without key") };
+            if s.unsigned.is_some() || store {
+                bail!("sig takes key, sums and decompress, not unsigned, identity or issuer");
             }
             let k = key_file(repo, key);
             if !k.is_file() {
                 bail!("{} is missing", k.display());
             }
         }
-        (Some(_), None) => bail!("sig without key"),
-        (None, _) => {
-            if s.key.is_some() || s.sums.is_some() || s.decompress.is_some() {
-                bail!("key, sums and decompress need sig");
+        (None, Some(_)) => {
+            if s.identity.is_none() || s.issuer.is_none() {
+                bail!("sigstore needs identity and issuer");
+            }
+            if s.unsigned.is_some() || pgp {
+                bail!("sigstore takes identity and issuer, not unsigned, key, sums or decompress");
+            }
+            let root = sigstore_root(repo);
+            if !root.is_file() {
+                bail!("{} is missing", root.display());
+            }
+        }
+        (None, None) => {
+            if pgp || store {
+                bail!("key, sums, decompress, identity and issuer need sig or sigstore");
             }
             if s.unsigned.as_ref().or(pkg.unsigned.as_ref()).is_none_or(|r| r.is_empty()) {
-                bail!("no sig; say why with unsigned");
+                bail!("no sig or sigstore; say why with unsigned");
             }
         }
     }
@@ -170,6 +196,11 @@ fn check_signed(repo: &Path, pkg: &PkgToml, s: &Source) -> Result<()> {
 
 fn key_file(repo: &Path, key: &str) -> PathBuf {
     pkgs_dir(repo).join("keys").join(format!("{key}.asc"))
+}
+
+/// Sigstore's trusted root (Fulcio CAs, Rekor keys), as Sigstore publishes it.
+fn sigstore_root(repo: &Path) -> PathBuf {
+    pkgs_dir(repo).join("keys/sigstore.json")
 }
 
 pub fn read_lock(repo: &Path) -> Result<Lock> {
@@ -217,6 +248,18 @@ pub fn fetch(repo: &Path, pkg: &PkgToml) -> Result<Vec<(String, PathBuf)>> {
             if fresh {
                 eprintln!(">> signed by {who} ({key})");
             }
+        } else if let (Some(url), Some(who), Some(via)) = (&s.sigstore, &s.identity, &s.issuer) {
+            let entry = crate::sigstore::verify(
+                &fs::read(sigstore_root(repo))?,
+                &fetch_sig(repo, url)?,
+                &s.sha256,
+                who,
+                via,
+            )
+            .with_context(|| format!("Sigstore bundle of {} ({url})", s.url))?;
+            if fresh {
+                eprintln!(">> signed by {who} via {via} (Sigstore, Rekor entry {entry})");
+            }
         } else if fresh {
             let why = s.unsigned.as_ref().or(pkg.unsigned.as_ref()).map_or("", |w| w.as_str());
             eprintln!(">> unsigned: {why}");
@@ -244,17 +287,7 @@ fn download(url: &str, dest: &Path, quiet: bool) -> Result<()> {
 fn verify_sig(repo: &Path, s: &Source, file: &Path) -> Result<String> {
     let (Some(sig_url), Some(key)) = (&s.sig, &s.key) else { bail!("no sig") };
     let keys = fs::read(key_file(repo, key))?;
-    let cached = |url: &str| -> Result<Vec<u8>> {
-        let rel = url.split_once("://").map_or(url, |(_, r)| r);
-        if rel.contains('?') || rel.split('/').any(|c| c.is_empty() || c == "..") {
-            bail!("bad signature URL {url}");
-        }
-        let p = repo.join("build/fetch/sig").join(rel);
-        if !p.is_file() {
-            download(url, &p, true)?;
-        }
-        Ok(fs::read(p)?)
-    };
+    let cached = |url: &str| fetch_sig(repo, url);
     let sig = cached(sig_url)?;
     match (&s.sums, s.decompress.as_deref()) {
         (Some(sums_url), _) => {
@@ -276,6 +309,20 @@ fn verify_sig(repo: &Path, s: &Source, file: &Path) -> Result<String> {
         }
         (None, None) => crate::openpgp::verify(&keys, &sig, fs::File::open(file)?),
     }
+}
+
+/// A signature, sums list or bundle, fetched once to
+/// build/fetch/sig/<host>/<path>.
+fn fetch_sig(repo: &Path, url: &str) -> Result<Vec<u8>> {
+    let rel = url.split_once("://").map_or(url, |(_, r)| r);
+    if rel.contains('?') || rel.split('/').any(|c| c.is_empty() || c == "..") {
+        bail!("bad signature URL {url}");
+    }
+    let p = repo.join("build/fetch/sig").join(rel);
+    if !p.is_file() {
+        download(url, &p, true)?;
+    }
+    Ok(fs::read(p)?)
 }
 
 /// Whether a `sha256sum` list names `name` with `sha256`.
@@ -491,15 +538,25 @@ pub fn list(repo: &Path) -> Result<()> {
         if !p.description.is_empty() {
             println!("{:12} {} {}", "", p.description, p.home);
         }
-        let keys: BTreeSet<&str> = p.source.iter().filter_map(|s| s.key.as_deref()).collect();
-        let unsigned: Vec<String> =
-            p.source.iter().filter(|s| s.sig.is_none()).map(Source::file).collect();
+        let keys: BTreeSet<String> = p
+            .source
+            .iter()
+            .filter_map(|s| {
+                s.key
+                    .as_ref()
+                    .map(|k| format!("keys/{k}"))
+                    .or_else(|| s.identity.as_ref().map(|i| format!("sigstore:{i}")))
+            })
+            .collect();
+        let unsigned: Vec<String> = p
+            .source
+            .iter()
+            .filter(|s| s.sig.is_none() && s.sigstore.is_none())
+            .map(Source::file)
+            .collect();
         let mut sig = Vec::new();
         if !keys.is_empty() {
-            sig.push(format!(
-                "signed by keys/{}",
-                keys.into_iter().collect::<Vec<_>>().join(", keys/")
-            ));
+            sig.push(format!("signed by {}", keys.into_iter().collect::<Vec<_>>().join(", ")));
         }
         match unsigned.len() {
             0 => {}
