@@ -458,11 +458,7 @@ fn index_blurb(path: &Path) -> String {
 pub fn verify_tree(store_root: &Path, name: &str, hash: &str) -> Result<PkgVerified> {
     let got = hash_tree(&realization_dir(store_root, name, hash))?;
     let ok = got == hash;
-    Ok(PkgVerified {
-        ok,
-        at: crate::now_rfc3339(),
-        got: if ok { String::new() } else { got },
-    })
+    Ok(PkgVerified { ok, at: crate::now_rfc3339(), got: if ok { String::new() } else { got } })
 }
 
 fn live_hash(catalog_root: &Path, name: &str) -> Result<Option<String>> {

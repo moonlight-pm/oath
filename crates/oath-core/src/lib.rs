@@ -28,9 +28,9 @@ pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory, Snap,
-    PkgComponent, PkgNeed, PkgRealization, PkgVerified, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual,
-    SvcRestart, SvcUser,
+    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory,
+    PkgComponent, PkgNeed, PkgRealization, PkgVerified, Plan, PlanActual, Snap, Ssh, SshActual,
+    Svc, SvcActual, SvcRestart, SvcUser,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,

@@ -118,10 +118,7 @@ mod tests {
         assert_eq!(svc["required"], json!(["exec"]));
         assert_eq!(svc["properties"]["restart"]["default"], "always");
         assert_eq!(svc["properties"]["enabled"]["default"], true);
-        assert_eq!(
-            svc["properties"]["restart"]["enum"],
-            json!(["never", "always", "on-failure"])
-        );
+        assert_eq!(svc["properties"]["restart"]["enum"], json!(["never", "always", "on-failure"]));
         let net = schema("net").unwrap();
         assert!(net["properties"].get("lease").is_none(), "actual-only fields stay out");
         assert_eq!(schema("host").unwrap()["properties"]["hostname"]["maxLength"], 63);
