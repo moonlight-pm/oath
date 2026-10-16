@@ -215,6 +215,29 @@ pub struct Net {
     /// Runtime lease when `ipv4` is `dhcp`. Not a desired field.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lease: Option<String>,
+    /// The DHCP lease as the client last bound or renewed it. Actual only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dhcp: Option<DhcpLease>,
+}
+
+/// What the DHCP server last handed out (`net:net0` actual `dhcp`).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DhcpLease {
+    /// `a.b.c.d/n`.
+    pub address: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub router: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dns: Vec<String>,
+    /// Lease length the server gave, in seconds.
+    #[serde(default)]
+    pub seconds: u64,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub server: String,
+    /// `bound` (a new lease) or `renew`.
+    pub event: String,
+    /// When the client got it, RFC 3339.
+    pub at: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

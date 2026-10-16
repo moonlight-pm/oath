@@ -34,8 +34,10 @@ With `ipv4: dhcp`, converge takes the first lease with a one-shot
 `udhcpc`, and PID 1 keeps `udhcpc -f -i net0` running so the lease
 renews. That client is PID 1's, not a `svc` object; it restarts with
 backoff like a service, and its log is `oath logs net:net0`. Setting a
-static address stops it. Known gap: `actual.lease` is the first lease;
-renewals are not written back.
+static address stops it. Each lease and renewal the client gets shows
+in actual: `lease` is the address and `dhcp` has the router, DNS
+servers, lease length and when it was renewed
+(`oath get net:net0 --actual`).
 
 ## Time
 

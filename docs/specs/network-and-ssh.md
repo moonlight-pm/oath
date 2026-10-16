@@ -32,6 +32,13 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   catalog `svc`), restarted with backoff, so the lease renews. Its log is
   `/oath/log/net/net0.log` (`oath logs net:net0`). A static address
   stops it.
+- Every `bound` and `renew` the client gets is recorded (built
+  2026-10-16): the script runs `/lib/oath/net-lease` (PID 1's binary)
+  with udhcpc's environment, which writes actual `lease` (the address)
+  and `dhcp` (`address`, `router`, `dns`, `seconds`, `server`, `event`,
+  `at`) without the catalog lock, and keeps a copy in
+  `/run/oath/net0.lease.json` that the next converge reads. `deconfig`,
+  `leasefail` and `nak` clear both.
 - Any change to `up`, `ipv4` or `gateway` is confirm-class: `oath apply`
   exits 3 without `--confirm`, because it can cut the machine off from
   SSH. Serial still works.
@@ -92,21 +99,19 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
 ## Known defects (from the 2026-10-13 review)
 
-- `actual.lease` is the first lease; renewals by the DHCP client are
-  not written back.
-- Changing `ssh:local`, `svc:sshd` or `net:net0` with `--confirm` can
-  still lock the owner out; nothing rolls it back automatically. Without
-  `--confirm` apply refuses: `svc:sshd` disabled, removed, or its
-  `exec`, `user` or `env` changed; `ssh:local` `authorized` becoming
-  empty; any `net:net0` `up`, `ipv4` or `gateway` change.
+- None open. The two from the review were fixed on 2026-10-16: renewals
+  are recorded in actual, and lockout-class changes (`svc:sshd`
+  disabled, removed, or its `exec`, `user` or `env` changed;
+  `ssh:local` losing a key; any `net:net0` `up`, `ipv4` or `gateway`
+  change) go on probation and roll back unless a new session keeps
+  them.
 
 ## Target
 
-- **Current lease in actual.** The DHCP client's script records each
-  renewal in `net:net0` actual.
 - **More NICs.** Naming beyond `net0` waits until a machine needs it.
 - **Root SSH as a field.** A payload that needs root over SSH gets a
-  generic `ssh:local` toggle, off by default (scope.md).
+  generic `ssh:local` toggle, off by default (scope.md). Not before a
+  payload needs it.
 
 ## Courage test
 

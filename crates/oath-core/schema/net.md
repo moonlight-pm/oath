@@ -17,8 +17,9 @@ static address.
 - `gateway` — IPv4 default gateway for a static address. Ignored for
   `dhcp`.
 
-Actual may carry `lease` (the first address DHCP gave; renewals are
-not written back). It is not a desired field.
+Actual may carry `lease` (the address DHCP gave) and `dhcp` (`address`,
+`router`, `dns`, `seconds`, `server`, `event` `bound` or `renew`, and
+`at`), updated on every renewal. Neither is a desired field.
 
 Safety: `mutate`, but any change to `up`, `ipv4` or `gateway` can cut
 off SSH, so `oath apply` needs `--confirm` for it, and the change goes

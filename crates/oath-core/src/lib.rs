@@ -27,14 +27,17 @@ pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory, PkgComponent, PkgNeed,
-    PkgRealization, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual, SvcRestart, SvcUser,
+    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory,
+    PkgComponent, PkgNeed, PkgRealization, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual,
+    SvcRestart, SvcUser,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
     rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL,
 };
-pub use net::{appliance_desired as net_appliance_desired, converge as converge_net};
+pub use net::{
+    appliance_desired as net_appliance_desired, converge as converge_net, record_lease, LEASE_FILE,
+};
 pub use packhash::{
     fetch_adv_url, fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX,
     LIVE_NAME,

@@ -50,7 +50,9 @@ btrfs
 
 ```
 /sbin/init → /lib/oath/init        same ELF as the initrd's /init
-/lib/oath/  serial-login, sudo (setuid), udhcpc.script, backup-send, backup-daily
+/lib/oath/  serial-login, sudo (setuid), udhcpc.script, backup-send, backup-daily;
+            modprobe and net-lease are links to init (the kernel's module
+            helper, and the DHCP script's lease recorder)
 /bin/       symlink farm → /oath/store/pkg/<name>/live/bin/<x>
 /home       the `home` account (uid 1); SSH logs in here
 /etc        written by PID 1 from host:local (hostname, hosts, profile, shells)

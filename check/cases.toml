@@ -287,6 +287,15 @@ steps = [
 ]
 
 [[case]]
+name = "dhcp-renewal-in-actual"
+about = "net:net0 actual shows the lease the DHCP client holds, and a renewal updates it."
+metal = true
+steps = [
+  { run = "oath get net:net0 --actual", expect = ["\"dhcp\"", "\"router\"", "\"event\": \"bound\""] },
+  { run = "sudo kill -USR1 $(pidof udhcpc) && sleep 3 && oath get net:net0 --actual && oath diff", expect = ["\"event\": \"renew\"", "in-sync"] },
+]
+
+[[case]]
 name = "switch-root"
 about = "PID 1 switch_roots into the disk: no /newroot left in the mount table."
 metal = true

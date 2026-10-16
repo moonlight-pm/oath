@@ -21,4 +21,7 @@ bound|renew)
 	fi
 	;;
 esac
+# Record the lease in net:net0 actual (not in the installer, which has no
+# catalog).
+[ -x /lib/oath/net-lease ] && /lib/oath/net-lease "$1"
 exit 0

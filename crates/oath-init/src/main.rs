@@ -47,10 +47,23 @@ fn kver() -> String {
 }
 
 fn main() {
-    // The kernel runs this binary as its modprobe helper too.
+    // The kernel runs this binary as its modprobe helper too, and the
+    // DHCP client script as `net-lease`.
     let mut args = std::env::args();
-    if args.next().is_some_and(|a| a.rsplit('/').next() == Some("modprobe")) {
-        std::process::exit(modules::modprobe_main(&args.collect::<Vec<_>>()));
+    match args.next().as_deref().map(|a| a.rsplit('/').next().unwrap_or(a)) {
+        Some("modprobe") => {
+            std::process::exit(modules::modprobe_main(&args.collect::<Vec<_>>()));
+        }
+        Some("net-lease") => {
+            let event = args.next().unwrap_or_default();
+            let env = |k: &str| std::env::var(k).ok();
+            if let Err(e) = oath_core::record_lease(Path::new(DEFAULT_ROOT), &event, &env) {
+                eprintln!("net-lease: {e}");
+            }
+            // Never fail the client's script over a status file.
+            std::process::exit(0);
+        }
+        _ => {}
     }
     // A panic in PID 1 panics the kernel; `panic=` on the command line
     // then reboots. Say why first.

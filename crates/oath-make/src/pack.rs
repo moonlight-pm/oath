@@ -118,6 +118,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     symlink("../lib/oath/init", stage.join("sbin/init"))?;
     let _ = fs::remove_file(stage.join("lib/oath/modprobe"));
     symlink("init", stage.join("lib/oath/modprobe"))?;
+    let _ = fs::remove_file(stage.join("lib/oath/net-lease"));
+    symlink("init", stage.join("lib/oath/net-lease"))?;
     let _ = fs::remove_file(stage.join("bin/sudo"));
     symlink("../lib/oath/sudo", stage.join("bin/sudo"))?;
     fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
