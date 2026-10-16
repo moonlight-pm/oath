@@ -1,6 +1,12 @@
 use std::collections::BTreeMap;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+// The kinds' JSON Schemas are generated from the desired types below
+// (`crate::schema`): the doc comment on a type or field is the
+// description an agent reads, and serde's attributes decide what is
+// required and what defaults.
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Meta {
@@ -26,20 +32,28 @@ impl Meta {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// This machine: its name, power state, environment and timezone.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Host {
+    /// Linux hostname: letters, digits, `-` and `.`, at most 63. Source of
+    /// truth is this object, not /etc/hostname.
+    #[schemars(length(min = 1, max = 63), regex(pattern = r"^[A-Za-z0-9.-]+$"))]
     pub hostname: String,
+    /// `run` is steady state. `reboot` and `halt` need --confirm on apply.
     pub power: HostPower,
-    /// Injected into every svc spawn; `/etc/profile` is a side effect.
+    /// Environment PID 1 puts in every svc spawn. Also written to
+    /// root-owned /etc/profile for logins (a side effect; the catalog is
+    /// truth).
     #[serde(default)]
     pub env: BTreeMap<String, String>,
-    /// Local timezone (POSIX TZ). Empty = UTC. Every service and login
-    /// gets `TZ` from this; the system clock stays UTC (T34).
+    /// Local timezone (POSIX TZ string). Empty is UTC. Every svc and every
+    /// login gets TZ from this unless env sets TZ. The system clock stays
+    /// UTC.
     #[serde(default)]
     pub timezone: String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum HostPower {
     Run,
@@ -58,7 +72,7 @@ impl HostPower {
 }
 
 /// Unix account a service runs as. Oath has these two and no others.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum SvcUser {
     Root,
@@ -88,27 +102,42 @@ impl SvcUser {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// A process PID 1 supervises.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Svc {
+    /// argv; absolute path in exec[0]. May be empty only while disabled.
     pub exec: Vec<String>,
+    /// Other svc ids that should be up first (ordering, not Requires).
     #[serde(default)]
     pub wants: Vec<String>,
+    /// When PID 1 starts it again after it exits.
+    #[serde(default = "default_restart")]
     pub restart: SvcRestart,
+    /// If false, the process is not running.
+    #[serde(default = "default_true")]
     pub enabled: bool,
-    /// Absent means "not set". Effective account is [`crate::svc_spawn`].
+    /// Unix account: root or home (uid 1). Absent means root. Does not
+    /// create accounts.
+    // The effective account is `crate::svc_spawn`'s.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user: Option<SvcUser>,
-    /// Extra environment for this process. Empty when the field is absent.
+    /// Extra environment for this process. Empty when absent. Wins over
+    /// host:local.env on the same name.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub env: BTreeMap<String, String>,
-    /// When true, a non-root process keeps `CAP_NET_BIND_SERVICE`.
+    /// When true, a non-root process keeps CAP_NET_BIND_SERVICE and may
+    /// bind ports below 1024. Root does not need this.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub bind_low_ports: bool,
-    /// When true, stopping or restarting signals only the main process;
-    /// its children (sshd's login sessions) keep running. Otherwise the
-    /// whole process tree (the service's cgroup) is stopped.
+    /// When true, stop and restart signal only the main process and its
+    /// children keep running (sshd keeps login sessions). Otherwise the
+    /// whole process tree (the service's cgroup) stops.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub keep_children: bool,
+}
+
+fn default_restart() -> SvcRestart {
+    SvcRestart::Always
 }
 
 impl Svc {
@@ -122,7 +151,7 @@ impl Svc {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum SvcRestart {
     Never,
@@ -139,31 +168,50 @@ pub struct SvcActual {
     pub restarts: u32,
 }
 
-/// One runtime need: slot + realization. Hash is required (T41/T43).
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// One runtime need: a package and the realization it needs.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[schemars(deny_unknown_fields)]
 pub struct PkgNeed {
+    /// pkg:* id (pkg:libfoo, or libfoo).
     pub id: String,
+    /// Realization id sha256-<64 hex> of the needed pack. Apply refuses if
+    /// the needed pack's live hash differs.
+    #[schemars(regex(pattern = r"^sha256-[0-9a-f]{64}$"))]
     pub hash: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// A package: a slot in the store whose linked tree's bin/ is symlinked
+/// into /bin.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Pkg {
+    /// If true, files in /oath/store/pkg/<name>/<hash>/bin/ are symlinked
+    /// at /bin/<basename>. If false, those links are removed. The store
+    /// tree stays.
+    #[serde(default = "default_true")]
     pub present: bool,
-    /// If non-empty, apply wget's this into the store when `present`.
-    #[serde(default)]
-    pub url: String,
-    /// Pin: realization id (`sha256-` + 64 hex). Empty = discovery.
+    /// If non-empty, apply fetches this URL into the store when present
+    /// (the local store wins if the tree is already there). A .tar URL is
+    /// a pack tree; an origin prefix plus hash fetches
+    /// {url}/pkg/{name}/{hash}.tar.
     #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub url: String,
+    /// Pin: realization id sha256-<64 hex> of the pack tree (oath-tree-v1).
+    /// Apply verifies it. Empty is discovery (a fetch or the unique
+    /// on-disk tree reports actual.hash).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    #[schemars(regex(pattern = r"^(sha256-[0-9a-f]{64})?$"))]
     pub hash: String,
-    /// Other `pkg:*` this pack needs at runtime, each pinned to a
-    /// realization id. Cycles and missing present needs refuse apply.
-    /// Empty means none.
+    /// Runtime needs, each pinned to a realization. Cycles refuse apply.
+    /// present=true is refused if a need is missing or its live hash does
+    /// not match; present=false is refused while another present pack
+    /// still needs this. Apply does not rewrite other objects.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub needs: Vec<PkgNeed>,
-    /// Short prose. Empty means none.
+    /// Short prose for humans and agents. Empty means none.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub description: String,
-    /// Source or project page. Not the fetch `url`.
+    /// HTTPS URL of the source tree or main project page. Not the fetch
+    /// url.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub home: String,
 }
@@ -187,11 +235,32 @@ pub struct PkgAdvisory {
     pub summary: String,
 }
 
-/// Pin of a plan file. Product lives on `pkg:<name>`, not here.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// The pin of a plan file. The product lives on pkg:<name>, not here.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Plan {
+    /// sha256- plus 64 lowercase hex of the canonical plan.plan file.
+    /// Empty means unpinned (oath build plan:<name> refuses).
     #[serde(default, skip_serializing_if = "String::is_empty")]
+    #[schemars(regex(pattern = r"^(sha256-[0-9a-f]{64})?$"))]
     pub hash: String,
+}
+
+/// A generation: snap:current names the live one; snap:N records one
+/// apply's snapshot (read-only).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct Snap {
+    /// For snap:current, the last snapshot apply created. For snap:N,
+    /// that generation's id.
+    pub generation: u64,
+    /// Parent generation (snap:N only).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent: Option<u64>,
+    /// When the snapshot was taken (snap:N only).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub time: Option<String>,
+    /// Why (snap:N only).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -206,17 +275,24 @@ pub struct PlanActual {
     pub inputs: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// The network link net0 (the machine's one NIC).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Net {
+    /// If true, net0 is up. If false, the link is down.
     pub up: bool,
+    /// IPv4 CIDR (static) or the string dhcp.
+    #[schemars(regex(pattern = r"^(dhcp|[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2})$"))]
     pub ipv4: String,
+    /// IPv4 default gateway. Ignored when ipv4 is dhcp.
     #[serde(default)]
     pub gateway: String,
     /// Runtime lease when `ipv4` is `dhcp`. Not a desired field.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(skip)]
     pub lease: Option<String>,
     /// The DHCP lease as the client last bound or renewed it. Actual only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(skip)]
     pub dhcp: Option<DhcpLease>,
 }
 
@@ -240,14 +316,22 @@ pub struct DhcpLease {
     pub at: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Who may log in over SSH (as home).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Ssh {
+    /// OpenSSH public key lines that may log in as home (each starts ssh-,
+    /// ecdsa- or sk-). Empty means nobody can log in over SSH. No
+    /// passwords, and no private key in the catalog.
     #[serde(default)]
+    #[schemars(inner(regex(pattern = r"^(ssh-|ecdsa-|sk-)")))]
     pub authorized: Vec<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// A hardware device (inventory).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Dev {
+    /// Whether this hardware is in the inventory. The seeded devices
+    /// cannot be set false.
     pub present: bool,
 }
 

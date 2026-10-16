@@ -13,7 +13,7 @@ gaps · `target` designed, not built.
 
 | Capability | Status | Works | Main gaps |
 |---|---|---|---|
-| Catalog | partial | `kind:name` objects with desired/actual/meta; JSON Schema per kind; generated `INDEX.md`; locked atomic writes; typed `set`; id grammar; `oath new` / `oath rm` (svc, pkg) | Schemas are hand-written, not generated from the types; `new` fills no defaults |
+| Catalog | partial | `kind:name` objects with desired/actual/meta; JSON Schema per kind, generated from the Rust types; generated `INDEX.md`; locked atomic writes; typed `set`; id grammar; `oath new` / `oath rm` (svc, pkg), `new` filling the type's defaults | Spec and status share a directory inside the snapshot |
 | `oath` CLI | shipped | `ls get set new rm diff apply keep undo verify log logs schema fmt build`, `--json`; bare `oath` prints the INDEX; apply returns after PID 1 converged | MCP adapter is roadmap phase 7 |
 | Generations | partial | checks before the snapshot (`refused` changes nothing); every outcome logged; undo is a stack restoring only the touched objects' spec; lockout-class changes go on probation and PID 1 undoes them unless `oath keep` runs from a new session | A catalog reboot takes a generation |
 | Services (PID 1) | partial | runs only applied specs; per-service logs (`oath logs`); exit codes, restart count, backoff, `failed` with a `reason`; a cgroup per service; shutdown on `reboot`/`poweroff` in reverse `wants` order; a wants cycle skips only its members | A PID 1 panic reboots the machine |

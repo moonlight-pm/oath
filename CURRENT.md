@@ -12,9 +12,10 @@ append history (git has it).
 1. **Target sweep before phase 7.** Joshua (2026-10-16): close every
    target in the specs short of phase 8. Done: R13 source on origins,
    probation with rollback, the cycle reason and shutdown order, DHCP
-   renewals in actual, store integrity (`oath verify`). Left: generated
-   schemas and `new` defaults, hotplug and discovery, surviving a PID 1
-   panic, remote update, install's build-host guard. Next: schemas.
+   renewals in actual, store integrity (`oath verify`), schemas
+   generated from the types with `oath new` defaults. Left: install's
+   build-host guard, remote update, hotplug and discovery, surviving a
+   PID 1 panic. Next: the guard and `cargo make update`.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a

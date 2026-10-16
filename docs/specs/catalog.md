@@ -11,9 +11,9 @@ use the same verbs.
 locked atomic writes, typed `set`, validation before the snapshot, a
 logged outcome for every apply, a spec-only stack undo, `oath new` /
 `oath rm`, an id grammar and a confirm gate on changes that can cut off
-SSH. Probation with automatic rollback and the store integrity check
-were built 2026-10-16. Generated schemas and a physical spec/status
-split are still the target.
+SSH. Probation with automatic rollback, the store integrity check,
+schemas generated from the Rust types and defaults for `oath new` were
+built 2026-10-16. A physical spec/status split is still the target.
 
 Replaces: T1 (catalog and `oath` surface), the catalog parts of T7, T24,
 T34.
@@ -23,7 +23,7 @@ T34.
 ```text
 /oath/
   INDEX.md                  generated; the agent starts here
-  schema/<kind>.json        JSON Schema 2020-12
+  schema/<kind>.json        JSON Schema 2020-12, generated from the kind's Rust type
   schema/<kind>.md          prompt-sized prose: purpose, fields, safety, example
   objects/<kind>/<name>/
     desired.json            owner intent
@@ -42,7 +42,18 @@ T34.
 ```
 
 Documents are pretty-printed UTF-8 JSON with a trailing newline. A kind
-exists only if `schema/<kind>.json` exists. Today's kinds: `host`,
+exists only if `schema/<kind>.json` exists.
+
+The schemas are generated (built 2026-10-16): `oath-core` derives each
+kind's schema from its desired type with `schemars`, so the doc comment
+on a field is its description and serde's attributes decide what is
+required and what defaults. The schema is flat (no `$ref`), closed
+(`additionalProperties: false`), and leaves actual-only fields out
+(`net` `lease`, `dhcp`). `oath schema`, the keys `set` accepts, and
+the parse apply runs all come from the same type. The files under
+`schema/` are copies for readers: seed writes them, and PID 1 rewrites
+any that differ at every boot, so an upgraded `oath` brings its
+schemas. The prose (`<kind>.md`) is hand-written and embedded too. Today's kinds: `host`,
 `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`. No kind is added
 without a recorded decision.
 
@@ -123,7 +134,10 @@ pass its checks: a host name; a `svc` that is enabled has an `exec`; a
 has a numeric generation. A refusal names the fields being set.
 
 `oath new <id>` creates a `svc` or `pkg` from the given fields (same
-checks; no defaults are filled in). It is marked `new` and does nothing
+checks). It writes the document as the kind's type reads it, so a
+field the type defaults is filled in: a `svc` needs only `exec`
+(`restart: always`, `enabled: true`, `wants: []`), a `pkg` nothing
+(`present: true`). It is marked `new` and does nothing
 until `oath apply`. `oath rm <id>` marks a `svc` or `pkg` `removing`;
 `oath apply` stops or unlinks it and deletes the object. An object that
 was never applied is deleted at once. Base packages, and `host`, `net`,
@@ -202,14 +216,9 @@ and ssh `actual.authorized`, because PID 1 boots from applied state.
 
 ## Target
 
-- **Generated schemas.** `schema/<kind>.json` is still hand-written.
-  It will be generated from the Rust types and embedded, so code and
-  schema cannot drift.
 - **Physical state split.** Spec and status still share an object
   directory and both are inside the `@` snapshot; undo reads only spec.
   Status may move out of the snapshotted tree.
-- **Defaults for `oath new`.** Fields with schema defaults could be
-  filled in; today every required field must be given.
 
 ## INDEX
 

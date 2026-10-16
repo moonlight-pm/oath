@@ -14,6 +14,7 @@ mod pkg;
 mod plan;
 mod plan_build;
 pub mod probation;
+pub mod schema;
 pub mod seat;
 mod seed;
 mod ssh;
@@ -27,9 +28,9 @@ pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory,
-    PkgComponent, PkgNeed, PkgRealization, PkgVerified, Plan, PlanActual, Ssh, SshActual, Svc,
-    SvcActual, SvcRestart, SvcUser,
+    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory, Snap,
+    PkgComponent, PkgNeed, PkgRealization, PkgVerified, Plan, PlanActual, Ssh, SshActual, Svc, SvcActual,
+    SvcRestart, SvcUser,
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
@@ -56,7 +57,8 @@ pub use plan::{
 pub use plan_build::{build_file, build_log, build_pinned, file_plan, BuildReport};
 pub use probation::Probation;
 pub use seed::{
-    apply_overlay, merge_patch, seed, seed_profile, Profile, DEFAULT_PROFILE, PROFILES,
+    apply_overlay, merge_patch, seed, seed_profile, write_schemas, Profile, DEFAULT_PROFILE,
+    PROFILES,
 };
 pub use ssh::{converge as converge_ssh, HOST_KEY as SSH_HOST_KEY};
 pub use svc_order::{

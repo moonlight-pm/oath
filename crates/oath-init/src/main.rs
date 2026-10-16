@@ -119,6 +119,13 @@ fn real_main() -> Result<(), String> {
     if let Err(e) = &boot_lock {
         log(&format!("catalog lock: {e}"));
     }
+    // The schema files describe the binaries on this machine, so an
+    // upgraded oath brings its schemas with it.
+    match oath_core::write_schemas(Path::new(DEFAULT_ROOT)) {
+        Ok(files) if !files.is_empty() => log(&format!("schema: wrote {}", files.join(" "))),
+        Ok(_) => {}
+        Err(e) => log(&format!("schema: {e}")),
+    }
     if !Path::new("/oath/INDEX.md").exists() {
         if let Ok(c) = Catalog::open(DEFAULT_ROOT) {
             let _ = c.write_index();

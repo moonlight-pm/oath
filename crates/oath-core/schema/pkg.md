@@ -10,7 +10,8 @@ realization (`hash`).
 **When not:** do not `ln` or `rm` in `/bin`. Do not exec from the
 store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
 `pkg:oath`, or `pkg:dropbear`; they cannot be removed either. Create a
-`pkg` object with `oath new pkg:<name>` and remove one with `oath rm`
+`pkg` object with `oath new pkg:<name>` (`present` defaults to true)
+and remove one with `oath rm`
 (both take effect at `oath apply`); `oath build` creates the product's
 object, and an install overlay can add others.
 

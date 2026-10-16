@@ -9,7 +9,7 @@ use serde_json::{json, Map, Value};
 use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
-use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, Plan, Ssh, Svc};
+use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, Plan, Snap, Ssh, Svc};
 use crate::probation;
 use crate::{
     now_rfc3339, parse_gen_subvol, read_json, write_atomic, write_json, BTRFS_TOP, KIND_DEV,
@@ -181,15 +181,18 @@ impl Catalog {
         Ok(ks)
     }
 
+    /// The kind's schema, generated from its type (the file under
+    /// `schema/` is a copy for readers).
     pub fn schema_json(&self, kind: &str) -> Result<String> {
-        let p = self.root.join("schema").join(format!("{kind}.json"));
-        fs::read_to_string(&p)
-            .map_err(|_| Error::hint(format!("no kind `{kind}`"), "oath schema   (list kinds)"))
+        if !self.root.join("schema").join(format!("{kind}.json")).is_file() {
+            return Err(Error::hint(format!("no kind `{kind}`"), "oath schema   (list kinds)"));
+        }
+        crate::schema::text(kind)
+            .ok_or_else(|| Error::hint(format!("no kind `{kind}`"), "oath schema   (list kinds)"))
     }
 
     pub fn schema_md(&self, kind: &str) -> Result<String> {
-        let p = self.root.join("schema").join(format!("{kind}.md"));
-        fs::read_to_string(&p).map_err(|_| {
+        crate::schema::prose(kind).map(str::to_string).ok_or_else(|| {
             Error::hint(format!("no prose for `{kind}`"), format!("oath schema {kind}"))
         })
     }
@@ -300,8 +303,15 @@ impl Catalog {
             return Err(Error::hint(format!("{id} already exists"), format!("oath set {id} k=v")));
         }
         self.check_keys(id, &fields)?;
-        let desired = Value::Object(fields);
-        self.validate(id, &desired)?;
+        let given = Value::Object(fields);
+        self.validate(id, &given)?;
+        // What the type fills in for absent fields is written down, so the
+        // object says what it will do.
+        let desired = match id.kind.as_str() {
+            KIND_SVC => serde_json::to_value(serde_json::from_value::<Svc>(given)?)?,
+            KIND_PKG => serde_json::to_value(serde_json::from_value::<Pkg>(given)?)?,
+            _ => given,
+        };
         fs::create_dir_all(&dir)?;
         write_json(&dir.join("meta.json"), &Meta::new(&id.kind, &id.name, "mutate"))?;
         write_json(&dir.join("actual.json"), &first_actual(id, &desired, false))?;
@@ -756,9 +766,7 @@ impl Catalog {
                 let _: Plan = serde_json::from_value(doc.clone()).map_err(bad)?;
             }
             KIND_SNAP => {
-                if doc.get("generation").and_then(|g| g.as_u64()).is_none() {
-                    return Err(Error::hint(format!("{id}: generation must be a number"), hint()));
-                }
+                let _: Snap = serde_json::from_value(doc.clone()).map_err(bad)?;
             }
             other => {
                 return Err(Error::hint(format!("no kind `{other}`"), "oath schema"));

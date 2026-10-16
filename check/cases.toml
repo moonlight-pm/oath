@@ -157,7 +157,9 @@ name = "oath-new"
 about = "An agent can create a service."
 metal = true
 steps = [
-  { run = "sudo oath new svc:tick --from-json '{\"exec\":[\"/bin/sleep\",\"1000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tick && sleep 1 && oath get svc:tick", expect = ["running"] },
+  { run = "sudo oath new svc:tick --from-json '{\"exec\":[\"/bin/sleep\",\"1000\"]}' && oath get svc:tick --desired", expect = ["\"restart\": \"always\"", "\"enabled\": true", "\"wants\": []"] },
+  { run = "sudo oath apply svc:tick && sleep 1 && oath get svc:tick", expect = ["running"] },
+  { run = "oath schema svc; cat /oath/schema/svc.json | grep -c oath:kind:svc", expect = ["\"default\": \"always\"", "\"additionalProperties\": false", "1"] },
 ]
 
 [[case]]

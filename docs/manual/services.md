@@ -97,8 +97,10 @@ sudo oath apply svc:tick        # stops it and deletes the object
 sudo oath undo                  # brings it back
 ```
 
-`oath new` needs every required field (`exec`, `restart`, `enabled`).
-Until `oath apply`, a new service has status `new` and does not run;
+`oath new` needs only `exec`; it writes the defaults into the object
+(`restart: always`, `enabled: true`, `wants: []`), so `oath get` shows
+what will run. Until `oath apply`, a new service has status `new` and
+does not run;
 `oath rm` before that deletes it at once.
 
 `svc:sshd` changes that can cut off SSH (disabling or removing it, or

@@ -924,3 +924,38 @@ fn a_damaged_store_tree_is_not_linked_and_verify_says_so() {
     let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
     assert!(err.to_string().contains("store is damaged"), "{err}");
 }
+
+#[test]
+fn new_fills_in_what_the_type_defaults() {
+    let (_d, cat) = tmp();
+    let short: ObjectId = "svc:short".parse().unwrap();
+    cat.new_object(&short, json!({"exec": ["/bin/sleep", "9"]}).as_object().unwrap().clone())
+        .unwrap();
+    assert_eq!(
+        cat.get(&short).unwrap().desired,
+        json!({"exec": ["/bin/sleep", "9"], "wants": [], "restart": "always", "enabled": true})
+    );
+    let tool: ObjectId = "pkg:tool".parse().unwrap();
+    cat.new_object(&tool, Map::new()).unwrap();
+    assert_eq!(cat.get(&tool).unwrap().desired, json!({"present": true}));
+    // The schema is the type's: every field it lists is one set accepts.
+    let schema: serde_json::Value = serde_json::from_str(&cat.schema_json("svc").unwrap()).unwrap();
+    for k in schema["properties"].as_object().unwrap().keys() {
+        assert!(
+            [
+                "exec",
+                "wants",
+                "restart",
+                "enabled",
+                "user",
+                "env",
+                "bind_low_ports",
+                "keep_children"
+            ]
+            .contains(&k.as_str()),
+            "{k}"
+        );
+    }
+    assert!(set(&cat, "svc:short", "keep_children", json!(true)).is_ok());
+    assert!(set(&cat, "svc:short", "nonsense", json!(true)).is_err());
+}

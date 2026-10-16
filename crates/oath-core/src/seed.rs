@@ -16,42 +16,6 @@ use crate::error::{Error, Result};
 use crate::kinds::Meta;
 use crate::{write_json, ObjectId, KIND_PKG, KIND_SSH, KIND_SVC};
 
-pub const HOST_SCHEMA: &str = include_str!("../schema/host.json");
-pub const HOST_MD: &str = include_str!("../schema/host.md");
-pub const SVC_SCHEMA: &str = include_str!("../schema/svc.json");
-pub const SVC_MD: &str = include_str!("../schema/svc.md");
-pub const SNAP_SCHEMA: &str = include_str!("../schema/snap.json");
-pub const SNAP_MD: &str = include_str!("../schema/snap.md");
-pub const PKG_SCHEMA: &str = include_str!("../schema/pkg.json");
-pub const PKG_MD: &str = include_str!("../schema/pkg.md");
-pub const NET_SCHEMA: &str = include_str!("../schema/net.json");
-pub const NET_MD: &str = include_str!("../schema/net.md");
-pub const SSH_SCHEMA: &str = include_str!("../schema/ssh.json");
-pub const SSH_MD: &str = include_str!("../schema/ssh.md");
-pub const DEV_SCHEMA: &str = include_str!("../schema/dev.json");
-pub const DEV_MD: &str = include_str!("../schema/dev.md");
-pub const PLAN_SCHEMA: &str = include_str!("../schema/plan.json");
-pub const PLAN_MD: &str = include_str!("../schema/plan.md");
-
-const SCHEMAS: &[(&str, &str)] = &[
-    ("host.json", HOST_SCHEMA),
-    ("host.md", HOST_MD),
-    ("svc.json", SVC_SCHEMA),
-    ("svc.md", SVC_MD),
-    ("snap.json", SNAP_SCHEMA),
-    ("snap.md", SNAP_MD),
-    ("pkg.json", PKG_SCHEMA),
-    ("pkg.md", PKG_MD),
-    ("net.json", NET_SCHEMA),
-    ("net.md", NET_MD),
-    ("ssh.json", SSH_SCHEMA),
-    ("ssh.md", SSH_MD),
-    ("dev.json", DEV_SCHEMA),
-    ("dev.md", DEV_MD),
-    ("plan.json", PLAN_SCHEMA),
-    ("plan.md", PLAN_MD),
-];
-
 /// Built-in profiles. `base` is a headless machine you reach over SSH.
 pub const PROFILES: &[(&str, &str)] = &[("base", include_str!("../seed/base.json"))];
 
@@ -149,6 +113,27 @@ impl Profile {
     }
 }
 
+/// Write `schema/<kind>.json` (generated from the types) and
+/// `schema/<kind>.md` for every kind, leaving files that already match.
+/// Returns the files it rewrote. PID 1 runs this at every boot, so the
+/// files always describe the binaries on the machine.
+pub fn write_schemas(root: &Path) -> Result<Vec<String>> {
+    let dir = root.join("schema");
+    std::fs::create_dir_all(&dir)?;
+    let mut changed = Vec::new();
+    for (kind, md) in crate::schema::KINDS {
+        let json = crate::schema::text(kind).unwrap_or_default();
+        for (name, body) in [(format!("{kind}.json"), json.as_str()), (format!("{kind}.md"), md)] {
+            let p = dir.join(&name);
+            if std::fs::read_to_string(&p).ok().as_deref() != Some(body) {
+                write_text(&p, body)?;
+                changed.push(name);
+            }
+        }
+    }
+    Ok(changed)
+}
+
 /// Seed the default profile.
 pub fn seed(root: &Path) -> Result<()> {
     seed_profile(root, DEFAULT_PROFILE)
@@ -161,9 +146,7 @@ pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
     for d in ["schema", "objects", "log", "run"] {
         std::fs::create_dir_all(root.join(d))?;
     }
-    for (name, body) in SCHEMAS {
-        write_text(&root.join("schema").join(name), body)?;
-    }
+    write_schemas(root)?;
     for (id, desired) in &p.objects {
         let oid: ObjectId = id.parse()?;
         let actual = match p.actual.get(id) {

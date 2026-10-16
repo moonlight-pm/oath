@@ -27,8 +27,3 @@ These are real today and scheduled to be fixed. Plan around them.
 
 - A device plugged in after boot gets no driver until the next boot
   (no hotplug yet).
-- The DHCP client renews the lease, but `net:net0` actual shows only
-  the first lease.
-- Changes that can cut off SSH (`svc:sshd`, `ssh:local`, `net:net0`)
-  need `--confirm`, but once applied nothing rolls them back for you.
-- `oath new` fills in no defaults: give every required field.

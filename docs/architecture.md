@@ -59,7 +59,8 @@ btrfs
 /etc        written by PID 1 from host:local (hostname, hosts, profile, shells)
 /oath/      the catalog
   INDEX.md                 generated; what an agent reads first
-  schema/<kind>.json|.md   per-kind schema and prose
+  schema/<kind>.json|.md   per-kind schema (generated from the type) and
+                           prose; PID 1 rewrites them at boot if they differ
   objects/<kind>/<name>/   desired.json actual.json meta.json [applied.json]
                            [new | remove markers for oath new / oath rm]
   log/apply.jsonl          one line per apply (ok, error, refused), undo or keep

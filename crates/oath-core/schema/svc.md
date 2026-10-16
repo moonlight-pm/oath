@@ -6,9 +6,10 @@ that converges `svc:*`. There is no unit file.
 **When to use:** start, stop, or change a supervised process.
 
 **When not:** do not hand-write init dialects. Do not add a service by
-editing `/etc`. Create one with `oath new svc:<name>` (every required
-field: `exec`, `restart`, `enabled`), remove one with `oath rm`; both
-take effect at `oath apply`.
+editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
+`exec` is required; `restart` defaults to `always`, `enabled` to
+`true`, `wants` to `[]`, and the object records them), remove one with
+`oath rm`; both take effect at `oath apply`.
 
 ## Fields
 
@@ -64,7 +65,7 @@ before the services it wants.
 oath ls --kind svc
 oath get svc:time --actual
 oath logs svc:time
-oath new svc:tick --from-json '{"exec":["/bin/sleep","86400000"],"restart":"always","enabled":true}'
+oath new svc:tick --from-json '{"exec":["/bin/sleep","86400000"]}'
 oath apply svc:tick
 oath set svc:tick enabled=false
 oath apply svc:tick
