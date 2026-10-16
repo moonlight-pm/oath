@@ -4,6 +4,11 @@
 linker = "rust-lld"
 rustflags = ["-C", "target-feature=+crt-static", "-C", "link-self-contained=yes"]
 
+# oath-efi: lld-link stamps the PE header with the link time unless told
+# to use a hash of the image.
+[target.x86_64-unknown-uefi]
+rustflags = ["-C", "link-arg=/Brepro"]
+
 # Host build CLI (xtask-style). `cargo make build|run|up|start|stop|ssh|check|install|esp|bootstrap|pkgs` runs oath-make.
 # Bare `cargo make` prints the tool help. `cargo make --help` is Cargo's alias help.
 [alias]

@@ -53,6 +53,15 @@ its compiler's store path (`/oath/store/pkg/llvm/<hash>`), or it changes
 with every `pkg:llvm`: strip debug info from anything built with `-g`
 (python does).
 
+`rust/` is the vendor's Rust release rather than a source build: its
+tarballs are the pinned sources, and its plan gives the vendor's
+binaries their own musl loader and `libgcc_s.so.1`. It builds the Oath
+binaries, which are not a directory here: `cargo make build` (or
+`cargo make pkgs oath`) packs this tree and every crate in `Cargo.lock`
+into `pkg:oath-src` and builds `pkg:oath` with
+`crates/oath-make/src/oath-pkg.sh`. That product follows the tree and
+is not in the lock.
+
 `cargo make pkgs --list` shows every package, its licence and its pins.
 `cargo make build` packs the image from the products in `lock.json`:
 the profile's packages, and the kernel and its modules from

@@ -5,10 +5,11 @@ Everything is built on the build host with `cargo make` (crate
 
 Built here, from source: the kernel; the toolchain (clang, lld, musl,
 libc++); every package in the image (`pkgs/`); PID 1 (`oath-init`,
-`serial-login`, `sudo`), `oath`, and the UEFI loader `oath-efi`. The
-only thing taken from Nix is QEMU and its UEFI firmware for running
-images on the build host (`image/host.nix`), plus the host compilers
-that build the kernel and stage 0 of the toolchain. None of it ships.
+`serial-login`, `sudo`), `oath`, and the UEFI loader `oath-efi`
+(`pkg:oath`, built by the vendor's Rust release, `pkg:rust`). The only
+things taken from Nix are QEMU and its UEFI firmware for running images
+on the build host (`image/host.nix`), and the host compilers that build
+stage 0 of the toolchain and `oath-make` itself. None of it ships.
 
 ## The toolchain and packages
 
@@ -26,8 +27,10 @@ cargo make pkgs curl        # one package (and what it builds with)
 the declared packs), writes the exact plan to `pkgs/<name>/<name>.plan`
 and the product to `pkgs/lock.json`. `pkg:llvm` is one of them: it
 rebuilds itself with the `cmake`, `ninja` and `python` packs, which
-are build-only and not in the image. The image takes every userspace
-package from the lock. How packages are written: `pkgs/README.md`.
+are build-only and not in the image. `pkg:rust` is the vendor's Rust
+release (pinned by sha256) with its own musl loader; it builds
+`pkg:oath`. The image takes every userspace package from the lock. How
+packages are written: `pkgs/README.md`.
 
 ## The kernel
 
@@ -54,17 +57,21 @@ its UAPI headers from the same tarball).
 
 ## The image
 
-Needs: Rust with `x86_64-unknown-linux-musl` and `x86_64-unknown-uefi`
-(linked with `rust-lld` and musl's self-contained crt,
-`.cargo/config.toml`), `sudo` for the loop mount, `mkfs.btrfs` on the
-host (`shell.nix` has it), and the packs in `pkgs/lock.json`.
+Needs: the packs in `pkgs/lock.json` (`pkg:rust` among them), `sudo`
+for the loop mount, and `mkfs.btrfs` on the host (`shell.nix` has it).
+The build host's Rust compiles only `oath-make`.
 
 ```sh
 cargo make build                  # profile base
 cargo make boot                   # kernel + initrd + oath-efi only
 ```
 
-`build` compiles the musl binaries, writes the boot initrd and the
+`build` builds `pkg:oath` from this tree: it packs the workspace and
+every crates.io crate in `Cargo.lock` (fetched once into `build/fetch`,
+checked against the lock's sha256) and runs `cargo build` with
+`pkg:rust` in the sandbox, offline. A tree that has not changed is not
+rebuilt; `cargo make pkgs oath` does this step alone. Then `build`
+writes the boot initrd and the
 installer initrd, stages the root tree, seeds `/oath` from the profile,
 packs the profile's packages into the hashed store (also cached under
 `.cache/oath/store`), and writes `build/oath.qcow2` (btrfs, subvolume

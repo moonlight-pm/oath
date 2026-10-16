@@ -132,6 +132,13 @@
     "plan": "sha256-b750bb523fee13f42ee27eb332aeae2ac393a38e04865e9569393b7b00373720",
     "product": "sha256-a2d5a653d2ee489f22f5d6a6d58b6f4ed804cdea95bedec0c99ed36efd33ce2c"
   },
+  "patchelf": {
+    "version": "0.19.2",
+    "license": "GPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-c1871d34c0f5969160a849e500e5330b8661b8f8140b33f4c7f3e79b7e1a83e1",
+    "product": "sha256-e89891dea1ae13eb5f70e28981de3dc37c5fd660729623a174c2c9f40936054d"
+  },
   "perl": {
     "version": "5.44.0",
     "license": "Artistic-1.0-Perl OR GPL-1.0-or-later",
@@ -152,6 +159,13 @@
     "by": "plan",
     "plan": "sha256-b17ff7e78a7e0f5c7cb4a92e3ce4fb85618dce1a889a37e8b116c0e4431b018a",
     "product": "sha256-0d9ca4d5b471b54ef7d8094f9ad69759cec90921fabdaa9d5b903f66d837ec6e"
+  },
+  "rust": {
+    "version": "1.99.1",
+    "license": "(MIT OR Apache-2.0) AND Apache-2.0 WITH LLVM-exception AND MIT",
+    "by": "plan",
+    "plan": "sha256-bfc054fb41d2d05adba9deee1e9bac332e8a58275ea03bb862cdd1e510b1c266",
+    "product": "sha256-82bf1e1edb7b8ac942d3a94d3277cd765494a96846e0344450c0a2403bc9d4cb"
   },
   "util-linux": {
     "version": "2.42.4",

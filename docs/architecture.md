@@ -109,9 +109,13 @@ cargo make pkgs [names]
   llvm, busybox and make rebuild themselves; cmake, ninja and python
     are build-only packs (llvm's plan needs them), and so are m4, flex,
     bison, perl and elfutils (libelf), which the kernel's plan needs
+  pkg:rust: the vendor's rustc, cargo and std (musl, uefi) with its own
+    musl loader and libunwind as libgcc_s (patchelf points it there)
   pkg:linux: boot/vmlinuz, boot/config, lib/modules/<release>/
 cargo make build [--profile base]
-  cargo build oath, oath-init (host rustc, musl, rust-lld), oath-efi (uefi)
+  pkg:oath: this tree + every crates.io crate in Cargo.lock → pkg:oath-src;
+    `cargo build` with pkg:rust in the sandbox → bin/oath,
+    lib/oath/{init,serial-login,sudo}, boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)

@@ -46,10 +46,12 @@ What is true today:
   from pinned source in `pkgs/` by our own Clang/LLVM on musl, and
   rebuilds bit-identically. That Clang/LLVM is a plan product too and
   rebuilds itself. The boot loader is `oath-efi`.
+- The Oath binaries are `pkg:oath`, built from this tree in the same
+  sandbox by the vendor's Rust release (`pkg:rust`, pinned by sha256),
+  and rebuild bit-identically too.
 - Still compiled by the build host: stage 0 of the toolchain, and the
-  Oath crates (host rustc, with Rust's bundled musl). QEMU and its UEFI
-  firmware come from Nix to run images on the build host. None of that
-  ships.
+  build tool `oath-make`. QEMU and its UEFI firmware come from Nix to
+  run images on the build host. None of that ships.
 
 Focus: [CURRENT.md](CURRENT.md). Decisions: [docs/decisions.md](docs/decisions.md).
 Maturity: [docs/capabilities.md](docs/capabilities.md). Manual:

@@ -118,9 +118,8 @@ not matter (canto's September image logged `home` into Thoxa).
 - Install copies whatever `build/stage` holds, which may be stale or
   from another profile.
 - Stage 0 of the toolchain is compiled with a floating nixpkgs
-  (`pkgs/bootstrap.nix`), and Oath's own crates by the host's rustc.
-  Everything else that ships, the kernel included, is a pinned plan
-  product from `pkgs/lock.json` (builds.md).
+  (`pkgs/bootstrap.nix`). Everything that ships, the kernel and the
+  Oath binaries included, is a pinned plan product (builds.md).
 
 ## Target
 

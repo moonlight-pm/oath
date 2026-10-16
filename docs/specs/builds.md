@@ -8,10 +8,11 @@ same product hash. Plans are how Oath makes native packages.
 
 **Status:** partly built. The plan kind, `oath fmt`,
 `oath build` (pinned and `--file`), the sandbox and the native
-toolchain are built; every C package in the image is a plan product
-(`pkgs/`, via `cargo make pkgs`), and so are `pkg:llvm` and the kernel
-(`pkg:linux`). Still target: the Rust toolchain as a pack pinned by
-Oath, upstream signature checks, immutable outputs, build logs.
+toolchain are built; every package in the image is a plan product: the
+C packages, `pkg:llvm` and the kernel (`pkg:linux`) from `pkgs/` via
+`cargo make pkgs`, and the Oath binaries (`pkg:oath`) from this tree,
+built by the vendor's Rust release (`pkg:rust`). Still target: upstream
+signature checks, immutable outputs, build logs.
 
 Replaces: T43, and the toolchain parts of T35.
 
@@ -129,18 +130,42 @@ Zig is not used (R9).
 - **Fixed point.** Rebuilding stage 2 with stage-2 tools gives
   bit-identical products: `pkg:llvm` rebuilt by itself is identical
   (2026-10-15), and a second `cargo make pkgs` rebuilds nothing. The
-  kernel and its build tools rebuild identically too (2026-10-15).
+  kernel and its build tools rebuild identically too (2026-10-15), and
+  so do `pkg:rust`, `patchelf` and `pkg:oath` (2026-10-16).
   Configure scripts that record time, host or user (perl's, the
   kernel's) get fixed values.
 - **The headless base** (15 plan products): busybox, make, pkgconf,
   zlib, zstd, lzo, util-linux, btrfs-progs, dropbear, OpenSSH (no
   OpenSSL), mbedTLS, curl (mbedTLS, pinned CA bundle), dosfstools,
   kexec-tools and linux-firmware blobs pinned one by one.
-- **Rust.** The Oath crates are static musl binaries linked by
-  `rust-lld` with the Rust musl target's self-contained crt and libc
-  (Rust's bundled musl, not `pkg:llvm`'s 1.2.6). The Rust toolchain
-  itself is still the build host's; the vendor's pinned release as a
-  pack is target.
+- **Rust** (`pkgs/rust`). The vendor's release, pinned by sha256 (R7):
+  rustc and cargo 1.99.1 built for a musl host, and the standard library
+  for `x86_64-unknown-linux-musl` and `x86_64-unknown-uefi`. Those
+  binaries are dynamically linked against musl and libgcc_s, so the
+  pack carries its own: musl 1.2.6's shared libc (the loader) and LLVM's
+  libunwind as `libgcc_s.so.1`, with compiler-rt's `__popcountdi2` and
+  upstream's no-op frame-registration API (gcc's crtbegin in the non-PIE
+  `rust-lld` calls it). `patchelf` (a build-only pack) points every
+  executable's interpreter at `/oath/store/pkg/rust/live/lib`, and the
+  loader's `etc/ld-musl-x86_64.path` searches only the pack. The plan
+  fails if any vendor binary imports a symbol the pack does not define,
+  and checks that rustc can still report an error (it does so by
+  unwinding). The `.tar.gz` tarballs are pinned: rustc's `.tar.xz` uses
+  a 128 MiB dictionary and busybox's unxz stops at 64 MiB.
+- **The Oath binaries** (`pkg:oath`). `cargo make build` packs this tree
+  (the workspace, `brand/logo-white.png`, and every crates.io crate in
+  `Cargo.lock`, fetched and checked against the lock's sha256) into
+  `pkg:oath-src`, and builds it with `pkg:rust` and busybox in the
+  sandbox: the crates are a vendored source, cargo runs `--frozen`.
+  Product: `bin/oath`, `lib/oath/{init,serial-login,sudo}`,
+  `boot/BOOTX64.EFI` and a `components.json` listing every crate in the
+  binaries (`pkg:cargo/…`, from `cargo tree`). The product follows the
+  tree, so it is not in `pkgs/lock.json`; an unchanged tree is not
+  rebuilt (`build/pkgs/oath.json`). It rebuilds bit-identically
+  (oath-efi links with `/Brepro`, so its PE timestamp is a hash). The
+  binaries are static musl linked by `rust-lld` with the Rust musl
+  target's self-contained crt and libc: Rust's bundled musl 1.2.5, not
+  `pkg:llvm`'s 1.2.6. The build host's Rust compiles only `oath-make`.
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans (phase 8).
 

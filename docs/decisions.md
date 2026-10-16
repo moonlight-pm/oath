@@ -19,7 +19,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R4 | Every catalog writer takes an exclusive file lock (`flock`) and writes temp-file-then-rename; PID 1 reads only `applied`. | Decided 2026-10-13; phase 3 |
 | R5 | Delete the probe; add a headless QEMU harness that gates installs. | Probe deleted; harness next |
 | R6 | One kernel: own-built, sha256-pinned, vermagic-checked. No Nix kernel. | Done in the cut |
-| R7 | Native packages from the outset: built from source by an Oath plan, or the vendor's release pinned by sha256. Never another distro's packages. Build-host compilers bootstrap only. | Done 2026-10-14 (phase 5); `pkg:llvm` and the kernel are plan products since 2026-10-15; only stage 0 uses the host's gcc |
+| R7 | Native packages from the outset: built from source by an Oath plan, or the vendor's release pinned by sha256. Never another distro's packages. Build-host compilers bootstrap only. | Done 2026-10-14 (phase 5); `pkg:llvm` and the kernel are plan products since 2026-10-15, and the Oath binaries (built by the vendor's Rust, `pkg:rust`) since 2026-10-16; only stage 0 uses the host's gcc, and only `oath-make` the host's Rust |
 | R8 | Reset the progress docs ("slash and burn"). | Done in the cut |
 | R9 | No Zig anywhere in Oath (Joshua, 2026-10-13). `pkg:cc` and the `dev` profile were removed. | Done |
 | R10 | Keep the pinned 7.3-rc1 kernel for now. | Decided 2026-10-13 |

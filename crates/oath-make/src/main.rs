@@ -4,6 +4,7 @@ mod check;
 mod cpio;
 mod install;
 mod kernel;
+mod oath_pkg;
 mod pack;
 mod pkgs;
 mod qemu;
@@ -117,7 +118,8 @@ enum Cmd {
         jobs: Option<usize>,
     },
     /// Build native packages from pkgs/ as sandboxed `oath build` plans,
-    /// in dependency order. No names: every package.
+    /// in dependency order. No names: every package. `oath` builds
+    /// pkg:oath from this tree (`cargo make build` does that itself).
     Pkgs {
         names: Vec<String>,
         /// List packages, versions, licences and what the lock pins.
@@ -226,10 +228,18 @@ fn real() -> Result<()> {
             pkgs::bootstrap(&root, jobs.unwrap_or(n / 2).max(1))?
         }
         Cmd::Pkgs { names, list } => {
+            // `oath` is this tree (pkg:oath), not a pkgs/ package.
+            let (oath, rest): (Vec<String>, Vec<String>) =
+                names.into_iter().partition(|n| n == "oath");
             if list {
                 pkgs::list(&root)?
             } else {
-                pkgs::build(&root, &names)?
+                if oath.is_empty() || !rest.is_empty() {
+                    pkgs::build(&root, &rest)?
+                }
+                if !oath.is_empty() {
+                    oath_pkg::build(&root)?;
+                }
             }
         }
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,

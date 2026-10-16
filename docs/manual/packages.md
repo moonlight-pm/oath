@@ -24,8 +24,9 @@ The `base` profile:
 | `pkg:dosfstools` | present | yes — `mkfs.fat`, `mkfs.vfat`, `fsck.fat` |
 | `pkg:curl` | present | yes — static curl (mbedTLS) with a CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem` |
 
-Every pack above except `pkg:oath` is built from pinned source on the
-build host (`pkgs/`, [Build](build.md)). There is no C compiler on the
+Every pack above is built from pinned source on the build host: the
+Oath binaries (`pkg:oath`) from this tree, the rest from `pkgs/`
+([Build](build.md)). There is no C compiler on the
 box yet: the toolchain (`pkg:llvm`) exists on the build host but is not
 in the base profile. There is no glibc on Oath.
 

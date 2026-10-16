@@ -249,7 +249,7 @@ pub fn store(cat: &Path, name: &str, tree: &Path) -> Result<String> {
     Ok(hash)
 }
 
-fn product(lock: &Lock, name: &str) -> Result<String> {
+pub(crate) fn product(lock: &Lock, name: &str) -> Result<String> {
     lock.get(name)
         .map(|e| e.product.clone())
         .with_context(|| format!("pkg:{name} is not built yet (pkgs/lock.json)"))

@@ -122,7 +122,7 @@ fn parts(disk: &str) -> (String, String) {
 
 fn write_usb_installer(root: &Path, out: &Path, tools: &Tools, opts: &Opts) -> Result<()> {
     assert_usb_stick(&opts.disk)?;
-    let boot = crate::pack::build_efi(root)?;
+    let boot = crate::pack::efi(&crate::oath_pkg::build(root)?);
     let mkfat = tools.bin("dosfstools", "mkfs.fat")?;
     let sfdisk = tools.bin("util-linux", "sfdisk")?;
     let (p1, _) = parts(&opts.disk);
@@ -719,16 +719,7 @@ pub fn update_esp(repo: &Path, out: &Path, opts: EspOpts) -> Result<()> {
         bail!("--esp must be a /dev/ node (got {:?})", opts.esp);
     }
     let tools = tools::load(repo)?;
-    pack::boot_image(repo, out, &tools)?;
-    let efi = repo.join("target/x86_64-unknown-uefi/release/oath-efi.efi");
-    let efi_alt = repo.join("target/x86_64-unknown-uefi/release/oath-efi");
-    let efi = if efi.is_file() {
-        efi
-    } else if efi_alt.is_file() {
-        efi_alt
-    } else {
-        bail!("oath-efi missing after boot_image");
-    };
+    let efi = pack::efi(&pack::boot_image(repo, out, &tools)?);
     let mnt = out.join("esp-mnt");
     let _ = fs::create_dir_all(&mnt);
     let _ = sudo(&["umount", mnt.to_str().unwrap()]);

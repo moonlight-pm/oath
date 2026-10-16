@@ -13,27 +13,15 @@ use crate::cpio;
 use crate::tools::Tools;
 use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
 
-/// Kernel + initrd + `oath-efi` only. Used by `cargo make esp` on metal
-/// (no qcow, no qemu).
-pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<()> {
+/// Kernel + initrd only. Used by `cargo make esp` on metal (no qcow, no
+/// qemu). Returns pkg:oath's tree, which holds `oath-efi`.
+pub fn boot_image(root: &Path, out: &Path, tools: &Tools) -> Result<PathBuf> {
     fs::create_dir_all(out)?;
     eprintln!("kernel={}", tools.kernel.display());
     eprintln!("modules={}", tools.modules.display());
-    eprintln!(">> musl oath-init");
-    run(Command::new("cargo").current_dir(root).args([
-        "build",
-        "--release",
-        "--target",
-        "x86_64-unknown-linux-musl",
-        "-p",
-        "oath-init",
-    ]))?;
-    let init = root.join("target/x86_64-unknown-linux-musl/release/oath-init");
-    if !init.is_file() {
-        bail!("missing oath-init");
-    }
-    build_efi(root)?;
-    write_initrd(root, out, tools, &init)
+    let oath = crate::oath_pkg::build(root)?;
+    write_initrd(root, out, tools, &oath.join("lib/oath/init"))?;
+    Ok(oath)
 }
 
 /// Pack the image for one seed profile (`base`, `dev`). The profile's
@@ -52,25 +40,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     eprintln!("modules={}", tools.modules.display());
     eprintln!("packs={}", tools.packs.keys().cloned().collect::<Vec<_>>().join(" "));
 
-    eprintln!(">> musl binaries");
-    run(Command::new("cargo").current_dir(root).args([
-        "build",
-        "--release",
-        "--target",
-        "x86_64-unknown-linux-musl",
-        "-p",
-        "oath",
-        "-p",
-        "oath-init",
-    ]))?;
-    build_efi(root)?;
-    let bin = root.join("target/x86_64-unknown-linux-musl/release");
-    for n in ["oath", "oath-init", "serial-login", "sudo"] {
-        if !bin.join(n).is_file() {
-            bail!("missing {n}");
-        }
-    }
-    write_initrd(root, out, tools, &bin.join("oath-init"))?;
+    // The Oath binaries: pkg:oath, this tree built by pkg:rust.
+    let oath = crate::oath_pkg::build(root)?;
+    let lib = oath.join("lib/oath");
+    write_initrd(root, out, tools, &lib.join("init"))?;
 
     eprintln!(">> installer initramfs");
     let ir_install = out.join("initramfs-install");
@@ -92,7 +65,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
         chmod_exec(&dest)?;
     }
     // The installer writes the new catalog with `oath seed --overlay`.
-    copy_file(&bin.join("oath"), &ir_install.join("bin/oath"))?;
+    copy_file(&oath.join("bin/oath"), &ir_install.join("bin/oath"))?;
     chmod_exec(&ir_install.join("bin/oath"))?;
     let _ = fs::remove_file(ir_install.join("bin/tar"));
     symlink("busybox", ir_install.join("bin/tar"))?;
@@ -100,7 +73,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     copy_file(&out.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
     copy_file(&tools.kernel, &ir_install.join("opt/oath-install/vmlinuz"))?;
     // oath-efi is the boot loader (menu, BLS entries, kernel + initrd).
-    copy_file(&build_efi(root)?, &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
+    copy_file(&efi(&oath), &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
     fs::create_dir_all(ir_install.join("lib/oath"))?;
     fs::write(ir_install.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     chmod_exec(&ir_install.join("lib/oath/udhcpc.script"))?;
@@ -125,9 +98,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     ] {
         fs::create_dir_all(stage.join(d))?;
     }
-    copy_file(&bin.join("oath-init"), &stage.join("lib/oath/init"))?;
-    copy_file(&bin.join("serial-login"), &stage.join("lib/oath/serial-login"))?;
-    copy_file(&bin.join("sudo"), &stage.join("lib/oath/sudo"))?;
+    for n in ["init", "serial-login", "sudo"] {
+        copy_file(&lib.join(n), &stage.join("lib/oath").join(n))?;
+    }
     fs::write(stage.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
     fs::write(stage.join("lib/oath/ntp-event"), include_str!("ntp-event"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
@@ -164,7 +137,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("root/.ssh"))?;
     fs::create_dir_all(stage.join("home/.ssh"))?;
-    run(Command::new(bin.join("oath")).args([
+    run(Command::new(oath.join("bin/oath")).args([
         "--root",
         stage.join("oath").to_str().unwrap(),
         "seed",
@@ -174,14 +147,12 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
 
     let oath_root = stage.join("oath");
     let guest_bin = stage.join("bin");
-    // The profile's packages: native packs (pkgs/lock.json) as they are,
-    // plus oath itself from this tree.
-    write_bin_store(&oath_root, "oath", &bin.join("oath"))?;
+    // The profile's packages as they were built: native packs
+    // (pkgs/lock.json), and pkg:oath from this tree.
     let fixed = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
     for name in &wanted {
-        if name != "oath" {
-            copy_tree(tools.pack(name)?, &oath_root.join("store/pkg").join(name))?;
-        }
+        let tree = if name == "oath" { oath.as_path() } else { tools.pack(name)? };
+        copy_tree(tree, &oath_root.join("store/pkg").join(name))?;
         link_pkg(&oath_root, &guest_bin, name, !fixed.is_fixed(name))?;
     }
 
@@ -258,27 +229,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<()
     Ok(())
 }
 
-pub(crate) fn build_efi(root: &Path) -> Result<PathBuf> {
-    eprintln!(">> uefi oath-efi");
-    run(Command::new("cargo").current_dir(root).args([
-        "build",
-        "--release",
-        "--target",
-        "x86_64-unknown-uefi",
-        "-p",
-        "oath-efi",
-        "--features",
-        "uefi-app",
-    ]))?;
-    let efi = root.join("target/x86_64-unknown-uefi/release/oath-efi.efi");
-    let alt = root.join("target/x86_64-unknown-uefi/release/oath-efi");
-    if efi.is_file() {
-        Ok(efi)
-    } else if alt.is_file() {
-        Ok(alt)
-    } else {
-        bail!("missing oath-efi (need rust-std x86_64-unknown-uefi)");
-    }
+/// `oath-efi` inside pkg:oath's tree.
+pub(crate) fn efi(oath: &Path) -> PathBuf {
+    oath.join("boot/BOOTX64.EFI")
 }
 
 fn write_initrd(root: &Path, out: &Path, tools: &Tools, init: &Path) -> Result<()> {
@@ -443,14 +396,6 @@ pub fn bake_install_keys(out: &Path, keys: &str) -> Result<PathBuf> {
 
 /// Transitive closure + topological load order from `modules.dep`.
 /// Output paths have `.xz` stripped (pack stores uncompressed `.ko`).
-
-fn write_bin_store(oath_root: &Path, name: &str, src: &Path) -> Result<()> {
-    let dest = oath_root.join("store/pkg").join(name).join("bin").join(name);
-    fs::create_dir_all(dest.parent().unwrap())?;
-    copy_file(src, &dest)?;
-    chmod_exec(&dest)?;
-    Ok(())
-}
 
 fn link_pkg(oath_root: &Path, bin_dir: &Path, name: &str, removable: bool) -> Result<()> {
     let hash = desired_hash(oath_root, name);

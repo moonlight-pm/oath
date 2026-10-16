@@ -9,12 +9,14 @@ append history (git has it).
 
 ## Now
 
-1. **Native base leftovers (phase 5).** The Oath crates are built by
-   the host's rustc (with Rust's bundled musl); sources are
-   sha256-pinned but upstream signatures are not checked; nothing
-   enforces a licence allowlist on publish; build outputs have no
-   manifest. Next: the vendor's Rust release pinned by sha256 as a
-   pack, so `cargo make build` stops using the host's rustc.
+1. **Native base leftovers (phase 5).** The Oath binaries are
+   `pkg:oath`, built from this tree in the sandbox by the vendor's Rust
+   1.99.1 (`pkg:rust`), but they link Rust's bundled musl 1.2.5, not
+   `pkg:llvm`'s 1.2.6. Sources are sha256-pinned but upstream
+   signatures are not checked; nothing enforces a licence allowlist on
+   publish; build outputs have no manifest. Next: link `pkg:oath`
+   against `pkg:llvm`'s musl and libunwind (clang as the linker, not
+   the self-contained crt), so one musl ships.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
@@ -22,14 +24,15 @@ append history (git has it).
 
 **State:** phases 1–5 are done; phase 6 is active
 ([docs/roadmap.md](docs/roadmap.md)). The image is the native headless
-base, its kernel and every package are plan products of `pkgs/`, and
-its seed carries no test fixtures: the harness checks the
-image `install` ships, and each case makes what it needs with
+base: its kernel, the Oath binaries and every package are plan
+products, and its seed carries no test fixtures: the harness checks
+the image `install` ships, and each case makes what it needs with
 `oath new`. Modules load by modalias; `svc:time` keeps the clock from
-pool.ntp.org. canto was reinstalled over SSH, unattended, from that image on
-2026-10-16 (the kernel built by `pkg:llvm`) and passes all 24 `metal`
-harness cases (`cargo make check --target`).
-30 QEMU cases and the `install --qemu` rehearsal pass.
+pool.ntp.org. canto was reinstalled over SSH, unattended, on
+2026-10-16 from the image with the kernel built by `pkg:llvm` (its Oath
+binaries were still the host rustc's) and passes all 24 `metal`
+harness cases (`cargo make check --target`). 30 QEMU cases and the
+`install --qemu` rehearsal pass.
 
 ## Machines
 
