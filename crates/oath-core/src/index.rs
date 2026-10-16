@@ -32,9 +32,10 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath apply [id...]   check, snapshot, then converge
     oath undo            put back the spec the last apply changed, and converge
     oath log             apply log
-    oath logs [id]       a service's output (svc:<name>), or PID 1's
+    oath logs [id]       output of svc:<name>, net:net0, a plan's last build
+                         (plan:<name>), or PID 1 (no id)
     oath fmt <path>      canonical plan.plan
-    oath build           isolated plan build (no /bin link)
+    oath build           isolated plan build (no /bin link; log in /oath/log/plan/)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
 

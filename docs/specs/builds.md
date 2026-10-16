@@ -6,7 +6,8 @@ network and only the declared inputs, then hashes `/out` into the
 store. The same plan bytes and the same input hashes must give the
 same product hash. Plans are how Oath makes native packages.
 
-**Status:** partly built. The plan kind, `oath fmt`,
+**Status:** built for the headless base; the desk's packages are target
+(phase 8). The plan kind, `oath fmt`,
 `oath build` (pinned and `--file`), the sandbox and the native
 toolchain are built; every package in the image is a plan product: the
 C packages, `pkg:llvm` and the kernel (`pkg:linux`) from `pkgs/` via
@@ -193,8 +194,6 @@ Zig is not used (R9).
   GCC. Build scripts still link that musl (cargo gives them none of the
   target's rustflags); they run only in the sandbox. The build host's
   Rust compiles only `oath-make`.
-- **Desk later.** Mesa, Wayland, a compositor and the rest come after
-  the base, as plans (phase 8).
 
 ## Products and logs (built)
 
@@ -209,6 +208,11 @@ Zig is not used (R9).
   product or the failure. The build before is `<name>.log.1`.
   `oath build` prints the log's path, a failed build the log's last
   lines, and `oath logs plan:<name>` reads it.
+
+## Target
+
+- **The desk.** Mesa, Wayland, a compositor and the rest, as plans in
+  `pkgs/` (phase 8).
 
 ## Out
 

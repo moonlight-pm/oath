@@ -10,7 +10,7 @@ in [../decisions.md](../decisions.md).
 | [scope.md](scope.md) | What is core and what is a payload; the Steam and Minecraft desk requirement | built |
 | [catalog.md](catalog.md) | Objects, verbs, apply, undo, generations, INDEX | partly built |
 | [packages.md](packages.md) | `pkg`, the content-addressed store, needs, origins, advisories, the native rule | partly built |
-| [builds.md](builds.md) | `plan`, `oath build`, the sandbox, the native toolchain | partly built |
+| [builds.md](builds.md) | `plan`, `oath build`, the sandbox, the native toolchain | built (desk packages: phase 8) |
 | [services.md](services.md) | `svc` and PID 1 | partly built |
 | [network-and-ssh.md](network-and-ssh.md) | `net`, `ssh`, the `home` account, `sudo` | partly built |
 | [devices.md](devices.md) | `dev`, modules, firmware | partly built |

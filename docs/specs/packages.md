@@ -106,16 +106,18 @@ the publishable packs and their advisories into an origin tree (below).
 - A build host's compiler may bootstrap the first toolchain. It never
   ships.
 
-As built (2026-10-14), `pkgs/lock.json` pins 16 packs, each with its
-version, SPDX licence, how it was built, plan hash and product hash.
-`pkg:llvm` is built by the bootstrap script until it can be a plan. The
-other 15 are plan products: busybox, make, pkgconf, zlib, zstd, lzo,
-util-linux, btrfs-progs (`pkg:btrfs`), dropbear, OpenSSH (client, scp,
-sftp, ssh-keygen, sftp-server; no OpenSSL), mbedTLS, curl (with the CA
-bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`), dosfstools,
-kexec-tools (`pkg:kexec`) and firmware (individual linux-firmware
-blobs). The image takes every userspace package from the lock;
-nothing in it comes from nixpkgs.
+As built (2026-10-16), `pkgs/lock.json` pins 27 packages, each with its
+version, SPDX licence, how it was built, plan hash and product hash,
+and every one is a plan product: the image's busybox, btrfs-progs
+(`pkg:btrfs`), dropbear, OpenSSH (client, scp, sftp, ssh-keygen,
+sftp-server; no OpenSSL), util-linux, dosfstools and curl (with the CA
+bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`); the kernel
+(`pkg:linux`) and firmware (individual linux-firmware blobs);
+kexec-tools (`pkg:kexec`) for the installer; and the build tools
+(`pkg:llvm`, `pkg:rust`, make, cmake, ninja, python, perl, m4, flex,
+bison, elfutils, pkgconf, patchelf and the libraries zlib, zstd, lzo
+and mbedTLS). `pkg:oath` follows this tree and is not locked. Nothing
+in the image comes from nixpkgs.
 
 ## Target
 
@@ -140,11 +142,12 @@ are not published (open question in decisions.md: GPL source).
 
 ## Pack manifest (built)
 
-`cargo make build` writes `build/manifest.json`: every pack the image
-ships (the profile's store, the initrd, the installer's tools, the
-ESP), each with its hash, version, licence, plan hash, where it ships,
-and its source pins with signing keys or unsigned reasons; `pkg:oath`
-with the commit it was built from.
+`cargo make build` writes `manifest.json` into its output
+(`build/out/<id>/`; the id is the manifest's hash): every pack the
+image ships (the profile's store, the initrd, the installer's tools,
+the ESP), each with its hash, version, licence, plan hash, where it
+ships, and its source pins with signing keys, Sigstore identities or
+unsigned reasons; `pkg:oath` with the commit it was built from.
 
 ## Pack layout
 

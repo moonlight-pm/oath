@@ -30,7 +30,7 @@ for build and install tooling on the build host.
 | `oath apply [id...]` | Check, snapshot, then converge the listed ids or all drift |
 | `oath undo` | Put back what the last apply changed (repeat to go further back) |
 | `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N` |
-| `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), or PID 1's (no id). `-n N` lines, default 50 |
+| `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50 |
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
 | `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin` |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
