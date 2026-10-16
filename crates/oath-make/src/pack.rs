@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::os::unix::fs::{symlink, PermissionsExt};
 use std::path::{Path, PathBuf};
@@ -519,91 +520,88 @@ fn write_pack_tar(tree: &Path, tarball: &Path) -> Result<PathBuf> {
     Ok(tarball.to_path_buf())
 }
 
-/// Copy hashed pack tarballs into an origin tree (`pkg/<name>/<hash>.tar`).
+/// `cargo make publish`: copy into an origin tree (`pkg/<name>/<hash>.tar`,
+/// `adv/<name>/<hash>.json`, `INDEX.md`) every package a seed profile
+/// names, at the hash this tree records for it (`pkgs/lock.json`, or
+/// pkg:oath's last build), each with a licence on record. Nothing else in
+/// the cache is published: not source packs, build tools or other hashes.
+/// Refuses before copying anything if a package is not built, has no
+/// licence, or needs a package no profile names.
 pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
-    let cache = host_store_cache(repo).join("pkg");
-    if !cache.is_dir() {
-        bail!(
-            "no host store cache at {} — cargo make store --name <n> --from <dir> --tar",
-            cache.display()
-        );
+    let mut named = BTreeSet::new();
+    for (profile, _) in oath_core::PROFILES {
+        let p = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
+        named.extend(p.pkgs());
     }
-    let dest_pkg = dest.join("pkg");
-    fs::create_dir_all(&dest_pkg)?;
-    let mut rows: Vec<(String, String)> = Vec::new();
-    let mut names: Vec<String> = fs::read_dir(&cache)?
+    let lock = crate::pkgs::read_lock(repo)?;
+    let all = crate::pkgs::load(repo)?;
+    let cache = host_store_cache(repo);
+    let mut rows: Vec<(String, String, String)> = Vec::new();
+    for name in &named {
+        let (hash, license) = if name == "oath" {
+            let hash = crate::oath_pkg::built(repo)?;
+            let tree = cache.join("pkg/oath").join(&hash);
+            (hash, crate::oath_pkg::license(repo, &tree)?)
+        } else {
+            let e = lock.get(name).with_context(|| {
+                format!("pkg:{name} is not in pkgs/lock.json: cargo make pkgs {name}")
+            })?;
+            (e.product.clone(), e.license.clone())
+        };
+        if license.trim().is_empty() {
+            bail!("pkg:{name} has no licence on record; publish refuses it");
+        }
+        if !cache.join("pkg").join(name).join(&hash).is_dir() {
+            bail!("pkg:{name} {hash} is not in {}", cache.display());
+        }
+        for need in all.get(name).map(|p| p.run.as_slice()).unwrap_or_default() {
+            if !named.contains(need) {
+                bail!("pkg:{name} needs pkg:{need}, which no seed profile names");
+            }
+        }
+        rows.push((name.clone(), hash, license));
+    }
+
+    for (name, hash, license) in &rows {
+        let tree = cache.join("pkg").join(name).join(hash);
+        let tar = cache.join("pkg").join(name).join(format!("{hash}.tar"));
+        if !tar.is_file() {
+            write_pack_tar(&tree, &tar)?;
+        }
+        let out = dest.join("pkg").join(name).join(format!("{hash}.tar"));
+        fs::create_dir_all(out.parent().context("parent")?)?;
+        fs::copy(&tar, &out)
+            .with_context(|| format!("copy {} -> {}", tar.display(), out.display()))?;
+        println!("pkg:{name} {hash} {license}");
+        let adv = cache.join("adv").join(name).join(format!("{hash}.json"));
+        if adv.is_file() {
+            let out = dest.join("adv").join(name).join(format!("{hash}.json"));
+            fs::create_dir_all(out.parent().context("parent")?)?;
+            fs::copy(&adv, &out)
+                .with_context(|| format!("copy {} -> {}", adv.display(), out.display()))?;
+            println!("adv:{name} {hash}.json");
+        }
+    }
+    let mut skipped: Vec<String> = fs::read_dir(cache.join("pkg"))?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_dir())
         .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| !named.contains(n))
         .collect();
-    names.sort();
-    for name in names {
-        let slot = cache.join(&name);
-        let mut hashes: Vec<String> = fs::read_dir(&slot)?
-            .filter_map(|e| e.ok())
-            .filter(|e| e.path().is_dir())
-            .map(|e| e.file_name().to_string_lossy().into_owned())
-            .filter(|n| oath_core::is_realization_id(n))
-            .collect();
-        hashes.sort();
-        for hash in hashes {
-            let tree = slot.join(&hash);
-            let tar = slot.join(format!("{hash}.tar"));
-            if !tar.is_file() {
-                write_pack_tar(&tree, &tar)?;
-            }
-            let out_dir = dest_pkg.join(&name);
-            fs::create_dir_all(&out_dir)?;
-            let out = out_dir.join(format!("{hash}.tar"));
-            fs::copy(&tar, &out)
-                .with_context(|| format!("copy {} -> {}", tar.display(), out.display()))?;
-            println!("pkg:{name} {hash}");
-            rows.push((name.clone(), hash));
-        }
+    skipped.sort();
+    if !skipped.is_empty() {
+        println!("not named by a seed profile, not published: {}", skipped.join(" "));
     }
-    let cache_adv = host_store_cache(repo).join("adv");
-    if cache_adv.is_dir() {
-        let dest_adv = dest.join("adv");
-        fs::create_dir_all(&dest_adv)?;
-        let mut names: Vec<String> = fs::read_dir(&cache_adv)?
-            .filter_map(|e| e.ok())
-            .filter(|e| e.path().is_dir())
-            .map(|e| e.file_name().to_string_lossy().into_owned())
-            .collect();
-        names.sort();
-        for name in names {
-            let slot = cache_adv.join(&name);
-            let out_dir = dest_adv.join(&name);
-            fs::create_dir_all(&out_dir)?;
-            let mut files: Vec<String> = fs::read_dir(&slot)?
-                .filter_map(|e| e.ok())
-                .filter(|e| e.path().is_file())
-                .map(|e| e.file_name().to_string_lossy().into_owned())
-                .filter(|n| n.ends_with(".json"))
-                .collect();
-            files.sort();
-            for file in files {
-                fs::copy(slot.join(&file), out_dir.join(&file)).with_context(|| {
-                    format!(
-                        "copy {} -> {}",
-                        slot.join(&file).display(),
-                        out_dir.join(&file).display()
-                    )
-                })?;
-                println!("adv:{name} {file}");
-            }
-        }
-    }
+
     let mut index = String::from(
         "# Oath pack origin\n\n\
          Not a package manager. Trees are `oath-tree-v1` (SHA-256). \
          Fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`. \
          Advisories are `{origin}/adv/<name>/<hash>.json` (not part of the pack hash).\n\n\
-         | name | hash |\n\
-         |------|------|\n",
+         | name | hash | licence |\n\
+         |------|------|---------|\n",
     );
-    for (name, hash) in &rows {
-        index.push_str(&format!("| `{name}` | `{hash}` |\n"));
+    for (name, hash, license) in &rows {
+        index.push_str(&format!("| `{name}` | `{hash}` | {license} |\n"));
     }
     fs::write(dest.join("INDEX.md"), index)?;
     println!("{} ({} packs)", dest.display(), rows.len());

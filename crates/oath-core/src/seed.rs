@@ -94,6 +94,12 @@ impl Profile {
         self.fixed.contains(&id)
     }
 
+    /// Every `pkg:*` object the profile names, present or not. These are
+    /// what `cargo make publish` may put on an origin.
+    pub fn pkgs(&self) -> Vec<String> {
+        self.objects.keys().filter_map(|id| id.strip_prefix("pkg:")).map(str::to_string).collect()
+    }
+
     /// `pkg:*` objects the profile wants present. The image packs these.
     pub fn present_pkgs(&self) -> Vec<String> {
         self.objects
@@ -319,7 +325,8 @@ mod tests {
     fn a_profile_extends_another() {
         let extra = r#"{"extends": "base", "objects": {
             "host:local": {"env": {"EDITOR": "vi"}},
-            "pkg:extra": {"present": true}
+            "pkg:extra": {"present": true},
+            "pkg:later": {"present": false}
         }}"#;
         let looped = r#"{"extends": "looped"}"#;
         let profiles = [PROFILES[0], ("extra", extra), ("looped", looped)];
@@ -330,6 +337,8 @@ mod tests {
         assert!(p.fixed.contains("pkg:oath"));
         assert!(p.present_pkgs().contains(&"extra".to_string()));
         assert!(!p.present_pkgs().contains(&"util".to_string()));
+        assert!(!p.present_pkgs().contains(&"later".to_string()));
+        assert!(p.pkgs().contains(&"later".to_string()) && p.pkgs().contains(&"oath".to_string()));
         assert!(Profile::load_from("looped", &profiles).is_err());
         assert!(Profile::load_from("nope", &profiles).is_err());
     }

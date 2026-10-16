@@ -77,8 +77,10 @@ Oath binaries are `pkg:oath`, built by the vendor's Rust pack
 are checked against upstream OpenPGP signatures by keys pinned in
 `pkgs/keys/` (2026-10-16).
 
-Not done, carried forward: a publish allowlist that reads the licences
-in `lock.json`, immutable build outputs with a manifest.
+`cargo make publish` carries only the packages a seed profile names,
+each with its licence (2026-10-16).
+
+Not done, carried forward: immutable build outputs with a manifest.
 
 ## 6. Reinstall — active
 

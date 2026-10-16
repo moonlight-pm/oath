@@ -10,12 +10,13 @@ append history (git has it).
 ## Now
 
 1. **Native base leftovers (phase 5).** Since 2026-10-16 every fetch
-   checks upstream OpenPGP signatures against one key per upstream in
-   `pkgs/keys/` (22 sources, 19 keys); the rest say why not in
-   `unsigned` (Python and Perl: Sigstore only). Nothing enforces a
-   licence allowlist on publish; build outputs have no manifest. Next:
-   `cargo make publish` refuses a package that no profile names or
-   whose `lock.json` licence is empty.
+   checks upstream OpenPGP signatures against keys in `pkgs/keys/`
+   (Python and Perl sign only with Sigstore, unchecked), and
+   `cargo make publish` carries only the profiles' packages, each with
+   its licence. Open for Joshua: publish GPL source beside the
+   binaries? The image has no manifest. Next: `cargo make build`
+   writes `build/manifest.json`, every pack the image ships with its
+   source pins, hash and licence.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a

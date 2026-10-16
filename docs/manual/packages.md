@@ -109,13 +109,20 @@ The build host keeps the same layout under `.cache/oath/store` (or
 ```
 cargo make store --name hello --from apps/hello --tar
 cargo make advisories            # OSV lookup from components.json
-cargo make publish --dest <dir>  # copies pkg/<name>/<hash>.tar and adv/
+cargo make publish --dest <dir>  # the profiles' packages: pkg/, adv/, INDEX.md
 ```
 
-`publish` copies every pack in the cache. There is no allowlist or
-license check yet (`pkgs/lock.json` records each package's licence, but
-`publish` does not read it), so check the cache before publishing
-anywhere public.
+`publish` copies only the packages a seed profile names (today the
+eight in `base`), each at the hash this tree records for it: the
+product in `pkgs/lock.json`, or `pkg:oath`'s last `cargo make build`.
+Each needs a licence on record: `lock.json`'s, or for `pkg:oath` the
+workspace licence AND every crate's in its `components.json`. It
+refuses, before copying anything, a package that is not built, has no
+licence, or needs a package no profile names. `INDEX.md` lists name,
+hash and licence. Source packs, build tools (`llvm`, `rust`, ...),
+test packs and other hashes in the cache are never published; the
+last line names what was left out. A pack made with `cargo make store`
+is published only if a profile names it.
 
 Optional backup hooks in a pack (not catalog fields):
 `libexec/oath-backup-quiesce` and `libexec/oath-backup-thaw`. See

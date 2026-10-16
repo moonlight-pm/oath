@@ -8,6 +8,11 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 - **Steam + Minecraft desk.** Which machine, and when. Not before the
   native desk exists.
+- **GPL source on origins.** `cargo make publish` puts GPL binaries
+  (busybox, btrfs, util-linux, dosfstools) on an origin without their
+  source. Should it also publish each package's `-src` pack and plan
+  (the exact sources, patches and build script) beside it? Until
+  decided, publish to private origins only.
 
 ## 2026-10-13 review (briefing D1–D8)
 

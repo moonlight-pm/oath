@@ -139,7 +139,8 @@ enum Cmd {
         #[arg(long)]
         tar: bool,
     },
-    /// Copy hashed pack tarballs into a store origin tree (`pkg/<name>/<hash>.tar`).
+    /// Copy every package a seed profile names, at its locked hash and with
+    /// its licence, into a store origin tree (`pkg/<name>/<hash>.tar`).
     Publish {
         /// Destination directory.
         #[arg(long)]

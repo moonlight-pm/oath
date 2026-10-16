@@ -83,6 +83,70 @@ pub fn build(repo: &Path) -> Result<PathBuf> {
     Ok(tree(&r.product))
 }
 
+/// pkg:oath's product from its last build (`build/pkgs/oath.json`).
+pub fn built(repo: &Path) -> Result<String> {
+    let record = repo.join("build/pkgs/oath.json");
+    let last: Built = serde_json::from_str(&fs::read_to_string(&record).with_context(|| {
+        format!("{}: pkg:oath is not built yet (cargo make build)", record.display())
+    })?)?;
+    Ok(last.product)
+}
+
+/// pkg:oath's licence: the workspace's, AND every crate's in its
+/// `components.json`, read from the crate's own Cargo.toml in
+/// build/fetch/crates (the checksummed tarballs it was built from).
+pub fn license(repo: &Path, tree: &Path) -> Result<String> {
+    let ws: toml::Value = toml::from_str(&fs::read_to_string(repo.join("Cargo.toml"))?)?;
+    let own = ws
+        .get("workspace")
+        .and_then(|w| w.get("package"))
+        .and_then(|p| p.get("license"))
+        .and_then(|l| l.as_str())
+        .context("Cargo.toml has no workspace.package.license")?
+        .to_string();
+    let comp: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(tree.join("components.json"))?)?;
+    let list = comp.get("components").unwrap_or(&comp).as_array().context("components.json")?;
+    let mut terms = std::collections::BTreeSet::new();
+    for c in list {
+        let purl = c.get("purl").and_then(|p| p.as_str()).unwrap_or("");
+        let Some(crate_at) = purl.strip_prefix("pkg:cargo/") else { continue };
+        let (name, version) = crate_at.split_once('@').context("purl without @")?;
+        let file = repo.join(format!("build/fetch/crates/{name}-{version}.crate"));
+        let text = crate::util::run_out(
+            std::process::Command::new("tar")
+                .arg("-xzOf")
+                .arg(&file)
+                .arg(format!("{name}-{version}/Cargo.toml")),
+        )?;
+        let manifest: toml::Value = toml::from_str(&text)?;
+        let spdx = manifest
+            .get("package")
+            .and_then(|p| p.get("license"))
+            .and_then(|l| l.as_str())
+            .with_context(|| format!("crate {name} {version} has no SPDX licence"))?;
+        terms.insert(spdx_term(spdx));
+    }
+    terms.remove(&own);
+    Ok(std::iter::once(own).chain(terms).collect::<Vec<_>>().join(" AND "))
+}
+
+/// One licence as an AND operand: the old `A/B` is `A OR B`, the operands
+/// of a plain OR are sorted, and anything compound is parenthesized.
+fn spdx_term(l: &str) -> String {
+    let l = l.replace('/', " OR ");
+    if !l.contains(' ') {
+        return l;
+    }
+    if !l.contains('(') && !l.contains(" AND ") && !l.contains(" WITH ") {
+        let mut ors: Vec<&str> = l.split(" OR ").map(str::trim).collect();
+        ors.sort();
+        ors.dedup();
+        return if ors.len() == 1 { ors[0].to_string() } else { format!("({})", ors.join(" OR ")) };
+    }
+    format!("({l})")
+}
+
 /// The workspace version (`crates/oath`).
 fn version(repo: &Path) -> Result<String> {
     let text = fs::read_to_string(repo.join("crates/oath/Cargo.toml"))?;
@@ -160,4 +224,21 @@ fn copy_source(from: &Path, to: &Path) -> Result<()> {
         bail!("{} is missing", from.display());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spdx_terms() {
+        assert_eq!(spdx_term("MIT"), "MIT");
+        assert_eq!(spdx_term("MIT OR Apache-2.0"), "(Apache-2.0 OR MIT)");
+        assert_eq!(spdx_term("Apache-2.0/MIT"), "(Apache-2.0 OR MIT)");
+        assert_eq!(
+            spdx_term("(MIT OR Apache-2.0) AND Unicode-3.0"),
+            "((MIT OR Apache-2.0) AND Unicode-3.0)"
+        );
+        assert_eq!(spdx_term("Apache-2.0 WITH LLVM-exception"), "(Apache-2.0 WITH LLVM-exception)");
+    }
 }

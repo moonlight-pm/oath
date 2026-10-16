@@ -7,7 +7,7 @@ this file under 800 words. Update a row in the same change as the code.
 **Status:** `shipped` works and is tested · `partial` works with listed
 gaps · `target` designed, not built.
 
-**As of:** 2026-10-16 (upstream signatures checked)
+**As of:** 2026-10-16 (publish allowlist)
 
 ## Core
 
@@ -17,9 +17,9 @@ gaps · `target` designed, not built.
 | `oath` CLI | shipped | `ls get set new rm diff apply undo log logs schema fmt build`, `--json`; bare `oath` prints the INDEX; apply returns after PID 1 converged | MCP adapter is roadmap phase 7 |
 | Generations | partial | checks before the snapshot (`refused` changes nothing); every outcome logged; undo is a stack restoring only the touched objects' spec | Lockout-class changes need `--confirm` but nothing auto-reverts them; a catalog reboot takes a generation |
 | Services (PID 1) | partial | runs only applied specs; per-service logs (`oath logs`); exit codes, restart count, backoff, `failed`; a cgroup per service; orderly shutdown on `reboot`/`poweroff`; a wants cycle skips only its members | Shutdown is not in reverse `wants` order |
-| Packages | partial | hash-in-path store, `/bin` farm, pins, `needs` graph, `components.json` + advisories, fetch by `url` | Store integrity not verified at boot; publish has no licence allowlist |
+| Packages | partial | hash-in-path store, `/bin` farm, pins, `needs` graph, `components.json` + advisories, fetch by `url`; publish: licensed profile packages only | Store integrity not verified at boot; GPL source not published |
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; sandbox with no network, its own PID namespace and nothing from the build host; cache keyed on plan and inputs; every package in the image, kernel and Oath binaries included, is a plan product | — |
-| Toolchain and native packages | partial | `cargo make bootstrap` makes the first Clang/LLVM 23.1.3 + musl 1.2.6; `cargo make pkgs`: 27 plan products from `pkgs/` (sha256-pinned sources, upstream OpenPGP signatures checked against `pkgs/keys/`, SPDX licences, `pkgs/lock.json`), among them `pkg:llvm`, the kernel and the vendor's Rust 1.99.1, which builds `pkg:oath` against `pkg:llvm`'s musl; rebuilds are bit-identical | Sigstore-only (Python, Perl) and unsigned upstreams rest on sha256 alone |
+| Toolchain and native packages | partial | `cargo make bootstrap` makes the first Clang/LLVM 23.1.3 + musl 1.2.6; `cargo make pkgs`: 27 plan products from `pkgs/` (sha256-pinned sources, upstream OpenPGP signatures checked against `pkgs/keys/`, SPDX licences, `pkgs/lock.json`), among them `pkg:llvm`, the kernel and the vendor's Rust 1.99.1, which builds `pkg:oath` against `pkg:llvm`'s musl; rebuilds are bit-identical | Sigstore-only and unsigned upstreams rest on sha256 alone |
 | Network | partial | `net:net0` dhcp (default) or static; NIC renamed to `net0`; a supervised DHCP client renews the lease; time from pool.ntp.org (`svc:time`) | `actual.lease` shows the first lease; one NIC, chosen at boot |
 | SSH | shipped | dropbear server as `home`, keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` for `home` (clean env, groups dropped) | — |
 | Devices | partial | modules load by modalias at boot and on kernel request; `dev:net0`, `dev:ttyS0` inventory | No hotplug; no discovery (disks are not listed) |

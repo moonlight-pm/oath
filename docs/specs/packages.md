@@ -9,8 +9,8 @@ vendor's own release pinned by sha256.
 **Status:** partly built. The store, pins, needs graph, descriptions,
 components and advisories are built. The native rule holds for the
 image: every userspace package in it is built from pinned source by an
-Oath plan (`pkgs/`, [builds.md](builds.md)). The publish allowlist and
-the pack manifest are target.
+Oath plan (`pkgs/`, [builds.md](builds.md)). The publish allowlist is
+built; the pack manifest is target.
 
 Replaces: T11, T12, T18, T20, T32, T41, T42, T44, and the packaging
 parts of T24 and T35.
@@ -78,7 +78,7 @@ not a repository kind and not canonical.
 
 Host side: `cargo make store --name <n> --from <dir> [--tar]` hashes a
 tree into `.cache/oath/store`. `cargo make publish --dest <dir>` copies
-cached tarballs and advisories into an origin tree.
+the publishable packs and their advisories into an origin tree (below).
 
 ## Components and advisories (built)
 
@@ -122,14 +122,22 @@ nothing in it comes from nixpkgs.
   and the store is never rolled back by undo.
 - **RPATHs** inside packs point at hash paths, not at `live`, so a
   re-pin cannot change a running program's libraries.
-- **Publish allowlist.** Only packages named by a profile, each with a
-  license on record, can be published.
 - **Pack manifest.** Every pack the image ships is listed with its
   source, pin and license in one file.
 - Out of scope for now: signatures on Oath's own packs and indexes
   (upstream sources are signature-checked at build time, see
-  builds.md), reaping unused
-  realizations, peer discovery.
+  builds.md), reaping unused realizations, peer discovery.
+
+## Publish allowlist (built)
+
+`cargo make publish` puts on an origin only the packages a seed profile
+names (present or not), at the hash the tree records (`pkgs/lock.json`,
+or `pkg:oath`'s last build), each with a licence on record: the SPDX
+expression in `lock.json`, or for `pkg:oath` the workspace licence AND
+every crate's from its `components.json`. It refuses the whole publish
+if one is not built, has no licence, or has a `run` need that no
+profile names. `INDEX.md` lists name, hash and licence. Source packs
+are not published (open question in decisions.md: GPL source).
 
 ## Pack layout
 
