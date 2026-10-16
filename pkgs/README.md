@@ -59,8 +59,8 @@ binaries their own musl loader and `libgcc_s.so.1`. It builds the Oath
 binaries, which are not a directory here: `cargo make build` (or
 `cargo make pkgs oath`) packs this tree and every crate in `Cargo.lock`
 into `pkg:oath-src` and builds `pkg:oath` with
-`crates/oath-make/src/oath-pkg.sh`. That product follows the tree and
-is not in the lock.
+`crates/oath-make/src/oath-pkg.sh`, linked by `pkg:llvm`'s clang against
+its musl. That product follows the tree and is not in the lock.
 
 `cargo make pkgs --list` shows every package, its licence and its pins.
 `cargo make build` packs the image from the products in `lock.json`:

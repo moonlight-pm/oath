@@ -114,7 +114,8 @@ cargo make pkgs [names]
   pkg:linux: boot/vmlinuz, boot/config, lib/modules/<release>/
 cargo make build [--profile base]
   pkg:oath: this tree + every crates.io crate in Cargo.lock → pkg:oath-src;
-    `cargo build` with pkg:rust in the sandbox → bin/oath,
+    `cargo build` with pkg:rust in the sandbox, linked by pkg:llvm's
+    clang against its musl → bin/oath,
     lib/oath/{init,serial-login,sudo}, boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)

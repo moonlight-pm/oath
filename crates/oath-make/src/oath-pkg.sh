@@ -16,6 +16,13 @@ replace-with = "vendored"
 [source.vendored]
 directory = "/tmp/vendor"
 EOF
+# The musl binaries link with pkg:llvm's clang against its sysroot, as
+# every C package does. Not `cc`: its clang.cfg links -static, which
+# turns a proc macro (a shared object rustc loads) into an executable.
+sysroot=$(cd "$(cc -print-resource-dir)/../../../sysroot" && pwd)
+printf '#!/bin/sh\nexec clang --no-default-config --sysroot=%s "$@"\n' "$sysroot" >/tmp/cc
+chmod +x /tmp/cc
+export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=/tmp/cc
 cp -R "$FILES/tree" /tmp/oath
 cd /tmp/oath
 musl="--frozen --target x86_64-unknown-linux-musl -p oath -p oath-init"
@@ -28,6 +35,14 @@ cp $r/oath /out/bin/oath
 cp $r/oath-init /out/lib/oath/init
 cp $r/serial-login $r/sudo /out/lib/oath/
 cp target/x86_64-unknown-uefi/release/oath-efi.efi /out/boot/BOOTX64.EFI
+# One musl: Rust's self-contained one was compiled by gcc, pkg:llvm's by
+# clang, and each object names its compiler in .comment.
+for f in /out/bin/oath /out/lib/oath/*; do
+	if llvm-readelf -p .comment "$f" | grep -q 'GCC:'; then
+		echo "$f links objects compiled by gcc, not pkg:llvm's musl" >&2
+		exit 1
+	fi
+done
 
 # components.json: oath, and the crates.io crates its binaries build from,
 # sorted by purl.

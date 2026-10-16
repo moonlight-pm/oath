@@ -9,14 +9,13 @@ append history (git has it).
 
 ## Now
 
-1. **Native base leftovers (phase 5).** The Oath binaries are
-   `pkg:oath`, built from this tree in the sandbox by the vendor's Rust
-   1.99.1 (`pkg:rust`), but they link Rust's bundled musl 1.2.5, not
-   `pkg:llvm`'s 1.2.6. Sources are sha256-pinned but upstream
-   signatures are not checked; nothing enforces a licence allowlist on
-   publish; build outputs have no manifest. Next: link `pkg:oath`
-   against `pkg:llvm`'s musl and libunwind (clang as the linker, not
-   the self-contained crt), so one musl ships.
+1. **Native base leftovers (phase 5).** One musl ships: since
+   2026-10-16 `pkg:oath` is linked by `pkg:llvm`'s clang against its
+   musl 1.2.6 and libunwind, and its plan fails on any gcc-built
+   object. Sources are sha256-pinned but upstream signatures are not
+   checked; nothing enforces a licence allowlist on publish; build
+   outputs have no manifest. Next: verify upstream signatures in
+   `cargo make pkgs`'s fetch, against signing keys pinned in `pkgs/`.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
@@ -31,8 +30,8 @@ the image `install` ships, and each case makes what it needs with
 pool.ntp.org. canto was reinstalled over SSH, unattended, on
 2026-10-16 from the image with the kernel built by `pkg:llvm` (its Oath
 binaries were still the host rustc's) and passes all 24 `metal`
-harness cases (`cargo make check --target`). 30 QEMU cases and the
-`install --qemu` rehearsal pass.
+harness cases (`cargo make check --target`); it has not run `pkg:oath`
+yet. 30 QEMU cases and the `install --qemu` rehearsal pass with it.
 
 ## Machines
 

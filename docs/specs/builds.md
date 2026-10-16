@@ -155,17 +155,22 @@ Zig is not used (R9).
 - **The Oath binaries** (`pkg:oath`). `cargo make build` packs this tree
   (the workspace, `brand/logo-white.png`, and every crates.io crate in
   `Cargo.lock`, fetched and checked against the lock's sha256) into
-  `pkg:oath-src`, and builds it with `pkg:rust` and busybox in the
-  sandbox: the crates are a vendored source, cargo runs `--frozen`.
+  `pkg:oath-src`, and builds it with `pkg:rust`, `pkg:llvm` and busybox
+  in the sandbox: the crates are a vendored source, cargo runs `--frozen`.
   Product: `bin/oath`, `lib/oath/{init,serial-login,sudo}`,
   `boot/BOOTX64.EFI` and a `components.json` listing every crate in the
   binaries (`pkg:cargo/…`, from `cargo tree`). The product follows the
   tree, so it is not in `pkgs/lock.json`; an unchanged tree is not
   rebuilt (`build/pkgs/oath.json`). It rebuilds bit-identically
   (oath-efi links with `/Brepro`, so its PE timestamp is a hash). The
-  binaries are static musl linked by `rust-lld` with the Rust musl
-  target's self-contained crt and libc: Rust's bundled musl 1.2.5, not
-  `pkg:llvm`'s 1.2.6. The build host's Rust compiles only `oath-make`.
+  musl binaries are static PIE, linked by `pkg:llvm`'s clang (without
+  its `clang.cfg`, whose `-static` would break proc macros) with
+  `-C link-self-contained=no`: `pkg:llvm`'s musl 1.2.6, libunwind and
+  startup files, as every C package. Rust's self-contained musl was
+  compiled by gcc, so the plan fails if a binary's `.comment` names
+  GCC. Build scripts still link that musl (cargo gives them none of the
+  target's rustflags); they run only in the sandbox. The build host's
+  Rust compiles only `oath-make`.
 - **Desk later.** Mesa, Wayland, a compositor and the rest come after
   the base, as plans (phase 8).
 
