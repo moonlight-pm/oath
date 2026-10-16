@@ -71,10 +71,14 @@ bit-identical products. The image takes every userspace package from
 the only loader); the installer uses sfdisk, wipefs and native mkfs.
 27 harness cases and the `install --qemu` rehearsal pass.
 
-Not done, carried forward: the kernel built by a plan with our compiler,
-the Rust toolchain as a pinned vendor pack, upstream signature checks
-(sources are sha256-pinned), a publish allowlist that reads the
-licences in `lock.json`, immutable build outputs with a manifest.
+Since: the kernel is a plan built by `pkg:llvm` (2026-10-15), and the
+Oath binaries are `pkg:oath`, built by the vendor's Rust pack
+`pkg:rust` (2026-10-16).
+
+Not done, carried forward: one musl (the Oath binaries link Rust's
+bundled 1.2.5), upstream signature checks (sources are sha256-pinned),
+a publish allowlist that reads the licences in `lock.json`, immutable
+build outputs with a manifest.
 
 ## 6. Reinstall — active
 
