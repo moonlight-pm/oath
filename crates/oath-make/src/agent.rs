@@ -154,7 +154,6 @@ fn run_qemu(
     let dir = output.dir.join("agent");
     let vms = base.join(format!("{}-agent", utc_stamp()));
     let cwd = vms.join("cwd");
-    let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir)?;
     fs::create_dir_all(&cwd)?;
     eprintln!(
@@ -418,9 +417,12 @@ fn print_outcome(o: &Outcome) {
     eprintln!("{:5}  {}{cost}{turns}{detail}", if o.pass { "PASS" } else { "FAIL" }, o.task);
 }
 
-/// Write the report, print the totals, and return the exit code.
+/// Write the report, print the totals, and return the exit code (this
+/// run's tasks only). A run of some tasks replaces their entries and keeps
+/// the others', as their transcripts stay.
 fn finish(run: &Run, mut results: Vec<Outcome>, report: &Path, place: Value) -> Result<i32> {
     results.sort_by(|a, b| a.task.cmp(&b.task));
+    let time = utc_rfc3339();
     let tasks: Vec<Value> = results
         .iter()
         .map(|o| {
@@ -431,10 +433,13 @@ fn finish(run: &Run, mut results: Vec<Outcome>, report: &Path, place: Value) -> 
                 "cost": o.cost,
                 "turns": o.turns,
                 "detail": o.detail,
+                "time": time,
             })
         })
         .collect();
-    let mut doc = json!({ "time": utc_rfc3339(), "model": run.model, "tasks": tasks });
+    let before: Option<Value> =
+        fs::read_to_string(report).ok().and_then(|t| serde_json::from_str(&t).ok());
+    let mut doc = json!({ "time": time, "tasks": merge(before.as_ref(), tasks) });
     if let (Some(d), Some(p)) = (doc.as_object_mut(), place.as_object()) {
         d.extend(p.clone());
     }
@@ -454,9 +459,42 @@ fn finish(run: &Run, mut results: Vec<Outcome>, report: &Path, place: Value) -> 
     Ok(if passed == results.len() { 0 } else { 1 })
 }
 
+/// The entries of an earlier report for tasks this run did not run, then
+/// this run's, by task name.
+fn merge(before: Option<&Value>, now: Vec<Value>) -> Vec<Value> {
+    let mut all: Vec<Value> = before
+        .and_then(|b| b["tasks"].as_array())
+        .into_iter()
+        .flatten()
+        .filter(|t| !now.iter().any(|n| n["task"] == t["task"]))
+        .cloned()
+        .collect();
+    all.extend(now);
+    all.sort_by(|a, b| a["task"].as_str().cmp(&b["task"].as_str()));
+    all
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_partial_run_replaces_only_its_tasks() {
+        let before = json!({ "tasks": [
+            { "task": "rename", "pass": true, "model": "haiku" },
+            { "task": "diagnose", "pass": false, "model": "haiku" },
+        ]});
+        let now = vec![json!({ "task": "diagnose", "pass": true, "model": "sonnet" })];
+        let all = merge(Some(&before), now);
+        assert_eq!(
+            all,
+            [
+                json!({ "task": "diagnose", "pass": true, "model": "sonnet" }),
+                json!({ "task": "rename", "pass": true, "model": "haiku" }),
+            ]
+        );
+        assert_eq!(merge(None, vec![json!({ "task": "a" })]).len(), 1);
+    }
 
     #[test]
     fn repo_tasks_parse() {

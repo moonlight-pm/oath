@@ -324,11 +324,15 @@ machine's `oath mcp` and a task, and nothing else.
    passes. **Done 2026-10-17:** all 46 cases pass. Updating canto and
    running the metal cases waits for Joshua to ask.
 2. The agent check. Done when every task passes with the default model
-   in QEMU. **Built 2026-10-17, not yet passed:** a dry run reached
-   the model call (Claude Code connected to the guest's `oath mcp`
-   over SSH and listed its 20 tools), but the `ANTHROPIC_API_KEY` in
-   novus's environment was refused as invalid, so no task has run
-   against a model yet.
+   in QEMU. **Built 2026-10-17; 4 of 5 pass.** The first run (haiku,
+   output `e3a11645f14c`, $0.0083 in all) passed `rename`, `service`,
+   `undo` and `reboot`. Each time the model read `index` first, then
+   set, diffed, applied and looked again; it passed `confirm` only for
+   the reboot. Its one wrong guess (a `description` field on a `svc`)
+   came back with the CLI's hint and it corrected itself. `diagnose`
+   never reached the model: its setup required an exit 0 from an apply
+   whose service cannot start, which is an error. The setup now
+   expects that error; the task waits for a rerun.
 3. What step 2's transcripts show is missing, and: resources
    (`oath://index`, `oath://schema/<kind>`,
    `oath://object/<kind>/<name>`), filing a plan from text

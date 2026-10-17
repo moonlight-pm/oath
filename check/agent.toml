@@ -66,8 +66,9 @@ expect = [
 [[task]]
 name = "diagnose"
 prompt = "svc:broken keeps failing. Find out why and fix it."
+# The apply is an error (the service never runs) and is logged as one.
 setup = [
-  { run = "sudo oath new svc:broken --from-json '{\"exec\":[\"/bin/slep\",\"600\"]}' && sudo oath apply svc:broken" },
+  { run = "sudo oath new svc:broken --from-json '{\"exec\":[\"/bin/slep\",\"600\"]}' && sudo oath apply svc:broken", fails = true, expect = ["did not become running"] },
 ]
 expect = [
   { run = "sleep 3; oath get svc:broken", expect = ["state: \"running\""] },

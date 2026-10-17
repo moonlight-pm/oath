@@ -150,7 +150,8 @@ did not ask for it. It is opt-in and never gates `install`: it costs
 money (the budget per task is in the file) and a model is not
 deterministic. The key is `ANTHROPIC_API_KEY` from the environment; it
 refuses to run without one and writes it nowhere. Results are in
-`build/out/<id>/agent-check.json` (task, model, pass, cost, turns),
+`build/out/<id>/agent-check.json` (task, model, pass, cost, turns; a
+run of some tasks replaces only their entries),
 transcripts in `build/out/<id>/agent/<task>.jsonl`, and each VM's
 serial console and steps under `build/check/<time>-agent/<task>/`; with
 `--target`, all of it is under `build/check/<time>-<host>-agent/`.

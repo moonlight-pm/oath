@@ -14,11 +14,12 @@ append history (git has it).
    (both MCP eras, 20 tools, `--read-only`, `actor.via` and `confirm` in
    the apply log) passes the QEMU harness with its five `mcp-*` cases,
    and `cargo make check --agent` runs the five tasks of
-   `check/agent.toml`. No task has met a model yet: the
-   `ANTHROPIC_API_KEY` in novus's environment is refused as invalid.
-   Next: with a working key, `cargo make check --agent` (haiku) until
-   every task passes in QEMU; then, when Joshua asks, `cargo make
-   update` canto and run the metal cases and `--agent --target` there.
+   `check/agent.toml`. haiku passed `rename`, `service`, `undo` and
+   `reboot` on the first run; `diagnose` failed in its own setup (now
+   fixed). The key in this session's environment is refused, so Joshua
+   runs it. Next: `cargo make check --agent --case diagnose`; then,
+   when Joshua asks, `cargo make update` canto and run the metal cases
+   and `--agent --target` there.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
