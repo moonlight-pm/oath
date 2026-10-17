@@ -42,7 +42,7 @@ Desired and actual are separate files. You may `cat` any of these;
 | `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `openssh`, `util-linux`, `dosfstools`, `curl` | Store + `/bin` symlink farm |
 | `net` | `net:net0` | The link: `dhcp` or a static address |
 | `ssh` | `ssh:local` | Keys that may log in as `home` |
-| `dev` | `dev:net0`, `dev:ttyS0` | Hardware inventory |
+| `dev` | `dev:net0`, `dev:disk-pci-…` (discovered) | Hardware inventory |
 | `plan` | none until you file one | Hashed `plan.plan`; `oath build` writes a pkg tree |
 
 `host` and `net` share a schema between desired and actual. `svc`
@@ -91,11 +91,15 @@ only takes `--overlay`; `--profile` on it is refused.
 
 ## Devices
 
-`dev:*` is the hardware inventory. `/dev` is nodes from devtmpfs, not
-the admin UI. There is no udevd. `dev:net0` (the NIC; `net:net0` is
-the link) and `dev:ttyS0` are seeded, are not removable, and get their
-actual refreshed at boot. Disks are not listed yet; discovery is the
-target ([devices spec](../specs/devices.md)).
+`dev:*` is the hardware inventory, discovered by PID 1 at boot and
+again whenever a disk, NIC or serial port comes or goes: disks are
+`dev:disk-<bus path>` (`dev:disk-pci-0000.00.1f.2-ata-1`), the NIC is
+`dev:net0` (`net:net0` is its link) and other NICs `dev:net1`, …, a real
+UART keeps its kernel name (`dev:ttyS0`). Actual has the `node`, bus
+`path`, `driver`, and for a disk its `size`, `model` and `removable`.
+A device that goes away loses its object. `/dev` is nodes from
+devtmpfs, not the admin UI. There is no udevd; PID 1 loads the driver
+a hot-plugged device asks for ([devices spec](../specs/devices.md)).
 
 PID 1 also mounts, outside the catalog: `/proc`, `/sys`, devtmpfs
 `/dev` with `/dev/pts`, tmpfs `/tmp`, `/dev/shm` and `/run`, and

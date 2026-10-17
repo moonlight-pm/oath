@@ -168,7 +168,5 @@ Without them the copy is crash-consistent (`sync` plus btrfs CoW).
 
 ## Known gaps
 
-- A device plugged in after boot gets no driver until the next boot
-  (no hotplug yet).
 - A panic in PID 1 panics the kernel; `panic=10` reboots the machine
   ten seconds later.

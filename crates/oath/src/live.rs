@@ -151,11 +151,7 @@ impl ApplyHooks for Live {
 
     fn converge_dev(&self, id: &ObjectId, desired: &Dev) -> Result<DevActual> {
         if self.catalog_root.as_path() != Path::new("/oath") {
-            return Ok(DevActual {
-                present: desired.present,
-                class: String::new(),
-                node: String::new(),
-            });
+            return Ok(DevActual { present: desired.present, ..Default::default() });
         }
         let actual = converge_dev(id, desired)?;
         tel(

@@ -15,6 +15,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
   kernel cmdline: oath.root=<dev> oath.subvol=@ console=ttyS0 panic=10 …
   initrd /init = oath-init (PID 1, static musl)
     catch SIGTERM/SIGINT (reboot), SIGUSR1 (halt), SIGUSR2 (poweroff)
+    open the uevent socket (netlink) before the first coldplug
     mount /proc /sys /dev /dev/pts; tmpfs /tmp /run /dev/shm; cgroup2
     kernel modprobe helper = /lib/oath/modprobe (this binary)
     coldplug by modalias (display and sound wait until services start)
@@ -23,13 +24,14 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
     seed only if /oath/objects is missing; regenerate a missing INDEX.md
     under /oath/.lock: apply host, net (one-shot udhcpc for dhcp), ssh
-      from their applied state (actual.json); probe dev
+      from their applied state (actual.json); discover dev:* from sysfs
     listen on /oath/run/init.sock; start svc:* from applied.json in
       `wants` order (a cycle skips only its members) and the DHCP client;
       after `ready`, run `oath verify` once (re-hash the linked store)
     main loop: shutdown request? reap, pump logs, start due restarts,
       the probation timer (runs `oath undo --expired` once it is up),
-      answer converge requests
+      uevents (load the module an added device asks for; discover
+      dev:* again after a block/net/tty change), answer converge requests
 ```
 
 QEMU (`cargo make run|up|start`) boots the same kernel and initrd with

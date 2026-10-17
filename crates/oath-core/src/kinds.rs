@@ -335,13 +335,36 @@ pub struct Dev {
     pub present: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DevActual {
     pub present: bool,
+    /// `block`, `net` or `tty`.
     #[serde(default)]
     pub class: String,
+    /// The node or sysfs entry (`/dev/sda`, `/sys/class/net/net0`).
     #[serde(default)]
     pub node: String,
+    /// Where it sits on the buses (`pci-0000:00:1f.2-ata-1`): what its
+    /// name is made from.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub path: String,
+    /// The kernel driver bound to it.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub driver: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub model: String,
+    /// Bytes, for a disk.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub size: u64,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub removable: bool,
+    /// Hardware address, for a NIC.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub mac: String,
+}
+
+fn is_zero(n: &u64) -> bool {
+    *n == 0
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

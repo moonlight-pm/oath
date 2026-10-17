@@ -94,7 +94,10 @@ any login shell and pins the new host key; the seed lost QEMU's
 every metal case. PID 1 loads modules by modalias and is the kernel's
 modprobe helper; every built module ships with depmod's index. canto
 loads exactly its own drivers and passes all 24 metal cases
-(2026-10-15). `svc:time` keeps the clock from pool.ntp.org (R12). Left: buccina (parked by Joshua).
+(2026-10-15). `svc:time` keeps the clock from pool.ntp.org (R12).
+Devices are discovered and hot-plugged, and `cargo make update` moves
+an installed machine to a new output without a reinstall
+(2026-10-16). Left: buccina (parked by Joshua).
 
 ## 7. Agent surface — planned
 

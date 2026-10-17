@@ -25,5 +25,5 @@ arguments). That file is generated from the live catalog.
 
 These are real today and scheduled to be fixed. Plan around them.
 
-- A device plugged in after boot gets no driver until the next boot
-  (no hotplug yet).
+- A panic in PID 1 panics the kernel; `panic=10` reboots the machine
+  ten seconds later.

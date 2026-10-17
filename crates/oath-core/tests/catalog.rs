@@ -120,13 +120,13 @@ fn seed_lists_host() {
         "pkg:curl",
         "net:net0",
         "ssh:local",
-        "dev:net0",
-        "dev:ttyS0",
         "snap:current",
     ] {
         assert!(ids.iter().any(|i| i == want), "missing {want}");
     }
-    assert_eq!(ids.len(), 17, "{ids:?}");
+    // Devices are discovered on the machine, not seeded.
+    assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
+    assert_eq!(ids.len(), 15, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -390,6 +390,8 @@ fn svc_wants_cycle_refuses_apply() {
 #[test]
 fn dev_not_removable() {
     let (_d, cat) = tmp();
+    let found = vec![("net0".to_string(), oath_core::DevActual::default())];
+    cat.write_devices(&cat.lock().unwrap(), &found).unwrap();
     let id: ObjectId = "dev:net0".parse().unwrap();
     let mut fields = Map::new();
     fields.insert("present".into(), json!(false));
@@ -958,4 +960,33 @@ fn new_fills_in_what_the_type_defaults() {
     }
     assert!(set(&cat, "svc:short", "keep_children", json!(true)).is_ok());
     assert!(set(&cat, "svc:short", "nonsense", json!(true)).is_err());
+}
+
+#[test]
+fn discovered_devices_come_and_go() {
+    let (_d, cat) = tmp();
+    let disk = oath_core::DevActual {
+        present: true,
+        class: "block".into(),
+        node: "/dev/vda".into(),
+        ..Default::default()
+    };
+    let nic = oath_core::DevActual { present: true, class: "net".into(), ..Default::default() };
+    let found = vec![("disk-pci-0000.00.04.0".to_string(), disk), ("net0".to_string(), nic)];
+    let ch = cat.write_devices(&cat.lock().unwrap(), &found).unwrap();
+    assert_eq!(ch, vec!["+dev:disk-pci-0000.00.04.0", "+dev:net0"]);
+    let disk = cat.get(&"dev:disk-pci-0000.00.04.0".parse().unwrap()).unwrap();
+    assert_eq!(disk.actual["node"], "/dev/vda");
+    assert_eq!(disk.meta.status, "in-sync");
+    assert!(cat.diff(None).unwrap().is_empty());
+    assert!(cat.index_text().unwrap().contains("`dev`"));
+    // Same hardware: nothing changes. The disk is pulled: its object goes.
+    assert!(cat.write_devices(&cat.lock().unwrap(), &found).unwrap().is_empty());
+    let ch = cat.write_devices(&cat.lock().unwrap(), &found[1..]).unwrap();
+    assert_eq!(ch, vec!["-dev:disk-pci-0000.00.04.0"]);
+    // try_lock does not wait for a holder.
+    let held = cat.lock().unwrap();
+    assert!(cat.try_lock().unwrap().is_none());
+    drop(held);
+    assert!(cat.try_lock().unwrap().is_some());
 }

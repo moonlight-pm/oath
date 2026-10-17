@@ -23,7 +23,7 @@ mod svc_run;
 mod tel;
 
 pub use catalog::{copy_objects, diff_values, Catalog, CatalogLock, Drift, Object, Verified};
-pub use dev::converge as converge_dev;
+pub use dev::{converge as converge_dev, discover as discover_devices};
 pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;

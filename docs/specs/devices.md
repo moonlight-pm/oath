@@ -1,27 +1,34 @@
 # Devices
 
 Devices are hardware the system found, recorded as `dev:*` objects, and
-the kernel modules and firmware that make them work. Today this is a
-small fixed inventory, and modules load by modalias. The target is
-discovery: devices appear as objects on their own, and device-node and
-mount rules are fields.
+the kernel modules and firmware that make them work. Devices appear as
+objects on their own, and modules load by modalias at boot and on
+hotplug. Device-node and mount rules as fields are the target.
 
-**Status:** partly built. The `dev` kind and modalias loading are
-built. Hotplug and discovery are the target.
+**Status:** built, except rules as fields. Discovery and hotplug were
+built 2026-10-16.
 
 Replaces: T13 (devices), the module and firmware parts of T27 and T38.
 
 ## `dev` kind (built)
 
-- Seeded objects: `dev:net0`, `dev:ttyS0`. Desired is
-  `{ "present": true }`; `present: false` is refused.
-- Actual is `present`, `class` (`block`, `net`, `tty`) and `node`
-  (`/sys/class/net/net0`, `/dev/ttyS0`). Converge probes `/dev` and
-  sysfs for that name. It does not load modules. Unknown names are
-  probed as `/dev/<name>`.
-- The seed had `dev:vda`, QEMU's disk, until 2026-10-14: on metal it
-  was absent, so a fresh install was never in-sync. Disks are not
-  listed until discovery.
+- The seed has no device objects. PID 1 discovers them from sysfs at
+  boot (under the boot lock, after `net0` is named) and again a second
+  after a `block`, `net` or `tty` uevent settles (taking the lock
+  without waiting; if an apply holds it, two seconds later). Each found
+  device gets an object (desired `{ "present": true }`; `present:
+  false` is refused); an object whose device is gone is deleted.
+- Names are stable: a disk is `disk-` plus its bus path with `:` as
+  `.` (`disk-pci-0000.00.1f.2-ata-1`, `disk-pci-0000.00.04.0` for
+  virtio, `…-nvme-1`, `…-usb-1-2`); the NIC PID 1 renamed is `net0` and
+  any other physical NIC `net1`, `net2`, … in kernel-name order; a
+  serial port keeps its kernel name (`ttyS0` when a UART answers,
+  `ttyUSB0`, `ttyACM0`). Loop, RAM, zram, dm, md and nbd devices are
+  not listed.
+- Actual: `present`, `class` (`block`, `net`, `tty`), `node`
+  (`/dev/sda`, `/sys/class/net/net0`), the bus `path`, the bound
+  `driver`, and `size` (bytes), `model`, `removable` for a disk, `mac`
+  for a NIC.
 - `net:net0` is the link configuration; `dev:net0` is the inventory
   entry for the same NIC.
 
@@ -58,6 +65,15 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   `urandom` back to mode 0666, because `mdev -s` recreates them
   root-only.
 
+## Hotplug (built)
+
+PID 1 opens a `NETLINK_KOBJECT_UEVENT` socket before the first
+coldplug (4 MiB buffer, so boot's burst is kept) and drains it every
+loop. An `add` with a `MODALIAS` loads what the alias resolves to, with
+the coldplug index, display and sound included (boot is over); each
+load is logged `hotplug: <module> for <alias>`. Block, net and tty
+events schedule discovery. devtmpfs makes the nodes.
+
 ## Unix floor (built)
 
 Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
@@ -66,17 +82,11 @@ Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
 
 ## Known defects
 
-- No hotplug: a device that appears after the second coldplug (a USB
-  stick plugged in later) gets no driver until the next boot.
-- The inventory is two fixed names; the disk is not in it.
+- NICs other than `net0` are listed but not configured: one NIC, until
+  a machine needs more (network-and-ssh.md).
 
 ## Target
 
-- **Hotplug.** PID 1 listens for kernel uevents and loads the driver a
-  new device asks for, with the same index.
-- **Discovery.** Converge creates `dev:*` for what it finds, named by
-  stable rules (block by bus path, NICs as `net0`, `net1`, …). The
-  seed has no device objects.
 - **Rules as fields.** Ownership and mode of device nodes (for a future
   graphical seat) and filesystems to mount (for a payload's data
   volume) become fields on catalog objects, not code in PID 1.

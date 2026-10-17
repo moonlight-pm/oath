@@ -135,6 +135,62 @@ impl Catalog {
         &self.root
     }
 
+    /// The catalog lock if nobody else holds it, without waiting (PID 1
+    /// must not stall on an `oath apply`).
+    pub fn try_lock(&self) -> Result<Option<CatalogLock>> {
+        fs::create_dir_all(&self.root)?;
+        let file = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(self.root.join(".lock"))?;
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
+            return Ok(Some(CatalogLock { _file: file }));
+        }
+        let err = std::io::Error::last_os_error();
+        if err.raw_os_error() == Some(libc::EWOULDBLOCK) {
+            return Ok(None);
+        }
+        Err(err.into())
+    }
+
+    /// Make the `dev:*` objects what discovery `found`: new hardware gets
+    /// an object (desired `present: true`), hardware that is gone loses
+    /// its object, and the rest get a fresh actual. The caller holds the
+    /// lock. Returns the changes (`+dev:x`, `-dev:y`).
+    pub fn write_devices(
+        &self,
+        _lock: &CatalogLock,
+        found: &[(String, crate::DevActual)],
+    ) -> Result<Vec<String>> {
+        let mut changes = Vec::new();
+        for id in self.ls(Some(KIND_DEV))? {
+            if !found.iter().any(|(n, _)| *n == id.name) {
+                fs::remove_dir_all(self.obj_dir(&id))?;
+                changes.push(format!("-{id}"));
+            }
+        }
+        for (name, actual) in found {
+            let id = ObjectId::new(KIND_DEV, name);
+            let dir = self.obj_dir(&id);
+            if !dir.join("desired.json").is_file() {
+                fs::create_dir_all(&dir)?;
+                write_json(&dir.join("meta.json"), &Meta::new(KIND_DEV, name, "mutate"))?;
+                write_json(&dir.join("desired.json"), &json!({ "present": true }))?;
+                changes.push(format!("+{id}"));
+            }
+            let path = dir.join("actual.json");
+            if read_json::<crate::DevActual>(&path).ok().as_ref() != Some(actual) {
+                write_json(&path, actual)?;
+            }
+        }
+        if !changes.is_empty() {
+            self.write_index()?;
+        }
+        Ok(changes)
+    }
+
     /// Take the catalog lock, waiting up to 30 s for another writer.
     pub fn lock(&self) -> Result<CatalogLock> {
         fs::create_dir_all(&self.root)?;

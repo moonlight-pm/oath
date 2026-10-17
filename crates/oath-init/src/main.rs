@@ -16,6 +16,7 @@ use oath_core::{seed, tel, Catalog, Host, ObjectId, BTRFS_TOP, DEFAULT_ROOT};
 use serde_json::json;
 
 mod gpu;
+mod hotplug;
 mod modules;
 mod probation;
 mod shutdown;
@@ -92,6 +93,7 @@ fn real_main() -> Result<(), String> {
     if cmdline_flag("oath.install") {
         return install_ramdisk();
     }
+    let mut hot = hotplug::Hotplug::open();
 
     if !Path::new("/oath/INDEX.md").exists() {
         load_modules(true);
@@ -138,7 +140,10 @@ fn real_main() -> Result<(), String> {
     // firmware_fb_live() would load amdgpu and hang the NIC forever.
     load_modules(true);
     apply_net();
-    apply_dev();
+    // The inventory is what sysfs has (net0 is named by now).
+    if let (Ok(cat), Ok(lock)) = (Catalog::open(DEFAULT_ROOT), &boot_lock) {
+        hotplug::sync(&cat, lock);
+    }
     ensure_home();
     inject_ssh_from_host();
     apply_ssh();
@@ -168,6 +173,7 @@ fn real_main() -> Result<(), String> {
         sup.pump_logs();
         sup.start_due();
         probation.tick(&mut sup);
+        hot.tick();
         if let Ok((mut s, _)) = listener.accept() {
             let mut buf = [0u8; 64];
             let n = s.read(&mut buf).unwrap_or(0);
@@ -727,30 +733,6 @@ fn apply_net() {
         Err(e) => {
             log(&format!("net: {e}"));
             tel("init", "net", json!({ "ok": false, "err": e.to_string() }));
-        }
-    }
-}
-
-fn apply_dev() {
-    let cat = match Catalog::open(DEFAULT_ROOT) {
-        Ok(c) => c,
-        Err(_) => return,
-    };
-    let Ok(ids) = cat.ls(Some("dev")) else { return };
-    for id in ids {
-        let Ok(obj) = cat.get(&id) else { continue };
-        let Ok(dev) = serde_json::from_value::<oath_core::Dev>(obj.desired) else { continue };
-        match oath_core::converge_dev(&id, &dev) {
-            Ok(actual) => {
-                tel(
-                    "init",
-                    "dev",
-                    json!({ "id": id.to_string(), "present": actual.present, "node": actual.node }),
-                );
-                let dir = Path::new(DEFAULT_ROOT).join("objects/dev").join(&id.name);
-                let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
-            }
-            Err(e) => log(&format!("dev {id}: {e}")),
         }
     }
 }

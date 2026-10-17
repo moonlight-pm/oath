@@ -375,6 +375,23 @@ steps = [
 ]
 
 [[case]]
+name = "devices-discovered"
+about = "PID 1 lists the machine's disk and NIC as dev objects, named by stable rules, with real nodes."
+metal = true
+steps = [
+  { run = "oath ls --kind dev", expect = ["dev:net0", "dev:disk-pci-"] },
+  { run = "oath get dev:net0 --actual; for d in $(oath ls --kind dev | grep disk-); do oath get $d --actual; done; oath diff", expect = ["\"mac\"", "\"driver\"", "\"node\": \"/dev/", "\"size\"", "in-sync"] },
+]
+
+[[case]]
+name = "hotplug-loads-a-driver"
+about = "A device that appears after boot gets its driver from PID 1 (the uevent of an unbound virtio-rng)."
+steps = [
+  { run = "sudo rmmod virtio_rng && ! grep -qw virtio_rng /proc/modules && echo REMOVED", expect = ["REMOVED"] },
+  { run = "for d in /sys/bus/virtio/devices/*; do grep -q '^virtio:d00000004v' $d/modalias && sudo sh -c \"echo add > $d/uevent\"; done; sleep 2; grep -w virtio_rng /proc/modules; oath logs | grep 'hotplug:'", expect = ["virtio_rng", "hotplug: virtio_rng for virtio:d00000004"] },
+]
+
+[[case]]
 name = "modprobe-helper"
 about = "The kernel loads a filesystem module on demand through /lib/oath/modprobe."
 metal = true

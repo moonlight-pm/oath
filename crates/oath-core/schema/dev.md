@@ -9,17 +9,19 @@ devtmpfs, not the admin UI. There is no udevd.
 `/dev`. Loading kernel modules is not this kind. `net:net0` is the
 link; `dev:net0` is the NIC.
 
-The `base` profile seeds `dev:net0` and `dev:ttyS0`. They are not
-removable. PID 1 refreshes their actual at boot.
+PID 1 discovers the objects: at boot, and again when a disk, NIC or
+serial port comes or goes (a device that is gone loses its object).
+Names are stable: `disk-<bus path>` (`disk-pci-0000.00.1f.2-ata-1`),
+`net0` for the NIC `net:net0` configures and `net1`, … for others, and
+the kernel name of a real serial port (`ttyS0`). The seed has none.
 
 ## Fields
 
-- `present` — in inventory. `false` is refused on these objects.
+- `present` — in inventory. `false` is refused.
 
-Actual also has `class` (`block` / `net` / `tty`) and `node`.
-
-Known gap: the inventory is fixed, not discovered. Disks are not
-listed; any other `dev:<name>` probes `/dev/<name>`.
+Actual also has `class` (`block` / `net` / `tty`), `node`, the bus
+`path`, the `driver`, and for a disk `size` (bytes), `model` and
+`removable`, for a NIC `mac`.
 
 ## Example
 

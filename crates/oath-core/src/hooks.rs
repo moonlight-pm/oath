@@ -96,7 +96,12 @@ pub trait ApplyHooks {
             "mouse0" => ("input", "/dev/input/event1"),
             _ => ("unknown", ""),
         };
-        Ok(DevActual { present: true, class: class.into(), node: node.into() })
+        Ok(DevActual {
+            present: true,
+            class: class.into(),
+            node: node.into(),
+            ..Default::default()
+        })
     }
 }
 

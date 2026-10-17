@@ -66,12 +66,6 @@
     },
     "ssh:local": { "authorized": [] },
     "net:net0": { "up": true, "ipv4": "dhcp", "gateway": "", "lease": null },
-    "dev:net0": { "present": true },
-    "dev:ttyS0": { "present": true },
     "snap:current": { "generation": 0 }
-  },
-  "actual": {
-    "dev:net0": { "present": true, "class": "net", "node": "/sys/class/net/net0" },
-    "dev:ttyS0": { "present": true, "class": "tty", "node": "/dev/ttyS0" }
   }
 }
