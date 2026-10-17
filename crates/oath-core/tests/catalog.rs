@@ -179,10 +179,20 @@ fn reboot_needs_confirm() {
     cat.set_fields(&id, fields).unwrap();
     let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
     assert_eq!(err.exit_code(), EXIT_CONFIRM);
-    cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
+    let r = cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
     assert_eq!(*hooks.reboots.lock().unwrap(), 1);
     let obj = cat.get(&id).unwrap();
     assert_eq!(obj.desired["power"], "run");
+    // Power alone is not configuration: no generation, nothing to undo.
+    assert!(r.power_only);
+    assert_eq!(cat.get(&"snap:current".parse().unwrap()).unwrap().actual["generation"], 0);
+    assert_eq!(results(&cat).last().unwrap(), &("ok".to_string(), None));
+    assert!(cat.undo(&Actor::unknown(), &hooks).is_err(), "nothing to undo");
+    // With a real change it is one generation like any other.
+    set(&cat, "host:local", "hostname", json!("both")).unwrap();
+    set(&cat, "host:local", "power", json!("reboot")).unwrap();
+    let r = cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
+    assert!(!r.power_only && r.generation == 1);
 }
 
 #[test]

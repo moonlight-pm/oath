@@ -17,8 +17,9 @@ not this kind. Do not add a Unix user kind — the accounts are always
   `run` is **confirm** (`oath apply --confirm`). The apply asks PID 1
   to shut down cleanly (stop services, sync, remount `/` read-only),
   then reboot or power off. After a reboot apply, desired is set back
-  to `run` so the box does not loop. Plain `reboot` / `poweroff` take
-  the same path without a generation.
+  to `run` so the box does not loop. A power change on its own takes no
+  generation (nothing for undo); plain `reboot` / `poweroff` take the
+  same path.
 - `env` — `NAME=value` map. PID 1 puts these in every `svc` spawn.
   Root-owned `/etc/profile` exports them for logins. Do not write
   `$HOME/.profile`. Empty in the `base` profile.

@@ -433,6 +433,8 @@ fn run() -> oath_core::Result<i32> {
                 );
             } else if r.ids.is_empty() {
                 println!("in-sync");
+            } else if r.power_only {
+                println!("power change applied without a generation (power is not configuration)");
             } else {
                 println!("applied generation {} ({})", r.generation, r.ids.join(", "));
                 if let Some(secs) = r.probation {

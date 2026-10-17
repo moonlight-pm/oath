@@ -80,8 +80,9 @@ oath apply --confirm    # reboots
 
 After a reboot apply, desired `power` is set back to `run` so the box
 does not loop. The apply asks PID 1 for the reboot; PID 1 stops the
-services, syncs and remounts `/` read-only first. Plain `sudo reboot`
-and `sudo poweroff` do the same without a generation.
+services, syncs and remounts `/` read-only first. A power change on its
+own takes no generation (power is not configuration); plain
+`sudo reboot` and `sudo poweroff` do the same.
 
 A change that can cut off SSH goes on **probation** once applied:
 

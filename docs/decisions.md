@@ -8,6 +8,12 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 - **Steam + Minecraft desk.** Which machine, and when. Not before the
   native desk exists.
+- **Spec/status split.** Should status (`actual.json`, `meta.json`)
+  move out of the snapshotted `@` tree (catalog.md target)? Undo already
+  reads only spec, so this changes what `@gen-N` and `@boot-N` hold, not
+  what undo does. PID 1 boots `host`, `net` and `ssh` from
+  `actual.json`, so status outside the snapshot changes what an archived
+  boot starts from. Not built until Joshua decides.
 - **Permissive alternatives.** Joshua (2026-10-16) would like
   permissive replacements for the GPL packages (busybox, btrfs-progs,
   util-linux, dosfstools) some day; not now.

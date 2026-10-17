@@ -46,6 +46,8 @@ pub struct ApplyReport {
     pub halting: bool,
     /// Seconds the apply is on probation (it can cut off SSH), if it is.
     pub probation: Option<u64>,
+    /// Only `host:local` power changed: no generation was taken.
+    pub power_only: bool,
 }
 
 pub trait ApplyHooks {

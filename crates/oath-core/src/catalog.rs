@@ -493,6 +493,31 @@ impl Catalog {
             self.append_log(actor, None, parent, &id_list, "refused", Some(&e.to_string()))?;
             return Err(e);
         }
+        // Power is not configuration: a reboot or halt on its own takes no
+        // generation and leaves undo nothing to take back.
+        if selected
+            .iter()
+            .all(|d| d.id.kind == KIND_HOST && d.fields.iter().all(|(f, _, _)| f == "power"))
+        {
+            let mut report = ApplyReport {
+                generation: parent,
+                ids: id_list.clone(),
+                power_only: true,
+                ..Default::default()
+            };
+            if let Err(e) = self.converge_selected(&selected, hooks, &mut report) {
+                self.append_log(actor, None, parent, &id_list, "error", Some(&e.to_string()))?;
+                return Err(e);
+            }
+            self.append_log(actor, None, parent, &id_list, "ok", None)?;
+            self.write_index()?;
+            if report.rebooting {
+                hooks.reboot()?;
+            } else if report.halting {
+                hooks.halt()?;
+            }
+            return Ok(report);
+        }
 
         let generation = self.next_generation()?;
         // The snapshot keeps last-good spec: what was applied before, not
@@ -522,6 +547,7 @@ impl Catalog {
             rebooting: false,
             halting: false,
             probation: None,
+            power_only: false,
         };
         // A change that can cut off SSH is undone unless a new session
         // keeps it, failed or not: a half-converged net is just as likely

@@ -9,30 +9,33 @@ append history (git has it).
 
 ## Now
 
-1. **Target sweep before phase 7.** Joshua (2026-10-16): close every
-   target in the specs short of phase 8. Done: R13 source on origins,
-   probation with rollback, the cycle reason and shutdown order, DHCP
-   renewals in actual, store integrity (`oath verify`), schemas
-   generated from the types with `oath new` defaults, install's
-   build-host guard, `cargo make update` (QEMU rehearsal passed),
-   device discovery and hotplug, surviving a PID 1 panic. Left: a
-   catalog reboot without a generation.
-2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+1. **canto onto the new base (needs Joshua).** canto runs output
+   `97c1f7409deb` (pruned from `build/out`); every target short of the
+   desk landed after it. Next, when Joshua says so:
+   `cargo make update --target home@10.0.0.3 --confirm --reboot`, then
+   `cargo make check --target home@10.0.0.3` (31 metal cases now).
+2. **Spec/status split (Open).** The last catalog target: whether status
+   leaves the snapshotted tree (docs/decisions.md). Next: Joshua decides.
+3. **Phase 7, agent surface.** MCP and agent tooling over `oath --json`.
+   Next: a spec in `docs/specs/` for the adapter, then build it.
+4. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
-   when Joshua picks it up: the Wicket deploy key, or a
-   `cargo make install --usb` stick.
+   when Joshua picks it up: the Wicket deploy key, a
+   `cargo make install --usb` stick, or `cargo make update` once it
+   runs an Oath base.
 
 **State:** phases 1–5 are done; phase 6 is active
-([docs/roadmap.md](docs/roadmap.md)). The image is the native headless
-base: its kernel, the Oath binaries and every package are plan
-products, and its seed carries no test fixtures: the harness checks
-the image `install` ships, and each case makes what it needs with
-`oath new`. Modules load by modalias; `svc:time` keeps the clock from
-pool.ntp.org. canto was reinstalled over SSH, unattended, on
-2026-10-16 from build output `97c1f7409deb` (`pkg:oath` by `pkg:rust`,
-signature-checked sources) and passes all 24 `metal` harness cases
-(`cargo make check --target`). That output passes 31 QEMU cases (among
-them a build on the box) and the `install --qemu` rehearsal.
+([docs/roadmap.md](docs/roadmap.md)). On 2026-10-16 every target in the
+specs short of phase 8 was built, except the spec/status split: source
+beside each pack on origins (R13), probation with automatic rollback,
+store integrity (`oath verify`), schemas generated from the types,
+cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
+device discovery and hotplug, PID 1 surviving its own panic, power
+changes without a generation, install's build-host guard and
+`cargo make update`. The newest output passes 40 QEMU cases, and
+`cargo make update --qemu` moved an installed older output to a newer
+one. Left by design until something needs them: root SSH as a field,
+more NICs, device rules as fields, RPATHs to hash paths (the desk).
 
 ## Machines
 

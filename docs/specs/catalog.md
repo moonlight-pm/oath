@@ -153,7 +153,10 @@ was never applied is deleted at once. Base packages, and `host`, `net`,
    graph has no cycle; the `pkg` needs graph holds. A refusal takes no
    generation, changes nothing, and is logged `refused` with
    `generation: null`.
-3. Write last-good spec into the selected objects, snapshot the live
+3. If the only change is `host:local` `power`, take no generation:
+   converge it, log `ok` with `generation: null`, and reboot or halt.
+   Power is not configuration, so undo has nothing to take back.
+   Otherwise write last-good spec into the selected objects, snapshot the live
    `@` subvolume as `@gen-N` from the top-level mount, then put the
    pending spec back. The snapshot holds what was applied before.
 4. Converge each object through its kind handler; refresh actual. svc:
@@ -218,7 +221,7 @@ and ssh `actual.authorized`, because PID 1 boots from applied state.
 
 - **Physical state split.** Spec and status still share an object
   directory and both are inside the `@` snapshot; undo reads only spec.
-  Status may move out of the snapshotted tree.
+  Status may move out of the snapshotted tree; Open in decisions.md.
 
 ## INDEX
 

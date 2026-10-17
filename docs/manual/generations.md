@@ -53,9 +53,11 @@ until a new session runs `oath keep`. If its time runs out, or the
 machine boots again first, PID 1 runs the same undo itself (logged
 with tty `probation`).
 
-A reboot through the catalog (`power=reboot`) is itself an apply and
-takes a generation; PID 1 then shuts down cleanly. Plain `sudo reboot`
-reboots the same way without one.
+A reboot or halt through the catalog (`power=reboot`) on its own takes
+no generation: power is not configuration, so there is nothing for undo
+to take back. It is logged `ok` without a generation, and PID 1 shuts
+down cleanly. Applied together with other changes, it is part of their
+generation. Plain `sudo reboot` reboots the same way.
 
 ## Boot menu
 
