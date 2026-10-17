@@ -14,12 +14,12 @@ append history (git has it).
    (both MCP eras, 20 tools, `--read-only`, `actor.via` and `confirm` in
    the apply log) passes the QEMU harness with its five `mcp-*` cases,
    and `cargo make check --agent` runs the five tasks of
-   `check/agent.toml`. haiku passed `rename`, `service`, `undo` and
-   `reboot` on the first run; `diagnose` failed in its own setup (now
-   fixed). The key in this session's environment is refused, so Joshua
-   runs it. canto runs `e3a11645f14c` and passes all 37 metal cases.
-   Next: `cargo make check --agent --case diagnose` in QEMU, then
-   `cargo make check --agent --target home@10.0.0.3` on canto.
+   `check/agent.toml`. canto runs `e3a11645f14c`, passes all 37 metal
+   cases, and passes all five tasks with haiku. In QEMU four pass;
+   `diagnose` failed in its own setup (fixed since) and has not been
+   rerun. The key in this session's environment is refused, so Joshua
+   runs it. Next: `cargo make check --agent --case diagnose`; when it
+   passes, phase 7 is done (flip it in the roadmap).
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a

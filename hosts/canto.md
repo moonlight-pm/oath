@@ -24,8 +24,8 @@ Overwrite this file when facts change; do not append a diary.
   `metal` cases (`cargo make check --target home@10.0.0.3`), the five
   `mcp-*` cases among them. SI DPM initializes on both GPUs.
 - **Agent:** `ssh -T home@10.0.0.3 oath mcp` serves the verbs as MCP
-  tools. The real-model check (`check --agent --target`) has not run
-  here yet.
+  tools. All five real-model tasks pass here with haiku (`cargo make
+  check --agent --target home@10.0.0.3`, 2026-10-17).
 - **Screen:** the monitor is on DP-10 of the GPU at `06:00.0`. The
   Apple logo stays until amdgpu loads (about 10 s), then fbcon
   (1920×1080, 240×67) shows `svc:screen`'s `home` shell on tty1.

@@ -332,7 +332,11 @@ machine's `oath mcp` and a task, and nothing else.
    came back with the CLI's hint and it corrected itself. `diagnose`
    never reached the model: its setup required an exit 0 from an apply
    whose service cannot start, which is an error. The setup now
-   expects that error; the task waits for a rerun.
+   expects that error. On canto (2026-10-17, haiku, $0.0088 in all)
+   all five tasks pass, `diagnose` included: the model read the
+   failure reason, looked for a package that provides `slep`, fixed
+   the `exec` typo to `/bin/sleep` and saw the service run. Left:
+   `diagnose` in QEMU.
 3. What step 2's transcripts show is missing, and: resources
    (`oath://index`, `oath://schema/<kind>`,
    `oath://object/<kind>/<name>`), filing a plan from text
