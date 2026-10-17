@@ -33,7 +33,7 @@ r=target/x86_64-unknown-linux-musl/release
 mkdir -p /out/bin /out/lib/oath /out/boot
 cp $r/oath /out/bin/oath
 cp $r/oath-init /out/lib/oath/init
-cp $r/serial-login $r/sudo /out/lib/oath/
+cp $r/serial-login $r/screen-login $r/sudo /out/lib/oath/
 cp target/x86_64-unknown-uefi/release/oath-efi.efi /out/boot/BOOTX64.EFI
 # One musl: Rust's self-contained one was compiled by gcc, pkg:llvm's by
 # clang, and each object names its compiler in .comment.

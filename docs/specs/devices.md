@@ -78,6 +78,7 @@ events schedule discovery. devtmpfs makes the nodes.
 
 Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
 `/sys/fs/cgroup`; `/dev/pts` with mode 666 so `home` can open a PTY;
+`/dev/tty1` owned by `home` (0600) for `svc:screen`;
 `/dev/fd` and the stdio links; a fixed `/etc/machine-id`.
 
 ## Known defects

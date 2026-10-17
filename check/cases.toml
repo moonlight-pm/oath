@@ -326,6 +326,15 @@ steps = [
   { run = "sudo -E true", fails = true, expect = ["not supported"] },
 ]
 
+[[case]]
+name = "screen-is-home"
+about = "With no desk, svc:screen runs a login shell as home on tty1, which home owns."
+metal = true
+steps = [
+  { run = "oath get svc:screen", expect = ["state: \"running\""] },
+  { run = "p=$(oath get svc:screen | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; readlink /proc/$p/fd/0; tr '\\0' ' ' < /proc/$p/cmdline; echo; stat -c 'owner=%u mode=%a' /dev/tty1", expect = ["Uid:\t1\t1\t1\t1", "/dev/tty1", "/bin/busybox sh -l", "owner=1 mode=600"] },
+]
+
 # ---- Phase 5: native packages ----------------------------------------
 
 [[case]]

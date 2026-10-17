@@ -67,7 +67,7 @@ hosts/            one file pair per machine: facts (.md) + install overlay (.jso
 docs/             decisions, capabilities, roadmap, architecture, specs/, manual/
 crates/oath-core  catalog, kinds, apply/undo, seed profiles (seed/*.json)
 crates/oath       the `oath` CLI
-crates/oath-init  PID 1, serial-login, sudo
+crates/oath-init  PID 1, serial-login, screen-login, sudo
 crates/oath-efi   UEFI boot menu and mark
 crates/oath-make  host build tool (`cargo make bootstrap|pkgs|build|check|run|up|start|stop|ssh|install|update|esp|store|publish|advisories`)
 pkgs/             every package that ships: pkg.toml + build.sh per package, lock.json, the toolchain bootstrap;

@@ -23,7 +23,7 @@ gaps · `target` designed, not built.
 | Network | partial | `net:net0` dhcp or static; NIC renamed `net0`; a supervised DHCP client whose renewals show in actual; time from pool.ntp.org | One NIC, chosen at boot |
 | SSH | shipped | dropbear server as `home`, keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` for `home` (clean env, groups dropped) | — |
 | Devices | partial | modules by modalias at boot, on kernel request and on hotplug; `dev:*` discovered from sysfs (disks by bus path, `net0`…, UARTs) at boot and on change | Node ownership and mounts are not fields yet |
-| Seed and overlays | shipped | profile `base`, free of test fixtures; `svc:serial` idles with no UART; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
+| Seed and overlays | shipped | profile `base`, free of test fixtures; `svc:serial` idles with no UART; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, a plan built by `pkg:llvm` (7.3-rc1, Oath fragment and patches, depmod index); vermagic checked; canto runs it | — |
 | Boot | partial | initrd from our PID 1, native busybox and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; boots canto; `cargo make update` moves an installed machine to a new output (rehearsed in QEMU) | `update` not yet run on metal |
 | Image build | shipped | `cargo make build` packs `pkg:oath` and the locked packages into an immutable `build/out/<id>/` with a manifest of every shipped pack; install and `esp` take its id | — |

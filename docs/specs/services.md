@@ -54,7 +54,10 @@ Desired is what the owner is staging; PID 1 never reads it while an
 `applied.json` exists.
 
 The base profile seeds `svc:serial` (root shell on the serial console;
-it idles on a machine with no UART), `svc:sshd`, and `svc:time`.
+it idles on a machine with no UART), `svc:screen` (a login shell as
+`home` on tty1, the screen and keyboard; R15), `svc:sshd`, and
+`svc:time`. A desk profile (phase 8) will set `svc:screen`
+`enabled: false` and own the display.
 
 ## Spawn environment (built)
 

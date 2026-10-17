@@ -126,7 +126,7 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    assert_eq!(ids.len(), 15, "{ids:?}");
+    assert_eq!(ids.len(), 16, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -136,6 +136,9 @@ fn seed_lists_host() {
     assert_eq!(net.desired["ipv4"], "dhcp");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
     assert_eq!(serial.desired["exec"][0], "/lib/oath/serial-login");
+    let screen = cat.get(&"svc:screen".parse().unwrap()).unwrap();
+    assert_eq!(screen.desired["exec"][0], "/lib/oath/screen-login");
+    assert_eq!(screen.desired["user"], "home");
     let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();
     let exec = sshd.desired["exec"].as_array().unwrap();
     assert!(exec.iter().any(|v| v == "-w"));

@@ -107,7 +107,7 @@ package store, or the SSH host keys.
 ## Who you are
 
 Serial login is **root** (break-glass) when `svc:serial` is enabled.
-SSH is **home** (uid 1, `HOME=/home`, shell `/bin/sh`). `sudo` (no
+The screen and keyboard are **home** when `svc:screen` is enabled. SSH is **home** (uid 1, `HOME=/home`, shell `/bin/sh`). `sudo` (no
 password) becomes root. The only groups are `root` and `home`. The
 apply log records uid and tty. `host:local.env` and `TZ` (from
 `host:local.timezone`) are injected by PID 1 into services and written

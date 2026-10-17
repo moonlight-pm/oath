@@ -3,7 +3,8 @@
 An Oath box is reached over SSH as the account `home`, with keys listed
 in the catalog. There is one NIC object, `net:net0`, which takes a
 DHCP lease by default. Root is privilege, not a login: `home` uses
-`sudo`, and the serial console is the root break-glass.
+`sudo`, the screen (tty1) is a `home` shell when no desk owns it, and
+the serial console is the root break-glass.
 
 **Status:** partly built. DHCP, static addresses, SSH keys, host keys,
 the `home` account and `sudo` are built. Changes that can cut off SSH
@@ -94,7 +95,9 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   other option, sets groups, gid and uid to root and checks each call,
   and runs the command with a clean root environment (`PATH=/bin`,
   `HOME=/root`), keeping only `TERM` and `TZ`.
-- The serial console logs in as root. The installer ramdisk accepts
+- The serial console logs in as root; the screen (`svc:screen`, tty1)
+  as `home`, so `/dev/tty1` is home's (PID 1 sets it 0600 after every
+  `mdev -s`). The installer ramdisk accepts
   root over SSH with the baked host keys; the installed system does not.
 
 ## Known defects (from the 2026-10-13 review)

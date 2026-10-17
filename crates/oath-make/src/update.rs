@@ -197,17 +197,17 @@ fn ship_packs(r: &Remote, stage: &Path) -> Result<()> {
 }
 
 /// 4. The output's pins for the packages the machine has, applied in one
-/// generation. Packages the output has and the machine does not are
+/// generation. Objects the output's seed has and the machine does not are
 /// reported, not created: the catalog is the owner's.
 fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
-    let ids = install::ssh_out(r, "oath ls --kind pkg")?;
+    let ids = install::ssh_out(r, "oath ls")?;
     let have: Vec<&str> = ids.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
+    let missing: Vec<String> =
+        stage_ids(stage)?.into_iter().filter(|id| !have.contains(&id.as_str())).collect();
     let mut changed = Vec::new();
-    let mut missing = Vec::new();
     for (name, pin) in stage_pins(stage)? {
         let id = format!("pkg:{name}");
         if !have.contains(&id.as_str()) {
-            missing.push(id);
             continue;
         }
         let cur = install::ssh_out(r, &format!("oath --json get {id} --desired"))?;
@@ -219,7 +219,10 @@ fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
         changed.push(id);
     }
     if !missing.is_empty() {
-        eprintln!("not on the machine, left alone: {}", missing.join(" "));
+        eprintln!(
+            "in the output's seed, not on the machine, left to its owner (oath new): {}",
+            missing.join(" ")
+        );
     }
     if changed.is_empty() {
         eprintln!("every package is already at the output's pin");
@@ -367,6 +370,27 @@ fn stage_packs(stage: &Path) -> Result<Vec<(String, String)>> {
             let hash = e.file_name().to_string_lossy().into_owned();
             if oath_core::is_realization_id(&hash) && e.path().is_dir() {
                 out.push((name.clone(), hash));
+            }
+        }
+    }
+    out.sort();
+    Ok(out)
+}
+
+/// Every object the output's seed made, generations and devices aside.
+fn stage_ids(stage: &Path) -> Result<Vec<String>> {
+    let mut out = Vec::new();
+    let dir = stage.join("oath/objects");
+    for kind in fs::read_dir(&dir).with_context(|| format!("read {}", dir.display()))? {
+        let kind = kind?;
+        let k = kind.file_name().to_string_lossy().into_owned();
+        if !kind.path().is_dir() || k == "snap" || k == "dev" {
+            continue;
+        }
+        for e in fs::read_dir(kind.path())? {
+            let e = e?;
+            if e.path().join("desired.json").is_file() {
+                out.push(format!("{k}:{}", e.file_name().to_string_lossy()));
             }
         }
     }

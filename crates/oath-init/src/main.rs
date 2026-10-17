@@ -272,8 +272,9 @@ fn mount_devpts() {
     open_dev_nodes();
 }
 
-/// The nodes every user needs (`/dev/null`, `/dev/urandom`, …) are 0666.
-/// `mdev -s` recreates them root-only, so this runs after every pass.
+/// The nodes every user needs (`/dev/null`, `/dev/urandom`, …) are 0666
+/// and `/dev/tty1` is home's. `mdev -s` recreates them root-only, so this
+/// runs after every pass.
 fn open_dev_nodes() {
     for n in [
         "/dev/null",
@@ -286,6 +287,10 @@ fn open_dev_nodes() {
     ] {
         let _ = fs::set_permissions(n, fs::Permissions::from_mode(0o666));
     }
+    // The screen's terminal is the seat's: `svc:screen` runs as home.
+    let tty = "/dev/tty1";
+    let _ = std::os::unix::fs::chown(tty, Some(oath_core::seat::UID), Some(oath_core::seat::GID));
+    let _ = fs::set_permissions(tty, fs::Permissions::from_mode(0o600));
 }
 
 /// Coldplug by modalias; with `defer_kms`, display and sound wait.

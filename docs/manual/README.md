@@ -4,8 +4,8 @@ How the system works **today**. Not a roadmap. If it is not here, do
 not assume Debian, systemd, or another distro.
 
 Oath is a Linux you administer with `oath`. The live catalog is
-`/oath`. The image is **headless**: you reach it over SSH as `home`,
-or on the serial console as root. There is no desktop.
+`/oath`. There is no desktop: you reach it over SSH or on the screen
+and keyboard as `home`, or on the serial console as root.
 
 | Page | What |
 |------|------|

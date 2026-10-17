@@ -7,7 +7,7 @@
 //! builds only oath-make itself. The product follows the tree, so it is
 //! not locked; a tree that has not changed is not rebuilt.
 //!
-//! Product: `bin/oath`, `lib/oath/{init,serial-login,sudo}`,
+//! Product: `bin/oath`, `lib/oath/{init,serial-login,screen-login,sudo}`,
 //! `boot/BOOTX64.EFI` (oath-efi) and `components.json`.
 
 use std::fs;

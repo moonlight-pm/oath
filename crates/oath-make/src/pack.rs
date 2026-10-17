@@ -100,7 +100,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     ] {
         fs::create_dir_all(stage.join(d))?;
     }
-    for n in ["init", "serial-login", "sudo"] {
+    for n in ["init", "serial-login", "screen-login", "sudo"] {
         copy_file(&lib.join(n), &stage.join("lib/oath").join(n))?;
     }
     fs::write(stage.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
@@ -109,6 +109,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     fs::write(stage.join("lib/oath/backup-daily"), include_str!("backup-daily"))?;
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
+    chmod_exec(&stage.join("lib/oath/screen-login"))?;
     chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
     chmod_exec(&stage.join("lib/oath/ntp-event"))?;
     chmod_exec(&stage.join("lib/oath/backup-send"))?;

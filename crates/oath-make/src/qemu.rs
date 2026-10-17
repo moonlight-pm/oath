@@ -172,9 +172,8 @@ pub fn qemu_args(tools: &Tools, img: &Image, vm: &VmSpec) -> Vec<String> {
 pub const DEFAULT_DISPLAY_WIDTH: u32 = 1280;
 pub const DEFAULT_DISPLAY_HEIGHT: u32 = 800;
 
-/// Graphical boot is the white mark on black. Kernel + init logs stay on serial.
-pub const QUIET_BOOT: &str =
-    "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo drm_kms_helper.fbdev_emulation=0";
+/// Kernel and init logs stay on serial; the screen is `svc:screen`'s tty1.
+pub const QUIET_BOOT: &str = "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo";
 
 fn parse_dim(raw: Option<&str>, default: u32) -> u32 {
     raw.and_then(|s| s.parse().ok()).filter(|&n| (640..=7680).contains(&n)).unwrap_or(default)

@@ -30,6 +30,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R12 | Time comes from pool.ntp.org (`0`–`3.pool.ntp.org`): busybox `ntpd` as `svc:time` in the `base` seed. | Decided by Joshua 2026-10-15; done |
 | R13 | An origin carries each package's source beside it: `cargo make publish` copies the plan that built a pack and the `-src` pack that plan pins, for every published package, GPL or not. | Decided by Joshua 2026-10-16; done |
 | R14 | Spec and status split: every kind that converges keeps the spec it last applied (`applied.json`), and drift and undo read only spec; status (`actual`) is observation only and lives on a tmpfs at `/oath/status`, rebuilt at every boot, outside every snapshot. History that must survive (generation records, a service's last-run record) stays on disk with the spec or the log. | Decided by Joshua 2026-10-16 (option "B then C"); done |
+| R15 | The screen: when no desk is installed, the screen and keyboard (tty1) are a login shell as `home` (`svc:screen` in the `base` seed; root through `sudo`); a desk profile turns it off and owns the display. The serial console stays root. | Decided by Joshua 2026-10-16; done |
 
 ## Standing
 
@@ -46,9 +47,10 @@ acting on anything under **Open**. Replaces `open-questions.md`
   `--confirm`; agents pass it only when the owner asked.
 - **Generations.** btrfs `@` with sibling `@gen-N`; `snap:current`.
   Undo is the snapshot. qcow snapshots are host debugging only.
-- **Principal.** Serial console is root (break-glass). SSH and daily
-  use are Unix user `home` (uid 1, `HOME=/home`). The agent is not a
-  third user. Root SSH is off (`dropbear -w`).
+- **Principal.** Serial console is root (break-glass). SSH, the screen
+  (tty1, when no desk owns it; R15) and daily use are Unix user `home`
+  (uid 1, `HOME=/home`). The agent is not a third user. Root SSH is
+  off (`dropbear -w`).
 - **Packages.** Store `/oath/store/pkg/<name>/<hash>/`, hash is
   SHA-256 of `oath-tree-v1`; `/bin` is a symlink farm; `desired.hash`
   pins and apply verifies. Base packages are not removable. `needs`

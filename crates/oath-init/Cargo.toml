@@ -14,6 +14,10 @@ name = "serial-login"
 path = "src/bin/serial-login.rs"
 
 [[bin]]
+name = "screen-login"
+path = "src/bin/screen-login.rs"
+
+[[bin]]
 name = "sudo"
 path = "src/bin/sudo.rs"
 

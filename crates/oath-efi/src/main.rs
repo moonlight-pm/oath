@@ -299,15 +299,12 @@ fn start_kernel(kernel_path: &str, initrd_path: &str, options: &str) -> Result<(
 }
 
 fn quiet_cmdline(options: &str) -> String {
-    let mut out = String::from(
-        "quiet loglevel=0 vt.global_cursor_default=0 logo.nologo drm_kms_helper.fbdev_emulation=0",
-    );
+    let mut out = String::from("quiet loglevel=0 vt.global_cursor_default=0 logo.nologo");
     for tok in options.split_whitespace() {
         if tok == "quiet"
             || tok.starts_with("loglevel=")
             || tok == "logo.nologo"
             || tok.starts_with("vt.global_cursor_default=")
-            || tok.starts_with("drm_kms_helper.fbdev_emulation=")
             || tok == "console=tty0"
             || tok.starts_with("console=tty0,")
         {

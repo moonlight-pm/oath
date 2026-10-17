@@ -8,6 +8,13 @@
       "restart": "always",
       "enabled": true
     },
+    "svc:screen": {
+      "exec": ["/lib/oath/screen-login"],
+      "wants": [],
+      "restart": "always",
+      "enabled": true,
+      "user": "home"
+    },
     "svc:sshd": {
       "exec": ["/bin/dropbear", "-F", "-E", "-s", "-w", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
       "wants": [],

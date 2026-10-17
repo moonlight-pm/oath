@@ -18,7 +18,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     open the uevent socket (netlink) before the first coldplug
     mount /proc /sys /dev /dev/pts; tmpfs /tmp /run /dev/shm; cgroup2
     kernel modprobe helper = /lib/oath/modprobe (this binary)
-    coldplug by modalias (display and sound wait until services start)
+    coldplug by modalias (display and sound wait until services start;
+      the screen keeps the EFI mark until then, then shows tty1, svc:screen)
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
@@ -58,7 +59,7 @@ btrfs
 
 ```
 /sbin/init → /lib/oath/init        same ELF as the initrd's /init
-/lib/oath/  serial-login, sudo (setuid), udhcpc.script, backup-send, backup-daily;
+/lib/oath/  serial-login, screen-login, sudo (setuid), udhcpc.script, backup-send, backup-daily;
             modprobe and net-lease are links to init (the kernel's module
             helper, and the DHCP script's lease recorder)
 /bin/       symlink farm → /oath/store/pkg/<name>/live/bin/<x>
@@ -95,6 +96,7 @@ btrfs
 | `oath-init` | initrd `/init` | PID 1, root |
 | `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused); `keep_children` |
 | `svc:serial` | `/lib/oath/serial-login` on ttyS0 (idles with no UART) | root (break-glass) |
+| `svc:screen` | `/lib/oath/screen-login` on tty1, then `busybox sh -l` | `home` |
 | `svc:time` | `/bin/ntpd -n` against `0`–`3.pool.ntp.org` | root |
 | DHCP client | `udhcpc -f -i net0`, supervised by PID 1 as `net:net0` | root; renews the lease |
 
@@ -136,7 +138,7 @@ cargo make build [--profile base]
   pkg:oath: this tree + every crates.io crate in Cargo.lock → pkg:oath-src;
     `cargo build` with pkg:rust in the sandbox, linked by pkg:llvm's
     clang against its musl → bin/oath,
-    lib/oath/{init,serial-login,sudo}, boot/BOOTX64.EFI (oath-efi)
+    lib/oath/{init,serial-login,screen-login,sudo}, boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)

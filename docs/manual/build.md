@@ -154,7 +154,7 @@ oath ls
 ```
 
 When `DISPLAY` is set, `run` also opens a gtk window on the guest's
-virtio-gpu. The image has no desktop, so use serial or SSH.
+virtio-gpu: its screen, a shell as `home` (`svc:screen`).
 `OATH_DISPLAY=none` hides the window.
 
 ## Leave the VM
