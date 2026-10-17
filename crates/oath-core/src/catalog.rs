@@ -566,11 +566,27 @@ impl Catalog {
                 ),
                 "from a new SSH session: sudo oath keep; or sudo oath undo",
             );
-            self.append_log(actor, None, parent, &id_list, "refused", Some(&e.to_string()))?;
+            self.append_log(
+                actor,
+                confirm,
+                None,
+                parent,
+                &id_list,
+                "refused",
+                Some(&e.to_string()),
+            )?;
             return Err(e);
         }
         if let Err(e) = self.preflight(&selected, confirm) {
-            self.append_log(actor, None, parent, &id_list, "refused", Some(&e.to_string()))?;
+            self.append_log(
+                actor,
+                confirm,
+                None,
+                parent,
+                &id_list,
+                "refused",
+                Some(&e.to_string()),
+            )?;
             return Err(e);
         }
         // Power is not configuration: a reboot or halt on its own takes no
@@ -586,10 +602,18 @@ impl Catalog {
                 ..Default::default()
             };
             if let Err(e) = self.converge_selected(&selected, hooks, &mut report) {
-                self.append_log(actor, None, parent, &id_list, "error", Some(&e.to_string()))?;
+                self.append_log(
+                    actor,
+                    confirm,
+                    None,
+                    parent,
+                    &id_list,
+                    "error",
+                    Some(&e.to_string()),
+                )?;
                 return Err(e);
             }
-            self.append_log(actor, None, parent, &id_list, "ok", None)?;
+            self.append_log(actor, confirm, None, parent, &id_list, "ok", None)?;
             self.write_index()?;
             if report.rebooting {
                 hooks.reboot()?;
@@ -616,7 +640,15 @@ impl Catalog {
             write_json(&self.obj_dir(id).join("desired.json"), des)?;
         }
         if let Err(e) = snap {
-            self.append_log(actor, None, parent, &id_list, "refused", Some(&e.to_string()))?;
+            self.append_log(
+                actor,
+                confirm,
+                None,
+                parent,
+                &id_list,
+                "refused",
+                Some(&e.to_string()),
+            )?;
             return Err(e);
         }
         self.record_generation(generation, parent, &selected)?;
@@ -645,6 +677,7 @@ impl Catalog {
         if let Err(e) = converged {
             self.append_log(
                 actor,
+                confirm,
                 Some(generation),
                 parent,
                 &id_list,
@@ -654,7 +687,7 @@ impl Catalog {
             let _ = self.write_index();
             return Err(e);
         }
-        self.append_log(actor, Some(generation), parent, &id_list, "ok", None)?;
+        self.append_log(actor, confirm, Some(generation), parent, &id_list, "ok", None)?;
         self.write_index()?;
 
         if report.rebooting {
@@ -715,7 +748,7 @@ impl Catalog {
         }
         probation::clear(&self.root)?;
         let ids = vec![format!("keep:{}", p.generation)];
-        self.append_log(actor, None, p.generation, &ids, "ok", None)?;
+        self.append_log(actor, false, None, p.generation, &ids, "ok", None)?;
         self.write_index()?;
         Ok(p.generation)
     }
@@ -753,7 +786,7 @@ impl Catalog {
             probation::clear(&self.root)?;
         }
         let ids = vec![format!("undo:{generation}")];
-        self.append_log(actor, Some(parent), generation, &ids, "ok", None)?;
+        self.append_log(actor, false, Some(parent), generation, &ids, "ok", None)?;
         self.write_index()?;
         Ok(ApplyReport { generation: parent, ids, ..Default::default() })
     }
@@ -1437,24 +1470,36 @@ impl Catalog {
         self.set_current_generation(generation)
     }
 
+    /// One line of `log/apply.jsonl`. `actor.via` names the tool that ran
+    /// `oath` for the actor (`mcp:<client>`); `confirm: true` marks an apply
+    /// given `--confirm`, so the log answers what an agent forced.
+    #[allow(clippy::too_many_arguments)]
     fn append_log(
         &self,
         actor: &Actor,
+        confirm: bool,
         generation: Option<u64>,
         parent: u64,
         ids: &[String],
         result: &str,
         error: Option<&str>,
     ) -> Result<()> {
-        let rec = json!({
+        let mut who = json!({ "uid": actor.uid, "tty": actor.tty });
+        if let Some(via) = &actor.via {
+            who["via"] = json!(via);
+        }
+        let mut rec = json!({
             "time": now_rfc3339(),
-            "actor": { "uid": actor.uid, "tty": actor.tty },
+            "actor": who,
             "ids": ids,
             "generation": generation,
             "parent_generation": parent,
             "result": result,
             "error": error,
         });
+        if confirm {
+            rec["confirm"] = json!(true);
+        }
         let line = serde_json::to_string(&rec)?;
         let path = self.root.join("log/apply.jsonl");
         if let Some(d) = path.parent() {

@@ -28,7 +28,7 @@ An agent that has never seen Oath should be able to:
 
 Kinds: `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`.
 
-## Status (2026-10-15)
+## Status (2026-10-17)
 
 Early and not a daily driver. A review on 2026-10-13 cut the desk, the
 Steam and Omarchy experiments and the Wicket host image out of the core
@@ -49,6 +49,10 @@ What is true today:
 - The Oath binaries are `pkg:oath`, built from this tree in the same
   sandbox by the vendor's Rust release (`pkg:rust`, pinned by sha256),
   and rebuild bit-identically too.
+- An agent connects with `ssh -T home@<host> oath mcp`: the verbs as
+  MCP tools, the INDEX as instructions, writes through `sudo` and in
+  the apply log like the owner's. `cargo make check --agent` tests that
+  against a real model that has never seen Oath.
 - Still compiled by the build host: stage 0 of the toolchain, and the
   build tool `oath-make`. QEMU and its UEFI firmware come from Nix to
   run images on the build host. None of that ships.

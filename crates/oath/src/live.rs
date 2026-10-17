@@ -50,8 +50,10 @@ impl ApplyHooks for Live {
         if src.is_dir() && self.catalog_root == Path::new("/oath") {
             let src_s = src.to_string_lossy().into_owned();
             let dest_s = dest.to_string_lossy().into_owned();
+            // stdout carries only oath's own answer (`--json`).
             if let Ok(st) = Command::new("btrfs")
                 .args(["subvolume", "snapshot", "-r", &src_s, &dest_s])
+                .stdout(std::io::stderr())
                 .status()
             {
                 if st.success() {

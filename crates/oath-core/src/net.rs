@@ -248,6 +248,7 @@ fn read_lease(dev: &str) -> Option<String> {
 fn ip(args: &[&str]) -> Result<()> {
     let st = Command::new("/bin/ip")
         .args(args)
+        .stdout(std::io::stderr())
         .status()
         .map_err(|e| Error::Msg(format!("ip {}: {e}", args.join(" "))))?;
     if !st.success() {

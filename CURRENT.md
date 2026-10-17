@@ -9,13 +9,16 @@ append history (git has it).
 
 ## Now
 
-1. **Phase 7, agent surface (R16).** The spec is
-   [docs/specs/agent.md](docs/specs/agent.md): `oath mcp` over SSH, one
-   tool per verb, then a real-model check. Next: its step 1, `oath mcp`
-   in `crates/oath/src/mcp.rs` (both MCP eras, every tool,
-   `--read-only`), `oath logs --json`, `oath log -n`, `--via` and
-   `confirm` in the apply log, unit tests, the five `mcp-*` cases;
-   done when the QEMU harness passes.
+1. **Phase 7, agent surface (R16).** Steps 1 and 2 of
+   [docs/specs/agent.md](docs/specs/agent.md) are built: `oath mcp`
+   (both MCP eras, 20 tools, `--read-only`, `actor.via` and `confirm` in
+   the apply log) passes the QEMU harness with its five `mcp-*` cases,
+   and `cargo make check --agent` runs the five tasks of
+   `check/agent.toml`. No task has met a model yet: the
+   `ANTHROPIC_API_KEY` in novus's environment is refused as invalid.
+   Next: with a working key, `cargo make check --agent` (haiku) until
+   every task passes in QEMU; then, when Joshua asks, `cargo make
+   update` canto and run the metal cases and `--agent --target` there.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
@@ -23,7 +26,8 @@ append history (git has it).
    runs an Oath base.
 
 **State:** phases 1–5 are done; phases 6 (buccina left) and 7 are active
-([docs/roadmap.md](docs/roadmap.md)). On 2026-10-16 every target in the
+([docs/roadmap.md](docs/roadmap.md)). On 2026-10-17 `oath mcp` and the
+real-model check were built (R16). On 2026-10-16 every target in the
 specs short of phase 8 was built: the spec/status split (R14), source
 beside each pack on origins (R13), probation with automatic rollback,
 store integrity (`oath verify`), schemas generated from the types,

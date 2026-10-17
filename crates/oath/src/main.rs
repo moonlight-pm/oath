@@ -11,6 +11,7 @@ use oath_core::{
 use serde_json::{json, Map, Value};
 
 mod live;
+mod mcp;
 
 #[derive(Parser)]
 #[command(name = "oath", about = "Oath catalog — the only admin surface.")]
@@ -22,6 +23,10 @@ struct Cli {
     json: bool,
     #[arg(long, global = true)]
     confirm: bool,
+    /// The tool running this command for the user (`mcp:<client>`), kept
+    /// in the apply log as `actor.via`.
+    #[arg(long, global = true, hide = true)]
+    via: Option<String>,
     #[command(subcommand)]
     cmd: Option<Cmd>,
 }
@@ -99,7 +104,11 @@ enum Cmd {
         #[arg(long, hide = true)]
         expired: bool,
     },
-    Log,
+    Log {
+        /// Last N entries (default all).
+        #[arg(short = 'n', long)]
+        lines: Option<usize>,
+    },
     /// Output of a service (`svc:<name>`), the DHCP client (`net:net0`), the
     /// last build of a plan (`plan:<name>`), or PID 1 itself (no id).
     Logs {
@@ -107,6 +116,13 @@ enum Cmd {
         /// Last N lines.
         #[arg(short = 'n', long, default_value_t = 50)]
         lines: usize,
+    },
+    /// The verbs as an MCP server on stdin/stdout, one `oath --json`
+    /// command per tool call: `ssh -T home@<host> oath mcp`.
+    Mcp {
+        /// List only the tools that look, and never run sudo.
+        #[arg(long)]
+        read_only: bool,
     },
     /// Make PID 1 panic, to show that it resumes with every service still
     /// running. Root only. For the harness.
@@ -171,12 +187,17 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Keep) => "keep",
         Some(Cmd::Verify { .. }) => "verify",
         Some(Cmd::Undo { .. }) => "undo",
-        Some(Cmd::Log) => "log",
+        Some(Cmd::Log { .. }) => "log",
         Some(Cmd::Logs { .. }) => "logs",
+        Some(Cmd::Mcp { .. }) => "mcp",
         Some(Cmd::Seed { .. }) => "seed",
         Some(Cmd::PanicInit) => "panic-init",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
+    if let Some(Cmd::Mcp { read_only }) = cli.cmd {
+        return mcp::serve(&cli.root, read_only);
+    }
+    let actor = Actor { via: cli.via.clone(), ..Actor::current() };
     let cat = Catalog::open(&cli.root)?;
     let out: oath_core::Result<i32> = match cli.cmd {
         None => {
@@ -195,6 +216,7 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
+        Some(Cmd::Mcp { .. }) => unreachable!("served above"),
         Some(Cmd::Seed { profile, overlay }) => {
             let fresh = !cli.root.join("INDEX.md").exists();
             if fresh {
@@ -421,7 +443,7 @@ fn run() -> oath_core::Result<i32> {
                 Some(ids.into_iter().map(|s| s.parse()).collect::<oath_core::Result<Vec<_>>>()?)
             };
             let hooks = live::Live { catalog_root: cli.root.clone() };
-            let r = cat.apply_with(ids, cli.confirm, probation, &Actor::current(), &hooks)?;
+            let r = cat.apply_with(ids, cli.confirm, probation, &actor, &hooks)?;
             if cli.json {
                 println!(
                     "{}",
@@ -451,7 +473,7 @@ fn run() -> oath_core::Result<i32> {
             let p = oath_core::probation::read(&cli.root)
                 .ok_or_else(|| Error::hint("no apply is on probation", "oath log"))?;
             oath_core::probation::check_new_session(&p)?;
-            let g = cat.keep(&Actor::current())?;
+            let g = cat.keep(&actor)?;
             if cli.json {
                 println!("{}", json!({"kept": g}));
             } else {
@@ -488,7 +510,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Undo { expired }) => {
             let hooks = live::Live { catalog_root: cli.root.clone() };
             let r = if expired {
-                let actor = Actor { uid: 0, tty: "probation".into() };
+                let actor = Actor::probation();
                 match cat.undo_expired(&actor, &hooks)? {
                     Some(r) => r,
                     None => {
@@ -497,7 +519,7 @@ fn run() -> oath_core::Result<i32> {
                     }
                 }
             } else {
-                cat.undo(&Actor::current(), &hooks)?
+                cat.undo(&actor, &hooks)?
             };
             if cli.json {
                 println!("{}", json!({"generation": r.generation}));
@@ -530,13 +552,28 @@ fn run() -> oath_core::Result<i32> {
                 ));
             }
             let all: Vec<&str> = text.lines().collect();
-            for l in &all[all.len().saturating_sub(lines)..] {
-                println!("{l}");
+            let last = &all[all.len().saturating_sub(lines)..];
+            if cli.json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&json!({
+                        "id": id,
+                        "path": path.display().to_string(),
+                        "lines": last,
+                    }))?
+                );
+            } else {
+                for l in last {
+                    println!("{l}");
+                }
             }
             Ok(0)
         }
-        Some(Cmd::Log) => {
-            let lines = cat.log_lines()?;
+        Some(Cmd::Log { lines: n }) => {
+            let mut lines = cat.log_lines()?;
+            if let Some(n) = n {
+                lines.drain(..lines.len().saturating_sub(n));
+            }
             if cli.json {
                 println!("{}", serde_json::to_string_pretty(&lines)?);
             } else {

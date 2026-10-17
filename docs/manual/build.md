@@ -130,6 +130,31 @@ to say `in-sync` again; if it does not, the run stops there. A reboot
 step waits up to five minutes for a new boot id. Logs are under
 `build/check/<time>-<host>/`. No stamp is written.
 
+### A real model
+
+```sh
+ANTHROPIC_API_KEY=… cargo make check --agent              # every task, haiku
+cargo make check --agent --case rename --model sonnet
+cargo make check --agent --target home@10.0.0.3           # on a machine
+```
+
+`--agent` gives a model that has never seen Oath one MCP server, the
+machine's `ssh -T home@… oath mcp`, and each task in `check/agent.toml`
+(rename the machine, run a service, undo a mistake, fix a failing
+service, reboot), then checks the machine over SSH. The client is
+Claude Code, headless, with no shell, files, memory or `CLAUDE.md`; it
+is a template in `check/agent.toml`, so another client can run the same
+tasks. A task fails if its checks fail, if a change in the apply log did
+not come through MCP, or if the model passed `confirm` where the task
+did not ask for it. It is opt-in and never gates `install`: it costs
+money (the budget per task is in the file) and a model is not
+deterministic. The key is `ANTHROPIC_API_KEY` from the environment; it
+refuses to run without one and writes it nowhere. Results are in
+`build/out/<id>/agent-check.json` (task, model, pass, cost, turns),
+transcripts in `build/out/<id>/agent/<task>.jsonl`, and each VM's
+serial console and steps under `build/check/<time>-agent/<task>/`; with
+`--target`, all of it is under `build/check/<time>-<host>-agent/`.
+
 ## Run it in QEMU
 
 ```sh

@@ -31,11 +31,12 @@ for build and install tooling on the build host.
 | `oath keep` | Keep an apply that is on probation. Run it from a new SSH session |
 | `oath undo` | Put back what the last apply changed (repeat to go further back) |
 | `oath verify [pkg:…]` | Hash linked package trees again against their pins; exit 1 if one changed on disk |
-| `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N`, `keep:N` |
-| `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50 |
+| `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N`, `keep:N`. `-n N` for the last N |
+| `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50; `--json` gives `{id, path, lines}` |
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
 | `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin` |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
+| `oath mcp` | These verbs as an MCP server on stdin/stdout, for an agent ([Agents](#agents)) |
 
 `set`, `new` and `rm` are staging. Nothing is live until `apply`, and
 PID 1 never runs a spec that was not applied. `set` refuses a key the
@@ -113,3 +114,34 @@ apply log records uid and tty. `host:local.env` and `TZ` (from
 `host:local.timezone`) are injected by PID 1 into services and written
 to root-owned `/etc/profile` for logins. `oath apply` does not write
 `$HOME/.profile`.
+
+## Agents
+
+An agent reaches the machine the way the owner does: over SSH as
+`home`, with a key in `ssh:local`. `oath mcp` speaks the Model Context
+Protocol on stdin and stdout, so an MCP client gets the verbs as tools
+and the INDEX as its instructions. Nothing listens on a port; the
+server lives as long as the SSH connection.
+
+```
+claude mcp add canto -- ssh -T -o BatchMode=yes home@10.0.0.3 oath mcp
+ssh -T home@10.0.0.3 oath mcp --read-only    # only the tools that look
+```
+
+Each tool runs one `oath --json` command and returns its JSON: `index`,
+`ls`, `schema`, `get`, `diff`, `log`, `logs` and `verify` look;
+`set_host`, `set_svc`, `set_pkg`, `set_net`, `set_ssh`, `new_svc`,
+`new_pkg`, `rm`, `apply`, `undo`, `keep` and `build` run through
+`sudo`, as the owner's would. A tool's `fields` are the kind's schema,
+so a field added to a kind reaches the tools with nothing else to do.
+A failed command is a tool error carrying the CLI's hint; exit 3 says
+the apply needs `confirm`, which an agent passes only when the owner
+asked for that class of change.
+
+`oath log` shows what came through MCP: such entries have
+`actor.via: "mcp:<client>"`, and an apply given `confirm` has
+`confirm: true`. A change that can cut off SSH goes on probation as
+usual, and the connection that applied it cannot keep it: a new
+`ssh … oath mcp` (or `ssh home@<host> sudo oath keep`) can. The server
+speaks both the current MCP revision (2026-07-28) and the
+`initialize`-based ones before it.

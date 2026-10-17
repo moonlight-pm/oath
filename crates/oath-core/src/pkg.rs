@@ -1036,6 +1036,7 @@ pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
     let wget = find_bin("wget");
     let st = Command::new(&wget)
         .args(["-q", "-O", blob.to_str().unwrap(), &adv_url])
+        .stdout(std::io::stderr())
         .status()
         .map_err(|e| Error::Msg(format!("wget: {e}")));
     let st = match st {
@@ -1084,6 +1085,7 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
     let wget = find_bin("wget");
     let st = Command::new(&wget)
         .args(["-q", "-O", blob.to_str().unwrap(), &url])
+        .stdout(std::io::stderr())
         .status()
         .map_err(|e| Error::Msg(format!("wget: {e}")))?;
     if !st.success() {
@@ -1154,7 +1156,7 @@ fn extract_tar(blob: &Path, dest: &Path) -> Result<()> {
         cmd.arg("-xf");
     }
     cmd.arg(blob);
-    let st = cmd.status().map_err(|e| Error::Msg(format!("tar: {e}")))?;
+    let st = cmd.stdout(std::io::stderr()).status().map_err(|e| Error::Msg(format!("tar: {e}")))?;
     if !st.success() {
         return Err(Error::hint("fetch pack tar extract failed", "oath schema pkg"));
     }

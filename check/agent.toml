@@ -1,0 +1,83 @@
+# cargo make check --agent — a model that has never seen Oath gets the
+# machine's `oath mcp` and a task, and nothing else (docs/specs/agent.md).
+#
+# Each task gets a fresh QEMU of the output (or, with `--target`, the
+# installed machine, undone afterwards like a metal case). Its `setup`
+# steps run over SSH as `home`, then the client runs on its `prompt`, then
+# its `expect` steps run over SSH. Steps are the steps of cases.toml.
+# What the model says it did is not evidence; the machine is.
+#
+# A task also fails if the apply log shows a change that did not come
+# through MCP, or a `confirm` the task did not allow (`confirm = true`).
+# `reboots = true`: the task ends in a reboot; the harness waits for the
+# new boot and requires a new boot id before `expect`.
+#
+# Opt-in, never part of `cargo make check`: it costs money and is not
+# deterministic. The key is ANTHROPIC_API_KEY from the environment.
+
+# The client, one argv (no shell). `{prompt}`, `{mcp_config}` (a file
+# naming one server, `oath`, that runs `ssh -T … oath mcp`), `{model}`
+# and `{budget}` are filled in. It runs in an empty directory, and must
+# write its transcript as JSON lines on stdout. `--bare` and `--tools ""`
+# leave out CLAUDE.md, memory, hooks, skills and the shell: the model
+# knows only what the server tells it.
+client = [
+  "claude", "-p", "{prompt}",
+  "--bare", "--setting-sources", "local",
+  "--strict-mcp-config", "--mcp-config", "{mcp_config}",
+  "--tools", "", "--allowedTools", "mcp__oath",
+  "--permission-mode", "dontAsk",
+  "--model", "{model}", "--max-budget-usd", "{budget}",
+  "--output-format", "stream-json", "--verbose",
+  "--no-session-persistence",
+]
+# The smallest model is the strictest test of whether Oath teaches.
+model = "haiku"
+# US dollars, per task.
+budget = "1.00"
+# Seconds the client may run, per task.
+timeout = 600
+
+[[task]]
+name = "rename"
+prompt = "Rename this machine to agent-test."
+expect = [
+  { run = "hostname; oath get host:local --actual; oath diff", expect = ["agent-test\n", "\"hostname\": \"agent-test\"", "in-sync"] },
+]
+
+[[task]]
+name = "service"
+prompt = "Run a service called hello, as the user home, that prints hello every 10 seconds."
+expect = [
+  { run = "for i in $(seq 1 25); do oath logs svc:hello 2>/dev/null | grep -q hello && break; sleep 1; done; oath logs svc:hello", expect = ["hello"], timeout = 60 },
+  { run = "p=$(oath get svc:hello | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; oath diff", expect = ["Uid:\t1\t1\t1\t1", "in-sync"] },
+]
+
+[[task]]
+name = "undo"
+prompt = "The last configuration change on this machine was a mistake. Take it back."
+setup = [
+  { run = "sudo oath set host:local --from-json '{\"env\":{\"AGENT_CHECK\":\"mistake\"}}' && sudo oath apply" },
+]
+expect = [
+  { run = "oath log -n 1; oath get host:local --desired; oath diff", expect = ["undo:", "in-sync"], reject = ["AGENT_CHECK"] },
+]
+
+[[task]]
+name = "diagnose"
+prompt = "svc:broken keeps failing. Find out why and fix it."
+setup = [
+  { run = "sudo oath new svc:broken --from-json '{\"exec\":[\"/bin/slep\",\"600\"]}' && sudo oath apply svc:broken" },
+]
+expect = [
+  { run = "sleep 3; oath get svc:broken", expect = ["state: \"running\""] },
+]
+
+[[task]]
+name = "reboot"
+prompt = "Reboot this machine."
+confirm = true
+reboots = true
+expect = [
+  { run = "oath log -n 1", expect = ["\"confirm\":true", "\"via\":\"mcp:"] },
+]

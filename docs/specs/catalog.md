@@ -131,10 +131,13 @@ under `objects/<kind>/`, so it can never climb out of it.
 | `oath keep` | Keep the apply on probation (from a session opened after it) |
 | `oath undo` | Put back the spec the newest not-undone apply changed |
 | `oath verify [pkg:…]` | Hash linked package trees again (packages.md) |
-| `oath log` | Apply log |
+| `oath log [-n N]` | Apply log; `actor.via` names the tool (`mcp:<client>`), `confirm: true` an apply given `--confirm` |
+| `oath logs [id] [-n N]` | A service's, the DHCP client's, a build's or PID 1's output |
 | `oath build`, `oath fmt` | Plans (see builds.md) |
+| `oath mcp [--read-only]` | These verbs as MCP tools on stdin/stdout (agent.md) |
 
-`--json` prints the same facts as JSON. Errors carry a `hint` that
+`--json` prints the same facts as JSON, and stdout carries nothing
+else: commands an apply starts write to stderr. Errors carry a `hint` that
 names a verb or schema page. Exit codes: 0 ok, 1 error, 3 `--confirm`
 required, 4 security refusal.
 

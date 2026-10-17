@@ -34,8 +34,8 @@ use crate::util::{sha256_file, utc_rfc3339, utc_stamp, write_pretty};
 /// http://10.0.2.2:18765/fetchme, which QEMU's user net sends here.
 const FETCH_PORT: u16 = 18765;
 const FIRST_SSH_PORT: u16 = 2300;
-const BOOT_WAIT: Duration = Duration::from_secs(90);
-const REBOOT_WAIT: Duration = Duration::from_secs(45);
+pub(crate) const BOOT_WAIT: Duration = Duration::from_secs(90);
+pub(crate) const REBOOT_WAIT: Duration = Duration::from_secs(45);
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -131,12 +131,12 @@ pub struct Opts {
     pub output: Option<String>,
 }
 
-struct Ctx {
-    tools: Tools,
-    img: Image,
-    key: PathBuf,
-    key_pub: PathBuf,
-    dir: PathBuf,
+pub(crate) struct Ctx {
+    pub(crate) tools: Tools,
+    pub(crate) img: Image,
+    pub(crate) key: PathBuf,
+    pub(crate) key_pub: PathBuf,
+    pub(crate) dir: PathBuf,
 }
 
 struct Outcome {
@@ -307,7 +307,7 @@ pub fn parse_cases(text: &str) -> Result<Vec<Case>> {
     Ok(file.case)
 }
 
-fn harness_key(base: &Path) -> Result<(PathBuf, PathBuf)> {
+pub(crate) fn harness_key(base: &Path) -> Result<(PathBuf, PathBuf)> {
     let key = base.join("key");
     let key_pub = base.join("key.pub");
     if !key.is_file() || !key_pub.is_file() {
@@ -354,12 +354,12 @@ fn serve_fetchme(body: Vec<u8>) -> Result<()> {
     Ok(())
 }
 
-struct Vm {
+pub(crate) struct Vm {
     child: Child,
 }
 
 impl Vm {
-    fn boot(ctx: &Ctx, dir: &Path, port: u16, boot_no: u32) -> Result<Self> {
+    pub(crate) fn boot(ctx: &Ctx, dir: &Path, port: u16, boot_no: u32) -> Result<Self> {
         let overlay = qemu::overlay_disk(&ctx.tools, dir, &ctx.img.backing)?;
         let serial_log = dir.join(format!("serial-{boot_no}.log"));
         let qemu_log = dir.join(format!("qemu-{boot_no}.log"));
@@ -387,7 +387,11 @@ impl Vm {
         Ok(Self { child })
     }
 
-    fn exited_within(&mut self, wait: Duration) -> bool {
+    pub(crate) fn exited(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(Some(_)))
+    }
+
+    pub(crate) fn exited_within(&mut self, wait: Duration) -> bool {
         let deadline = Instant::now() + wait;
         while Instant::now() < deadline {
             if let Ok(Some(_)) = self.child.try_wait() {
@@ -410,19 +414,19 @@ impl Drop for Vm {
     }
 }
 
-struct Shell {
-    code: i32,
-    text: String,
+pub(crate) struct Shell {
+    pub(crate) code: i32,
+    pub(crate) text: String,
 }
 
 /// How to reach a machine: the ssh(1) arguments that go before the command.
-struct Conn {
-    args: Vec<String>,
+pub(crate) struct Conn {
+    pub(crate) args: Vec<String>,
 }
 
 impl Conn {
     /// A check VM: the harness key, any host key (every VM makes a new one).
-    fn vm(key: &Path, port: u16) -> Self {
+    pub(crate) fn vm(key: &Path, port: u16) -> Self {
         let mut args: Vec<String> = vec!["-i".into(), key.display().to_string()];
         args.extend(
             [
@@ -442,7 +446,7 @@ impl Conn {
 
     /// A real machine: the operator's keys, and only the host key `install`
     /// pinned for it.
-    fn target(r: &Remote, pins: &Path) -> Self {
+    pub(crate) fn target(r: &Remote, pins: &Path) -> Self {
         let args = [
             "-p".to_string(),
             r.port.to_string(),
@@ -475,7 +479,7 @@ impl Conn {
     }
 }
 
-fn ssh(conn: &Conn, cmd: &str, timeout: Duration) -> Shell {
+pub(crate) fn ssh(conn: &Conn, cmd: &str, timeout: Duration) -> Shell {
     let mut c = Command::new("ssh");
     c.args(&conn.args).arg(cmd);
     c.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -516,7 +520,7 @@ fn ssh(conn: &Conn, cmd: &str, timeout: Duration) -> Shell {
     Shell { code, text }
 }
 
-fn wait_ssh(conn: &Conn, wait: Duration) -> bool {
+pub(crate) fn wait_ssh(conn: &Conn, wait: Duration) -> bool {
     let deadline = Instant::now() + wait;
     while Instant::now() < deadline {
         if ssh(conn, "test -f /oath/INDEX.md", Duration::from_secs(10)).code == 0 {
@@ -539,7 +543,7 @@ fn reboot_cmd(how: &str) -> &'static str {
 }
 
 /// Run one `run` step and judge its output.
-fn run_step(conn: &Conn, n: usize, step: &Step, log: &mut String) -> Result<(), String> {
+pub(crate) fn run_step(conn: &Conn, n: usize, step: &Step, log: &mut String) -> Result<(), String> {
     let cmd = step.run.as_deref().unwrap_or("");
     let r = ssh(conn, cmd, Duration::from_secs(step.timeout));
     log.push_str(&format!("## step {n}\n$ {cmd}\n{}\n[exit {}]\n", r.text, r.code));
@@ -615,7 +619,7 @@ fn outcome(case: &Case, result: Result<(), String>) -> Outcome {
 // ---- real machines (`--target`) ----------------------------------------
 
 /// A real machine is slower to come back than a VM (firmware, POST).
-const METAL_BOOT_WAIT: Duration = Duration::from_secs(300);
+pub(crate) const METAL_BOOT_WAIT: Duration = Duration::from_secs(300);
 
 fn run_target(out: &Path, cases: Vec<Case>, target: &str) -> Result<i32> {
     let r = crate::install::parse_target(target)?;
@@ -698,7 +702,7 @@ fn run_target_case(conn: &Conn, case: &Case, dir: &Path) -> (Outcome, Result<(),
 }
 
 /// `snap:current`'s generation.
-fn generation(conn: &Conn) -> Result<u64, String> {
+pub(crate) fn generation(conn: &Conn) -> Result<u64, String> {
     let r = ssh(conn, "oath --json get snap:current", Duration::from_secs(30));
     let v: serde_json::Value = serde_json::from_str(r.text.trim())
         .map_err(|e| format!("oath get snap:current: {e}: {}", r.text))?;
@@ -706,7 +710,7 @@ fn generation(conn: &Conn) -> Result<u64, String> {
 }
 
 /// Undo back to generation `start`, then require nothing pending.
-fn restore(conn: &Conn, start: u64, log: &mut String) -> Result<(), String> {
+pub(crate) fn restore(conn: &Conn, start: u64, log: &mut String) -> Result<(), String> {
     for _ in 0..20 {
         let g = generation(conn)?;
         if g == start {
@@ -733,7 +737,7 @@ fn restore(conn: &Conn, start: u64, log: &mut String) -> Result<(), String> {
     Ok(())
 }
 
-fn boot_id(conn: &Conn) -> Result<String, String> {
+pub(crate) fn boot_id(conn: &Conn) -> Result<String, String> {
     let r = ssh(conn, "cat /proc/sys/kernel/random/boot_id", Duration::from_secs(15));
     if r.code != 0 {
         return Err(format!("read boot_id: {}", r.text));
@@ -742,7 +746,7 @@ fn boot_id(conn: &Conn) -> Result<String, String> {
 }
 
 /// Wait until the machine answers with a different boot id and a catalog.
-fn rebooted(conn: &Conn, before: &str, wait: Duration) -> bool {
+pub(crate) fn rebooted(conn: &Conn, before: &str, wait: Duration) -> bool {
     let deadline = Instant::now() + wait;
     while Instant::now() < deadline {
         let r = ssh(

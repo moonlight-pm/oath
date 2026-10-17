@@ -421,6 +421,135 @@ steps = [
   { run = "mkdir -p /tmp/m; sudo mount -t vfat /dev/null /tmp/m; grep -w vfat /proc/filesystems", expect = ["vfat"] },
 ]
 
+# ---- Phase 7: agent surface ------------------------------------------
+#
+# Each case pipes JSON-RPC lines into `oath mcp` on the machine and greps
+# the replies, so the build host needs no MCP client. Replies are compact
+# JSON; a tool's text is JSON inside a JSON string, hence `\"`.
+
+[[case]]
+name = "mcp-handshake"
+about = "oath mcp answers a legacy initialize and a modern server/discover, lists its tools, and refuses an unknown version."
+metal = true
+
+[[case.steps]]
+run = '''
+oath mcp > /tmp/mcp.out <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+EOF
+cat /tmp/mcp.out; echo LINES=$(wc -l < /tmp/mcp.out)'''
+expect = ['"protocolVersion":"2025-06-18"', '"name":"oath"', 'You are on **Oath**', '"name":"set_host"', '"name":"apply"', '"readOnlyHint":true', 'LINES=2']
+reject = ['"resultType"']
+
+[[case.steps]]
+run = '''
+oath mcp > /tmp/mcp.out <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{},"io.modelcontextprotocol/clientInfo":{"name":"check","version":"1"}}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2099-01-01","io.modelcontextprotocol/clientCapabilities":{}}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/list"}
+EOF
+cat /tmp/mcp.out; echo LINES=$(wc -l < /tmp/mcp.out)'''
+expect = ['"supportedVersions":["2026-07-28"]', '"resultType":"complete"', '"cacheScope":"private"', '"ttlMs":3600000', '"name":"keep"', '"code":-32022', '"requested":"2099-01-01"', '"code":-32602', 'LINES=4']
+
+[[case]]
+name = "mcp-loop"
+about = "The README loop over MCP: set_host, diff, apply, get shows the name in actual, undo; the log names the client."
+metal = true
+
+[[case.steps]]
+run = '''
+oath mcp <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"set_host","arguments":{"name":"local","fields":{"hostname":"mcp1"}}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"diff","arguments":{}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"apply","arguments":{}}}
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"get","arguments":{"id":"host:local","part":"actual"}}}
+EOF
+hostname'''
+expect = ['\"desired\": \"mcp1\"', '"text":"{\n  \"generation\": ', '\"hostname\": \"mcp1\"', "\nmcp1"]
+reject = ['"isError":true']
+
+[[case.steps]]
+run = '''
+oath log -n 1; oath --json logs -n 2'''
+expect = ['"via":"mcp:check"', '"result":"ok"', '"lines": [']
+reject = ['"confirm":true']
+
+[[case.steps]]
+run = '''
+oath mcp <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"undo","arguments":{}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"log","arguments":{"lines":1}}}
+EOF
+test "$(hostname)" != mcp1 && echo NAME_BACK'''
+expect = ['undo:', 'NAME_BACK']
+reject = ['"isError":true']
+
+[[case]]
+name = "mcp-confirm"
+about = "An apply that halts, without confirm, is a tool error naming exit 3; it is logged refused and the machine keeps running."
+metal = true
+
+[[case.steps]]
+run = '''
+oath mcp <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"set_host","arguments":{"name":"local","fields":{"power":"halt"}}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"apply","arguments":{}}}
+EOF'''
+expect = ['"isError":true', 'exit 3, confirm required: nothing changed']
+
+[[case.steps]]
+run = '''
+oath log -n 1; sudo oath set host:local power=run && oath diff'''
+expect = ['"result":"refused"', '"via":"mcp:check"', 'in-sync']
+reject = ['"confirm":true']
+
+[[case]]
+name = "mcp-keep"
+about = "An sshd change applied with confirm goes on probation; keep is refused in the same oath mcp run and accepted from a new connection."
+metal = true
+
+[[case.steps]]
+run = '''
+oath mcp <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"set_svc","arguments":{"name":"sshd","fields":{"env":{"OATH_CHECK":"7"}}}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"apply","arguments":{"ids":["svc:sshd"],"confirm":true,"probation_secs":60}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"keep","arguments":{}}}
+EOF'''
+expect = ['on probation for 60 s', 'this one cannot keep it', 'older than the apply', '"isError":true']
+
+[[case.steps]]
+run = '''
+oath mcp <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"keep","arguments":{}}}
+EOF
+oath log -n 2; oath get svc:sshd --desired'''
+expect = ['\"kept\"', 'keep:', '"confirm":true', '"via":"mcp:check"', 'OATH_CHECK']
+reject = ['"isError":true']
+
+[[case]]
+name = "mcp-read-only"
+about = "oath mcp --read-only lists only the tools that look; a write tool is not there to call."
+metal = true
+
+[[case.steps]]
+run = '''
+oath mcp --read-only <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"apply","arguments":{}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"ls","arguments":{"kind":"host"}}}
+EOF'''
+expect = ['read-only', '"name":"index"', '"name":"verify"', '"code":-32602', 'host:local']
+reject = ['"name":"apply"', '"name":"set_host"', '"name":"undo"', '"name":"keep"']
+
 # ---- Known gaps (acceptance tests for later phases) ------------------
 #
 # None today. Add a case with `gap = "phase N: …"` when a defect is found

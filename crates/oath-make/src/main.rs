@@ -1,4 +1,5 @@
 mod advisories;
+mod agent;
 mod boot;
 mod check;
 mod cpio;
@@ -82,6 +83,14 @@ enum Cmd {
         /// Build output to boot (`build/out/<id>`; default: the latest).
         #[arg(long)]
         output: Option<String>,
+        /// Give a real model only the machine's `oath mcp` and each task in
+        /// check/agent.toml (`--case` picks tasks). Opt-in: needs
+        /// ANTHROPIC_API_KEY, costs money, does not gate install.
+        #[arg(long)]
+        agent: bool,
+        /// The model for `--agent` (default: check/agent.toml's).
+        #[arg(long, requires = "agent")]
+        model: Option<String>,
     },
     /// SSH to the QEMU guest (`home@127.0.0.1`, port `OATH_SSH_PORT` / 2222).
     Ssh {
@@ -247,11 +256,15 @@ fn real() -> Result<()> {
             qemu::start(&root, &out)?;
         }
         Cmd::Stop => qemu::stop(&out)?,
-        Cmd::Check { build, only, jobs, target, output } => {
+        Cmd::Check { build, only, jobs, target, output, agent, model } => {
             if build {
                 pack_image(&root, &out, oath_core::DEFAULT_PROFILE)?;
             }
-            let rc = check::run_check(&root, &out, check::Opts { only, jobs, target, output })?;
+            let rc = if agent {
+                agent::run_agent(&root, &out, agent::Opts { only, jobs, target, output, model })?
+            } else {
+                check::run_check(&root, &out, check::Opts { only, jobs, target, output })?
+            };
             std::process::exit(rc);
         }
         Cmd::Ssh { args } => {

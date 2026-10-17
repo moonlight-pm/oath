@@ -38,6 +38,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          (plan:<name>), or PID 1 (no id)
     oath fmt <path>      canonical plan.plan
     oath build           isolated plan build (no /bin link; log in /oath/log/plan/)
+    oath mcp             these verbs as an MCP server on stdin/stdout
+                         (ssh -T home@<host> oath mcp)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
 {probation}{damage}

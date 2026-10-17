@@ -73,7 +73,7 @@ crates/oath-make  host build tool (`cargo make bootstrap|pkgs|build|check|run|up
 pkgs/             every package that ships: pkg.toml + build.sh per package, lock.json, the toolchain bootstrap;
                   pkgs/linux is the kernel (linux.fragment, patches/); pkgs/keys the upstream signing keys
 image/            host.nix (QEMU + OVMF, build host only)
-check/            cases.toml for `cargo make check` (the QEMU harness)
+check/            cases.toml for `cargo make check` (the QEMU harness), agent.toml for `--agent`
 apps/             first-party package sources and example plans
 forks/            submodules for the future native desk (sola, river, wlroots)
 apocrypha/        gitignored scratch — never a source of truth

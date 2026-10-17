@@ -6,11 +6,19 @@ use crate::Result;
 pub struct Actor {
     pub uid: u32,
     pub tty: String,
+    /// The tool that ran `oath` for this actor (`mcp:<client>`), from the
+    /// hidden `--via`. Self-reported: it labels log lines, nothing more.
+    pub via: Option<String>,
 }
 
 impl Actor {
     pub fn unknown() -> Self {
-        Self { uid: 0, tty: "unknown".into() }
+        Self { uid: 0, tty: "unknown".into(), via: None }
+    }
+
+    /// PID 1's rollback of an apply nobody kept.
+    pub fn probation() -> Self {
+        Self { uid: 0, tty: "probation".into(), via: None }
     }
 
     pub fn current() -> Self {
@@ -20,7 +28,7 @@ impl Actor {
             .and_then(|p| p.to_str().map(|s| s.to_string()))
             .filter(|s| s.starts_with("/dev/") || s.contains("tty") || s.contains("pts"))
             .unwrap_or_else(|| "unknown".into());
-        Self { uid, tty }
+        Self { uid, tty, via: None }
     }
 }
 

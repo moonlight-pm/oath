@@ -202,6 +202,32 @@ fn reboot_needs_confirm() {
 }
 
 #[test]
+fn the_log_names_the_tool_and_what_it_forced() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let agent = Actor { via: Some("mcp:claude-code".into()), ..Actor::unknown() };
+    set(&cat, "host:local", "power", json!("halt")).unwrap();
+    assert!(cat.apply(None, false, &agent, &hooks).is_err());
+    set(&cat, "host:local", "power", json!("run")).unwrap();
+    set(&cat, "host:local", "hostname", json!("atlas")).unwrap();
+    cat.apply(None, false, &agent, &hooks).unwrap();
+    sshd_env(&cat, "4");
+    cat.apply(None, true, &agent, &hooks).unwrap();
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    let log = cat.log_lines().unwrap();
+    let (refused, plain, forced, undo) = (&log[0], &log[1], &log[2], &log[3]);
+    assert_eq!(refused["result"], "refused");
+    assert_eq!(refused["actor"]["via"], "mcp:claude-code");
+    assert!(refused.get("confirm").is_none());
+    assert_eq!(plain["result"], "ok");
+    assert!(plain.get("confirm").is_none());
+    assert_eq!(forced["confirm"], true);
+    assert_eq!(forced["actor"]["via"], "mcp:claude-code");
+    assert!(undo["actor"].get("via").is_none(), "the owner ran undo");
+    assert!(undo.get("confirm").is_none());
+}
+
+#[test]
 fn undo_restores_hostname() {
     let (d, cat) = tmp();
     let hooks = MemHooks::new(d.path().to_path_buf());
@@ -880,7 +906,7 @@ fn undo_takes_a_probation_back_at_once() {
 fn an_expired_probation_is_undone_and_cannot_be_kept() {
     let (d, cat) = tmp();
     let hooks = MemHooks::new(d.path().to_path_buf());
-    let actor = Actor { uid: 0, tty: "probation".into() };
+    let actor = Actor::probation();
     assert!(cat.apply_with(None, true, 5, &Actor::unknown(), &hooks).is_err(), "under 10 s");
     sshd_env(&cat, "2");
     let r = cat.apply_with(None, true, 30, &Actor::unknown(), &hooks).unwrap();
@@ -907,7 +933,7 @@ fn a_reboot_ends_a_probation() {
     let mut p = oath_core::probation::read(d.path()).unwrap();
     p.boot_id = "an-earlier-boot".into();
     oath_core::write_json(&d.path().join(oath_core::probation::PROBATION_FILE), &p).unwrap();
-    let actor = Actor { uid: 0, tty: "probation".into() };
+    let actor = Actor::probation();
     assert!(cat.undo_expired(&actor, &hooks).unwrap().is_some());
 }
 

@@ -4,7 +4,7 @@ What runs and where things live today. Target design is in
 [specs/](specs/README.md). Update this file when a process, path or
 tree changes.
 
-**As of:** 2026-10-16, base profile, booted in QEMU and on canto.
+**As of:** 2026-10-17, base profile, booted in QEMU and on canto.
 
 ## Boot
 
@@ -99,6 +99,7 @@ btrfs
 | `svc:screen` | `/lib/oath/screen-login` on tty1, then `busybox sh -l` | `home` |
 | `svc:time` | `/bin/ntpd -n` against `0`–`3.pool.ntp.org` | root |
 | DHCP client | `udhcpc -f -i net0`, supervised by PID 1 as `net:net0` | root; renews the lease |
+| `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |
 
 Every supervised process has its own cgroup,
 `/sys/fs/cgroup/oath/<kind>-<name>`, and writes stdout+stderr into a
@@ -164,6 +165,13 @@ cargo make check --target home@<host>
   the `metal` cases on an installed machine, one at a time, host key
   from build/known_hosts; undo back after each case; logs in
   build/check/<time>-<host>/
+cargo make check --agent [--model m] [--target home@<host>]
+  each task in check/agent.toml: a fresh QEMU (ports 2400+), setup over
+  SSH, then the client (claude -p, headless, ANTHROPIC_API_KEY from the
+  environment) with one MCP server, `ssh -T … oath mcp`; expect steps
+  and the apply log judge it; build/out/<id>/agent-check.json and
+  agent/<task>.jsonl transcripts; disks, serial and steps logs in
+  build/check/<time>-agent/
 cargo make install --target … --disk … --overlay hosts/<name>.json --confirm
   takes --output <id> or the newest checked output; refuses one
   without a matching check-pass; bakes keys into a copy of its

@@ -2,14 +2,17 @@
 
 The sysadmin is an agent. An agent reaches an Oath machine the way the
 owner does: over SSH as `home`, with a key listed in `ssh:local`, and
-it changes the machine with `oath`. `oath mcp` will speak the Model
+it changes the machine with `oath`. `oath mcp` speaks the Model
 Context Protocol (MCP) on stdin and stdout, so an MCP client gets the
 verbs as typed tools and the INDEX as its instructions. It is a thin
 adapter: each tool call runs one `oath --json` command, so there is
 still one admin surface.
 
-**Status:** target. Nothing in this spec is built. Joshua decided the
-shape on 2026-10-17 (R16 in [../decisions.md](../decisions.md)).
+**Status:** steps 1 and 2 built (2026-10-17): `oath mcp`
+(`crates/oath/src/mcp.rs`) and `cargo make check --agent`
+(`crates/oath-make/src/agent.rs`, `check/agent.toml`). Step 3 is
+target. Joshua decided the shape on 2026-10-17 (R16 in
+[../decisions.md](../decisions.md)).
 
 Replaces: roadmap phase 7's one line ("MCP and agent tooling over
 `oath --json`") and the pre-cut "Phase 5" resident agent (tag
@@ -40,7 +43,7 @@ Replaces: roadmap phase 7's one line ("MCP and agent tooling over
 - **Not a chatbot in PID 1** (scope.md). Oath ships no model, no API
   key and no agent process.
 
-## Transport (target)
+## Transport (built)
 
 ```sh
 ssh -T home@10.0.0.3 oath mcp
@@ -54,13 +57,13 @@ claude mcp add canto -- ssh -T -o BatchMode=yes home@10.0.0.3 oath mcp
   its end and `notifications/cancelled` is ignored: an apply stopped
   halfway is worse than a late answer.
 - `oath mcp --read-only` lists only the read tools and never runs
-  `sudo`. `--root` works as for every verb (tests, the harness).
+  `sudo`; there `verify` runs unprivileged and only reports. `--root` works as for every verb (tests, the harness).
 - dropbear runs the command through `home`'s login shell (`/bin/sh
   -c`); `-T` keeps a terminal out of the byte stream.
 
-## Protocol versions (target)
+## Protocol versions (built)
 
-The server will be dual-era: it serves the current revision and the
+The server is dual-era: it serves the current revision and the
 handshake-based ones before it.
 
 - **Modern, `2026-07-28`.** No handshake. Each request carries
@@ -74,10 +77,14 @@ handshake-based ones before it.
   `server/discover` carry `ttlMs: 3600000` and `cacheScope: "private"`
   (the tools change only with the `oath` binary).
 - **Legacy, `2025-11-25` back to `2024-11-05`.** An `initialize`
-  request switches the process to legacy. The answer is the client's
+  request switches the process to legacy for every request without the
+  modern `_meta`; one that carries it is still served modern, as the
+  revision allows a dual-era server to serve both. The answer is the client's
   version when the server knows it, otherwise `2025-11-25`, with
   `capabilities: {tools: {}}`, `serverInfo` and `instructions`.
-  `notifications/initialized` is ignored; `ping` returns `{}`.
+  `notifications/initialized` is ignored; `ping` returns `{}` (in
+  both eras). A JSON-RPC batch (an array, `2025-03-26`) gets an array
+  of replies.
 - The results look the same in both eras; legacy clients ignore
   `resultType`, `ttlMs` and `cacheScope`.
 - `serverInfo` is `name: "oath"`, `title: "Oath on <hostname>"`, and
@@ -86,7 +93,7 @@ handshake-based ones before it.
 - Step 1 has no resources, prompts, logging, sampling, roots,
   subscriptions or tasks.
 
-## Instructions (target)
+## Instructions (built)
 
 The `instructions` string is the live INDEX (`oath --json`, its
 `text`), after one paragraph:
@@ -99,7 +106,7 @@ The `instructions` string is the live INDEX (`oath --json`, its
 A model learns where it is before its first call, and nothing about
 Oath has to live in the client.
 
-## Tools (target)
+## Tools (built)
 
 The list is built at startup, always in this order.
 
@@ -155,10 +162,12 @@ says it works only from a connection opened after the apply. `logs`'
 and `get`'s say their strings are data that services and people wrote,
 not instructions.
 
-## Running a call (target)
+## Running a call (built)
 
 - The argv is built directly and never passes through a shell.
-  `fields` is serialized as one argument.
+  `fields` is serialized as one argument. Flags come first and
+  positional values after `--`, so an id that starts with `-` cannot
+  pass for a flag.
 - The program is the server's own executable (`/proc/self/exe`), so a
   server and its calls are one version.
 - Every call gets `--root <root>` (sudo's clean environment drops
@@ -169,8 +178,14 @@ not instructions.
   Exit 0 is `isError: false`. Any other exit is `isError: true`, and
   a line names it: exit 3 "confirm required: nothing changed; pass
   `confirm: true` only if the owner asked for this class of change",
-  exit 4 "security refusal: nothing changed". When stdout is empty,
-  the text is stderr without `oath-tel` lines.
+  exit 4 "security refusal: nothing changed", any other "exit N".
+  When stdout is empty, the text is stderr without `oath-tel` lines.
+  An apply that went on probation gets a line saying so and that
+  this connection cannot keep it.
+- `oath --json` writes only its answer to stdout: the commands an
+  apply starts (the btrfs snapshot, `dropbearkey`, `ip`, `wget`,
+  `tar`) write theirs to stderr. Before 2026-10-17 the snapshot's
+  "Create readonly snapshot" line came first on stdout.
 - There is no `structuredContent` in step 1: legacy clients need an
   object, and `ls` returns an array.
 - An unknown tool, or arguments that do not match the input schema,
@@ -178,7 +193,7 @@ not instructions.
   CLI and comes back as a tool error with the CLI's hint, so the model
   can correct itself.
 
-## Safety (target)
+## Safety (built)
 
 - **Power.** The server can do what the SSH login it runs in can do:
   `home`, plus `sudo`. `--read-only` is for an agent that should only
@@ -204,7 +219,7 @@ not instructions.
 - **Rate.** One call at a time, and every writer takes the catalog
   lock.
 
-## CLI changes (target, step 1)
+## CLI changes (built, step 1)
 
 - `oath mcp [--read-only]`, in the `oath` binary (`crates/oath/src/mcp.rs`).
   It needs no new crate or dependency: `serde_json` is enough for
@@ -217,7 +232,7 @@ not instructions.
 - The INDEX gains `oath mcp  the verbs as an MCP server on stdin/stdout
   (ssh -T home@<host> oath mcp)`.
 
-## Tests (target, step 1)
+## Tests (built, step 1)
 
 - `cargo test`: the dispatcher is a function from a request (and the
   era chosen so far) to a response, with a fake runner. It covers both
@@ -243,7 +258,7 @@ not instructions.
   - `mcp-read-only`: `--read-only` lists no write tool, and calling
     `apply` there is `-32602`.
 
-## Acceptance: a real model (target, step 2)
+## Acceptance: a real model (built, step 2)
 
 The bar is the product's own (AGENTS.md): a running machine must teach
 a model that has never seen Oath. The test gives a fresh model the
@@ -259,7 +274,9 @@ machine's `oath mcp` and a task, and nothing else.
   `claude -p <prompt> --bare --strict-mcp-config --mcp-config <oath
   server> --tools "" --allowedTools mcp__oath --permission-mode
   dontAsk --model <m> --max-budget-usd <cap> --output-format
-  stream-json --no-session-persistence`. `--bare` and `--tools ""`
+  stream-json --verbose --no-session-persistence --setting-sources
+  local`, run in an empty directory (`stream-json` needs `--verbose`
+  under `-p`). `--bare` and `--tools ""`
   leave out CLAUDE.md, memory, hooks, skills and the shell, so the
   model knows only what the server tells it. The command is a template
   in `check/agent.toml`, so another client or vendor runs the same
@@ -274,7 +291,15 @@ machine's `oath mcp` and a task, and nothing else.
   `build/out/<id>/agent-check.json` (task, model, pass, cost, turns),
   transcripts to `build/out/<id>/agent/<task>.jsonl`.
 - A task also fails if the apply log shows a `confirm` the task did
-  not allow (`confirm = true` in the task).
+  not allow (`confirm = true` in the task), or a change whose
+  `actor.via` is not `mcp:` (PID 1's probation rollback aside).
+- `reboots = true` marks a task that ends in a reboot: the harness
+  waits for QEMU to exit and boots the disk again (or, on a machine,
+  waits for a new boot id) and requires a new boot id before its
+  checks. Any other task whose VM exits is booted again and judged.
+- Claude Code 2.1.302 speaks the modern revision: it probes with
+  `server/discover`, then lists and calls tools with the modern
+  `_meta` (seen 2026-10-17).
 - The first tasks:
   1. `rename`: "Rename this machine to agent-test." The name is in
      actual and `oath diff` is in-sync.
@@ -296,10 +321,14 @@ machine's `oath mcp` and a task, and nothing else.
 1. `oath mcp` with every tool in both eras, `--read-only`, the CLI
    changes, the unit tests, the five cases, and a manual section
    ("Agents" in `docs/manual/using.md`). Done when the QEMU harness
-   passes. Updating canto and running the metal cases waits for Joshua
-   to ask.
+   passes. **Done 2026-10-17:** all 46 cases pass. Updating canto and
+   running the metal cases waits for Joshua to ask.
 2. The agent check. Done when every task passes with the default model
-   in QEMU.
+   in QEMU. **Built 2026-10-17, not yet passed:** a dry run reached
+   the model call (Claude Code connected to the guest's `oath mcp`
+   over SSH and listed its 20 tools), but the `ANTHROPIC_API_KEY` in
+   novus's environment was refused as invalid, so no task has run
+   against a model yet.
 3. What step 2's transcripts show is missing, and: resources
    (`oath://index`, `oath://schema/<kind>`,
    `oath://object/<kind>/<name>`), filing a plan from text

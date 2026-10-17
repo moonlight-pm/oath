@@ -106,6 +106,10 @@ on each machine over SSH, one tool per verb, and an opt-in check where
 a real model that has never seen Oath is given only that server and a
 task. Done when that check passes in QEMU and on canto.
 
+Built (2026-10-17): `oath mcp` in both MCP eras with every verb as a
+tool, `--read-only`, `actor.via` and `confirm` in the apply log, and
+`cargo make check --agent` with the five tasks of `check/agent.toml`.
+
 ## 8. Native desk — planned
 
 River, wlroots, mesa, input, audio, fonts and Sola built natively.

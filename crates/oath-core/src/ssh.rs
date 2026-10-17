@@ -14,8 +14,10 @@ pub fn converge(desired: &Ssh) -> Result<SshActual> {
     fs::create_dir_all("/oath/ssh")?;
     let host = Path::new(HOST_KEY);
     if !host.is_file() {
+        // It prints the public key; oath's stdout is for oath's answer.
         let st = Command::new("/bin/dropbearkey")
             .args(["-t", "ed25519", "-f", HOST_KEY])
+            .stdout(std::io::stderr())
             .status()
             .map_err(|e| Error::Msg(format!("dropbearkey: {e}")))?;
         if !st.success() {
