@@ -23,7 +23,12 @@ PID 1 mounts the btrfs top level (subvolid=0) at `/oath/run/fs`:
 Generations are siblings of `@`, not nested under `/`.
 
 `snap:current` holds the last snapshot id. `snap:N` is a read-only
-record (`generation`, `parent`, `time`, `reason`). Do not `set` `snap:N`.
+record (`generation`, `parent`, `time`, `reason`) in its desired
+document. Do not `set` `snap:N`.
+
+A generation holds spec only: status lives on the `/oath/status`
+tmpfs, so no `@gen-N` or `@boot-N` carries it, and an archived boot
+observes its own.
 
 ## Apply and undo
 

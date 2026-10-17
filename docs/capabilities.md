@@ -13,7 +13,7 @@ gaps · `target` designed, not built.
 
 | Capability | Status | Works | Main gaps |
 |---|---|---|---|
-| Catalog | partial | `kind:name` objects with desired/actual/meta; JSON Schema per kind generated from the Rust types; generated `INDEX.md`; locked atomic writes; typed `set`; `oath new` (fills defaults) / `oath rm` | Status still sits in the object directories, inside the snapshot |
+| Catalog | shipped | `kind:name` objects: spec (desired, applied, meta) on disk, status on a tmpfs rebuilt each boot (R14); schemas generated from the Rust types; generated `INDEX.md`; locked atomic writes; typed `set`; `oath new` (fills defaults) / `oath rm` | — |
 | `oath` CLI | shipped | `ls get set new rm diff apply keep undo verify log logs schema fmt build`, `--json`; bare `oath` prints the INDEX; apply returns after PID 1 converged | MCP adapter is roadmap phase 7 |
 | Generations | shipped | checks before the snapshot; every outcome logged; undo restores only the touched objects' spec; lockout-class changes go on probation until `oath keep` from a new session; power alone takes no generation | — |
 | Services (PID 1) | shipped | runs only applied specs; per-service logs; exit codes, backoff, `failed` with a `reason`; a cgroup per service; shutdown in reverse `wants` order; a cycle skips only its members; a main-loop panic re-executes PID 1, services untouched | — |

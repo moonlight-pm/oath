@@ -153,11 +153,10 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     let guest_bin = stage.join("bin");
     // The profile's packages as they were built: native packs
     // (pkgs/lock.json), and pkg:oath from this tree.
-    let fixed = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
     for name in &wanted {
         let tree = if name == "oath" { oath.as_path() } else { tools.pack(name)? };
         copy_tree(tree, &oath_root.join("store/pkg").join(name))?;
-        link_pkg(&oath_root, &guest_bin, name, !fixed.is_fixed(name))?;
+        link_pkg(&oath_root, &guest_bin, name)?;
     }
 
     let cache = host_store_cache(root);
@@ -168,7 +167,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     }
     relink_present(&oath_root, &guest_bin)?;
     oath_core::sync_need_hashes(&oath_root).map_err(|e| anyhow::anyhow!("{e}"))?;
-    settle_pkg_actuals(&oath_root)?;
+    settle_pkg_applied(&oath_root)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
     let raw = dir.join("root.raw");
@@ -410,13 +409,11 @@ pub fn bake_install_keys(o: &Output, run: &Path, keys: &str) -> Result<PathBuf> 
 /// Transitive closure + topological load order from `modules.dep`.
 /// Output paths have `.xz` stripped (pack stores uncompressed `.ko`).
 
-fn link_pkg(oath_root: &Path, bin_dir: &Path, name: &str, removable: bool) -> Result<()> {
+/// Link `pkg:<name>` into the stage's `/bin`. No status is written: the
+/// machine observes it at boot (R14).
+fn link_pkg(oath_root: &Path, bin_dir: &Path, name: &str) -> Result<()> {
     let hash = desired_hash(oath_root, name);
-    let mut actual =
-        converge_with_link_root(oath_root, bin_dir, Path::new("/oath"), name, true, &hash)
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-    actual.removable = removable;
-    write_json(&oath_root.join("objects/pkg").join(name).join("actual.json"), &actual)
+    converge_with_link_root(oath_root, bin_dir, Path::new("/oath"), name, true, &hash)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(())
 }
@@ -448,47 +445,19 @@ fn relink_present(oath_root: &Path, bin_dir: &Path) -> Result<()> {
         if v.get("present").and_then(|p| p.as_bool()) != Some(true) {
             continue;
         }
-        let removable = oath_root
-            .join("objects/pkg")
-            .join(&name)
-            .join("actual.json")
-            .exists()
-            .then(|| {
-                oath_core::read_json::<serde_json::Value>(
-                    &oath_root.join("objects/pkg").join(&name).join("actual.json"),
-                )
-                .ok()
-                .and_then(|a| a.get("removable").and_then(|x| x.as_bool()))
-                .unwrap_or(true)
-            })
-            .unwrap_or(true);
-        link_pkg(oath_root, bin_dir, &name, removable)?;
+        link_pkg(oath_root, bin_dir, &name)?;
     }
     Ok(())
 }
 
-/// Give every `pkg` actual the prose and pin its desired doc has, and keep
-/// the desired doc as applied, the way apply would, so a fresh image
-/// starts in sync instead of drifting.
-fn settle_pkg_actuals(oath_root: &Path) -> Result<()> {
+/// Keep every `pkg`'s desired doc (with its pin) as applied, the way apply
+/// would: the image links what its seed pins, so it starts in sync.
+fn settle_pkg_applied(oath_root: &Path) -> Result<()> {
     let dir = oath_root.join("objects/pkg");
     for e in fs::read_dir(&dir)?.flatten() {
         let d = e.path();
         let desired: serde_json::Value = oath_core::read_json(&d.join("desired.json"))
             .map_err(|e| anyhow::anyhow!("{}: {e}", d.display()))?;
-        let mut actual: serde_json::Value = oath_core::read_json(&d.join("actual.json"))
-            .map_err(|e| anyhow::anyhow!("{}: {e}", d.display()))?;
-        for k in ["url", "needs", "description", "home"] {
-            if let Some(v) = desired.get(k) {
-                actual[k] = v.clone();
-            }
-        }
-        let pin = desired.get("hash").and_then(|h| h.as_str()).unwrap_or("");
-        if !pin.is_empty() && actual.get("hash").and_then(|h| h.as_str()).unwrap_or("").is_empty() {
-            actual["hash"] = serde_json::json!(pin);
-        }
-        write_json(&d.join("actual.json"), &actual).map_err(|e| anyhow::anyhow!("{e}"))?;
-        // The image links what its seed pins: that is applied.
         write_json(&d.join("applied.json"), &desired).map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())

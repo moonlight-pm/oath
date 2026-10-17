@@ -14,12 +14,9 @@ append history (git has it).
    desk landed after it. Next, when Joshua says so:
    `cargo make update --target home@10.0.0.3 --confirm --reboot`, then
    `cargo make check --target home@10.0.0.3` (31 metal cases now).
-2. **Spec/status split (R14).** Every kind keeps its applied spec in
-   `applied.json`, and drift and undo read only spec (2026-10-16). Next:
-   status moves to a tmpfs at `/oath/status`, rebuilt at every boot.
-3. **Phase 7, agent surface.** MCP and agent tooling over `oath --json`.
+2. **Phase 7, agent surface.** MCP and agent tooling over `oath --json`.
    Next: a spec in `docs/specs/` for the adapter, then build it.
-4. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
    `cargo make install --usb` stick, or `cargo make update` once it
@@ -27,7 +24,7 @@ append history (git has it).
 
 **State:** phases 1–5 are done; phase 6 is active
 ([docs/roadmap.md](docs/roadmap.md)). On 2026-10-16 every target in the
-specs short of phase 8 was built, except moving status to tmpfs: source
+specs short of phase 8 was built: the spec/status split (R14), source
 beside each pack on origins (R13), probation with automatic rollback,
 store integrity (`oath verify`), schemas generated from the types,
 cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,

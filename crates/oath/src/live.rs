@@ -126,7 +126,7 @@ impl ApplyHooks for Live {
             return Ok(());
         }
         let want = if enabled { "running" } else { "stopped" };
-        let path = Path::new("/oath/objects/svc").join(&id.name).join("actual.json");
+        let path = oath_core::status_path(&self.catalog_root, id);
         for _ in 0..40 {
             if let Ok(v) = oath_core::read_json::<serde_json::Value>(&path) {
                 if v.get("state").and_then(|s| s.as_str()) == Some(want) {

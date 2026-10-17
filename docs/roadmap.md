@@ -36,10 +36,9 @@ before the snapshot, every outcome logged (`ok` / `error` /
 `--confirm` for changes that can cut off SSH, PID 1 running only
 applied specs, no reseed of an existing catalog.
 
-Not done, carried forward: a physical spec/status directory split
-(undo already touches spec only). Since: probation apply with
-automatic rollback, the store integrity check, and schemas generated
-from the Rust types (2026-10-16).
+Since: probation apply with automatic rollback, the store integrity
+check, schemas generated from the Rust types, and the spec/status split
+(R14, status on a tmpfs) (2026-10-16).
 
 ## 4. PID 1 — done (2026-10-13)
 

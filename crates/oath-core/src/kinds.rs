@@ -17,6 +17,10 @@ pub struct Meta {
     pub status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_generation: Option<u64>,
+    /// A package the seed profile fixes: `present=false` and `oath rm` are
+    /// refused.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fixed: bool,
 }
 
 impl Meta {
@@ -28,6 +32,7 @@ impl Meta {
             safety: safety.to_string(),
             status: "in-sync".into(),
             last_generation: None,
+            fixed: false,
         }
     }
 }

@@ -113,6 +113,7 @@ fn real_main() -> Result<(), String> {
     let _ = fs::create_dir_all("/tmp");
     let _ = fs::create_dir_all("/root");
     mount_toplevel();
+    mount_status();
 
     // Seed only a machine with no catalog at all. A missing INDEX.md is
     // regenerated, never a reason to throw the catalog away.
@@ -125,6 +126,14 @@ fn real_main() -> Result<(), String> {
     let boot_lock = Catalog::open(DEFAULT_ROOT).and_then(|c| c.lock());
     if let Err(e) = &boot_lock {
         log(&format!("catalog lock: {e}"));
+    }
+    // A catalog from before R14 kept status in its object directories.
+    if let (Ok(cat), Ok(lock)) = (Catalog::open(DEFAULT_ROOT), &boot_lock) {
+        match cat.migrate(lock) {
+            Ok(0) => {}
+            Ok(n) => log(&format!("catalog: {n} objects moved to applied.json and status/")),
+            Err(e) => log(&format!("catalog migrate: {e}")),
+        }
     }
     // The schema files describe the binaries on this machine, so an
     // upgraded oath brings its schemas with it.
@@ -152,6 +161,12 @@ fn real_main() -> Result<(), String> {
     ensure_home();
     inject_ssh_from_host();
     apply_ssh();
+    // Packages, plans and the generation: observed from the store and /bin.
+    if let (Ok(cat), Ok(lock)) = (Catalog::open(DEFAULT_ROOT), &boot_lock) {
+        if let Err(e) = cat.observe(lock, Path::new("/bin")) {
+            log(&format!("catalog observe: {e}"));
+        }
+    }
     drop(boot_lock);
     // Listen before the first service starts: an `oath apply` that comes
     // in over SSH while boot finishes waits in the backlog, not lost.
@@ -698,6 +713,28 @@ fn unix_floor() {
     let _ = Command::new("/bin/ip").args(["addr", "add", "::1/128", "dev", "lo"]).status();
 }
 
+/// `id`'s status file (on the `/oath/status` tmpfs).
+fn status(id: &ObjectId) -> std::path::PathBuf {
+    oath_core::status_path(Path::new(DEFAULT_ROOT), id)
+}
+
+/// Status lives on a tmpfs at `/oath/status` (R14): no generation or boot
+/// snapshot holds it, and every boot observes afresh. Whatever an older
+/// `oath` left in the directory underneath is cleared first, so it is not
+/// carried in snapshots either.
+fn mount_status() {
+    let dir = Path::new(DEFAULT_ROOT).join(oath_core::STATUS_DIR);
+    if mounted(&dir.to_string_lossy()) {
+        return;
+    }
+    let _ = fs::remove_dir_all(&dir);
+    let _ = fs::create_dir_all(&dir);
+    let flags = MsFlags::MS_NOSUID | MsFlags::MS_NODEV | MsFlags::MS_NOEXEC;
+    if let Err(e) = mount(Some("tmpfs"), &dir, Some("tmpfs"), flags, Some("mode=755")) {
+        log(&format!("status tmpfs: {e}; status stays on disk this boot"));
+    }
+}
+
 /// Mount btrfs subvolid=0 so generations can be sibling `@gen-N`, not nested on `@`.
 fn mount_toplevel() {
     let top = Path::new(BTRFS_TOP);
@@ -770,8 +807,7 @@ fn apply_host() {
         env: host.env,
         timezone: host.timezone,
     };
-    let dir = Path::new(DEFAULT_ROOT).join("objects/host/local");
-    let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
+    let _ = oath_core::write_json(&status(&id), &actual);
     let _ = cat.write_index();
 }
 
@@ -786,8 +822,7 @@ fn apply_net() {
     match oath_core::converge_net(&net) {
         Ok(actual) => {
             tel("init", "net", json!({ "ok": true, "up": actual.up, "ipv4": actual.ipv4 }));
-            let dir = Path::new(DEFAULT_ROOT).join("objects/net/net0");
-            let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
+            let _ = oath_core::write_json(&status(&id), &actual);
         }
         Err(e) => {
             log(&format!("net: {e}"));
@@ -848,8 +883,7 @@ fn apply_ssh() {
     match oath_core::converge_ssh(&ssh) {
         Ok(actual) => {
             tel("init", "ssh", json!({ "ok": true, "host_key": actual.host_key }));
-            let dir = Path::new(DEFAULT_ROOT).join("objects/ssh/local");
-            let _ = oath_core::write_json(&dir.join("actual.json"), &actual);
+            let _ = oath_core::write_json(&status(&id), &actual);
         }
         Err(e) => {
             log(&format!("ssh: {e}"));

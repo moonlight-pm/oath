@@ -108,6 +108,43 @@ pub fn converge_with_link_root(
     }
 }
 
+/// What of `name` is linked now, changing nothing: the live realization
+/// and the `/bin` names that point into it. With no tree in the store it
+/// is absent; a tree with nothing in `bin/` cannot show it is present, so
+/// it is what `applied_present` says.
+pub fn observe(
+    catalog_root: &Path,
+    bin_dir: &Path,
+    name: &str,
+    applied_present: bool,
+) -> PkgActual {
+    let hash = live_hash(catalog_root, name).ok().flatten().unwrap_or_default();
+    let tree = if hash.is_empty() {
+        slot_dir(catalog_root, name)
+    } else {
+        realization_dir(catalog_root, name, &hash)
+    };
+    let store = tree.join("bin");
+    let slot = slot_dir(catalog_root, name);
+    let names = bin_names(&store).unwrap_or_default();
+    let links: Vec<String> = names
+        .iter()
+        .filter(|n| {
+            let target = store_target(catalog_root, name, n, &tree, catalog_root);
+            is_our_link(&bin_dir.join(n), &target, &store.join(n), &slot)
+        })
+        .cloned()
+        .collect();
+    let present = if !tree.is_dir() {
+        false
+    } else if names.is_empty() {
+        applied_present
+    } else {
+        links.len() == names.len()
+    };
+    pkg_actual(present, links, hash, catalog_root, name)
+}
+
 pub fn normalize_need(w: &str) -> String {
     if w.contains(':') {
         w.to_string()
@@ -747,13 +784,13 @@ pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
         let name = e.file_name().to_string_lossy().into_owned();
         let desired =
             crate::read_json::<Value>(&e.path().join("desired.json")).unwrap_or(Value::Null);
-        let actual =
-            crate::read_json::<Value>(&e.path().join("actual.json")).unwrap_or(Value::Null);
+        let applied =
+            crate::read_json::<Value>(&e.path().join("applied.json")).unwrap_or(Value::Null);
         let h = desired
             .get("hash")
             .and_then(|x| x.as_str())
             .filter(|s| !s.is_empty())
-            .or_else(|| actual.get("hash").and_then(|x| x.as_str()).filter(|s| !s.is_empty()))
+            .or_else(|| applied.get("hash").and_then(|x| x.as_str()).filter(|s| !s.is_empty()))
             .unwrap_or("")
             .to_string();
         if !h.is_empty() {
@@ -766,7 +803,7 @@ pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
         if !e.path().is_dir() {
             continue;
         }
-        for file in ["desired.json", "applied.json", "actual.json"] {
+        for file in ["desired.json", "applied.json"] {
             let p = e.path().join(file);
             let Ok(mut v) = crate::read_json::<Value>(&p) else {
                 continue;

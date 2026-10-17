@@ -23,6 +23,14 @@ const REMOVE_MARK: &str = "remove";
 /// In an object directory: the spec as it was last applied. Drift is
 /// desired against it, and undo puts it back.
 const APPLIED: &str = "applied.json";
+/// Where status (`actual`) lives, under the catalog root: a tmpfs on the
+/// machine, so no snapshot holds it and every boot observes afresh (R14).
+pub const STATUS_DIR: &str = "status";
+
+/// `<root>/status/<kind>/<name>.json`: what the machine observed of `id`.
+pub fn status_path(root: &Path, id: &ObjectId) -> PathBuf {
+    root.join(STATUS_DIR).join(&id.kind).join(format!("{}.json", id.name))
+}
 /// Kinds `oath new` / `oath rm` work on. host, net, ssh, snap and dev are
 /// singletons or inventory owned by the engine.
 const CREATABLE: &[&str] = &[KIND_SVC, KIND_PKG];
@@ -107,28 +115,6 @@ fn copy_tree(src: &Path, dst: &Path) -> Result<()> {
     Ok(())
 }
 
-/// The actual document an object starts with before anything converges.
-pub(crate) fn first_actual(id: &ObjectId, desired: &Value, fixed: bool) -> Value {
-    match id.kind.as_str() {
-        KIND_SVC => json!({ "state": "stopped", "pid": null, "restarts": 0 }),
-        KIND_SSH => json!({ "authorized": [], "host_key": false }),
-        KIND_PKG => {
-            let mut a = json!({
-                "present": false,
-                "links": [],
-                "removable": !fixed,
-            });
-            for k in ["url", "needs", "description", "home"] {
-                if let Some(v) = desired.get(k) {
-                    a[k] = v.clone();
-                }
-            }
-            a
-        }
-        _ => desired.clone(),
-    }
-}
-
 impl Catalog {
     pub fn open(root: impl Into<PathBuf>) -> Result<Self> {
         Ok(Self { root: root.into() })
@@ -171,6 +157,7 @@ impl Catalog {
         for id in self.ls(Some(KIND_DEV))? {
             if !found.iter().any(|(n, _)| *n == id.name) {
                 fs::remove_dir_all(self.obj_dir(&id))?;
+                self.drop_actual(&id);
                 changes.push(format!("-{id}"));
             }
         }
@@ -184,7 +171,7 @@ impl Catalog {
                 write_json(&dir.join(APPLIED), &json!({ "present": true }))?;
                 changes.push(format!("+{id}"));
             }
-            let path = dir.join("actual.json");
+            let path = status_path(&self.root, &id);
             if read_json::<crate::DevActual>(&path).ok().as_ref() != Some(actual) {
                 write_json(&path, actual)?;
             }
@@ -193,6 +180,94 @@ impl Catalog {
             self.write_index()?;
         }
         Ok(changes)
+    }
+
+    /// Bring a catalog from before R14 to the split. Each object that
+    /// converges gets the `applied.json` its old `actual.json` stood for; a
+    /// fixed package's `removable: false` becomes `meta.fixed`; a
+    /// generation record moves into its `desired.json`; a service's
+    /// `last.json` moves to the log tree; and the old `actual.json` goes
+    /// (status is observed again). Returns how many objects changed.
+    pub fn migrate(&self, _lock: &CatalogLock) -> Result<usize> {
+        let mut changed = 0;
+        for id in self.ls(None)? {
+            let dir = self.obj_dir(&id);
+            let last = dir.join("last.json");
+            if last.is_file() {
+                let to =
+                    self.root.join("log").join(&id.kind).join(format!("{}.last.json", id.name));
+                fs::create_dir_all(to.parent().unwrap_or(&self.root))?;
+                fs::rename(&last, &to)?;
+                changed += 1;
+            }
+            let legacy = dir.join("actual.json");
+            if !legacy.is_file() {
+                continue;
+            }
+            let actual: Value = read_json(&legacy).unwrap_or(Value::Null);
+            let mut meta: Meta = read_json(&dir.join("meta.json"))?;
+            let desired: Value = read_json(&dir.join("desired.json"))?;
+            if id.kind == KIND_SNAP && id.name != "current" {
+                if desired.get("generation").is_none() && actual.get("generation").is_some() {
+                    write_json(&dir.join("desired.json"), &actual)?;
+                }
+            } else if id.kind != KIND_SVC && !dir.join(APPLIED).is_file() {
+                let applied = match id.kind.as_str() {
+                    KIND_PLAN => {
+                        json!({ "hash": actual.get("hash").cloned().unwrap_or(json!("")) })
+                    }
+                    _ => {
+                        let obj = Object {
+                            id: id.clone(),
+                            meta: meta.clone(),
+                            desired,
+                            actual: actual.clone(),
+                        };
+                        self.last_good(&obj)?
+                    }
+                };
+                write_json(&dir.join(APPLIED), &applied)?;
+            }
+            if id.kind == KIND_PKG && actual.get("removable") == Some(&json!(false)) && !meta.fixed
+            {
+                meta.fixed = true;
+                write_json(&dir.join("meta.json"), &meta)?;
+            }
+            fs::remove_file(&legacy)?;
+            changed += 1;
+        }
+        Ok(changed)
+    }
+
+    /// Observe what only the catalog and the store can say (PID 1 at boot,
+    /// on a fresh `status/`): each package from its tree and the links in
+    /// `bin_dir`, each plan and the current generation from their applied
+    /// specs. Hosts, links, keys, devices and services are observed by
+    /// whoever converges them.
+    pub fn observe(&self, _lock: &CatalogLock, bin_dir: &Path) -> Result<()> {
+        for id in self.ls(Some(KIND_PKG))? {
+            let obj = self.get(&id)?;
+            let spec = self.applied(&id)?.unwrap_or(obj.desired);
+            let Ok(spec) = serde_json::from_value::<Pkg>(spec) else { continue };
+            let mut actual = crate::pkg::observe(&self.root, bin_dir, &id.name, spec.present);
+            actual.removable = !obj.meta.fixed;
+            actual.url = spec.url;
+            actual.needs = spec.needs;
+            actual.description = spec.description;
+            actual.home = spec.home;
+            self.write_actual(&id, &actual)?;
+        }
+        for id in self.ls(Some(KIND_PLAN))? {
+            let spec = self.applied(&id)?.unwrap_or(self.get(&id)?.desired);
+            let hash = spec.get("hash").cloned().unwrap_or(json!(""));
+            self.write_actual(&id, &json!({ "hash": hash }))?;
+        }
+        let cur = ObjectId::new(KIND_SNAP, "current");
+        if self.obj_dir(&cur).is_dir() {
+            let spec = self.applied(&cur)?.unwrap_or(self.get(&cur)?.desired);
+            self.write_actual(&cur, &spec)?;
+        }
+        Ok(())
     }
 
     /// Take the catalog lock, waiting up to 30 s for another writer.
@@ -292,7 +367,10 @@ impl Catalog {
         }
         let mut meta: Meta = read_json(&dir.join("meta.json"))?;
         let desired: Value = read_json(&dir.join("desired.json"))?;
-        let actual: Value = read_json(&dir.join("actual.json")).unwrap_or(Value::Null);
+        // Not observed yet: null. A catalog from before R14 kept it here.
+        let actual: Value = read_json(&status_path(&self.root, id))
+            .or_else(|_| read_json(&dir.join("actual.json")))
+            .unwrap_or(Value::Null);
         let obj = Object { id: id.clone(), meta: meta.clone(), desired, actual };
         meta.status = if dir.join(REMOVE_MARK).exists() {
             "removing".into()
@@ -322,7 +400,7 @@ impl Catalog {
         }
         if id.kind == KIND_PKG
             && fields.get("present") == Some(&Value::Bool(false))
-            && !pkg_removable(&obj.actual)
+            && obj.meta.fixed
         {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
@@ -373,7 +451,6 @@ impl Catalog {
         };
         fs::create_dir_all(&dir)?;
         write_json(&dir.join("meta.json"), &Meta::new(&id.kind, &id.name, "mutate"))?;
-        write_json(&dir.join("actual.json"), &first_actual(id, &desired, false))?;
         write_atomic(&dir.join(NEW_MARK), b"")?;
         write_json(&dir.join("desired.json"), &desired)?;
         self.write_index()?;
@@ -389,7 +466,7 @@ impl Catalog {
             return Err(Error::hint(format!("{id} cannot be removed"), "oath schema"));
         }
         let obj = self.get(id)?;
-        if id.kind == KIND_PKG && !pkg_removable(&obj.actual) {
+        if id.kind == KIND_PKG && obj.meta.fixed {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
         let dir = self.obj_dir(id);
@@ -709,8 +786,8 @@ impl Catalog {
         }
         let Ok(_lock) = self.lock() else { return Ok(out) };
         for r in &out {
-            let p = self.obj_dir(&r.id).join("actual.json");
-            let mut actual: Value = read_json(&p)?;
+            let p = status_path(&self.root, &r.id);
+            let Ok(mut actual) = read_json::<Value>(&p) else { continue };
             // Linked as something else since it was hashed: leave it.
             if actual.get("hash").and_then(|h| h.as_str()) != Some(r.hash.as_str()) {
                 continue;
@@ -966,9 +1043,14 @@ impl Catalog {
         Ok(applied)
     }
 
-    /// An object's observation (`actual`).
+    /// An object's observation (`actual`), under `status/`.
     pub(crate) fn write_actual(&self, id: &ObjectId, actual: &impl serde::Serialize) -> Result<()> {
-        write_json(&self.obj_dir(id).join("actual.json"), actual)
+        write_json(&status_path(&self.root, id), actual)
+    }
+
+    /// Forget what was observed of `id` (it is gone).
+    fn drop_actual(&self, id: &ObjectId) {
+        let _ = fs::remove_file(status_path(&self.root, id));
     }
 
     /// Stop or unlink, then delete the object directory.
@@ -991,6 +1073,7 @@ impl Catalog {
             _ => {}
         }
         fs::remove_dir_all(&dir)?;
+        self.drop_actual(id);
         if id.kind == KIND_SVC {
             hooks.notify_init()?;
         }
@@ -1025,13 +1108,12 @@ impl Catalog {
             if to.exists() {
                 fs::remove_dir_all(&to)?;
             }
+            self.drop_actual(id);
             return Ok(false);
         }
         fs::create_dir_all(&to)?;
-        for name in ["meta.json", "actual.json"] {
-            if !to.join(name).is_file() && from.join(name).is_file() {
-                fs::copy(from.join(name), to.join(name))?;
-            }
+        if !to.join("meta.json").is_file() && from.join("meta.json").is_file() {
+            fs::copy(from.join("meta.json"), to.join("meta.json"))?;
         }
         // The snapshot's desired is what was applied before (apply writes
         // last-good spec into it), so it stands in for an applied.json that
@@ -1143,7 +1225,7 @@ impl Catalog {
     fn converge_one_pkg(&self, id: &ObjectId, hooks: &dyn ApplyHooks) -> Result<Value> {
         let obj = self.get(id)?;
         let pkg: Pkg = serde_json::from_value(obj.desired.clone())?;
-        let removable = pkg_removable(&obj.actual);
+        let removable = !obj.meta.fixed;
         if !pkg.present && !removable {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
@@ -1185,7 +1267,8 @@ impl Catalog {
             if let Ok(mut spec) = serde_json::from_value::<Pkg>(obj.desired) {
                 if spec.hash.is_empty() {
                     let linked = self.applied(&id)?.unwrap_or(obj.actual);
-                    spec.hash = linked.get("hash").and_then(|h| h.as_str()).unwrap_or("").to_string();
+                    spec.hash =
+                        linked.get("hash").and_then(|h| h.as_str()).unwrap_or("").to_string();
                 }
                 if self.removing(&id) {
                     spec.present = false;
@@ -1340,16 +1423,16 @@ impl Catalog {
             "time": now_rfc3339(),
             "reason": format!("apply {reason}"),
         });
+        // The record is history, so it is spec: it stays with the catalog on
+        // disk and in later snapshots. Read-only: nothing sets it.
         let id = ObjectId::new(KIND_SNAP, generation.to_string());
         let dir = self.obj_dir(&id);
         fs::create_dir_all(&dir)?;
-        write_json(&dir.join("actual.json"), &rec)?;
         write_json(
             &dir.join("meta.json"),
             &Meta::new(KIND_SNAP, &generation.to_string(), "mutate"),
         )?;
-        // no desired — read-only
-        write_atomic(&dir.join("desired.json"), b"{}\n")?;
+        write_json(&dir.join("desired.json"), &rec)?;
 
         self.set_current_generation(generation)
     }
@@ -1383,10 +1466,6 @@ impl Catalog {
         f.sync_all()?;
         Ok(())
     }
-}
-
-fn pkg_removable(actual: &Value) -> bool {
-    actual.get("removable").and_then(|v| v.as_bool()).unwrap_or(true)
 }
 
 fn is_cidr(s: &str) -> bool {

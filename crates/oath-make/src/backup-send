@@ -15,7 +15,10 @@ host=${host%%.*}
 fs=/oath/run/fs
 live=$fs/@
 mnt=/run/oath-backup
-obj=/oath/objects/svc/backup
+# Status is on the /oath/status tmpfs; this service's own record of its
+# last run lives with its log, so it survives a reboot (R14).
+status=/oath/status/svc/backup.json
+last=/oath/log/svc/backup.last.json
 mounted=0
 
 log() { echo "backup-send: $*" >&2; }
@@ -81,7 +84,7 @@ next_gen() {
 }
 
 pkg_present() {
-	f=/oath/objects/pkg/$1/actual.json
+	f=/oath/status/pkg/$1.json
 	[ -f "$f" ] || return 1
 	$bb grep -q '"present"[[:space:]]*:[[:space:]]*true' "$f"
 }
@@ -103,7 +106,8 @@ quiesce_all() {
 }
 
 current_gen() {
-	p=/oath/objects/snap/current/actual.json
+	p=/oath/objects/snap/current/applied.json
+	[ -f "$p" ] || p=/oath/objects/snap/current/desired.json
 	[ -f "$p" ] || {
 		echo 0
 		return
@@ -139,13 +143,13 @@ thaw_all
 
 now=$($bb date -u +%Y-%m-%dT%H:%M:%SZ)
 snapdir=/oath/objects/snap/$gen
-$bb mkdir -p "$snapdir"
-printf '{"generation":%s,"parent":%s,"time":"%s","reason":"backup"}\n' "$gen" "$parent" "$now" >"$snapdir/actual.json"
-printf '{}\n' >"$snapdir/desired.json"
+$bb mkdir -p "$snapdir" /oath/status/snap
+# The generation record is history: it is snap:N's spec.
+printf '{"generation":%s,"parent":%s,"time":"%s","reason":"backup"}\n' "$gen" "$parent" "$now" >"$snapdir/desired.json"
 printf '{"id":"snap:%s","kind":"snap","name":"%s","safety":"mutate","status":"in-sync"}\n' "$gen" "$gen" >"$snapdir/meta.json"
 printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/desired.json
 printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/applied.json
-printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/actual.json
+printf '{"generation":%s}\n' "$gen" >/oath/status/snap/current.json
 
 tmp=$mnt/$host.send.tmp
 final=$mnt/$host.send
@@ -170,12 +174,12 @@ $bb mv -f "$side_tmp" "$side"
 $bb sync
 log "ok generation=$gen size=$size checksum=sha256:$sum"
 
-$bb mkdir -p "$obj"
+$bb mkdir -p "${last%/*}"
 printf '{"generation":%s,"time":"%s","dest":"%s","checksum":"sha256:%s","size":%s}\n' \
-	"$gen" "$now" "$spec" "$sum" "$size" >"$obj/last.json"
-if [ -f "$obj/actual.json" ]; then
+	"$gen" "$now" "$spec" "$sum" "$size" >"$last"
+if [ -f "$status" ]; then
 	printf '{"state":"running","pid":null,"restarts":0,"generation":%s,"time":"%s","dest":"%s","checksum":"sha256:%s","size":%s}\n' \
-		"$gen" "$now" "$spec" "$sum" "$size" >"$obj/actual.json"
+		"$gen" "$now" "$spec" "$sum" "$size" >"$status"
 fi
 
 log "done"

@@ -7,12 +7,12 @@ The catalog is the source of truth. It lives at `/oath`.
   INDEX.md                 generated. read this first
   schema/<kind>.json       JSON Schema 2020-12
   schema/<kind>.md         prompt-sized prose
-  objects/<kind>/<name>/
-    desired.json
-    actual.json
-    meta.json              id, safety, status
+  objects/<kind>/<name>/   spec (snapshots hold it; undo reads it)
+    desired.json           what you asked for
     applied.json           the spec as last applied (PID 1 runs a svc's)
+    meta.json              id, safety; `fixed` on a seed-fixed package
     new / remove           markers for a pending `oath new` / `oath rm`
+  status/<kind>/<name>.json  what the machine observed: tmpfs, rebuilt each boot
   log/apply.jsonl          every apply (ok, error, refused), undo and keep
   probation.json           an apply that can cut off SSH, until `oath keep`
   log/init.log             PID 1's messages
@@ -46,7 +46,7 @@ Desired and actual are separate files. You may `cat` any of these;
 | `plan` | none until you file one | Hashed `plan.plan`; `oath build` writes a pkg tree |
 
 Drift is desired against `applied.json`, the spec as last applied, for
-every kind; `actual.json` is only what the machine observed (`svc`
+every kind; actual (`/oath/status/…`) is only what the machine observed (`svc`
 actual is runtime: `state`, `pid`, `restarts`).
 
 `oath schema <kind>` on the box gives fields, safety, and examples.

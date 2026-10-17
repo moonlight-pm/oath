@@ -65,7 +65,9 @@ pub fn record_lease(root: &Path, event: &str, env: &dyn Fn(&str) -> Option<Strin
             let _ = fs::remove_file(LEASE_FILE);
         }
     }
-    let actual = root.join("objects/net/net0/actual.json");
+    // Before PID 1 first observed net0 there is nothing to update; its
+    // converge reads LEASE_FILE.
+    let actual = crate::status_path(root, &crate::ObjectId::new("net", "net0"));
     let Ok(mut a) = crate::read_json::<serde_json::Value>(&actual) else { return Ok(()) };
     match lease {
         Some(l) => {
@@ -261,7 +263,7 @@ mod tests {
     #[test]
     fn a_renewal_lands_in_actual() {
         let d = tempfile::tempdir().unwrap();
-        let actual = d.path().join("objects/net/net0/actual.json");
+        let actual = crate::status_path(d.path(), &crate::ObjectId::new("net", "net0"));
         crate::write_json(&actual, &serde_json::json!({"up": true, "ipv4": "dhcp"})).unwrap();
         let env = |k: &str| {
             let v = match k {

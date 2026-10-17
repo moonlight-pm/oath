@@ -2,9 +2,9 @@
 //!
 //! A profile names objects and their first desired document. `extends`
 //! pulls in another profile first. `fixed` lists packages that can never
-//! be removed. `actual` gives a first actual document where the default
-//! one is wrong. An overlay is the same shape without `extends`; each of
+//! be removed. An overlay is the same shape without `extends`; each of
 //! its objects is a JSON merge patch (RFC 7386) on the current desired.
+//! Seeding writes spec only: status is observed by the machine (R14).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 
 use crate::error::{Error, Result};
 use crate::kinds::Meta;
-use crate::{write_json, ObjectId, KIND_PKG, KIND_SSH, KIND_SVC};
+use crate::{write_json, ObjectId, KIND_SSH, KIND_SVC};
 
 /// Built-in profiles. `base` is a headless machine you reach over SSH.
 pub const PROFILES: &[(&str, &str)] = &[("base", include_str!("../seed/base.json"))];
@@ -30,16 +30,13 @@ struct ProfileFile {
     fixed: Vec<String>,
     #[serde(default)]
     objects: BTreeMap<String, Value>,
-    #[serde(default)]
-    actual: BTreeMap<String, Value>,
 }
 
-/// A resolved profile: every object's first desired and actual.
+/// A resolved profile: every object's first desired document.
 #[derive(Debug, Default)]
 pub struct Profile {
     fixed: BTreeSet<String>,
     objects: BTreeMap<String, Value>,
-    actual: BTreeMap<String, Value>,
 }
 
 impl Profile {
@@ -105,10 +102,6 @@ impl Profile {
             let base = self.objects.remove(&id).unwrap_or_else(|| json!({}));
             self.objects.insert(id, merge_patch(base, &patch));
         }
-        for (id, a) in file.actual {
-            check_id(&id)?;
-            self.actual.insert(id, a);
-        }
         Ok(())
     }
 }
@@ -149,12 +142,8 @@ pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
     write_schemas(root)?;
     for (id, desired) in &p.objects {
         let oid: ObjectId = id.parse()?;
-        let actual = match p.actual.get(id) {
-            Some(a) => a.clone(),
-            None => first_actual(&oid, desired, p.fixed.contains(id)),
-        };
         // A seeded object starts applied: the image is built that way.
-        write_object(root, &oid, desired, &actual, true)?;
+        write_object(root, &oid, desired, true, p.fixed.contains(id))?;
     }
     std::fs::write(root.join("log/apply.jsonl"), "")?;
     crate::Catalog::open(root)?.write_index()?;
@@ -164,17 +153,18 @@ pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
 /// Merge an overlay into the catalog at `root` before it first boots.
 /// Each patch lands in `desired` and, for svc, host, net and ssh, counts
 /// as applied (PID 1 boots from `applied.json`). Packages keep their
-/// applied spec; a package an overlay turns on is linked by the first
-/// `oath apply`. New objects get a first actual. Returns the ids touched.
+/// applied spec, and a package the overlay creates starts applied as
+/// absent: one it wants present is linked by the first `oath apply`.
+/// Returns the ids touched.
 pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
     let cat = crate::Catalog::open(root)?;
     let _lock = cat.lock()?;
     let file: ProfileFile = serde_json::from_value(overlay.clone())
         .map_err(|e| Error::hint(format!("overlay: {e}"), "{\"objects\": {\"kind:name\": {…}}}"))?;
-    if file.extends.is_some() || !file.fixed.is_empty() || !file.actual.is_empty() {
+    if file.extends.is_some() || !file.fixed.is_empty() {
         return Err(Error::hint(
             "an overlay has only `objects`",
-            "profiles use extends/fixed/actual; overlays patch desired",
+            "profiles use extends/fixed; overlays patch desired",
         ));
     }
     let mut touched = Vec::new();
@@ -194,9 +184,13 @@ pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
             if boots_from_it {
                 write_json(&dir.join("applied.json"), &desired)?;
             }
+        } else if oid.kind == crate::KIND_PKG {
+            write_object(root, &oid, &desired, false, false)?;
+            let mut nothing_linked = desired.clone();
+            nothing_linked["present"] = json!(false);
+            write_json(&dir.join("applied.json"), &nothing_linked)?;
         } else {
-            let actual = first_actual(&oid, &desired, false);
-            write_object(root, &oid, &desired, &actual, boots_from_it)?;
+            write_object(root, &oid, &desired, true, false)?;
         }
         touched.push(oid);
     }
@@ -242,40 +236,19 @@ fn check_id(id: &str) -> Result<()> {
     Ok(())
 }
 
-/// The actual document an object starts with before anything converges.
-fn first_actual(id: &ObjectId, desired: &Value, fixed: bool) -> Value {
-    match id.kind.as_str() {
-        KIND_SVC => json!({ "state": "stopped", "pid": null, "restarts": 0 }),
-        KIND_SSH => json!({ "authorized": [], "host_key": false }),
-        KIND_PKG => {
-            let mut a = json!({
-                "present": desired.get("present").cloned().unwrap_or(json!(false)),
-                "links": [],
-                "removable": !fixed,
-            });
-            for k in ["url", "needs", "description", "home"] {
-                if let Some(v) = desired.get(k) {
-                    a[k] = v.clone();
-                }
-            }
-            a
-        }
-        _ => desired.clone(),
-    }
-}
-
 fn write_object(
     root: &Path,
     id: &ObjectId,
     desired: &Value,
-    actual: &Value,
     applied: bool,
+    fixed: bool,
 ) -> Result<()> {
     let dir = root.join("objects").join(&id.kind).join(&id.name);
     std::fs::create_dir_all(&dir)?;
     write_json(&dir.join("desired.json"), desired)?;
-    write_json(&dir.join("actual.json"), actual)?;
-    write_json(&dir.join("meta.json"), &Meta::new(&id.kind, &id.name, "mutate"))?;
+    let mut meta = Meta::new(&id.kind, &id.name, "mutate");
+    meta.fixed = fixed;
+    write_json(&dir.join("meta.json"), &meta)?;
     if applied {
         write_json(&dir.join("applied.json"), desired)?;
     }
@@ -368,8 +341,13 @@ mod tests {
             crate::read_json(&d.path().join("objects/host/local/desired.json")).unwrap();
         assert_eq!(host["hostname"], "canto");
         assert_eq!(host["power"], "run");
-        let a: Value = crate::read_json(&d.path().join("objects/svc/backup/actual.json")).unwrap();
-        assert_eq!(a["state"], "stopped");
+        // Counted as applied for PID 1; nothing observed yet, so no status.
+        let a: Value = crate::read_json(&d.path().join("objects/svc/backup/applied.json")).unwrap();
+        assert_eq!(a["enabled"], false);
+        let host: Value =
+            crate::read_json(&d.path().join("objects/host/local/applied.json")).unwrap();
+        assert_eq!(host["hostname"], "canto");
+        assert!(!d.path().join("status").exists());
     }
 
     #[test]

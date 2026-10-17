@@ -67,8 +67,9 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
     write_json(&dir_obj.join("applied.json"), &json!({ "hash": hash }))?;
     // A new pin forgets the last build: its product says nothing about
     // this plan file.
-    let actual = if dir_obj.join("actual.json").is_file() {
-        let mut a: PlanActual = crate::read_json(&dir_obj.join("actual.json"))?;
+    let status = crate::status_path(catalog_root, &ObjectId::new(KIND_PLAN, &plan.name));
+    let actual = if status.is_file() {
+        let mut a: PlanActual = crate::read_json(&status)?;
         if a.hash != hash {
             a = PlanActual { hash: hash.clone(), product: String::new(), inputs: String::new() };
         }
@@ -76,7 +77,7 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
     } else {
         PlanActual { hash: hash.clone(), product: String::new(), inputs: String::new() }
     };
-    write_json(&dir_obj.join("actual.json"), &actual)?;
+    write_json(&status, &actual)?;
     write_json(&dir_obj.join("meta.json"), &Meta::new(KIND_PLAN, &plan.name, "mutate"))?;
     Ok(hash)
 }
@@ -230,9 +231,8 @@ fn build_inner(
 
     ensure_pkg_object(catalog_root, plan, &product)?;
     if let Some(id) = plan_id {
-        let dir = catalog_root.join("objects/plan").join(&id.name);
         write_json(
-            &dir.join("actual.json"),
+            &crate::status_path(catalog_root, id),
             &PlanActual {
                 hash: plan_hash.to_string(),
                 product: product.clone(),
@@ -265,10 +265,6 @@ fn ensure_pkg_object(catalog_root: &Path, plan: &PlanFile, product: &str) -> Res
     }
     write_json(&dir.join("desired.json"), &desired)?;
     write_json(&dir.join("applied.json"), &desired)?;
-    write_json(
-        &dir.join("actual.json"),
-        &json!({ "present": false, "links": [], "removable": true }),
-    )?;
     write_json(&dir.join("meta.json"), &Meta::new(KIND_PKG, &plan.name, "mutate"))?;
     Ok(())
 }

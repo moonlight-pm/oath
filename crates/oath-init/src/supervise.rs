@@ -535,7 +535,10 @@ impl Supervisor {
         if let Some(why) = why {
             v["reason"] = json!(why);
         }
-        if let Ok(extra) = oath_core::read_json::<Value>(&dir.join("last.json")) {
+        // A service's own record of its last run (backup-send writes one)
+        // lives with its log, so it outlives the status tmpfs.
+        let last = Path::new(LOG_ROOT).join("svc").join(format!("{}.last.json", oid.name));
+        if let Ok(extra) = oath_core::read_json::<Value>(&last) {
             if let Some(obj) = extra.as_object() {
                 for (k, val) in obj {
                     if v.get(k).is_none() {
@@ -544,7 +547,7 @@ impl Supervisor {
                 }
             }
         }
-        let _ = oath_core::write_json(&dir.join("actual.json"), &v);
+        let _ = oath_core::write_json(&oath_core::status_path(Path::new(DEFAULT_ROOT), &oid), &v);
     }
 }
 

@@ -141,9 +141,12 @@ fn seed_lists_host() {
     assert!(exec.iter().any(|v| v == "-w"));
     assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
     let oath = cat.get(&"pkg:oath".parse().unwrap()).unwrap();
-    assert_eq!(oath.actual["removable"], false);
+    assert!(oath.meta.fixed);
     let curl = cat.get(&"pkg:curl".parse().unwrap()).unwrap();
-    assert_eq!(curl.actual["removable"], true);
+    assert!(!curl.meta.fixed);
+    // Seeding writes spec; status is the machine's to observe.
+    assert!(curl.actual.is_null());
+    assert!(!cat.root().join("status").exists());
 }
 
 fn write_hello_store(root: &std::path::Path) {
@@ -185,7 +188,7 @@ fn reboot_needs_confirm() {
     assert_eq!(obj.desired["power"], "run");
     // Power alone is not configuration: no generation, nothing to undo.
     assert!(r.power_only);
-    assert_eq!(cat.get(&"snap:current".parse().unwrap()).unwrap().actual["generation"], 0);
+    assert_eq!(cat.get(&"snap:current".parse().unwrap()).unwrap().desired["generation"], 0);
     assert_eq!(results(&cat).last().unwrap(), &("ok".to_string(), None));
     assert!(cat.undo(&Actor::unknown(), &hooks).is_err(), "nothing to undo");
     // With a real change it is one generation like any other.
@@ -569,7 +572,8 @@ fn ingest_file_reports_hash() {
     assert!(d.path().join("store/pkg/fetchme").join(&h).join("bin/fetchme").is_file());
 }
 
-/// Seed plus `pkg:libfoo` and `pkg:app`, where app needs libfoo.
+/// Seed plus `pkg:libfoo` and `pkg:app`, where app needs libfoo, both
+/// applied present.
 fn tmp_with_needs() -> (tempfile::TempDir, Catalog) {
     let (d, cat) = tmp();
     let h = format!("sha256-{}", "a".repeat(64));
@@ -581,6 +585,9 @@ fn tmp_with_needs() -> (tempfile::TempDir, Catalog) {
         }}),
     )
     .unwrap();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let ids = vec!["pkg:libfoo".parse().unwrap(), "pkg:app".parse().unwrap()];
+    cat.apply(Some(ids), false, &Actor::unknown(), &hooks).unwrap();
     (d, cat)
 }
 
@@ -600,7 +607,7 @@ fn pkg_needs_refuses_need_off_while_user_present() {
         }
         other => panic!("{other:?}"),
     }
-    assert_eq!(cat.get(&lib).unwrap().actual["present"], json!(true));
+    assert_eq!(cat.applied(&lib).unwrap().unwrap()["present"], json!(true));
 }
 
 #[test]
@@ -655,7 +662,7 @@ fn refused_apply_changes_nothing_and_is_logged() {
     assert_eq!(*hooks.hostname.lock().unwrap(), "oath");
     assert_eq!(results(&cat), vec![("refused".into(), None)]);
     let snap = cat.get(&"snap:current".parse().unwrap()).unwrap();
-    assert_eq!(snap.actual["generation"], 0);
+    assert_eq!(snap.desired["generation"], 0);
 }
 
 #[test]
@@ -1027,4 +1034,111 @@ fn drift_and_undo_read_only_the_spec() {
     assert!(cat.diff(None).unwrap().is_empty());
     set(&cat, "host:local", "hostname", json!("two")).unwrap();
     assert_eq!(cat.diff(None).unwrap()[0].fields[0].0, "hostname");
+}
+
+#[test]
+fn status_lives_outside_the_object_directories() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "host:local", "hostname", json!("seen")).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    let host: ObjectId = "host:local".parse().unwrap();
+    assert!(oath_core::status_path(d.path(), &host).is_file());
+    assert_eq!(cat.get(&host).unwrap().actual["hostname"], "seen");
+    for e in walk(&d.path().join("objects")) {
+        assert!(!e.ends_with("actual.json"), "status in the spec tree: {}", e.display());
+    }
+    // A generation record is spec.
+    let rec = cat.get(&"snap:1".parse().unwrap()).unwrap();
+    assert_eq!(rec.desired["parent"], 0);
+}
+
+fn walk(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut out = Vec::new();
+    for e in std::fs::read_dir(dir).unwrap().flatten() {
+        if e.path().is_dir() {
+            out.extend(walk(&e.path()));
+        } else {
+            out.push(e.path());
+        }
+    }
+    out
+}
+
+#[test]
+fn migrate_brings_an_old_catalog_to_the_split() {
+    let (d, cat) = seeded();
+    let obj = |kind: &str, name: &str| d.path().join("objects").join(kind).join(name);
+    // How a catalog looked before R14: actual held the applied spec, a
+    // fixed package said removable false, a record lived in actual.
+    std::fs::remove_file(obj("host", "local").join("applied.json")).unwrap();
+    oath_core::write_json(
+        &obj("host", "local").join("actual.json"),
+        &json!({"hostname": "old", "power": "run", "env": {}, "timezone": ""}),
+    )
+    .unwrap();
+    let mut meta: serde_json::Value =
+        oath_core::read_json(&obj("pkg", "busybox").join("meta.json")).unwrap();
+    meta.as_object_mut().unwrap().remove("fixed");
+    oath_core::write_json(&obj("pkg", "busybox").join("meta.json"), &meta).unwrap();
+    oath_core::write_json(
+        &obj("pkg", "busybox").join("actual.json"),
+        &json!({"present": true, "removable": false, "links": []}),
+    )
+    .unwrap();
+    std::fs::create_dir_all(obj("snap", "7")).unwrap();
+    oath_core::write_json(&obj("snap", "7").join("desired.json"), &json!({})).unwrap();
+    oath_core::write_json(&obj("snap", "7").join("meta.json"), &meta_of("snap", "7")).unwrap();
+    oath_core::write_json(
+        &obj("snap", "7").join("actual.json"),
+        &json!({"generation": 7, "parent": 6, "time": "2026-10-01T00:00:00Z", "reason": "apply x"}),
+    )
+    .unwrap();
+    oath_core::write_json(&obj("svc", "serial").join("last.json"), &json!({"generation": 7}))
+        .unwrap();
+
+    let n = cat.migrate(&cat.lock().unwrap()).unwrap();
+    assert_eq!(n, 4);
+    let applied = cat.applied(&"host:local".parse().unwrap()).unwrap().unwrap();
+    assert_eq!(applied["hostname"], "old");
+    assert!(cat.get(&"pkg:busybox".parse().unwrap()).unwrap().meta.fixed);
+    assert_eq!(cat.get(&"snap:7".parse().unwrap()).unwrap().desired["parent"], 6);
+    assert!(d.path().join("log/svc/serial.last.json").is_file());
+    for e in walk(&d.path().join("objects")) {
+        assert!(!e.ends_with("actual.json") && !e.ends_with("last.json"), "{}", e.display());
+    }
+    // The applied spec is what the old actual said, so host drifts to it.
+    assert_eq!(cat.diff(None).unwrap().len(), 1);
+    assert_eq!(cat.migrate(&cat.lock().unwrap()).unwrap(), 0, "once");
+}
+
+fn meta_of(kind: &str, name: &str) -> serde_json::Value {
+    json!({"id": format!("{kind}:{name}"), "kind": kind, "name": name, "safety": "mutate", "status": "in-sync"})
+}
+
+#[test]
+fn observe_rebuilds_package_status_from_the_store() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let hash = promote_slot(d.path(), "hello", None).unwrap();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "pkg:hello", "present", json!(true)).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    // A boot: the status tmpfs is empty.
+    std::fs::remove_dir_all(d.path().join("status")).unwrap();
+    let hello: ObjectId = "pkg:hello".parse().unwrap();
+    assert!(cat.get(&hello).unwrap().actual.is_null());
+    cat.observe(&cat.lock().unwrap(), &d.path().join("bin")).unwrap();
+    let a = cat.get(&hello).unwrap().actual;
+    assert_eq!((a["present"].clone(), a["hash"].clone()), (json!(true), json!(hash)));
+    assert_eq!(a["links"], json!(["hello"]));
+    assert_eq!(a["removable"], true);
+    assert_eq!(a["description"], "Canary. /bin/hello prints hello.");
+    let busybox = cat.get(&"pkg:busybox".parse().unwrap()).unwrap().actual;
+    assert_eq!(
+        (busybox["present"].clone(), busybox["removable"].clone()),
+        (json!(false), json!(false))
+    );
+    let cur = cat.get(&"snap:current".parse().unwrap()).unwrap().actual;
+    assert_eq!(cur["generation"], 1);
 }

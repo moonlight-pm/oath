@@ -29,7 +29,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R11 | The system toolchain is Clang/LLVM (clang, lld, compiler-rt, libunwind, libc++) on musl, built from source: stage 0 by the build host's gcc, stage 1 (`pkg:llvm`) by stage 0. One toolchain for every target; mesa needs LLVM anyway. | Decided 2026-10-14 |
 | R12 | Time comes from pool.ntp.org (`0`–`3.pool.ntp.org`): busybox `ntpd` as `svc:time` in the `base` seed. | Decided by Joshua 2026-10-15; done |
 | R13 | An origin carries each package's source beside it: `cargo make publish` copies the plan that built a pack and the `-src` pack that plan pins, for every published package, GPL or not. | Decided by Joshua 2026-10-16; done |
-| R14 | Spec and status split: every kind that converges keeps the spec it last applied (`applied.json`), and drift and undo read only spec; status (`actual`) is observation only and lives on a tmpfs at `/oath/status`, rebuilt at every boot, outside every snapshot. History that must survive (generation records, a service's last-run record) stays on disk with the spec or the log. | Decided by Joshua 2026-10-16 (option "B then C") |
+| R14 | Spec and status split: every kind that converges keeps the spec it last applied (`applied.json`), and drift and undo read only spec; status (`actual`) is observation only and lives on a tmpfs at `/oath/status`, rebuilt at every boot, outside every snapshot. History that must survive (generation records, a service's last-run record) stays on disk with the spec or the log. | Decided by Joshua 2026-10-16 (option "B then C"); done |
 
 ## Standing
 

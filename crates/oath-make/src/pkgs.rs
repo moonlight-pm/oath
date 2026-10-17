@@ -126,6 +126,9 @@ pub fn build_catalog(repo: &Path) -> Result<PathBuf> {
     if !root.join("objects").is_dir() {
         oath_core::seed(&root).map_err(|e| anyhow::anyhow!("seed {}: {e}", root.display()))?;
     }
+    let cat = oath_core::Catalog::open(&root).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let lock = cat.lock().map_err(|e| anyhow::anyhow!("{e}"))?;
+    cat.migrate(&lock).map_err(|e| anyhow::anyhow!("migrate {}: {e}", root.display()))?;
     Ok(root)
 }
 

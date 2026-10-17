@@ -66,9 +66,10 @@ descriptive fields.
   tree matches it. There is no global "right" hash for a name; the
   first pin is a trust act by the owner. After that, a mismatch is an
   error, never a silent upgrade.
-- **Removable.** Engine-owned. The seed profile lists fixed packages
-  (`busybox`, `btrfs`, `oath`, `dropbear`); `present=false` on one of
-  them is refused.
+- **Removable.** The seed profile lists fixed packages (`busybox`,
+  `btrfs`, `oath`, `dropbear`), recorded as `fixed` in their
+  `meta.json`; `present=false` or `oath rm` on one of them is refused.
+  Actual `removable` reports it.
 - **Needs.** A list of `{id, hash}`: other packages this one needs at
   run time, each at a pin. Apply refuses cycles, refuses `present=true`
   while a need is absent or at another hash, and refuses

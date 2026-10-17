@@ -155,7 +155,9 @@ trusting only the host key `install` pinned:
 
 `--qemu <older output>` rehearses it: `install --qemu` of the older
 output, an OVMF boot, the update, a reboot and the checks. On
-2026-10-16 it moved `30ae9c0094cd` to `7d6e132eb1cb`.
+2026-10-16 it moved `30ae9c0094cd` to `7d6e132eb1cb`, and
+`b0e9cee21d59` (from before R14) to `f4bc274b6ee4`, whose PID 1
+migrated the old catalog at boot (20 objects) and came up in sync.
 
 ## Target
 

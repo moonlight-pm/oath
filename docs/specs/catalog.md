@@ -13,7 +13,8 @@ logged outcome for every apply, a spec-only stack undo, `oath new` /
 `oath rm`, an id grammar and a confirm gate on changes that can cut off
 SSH. Probation with automatic rollback, the store integrity check,
 schemas generated from the Rust types and defaults for `oath new` were
-built 2026-10-16. A physical spec/status split is still the target.
+built 2026-10-16, and so was the spec/status split (R14): status lives on
+a tmpfs at `/oath/status`, outside every snapshot.
 
 Replaces: T1 (catalog and `oath` surface), the catalog parts of T7, T24,
 T34.
@@ -25,13 +26,14 @@ T34.
   INDEX.md                  generated; the agent starts here
   schema/<kind>.json        JSON Schema 2020-12, generated from the kind's Rust type
   schema/<kind>.md          prompt-sized prose: purpose, fields, safety, example
-  objects/<kind>/<name>/
-    desired.json            owner intent
-    actual.json             engine-owned observation
-    meta.json               id, safety, status, last generation
+  objects/<kind>/<name>/   spec: what snapshots hold and undo reads
+    desired.json            owner intent (a snap:N's record)
     applied.json            the spec as last applied (PID 1 runs a svc's)
+    meta.json               id, safety, `fixed` for a seed-fixed package
     new                     marker: made by `oath new`, not applied yet
     remove                  marker: `oath rm` pending
+  status/<kind>/<name>.json status: what the machine observed (`actual`);
+                            a tmpfs, rebuilt every boot
   log/apply.jsonl           one line per apply (ok, error, refused), undo or keep
   probation.json            the apply on probation, while one is open
   .lock                     writers' exclusive flock
@@ -73,9 +75,36 @@ half. The apply log is appended and fsynced.
 Every writer of spec or log takes an exclusive `flock` on
 `/oath/.lock` (R4) and waits up to 30 s for another writer: `oath set`,
 `new`, `rm`, `apply`, `undo`, `build`, `seed`, and PID 1 during its
-boot-time catalog work. PID 1 writes svc status (`actual.json`) without
-the lock; that file has one writer, and the write is atomic. Readers
-(`get`, `ls`, `diff`) take no lock.
+boot-time catalog work. PID 1 writes svc status (`status/svc/<name>.json`)
+without the lock; that file has one writer, and the write is atomic, as
+is the DHCP script's lease. Readers (`get`, `ls`, `diff`) take no lock.
+
+## Spec and status (built)
+
+R14 (2026-10-16). Everything under `objects/` is spec: desired, the
+spec last applied, identity, markers, and history that is spec by
+nature (a `snap:N` record is its `desired.json`). Status is only what
+the machine observed, at `status/<kind>/<name>.json`. On a machine
+PID 1 mounts a tmpfs there before any catalog work, clearing what an
+older `oath` left in the directory underneath, so no `@gen-N` or
+`@boot-N` holds status and every boot observes afresh: `host`, `net`,
+`ssh` and `dev:*` when PID 1 converges and discovers them, services as
+it starts them, packages, plans and `snap:current` by
+`Catalog::observe` (each package's live tree and its `/bin` links),
+`verified` by the boot's `oath verify`. Until something observes an
+object its actual is `null`. Seeding, overlays and the image packer
+write no status. Plan status (the last product) starts empty after a
+boot, so the first `oath build` after one rebuilds. A record that must
+outlive a boot and is not spec lives in `log/`: a service's own
+`log/svc/<name>.last.json` (backup-send's last run) is merged into its
+status. `probation.json` stays on disk: a reboot must still roll back.
+
+A catalog from before R14 is migrated at boot (`Catalog::migrate`,
+under the lock): each object that converges gets the `applied.json`
+its old `actual.json` stood for, a fixed package's `removable: false`
+becomes `meta.fixed`, `snap:N` records move into `desired.json`, a
+service's `last.json` moves to `log/`, and the old `actual.json` files
+go.
 
 ## Identity
 
@@ -227,9 +256,6 @@ object starts applied.
 
 ## Target
 
-- **Physical state split.** Spec and status still share an object
-  directory and both are inside the `@` snapshot; undo reads only spec.
-  Status may move out of the snapshotted tree; Open in decisions.md.
 
 ## INDEX
 

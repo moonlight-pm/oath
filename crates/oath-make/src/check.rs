@@ -702,7 +702,7 @@ fn generation(conn: &Conn) -> Result<u64, String> {
     let r = ssh(conn, "oath --json get snap:current", Duration::from_secs(30));
     let v: serde_json::Value = serde_json::from_str(r.text.trim())
         .map_err(|e| format!("oath get snap:current: {e}: {}", r.text))?;
-    v["actual"]["generation"].as_u64().ok_or_else(|| format!("no generation in {}", r.text))
+    v["desired"]["generation"].as_u64().ok_or_else(|| format!("no generation in {}", r.text))
 }
 
 /// Undo back to generation `start`, then require nothing pending.
