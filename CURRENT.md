@@ -17,9 +17,9 @@ append history (git has it).
    `check/agent.toml`. haiku passed `rename`, `service`, `undo` and
    `reboot` on the first run; `diagnose` failed in its own setup (now
    fixed). The key in this session's environment is refused, so Joshua
-   runs it. Next: `cargo make check --agent --case diagnose`; then,
-   when Joshua asks, `cargo make update` canto and run the metal cases
-   and `--agent --target` there.
+   runs it. canto runs `e3a11645f14c` and passes all 37 metal cases.
+   Next: `cargo make check --agent --case diagnose` in QEMU, then
+   `cargo make check --agent --target home@10.0.0.3` on canto.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
@@ -37,14 +37,14 @@ device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
 `cargo make update`. The screen is a `home` shell when no desk owns it
 (R15). The newest output, `e3a11645f14c` (`oath mcp`), passes all 46
-QEMU cases; canto runs `18823a7556d0`, which passed all 32 metal cases. Left by design until something needs them: root SSH as a field,
+QEMU cases and, on canto, all 37 metal cases. Left by design until something needs them: root SSH as a field,
 more NICs, device rules as fields, RPATHs to hash paths (the desk).
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013; output `18823a7556d0`, screen is a `home` shell; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013; output `e3a11645f14c` (`oath mcp`), screen is a `home` shell; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

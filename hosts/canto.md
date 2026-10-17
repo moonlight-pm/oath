@@ -14,15 +14,18 @@ Overwrite this file when facts change; do not append a diary.
   `ssh home@10.0.0.3`, host key pinned in `build/known_hosts`.
 - **Overlay:** [canto.json](canto.json) — hostname, Mountain time,
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
-- **Running now:** build output `18823a7556d0` (commit `39a2b09`),
-  reached on 2026-10-16 with `cargo make update --target
-  home@10.0.0.3 --confirm --reboot`, from `97c1f7409deb` through
-  `f4bc274b6ee4` (the first boot of R14 moved 38 objects to
-  `applied.json` and `status/`). Installed 2026-10-16 with `cargo make
-  install --target home@10.0.0.3 --disk /dev/sda --hostname canto
-  --overlay hosts/canto.json --confirm`, unattended (EFI one-shot
-  installer entry). Passes all 32 `metal` cases (`cargo make check
-  --target home@10.0.0.3`). SI DPM initializes on both GPUs.
+- **Running now:** build output `e3a11645f14c` (commit `bea6b36`,
+  `oath mcp`), reached on 2026-10-17 with `cargo make update --target
+  home@10.0.0.3 --output e3a11645f14c --confirm --reboot` from
+  `18823a7556d0` (generation 72; the old boot is archived as boot 3).
+  Installed 2026-10-16 with `cargo make install --target home@10.0.0.3
+  --disk /dev/sda --hostname canto --overlay hosts/canto.json
+  --confirm`, unattended (EFI one-shot installer entry). Passes all 37
+  `metal` cases (`cargo make check --target home@10.0.0.3`), the five
+  `mcp-*` cases among them. SI DPM initializes on both GPUs.
+- **Agent:** `ssh -T home@10.0.0.3 oath mcp` serves the verbs as MCP
+  tools. The real-model check (`check --agent --target`) has not run
+  here yet.
 - **Screen:** the monitor is on DP-10 of the GPU at `06:00.0`. The
   Apple logo stays until amdgpu loads (about 10 s), then fbcon
   (1920×1080, 240×67) shows `svc:screen`'s `home` shell on tty1.
