@@ -23,7 +23,5 @@ arguments). That file is generated from the live catalog.
 
 ## Known gaps
 
-These are real today and scheduled to be fixed. Plan around them.
-
-- A panic in PID 1 panics the kernel; `panic=10` reboots the machine
-  ten seconds later.
+None in shipped behavior today. What is still design lives under
+"Target" in each [spec](../specs/README.md).

@@ -34,7 +34,7 @@ const STOP_WAIT: Duration = Duration::from_secs(5);
 /// `/oath/log/net/net0.log`.
 const DHCP_ID: &str = "net:net0";
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 enum Exit {
     Code(i32),
     Signal(i32),
@@ -91,6 +91,114 @@ pub struct Supervisor {
     /// How each helper last ended, by name, until [`Supervisor::task_exit`]
     /// takes it.
     task_exits: HashMap<String, bool>,
+}
+
+/// Everything the supervisor knows, for a PID 1 that execs itself after a
+/// panic (`crate::resume`). Children stay PID 1's across the exec; their
+/// log pipes stay open (the fd numbers are here).
+#[derive(Default, serde::Serialize, serde::Deserialize)]
+pub struct State {
+    kids: Vec<KidState>,
+    oneshot_done: Vec<String>,
+    pending: Vec<(String, Svc, u64)>,
+    failed: Vec<(String, Svc)>,
+    history: Vec<(String, u32, u32, Option<Exit>, Option<String>)>,
+    tasks: Vec<(i32, String)>,
+}
+
+impl State {
+    /// Service processes in it.
+    pub fn len(&self) -> usize {
+        self.kids.len()
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct KidState {
+    pid: i32,
+    id: String,
+    spec: Svc,
+    /// Milliseconds it had run.
+    ran_ms: u64,
+    out: Option<i32>,
+    partial: Vec<u8>,
+}
+
+impl Supervisor {
+    /// Hand everything over: the log pipes lose close-on-exec so the next
+    /// PID 1 can read them.
+    pub fn export(&mut self) -> State {
+        let now = Instant::now();
+        let kids = self
+            .kids
+            .drain()
+            .map(|(pid, k)| {
+                let out = k.out.map(|f| {
+                    let fd = std::os::fd::IntoRawFd::into_raw_fd(f);
+                    unsafe { libc::fcntl(fd, libc::F_SETFD, 0) };
+                    fd
+                });
+                KidState {
+                    pid,
+                    id: k.id,
+                    spec: k.spec,
+                    ran_ms: k.started.elapsed().as_millis() as u64,
+                    out,
+                    partial: k.partial,
+                }
+            })
+            .collect();
+        State {
+            kids,
+            oneshot_done: self.oneshot_done.drain().collect(),
+            pending: self
+                .pending
+                .drain(..)
+                .map(|p| (p.id, p.spec, p.due.saturating_duration_since(now).as_millis() as u64))
+                .collect(),
+            failed: self.failed.drain().collect(),
+            history: self
+                .history
+                .drain()
+                .map(|(id, h)| (id, h.restarts, h.quick, h.last_exit, h.why))
+                .collect(),
+            tasks: self.tasks.drain().collect(),
+        }
+    }
+
+    /// The supervisor a resumed PID 1 continues with.
+    pub fn import(state: State) -> Self {
+        let now = Instant::now();
+        let mut s = Self::new();
+        for k in state.kids {
+            let out = k.out.map(|fd| {
+                unsafe { libc::fcntl(fd, libc::F_SETFD, libc::FD_CLOEXEC) };
+                unsafe { fs::File::from_raw_fd(fd) }
+            });
+            let started = now.checked_sub(Duration::from_millis(k.ran_ms)).unwrap_or(now);
+            s.kids.insert(k.pid, Kid { id: k.id, spec: k.spec, started, out, partial: k.partial });
+        }
+        s.oneshot_done = state.oneshot_done.into_iter().collect();
+        s.pending = state
+            .pending
+            .into_iter()
+            .map(|(id, spec, ms)| Pending { id, spec, due: now + Duration::from_millis(ms) })
+            .collect();
+        s.failed = state.failed.into_iter().collect();
+        s.history = state
+            .history
+            .into_iter()
+            .map(|(id, restarts, quick, last_exit, why)| {
+                (id, History { restarts, quick, last_exit, why })
+            })
+            .collect();
+        s.tasks = state.tasks.into_iter().collect();
+        s
+    }
+
+    pub fn running_count(&self) -> usize {
+        self.kids.len()
+    }
 }
 
 impl Supervisor {
@@ -689,6 +797,40 @@ mod tests {
         assert_eq!(log_path("svc:sshd"), Path::new("/oath/log/svc/sshd.log"));
         assert_eq!(log_path("net:net0"), Path::new("/oath/log/net/net0.log"));
         assert_eq!(log_path("init"), Path::new("/oath/log/init.log"));
+    }
+
+    #[test]
+    fn state_survives_the_handoff() {
+        let spec: Svc = serde_json::from_value(json!({"exec": ["/bin/sleep", "9"]})).unwrap();
+        let mut sup = Supervisor::default();
+        sup.pending.push(Pending {
+            id: "svc:a".into(),
+            spec: spec.clone(),
+            due: Instant::now() + Duration::from_secs(4),
+        });
+        sup.failed.insert("svc:b".into(), spec.clone());
+        sup.history.insert(
+            "svc:b".into(),
+            History {
+                restarts: 2,
+                quick: 5,
+                last_exit: Some(Exit::Code(3)),
+                why: Some("x".into()),
+            },
+        );
+        sup.oneshot_done.insert("svc:c".into());
+        sup.tasks.insert(42, "verify".into());
+        let text = serde_json::to_string(&sup.export()).unwrap();
+        assert!(sup.pending.is_empty() && sup.failed.is_empty(), "export hands everything over");
+        let back = Supervisor::import(serde_json::from_str(&text).unwrap());
+        assert_eq!(back.pending[0].id, "svc:a");
+        assert!(back.pending[0].due > Instant::now() + Duration::from_secs(3));
+        assert_eq!(back.failed["svc:b"], spec);
+        let h = &back.history["svc:b"];
+        assert_eq!((h.restarts, h.quick, h.why.as_deref()), (2, 5, Some("x")));
+        assert!(matches!(h.last_exit, Some(Exit::Code(3))));
+        assert!(back.oneshot_done.contains("svc:c"));
+        assert!(back.task_running("verify"));
     }
 
     #[test]

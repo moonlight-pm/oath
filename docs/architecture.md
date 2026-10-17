@@ -31,7 +31,9 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     main loop: shutdown request? reap, pump logs, start due restarts,
       the probation timer (runs `oath undo --expired` once it is up),
       uevents (load the module an added device asks for; discover
-      dev:* again after a block/net/tty change), answer converge requests
+      dev:* again after a block/net/tty change), answer converge requests;
+      a panic in a pass writes /run/oath/init-resume.json and execs
+      /proc/self/exe oath-resume, which takes the state and fds back
 ```
 
 QEMU (`cargo make run|up|start`) boots the same kernel and initrd with

@@ -75,6 +75,16 @@ impl Hotplug {
         Self { sock, index: None, rediscover: None }
     }
 
+    /// The socket, for a PID 1 that execs itself ([`crate::resume`]).
+    pub fn take_socket(&mut self) -> Option<OwnedFd> {
+        self.sock.take()
+    }
+
+    /// Go on with a socket a previous PID 1 opened.
+    pub fn from_socket(sock: Option<OwnedFd>) -> Self {
+        Self { sock, index: None, rediscover: None }
+    }
+
     /// Handle what arrived since the last call. Never blocks.
     pub fn tick(&mut self) {
         let mut aliases = Vec::new();

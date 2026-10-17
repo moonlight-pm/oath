@@ -166,7 +166,10 @@ A present package may ship
 `oath-backup-thaw`; `backup-send` runs them around the snapshot.
 Without them the copy is crash-consistent (`sync` plus btrfs CoW).
 
-## Known gaps
+## If PID 1 panics
 
-- A panic in PID 1 panics the kernel; `panic=10` reboots the machine
-  ten seconds later.
+A panic in PID 1's main loop is logged and survived: PID 1 hands its
+state to a fresh copy of itself, and every service keeps running and
+stays supervised (`oath logs` shows `panic: re-executing PID 1` and
+`resumed after a panic`). A third panic within a minute makes it shut
+down cleanly and reboot.

@@ -19,6 +19,7 @@ mod gpu;
 mod hotplug;
 mod modules;
 mod probation;
+mod resume;
 mod shutdown;
 mod supervise;
 
@@ -81,6 +82,10 @@ fn main() {
 }
 
 fn real_main() -> Result<(), String> {
+    if resume::resuming() {
+        let r = resume::take()?;
+        run(r.sup, r.listener, hotplug::Hotplug::from_socket(r.uevents), r.resumes);
+    }
     tel("init", "boot", json!({ "pid": std::process::id(), "kver": kver() }));
     ensure_mount("proc", "/proc", "proc");
     ensure_mount("sysfs", "/sys", "sysfs");
@@ -93,7 +98,7 @@ fn real_main() -> Result<(), String> {
     if cmdline_flag("oath.install") {
         return install_ramdisk();
     }
-    let mut hot = hotplug::Hotplug::open();
+    let hot = hotplug::Hotplug::open();
 
     if !Path::new("/oath/INDEX.md").exists() {
         load_modules(true);
@@ -164,25 +169,72 @@ fn real_main() -> Result<(), String> {
     // The store's integrity, once a boot, off the boot path: every linked
     // package tree is hashed again against its pin.
     sup.run_task("verify", &["/bin/oath", "verify"]);
+    run(sup, listener, hot, Vec::new())
+}
+
+/// The main loop. A panic in one pass does not take the machine down:
+/// PID 1 hands its state to a fresh copy of itself (`resume`), and only
+/// reboots when that keeps happening.
+fn run(
+    mut sup: supervise::Supervisor,
+    listener: UnixListener,
+    mut hot: hotplug::Hotplug,
+    resumes: Vec<f64>,
+) -> ! {
     let mut probation = probation::Watch::default();
     loop {
-        if let Some(mode) = shutdown::requested() {
-            shutdown::finish(&mut sup, mode);
-        }
-        sup.reap();
-        sup.pump_logs();
-        sup.start_due();
-        probation.tick(&mut sup);
-        hot.tick();
-        if let Ok((mut s, _)) = listener.accept() {
-            let mut buf = [0u8; 64];
-            let n = s.read(&mut buf).unwrap_or(0);
-            tel("init", "converge", json!({ "bytes": n }));
-            sup.converge();
-            let _ = s.write_all(b"ok\n");
+        let pass = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            step(&mut sup, &listener, &mut probation, &mut hot)
+        }));
+        if pass.is_err() {
+            resume::handoff(&mut sup, listener, hot.take_socket(), resumes);
+            shutdown::finish(&mut sup, shutdown::Mode::Reboot);
         }
         std::thread::sleep(Duration::from_millis(100));
     }
+}
+
+fn step(
+    sup: &mut supervise::Supervisor,
+    listener: &UnixListener,
+    probation: &mut probation::Watch,
+    hot: &mut hotplug::Hotplug,
+) {
+    if let Some(mode) = shutdown::requested() {
+        shutdown::finish(sup, mode);
+    }
+    sup.reap();
+    sup.pump_logs();
+    sup.start_due();
+    probation.tick(sup);
+    hot.tick();
+    if let Ok((mut s, _)) = listener.accept() {
+        let mut buf = [0u8; 64];
+        let n = s.read(&mut buf).unwrap_or(0);
+        // The harness's way to prove a panic is survived; root only.
+        if buf[..n].starts_with(b"panic") && peer_uid(&s) == Some(0) {
+            panic!("asked to over init.sock");
+        }
+        tel("init", "converge", json!({ "bytes": n }));
+        sup.converge();
+        let _ = s.write_all(b"ok\n");
+    }
+}
+
+fn peer_uid(s: &std::os::unix::net::UnixStream) -> Option<u32> {
+    use std::os::fd::AsRawFd;
+    let mut cred = libc::ucred { pid: 0, uid: u32::MAX, gid: 0 };
+    let mut len = std::mem::size_of::<libc::ucred>() as libc::socklen_t;
+    let ok = unsafe {
+        libc::getsockopt(
+            s.as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::SO_PEERCRED,
+            (&mut cred as *mut libc::ucred).cast(),
+            &mut len,
+        )
+    } == 0;
+    ok.then_some(cred.uid)
 }
 
 fn ensure_mount(fstype: &str, target: &str, source: &str) {

@@ -108,6 +108,10 @@ enum Cmd {
         #[arg(short = 'n', long, default_value_t = 50)]
         lines: usize,
     },
+    /// Make PID 1 panic, to show that it resumes with every service still
+    /// running. Root only. For the harness.
+    #[command(hide = true)]
+    PanicInit,
     /// Write a fresh catalog from a built-in profile, or merge overlays
     /// into an existing one. Build and install time only.
     #[command(hide = true)]
@@ -170,6 +174,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Log) => "log",
         Some(Cmd::Logs { .. }) => "logs",
         Some(Cmd::Seed { .. }) => "seed",
+        Some(Cmd::PanicInit) => "panic-init",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
     let cat = Catalog::open(&cli.root)?;
@@ -209,6 +214,19 @@ fn run() -> oath_core::Result<i32> {
                     println!("{id}");
                 }
             }
+            Ok(0)
+        }
+        Some(Cmd::PanicInit) => {
+            use std::io::Read;
+            let mut s = std::os::unix::net::UnixStream::connect("/oath/run/init.sock")
+                .map_err(|e| Error::hint(format!("init socket: {e}"), "is this Oath?"))?;
+            s.write_all(b"panic\n")?;
+            let mut reply = String::new();
+            let _ = s.read_to_string(&mut reply);
+            if reply.starts_with("ok") {
+                return Err(Error::hint("PID 1 did not panic (not root?)", "sudo oath panic-init"));
+            }
+            println!("PID 1 panicked; `oath logs` shows it resume");
             Ok(0)
         }
         Some(Cmd::Ls { kind }) => {

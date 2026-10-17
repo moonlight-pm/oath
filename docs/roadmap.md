@@ -51,9 +51,9 @@ count, backoff into a `failed` state, one cgroup per service
 client that renews the lease, and `oath apply` waiting for PID 1 to
 converge. All 25 harness cases pass.
 
-Not done, carried forward: module loading by modalias (with metal, in
-phase 6), surviving a supervisor panic. Since: the cycle reason in
-actual and shutdown in reverse `wants` order (2026-10-16).
+Since: module loading by modalias (phase 6), the cycle reason in
+actual, shutdown in reverse `wants` order, and surviving a supervisor
+panic (2026-10-16).
 
 ## 5. Native base — done (2026-10-14)
 

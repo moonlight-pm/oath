@@ -6,9 +6,9 @@ configuration: there are no unit files, no init scripts, and no
 systemd. PID 1 itself is not an object; it is the engine that
 converges `svc`.
 
-**Status:** built, except the target at the end (surviving its own
-panic). Since 2026-10-16 a service PID 1 skips or gives up on says
-why in actual, and shutdown runs in reverse `wants` order. Since
+**Status:** built. Since 2026-10-16 a service PID 1 skips or gives up
+on says why in actual, shutdown runs in reverse `wants` order, and a
+panic in PID 1's main loop is survived with every service running. Since
 2026-10-13 PID 1 runs only applied specs, isolates a `wants` cycle,
 logs every service, restarts with backoff into a `failed` state, gives
 each service a cgroup, shuts down in order, and switch_roots into the
@@ -135,15 +135,25 @@ still starts. PID
   runs `udhcpc -f -i net0` as an internal service (id `net:net0`, not a
   catalog `svc`, log `/oath/log/net/net0.log`) with the same restart
   and backoff, so the lease renews. See network-and-ssh.md.
-- **Crash path.** A panic is logged (`init.log`, console) and panics
-  the kernel; `panic=10` on the kernel command line (QEMU and metal)
-  reboots it. If boot itself fails, PID 1 runs a root shell on the
-  console and respawns it, reaping every child.
+- **Crash path.** A panic is logged (`init.log`, console). In the main
+  loop it is caught: PID 1 writes its supervisor state (every child's
+  pid, spec, run time and log pipe; pending restarts; `failed` specs and
+  their reasons; restart history; running helpers) and the fd numbers of
+  its log pipes, `init.sock` and the uevent socket, all left open, to
+  `/run/oath/init-resume.json`, and execs its own binary again
+  (`/proc/self/exe`, `argv[1] = oath-resume`). Services are untouched:
+  they stay PID 1's children. The new image skips boot, takes the state
+  and fds back, logs `resumed after a panic (n in the last minute)`, and
+  runs the loop. A third panic within a minute is not resumed: PID 1
+  shuts down cleanly and reboots. A panic during boot, before the loop,
+  still panics the kernel (`panic=10` reboots it); if boot fails with
+  an error, PID 1 runs a root shell on the console and respawns it,
+  reaping every child. `sudo oath panic-init` (hidden; root only, by
+  `SO_PEERCRED`) makes PID 1 panic for the harness.
 
 ## Target
 
-- **Survive a panic.** A supervisor panic reboots the machine; keeping
-  services up through it is not designed yet.
+None open short of the desk (phase 8).
 
 ## Courage test
 
@@ -152,5 +162,5 @@ torn `desired.json` (the service keeps running); a cycle at boot (sshd
 still starts; the cycle's members are `failed` with the reason);
 shutdown in reverse `wants` order; a crashing service that backs off to `failed` with exit
 code 3; `oath logs`; stopping a service that forked; an sshd restart
-that keeps this SSH session; the DHCP client; switch_root; and plain
-`reboot`.
+that keeps this SSH session; the DHCP client; switch_root; plain
+`reboot`; and a PID 1 panic that a running service does not notice.

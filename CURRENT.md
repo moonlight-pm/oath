@@ -15,7 +15,8 @@ append history (git has it).
    renewals in actual, store integrity (`oath verify`), schemas
    generated from the types with `oath new` defaults, install's
    build-host guard, `cargo make update` (QEMU rehearsal passed),
-   device discovery and hotplug. Left: surviving a PID 1 panic.
+   device discovery and hotplug, surviving a PID 1 panic. Left: a
+   catalog reboot without a generation.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, or a
