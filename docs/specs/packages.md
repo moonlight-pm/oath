@@ -139,13 +139,14 @@ in the image comes from nixpkgs.
 
 ## Target
 
-- **RPATHs** inside packs point at hash paths, not at `live`, so a
-  re-pin cannot change a running program's libraries. No shipped pack
-  has an RPATH or loader path today (the base is static; the harness
-  checks it); `pkg:rust`, build-only, names its loader under `live`. A
-  pack cannot name its own hash, so this needs hash-modulo-self
-  rewriting, which waits for the first dynamic packs (the desk, phase
-  8).
+- **Shared libraries (R17).** Programs link dynamically against
+  glibc, whose loader is `/lib/ld-linux-x86-64.so.2`. `/lib` will be a
+  link farm of every linked package's `lib/*.so*`, made and removed
+  with its `/bin` links, so a re-pin of a library changes the programs
+  that load it, as on any distro; sonames keep incompatible versions
+  apart, the `needs` graph checks the set, and undo takes a bad re-pin
+  back. No RPATHs, no `/lib64`. This replaces the earlier target of
+  RPATHs to hash paths (2026-10-17).
 - Out of scope for now: signatures on Oath's own packs and indexes
   (upstream sources are signature-checked at build time, see
   builds.md), reaping unused realizations, peer discovery.

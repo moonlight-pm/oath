@@ -86,8 +86,8 @@ in (`OATH_SANDBOX_NIX_STORE`).
 ## Native toolchain (built)
 
 Clang/LLVM 23.1.3 (clang, lld, compiler-rt, libunwind, libc++) on musl
-1.2.6 is the system toolchain (R11 in [decisions](../decisions.md)).
-Zig is not used (R9).
+1.2.6 is the system toolchain (R11 in [decisions](../decisions.md)),
+until R17's switch below lands. Zig is not used (R9).
 
 - **Stage 0** (`cargo make bootstrap`, `pkgs/bootstrap.sh`): clang and
   lld targeting `x86_64-unknown-linux-musl`, plus a sysroot (Linux UAPI
@@ -211,8 +211,30 @@ Zig is not used (R9).
 
 ## Target
 
-- **The desk.** Mesa, Wayland, a compositor and the rest, as plans in
-  `pkgs/` (phase 8).
+- **GCC and glibc (R17, phase 8 slice 1).** The toolchain will be GCC,
+  binutils and glibc, and Clang/LLVM, musl, compiler-rt, libunwind and
+  libc++ go away:
+  - Stage 0, with the build host's gcc: binutils, GCC (C and C++) and
+    glibc against the pinned kernel's UAPI headers, in a sysroot.
+  - Stage 1, with stage 0: `pkg:gcc` (GCC and binutils, with
+    `libgcc_s` and `libstdc++`), `pkg:glibc`, busybox and make, as
+    today's three stage-1 packs are.
+  - GCC links every program with the loader `/lib/ld-linux-x86-64.so.2`
+    (one patched define), and glibc installs it there and searches
+    `/lib`. The sandbox will give a build a `/lib` farm of its packs'
+    libraries beside its `/bin` farm.
+  - Packages build shared libraries as upstream does; no `-static`
+    default. Oath's binaries stay static: Rust's
+    `x86_64-unknown-linux-gnu` with `crt-static`, linked by `pkg:gcc`
+    against `pkg:glibc`.
+  - `pkg:rust` becomes the vendor's gnu release, its interpreter set to
+    the `/lib` loader; it needs no loader or `libgcc_s` of its own.
+  - The kernel builds with `pkg:gcc`. cmake leaves the build set if
+    nothing else needs it.
+  - Done when every package, the kernel and `pkg:oath` rebuild
+    bit-identically with the stage-2 tools, and the harness passes.
+- **The desk.** Mesa (without LLVM), Wayland, a compositor and the
+  rest, as plans in `pkgs/` (phase 8).
 
 ## Out
 

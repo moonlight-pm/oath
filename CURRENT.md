@@ -5,7 +5,7 @@ items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
 **As of:** 2026-10-17 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R16 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R17 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -20,13 +20,20 @@ append history (git has it).
    since). The key in this session's environment is refused, so
    Joshua runs it. Next: `cargo make check --agent` on `534f0dc53cbb`;
    when all five pass, phase 7 is done (flip it in the roadmap).
-2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+2. **Phase 8 slice 1: GCC and glibc (R17).** The toolchain becomes
+   GCC, binutils and glibc; programs link dynamically through a `/lib`
+   farm (loader `/lib/ld-linux-x86-64.so.2`, no `/lib64`); Clang/LLVM
+   and musl leave. Plan in [docs/specs/builds.md](docs/specs/builds.md)
+   (Target). Next: the stage 0/1 bootstrap in `pkgs/bootstrap.sh`
+   (binutils, GCC, glibc), then `pkg:gcc`, `pkg:glibc` and the sandbox's
+   `/lib` farm. Open before River: it is Zig (R9).
+3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
    `cargo make install --usb` stick, or `cargo make update` once it
    runs an Oath base.
 
-**State:** phases 1–5 are done; phases 6 (buccina left) and 7 are active
+**State:** phases 1–5 are done; phases 6 (buccina left), 7 and 8 are active
 ([docs/roadmap.md](docs/roadmap.md)). On 2026-10-17 `oath mcp` and the
 real-model check were built (R16). On 2026-10-16 every target in the
 specs short of phase 8 was built: the spec/status split (R14), source

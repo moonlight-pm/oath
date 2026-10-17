@@ -110,10 +110,15 @@ Built (2026-10-17): `oath mcp` in both MCP eras with every verb as a
 tool, `--read-only`, `actor.via` and `confirm` in the apply log, and
 `cargo make check --agent` with the five tasks of `check/agent.toml`.
 
-## 8. Native desk — planned
+## 8. Native desk — active
 
 River, wlroots, mesa, input, audio, fonts and Sola built natively.
 Sola-compat rules from the old fork workflow still apply.
+
+Slice 1 (R17, 2026-10-17): the toolchain becomes GCC, binutils and
+glibc, programs link dynamically through a `/lib` farm, and Clang/LLVM
+and musl leave ([specs/builds.md](specs/builds.md), Target). Open: River
+is written in Zig, which R9 rules out.
 
 ## 9. Steam + Minecraft desk — planned
 

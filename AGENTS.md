@@ -11,7 +11,9 @@ and how to change them. Its identity is a typed, live catalog at
 We write PID 1. Unix is the substrate, not the admin interface.
 
 - **Is not:** a kernel project, a chatbot in PID 1, or systemd with a skin.
-- **Libc:** musl. glibc never shares a process with musl.
+- **Toolchain and libc:** GCC, binutils and glibc, one of each (R17).
+  Programs link dynamically through `/lib`; Oath's own binaries are
+  static.
 - **Packages:** native only — built from source by an Oath `plan`, or
   the vendor's own release pinned by sha256. Never another distro's
   packages (R7 in [docs/decisions.md](docs/decisions.md)).
