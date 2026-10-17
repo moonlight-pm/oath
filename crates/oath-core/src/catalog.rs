@@ -376,8 +376,11 @@ impl Catalog {
             "removing".into()
         } else if dir.join(NEW_MARK).exists() {
             "new".into()
-        } else if obj.actual.pointer("/verified/ok") == Some(&json!(false)) {
-            // A package whose stored tree no longer hashes to its pin.
+        } else if obj.actual.pointer("/verified/ok") == Some(&json!(false))
+            || (id.kind == KIND_SVC && obj.actual.get("state") == Some(&json!("failed")))
+        {
+            // A package whose stored tree no longer hashes to its pin, or a
+            // service PID 1 gave up on (its actual says why).
             "error".into()
         } else if self.drift_fields(&obj)?.is_empty() {
             "in-sync".into()
@@ -981,12 +984,14 @@ impl Catalog {
                 continue;
             }
             self.converge_one(&d.id, hooks, report)?;
-            let _ = fs::remove_file(self.obj_dir(&d.id).join(NEW_MARK));
         }
         Ok(())
     }
 
-    /// Converge `id` and wait for PID 1 when it is a service.
+    /// Converge `id` and wait for PID 1 when it is a service. Once its spec
+    /// is applied the object is no longer new, even if the service then
+    /// fails to come up: that is an error in its status, not a pending
+    /// creation.
     fn converge_one(
         &self,
         id: &ObjectId,
@@ -994,6 +999,7 @@ impl Catalog {
         report: &mut ApplyReport,
     ) -> Result<()> {
         let applied = self.converge_spec(id, hooks, report)?;
+        let _ = fs::remove_file(self.obj_dir(id).join(NEW_MARK));
         if id.kind == KIND_SVC {
             let enabled = applied.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
             hooks.notify_init()?;

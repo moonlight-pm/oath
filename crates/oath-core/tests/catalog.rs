@@ -14,6 +14,9 @@ struct MemHooks {
     root: std::path::PathBuf,
     snaps: tempfile::TempDir,
     reboots: Mutex<u32>,
+    /// Services do not come up: PID 1 records them failed, and apply's
+    /// wait for them is an error.
+    no_start: Mutex<bool>,
 }
 
 impl MemHooks {
@@ -23,6 +26,7 @@ impl MemHooks {
             root,
             snaps: tempfile::tempdir().unwrap(),
             reboots: Mutex::new(0),
+            no_start: Mutex::new(false),
         }
     }
 }
@@ -57,6 +61,14 @@ impl ApplyHooks for MemHooks {
     }
     fn halt(&self) -> Result<()> {
         Ok(())
+    }
+    fn wait_converge(&self, id: &ObjectId, _enabled: bool) -> Result<()> {
+        if !*self.no_start.lock().unwrap() {
+            return Ok(());
+        }
+        let failed = json!({ "state": "failed", "reason": "cannot start /bin/slep" });
+        oath_core::write_json(&oath_core::status_path(&self.root, id), &failed)?;
+        Err(Error::hint(format!("{id} did not become running"), format!("oath get {id}")))
     }
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
         let store = self.root.join("store/pkg").join(&id.name).join("bin");
@@ -748,6 +760,31 @@ fn pkg_undo_puts_url_and_prose_back() {
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().desired, before);
     assert!(cat.diff(None).unwrap().is_empty());
+}
+
+#[test]
+fn a_service_that_does_not_start_is_applied_and_an_error() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    *hooks.no_start.lock().unwrap() = true;
+    let broken: ObjectId = "svc:broken".parse().unwrap();
+    cat.new_object(&broken, json!({"exec": ["/bin/slep", "9"]}).as_object().unwrap().clone())
+        .unwrap();
+    assert!(cat.apply(None, false, &Actor::unknown(), &hooks).is_err());
+    // Its spec is applied: not new, no drift, and PID 1's failure shows.
+    let obj = cat.get(&broken).unwrap();
+    assert_eq!(obj.meta.status, "error");
+    assert_eq!(obj.actual["reason"], "cannot start /bin/slep");
+    assert!(cat.diff(None).unwrap().is_empty());
+    // Fixing it is an ordinary set and apply.
+    *hooks.no_start.lock().unwrap() = false;
+    set(&cat, "svc:broken", "exec", json!(["/bin/sleep", "9"])).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    // Undo takes back the fix, then the apply that created it.
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&broken).unwrap().desired["exec"][0], "/bin/slep");
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert!(cat.get(&broken).is_err());
 }
 
 #[test]

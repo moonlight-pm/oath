@@ -60,7 +60,10 @@ schemas. The prose (`<kind>.md`) is hand-written and embedded too. Today's kinds
 without a recorded decision.
 
 `status`, as `oath get` reports it, is `in-sync`, `drift`, `new`,
-`removing` or `error`. Drift is desired against `applied.json` for every
+`removing` or `error` (a package whose tree no longer hashes to its
+pin, or a service PID 1 has given up on; its actual says why). An
+object stops being `new` once an apply has applied its spec, even if
+the service then fails to start. Drift is desired against `applied.json` for every
 kind (R14, built 2026-10-16): actual is only what the machine observed,
 and neither drift nor undo reads it. An object that was never applied
 drifts in every field. A catalog from before `applied.json` falls back
@@ -123,7 +126,7 @@ under `objects/<kind>/`, so it can never climb out of it.
 | `oath ls [--kind k]` | Ids |
 | `oath schema [kind]` | Kinds, or one kind's schema and prose |
 | `oath get <id> [--desired\|--actual]` | Desired, actual, meta |
-| `oath set <id> k=v…` / `--from-json` / `--from-file` | Merge into desired; the result must parse as the kind's type |
+| `oath set <id> k=v…` / `--from-json` / `--from-file` | Merge into desired; the result must parse as the kind's type. `--from-file -` reads a plan from stdin and files its canonical form |
 | `oath new <id> k=v…` / `--from-json` | Create a `svc` or `pkg` |
 | `oath rm <id>` | Mark a `svc` or `pkg` for removal |
 | `oath diff [id]` | Drift; exit 0 when none |

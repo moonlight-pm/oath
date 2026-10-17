@@ -258,7 +258,7 @@ name = "crash-backoff-failed"
 about = "A service that keeps dying backs off, records its exit code, and ends up failed."
 metal = true
 steps = [
-  { run = "oath logs svc:crash -n 100000 2>/dev/null | grep -c dying > /tmp/crash.before; sudo oath new svc:crash --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo dying; exit 3\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}'; sudo oath apply svc:crash; sleep 25; oath get svc:crash --actual", expect = ["\"failed\"", "\"code\": 3"], timeout = 60 },
+  { run = "oath logs svc:crash -n 100000 2>/dev/null | grep -c dying > /tmp/crash.before; sudo oath new svc:crash --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo dying; exit 3\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}'; sudo oath apply svc:crash; sleep 25; oath get svc:crash --actual; oath get svc:crash | head -1", expect = ["\"failed\"", "\"code\": 3", "status=error"], timeout = 60 },
   { run = "echo DIED=$(( $(oath logs svc:crash -n 100000 | grep -c dying) - $(cat /tmp/crash.before) ))", expect = ["DIED=5"] },
 ]
 
@@ -533,6 +533,26 @@ EOF
 oath log -n 2; oath get svc:sshd --desired'''
 expect = ['\"kept\"', 'keep:', '"confirm":true', '"via":"mcp:check"', 'OATH_CHECK']
 reject = ['"isError":true']
+
+[[case]]
+name = "mcp-plan"
+about = "A plan filed from text over MCP (not canonical: it is filed canonical) builds on the box; resources read it back."
+
+[[case.steps]]
+run = '''
+h=$(readlink /oath/store/pkg/busybox/live)
+oath mcp <<EOF
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_plan","arguments":{"name":"mcpecho","text":"#!oath-plan\n{\"name\": \"mcpecho\", \"produces\": \"pkg:mcpecho\", \"build_needs\": [{\"id\": \"pkg:busybox\", \"hash\": \"$h\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-by-mcp\nmkdir -p /out/bin\necho hi >/out/bin/hi\n"}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"build","arguments":{"plan":"mcpecho"},"_meta":{"progressToken":"b1"}}}
+{"jsonrpc":"2.0","id":4,"method":"resources/read","params":{"uri":"oath://object/plan/mcpecho"}}
+EOF'''
+expect = ['{\"hash\":\"sha256-', '\"product\": \"sha256-', '"uri":"oath://object/plan/mcpecho"']
+reject = ['"isError":true', '"error":{']
+
+[[case.steps]]
+run = "oath logs plan:mcpecho; f=$(ls /oath/store/plan/mcpecho/*/plan.plan); oath fmt $f | cmp - $f && echo CANONICAL"
+expect = ["built-by-mcp", "CANONICAL"]
 
 [[case]]
 name = "mcp-read-only"

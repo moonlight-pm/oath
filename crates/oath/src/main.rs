@@ -4,9 +4,9 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use oath_core::{
-    apply_overlay, build_file, build_pinned, file_plan, fmt_plan, lint_path, parse_plan,
-    seed_profile, tel, Actor, BuildReport, Catalog, Error, ObjectId, DEFAULT_PROFILE, DEFAULT_ROOT,
-    EXIT_CONFIRM, KIND_PLAN,
+    apply_overlay, build_file, build_pinned, file_plan, fmt_plan, lint_bytes, lint_path,
+    parse_plan, seed_profile, tel, Actor, BuildReport, Catalog, Error, ObjectId, DEFAULT_PROFILE,
+    DEFAULT_ROOT, EXIT_CONFIRM, KIND_PLAN,
 };
 use serde_json::{json, Map, Value};
 
@@ -367,7 +367,17 @@ fn run() -> oath_core::Result<i32> {
                 if id.kind != KIND_PLAN {
                     return Err(Error::hint("--from-file is for plan:<name>", "oath schema plan"));
                 }
-                let (plan, bytes) = lint_path(&path)?;
+                // `-` is a plan's text on stdin (`oath mcp`'s `file_plan`):
+                // its canonical form is filed. A file must already be
+                // canonical, so its hash is the hash of what is on disk.
+                let (plan, bytes) = if path.as_os_str() == "-" {
+                    let mut text = String::new();
+                    std::io::Read::read_to_string(&mut std::io::stdin(), &mut text)?;
+                    let canon = fmt_plan(&parse_plan(&text)?).into_bytes();
+                    (lint_bytes(&canon)?, canon)
+                } else {
+                    lint_path(&path)?
+                };
                 if id.name != plan.name {
                     return Err(Error::hint(
                         format!("file name `{}` != {id}", plan.name),

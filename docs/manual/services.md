@@ -101,7 +101,9 @@ sudo oath undo                  # brings it back
 `oath new` needs only `exec`; it writes the defaults into the object
 (`restart: always`, `enabled: true`, `wants: []`), so `oath get` shows
 what will run. Until `oath apply`, a new service has status `new` and
-does not run;
+does not run; once applied it is not new, and if it cannot start (a
+wrong `exec`, say) its status is `error` and its actual has the
+`reason`;
 `oath rm` before that deletes it at once.
 
 `svc:sshd` changes that can cut off SSH (disabling or removing it, or

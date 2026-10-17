@@ -71,17 +71,20 @@ handshake-based ones before it.
   `io.modelcontextprotocol/clientCapabilities`; a request without
   them is refused with `-32602`, and an unknown version with `-32022`
   and `data: {supported, requested}`. `server/discover` returns
-  `supportedVersions: ["2026-07-28"]`, `capabilities: {tools: {}}`
-  and the instructions. Every result carries `resultType: "complete"`
+  `supportedVersions: ["2026-07-28"]`, `capabilities: {tools: {},
+  resources: {}}` and the instructions. Every result carries `resultType: "complete"`
   and `_meta` `io.modelcontextprotocol/serverInfo`; `tools/list` and
   `server/discover` carry `ttlMs: 3600000` and `cacheScope: "private"`
-  (the tools change only with the `oath` binary).
+  (the tools change only with the `oath` binary), and so does
+  `resources/templates/list`; `resources/list` and `resources/read`
+  carry `ttlMs: 0` (any apply changes them).
 - **Legacy, `2025-11-25` back to `2024-11-05`.** An `initialize`
   request switches the process to legacy for every request without the
   modern `_meta`; one that carries it is still served modern, as the
   revision allows a dual-era server to serve both. The answer is the client's
   version when the server knows it, otherwise `2025-11-25`, with
-  `capabilities: {tools: {}}`, `serverInfo` and `instructions`.
+  `capabilities: {tools: {}, resources: {}}`, `serverInfo` and
+  `instructions`.
   `notifications/initialized` is ignored; `ping` returns `{}` (in
   both eras). A JSON-RPC batch (an array, `2025-03-26`) gets an array
   of replies.
@@ -90,8 +93,28 @@ handshake-based ones before it.
 - `serverInfo` is `name: "oath"`, `title: "Oath on <hostname>"`, and
   `version`: the first 12 hex digits of the running `pkg:oath` hash
   (from the executable's store path; `dev` outside the store).
-- Step 1 has no resources, prompts, logging, sampling, roots,
-  subscriptions or tasks.
+- There are no prompts, logging, sampling, roots, subscriptions or
+  tasks.
+
+## Resources (built, step 3)
+
+Resources are the reads, addressed by URI, for a client that pulls
+context in rather than calling a tool. Each read runs the `oath --json`
+command its tool runs, never through `sudo`.
+
+| URI | Reads | MIME type |
+|-----|-------|-----------|
+| `oath://index` | the INDEX (`oath --json`, its `text`) | `text/markdown` |
+| `oath://schema/<kind>` | `oath --json schema <kind>` | `application/json` |
+| `oath://object/<kind>/<name>` | `oath --json get <kind>:<name>` | `application/json` |
+
+`resources/list` names the index, every kind's schema and every object
+`ls` lists; `resources/templates/list` gives `oath://object/{kind}/{name}`
+and `oath://schema/{kind}`. A URI that is not one of these, an unknown
+kind, a name outside the id grammar or an object that does not exist
+is "Resource not found": `-32602` with `data: {uri}` (and the CLI's
+error when it ran), or `-32002` for a legacy session, as those
+revisions had it. A bad URI runs nothing.
 
 ## Instructions (built)
 
@@ -126,6 +149,7 @@ The list is built at startup, always in this order.
 | `apply` | `ids?`, `confirm?`, `probation_secs?` | `sudo oath --json [--confirm] apply [--probation s] [ids]` | destructive, open world |
 | `undo` | — | `sudo oath --json undo` | destructive |
 | `keep` | — | `sudo oath --json keep` | |
+| `file_plan` | `name`, `text` | `sudo oath --json set plan:<name> --from-file -`, `text` on stdin | idempotent |
 | `build` | `plan` | `sudo oath --json build plan:<name>` | idempotent |
 
 "Hints" are MCP tool annotations (`readOnlyHint`, `destructiveHint`,
@@ -152,7 +176,7 @@ Left out, with the reason:
 
 - `set` for `dev` (inventory; its one field cannot be set false), for
   `snap` (`snap:current` is a boot-generation change; `undo` is the
-  path) and for `plan` (filed from a file; step 3).
+  path) and for `plan` (`file_plan` files one from its text).
 - `fmt`, `seed`, `panic-init` and `undo --expired` (build time, the
   harness, PID 1).
 
@@ -169,7 +193,13 @@ not instructions.
   positional values after `--`, so an id that starts with `-` cannot
   pass for a flag.
 - The program is the server's own executable (`/proc/self/exe`), so a
-  server and its calls are one version.
+  server and its calls are one version. Only `file_plan` writes to the
+  command's stdin (the plan's text); every other call gets none, and
+  none ever reads the server's own stdin.
+- A `tools/call` whose `_meta` has a `progressToken` gets
+  `notifications/progress` every 5 s while its command runs: `progress`
+  is the seconds so far, `message` names the tool and, for `build`, the
+  last line of the build's log. A call that ends sooner sends none.
 - Every call gets `--root <root>` (sudo's clean environment drops
   `OATH_ROOT`) and `--via mcp:<client>`, where `<client>` is
   `clientInfo.name`, reduced to `A-Za-z0-9._/-` and 64 characters.
@@ -342,7 +372,12 @@ machine's `oath mcp` and a task, and nothing else.
    `oath://object/<kind>/<name>`), filing a plan from text
    (`file_plan`; the CLI gains `set plan:<name> --from-file -`), and
    progress notifications during a long `build` or `apply` when the
-   request has a `progressToken`.
+   request has a `progressToken`. **Built 2026-10-17.** From the
+   transcripts: a service whose first apply fails is no longer left
+   `new` (its spec is applied; `status` is `error` while PID 1 has
+   given up on it), and PID 1's "cannot start" line in its log is
+   stamped and names the path, so a model can tell it from the starts
+   after a fix.
 
 Phase 7 is done when step 2 passes in QEMU and on canto, and canto
 runs an output with `oath mcp`.

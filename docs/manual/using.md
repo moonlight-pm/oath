@@ -23,7 +23,7 @@ for build and install tooling on the build host.
 | `oath ls` | List object ids. `--kind host` (etc.) to filter |
 | `oath schema [kind]` | List kinds, or one kind's prose + JSON Schema |
 | `oath get <id>` | Desired + actual + status. `--desired` / `--actual` to clip |
-| `oath set <id> k=v` | Write **desired** only. Does not converge. `--from-json '<obj>'` sets several fields. The result must fit the kind's type |
+| `oath set <id> k=v` | Write **desired** only. Does not converge. `--from-json '<obj>'` sets several fields. The result must fit the kind's type. `oath set plan:<name> --from-file <path>` files a plan (canonical, `oath fmt -w`); `--from-file -` files the canonical form of a plan read from stdin |
 | `oath new <id> k=v` | Create a `svc` or `pkg` (`--from-json` too). Runs after `apply` |
 | `oath rm <id>` | Mark a `svc` or `pkg` for removal. Removed at `apply` |
 | `oath diff [id]` | Drift between desired and actual (or last applied, for `svc`) |
@@ -131,8 +131,11 @@ ssh -T home@10.0.0.3 oath mcp --read-only    # only the tools that look
 Each tool runs one `oath --json` command and returns its JSON: `index`,
 `ls`, `schema`, `get`, `diff`, `log`, `logs` and `verify` look;
 `set_host`, `set_svc`, `set_pkg`, `set_net`, `set_ssh`, `new_svc`,
-`new_pkg`, `rm`, `apply`, `undo`, `keep` and `build` run through
-`sudo`, as the owner's would. A tool's `fields` are the kind's schema,
+`new_pkg`, `rm`, `apply`, `undo`, `keep`, `file_plan` (a plan from its
+text) and `build` run through `sudo`, as the owner's would. The same
+reads are resources too: `oath://index`, `oath://schema/<kind>` and
+`oath://object/<kind>/<name>`. A client that sends a `progressToken`
+hears every 5 s that a long `build` or `apply` is still running. A tool's `fields` are the kind's schema,
 so a field added to a kind reaches the tools with nothing else to do.
 A failed command is a tool error carrying the CLI's hint; exit 3 says
 the apply needs `confirm`, which an agent passes only when the owner

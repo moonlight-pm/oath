@@ -458,8 +458,10 @@ impl Supervisor {
             Err(e) => {
                 log(&format!("{id} spawn: {e}"));
                 tel("init", "svc_fail", json!({ "id": id, "err": e }));
-                append_log(id, format!("oath-init: cannot start: {e}\n").as_bytes());
                 let why = format!("cannot start {}: {e}", spec.exec[0]);
+                // Stamped like the service's own lines, so a later reader
+                // can tell this start from the ones after a fix.
+                append_log(id, format!("{} oath-init: {why}\n", now_rfc3339()).as_bytes());
                 let h = self.history.entry(id.to_string()).or_default();
                 h.quick += 1;
                 h.why = Some(why.clone());

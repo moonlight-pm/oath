@@ -8,9 +8,10 @@
 //! revision (no handshake, every request stands alone); an `initialize`
 //! switches the process to the handshake-based revisions before it.
 
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Read, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 use serde_json::{json, Map, Value};
 
@@ -24,19 +25,31 @@ const META_VERSION: &str = "io.modelcontextprotocol/protocolVersion";
 const META_CAPS: &str = "io.modelcontextprotocol/clientCapabilities";
 const META_CLIENT: &str = "io.modelcontextprotocol/clientInfo";
 const META_SERVER: &str = "io.modelcontextprotocol/serverInfo";
-/// The tools change only with the `oath` binary.
+/// The tools and resource templates change only with the `oath` binary.
 const TTL_MS: u64 = 3_600_000;
+/// Seconds between progress notifications while a command runs.
+const PROGRESS_SECS: u64 = 5;
 
 const PARSE_ERROR: i64 = -32700;
 const INVALID_REQUEST: i64 = -32600;
 const METHOD_NOT_FOUND: i64 = -32601;
 const INVALID_PARAMS: i64 = -32602;
 const UNSUPPORTED_VERSION: i64 = -32022;
+/// "Resource not found" before the modern revision, which uses -32602.
+const LEGACY_NOT_FOUND: i64 = -32002;
 
-/// What a tool call needs from the machine. Tests give a fake.
+/// One command a tool or resource runs.
+pub struct Call {
+    pub argv: Vec<String>,
+    /// Its stdin: a plan's text for `file_plan`, nothing otherwise.
+    pub input: Option<String>,
+}
+
+/// What a call needs from the machine. Tests give a fake.
 pub trait Machine {
-    /// Run `argv` (never through a shell) with no stdin, and wait.
-    fn run(&self, argv: &[String]) -> Ran;
+    /// Run a call, never through a shell, and wait. While it runs, `tick`
+    /// gets the seconds so far every [`PROGRESS_SECS`].
+    fn run(&self, call: &Call, tick: &mut dyn FnMut(u64)) -> Ran;
     fn hostname(&self) -> String;
 }
 
@@ -50,18 +63,57 @@ pub struct Ran {
 struct Live;
 
 impl Machine for Live {
-    fn run(&self, argv: &[String]) -> Ran {
+    fn run(&self, call: &Call, tick: &mut dyn FnMut(u64)) -> Ran {
+        let argv = &call.argv;
         // stdin is the JSON-RPC stream: a call must never read it.
-        match Command::new(&argv[0]).args(&argv[1..]).stdin(Stdio::null()).output() {
-            Ok(o) => Ran {
-                code: o.status.code(),
-                stdout: String::from_utf8_lossy(&o.stdout).into_owned(),
-                stderr: String::from_utf8_lossy(&o.stderr).into_owned(),
-            },
+        let spawned = Command::new(&argv[0])
+            .args(&argv[1..])
+            .stdin(if call.input.is_some() { Stdio::piped() } else { Stdio::null() })
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn();
+        let mut child = match spawned {
+            Ok(c) => c,
             Err(e) => {
-                Ran { code: None, stdout: String::new(), stderr: format!("{}: {e}", argv[0]) }
+                return Ran {
+                    code: None,
+                    stdout: String::new(),
+                    stderr: format!("{}: {e}", argv[0]),
+                }
             }
+        };
+        if let (Some(text), Some(mut stdin)) = (&call.input, child.stdin.take()) {
+            let _ = stdin.write_all(text.as_bytes());
         }
+        // One reader per stream: a full pipe must never block the other.
+        let drain = |pipe: Option<Box<dyn Read + Send>>| {
+            std::thread::spawn(move || {
+                let mut buf = Vec::new();
+                if let Some(mut p) = pipe {
+                    let _ = p.read_to_end(&mut buf);
+                }
+                String::from_utf8_lossy(&buf).into_owned()
+            })
+        };
+        let out = drain(child.stdout.take().map(|p| Box::new(p) as Box<dyn Read + Send>));
+        let err = drain(child.stderr.take().map(|p| Box::new(p) as Box<dyn Read + Send>));
+        let start = Instant::now();
+        let mut ticked = 0;
+        let code = loop {
+            match child.try_wait() {
+                Ok(Some(st)) => break st.code(),
+                Ok(None) => {
+                    std::thread::sleep(Duration::from_millis(100));
+                    let secs = start.elapsed().as_secs();
+                    if secs >= ticked + PROGRESS_SECS {
+                        ticked = secs;
+                        tick(secs);
+                    }
+                }
+                Err(_) => break None,
+            }
+        };
+        Ran { code, stdout: out.join().unwrap_or_default(), stderr: err.join().unwrap_or_default() }
     }
 
     fn hostname(&self) -> String {
@@ -73,7 +125,8 @@ impl Machine for Live {
 }
 
 /// Serve stdin until it ends: one JSON-RPC message per line in, one reply
-/// per request out, one request at a time.
+/// per request out, one request at a time. Progress notifications go out
+/// while a request runs.
 pub fn serve(root: &Path, read_only: bool) -> oath_core::Result<i32> {
     let exe = std::env::current_exe()?.display().to_string();
     let root = std::path::absolute(root)?.display().to_string();
@@ -91,7 +144,12 @@ pub fn serve(root: &Path, read_only: bool) -> oath_core::Result<i32> {
         if text.trim().is_empty() {
             continue;
         }
-        if let Some(reply) = server.line(text.trim(), &Live) {
+        let mut notify = |n: Value| {
+            let mut out = stdout.lock();
+            let _ = writeln!(out, "{n}");
+            let _ = out.flush();
+        };
+        if let Some(reply) = server.line(text.trim(), &Live, &mut notify) {
             let mut out = stdout.lock();
             writeln!(out, "{reply}")?;
             out.flush()?;
@@ -141,23 +199,35 @@ impl Server {
         Self { exe, root, read_only, version, tools, legacy: None }
     }
 
-    /// One line from the client: a reply to print, or `None`.
-    pub fn line(&mut self, text: &str, m: &dyn Machine) -> Option<Value> {
+    /// One line from the client: a reply to print, or `None`. `notify`
+    /// sends a notification at once (progress, while a call runs).
+    pub fn line(
+        &mut self,
+        text: &str,
+        m: &dyn Machine,
+        notify: &mut dyn FnMut(Value),
+    ) -> Option<Value> {
         match serde_json::from_str::<Value>(text) {
             Ok(Value::Array(batch)) => {
-                let out: Vec<Value> = batch.iter().filter_map(|msg| self.message(msg, m)).collect();
+                let out: Vec<Value> =
+                    batch.iter().filter_map(|msg| self.message(msg, m, notify)).collect();
                 if out.is_empty() {
                     None
                 } else {
                     Some(Value::Array(out))
                 }
             }
-            Ok(msg) => self.message(&msg, m),
+            Ok(msg) => self.message(&msg, m, notify),
             Err(e) => Some(reply(Value::Null, Err(rpc(PARSE_ERROR, format!("parse error: {e}"))))),
         }
     }
 
-    fn message(&mut self, msg: &Value, m: &dyn Machine) -> Option<Value> {
+    fn message(
+        &mut self,
+        msg: &Value,
+        m: &dyn Machine,
+        notify: &mut dyn FnMut(Value),
+    ) -> Option<Value> {
         let Some(o) = msg.as_object() else {
             return Some(reply(Value::Null, Err(rpc(INVALID_REQUEST, "not a JSON-RPC message"))));
         };
@@ -169,7 +239,7 @@ impl Server {
         };
         let empty = json!({});
         let params = o.get("params").unwrap_or(&empty);
-        Some(reply(id.clone(), self.request(method, params, m)))
+        Some(reply(id.clone(), self.request(method, params, m, notify)))
     }
 
     fn request(
@@ -177,6 +247,7 @@ impl Server {
         method: &str,
         params: &Value,
         m: &dyn Machine,
+        notify: &mut dyn FnMut(Value),
     ) -> Result<Value, RpcError> {
         if method == "initialize" {
             let asked = params.get("protocolVersion").and_then(Value::as_str);
@@ -186,7 +257,7 @@ impl Server {
             self.legacy = Some(client);
             return Ok(json!({
                 "protocolVersion": version,
-                "capabilities": { "tools": {} },
+                "capabilities": { "tools": {}, "resources": {} },
                 "serverInfo": self.info(m),
                 "instructions": instructions,
             }));
@@ -223,24 +294,113 @@ impl Server {
             "ping" => json!({}),
             "server/discover" if modern => json!({
                 "supportedVersions": [MODERN],
-                "capabilities": { "tools": {} },
+                "capabilities": { "tools": {}, "resources": {} },
                 "instructions": self.instructions(&client, m),
             }),
             "tools/list" => {
                 json!({ "tools": self.tools.iter().map(Tool::listing).collect::<Vec<_>>() })
             }
-            "tools/call" => self.call(params, &client, m)?,
+            "tools/call" => self.call(params, &client, m, notify)?,
+            "resources/list" => self.resources(&client, m),
+            "resources/templates/list" => json!({ "resourceTemplates": templates() }),
+            "resources/read" => self.read(params, &client, modern, m)?,
             _ => return Err(rpc(METHOD_NOT_FOUND, format!("no method {method}"))),
         };
         if modern {
             result["resultType"] = json!("complete");
             result["_meta"] = json!({ META_SERVER: self.info(m) });
-            if matches!(method, "server/discover" | "tools/list") {
-                result["ttlMs"] = json!(TTL_MS);
+            // The index, objects and schemas a resource reads change with
+            // any apply or upgrade: fresh for no time.
+            let ttl = match method {
+                "server/discover" | "tools/list" | "resources/templates/list" => Some(TTL_MS),
+                "resources/list" | "resources/read" => Some(0),
+                _ => None,
+            };
+            if let Some(ttl) = ttl {
+                result["ttlMs"] = json!(ttl);
                 result["cacheScope"] = json!("private");
             }
         }
         Ok(result)
+    }
+
+    /// The INDEX, each kind's schema, and each object, by URI.
+    fn resources(&self, client: &str, m: &dyn Machine) -> Value {
+        let mut list = vec![json!({
+            "uri": "oath://index",
+            "name": "index",
+            "title": format!("INDEX of {}", m.hostname()),
+            "description": "Where you are, the verbs, the kinds here and the safety rules.",
+            "mimeType": "text/markdown",
+        })];
+        for k in kinds() {
+            list.push(json!({
+                "uri": format!("oath://schema/{k}"),
+                "name": format!("schema/{k}"),
+                "description": format!("The `{k}` kind: its JSON Schema and prose."),
+                "mimeType": "application/json",
+            }));
+        }
+        let ran = m.run(&self.call_of("ls", &Map::new(), client), &mut |_| {});
+        let ids: Vec<String> = serde_json::from_str(&ran.stdout).unwrap_or_default();
+        for id in ids {
+            let Some((k, n)) = id.split_once(':') else { continue };
+            list.push(json!({
+                "uri": format!("oath://object/{k}/{n}"),
+                "name": id,
+                "mimeType": "application/json",
+            }));
+        }
+        json!({ "resources": list })
+    }
+
+    /// `resources/read`: the command a URI stands for, as one text content.
+    fn read(
+        &self,
+        params: &Value,
+        client: &str,
+        modern: bool,
+        m: &dyn Machine,
+    ) -> Result<Value, RpcError> {
+        let uri = params.get("uri").and_then(Value::as_str).unwrap_or("");
+        let missing = |why: Option<String>| {
+            let mut data = json!({ "uri": uri });
+            if let Some(w) = why {
+                data["error"] = json!(w);
+            }
+            RpcError {
+                code: if modern { INVALID_PARAMS } else { LEGACY_NOT_FOUND },
+                message: "Resource not found".into(),
+                data: Some(data),
+            }
+        };
+        let path = uri.strip_prefix("oath://").ok_or_else(|| missing(None))?;
+        let mut a = Map::new();
+        let (tool, mime) = match path.split('/').collect::<Vec<_>>()[..] {
+            ["index"] => ("index", "text/markdown"),
+            ["schema", k] if kinds().iter().any(|x| x == k) => {
+                a.insert("kind".into(), json!(k));
+                ("schema", "application/json")
+            }
+            ["object", k, n] if kinds().iter().any(|x| x == k) && name_ok(n) => {
+                a.insert("id".into(), json!(format!("{k}:{n}")));
+                ("get", "application/json")
+            }
+            _ => return Err(missing(None)),
+        };
+        let ran = m.run(&self.call_of(tool, &a, client), &mut |_| {});
+        if ran.code != Some(0) {
+            return Err(missing(Some(output_text(&ran))));
+        }
+        let text = if tool == "index" {
+            serde_json::from_str::<Value>(&ran.stdout)
+                .ok()
+                .and_then(|v| v["text"].as_str().map(String::from))
+                .ok_or_else(|| missing(Some(output_text(&ran))))?
+        } else {
+            ran.stdout.trim_end().to_string()
+        };
+        Ok(json!({ "contents": [{ "uri": uri, "mimeType": mime, "text": text }] }))
     }
 
     fn info(&self, m: &dyn Machine) -> Value {
@@ -266,7 +426,7 @@ impl Server {
             );
         }
         s.push_str("\n\n");
-        let ran = m.run(&self.argv("index", &Map::new(), client));
+        let ran = m.run(&self.call_of("index", &Map::new(), client), &mut |_| {});
         let index: Option<String> = serde_json::from_str::<Value>(&ran.stdout)
             .ok()
             .and_then(|v| v["text"].as_str().map(String::from));
@@ -277,7 +437,13 @@ impl Server {
         s
     }
 
-    fn call(&self, params: &Value, client: &str, m: &dyn Machine) -> Result<Value, RpcError> {
+    fn call(
+        &self,
+        params: &Value,
+        client: &str,
+        m: &dyn Machine,
+        notify: &mut dyn FnMut(Value),
+    ) -> Result<Value, RpcError> {
         let name = params.get("name").and_then(Value::as_str).unwrap_or("");
         let Some(tool) = self.tools.iter().find(|t| t.name == name) else {
             return Err(rpc(INVALID_PARAMS, format!("no tool {name:?}; tools/list has them")));
@@ -289,7 +455,26 @@ impl Server {
             Some(_) => return Err(rpc(INVALID_PARAMS, "arguments must be an object")),
         };
         tool.check(args).map_err(|e| rpc(INVALID_PARAMS, format!("{name}: {e}")))?;
-        let ran = m.run(&self.argv(name, args, client));
+        // A long build or apply reports that it is still going, and a
+        // build its log's last line.
+        let token = params.pointer("/_meta/progressToken").filter(|t| t.is_string() || t.is_u64());
+        let build_log = (name == "build")
+            .then(|| a_str(args, "plan"))
+            .flatten()
+            .map(|p| Path::new(&self.root).join("log/plan").join(format!("{p}.log")));
+        let mut tick = |secs: u64| {
+            let Some(token) = token else { return };
+            let mut message = format!("{name}: {secs} s");
+            if let Some(last) = build_log.as_deref().and_then(last_line) {
+                message.push_str(&format!(": {last}"));
+            }
+            notify(json!({
+                "jsonrpc": "2.0",
+                "method": "notifications/progress",
+                "params": { "progressToken": token, "progress": secs, "message": message },
+            }));
+        };
+        let ran = m.run(&self.call_of(name, args, client), &mut tick);
         let mut text = output_text(&ran);
         let note = match ran.code {
             Some(0) => {
@@ -320,8 +505,14 @@ impl Server {
         }))
     }
 
-    /// The command a tool runs. Option values come first and positional
-    /// ones after `--`, so no argument can pass for a flag.
+    /// The command a tool runs, with its stdin.
+    fn call_of(&self, tool: &str, a: &Map<String, Value>, client: &str) -> Call {
+        let input = (tool == "file_plan").then(|| a_str(a, "text")).flatten();
+        Call { argv: self.argv(tool, a, client), input }
+    }
+
+    /// The argv of a tool. Option values come first and positional ones
+    /// after `--`, so no argument can pass for a flag.
     fn argv(&self, tool: &str, a: &Map<String, Value>, client: &str) -> Vec<String> {
         let sudo = match tool {
             "verify" => !self.read_only,
@@ -401,6 +592,10 @@ impl Server {
                 v.push("build".into());
                 rest.extend(s("plan").map(|p| format!("plan:{p}")));
             }
+            "file_plan" => {
+                v.extend(["set".into(), "--from-file".into(), "-".into()]);
+                rest.extend(s("name").map(|p| format!("plan:{p}")));
+            }
             t => {
                 // set_<kind> / new_<kind>
                 let (verb, kind) = t.split_once('_').unwrap_or((t, ""));
@@ -415,6 +610,34 @@ impl Server {
         }
         v
     }
+}
+
+fn a_str(a: &Map<String, Value>, k: &str) -> Option<String> {
+    a.get(k).and_then(Value::as_str).map(String::from)
+}
+
+/// The last non-empty line of a file, if it can be read.
+fn last_line(path: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(path).ok()?;
+    text.lines().rev().find(|l| !l.trim().is_empty()).map(|l| l.chars().take(200).collect())
+}
+
+/// URI templates for the resources that take a name.
+fn templates() -> Vec<Value> {
+    vec![
+        json!({
+            "uriTemplate": "oath://object/{kind}/{name}",
+            "name": "object",
+            "description": "One object, `kind:name`: desired, actual and meta.",
+            "mimeType": "application/json",
+        }),
+        json!({
+            "uriTemplate": "oath://schema/{kind}",
+            "name": "schema",
+            "description": "One kind's JSON Schema and prose.",
+            "mimeType": "application/json",
+        }),
+    ]
 }
 
 /// stdout, or when there is none, stderr without telemetry lines.
@@ -700,6 +923,21 @@ fn tools() -> Vec<Tool> {
         false,
     ));
     t.push(write(
+        "file_plan",
+        "File a build plan from its text: the whole plan file (`#!oath-plan`, its JSON header, \
+         `---`, then the build script). Its header's `name` must be `name`. It is stored by its \
+         hash in canonical form and pinned as `plan:<name>`; `build` builds it. The format: \
+         `schema` with kind `plan`."
+            .into(),
+        vec![
+            p("name", Ty::Name, true, "The plan: `plan:<name>`."),
+            p("text", Ty::Str, true, "The plan file."),
+        ],
+        false,
+        true,
+        false,
+    ));
+    t.push(write(
         "build",
         "Build `plan:<name>` in the netless sandbox and store its product. Does not link /bin; \
          `logs` with `plan:<name>` shows the build."
@@ -821,16 +1059,25 @@ mod tests {
 
     const EXE: &str = "/oath/store/pkg/oath/sha256-0123456789abcdef0000/bin/oath";
 
-    /// Records each argv. Answers with the canned result if there is one,
-    /// else as `oath --json` (the INDEX) or `{"ok": true}`.
+    /// Records each argv and stdin. Answers with the canned result if
+    /// there is one, else by verb: the INDEX, two ids for `ls`, no object
+    /// `svc:gone`, `{"ok": true}` for the rest. `ticks` are the progress
+    /// seconds each call reports while it "runs".
     struct Fake {
         calls: RefCell<Vec<Vec<String>>>,
+        inputs: RefCell<Vec<Option<String>>>,
         canned: RefCell<Option<(Option<i32>, String, String)>>,
+        ticks: Vec<u64>,
     }
 
     impl Fake {
         fn new() -> Self {
-            Self { calls: RefCell::new(Vec::new()), canned: RefCell::new(None) }
+            Self {
+                calls: RefCell::new(Vec::new()),
+                inputs: RefCell::new(Vec::new()),
+                canned: RefCell::new(None),
+                ticks: Vec::new(),
+            }
         }
 
         fn answer(&self, code: Option<i32>, stdout: &str, stderr: &str) {
@@ -843,17 +1090,31 @@ mod tests {
     }
 
     impl Machine for Fake {
-        fn run(&self, argv: &[String]) -> Ran {
-            self.calls.borrow_mut().push(argv.to_vec());
+        fn run(&self, call: &Call, tick: &mut dyn FnMut(u64)) -> Ran {
+            let argv = &call.argv;
+            self.calls.borrow_mut().push(argv.clone());
+            self.inputs.borrow_mut().push(call.input.clone());
+            for t in &self.ticks {
+                tick(*t);
+            }
             if let Some((code, stdout, stderr)) = self.canned.borrow().clone() {
                 return Ran { code, stdout, stderr };
             }
-            let stdout = if argv.last().map(String::as_str) == Some("--json") {
-                json!({ "index": "/oath/INDEX.md", "text": "# Oath\nTHE-INDEX" }).to_string()
-            } else {
-                "{\"ok\": true}".into()
-            };
-            Ran { code: Some(0), stdout, stderr: String::new() }
+            let verb = argv.iter().skip_while(|a| *a != "--json").nth(1).map(String::as_str);
+            let ok = |stdout: String| Ran { code: Some(0), stdout, stderr: String::new() };
+            match verb {
+                None => {
+                    ok(json!({ "index": "/oath/INDEX.md", "text": "# Oath\nTHE-INDEX" })
+                        .to_string())
+                }
+                Some("ls") => ok("[\n  \"host:local\",\n  \"svc:sshd\"\n]".into()),
+                Some("get") if argv.last().map(String::as_str) == Some("svc:gone") => Ran {
+                    code: Some(1),
+                    stdout: "{\"error\": \"no object svc:gone\"}".into(),
+                    stderr: String::new(),
+                },
+                _ => ok("{\"ok\": true}".into()),
+            }
         }
         fn hostname(&self) -> String {
             "canto".into()
@@ -873,7 +1134,8 @@ mod tests {
     }
 
     fn send(s: &mut Server, m: &Fake, msg: Value) -> Value {
-        s.line(&msg.to_string(), m).expect("a reply")
+        s.line(&msg.to_string(), m, &mut |n| panic!("unexpected notification {n}"))
+            .expect("a reply")
     }
 
     fn init(s: &mut Server, m: &Fake, version: &str) -> Value {
@@ -906,7 +1168,7 @@ mod tests {
         let r = init(&mut s, &m, "2025-06-18");
         assert_eq!(r["id"], 0);
         assert_eq!(r["result"]["protocolVersion"], "2025-06-18");
-        assert_eq!(r["result"]["capabilities"], json!({ "tools": {} }));
+        assert_eq!(r["result"]["capabilities"], json!({ "tools": {}, "resources": {} }));
         assert_eq!(
             r["result"]["serverInfo"],
             json!({ "name": "oath", "title": "Oath on canto", "version": "0123456789ab" })
@@ -918,7 +1180,8 @@ mod tests {
 
         let r = init(&mut s, &m, "1999-01-01");
         assert_eq!(r["result"]["protocolVersion"], LEGACY[0]);
-        assert!(s.line(r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#, &m).is_none());
+        let note = r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#;
+        assert!(s.line(note, &m, &mut |_| {}).is_none());
         let r = send(&mut s, &m, json!({ "jsonrpc": "2.0", "id": 1, "method": "ping" }));
         assert_eq!(r["result"], json!({}));
         let r = send(&mut s, &m, json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }));
@@ -931,9 +1194,27 @@ mod tests {
         assert_eq!(
             names,
             [
-                "index", "ls", "schema", "get", "diff", "log", "logs", "verify", "set_host",
-                "set_svc", "set_pkg", "set_net", "set_ssh", "new_svc", "new_pkg", "rm", "apply",
-                "undo", "keep", "build"
+                "index",
+                "ls",
+                "schema",
+                "get",
+                "diff",
+                "log",
+                "logs",
+                "verify",
+                "set_host",
+                "set_svc",
+                "set_pkg",
+                "set_net",
+                "set_ssh",
+                "new_svc",
+                "new_pkg",
+                "rm",
+                "apply",
+                "undo",
+                "keep",
+                "file_plan",
+                "build"
             ]
         );
         assert!(r["result"].get("resultType").is_none(), "legacy results are plain");
@@ -947,7 +1228,7 @@ mod tests {
         let r = modern(&mut s, &m, "server/discover", json!({}));
         let res = &r["result"];
         assert_eq!(res["supportedVersions"], json!([MODERN]));
-        assert_eq!(res["capabilities"], json!({ "tools": {} }));
+        assert_eq!(res["capabilities"], json!({ "tools": {}, "resources": {} }));
         assert_eq!(res["resultType"], "complete");
         assert_eq!(res["ttlMs"], TTL_MS);
         assert_eq!(res["cacheScope"], "private");
@@ -956,7 +1237,7 @@ mod tests {
         assert_eq!(m.last()[4], "mcp:claudecode", "the label keeps A-Za-z0-9._/-");
 
         let r = modern(&mut s, &m, "tools/list", json!({}));
-        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 20);
+        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 21);
         assert_eq!(r["result"]["ttlMs"], TTL_MS);
         let r = modern(&mut s, &m, "tools/call", json!({ "name": "ls", "arguments": {} }));
         assert_eq!(r["result"]["resultType"], "complete");
@@ -984,21 +1265,23 @@ mod tests {
         );
         assert_eq!(r["error"]["code"], UNSUPPORTED_VERSION);
         assert_eq!(r["error"]["data"], json!({ "supported": [MODERN], "requested": "2099-01-01" }));
-        let r = modern(&mut s, &m, "resources/list", json!({}));
+        let r = modern(&mut s, &m, "prompts/list", json!({}));
         assert_eq!(r["error"]["code"], METHOD_NOT_FOUND);
     }
 
     #[test]
     fn bad_lines_and_batches() {
         let (mut s, m) = (server(false), Fake::new());
-        assert_eq!(s.line("{nope", &m).unwrap()["error"]["code"], PARSE_ERROR);
-        assert_eq!(s.line("3", &m).unwrap()["error"]["code"], INVALID_REQUEST);
+        let quiet = &mut |_| {};
+        assert_eq!(s.line("{nope", &m, quiet).unwrap()["error"]["code"], PARSE_ERROR);
+        assert_eq!(s.line("3", &m, quiet).unwrap()["error"]["code"], INVALID_REQUEST);
         init(&mut s, &m, LEGACY[0]);
         let r = s
             .line(
                 r#"[{"jsonrpc":"2.0","id":1,"method":"ping"},
                     {"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":1}}]"#,
                 &m,
+                quiet,
             )
             .unwrap();
         assert_eq!(r, json!([{ "jsonrpc": "2.0", "id": 1, "result": {} }]));
@@ -1063,6 +1346,12 @@ mod tests {
             ("undo", json!({}), true, vec!["undo"]),
             ("keep", json!({}), true, vec!["keep"]),
             ("build", json!({ "plan": "hello" }), true, vec!["build", "--", "plan:hello"]),
+            (
+                "file_plan",
+                json!({ "name": "hello", "text": "#!oath-plan\n" }),
+                true,
+                vec!["set", "--from-file", "-", "--", "plan:hello"],
+            ),
         ];
         for (tool, args, sudo, tail) in cases {
             let r = call(&mut s, &m, tool, args.clone());
@@ -1071,6 +1360,98 @@ mod tests {
             want.extend(tail.iter().map(|x| x.to_string()));
             assert_eq!(m.last(), want, "{tool} {args}");
         }
+    }
+
+    #[test]
+    fn file_plan_sends_its_text_on_stdin() {
+        let (mut s, m) = (server(false), Fake::new());
+        init(&mut s, &m, LEGACY[0]);
+        call(&mut s, &m, "file_plan", json!({ "name": "hello", "text": "PLAN TEXT" }));
+        assert_eq!(m.inputs.borrow().last().unwrap().as_deref(), Some("PLAN TEXT"));
+        call(&mut s, &m, "apply", json!({}));
+        assert_eq!(*m.inputs.borrow().last().unwrap(), None, "no other call gets stdin");
+    }
+
+    #[test]
+    fn resources_are_the_index_schemas_and_objects() {
+        let (mut s, m) = (server(true), Fake::new());
+        let r = modern(&mut s, &m, "resources/list", json!({}));
+        let res = &r["result"];
+        let uris: Vec<&str> = res["resources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| x["uri"].as_str().unwrap())
+            .collect();
+        assert_eq!(uris[0], "oath://index");
+        assert!(uris.contains(&"oath://schema/svc"));
+        assert!(uris.ends_with(&["oath://object/host/local", "oath://object/svc/sshd"]));
+        assert_eq!((res["ttlMs"].clone(), res["cacheScope"].clone()), (json!(0), json!("private")));
+
+        let r = modern(&mut s, &m, "resources/templates/list", json!({}));
+        assert_eq!(
+            r["result"]["resourceTemplates"][0]["uriTemplate"],
+            "oath://object/{kind}/{name}"
+        );
+        assert_eq!(r["result"]["ttlMs"], TTL_MS);
+
+        let r = modern(&mut s, &m, "resources/read", json!({ "uri": "oath://index" }));
+        assert_eq!(
+            r["result"]["contents"],
+            json!([{ "uri": "oath://index", "mimeType": "text/markdown", "text": "# Oath\nTHE-INDEX" }])
+        );
+        assert_eq!(r["result"]["ttlMs"], 0);
+        modern(&mut s, &m, "resources/read", json!({ "uri": "oath://object/svc/sshd" }));
+        assert_eq!(m.last()[6..], ["get", "--", "svc:sshd"]);
+        modern(&mut s, &m, "resources/read", json!({ "uri": "oath://schema/net" }));
+        assert_eq!(m.last()[6..], ["schema", "--", "net"]);
+        assert!(m.calls.borrow().iter().all(|c| c[0] != "sudo"), "reads never sudo");
+
+        let before = m.calls.borrow().len();
+        for uri in ["oath://nope", "oath://object/cat/x", "oath://object/svc/../x", "file:///etc"] {
+            let r = modern(&mut s, &m, "resources/read", json!({ "uri": uri }));
+            assert_eq!(r["error"]["code"], INVALID_PARAMS, "{uri}");
+            assert_eq!(r["error"]["data"]["uri"], uri);
+        }
+        assert_eq!(m.calls.borrow().len(), before, "a bad URI runs nothing");
+        let r = modern(&mut s, &m, "resources/read", json!({ "uri": "oath://object/svc/gone" }));
+        assert_eq!(r["error"]["message"], "Resource not found");
+        assert!(r["error"]["data"]["error"].as_str().unwrap().contains("no object"));
+        // Before the modern revision, not found was its own code.
+        init(&mut s, &m, LEGACY[0]);
+        let r = send(
+            &mut s,
+            &m,
+            json!({ "jsonrpc": "2.0", "id": 9, "method": "resources/read",
+                    "params": { "uri": "oath://object/svc/gone" } }),
+        );
+        assert_eq!(r["error"]["code"], LEGACY_NOT_FOUND);
+    }
+
+    #[test]
+    fn a_progress_token_gets_progress_while_a_call_runs() {
+        let (mut s, mut m) = (server(false), Fake::new());
+        m.ticks = vec![5, 10];
+        let q = |args: Value, meta: Value| {
+            json!({ "jsonrpc": "2.0", "id": 4, "method": "tools/call",
+                    "params": { "name": "build", "arguments": args, "_meta": meta } })
+            .to_string()
+        };
+        init(&mut s, &m, LEGACY[0]);
+        let mut sent = Vec::new();
+        let r =
+            s.line(&q(json!({ "plan": "x" }), json!({ "progressToken": "t1" })), &m, &mut |n| {
+                sent.push(n)
+            });
+        assert_eq!(r.unwrap()["result"]["isError"], false);
+        assert_eq!(sent.len(), 2);
+        assert_eq!(sent[0]["method"], "notifications/progress");
+        assert_eq!(sent[0]["params"]["progressToken"], "t1");
+        assert_eq!(sent[1]["params"]["progress"], 10);
+        assert!(sent[1]["params"]["message"].as_str().unwrap().starts_with("build: 10 s"));
+        // No token, no notifications.
+        let r = s.line(&q(json!({ "plan": "x" }), json!({})), &m, &mut |n| panic!("{n}"));
+        assert!(r.is_some());
     }
 
     #[test]
@@ -1140,6 +1521,7 @@ mod tests {
         let r = send(&mut s, &m, json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }));
         let tools = r["result"]["tools"].as_array().unwrap();
         assert_eq!(tools.len(), 8);
+        assert!(!tools.iter().any(|t| t["name"] == "file_plan"));
         assert!(tools.iter().all(|t| t["annotations"]["readOnlyHint"] == true));
         for (tool, args) in
             [("apply", json!({})), ("set_host", json!({ "name": "local", "fields": {} }))]
