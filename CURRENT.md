@@ -9,17 +9,17 @@ append history (git has it).
 
 ## Now
 
-1. **Phase 7, agent surface (R16).** Steps 1 and 2 of
+1. **Phase 7, agent surface (R16).** All three steps of
    [docs/specs/agent.md](docs/specs/agent.md) are built: `oath mcp`
-   (both MCP eras, 20 tools, `--read-only`, `actor.via` and `confirm` in
-   the apply log) passes the QEMU harness with its five `mcp-*` cases,
-   and `cargo make check --agent` runs the five tasks of
-   `check/agent.toml`. canto runs `e3a11645f14c`, passes all 37 metal
-   cases, and passes all five tasks with haiku. In QEMU four pass;
-   `diagnose` failed in its own setup (fixed since) and has not been
-   rerun. The key in this session's environment is refused, so Joshua
-   runs it. Next: `cargo make check --agent --case diagnose`; when it
-   passes, phase 7 is done (flip it in the roadmap).
+   (both MCP eras, 21 tools with `file_plan`, resources, progress,
+   `--read-only`, `actor.via` and `confirm` in the apply log) and
+   `cargo make check --agent`. Output `534f0dc53cbb` passes all 47
+   QEMU cases. canto runs `e3a11645f14c` (steps 1–2), passes all 37
+   metal cases and all five agent tasks with haiku. In QEMU four tasks
+   passed on `e3a11645f14c`; `diagnose` failed in its own setup (fixed
+   since). The key in this session's environment is refused, so
+   Joshua runs it. Next: `cargo make check --agent` on `534f0dc53cbb`;
+   when all five pass, phase 7 is done (flip it in the roadmap).
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
@@ -36,8 +36,8 @@ cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
 device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
 `cargo make update`. The screen is a `home` shell when no desk owns it
-(R15). The newest output, `e3a11645f14c` (`oath mcp`), passes all 46
-QEMU cases and, on canto, all 37 metal cases. Left by design until something needs them: root SSH as a field,
+(R15). The newest output, `534f0dc53cbb`, passes all 47 QEMU cases;
+canto's, `e3a11645f14c`, all 37 metal cases. Left by design until something needs them: root SSH as a field,
 more NICs, device rules as fields, RPATHs to hash paths (the desk).
 
 ## Machines
