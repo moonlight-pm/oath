@@ -35,8 +35,8 @@ cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
 device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
 `cargo make update`. The screen is a `home` shell when no desk owns it
-(R15). The newest output, `18823a7556d0`, passes 41 QEMU cases; canto
-was updated to it on metal and passes all 32 metal cases. Left by design until something needs them: root SSH as a field,
+(R15). The newest output, `e3a11645f14c` (`oath mcp`), passes all 46
+QEMU cases; canto runs `18823a7556d0`, which passed all 32 metal cases. Left by design until something needs them: root SSH as a field,
 more NICs, device rules as fields, RPATHs to hash paths (the desk).
 
 ## Machines
