@@ -5,18 +5,13 @@ items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
 **As of:** 2026-10-16 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R13 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R15 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **canto onto the new base (needs Joshua).** canto runs output
-   `97c1f7409deb` (pruned from `build/out`); every target short of the
-   desk landed after it. Next, when Joshua says so:
-   `cargo make update --target home@10.0.0.3 --confirm --reboot`, then
-   `cargo make check --target home@10.0.0.3` (31 metal cases now).
-2. **Phase 7, agent surface.** MCP and agent tooling over `oath --json`.
+1. **Phase 7, agent surface.** MCP and agent tooling over `oath --json`.
    Next: a spec in `docs/specs/` for the adapter, then build it.
-3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
    `cargo make install --usb` stick, or `cargo make update` once it
@@ -30,16 +25,16 @@ store integrity (`oath verify`), schemas generated from the types,
 cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
 device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
-`cargo make update`. The newest output passes 40 QEMU cases, and
-`cargo make update --qemu` moved an installed older output to a newer
-one. Left by design until something needs them: root SSH as a field,
+`cargo make update`. The screen is a `home` shell when no desk owns it
+(R15). The newest output, `18823a7556d0`, passes 41 QEMU cases; canto
+was updated to it on metal and passes all 32 metal cases. Left by design until something needs them: root SSH as a field,
 more NICs, device rules as fields, RPATHs to hash paths (the desk).
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013; native base, LLVM kernel since 2026-10-16; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013; output `18823a7556d0`, screen is a `home` shell; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

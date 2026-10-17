@@ -239,7 +239,8 @@ metal = true
 steps = [
   { run = '''sudo oath new svc:base --from-json '{"exec":["/bin/sh","-c","touch /run/base.up; trap \"rm -f /run/base.up; exit 0\" TERM; while :; do sleep 1; done"],"wants":[],"restart":"always","enabled":true}' && sudo oath new svc:top --from-json '{"exec":["/bin/sh","-c","trap \"sleep 1; if [ -e /run/base.up ]; then echo base-still-up; else echo base-gone; fi; exit 0\" TERM; while :; do sleep 1; done"],"wants":["svc:base"],"restart":"always","enabled":true}' && sudo oath apply svc:base svc:top && sleep 1 && test -e /run/base.up''' },
   { reboot = "signal" },
-  { run = "oath logs svc:top; oath logs | grep 'shutdown: stopping'", expect = ["base-still-up", "shutdown: stopping svc:top"], reject = ["base-gone"] },
+  # Logs outlive runs on metal: read only this shutdown's lines.
+  { run = "oath logs svc:top -n 1; oath logs -n 200 | grep 'shutdown: stopping' | tail -n 2", expect = ["base-still-up", "shutdown: stopping svc:top\n"], reject = ["base-gone"] },
 ]
 
 [[case]]
