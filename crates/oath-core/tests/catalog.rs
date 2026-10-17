@@ -1000,3 +1000,31 @@ fn discovered_devices_come_and_go() {
     drop(held);
     assert!(cat.try_lock().unwrap().is_some());
 }
+
+#[test]
+fn drift_and_undo_read_only_the_spec() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let host: ObjectId = "host:local".parse().unwrap();
+    let dir = d.path().join("objects/host/local");
+    set(&cat, "host:local", "hostname", json!("one")).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    let applied: serde_json::Value = oath_core::read_json(&dir.join("applied.json")).unwrap();
+    assert_eq!(applied["hostname"], "one");
+    // Whatever the observation says, drift is desired against applied.
+    let mut actual = cat.get(&host).unwrap().actual;
+    actual["hostname"] = json!("observed-elsewhere");
+    oath_core::write_json(&dir.join("actual.json"), &actual).unwrap();
+    assert!(cat.diff(None).unwrap().is_empty());
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    let applied: serde_json::Value = oath_core::read_json(&dir.join("applied.json")).unwrap();
+    assert_eq!(applied["hostname"], "oath");
+    assert_eq!(*hooks.hostname.lock().unwrap(), "oath");
+
+    // A catalog from before applied.json: actual held the applied spec.
+    std::fs::remove_file(dir.join("applied.json")).unwrap();
+    oath_core::write_json(&dir.join("actual.json"), &cat.get(&host).unwrap().desired).unwrap();
+    assert!(cat.diff(None).unwrap().is_empty());
+    set(&cat, "host:local", "hostname", json!("two")).unwrap();
+    assert_eq!(cat.diff(None).unwrap()[0].fields[0].0, "hostname");
+}

@@ -153,7 +153,8 @@ pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
             Some(a) => a.clone(),
             None => first_actual(&oid, desired, p.fixed.contains(id)),
         };
-        write_object(root, &oid, desired, &actual)?;
+        // A seeded object starts applied: the image is built that way.
+        write_object(root, &oid, desired, &actual, true)?;
     }
     std::fs::write(root.join("log/apply.jsonl"), "")?;
     crate::Catalog::open(root)?.write_index()?;
@@ -161,9 +162,9 @@ pub fn seed_profile(root: &Path, profile: &str) -> Result<()> {
 }
 
 /// Merge an overlay into the catalog at `root` before it first boots.
-/// Each patch lands in `desired` and counts as applied: svc `applied`,
-/// and host / net / ssh `actual` (PID 1 boots from those). Packages keep
-/// their actual; a package an overlay turns on is linked by the first
+/// Each patch lands in `desired` and, for svc, host, net and ssh, counts
+/// as applied (PID 1 boots from `applied.json`). Packages keep their
+/// applied spec; a package an overlay turns on is linked by the first
 /// `oath apply`. New objects get a first actual. Returns the ids touched.
 pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
     let cat = crate::Catalog::open(root)?;
@@ -186,23 +187,16 @@ pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
         let base = if exists { crate::read_json(&path)? } else { json!({}) };
         let desired = merge_patch(base, patch);
         cat.validate(&oid, &desired)?;
+        let boots_from_it =
+            matches!(oid.kind.as_str(), KIND_SVC | crate::KIND_HOST | crate::KIND_NET | KIND_SSH);
         if exists {
             write_json(&path, &desired)?;
-            match oid.kind.as_str() {
-                KIND_SVC => write_json(&dir.join("applied.json"), &desired)?,
-                crate::KIND_HOST | crate::KIND_NET => {
-                    write_json(&dir.join("actual.json"), &desired)?
-                }
-                KIND_SSH => {
-                    let mut a: Value = crate::read_json(&dir.join("actual.json"))?;
-                    a["authorized"] = desired["authorized"].clone();
-                    write_json(&dir.join("actual.json"), &a)?;
-                }
-                _ => {}
+            if boots_from_it {
+                write_json(&dir.join("applied.json"), &desired)?;
             }
         } else {
             let actual = first_actual(&oid, &desired, false);
-            write_object(root, &oid, &desired, &actual)?;
+            write_object(root, &oid, &desired, &actual, boots_from_it)?;
         }
         touched.push(oid);
     }
@@ -270,13 +264,19 @@ fn first_actual(id: &ObjectId, desired: &Value, fixed: bool) -> Value {
     }
 }
 
-fn write_object(root: &Path, id: &ObjectId, desired: &Value, actual: &Value) -> Result<()> {
+fn write_object(
+    root: &Path,
+    id: &ObjectId,
+    desired: &Value,
+    actual: &Value,
+    applied: bool,
+) -> Result<()> {
     let dir = root.join("objects").join(&id.kind).join(&id.name);
     std::fs::create_dir_all(&dir)?;
     write_json(&dir.join("desired.json"), desired)?;
     write_json(&dir.join("actual.json"), actual)?;
     write_json(&dir.join("meta.json"), &Meta::new(&id.kind, &id.name, "mutate"))?;
-    if id.kind == KIND_SVC {
+    if applied {
         write_json(&dir.join("applied.json"), desired)?;
     }
     Ok(())

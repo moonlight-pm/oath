@@ -29,7 +29,7 @@ T34.
     desired.json            owner intent
     actual.json             engine-owned observation
     meta.json               id, safety, status, last generation
-    applied.json            svc only: the spec PID 1 runs
+    applied.json            the spec as last applied (PID 1 runs a svc's)
     new                     marker: made by `oath new`, not applied yet
     remove                  marker: `oath rm` pending
   log/apply.jsonl           one line per apply (ok, error, refused), undo or keep
@@ -58,7 +58,12 @@ schemas. The prose (`<kind>.md`) is hand-written and embedded too. Today's kinds
 without a recorded decision.
 
 `status`, as `oath get` reports it, is `in-sync`, `drift`, `new`,
-`removing`, `applying` or `error`.
+`removing` or `error`. Drift is desired against `applied.json` for every
+kind (R14, built 2026-10-16): actual is only what the machine observed,
+and neither drift nor undo reads it. An object that was never applied
+drifts in every field. A catalog from before `applied.json` falls back
+to actual, which used to hold the applied spec for `host`, `net`,
+`ssh`, `pkg`, `plan` and `snap:current`.
 
 Every JSON document is written to a temporary file in the same
 directory, fsynced, renamed over the target, and the directory is
@@ -159,9 +164,11 @@ was never applied is deleted at once. Base packages, and `host`, `net`,
    Otherwise write last-good spec into the selected objects, snapshot the live
    `@` subvolume as `@gen-N` from the top-level mount, then put the
    pending spec back. The snapshot holds what was applied before.
-4. Converge each object through its kind handler; refresh actual. svc:
-   write `applied.json`, notify PID 1 and wait for its reply (sent
-   after it converged), then check for running or stopped.
+4. Converge each object through its kind handler, write what it
+   observed as actual and the spec as `applied.json` (a `pkg`'s with
+   the hash it linked, so undo can put back a pin discovery found).
+   svc: notify PID 1 and wait for its reply (sent after it converged),
+   then check for running or stopped.
    Removals stop or unlink, then delete the object directory.
 5. Log the outcome: `ok`, or `error` with the message if converging
    failed after the snapshot (the generation exists). Regenerate INDEX.
@@ -200,7 +207,7 @@ section.
 `oath undo` is a stack. It takes the newest log line with a generation
 and result `ok` or `error` that no `undo:N` line has undone yet. From
 that generation's snapshot it puts back the spec of the objects that
-apply touched: `desired`, and `applied` for a `svc`. An object the apply
+apply touched: `desired` and `applied`. An object the apply
 created is stopped or unlinked and removed; an object it removed comes
 back. It then converges those objects, sets `snap:current` to the
 apply's parent and appends an `undo:N` line. Undo never touches `log/`,
@@ -214,8 +221,9 @@ catalog, and `snapshot_catalog(n)` returns the catalog root inside it
 snapshot, which keeps only `objects/`).
 
 `oath seed --overlay` (build and install time) validates each patch and
-counts it as applied: svc `applied.json`, host and net `actual.json`,
-and ssh `actual.authorized`, because PID 1 boots from applied state.
+counts it as applied for `svc`, `host`, `net` and `ssh`
+(`applied.json`), because PID 1 boots from applied specs. A seeded
+object starts applied.
 
 ## Target
 

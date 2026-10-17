@@ -570,7 +570,7 @@ fn wanted() -> (HashMap<String, Svc>, Vec<String>) {
         }
     }
     if let Ok(obj) = cat.get(&ObjectId::new("net", "net0")) {
-        if let Some(net) = applied::<oath_core::Net>(&obj) {
+        if let Some(net) = applied::<oath_core::Net>(&cat, &obj) {
             if net.up && net.ipv4 == "dhcp" {
                 out.insert(DHCP_ID.into(), dhcp_spec());
             }
@@ -612,7 +612,7 @@ fn dhcp_spec() -> Svc {
 fn host_env() -> Vec<(String, String)> {
     let Ok(cat) = Catalog::open(DEFAULT_ROOT) else { return Vec::new() };
     let Ok(obj) = cat.get(&ObjectId::new("host", "local")) else { return Vec::new() };
-    let Some(host) = applied::<Host>(&obj) else { return Vec::new() };
+    let Some(host) = applied::<Host>(&cat, &obj) else { return Vec::new() };
     oath_core::seat::login_env(&host)
         .into_iter()
         .filter(|(k, v)| oath_core::seat::valid_env_name(k) && !v.contains('\n'))

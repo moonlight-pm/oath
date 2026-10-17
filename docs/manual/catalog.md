@@ -11,7 +11,7 @@ The catalog is the source of truth. It lives at `/oath`.
     desired.json
     actual.json
     meta.json              id, safety, status
-    applied.json           svc only — the spec PID 1 runs
+    applied.json           the spec as last applied (PID 1 runs a svc's)
     new / remove           markers for a pending `oath new` / `oath rm`
   log/apply.jsonl          every apply (ok, error, refused), undo and keep
   probation.json           an apply that can cut off SSH, until `oath keep`
@@ -45,9 +45,9 @@ Desired and actual are separate files. You may `cat` any of these;
 | `dev` | `dev:net0`, `dev:disk-pci-…` (discovered) | Hardware inventory |
 | `plan` | none until you file one | Hashed `plan.plan`; `oath build` writes a pkg tree |
 
-`host` and `net` share a schema between desired and actual. `svc`
-actual is runtime (`state`, `pid`, `restarts`); drift is desired
-against `applied.json`, not against `actual.json`.
+Drift is desired against `applied.json`, the spec as last applied, for
+every kind; `actual.json` is only what the machine observed (`svc`
+actual is runtime: `state`, `pid`, `restarts`).
 
 `oath schema <kind>` on the box gives fields, safety, and examples.
 That text is the same as `crates/oath-core/schema/` in the repo.

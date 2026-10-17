@@ -24,7 +24,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
     seed only if /oath/objects is missing; regenerate a missing INDEX.md
     under /oath/.lock: apply host, net (one-shot udhcpc for dhcp), ssh
-      from their applied state (actual.json); discover dev:* from sysfs
+      from their applied specs (applied.json); discover dev:* from sysfs
     listen on /oath/run/init.sock; start svc:* from applied.json in
       `wants` order (a cycle skips only its members) and the DHCP client;
       after `ready`, run `oath verify` once (re-hash the linked store)
@@ -65,7 +65,7 @@ btrfs
   INDEX.md                 generated; what an agent reads first
   schema/<kind>.json|.md   per-kind schema (generated from the type) and
                            prose; PID 1 rewrites them at boot if they differ
-  objects/<kind>/<name>/   desired.json actual.json meta.json [applied.json]
+  objects/<kind>/<name>/   desired.json applied.json actual.json meta.json
                            [new | remove markers for oath new / oath rm]
   log/apply.jsonl          one line per apply (ok, error, refused), undo or keep
   probation.json           the apply on probation (lockout class), while open

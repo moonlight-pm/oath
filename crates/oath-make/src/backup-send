@@ -144,6 +144,7 @@ printf '{"generation":%s,"parent":%s,"time":"%s","reason":"backup"}\n' "$gen" "$
 printf '{}\n' >"$snapdir/desired.json"
 printf '{"id":"snap:%s","kind":"snap","name":"%s","safety":"mutate","status":"in-sync"}\n' "$gen" "$gen" >"$snapdir/meta.json"
 printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/desired.json
+printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/applied.json
 printf '{"generation":%s}\n' "$gen" >/oath/objects/snap/current/actual.json
 
 tmp=$mnt/$host.send.tmp

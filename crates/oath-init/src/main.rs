@@ -724,12 +724,19 @@ fn mount_toplevel() {
     }
 }
 
-/// What was last applied: `actual` for host, net and ssh (apply writes it
-/// after converging), else `desired` on a catalog that has never booted.
-/// Pending `oath set` edits do not take effect until `oath apply`.
-fn applied<T: serde::de::DeserializeOwned>(obj: &oath_core::Object) -> Option<T> {
-    serde_json::from_value(obj.actual.clone())
+/// What was last applied (`applied.json`). A catalog from before
+/// applied.json kept it in `actual`; one that has never been applied
+/// starts from `desired`. Pending `oath set` edits do not take effect
+/// until `oath apply`.
+pub(crate) fn applied<T: serde::de::DeserializeOwned>(
+    cat: &Catalog,
+    obj: &oath_core::Object,
+) -> Option<T> {
+    cat.applied(&obj.id)
         .ok()
+        .flatten()
+        .and_then(|a| serde_json::from_value(a).ok())
+        .or_else(|| serde_json::from_value(obj.actual.clone()).ok())
         .or_else(|| serde_json::from_value(obj.desired.clone()).ok())
 }
 
@@ -743,7 +750,7 @@ fn apply_host() {
     };
     let id = ObjectId::new("host", "local");
     let Ok(obj) = cat.get(&id) else { return };
-    let Some(host) = applied::<Host>(&obj) else { return };
+    let Some(host) = applied::<Host>(&cat, &obj) else { return };
     if sethostname(host.hostname.as_str()).is_err() {
         log("sethostname failed");
         tel("init", "hostname", json!({ "ok": false, "name": host.hostname }));
@@ -775,7 +782,7 @@ fn apply_net() {
     };
     let id = ObjectId::new("net", "net0");
     let Ok(obj) = cat.get(&id) else { return };
-    let Some(net) = applied::<oath_core::Net>(&obj) else { return };
+    let Some(net) = applied::<oath_core::Net>(&cat, &obj) else { return };
     match oath_core::converge_net(&net) {
         Ok(actual) => {
             tel("init", "net", json!({ "ok": true, "up": actual.up, "ipv4": actual.ipv4 }));
@@ -822,13 +829,10 @@ fn inject_ssh_from_host() {
     if n == 0 {
         return;
     }
-    // Boot applies ssh from actual, so the keys go in both.
+    // Boot applies ssh from its applied spec, so the keys go in both.
     let dir = Path::new(DEFAULT_ROOT).join("objects/ssh/local");
     let _ = oath_core::write_json(&dir.join("desired.json"), &ssh);
-    if let Ok(mut a) = oath_core::read_json::<serde_json::Value>(&dir.join("actual.json")) {
-        a["authorized"] = json!(ssh.authorized);
-        let _ = oath_core::write_json(&dir.join("actual.json"), &a);
-    }
+    let _ = oath_core::write_json(&dir.join("applied.json"), &ssh);
     tel("init", "ssh_inject", json!({ "added": n, "total": ssh.authorized.len() }));
     log(&format!("injected {n} host SSH public key(s)"));
 }
@@ -840,7 +844,7 @@ fn apply_ssh() {
     };
     let id = ObjectId::new("ssh", "local");
     let Ok(obj) = cat.get(&id) else { return };
-    let Some(ssh) = applied::<oath_core::Ssh>(&obj) else { return };
+    let Some(ssh) = applied::<oath_core::Ssh>(&cat, &obj) else { return };
     match oath_core::converge_ssh(&ssh) {
         Ok(actual) => {
             tel("init", "ssh", json!({ "ok": true, "host_key": actual.host_key }));

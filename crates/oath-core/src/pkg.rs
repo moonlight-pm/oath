@@ -766,7 +766,7 @@ pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
         if !e.path().is_dir() {
             continue;
         }
-        for file in ["desired.json", "actual.json"] {
+        for file in ["desired.json", "applied.json", "actual.json"] {
             let p = e.path().join(file);
             let Ok(mut v) = crate::read_json::<Value>(&p) else {
                 continue;
@@ -806,14 +806,19 @@ pub fn sync_need_hashes(catalog_root: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Pin `pkg:<name>` to `hash` in desired, and in applied when it has been
+/// applied (the image packer links what it pins).
 pub fn pin_desired_hash(catalog_root: &Path, name: &str, hash: &str) -> Result<()> {
-    let p = catalog_root.join("objects").join("pkg").join(name).join("desired.json");
-    if !p.is_file() {
-        return Ok(());
+    let dir = catalog_root.join("objects").join("pkg").join(name);
+    for file in ["desired.json", "applied.json"] {
+        let p = dir.join(file);
+        if !p.is_file() {
+            continue;
+        }
+        let mut v: serde_json::Value = crate::read_json(&p)?;
+        v["hash"] = serde_json::Value::String(hash.to_string());
+        write_json(&p, &v)?;
     }
-    let mut v: serde_json::Value = crate::read_json(&p)?;
-    v["hash"] = serde_json::Value::String(hash.to_string());
-    write_json(&p, &v)?;
     Ok(())
 }
 

@@ -84,7 +84,7 @@ execs.
 5. Seed only if `/oath/objects` is missing; regenerate a missing
    `INDEX.md`. Take the catalog lock for the boot-time writes.
 6. Converge `host:local`, `net:net0` and `ssh:local` from their applied
-   state (`actual.json`), not from pending desired; probe `dev:*`.
+   spec (`applied.json`), not from pending desired; discover `dev:*`.
    Release the lock.
 7. Listen on `/oath/run/init.sock`, then start enabled services in
    `wants` order (and the DHCP client, below).

@@ -62,7 +62,9 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
     }
     let dir_obj = catalog_root.join("objects/plan").join(&plan.name);
     fs::create_dir_all(&dir_obj)?;
+    // Filing a plan pins it: the new pin is applied at once.
     write_json(&dir_obj.join("desired.json"), &json!({ "hash": hash }))?;
+    write_json(&dir_obj.join("applied.json"), &json!({ "hash": hash }))?;
     // A new pin forgets the last build: its product says nothing about
     // this plan file.
     let actual = if dir_obj.join("actual.json").is_file() {
@@ -262,6 +264,7 @@ fn ensure_pkg_object(catalog_root: &Path, plan: &PlanFile, product: &str) -> Res
         desired["needs"] = serde_json::to_value(&plan.run_needs)?;
     }
     write_json(&dir.join("desired.json"), &desired)?;
+    write_json(&dir.join("applied.json"), &desired)?;
     write_json(
         &dir.join("actual.json"),
         &json!({ "present": false, "links": [], "removable": true }),

@@ -467,8 +467,9 @@ fn relink_present(oath_root: &Path, bin_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Give every `pkg` actual the prose and pin its desired doc has, the way
-/// apply would, so a fresh image starts in sync instead of drifting.
+/// Give every `pkg` actual the prose and pin its desired doc has, and keep
+/// the desired doc as applied, the way apply would, so a fresh image
+/// starts in sync instead of drifting.
 fn settle_pkg_actuals(oath_root: &Path) -> Result<()> {
     let dir = oath_root.join("objects/pkg");
     for e in fs::read_dir(&dir)?.flatten() {
@@ -487,6 +488,8 @@ fn settle_pkg_actuals(oath_root: &Path) -> Result<()> {
             actual["hash"] = serde_json::json!(pin);
         }
         write_json(&d.join("actual.json"), &actual).map_err(|e| anyhow::anyhow!("{e}"))?;
+        // The image links what its seed pins: that is applied.
+        write_json(&d.join("applied.json"), &desired).map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
 }

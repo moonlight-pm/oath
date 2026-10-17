@@ -55,8 +55,8 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 - `authorized` is a list of OpenSSH public key lines (each starts
   `ssh-`, `ecdsa-` or `sk-`; `set` refuses anything else). Converge
   writes them to `/home/.ssh/authorized_keys`, owned by `home`, mode
-  600. At boot PID 1 applies the keys last applied (`actual`), not
-  pending desired.
+  600. At boot PID 1 applies the keys last applied (`applied.json`),
+  not pending desired.
 - `oath undo` never restores `/oath/ssh/`: host keys do not roll back.
 - The host key is generated on first converge at
   `/oath/ssh/host_ed25519` with `dropbearkey`. No image ships a private

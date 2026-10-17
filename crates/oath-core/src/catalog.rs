@@ -20,6 +20,9 @@ use crate::{
 const NEW_MARK: &str = "new";
 /// In an object directory: `oath rm` is pending; apply deletes the object.
 const REMOVE_MARK: &str = "remove";
+/// In an object directory: the spec as it was last applied. Drift is
+/// desired against it, and undo puts it back.
+const APPLIED: &str = "applied.json";
 /// Kinds `oath new` / `oath rm` work on. host, net, ssh, snap and dev are
 /// singletons or inventory owned by the engine.
 const CREATABLE: &[&str] = &[KIND_SVC, KIND_PKG];
@@ -178,6 +181,7 @@ impl Catalog {
                 fs::create_dir_all(&dir)?;
                 write_json(&dir.join("meta.json"), &Meta::new(KIND_DEV, name, "mutate"))?;
                 write_json(&dir.join("desired.json"), &json!({ "present": true }))?;
+                write_json(&dir.join(APPLIED), &json!({ "present": true }))?;
                 changes.push(format!("+{id}"));
             }
             let path = dir.join("actual.json");
@@ -340,7 +344,6 @@ impl Catalog {
             other => other,
         })?;
         write_json(&self.obj_dir(id).join("desired.json"), &obj.desired)?;
-        self.touch_status(id, "drift")?;
         Ok(())
     }
 
@@ -654,51 +657,15 @@ impl Catalog {
             }
         }
         let mut svcs = Vec::new();
+        let mut report = ApplyReport::default();
         for id in &back {
-            let obj = self.get(id)?;
-            match id.kind.as_str() {
-                KIND_HOST => {
-                    let host: Host = serde_json::from_value(obj.desired)?;
-                    let actual = hooks.converge_host(&host)?;
-                    write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
-                }
-                KIND_PKG => self.converge_one_pkg(id, hooks)?,
-                KIND_NET => {
-                    let net: Net = serde_json::from_value(obj.desired)?;
-                    let actual = hooks.converge_net(id, &net)?;
-                    write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
-                }
-                KIND_SSH => {
-                    let ssh: Ssh = serde_json::from_value(obj.desired)?;
-                    let actual = hooks.converge_ssh(id, &ssh)?;
-                    write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
-                }
-                KIND_DEV => {
-                    let dev: Dev = serde_json::from_value(obj.desired)?;
-                    let actual = hooks.converge_dev(id, &dev)?;
-                    write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
-                }
-                KIND_SVC => {
-                    let enabled =
-                        obj.desired.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
-                    svcs.push((id.clone(), enabled));
-                }
-                KIND_PLAN => {
-                    let mut actual = obj.actual.clone();
-                    if let Some(h) = obj.desired.get("hash") {
-                        actual["hash"] = h.clone();
-                    }
-                    write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
-                }
-                _ => {}
+            let applied = self.converge_spec(id, hooks, &mut report)?;
+            if id.kind == KIND_SVC {
+                svcs.push((id.clone(), applied["enabled"] == json!(true)));
             }
-            self.touch_status(id, "in-sync")?;
         }
 
-        let cur = ObjectId::new(KIND_SNAP, "current");
-        let g = json!({ "generation": parent });
-        write_json(&self.obj_dir(&cur).join("desired.json"), &g)?;
-        write_json(&self.obj_dir(&cur).join("actual.json"), &g)?;
+        self.set_current_generation(parent)?;
 
         hooks.notify_init()?;
         for (id, enabled) in svcs {
@@ -903,28 +870,44 @@ impl Catalog {
                 self.converge_removal(&d.id, hooks)?;
                 continue;
             }
-            self.touch_status(&d.id, "applying")?;
-            let res = self.converge_one(&d.id, hooks, report);
-            if let Err(e) = res {
-                let _ = self.touch_status(&d.id, "error");
-                return Err(e);
-            }
+            self.converge_one(&d.id, hooks, report)?;
             let _ = fs::remove_file(self.obj_dir(&d.id).join(NEW_MARK));
-            self.touch_status(&d.id, "in-sync")?;
         }
         Ok(())
     }
 
+    /// Converge `id` and wait for PID 1 when it is a service.
     fn converge_one(
         &self,
         id: &ObjectId,
         hooks: &dyn ApplyHooks,
         report: &mut ApplyReport,
     ) -> Result<()> {
+        let applied = self.converge_spec(id, hooks, report)?;
+        if id.kind == KIND_SVC {
+            let enabled = applied.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+            hooks.notify_init()?;
+            hooks.wait_converge(id, enabled)?;
+        }
+        Ok(())
+    }
+
+    /// Converge `id` to its desired spec, record what that observed as its
+    /// actual, and keep the spec as applied (`applied.json`). A service only
+    /// gets its applied spec here: PID 1 runs it once notified. Returns the
+    /// applied spec.
+    fn converge_spec(
+        &self,
+        id: &ObjectId,
+        hooks: &dyn ApplyHooks,
+        report: &mut ApplyReport,
+    ) -> Result<Value> {
         let dir = self.obj_dir(id);
-        match id.kind.as_str() {
+        let obj = self.get(id)?;
+        let desired = obj.desired;
+        let applied = match id.kind.as_str() {
             KIND_HOST => {
-                let mut host: Host = serde_json::from_value(self.get(id)?.desired)?;
+                let mut host: Host = serde_json::from_value(desired)?;
                 let reboot = host.power == HostPower::Reboot;
                 let halt = host.power == HostPower::Halt;
                 if reboot || halt {
@@ -932,43 +915,45 @@ impl Catalog {
                     write_json(&dir.join("desired.json"), &host)?;
                 }
                 let actual = hooks.converge_host(&host)?;
-                write_json(&dir.join("actual.json"), &actual)?;
+                self.write_actual(id, &actual)?;
                 report.rebooting |= reboot;
                 report.halting |= halt;
+                serde_json::to_value(&host)?
             }
-            KIND_SVC => {
-                let obj = self.get(id)?;
-                let enabled = obj.desired.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
-                write_json(&dir.join("applied.json"), &obj.desired)?;
-                hooks.notify_init()?;
-                hooks.wait_converge(id, enabled)?;
-            }
+            KIND_SVC => desired,
             KIND_SNAP => {
-                write_json(&dir.join("actual.json"), &self.get(id)?.desired)?;
+                self.write_actual(id, &desired)?;
+                desired
             }
             KIND_PKG => self.converge_one_pkg(id, hooks)?,
             KIND_NET => {
-                let net: Net = serde_json::from_value(self.get(id)?.desired)?;
+                let net: Net = serde_json::from_value(desired.clone())?;
                 let actual = hooks.converge_net(id, &net)?;
-                write_json(&dir.join("actual.json"), &actual)?;
+                self.write_actual(id, &actual)?;
+                desired
             }
             KIND_SSH => {
-                let ssh: Ssh = serde_json::from_value(self.get(id)?.desired)?;
+                let ssh: Ssh = serde_json::from_value(desired.clone())?;
                 let actual = hooks.converge_ssh(id, &ssh)?;
-                write_json(&dir.join("actual.json"), &actual)?;
+                self.write_actual(id, &actual)?;
+                desired
             }
             KIND_PLAN => {
-                let obj = self.get(id)?;
-                let mut actual = obj.actual.clone();
-                if let Some(h) = obj.desired.get("hash") {
+                let mut actual = obj.actual;
+                if !actual.is_object() {
+                    actual = json!({});
+                }
+                if let Some(h) = desired.get("hash") {
                     actual["hash"] = h.clone();
                 }
-                write_json(&dir.join("actual.json"), &actual)?;
+                self.write_actual(id, &actual)?;
+                desired
             }
             KIND_DEV => {
-                let dev: Dev = serde_json::from_value(self.get(id)?.desired)?;
+                let dev: Dev = serde_json::from_value(desired.clone())?;
                 let actual = hooks.converge_dev(id, &dev)?;
-                write_json(&dir.join("actual.json"), &actual)?;
+                self.write_actual(id, &actual)?;
+                desired
             }
             other => {
                 return Err(Error::hint(
@@ -976,8 +961,14 @@ impl Catalog {
                     format!("oath schema {other}"),
                 ));
             }
-        }
-        Ok(())
+        };
+        write_json(&dir.join(APPLIED), &applied)?;
+        Ok(applied)
+    }
+
+    /// An object's observation (`actual`).
+    pub(crate) fn write_actual(&self, id: &ObjectId, actual: &impl serde::Serialize) -> Result<()> {
+        write_json(&self.obj_dir(id).join("actual.json"), actual)
     }
 
     /// Stop or unlink, then delete the object directory.
@@ -1042,15 +1033,16 @@ impl Catalog {
                 fs::copy(from.join(name), to.join(name))?;
             }
         }
+        // The snapshot's desired is what was applied before (apply writes
+        // last-good spec into it), so it stands in for an applied.json that
+        // a catalog from before applied.json lacks.
         let desired: Value = read_json(&from.join("desired.json"))?;
-        if id.kind == KIND_SVC {
-            let applied = if from.join("applied.json").is_file() {
-                read_json(&from.join("applied.json"))?
-            } else {
-                desired.clone()
-            };
-            write_json(&to.join("applied.json"), &applied)?;
-        }
+        let applied = if from.join(APPLIED).is_file() {
+            read_json(&from.join(APPLIED))?
+        } else {
+            desired.clone()
+        };
+        write_json(&to.join(APPLIED), &applied)?;
         write_json(&to.join("desired.json"), &desired)?;
         let _ = fs::remove_file(to.join(NEW_MARK));
         let _ = fs::remove_file(to.join(REMOVE_MARK));
@@ -1090,6 +1082,10 @@ impl Catalog {
 
     fn last_good(&self, obj: &Object) -> Result<Value> {
         let id = &obj.id;
+        if let Some(applied) = self.applied(id)? {
+            return Ok(applied);
+        }
+        // A catalog from before applied.json: derive it from actual.
         Ok(match id.kind.as_str() {
             KIND_SVC => {
                 let p = self.obj_dir(id).join("applied.json");
@@ -1142,7 +1138,9 @@ impl Catalog {
         })
     }
 
-    fn converge_one_pkg(&self, id: &ObjectId, hooks: &dyn ApplyHooks) -> Result<()> {
+    /// Link or unlink a package. The applied spec carries the hash it was
+    /// linked at, so undo can put back a pin that discovery found.
+    fn converge_one_pkg(&self, id: &ObjectId, hooks: &dyn ApplyHooks) -> Result<Value> {
         let obj = self.get(id)?;
         let pkg: Pkg = serde_json::from_value(obj.desired.clone())?;
         let removable = pkg_removable(&obj.actual);
@@ -1158,9 +1156,12 @@ impl Catalog {
         if actual.hash.is_empty() && !pkg.hash.is_empty() {
             actual.hash = pkg.hash.clone();
         }
-        write_json(&self.obj_dir(id).join("actual.json"), &actual)?;
-        self.touch_status(id, "in-sync")?;
-        Ok(())
+        self.write_actual(id, &actual)?;
+        let mut applied = obj.desired;
+        if !actual.hash.is_empty() {
+            applied["hash"] = json!(actual.hash);
+        }
+        Ok(applied)
     }
 
     fn check_svc_wants(&self) -> Result<()> {
@@ -1183,8 +1184,8 @@ impl Catalog {
             let obj = self.get(&id)?;
             if let Ok(mut spec) = serde_json::from_value::<Pkg>(obj.desired) {
                 if spec.hash.is_empty() {
-                    spec.hash =
-                        obj.actual.get("hash").and_then(|h| h.as_str()).unwrap_or("").to_string();
+                    let linked = self.applied(&id)?.unwrap_or(obj.actual);
+                    spec.hash = linked.get("hash").and_then(|h| h.as_str()).unwrap_or("").to_string();
                 }
                 if self.removing(&id) {
                     spec.present = false;
@@ -1217,13 +1218,26 @@ impl Catalog {
         Ok(keys)
     }
 
+    /// Desired against the spec last applied. Never applied: everything.
     fn drift_fields(&self, obj: &Object) -> Result<Vec<(String, Value, Value)>> {
-        if obj.id.kind == KIND_SVC {
-            let applied_p = self.obj_dir(&obj.id).join("applied.json");
-            let applied = if applied_p.is_file() { read_json(&applied_p)? } else { Value::Null };
+        if let Some(applied) = self.applied(&obj.id)? {
             return Ok(diff_values(&obj.desired, &applied));
         }
+        if obj.id.kind == KIND_SVC || self.is_new(&obj.id) {
+            return Ok(diff_values(&obj.desired, &Value::Null));
+        }
+        // A catalog from before applied.json: actual held the applied spec.
         Ok(diff_values(&obj.desired, &obj.actual))
+    }
+
+    /// The spec `id` last applied, if it has been applied.
+    pub fn applied(&self, id: &ObjectId) -> Result<Option<Value>> {
+        let p = self.obj_dir(id).join(APPLIED);
+        if p.is_file() {
+            Ok(Some(read_json(&p)?))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Power, the boot generation, and changes that can cut off SSH.
@@ -1270,7 +1284,17 @@ impl Catalog {
     fn current_generation(&self) -> Result<u64> {
         let id = ObjectId::new(KIND_SNAP, "current");
         let obj = self.get(&id)?;
-        Ok(obj.actual.get("generation").and_then(|v| v.as_u64()).unwrap_or(0))
+        let doc = self.applied(&id)?.unwrap_or(obj.actual);
+        Ok(doc.get("generation").and_then(|v| v.as_u64()).unwrap_or(0))
+    }
+
+    /// `snap:current` is `generation`, applied.
+    fn set_current_generation(&self, generation: u64) -> Result<()> {
+        let cur = ObjectId::new(KIND_SNAP, "current");
+        let g = json!({ "generation": generation });
+        write_json(&self.obj_dir(&cur).join("desired.json"), &g)?;
+        write_json(&self.obj_dir(&cur).join(APPLIED), &g)?;
+        self.write_actual(&cur, &g)
     }
 
     fn next_generation(&self) -> Result<u64> {
@@ -1327,19 +1351,7 @@ impl Catalog {
         // no desired — read-only
         write_atomic(&dir.join("desired.json"), b"{}\n")?;
 
-        let cur = ObjectId::new(KIND_SNAP, "current");
-        let g = json!({ "generation": generation });
-        write_json(&self.obj_dir(&cur).join("desired.json"), &g)?;
-        write_json(&self.obj_dir(&cur).join("actual.json"), &g)?;
-        Ok(())
-    }
-
-    pub(crate) fn touch_status(&self, id: &ObjectId, status: &str) -> Result<()> {
-        let p = self.obj_dir(id).join("meta.json");
-        let mut meta: Meta = read_json(&p)?;
-        meta.status = status.into();
-        write_json(&p, &meta)?;
-        Ok(())
+        self.set_current_generation(generation)
     }
 
     fn append_log(
