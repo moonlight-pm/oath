@@ -40,7 +40,8 @@ pub use layout::{
     rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL,
 };
 pub use net::{
-    appliance_desired as net_appliance_desired, converge as converge_net, record_lease, LEASE_FILE,
+    appliance_desired as net_appliance_desired, converge as converge_net, dhcpcd_args,
+    dhcpcd_oneshot, record_lease, DHCP_DIRS, DHCP_HOOK, LEASE_FILE,
 };
 pub use packhash::{
     fetch_adv_url, fetch_url, hash_tree, is_realization_id, realization_dir, slot_dir, HASH_PREFIX,

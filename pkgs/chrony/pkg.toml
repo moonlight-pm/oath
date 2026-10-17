@@ -1,0 +1,12 @@
+version = "4.9"
+license = "GPL-2.0-only"
+description = "chrony: chronyd keeps the clock from pool.ntp.org (svc:time)."
+home = "https://chrony-project.org/"
+purl = "pkg:generic/chrony@4.9"
+build = []
+
+[[source]]
+url = "https://chrony-project.org/releases/chrony-4.9.tar.gz"
+sha256 = "4924c6f530105bcd5b9e9e33c48a2ae1bfd889222c8480bc41601110efc864d0"
+sig = "https://chrony-project.org/releases/chrony-4.9-tar-gz-asc.txt"
+key = "chrony"

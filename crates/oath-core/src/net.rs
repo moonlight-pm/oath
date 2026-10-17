@@ -14,8 +14,37 @@ pub const APPLIANCE_IPV4: &str = "10.0.2.15/24";
 pub const APPLIANCE_GATEWAY: &str = "10.0.2.2";
 
 /// The DHCP client's last lease, written by [`record_lease`]. Gone after
-/// a reboot or a `deconfig`.
+/// a reboot or when the lease is lost.
 pub const LEASE_FILE: &str = "/run/oath/net0.lease.json";
+
+/// dhcpcd's hook (R18): it writes `/etc/resolv.conf` and runs `net-lease`.
+pub const DHCP_HOOK: &str = "/lib/oath/dhcpcd.hook";
+/// Where dhcpcd keeps its DUID and leases, and its pid file.
+pub const DHCP_DIRS: [&str; 2] = ["/var/lib/dhcpcd", "/run/dhcpcd"];
+
+/// dhcpcd on `nic`, IPv4 only, with Oath's hook in place of its own (-c).
+/// It keeps the address when it stops (-p: a restart must not drop SSH),
+/// takes no link-local address (-L), and names itself by the hardware
+/// address (-I '', as busybox's udhcpc did, so DHCP reservations still
+/// match).
+fn dhcpcd_common(nic: &str) -> Vec<String> {
+    let opts = "subnet_mask,routers,domain_name_servers,domain_name";
+    ["-4", "-p", "-L", "-I", "", "-c", DHCP_HOOK, "-o", opts, nic].map(String::from).to_vec()
+}
+
+/// The supervised client of `net:net0` dhcp: in the foreground, renewing.
+pub fn dhcpcd_args(nic: &str) -> Vec<String> {
+    let mut v = vec!["-B".to_string()];
+    v.extend(dhcpcd_common(nic));
+    v
+}
+
+/// One lease and exit (boot, the installer): up to `timeout` seconds.
+pub fn dhcpcd_oneshot(nic: &str, timeout: u32) -> Vec<String> {
+    let mut v = vec!["-1".to_string(), "-t".to_string(), timeout.to_string()];
+    v.extend(dhcpcd_common(nic));
+    v
+}
 
 pub fn appliance_desired() -> Net {
     Net {
@@ -27,34 +56,39 @@ pub fn appliance_desired() -> Net {
     }
 }
 
-/// The DHCP client script's hook (`/lib/oath/net-lease <event>`, with
-/// udhcpc's environment): keep the lease the client holds in
+/// The DHCP client's hook (`/lib/oath/net-lease <reason>`, with dhcpcd's
+/// environment): keep the lease the client holds in
 /// [`LEASE_FILE`] and in `net:net0` actual, so a renewal shows. Called
 /// with no catalog lock: an apply that converges `net:net0` waits for
 /// the one-shot client that calls this.
-pub fn record_lease(root: &Path, event: &str, env: &dyn Fn(&str) -> Option<String>) -> Result<()> {
-    let lease = match event {
-        "bound" | "renew" => {
-            let ip = env("ip").unwrap_or_default();
-            if ip.is_empty() {
-                return Ok(());
-            }
-            Some(DhcpLease {
-                address: format!("{ip}/{}", env("mask").unwrap_or_else(|| "32".into())),
-                router: env("router")
-                    .and_then(|r| r.split_whitespace().next().map(str::to_string))
-                    .unwrap_or_default(),
-                dns: env("dns")
-                    .map(|d| d.split_whitespace().map(str::to_string).collect())
-                    .unwrap_or_default(),
-                seconds: env("lease").and_then(|l| l.parse().ok()).unwrap_or(0),
-                server: env("serverid").unwrap_or_default(),
-                event: event.into(),
-                at: crate::now_rfc3339(),
-            })
-        }
-        "deconfig" | "leasefail" | "nak" => None,
+pub fn record_lease(root: &Path, reason: &str, env: &dyn Fn(&str) -> Option<String>) -> Result<()> {
+    let event = match reason {
+        "BOUND" | "REBOOT" => "bound",
+        "RENEW" | "REBIND" => "renew",
+        // The lease is gone. A stop is not: -p keeps the address.
+        "EXPIRE" | "NAK" | "RELEASE" | "NOCARRIER" | "DEPARTED" => "",
         _ => return Ok(()),
+    };
+    let lease = if event.is_empty() {
+        None
+    } else {
+        let ip = env("new_ip_address").unwrap_or_default();
+        if ip.is_empty() {
+            return Ok(());
+        }
+        Some(DhcpLease {
+            address: format!("{ip}/{}", env("new_subnet_cidr").unwrap_or_else(|| "32".into())),
+            router: env("new_routers")
+                .and_then(|r| r.split_whitespace().next().map(str::to_string))
+                .unwrap_or_default(),
+            dns: env("new_domain_name_servers")
+                .map(|d| d.split_whitespace().map(str::to_string).collect())
+                .unwrap_or_default(),
+            seconds: env("new_dhcp_lease_time").and_then(|l| l.parse().ok()).unwrap_or(0),
+            server: env("new_dhcp_server_identifier").unwrap_or_default(),
+            event: event.into(),
+            at: crate::now_rfc3339(),
+        })
     };
     // The run file is for the next converge; actual is what matters.
     match &lease {
@@ -102,27 +136,18 @@ pub fn converge(desired: &Net) -> Result<Net> {
     if desired.up {
         ip(&["link", "set", &dev, "up"])?;
         if desired.ipv4 == "dhcp" {
-            let st = Command::new("/bin/udhcpc")
-                .args([
-                    "-i",
-                    &dev,
-                    "-n",
-                    "-q",
-                    "-f",
-                    "-s",
-                    "/lib/oath/udhcpc.script",
-                    "-T",
-                    "2",
-                    "-t",
-                    "5",
-                ])
+            for d in DHCP_DIRS {
+                let _ = fs::create_dir_all(d);
+            }
+            let st = Command::new("/bin/dhcpcd")
+                .args(dhcpcd_oneshot(&dev, 10))
                 .stdin(std::process::Stdio::null())
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::null())
                 .status()
-                .map_err(|e| Error::Msg(format!("udhcpc: {e}")))?;
+                .map_err(|e| Error::Msg(format!("dhcpcd: {e}")))?;
             if !st.success() {
-                return Err(Error::hint("udhcpc failed", "oath schema net"));
+                return Err(Error::hint("dhcpcd got no lease", "oath logs net:net0"));
             }
             let mut out = desired.clone();
             out.lease = read_lease(&dev);
@@ -266,26 +291,46 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let actual = crate::status_path(d.path(), &crate::ObjectId::new("net", "net0"));
         crate::write_json(&actual, &serde_json::json!({"up": true, "ipv4": "dhcp"})).unwrap();
+        // dhcpcd's names (dhcpcd-run-hooks(8)).
         let env = |k: &str| {
             let v = match k {
-                "ip" => "10.0.2.15",
-                "mask" => "24",
-                "router" => "10.0.2.2",
-                "dns" => "10.0.2.3 10.0.2.4",
-                "lease" => "86400",
+                "new_ip_address" => "10.0.2.15",
+                "new_subnet_cidr" => "24",
+                "new_routers" => "10.0.2.2",
+                "new_domain_name_servers" => "10.0.2.3 10.0.2.4",
+                "new_dhcp_lease_time" => "86400",
+                "new_dhcp_server_identifier" => "10.0.2.2",
                 _ => return None,
             };
             Some(v.to_string())
         };
-        record_lease(d.path(), "renew", &env).unwrap();
+        record_lease(d.path(), "REBIND", &env).unwrap();
         let a: serde_json::Value = crate::read_json(&actual).unwrap();
         assert_eq!(a["lease"], "10.0.2.15/24");
         assert_eq!(a["dhcp"]["event"], "renew");
         assert_eq!(a["dhcp"]["dns"][1], "10.0.2.4");
         assert_eq!(a["dhcp"]["seconds"], 86400);
-        record_lease(d.path(), "deconfig", &env).unwrap();
+        assert_eq!(a["dhcp"]["server"], "10.0.2.2");
+        // A stop keeps the address (-p), and so the lease.
+        record_lease(d.path(), "STOP", &env).unwrap();
+        assert!(crate::read_json::<serde_json::Value>(&actual).unwrap().get("lease").is_some());
+        record_lease(d.path(), "EXPIRE", &env).unwrap();
         let a: serde_json::Value = crate::read_json(&actual).unwrap();
         assert!(a.get("lease").is_none() && a.get("dhcp").is_none());
+    }
+
+    #[test]
+    fn dhcpcd_is_ipv4_persistent_and_runs_oaths_hook() {
+        let a = dhcpcd_args("net0");
+        assert_eq!(a[0], "-B");
+        let o = dhcpcd_oneshot("net0", 10);
+        assert_eq!(o[..3], ["-1", "-t", "10"]);
+        for v in [&a, &o] {
+            assert_eq!(v.last().unwrap(), "net0");
+            assert!(v.windows(2).any(|w| w == ["-c", DHCP_HOOK]));
+            assert!(v.windows(2).any(|w| w == ["-I", ""]));
+            assert!(v.iter().any(|x| x == "-p") && v.iter().any(|x| x == "-4"));
+        }
     }
 
     #[test]

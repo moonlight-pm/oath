@@ -1,17 +1,15 @@
+# CPython, with its stdlib extensions as shared modules (lib-dynload).
+# Not built: those whose libraries Oath does not have (OpenSSL, libffi,
+# SQLite, Tk). It finds its stdlib by its own path.
 tar -xf "$SRC/$SOURCES"
-cd Python-$VERSION
-# One static binary: a static musl program cannot dlopen, so every
-# stdlib extension is linked in (MODULE_BUILDTYPE=static).
-MODULE_BUILDTYPE=static ./configure --prefix=/ --disable-shared \
-	--without-ensurepip --disable-test-modules
+cd "Python-$VERSION"
+./configure --prefix=/ --without-ensurepip --disable-test-modules
 make -j"$JOBS"
 make install DESTDIR=/out
 # CPython compiles with -g, and its DWARF names the compiler's store
-# path: drop it, or the binary changes with every pkg:llvm hash.
-strip --strip-debug /out/bin/python$(echo "$VERSION" | cut -d. -f1,2)
-# The interpreter is the product: nothing can embed or extend a static
-# python, so libpython (installed twice) goes, and so do IDLE and
-# tkinter (_tkinter is not built).
+# path: drop it, or every file changes with every pkg:gcc.
+strip --strip-debug "/out/bin/python$(echo "$VERSION" | cut -d. -f1,2)"
+find /out/lib -name '*.so' -exec strip --strip-debug {} +
 rm -rf /out/share /out/lib/libpython*.a /out/lib/python3*/config-*/libpython*.a \
 	/out/lib/python3*/idlelib /out/lib/python3*/tkinter \
 	/out/lib/python3*/turtledemo /out/bin/idle3*

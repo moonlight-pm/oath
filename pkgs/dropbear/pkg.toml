@@ -2,7 +2,8 @@ version = "2026.94"
 license = "MIT"
 description = "Dropbear SSH server and dropbearkey."
 home = "https://matt.ucc.asn.au/dropbear/dropbear.html"
-build = ["llvm", "busybox", "make", "zlib"]
+build = ["zlib"]
+run = ["zlib"]
 
 [[source]]
 url = "https://matt.ucc.asn.au/dropbear/releases/dropbear-2026.94.tar.bz2"

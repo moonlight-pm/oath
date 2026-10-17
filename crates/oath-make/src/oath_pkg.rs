@@ -2,8 +2,8 @@
 //! packs this tree (the workspace, and every crates.io crate in
 //! Cargo.lock, fetched and checked against its checksum) into
 //! `pkg:oath-src` and builds it in the sandbox with `pkg:rust`, the
-//! vendor's Rust release pinned in pkgs/lock.json, linking with
-//! `pkg:llvm`'s clang and musl. The build host's Rust
+//! vendor's Rust release pinned in pkgs/lock.json, linked statically by
+//! `pkg:gcc` against `pkg:glibc`. The build host's Rust
 //! builds only oath-make itself. The product follows the tree, so it is
 //! not locked; a tree that has not changed is not rebuilt.
 //!
@@ -41,7 +41,7 @@ pub fn build(repo: &Path) -> Result<PathBuf> {
     let src = source_pack(repo, &cat, &crates)?;
     let version = version(repo)?;
     let mut build_needs = vec![PkgNeed { id: "pkg:oath-src".into(), hash: src.clone() }];
-    for d in ["busybox", "llvm", "rust"] {
+    for d in pkgs::BASE.iter().copied().chain(["rust"]) {
         build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: pkgs::product(&lock, d)? });
     }
     let script = format!(

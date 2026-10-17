@@ -1,5 +1,7 @@
+# btrfs and mkfs.btrfs, against the shared zlib, zstd, LZO and
+# util-linux's libblkid and libuuid.
 tar -xf "$SRC/$SOURCES"
-cd btrfs-progs-v$VERSION
+cd "btrfs-progs-v$VERSION"
 ./configure --prefix=/ --disable-documentation --disable-python --disable-convert \
 	--disable-libudev --disable-shared --disable-zoned --disable-backtrace
 make -j"$JOBS" btrfs mkfs.btrfs

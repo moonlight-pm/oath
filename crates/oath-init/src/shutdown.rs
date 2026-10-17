@@ -1,7 +1,8 @@
-//! Shutdown on request. busybox's conventions: `reboot` sends SIGTERM,
-//! `halt` SIGUSR1, `poweroff` SIGUSR2; Ctrl-Alt-Del sends SIGINT. `oath`
-//! power changes send the same signals. PID 1 stops every service,
-//! kills what is left, syncs, remounts `/` read-only, then reboots.
+//! Shutdown on request. `reboot` sends SIGTERM, `halt` SIGUSR1, `poweroff`
+//! SIGUSR2 (those commands are this binary, see [`command_main`]);
+//! Ctrl-Alt-Del sends SIGINT. `oath` power changes send the same
+//! signals. PID 1 stops every service, kills what is left, syncs,
+//! remounts `/` read-only, then reboots.
 
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::time::{Duration, Instant};
@@ -23,6 +24,38 @@ pub enum Mode {
     Reboot,
     Halt,
     PowerOff,
+}
+
+/// `reboot`, `halt` and `poweroff` (R18): ask PID 1, which stops every
+/// service first. `-f` does not ask: it syncs and calls the kernel.
+pub fn command_main(name: &str, args: &[String]) -> i32 {
+    let force = match args {
+        [] => false,
+        [f] if f == "-f" || f == "--force" => true,
+        _ => {
+            eprintln!("{name}: usage: {name} [-f]");
+            return 1;
+        }
+    };
+    if unsafe { libc::geteuid() } != 0 {
+        eprintln!("{name}: needs root: sudo {name}");
+        return 1;
+    }
+    let (sig, cmd) = match name {
+        "reboot" => (libc::SIGTERM, libc::RB_AUTOBOOT),
+        "halt" => (libc::SIGUSR1, libc::RB_HALT_SYSTEM),
+        _ => (libc::SIGUSR2, libc::RB_POWER_OFF),
+    };
+    if force {
+        unsafe {
+            libc::sync();
+            libc::reboot(cmd);
+        }
+    } else if unsafe { libc::kill(1, sig) } == 0 {
+        return 0;
+    }
+    eprintln!("{name}: {}", std::io::Error::last_os_error());
+    1
 }
 
 extern "C" fn on_signal(sig: libc::c_int) {

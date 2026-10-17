@@ -122,7 +122,10 @@ fn seed_lists_host() {
         "svc:serial",
         "svc:sshd",
         "svc:time",
-        "pkg:busybox",
+        "pkg:bash",
+        "pkg:glibc",
+        "pkg:dhcpcd",
+        "pkg:chrony",
         "pkg:btrfs",
         "pkg:oath",
         "pkg:dropbear",
@@ -138,7 +141,8 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    assert_eq!(ids.len(), 16, "{ids:?}");
+    // 5 svc and host, 31 packages, net:net0, ssh:local, snap:current.
+    assert_eq!(ids.len(), 39, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -386,7 +390,7 @@ fn pkg_collision_refuses() {
 fn pkg_not_removable_refuses_absent() {
     let (d, cat) = tmp();
     let hooks = MemHooks::new(d.path().to_path_buf());
-    let id: ObjectId = "pkg:busybox".parse().unwrap();
+    let id: ObjectId = "pkg:bash".parse().unwrap();
     let mut fields = Map::new();
     fields.insert("present".into(), json!(false));
     let err = cat.set_fields(&id, fields).unwrap_err();
@@ -397,7 +401,7 @@ fn pkg_not_removable_refuses_absent() {
     let obj = cat.get(&id).unwrap();
     assert_eq!(obj.desired["present"], json!(true));
 
-    write_json_present_false(d.path(), "busybox");
+    write_json_present_false(d.path(), "bash");
     let err = cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err();
     match err {
         Error::Hint { message, .. } => assert!(message.contains("not removable"), "{message}"),
@@ -839,7 +843,7 @@ fn new_and_rm_go_through_apply_and_undo() {
     cat.new_object(&late, spec.as_object().unwrap().clone()).unwrap();
     cat.remove_object(&late).unwrap();
     assert!(cat.get(&late).is_err());
-    assert!(cat.remove_object(&"pkg:busybox".parse().unwrap()).is_err());
+    assert!(cat.remove_object(&"pkg:bash".parse().unwrap()).is_err());
     assert!(cat.remove_object(&"host:local".parse().unwrap()).is_err());
 }
 
@@ -1144,11 +1148,11 @@ fn migrate_brings_an_old_catalog_to_the_split() {
     )
     .unwrap();
     let mut meta: serde_json::Value =
-        oath_core::read_json(&obj("pkg", "busybox").join("meta.json")).unwrap();
+        oath_core::read_json(&obj("pkg", "bash").join("meta.json")).unwrap();
     meta.as_object_mut().unwrap().remove("fixed");
-    oath_core::write_json(&obj("pkg", "busybox").join("meta.json"), &meta).unwrap();
+    oath_core::write_json(&obj("pkg", "bash").join("meta.json"), &meta).unwrap();
     oath_core::write_json(
-        &obj("pkg", "busybox").join("actual.json"),
+        &obj("pkg", "bash").join("actual.json"),
         &json!({"present": true, "removable": false, "links": []}),
     )
     .unwrap();
@@ -1167,7 +1171,7 @@ fn migrate_brings_an_old_catalog_to_the_split() {
     assert_eq!(n, 4);
     let applied = cat.applied(&"host:local".parse().unwrap()).unwrap().unwrap();
     assert_eq!(applied["hostname"], "old");
-    assert!(cat.get(&"pkg:busybox".parse().unwrap()).unwrap().meta.fixed);
+    assert!(cat.get(&"pkg:bash".parse().unwrap()).unwrap().meta.fixed);
     assert_eq!(cat.get(&"snap:7".parse().unwrap()).unwrap().desired["parent"], 6);
     assert!(d.path().join("log/svc/serial.last.json").is_file());
     for e in walk(&d.path().join("objects")) {
@@ -1200,11 +1204,45 @@ fn observe_rebuilds_package_status_from_the_store() {
     assert_eq!(a["links"], json!(["hello"]));
     assert_eq!(a["removable"], true);
     assert_eq!(a["description"], "Canary. /bin/hello prints hello.");
-    let busybox = cat.get(&"pkg:busybox".parse().unwrap()).unwrap().actual;
+    let bash = cat.get(&"pkg:bash".parse().unwrap()).unwrap().actual;
     assert_eq!(
-        (busybox["present"].clone(), busybox["removable"].clone()),
+        (bash["present"].clone(), bash["removable"].clone()),
         (json!(false), json!(false))
     );
     let cur = cat.get(&"snap:current".parse().unwrap()).unwrap().actual;
     assert_eq!(cur["generation"], 1);
+}
+
+#[test]
+fn a_package_links_its_libraries_into_lib() {
+    // R17: /lib is the loader's link farm, made and removed with /bin.
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path();
+    let pack = |name: &str, lib: &str| {
+        let stage = root.join(format!("stage-{name}"));
+        std::fs::create_dir_all(stage.join("bin")).unwrap();
+        std::fs::create_dir_all(stage.join("lib/pkgconfig")).unwrap();
+        std::fs::create_dir_all(stage.join("lib/oath")).unwrap();
+        std::fs::write(stage.join("bin").join(name), name).unwrap();
+        std::fs::write(stage.join("lib").join(lib), name).unwrap();
+        std::fs::write(stage.join("lib/pkgconfig").join(format!("{name}.pc")), "").unwrap();
+        let h = hash_tree(&stage).unwrap();
+        oath_core::put_tree(&root.join("store/pkg").join(name), &h, &stage).unwrap();
+        h
+    };
+    let z = pack("zz", "libz.so.1");
+    converge_pkg(root, &root.join("bin"), "zz", true, &z).unwrap();
+    let link = root.join("lib/libz.so.1");
+    assert_eq!(
+        std::fs::read_link(&link).unwrap(),
+        root.join("store/pkg/zz").join(&z).join("lib/libz.so.1")
+    );
+    assert_eq!(std::fs::read_to_string(&link).unwrap(), "zz");
+    assert!(!root.join("lib/pkgconfig").exists() && !root.join("lib/oath").exists());
+    // Another package cannot take the name.
+    let y = pack("yy", "libz.so.1");
+    let e = converge_pkg(root, &root.join("bin"), "yy", true, &y).unwrap_err();
+    assert!(e.to_string().contains("/lib/libz.so.1 exists and is not pkg:yy"), "{e}");
+    converge_pkg(root, &root.join("bin"), "zz", false, &z).unwrap();
+    assert!(link.symlink_metadata().is_err() && !root.join("bin/zz").exists());
 }

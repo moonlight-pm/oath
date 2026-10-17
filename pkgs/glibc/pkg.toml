@@ -1,0 +1,23 @@
+# The C library (R17): glibc and the Linux UAPI headers. Its loader is
+# /lib/ld-linux-x86-64.so.2 and it searches /lib, the link farm of every
+# linked package's libraries; there is no /lib64. `cargo make bootstrap`
+# makes the first one (stage 0 of pkgs/bootstrap.sh); build.sh rebuilds
+# it with pkg:gcc.
+version = "2.44"
+license = "LGPL-2.1-or-later AND GPL-2.0-or-later AND GPL-2.0-only WITH Linux-syscall-note"
+description = "The GNU C library with the Linux UAPI headers. Every program loads it from /lib."
+home = "https://www.gnu.org/software/libc/"
+purl = "pkg:generic/glibc@2.44"
+build = ["python", "bison"]
+
+[[source]]
+url = "https://ftp.gnu.org/gnu/glibc/glibc-2.44.tar.xz"
+sha256 = "37f600f2bef3c5e8300147059568b2a2e40a7ad6ccc65ce942556d49429cc667"
+sig = "https://ftp.gnu.org/gnu/glibc/glibc-2.44.tar.xz.sig"
+key = "glibc"
+
+# Same pinned tarball as pkgs/linux; only the UAPI headers are used.
+[[source]]
+url = "https://git.kernel.org/torvalds/t/linux-7.3-rc1.tar.gz"
+sha256 = "8d36fbfc7c8906ccfa1ebacc30f84998406504c3f13733a040bb3a3fbe8ac270"
+unsigned = "a cgit snapshot of Linus's signed tag; rc tarballs are not signed"

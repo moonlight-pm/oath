@@ -3,9 +3,8 @@
 # Not a distro generic config.
 
 CONFIG_EXPERT=y
-# defconfig makes warnings errors. pkg:llvm is newer than what an rc was
-# tested with (under clang 23 amdgpu's DML frames pass 2048 bytes), so
-# warnings stay warnings, in the build log.
+# defconfig makes warnings errors. pkg:gcc may be newer than what an rc
+# was tested with, so warnings stay warnings, in the build log.
 CONFIG_WERROR=n
 CONFIG_MODULES=y
 CONFIG_MODULE_UNLOAD=y

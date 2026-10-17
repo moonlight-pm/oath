@@ -1,4 +1,4 @@
-# The one Oath kernel, built by pkg:llvm. Output: boot/vmlinuz,
+# The one Oath kernel, built by pkg:gcc. Output: boot/vmlinuz,
 # boot/config and lib/modules/<release>/ with depmod's index.
 unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS CC CXX AR RANLIB NM STRIP
 tar -xf "$SRC/$SOURCES"
@@ -9,12 +9,11 @@ for p in "$FILES"/patches/*.patch; do
 done
 # No build user, host, time or counter: the same plan gives the same image.
 # The built-in initramfs takes its mtimes from the timestamp through
-# busybox `date -d`, which reads this form (and silently uses now if not).
+# `date -d`.
 export TZ=UTC KBUILD_BUILD_USER=oath KBUILD_BUILD_HOST=oath KBUILD_BUILD_VERSION=1 \
 	KBUILD_BUILD_TIMESTAMP='1970-01-01 00:00:00'
-# Host tools link statically: pkg-config --static adds libelf's zlib.
-# depmod is busybox's small one; the index is written below.
-k() { make ARCH=x86_64 LLVM=1 HOSTPKG_CONFIG='pkg-config --static' DEPMOD=true "$@"; }
+# Oath writes depmod's index itself, below.
+k() { make ARCH=x86_64 DEPMOD=true "$@"; }
 k defconfig
 scripts/kconfig/merge_config.sh -m .config "$FILES/linux.fragment"
 k olddefconfig
@@ -39,7 +38,7 @@ awk '{ n = $0; sub(/.*\//, "", n); sub(/\.ko$/, "", n); gsub(/-/, "_", n); print
 while read -r p; do
 	n=${p##*/}
 	n=$(echo "${n%.ko}" | tr - _)
-	llvm-objcopy -O binary --only-section=.modinfo "$p" /tmp/modinfo
+	objcopy -O binary --only-section=.modinfo "$p" /tmp/modinfo
 	tr '\0' '\n' </tmp/modinfo >/tmp/modinfo.txt
 	needs=
 	for d in $(sed -n 's/^depends=//p' /tmp/modinfo.txt | tr , ' '); do

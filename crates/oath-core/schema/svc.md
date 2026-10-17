@@ -74,6 +74,6 @@ oath undo
 
 The `base` profile ships `svc:serial` (root shell on the serial
 console; it idles, and says so in its log, on a machine with no UART),
-`svc:sshd` (dropbear; login as `home`), and `svc:time` (busybox `ntpd`
+`svc:sshd` (dropbear; login as `home`), and `svc:time` (chronyd
 against pool.ntp.org). Do not disable `svc:serial` unless you have
 another way in.

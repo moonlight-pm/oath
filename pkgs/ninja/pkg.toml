@@ -3,7 +3,7 @@ license = "Apache-2.0"
 description = "Ninja. A build tool; not in the base image."
 home = "https://ninja-build.org/"
 purl = "pkg:github/ninja-build/ninja@v1.13.2"
-build = ["llvm", "busybox", "make", "cmake"]
+build = ["python"]
 
 [[source]]
 url = "https://github.com/ninja-build/ninja/archive/refs/tags/v1.13.2.tar.gz"

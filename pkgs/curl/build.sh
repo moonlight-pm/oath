@@ -1,6 +1,8 @@
+# curl (the tool; libcurl is linked into it), with mbedTLS and zlib from
+# their packs and a pinned CA bundle.
 tar -xf "$SRC/curl-$VERSION.tar.xz"
-cd curl-$VERSION
-./configure --prefix=/ --disable-shared --enable-static \
+cd "curl-$VERSION"
+./configure --prefix=/ --disable-shared \
 	--with-mbedtls=/oath/store/pkg/mbedtls/live --with-zlib=/oath/store/pkg/zlib/live \
 	--with-ca-bundle="$LIVE/ssl/cert.pem" --without-ca-path \
 	--without-libpsl --without-libidn2 --without-nghttp2 --without-brotli \

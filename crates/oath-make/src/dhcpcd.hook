@@ -1,0 +1,17 @@
+#!/bin/sh
+# dhcpcd's hook (R18), in place of its own (-c). dhcpcd configures the
+# interface itself; this writes /etc/resolv.conf and records the lease in
+# net:net0 actual. $reason is BOUND, RENEW, REBIND, EXPIRE, …
+case "$reason" in
+BOUND | RENEW | REBIND | REBOOT)
+	if [ -n "$new_domain_name_servers" ]; then
+		: >/etc/resolv.conf
+		for n in $new_domain_name_servers; do
+			echo "nameserver $n" >>/etc/resolv.conf
+		done
+	fi
+	;;
+esac
+# Not in the installer, which has no catalog.
+[ -x /lib/oath/net-lease ] && /lib/oath/net-lease "$reason"
+exit 0

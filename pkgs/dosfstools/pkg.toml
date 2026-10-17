@@ -2,7 +2,7 @@ version = "4.2"
 license = "GPL-3.0-or-later"
 description = "mkfs.fat and fsck.fat for the EFI system partition."
 home = "https://github.com/dosfstools/dosfstools"
-build = ["llvm", "busybox", "make"]
+build = []
 
 [[source]]
 url = "https://github.com/dosfstools/dosfstools/releases/download/v4.2/dosfstools-4.2.tar.gz"

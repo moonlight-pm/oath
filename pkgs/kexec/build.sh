@@ -1,11 +1,13 @@
+# kexec, the installer's way into its ramdisk. It runs on the machine
+# being replaced, whatever its libc or loader path, so it is static (as
+# Oath's own binaries are) and reads only uncompressed kernels.
 tar -xf "$SRC/$SOURCES"
-cd kexec-tools-$VERSION
-# No separate assembler: clang assembles .S itself.
-mkdir -p /tmp/bin
-printf '#!/bin/sh\nexec cc -c "$@"\n' > /tmp/bin/as
-chmod +x /tmp/bin/as
-PATH=/tmp/bin:$PATH
-./configure --prefix=/ --without-lzma --without-xen AS=as
+cd "kexec-tools-$VERSION"
+./configure --prefix=/ --without-lzma --without-zlib --without-xen LDFLAGS=-static
 make -j"$JOBS"
 mkdir -p /out/bin
 cp build/sbin/kexec /out/bin/kexec
+if readelf -lW /out/bin/kexec | grep -q INTERP; then
+	echo "kexec is not static" >&2
+	exit 1
+fi

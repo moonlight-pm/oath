@@ -49,7 +49,7 @@ impl Profile {
         Self::load_inner(name, profiles, &mut seen)
     }
 
-    /// Whether `id` (`pkg:busybox` or `busybox`) can never be removed.
+    /// Whether `id` (`pkg:glibc` or `glibc`) can never be removed.
     pub fn is_fixed(&self, name: &str) -> bool {
         let id = if name.contains(':') { name.to_string() } else { format!("pkg:{name}") };
         self.fixed.contains(&id)
@@ -287,7 +287,7 @@ mod tests {
         let looped = r#"{"extends": "looped"}"#;
         let profiles = [PROFILES[0], ("extra", extra), ("looped", looped)];
         let p = Profile::load_from("extra", &profiles).unwrap();
-        assert!(p.objects.contains_key("pkg:busybox"));
+        assert!(p.objects.contains_key("pkg:bash"));
         assert_eq!(p.objects["host:local"]["hostname"], "oath");
         assert_eq!(p.objects["host:local"]["env"]["EDITOR"], "vi");
         assert!(p.fixed.contains("pkg:oath"));

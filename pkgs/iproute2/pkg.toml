@@ -1,0 +1,13 @@
+version = "7.2.0"
+license = "GPL-2.0-or-later"
+description = "iproute2: ip, ss, tc and bridge."
+home = "https://wiki.linuxfoundation.org/networking/iproute2"
+purl = "pkg:generic/iproute2@7.2.0"
+build = ["bison", "flex", "pkgconf"]
+
+[[source]]
+url = "https://mirrors.edge.kernel.org/pub/linux/utils/net/iproute2/iproute2-7.2.0.tar.xz"
+sha256 = "4c2fa124c2cf0afd7ca34d1eeacba6ba048a56f6374e2aab93dafbdbd4eea9c0"
+sig = "https://mirrors.edge.kernel.org/pub/linux/utils/net/iproute2/iproute2-7.2.0.tar.sign"
+decompress = "xz"
+key = "iproute2"

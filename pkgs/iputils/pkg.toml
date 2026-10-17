@@ -1,0 +1,12 @@
+version = "20250605"
+license = "GPL-2.0-or-later AND BSD-3-Clause"
+description = "iputils: ping, tracepath and arping."
+home = "https://github.com/iputils/iputils"
+purl = "pkg:github/iputils/iputils@20250605"
+build = ["meson", "ninja", "python", "pkgconf"]
+
+[[source]]
+url = "https://github.com/iputils/iputils/releases/download/20250605/iputils-20250605.tar.xz"
+sha256 = "6f213700dbf96b5cc4499ca70cb15ecd69c09f405b06785bb4a1a10b572b6276"
+sig = "https://github.com/iputils/iputils/releases/download/20250605/iputils-20250605.tar.xz.asc"
+key = "iputils"

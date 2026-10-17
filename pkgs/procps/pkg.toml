@@ -1,0 +1,13 @@
+version = "4.0.7"
+license = "GPL-2.0-or-later AND LGPL-2.1-or-later"
+description = "procps-ng: ps, pidof, free, top, kill, uptime, watch."
+home = "https://gitlab.com/procps-ng/procps"
+purl = "pkg:generic/procps-ng@4.0.7"
+build = ["ncurses", "pkgconf"]
+run = ["ncurses"]
+
+[[source]]
+url = "https://downloads.sourceforge.net/project/procps-ng/Production/procps-ng-4.0.7.tar.xz"
+sha256 = "9d2021f47a4501c667862c9942a92d1953694b21d11bcd1702e83eb594e3d67d"
+sig = "https://downloads.sourceforge.net/project/procps-ng/Production/procps-ng-4.0.7.tar.xz.asc"
+key = "procps"

@@ -1,6 +1,6 @@
 //! Upstream signature checks for `cargo make pkgs`: detached OpenPGP v4
-//! signatures (RFC 9580) by RSA or DSA keys over SHA-1 or SHA-2, which is
-//! what upstream release signatures use. The keys come from files pinned
+//! signatures (RFC 9580) by RSA, DSA or Ed25519 keys over SHA-1 or SHA-2,
+//! which is what upstream release signatures use. The keys come from files pinned
 //! in `pkgs/keys/`; every key in such a file is trusted as it stands, so
 //! there are no expiry, revocation or subkey-binding checks.
 
@@ -8,6 +8,7 @@ use std::io::Read;
 
 use anyhow::{bail, Context, Result};
 use dsa::signature::hazmat::PrehashVerifier;
+use ed25519_dalek::Verifier;
 use rsa::{Pkcs1v15Sign, RsaPublicKey};
 use sha1::Sha1;
 use sha2::digest::DynDigest;
@@ -25,14 +26,18 @@ struct Key {
 enum Material {
     Rsa(RsaPublicKey),
     Dsa(dsa::VerifyingKey),
+    Ed25519(ed25519_dalek::VerifyingKey),
 }
+
+/// Ed25519's curve OID in a v4 EdDSA key (1.3.6.1.4.1.11591.15.1).
+const ED25519_OID: &[u8] = &[0x2b, 0x06, 0x01, 0x04, 0x01, 0xda, 0x47, 0x0f, 0x01];
 
 struct Signature {
     hash: u8,
     /// Version through the hashed subpackets: what is hashed after the data.
     hashed: Vec<u8>,
     left16: [u8; 2],
-    /// RSA: `[s]`; DSA: `[r, s]`.
+    /// RSA: `[s]`; DSA and EdDSA: `[r, s]`.
     mpis: Vec<Vec<u8>>,
     /// Issuer fingerprint or key ID, for messages.
     issuer: String,
@@ -44,11 +49,11 @@ struct Signature {
 pub fn verify(keys: &[u8], sig: &[u8], mut data: impl Read) -> Result<String> {
     let keys = parse_keys(&dearmor(keys)?)?;
     if keys.is_empty() {
-        bail!("the key file holds no v4 RSA or DSA key");
+        bail!("the key file holds no v4 RSA, DSA or Ed25519 key");
     }
     let sigs = parse_signatures(&dearmor(sig)?)?;
     if sigs.is_empty() {
-        bail!("no v4 RSA or DSA signature over a binary document");
+        bail!("no v4 RSA, DSA or EdDSA signature over a binary document");
     }
     let mut hashers = sigs.iter().map(|s| hasher(s.hash)).collect::<Result<Vec<_>>>()?;
     let mut buf = vec![0u8; 1 << 20];
@@ -111,6 +116,17 @@ impl Key {
                     Err(_) => false,
                 }
             }
+            // EdDSA signs the digest itself; r and s are 32-byte MPIs that
+            // dropped their leading zeros.
+            (Material::Ed25519(k), [r, sv]) => {
+                if r.len() > 32 || sv.len() > 32 {
+                    return Ok(false);
+                }
+                let mut rs = [0u8; 64];
+                rs[32 - r.len()..32].copy_from_slice(r);
+                rs[64 - sv.len()..].copy_from_slice(sv);
+                k.verify(digest, &ed25519_dalek::Signature::from_bytes(&rs)).is_ok()
+            }
             _ => false,
         })
     }
@@ -151,7 +167,7 @@ fn parse_keys(data: &[u8]) -> Result<Vec<Key>> {
 }
 
 /// A v4 public key or subkey packet; `None` for other versions and for
-/// algorithms that cannot sign here (Elgamal, ECC).
+/// algorithms that cannot sign here (Elgamal, ECDH, curves but Ed25519).
 fn key(body: &[u8]) -> Result<Option<Key>> {
     let mut d = body;
     if take(&mut d, 1)?[0] != 4 {
@@ -175,6 +191,17 @@ fn key(body: &[u8]) -> Result<Option<Key>> {
                     .map_err(|_| anyhow::anyhow!("bad DSA key"))?,
             )
         }
+        22 => {
+            let oid_len = take(&mut d, 1)?[0] as usize;
+            if take(&mut d, oid_len)? != ED25519_OID {
+                return Ok(None);
+            }
+            // The point: 0x40, then the 32-byte public key.
+            let point = mpi(&mut d)?;
+            let Some((&0x40, pk)) = point.split_first() else { return Ok(None) };
+            let pk: [u8; 32] = pk.try_into().context("Ed25519 key length")?;
+            Material::Ed25519(ed25519_dalek::VerifyingKey::from_bytes(&pk).context("Ed25519 key")?)
+        }
         _ => return Ok(None),
     };
     // v4 fingerprint: SHA-1 of 0x99, the two-octet body length, the body.
@@ -197,7 +224,7 @@ fn parse_signatures(data: &[u8]) -> Result<Vec<Signature>> {
     Ok(out)
 }
 
-/// A v4 signature of a binary document (type 0x00) by RSA or DSA.
+/// A v4 signature of a binary document (type 0x00) by RSA, DSA or EdDSA.
 fn signature(body: &[u8]) -> Result<Option<Signature>> {
     let mut d = body;
     let head = take(&mut d, 4)?;
@@ -213,7 +240,7 @@ fn signature(body: &[u8]) -> Result<Option<Signature>> {
     let left16 = take(&mut d, 2)?.try_into()?;
     let mpis = match algo {
         1 | 3 => vec![mpi(&mut d)?.to_vec()],
-        17 => vec![mpi(&mut d)?.to_vec(), mpi(&mut d)?.to_vec()],
+        17 | 22 => vec![mpi(&mut d)?.to_vec(), mpi(&mut d)?.to_vec()],
         _ => return Ok(None),
     };
     let mut issuer = issuer_of(hashed_sub)?;
@@ -354,25 +381,29 @@ fn hex(b: &[u8]) -> String {
 mod tests {
     use super::*;
 
-    // Made with gpg: an RSA key that signs with a subkey (SHA-512, binary)
-    // and a DSA-1024 key (SHA-1, armored), as old upstream keys do.
+    // Made with gpg: an RSA key that signs with a subkey (SHA-512, binary),
+    // a DSA-1024 key (SHA-1, armored), as old upstream keys do, and an
+    // Ed25519 key (SHA-512, binary), as newer ones do.
     const DATA: &[u8] = include_bytes!("../testdata/openpgp/data");
     const RSA: &[u8] = include_bytes!("../testdata/openpgp/rsa.asc");
     const RSA_SIG: &[u8] = include_bytes!("../testdata/openpgp/data.rsa.sig");
     const DSA: &[u8] = include_bytes!("../testdata/openpgp/dsa.asc");
     const DSA_SIG: &[u8] = include_bytes!("../testdata/openpgp/data.dsa.asc");
+    const ED: &[u8] = include_bytes!("../testdata/openpgp/ed25519.asc");
+    const ED_SIG: &[u8] = include_bytes!("../testdata/openpgp/data.ed25519.sig");
 
     #[test]
     fn good_signatures() {
         assert_eq!(verify(RSA, RSA_SIG, DATA).unwrap(), "4BAF89D1F684C7675AEE643955E6AB4C380FE608");
         assert_eq!(verify(DSA, DSA_SIG, DATA).unwrap(), "6C56805587FE2A86DF6DE65DE0761AFC7AA1EABA");
+        assert_eq!(verify(ED, ED_SIG, DATA).unwrap(), "6B0B2FCC06C18BB198DF083821A6B0B41F1C539B");
     }
 
     #[test]
     fn bad_data_and_unpinned_signer() {
         let mut other = DATA.to_vec();
         other[0] ^= 1;
-        for (key, sig) in [(RSA, RSA_SIG), (DSA, DSA_SIG)] {
+        for (key, sig) in [(RSA, RSA_SIG), (DSA, DSA_SIG), (ED, ED_SIG)] {
             let e = verify(key, sig, &other[..]).unwrap_err().to_string();
             assert!(e.starts_with("BAD signature"), "{e}");
         }

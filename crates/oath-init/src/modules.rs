@@ -341,6 +341,9 @@ pub fn modprobe_main(args: &[String]) -> i32 {
         Some(i) => args[i + 1..].iter().collect(),
         None => args.iter().filter(|a| !a.starts_with('-')).collect(),
     };
+    if args.iter().take_while(|a| *a != "--").any(|a| a == "-r" || a == "--remove") {
+        return remove(&names);
+    }
     let Some(idx) = Index::open(&base()) else { return 1 };
     let mut ok = false;
     for n in names {
@@ -357,6 +360,20 @@ pub fn modprobe_main(args: &[String]) -> i32 {
     } else {
         1
     }
+}
+
+/// `modprobe -r`: unload modules by name (`-` and `_` alike). One that is
+/// in use stays, and says so.
+fn remove(names: &[&String]) -> i32 {
+    let mut code = 0;
+    for n in names {
+        let Ok(c) = std::ffi::CString::new(n.replace('-', "_")) else { continue };
+        if unsafe { libc::syscall(libc::SYS_delete_module, c.as_ptr(), libc::O_NONBLOCK) } != 0 {
+            eprintln!("modprobe: remove {n}: {}", std::io::Error::last_os_error());
+            code = 1;
+        }
+    }
+    code
 }
 
 #[cfg(test)]

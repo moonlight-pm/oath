@@ -3,7 +3,8 @@ license = "GPL-2.0-only"
 description = "btrfs-progs: btrfs and mkfs.btrfs for the live @ generations."
 home = "https://btrfs.readthedocs.io/"
 purl = "pkg:generic/btrfs-progs@7.1"
-build = ["llvm", "busybox", "make", "pkgconf", "zlib", "zstd", "lzo", "util-linux"]
+build = ["pkgconf", "zlib", "zstd", "lzo", "util-linux"]
+run = ["zlib", "zstd", "lzo", "util-linux"]
 
 [[source]]
 url = "https://www.kernel.org/pub/linux/kernel/people/kdave/btrfs-progs/btrfs-progs-v7.1.tar.xz"

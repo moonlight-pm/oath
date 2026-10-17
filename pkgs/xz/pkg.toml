@@ -1,0 +1,12 @@
+version = "5.8.4"
+license = "0BSD AND GPL-2.0-or-later"
+description = "XZ Utils: xz and liblzma."
+home = "https://tukaani.org/xz/"
+purl = "pkg:github/tukaani-project/xz@v5.8.4"
+build = []
+
+[[source]]
+url = "https://github.com/tukaani-project/xz/releases/download/v5.8.4/xz-5.8.4.tar.gz"
+sha256 = "0014c7886930454fe8bd4228665b51af55eeae560ea135c9c4cd33f55b2591d9"
+sig = "https://github.com/tukaani-project/xz/releases/download/v5.8.4/xz-5.8.4.tar.gz.sig"
+key = "xz"

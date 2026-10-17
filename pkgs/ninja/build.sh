@@ -1,7 +1,6 @@
+# Ninja, by its own bootstrap (Python and the C++ compiler; no CMake).
 tar -xf "$SRC/$SOURCES"
-cd ninja-$VERSION
-# BUILD_TESTING would fetch googletest.
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-make -C build -j"$JOBS" ninja
+cd "ninja-$VERSION"
+python3 configure.py --bootstrap
 mkdir -p /out/bin
-cp build/ninja /out/bin/ninja
+cp ninja /out/bin/ninja

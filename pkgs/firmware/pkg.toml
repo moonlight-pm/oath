@@ -6,7 +6,7 @@ version = "20260916"
 license = "LicenseRef-linux-firmware"
 description = "Firmware blobs from linux-firmware for the machines Oath runs on."
 home = "https://gitlab.com/kernel-firmware/linux-firmware"
-build = ["busybox"]
+build = []
 unsigned = "cgit serves single blobs; linux-firmware signs only its git tags"
 
 [[source]]

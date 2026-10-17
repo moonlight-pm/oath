@@ -8,7 +8,7 @@ license = "GPL-2.0-only WITH Linux-syscall-note"
 description = "The Linux kernel: boot/vmlinuz and lib/modules/<release>/."
 home = "https://www.kernel.org/"
 purl = "pkg:generic/linux@7.3-rc1"
-build = ["llvm", "busybox", "make", "m4", "flex", "bison", "perl", "pkgconf", "zlib", "elfutils"]
+build = ["m4", "flex", "bison", "perl", "pkgconf", "zlib", "elfutils", "bc"]
 
 # rc tarballs are Linus's git.kernel.org/torvalds/t/ ones.
 [[source]]

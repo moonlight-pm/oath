@@ -15,8 +15,12 @@ use crate::output::{self, Output};
 use crate::tools::Tools;
 use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
 
-/// Native tools the installer runs over SSH (static binaries): pack and
-/// file under its `bin/`.
+/// The boot initrd's one program besides PID 1 (static): the shell PID 1
+/// falls back to.
+pub(crate) const INITRD_TOOLS: &[(&str, &str)] = &[("bash", "bash")];
+
+/// What the installer ramdisk runs, over SSH and on its console: pack and
+/// file under its `bin/`. Each comes with the libraries it loads.
 pub(crate) const INSTALLER_TOOLS: &[(&str, &str)] = &[
     ("dropbear", "dropbear"),
     ("dropbear", "dropbearkey"),
@@ -24,8 +28,101 @@ pub(crate) const INSTALLER_TOOLS: &[(&str, &str)] = &[
     ("btrfs", "mkfs.btrfs"),
     ("util-linux", "sfdisk"),
     ("util-linux", "wipefs"),
+    ("util-linux", "blockdev"),
+    ("util-linux", "mount"),
+    ("util-linux", "umount"),
+    ("util-linux", "dmesg"),
     ("dosfstools", "mkfs.fat"),
+    ("iproute2", "ip"),
+    ("dhcpcd", "dhcpcd"),
+    ("tar", "tar"),
+    ("gawk", "gawk"),
+    ("coreutils", "cat"),
+    ("coreutils", "chmod"),
+    ("coreutils", "chown"),
+    ("coreutils", "cp"),
+    ("coreutils", "dd"),
+    ("coreutils", "ls"),
+    ("coreutils", "mkdir"),
+    ("coreutils", "rm"),
+    ("coreutils", "sleep"),
+    ("coreutils", "sync"),
 ];
+
+/// Puts programs into a ramdisk tree with what they load (R17): every
+/// library they name, found in the packs' `lib/`, and glibc's loader, all
+/// in its `/lib`.
+pub(crate) struct Ramdisk<'a> {
+    root: &'a Path,
+    tools: &'a Tools,
+    done: BTreeSet<String>,
+    /// The packs whose files went in.
+    pub packs: BTreeSet<String>,
+}
+
+impl<'a> Ramdisk<'a> {
+    pub fn new(root: &'a Path, tools: &'a Tools) -> Self {
+        Self { root, tools, done: BTreeSet::new(), packs: BTreeSet::new() }
+    }
+
+    /// `bin/<file>` of `pack`, as `bin/<file>`.
+    pub fn program(&mut self, pack: &str, file: &str) -> Result<()> {
+        let src = self.tools.bin(pack, file)?;
+        let dest = self.root.join("bin").join(file);
+        fs::create_dir_all(dest.parent().context("bin")?)?;
+        let _ = fs::remove_file(&dest);
+        copy_file(&src, &dest)?;
+        chmod_exec(&dest)?;
+        self.packs.insert(pack.to_string());
+        self.libs_of(&dest)
+    }
+
+    fn libs_of(&mut self, file: &Path) -> Result<()> {
+        let n = crate::elf::needs(&fs::read(file)?)
+            .with_context(|| format!("read {}", file.display()))?;
+        if let Some(i) = n.interp {
+            if i != "/lib/ld-linux-x86-64.so.2" {
+                bail!("{} names the loader {i}, not /lib's (R17)", file.display());
+            }
+            self.lib("ld-linux-x86-64.so.2")?;
+        }
+        for l in n.needed {
+            self.lib(&l)?;
+        }
+        Ok(())
+    }
+
+    fn lib(&mut self, name: &str) -> Result<()> {
+        if !self.done.insert(name.to_string()) {
+            return Ok(());
+        }
+        let (pack, src) = self
+            .tools
+            .packs
+            .iter()
+            .map(|(p, tree)| (p, tree.join("lib").join(name)))
+            .find(|(_, f)| f.exists())
+            .with_context(|| format!("no pack has lib/{name}"))?;
+        let dest = self.root.join("lib").join(name);
+        fs::create_dir_all(dest.parent().context("lib")?)?;
+        let _ = fs::remove_file(&dest);
+        // The file itself, not the pack's soname link.
+        fs::write(&dest, fs::read(&src)?)?;
+        chmod_exec(&dest)?;
+        self.packs.insert(pack.clone());
+        self.libs_of(&dest)
+    }
+}
+
+/// The packs a ramdisk with these programs carries, for the manifest.
+pub(crate) fn ramdisk_packs(tools: &Tools, programs: &[(&str, &str)]) -> Result<BTreeSet<String>> {
+    let scratch = tempfile::tempdir()?;
+    let mut r = Ramdisk::new(scratch.path(), tools);
+    for &(pack, file) in programs {
+        r.program(pack, file)?;
+    }
+    Ok(r.packs)
+}
 
 /// Pack the image for one seed profile (`base`, `dev`) into a build output
 /// (`build/out/<id>/`, see output.rs), or reuse the output of an unchanged
@@ -60,33 +157,24 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     let ir_install = dir.join("initramfs-install");
     let _ = fs::remove_dir_all(&ir_install);
     copy_tree(&dir.join("initramfs"), &ir_install)?;
+    let mut ramdisk = Ramdisk::new(&ir_install, tools);
     for &(pack, file) in INSTALLER_TOOLS {
-        let dest = ir_install.join("bin").join(file);
-        let _ = fs::remove_file(&dest);
-        copy_file(&tools.bin(pack, file)?, &dest)?;
-        chmod_exec(&dest)?;
+        ramdisk.program(pack, file)?;
     }
+    symlink("gawk", ir_install.join("bin/awk"))?;
+    // `reboot -f` is PID 1's own binary.
+    symlink("../init", ir_install.join("bin/reboot"))?;
     // The installer writes the new catalog with `oath seed --overlay`.
     copy_file(&oath.join("bin/oath"), &ir_install.join("bin/oath"))?;
     chmod_exec(&ir_install.join("bin/oath"))?;
-    let _ = fs::remove_file(ir_install.join("bin/tar"));
-    symlink("busybox", ir_install.join("bin/tar"))?;
     fs::create_dir_all(ir_install.join("opt/oath-install"))?;
     copy_file(&dir.join("initrd.gz"), &ir_install.join("opt/oath-install/initrd.gz"))?;
     copy_file(&tools.kernel, &ir_install.join("opt/oath-install/vmlinuz"))?;
     // oath-efi is the boot loader (menu, BLS entries, kernel + initrd).
     copy_file(&efi(&oath), &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
     fs::create_dir_all(ir_install.join("lib/oath"))?;
-    fs::write(ir_install.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
-    chmod_exec(&ir_install.join("lib/oath/udhcpc.script"))?;
-    // busybox applets the install steps run over SSH (`dd` writes files).
-    for a in [
-        "ip", "udhcpc", "mount", "umount", "mkdir", "mdev", "blockdev", "reboot", "sync", "sleep",
-        "cp", "cat", "sh", "dd", "rm",
-    ] {
-        let _ = fs::remove_file(ir_install.join("bin").join(a));
-        symlink("busybox", ir_install.join("bin").join(a))?;
-    }
+    fs::write(ir_install.join(&oath_core::DHCP_HOOK[1..]), include_str!("dhcpcd.hook"))?;
+    chmod_exec(&ir_install.join(&oath_core::DHCP_HOOK[1..]))?;
     fs::create_dir_all(ir_install.join("root/.ssh"))?;
     let initrd_install = write_cpio_gz(&ir_install, &dir.join("initrd-install.gz"))?;
     eprintln!("initrd-install {}", initrd_install.display());
@@ -103,15 +191,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     for n in ["init", "serial-login", "screen-login", "sudo"] {
         copy_file(&lib.join(n), &stage.join("lib/oath").join(n))?;
     }
-    fs::write(stage.join("lib/oath/udhcpc.script"), include_str!("udhcpc.script"))?;
-    fs::write(stage.join("lib/oath/ntp-event"), include_str!("ntp-event"))?;
+    fs::write(stage.join(&oath_core::DHCP_HOOK[1..]), include_str!("dhcpcd.hook"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
     fs::write(stage.join("lib/oath/backup-daily"), include_str!("backup-daily"))?;
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
     chmod_exec(&stage.join("lib/oath/screen-login"))?;
-    chmod_exec(&stage.join("lib/oath/udhcpc.script"))?;
-    chmod_exec(&stage.join("lib/oath/ntp-event"))?;
+    chmod_exec(&stage.join(&oath_core::DHCP_HOOK[1..]))?;
     chmod_exec(&stage.join("lib/oath/backup-send"))?;
     chmod_exec(&stage.join("lib/oath/backup-daily"))?;
     fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o4755))?;
@@ -123,6 +209,11 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     symlink("init", stage.join("lib/oath/net-lease"))?;
     let _ = fs::remove_file(stage.join("bin/sudo"));
     symlink("../lib/oath/sudo", stage.join("bin/sudo"))?;
+    // R18: modprobe, reboot, halt and poweroff are PID 1's binary.
+    for cmd in ["modprobe", "reboot", "halt", "poweroff"] {
+        let _ = fs::remove_file(stage.join("bin").join(cmd));
+        symlink("../lib/oath/init", stage.join("bin").join(cmd))?;
+    }
     fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
     fs::write(stage.join("etc/group"), oath_core::seat::group_file())?;
     fs::write(stage.join("etc/shadow"), oath_core::seat::shadow_file())?;
@@ -140,6 +231,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
          \tStrictHostKeyChecking accept-new\n",
     )?;
     fs::create_dir_all(stage.join("var/run"))?;
+    fs::create_dir_all(stage.join("var/lib/dhcpcd"))?;
     fs::create_dir_all(stage.join("root/.ssh"))?;
     fs::create_dir_all(stage.join("home/.ssh"))?;
     run(Command::new(oath.join("bin/oath")).args([
@@ -181,8 +273,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     let rootfs = dir.join("rootfs");
     fs::create_dir_all(&mnt)?;
     fs::create_dir_all(&rootfs)?;
-    // nix-shell puts busybox `mount` first; that binary does not
-    // understand `subvol=@`. Use the host util-linux wrappers.
+    // A `mount` early on PATH may not understand `subvol=@`. Use the
+    // host's util-linux wrappers.
     let mount = host_mount();
     let umount = host_umount();
     sudo(&[mount.as_str(), "-o", "loop", raw.to_str().unwrap(), mnt.to_str().unwrap()])?;
@@ -253,10 +345,11 @@ fn write_initrd(out: &Path, tools: &Tools, init: &Path) -> Result<()> {
     }
     copy_file(init, &ir.join("init"))?;
     chmod_exec(&ir.join("init"))?;
-    copy_file(&tools.bin("busybox", "busybox")?, &ir.join("bin/busybox"))?;
-    chmod_exec(&ir.join("bin/busybox"))?;
-    let _ = fs::remove_file(ir.join("bin/sh"));
-    symlink("busybox", ir.join("bin/sh"))?;
+    let mut ramdisk = Ramdisk::new(&ir, tools);
+    for &(pack, file) in INITRD_TOOLS {
+        ramdisk.program(pack, file)?;
+    }
+    symlink("bash", ir.join("bin/sh"))?;
 
     let kver = crate::kernel::check(&tools.kernel, &tools.modules)?;
     eprintln!("kernel release {kver} (bzImage, modules and vermagic agree)");

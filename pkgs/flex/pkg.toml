@@ -3,7 +3,7 @@ license = "BSD-3-Clause-flex"
 description = "flex, the lexer generator. A build tool (the kernel's Kconfig needs it); not in the base image."
 home = "https://github.com/westes/flex"
 purl = "pkg:github/westes/flex@v2.6.4"
-build = ["llvm", "busybox", "make", "m4"]
+build = ["m4"]
 run = ["m4"]
 
 [[source]]

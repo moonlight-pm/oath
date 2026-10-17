@@ -3,6 +3,7 @@ mod agent;
 mod boot;
 mod check;
 mod cpio;
+mod elf;
 mod install;
 mod kernel;
 mod manifest;
@@ -131,7 +132,7 @@ enum Cmd {
         output: Option<String>,
     },
     /// Build the toolchain from source on this host (stage 0 and 1) and
-    /// store pkg:llvm, pkg:busybox and pkg:make. Hours, not minutes.
+    /// store the base packs (pkg:gcc, pkg:glibc and the GNU tools). Hours, not minutes.
     Bootstrap {
         /// Parallel jobs (default: half the cores).
         #[arg(short, long)]
@@ -145,6 +146,10 @@ enum Cmd {
         /// List packages, versions, licences and what the lock pins.
         #[arg(long)]
         list: bool,
+        /// Fetch and check the sources (sha256 and signature) of the named
+        /// packages, or all, without building.
+        #[arg(long)]
+        fetch: bool,
     },
     /// Hash a pack directory into `.cache/oath/store` (same layout as the guest).
     Store {
@@ -292,12 +297,14 @@ fn real() -> Result<()> {
             let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2);
             pkgs::bootstrap(&root, jobs.unwrap_or(n / 2).max(1))?
         }
-        Cmd::Pkgs { names, list } => {
+        Cmd::Pkgs { names, list, fetch } => {
             // `oath` is this tree (pkg:oath), not a pkgs/ package.
             let (oath, rest): (Vec<String>, Vec<String>) =
                 names.into_iter().partition(|n| n == "oath");
             if list {
                 pkgs::list(&root)?
+            } else if fetch {
+                pkgs::fetch_all(&root, &rest)?
             } else {
                 if oath.is_empty() || !rest.is_empty() {
                     pkgs::build(&root, &rest)?

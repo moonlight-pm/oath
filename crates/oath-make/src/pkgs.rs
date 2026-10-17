@@ -4,8 +4,9 @@
 //! an `oath build` plan pinned to its source pack and to the exact build
 //! packs in `pkgs/lock.json`, writes the plan to `pkgs/<name>/<name>.plan`,
 //! and builds it in the sandbox. `cargo make bootstrap` makes the first
-//! three packs (llvm, busybox, make) with `pkgs/bootstrap.sh` on the host;
-//! after that their plans rebuild them with themselves.
+//! of each base pack ([`BASE`]: gcc, glibc and the GNU tools) with
+//! `pkgs/bootstrap.sh` on the host; after that their plans rebuild them
+//! with themselves.
 //!
 //! A source with `sig` is checked against its upstream's OpenPGP
 //! signature, by a key pinned in `pkgs/keys/<key>.asc`, on every fetch; a
@@ -35,7 +36,7 @@ pub struct PkgToml {
     pub description: String,
     #[serde(default)]
     pub home: String,
-    /// Package URL for components.json (`pkg:generic/busybox@1.38.0`).
+    /// Package URL for components.json (`pkg:generic/bash@5.3`).
     #[serde(default)]
     pub purl: String,
     #[serde(default)]
@@ -132,6 +133,27 @@ pub fn build_catalog(repo: &Path) -> Result<PathBuf> {
     Ok(root)
 }
 
+/// What `cargo make bootstrap` makes (stage 1), and what every plan
+/// builds with besides the packs its `build` names: the compiler, the C
+/// library and one GNU tool for each job (R17, R18).
+pub const BASE: &[&str] = &[
+    "gcc",
+    "glibc",
+    "bash",
+    "coreutils",
+    "sed",
+    "grep",
+    "gawk",
+    "findutils",
+    "diffutils",
+    "patch",
+    "tar",
+    "gzip",
+    "xz",
+    "bzip2",
+    "make",
+];
+
 pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
     let mut out = BTreeMap::new();
     for e in fs::read_dir(pkgs_dir(repo))? {
@@ -142,8 +164,15 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
         }
         let name = e.file_name().to_string_lossy().into_owned();
         let text = fs::read_to_string(&toml_p)?;
-        let p: PkgToml =
+        let mut p: PkgToml =
             toml::from_str(&text).with_context(|| format!("parse {}", toml_p.display()))?;
+        let extra = std::mem::take(&mut p.build);
+        p.build = BASE.iter().map(|b| b.to_string()).collect();
+        for d in extra {
+            if !p.build.contains(&d) {
+                p.build.push(d);
+            }
+        }
         for s in &p.source {
             check_signed(repo, &p, s)
                 .with_context(|| format!("pkgs/{name}/pkg.toml: {}", s.url))?;
@@ -224,6 +253,19 @@ fn write_lock(repo: &Path, lock: &Lock) -> Result<()> {
 /// Download (once) and verify every source of `pkg`: its sha256 pin and,
 /// when it has one, its upstream signature. Returns each source's path
 /// under `src/` and its file in build/fetch.
+/// `cargo make pkgs --fetch`: every source of the named packages (or all),
+/// pinned and signature-checked, and nothing built.
+pub fn fetch_all(repo: &Path, names: &[String]) -> Result<()> {
+    let all = load(repo)?;
+    for (name, p) in &all {
+        if names.is_empty() || names.contains(name) {
+            fetch(repo, p).with_context(|| format!("pkgs/{name}"))?;
+            eprintln!("== {name}: {} sources checked", p.source.len());
+        }
+    }
+    Ok(())
+}
+
 pub fn fetch(repo: &Path, pkg: &PkgToml) -> Result<Vec<(String, PathBuf)>> {
     let dir = repo.join("build/fetch");
     let mut out = Vec::new();
@@ -342,10 +384,10 @@ fn sha256(p: &Path) -> Result<String> {
 }
 
 /// Topological order of `names` and everything they build or run with.
-/// Tools that build each other (busybox and make; llvm and python) form a
+/// Tools that build each other (the base packs; glibc and python) form a
 /// cycle; a cycle through a package the lock already has is broken by
 /// using the locked product, so the name asked for is built last
-/// (`cargo make pkgs llvm` builds python first, with the locked llvm).
+/// (`cargo make pkgs glibc` builds python first, with the locked glibc).
 fn order(all: &BTreeMap<String, PkgToml>, names: &[String], locked: &Lock) -> Result<Vec<String>> {
     fn visit(
         n: &str,
@@ -362,13 +404,13 @@ fn order(all: &BTreeMap<String, PkgToml>, names: &[String], locked: &Lock) -> Re
             if locked.contains_key(n) {
                 return Ok(());
             }
-            bail!("package cycle through {n} (`cargo make bootstrap` makes the first llvm, busybox and make)");
+            bail!("package cycle through {n} (`cargo make bootstrap` makes the first of each base pack)");
         }
         let p = all.get(n).with_context(|| format!("no pkgs/{n}/pkg.toml"))?;
         stack.push(n.to_string());
         for d in p.build.iter().chain(p.run.iter()) {
             // A package may build with an earlier build of itself
-            // (busybox, make); that comes from the lock, not a recursion.
+            // (gcc, make); that comes from the lock, not a recursion.
             if d != n {
                 visit(d, all, locked, seen, stack, out)?;
             }
@@ -471,7 +513,7 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
              export CFLAGS=\"-O2 -pipe\" CXXFLAGS=\"-O2 -pipe\" SOURCE_DATE_EPOCH=0\n\
              CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=\n\
              for d in /oath/store/pkg/*/live; do\n\
-             \tcase $d in */llvm/live | *-src/live) continue ;; esac\n\
+             \tcase $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac\n\
              \t[ -d \"$d/include\" ] && CPPFLAGS=\"$CPPFLAGS -I$d/include\"\n\
              \t[ -d \"$d/lib\" ] && LDFLAGS=\"$LDFLAGS -L$d/lib\"\n\
              \t[ -d \"$d/lib/pkgconfig\" ] && PKG_CONFIG_PATH=\"$d/lib/pkgconfig${{PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}}\"\n\
@@ -571,33 +613,42 @@ pub fn list(repo: &Path) -> Result<()> {
     Ok(())
 }
 
-/// `cargo make bootstrap`: stage 0 and stage 1 on the host, then store
-/// pkg:llvm, pkg:busybox and pkg:make (stage 1) and lock them.
+/// `cargo make bootstrap`: stage 0 and stage 1 on the host, then store the
+/// base packs (stage 1) and lock them.
 pub fn bootstrap(repo: &Path, jobs: usize) -> Result<()> {
     let all = load(repo)?;
     let cat = build_catalog(repo)?;
-    let llvm = all.get("llvm").context("pkgs/llvm/pkg.toml")?;
-    let busybox = all.get("busybox").context("pkgs/busybox/pkg.toml")?;
-    let make = all.get("make").context("pkgs/make/pkg.toml")?;
-    let llvm_files = fetch(repo, llvm)?;
+    let get = |name: &str| all.get(name).with_context(|| format!("pkgs/{name}/pkg.toml"));
+    let mut files = fetch(repo, get("gcc")?)?;
+    files.extend(fetch(repo, get("glibc")?)?);
     let find = |prefix: &str| -> Result<PathBuf> {
-        llvm_files
+        files
             .iter()
             .find(|(rel, _)| rel.starts_with(prefix))
             .map(|(_, p)| p.clone())
-            .with_context(|| format!("pkgs/llvm/pkg.toml has no {prefix}* source"))
+            .with_context(|| format!("pkgs/gcc or pkgs/glibc has no {prefix}* source"))
     };
-    let busybox_src = fetch(repo, busybox)?.remove(0).1;
-    let make_src = fetch(repo, make)?.remove(0).1;
     let work = repo.join("build/bootstrap/work");
     let out = repo.join("build/bootstrap/out");
+    let mut env = format!(
+        "GCC_SRC={} BINUTILS_SRC={} GMP_SRC={} MPFR_SRC={} MPC_SRC={} GLIBC_SRC={} LINUX_SRC={}",
+        find("gcc-")?.display(),
+        find("binutils-")?.display(),
+        find("gmp-")?.display(),
+        find("mpfr-")?.display(),
+        find("mpc-")?.display(),
+        find("glibc-")?.display(),
+        find("linux-")?.display(),
+    );
+    // Each stage-1 tool's first source is its release tarball.
+    let tools: Vec<&str> = BASE.iter().copied().filter(|n| !["gcc", "glibc"].contains(n)).collect();
+    for n in &tools {
+        let src = fetch(repo, get(n)?)?.remove(0).1;
+        env.push_str(&format!(" SRC_{n}={}", src.display()));
+    }
     let script = format!(
-        "env LLVM_SRC={} MUSL_SRC={} LINUX_SRC={} BUSYBOX_SRC={} MAKE_SRC={} WORK={} OUT={} JOBS={jobs} sh {}",
-        find("llvm-project")?.display(),
-        find("musl")?.display(),
-        find("linux")?.display(),
-        busybox_src.display(),
-        make_src.display(),
+        "env {env} TOOLS='{}' WORK={} OUT={} JOBS={jobs} sh {}",
+        tools.join(" "),
         work.display(),
         out.display(),
         pkgs_dir(repo).join("bootstrap.sh").display(),
@@ -607,26 +658,25 @@ pub fn bootstrap(repo: &Path, jobs: usize) -> Result<()> {
         .arg(pkgs_dir(repo).join("bootstrap.nix"))
         .args(["--run", &script]))?;
     let mut lock = read_lock(repo)?;
-    for (name, p) in [("llvm", llvm), ("busybox", busybox), ("make", make)] {
+    for name in BASE {
+        let p = get(name)?;
         let tree = out.join(name);
         let comp = serde_json::to_string_pretty(&components(name, p))? + "\n";
         fs::write(tree.join("components.json"), comp)?;
         let hash = store(&cat, name, &tree)?;
         eprintln!("== pkg:{name} {hash} (bootstrap)");
-        // A stage-2 build of the same name replaces a bootstrap entry.
-        let keep = lock.get(name).is_some_and(|e| e.by == "plan");
-        if !keep {
-            lock.insert(
-                name.to_string(),
-                LockEntry {
-                    version: p.version.clone(),
-                    license: p.license.clone(),
-                    by: "bootstrap".into(),
-                    plan: String::new(),
-                    product: hash,
-                },
-            );
-        }
+        // The base starts over from these; stage 2 replaces each with a
+        // plan product.
+        lock.insert(
+            name.to_string(),
+            LockEntry {
+                version: p.version.clone(),
+                license: p.license.clone(),
+                by: "bootstrap".into(),
+                plan: String::new(),
+                product: hash,
+            },
+        );
     }
     write_lock(repo, &lock)?;
     Ok(())
@@ -648,13 +698,13 @@ mod tests {
     #[test]
     fn order_puts_deps_first_and_allows_self_builds() {
         let mut all = BTreeMap::new();
-        all.insert("llvm".to_string(), pkg(&[]));
-        all.insert("busybox".to_string(), pkg(&["llvm", "busybox"]));
-        all.insert("zlib".to_string(), pkg(&["llvm", "busybox"]));
-        all.insert("btrfs".to_string(), pkg(&["llvm", "busybox", "zlib"]));
+        all.insert("gcc".to_string(), pkg(&[]));
+        all.insert("bash".to_string(), pkg(&["gcc", "bash"]));
+        all.insert("zlib".to_string(), pkg(&["gcc", "bash"]));
+        all.insert("btrfs".to_string(), pkg(&["gcc", "bash", "zlib"]));
         let none = Lock::new();
         let o = order(&all, &["btrfs".into()], &none).unwrap();
-        assert_eq!(o, vec!["llvm", "busybox", "zlib", "btrfs"]);
+        assert_eq!(o, vec!["gcc", "bash", "zlib", "btrfs"]);
         all.insert("a".to_string(), pkg(&["b"]));
         all.insert("b".to_string(), pkg(&["a"]));
         assert!(order(&all, &["a".into()], &none).is_err());
@@ -682,9 +732,10 @@ mod tests {
             }
             assert!(pkgs_dir(&repo).join(name).join("build.sh").is_file(), "pkgs/{name}/build.sh");
         }
-        // The bootstrap's three rebuild themselves.
-        for name in ["llvm", "busybox", "make"] {
-            assert!(all[name].build.iter().any(|b| b == name), "pkgs/{name} builds with itself");
+        // Every package builds with the base, the base packs with
+        // earlier builds of themselves.
+        for (name, p) in &all {
+            assert_eq!(p.build[..BASE.len()], *BASE, "pkgs/{name}");
         }
     }
 }

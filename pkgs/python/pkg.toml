@@ -6,7 +6,8 @@ license = "PSF-2.0 AND MIT"
 description = "CPython. A build tool (LLVM's build needs it); not in the base image."
 home = "https://www.python.org/"
 purl = "pkg:generic/cpython@3.15.0"
-build = ["llvm", "busybox", "make", "pkgconf", "zlib", "zstd"]
+build = ["pkgconf", "zlib", "zstd"]
+run = ["zlib", "zstd"]
 
 [[source]]
 url = "https://www.python.org/ftp/python/3.15.0/Python-3.15.0.tar.xz"

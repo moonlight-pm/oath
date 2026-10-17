@@ -49,12 +49,16 @@ fn kver() -> String {
 }
 
 fn main() {
-    // The kernel runs this binary as its modprobe helper too, and the
-    // DHCP client script as `net-lease`.
+    // The kernel runs this binary as its modprobe helper too, the DHCP
+    // client's hook as `net-lease`, and people as `reboot`, `halt` and
+    // `poweroff`.
     let mut args = std::env::args();
     match args.next().as_deref().map(|a| a.rsplit('/').next().unwrap_or(a)) {
         Some("modprobe") => {
             std::process::exit(modules::modprobe_main(&args.collect::<Vec<_>>()));
+        }
+        Some(cmd @ ("reboot" | "halt" | "poweroff")) => {
+            std::process::exit(shutdown::command_main(cmd, &args.collect::<Vec<_>>()));
         }
         Some("net-lease") => {
             let event = args.next().unwrap_or_default();
@@ -273,8 +277,8 @@ fn mount_devpts() {
 }
 
 /// The nodes every user needs (`/dev/null`, `/dev/urandom`, …) are 0666
-/// and `/dev/tty1` is home's. `mdev -s` recreates them root-only, so this
-/// runs after every pass.
+/// and `/dev/tty1` is home's, whatever devtmpfs made them; this runs
+/// after every pass.
 fn open_dev_nodes() {
     for n in [
         "/dev/null",
@@ -308,7 +312,6 @@ fn load_modules(defer_kms: bool) {
         }
         None => log(&format!("no module index in {}", modules::base().display())),
     }
-    let _ = Command::new("/bin/busybox").args(["mdev", "-s"]).status();
     open_dev_nodes();
 }
 
@@ -386,13 +389,10 @@ fn bring_up_install_net() {
     log(&format!("install nic {nic}"));
     timed_link_up(&nic, Duration::from_secs(2));
     if let Some(ip) = cmdline_val("oath.ip") {
-        let st =
-            Command::new("/bin/busybox").args(["ip", "addr", "add", &ip, "dev", &nic]).status();
+        let st = Command::new("/bin/ip").args(["addr", "add", &ip, "dev", &nic]).status();
         log(&format!("ip addr add {ip} dev {nic} -> {st:?}"));
         if let Some(gw) = cmdline_val("oath.gw") {
-            let st = Command::new("/bin/busybox")
-                .args(["ip", "route", "add", "default", "via", &gw])
-                .status();
+            let st = Command::new("/bin/ip").args(["route", "add", "default", "via", &gw]).status();
             log(&format!("ip route default via {gw} -> {st:?}"));
         }
         tel("init", "install-net", json!({ "nic": nic, "ip": ip, "dhcp": false }));
@@ -405,23 +405,11 @@ fn bring_up_install_net() {
         log(&format!("wait carrier {nic} {i}"));
         std::thread::sleep(Duration::from_millis(400));
     }
-    let st = Command::new("/bin/busybox")
-        .args([
-            "udhcpc",
-            "-i",
-            &nic,
-            "-n",
-            "-q",
-            "-f",
-            "-s",
-            "/lib/oath/udhcpc.script",
-            "-T",
-            "2",
-            "-t",
-            "8",
-        ])
-        .status();
-    log(&format!("udhcpc {nic} -> {st:?}"));
+    for d in oath_core::DHCP_DIRS {
+        let _ = fs::create_dir_all(d);
+    }
+    let st = Command::new("/bin/dhcpcd").args(oath_core::dhcpcd_oneshot(&nic, 16)).status();
+    log(&format!("dhcpcd {nic} -> {st:?}"));
     tel("init", "install-net", json!({ "nic": nic, "dhcp": true }));
 }
 
@@ -452,14 +440,13 @@ fn nic_carrier(n: &str) -> bool {
 }
 
 fn timed_link_up(nic: &str, timeout: Duration) {
-    let mut child =
-        match Command::new("/bin/busybox").args(["ip", "link", "set", nic, "up"]).spawn() {
-            Ok(c) => c,
-            Err(e) => {
-                log(&format!("ip link set {nic} up spawn: {e}"));
-                return;
-            }
-        };
+    let mut child = match Command::new("/bin/ip").args(["link", "set", nic, "up"]).spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            log(&format!("ip link set {nic} up spawn: {e}"));
+            return;
+        }
+    };
     let start = Instant::now();
     loop {
         match child.try_wait() {
@@ -522,8 +509,8 @@ fn pick_install_nic() -> Option<String> {
 }
 
 fn start_install_tty0() {
-    let mut cmd = Command::new("/bin/busybox");
-    cmd.args(["sh", "-l"]);
+    let mut cmd = Command::new("/bin/bash");
+    cmd.arg("-l");
     cmd.env("PATH", "/bin").env("HOME", "/root").env("PS1", "oath-install# ");
     unsafe {
         cmd.pre_exec(|| {
@@ -549,7 +536,7 @@ fn start_install_tty0() {
 }
 
 fn install_has_ipv4() -> bool {
-    let o = Command::new("/bin/busybox").args(["ip", "addr"]).output();
+    let o = Command::new("/bin/ip").arg("addr").output();
     let Ok(o) = o else {
         return false;
     };
@@ -567,7 +554,7 @@ fn dump_kexec_debug() {
     body.push_str("nics: ");
     body.push_str(&list_nics().join(","));
     body.push('\n');
-    if let Ok(o) = Command::new("/bin/busybox").args(["ip", "addr"]).output() {
+    if let Ok(o) = Command::new("/bin/ip").arg("addr").output() {
         body.push_str("ip addr:\n");
         body.push_str(&String::from_utf8_lossy(&o.stdout));
     }
@@ -595,7 +582,7 @@ fn dump_kexec_debug() {
     } else {
         body.push_str("firmware tigon: missing\n");
     }
-    if let Ok(o) = Command::new("/bin/busybox").arg("dmesg").output() {
+    if let Ok(o) = Command::new("/bin/dmesg").output() {
         body.push_str("dmesg:\n");
         body.push_str(&String::from_utf8_lossy(&o.stdout));
     }
@@ -604,12 +591,12 @@ fn dump_kexec_debug() {
         if !Path::new(cand).exists() {
             continue;
         }
-        let st = Command::new("/bin/busybox").args(["mount", "-t", "vfat", cand, "/esp"]).status();
+        let st = Command::new("/bin/mount").args(["-t", "vfat", cand, "/esp"]).status();
         if !matches!(st, Ok(s) if s.success()) {
             continue;
         }
         let _ = fs::write("/esp/oath-kexec.log", &body);
-        let _ = Command::new("/bin/busybox").args(["umount", "/esp"]).status();
+        let _ = Command::new("/bin/umount").arg("/esp").status();
         log(&format!("wrote /esp/oath-kexec.log via {cand}"));
         break;
     }

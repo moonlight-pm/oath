@@ -1,9 +1,6 @@
-# Oath binaries are static musl, built in the sandbox by pkg:rust and
-# linked by pkg:llvm's clang against pkg:llvm's musl, libunwind and
-# startup files (crates/oath-make/src/oath-pkg.sh names the linker), not
-# the self-contained musl in Rust's release.
-[target.x86_64-unknown-linux-musl]
-rustflags = ["-C", "target-feature=+crt-static", "-C", "link-self-contained=no"]
+# Oath binaries are static glibc ones, built in the sandbox by pkg:rust
+# and linked by pkg:gcc (crates/oath-make/src/oath-pkg.sh sets
+# crt-static for that target only).
 
 # oath-efi: lld-link stamps the PE header with the link time unless told
 # to use a hash of the image.

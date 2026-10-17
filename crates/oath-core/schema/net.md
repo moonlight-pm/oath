@@ -26,11 +26,13 @@ off SSH, so `oath apply` needs `--confirm` for it, and the change goes
 on probation: a new SSH session (at the new address) runs `sudo oath
 keep`, or PID 1 undoes it after 180 s or at the next boot. Apply
 snapshots, then converges with `/bin/ip` and, for `dhcp`,
-`/bin/udhcpc`.
+`/bin/dhcpcd`.
 
 For `dhcp`, converge takes the first lease once; PID 1 then keeps
-`udhcpc -f -i net0` running so the lease renews (its log: `oath logs
-net:net0`). A static address stops that client.
+`dhcpcd -B … net0` running so the lease renews (its log: `oath logs
+net:net0`). The lease shows in actual (`dhcp`: address, router, DNS,
+seconds, and whether it was `bound` or a `renew`). A static address
+stops that client.
 
 ## Example
 

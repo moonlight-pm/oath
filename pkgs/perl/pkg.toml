@@ -2,7 +2,7 @@ version = "5.44.0"
 license = "Artistic-1.0-Perl OR GPL-1.0-or-later"
 description = "Perl 5. A build tool (the kernel generates its OID registry with it); not in the base image."
 home = "https://www.perl.org/"
-build = ["llvm", "busybox", "make"]
+build = []
 
 [[source]]
 url = "https://www.cpan.org/src/5.0/perl-5.44.0.tar.xz"

@@ -1,7 +1,8 @@
+# GNU make.
 tar -xf "$SRC/$SOURCES"
-cd make-$VERSION
-./configure --prefix=/ --disable-nls --without-guile CC=cc AR=ar RANLIB=ranlib
+cd "make-$VERSION"
+./configure --prefix="$LIVE" --disable-nls --without-guile
 make -j"$JOBS"
-mkdir -p /out/bin
-cp make /out/bin/make
+make install DESTDIR=/tmp/dest
+cp -a "/tmp/dest$LIVE/bin" /out/
 ln -s make /out/bin/gmake

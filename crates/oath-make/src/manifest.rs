@@ -10,7 +10,7 @@ use std::process::Command;
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
 
-use crate::pack::INSTALLER_TOOLS;
+use crate::pack::{INITRD_TOOLS, INSTALLER_TOOLS};
 use crate::tools::Tools;
 use crate::util::run_out;
 
@@ -28,7 +28,10 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
     for name in &wanted {
         at(name, "rootfs");
     }
-    at("busybox", "initrd");
+    // Each ramdisk program comes with the packs of the libraries it loads.
+    for pack in crate::pack::ramdisk_packs(tools, INITRD_TOOLS)? {
+        at(&pack, "initrd");
+    }
     at("oath", "initrd");
     if tools.firmware().is_some() {
         at("firmware", "initrd");
@@ -39,8 +42,8 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
         at("linux", "initrd");
         at("linux", "esp");
     }
-    for (pack, _) in INSTALLER_TOOLS {
-        at(pack, "installer");
+    for pack in crate::pack::ramdisk_packs(tools, INSTALLER_TOOLS)? {
+        at(&pack, "installer");
     }
     at("oath", "installer");
     at("oath", "esp");

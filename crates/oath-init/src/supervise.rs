@@ -585,24 +585,10 @@ fn wanted() -> (HashMap<String, Svc>, Vec<String>) {
 }
 
 fn dhcp_spec() -> Svc {
+    let mut exec = vec!["/bin/dhcpcd".to_string()];
+    exec.extend(oath_core::dhcpcd_args("net0"));
     Svc {
-        exec: [
-            "/bin/udhcpc",
-            "-f",
-            "-i",
-            "net0",
-            "-s",
-            "/lib/oath/udhcpc.script",
-            "-t",
-            "5",
-            "-T",
-            "3",
-            "-A",
-            "10",
-        ]
-        .iter()
-        .map(|s| s.to_string())
-        .collect(),
+        exec,
         wants: Vec::new(),
         restart: SvcRestart::Always,
         enabled: true,

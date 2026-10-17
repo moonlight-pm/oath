@@ -446,6 +446,7 @@ fn sandbox_in_child(
     }
 
     fs::create_dir_all(scratch.join("bin"))?;
+    fs::create_dir_all(scratch.join("lib"))?;
     fs::create_dir_all(scratch.join("out"))?;
     fs::create_dir_all(scratch.join("tmp"))?;
     fs::create_dir_all(scratch.join("dev"))?;
@@ -478,18 +479,28 @@ fn sandbox_in_child(
         fs::create_dir_all(&dest)?;
         bind(src, &dest, true)?;
         slot_compat(scratch, name, hash, src)?;
-        let bin = dest.join("bin");
-        if bin.is_dir() {
-            for e in fs::read_dir(&bin)? {
+        // `/bin` and `/lib` are link farms of the packs' programs and
+        // libraries, as on a machine (R17): glibc's loader is
+        // /lib/ld-linux-x86-64.so.2 and it searches /lib. The first pack to
+        // name an entry has it; pkg-config files stay per pack.
+        for dir in ["bin", "lib"] {
+            let from = dest.join(dir);
+            if !from.is_dir() {
+                continue;
+            }
+            for e in fs::read_dir(&from)? {
                 let e = e?;
-                let link = scratch.join("bin").join(e.file_name());
+                if dir == "lib" && e.file_name() == "pkgconfig" {
+                    continue;
+                }
+                let link = scratch.join(dir).join(e.file_name());
                 if link.symlink_metadata().is_ok() {
                     continue;
                 }
                 let target = PathBuf::from("/oath/store/pkg")
                     .join(name)
                     .join(hash)
-                    .join("bin")
+                    .join(dir)
                     .join(e.file_name());
                 symlink(&target, &link)?;
             }

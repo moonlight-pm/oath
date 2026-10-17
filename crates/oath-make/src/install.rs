@@ -343,7 +343,7 @@ pub(crate) fn ssh_fire(r: &Remote, script: &str) {
 }
 
 fn ssh_reboot(r: &Remote) -> Result<()> {
-    ssh_fire(r, "/bin/busybox reboot -f");
+    ssh_fire(r, "reboot -f");
     Ok(())
 }
 
@@ -568,7 +568,7 @@ fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
     ssh_run(
         r,
         &format!(
-            "/bin/busybox chown -R 0:0 /mnt && /bin/busybox chmod 755 /mnt && /bin/busybox chmod 700 /mnt/root && /bin/busybox mkdir -p /mnt/root/.ssh /mnt/home/.ssh && /bin/busybox chown -R {uid}:{gid} /mnt/home && /bin/busybox chmod 755 /mnt/home && /bin/busybox chmod 700 /mnt/home/.ssh && /bin/busybox chmod 4755 /mnt/lib/oath/sudo",
+            "chown -R 0:0 /mnt && chmod 755 /mnt && chmod 700 /mnt/root && mkdir -p /mnt/root/.ssh /mnt/home/.ssh && chown -R {uid}:{gid} /mnt/home && chmod 755 /mnt/home && chmod 700 /mnt/home/.ssh && chmod 4755 /mnt/lib/oath/sudo",
             uid = oath_core::seat::UID,
             gid = oath_core::seat::GID,
         ),
@@ -649,10 +649,9 @@ P2={p2}
 wipefs -a "$DISK" || true
 printf 'label: gpt\nsize=512MiB, type=uefi, name=ESP\ntype=linux, name=oath\n' | sfdisk --wipe always --quiet "$DISK"
 blockdev --rereadpt "$DISK" || true
-mdev -s || true
+# devtmpfs makes the partition nodes.
 for i in 1 2 3 4 5 6 7 8 9 10; do
   [ -b "$P1" ] && [ -b "$P2" ] && break
-  mdev -s || true
   sleep 1
 done
 [ -b "$P1" ] && [ -b "$P2" ]

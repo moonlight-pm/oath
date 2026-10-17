@@ -23,8 +23,10 @@ use crate::packhash::{
 pub const COMPONENTS_NAME: &str = "components.json";
 use crate::write_json;
 
-/// Create or remove this package’s `/bin` symlinks. Never clobber a
-/// name that does not already point at this package’s store.
+/// Create or remove this package’s `/bin` symlinks, and its `/lib` ones
+/// (R17: `/lib` is the link farm the loader searches; `lib_dir` is
+/// `bin_dir`'s sibling). Never clobber a name that does not already point
+/// at this package’s store.
 ///
 /// `link_root` is the prefix written into symlink targets (`/oath` on
 /// the appliance, even when packing from a stage tree).
@@ -71,11 +73,16 @@ pub fn converge_with_link_root(
         write_slot_links(store_root, name, &live_hash)?;
     }
     fs::create_dir_all(bin_dir)?;
+    let lib_dir = bin_dir.with_file_name("lib");
     let names = bin_names(&store)?;
+    let libs = lib_names(&tree.join("lib"))?;
     if present {
+        for n in &libs {
+            link_one(&lib_dir, "lib", link_root, store_root, name, n, &tree)?;
+        }
         let mut links = Vec::new();
         for n in &names {
-            let target = store_target(link_root, name, n, &tree, store_root);
+            let target = store_target(link_root, name, "bin", n, &tree, store_root);
             let dest = bin_dir.join(n);
             if dest.symlink_metadata().is_ok() {
                 if is_our_link(&dest, &target, &store.join(n), &slot_dir(store_root, name)) {
@@ -102,7 +109,10 @@ pub fn converge_with_link_root(
         Ok(actual)
     } else {
         for n in &names {
-            unlink_ours(bin_dir, link_root, store_root, name, n, &tree)?;
+            unlink_ours(bin_dir, "bin", link_root, store_root, name, n, &tree)?;
+        }
+        for n in &libs {
+            unlink_ours(&lib_dir, "lib", link_root, store_root, name, n, &tree)?;
         }
         Ok(pkg_actual(false, Vec::new(), live_hash, store_root, name))
     }
@@ -130,7 +140,7 @@ pub fn observe(
     let links: Vec<String> = names
         .iter()
         .filter(|n| {
-            let target = store_target(catalog_root, name, n, &tree, catalog_root);
+            let target = store_target(catalog_root, name, "bin", n, &tree, catalog_root);
             is_our_link(&bin_dir.join(n), &target, &store.join(n), &slot)
         })
         .cloned()
@@ -276,17 +286,69 @@ pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
     Ok(())
 }
 
-fn unlink_ours(
-    bin_dir: &Path,
+/// Names in `/lib` that are Oath's own (its helpers, the kernel's modules
+/// and firmware), never a package's link; and pkg-config files, which
+/// stay with their pack.
+const LIB_NOT_LINKED: &[&str] = &["oath", "modules", "firmware", "pkgconfig"];
+
+/// The entries of a pack's `lib/` that go into `/lib`.
+fn lib_names(lib: &Path) -> Result<Vec<String>> {
+    if !lib.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut names = Vec::new();
+    for e in fs::read_dir(lib)? {
+        let n = e?.file_name().to_string_lossy().into_owned();
+        if !LIB_NOT_LINKED.contains(&n.as_str()) {
+            names.push(n);
+        }
+    }
+    names.sort();
+    Ok(names)
+}
+
+/// Link `<dir_path>/<n>` to the pack's `<dir>/<n>`, or leave it if it is
+/// already ours; another package's or a real file is an error.
+fn link_one(
+    dir_path: &Path,
+    dir: &str,
     link_root: &Path,
     store_root: &Path,
     name: &str,
     n: &str,
     tree: &Path,
 ) -> Result<()> {
-    let dest = bin_dir.join(n);
-    let store = tree.join("bin");
-    let target = store_target(link_root, name, n, tree, store_root);
+    fs::create_dir_all(dir_path)?;
+    let target = store_target(link_root, name, dir, n, tree, store_root);
+    let dest = dir_path.join(n);
+    if dest.symlink_metadata().is_ok() {
+        if !is_our_link(&dest, &target, &tree.join(dir).join(n), &slot_dir(store_root, name)) {
+            return Err(Error::hint(
+                format!("/{dir}/{n} exists and is not pkg:{name}"),
+                "oath schema pkg",
+            ));
+        }
+        if fs::read_link(&dest).ok().as_deref() == Some(target.as_path()) {
+            return Ok(());
+        }
+        fs::remove_file(&dest)?;
+    }
+    symlink(&target, &dest)
+        .map_err(|e| Error::Msg(format!("symlink {} -> {}: {e}", dest.display(), target.display())))
+}
+
+fn unlink_ours(
+    dir_path: &Path,
+    dir: &str,
+    link_root: &Path,
+    store_root: &Path,
+    name: &str,
+    n: &str,
+    tree: &Path,
+) -> Result<()> {
+    let dest = dir_path.join(n);
+    let store = tree.join(dir);
+    let target = store_target(link_root, name, dir, n, tree, store_root);
     if dest.symlink_metadata().is_ok()
         && is_our_link(&dest, &target, &store.join(n), &slot_dir(store_root, name))
     {
@@ -308,6 +370,7 @@ pub fn converge(
 fn store_target(
     link_root: &Path,
     name: &str,
+    dir: &str,
     file: &str,
     tree: &Path,
     store_root: &Path,
@@ -321,11 +384,11 @@ fn store_target(
                 .join("pkg")
                 .join(name)
                 .join(rel.as_ref())
-                .join("bin")
+                .join(dir)
                 .join(file);
         }
     }
-    link_root.join("store").join("pkg").join(name).join("bin").join(file)
+    link_root.join("store").join("pkg").join(name).join(dir).join(file)
 }
 
 fn bin_names(store: &Path) -> Result<Vec<String>> {
@@ -1019,26 +1082,25 @@ pub fn write_advisories_store(
     )
 }
 
-/// T44 fetch: wget `{origin}/adv/{name}/{hash}.json`. Failure is Ok
+/// T44 fetch: curl `{origin}/adv/{name}/{hash}.json`. Failure is Ok
 /// (apply still converges; previous file stays).
 pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Result<()> {
     let adv_url = fetch_adv_url(url, name, hash);
     if adv_url.is_empty() {
         return Ok(());
     }
-    let tmpdir = catalog_root.join("store/adv").join(format!(".{name}.wget"));
+    let tmpdir = catalog_root.join("store/adv").join(format!(".{name}.fetch"));
     let _ = fs::remove_dir_all(&tmpdir);
     if let Err(e) = fs::create_dir_all(&tmpdir) {
         let _ = fs::remove_dir_all(&tmpdir);
         return Err(Error::Msg(format!("adv tmp: {e}")));
     }
     let blob = tmpdir.join("blob");
-    let wget = find_bin("wget");
-    let st = Command::new(&wget)
-        .args(["-q", "-O", blob.to_str().unwrap(), &adv_url])
+    let st = Command::new(find_bin("curl"))
+        .args(["-fsSL", "-o", blob.to_str().unwrap(), &adv_url])
         .stdout(std::io::stderr())
         .status()
-        .map_err(|e| Error::Msg(format!("wget: {e}")));
+        .map_err(|e| Error::Msg(format!("curl: {e}")));
     let st = match st {
         Ok(s) => s,
         Err(_) => {
@@ -1067,7 +1129,7 @@ pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
     Ok(())
 }
 
-/// T20 fetch: wget `url` (or `{url}/pkg/{name}/{hash}.tar`) into the store.
+/// T20 fetch: curl `url` (or `{url}/pkg/{name}/{hash}.tar`) into the store.
 /// A `.tar` / gzip is a pack tree; a single file becomes `bin/<name>`.
 /// Plan pre-build uses this with `present` still false.
 pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Result<()> {
@@ -1078,16 +1140,15 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
     if url.is_empty() {
         return Ok(());
     }
-    let tmpdir = catalog_root.join("store/pkg").join(format!(".{name}.wget"));
+    let tmpdir = catalog_root.join("store/pkg").join(format!(".{name}.fetch"));
     let _ = fs::remove_dir_all(&tmpdir);
     fs::create_dir_all(&tmpdir)?;
     let blob = tmpdir.join("blob");
-    let wget = find_bin("wget");
-    let st = Command::new(&wget)
-        .args(["-q", "-O", blob.to_str().unwrap(), &url])
+    let st = Command::new(find_bin("curl"))
+        .args(["-fsSL", "-o", blob.to_str().unwrap(), &url])
         .stdout(std::io::stderr())
         .status()
-        .map_err(|e| Error::Msg(format!("wget: {e}")))?;
+        .map_err(|e| Error::Msg(format!("curl: {e}")))?;
     if !st.success() {
         let _ = fs::remove_dir_all(&tmpdir);
         return Err(Error::hint(format!("fetch pkg:{name} failed"), "oath schema pkg"));

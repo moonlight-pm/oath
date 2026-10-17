@@ -176,6 +176,44 @@ fn sandbox_relocate_and_cache() {
 }
 
 #[test]
+fn sandbox_links_each_packs_libraries_into_lib() {
+    // R17: /lib is a farm of the packs' lib/ entries, as /bin is of bin/;
+    // the first pack to name an entry has it, and pkg-config stays per pack.
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_busybox(d.path());
+    let lib_pack = |name: &str, files: &[&str]| {
+        let stage = d.path().join(format!("stage-{name}"));
+        std::fs::create_dir_all(stage.join("lib/pkgconfig")).unwrap();
+        for file in files {
+            std::fs::write(stage.join("lib").join(file), name).unwrap();
+        }
+        std::fs::write(stage.join("lib/pkgconfig").join(format!("{name}.pc")), "").unwrap();
+        let h = hash_tree(&stage).unwrap();
+        oath_core::put_tree(&d.path().join("store/pkg").join(name), &h, &stage).unwrap();
+        PkgNeed { id: format!("pkg:{name}"), hash: h }
+    };
+    let a = lib_pack("alib", &["libshared.so.1"]);
+    let b = lib_pack("blib", &["libshared.so.1", "libb.so.2"]);
+    let p = PlanFile {
+        name: "libs".into(),
+        produces: "pkg:libs".into(),
+        build_needs: vec![PkgNeed { id: "pkg:busybox".into(), hash: bb }, a, b],
+        run_needs: vec![],
+        script: "mkdir -p /out\ncat /lib/libshared.so.1 >/out/shared\ncat /lib/libb.so.2 >/out/b\n\
+                 if [ -e /lib/pkgconfig ]; then echo yes >/out/pc; fi\n"
+            .into(),
+    };
+    let path = d.path().join("libs.plan");
+    std::fs::write(&path, fmt_plan(&p)).unwrap();
+    let r = build_file(d.path(), &path).expect("build");
+    let tree = d.path().join("store/pkg/libs").join(&r.product);
+    assert_eq!(std::fs::read_to_string(tree.join("shared")).unwrap(), "alib");
+    assert_eq!(std::fs::read_to_string(tree.join("b")).unwrap(), "blib");
+    assert!(!tree.join("pc").exists());
+}
+
+#[test]
 fn sandbox_has_its_own_proc() {
     // The kernel's objtool reads /proc/self/maps. The script is PID 1 of
     // the build's own PID namespace.
@@ -450,40 +488,10 @@ fn serve_file(path: &Path) -> (String, std::thread::JoinHandle<()>) {
     (format!("http://{addr}/reloc-src.tar"), h)
 }
 
-fn with_wget_shim<T>(bin: &Path, f: impl FnOnce() -> T) -> T {
+/// Fetches run curl (R18); one test at a time touches PATH-found tools.
+fn with_fetch<T>(f: impl FnOnce() -> T) -> T {
     let _guard = PATH_LOCK.lock().unwrap();
-    std::fs::create_dir_all(bin).unwrap();
-    let wget = bin.join("wget");
-    if which("wget").is_none() {
-        let curl = which("curl").expect("curl to shim wget in host tests");
-        std::fs::write(
-            &wget,
-            format!(
-                "#!/bin/sh\n\
-out=\n\
-url=\n\
-while [ $# -gt 0 ]; do\n\
-  case \"$1\" in\n\
-    -q) shift ;;\n\
-    -O) out=$2; shift 2 ;;\n\
-    -*) shift ;;\n\
-    *) url=$1; shift ;;\n\
-  esac\n\
-done\n\
-exec {} -sS -L --http1.1 -o \"$out\" \"$url\"\n",
-                curl.display()
-            ),
-        )
-        .unwrap();
-        let mut p = std::fs::metadata(&wget).unwrap().permissions();
-        p.set_mode(0o755);
-        std::fs::set_permissions(&wget, p).unwrap();
-    }
-    let old = std::env::var("PATH").unwrap_or_default();
-    std::env::set_var("PATH", format!("{}:{old}", bin.display()));
-    let r = f();
-    std::env::set_var("PATH", old);
-    r
+    f()
 }
 
 fn reloc_plan(bb: &str, src: &str) -> PlanFile {
@@ -505,7 +513,7 @@ chmod 0755 /out/bin/reloc\n"
 }
 
 #[test]
-fn prebuild_wget_relocate_file_and_skip() {
+fn prebuild_fetch_relocate_file_and_skip() {
     let d = tmp();
     seed(d.path()).unwrap();
     let bb = pack_busybox(d.path());
@@ -516,9 +524,7 @@ fn prebuild_wget_relocate_file_and_skip() {
     let s = fmt_plan(&p);
     let path = d.path().join("reloc.plan");
     std::fs::write(&path, &s).unwrap();
-    let r1 = with_wget_shim(&d.path().join("host-bin"), || {
-        build_file(d.path(), &path).expect("pre-build wget + relocate")
-    });
+    let r1 = with_fetch(|| build_file(d.path(), &path).expect("pre-build fetch + relocate"));
     assert!(!r1.skipped);
     let product = d.path().join("store/pkg/reloc").join(&r1.product).join("bin/reloc");
     assert!(product.is_file(), "{}", product.display());
@@ -559,7 +565,7 @@ fn prebuild_missing_url_refuses() {
 }
 
 #[test]
-fn prebuild_wget_hash_mismatch_refuses() {
+fn prebuild_fetch_hash_mismatch_refuses() {
     let d = tmp();
     seed(d.path()).unwrap();
     let bb = pack_busybox(d.path());
@@ -571,9 +577,7 @@ fn prebuild_wget_hash_mismatch_refuses() {
     let s = fmt_plan(&p);
     let path = d.path().join("reloc.plan");
     std::fs::write(&path, &s).unwrap();
-    let err = with_wget_shim(&d.path().join("host-bin"), || {
-        build_file(d.path(), &path).unwrap_err().to_string()
-    });
+    let err = with_fetch(|| build_file(d.path(), &path).unwrap_err().to_string());
     assert!(
         err.contains("hash") || err.contains("does not match") || err.contains("failed"),
         "{err}"

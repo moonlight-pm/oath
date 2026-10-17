@@ -1,0 +1,12 @@
+version = "9.2.1202"
+license = "Vim"
+description = "Vim, the editor."
+home = "https://www.vim.org/"
+purl = "pkg:github/vim/vim@v9.2.1202"
+build = ["ncurses"]
+run = ["ncurses"]
+
+[[source]]
+url = "https://github.com/vim/vim/archive/refs/tags/v9.2.1202.tar.gz"
+sha256 = "9e97414b85bdcb2d28d5264c65dd730d86b9a75319b005c63da0bc130c715a2f"
+unsigned = "Vim publishes no signed release tarballs; this is the GitHub archive of the release tag"

@@ -8,8 +8,10 @@ a symlink farm, not an unpack target. There is no `apt` and no
 realization (`hash`).
 
 **When not:** do not `ln` or `rm` in `/bin`. Do not exec from the
-store. Do not set `present=false` on `pkg:busybox`, `pkg:btrfs`,
-`pkg:oath`, or `pkg:dropbear`; they cannot be removed either. Create a
+store. Do not set `present=false` on the base's fixed packages
+(`pkg:glibc`, `pkg:bash`, `pkg:coreutils`, `pkg:util-linux`,
+`pkg:iproute2`, `pkg:dhcpcd`, `pkg:btrfs`, `pkg:oath`,
+`pkg:dropbear`); they cannot be removed either. Create a
 `pkg` object with `oath new pkg:<name>` (`present` defaults to true)
 and remove one with `oath rm`
 (both take effect at `oath apply`); `oath build` creates the product's
@@ -79,10 +81,13 @@ oath apply pkg:dosfstools
 oath undo
 ```
 
-The `base` profile ships every package present: `pkg:busybox`,
-`pkg:btrfs`, `pkg:oath` and `pkg:dropbear` not removable;
-`pkg:openssh`, `pkg:util-linux`, `pkg:dosfstools` and `pkg:curl`
-removable. Busybox applets are one package. All but `pkg:oath` (built
-by cargo) come from plans in `pkgs/`: built from source, static, musl,
-Clang. There is no glibc and no C compiler on the box
-yet.
+The `base` profile ships every package present: the fixed ones above,
+one GNU tool for each job (coreutils, sed, grep, gawk, findutils,
+diffutils, tar, gzip, xz, bzip2, procps-ng, less, vim), ping, chrony,
+OpenSSH's client tools, dosfstools, curl, and the libraries they load.
+A library a present package needs cannot be removed: apply refuses a
+broken `needs` graph. All but `pkg:oath` (built by cargo) come from
+plans in `pkgs/`, built from source with GCC against glibc. Programs
+load their libraries from `/lib`, a link farm like `/bin`: a package's
+`lib/` entries are linked there when it is present. There is no C
+compiler on the box yet.

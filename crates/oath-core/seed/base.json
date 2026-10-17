@@ -1,22 +1,49 @@
 {
-  "fixed": ["pkg:busybox", "pkg:btrfs", "pkg:oath", "pkg:dropbear"],
+  "fixed": [
+    "pkg:glibc",
+    "pkg:bash",
+    "pkg:coreutils",
+    "pkg:util-linux",
+    "pkg:iproute2",
+    "pkg:dhcpcd",
+    "pkg:btrfs",
+    "pkg:oath",
+    "pkg:dropbear"
+  ],
   "objects": {
-    "host:local": { "hostname": "oath", "power": "run" },
+    "host:local": {
+      "hostname": "oath",
+      "power": "run"
+    },
     "svc:serial": {
-      "exec": ["/lib/oath/serial-login"],
+      "exec": [
+        "/lib/oath/serial-login"
+      ],
       "wants": [],
       "restart": "always",
       "enabled": true
     },
     "svc:screen": {
-      "exec": ["/lib/oath/screen-login"],
+      "exec": [
+        "/lib/oath/screen-login"
+      ],
       "wants": [],
       "restart": "always",
       "enabled": true,
       "user": "home"
     },
     "svc:sshd": {
-      "exec": ["/bin/dropbear", "-F", "-E", "-s", "-w", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
+      "exec": [
+        "/bin/dropbear",
+        "-F",
+        "-E",
+        "-s",
+        "-w",
+        "-r",
+        "/oath/ssh/host_ed25519",
+        "-p",
+        "22"
+      ],
       "wants": [],
       "restart": "always",
       "enabled": true,
@@ -24,17 +51,137 @@
     },
     "svc:time": {
       "exec": [
-        "/bin/ntpd", "-n", "-S", "/lib/oath/ntp-event",
-        "-p", "0.pool.ntp.org", "-p", "1.pool.ntp.org", "-p", "2.pool.ntp.org", "-p", "3.pool.ntp.org"
+        "/bin/chronyd",
+        "-d",
+        "server 0.pool.ntp.org iburst",
+        "server 1.pool.ntp.org iburst",
+        "server 2.pool.ntp.org iburst",
+        "server 3.pool.ntp.org iburst",
+        "makestep 1 3"
       ],
       "wants": [],
       "restart": "always",
       "enabled": true
     },
-    "pkg:busybox": {
+    "pkg:glibc": {
       "present": true,
-      "description": "Unix applets in one musl ELF, including vi.",
-      "home": "https://busybox.net/"
+      "description": "The C library and its loader, /lib/ld-linux-x86-64.so.2: every program loads it.",
+      "home": "https://www.gnu.org/software/libc/"
+    },
+    "pkg:bash": {
+      "present": true,
+      "description": "GNU bash, the shell; also /bin/sh.",
+      "home": "https://www.gnu.org/software/bash/"
+    },
+    "pkg:coreutils": {
+      "present": true,
+      "description": "GNU coreutils: ls, cp, mv, cat, sort, hostname and the rest.",
+      "home": "https://www.gnu.org/software/coreutils/"
+    },
+    "pkg:sed": {
+      "present": true,
+      "description": "GNU sed.",
+      "home": "https://www.gnu.org/software/sed/"
+    },
+    "pkg:grep": {
+      "present": true,
+      "description": "GNU grep.",
+      "home": "https://www.gnu.org/software/grep/"
+    },
+    "pkg:gawk": {
+      "present": true,
+      "description": "GNU awk.",
+      "home": "https://www.gnu.org/software/gawk/"
+    },
+    "pkg:findutils": {
+      "present": true,
+      "description": "GNU find and xargs.",
+      "home": "https://www.gnu.org/software/findutils/"
+    },
+    "pkg:diffutils": {
+      "present": true,
+      "description": "GNU diff, cmp, diff3 and sdiff.",
+      "home": "https://www.gnu.org/software/diffutils/"
+    },
+    "pkg:tar": {
+      "present": true,
+      "description": "GNU tar.",
+      "home": "https://www.gnu.org/software/tar/"
+    },
+    "pkg:gzip": {
+      "present": true,
+      "description": "GNU gzip.",
+      "home": "https://www.gnu.org/software/gzip/"
+    },
+    "pkg:xz": {
+      "present": true,
+      "description": "XZ Utils: xz and liblzma.",
+      "home": "https://tukaani.org/xz/"
+    },
+    "pkg:bzip2": {
+      "present": true,
+      "description": "bzip2 and libbz2.",
+      "home": "https://sourceware.org/bzip2/"
+    },
+    "pkg:procps": {
+      "present": true,
+      "description": "procps-ng: ps, pidof, free, top, kill, uptime, watch.",
+      "home": "https://gitlab.com/procps-ng/procps"
+    },
+    "pkg:less": {
+      "present": true,
+      "description": "less, the pager.",
+      "home": "https://www.greenwoodsoftware.com/less/"
+    },
+    "pkg:vim": {
+      "present": true,
+      "description": "Vim, the editor; also vi.",
+      "home": "https://www.vim.org/"
+    },
+    "pkg:ncurses": {
+      "present": true,
+      "description": "ncurses and the terminfo database.",
+      "home": "https://invisible-island.net/ncurses/"
+    },
+    "pkg:iproute2": {
+      "present": true,
+      "description": "ip, ss, bridge and tc.",
+      "home": "https://wiki.linuxfoundation.org/networking/iproute2"
+    },
+    "pkg:iputils": {
+      "present": true,
+      "description": "ping, tracepath and arping.",
+      "home": "https://github.com/iputils/iputils"
+    },
+    "pkg:dhcpcd": {
+      "present": true,
+      "description": "dhcpcd, the DHCP client of net:net0.",
+      "home": "https://github.com/NetworkConfiguration/dhcpcd"
+    },
+    "pkg:chrony": {
+      "present": true,
+      "description": "chronyd, which keeps the clock (svc:time).",
+      "home": "https://chrony-project.org/"
+    },
+    "pkg:zlib": {
+      "present": true,
+      "description": "zlib, shared.",
+      "home": "https://zlib.net/"
+    },
+    "pkg:zstd": {
+      "present": true,
+      "description": "libzstd, shared, and zstd.",
+      "home": "https://facebook.github.io/zstd/"
+    },
+    "pkg:lzo": {
+      "present": true,
+      "description": "LZO, shared (btrfs compression).",
+      "home": "https://www.oberhumer.com/opensource/lzo/"
+    },
+    "pkg:mbedtls": {
+      "present": true,
+      "description": "Mbed TLS, shared (curl's TLS).",
+      "home": "https://www.trustedfirmware.org/projects/mbed-tls/"
     },
     "pkg:btrfs": {
       "present": true,
@@ -43,7 +190,7 @@
     },
     "pkg:oath": {
       "present": true,
-      "description": "Catalog CLI — the only admin surface.",
+      "description": "Catalog CLI \u2014 the only admin surface.",
       "home": "https://github.com/moonlight-pm/oath"
     },
     "pkg:dropbear": {
@@ -58,7 +205,7 @@
     },
     "pkg:util-linux": {
       "present": true,
-      "description": "Disk tools (sfdisk, wipefs, blkid, lsblk) and libuuid, libblkid, libfdisk, libmount.",
+      "description": "mount, umount, dmesg, fdisk, sfdisk, wipefs, blkid, lsblk, findmnt, losetup, and libblkid, libuuid, libmount, libfdisk.",
       "home": "https://github.com/util-linux/util-linux"
     },
     "pkg:dosfstools": {
@@ -71,8 +218,17 @@
       "description": "curl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca).",
       "home": "https://curl.se/"
     },
-    "ssh:local": { "authorized": [] },
-    "net:net0": { "up": true, "ipv4": "dhcp", "gateway": "", "lease": null },
-    "snap:current": { "generation": 0 }
+    "ssh:local": {
+      "authorized": []
+    },
+    "net:net0": {
+      "up": true,
+      "ipv4": "dhcp",
+      "gateway": "",
+      "lease": null
+    },
+    "snap:current": {
+      "generation": 0
+    }
   }
 }

@@ -14,7 +14,7 @@ use crate::util::{prepend_path, run_out, which};
 pub struct Tools {
     pub kernel: PathBuf,
     pub modules: PathBuf,
-    /// Native pack trees by name (`busybox` → `.cache/oath/store/pkg/busybox/<hash>`).
+    /// Native pack trees by name (`bash` → `.cache/oath/store/pkg/bash/<hash>`).
     pub packs: BTreeMap<String, PathBuf>,
     pub ovmf_code: Option<PathBuf>,
     pub ovmf_vars: Option<PathBuf>,

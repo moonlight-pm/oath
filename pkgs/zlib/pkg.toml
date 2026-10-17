@@ -2,7 +2,7 @@ version = "1.3.2"
 license = "Zlib"
 description = "zlib compression library (static, for builds)."
 home = "https://zlib.net/"
-build = ["llvm", "busybox", "make"]
+build = []
 
 [[source]]
 url = "https://zlib.net/zlib-1.3.2.tar.xz"

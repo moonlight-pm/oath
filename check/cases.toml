@@ -27,7 +27,7 @@ about = "A new agent can read the INDEX and list objects."
 metal = true
 steps = [
   { run = "oath", expect = ["You are on **Oath**", "## Kinds here", "`svc`"] },
-  { run = "oath ls", expect = ["host:local", "svc:sshd", "pkg:busybox", "net:net0"] },
+  { run = "oath ls", expect = ["host:local", "svc:sshd", "pkg:bash", "pkg:glibc", "net:net0"] },
   { run = "oath diff", expect = ["in-sync"] },
   { run = "oath schema host", expect = ["hostname"] },
 ]
@@ -75,9 +75,9 @@ name = "pkg-base-not-removable"
 about = "Base packages refuse present=false."
 metal = true
 steps = [
-  { run = "sudo oath set pkg:busybox present=false && sudo oath apply pkg:busybox", fails = true, expect = ["not removable"] },
-  { run = "test -x /bin/busybox" },
-  { run = "sudo oath set pkg:busybox present=true && oath diff", expect = ["in-sync"] },
+  { run = "sudo oath set pkg:bash present=false && sudo oath apply pkg:bash", fails = true, expect = ["not removable"] },
+  { run = "test -x /bin/bash" },
+  { run = "sudo oath set pkg:bash present=true && oath diff", expect = ["in-sync"] },
 ]
 
 [[case]]
@@ -267,8 +267,8 @@ name = "stop-takes-the-tree"
 about = "Stopping a service stops the processes it forked."
 metal = true
 steps = [
-  { run = "sudo oath new svc:tree --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"sleep 777 & sleep 778\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tree && sleep 1 && ps | grep -v grep | grep -c 'sleep 77'", expect = ["2"] },
-  { run = "sudo oath set svc:tree enabled=false && sudo oath apply svc:tree && sleep 1; ps | grep -v grep | grep -c 'sleep 77'", fails = true, expect = ["0"] },
+  { run = "sudo oath new svc:tree --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"sleep 777 & sleep 778\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:tree && sleep 1 && ps -eo args | grep -c '^sleep 77'", expect = ["2"] },
+  { run = "sudo oath set svc:tree enabled=false && sudo oath apply svc:tree && sleep 1; ps -eo args | grep -c '^sleep 77'", fails = true, expect = ["0"] },
 ]
 
 [[case]]
@@ -296,7 +296,7 @@ name = "dhcp-client-runs"
 about = "net:net0 dhcp keeps a client running that renews the lease, with a log."
 metal = true
 steps = [
-  { run = "ps | grep -v grep | grep 'udhcpc -f'" },
+  { run = "ps -eo args | grep '^/bin/dhcpcd -B'" },
   { run = "oath logs net:net0", expect = ["lease of"] },
 ]
 
@@ -306,7 +306,7 @@ about = "net:net0 actual shows the lease the DHCP client holds, and a renewal up
 metal = true
 steps = [
   { run = "oath get net:net0 --actual", expect = ["\"dhcp\"", "\"router\"", "\"event\": \"bound\""] },
-  { run = "sudo kill -USR1 $(pidof udhcpc) && sleep 3 && oath get net:net0 --actual && oath diff", expect = ["\"event\": \"renew\"", "in-sync"] },
+  { run = "sudo dhcpcd -N net0 && sleep 3 && oath get net:net0 --actual && oath diff", expect = ["\"event\": \"renew\"", "in-sync"] },
 ]
 
 [[case]]
@@ -333,28 +333,30 @@ about = "With no desk, svc:screen runs a login shell as home on tty1, which home
 metal = true
 steps = [
   { run = "oath get svc:screen", expect = ["state: \"running\""] },
-  { run = "p=$(oath get svc:screen | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; readlink /proc/$p/fd/0; tr '\\0' ' ' < /proc/$p/cmdline; echo; stat -c 'owner=%u mode=%a' /dev/tty1", expect = ["Uid:\t1\t1\t1\t1", "/dev/tty1", "/bin/busybox sh -l", "owner=1 mode=600"] },
+  { run = "p=$(oath get svc:screen | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; readlink /proc/$p/fd/0; tr '\\0' ' ' < /proc/$p/cmdline; echo; stat -c 'owner=%u mode=%a' /dev/tty1", expect = ["Uid:\t1\t1\t1\t1", "/dev/tty1", "/bin/bash -l", "owner=1 mode=600"] },
 ]
 
 # ---- Phase 5: native packages ----------------------------------------
 
 [[case]]
 name = "native-userland"
-about = "The base tools are the native builds: static, and they work (curl's CA bundle included)."
+about = "The base tools are the native builds: GNU, linked through /lib's loader (no /lib64), Oath's own static; they work (curl's CA bundle included)."
 metal = true
 steps = [
   { run = "echo x > /dev/null && head -c 16 /dev/urandom > /dev/null && stat -c '%a %n' /dev/null /dev/zero /dev/urandom /dev/ptmx", expect = ["666 /dev/null", "666 /dev/urandom"] },
   { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux"] },
-  { run = "for b in busybox curl dropbear ssh btrfs sfdisk mkfs.fat; do head -c 2000 $(readlink -f /bin/$b) | grep -q 'ld-musl' && echo DYNAMIC $b; done; echo checked", expect = ["checked"], reject = ["DYNAMIC"] },
+  { run = "for b in bash ls curl dropbear ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
+  { run = "ldd /lib/oath/init; ldd $(readlink -f /bin/oath); test ! -e /lib64 && echo NO_LIB64", expect = ["not a dynamic executable", "NO_LIB64"] },
+  { run = "bash --version; ls --version; vim --version | head -1; chronyd --version; dhcpcd --version; ip -V; ping -V", expect = ["GNU bash", "GNU coreutils", "VIM - Vi IMproved", "chronyd (chrony)", "dhcpcd 10", "iproute2", "iputils"] },
   { run = "ssh-keygen -q -t ed25519 -N '' -f /tmp/k && test -s /tmp/k.pub && test -x /bin/sftp-server && echo KEYGEN_OK", expect = ["KEYGEN_OK"] },
   { run = "curl -sS -o /dev/null -w '%{http_code}\\n' https://curl.se/", expect = ["200"] },
 ]
 
 [[case]]
 name = "build-on-the-box"
-about = "oath build runs a busybox-only plan in the sandbox on the box, stores the product and logs to /oath/log/plan/."
+about = "oath build runs a bash-and-coreutils plan in the sandbox on the box, stores the product and logs to /oath/log/plan/."
 steps = [
-  { run = "h=$(readlink /oath/store/pkg/busybox/live)\ncat >/tmp/echo.plan <<EOF\n#!oath-plan\n{\"name\": \"echo\", \"produces\": \"pkg:echo\", \"build_needs\": [{\"id\": \"pkg:busybox\", \"hash\": \"$h\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-on-the-box\nmkdir -p /out/bin\necho hi >/out/bin/hi\nEOF\noath fmt -w /tmp/echo.plan && sudo oath build --file /tmp/echo.plan", expect = ["pkg:echo sha256-", "log /oath/log/plan/echo.log"], reject = ["built-on-the-box"] },
+  { run = "b=$(readlink /oath/store/pkg/bash/live); c=$(readlink /oath/store/pkg/coreutils/live); g=$(readlink /oath/store/pkg/glibc/live)\ncat >/tmp/echo.plan <<EOF\n#!oath-plan\n{\"name\": \"echo\", \"produces\": \"pkg:echo\", \"build_needs\": [{\"id\": \"pkg:bash\", \"hash\": \"$b\"}, {\"id\": \"pkg:coreutils\", \"hash\": \"$c\"}, {\"id\": \"pkg:glibc\", \"hash\": \"$g\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-on-the-box\nmkdir -p /out/bin\necho hi >/out/bin/hi\nEOF\noath fmt -w /tmp/echo.plan && sudo oath build --file /tmp/echo.plan", expect = ["pkg:echo sha256-", "log /oath/log/plan/echo.log"], reject = ["built-on-the-box"] },
   { run = "oath logs plan:echo && ls -a /oath/store/pkg /oath/store/pkg/echo", expect = ["# oath build plan:echo", "built-on-the-box", "# product sha256-"], reject = [".part"] },
 ]
 
@@ -364,7 +366,7 @@ about = "PID 1 hashes every linked package tree again after boot and records it.
 metal = true
 steps = [
   { run = "for i in $(seq 1 30); do oath logs -n 1000 | grep -q 'verify: exit' && break; sleep 1; done; oath logs -n 1000 | grep -E 'damaged|verify: exit'", expect = [", 0 damaged", "verify: exit Code(0)"] },
-  { run = "oath get pkg:busybox --actual", expect = ["\"verified\"", "\"ok\": true"] },
+  { run = "oath get pkg:bash --actual", expect = ["\"verified\"", "\"ok\": true"] },
 ]
 
 [[case]]
@@ -388,11 +390,11 @@ steps = [
 
 [[case]]
 name = "clock-sync"
-about = "svc:time keeps the clock from pool.ntp.org and logs when ntpd settles on a stratum."
+about = "svc:time keeps the clock from pool.ntp.org: chronyd logs the source it selects."
 metal = true
 steps = [
   { run = "oath get svc:time --actual", expect = ["running"] },
-  { run = "for i in $(seq 1 40); do oath logs svc:time | grep -q 'time: stratum' && break; sleep 2; done; oath logs svc:time", expect = ["time: stratum stratum="], timeout = 120 },
+  { run = "for i in $(seq 1 40); do oath logs svc:time | grep -q 'Selected source' && break; sleep 2; done; oath logs svc:time", expect = ["Selected source"], timeout = 120 },
 ]
 
 [[case]]
@@ -408,7 +410,7 @@ steps = [
 name = "hotplug-loads-a-driver"
 about = "A device that appears after boot gets its driver from PID 1 (the uevent of an unbound virtio-rng)."
 steps = [
-  { run = "sudo rmmod virtio_rng && ! grep -qw virtio_rng /proc/modules && echo REMOVED", expect = ["REMOVED"] },
+  { run = "sudo modprobe -r virtio_rng && ! grep -qw virtio_rng /proc/modules && echo REMOVED", expect = ["REMOVED"] },
   { run = "for d in /sys/bus/virtio/devices/*; do grep -q '^virtio:d00000004v' $d/modalias && sudo sh -c \"echo add > $d/uevent\"; done; sleep 2; grep -w virtio_rng /proc/modules; oath logs | grep 'hotplug:'", expect = ["virtio_rng", "hotplug: virtio_rng for virtio:d00000004"] },
 ]
 
@@ -540,10 +542,12 @@ about = "A plan filed from text over MCP (not canonical: it is filed canonical) 
 
 [[case.steps]]
 run = '''
-h=$(readlink /oath/store/pkg/busybox/live)
+b=$(readlink /oath/store/pkg/bash/live)
+c=$(readlink /oath/store/pkg/coreutils/live)
+g=$(readlink /oath/store/pkg/glibc/live)
 oath mcp <<EOF
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_plan","arguments":{"name":"mcpecho","text":"#!oath-plan\n{\"name\": \"mcpecho\", \"produces\": \"pkg:mcpecho\", \"build_needs\": [{\"id\": \"pkg:busybox\", \"hash\": \"$h\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-by-mcp\nmkdir -p /out/bin\necho hi >/out/bin/hi\n"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_plan","arguments":{"name":"mcpecho","text":"#!oath-plan\n{\"name\": \"mcpecho\", \"produces\": \"pkg:mcpecho\", \"build_needs\": [{\"id\": \"pkg:bash\", \"hash\": \"$b\"}, {\"id\": \"pkg:coreutils\", \"hash\": \"$c\"}, {\"id\": \"pkg:glibc\", \"hash\": \"$g\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-by-mcp\nmkdir -p /out/bin\necho hi >/out/bin/hi\n"}}}
 {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"build","arguments":{"plan":"mcpecho"},"_meta":{"progressToken":"b1"}}}
 {"jsonrpc":"2.0","id":4,"method":"resources/read","params":{"uri":"oath://object/plan/mcpecho"}}
 EOF'''

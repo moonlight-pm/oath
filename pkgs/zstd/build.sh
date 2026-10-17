@@ -1,17 +1,9 @@
+# libzstd, shared, with headers and pkg-config, and the zstd tool.
 tar -xf "$SRC/$SOURCES"
-cd zstd-$VERSION/lib
-make -j"$JOBS" libzstd.a
-mkdir -p /out/include /out/lib/pkgconfig
-cp zstd.h zdict.h zstd_errors.h /out/include/
-cp libzstd.a /out/lib/
-cat > /out/lib/pkgconfig/libzstd.pc <<PC
-prefix=$LIVE
-libdir=\${prefix}/lib
-includedir=\${prefix}/include
-
-Name: zstd
-Description: fast lossless compression algorithm library
-Version: $VERSION
-Libs: -L\${libdir} -lzstd
-Cflags: -I\${includedir}
-PC
+cd "zstd-$VERSION"
+make -j"$JOBS" -C lib libzstd PREFIX="$LIVE"
+make -j"$JOBS" -C programs zstd PREFIX="$LIVE"
+make -C lib install-shared install-includes install-pc PREFIX="$LIVE" DESTDIR=/tmp/dest
+mkdir -p /out/bin
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" /out/
+cp programs/zstd /out/bin/
