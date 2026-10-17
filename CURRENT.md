@@ -4,20 +4,25 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-16 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R15 in [docs/decisions.md](docs/decisions.md)
+**As of:** 2026-10-17 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+· decisions R1–R16 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **Phase 7, agent surface.** MCP and agent tooling over `oath --json`.
-   Next: a spec in `docs/specs/` for the adapter, then build it.
+1. **Phase 7, agent surface (R16).** The spec is
+   [docs/specs/agent.md](docs/specs/agent.md): `oath mcp` over SSH, one
+   tool per verb, then a real-model check. Next: its step 1, `oath mcp`
+   in `crates/oath/src/mcp.rs` (both MCP eras, every tool,
+   `--read-only`), `oath logs --json`, `oath log -n`, `--via` and
+   `confirm` in the apply log, unit tests, the five `mcp-*` cases;
+   done when the QEMU harness passes.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
    `cargo make install --usb` stick, or `cargo make update` once it
    runs an Oath base.
 
-**State:** phases 1–5 are done; phase 6 is active
+**State:** phases 1–5 are done; phases 6 (buccina left) and 7 are active
 ([docs/roadmap.md](docs/roadmap.md)). On 2026-10-16 every target in the
 specs short of phase 8 was built: the spec/status split (R14), source
 beside each pack on origins (R13), probation with automatic rollback,

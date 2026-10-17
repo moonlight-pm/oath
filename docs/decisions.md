@@ -31,6 +31,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R13 | An origin carries each package's source beside it: `cargo make publish` copies the plan that built a pack and the `-src` pack that plan pins, for every published package, GPL or not. | Decided by Joshua 2026-10-16; done |
 | R14 | Spec and status split: every kind that converges keeps the spec it last applied (`applied.json`), and drift and undo read only spec; status (`actual`) is observation only and lives on a tmpfs at `/oath/status`, rebuilt at every boot, outside every snapshot. History that must survive (generation records, a service's last-run record) stays on disk with the spec or the log. | Decided by Joshua 2026-10-16 (option "B then C"); done |
 | R15 | The screen: when no desk is installed, the screen and keyboard (tty1) are a login shell as `home` (`svc:screen` in the `base` seed; root through `sudo`); a desk profile turns it off and owns the display. The serial console stays root. | Decided by Joshua 2026-10-16; done |
+| R16 | The agent surface is `oath mcp`: an MCP server on stdin and stdout, run on each machine over SSH as `home` (`ssh -T home@host oath mcp`), each tool one `oath --json` verb (writes through `sudo`). Acceptance is a real model given only that server and a task (`cargo make check --agent`, opt-in, an API key in novus's environment, never committed). A resident agent stays out of core, as a payload. Spec: [specs/agent.md](specs/agent.md). | Decided by Joshua 2026-10-17; target |
 
 ## Standing
 

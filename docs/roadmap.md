@@ -98,9 +98,13 @@ Devices are discovered and hot-plugged, and `cargo make update` moves
 an installed machine to a new output without a reinstall
 (2026-10-16). Left: buccina (parked by Joshua).
 
-## 7. Agent surface — next
+## 7. Agent surface — active
 
-MCP and agent tooling over `oath --json` (the old "Phase 5").
+MCP and agent tooling over `oath --json` (the old "Phase 5"). Decided
+2026-10-17 (R16), spec in [specs/agent.md](specs/agent.md): `oath mcp`
+on each machine over SSH, one tool per verb, and an opt-in check where
+a real model that has never seen Oath is given only that server and a
+task. Done when that check passes in QEMU and on canto.
 
 ## 8. Native desk — planned
 

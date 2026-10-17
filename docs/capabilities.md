@@ -7,14 +7,14 @@ this file under 800 words. Update a row in the same change as the code.
 **Status:** `shipped` works and is tested · `partial` works with listed
 gaps · `target` designed, not built.
 
-**As of:** 2026-10-16
+**As of:** 2026-10-17
 
 ## Core
 
 | Capability | Status | Works | Main gaps |
 |---|---|---|---|
 | Catalog | shipped | `kind:name` objects: spec (desired, applied, meta) on disk, status on a tmpfs rebuilt each boot (R14); schemas generated from the Rust types; generated `INDEX.md`; locked atomic writes; typed `set`; `oath new` (fills defaults) / `oath rm` | — |
-| `oath` CLI | shipped | `ls get set new rm diff apply keep undo verify log logs schema fmt build`, `--json`; bare `oath` prints the INDEX; apply returns after PID 1 converged | MCP adapter is roadmap phase 7 |
+| `oath` CLI | shipped | `ls get set new rm diff apply keep undo verify log logs schema fmt build`, `--json`; bare `oath` prints the INDEX; apply returns after PID 1 converged | `oath mcp` (phase 7): target, [specs/agent.md](specs/agent.md) |
 | Generations | shipped | checks before the snapshot; every outcome logged; undo restores only the touched objects' spec; lockout-class changes go on probation until `oath keep` from a new session; power alone takes no generation | — |
 | Services (PID 1) | shipped | runs only applied specs; per-service logs; exit codes, backoff, `failed` with a `reason`; a cgroup per service; shutdown in reverse `wants` order; a cycle skips only its members; a main-loop panic re-executes PID 1, services untouched | — |
 | Packages | partial | hash-in-path store, `/bin` farm, pins, `needs` graph, components + advisories, fetch by `url`; publish: profile packages with licence, plan and source pack; apply and `oath verify` (each boot) re-hash linked trees | RPATHs to hash paths wait for dynamic packs |
