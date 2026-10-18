@@ -56,8 +56,11 @@ Desired is what the owner is staging; PID 1 never reads it while an
 The base profile seeds `svc:serial` (root shell on the serial console;
 it idles on a machine with no UART), `svc:screen` (a login shell as
 `home` on tty1, the screen and keyboard; R15), `svc:sshd`, and
-`svc:time`. A desk profile (phase 8) will set `svc:screen`
-`enabled: false` and own the display.
+`svc:time`. The `desk` profile (R20) adds `svc:seatd` (root) and
+`svc:rivulet` (as `home`, wanting `svc:seatd`) and sets `svc:screen`
+`enabled: false`: the compositor owns the display. Services start
+before the deferred display modules load; rivulet waits up to 10 s for
+a KMS device, and a restart covers a GPU that takes longer.
 
 ## Spawn environment (built)
 

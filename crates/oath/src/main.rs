@@ -97,6 +97,9 @@ enum Cmd {
     /// as (all packages, or the ids given). Exit 1 if any is damaged.
     Verify {
         ids: Vec<String>,
+        /// Print only damaged packages and the count (PID 1's boot check).
+        #[arg(short, long)]
+        quiet: bool,
     },
     Undo {
         /// PID 1's rollback: undo only the apply on probation, and only once
@@ -491,7 +494,7 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Verify { ids }) => {
+        Some(Cmd::Verify { ids, quiet }) => {
             let ids = if ids.is_empty() {
                 None
             } else {
@@ -508,7 +511,9 @@ fn run() -> oath_core::Result<i32> {
             } else {
                 for r in &results {
                     if r.verified.ok {
-                        println!("{} ok {}", r.id, r.hash);
+                        if !quiet {
+                            println!("{} ok {}", r.id, r.hash);
+                        }
                     } else {
                         println!("{} DAMAGED: {} hashes to {}", r.id, r.hash, r.verified.got);
                     }

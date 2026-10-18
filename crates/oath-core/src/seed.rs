@@ -16,8 +16,11 @@ use crate::error::{Error, Result};
 use crate::kinds::Meta;
 use crate::{write_json, ObjectId, KIND_SSH, KIND_SVC};
 
-/// Built-in profiles. `base` is a headless machine you reach over SSH.
-pub const PROFILES: &[(&str, &str)] = &[("base", include_str!("../seed/base.json"))];
+/// Built-in profiles. `base` is a headless machine you reach over SSH;
+/// `desk` adds the graphical session (rivulet, seatd) and turns the
+/// screen's shell off.
+pub const PROFILES: &[(&str, &str)] =
+    &[("base", include_str!("../seed/base.json")), ("desk", include_str!("../seed/desk.json"))];
 
 pub const DEFAULT_PROFILE: &str = "base";
 
@@ -59,6 +62,11 @@ impl Profile {
     /// what `cargo make publish` may put on an origin.
     pub fn pkgs(&self) -> Vec<String> {
         self.objects.keys().filter_map(|id| id.strip_prefix("pkg:")).map(str::to_string).collect()
+    }
+
+    /// Every object the profile seeds.
+    pub fn ids(&self) -> Vec<String> {
+        self.objects.keys().cloned().collect()
     }
 
     /// `pkg:*` objects the profile wants present. The image packs these.
@@ -275,6 +283,16 @@ mod tests {
             assert!(p.objects.contains_key("host:local"), "{name}");
             assert!(p.objects.contains_key("svc:sshd"), "{name}");
         }
+    }
+
+    #[test]
+    fn desk_turns_the_screen_off_and_ships_rivulet() {
+        let p = Profile::load("desk").unwrap();
+        assert_eq!(p.objects["svc:screen"]["enabled"], json!(false));
+        assert_eq!(p.objects["svc:screen"]["user"], json!("home"));
+        assert_eq!(p.objects["svc:rivulet"]["wants"], json!(["svc:seatd"]));
+        let pkgs = p.present_pkgs();
+        assert!(["rivulet", "seatd", "mesa", "bash"].iter().all(|n| pkgs.contains(&n.to_string())));
     }
 
     #[test]

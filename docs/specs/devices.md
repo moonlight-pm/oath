@@ -62,7 +62,10 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   needs another blob gets a line there.
 - devtmpfs populates `/dev`. There is no udev. After every discovery
   pass PID 1 sets `/dev/null`, `zero`, `full`, `tty`, `ptmx`, `random`
-  and `urandom` to mode 0666, whatever devtmpfs made them.
+  and `urandom` to mode 0666, whatever devtmpfs made them, and the GPU
+  render nodes (`/dev/dri/renderD*`) too, again whenever a `drm` device
+  is added: GL clients open them themselves. Display (`card*`) and
+  input nodes stay root's 0600; seatd opens those for the desk (R20).
 
 ## Hotplug (built)
 
@@ -71,7 +74,10 @@ coldplug (4 MiB buffer, so boot's burst is kept) and drains it every
 loop. An `add` with a `MODALIAS` loads what the alias resolves to, with
 the coldplug index, display and sound included (boot is over); each
 load is logged `hotplug: <module> for <alias>`. Block, net and tty
-events schedule discovery. devtmpfs makes the nodes.
+events schedule discovery. devtmpfs makes the nodes. Every kernel
+uevent is passed on, unchanged, to netlink group 4, where udevd would
+rebroadcast it: libudev-zero's monitors listen there, so libinput sees
+input devices come and go and wlroots sees a GPU appear.
 
 ## Unix floor (built)
 
@@ -87,9 +93,9 @@ Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
 
 ## Target
 
-- **Rules as fields.** Ownership and mode of device nodes (for a future
-  graphical seat) and filesystems to mount (for a payload's data
-  volume) become fields on catalog objects, not code in PID 1.
+- **Rules as fields.** Ownership and mode of device nodes (sound for
+  the desk) and filesystems to mount (for a payload's data volume)
+  become fields on catalog objects, not code in PID 1.
 
 ## Courage test
 

@@ -1,0 +1,213 @@
+{
+  "extends": "base",
+  "objects": {
+    "svc:screen": {
+      "enabled": false
+    },
+    "svc:seatd": {
+      "exec": [
+        "/bin/seatd",
+        "-u",
+        "home",
+        "-g",
+        "home"
+      ],
+      "wants": [],
+      "restart": "always",
+      "enabled": true
+    },
+    "svc:rivulet": {
+      "exec": [
+        "/bin/rivulet",
+        "-log-level",
+        "info",
+        "-c",
+        ":"
+      ],
+      "wants": [
+        "svc:seatd"
+      ],
+      "restart": "always",
+      "enabled": true,
+      "user": "home",
+      "env": {
+        "LIBSEAT_BACKEND": "seatd"
+      }
+    },
+    "pkg:elfutils": {
+      "present": true,
+      "description": "libelf from elfutils, shared (objtool in the kernel build; Mesa's radeonsi).",
+      "home": "https://sourceware.org/elfutils/"
+    },
+    "pkg:expat": {
+      "present": true,
+      "description": "libexpat, shared: wayland-scanner's and Mesa's XML parser.",
+      "home": "https://libexpat.github.io/"
+    },
+    "pkg:gcc": {
+      "present": true,
+      "description": "GCC 16 (C, C++) and binutils 2.47. cc / c++ link dynamically against glibc through /lib.",
+      "home": "https://gcc.gnu.org/"
+    },
+    "pkg:libdisplay-info": {
+      "present": true,
+      "description": "libdisplay-info, shared, and di-edid-decode: EDID and DisplayID parsing for wlroots.",
+      "home": "https://gitlab.freedesktop.org/emersion/libdisplay-info"
+    },
+    "pkg:libdrm": {
+      "present": true,
+      "description": "libdrm, shared, with libdrm_amdgpu and libdrm_radeon.",
+      "home": "https://gitlab.freedesktop.org/mesa/drm"
+    },
+    "pkg:libepoxy": {
+      "present": true,
+      "description": "libepoxy, shared: GL function loading for Xwayland's glamor, through EGL.",
+      "home": "https://github.com/anholt/libepoxy"
+    },
+    "pkg:libevdev": {
+      "present": true,
+      "description": "libevdev, shared: how libinput reads input devices.",
+      "home": "https://www.freedesktop.org/wiki/Software/libevdev/"
+    },
+    "pkg:libffi": {
+      "present": true,
+      "description": "libffi, shared: the Wayland libraries' calls into handlers.",
+      "home": "https://sourceware.org/libffi/"
+    },
+    "pkg:libfontenc": {
+      "present": true,
+      "description": "libfontenc, shared: font encodings for libXfont2.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libinput": {
+      "present": true,
+      "description": "libinput, shared, and the libinput tool: input devices for wlroots.",
+      "home": "https://gitlab.freedesktop.org/libinput/libinput"
+    },
+    "pkg:libudev-zero": {
+      "present": true,
+      "description": "libudev-zero: libudev's API over sysfs and netlink, with no udev daemon (libinput, wlroots).",
+      "home": "https://github.com/illiliti/libudev-zero"
+    },
+    "pkg:libx11": {
+      "present": true,
+      "description": "libX11 and libX11-xcb, shared, with the compose and locale data.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxau": {
+      "present": true,
+      "description": "libXau, shared: X authorization records.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxcb": {
+      "present": true,
+      "description": "libxcb, shared, with every extension library (composite, glx, dri3, present, render, res, xfixes, ...).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxcvt": {
+      "present": true,
+      "description": "libxcvt, shared, and cvt: VESA CVT modelines (Xwayland's mode list).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxext": {
+      "present": true,
+      "description": "libXext, shared: X extension calls (Mesa's GLX).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxfixes": {
+      "present": true,
+      "description": "libXfixes, shared: the XFIXES extension (Mesa's gl.pc names it).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxfont2": {
+      "present": true,
+      "description": "libXfont2, shared, without FreeType: Xwayland's built-in fonts.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxkbcommon": {
+      "present": true,
+      "description": "libxkbcommon, shared: keymaps and key state, reading xkeyboard-config's data.",
+      "home": "https://xkbcommon.org/"
+    },
+    "pkg:libxkbfile": {
+      "present": true,
+      "description": "libxkbfile, shared: XKB file handling for xkbcomp.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxshmfence": {
+      "present": true,
+      "description": "libxshmfence, shared: the DRI3 fences Xwayland and GLX share.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxxf86vm": {
+      "present": true,
+      "description": "libXxf86vm, shared: XF86VidMode, which Mesa's direct GLX calls.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:mesa": {
+      "present": true,
+      "description": "Mesa: radeonsi and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX).",
+      "home": "https://mesa3d.org/"
+    },
+    "pkg:mpc": {
+      "present": true,
+      "description": "MPC, multiple-precision complex arithmetic (GCC).",
+      "home": "https://www.multiprecision.org/mpc/"
+    },
+    "pkg:nettle": {
+      "present": true,
+      "description": "Nettle, shared, without public-key code: Xwayland's SHA-1.",
+      "home": "https://www.lysator.liu.se/~nisse/nettle/"
+    },
+    "pkg:pixman": {
+      "present": true,
+      "description": "pixman, shared: wlroots' software renderer and buffer maths.",
+      "home": "https://pixman.org/"
+    },
+    "pkg:rivulet": {
+      "present": true,
+      "description": "rivulet, Oath's Wayland compositor: River 0.4.5 ported to C, with Xwayland.",
+      "home": "https://github.com/moonlight-pm/oath"
+    },
+    "pkg:seatd": {
+      "present": true,
+      "description": "seatd and libseat: who may open the GPU and input devices (wlroots' session).",
+      "home": "https://sr.ht/~kennylevinsen/seatd/"
+    },
+    "pkg:wayland": {
+      "present": true,
+      "description": "Wayland: libwayland-client, -server, -cursor and -egl, and wayland-scanner.",
+      "home": "https://wayland.freedesktop.org/"
+    },
+    "pkg:wlroots": {
+      "present": true,
+      "description": "wlroots, shared: the compositor library under rivulet (DRM, libinput, GLES2, Xwayland).",
+      "home": "https://gitlab.freedesktop.org/wlroots/wlroots"
+    },
+    "pkg:xcb-util-errors": {
+      "present": true,
+      "description": "xcb-util-errors, shared: X11 error names in wlroots' logs.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:xcb-util-wm": {
+      "present": true,
+      "description": "xcb-util-wm, shared: libxcb-icccm and libxcb-ewmh (wlroots' Xwayland window manager).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:xkbcomp": {
+      "present": true,
+      "description": "xkbcomp, which Xwayland runs to compile every keymap.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:xkeyboard-config": {
+      "present": true,
+      "description": "xkeyboard-config: the XKB keyboard layouts, models and rules.",
+      "home": "https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config"
+    },
+    "pkg:xwayland": {
+      "present": true,
+      "description": "Xwayland: X11 clients under rivulet, with glamor on GBM and GLX.",
+      "home": "https://gitlab.freedesktop.org/xorg/xserver"
+    }
+  }
+}

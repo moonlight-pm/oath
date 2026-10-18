@@ -1205,10 +1205,7 @@ fn observe_rebuilds_package_status_from_the_store() {
     assert_eq!(a["removable"], true);
     assert_eq!(a["description"], "Canary. /bin/hello prints hello.");
     let bash = cat.get(&"pkg:bash".parse().unwrap()).unwrap().actual;
-    assert_eq!(
-        (bash["present"].clone(), bash["removable"].clone()),
-        (json!(false), json!(false))
-    );
+    assert_eq!((bash["present"].clone(), bash["removable"].clone()), (json!(false), json!(false)));
     let cur = cat.get(&"snap:current".parse().unwrap()).unwrap().actual;
     assert_eq!(cur["generation"], 1);
 }

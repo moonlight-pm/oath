@@ -1,7 +1,9 @@
 //! Hotplug: PID 1 reads the kernel's uevents (netlink), loads the driver an
 //! added device asks for with the same index as coldplug, and has the
 //! `dev:*` inventory discovered again when a disk, NIC or serial port
-//! comes or goes. devtmpfs makes the nodes; there is no udev.
+//! comes or goes. devtmpfs makes the nodes; there is no udev. PID 1 passes
+//! each uevent on to group 4, where udevd would, for libudev-zero's
+//! monitors (libinput and wlroots hear hotplug there).
 
 use std::collections::HashSet;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
@@ -19,6 +21,8 @@ use crate::modules::{self, Index};
 const SETTLE: Duration = Duration::from_secs(1);
 /// The catalog was busy: try again after this.
 const BUSY: Duration = Duration::from_secs(2);
+/// The netlink group libudev's "udev" monitors listen on.
+const UDEV_GROUP: u32 = 4;
 
 pub struct Hotplug {
     sock: Option<OwnedFd>,
@@ -97,6 +101,9 @@ impl Hotplug {
             {
                 self.rediscover = Some(Instant::now() + SETTLE);
             }
+            if ev.subsystem == "drm" && ev.action == "add" {
+                crate::open_render_nodes();
+            }
         }
         if !aliases.is_empty() {
             self.load(&aliases);
@@ -120,6 +127,7 @@ impl Hotplug {
                 break;
             }
             if let Some(ev) = parse(&buf[..n as usize]) {
+                forward(sock, &buf[..n as usize]);
                 out.push(ev);
             }
         }
@@ -146,6 +154,26 @@ impl Hotplug {
                 }
             }
         }
+    }
+}
+
+/// Send a kernel uevent, unchanged, to [`UDEV_GROUP`]. libudev-zero takes
+/// it there (it reads `KEY=value` fields and skips the `action@devpath`
+/// head); nothing listens when no desk runs.
+fn forward(sock: &OwnedFd, msg: &[u8]) {
+    let mut addr: libc::sockaddr_nl = unsafe { std::mem::zeroed() };
+    addr.nl_family = libc::AF_NETLINK as u16;
+    addr.nl_groups = UDEV_GROUP;
+    // SAFETY: msg and addr outlive the call; an error (no listener) is ignored.
+    unsafe {
+        libc::sendto(
+            sock.as_raw_fd(),
+            msg.as_ptr().cast(),
+            msg.len(),
+            libc::MSG_DONTWAIT,
+            (&addr as *const libc::sockaddr_nl).cast(),
+            std::mem::size_of::<libc::sockaddr_nl>() as u32,
+        );
     }
 }
 

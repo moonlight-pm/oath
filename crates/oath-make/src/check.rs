@@ -11,7 +11,7 @@
 //! to the generation the case started from and requires `oath diff` to be
 //! in-sync; a machine left otherwise stops the run.
 
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, VecDeque};
 use std::fs;
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -57,6 +57,10 @@ pub struct Case {
     /// QEMU-specific and leaves no change that `oath undo` cannot take back.
     #[serde(default)]
     pub metal: bool,
+    /// Runs only on an image of this seed profile (`base`, `desk`); by
+    /// default on every profile.
+    #[serde(default)]
+    pub profile: Option<String>,
     pub steps: Vec<Step>,
 }
 
@@ -164,6 +168,8 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     }
     let tools = crate::tools::load(root)?;
     let output = crate::output::pick(out, opts.output.as_deref(), false)?;
+    let profile = output_profile(&output.dir)?;
+    let cases = for_profile(cases, &profile)?;
     let img = qemu::load_image(&output.dir)?;
     let base = out.join("check");
     fs::create_dir_all(&base)?;
@@ -174,7 +180,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     serve_fetchme(fetchme)?;
 
     eprintln!(
-        "check: output {}, {} cases, {} at a time, logs in {}",
+        "check: output {} ({profile}), {} cases, {} at a time, logs in {}",
         output.id,
         cases.len(),
         opts.jobs,
@@ -278,6 +284,42 @@ pub fn require_checked(output: &Path) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// The seed profile a build output was packed from (its manifest).
+fn output_profile(dir: &Path) -> Result<String> {
+    let m: serde_json::Value = serde_json::from_slice(
+        &fs::read(dir.join("manifest.json")).context("the output's manifest.json")?,
+    )?;
+    Ok(m["profile"].as_str().unwrap_or(oath_core::DEFAULT_PROFILE).to_string())
+}
+
+/// The cases for `profile`: those that name no profile, or this one.
+fn for_profile(cases: Vec<Case>, profile: &str) -> Result<Vec<Case>> {
+    let cases: Vec<Case> =
+        cases.into_iter().filter(|c| c.profile.as_deref().is_none_or(|p| p == profile)).collect();
+    if cases.is_empty() {
+        bail!("none of the chosen cases runs on profile {profile}");
+    }
+    Ok(cases)
+}
+
+/// A machine's profile, from its catalog: the largest seed profile whose
+/// objects it all has (an overlay only adds). `base` when none fits.
+fn machine_profile(conn: &Conn) -> Result<String> {
+    let ls = ssh(conn, "oath ls", Duration::from_secs(30));
+    if ls.code != 0 {
+        bail!("`oath ls` failed (exit {}): {}", ls.code, ls.text);
+    }
+    let have: BTreeSet<&str> = ls.text.lines().map(str::trim).collect();
+    let mut best = (0, oath_core::DEFAULT_PROFILE.to_string());
+    for (name, _) in oath_core::PROFILES {
+        let ids = oath_core::Profile::load(name).map_err(|e| anyhow::anyhow!("{e}"))?.ids();
+        if ids.len() > best.0 && ids.iter().all(|id| have.contains(id.as_str())) {
+            best = (ids.len(), name.to_string());
+        }
+    }
+    Ok(best.1)
 }
 
 pub fn load_cases(path: &Path) -> Result<Vec<Case>> {
@@ -645,9 +687,15 @@ fn run_target(out: &Path, cases: Vec<Case>, target: &str) -> Result<i32> {
     if cases.is_empty() {
         bail!("none of the chosen cases is marked `metal`");
     }
+    let profile = machine_profile(&conn)?;
+    let cases = for_profile(cases, &profile)?;
     let dir = out.join("check").join(format!("{}-{}", utc_stamp(), r.host));
     fs::create_dir_all(&dir)?;
-    eprintln!("check: {} cases on {target}, one at a time, logs in {}", cases.len(), dir.display());
+    eprintln!(
+        "check: {} cases on {target} ({profile}), one at a time, logs in {}",
+        cases.len(),
+        dir.display()
+    );
     let mut results = Vec::new();
     for case in &cases {
         let (o, left) = run_target_case(&conn, case, &dir);

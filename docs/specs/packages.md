@@ -50,8 +50,9 @@ parts of T24 and T35.
   INDEX, which lists damaged packages under `## Store damage`; a
   damaged package's status is `error`. It exits 1 if any is damaged.
   Without the lock it only reports.
-- PID 1 runs `oath verify` once per boot, after `ready`, as a task: the
-  hashing never delays boot, and its report goes to `init.log`.
+- PID 1 runs `oath verify --quiet` once per boot, after `ready`, as a
+  task: the hashing never delays boot, and its report (damaged packages
+  and the count) goes to `init.log`.
 
 ## Object (built)
 

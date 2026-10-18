@@ -6,9 +6,9 @@ built natively from `pkgs/`, with Sola on top. It is phase 8 of the
 [roadmap](../roadmap.md); the Steam and Minecraft desk
 ([scope.md](scope.md)) builds on it.
 
-**Status:** packages built on the build host 2026-10-18 and rivulet
-runs in the build sandbox; not yet in a profile, not yet run on a
-machine.
+**Status:** built and running on canto since 2026-10-18 (the `desk`
+profile, R20): rivulet drives DP-10 with radeonsi on ACO, input comes
+through seatd, and Xwayland serves X clients. Sola is not there yet.
 
 ## Packages (built)
 
@@ -58,6 +58,33 @@ How they fit the sandbox:
 - Mesa has GLX, so there is a `libGL`: libepoxy aborts when Xwayland's
   glamor makes a desktop GL context and no `libGL` exists.
 
+## Seat and profile (built)
+
+The `desk` seed profile (R20) extends `base`:
+
+- `svc:seatd` (root, `seatd -u home -g home`) opens the KMS device
+  (`/dev/dri/card*`) and the input devices for whoever holds the seat,
+  and takes them back on a VT switch.
+- `svc:rivulet` runs `rivulet -log-level info -c :` as `home`, wanting
+  `svc:seatd`, with `LIBSEAT_BACKEND=seatd`. Its log is
+  `oath logs svc:rivulet`.
+- `svc:screen` is off: the compositor owns tty1's display.
+- rivulet's 35 packages, `pkg:gcc` among them (Mesa's libstdc++).
+
+PID 1 does what udevd would for the seat: render nodes are mode 0666
+(GL clients and wlroots open them directly) and every kernel uevent is
+passed on to netlink group 4 for libudev-zero ([devices.md](devices.md)).
+Services start before the deferred display modules load; wlroots waits
+up to 10 s for a KMS device to appear there, and `restart: always`
+covers a GPU that takes longer.
+
+When wlroots cannot make a GPU renderer (QEMU's virtio-gpu has no Mesa
+driver here), rivulet falls back to pixman instead of exiting, so the
+desk image runs in QEMU too. The `desk` check case (`profile = "desk"`,
+metal) asserts seatd and rivulet run, rivulet holds a `card` and
+`event` nodes that seatd opened, a connector is connected, render nodes
+are 0666, and an X client gets a keymap through Xwayland.
+
 ## Signatures to watch
 
 Seven keys were added for the desk (Joshua, 2026-10-18). Facts that
@@ -94,28 +121,23 @@ a sha256 mismatch on one of those is not by itself an attack.
 
 ## Known defects
 
-- Nothing has run on a machine yet: the DRM and libinput backends, the
-  seat, radeonsi on canto's Pitcairn GPUs and glamor are untested.
+- No window manager runs yet (Sola is next), so nothing maps a window
+  and rivulet's output is empty.
+- The desk image carries all of `pkg:gcc` (393 MB) because Mesa loads
+  libstdc++ and libgcc_s; a runtime-only split of GCC's libraries would
+  save it.
 - Xwayland admits local clients by user name (`si:localuser`), so the
   desk user needs an `/etc/passwd` entry, and wlroots' shm buffers need
   `/dev/shm`. A machine has both (PID 1 mounts `/dev/shm`); the build
   sandbox has neither, so `sandbox.sh` makes them.
-- libudev-zero listens for hotplug on netlink group 4, not the
-  kernel's group 1, so libinput sees only the devices present at start
-  until something rebroadcasts uevents. It always reports devices as
-  initialized and lacks udev's rule-made properties (`ID_INTEGRATION`,
-  `LIBINPUT_DEVICE_GROUP`, calibration), so libinput falls back to its
-  quirks.
+- libudev-zero always reports devices as initialized and lacks udev's
+  rule-made properties (`ID_INTEGRATION`, `LIBINPUT_DEVICE_GROUP`,
+  calibration), so libinput falls back to its quirks.
 - rivulet keeps three upstream River bugs (see
   [apps/rivulet/README.md](../../apps/rivulet/README.md)).
 
 ## Target
 
-- **The seat.** Who opens `/dev/dri` and `/dev/input`: seatd as a
-  service, or libseat's noop backend with PID 1 granting the desk user
-  the nodes. PID 1 rebroadcasts uevents for libudev-zero.
-- **Services.** `svc:rivulet` and the Sola session in a desk profile
-  that owns the screen (R15).
 - **Sola natively.** oath-sola starts and reaps `rivulet`, not `river`
   (`forks/sola/crates/sola/src/river.rs`); then audio, fonts and Sola's
   own packages.

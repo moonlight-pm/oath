@@ -190,7 +190,7 @@ fn real_main() -> Result<(), String> {
     tel("init", "ready", json!({ "kver": kver() }));
     // The store's integrity, once a boot, off the boot path: every linked
     // package tree is hashed again against its pin.
-    sup.run_task("verify", &["/bin/oath", "verify"]);
+    sup.run_task("verify", &["/bin/oath", "verify", "--quiet"]);
     run(sup, listener, hot, Vec::new())
 }
 
@@ -298,6 +298,19 @@ fn open_dev_nodes() {
     let tty = "/dev/tty1";
     let _ = std::os::unix::fs::chown(tty, Some(oath_core::seat::UID), Some(oath_core::seat::GID));
     let _ = fs::set_permissions(tty, fs::Permissions::from_mode(0o600));
+    open_render_nodes();
+}
+
+/// GPU render nodes are open to every process: GL clients and wlroots
+/// open them themselves. Display (`card*`) and input nodes stay root's;
+/// seatd opens those for the desk.
+pub(crate) fn open_render_nodes() {
+    let Ok(dir) = fs::read_dir("/dev/dri") else { return };
+    for e in dir.flatten() {
+        if e.file_name().to_string_lossy().starts_with("renderD") {
+            let _ = fs::set_permissions(e.path(), fs::Permissions::from_mode(0o666));
+        }
+    }
 }
 
 /// Coldplug by modalias; with `defer_kms`, display and sound wait.

@@ -1,8 +1,9 @@
 # Only libelf is built: objtool, which every x86_64 kernel build runs,
-# links it. A build tool; not in the base image.
+# links it, and so does Mesa's radeonsi. Not in the base image; the desk
+# ships it.
 version = "0.196"
 license = "GPL-2.0-or-later OR LGPL-3.0-or-later"
-description = "libelf from elfutils, shared (the kernel build's objtool)."
+description = "libelf from elfutils, shared (objtool in the kernel build; Mesa's radeonsi)."
 home = "https://sourceware.org/elfutils/"
 purl = "pkg:generic/elfutils@0.196"
 build = ["pkgconf", "zlib"]

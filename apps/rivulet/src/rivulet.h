@@ -57,6 +57,7 @@
 
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/render/allocator.h>
+#include <wlr/render/pixman.h>
 #include <wlr/render/wlr_renderer.h>
 
 #include <wlr/types/wlr_alpha_modifier_v1.h>

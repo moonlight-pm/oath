@@ -69,6 +69,9 @@ build sandbox: rivulet headless on pixman, and as its init an X client
   session starts and reaps a binary named `river`
   (`forks/sola/crates/sola/src/river.rs`), so oath-sola must name
   `rivulet` there.
+- When wlroots cannot make a GPU renderer and `WLR_RENDERER` is unset,
+  rivulet uses the pixman renderer instead of exiting (QEMU's virtio-gpu,
+  a GPU Mesa has no driver for).
 - The render-order hash is FNV-1a 64, not Blake3; only equality is used.
 - With xkbcommon older than 1.12, keymaps compare through
   `xkb_keymap_get_as_string` instead of `…_string2`.

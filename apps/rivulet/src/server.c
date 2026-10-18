@@ -14,6 +14,7 @@
 static int terminate(int signal_number, void *data);
 static bool global_filter(const struct wl_client *client, const struct wl_global *global, void *data);
 static void handle_renderer_lost(struct wl_listener *listener, void *data);
+static struct wlr_renderer *renderer_create(struct wlr_backend *backend);
 static void handle_new_xdg_toplevel(struct wl_listener *listener, void *data);
 static void handle_new_toplevel_decoration(struct wl_listener *listener, void *data);
 #if WLR_HAS_XWAYLAND
@@ -61,7 +62,7 @@ bool rv_server_init(struct rv_server *server, bool runtime_xwayland, const char 
 		*error_name = "BackendCreateFailed";
 		return false;
 	}
-	struct wlr_renderer *renderer = wlr_renderer_autocreate(backend);
+	struct wlr_renderer *renderer = renderer_create(backend);
 	if (renderer == NULL) {
 		*error_name = "RendererCreateFailed";
 		return false;
@@ -393,6 +394,18 @@ static int terminate(int signal_number, void *data) {
 
 static void gpu_reset_recover_idle(void *data);
 
+// Oath: wlroots' renderer, or the pixman one when that fails and no
+// WLR_RENDERER asked for it (a GPU Mesa has no driver for, such as QEMU's
+// virtio-gpu without 3D). River 0.4.5 exits instead.
+static struct wlr_renderer *renderer_create(struct wlr_backend *backend) {
+	struct wlr_renderer *renderer = wlr_renderer_autocreate(backend);
+	if (renderer == NULL && getenv("WLR_RENDERER") == NULL) {
+		rv_err(RV_SCOPE_DEFAULT, "no GPU renderer, falling back to pixman (software)");
+		renderer = wlr_pixman_renderer_create();
+	}
+	return renderer;
+}
+
 static void handle_renderer_lost(struct wl_listener *listener, void *data) {
 	struct rv_server *server = wl_container_of(listener, server, renderer_lost);
 	if (server->gpu_reset_recover != NULL) {
@@ -424,7 +437,7 @@ enum gpu_reset_recover_error {
 
 static enum gpu_reset_recover_error gpu_reset_recover(struct rv_server *server) {
 	rv_info(RV_SCOPE_DEFAULT, "recovering from GPU reset");
-	struct wlr_renderer *new_renderer = wlr_renderer_autocreate(server->backend);
+	struct wlr_renderer *new_renderer = renderer_create(server->backend);
 	if (new_renderer == NULL) {
 		return GPU_RESET_RECOVER_RENDERER_CREATE_FAILED;
 	}

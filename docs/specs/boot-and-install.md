@@ -42,6 +42,10 @@ of T24, and D3 (seed as data).
   (R18), util-linux, iproute2, iputils, dhcpcd, chrony, btrfs, oath,
   dropbear, openssh, dosfstools, curl, vim and the libraries they load. It carries no test fixtures: the image
   the harness checks is the image `install` ships.
+- `desk` extends `base` with the graphical session (R20): `svc:seatd`,
+  `svc:rivulet`, and rivulet's 35 packages (Mesa, wlroots, Xwayland,
+  `pkg:gcc` for libstdc++); `svc:screen` is off. A check case may name
+  the profile it is for (`profile = "desk"`).
 - `cargo make build --profile <p>` builds `pkg:oath` (static, against
   glibc), packs the profile's present packages (each with `needs` for
   the libraries it loads, from the lock), seeds `stage/oath` with

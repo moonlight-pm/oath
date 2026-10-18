@@ -35,6 +35,6 @@ gaps · `target` designed, not built.
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (rivulet, Sola) | partial | rivulet (River in C, R19) and its packages build | Run on canto; the seat; Sola |
+| Desk (rivulet, Sola) | partial | rivulet runs on canto: radeonsi, seatd, Xwayland (R20) | Sola; audio; fonts |
 | Wicket host | target | Left core (R1); Wicket will ship its own packages and overlay. buccina still runs the trial image. |
 | Steam + Minecraft desk | target | Future requirement (R2): native desk, Steam runtime, JVM. |

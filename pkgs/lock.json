@@ -657,8 +657,8 @@
     "version": "0.1.0",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-36a3c9c97b3754d04a71692b1480f12f7117bf56c2cd23f721684f80a67a0bf1",
-    "product": "sha256-4ac4406d10b4251aa44102e8e256ca8ce989e4bf63402d8ce03d56741b0815ab",
+    "plan": "sha256-9a76db9296428238f5cb4d131e90599375e568f09543a00a324f032335a4fb67",
+    "product": "sha256-d029c479ac39c3d68192f753c04fbf604047d37a3ba5c6aeda842da603254ab4",
     "run": [
       "wlroots",
       "wayland",
