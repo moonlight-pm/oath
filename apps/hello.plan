@@ -4,16 +4,36 @@
   "produces": "pkg:hello",
   "build_needs": [
     {
-      "id": "pkg:busybox",
-      "hash": "sha256-5c07428c094578850fa4fbf5ab3eb123d4d563178885cb4b32fae5deaa951d35"
+      "id": "pkg:bash",
+      "hash": "sha256-80f160c2dd44f5d3801bd5627163e4203d513ea9bc1edf70cccb567a34f6c371"
+    },
+    {
+      "id": "pkg:coreutils",
+      "hash": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da"
+    },
+    {
+      "id": "pkg:gcc",
+      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+    },
+    {
+      "id": "pkg:glibc",
+      "hash": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592"
+    },
+    {
+      "id": "pkg:gmp",
+      "hash": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2"
     },
     {
       "id": "pkg:hello-src",
       "hash": "sha256-590eb253ec896fb42c51c17c1de506b8e33fedbfe8a053448756675f575b1e03"
     },
     {
-      "id": "pkg:llvm",
-      "hash": "sha256-bd45ef91795b5c3fe371714d4e13ef1b61e5d167d78040011f091dce30baebbd"
+      "id": "pkg:mpc",
+      "hash": "sha256-877f9c92df8a5af55c48573a0ee1ef5fc055e26c9a14ae866ab8753cbfd1a171"
+    },
+    {
+      "id": "pkg:mpfr",
+      "hash": "sha256-494241b048adac84186882cbd4d973464df07a671aaeebcfdaec9d460976e5e7"
     }
   ],
   "run_needs": []

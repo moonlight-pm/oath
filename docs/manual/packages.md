@@ -97,7 +97,10 @@ A **plan** (`plan:<name>`) is a hashed `plan.plan` file that builds a
 product tree for `pkg:<name>`: a JSON head (`name`, `produces`,
 `build_needs`, `run_needs`, each need pinned by hash) and a `/bin/sh`
 script that writes `/out`. `oath build` runs it in a sandbox with only
-the pinned needs mounted and no network. It does not link `/bin`.
+the pinned needs mounted and no network. Its `/bin` and `/lib` are link
+farms of those packs, as on a machine, so a plan pins every pack its
+tools load: `apps/hello.plan` pins bash, coreutils, gcc and glibc, and
+gmp, mpfr and mpc, which they run with.
 
 ```
 oath fmt -w apps/hello.plan
