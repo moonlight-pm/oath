@@ -5,7 +5,7 @@ Every package that ships in Oath is built from source here (R7 in
 
 | File | What |
 |------|------|
-| `<name>/pkg.toml` | version, licence (SPDX), description, upstream sources pinned by sha256, the packs it builds with (`build`) and needs at runtime (`run`) |
+| `<name>/pkg.toml` | version, licence (SPDX), description, upstream sources pinned by sha256 or a `tree` of this repo, the packs it builds with (`build`) and needs at runtime (`run`) |
 | `<name>/build.sh` | the build, run by `oath build` in the sandbox: no network, nothing from the build host, only the declared packs |
 | `<name>/*` (other files and directories) | configs and patches; the plan sees them under `$FILES` |
 | `<name>/<name>.plan` | generated: the exact plan that was built (source pack and every build pack pinned by hash) |
@@ -40,6 +40,10 @@ key = "m4"                 # pkgs/keys/m4.asc
   checkpoint its inclusion proof leads to.
 - `unsigned = "<why>"`: no signature to check. A package-level
   `unsigned` covers all of its sources that have no `sig` (firmware).
+- `tree = "apps/<dir>"` (package level): first-party source from this
+  repository, not an upstream's. What git tracks or would add there
+  goes into the source pack as `src/<dir>/`, so ignored build output
+  stays out; the manifest names the tree and the commit.
 
 Every fetch checks the sha256 pin, then the signature (cached under
 `build/fetch/sig/`). A key file holds exactly the key that signs the

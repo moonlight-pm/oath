@@ -61,12 +61,14 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
                 "license": crate::oath_pkg::license(root, &tree)?,
                 "plan": b.plan,
                 "ships_in": places,
-                "commit": commit(root),
+                "commit": commit(root, crate::oath_pkg::TREE),
             })
         } else {
             let e =
                 lock.get(&name).with_context(|| format!("pkg:{name} is not in pkgs/lock.json"))?;
             let p = all.get(&name).with_context(|| format!("pkgs/{name}/pkg.toml"))?;
+            let tree =
+                p.tree.iter().map(|t| json!({ "tree": t, "commit": commit(root, &[t.as_str()]) }));
             let sources: Vec<Value> = p
                 .source
                 .iter()
@@ -82,6 +84,7 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
                     }
                     v
                 })
+                .chain(tree)
                 .collect();
             json!({
                 "hash": e.product,
@@ -105,8 +108,9 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
     Ok(m)
 }
 
-/// HEAD of this tree, with `-dirty` when what pkg:oath packs has changed.
-fn commit(root: &Path) -> String {
+/// HEAD of this tree, with `-dirty` when what a pack is made from (`paths`)
+/// has changed.
+fn commit(root: &Path, paths: &[&str]) -> String {
     let git = || {
         let mut c = Command::new("git");
         c.arg("-C").arg(root);
@@ -115,7 +119,7 @@ fn commit(root: &Path) -> String {
     let Ok(head) = run_out(git().args(["rev-parse", "HEAD"])) else {
         return "unknown".into();
     };
-    let dirty = run_out(git().args(["status", "--porcelain", "--"]).args(crate::oath_pkg::TREE))
+    let dirty = run_out(git().args(["status", "--porcelain", "--"]).args(paths))
         .map_or(true, |s| !s.is_empty());
     if dirty {
         format!("{head}-dirty")
