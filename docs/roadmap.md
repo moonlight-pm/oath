@@ -99,7 +99,7 @@ Devices are discovered and hot-plugged, and `cargo make update` moves
 an installed machine to a new output without a reinstall
 (2026-10-16). Left: buccina (parked by Joshua).
 
-## 7. Agent surface — active
+## 7. Agent surface — done (2026-10-18)
 
 MCP and agent tooling over `oath --json` (the old "Phase 5"). Decided
 2026-10-17 (R16), spec in [specs/agent.md](specs/agent.md): `oath mcp`
@@ -110,6 +110,9 @@ task. Done when that check passes in QEMU and on canto.
 Built (2026-10-17): `oath mcp` in both MCP eras with every verb as a
 tool, `--read-only`, `actor.via` and `confirm` in the apply log, and
 `cargo make check --agent` with the five tasks of `check/agent.toml`.
+Done 2026-10-18: haiku passed all five tasks on canto (output
+`e3a11645f14c`) and in QEMU (output `218fd2e1e03b`), and canto runs
+`218fd2e1e03b`.
 
 ## 8. Native desk — active
 
@@ -121,8 +124,8 @@ binutils 2.47 and glibc 2.44, programs link dynamically through a
 `/lib` farm, and Clang/LLVM, musl and busybox are gone; the base is the
 GNU userland with util-linux, iproute2, dhcpcd, chrony and vim
 ([specs/builds.md](specs/builds.md)). canto was reinstalled with it on
-2026-10-18 and passes every metal case. Open: River is written in Zig,
-which R9 rules out.
+2026-10-18 and passes every metal case. River becomes a hard fork
+without Zig (Joshua, 2026-10-18); its form is open.
 
 ## 9. Steam + Minecraft desk — planned
 

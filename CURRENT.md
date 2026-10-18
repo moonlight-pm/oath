@@ -9,26 +9,24 @@ append history (git has it).
 
 ## Now
 
-1. **Phase 7, agent surface (R16).** `oath mcp` and
-   `cargo make check --agent` are built
-   ([docs/specs/agent.md](docs/specs/agent.md)); canto passed all five
-   agent tasks with haiku on `e3a11645f14c`, before R17. The key in
-   this session's environment is refused, so Joshua runs it. Next:
-   `cargo make check --agent` in QEMU on `218fd2e1e03b`; when all five
-   pass, phase 7 is done (flip it in the roadmap).
-2. **Phase 8 slice 2: the desk.** Mesa (ACO, no LLVM), Wayland,
-   wlroots and Sola as plans. Open first: River is Zig, which R9 rules
-   out ([docs/decisions.md](docs/decisions.md)).
-3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+1. **Phase 8 slice 2: the desk.** Mesa (ACO, no LLVM), Wayland,
+   the compositor and Sola as plans. River stops being a dependency:
+   Joshua (2026-10-18) wants a hard fork without Zig (R9). Open: its
+   form, a C port on wlroots, a Rust rewrite on Smithay, or one
+   `sola-wm` that merges River and `sola-river`
+   ([docs/decisions.md](docs/decisions.md)). Next: Joshua picks; Mesa,
+   libdrm, libinput, xkbcommon and Wayland come first under any form.
+2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
    `cargo make install --usb` stick, or `cargo make update` once it
    runs an Oath base.
 
-**State:** phases 1–5 are done; phases 6 (buccina left), 7 and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). On 2026-10-17 `oath mcp` and the
-real-model check were built (R16), and Oath became a GCC, glibc and
-GNU system (R17, R18: phase 8 slice 1; canto reinstalled 2026-10-18).
+**State:** phases 1–5 and 7 are done; phases 6 (buccina left) and 8
+are active ([docs/roadmap.md](docs/roadmap.md)). On 2026-10-18 haiku
+passed all five agent tasks in QEMU on `218fd2e1e03b`, which finished
+phase 7 (R16). On 2026-10-17 Oath became a GCC, glibc and GNU system
+(R17, R18: phase 8 slice 1; canto reinstalled 2026-10-18).
 On 2026-10-16 every target in the
 specs short of phase 8 was built: the spec/status split (R14), source
 beside each pack on origins (R13), probation with automatic rollback,

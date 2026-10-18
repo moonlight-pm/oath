@@ -12,9 +12,11 @@ acting on anything under **Open**. Replaces `open-questions.md`
   permissive replacements for the GPL packages (btrfs-progs,
   util-linux, dosfstools) some day; not now. R17 and R18 (GCC, glibc,
   the GNU userland) moved the toolchain, libc and tools the other way.
-- **River and Zig.** River, the desk's compositor (`forks/river`), is
-  written in Zig, which R9 rules out. Phase 8 needs an answer before it
-  builds River: another compositor, a port, or an exception.
+- **River's form.** River, the desk's compositor (`forks/river`), is
+  written in Zig, which R9 rules out. Joshua (2026-10-18): it becomes a
+  hard fork without Zig, and upstream River stops being a dependency.
+  Open: a C port on wlroots, a Rust rewrite on Smithay, or one Rust
+  `sola-wm` that merges the compositor and `sola-river`.
 
 ## 2026-10-13 review (briefing D1–D8)
 
@@ -35,7 +37,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R13 | An origin carries each package's source beside it: `cargo make publish` copies the plan that built a pack and the `-src` pack that plan pins, for every published package, GPL or not. | Decided by Joshua 2026-10-16; done |
 | R14 | Spec and status split: every kind that converges keeps the spec it last applied (`applied.json`), and drift and undo read only spec; status (`actual`) is observation only and lives on a tmpfs at `/oath/status`, rebuilt at every boot, outside every snapshot. History that must survive (generation records, a service's last-run record) stays on disk with the spec or the log. | Decided by Joshua 2026-10-16 (option "B then C"); done |
 | R15 | The screen: when no desk is installed, the screen and keyboard (tty1) are a login shell as `home` (`svc:screen` in the `base` seed; root through `sudo`); a desk profile turns it off and owns the display. The serial console stays root. | Decided by Joshua 2026-10-16; done |
-| R16 | The agent surface is `oath mcp`: an MCP server on stdin and stdout, run on each machine over SSH as `home` (`ssh -T home@host oath mcp`), each tool one `oath --json` verb (writes through `sudo`). Acceptance is a real model given only that server and a task (`cargo make check --agent`, opt-in, an API key in novus's environment, never committed). A resident agent stays out of core, as a payload. Spec: [specs/agent.md](specs/agent.md). | Decided by Joshua 2026-10-17; `oath mcp` and `check --agent` built 2026-10-17 |
+| R16 | The agent surface is `oath mcp`: an MCP server on stdin and stdout, run on each machine over SSH as `home` (`ssh -T home@host oath mcp`), each tool one `oath --json` verb (writes through `sudo`). Acceptance is a real model given only that server and a task (`cargo make check --agent`, opt-in, an API key in novus's environment, never committed). A resident agent stays out of core, as a payload. Spec: [specs/agent.md](specs/agent.md). | Decided by Joshua 2026-10-17; `oath mcp` and `check --agent` built 2026-10-17; done 2026-10-18 (phase 7) |
 | R17 | One compiler and one libc: GCC, binutils and glibc, built from source (stage 0 by the build host's gcc, stage 1 by stage 0). Clang/LLVM and musl leave the system; mesa builds without LLVM (radeonsi and RADV compile with ACO). Programs link dynamically against glibc: its loader is `/lib/ld-linux-x86-64.so.2`, and `/lib` is a link farm of every linked package's libraries, as `/bin` is of its programs, on machines and in the build sandbox. No RPATHs and no `/lib64`; a vendor executable Oath packages gets its interpreter set to the `/lib` loader. Oath's own binaries (PID 1, `oath`, `sudo`, the logins) stay static, against glibc. Why: one C++ runtime (`libstdc++`, which vendor binaries load), glibc built as upstream builds it, vendor releases usable under R7, LLVM (the slowest build) gone. Cost: GPL and LGPL where LLVM and musl were permissive; no llvmpipe. | Decided by Joshua 2026-10-17; built 2026-10-17 (phase 8, slice 1) |
 | R18 | No busybox: one GNU tool for each job. bash (also `/bin/sh`), coreutils, sed, grep, gawk, findutils, diffutils, patch, tar, gzip, xz, procps-ng, less and iproute2; dhcpcd is the DHCP client and chrony keeps time (`svc:time`, still pool.ntp.org, R12); vim is the editor, and iputils gives `ping`. `reboot`, `poweroff` and `halt` are PID 1's own binary, as `modprobe` is. Why: R17 made Oath a GNU system, upstream builds assume GNU tools, and each busybox applet duplicated one (awk beside gawk, wget beside curl, mount beside util-linux). | Decided by Joshua 2026-10-17; built 2026-10-17 (phase 8, slice 1) |
 

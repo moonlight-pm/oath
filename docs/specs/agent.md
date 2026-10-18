@@ -8,10 +8,10 @@ verbs as typed tools and the INDEX as its instructions. It is a thin
 adapter: each tool call runs one `oath --json` command, so there is
 still one admin surface.
 
-**Status:** steps 1 and 2 built (2026-10-17): `oath mcp`
-(`crates/oath/src/mcp.rs`) and `cargo make check --agent`
-(`crates/oath-make/src/agent.rs`, `check/agent.toml`). Step 3 is
-target. Joshua decided the shape on 2026-10-17 (R16 in
+**Status:** built; phase 7 done 2026-10-18. Steps 1–3 were built
+2026-10-17: `oath mcp` (`crates/oath/src/mcp.rs`) and
+`cargo make check --agent` (`crates/oath-make/src/agent.rs`,
+`check/agent.toml`). "Later" below is not built. Joshua decided the shape on 2026-10-17 (R16 in
 [../decisions.md](../decisions.md)).
 
 Replaces: roadmap phase 7's one line ("MCP and agent tooling over
@@ -365,8 +365,9 @@ machine's `oath mcp` and a task, and nothing else.
    expects that error. On canto (2026-10-17, haiku, $0.0088 in all)
    all five tasks pass, `diagnose` included: the model read the
    failure reason, looked for a package that provides `slep`, fixed
-   the `exec` typo to `/bin/sleep` and saw the service run. Left:
-   `diagnose` in QEMU.
+   the `exec` typo to `/bin/sleep` and saw the service run. **Done
+   2026-10-18:** in QEMU on output `218fd2e1e03b` (GCC, glibc), haiku
+   passed all five tasks, `diagnose` included, in 45 turns for $0.0096.
 3. What step 2's transcripts show is missing, and: resources
    (`oath://index`, `oath://schema/<kind>`,
    `oath://object/<kind>/<name>`), filing a plan from text
@@ -379,8 +380,8 @@ machine's `oath mcp` and a task, and nothing else.
    stamped and names the path, so a model can tell it from the starts
    after a fix.
 
-Phase 7 is done when step 2 passes in QEMU and on canto, and canto
-runs an output with `oath mcp`.
+Phase 7 was done when step 2 passed in QEMU and on canto, and canto
+ran an output with `oath mcp`: all three held on 2026-10-18.
 
 ## Later (not phase 7)
 
