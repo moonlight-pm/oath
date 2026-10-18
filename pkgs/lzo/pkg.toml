@@ -1,6 +1,6 @@
 version = "2.10"
 license = "GPL-2.0-or-later"
-description = "LZO compression library (static, for builds)."
+description = "LZO compression library, shared (btrfs-progs)."
 home = "https://www.oberhumer.com/opensource/lzo/"
 build = []
 

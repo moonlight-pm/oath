@@ -131,9 +131,18 @@ pub(crate) fn ramdisk_packs(tools: &Tools, programs: &[(&str, &str)]) -> Result<
 pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Output> {
     let wanted =
         oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
+    let lock = crate::pkgs::read_lock(root)?;
+    let all = crate::pkgs::load(root)?;
+    let mut run_needs = BTreeSet::new();
     for name in &wanted {
         if name != "oath" && !tools.packs.contains_key(name) {
             bail!("profile {profile} wants pkg:{name}, which this build cannot pack yet");
+        }
+        for need in crate::pkgs::locked_run(root, &all, &lock, name) {
+            if !wanted.contains(&need) {
+                bail!("profile {profile}: pkg:{name} runs with pkg:{need}, which it does not ship");
+            }
+            run_needs.insert((name.clone(), need));
         }
     }
     // The Oath binaries: pkg:oath, this tree built by pkg:rust.
@@ -259,6 +268,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
         eprintln!("   pkg:{n} {h}");
     }
     relink_present(&oath_root, &guest_bin)?;
+    pin_run_needs(&oath_root, &run_needs)?;
     oath_core::sync_need_hashes(&oath_root).map_err(|e| anyhow::anyhow!("{e}"))?;
     settle_pkg_applied(&oath_root)?;
 
@@ -540,6 +550,29 @@ fn relink_present(oath_root: &Path, bin_dir: &Path) -> Result<()> {
             continue;
         }
         link_pkg(oath_root, bin_dir, &name)?;
+    }
+    Ok(())
+}
+
+/// Each pack's runtime needs (the libraries it loads, from the lock) as
+/// its `needs`, so apply refuses removing one while a present pack loads
+/// it. `sync_need_hashes` pins them.
+fn pin_run_needs(oath_root: &Path, needs: &BTreeSet<(String, String)>) -> Result<()> {
+    for (name, need) in needs {
+        let p = oath_root.join("objects/pkg").join(name).join("desired.json");
+        let mut v: serde_json::Value =
+            oath_core::read_json(&p).map_err(|e| anyhow::anyhow!("{}: {e}", p.display()))?;
+        let list = v
+            .as_object_mut()
+            .with_context(|| format!("{}: not an object", p.display()))?
+            .entry("needs")
+            .or_insert_with(|| serde_json::json!([]));
+        let id = format!("pkg:{need}");
+        let arr = list.as_array_mut().with_context(|| format!("{}: needs", p.display()))?;
+        if !arr.iter().any(|n| n.get("id").and_then(|i| i.as_str()) == Some(id.as_str())) {
+            arr.push(serde_json::json!(id));
+        }
+        write_json(&p, &v).map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
 }

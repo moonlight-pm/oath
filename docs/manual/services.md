@@ -13,7 +13,7 @@ The `base` profile:
 | `svc:serial` | `/lib/oath/serial-login` | enabled, `restart=always` | Root shell on the serial console (`ttyS0` / `hvc0`). With no UART it idles and logs `no serial console`. Do not disable it unless you have another way in. |
 | `svc:screen` | `/lib/oath/screen-login`, `user: home` | enabled, `restart=always` | Login shell as `home` on the screen and keyboard (tty1); `sudo` for root. The screen shows it once the display driver loads, just before services start. A desk turns it off. |
 | `svc:sshd` | `/bin/dropbear -F -E -s -w -r /oath/ssh/host_ed25519 -p 22` | enabled, `restart=always`, `keep_children` | Keys in `ssh:local`. Passwords off (`-s`), root login off (`-w`). Restarting it keeps open sessions. |
-| `svc:time` | `/bin/ntpd -n` against `0`–`3.pool.ntp.org` | enabled, `restart=always` | Keeps the clock (see [Network](network.md)). |
+| `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | enabled, `restart=always` | Keeps the clock (see [Network](network.md)). |
 
 Add a service on the box with `oath new` and `oath apply` (below), or
 at install time with an overlay (see [Catalog](catalog.md)).

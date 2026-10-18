@@ -126,8 +126,10 @@ still starts. PID
   Stop sends SIGTERM to every process in it, waits up to 5 s, then
   `cgroup.kill`s the rest; an exit cleans up leftover children the same
   way. With `keep_children`, only the main process is signalled.
-- **Shutdown.** SIGTERM or SIGINT (busybox `reboot`, Ctrl-Alt-Del)
-  reboots; SIGUSR1 (`halt`) halts; SIGUSR2 (`poweroff`) powers off. An
+- **Shutdown.** SIGTERM or SIGINT (`reboot`, Ctrl-Alt-Del) reboots;
+  SIGUSR1 (`halt`) halts; SIGUSR2 (`poweroff`) powers off. `reboot`,
+  `halt` and `poweroff` are links to PID 1's binary (R18) that send it
+  that signal; with `-f` they sync and call the kernel themselves. An
   `oath` `power=reboot` or `halt` apply sends the same signal. PID 1
   stops the services in reverse `wants` order: in layers, each a set
   that nothing still running wants, so a service stops before the ones
@@ -135,7 +137,7 @@ still starts. PID
   in `init.log`). Then it signals everything else, syncs, unmounts
   `/oath/run/fs`, remounts `/` read-only, and calls the kernel.
 - **DHCP client.** When the applied `net:net0` is up and `dhcp`, PID 1
-  runs `udhcpc -f -i net0` as an internal service (id `net:net0`, not a
+  runs `dhcpcd -B … net0` as an internal service (id `net:net0`, not a
   catalog `svc`, log `/oath/log/net/net0.log`) with the same restart
   and backoff, so the lease renews. See network-and-ssh.md.
 - **Crash path.** A panic is logged (`init.log`, console). In the main

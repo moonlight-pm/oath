@@ -3,7 +3,8 @@ license = "GPL-3.0-or-later"
 description = "GNU awk."
 home = "https://www.gnu.org/software/gawk/"
 purl = "pkg:generic/gawk@5.4.1"
-build = []
+build = ["gmp", "mpfr"]
+run = ["gmp", "mpfr"]
 
 [[source]]
 url = "https://ftp.gnu.org/gnu/gawk/gawk-5.4.1.tar.xz"

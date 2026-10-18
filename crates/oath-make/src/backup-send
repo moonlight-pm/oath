@@ -116,12 +116,18 @@ current_gen() {
 
 load_nfs
 mkdir -p "$mnt"
-log "mount $spec -> $mnt"
+# There is no mount.nfs (-i): the kernel parses the options itself and
+# needs the server's address in them.
+server=${spec%%:*}
+addr=$(getent ahostsv4 "$server" | awk 'NR == 1 { print $1 }')
+[ -n "$addr" ] || die "cannot resolve $server"
+opts=rw,nolock,soft,timeo=30,addr=$addr
+log "mount $spec ($addr) -> $mnt"
 if have_fs nfs4; then
-	mount -i -t nfs4 -o rw,nolock,soft,timeo=30 "$spec" "$mnt" || die "mount nfs4 $spec"
+	mount -i -t nfs4 -o "$opts" "$spec" "$mnt" || die "mount nfs4 $spec"
 else
-	mount -i -t nfs -o rw,nolock,vers=4,soft,timeo=30 "$spec" "$mnt" ||
-		mount -i -t nfs -o rw,nolock,vers=3,soft,timeo=30 "$spec" "$mnt" ||
+	mount -i -t nfs -o "$opts,vers=4" "$spec" "$mnt" ||
+		mount -i -t nfs -o "$opts,vers=3" "$spec" "$mnt" ||
 		die "mount nfs $spec"
 fi
 mounted=1

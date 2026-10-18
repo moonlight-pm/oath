@@ -2,6 +2,6 @@
 tar -xf "$SRC/$SOURCES"
 cd "bc-$VERSION"
 ./configure --prefix="$LIVE"
-make -j"$JOBS"
+make -j"$JOBS" MAKEINFO=true
 mkdir -p /out/bin
 cp bc/bc dc/dc /out/bin/

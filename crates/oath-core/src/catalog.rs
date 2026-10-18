@@ -772,6 +772,7 @@ impl Catalog {
         let mut svcs = Vec::new();
         let mut report = ApplyReport::default();
         for id in &back {
+            self.stop_dhcp_client_first(id, hooks)?;
             let applied = self.converge_spec(id, hooks, &mut report)?;
             if id.kind == KIND_SVC {
                 svcs.push((id.clone(), applied["enabled"] == json!(true)));
@@ -998,14 +999,33 @@ impl Catalog {
         hooks: &dyn ApplyHooks,
         report: &mut ApplyReport,
     ) -> Result<()> {
+        self.stop_dhcp_client_first(id, hooks)?;
         let applied = self.converge_spec(id, hooks, report)?;
         let _ = fs::remove_file(self.obj_dir(id).join(NEW_MARK));
         if id.kind == KIND_SVC {
             let enabled = applied.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
             hooks.notify_init()?;
             hooks.wait_converge(id, enabled)?;
+        } else if id.kind == KIND_NET {
+            // PID 1 runs the DHCP client of an applied dhcp net:net0.
+            hooks.notify_init()?;
         }
         Ok(())
+    }
+
+    /// A `net` spec that wants no DHCP client (static, or down) is applied
+    /// to PID 1 first, so it stops the client before the address changes:
+    /// a running client would put its lease back.
+    fn stop_dhcp_client_first(&self, id: &ObjectId, hooks: &dyn ApplyHooks) -> Result<()> {
+        if id.kind != KIND_NET {
+            return Ok(());
+        }
+        let desired = self.get(id)?.desired;
+        if desired["up"] == json!(true) && desired["ipv4"] == json!("dhcp") {
+            return Ok(());
+        }
+        write_json(&self.obj_dir(id).join(APPLIED), &desired)?;
+        hooks.notify_init()
     }
 
     /// Converge `id` to its desired spec, record what that observed as its

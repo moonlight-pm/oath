@@ -35,8 +35,8 @@ fn copy_exec(src: &Path, dest: &Path) {
     std::fs::set_permissions(dest, p).unwrap();
 }
 
-fn pack_busybox(root: &Path) -> String {
-    let stage = root.join("stage-busybox");
+fn pack_shell(root: &Path) -> String {
+    let stage = root.join("stage-shell");
     let bin = stage.join("bin");
     std::fs::create_dir_all(&bin).unwrap();
     let sh = which("sh").or_else(|| which("bash")).expect("sh");
@@ -47,7 +47,7 @@ fn pack_busybox(root: &Path) -> String {
         }
     }
     let h = hash_tree(&stage).unwrap();
-    oath_core::put_tree(&root.join("store/pkg/busybox"), &h, &stage).unwrap();
+    oath_core::put_tree(&root.join("store/pkg/bash"), &h, &stage).unwrap();
     h
 }
 
@@ -77,8 +77,8 @@ fn pack_c_src(root: &Path) -> String {
     h
 }
 
-fn pack_llvm(root: &Path) -> String {
-    let stage = root.join("stage-llvm");
+fn pack_gcc(root: &Path) -> String {
+    let stage = root.join("stage-gcc");
     let bin = stage.join("bin");
     std::fs::create_dir_all(&bin).unwrap();
     if let Some(cc) = which("cc").or_else(|| which("gcc")) {
@@ -101,12 +101,12 @@ chmod 0755 \"$out\"\n";
         std::fs::set_permissions(bin.join("cc"), p).unwrap();
     }
     let h = hash_tree(&stage).unwrap();
-    oath_core::put_tree(&root.join("store/pkg/llvm"), &h, &stage).unwrap();
+    oath_core::put_tree(&root.join("store/pkg/gcc"), &h, &stage).unwrap();
     h
 }
 
-fn pack_busybox_old(root: &Path) -> String {
-    let dest = root.join("store/pkg/busybox");
+fn pack_shell_old(root: &Path) -> String {
+    let dest = root.join("store/pkg/bash");
     let bin = dest.join("bin");
     std::fs::create_dir_all(&bin).unwrap();
     let sh = which("sh").or_else(|| which("bash")).expect("sh");
@@ -148,7 +148,7 @@ fn fmt_lint_file_plan() {
 fn sandbox_relocate_and_cache() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let src = pack_src(d.path(), b"hello-from-src\n");
     let src_hash = src.clone();
     let script = format!(
@@ -158,7 +158,7 @@ fn sandbox_relocate_and_cache() {
         name: "hello".into(),
         produces: "pkg:hello".into(),
         build_needs: vec![
-            PkgNeed { id: "pkg:busybox".into(), hash: bb.clone() },
+            PkgNeed { id: "pkg:bash".into(), hash: bb.clone() },
             PkgNeed { id: "pkg:hello-src".into(), hash: src },
         ],
         run_needs: vec![],
@@ -181,7 +181,7 @@ fn sandbox_links_each_packs_libraries_into_lib() {
     // the first pack to name an entry has it, and pkg-config stays per pack.
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let lib_pack = |name: &str, files: &[&str]| {
         let stage = d.path().join(format!("stage-{name}"));
         std::fs::create_dir_all(stage.join("lib/pkgconfig")).unwrap();
@@ -198,7 +198,7 @@ fn sandbox_links_each_packs_libraries_into_lib() {
     let p = PlanFile {
         name: "libs".into(),
         produces: "pkg:libs".into(),
-        build_needs: vec![PkgNeed { id: "pkg:busybox".into(), hash: bb }, a, b],
+        build_needs: vec![PkgNeed { id: "pkg:bash".into(), hash: bb }, a, b],
         run_needs: vec![],
         script: "mkdir -p /out\ncat /lib/libshared.so.1 >/out/shared\ncat /lib/libb.so.2 >/out/b\n\
                  if [ -e /lib/pkgconfig ]; then echo yes >/out/pc; fi\n"
@@ -219,11 +219,11 @@ fn sandbox_has_its_own_proc() {
     // the build's own PID namespace.
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let p = PlanFile {
         name: "procs".into(),
         produces: "pkg:procs".into(),
-        build_needs: vec![PkgNeed { id: "pkg:busybox".into(), hash: bb }],
+        build_needs: vec![PkgNeed { id: "pkg:bash".into(), hash: bb }],
         run_needs: vec![],
         script: "mkdir -p /out\ncat /proc/self/maps >/out/maps\ncat /proc/1/cmdline >/out/pid1\n"
             .into(),
@@ -241,12 +241,12 @@ fn sandbox_has_its_own_proc() {
 fn a_build_logs_its_output_and_rotates() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let plan = |name: &str, script: &str| {
         let p = PlanFile {
             name: name.into(),
             produces: format!("pkg:{name}"),
-            build_needs: vec![PkgNeed { id: "pkg:busybox".into(), hash: bb.clone() }],
+            build_needs: vec![PkgNeed { id: "pkg:bash".into(), hash: bb.clone() }],
             run_needs: vec![],
             script: script.into(),
         };
@@ -312,11 +312,11 @@ fn put_tree_is_whole_or_nothing() {
 fn undeclared_cc_fails() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let p = PlanFile {
         name: "hello".into(),
         produces: "pkg:hello".into(),
-        build_needs: vec![PkgNeed { id: "pkg:busybox".into(), hash: bb }],
+        build_needs: vec![PkgNeed { id: "pkg:bash".into(), hash: bb }],
         run_needs: vec![],
         script: "/bin/cc -o /out/bin/hello /tmp/x.c\n".into(),
     };
@@ -331,7 +331,7 @@ fn undeclared_cc_fails() {
 fn adhoc_does_not_file_plan() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let src = pack_src(d.path(), b"x\n");
     let src_hash = src.clone();
     let script = format!(
@@ -341,7 +341,7 @@ fn adhoc_does_not_file_plan() {
         name: "hello".into(),
         produces: "pkg:hello".into(),
         build_needs: vec![
-            PkgNeed { id: "pkg:busybox".into(), hash: bb },
+            PkgNeed { id: "pkg:bash".into(), hash: bb },
             PkgNeed { id: "pkg:hello-src".into(), hash: src },
         ],
         run_needs: vec![],
@@ -364,8 +364,8 @@ fn adhoc_does_not_file_plan() {
 fn compile_with_declared_cc() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
-    let cc = pack_llvm(d.path());
+    let bb = pack_shell(d.path());
+    let cc = pack_gcc(d.path());
     let src = pack_c_src(d.path());
     let src_hash = src.clone();
     let script = format!(
@@ -375,9 +375,9 @@ fn compile_with_declared_cc() {
         name: "hello".into(),
         produces: "pkg:hello".into(),
         build_needs: vec![
-            PkgNeed { id: "pkg:busybox".into(), hash: bb },
+            PkgNeed { id: "pkg:bash".into(), hash: bb },
             PkgNeed { id: "pkg:hello-src".into(), hash: src },
-            PkgNeed { id: "pkg:llvm".into(), hash: cc },
+            PkgNeed { id: "pkg:gcc".into(), hash: cc },
         ],
         run_needs: vec![],
         script,
@@ -398,7 +398,7 @@ fn compile_with_declared_cc() {
 fn old_layout_build_need() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox_old(d.path());
+    let bb = pack_shell_old(d.path());
     let src = pack_src(d.path(), b"hello-old-layout\n");
     let src_hash = src.clone();
     let script = format!(
@@ -408,7 +408,7 @@ fn old_layout_build_need() {
         name: "hello".into(),
         produces: "pkg:hello".into(),
         build_needs: vec![
-            PkgNeed { id: "pkg:busybox".into(), hash: bb },
+            PkgNeed { id: "pkg:bash".into(), hash: bb },
             PkgNeed { id: "pkg:hello-src".into(), hash: src },
         ],
         run_needs: vec![],
@@ -504,7 +504,7 @@ chmod 0755 /out/bin/reloc\n"
         name: "reloc".into(),
         produces: "pkg:reloc".into(),
         build_needs: vec![
-            PkgNeed { id: "pkg:busybox".into(), hash: bb.to_string() },
+            PkgNeed { id: "pkg:bash".into(), hash: bb.to_string() },
             PkgNeed { id: "pkg:reloc-src".into(), hash: src.to_string() },
         ],
         run_needs: vec![],
@@ -516,7 +516,7 @@ chmod 0755 /out/bin/reloc\n"
 fn prebuild_fetch_relocate_file_and_skip() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let (src, tar) = pack_upstream(d.path());
     let (url, _srv) = serve_file(&tar);
     write_pkg_url(d.path(), "reloc-src", &url, &src);
@@ -554,7 +554,7 @@ fn prebuild_fetch_relocate_file_and_skip() {
 fn prebuild_missing_url_refuses() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let fake = "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     let p = reloc_plan(&bb, fake);
     let s = fmt_plan(&p);
@@ -568,7 +568,7 @@ fn prebuild_missing_url_refuses() {
 fn prebuild_fetch_hash_mismatch_refuses() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let (_src, tar) = pack_upstream(d.path());
     let (url, _srv) = serve_file(&tar);
     let wrong = "sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -588,14 +588,14 @@ fn prebuild_fetch_hash_mismatch_refuses() {
 fn a_changed_plan_rebuilds_even_with_the_same_inputs() {
     let d = tmp();
     seed(d.path()).unwrap();
-    let bb = pack_busybox(d.path());
+    let bb = pack_shell(d.path());
     let src = pack_src(d.path(), b"hello-from-src\n");
     let plan = |extra: &str| {
         PlanFile {
         name: "hello".into(),
         produces: "pkg:hello".into(),
         build_needs: vec![
-            PkgNeed { id: "pkg:busybox".into(), hash: bb.clone() },
+            PkgNeed { id: "pkg:bash".into(), hash: bb.clone() },
             PkgNeed { id: "pkg:hello-src".into(), hash: src.clone() },
         ],
         run_needs: vec![],

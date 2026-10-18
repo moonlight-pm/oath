@@ -39,7 +39,7 @@ Desired and actual are separate files. You may `cat` any of these;
 | `host` | `host:local` | Hostname, power, `env`, `timezone` |
 | `svc` | `svc:serial`, `svc:sshd`, `svc:time` | PID 1's only config |
 | `snap` | `snap:current`, then `snap:N` | Generations |
-| `pkg` | `busybox`, `btrfs`, `oath`, `dropbear`, `openssh`, `util-linux`, `dosfstools`, `curl` | Store + `/bin` symlink farm |
+| `pkg` | `glibc`, `bash`, `coreutils`, `btrfs`, `oath`, `dropbear`, `curl`, … (33 in `base`) | Store + `/bin` and `/lib` symlink farms |
 | `net` | `net:net0` | The link: `dhcp` or a static address |
 | `ssh` | `ssh:local` | Keys that may log in as `home` |
 | `dev` | `dev:net0`, `dev:disk-pci-…` (discovered) | Hardware inventory |

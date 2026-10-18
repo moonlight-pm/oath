@@ -96,6 +96,9 @@ fn real_main() -> Result<(), String> {
     ensure_mount("devtmpfs", "/dev", "devtmpfs");
     // Filesystems and code pages load when the kernel asks for them.
     let _ = fs::write("/proc/sys/kernel/modprobe", modules::HELPER);
+    // ICMP echo sockets for every group: `ping` works as home with no
+    // setuid bit or capability.
+    let _ = fs::write("/proc/sys/net/ipv4/ping_group_range", "0 2147483647");
     mount_devpts();
     unix_floor();
 

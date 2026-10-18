@@ -32,7 +32,7 @@ files are written with `dd`, so the user's login shell does not matter.
 3. Partitions GPT with the ramdisk's native tools (`wipefs`, `sfdisk`):
    a 512 MiB ESP (`mkfs.fat`), then btrfs (`mkfs.btrfs`) with subvolume
    `@`.
-4. Copies the packed root tree (busybox `tar`).
+4. Copies the packed root tree (GNU `tar`).
 5. Merges the catalog overlay with the ramdisk's `oath`
    (`oath --root /mnt/oath seed --overlay`): `host:local.hostname`
    (default `oath`), the build host's public keys as `ssh:local`, then

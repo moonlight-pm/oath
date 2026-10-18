@@ -141,8 +141,8 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 5 svc and host, 31 packages, net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 39, "{ids:?}");
+    // 5 svc and host, 33 packages, net:net0, ssh:local, snap:current.
+    assert_eq!(ids.len(), 41, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -369,7 +369,7 @@ fn pkg_collision_refuses() {
     let (d, cat) = tmp();
     write_hello_store(d.path());
     std::fs::create_dir_all(d.path().join("bin")).unwrap();
-    std::fs::write(d.path().join("bin/hello"), "busybox-or-other\n").unwrap();
+    std::fs::write(d.path().join("bin/hello"), "another-build\n").unwrap();
     let hooks = MemHooks::new(d.path().to_path_buf());
     let id: ObjectId = "pkg:hello".parse().unwrap();
     let mut fields = Map::new();
@@ -383,7 +383,7 @@ fn pkg_collision_refuses() {
         }
         other => panic!("{other:?}"),
     }
-    assert_eq!(std::fs::read_to_string(d.path().join("bin/hello")).unwrap(), "busybox-or-other\n");
+    assert_eq!(std::fs::read_to_string(d.path().join("bin/hello")).unwrap(), "another-build\n");
 }
 
 #[test]

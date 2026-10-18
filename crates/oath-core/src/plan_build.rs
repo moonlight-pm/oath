@@ -555,6 +555,9 @@ fn sandbox_in_child(
         .env("TMPDIR", "/tmp")
         .env("OUT", "/out")
         .env("XDG_CACHE_HOME", "/tmp")
+        // The builder owns what it unpacks: GNU tar as root (in a user
+        // namespace) would restore owners the namespace does not have.
+        .env("TAR_OPTIONS", "--no-same-owner")
         .stdin(Stdio::null())
         .stdout(Stdio::from(log.try_clone()?))
         .stderr(Stdio::from(log.try_clone()?))

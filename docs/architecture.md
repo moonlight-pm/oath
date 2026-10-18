@@ -13,7 +13,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
             loader/entries/oath.conf  + oath-N.conf (last 5 boots)
             vmlinuz (own build, 7.3.0-rc1) + initrd.gz
   kernel cmdline: oath.root=<dev> oath.subvol=@ console=ttyS0 panic=10 …
-  initrd /init = oath-init (PID 1, static musl)
+  initrd /init = oath-init (PID 1, static against glibc); bash (and its
+    libraries and glibc's loader in /lib) for the fallback shell
     catch SIGTERM/SIGINT (reboot), SIGUSR1 (halt), SIGUSR2 (poweroff)
     open the uevent socket (netlink) before the first coldplug
     mount /proc /sys /dev /dev/pts; tmpfs /tmp /run /dev/shm; cgroup2
@@ -26,7 +27,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     tmpfs at /oath/status (status; no snapshot holds it)
     seed only if /oath/objects is missing; regenerate a missing INDEX.md;
       migrate a catalog from before R14 (old actual.json → applied.json)
-    under /oath/.lock: apply host, net (one-shot udhcpc for dhcp), ssh
+    under /oath/.lock: apply host, net (one-shot dhcpcd for dhcp), ssh
       from their applied specs (applied.json); discover dev:* from sysfs;
       observe pkg:*, plan:* and snap:current into status/
     listen on /oath/run/init.sock; start svc:* from applied.json in
@@ -59,10 +60,14 @@ btrfs
 
 ```
 /sbin/init → /lib/oath/init        same ELF as the initrd's /init
-/lib/oath/  serial-login, screen-login, sudo (setuid), udhcpc.script, backup-send, backup-daily;
+/lib/oath/  serial-login, screen-login, sudo (setuid), dhcpcd.hook, backup-send, backup-daily;
             modprobe and net-lease are links to init (the kernel's module
             helper, and the DHCP script's lease recorder)
-/bin/       symlink farm → /oath/store/pkg/<name>/live/bin/<x>
+/bin/       symlink farm → /oath/store/pkg/<name>/<hash>/bin/<x>; modprobe, reboot,
+            halt and poweroff → /lib/oath/init
+/lib/       symlink farm → /oath/store/pkg/<name>/<hash>/lib/<x> (R17): glibc's
+            loader ld-linux-x86-64.so.2 and every linked package's libraries;
+            no /lib64. oath/, modules/ and firmware/ are not links
 /home       the `home` account (uid 1); SSH logs in here
 /etc        written by PID 1 from host:local (hostname, hosts, profile, shells)
 /oath/      the catalog
@@ -96,9 +101,9 @@ btrfs
 | `oath-init` | initrd `/init` | PID 1, root |
 | `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused); `keep_children` |
 | `svc:serial` | `/lib/oath/serial-login` on ttyS0 (idles with no UART) | root (break-glass) |
-| `svc:screen` | `/lib/oath/screen-login` on tty1, then `busybox sh -l` | `home` |
-| `svc:time` | `/bin/ntpd -n` against `0`–`3.pool.ntp.org` | root |
-| DHCP client | `udhcpc -f -i net0`, supervised by PID 1 as `net:net0` | root; renews the lease |
+| `svc:screen` | `/lib/oath/screen-login` on tty1, then `bash -l` | `home` |
+| `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | root |
+| DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root; renews the lease |
 | `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |
 
 Every supervised process has its own cgroup,
@@ -119,9 +124,11 @@ read-only, then calls `reboot(2)`.
 
 ```
 cargo make bootstrap
-  stage 0 (host gcc, nix-shell pkgs/bootstrap.nix): clang/lld + musl sysroot,
-    under build/bootstrap/, never ships
-  stage 1 (by stage 0): pkg:llvm, pkg:busybox, pkg:make into the build catalog
+  stage 0 (host gcc, nix-shell pkgs/bootstrap.nix): a cross binutils, GCC
+    and glibc for x86_64-oath-linux-gnu, under build/bootstrap/, never ships
+  stage 1 (by stage 0): pkg:gcc, pkg:glibc and the GNU base tools (bash,
+    coreutils, sed, grep, gawk, findutils, diffutils, patch, tar, gzip, xz,
+    bzip2, make) into the build catalog
 cargo make pkgs [names]
   sources → build/fetch (sha256 pin; upstream signature, cached under
     build/fetch/sig/, checked against pkgs/keys/<key>.asc)
@@ -129,19 +136,20 @@ cargo make pkgs [names]
     + pkgs/<name>/<name>.plan (build packs pinned from pkgs/lock.json)
   `oath build` in the sandbox of the build catalog at .cache/oath
   product hash, version, licence, plan hash → pkgs/lock.json
-  llvm, busybox and make rebuild themselves; cmake, ninja and python
-    are build-only packs (llvm's plan needs them), and so are m4, flex,
-    bison, perl and elfutils (libelf), which the kernel's plan needs
-  pkg:rust: the vendor's rustc, cargo and std (musl, uefi) with its own
-    musl loader and libunwind as libgcc_s (patchelf points it there)
+  the base packs rebuild themselves; python, meson and ninja are
+    build-only packs, and so are m4, flex, bison, bc, perl and elfutils
+    (libelf), which the kernel's plan needs; each build also gets what
+    its build packs run with (the lock records it)
+  pkg:rust: the vendor's rustc, cargo and std (glibc, uefi); patchelf
+    points its binaries at /lib's loader
   pkg:linux: boot/vmlinuz, boot/config, lib/modules/<release>/
 cargo make build [--profile base]
   pkg:oath: this tree + every crates.io crate in Cargo.lock → pkg:oath-src;
-    `cargo build` with pkg:rust in the sandbox, linked by pkg:llvm's
-    clang against its musl → bin/oath,
+    `cargo build` with pkg:rust in the sandbox, static against glibc,
+    linked by pkg:gcc → bin/oath,
     lib/oath/{init,serial-login,screen-login,sudo}, boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
-  every userspace pack (busybox, btrfs, dropbear, openssh, firmware, …)
+  every userspace pack (glibc, bash, coreutils, btrfs, dropbear, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)
   .cache/oath/store/      host copy of every packed tree, by hash
   build/out/<id>/         one build output, written once (<id>: the
@@ -153,8 +161,10 @@ cargo make build [--profile base]
     oath.qcow2            btrfs @ with the stage
     bzImage, initrd.gz, BOOTX64.EFI
     initrd-install.gz     installer ramdisk: dropbear, sfdisk, wipefs,
-                          mkfs.fat, mkfs.btrfs, btrfs, busybox tar, oath,
-                          oath-efi (install bakes keys into a copy)
+                          mkfs.fat, mkfs.btrfs, btrfs, mount, ip, dhcpcd,
+                          tar, coreutils, oath, oath-efi, each with the
+                          libraries it loads (install bakes keys into a
+                          copy)
     check-pass            a clean `cargo make check` of this output
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with

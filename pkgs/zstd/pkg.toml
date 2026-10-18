@@ -1,8 +1,9 @@
 version = "1.5.7"
 license = "BSD-3-Clause OR GPL-2.0-only"
-description = "Zstandard compression library (static, for builds)."
+description = "Zstandard: libzstd, shared, and zstd."
 home = "https://facebook.github.io/zstd/"
 build = []
+run = ["xz"]
 
 [[source]]
 url = "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz"

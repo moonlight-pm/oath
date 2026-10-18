@@ -4,12 +4,17 @@
 
 use anyhow::{bail, Context, Result};
 
+const ET_EXEC: u16 = 2;
+const ET_DYN: u16 = 3;
+const EM_X86_64: u16 = 62;
 const PT_LOAD: u32 = 1;
 const PT_DYNAMIC: u32 = 2;
 const PT_INTERP: u32 = 3;
 const DT_NULL: u64 = 0;
 const DT_NEEDED: u64 = 1;
 const DT_STRTAB: u64 = 5;
+const DT_RPATH: u64 = 15;
+const DT_RUNPATH: u64 = 29;
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Needs {
@@ -17,6 +22,20 @@ pub struct Needs {
     pub interp: Option<String>,
     /// `DT_NEEDED` sonames, in order.
     pub needed: Vec<String>,
+    /// `DT_RUNPATH` (or `DT_RPATH`) entries, as written (`$ORIGIN`, …).
+    pub runpath: Vec<String>,
+}
+
+/// Whether a file starting with `head` (64 bytes or more) is an x86_64
+/// program or shared library: what the loader loads. Kernel modules,
+/// objects and firmware for other cores are not.
+pub fn is_loadable(head: &[u8]) -> bool {
+    head.len() >= 20
+        && &head[..4] == b"\x7fELF"
+        && head[4] == 2
+        && head[5] == 1
+        && matches!(u16::from_le_bytes([head[16], head[17]]), ET_EXEC | ET_DYN)
+        && u16::from_le_bytes([head[18], head[19]]) == EM_X86_64
 }
 
 /// The interpreter and needed libraries of an x86_64 ELF file. A static
@@ -58,16 +77,18 @@ pub fn needs(data: &[u8]) -> Result<Needs> {
     }
     let Some((doff, dsize)) = dynamic else { return Ok(out) };
     let mut names = Vec::new();
+    let mut paths = Vec::new();
     let mut strtab = None;
     for e in (doff..doff + dsize).step_by(16) {
         match u64_at(e)? {
             DT_NULL => break,
             DT_NEEDED => names.push(u64_at(e + 8)? as usize),
+            DT_RPATH | DT_RUNPATH => paths.push(u64_at(e + 8)? as usize),
             DT_STRTAB => strtab = Some(u64_at(e + 8)?),
             _ => {}
         }
     }
-    if names.is_empty() {
+    if names.is_empty() && paths.is_empty() {
         return Ok(out);
     }
     // DT_STRTAB is an address: find the file offset of its segment.
@@ -79,6 +100,10 @@ pub fn needs(data: &[u8]) -> Result<Needs> {
     let base = offset + (addr - vaddr) as usize;
     for n in names {
         out.needed.push(cstr(data.get(base + n..).context("bad DT_NEEDED")?));
+    }
+    for p in paths {
+        let list = cstr(data.get(base + p..).context("bad DT_RUNPATH")?);
+        out.runpath.extend(list.split(':').filter(|d| !d.is_empty()).map(str::to_string));
     }
     Ok(out)
 }
@@ -101,5 +126,7 @@ mod tests {
         assert!(n.interp.as_deref().is_some_and(|i| i.contains("ld-linux")), "{n:?}");
         assert!(n.needed.iter().any(|l| l.starts_with("libc.so")), "{n:?}");
         assert!(needs(b"#!/bin/sh\n").is_err());
+        assert!(is_loadable(&me[..64]));
+        assert!(!is_loadable(b"#!/bin/sh\n"));
     }
 }

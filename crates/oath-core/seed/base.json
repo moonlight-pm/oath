@@ -93,6 +93,16 @@
       "description": "GNU awk.",
       "home": "https://www.gnu.org/software/gawk/"
     },
+    "pkg:gmp": {
+      "present": true,
+      "description": "GMP, multiple-precision arithmetic (coreutils' factor and expr, gawk's -M).",
+      "home": "https://gmplib.org/"
+    },
+    "pkg:mpfr": {
+      "present": true,
+      "description": "MPFR, multiple-precision floating point (gawk's -M).",
+      "home": "https://www.mpfr.org/"
+    },
     "pkg:findutils": {
       "present": true,
       "description": "GNU find and xargs.",

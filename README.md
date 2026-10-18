@@ -39,13 +39,15 @@ a **native** base where every package is built from source by an Oath
 What is true today:
 
 - PID 1, the catalog, `oath`, the package store and the installer are
-  ours, in Rust, statically linked against musl.
+  ours, in Rust, statically linked against glibc.
 - The kernel is vanilla kernel.org source, pinned by sha256, and every
-  other package in the image (busybox, util-linux, btrfs-progs,
-  dropbear, OpenSSH, curl, dosfstools, kexec-tools, firmware) is built
-  from pinned source in `pkgs/` by our own Clang/LLVM on musl, and
-  rebuilds bit-identically. That Clang/LLVM is a plan product too and
-  rebuilds itself. The boot loader is `oath-efi`.
+  other package in the image (glibc, bash and the GNU userland,
+  util-linux, iproute2, dhcpcd, chrony, btrfs-progs, dropbear, OpenSSH,
+  curl, vim, kexec-tools, firmware) is built from pinned source in
+  `pkgs/` by our own GCC on glibc, and rebuilds bit-identically.
+  Programs load their libraries through a `/lib` link farm. That GCC
+  and glibc are plan products too and rebuild themselves. The boot
+  loader is `oath-efi`.
 - The Oath binaries are `pkg:oath`, built from this tree in the same
   sandbox by the vendor's Rust release (`pkg:rust`, pinned by sha256),
   and rebuild bit-identically too.

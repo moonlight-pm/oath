@@ -57,52 +57,73 @@ sources.
 ## Bootstrap
 
 `cargo make bootstrap` (hours) builds the toolchain from the pinned
-(and signature-checked) sources in `llvm/pkg.toml`, `busybox/pkg.toml` and `make/pkg.toml`:
+(and signature-checked) sources in `gcc/pkg.toml` and `glibc/pkg.toml`,
+and the base tools from their own (R17, R18 in
+[../docs/decisions.md](../docs/decisions.md)):
 
 1. **Stage 0**, with the build host's gcc (`nix-shell bootstrap.nix`):
-   clang and lld targeting `x86_64-unknown-linux-musl`, and a sysroot of
-   Linux UAPI headers, musl, compiler-rt builtins, libunwind, libc++abi
-   and libc++. Stage 0 runs only on the build host and never ships.
-2. **Stage 1**, with stage 0: static musl clang, lld and LLVM tools plus
-   the same sysroot (`pkg:llvm`), and static busybox and GNU make. Their
-   `cc` / `c++` find the sysroot through `bin/clang.cfg` and link
-   statically by default.
+   a cross toolchain for `x86_64-oath-linux-gnu`: binutils, a C-only
+   GCC, the Linux UAPI headers, glibc, then the whole GCC (C, C++,
+   shared libgcc, libstdc++). It starts from an empty prefix every time,
+   runs only on the build host and never ships.
+2. **Stage 1**, with stage 0: `pkg:gcc` (GCC and binutils for
+   `x86_64-pc-linux-gnu`), `pkg:glibc` (stage 0's glibc and headers) and
+   the GNU tools: bash, coreutils, sed, grep, gawk, findutils, diffutils,
+   patch, tar, gzip, xz, bzip2 and make. These are the base every plan
+   builds with (`BASE` in `crates/oath-make/src/pkgs.rs`). The host's
+   pkg-config sees nothing during stage 1, so no host library can be
+   linked in.
 
-After that, `llvm/build.sh` is stage 1 as a plan: the previous
-`pkg:llvm`, with the `cmake`, `ninja` and `python` packs, builds a fresh
-sysroot and the tools in the sandbox.
+GCC is patched (one define) to name `/lib/ld-linux-x86-64.so.2` as
+every program's loader, and glibc installs it there and searches `/lib`;
+there is no `/lib64`. `pkg:gcc` reads glibc's headers from
+`/oath/store/pkg/glibc/live/include` and finds glibc's startup files and
+libraries in `/lib`. After the bootstrap, `gcc/build.sh` and
+`glibc/build.sh` rebuild them in the sandbox, and so does each base
+tool's own plan.
 
 ## Stage 2
 
 `cargo make pkgs [names]` builds packages in dependency order. For each:
 fetch and verify the sources; put them (and the package's extra files)
-in a `pkg:<name>-src` pack; write `<name>.plan` with the source pack and
-the build packs from `lock.json` pinned by hash; run `oath build` in the
-catalog at `.cache/oath`; record the product in `lock.json`. A package
-whose plan has not changed is not rebuilt. llvm, busybox and make are
-rebuilt here by their stage-1 selves; run `cargo make pkgs` again and
-everything rebuilds with the stage-2 tools. Packages that build each
-other (llvm and python) use the locked product of the one asked for, so
-`cargo make pkgs llvm` builds python first.
+in a `pkg:<name>-src` pack; write `<name>.plan` with the source pack, the
+base packs and the packs `build` names, all pinned by hash from
+`lock.json`; run `oath build` in the catalog at `.cache/oath`; record the
+product in `lock.json`. A package whose plan has not changed is not
+rebuilt. The base packs are rebuilt here by their stage-1 selves; run
+`cargo make pkgs` again and everything rebuilds with the stage-2 tools.
+Packages that build each other (glibc and python) use the locked
+product of the one asked for, so `cargo make pkgs glibc` builds python
+first. `cargo make pkgs --fetch [names]` only fetches and checks
+sources.
 
-The generated script starts with `SRC` (the tarballs), `FILES`,
-`SOURCES`, `VERSION`, `JOBS`, `LIVE` (the slot path the pack is used at,
+The sandbox has a `/bin` and a `/lib` link farm of its packs. The
+generated script starts with `SRC` (the tarballs), `FILES`, `SOURCES`,
+`VERSION`, `JOBS`, `LIVE` (the slot path the pack is used at,
 `/oath/store/pkg/<name>/live`), `CC=cc` and friends, and `CPPFLAGS`,
 `LDFLAGS` and `PKG_CONFIG_PATH` covering every library pack it builds
-with. Library packs install under `$LIVE` so their `.pc` files work in
-the next sandbox. Write the result to `/out`. A product must not name
-its compiler's store path (`/oath/store/pkg/llvm/<hash>`), or it changes
-with every `pkg:llvm`: strip debug info from anything built with `-g`
-(python does).
+with. Libraries build shared and install under `$LIVE` so their `.pc`
+files work in the next sandbox; a package that loads one names it under
+`run`, so machines get it too. After each build, every library the
+product's programs load (`DT_NEEDED`) must be in its own `lib/`,
+glibc's, or a `run` pack's (and what those run with); the build fails
+naming the pack that has it. A base pack counts: zstd links liblzma, so
+it runs with xz; C++ programs run with gcc (`libstdc++`, `libgcc_s`).
+Write the result to `/out`. A product
+must not name its compiler's store path (`/oath/store/pkg/gcc/<hash>`),
+or it changes with every `pkg:gcc`: strip debug info from anything built
+with `-g` (python does).
 
 `rust/` is the vendor's Rust release rather than a source build: its
-tarballs are the pinned sources, and its plan gives the vendor's
-binaries their own musl loader and `libgcc_s.so.1`. It builds the Oath
-binaries, which are not a directory here: `cargo make build` (or
-`cargo make pkgs oath`) packs this tree and every crate in `Cargo.lock`
-into `pkg:oath-src` and builds `pkg:oath` with
-`crates/oath-make/src/oath-pkg.sh`, linked by `pkg:llvm`'s clang against
-its musl. That product follows the tree and is not in the lock.
+tarballs are the pinned sources, and its plan points the vendor's
+binaries at `/lib`'s loader (they name `/lib64/…`). It builds the Oath
+binaries, which are not a directory here: `cargo make build` (or `cargo
+make pkgs oath`) packs this tree and every crate in `Cargo.lock` into
+`pkg:oath-src` and builds `pkg:oath` with
+`crates/oath-make/src/oath-pkg.sh`: static, against glibc's `libc.a`,
+linked by `pkg:gcc`. That product follows the tree and is not in the
+lock. `kexec` is static too: the installer runs it on the machine being
+replaced, whatever its libc.
 
 `cargo make pkgs --list` shows every package, its licence and its pins.
 `cargo make build` packs the image from the products in `lock.json`:

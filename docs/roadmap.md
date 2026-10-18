@@ -70,9 +70,10 @@ bit-identical products. The image takes every userspace package from
 the only loader); the installer uses sfdisk, wipefs and native mkfs.
 27 harness cases and the `install --qemu` rehearsal pass.
 
-Since: the kernel is a plan built by `pkg:llvm` (2026-10-15), and the
-Oath binaries are `pkg:oath`, built by the vendor's Rust pack
-`pkg:rust` and linked against `pkg:llvm`'s musl (2026-10-16). Sources
+Since: the kernel is a plan built by the system toolchain
+(2026-10-15), and the Oath binaries are `pkg:oath`, built by the
+vendor's Rust pack `pkg:rust` (2026-10-16); the toolchain became GCC
+and glibc on 2026-10-17 (phase 8, R17). Sources
 are checked against upstream OpenPGP signatures by keys pinned in
 `pkgs/keys/`, and Python's against its Sigstore bundle (2026-10-16).
 
@@ -115,10 +116,12 @@ tool, `--read-only`, `actor.via` and `confirm` in the apply log, and
 River, wlroots, mesa, input, audio, fonts and Sola built natively.
 Sola-compat rules from the old fork workflow still apply.
 
-Slice 1 (R17, 2026-10-17): the toolchain becomes GCC, binutils and
-glibc, programs link dynamically through a `/lib` farm, and Clang/LLVM
-and musl leave ([specs/builds.md](specs/builds.md), Target). Open: River
-is written in Zig, which R9 rules out.
+Slice 1 (R17, R18), built 2026-10-17: the toolchain is GCC 16.2,
+binutils 2.47 and glibc 2.44, programs link dynamically through a
+`/lib` farm, and Clang/LLVM, musl and busybox are gone; the base is the
+GNU userland with util-linux, iproute2, dhcpcd, chrony and vim
+([specs/builds.md](specs/builds.md)). Open: River is written in Zig,
+which R9 rules out.
 
 ## 9. Steam + Minecraft desk — planned
 

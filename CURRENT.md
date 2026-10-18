@@ -5,29 +5,30 @@ items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
 **As of:** 2026-10-17 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R17 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R18 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **Phase 7, agent surface (R16).** All three steps of
-   [docs/specs/agent.md](docs/specs/agent.md) are built: `oath mcp`
-   (both MCP eras, 21 tools with `file_plan`, resources, progress,
-   `--read-only`, `actor.via` and `confirm` in the apply log) and
-   `cargo make check --agent`. Output `534f0dc53cbb` passes all 47
-   QEMU cases. canto runs `e3a11645f14c` (steps 1–2), passes all 37
-   metal cases and all five agent tasks with haiku. In QEMU four tasks
-   passed on `e3a11645f14c`; `diagnose` failed in its own setup (fixed
-   since). The key in this session's environment is refused, so
-   Joshua runs it. Next: `cargo make check --agent` on `534f0dc53cbb`;
-   when all five pass, phase 7 is done (flip it in the roadmap).
-2. **Phase 8 slice 1: GCC and glibc (R17).** The toolchain becomes
-   GCC, binutils and glibc; programs link dynamically through a `/lib`
-   farm (loader `/lib/ld-linux-x86-64.so.2`, no `/lib64`); Clang/LLVM
-   and musl leave. Plan in [docs/specs/builds.md](docs/specs/builds.md)
-   (Target). Next: the stage 0/1 bootstrap in `pkgs/bootstrap.sh`
-   (binutils, GCC, glibc), then `pkg:gcc`, `pkg:glibc` and the sandbox's
-   `/lib` farm. Open before River: it is Zig (R9).
-3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+1. **Phase 8 slice 1: GCC, glibc and the GNU userland (R17, R18).**
+   Built: GCC 16.2, binutils 2.47 and glibc 2.44 bootstrapped from the
+   host's gcc; 51 locked packages, shared libraries through a `/lib`
+   farm (no `/lib64`), each pack's `needs` from the libraries it loads
+   (checked after every build); bash, coreutils and the GNU tools,
+   dhcpcd, chrony, vim; busybox, Clang/LLVM and musl gone. Output
+   `29b1b9a54be1` passes all 48 QEMU cases. Next: reinstall canto
+   (Joshua approved 2026-10-17; an update cannot cross this change),
+   run its `metal` cases and mount its NFS backup target once.
+2. **Phase 7, agent surface (R16).** `oath mcp` and
+   `cargo make check --agent` are built
+   ([docs/specs/agent.md](docs/specs/agent.md)); canto passed all five
+   agent tasks with haiku on `e3a11645f14c`. The key in this session's
+   environment is refused, so Joshua runs it. Next: `cargo make check
+   --agent` in QEMU on `29b1b9a54be1`; when all five pass, phase 7 is done
+   (flip it in the roadmap).
+3. **Phase 8 slice 2: the desk.** Mesa (ACO, no LLVM), Wayland,
+   wlroots and Sola as plans. Open first: River is Zig, which R9 rules
+   out ([docs/decisions.md](docs/decisions.md)).
+4. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
    `cargo make install --usb` stick, or `cargo make update` once it
@@ -35,7 +36,8 @@ append history (git has it).
 
 **State:** phases 1–5 are done; phases 6 (buccina left), 7 and 8 are active
 ([docs/roadmap.md](docs/roadmap.md)). On 2026-10-17 `oath mcp` and the
-real-model check were built (R16). On 2026-10-16 every target in the
+real-model check were built (R16), and Oath became a GCC, glibc and
+GNU system (R17, R18). On 2026-10-16 every target in the
 specs short of phase 8 was built: the spec/status split (R14), source
 beside each pack on origins (R13), probation with automatic rollback,
 store integrity (`oath verify`), schemas generated from the types,
@@ -43,9 +45,10 @@ cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
 device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
 `cargo make update`. The screen is a `home` shell when no desk owns it
-(R15). The newest output, `534f0dc53cbb`, passes all 47 QEMU cases;
-canto's, `e3a11645f14c`, all 37 metal cases. Left by design until something needs them: root SSH as a field,
-more NICs, device rules as fields, RPATHs to hash paths (the desk).
+(R15). The newest output, `29b1b9a54be1`, passes all 48 QEMU cases;
+canto's, `e3a11645f14c`, all 37 metal cases. Left by design until
+something needs them: root SSH as a field, more NICs, device rules as
+fields.
 
 ## Machines
 

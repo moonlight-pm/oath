@@ -90,7 +90,7 @@ if step stage0-binutils; then
 	rm -rf "$WORK/b0-binutils" && mkdir -p "$WORK/b0-binutils"
 	(cd "$WORK/b0-binutils" && "$WORK/binutils/configure" \
 		--target=$T0 --prefix="$S0" --with-sysroot="$SYS0" --with-lib-path==/lib \
-		--disable-nls --disable-werror --disable-gprofng --disable-gdb \
+		--without-zstd --disable-nls --disable-werror --disable-gprofng --disable-gdb \
 		--disable-gdbserver --disable-sim --disable-readline --disable-libdecnumber \
 		--enable-default-hash-style=gnu MAKEINFO=true &&
 		make -j"$JOBS" MAKEINFO=true && make install MAKEINFO=true)
@@ -118,7 +118,10 @@ if step stage0-gcc1; then
 fi
 
 if step stage0-linux-headers; then
-	make -C "$WORK/linux" ARCH=x86_64 HOSTCC=gcc INSTALL_HDR_PATH="$SYS0" headers_install
+	# As headers_install does, without rsync.
+	make -C "$WORK/linux" ARCH=x86_64 HOSTCC=gcc headers
+	find "$WORK/linux/usr/include" -type f ! -name '*.h' -delete
+	cp -r "$WORK/linux/usr/include" "$SYS0/"
 	done_ stage0-linux-headers
 fi
 
@@ -161,6 +164,10 @@ fi
 
 # ---- stage 1: pkg:glibc ---------------------------------------------------
 
+# Stage 1 builds for Oath: the host's pkg-config must not offer the host's
+# libraries (binutils linked the host's libzstd that way).
+export PKG_CONFIG_LIBDIR=/var/empty PKG_CONFIG_PATH=
+
 G=$OUT/glibc
 if step stage1-glibc; then
 	# Stage 0's glibc, as built: stage 2's plan rebuilds it with pkg:gcc.
@@ -184,7 +191,7 @@ if step stage1-binutils; then
 	# shellcheck disable=SC2086
 	(cd "$WORK/b1-binutils" && env $cross "$WORK/binutils/configure" \
 		--build="$BUILD" --host=$T --target=$T --prefix= --with-lib-path=/lib \
-		--disable-nls --disable-werror --disable-gprofng --disable-gdb \
+		--without-zstd --disable-nls --disable-werror --disable-gprofng --disable-gdb \
 		--disable-gdbserver --disable-sim --disable-readline --disable-libdecnumber \
 		--enable-default-hash-style=gnu --enable-plugins --enable-ld=default \
 		MAKEINFO=true &&

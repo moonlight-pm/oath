@@ -19,8 +19,8 @@ of T24, and D3 (seed as data).
 
 - `pkg:linux` is a plan (`pkgs/linux/`): `linux-<kver>.tar.gz` from
   git.kernel.org pinned by sha256, `patches/*.patch`, and
-  `linux.fragment` merged into `defconfig`, built by `pkg:llvm`
-  (`LLVM=1`) in the build sandbox. The product is `boot/vmlinuz`,
+  `linux.fragment` merged into `defconfig`, built by `pkg:gcc` in the
+  build sandbox. The product is `boot/vmlinuz`,
   `boot/config` and `lib/modules/<release>/` with the depmod index. The
   pin and version change together.
 - `cargo make` takes the kernel from `pkgs/lock.json` (or `OATH_KERNEL`
@@ -38,11 +38,13 @@ of T24, and D3 (seed as data).
   of a fresh catalog and their first desired documents. `extends`
   layers profiles. `fixed` lists packages that can never be removed.
 - `base` is a headless machine reached over SSH: host, net (DHCP), ssh,
-  serial, sshd, time, busybox, btrfs, oath, dropbear, openssh,
-  util-linux, dosfstools, curl. It carries no test fixtures: the image
+  serial, screen, sshd, time, and 33 packages: glibc, the GNU userland
+  (R18), util-linux, iproute2, iputils, dhcpcd, chrony, btrfs, oath,
+  dropbear, openssh, dosfstools, curl, vim and the libraries they load. It carries no test fixtures: the image
   the harness checks is the image `install` ships.
-- `cargo make build --profile <p>` builds the musl binaries, packs the
-  profile's present packages, seeds `stage/oath` with
+- `cargo make build --profile <p>` builds `pkg:oath` (static, against
+  glibc), packs the profile's present packages (each with `needs` for
+  the libraries it loads, from the lock), seeds `stage/oath` with
   `oath seed --profile <p>`, hashes the store, and writes a btrfs `@`
   into a build output's `oath.qcow2` (`build/out/<id>/`, below), with
   the boot initrd and the installer initrd.
@@ -71,8 +73,8 @@ of T24, and D3 (seed as data).
   moves the root over `/`, chroots): no `/newroot` is left behind. The
   initramfs modules and firmware stay bind-mounted for the deferred
   driver pass (services.md).
-- Shutdown is PID 1's: busybox `reboot`, `halt`, `poweroff`,
-  Ctrl-Alt-Del and `oath` `power=` all signal it, and it stops
+- Shutdown is PID 1's: `reboot`, `halt` and `poweroff` (links to PID
+  1's own binary), Ctrl-Alt-Del and `oath` `power=` all signal it, and it stops
   services, syncs, unmounts the btrfs top level and remounts `/`
   read-only before calling the kernel.
 - **Last five boots.** `cargo make esp --esp <part> --confirm`, run on
@@ -105,7 +107,7 @@ not matter (canto's September image logged `home` into Thoxa).
    dropbear for root, and waits.
 4. Over SSH, with the installer's native tools: `wipefs` and `sfdisk`
    write a GPT with a 512 MiB ESP and a btrfs partition; `mkfs.fat` and
-   `mkfs.btrfs` format them; `@` gets the staged root through busybox
+   `mkfs.btrfs` format them; `@` gets the staged root through GNU
    `tar`; fix ownership and the setuid bit on `/lib/oath/sudo`.
 5. Write the catalog overlay (hostname, the build host's keys for
    `home`, then the user's overlay) with

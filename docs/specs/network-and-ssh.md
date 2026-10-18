@@ -25,21 +25,29 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   The agent never hunts for `eth0` or `ens3`.
 - `ipv4` is `dhcp` or a CIDR. With a CIDR, `gateway` sets the default
   route.
-- `dhcp`: converge runs busybox `udhcpc` once for the first lease
-  (`/lib/oath/udhcpc.script` applies it; its output stays out of
+- `dhcp`: converge runs `dhcpcd -1` once for the first lease (R18;
+  dhcpcd configures the address and route, its output stays out of
   `oath apply`) and records `lease` in actual. `lease` is not a desired
   field. While the applied `net:net0` is up and `dhcp`, PID 1 also runs
-  `udhcpc -f -i net0` as an internal service (id `net:net0`, not a
-  catalog `svc`), restarted with backoff, so the lease renews. Its log is
-  `/oath/log/net/net0.log` (`oath logs net:net0`). A static address
-  stops it.
-- Every `bound` and `renew` the client gets is recorded (built
-  2026-10-16): the script runs `/lib/oath/net-lease` (PID 1's binary)
-  with udhcpc's environment, which writes actual `lease` (the address)
-  and `dhcp` (`address`, `router`, `dns`, `seconds`, `server`, `event`,
-  `at`) without the catalog lock, and keeps a copy in
-  `/run/oath/net0.lease.json` that the next converge reads. `deconfig`,
-  `leasefail` and `nak` clear both.
+  `dhcpcd -B … net0` as an internal service (id `net:net0`, not a
+  catalog `svc`), restarted with backoff, so the lease renews. Both are
+  IPv4 only (`-4`), keep the address when they stop (`-p`), take no
+  link-local address (`-L`), identify by the hardware address
+  (`-I ''`) and run `/lib/oath/dhcpcd.hook` in place of dhcpcd's own
+  hooks (`-c`). Its log is
+  `/oath/log/net/net0.log` (`oath logs net:net0`). Apply notifies PID 1
+  after every `net` converge; a spec that wants no client (static, or
+  down) is handed to PID 1 first, so the client is stopped before the
+  address changes (dhcpcd would otherwise put its lease back).
+- Every lease the client gets is recorded: the hook writes
+  `/etc/resolv.conf` and runs `/lib/oath/net-lease` (PID 1's binary)
+  with dhcpcd's environment (`reason`, `new_*`), which writes actual
+  `lease` (the address) and `dhcp` (`address`, `router`, `dns`,
+  `seconds`, `server`, `event`, `at`) without the catalog lock, and
+  keeps a copy in `/run/oath/net0.lease.json` that the next converge
+  reads. `BOUND` and `REBOOT` record a `bound` event, `RENEW` and
+  `REBIND` a `renew`; `EXPIRE`, `NAK`, `RELEASE`, `NOCARRIER` and
+  `DEPARTED` clear both.
 - Any change to `up`, `ipv4` or `gateway` is confirm-class: `oath apply`
   exits 3 without `--confirm`, because it can cut the machine off from
   SSH. Serial still works.
@@ -76,10 +84,12 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
 ## Time (built)
 
-- `svc:time` in the `base` seed runs `/bin/ntpd -n -S
-  /lib/oath/ntp-event -p 0.pool.ntp.org … -p 3.pool.ntp.org` as root
-  (R12). busybox `ntpd` steps an offset over one second and slews
-  smaller ones; `ntp-event` writes one log line per event.
+- `svc:time` in the `base` seed runs `/bin/chronyd -d 'server
+  0.pool.ntp.org iburst' … 'makestep 1 3'` as root (R12, R18): its
+  directives are arguments, there is no config file, and it is built
+  without a command socket (no `chronyc`) or NTS. It steps an offset
+  over one second in its first three updates and slews after that; its
+  own log lines are the service log.
 - The RTC is not written; every boot steps the clock again.
 
 ## Accounts (built)
@@ -119,5 +129,5 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 ## Courage test
 
 From the build host: `ssh -p 2222 home@127.0.0.1 oath get net:net0`
-shows a lease, and `ps` shows `udhcpc -f`. Adding a second key to `ssh:local` and applying lets
+shows a lease, and `ps` shows `dhcpcd: net0 [ip4]`. Adding a second key to `ssh:local` and applying lets
 that key log in. `sudo oath apply` works; `ssh root@…` is refused.

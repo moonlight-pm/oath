@@ -66,8 +66,9 @@ descriptive fields.
   tree matches it. There is no global "right" hash for a name; the
   first pin is a trust act by the owner. After that, a mismatch is an
   error, never a silent upgrade.
-- **Removable.** The seed profile lists fixed packages (`busybox`,
-  `btrfs`, `oath`, `dropbear`), recorded as `fixed` in their
+- **Removable.** The seed profile lists fixed packages (`glibc`,
+  `bash`, `coreutils`, `util-linux`, `iproute2`, `dhcpcd`, `btrfs`,
+  `oath`, `dropbear`), recorded as `fixed` in their
   `meta.json`; `present=false` or `oath rm` on one of them is refused.
   Actual `removable` reports it.
 - **Needs.** A list of `{id, hash}`: other packages this one needs at
@@ -124,29 +125,38 @@ the publishable packs and their advisories into an origin tree (below).
 - A build host's compiler may bootstrap the first toolchain. It never
   ships.
 
-As built (2026-10-16), `pkgs/lock.json` pins 27 packages, each with its
-version, SPDX licence, how it was built, plan hash and product hash,
-and every one is a plan product: the image's busybox, btrfs-progs
+As built (2026-10-17), `pkgs/lock.json` pins 51 packages, each with its
+version, SPDX licence, how it was built, plan hash, product hash and
+the packs it runs with, and every one is a plan product: glibc, GCC
+and binutils (`pkg:gcc`, with gmp, mpfr and mpc); the GNU userland
+(R18: bash, coreutils, sed, grep, gawk, findutils, diffutils, patch,
+tar, gzip, xz, bzip2, make, procps-ng, less, vim with ncurses);
+util-linux, iproute2, iputils, dhcpcd, chrony, btrfs-progs
 (`pkg:btrfs`), dropbear, OpenSSH (client, scp, sftp, ssh-keygen,
-sftp-server; no OpenSSL), util-linux, dosfstools and curl (with the CA
-bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`); the kernel
-(`pkg:linux`) and firmware (individual linux-firmware blobs);
-kexec-tools (`pkg:kexec`) for the installer; and the build tools
-(`pkg:llvm`, `pkg:rust`, make, cmake, ninja, python, perl, m4, flex,
-bison, elfutils, pkgconf, patchelf and the libraries zlib, zstd, lzo
-and mbedTLS). `pkg:oath` follows this tree and is not locked. Nothing
-in the image comes from nixpkgs.
+sftp-server; no OpenSSL), dosfstools and curl (with the CA bundle at
+`/oath/store/pkg/curl/live/ssl/cert.pem`) and the libraries they load
+(zlib, zstd, lzo, mbedTLS); the kernel (`pkg:linux`) and firmware
+(individual linux-firmware blobs); kexec-tools (`pkg:kexec`, static)
+for the installer; and the build tools (`pkg:rust`, python, meson,
+ninja, perl, m4, flex, bison, bc, elfutils, pkgconf, patchelf).
+`pkg:oath` follows this tree and is not locked. Nothing in the image
+comes from nixpkgs.
+
+## Shared libraries (built, R17)
+
+Programs link dynamically against glibc, whose loader is
+`/lib/ld-linux-x86-64.so.2`. `/lib` is a link farm of every linked
+package's `lib/` entries (not `oath/`, `modules/`, `firmware/` or
+`pkgconfig/`), made and removed with its `/bin` links, so a re-pin of
+a library changes the programs that load it, as on any distro; sonames
+keep incompatible versions apart, the `needs` graph checks the set,
+and undo takes a bad re-pin back. No RPATHs, no `/lib64`. The image
+writes each pack's `needs` from the lock's run packs (the libraries it
+loads), so apply refuses removing `pkg:ncurses` while `pkg:less` is
+present.
 
 ## Target
 
-- **Shared libraries (R17).** Programs link dynamically against
-  glibc, whose loader is `/lib/ld-linux-x86-64.so.2`. `/lib` will be a
-  link farm of every linked package's `lib/*.so*`, made and removed
-  with its `/bin` links, so a re-pin of a library changes the programs
-  that load it, as on any distro; sonames keep incompatible versions
-  apart, the `needs` graph checks the set, and undo takes a bad re-pin
-  back. No RPATHs, no `/lib64`. This replaces the earlier target of
-  RPATHs to hash paths (2026-10-17).
 - Out of scope for now: signatures on Oath's own packs and indexes
   (upstream sources are signature-checked at build time, see
   builds.md), reaping unused realizations, peer discovery.
@@ -164,7 +174,7 @@ verbatim upstream files, patches and `build.sh` inputs). It refuses the
 whole publish if one is not built, has no licence, has no plan whose
 hash matches the record, or has a `run` need that no profile names.
 `INDEX.md` lists name, hash, licence, plan and source. The build packs
-a plan pins (`pkg:llvm`, `pkg:make`, `pkg:rust`, ...) are not
+a plan pins (`pkg:gcc`, `pkg:rust`, `pkg:python`, ...) are not
 published.
 
 ## Pack manifest (built)

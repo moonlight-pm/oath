@@ -20,7 +20,7 @@ pub fn passwd_file() -> String {
 
 /// Dropbear (and getusershell) reject logins whose pw_shell is not listed here.
 pub fn shells_file() -> String {
-    "/bin/sh\n".into()
+    "/bin/sh\n/bin/bash\n".into()
 }
 
 pub fn group_file() -> String {

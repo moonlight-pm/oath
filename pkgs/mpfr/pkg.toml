@@ -1,0 +1,13 @@
+version = "4.2.2"
+license = "LGPL-3.0-or-later"
+description = "MPFR, multiple-precision floating point (GCC, MPC, gawk)."
+home = "https://www.mpfr.org/"
+purl = "pkg:generic/mpfr@4.2.2"
+build = ["gmp"]
+run = ["gmp"]
+
+[[source]]
+url = "https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz"
+sha256 = "b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01"
+sig = "https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz.sig"
+key = "mpfr"

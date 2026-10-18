@@ -1,5 +1,5 @@
-# The compiler (R17): GCC (C, C++) and binutils, with GMP, MPFR and MPC
-# built into it. Its runtime libraries (libgcc_s, libstdc++, libatomic,
+# The compiler (R17): GCC (C, C++) and binutils, linked against the GMP,
+# MPFR and MPC packages. Its runtime libraries (libgcc_s, libstdc++, libatomic,
 # libgomp) are in lib/. It links every program with glibc's loader at
 # /lib/ld-linux-x86-64.so.2 and reads glibc's headers from
 # /oath/store/pkg/glibc/live/include. `cargo make bootstrap` makes the
@@ -10,7 +10,8 @@ license = "GPL-3.0-or-later WITH GCC-exception-3.1 AND GPL-3.0-or-later AND LGPL
 description = "GCC 16 (C, C++) and binutils 2.47. cc / c++ link dynamically against glibc through /lib."
 home = "https://gcc.gnu.org/"
 purl = "pkg:generic/gcc@16.2.0"
-build = []
+build = ["gmp", "mpfr", "mpc"]
+run = ["gmp", "mpfr", "mpc"]
 
 [[source]]
 url = "https://ftp.gnu.org/gnu/gcc/gcc-16.2.0/gcc-16.2.0.tar.xz"
@@ -23,21 +24,3 @@ url = "https://ftp.gnu.org/gnu/binutils/binutils-2.47.tar.xz"
 sha256 = "154ab23b60070e8f27013c22977f1129425d67d1e8acd6e13010e617811e4cff"
 sig = "https://ftp.gnu.org/gnu/binutils/binutils-2.47.tar.xz.sig"
 key = "binutils"
-
-[[source]]
-url = "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz"
-sha256 = "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
-sig = "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz.sig"
-key = "gmp"
-
-[[source]]
-url = "https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz"
-sha256 = "b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01"
-sig = "https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz.sig"
-key = "mpfr"
-
-[[source]]
-url = "https://ftp.gnu.org/gnu/mpc/mpc-1.4.1.tar.xz"
-sha256 = "91204cd32f164bd3b7c992d4a6a8ce6519511aadab30f78b6982d0bf8d73e931"
-sig = "https://ftp.gnu.org/gnu/mpc/mpc-1.4.1.tar.xz.sig"
-key = "mpc"

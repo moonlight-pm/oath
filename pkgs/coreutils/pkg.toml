@@ -4,6 +4,8 @@ description = "GNU coreutils: ls, cp, mv, cat, sort, and the rest."
 home = "https://www.gnu.org/software/coreutils/"
 purl = "pkg:generic/coreutils@9.12"
 build = []
+# factor, expr and basenc use GMP for big numbers.
+run = ["gmp"]
 
 [[source]]
 url = "https://ftp.gnu.org/gnu/coreutils/coreutils-9.12.tar.xz"

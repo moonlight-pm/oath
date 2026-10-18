@@ -29,9 +29,9 @@ Principles: independence, simplicity, openness, courage. Oath is not a
 remix of Debian, Arch, NixOS, Alpine or Ubuntu. Unix is the substrate;
 the catalog is the admin interface.
 
-The C library is musl. glibc may come back only as a runtime object
-for a payload that needs it (`pkg:glibc`). One process never loads two
-libcs.
+The C library is glibc, and the toolchain GCC and binutils (R17).
+Programs load glibc through `/lib/ld-linux-x86-64.so.2`; Oath's own
+binaries are static. One process never loads two libcs.
 
 ## Payloads
 

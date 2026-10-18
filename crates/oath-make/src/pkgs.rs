@@ -110,6 +110,10 @@ pub struct LockEntry {
     #[serde(default)]
     pub plan: String,
     pub product: String,
+    /// The packs this product loads at run time, as it was built (its
+    /// plan's `run_needs`). Absent in entries from before it was kept.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run: Option<Vec<String>>,
 }
 
 pub type Lock = BTreeMap<String, LockEntry>;
@@ -253,6 +257,63 @@ fn write_lock(repo: &Path, lock: &Lock) -> Result<()> {
 /// Download (once) and verify every source of `pkg`: its sha256 pin and,
 /// when it has one, its upstream signature. Returns each source's path
 /// under `src/` and its file in build/fetch.
+/// What a package builds with: its build packs and, since they run in the
+/// sandbox, what each of those needs to run (bison runs m4), in order:
+/// what the locked product needs, not what its pkg.toml says now. The
+/// package itself is left out until it has been built once.
+pub(crate) fn build_closure(
+    repo: &Path,
+    all: &BTreeMap<String, PkgToml>,
+    lock: &Lock,
+    name: &str,
+    p: &PkgToml,
+) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut todo: Vec<String> = p.build.clone();
+    todo.reverse();
+    while let Some(d) = todo.pop() {
+        if out.contains(&d) || (d == name && !lock.contains_key(name)) {
+            continue;
+        }
+        todo.extend(locked_run(repo, all, lock, &d).into_iter().rev());
+        out.push(d);
+    }
+    out
+}
+
+/// The packs `name`'s locked product runs with: as recorded, or (for an
+/// entry from before that) its plan's `run_needs` if that plan is the one
+/// the lock pins, or else pkg.toml's. A bootstrap pack carries its own.
+pub(crate) fn locked_run(
+    repo: &Path,
+    all: &BTreeMap<String, PkgToml>,
+    lock: &Lock,
+    name: &str,
+) -> Vec<String> {
+    let Some(e) = lock.get(name) else {
+        return all.get(name).map(|p| p.run.clone()).unwrap_or_default();
+    };
+    if let Some(run) = &e.run {
+        return run.clone();
+    }
+    if e.by == "bootstrap" {
+        return Vec::new();
+    }
+    let plan = pkgs_dir(repo).join(name).join(format!("{name}.plan"));
+    if let Ok(bytes) = fs::read(&plan) {
+        if oath_core::file_hash(&bytes) == e.plan {
+            if let Ok(pf) = oath_core::parse_plan(&String::from_utf8_lossy(&bytes)) {
+                return pf
+                    .run_needs
+                    .iter()
+                    .map(|n| n.id.trim_start_matches("pkg:").to_string())
+                    .collect();
+            }
+        }
+    }
+    all.get(name).map(|p| p.run.clone()).unwrap_or_default()
+}
+
 /// `cargo make pkgs --fetch`: every source of the named packages (or all),
 /// pinned and signature-checked, and nothing built.
 pub fn fetch_all(repo: &Path, names: &[String]) -> Result<()> {
@@ -409,9 +470,12 @@ fn order(all: &BTreeMap<String, PkgToml>, names: &[String], locked: &Lock) -> Re
         let p = all.get(n).with_context(|| format!("no pkgs/{n}/pkg.toml"))?;
         stack.push(n.to_string());
         for d in p.build.iter().chain(p.run.iter()) {
-            // A package may build with an earlier build of itself
-            // (gcc, make); that comes from the lock, not a recursion.
-            if d != n {
+            // A package may build with an earlier build of itself (gcc,
+            // make); that comes from the lock, not a recursion. So does a
+            // base pack another package builds with: each base pack is
+            // rebuilt in its own turn.
+            let base = BASE.contains(&d.as_str()) && locked.contains_key(d);
+            if d != n && !base {
                 visit(d, all, locked, seen, stack, out)?;
             }
         }
@@ -491,8 +555,8 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
         let files = fetch(repo, p)?;
         let src = source_pack(repo, &cat, &name, &files)?;
         let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.clone() }];
-        for d in &p.build {
-            build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(&lock, d)? });
+        for d in build_closure(repo, &all, &lock, &name, p) {
+            build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(&lock, &d)? });
         }
         let mut run_needs = Vec::new();
         for d in &p.run {
@@ -555,6 +619,7 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
         );
         let r = oath_core::build_file(&cat, &plan_path)
             .map_err(|e| anyhow::anyhow!("pkg:{name}: {e}"))?;
+        check_loads(repo, &cat, &all, &lock, &name, &r.product)?;
         eprintln!("== pkg:{name} {}", r.product);
         lock.insert(
             name.clone(),
@@ -564,11 +629,101 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
                 by: "plan".into(),
                 plan: plan_hash,
                 product: r.product,
+                run: Some(p.run.clone()),
             },
         );
         write_lock(repo, &lock)?;
     }
     Ok(())
+}
+
+/// Every library a new product's programs load (`DT_NEEDED`) must be in
+/// its own `lib/`, glibc's, or a pack it runs with (`run`, and what those
+/// run with): on a machine a program finds its libraries only in `/lib`,
+/// which holds what is linked there (R17), or beside itself through an
+/// upstream `$ORIGIN` path (glibc's gconv modules). A library that only
+/// the build sandbox had (a base pack, a build pack) is an undeclared
+/// `run`.
+fn check_loads(
+    repo: &Path,
+    cat: &Path,
+    all: &BTreeMap<String, PkgToml>,
+    lock: &Lock,
+    name: &str,
+    product: &str,
+) -> Result<()> {
+    let store = cat.join("store/pkg");
+    let tree = store.join(name).join(product);
+    let libs = |t: &Path| -> BTreeSet<String> {
+        fs::read_dir(t.join("lib"))
+            .into_iter()
+            .flatten()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect()
+    };
+    let locked = |n: &str| lock.get(n).map(|e| store.join(n).join(&e.product));
+    let mut have = libs(&tree);
+    let mut seen = BTreeSet::new();
+    let mut todo = vec!["glibc".to_string()];
+    todo.extend(all[name].run.iter().cloned());
+    while let Some(d) = todo.pop() {
+        if d == name || !seen.insert(d.clone()) {
+            continue;
+        }
+        if let Some(t) = locked(&d) {
+            have.extend(libs(&t));
+        }
+        todo.extend(locked_run(repo, all, lock, &d));
+    }
+    let mut missing: BTreeMap<String, String> = BTreeMap::new();
+    let mut files = vec![tree.clone()];
+    while let Some(p) = files.pop() {
+        let meta = fs::symlink_metadata(&p)?;
+        if meta.is_dir() {
+            files.extend(fs::read_dir(&p)?.map(|e| e.map(|e| e.path())).collect::<Result<Vec<_>, _>>()?);
+            continue;
+        }
+        if !meta.is_file() || meta.len() < 64 {
+            continue;
+        }
+        let mut head = [0u8; 64];
+        std::io::Read::read_exact(&mut fs::File::open(&p)?, &mut head)?;
+        if !crate::elf::is_loadable(&head) {
+            continue;
+        }
+        let needs = crate::elf::needs(&fs::read(&p)?)
+            .with_context(|| format!("pkg:{name}: {}", p.display()))?;
+        let dir = p.parent().unwrap_or(&tree);
+        let beside = |so: &str| {
+            needs.runpath.iter().any(|r| {
+                let r = r.replace("${ORIGIN}", "$ORIGIN");
+                r.strip_prefix("$ORIGIN")
+                    .is_some_and(|rest| dir.join(rest.trim_start_matches('/')).join(so).exists())
+            })
+        };
+        for so in &needs.needed {
+            if !have.contains(so) && !beside(so) {
+                let rel = p.strip_prefix(&tree).unwrap_or(&p).display().to_string();
+                missing.entry(so.clone()).or_insert(rel);
+            }
+        }
+    }
+    if missing.is_empty() {
+        return Ok(());
+    }
+    let mut msg = format!("pkg:{name} {product} loads libraries none of its run packs has:");
+    for (so, file) in &missing {
+        let from: Vec<String> = lock
+            .keys()
+            .filter(|n| locked(n).is_some_and(|t| libs(&t).contains(so)))
+            .map(|n| format!("pkg:{n}"))
+            .collect();
+        let from = if from.is_empty() { "no locked pack".into() } else { from.join(", ") };
+        msg.push_str(&format!("\n  {so} ({file}); in {from}"));
+    }
+    msg.push_str(&format!("\nadd the pack to `run` in pkgs/{name}/pkg.toml"));
+    bail!(msg)
 }
 
 /// `cargo make pkgs --list`: every package, its lock entry and prose.
@@ -619,14 +774,16 @@ pub fn bootstrap(repo: &Path, jobs: usize) -> Result<()> {
     let all = load(repo)?;
     let cat = build_catalog(repo)?;
     let get = |name: &str| all.get(name).with_context(|| format!("pkgs/{name}/pkg.toml"));
-    let mut files = fetch(repo, get("gcc")?)?;
-    files.extend(fetch(repo, get("glibc")?)?);
+    let mut files = Vec::new();
+    for n in ["gcc", "glibc", "gmp", "mpfr", "mpc"] {
+        files.extend(fetch(repo, get(n)?)?);
+    }
     let find = |prefix: &str| -> Result<PathBuf> {
         files
             .iter()
             .find(|(rel, _)| rel.starts_with(prefix))
             .map(|(_, p)| p.clone())
-            .with_context(|| format!("pkgs/gcc or pkgs/glibc has no {prefix}* source"))
+            .with_context(|| format!("no toolchain package has a {prefix}* source"))
     };
     let work = repo.join("build/bootstrap/work");
     let out = repo.join("build/bootstrap/out");
@@ -675,6 +832,7 @@ pub fn bootstrap(repo: &Path, jobs: usize) -> Result<()> {
                 by: "bootstrap".into(),
                 plan: String::new(),
                 product: hash,
+                run: Some(Vec::new()),
             },
         );
     }
@@ -711,6 +869,43 @@ mod tests {
         let mut locked = Lock::new();
         locked.insert("a".into(), LockEntry::default());
         assert_eq!(order(&all, &["a".into()], &locked).unwrap(), vec!["b", "a"]);
+    }
+
+    #[test]
+    fn a_build_tool_brings_what_it_runs_with() {
+        let mut all = BTreeMap::new();
+        let mut bison = pkg(&["gcc"]);
+        bison.run = vec!["m4".into()];
+        all.insert("bison".to_string(), bison);
+        all.insert("m4".to_string(), pkg(&["gcc"]));
+        all.insert("gcc".to_string(), pkg(&[]));
+        let glibc = pkg(&["gcc", "bison"]);
+        let mut lock = Lock::new();
+        let repo = Path::new("/nonexistent");
+        let closure = |all: &BTreeMap<String, PkgToml>, lock: &Lock, name: &str, p: &PkgToml| {
+            build_closure(repo, all, lock, name, p)
+        };
+        assert_eq!(closure(&all, &lock, "glibc", &glibc), ["gcc", "bison", "m4"]);
+        // A bootstrap pack brings nothing: it carries what it runs with.
+        all.get_mut("gcc").unwrap().run = vec!["gmp".into()];
+        let entry = |by: &str, run: Option<Vec<String>>| LockEntry {
+            by: by.into(),
+            run,
+            ..Default::default()
+        };
+        lock.insert("gcc".into(), entry("bootstrap", Some(Vec::new())));
+        assert_eq!(closure(&all, &lock, "glibc", &glibc), ["gcc", "bison", "m4"]);
+        lock.insert("gcc".into(), entry("plan", Some(vec!["gmp".into()])));
+        assert_eq!(closure(&all, &lock, "glibc", &glibc), ["gcc", "gmp", "bison", "m4"]);
+        // What the locked product was built with counts, not pkg.toml now;
+        // and a package's first build cannot need itself.
+        lock.insert("gcc".into(), entry("plan", Some(Vec::new())));
+        assert_eq!(closure(&all, &lock, "glibc", &glibc), ["gcc", "bison", "m4"]);
+        lock.insert("gcc".into(), entry("plan", Some(vec!["gmp".into()])));
+        let gmp = pkg(&["gcc"]);
+        assert_eq!(closure(&all, &lock, "gmp", &gmp), ["gcc"]);
+        lock.insert("gmp".into(), entry("plan", Some(Vec::new())));
+        assert_eq!(closure(&all, &lock, "gmp", &gmp), ["gcc", "gmp"]);
     }
 
     #[test]

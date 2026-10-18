@@ -3,8 +3,8 @@
 Everything is built on the build host with `cargo make` (crate
 `oath-make`), from a plain shell.
 
-Built here, from source: the kernel; the toolchain (clang, lld, musl,
-libc++); every package in the image (`pkgs/`); PID 1 (`oath-init`,
+Built here, from source: the kernel; the toolchain (GCC, binutils,
+glibc); every package in the image (`pkgs/`); PID 1 (`oath-init`,
 `serial-login`, `sudo`), `oath`, and the UEFI loader `oath-efi`
 (`pkg:oath`, built by the vendor's Rust release, `pkg:rust`). The only
 things taken from Nix are QEMU and its UEFI firmware for running images
@@ -20,26 +20,30 @@ cargo make pkgs --list      # versions, licences, what pkgs/lock.json pins
 cargo make pkgs curl        # one package (and what it builds with)
 ```
 
-`bootstrap` builds clang/lld targeting musl with the host's gcc (stage
-0), then a static musl toolchain, busybox and make with stage 0 (stage
-1): `pkg:llvm`, `pkg:busybox`, `pkg:make`. `pkgs` builds each
-`pkgs/<name>/` as an `oath build` plan in the sandbox (no network, only
-the declared packs), writes the exact plan to `pkgs/<name>/<name>.plan`
-and the product to `pkgs/lock.json`. `pkg:llvm` is one of them: it
-rebuilds itself with the `cmake`, `ninja` and `python` packs, which
-are build-only and not in the image. `pkg:rust` is the vendor's Rust
-release (pinned by sha256) with its own musl loader; it builds
-`pkg:oath`. The image takes every userspace package from the lock. How
-packages are written: `pkgs/README.md`.
+`bootstrap` builds a cross binutils, GCC and glibc with the host's gcc
+(stage 0, never shipped), then with stage 0 the base packs (stage 1):
+`pkg:gcc` (GCC and binutils), `pkg:glibc`, and bash, coreutils, sed,
+grep, gawk, findutils, diffutils, patch, tar, gzip, xz, bzip2 and make.
+`pkgs` builds each `pkgs/<name>/` as an `oath build` plan in the
+sandbox (no network, only the declared packs, glibc's loader and every
+pack's libraries under `/lib`), writes the exact plan to
+`pkgs/<name>/<name>.plan` and the product to `pkgs/lock.json`. Every
+plan builds with the base packs; the base packs rebuild themselves
+this way too. Build-only packs (python, meson, ninja, m4, flex, bison,
+bc, perl, elfutils) are not in the image. `pkg:rust` is the vendor's
+Rust release (pinned by sha256, its binaries pointed at `/lib`'s
+loader); it builds `pkg:oath`, static against glibc. The image takes
+every userspace package from the lock. How packages are written:
+`pkgs/README.md`.
 
 ## The kernel
 
 There is one kernel, `pkg:linux`: vanilla kernel.org Linux, pinned by
 sha256 in `pkgs/linux/pkg.toml`, plus `pkgs/linux/patches/` and the
 config fragment `pkgs/linux/linux.fragment` over `defconfig`. It is a
-plan product like every other package, built by `pkg:llvm`
-(`LLVM=1`) with the `flex`, `bison`, `m4`, `perl` and `elfutils`
-(libelf, for objtool) packs, which are build-only.
+plan product like every other package, built by `pkg:gcc` with the
+`flex`, `bison`, `m4`, `bc`, `perl` and `elfutils` (libelf, for
+objtool) packs, which are build-only.
 
 ```sh
 cargo make pkgs linux
@@ -52,8 +56,8 @@ The product holds `boot/vmlinuz`, `boot/config` and
 `OATH_KERNEL` / `OATH_MODULES`). Firmware for the initrd comes from
 `pkg:firmware`, not the kernel build. Packing refuses a bzImage whose
 release does not match the module directory or the `vermagic` of
-`btrfs.ko`. Bump the version and the sha256 together (`pkgs/llvm` takes
-its UAPI headers from the same tarball).
+`btrfs.ko`. Bump the version and the sha256 together (`pkgs/glibc`
+takes its UAPI headers from the same tarball).
 
 ## The image
 

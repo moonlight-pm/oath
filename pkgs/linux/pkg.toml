@@ -1,8 +1,7 @@
 # The one Oath kernel (R6, R10): kernel.org Linux, patches/ and
-# linux.fragment over defconfig, built by pkg:llvm (LLVM=1). Booted from
-# the ESP and the initrd, not installed as a package. Bump the version
-# and the pin together (pkgs/llvm takes its UAPI headers from the same
-# tarball).
+# linux.fragment over defconfig, built by pkg:gcc. Booted from the ESP
+# and the initrd, not installed as a package. Bump the version and the
+# pin together (pkgs/glibc takes its UAPI headers from the same tarball).
 version = "7.3-rc1"
 license = "GPL-2.0-only WITH Linux-syscall-note"
 description = "The Linux kernel: boot/vmlinuz and lib/modules/<release>/."

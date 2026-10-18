@@ -22,14 +22,17 @@ pub const DHCP_HOOK: &str = "/lib/oath/dhcpcd.hook";
 /// Where dhcpcd keeps its DUID and leases, and its pid file.
 pub const DHCP_DIRS: [&str; 2] = ["/var/lib/dhcpcd", "/run/dhcpcd"];
 
-/// dhcpcd on `nic`, IPv4 only, with Oath's hook in place of its own (-c).
-/// It keeps the address when it stops (-p: a restart must not drop SSH),
-/// takes no link-local address (-L), and names itself by the hardware
-/// address (-I '', as busybox's udhcpc did, so DHCP reservations still
-/// match).
+/// dhcpcd on `nic`, IPv4 only, with Oath's hook in place of its own (-c)
+/// and no config file (-f /dev/null: every option is here). It keeps the
+/// address when it stops (-p: a restart must not drop SSH), takes no
+/// link-local address (-L), and names itself by the hardware address
+/// (-I ''), so DHCP reservations made for the machine match. Being IPv4
+/// only, it keeps `/run/dhcpcd/<nic>-4.pid`; `dhcpcd -4 -N <nic>` renews.
 fn dhcpcd_common(nic: &str) -> Vec<String> {
     let opts = "subnet_mask,routers,domain_name_servers,domain_name";
-    ["-4", "-p", "-L", "-I", "", "-c", DHCP_HOOK, "-o", opts, nic].map(String::from).to_vec()
+    ["-f", "/dev/null", "-4", "-p", "-L", "-I", "", "-c", DHCP_HOOK, "-o", opts, nic]
+        .map(String::from)
+        .to_vec()
 }
 
 /// The supervised client of `net:net0` dhcp: in the foreground, renewing.

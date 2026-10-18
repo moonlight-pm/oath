@@ -3,11 +3,11 @@
 # package, so it is not built.
 version = "3.15.0"
 license = "PSF-2.0 AND MIT"
-description = "CPython. A build tool (LLVM's build needs it); not in the base image."
+description = "CPython. A build tool (glibc's and meson's builds need it); not in the base image."
 home = "https://www.python.org/"
 purl = "pkg:generic/cpython@3.15.0"
 build = ["pkgconf", "zlib", "zstd"]
-run = ["zlib", "zstd"]
+run = ["bzip2", "xz", "zlib", "zstd"]
 
 [[source]]
 url = "https://www.python.org/ftp/python/3.15.0/Python-3.15.0.tar.xz"

@@ -2,7 +2,10 @@
 
 A package is a `pkg:*` catalog object. Bits live under
 `/oath/store/pkg/<name>/<hash>/`. `/bin` is a **symlink farm**, not an
-unpack target. Name is a slot; hash is the bits (`sha256-` plus 64 hex
+unpack target, and so is `/lib`: glibc's loader
+(`/lib/ld-linux-x86-64.so.2`) and every linked pack's `lib/` entries
+(decision R17). There is no `/lib64` and no RPATH; a program finds its
+libraries through `/lib`. Name is a slot; hash is the bits (`sha256-` plus 64 hex
 of `oath-tree-v1`). There is no `apt` and no `oath install`.
 
 The slot also has `live` → `<hash>` and compatibility links (`bin` →
@@ -13,22 +16,35 @@ Those links are not part of the hash.
 
 The `base` profile:
 
-| Id | Default | Removable |
-|----|---------|-----------|
-| `pkg:busybox` | present | no — all applets, including `/bin/vi`, `/bin/ip`, `/bin/udhcpc` |
-| `pkg:btrfs` | present | no — `/bin/btrfs` |
-| `pkg:oath` | present | no — `/bin/oath` |
-| `pkg:dropbear` | present | no — the SSH server: `dropbear`, `dropbearkey` |
-| `pkg:openssh` | present | yes — OpenSSH client tools: `ssh`, `scp`, `sftp`, `ssh-keygen`, `sftp-server` |
-| `pkg:util-linux` | present | yes — `sfdisk`, `wipefs`, `blkid`, `lsblk` |
-| `pkg:dosfstools` | present | yes — `mkfs.fat`, `mkfs.vfat`, `fsck.fat` |
-| `pkg:curl` | present | yes — static curl (mbedTLS) with a CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem` |
+Not removable (`present=false` is refused):
 
-Every pack above is built from pinned source on the build host: the
-Oath binaries (`pkg:oath`) from this tree, the rest from `pkgs/`
-([Build](build.md)). There is no C compiler on the
-box yet: the toolchain (`pkg:llvm`) exists on the build host but is not
-in the base profile. There is no glibc on Oath.
+| Id | What |
+|----|------|
+| `pkg:glibc` | the C library and its loader |
+| `pkg:bash` | `bash`, also `/bin/sh` |
+| `pkg:coreutils` | `ls`, `cp`, `cat`, `sort`, `hostname`, … |
+| `pkg:util-linux` | `mount`, `dmesg`, `sfdisk`, `wipefs`, `blkid`, `lsblk`, `findmnt` |
+| `pkg:iproute2` | `ip`, `ss`, `bridge`, `tc` |
+| `pkg:dhcpcd` | the DHCP client of `net:net0` |
+| `pkg:btrfs` | `btrfs`, `mkfs.btrfs` |
+| `pkg:oath` | `oath` |
+| `pkg:dropbear` | the SSH server: `dropbear`, `dropbearkey` |
+
+Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
+`tar`, `gzip`, `xz`, `bzip2`, `procps` (`ps`, `pidof`, `free`, `top`,
+`kill`), `less`, `vim` (also `vi`), `iputils` (`ping`, `tracepath`,
+`arping`), `chrony` (`svc:time`), `openssh` (client tools: `ssh`, `scp`,
+`sftp`, `ssh-keygen`, `sftp-server`), `dosfstools` (`mkfs.fat`), `curl`
+(Mbed TLS, CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`), and
+the libraries they load: `ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`,
+`lzo`, `mbedtls`. A pack's `needs` lists the libraries it loads, so
+apply refuses removing `pkg:ncurses` while `pkg:less` is present.
+
+Every pack is built from pinned source on the build host: the Oath
+binaries (`pkg:oath`) from this tree, the rest from `pkgs/`
+([Build](build.md)). There is no C compiler on the box yet: the
+toolchain (`pkg:gcc`) exists on the build host but is not in the base
+profile.
 
 PID 1 stays at `/lib/oath/init`; it is not a package.
 
@@ -102,7 +118,7 @@ is `hello.log.1`.
 The build cache is keyed on the plan hash and the input set, so an
 edited script always rebuilds.
 
-Known gap: the base image does not carry `pkg:llvm`, so
+Known gap: the base image does not carry `pkg:gcc`, so
 `apps/hello.plan` builds on the build host (in `.cache/oath`), not on
 the box. The plans in `pkgs/` are the larger examples.
 
@@ -118,7 +134,7 @@ cargo make publish --dest <dir>  # the profiles' packages and their sources: pkg
 ```
 
 `publish` copies only the packages a seed profile names (today the
-eight in `base`), each at the hash this tree records for it: the
+33 in `base`), each at the hash this tree records for it: the
 product in `pkgs/lock.json`, or `pkg:oath`'s last `cargo make build`.
 Each needs a licence on record: `lock.json`'s, or for `pkg:oath` the
 workspace licence AND every crate's in its `components.json`. It
@@ -128,7 +144,7 @@ its source: the plan that built it (`plan/<name>/<plan hash>.plan`)
 and the source pack the plan pins (`pkg/<name>-src/<hash>.tar`); a
 pack whose plan is missing or does not match the record is refused.
 `INDEX.md` lists name, hash, licence, plan and source. Build tools
-(`llvm`, `rust`, ...), test packs and other hashes in the cache are
+(`gcc`, `rust`, ...), test packs and other hashes in the cache are
 never published; the last line names what was left out. A pack made with `cargo make store`
 is published only if a profile names it.
 
