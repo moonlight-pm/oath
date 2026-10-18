@@ -107,7 +107,7 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   `HOME=/root`), keeping only `TERM` and `TZ`.
 - The serial console logs in as root; the screen (`svc:screen`, tty1)
   as `home`, so `/dev/tty1` is home's (PID 1 sets it 0600 after every
-  `mdev -s`). The installer ramdisk accepts
+  discovery pass). The installer ramdisk accepts
   root over SSH with the baked host keys; the installed system does not.
 
 ## Known defects (from the 2026-10-13 review)

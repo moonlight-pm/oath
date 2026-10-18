@@ -60,10 +60,9 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   initrd and bind-mounted over the root's `/lib/modules` and
   `/lib/firmware` so the deferred pass can load them. A machine that
   needs another blob gets a line there.
-- `mdev -s` populates `/dev`. There is no udev. After every `mdev -s`
-  PID 1 sets `/dev/null`, `zero`, `full`, `tty`, `ptmx`, `random` and
-  `urandom` back to mode 0666, because `mdev -s` recreates them
-  root-only.
+- devtmpfs populates `/dev`. There is no udev. After every discovery
+  pass PID 1 sets `/dev/null`, `zero`, `full`, `tty`, `ptmx`, `random`
+  and `urandom` to mode 0666, whatever devtmpfs made them.
 
 ## Hotplug (built)
 
