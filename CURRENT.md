@@ -5,17 +5,17 @@ items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
 **As of:** 2026-10-18 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R18 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R19 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **Phase 8 slice 2: the desk.** Mesa (ACO, no LLVM), Wayland,
-   the compositor and Sola as plans. River stops being a dependency:
-   Joshua (2026-10-18) wants a hard fork without Zig (R9). Open: its
-   form, a C port on wlroots, a Rust rewrite on Smithay, or one
-   `sola-wm` that merges River and `sola-river`
-   ([docs/decisions.md](docs/decisions.md)). Next: Joshua picks; Mesa,
-   libdrm, libinput, xkbcommon and Wayland come first under any form.
+1. **Phase 8 slice 2: the desk.** River in C (R19, `apps/river/`),
+   then its libraries as plans (Wayland, libdrm, libinput, libevdev,
+   libudev-zero, xkbcommon, pixman, libdisplay-info, Mesa with ACO,
+   wlroots from `forks/wlroots`, seatd, Xwayland), then the seat
+   (`svc:seatd`, `svc:river`, `svc:sola-river`) and Sola. Next: port
+   River 0.4.5 to C and run it on novus (headless and nested) with
+   unmodified `sola-river`, globals matching upstream.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a

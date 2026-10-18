@@ -124,8 +124,8 @@ binutils 2.47 and glibc 2.44, programs link dynamically through a
 `/lib` farm, and Clang/LLVM, musl and busybox are gone; the base is the
 GNU userland with util-linux, iproute2, dhcpcd, chrony and vim
 ([specs/builds.md](specs/builds.md)). canto was reinstalled with it on
-2026-10-18 and passes every metal case. River becomes a hard fork
-without Zig (Joshua, 2026-10-18); its form is open.
+2026-10-18 and passes every metal case. River becomes a C port on
+wlroots, a hard fork without Zig (R19, 2026-10-18).
 
 ## 9. Steam + Minecraft desk — planned
 
