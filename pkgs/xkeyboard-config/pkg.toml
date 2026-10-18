@@ -1,0 +1,12 @@
+version = "2.48"
+license = "MIT AND MIT-open-group AND HPND AND HPND-sell-variant AND X11 AND xkeyboard-config-Zinoviev"
+description = "xkeyboard-config: the XKB keyboard layouts, models and rules."
+home = "https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config"
+purl = "pkg:generic/xkeyboard-config@2.48"
+build = ["meson", "ninja", "python", "pkgconf", "perl"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/releases/individual/data/xkeyboard-config/xkeyboard-config-2.48.tar.xz"
+sha256 = "b77041324f0109f77161ee43743fe04baa485866af8460d31e476ad3f7648fd5"
+sig = "https://xorg.freedesktop.org/releases/individual/data/xkeyboard-config/xkeyboard-config-2.48.tar.xz.sig"
+key = "xkeyboard-config"

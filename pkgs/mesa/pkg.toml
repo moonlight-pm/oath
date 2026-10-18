@@ -1,0 +1,25 @@
+# radeonsi compiles with ACO (GFX6 and newer), so no LLVM. softpipe is the
+# software fallback, and Xwayland's GLX falls back to it (swrast_dri.so).
+# libXfixes is not linked, but gl.pc requires it, so what builds with
+# mesa finds it.
+version = "26.2.5"
+license = "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0"
+description = "Mesa: radeonsi and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX)."
+home = "https://mesa3d.org/"
+purl = "pkg:generic/mesa@26.2.5"
+build = [
+	"meson", "ninja", "python", "pkgconf", "bison", "flex",
+	"python-mako", "python-pyyaml", "python-packaging",
+	"libdrm", "wayland", "wayland-protocols", "expat", "zlib", "zstd", "elfutils",
+	"xorgproto", "libx11", "libxcb", "libxext", "libxxf86vm", "libxshmfence",
+]
+run = [
+	"gcc", "libdrm", "wayland", "expat", "zlib", "zstd", "elfutils",
+	"libx11", "libxcb", "libxext", "libxxf86vm", "libxshmfence", "libxfixes",
+]
+
+[[source]]
+url = "https://archive.mesa3d.org/mesa-26.2.5.tar.xz"
+sha256 = "794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5"
+sig = "https://archive.mesa3d.org/mesa-26.2.5.tar.xz.sig"
+key = "engestrom"

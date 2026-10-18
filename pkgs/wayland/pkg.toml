@@ -1,0 +1,13 @@
+version = "1.26.0"
+license = "MIT"
+description = "Wayland: libwayland-client, -server, -cursor and -egl, and wayland-scanner."
+home = "https://wayland.freedesktop.org/"
+purl = "pkg:generic/wayland@1.26.0"
+build = ["meson", "ninja", "python", "pkgconf", "libffi", "expat"]
+run = ["libffi", "expat"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.26.0/downloads/wayland-1.26.0.tar.xz"
+sha256 = "64176eaa46e4969903e286f8e5ef8331affc17fdf03ac9b58381d2b23162b7a3"
+sig = "https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.26.0/downloads/wayland-1.26.0.tar.xz.sig"
+key = "ser"

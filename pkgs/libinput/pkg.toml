@@ -1,0 +1,12 @@
+version = "1.32.0"
+license = "MIT"
+description = "libinput, shared, and the libinput tool: input devices for wlroots."
+home = "https://gitlab.freedesktop.org/libinput/libinput"
+purl = "pkg:generic/libinput@1.32.0"
+build = ["meson", "ninja", "python", "pkgconf", "libevdev", "libudev-zero"]
+run = ["libevdev", "libudev-zero"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/libinput/libinput/-/archive/1.32.0/libinput-1.32.0.tar.gz"
+sha256 = "7dd6c1ca964c86eb6810ccd6639cda634e68bdca43bf3afec39e94e942fac8d4"
+unsigned = "a GitLab tag archive; libinput publishes no tarball or signature since 1.19.4, only a signed git tag"

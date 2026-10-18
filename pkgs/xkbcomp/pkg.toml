@@ -1,0 +1,13 @@
+version = "1.5.0"
+license = "HPND AND MIT-open-group"
+description = "xkbcomp, which Xwayland runs to compile every keymap."
+home = "https://www.x.org/"
+purl = "pkg:generic/xkbcomp@1.5.0"
+build = ["pkgconf", "bison", "xorgproto", "libx11", "libxkbfile"]
+run = ["libx11", "libxkbfile", "xkeyboard-config"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/app/xkbcomp-1.5.0.tar.xz"
+sha256 = "2ac31f26600776db6d9cd79b3fcd272263faebac7eb85fb2f33c7141b8486060"
+sig = "https://xorg.freedesktop.org/archive/individual/app/xkbcomp-1.5.0.tar.xz.sig"
+key = "hutterer"

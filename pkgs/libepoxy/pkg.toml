@@ -1,0 +1,12 @@
+version = "1.5.10"
+license = "MIT"
+description = "libepoxy, shared: GL function loading for Xwayland's glamor, through EGL."
+home = "https://github.com/anholt/libepoxy"
+purl = "pkg:github/anholt/libepoxy@1.5.10"
+build = ["meson", "ninja", "python", "pkgconf", "mesa"]
+run = ["mesa"]
+
+[[source]]
+url = "https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz"
+sha256 = "072cda4b59dd098bba8c2363a6247299db1fa89411dc221c8b81b8ee8192e623"
+unsigned = "GNOME's mirror of the dist tarball carries only a sha256sum; upstream publishes no signature"

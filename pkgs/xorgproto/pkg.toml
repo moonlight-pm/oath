@@ -1,0 +1,12 @@
+version = "2026.1"
+license = "MIT AND X11 AND HPND-sell-variant"
+description = "xorgproto: the X11 protocol headers."
+home = "https://www.x.org/"
+purl = "pkg:generic/xorgproto@2026.1"
+build = ["pkgconf"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/proto/xorgproto-2026.1.tar.xz"
+sha256 = "f9bfe4a9ed8c8ab9d2a3b0d49797f046052dadd06b7a8b45dbffaffb137e8290"
+sig = "https://xorg.freedesktop.org/archive/individual/proto/xorgproto-2026.1.tar.xz.sig"
+key = "coopersmith"

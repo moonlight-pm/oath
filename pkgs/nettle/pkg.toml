@@ -1,0 +1,12 @@
+version = "4.0"
+license = "LGPL-3.0-or-later OR GPL-2.0-or-later"
+description = "Nettle, shared, without public-key code: Xwayland's SHA-1."
+home = "https://www.lysator.liu.se/~nisse/nettle/"
+purl = "pkg:generic/nettle@4.0"
+build = ["m4"]
+
+[[source]]
+url = "https://ftp.gnu.org/gnu/nettle/nettle-4.0.tar.gz"
+sha256 = "3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094"
+sig = "https://ftp.gnu.org/gnu/nettle/nettle-4.0.tar.gz.sig"
+key = "gmp"

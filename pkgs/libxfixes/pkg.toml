@@ -1,0 +1,13 @@
+version = "6.0.2"
+license = "HPND-sell-variant AND MIT"
+description = "libXfixes, shared: the XFIXES extension (Mesa's gl.pc names it)."
+home = "https://www.x.org/"
+purl = "pkg:generic/libXfixes@6.0.2"
+build = ["pkgconf", "xorgproto", "libx11"]
+run = ["libx11"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXfixes-6.0.2.tar.xz"
+sha256 = "39f115d72d9c5f8111e4684164d3d68cc1fd21f9b27ff2401b08fddfc0f409ba"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libXfixes-6.0.2.tar.xz.sig"
+key = "coopersmith"

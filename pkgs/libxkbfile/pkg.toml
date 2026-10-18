@@ -1,0 +1,13 @@
+version = "1.2.0"
+license = "HPND AND MIT-open-group"
+description = "libxkbfile, shared: XKB file handling for xkbcomp."
+home = "https://www.x.org/"
+purl = "pkg:generic/libxkbfile@1.2.0"
+build = ["meson", "ninja", "python", "pkgconf", "xorgproto", "libx11"]
+run = ["libx11"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libxkbfile-1.2.0.tar.xz"
+sha256 = "7f71884e5faf56fb0e823f3848599cf9b5a9afce51c90982baeb64f635233ebf"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libxkbfile-1.2.0.tar.xz.sig"
+key = "coopersmith"

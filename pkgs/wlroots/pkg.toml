@@ -1,0 +1,23 @@
+# Oath's two patches (patches/, from forks/wlroots): wlr-screencopy
+# leaves out the software cursor when asked to, and libinput falls back
+# to /dev/input/event* when its udev backend finds nothing.
+version = "0.20.2"
+license = "MIT"
+description = "wlroots, shared: the compositor library under rivulet (DRM, libinput, GLES2, Xwayland)."
+home = "https://gitlab.freedesktop.org/wlroots/wlroots"
+purl = "pkg:generic/wlroots@0.20.2"
+build = [
+	"meson", "ninja", "python", "pkgconf", "wayland", "wayland-protocols", "hwdata",
+	"libdrm", "mesa", "libinput", "libxkbcommon", "pixman", "seatd", "libudev-zero",
+	"libdisplay-info", "libxcb", "xcb-util-wm", "xcb-util-errors", "xwayland",
+]
+run = [
+	"wayland", "libdrm", "mesa", "libinput", "libxkbcommon", "pixman", "seatd", "libudev-zero",
+	"libdisplay-info", "libxcb", "xcb-util-wm", "xcb-util-errors", "xwayland",
+]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/wlroots/wlroots/-/releases/0.20.2/downloads/wlroots-0.20.2.tar.gz"
+sha256 = "80c567d2ed4efb2cfa6b077f22c7a710d9c78ba4e185a75e8694001114af0733"
+sig = "https://gitlab.freedesktop.org/wlroots/wlroots/-/releases/0.20.2/downloads/wlroots-0.20.2.tar.gz.sig"
+key = "ser"

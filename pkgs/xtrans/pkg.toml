@@ -1,0 +1,12 @@
+version = "1.6.0"
+license = "MIT-open-group AND MIT"
+description = "xtrans: X's transport code, compiled into libX11 and Xwayland. A build tool; not in the base image."
+home = "https://www.x.org/"
+purl = "pkg:generic/xtrans@1.6.0"
+build = ["pkgconf"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/xtrans-1.6.0.tar.xz"
+sha256 = "faafea166bf2451a173d9d593352940ec6404145c5d1da5c213423ce4d359e92"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/xtrans-1.6.0.tar.xz.sig"
+key = "coopersmith"

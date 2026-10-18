@@ -1,0 +1,12 @@
+version = "0.4.0"
+license = "MIT"
+description = "libdisplay-info, shared, and di-edid-decode: EDID and DisplayID parsing for wlroots."
+home = "https://gitlab.freedesktop.org/emersion/libdisplay-info"
+purl = "pkg:generic/libdisplay-info@0.4.0"
+build = ["meson", "ninja", "python", "pkgconf", "hwdata"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/emersion/libdisplay-info/-/releases/0.4.0/downloads/libdisplay-info-0.4.0.tar.xz"
+sha256 = "43b180baa143e2035654759d84e2b2f5ee77d5fe817c423838c7fe59c0d68459"
+sig = "https://gitlab.freedesktop.org/emersion/libdisplay-info/-/releases/0.4.0/downloads/libdisplay-info-0.4.0.tar.xz.sig"
+key = "ser"

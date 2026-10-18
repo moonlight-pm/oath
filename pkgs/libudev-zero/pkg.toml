@@ -1,0 +1,12 @@
+version = "1.0.5"
+license = "ISC"
+description = "libudev-zero: libudev's API over sysfs and netlink, with no udev daemon (libinput, wlroots)."
+home = "https://github.com/illiliti/libudev-zero"
+purl = "pkg:github/illiliti/libudev-zero@1.0.5"
+build = []
+
+[[source]]
+url = "https://github.com/illiliti/libudev-zero/archive/refs/tags/1.0.5.tar.gz"
+sha256 = "bf4372f79ddbe6b0e266a3d2994ffac7018a7edf4f87632aecb5176565d96138"
+file = "libudev-zero-1.0.5.tar.gz"
+unsigned = "a GitHub tag archive; upstream publishes no signature"

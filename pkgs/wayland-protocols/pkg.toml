@@ -1,0 +1,12 @@
+version = "1.49"
+license = "MIT"
+description = "wayland-protocols: the protocol XML that compositors and clients build against."
+home = "https://gitlab.freedesktop.org/wayland/wayland-protocols"
+purl = "pkg:generic/wayland-protocols@1.49"
+build = ["meson", "ninja", "python", "pkgconf", "wayland"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.49/downloads/wayland-protocols-1.49.tar.xz"
+sha256 = "ec4c8f74942d6dff7ace8b4ce4764f0ef9ff618a935d974ea77edee2ad240b14"
+sig = "https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.49/downloads/wayland-protocols-1.49.tar.xz.sig"
+key = "ser"

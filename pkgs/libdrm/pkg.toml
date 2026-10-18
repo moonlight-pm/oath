@@ -1,0 +1,12 @@
+version = "2.4.134"
+license = "MIT"
+description = "libdrm, shared, with libdrm_amdgpu and libdrm_radeon."
+home = "https://gitlab.freedesktop.org/mesa/drm"
+purl = "pkg:generic/libdrm@2.4.134"
+build = ["meson", "ninja", "python", "pkgconf"]
+
+[[source]]
+url = "https://dri.freedesktop.org/libdrm/libdrm-2.4.134.tar.xz"
+sha256 = "ac5e74d157830eb8bee44c6a6bf3ad49774ef0dd2a72bdad74a8f20308b52a95"
+sig = "https://dri.freedesktop.org/libdrm/libdrm-2.4.134.tar.xz.sig"
+key = "ser"

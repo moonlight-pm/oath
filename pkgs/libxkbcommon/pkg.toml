@@ -1,0 +1,14 @@
+# The compositor uses xkb_keymap_get_as_string2, new in 1.12.
+version = "1.13.2"
+license = "MIT AND MIT-open-group AND HPND AND HPND-sell-variant AND X11 AND ISC"
+description = "libxkbcommon, shared: keymaps and key state, reading xkeyboard-config's data."
+home = "https://xkbcommon.org/"
+purl = "pkg:github/xkbcommon/libxkbcommon@xkbcommon-1.13.2"
+build = ["meson", "ninja", "python", "pkgconf", "bison", "xkeyboard-config"]
+run = ["xkeyboard-config"]
+
+[[source]]
+url = "https://github.com/xkbcommon/libxkbcommon/archive/refs/tags/xkbcommon-1.13.2.tar.gz"
+sha256 = "acc4d5f7c3cbba5f9f8d08d8bdbeede84ecede46792f47929aa9321873385528"
+file = "libxkbcommon-xkbcommon-1.13.2.tar.gz"
+unsigned = "a GitHub tag archive; upstream ships no tarballs since 1.7.0 and its tags are unsigned"

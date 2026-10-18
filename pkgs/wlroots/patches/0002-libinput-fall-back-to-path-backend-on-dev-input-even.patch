@@ -1,0 +1,152 @@
+From 4d8f0b0469b421249575e5df3826d93a94cc6288 Mon Sep 17 00:00:00 2001
+From: Joshua Kifer <joshua@moonlight.pm>
+Date: Sun, 30 Aug 2026 18:16:44 -0600
+Subject: [PATCH 2/2] libinput: fall back to path backend on /dev/input/event*.
+
+udev_new() succeeds without udevd, but libinput's udev backend finds
+no devices. Enumerate evdev nodes so compositors work without udevd.
+---
+ backend/libinput/backend.c | 92 +++++++++++++++++++++++++++++++++-----
+ backend/libinput/events.c  |  2 +-
+ 2 files changed, 81 insertions(+), 13 deletions(-)
+
+diff --git a/backend/libinput/backend.c b/backend/libinput/backend.c
+index 121731b3..7eaaf20f 100644
+--- a/backend/libinput/backend.c
++++ b/backend/libinput/backend.c
+@@ -1,7 +1,10 @@
+ #include <assert.h>
++#include <dirent.h>
++#include <errno.h>
+ #include <libinput.h>
+ #include <stdlib.h>
+ #include <stdio.h>
++#include <string.h>
+ #include <wlr/backend/interface.h>
+ #include <wlr/backend/session.h>
+ #include <wlr/util/log.h>
+@@ -82,31 +85,96 @@ static void log_libinput(struct libinput *libinput_context,
+ 	_wlr_vlog(importance, wlr_fmt, args);
+ }
+ 
++static int add_evdev_path_devices(struct libinput *li) {
++	DIR *dir = opendir("/dev/input");
++	if (!dir) {
++		wlr_log(WLR_ERROR, "Failed to open /dev/input: %s", strerror(errno));
++		return 0;
++	}
++
++	int added = 0;
++	struct dirent *ent;
++	while ((ent = readdir(dir))) {
++		if (strncmp(ent->d_name, "event", 5) != 0) {
++			continue;
++		}
++		char path[64];
++		if (snprintf(path, sizeof(path), "/dev/input/%s",
++				ent->d_name) >= (int)sizeof(path)) {
++			continue;
++		}
++		struct libinput_device *dev = libinput_path_add_device(li, path);
++		if (dev) {
++			wlr_log(WLR_INFO, "Added libinput path device %s", path);
++			added++;
++		} else {
++			wlr_log(WLR_ERROR, "Failed to add libinput path device %s", path);
++		}
++	}
++	closedir(dir);
++	return added;
++}
++
++static bool start_libinput_path(struct wlr_libinput_backend *backend) {
++	wlr_log(WLR_INFO, "Using libinput path backend on /dev/input");
++	backend->libinput_context = libinput_path_create_context(&libinput_impl, backend);
++	if (!backend->libinput_context) {
++		wlr_log(WLR_ERROR, "Failed to create libinput path context");
++		return false;
++	}
++	add_evdev_path_devices(backend->libinput_context);
++	return true;
++}
++
++static void configure_libinput_log(struct libinput *li) {
++	libinput_log_set_handler(li, log_libinput);
++	libinput_log_set_priority(li, LIBINPUT_LOG_PRIORITY_ERROR);
++}
++
+ static bool backend_start(struct wlr_backend *wlr_backend) {
+ 	struct wlr_libinput_backend *backend =
+ 		get_libinput_backend_from_backend(wlr_backend);
+ 	wlr_log(WLR_DEBUG, "Starting libinput backend");
+ 
+-	backend->libinput_context = libinput_udev_create_context(&libinput_impl,
+-		backend, backend->session->udev);
+-	if (!backend->libinput_context) {
+-		wlr_log(WLR_ERROR, "Failed to create libinput context");
+-		return false;
++	bool used_path = false;
++	if (backend->session->udev) {
++		backend->libinput_context = libinput_udev_create_context(&libinput_impl,
++			backend, backend->session->udev);
++		if (backend->libinput_context) {
++			if (libinput_udev_assign_seat(backend->libinput_context,
++					backend->session->seat) != 0) {
++				wlr_log(WLR_ERROR, "Failed to assign libinput seat");
++				libinput_unref(backend->libinput_context);
++				backend->libinput_context = NULL;
++			}
++		} else {
++			wlr_log(WLR_ERROR, "Failed to create libinput udev context");
++		}
+ 	}
+ 
+-	if (libinput_udev_assign_seat(backend->libinput_context,
+-			backend->session->seat) != 0) {
+-		wlr_log(WLR_ERROR, "Failed to assign libinput seat");
+-		return false;
++	if (!backend->libinput_context) {
++		used_path = true;
++		if (!start_libinput_path(backend)) {
++			return false;
++		}
+ 	}
+ 
+-	// TODO: More sophisticated logging
+-	libinput_log_set_handler(backend->libinput_context, log_libinput);
+-	libinput_log_set_priority(backend->libinput_context, LIBINPUT_LOG_PRIORITY_ERROR);
++	configure_libinput_log(backend->libinput_context);
+ 
+ 	int libinput_fd = libinput_get_fd(backend->libinput_context);
+ 
+ 	handle_libinput_readable(libinput_fd, WL_EVENT_READABLE, backend);
++	if (wl_list_empty(&backend->devices) && !used_path) {
++		wlr_log(WLR_INFO, "libinput udev found no devices; trying /dev/input");
++		libinput_unref(backend->libinput_context);
++		backend->libinput_context = NULL;
++		if (!start_libinput_path(backend)) {
++			return false;
++		}
++		configure_libinput_log(backend->libinput_context);
++		libinput_fd = libinput_get_fd(backend->libinput_context);
++		handle_libinput_readable(libinput_fd, WL_EVENT_READABLE, backend);
++	}
+ 	if (!env_parse_bool("WLR_LIBINPUT_NO_DEVICES") && wl_list_empty(&backend->devices)) {
+ 		wlr_log(WLR_ERROR, "libinput initialization failed, no input devices");
+ 		wlr_log(WLR_ERROR, "Set WLR_LIBINPUT_NO_DEVICES=1 to suppress this check");
+diff --git a/backend/libinput/events.c b/backend/libinput/events.c
+index 9be5def8..c8060f7b 100644
+--- a/backend/libinput/events.c
++++ b/backend/libinput/events.c
+@@ -66,7 +66,7 @@ static void handle_device_added(struct wlr_libinput_backend *backend,
+ 	int vendor = libinput_device_get_id_vendor(libinput_dev);
+ 	int product = libinput_device_get_id_product(libinput_dev);
+ 	const char *name = libinput_device_get_name(libinput_dev);
+-	wlr_log(WLR_DEBUG, "Adding %s [%d:%d]", name, vendor, product);
++	wlr_log(WLR_INFO, "Adding %s [%d:%d]", name, vendor, product);
+ 
+ 	struct wlr_libinput_input_device *dev = calloc(1, sizeof(*dev));
+ 	if (dev == NULL) {
+-- 
+2.51.2
+

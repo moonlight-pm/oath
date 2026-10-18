@@ -1,0 +1,13 @@
+version = "1.1.7"
+license = "X11"
+description = "libXxf86vm, shared: XF86VidMode, which Mesa's direct GLX calls."
+home = "https://www.x.org/"
+purl = "pkg:generic/libXxf86vm@1.1.7"
+build = ["pkgconf", "xorgproto", "libx11", "libxext"]
+run = ["libx11", "libxext"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXxf86vm-1.1.7.tar.xz"
+sha256 = "ae50c0f669e0af5a67cc4cd0f54f21d64a64d2660af883e80e95d3fe51b945d8"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libXxf86vm-1.1.7.tar.xz.sig"
+key = "coopersmith"

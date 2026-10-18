@@ -1,0 +1,11 @@
+# Built from apps/rivulet in this repo (R19).
+version = "0.1.0"
+license = "GPL-3.0-only"
+description = "rivulet, Oath's Wayland compositor: River 0.4.5 ported to C, with Xwayland."
+home = "https://github.com/moonlight-pm/oath"
+tree = "apps/rivulet"
+build = [
+	"pkgconf", "wayland", "wayland-protocols", "wlroots", "libxkbcommon", "pixman",
+	"libinput", "libevdev", "libxcb", "xcb-util-wm",
+]
+run = ["wlroots", "wayland", "libxkbcommon", "pixman", "libinput", "libevdev", "libxcb", "xcb-util-wm"]

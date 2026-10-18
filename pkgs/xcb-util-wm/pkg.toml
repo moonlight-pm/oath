@@ -1,0 +1,13 @@
+version = "0.4.2"
+license = "X11"
+description = "xcb-util-wm, shared: libxcb-icccm and libxcb-ewmh (wlroots' Xwayland window manager)."
+home = "https://www.x.org/"
+purl = "pkg:generic/xcb-util-wm@0.4.2"
+build = ["pkgconf", "m4", "libxcb"]
+run = ["libxcb"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/xcb-util-wm-0.4.2.tar.xz"
+sha256 = "62c34e21d06264687faea7edbf63632c9f04d55e72114aa4a57bb95e4f888a0b"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/xcb-util-wm-0.4.2.tar.xz.sig"
+key = "coopersmith"

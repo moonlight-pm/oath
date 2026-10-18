@@ -1,0 +1,13 @@
+version = "1.8.14"
+license = "MIT AND X11 AND HPND-sell-variant"
+description = "libX11 and libX11-xcb, shared, with the compose and locale data."
+home = "https://www.x.org/"
+purl = "pkg:generic/libX11@1.8.14"
+build = ["pkgconf", "xorgproto", "xtrans", "libxcb"]
+run = ["libxcb"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libX11-1.8.14.tar.xz"
+sha256 = "bbc78c46217174655c2b32b138ad119f3ac15f50808b4d0b3a2677a4b1afc950"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libX11-1.8.14.tar.xz.sig"
+key = "coopersmith"

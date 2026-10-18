@@ -1,0 +1,21 @@
+version = "24.1.14"
+license = "MIT AND X11 AND HPND-sell-variant AND BSD-3-Clause"
+description = "Xwayland: X11 clients under rivulet, with glamor on GBM and GLX."
+home = "https://gitlab.freedesktop.org/xorg/xserver"
+purl = "pkg:generic/xwayland@24.1.14"
+build = [
+	"meson", "ninja", "python", "pkgconf", "xorgproto", "xtrans", "libxau", "libx11",
+	"libxext", "libxfixes", "libxxf86vm", "libxcb", "libxkbfile", "libxfont2", "libfontenc", "libxcvt", "libxshmfence", "libepoxy", "nettle",
+	"pixman", "libdrm", "mesa", "wayland", "wayland-protocols", "zlib", "xkbcomp",
+	"xkeyboard-config",
+]
+run = [
+	"libxau", "libxfont2", "libfontenc", "libxcvt", "libxshmfence", "libepoxy", "nettle",
+	"pixman", "libdrm", "mesa", "wayland", "zlib", "xkbcomp", "xkeyboard-config",
+]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/xserver/xwayland-24.1.14.tar.xz"
+sha256 = "4eb6b98d678299a4b96138d886345b294130695760345ef84596225a8224078a"
+sig = "https://xorg.freedesktop.org/archive/individual/xserver/xwayland-24.1.14.tar.xz.sig"
+key = "hutterer"

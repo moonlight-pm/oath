@@ -1,0 +1,14 @@
+# Only pnp.ids, the monitor vendor names that wlroots and libdisplay-info
+# compile in. A build tool; not in the base image.
+version = "0.412"
+license = "GPL-2.0-or-later"
+description = "hwdata's pnp.ids (EDID vendor names), with hwdata.pc."
+home = "https://github.com/vcrhonek/hwdata"
+purl = "pkg:github/vcrhonek/hwdata@v0.412"
+build = []
+
+[[source]]
+url = "https://github.com/vcrhonek/hwdata/archive/refs/tags/v0.412.tar.gz"
+sha256 = "f0c64cd7e31d70a5fb3a52e53ab50a61e74c0421a6381eaa45114eec3bde5fe7"
+file = "hwdata-0.412.tar.gz"
+unsigned = "a GitHub tag archive; upstream publishes no tarball signature (only a signed git tag)"

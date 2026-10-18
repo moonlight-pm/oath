@@ -1,0 +1,12 @@
+version = "1.17.0"
+license = "X11"
+description = "xcb-proto: the X protocol in XML and the xcbgen module that generates libxcb. A build tool; not in the base image."
+home = "https://www.x.org/"
+purl = "pkg:generic/xcb-proto@1.17.0"
+build = ["pkgconf", "python"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-1.17.0.tar.xz"
+sha256 = "2c1bacd2110f4799f74de6ebb714b94cf6f80fb112316b1219480fd22562148c"
+sig = "https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-1.17.0.tar.xz.sig"
+key = "turner"
