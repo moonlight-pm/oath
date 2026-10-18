@@ -113,7 +113,14 @@ product's programs load (`DT_NEEDED`) must be in its own `lib/`,
 glibc's, or a `run` pack's (and what those run with); the build fails
 naming the pack that has it. A base pack counts: zstd links liblzma, so
 it runs with xz; C++ programs run with gcc (`libstdc++`, `libgcc_s`).
-Write the result to `/out`. A product
+Only `<pack>/lib/pkgconfig` is on `PKG_CONFIG_PATH`, so a data-only
+pack that installs its `.pc` in `share/pkgconfig` moves it
+(wayland-protocols). There is no `/usr`: a Python script meson would run by its
+`#!/usr/bin/env` line is made non-executable, so meson runs it with its
+own python (libevdev); any other interpreter's `#!` line is rewritten to
+its path (xkeyboard-config's perl). Python modules for a build are
+packs with `lib/python/<module>` that the build puts on `PYTHONPATH`
+(Mesa). Write the result to `/out`. A product
 must not name its compiler's store path (`/oath/store/pkg/gcc/<hash>`),
 or it changes with every `pkg:gcc`: strip debug info from anything built
 with `-g` (python does).

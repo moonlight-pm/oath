@@ -10,14 +10,15 @@ append history (git has it).
 ## Now
 
 1. **Phase 8 slice 2: the desk.** River is ported to C as rivulet
-   (R19, `apps/rivulet/`, 16k lines) and matches upstream 0.4.5
-   headless on novus under unmodified `sola-river`, sanitizer-clean
-   ([apps/rivulet/README.md](apps/rivulet/README.md)). Its 41
-   packages are in `pkgs/` (Wayland, libinput on libudev-zero, Mesa
-   with ACO and GLX, wlroots with Oath's patches, seatd, Xwayland and
-   the X libraries), with seven keys Joshua approved 2026-10-18.
-   Next: build them (`cargo make pkgs rivulet`), then the seat, and
-   Sola with oath-sola starting `rivulet`.
+   (R19, `apps/rivulet/`) and matches upstream 0.4.5 headless under
+   `sola-river`. It and its 41 packages (Mesa with ACO and GLX,
+   wlroots, libinput on libudev-zero, seatd, Xwayland) build natively,
+   and rivulet runs with Xwayland in the build sandbox
+   ([docs/specs/desk.md](docs/specs/desk.md): what to watch at the next
+   bump). Next: the seat (seatd, or libseat's noop with PID 1 granting
+   `/dev/dri` and `/dev/input`; PID 1 rebroadcasting uevents for
+   libudev-zero) and a desk profile on canto; then Sola, with oath-sola
+   starting `rivulet`.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a

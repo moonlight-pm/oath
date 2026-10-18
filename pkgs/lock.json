@@ -119,6 +119,14 @@
       "zlib"
     ]
   },
+  "expat": {
+    "version": "2.9.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-1a1175f92f592520bc0e39e47bc678677e9567e94825527b3992e6acaf04cd8b",
+    "product": "sha256-e830e8033e44121fcf2bdbb35495474940d8d0ee53f00246bbfabc12997a5b75",
+    "run": []
+  },
   "findutils": {
     "version": "4.11.0",
     "license": "GPL-3.0-or-later",
@@ -200,6 +208,14 @@
     "product": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6",
     "run": []
   },
+  "hwdata": {
+    "version": "0.412",
+    "license": "GPL-2.0-or-later",
+    "by": "plan",
+    "plan": "sha256-4d211fd544bd3826c2e31580093d3452a940cbb7b16ef24058e3e7414beb6db2",
+    "product": "sha256-95867516fcd24e190be31134534fac570ba03820a10c60999d35e13728ee42fa",
+    "run": []
+  },
   "iproute2": {
     "version": "7.2.0",
     "license": "GPL-2.0-or-later",
@@ -232,6 +248,183 @@
     "product": "sha256-ea7e1d00bd423976a32e7062721c495f6d5d47a83339233ad2a6bc46d6c28cb9",
     "run": [
       "ncurses"
+    ]
+  },
+  "libdisplay-info": {
+    "version": "0.4.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-9d0b376070d1b61099dec574e78dbdddc9b25a8f277a5fde334a0c5a09761fb2",
+    "product": "sha256-16dbcb55ce7976f0741a9aff62747658339af1f9ea8a2f7cf054a1c6850e995e",
+    "run": []
+  },
+  "libdrm": {
+    "version": "2.4.134",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-3eceb9a7d693bed9cd7563bf66404aedc3b086bedd5b81b033a51dcbe6fc8803",
+    "product": "sha256-15e17b25ad84dafb657672840e83cfd322d33f05050f6f5607b7fcc56806f9a8",
+    "run": []
+  },
+  "libepoxy": {
+    "version": "1.5.10",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-5867db250403fe7577b6f8e7e083e4dc2fd2d26a26ee3cacc0c5f474bc0d626f",
+    "product": "sha256-c1d5160c1fef7a69e0132c2e4fa275fa700de8661b80d12a01c30b3cbd4077e7",
+    "run": [
+      "mesa"
+    ]
+  },
+  "libevdev": {
+    "version": "1.14.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-f11a92b9ae5cb0084df3988e9826cda6f07909324b7ce913dbe8da4028205118",
+    "product": "sha256-25d86a9ad58db36140c5e3d3a48b3dd6311a9f9c5012991d962fc221456b57ca",
+    "run": []
+  },
+  "libffi": {
+    "version": "3.8.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-4c50eb3342a54e2ffdd6e92aac5be42ba9c8d1854745542dfd66386ed68fac66",
+    "product": "sha256-eaec020f8be62accfd32bc1374f1fee926034e99048b76eb8bfcd06880b75c30",
+    "run": []
+  },
+  "libfontenc": {
+    "version": "1.1.9",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-3898d2db89bee8e6beacd69f59f54f1e0940bc4f550d22f4a6000cf4b6bcb43a",
+    "product": "sha256-c15e3a6dfb55cab94f5702332c3ff31a0b227a27c39c30d4668dc9a36455a5b4",
+    "run": [
+      "zlib"
+    ]
+  },
+  "libinput": {
+    "version": "1.32.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-ca05a6cb112e72577d7d23ff15a75cb60fae5e45060d1a1cdce6647de9afbc85",
+    "product": "sha256-1650ffce17660808b7ba9820f6a9766fc320f5b5881a0864a663360e09e2b828",
+    "run": [
+      "libevdev",
+      "libudev-zero"
+    ]
+  },
+  "libudev-zero": {
+    "version": "1.0.5",
+    "license": "ISC",
+    "by": "plan",
+    "plan": "sha256-6135b2402060ce4dd1cac4c6c9c753d676e54402f83274866465ee126945538c",
+    "product": "sha256-ab04e124dca4a03a2eaf6d17e9f55e885509740f3cb73266e6cce746dc179ede",
+    "run": []
+  },
+  "libx11": {
+    "version": "1.8.14",
+    "license": "MIT AND X11 AND HPND-sell-variant",
+    "by": "plan",
+    "plan": "sha256-78c5c1458e44fc05309e9987102506470c01fc88044703fb0beb4605ce420a90",
+    "product": "sha256-b0dc36b6201c46bbd9552cccb7e7338800c735ad0d458df99faaebfa75e7b145",
+    "run": [
+      "libxcb"
+    ]
+  },
+  "libxau": {
+    "version": "1.0.12",
+    "license": "MIT-open-group",
+    "by": "plan",
+    "plan": "sha256-4518aca69e42df1828428eea8b60cc086f52a9bdc47bcb258e5d0c8255b5c53a",
+    "product": "sha256-cdf237ba5f43cacdc75c9fd3e1b8b9fca8c65a3e0ce1eeec0b8303ad86bb4abb",
+    "run": []
+  },
+  "libxcb": {
+    "version": "1.17.0",
+    "license": "X11",
+    "by": "plan",
+    "plan": "sha256-29ebf8c6795c9d80a3333bd02f67717e11944e0a33e8d874d48a28ed6bc57704",
+    "product": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c",
+    "run": [
+      "libxau"
+    ]
+  },
+  "libxcvt": {
+    "version": "0.1.3",
+    "license": "MIT AND HPND-sell-variant",
+    "by": "plan",
+    "plan": "sha256-1f7b2869a667d49fe268b88577265134ba04f50d076433c3975df1ddc2bc0fa5",
+    "product": "sha256-3da8a8132f9f8f83bc0ab62e0b76463498691a26d0cefa9c3c09078fd487fa8b",
+    "run": []
+  },
+  "libxext": {
+    "version": "1.3.7",
+    "license": "MIT AND MIT-open-group AND HPND AND X11",
+    "by": "plan",
+    "plan": "sha256-6d1b3866b4999efc9aec6633833b631c0d9496e3ccf6b1f46b3c49feaa75cfe7",
+    "product": "sha256-d00c79356828a7e6408978f912f340ba89e1bec9c9533edd8592f953b5941ec4",
+    "run": [
+      "libx11"
+    ]
+  },
+  "libxfixes": {
+    "version": "6.0.2",
+    "license": "HPND-sell-variant AND MIT",
+    "by": "plan",
+    "plan": "sha256-9826c17b1d4a019bbf0d848ed5da2126ec8785d0f710b6496ac56156b99ba4a1",
+    "product": "sha256-d75d210b505179bdfaa3301afa5f53363f735538bbc653d186a13784c35cf099",
+    "run": [
+      "libx11"
+    ]
+  },
+  "libxfont2": {
+    "version": "2.0.9",
+    "license": "MIT AND X11 AND HPND-sell-variant AND BSD-2-Clause",
+    "by": "plan",
+    "plan": "sha256-b98bde7c64a84b4ae113ad31877568aae907f896af26b00cded2d7f35addc323",
+    "product": "sha256-570ee12e1f5b87da0e7435dbdebb01d377127de11f4fcfbd1e08b27a66fd2f29",
+    "run": [
+      "libfontenc",
+      "zlib"
+    ]
+  },
+  "libxkbcommon": {
+    "version": "1.13.2",
+    "license": "MIT AND MIT-open-group AND HPND AND HPND-sell-variant AND X11 AND ISC",
+    "by": "plan",
+    "plan": "sha256-8393d6a747b4e9509dd21e89414e9009f4fbc2dcb7f0c524079d8cef1f6f1420",
+    "product": "sha256-5b04e58574fd7b393bcfa7abee18286ba852a3eb4b025a0857d492e40d5abba7",
+    "run": [
+      "xkeyboard-config"
+    ]
+  },
+  "libxkbfile": {
+    "version": "1.2.0",
+    "license": "HPND AND MIT-open-group",
+    "by": "plan",
+    "plan": "sha256-24f49153c03b8799414a310baaccc9096fa9f7d2b5c39d40f97fc71edc5fc332",
+    "product": "sha256-126a6a61f04b353bdccb4e49311a88bbf2fb0bf771f6d3a781c69c2471070a14",
+    "run": [
+      "libx11"
+    ]
+  },
+  "libxshmfence": {
+    "version": "1.3.3",
+    "license": "HPND-sell-variant",
+    "by": "plan",
+    "plan": "sha256-a10e9f7bea4ad22b183e8d598ebbef86b52b1341801ec4a9d67e04b755019306",
+    "product": "sha256-6aad437cdd1ac2098010057bab9bbf3235b6e7bc143bbb6cdf2de20284b36e8c",
+    "run": []
+  },
+  "libxxf86vm": {
+    "version": "1.1.7",
+    "license": "X11",
+    "by": "plan",
+    "plan": "sha256-b29f588e6ea73a140a0666ce3ae6f8fefcb83187839a1e92e1700588f8eda301",
+    "product": "sha256-d656f2c5a186be24afa2132c39344c2fb9e8a16eaa0618bf3123096c44dc84ca",
+    "run": [
+      "libx11",
+      "libxext"
     ]
   },
   "linux": {
@@ -274,6 +467,28 @@
     "product": "sha256-ad12da9cb2e267f449a4c5fc680679c14ed56ddeec29b6e61a0f55b97b3d708a",
     "run": []
   },
+  "mesa": {
+    "version": "26.2.5",
+    "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
+    "by": "plan",
+    "plan": "sha256-442725a751ec3a81315aba5e1370bb411a4d3368aa69887f7603ca9cc0b7b5fa",
+    "product": "sha256-057d7efa073ca29a169f7b9f96df4a4b37ceffb88f27993c7effdcfb226b5aae",
+    "run": [
+      "gcc",
+      "libdrm",
+      "wayland",
+      "expat",
+      "zlib",
+      "zstd",
+      "elfutils",
+      "libx11",
+      "libxcb",
+      "libxext",
+      "libxxf86vm",
+      "libxshmfence",
+      "libxfixes"
+    ]
+  },
   "meson": {
     "version": "1.12.1",
     "license": "Apache-2.0",
@@ -309,6 +524,14 @@
     "by": "plan",
     "plan": "sha256-a59c33e7abf408c68b2cef94835aa098884b7ed3478a8f8346399cfeb01f5680",
     "product": "sha256-57d92009aaabace2bc64854cb9f66f500f955eaf685fa78fb847aa2c6a5865c6",
+    "run": []
+  },
+  "nettle": {
+    "version": "4.0",
+    "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+    "by": "plan",
+    "plan": "sha256-b23b44c130c6885c428e03e5d5e556d79f3d0ddb0565402dceadb2128c3a40ef",
+    "product": "sha256-a3ab74d558e64f0008d0543964ad4ce15b76ed722608769f84ac5c45f25e129c",
     "run": []
   },
   "ninja": {
@@ -357,6 +580,14 @@
     "product": "sha256-63b56053bfcb6a5c1103ac5a946edf20d04167d8063e0347252f0f4c9bff3510",
     "run": []
   },
+  "pixman": {
+    "version": "0.46.4",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-fe19e218962bdbe2911627cdc7793033f1d8af6fda615a42dcad74cc45e01f20",
+    "product": "sha256-0528602f2f5666250dbe8c697ca33864ffd02293bcfac5666292cacfb147a1b5",
+    "run": []
+  },
   "pkgconf": {
     "version": "3.0.8",
     "license": "ISC",
@@ -388,6 +619,57 @@
       "zstd"
     ]
   },
+  "python-mako": {
+    "version": "1.4.3",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-e01de40ab940f7e02dfae6493b790e87ee4fdea3dc37b47b6f25458ccb2694d8",
+    "product": "sha256-efe336c018f03c0bf6c2fb4d588e4cb732ca22dea90cebb8c767f3db6dac23cc",
+    "run": [
+      "python-markupsafe"
+    ]
+  },
+  "python-markupsafe": {
+    "version": "3.0.4",
+    "license": "BSD-3-Clause",
+    "by": "plan",
+    "plan": "sha256-37dece5db75c46058bb446e19499c14839b36648a0b4cf21eb30e1f9365909c3",
+    "product": "sha256-b15485f9419e2d9044b4095614358fa4eb9bf1c74d55ce7b577f7e243e74032f",
+    "run": []
+  },
+  "python-packaging": {
+    "version": "26.3",
+    "license": "Apache-2.0 OR BSD-2-Clause",
+    "by": "plan",
+    "plan": "sha256-ae15b0957a0c773e4cd05d4b6d1e241473c0ad8b32b962a2406ebf1d89e231b8",
+    "product": "sha256-c061c6b543f91a45b83c62e84193c10936ed7919c36ed741783385284fa81fa7",
+    "run": []
+  },
+  "python-pyyaml": {
+    "version": "6.0.3",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-d63009edeb6cf30b3977e5c5663f07b831669f143ab23b1cbe8687d767938427",
+    "product": "sha256-a55e5c8ef2cd59ea62acc2282cd0a52ebc564af9417abfd23bcbbac7603b5c29",
+    "run": []
+  },
+  "rivulet": {
+    "version": "0.1.0",
+    "license": "GPL-3.0-only",
+    "by": "plan",
+    "plan": "sha256-36a3c9c97b3754d04a71692b1480f12f7117bf56c2cd23f721684f80a67a0bf1",
+    "product": "sha256-4ac4406d10b4251aa44102e8e256ca8ce989e4bf63402d8ce03d56741b0815ab",
+    "run": [
+      "wlroots",
+      "wayland",
+      "libxkbcommon",
+      "pixman",
+      "libinput",
+      "libevdev",
+      "libxcb",
+      "xcb-util-wm"
+    ]
+  },
   "rust": {
     "version": "1.99.1",
     "license": "(MIT OR Apache-2.0) AND Apache-2.0 WITH LLVM-exception AND MIT",
@@ -398,6 +680,14 @@
       "gcc",
       "zlib"
     ]
+  },
+  "seatd": {
+    "version": "0.9.3",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-8b6491904de43ce2d45e91cdab85088b423b3dba0b5fc1f7db2aaadf93a315ff",
+    "product": "sha256-0b27cfd6ef2916991ed459140d58faa3922d71ff97f9025765d72bff528e1e48",
+    "run": []
   },
   "sed": {
     "version": "4.10",
@@ -431,6 +721,134 @@
     "product": "sha256-9c2b7551f1719b1561f651dd37d323deb1756346bb9cd4636d1ed4f91b51525d",
     "run": [
       "ncurses"
+    ]
+  },
+  "wayland": {
+    "version": "1.26.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-817bea9d3380336f9bd3577dd13e1ee2af9b626fc4005eff937b5fc52037044a",
+    "product": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+    "run": [
+      "libffi",
+      "expat"
+    ]
+  },
+  "wayland-protocols": {
+    "version": "1.49",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-cb4ef512c5624f1256cbc9edbe743710d7dfbef448ca68ca2240cb85a58f7dc4",
+    "product": "sha256-7a8a358cf0f3325b4d5821273f7ecc9d1530602b24d102c4b140625a539de924",
+    "run": []
+  },
+  "wlroots": {
+    "version": "0.20.2",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-0576b68b650992eaac5fab02580f38a94cc9d9698c572d44061697d5467fb3f5",
+    "product": "sha256-f744c237b35f479b1cf393321d925b4b9140317ce8e825831810123a7fb610c2",
+    "run": [
+      "wayland",
+      "libdrm",
+      "mesa",
+      "libinput",
+      "libxkbcommon",
+      "pixman",
+      "seatd",
+      "libudev-zero",
+      "libdisplay-info",
+      "libxcb",
+      "xcb-util-wm",
+      "xcb-util-errors",
+      "xwayland"
+    ]
+  },
+  "xcb-proto": {
+    "version": "1.17.0",
+    "license": "X11",
+    "by": "plan",
+    "plan": "sha256-7c8cd9e02a738fc3e250a41287510f048d7304cea1bac0b0d5cb0b05edca50ee",
+    "product": "sha256-8a3e43e2f45ddef5c7698f4b5d219e7cba9e5eb81c204166fb01f2c1daa3ac3f",
+    "run": []
+  },
+  "xcb-util-errors": {
+    "version": "1.0.1",
+    "license": "X11",
+    "by": "plan",
+    "plan": "sha256-8f6c3dafb2c9dea9199835637538b8551eb3b6006ec2640d46499d56e852eccf",
+    "product": "sha256-5e8ec2d3bf0dc973601c42380e9e0cb1d92d36a7973df37b43ad72e8e80418e5",
+    "run": [
+      "libxcb"
+    ]
+  },
+  "xcb-util-wm": {
+    "version": "0.4.2",
+    "license": "X11",
+    "by": "plan",
+    "plan": "sha256-1e0fb824d15800367d94c171c8f7d00a4cff61a57cdef1d7673189f5f15d7bbd",
+    "product": "sha256-b4bccb03f57800ed07f53c75a8fad793caacc66076ad0ca7f9adb4de2db0f148",
+    "run": [
+      "libxcb"
+    ]
+  },
+  "xkbcomp": {
+    "version": "1.5.0",
+    "license": "HPND AND MIT-open-group",
+    "by": "plan",
+    "plan": "sha256-054e75cd00857c8a06fba863f6388088cf529da6fbc954e3ce97aa46708d66a8",
+    "product": "sha256-8c90903ca0d79b049edca46f137ea37adc5ba0781c14af4815def533c8c2ccf6",
+    "run": [
+      "libx11",
+      "libxkbfile",
+      "xkeyboard-config"
+    ]
+  },
+  "xkeyboard-config": {
+    "version": "2.48",
+    "license": "MIT AND MIT-open-group AND HPND AND HPND-sell-variant AND X11 AND xkeyboard-config-Zinoviev",
+    "by": "plan",
+    "plan": "sha256-8dc4f29fc83b22a55f6df782b6d6fa3edfe325e691add87c7a06f8a6b458b996",
+    "product": "sha256-089cd18859102859ffedb44ced07e9a1c86e47ddb21dbfbf8f852963af243cf2",
+    "run": []
+  },
+  "xorgproto": {
+    "version": "2026.1",
+    "license": "MIT AND X11 AND HPND-sell-variant",
+    "by": "plan",
+    "plan": "sha256-4579af08357a968d9bac0b11dc2f73839c61b24207bd5e43d8a44351445840e8",
+    "product": "sha256-0fc8bda924e9431b51ced4992b68de06757342614daa488502a71a29208ee81e",
+    "run": []
+  },
+  "xtrans": {
+    "version": "1.6.0",
+    "license": "MIT-open-group AND MIT",
+    "by": "plan",
+    "plan": "sha256-76465101d22f151ccddedc26ac24bc5508b8b8ebb1073dd982200a2b0e87433f",
+    "product": "sha256-98b2f215749700c7b5b702e42dc19716f9be1748c6077ebe3a260d871c0fdd72",
+    "run": []
+  },
+  "xwayland": {
+    "version": "24.1.14",
+    "license": "MIT AND X11 AND HPND-sell-variant AND BSD-3-Clause",
+    "by": "plan",
+    "plan": "sha256-6b1462bc9aab720340199b225ddedf63f2a701326c1f9a9a3effaf045f6ce2e7",
+    "product": "sha256-4de85bc27fcfb59c2c9947b7c06878ca9e23bee3369100ab8240e5dd559ebe0a",
+    "run": [
+      "libxau",
+      "libxfont2",
+      "libfontenc",
+      "libxcvt",
+      "libxshmfence",
+      "libepoxy",
+      "nettle",
+      "pixman",
+      "libdrm",
+      "mesa",
+      "wayland",
+      "zlib",
+      "xkbcomp",
+      "xkeyboard-config"
     ]
   },
   "xz": {

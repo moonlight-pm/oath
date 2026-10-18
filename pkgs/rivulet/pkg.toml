@@ -6,6 +6,6 @@ home = "https://github.com/moonlight-pm/oath"
 tree = "apps/rivulet"
 build = [
 	"pkgconf", "wayland", "wayland-protocols", "wlroots", "libxkbcommon", "pixman",
-	"libinput", "libevdev", "libxcb", "xcb-util-wm",
+	"libinput", "libevdev", "xorgproto", "libxcb", "xcb-util-wm",
 ]
 run = ["wlroots", "wayland", "libxkbcommon", "pixman", "libinput", "libevdev", "libxcb", "xcb-util-wm"]

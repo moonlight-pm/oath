@@ -127,6 +127,10 @@ GNU userland with util-linux, iproute2, dhcpcd, chrony and vim
 2026-10-18 and passes every metal case. River becomes rivulet, a C port
 on wlroots and a hard fork without Zig (R19, 2026-10-18).
 
+Slice 2, the desk: rivulet and its 41 packages (Mesa with ACO and GLX,
+wlroots, libinput, Xwayland and the X libraries) build natively
+(2026-10-18; [specs/desk.md](specs/desk.md)).
+
 ## 9. Steam + Minecraft desk — planned
 
 A desk for Joshua's daughter that launches Steam and runs Minecraft.

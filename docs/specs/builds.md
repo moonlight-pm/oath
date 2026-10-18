@@ -6,8 +6,8 @@ network and only the declared inputs, then hashes `/out` into the
 store. The same plan bytes and the same input hashes must give the
 same product hash. Plans are how Oath makes native packages.
 
-**Status:** built for the headless base; the desk's packages are target
-(phase 8). The plan kind, `oath fmt`,
+**Status:** built for the headless base and the desk's packages
+([desk.md](desk.md), 2026-10-18). The plan kind, `oath fmt`,
 `oath build` (pinned and `--file`), the sandbox and the native
 toolchain are built; every package in the image is a plan product: the
 C packages, the toolchain (`pkg:gcc`, `pkg:glibc`) and the kernel
@@ -207,8 +207,8 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
 
 ## Target
 
-- **The desk.** Mesa (without LLVM), Wayland, a compositor and the
-  rest, as plans in `pkgs/` (phase 8).
+- **The desk's session.** Its packages are built ([desk.md](desk.md));
+  audio, fonts and Sola as plans remain (phase 8).
 
 ## Out
 

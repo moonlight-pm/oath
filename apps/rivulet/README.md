@@ -18,6 +18,7 @@ versions, so `sola-river` drives it unchanged. GPL-3.0-only
 | `Makefile` | `make` → `build/rivulet`; `BUILD=<dir>` builds elsewhere; `make install DESTDIR= PREFIX=` |
 | `dev.nix` | build host only: the shell to build and test on novus (Sola's nixpkgs pin) |
 | `test/headless.sh` | a headless run driven by `sola-river`, and a comparison of two runs |
+| `test/sandbox.sh` | the built `pkg:rivulet` in the build sandbox: headless, with an X client through Xwayland |
 
 Names follow the Zig: type `Foo` is `struct rv_foo`, method `Foo.bar` is
 `rv_foo_bar()`, fields keep their Zig names, a nested type takes its
@@ -53,6 +54,12 @@ build and upstream River 0.4.5 gave the same 53 globals, the same steps,
 window lists and output state, the same log lines apart from how many
 manage and render sequences ran, and pixel-identical screenshots, with no
 sanitizer reports. The one leak is upstream's: a `Seat` is never freed.
+
+`pkgs/rivulet` builds this tree (`tree = "apps/rivulet"`); rebuild it
+with `cargo make pkgs rivulet` after a change here, or the image ships
+the locked product. `test/sandbox.sh` then runs that product in the
+build sandbox: rivulet headless on pixman, and as its init an X client
+(`xkbcomp`) that starts Xwayland and reads the keymap back.
 
 ## Where it differs from the Zig
 

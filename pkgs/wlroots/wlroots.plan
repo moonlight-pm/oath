@@ -1,0 +1,345 @@
+#!oath-plan
+{
+  "name": "wlroots",
+  "produces": "pkg:wlroots",
+  "build_needs": [
+    {
+      "id": "pkg:bash",
+      "hash": "sha256-80f160c2dd44f5d3801bd5627163e4203d513ea9bc1edf70cccb567a34f6c371"
+    },
+    {
+      "id": "pkg:bzip2",
+      "hash": "sha256-14b4d3dd447515672a1890ee020e2e577bc6604508ed21e6be53aba1cb025955"
+    },
+    {
+      "id": "pkg:coreutils",
+      "hash": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da"
+    },
+    {
+      "id": "pkg:diffutils",
+      "hash": "sha256-064d781760f48fb7ee12fa47f1de69b1c644c7cf72dbd83b476b89dad7149002"
+    },
+    {
+      "id": "pkg:elfutils",
+      "hash": "sha256-a468120c4b617df7476a8a6d5a6b187ce2d47728057419f4c0b5be1ed0d13b4d"
+    },
+    {
+      "id": "pkg:expat",
+      "hash": "sha256-e830e8033e44121fcf2bdbb35495474940d8d0ee53f00246bbfabc12997a5b75"
+    },
+    {
+      "id": "pkg:findutils",
+      "hash": "sha256-0752f905b59e72a4bc41ae54d4f53629d49d82a129219a2eb4c4d2b67bb5fab7"
+    },
+    {
+      "id": "pkg:gawk",
+      "hash": "sha256-b671a3d6d7871b775c6026322a73b8288a5f889814437a92432fe0f745db118c"
+    },
+    {
+      "id": "pkg:gcc",
+      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+    },
+    {
+      "id": "pkg:glibc",
+      "hash": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592"
+    },
+    {
+      "id": "pkg:gmp",
+      "hash": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2"
+    },
+    {
+      "id": "pkg:grep",
+      "hash": "sha256-f4fa7ae2900d8fa5a5b390d16a5d2421a6ebd976a448947261f1c54a0118e8d5"
+    },
+    {
+      "id": "pkg:gzip",
+      "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
+    },
+    {
+      "id": "pkg:hwdata",
+      "hash": "sha256-95867516fcd24e190be31134534fac570ba03820a10c60999d35e13728ee42fa"
+    },
+    {
+      "id": "pkg:libdisplay-info",
+      "hash": "sha256-16dbcb55ce7976f0741a9aff62747658339af1f9ea8a2f7cf054a1c6850e995e"
+    },
+    {
+      "id": "pkg:libdrm",
+      "hash": "sha256-15e17b25ad84dafb657672840e83cfd322d33f05050f6f5607b7fcc56806f9a8"
+    },
+    {
+      "id": "pkg:libepoxy",
+      "hash": "sha256-c1d5160c1fef7a69e0132c2e4fa275fa700de8661b80d12a01c30b3cbd4077e7"
+    },
+    {
+      "id": "pkg:libevdev",
+      "hash": "sha256-25d86a9ad58db36140c5e3d3a48b3dd6311a9f9c5012991d962fc221456b57ca"
+    },
+    {
+      "id": "pkg:libffi",
+      "hash": "sha256-eaec020f8be62accfd32bc1374f1fee926034e99048b76eb8bfcd06880b75c30"
+    },
+    {
+      "id": "pkg:libfontenc",
+      "hash": "sha256-c15e3a6dfb55cab94f5702332c3ff31a0b227a27c39c30d4668dc9a36455a5b4"
+    },
+    {
+      "id": "pkg:libinput",
+      "hash": "sha256-1650ffce17660808b7ba9820f6a9766fc320f5b5881a0864a663360e09e2b828"
+    },
+    {
+      "id": "pkg:libudev-zero",
+      "hash": "sha256-ab04e124dca4a03a2eaf6d17e9f55e885509740f3cb73266e6cce746dc179ede"
+    },
+    {
+      "id": "pkg:libx11",
+      "hash": "sha256-b0dc36b6201c46bbd9552cccb7e7338800c735ad0d458df99faaebfa75e7b145"
+    },
+    {
+      "id": "pkg:libxau",
+      "hash": "sha256-cdf237ba5f43cacdc75c9fd3e1b8b9fca8c65a3e0ce1eeec0b8303ad86bb4abb"
+    },
+    {
+      "id": "pkg:libxcb",
+      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+    },
+    {
+      "id": "pkg:libxcvt",
+      "hash": "sha256-3da8a8132f9f8f83bc0ab62e0b76463498691a26d0cefa9c3c09078fd487fa8b"
+    },
+    {
+      "id": "pkg:libxext",
+      "hash": "sha256-d00c79356828a7e6408978f912f340ba89e1bec9c9533edd8592f953b5941ec4"
+    },
+    {
+      "id": "pkg:libxfixes",
+      "hash": "sha256-d75d210b505179bdfaa3301afa5f53363f735538bbc653d186a13784c35cf099"
+    },
+    {
+      "id": "pkg:libxfont2",
+      "hash": "sha256-570ee12e1f5b87da0e7435dbdebb01d377127de11f4fcfbd1e08b27a66fd2f29"
+    },
+    {
+      "id": "pkg:libxkbcommon",
+      "hash": "sha256-5b04e58574fd7b393bcfa7abee18286ba852a3eb4b025a0857d492e40d5abba7"
+    },
+    {
+      "id": "pkg:libxkbfile",
+      "hash": "sha256-126a6a61f04b353bdccb4e49311a88bbf2fb0bf771f6d3a781c69c2471070a14"
+    },
+    {
+      "id": "pkg:libxshmfence",
+      "hash": "sha256-6aad437cdd1ac2098010057bab9bbf3235b6e7bc143bbb6cdf2de20284b36e8c"
+    },
+    {
+      "id": "pkg:libxxf86vm",
+      "hash": "sha256-d656f2c5a186be24afa2132c39344c2fb9e8a16eaa0618bf3123096c44dc84ca"
+    },
+    {
+      "id": "pkg:make",
+      "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
+    },
+    {
+      "id": "pkg:mesa",
+      "hash": "sha256-057d7efa073ca29a169f7b9f96df4a4b37ceffb88f27993c7effdcfb226b5aae"
+    },
+    {
+      "id": "pkg:meson",
+      "hash": "sha256-e681b9f9580b5670fc12fc8da7926b01b2fd4650c5ff09abb4d8d816cfe90dc6"
+    },
+    {
+      "id": "pkg:mpc",
+      "hash": "sha256-877f9c92df8a5af55c48573a0ee1ef5fc055e26c9a14ae866ab8753cbfd1a171"
+    },
+    {
+      "id": "pkg:mpfr",
+      "hash": "sha256-494241b048adac84186882cbd4d973464df07a671aaeebcfdaec9d460976e5e7"
+    },
+    {
+      "id": "pkg:nettle",
+      "hash": "sha256-a3ab74d558e64f0008d0543964ad4ce15b76ed722608769f84ac5c45f25e129c"
+    },
+    {
+      "id": "pkg:ninja",
+      "hash": "sha256-7af4eba9e7734252b0b4c5cd6277eb84ea304152c6fdeb161eb70459ba5e0d56"
+    },
+    {
+      "id": "pkg:patch",
+      "hash": "sha256-61ab1745f2340a0c91fd938bb763c6a69c0640e66ff951e4c558575e0e7ff4ef"
+    },
+    {
+      "id": "pkg:pixman",
+      "hash": "sha256-0528602f2f5666250dbe8c697ca33864ffd02293bcfac5666292cacfb147a1b5"
+    },
+    {
+      "id": "pkg:pkgconf",
+      "hash": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f"
+    },
+    {
+      "id": "pkg:python",
+      "hash": "sha256-5336ee7c08ccba6fd538b203c4c7d155f276827686e827a7239fa8fb9845dabc"
+    },
+    {
+      "id": "pkg:seatd",
+      "hash": "sha256-0b27cfd6ef2916991ed459140d58faa3922d71ff97f9025765d72bff528e1e48"
+    },
+    {
+      "id": "pkg:sed",
+      "hash": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819"
+    },
+    {
+      "id": "pkg:tar",
+      "hash": "sha256-94263cf077bd23908966915fea3ab0cd481b04f7efa276407088a96b6de96128"
+    },
+    {
+      "id": "pkg:wayland",
+      "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac"
+    },
+    {
+      "id": "pkg:wayland-protocols",
+      "hash": "sha256-7a8a358cf0f3325b4d5821273f7ecc9d1530602b24d102c4b140625a539de924"
+    },
+    {
+      "id": "pkg:wlroots-src",
+      "hash": "sha256-67452148aff81e571bce0cddc0e417553c75b214eb88f064982471e4d380c132"
+    },
+    {
+      "id": "pkg:xcb-util-errors",
+      "hash": "sha256-5e8ec2d3bf0dc973601c42380e9e0cb1d92d36a7973df37b43ad72e8e80418e5"
+    },
+    {
+      "id": "pkg:xcb-util-wm",
+      "hash": "sha256-b4bccb03f57800ed07f53c75a8fad793caacc66076ad0ca7f9adb4de2db0f148"
+    },
+    {
+      "id": "pkg:xkbcomp",
+      "hash": "sha256-8c90903ca0d79b049edca46f137ea37adc5ba0781c14af4815def533c8c2ccf6"
+    },
+    {
+      "id": "pkg:xkeyboard-config",
+      "hash": "sha256-089cd18859102859ffedb44ced07e9a1c86e47ddb21dbfbf8f852963af243cf2"
+    },
+    {
+      "id": "pkg:xorgproto",
+      "hash": "sha256-0fc8bda924e9431b51ced4992b68de06757342614daa488502a71a29208ee81e"
+    },
+    {
+      "id": "pkg:xwayland",
+      "hash": "sha256-4de85bc27fcfb59c2c9947b7c06878ca9e23bee3369100ab8240e5dd559ebe0a"
+    },
+    {
+      "id": "pkg:xz",
+      "hash": "sha256-449080873772868f09eacc3db3243ca5f4376920782f3c1c1199d0302646b33b"
+    },
+    {
+      "id": "pkg:zlib",
+      "hash": "sha256-b6d23a9b5dc6b51202879ba481a78cdaaa1a05418515ffa715a2bf3bb2904528"
+    },
+    {
+      "id": "pkg:zstd",
+      "hash": "sha256-5bf91c19d01771beccc4dd6c715f577d57ee823e5d7e1a15f733e9d1f664fffa"
+    }
+  ],
+  "run_needs": [
+    {
+      "id": "pkg:libdisplay-info",
+      "hash": "sha256-16dbcb55ce7976f0741a9aff62747658339af1f9ea8a2f7cf054a1c6850e995e"
+    },
+    {
+      "id": "pkg:libdrm",
+      "hash": "sha256-15e17b25ad84dafb657672840e83cfd322d33f05050f6f5607b7fcc56806f9a8"
+    },
+    {
+      "id": "pkg:libinput",
+      "hash": "sha256-1650ffce17660808b7ba9820f6a9766fc320f5b5881a0864a663360e09e2b828"
+    },
+    {
+      "id": "pkg:libudev-zero",
+      "hash": "sha256-ab04e124dca4a03a2eaf6d17e9f55e885509740f3cb73266e6cce746dc179ede"
+    },
+    {
+      "id": "pkg:libxcb",
+      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+    },
+    {
+      "id": "pkg:libxkbcommon",
+      "hash": "sha256-5b04e58574fd7b393bcfa7abee18286ba852a3eb4b025a0857d492e40d5abba7"
+    },
+    {
+      "id": "pkg:mesa",
+      "hash": "sha256-057d7efa073ca29a169f7b9f96df4a4b37ceffb88f27993c7effdcfb226b5aae"
+    },
+    {
+      "id": "pkg:pixman",
+      "hash": "sha256-0528602f2f5666250dbe8c697ca33864ffd02293bcfac5666292cacfb147a1b5"
+    },
+    {
+      "id": "pkg:seatd",
+      "hash": "sha256-0b27cfd6ef2916991ed459140d58faa3922d71ff97f9025765d72bff528e1e48"
+    },
+    {
+      "id": "pkg:wayland",
+      "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac"
+    },
+    {
+      "id": "pkg:xcb-util-errors",
+      "hash": "sha256-5e8ec2d3bf0dc973601c42380e9e0cb1d92d36a7973df37b43ad72e8e80418e5"
+    },
+    {
+      "id": "pkg:xcb-util-wm",
+      "hash": "sha256-b4bccb03f57800ed07f53c75a8fad793caacc66076ad0ca7f9adb4de2db0f148"
+    },
+    {
+      "id": "pkg:xwayland",
+      "hash": "sha256-4de85bc27fcfb59c2c9947b7c06878ca9e23bee3369100ab8240e5dd559ebe0a"
+    }
+  ]
+}
+---
+#!/bin/sh
+set -eu
+# generated by cargo make pkgs from pkgs/wlroots/
+SRC=/oath/store/pkg/wlroots-src/sha256-67452148aff81e571bce0cddc0e417553c75b214eb88f064982471e4d380c132/src
+FILES=/oath/store/pkg/wlroots-src/sha256-67452148aff81e571bce0cddc0e417553c75b214eb88f064982471e4d380c132/files
+SOURCES='wlroots-0.20.2.tar.gz'
+VERSION=0.20.2
+JOBS=$(nproc)
+LIVE=/oath/store/pkg/wlroots/live
+export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
+CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
+for d in /oath/store/pkg/*/live; do
+	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
+	[ -d "$d/include" ] && CPPFLAGS="$CPPFLAGS -I$d/include"
+	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
+	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+done
+export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
+# Hand-written Makefiles often ignore CPPFLAGS.
+CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
+mkdir -p /out
+cat > /out/components.json <<'OATH_EOF'
+[
+  {
+    "name": "wlroots",
+    "purl": "pkg:generic/wlroots@0.20.2",
+    "version": "0.20.2"
+  }
+]
+OATH_EOF
+# wlroots, shared, with Oath's patches: the DRM and libinput backends
+# (session through libseat, devices through libudev-zero), the GLES2
+# renderer, GBM buffers and Xwayland, whose path it compiles in.
+tar -xf "$SRC/$SOURCES"
+cd "wlroots-$VERSION"
+for p in "$FILES"/patches/*.patch; do
+	echo "patch ${p##*/}"
+	patch -p1 -i "$p"
+done
+meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release -Dwerror=false \
+	-Dexamples=false -Dbackends=drm,libinput -Drenderers=gles2 -Dallocators=gbm \
+	-Dsession=enabled -Dxwayland=enabled -Dxcb-errors=enabled -Dlibliftoff=disabled \
+	-Dcolor-management=disabled
+ninja -C build -j"$JOBS"
+DESTDIR=/tmp/dest ninja -C build install
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" /out/

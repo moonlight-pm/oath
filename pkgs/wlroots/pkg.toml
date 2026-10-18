@@ -9,7 +9,7 @@ purl = "pkg:generic/wlroots@0.20.2"
 build = [
 	"meson", "ninja", "python", "pkgconf", "wayland", "wayland-protocols", "hwdata",
 	"libdrm", "mesa", "libinput", "libxkbcommon", "pixman", "seatd", "libudev-zero",
-	"libdisplay-info", "libxcb", "xcb-util-wm", "xcb-util-errors", "xwayland",
+	"libdisplay-info", "xorgproto", "libxcb", "xcb-util-wm", "xcb-util-errors", "xwayland",
 ]
 run = [
 	"wayland", "libdrm", "mesa", "libinput", "libxkbcommon", "pixman", "seatd", "libudev-zero",
