@@ -120,7 +120,8 @@ Slice 1 (R17, R18), built 2026-10-17: the toolchain is GCC 16.2,
 binutils 2.47 and glibc 2.44, programs link dynamically through a
 `/lib` farm, and Clang/LLVM, musl and busybox are gone; the base is the
 GNU userland with util-linux, iproute2, dhcpcd, chrony and vim
-([specs/builds.md](specs/builds.md)). Open: River is written in Zig,
+([specs/builds.md](specs/builds.md)). canto was reinstalled with it on
+2026-10-18 and passes every metal case. Open: River is written in Zig,
 which R9 rules out.
 
 ## 9. Steam + Minecraft desk — planned

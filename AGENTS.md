@@ -53,10 +53,13 @@ is the `oath-docs` skill (`.claude/skills/oath-docs/`).
 **Do without asking:** read, search and edit project files; docs
 hygiene; normal git on `master` (status, diff, log, add, commit);
 `cargo test`; `cargo make build`; `cargo make check`; local QEMU of
-images this repo built.
+images this repo built. **Anything on canto**, the test machine
+(Joshua, 2026-10-18): `cargo make install --target home@10.0.0.3
+--disk /dev/sda … --confirm`, `cargo make update --target`, reboots,
+`sudo`, wiping its disk.
 
 **Ask first:** force-push or hard reset of published history; writing
-to a real disk or USB stick Joshua did not ask for (`cargo make
+to any other real disk or USB stick Joshua did not ask for (`cargo make
 install --confirm`, `--usb`, `cargo make update --target`); changing
 novus (the NixOS build host);
 committing secrets; answering an Open decision.

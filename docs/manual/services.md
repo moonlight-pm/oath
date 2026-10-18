@@ -149,7 +149,7 @@ on the console reboots the same way.
 The image ships two helpers, not a service:
 
 - `/lib/oath/backup-send host:/export/path` — snapshot `@`, mount the
-  NFS export, write `<hostname>.send` (one `btrfs send` stream,
+  NFS export (version 4, else 3), write `<hostname>.send` (one `btrfs send` stream,
   overwritten each time) and `<hostname>.json` (generation, UTC time,
   size, sha256). It is not a second undo; `oath undo` never reads it.
 - `/lib/oath/backup-daily host:/export/path` — sleep until 04:00 local

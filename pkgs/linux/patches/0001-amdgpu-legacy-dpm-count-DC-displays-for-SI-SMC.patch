@@ -13,7 +13,21 @@ Subject: 0001-amdgpu-legacy-dpm-count-DC-displays-for-SI-SMC.patch
  
  #define amdgpu_dpm_pre_set_power_state(adev) \
  		((adev)->powerplay.pp_funcs->pre_set_power_state((adev)->powerplay.pp_handle))
-@@ -959,14 +962,123 @@
+@@ -938,6 +941,13 @@
+ 	if (equal)
+ 		return 0;
+ 
++	/* Only real switches: DC recomputes clocks on every commit. */
++	drm_info(adev_to_drm(adev),
++		 "legacy dpm: switch to class=0x%x caps=0x%x ac=%d num_display=%u vblank=%u\n",
++		 ps->class, ps->caps, adev->pm.ac_power,
++		 adev->pm.pm_display_cfg.num_display,
++		 adev->pm.pm_display_cfg.min_vblank_time);
++
+ 	if (pp_funcs->set_power_state)
+ 		pp_funcs->set_power_state(adev->powerplay.pp_handle);
+ 
+@@ -959,14 +969,115 @@
  	return 0;
  }
  
@@ -111,7 +125,6 @@ Subject: 0001-amdgpu-legacy-dpm-count-DC-displays-for-SI-SMC.patch
  void amdgpu_legacy_dpm_compute_clocks(void *handle)
  {
  	struct amdgpu_device *adev = (struct amdgpu_device *)handle;
-+	struct amdgpu_ps *ps;
 +	int ret;
  
 -	if (!adev->dc_enabled)
@@ -124,18 +137,11 @@ Subject: 0001-amdgpu-legacy-dpm-count-DC-displays-for-SI-SMC.patch
  
 -	amdgpu_dpm_change_power_state_locked(adev);
 +	ret = amdgpu_dpm_change_power_state_locked(adev);
-+	ps = adev->pm.dpm.requested_ps;
-+	if (ps)
-+		drm_info(adev_to_drm(adev),
-+			 "legacy dpm: pick class=0x%x caps=0x%x ret=%d ac=%d num_display=%u vblank=%u\n",
-+			 ps->class, ps->caps, ret, adev->pm.ac_power,
-+			 adev->pm.pm_display_cfg.num_display,
-+			 adev->pm.pm_display_cfg.min_vblank_time);
-+	else
-+		drm_info(adev_to_drm(adev),
-+			 "legacy dpm: pick failed ret=%d num_display=%u vblank=%u\n",
-+			 ret, adev->pm.pm_display_cfg.num_display,
-+			 adev->pm.pm_display_cfg.min_vblank_time);
++	if (ret)
++		dev_warn_ratelimited(adev->dev,
++				     "legacy dpm: no power state ret=%d num_display=%u vblank=%u\n",
++				     ret, adev->pm.pm_display_cfg.num_display,
++				     adev->pm.pm_display_cfg.min_vblank_time);
  }
  
  void amdgpu_dpm_thermal_work_handler(struct work_struct *work)

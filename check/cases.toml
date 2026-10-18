@@ -85,9 +85,9 @@ name = "svc-stop-start"
 about = "Disabling and enabling a service through the catalog."
 metal = true
 steps = [
-  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold && sleep 1 && pidof sleep" },
-  { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sleep 1 && ! pidof sleep" },
-  { run = "sudo oath set svc:hold enabled=true && sudo oath apply svc:hold && sleep 1 && pidof sleep" },
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold && sleep 1 && pgrep -fx '/bin/sleep 86400000'" },
+  { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sleep 1 && ! pgrep -fx '/bin/sleep 86400000'" },
+  { run = "sudo oath set svc:hold enabled=true && sudo oath apply svc:hold && sleep 1 && pgrep -fx '/bin/sleep 86400000'" },
 ]
 
 [[case]]
@@ -97,7 +97,7 @@ metal = true
 steps = [
   { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold" },
   { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sudo oath undo && sleep 2" },
-  { run = "p=$(pidof sleep) && oath get svc:hold --actual | grep \"\\\"pid\\\": $p\"" },
+  { run = "p=$(pgrep -fx '/bin/sleep 86400000') && oath get svc:hold --actual | grep \"\\\"pid\\\": $p\"" },
 ]
 
 [[case]]
@@ -127,9 +127,9 @@ name = "oath-rm-and-undo"
 about = "rm goes through apply; undo brings the service back."
 metal = true
 steps = [
-  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold && sleep 1 && pidof sleep" },
-  { run = "sudo oath rm svc:hold && sudo oath apply svc:hold && sleep 1 && ! pidof sleep && ! oath get svc:hold" },
-  { run = "sudo oath undo && sleep 1 && pidof sleep && oath get svc:hold", expect = ["in-sync"] },
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold && sleep 1 && pgrep -fx '/bin/sleep 86400000'" },
+  { run = "sudo oath rm svc:hold && sudo oath apply svc:hold && sleep 1 && ! pgrep -fx '/bin/sleep 86400000' && ! oath get svc:hold" },
+  { run = "sudo oath undo && sleep 1 && pgrep -fx '/bin/sleep 86400000' && oath get svc:hold", expect = ["in-sync"] },
 ]
 
 [[case]]
@@ -207,7 +207,7 @@ steps = [
   { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}' && sudo oath apply svc:hold" },
   { run = "sudo sh -c 'printf \"{\\\"exec\\\": [\" > /oath/objects/svc/hold/desired.json'" },
   { reboot = "force" },
-  { run = "sleep 2; pidof sleep" },
+  { run = "sleep 2; pgrep -fx '/bin/sleep 86400000'" },
 ]
 
 [[case]]
@@ -285,10 +285,10 @@ name = "pid1-panic-resumes"
 about = "A panic in PID 1's main loop re-executes PID 1 with its state: services keep running and stay supervised."
 metal = true
 steps = [
-  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"]}' && sudo oath apply svc:hold && sleep 1 && pidof sleep > /tmp/hold.pid && cat /tmp/hold.pid" },
+  { run = "sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"]}' && sudo oath apply svc:hold && sleep 1 && pgrep -fx '/bin/sleep 86400000' > /tmp/hold.pid && cat /tmp/hold.pid" },
   { run = "sudo oath panic-init", expect = ["PID 1 panicked"] },
-  { run = "sleep 2; pidof sleep | diff /tmp/hold.pid - && echo SAME_PROCESS; oath logs -n 400 | grep -E 'panic|resumed'", expect = ["SAME_PROCESS", "re-executing PID 1", "resumed after a panic (1 in the last minute)"] },
-  { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sleep 1; pidof sleep || echo STOPPED; oath get svc:sshd --actual", expect = ["STOPPED", "running"] },
+  { run = "sleep 2; pgrep -fx '/bin/sleep 86400000' | diff /tmp/hold.pid - && echo SAME_PROCESS; oath logs -n 400 | grep -E 'panic|resumed'", expect = ["SAME_PROCESS", "re-executing PID 1", "resumed after a panic (1 in the last minute)"] },
+  { run = "sudo oath set svc:hold enabled=false && sudo oath apply svc:hold && sleep 1; pgrep -fx '/bin/sleep 86400000' || echo STOPPED; oath get svc:sshd --actual", expect = ["STOPPED", "running"] },
 ]
 
 [[case]]

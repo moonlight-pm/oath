@@ -351,8 +351,8 @@ machine's `oath mcp` and a task, and nothing else.
 1. `oath mcp` with every tool in both eras, `--read-only`, the CLI
    changes, the unit tests, the five cases, and a manual section
    ("Agents" in `docs/manual/using.md`). Done when the QEMU harness
-   passes. **Done 2026-10-17:** all 46 cases pass in QEMU; canto runs
-   output `e3a11645f14c` and passes all 37 metal cases.
+   passes. **Done 2026-10-17:** all 46 cases passed in QEMU; canto ran
+   output `e3a11645f14c` and passed all 37 metal cases.
 2. The agent check. Done when every task passes with the default model
    in QEMU. **Built 2026-10-17; 4 of 5 pass.** The first run (haiku,
    output `e3a11645f14c`, $0.0083 in all) passed `rename`, `service`,
