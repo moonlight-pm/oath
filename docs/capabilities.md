@@ -18,7 +18,7 @@ gaps · `target` designed, not built.
 | Agent surface | shipped | `oath mcp` over SSH: a tool per verb (writes via `sudo`), resources, INDEX as instructions, MCP 2026-07-28 and older, `--read-only`; the log records `actor.via`, `confirm`; `check --agent`: haiku passes all five tasks, QEMU and canto ([specs/agent.md](specs/agent.md)) | — |
 | Generations | shipped | checks before the snapshot; every outcome logged; undo restores only the touched objects' spec; lockout-class changes go on probation until `oath keep` from a new session | — |
 | Services (PID 1) | shipped | runs only applied specs; per-service logs; exit codes, backoff, `failed` with a `reason`; a cgroup per service; shutdown in reverse `wants` order; a cycle skips only its members; survives its own panic | — |
-| Packages | shipped | hash-in-path store, `/bin` and `/lib` farms (R17), pins, `needs` graph (the libraries a pack loads), components + advisories, fetch by `url`; publish: profile packages with licence, plan and source pack; apply and `oath verify` (each boot) re-hash linked trees | — |
+| Packages | shipped | hash-in-path store, `/bin` and `/lib` farms (R17), pins, `needs` graph (the libraries a pack loads), components + advisories, fetch by `url`; publish carries licence, plan and source; `oath verify` re-hashes linked trees each boot | — |
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; netless sandbox in its own PID namespace; cache keyed on plan and inputs; logs in `/oath/log/plan/`; every image package, the kernel and Oath binaries included, is a plan product | — |
 | Toolchain and native packages | partial | `cargo make bootstrap`: GCC 16.2 + binutils 2.47 + glibc 2.44 (R17); `cargo make pkgs`: 51 plan products (sha256 pins, OpenPGP and Sigstore signatures, SPDX licences, `pkgs/lock.json`); GNU userland (R18); bit-identical rebuilds | Perl unsigned; no compiler on the box |
 | Network | partial | `net:net0` dhcp or static; NIC renamed `net0`; supervised dhcpcd whose renewals show in actual; chrony from pool.ntp.org | One NIC, chosen at boot |
@@ -35,6 +35,6 @@ gaps · `target` designed, not built.
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (River, Sola) | target | Returns when River, wlroots, mesa, Sola and their deps build natively. |
+| Desk (River, Sola) | partial | River in C (R19) matches upstream headless | Libraries, Mesa, Sola as plans; the seat |
 | Wicket host | target | Left core (R1); Wicket will ship its own packages and overlay. buccina still runs the trial image. |
 | Steam + Minecraft desk | target | Future requirement (R2): native desk, Steam runtime, JVM. |

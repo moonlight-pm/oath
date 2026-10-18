@@ -9,13 +9,14 @@ append history (git has it).
 
 ## Now
 
-1. **Phase 8 slice 2: the desk.** River in C (R19, `apps/river/`),
-   then its libraries as plans (Wayland, libdrm, libinput, libevdev,
-   libudev-zero, xkbcommon, pixman, libdisplay-info, Mesa with ACO,
-   wlroots from `forks/wlroots`, seatd, Xwayland), then the seat
-   (`svc:seatd`, `svc:river`, `svc:sola-river`) and Sola. Next: port
-   River 0.4.5 to C and run it on novus (headless and nested) with
-   unmodified `sola-river`, globals matching upstream.
+1. **Phase 8 slice 2: the desk.** River is ported to C (R19,
+   `apps/river/`, 16k lines) and matches upstream 0.4.5 headless on
+   novus under unmodified `sola-river`, sanitizer-clean
+   ([apps/river/README.md](apps/river/README.md)). Next: its libraries
+   as plans (Wayland, libdrm, libevdev, libinput, libudev-zero,
+   xkbcommon, pixman, libdisplay-info, Mesa with ACO, wlroots from
+   `forks/wlroots`, seatd, Xwayland), each upstream's signing key added
+   by Joshua; then `pkg:river`, the seat and Sola.
 2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a

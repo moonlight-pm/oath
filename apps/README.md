@@ -39,6 +39,7 @@ around its snapshot. No hook is the default (crash-consistent).
 | `hello.plan` | `plan:hello` | compile `hello.c` with `pkg:gcc`, `pkg:glibc`, `pkg:bash`, `pkg:coreutils` and what they run with |
 | `reloc-src/` | `pkg:reloc-src` | upstream prefix tree for the relocate plan |
 | `reloc.plan` | `plan:reloc` | relocate `hello-1.0/hello` into `/out/bin/reloc` |
+| `river/` | `pkg:river` (to come) | the compositor: River 0.4.5 ported to C (R19); see [river/README.md](river/README.md) |
 | `fetchme/` | `pkg:fetchme` | single-file payload the harness serves; fetch cases make `pkg:fetchme` with `url` `http://10.0.2.2:18765/fetchme` |
 
 The pins in `hello.plan` and `reloc.plan` name products in
