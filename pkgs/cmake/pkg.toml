@@ -1,0 +1,14 @@
+version = "4.4.4"
+license = "BSD-3-Clause AND curl AND MIT AND BSD-2-Clause AND Zlib AND 0BSD AND Apache-2.0"
+description = "CMake, with its bundled libraries and no OpenSSL. A build tool (crates' build scripts on the desk)."
+home = "https://cmake.org/"
+purl = "pkg:github/Kitware/CMake@v4.4.4"
+build = []
+run = ["gcc"]
+
+[[source]]
+url = "https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4.tar.gz"
+sha256 = "bd24c30d80a7744ae84b845ff080cc8453b06c622ef01066564108e9cefc44cf"
+sig = "https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-SHA-256.txt.asc"
+sums = "https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-SHA-256.txt"
+key = "cmake"

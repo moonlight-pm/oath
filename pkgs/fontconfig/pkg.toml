@@ -4,7 +4,7 @@
 # FONTCONFIG_FILE.
 version = "2.18.3"
 license = "HPND-sell-variant AND MIT AND MIT-Modern-Variant AND Unicode-DFS-2016"
-description = "fontconfig, shared, its tools and fonts.conf listing Oath's font packages."
+description = "fontconfig, shared, its tools and fonts.conf listing Oath's font packages (Noto, Iosevka Term Slab)."
 home = "https://www.freedesktop.org/wiki/Software/fontconfig/"
 purl = "pkg:generic/fontconfig@2.18.3"
 build = ["meson", "ninja", "python", "pkgconf", "gperf", "freetype", "expat"]

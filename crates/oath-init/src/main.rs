@@ -299,6 +299,21 @@ fn open_dev_nodes() {
     let _ = std::os::unix::fs::chown(tty, Some(oath_core::seat::UID), Some(oath_core::seat::GID));
     let _ = fs::set_permissions(tty, fs::Permissions::from_mode(0o600));
     open_render_nodes();
+    open_sound_nodes();
+}
+
+/// Sound devices belong to the seat: `/dev/snd/*` is root:home 0660, so
+/// the desk's PipeWire (as `home`) opens them.
+pub(crate) fn open_sound_nodes() {
+    let Ok(dir) = fs::read_dir("/dev/snd") else { return };
+    for e in dir.flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            continue;
+        }
+        let _ = std::os::unix::fs::chown(&p, None, Some(oath_core::seat::GID));
+        let _ = fs::set_permissions(&p, fs::Permissions::from_mode(0o660));
+    }
 }
 
 /// GPU render nodes are open to every process: GL clients and wlroots

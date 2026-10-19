@@ -89,7 +89,7 @@
     },
     {
       "id": "pkg:libudev-zero",
-      "hash": "sha256-ab04e124dca4a03a2eaf6d17e9f55e885509740f3cb73266e6cce746dc179ede"
+      "hash": "sha256-cbc552b7f0b26124a7367046a607c0a754bac70127cac1a06296bf1c76510d5f"
     },
     {
       "id": "pkg:libx11",
@@ -255,7 +255,7 @@
     },
     {
       "id": "pkg:libudev-zero",
-      "hash": "sha256-ab04e124dca4a03a2eaf6d17e9f55e885509740f3cb73266e6cce746dc179ede"
+      "hash": "sha256-cbc552b7f0b26124a7367046a607c0a754bac70127cac1a06296bf1c76510d5f"
     },
     {
       "id": "pkg:libxcb",

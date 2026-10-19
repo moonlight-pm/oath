@@ -104,6 +104,9 @@ impl Hotplug {
             if ev.subsystem == "drm" && ev.action == "add" {
                 crate::open_render_nodes();
             }
+            if ev.subsystem == "sound" && ev.action == "add" {
+                crate::open_sound_nodes();
+            }
         }
         if !aliases.is_empty() {
             self.load(&aliases);

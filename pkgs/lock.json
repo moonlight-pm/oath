@@ -69,7 +69,7 @@
     "version": "1.18.6",
     "license": "LGPL-2.1-only OR MPL-1.1",
     "by": "plan",
-    "plan": "sha256-6f055280a1fc60541004a496de64f7e08430e260cb707b3a755b5effb77fb44a",
+    "plan": "sha256-3d5fc0c0ae241a4d0106f2d6368a936e04b6ca3cddaba63147acdd62d9b0d402",
     "product": "sha256-4c6511f9ad09fed016040c4c4c052e19bf42c3cfae356d51ce5f97e36274cf2e",
     "run": [
       "pixman",
@@ -81,7 +81,7 @@
     "version": "147.0.10+gd58e84d+chromium-147.0.7727.118",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-67243e88d365451c79e7a9c8a1b457ea4b4c506992ccf364db26ec6af9064ce9",
+    "plan": "sha256-d9fe5bd9b5a64b8dd28470224dd85b0b1560146b0c676c8d0fc53327fc30f2fe",
     "product": "sha256-355ac7f45920ab9d7ef913560e645b93af3eff6f655ff424732f74dd962ad5e7",
     "run": [
       "glib",
@@ -115,6 +115,16 @@
     "product": "sha256-dc8d8505af2b2d236b3026c5f8da1dfb3ee3a0168b492f544ebcccfdc0770a05",
     "run": []
   },
+  "cmake": {
+    "version": "4.4.4",
+    "license": "BSD-3-Clause AND curl AND MIT AND BSD-2-Clause AND Zlib AND 0BSD AND Apache-2.0",
+    "by": "plan",
+    "plan": "sha256-0efb1d964aebb317675d0038dae708a512d62b2c9ed11a79987a845a112a04d9",
+    "product": "sha256-25bd1cb37f989406b4d30d3b09a2bfdc2078b6a4a6c15467e60561cc8e5497b2",
+    "run": [
+      "gcc"
+    ]
+  },
   "coreutils": {
     "version": "9.12",
     "license": "GPL-3.0-or-later",
@@ -139,8 +149,8 @@
     "version": "8.23.0",
     "license": "curl AND MPL-2.0",
     "by": "plan",
-    "plan": "sha256-977287996e52339db8151454e313e0cb5117814f08da02d3f6ca010a2cdaec50",
-    "product": "sha256-33c7797979eabee06387d1b6f3be9c584f4dc9313623f22feaeed4ec4a6bfd58",
+    "plan": "sha256-3f604a7fb0b376aa18a02d22dff4dd4ed130e1a81951903e3a1f786f14e60166",
+    "product": "sha256-bc7990201036d75a6be451fa2db3ef8635a5d5eec976087a00afcdcc7e98045e",
     "run": [
       "mbedtls",
       "zlib"
@@ -234,14 +244,6 @@
       "m4"
     ]
   },
-  "font-inter": {
-    "version": "4.1",
-    "license": "OFL-1.1",
-    "by": "plan",
-    "plan": "sha256-052ea66c8a0cc7a1d4f75769048aef3c594b928ecbfffdde2cee6b099ccf7660",
-    "product": "sha256-3abeeff0b52d4f431db958c4cb4a6dd58576bad5d12b086438010a11f112bd73",
-    "run": []
-  },
   "font-iosevka-term-slab": {
     "version": "34.9.0",
     "license": "OFL-1.1",
@@ -250,12 +252,36 @@
     "product": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
     "run": []
   },
+  "font-noto": {
+    "version": "2026.10.01",
+    "license": "OFL-1.1",
+    "by": "plan",
+    "plan": "sha256-0b13223515771515638ed9579cf13d88a8fa4e66e9143409e5a1d6756a64141d",
+    "product": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+    "run": []
+  },
+  "font-noto-cjk": {
+    "version": "20240730",
+    "license": "OFL-1.1",
+    "by": "plan",
+    "plan": "sha256-7e5634415b6c6943fad72a720e2615b3bc1a5b5978cf9b35645d617caefbc477",
+    "product": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+    "run": []
+  },
+  "font-noto-emoji": {
+    "version": "2.057",
+    "license": "OFL-1.1",
+    "by": "plan",
+    "plan": "sha256-ff302aec8a53da554a0eef59a258ffca73c898974bb1694085c1f4a15624b8dd",
+    "product": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+    "run": []
+  },
   "fontconfig": {
     "version": "2.18.3",
     "license": "HPND-sell-variant AND MIT AND MIT-Modern-Variant AND Unicode-DFS-2016",
     "by": "plan",
-    "plan": "sha256-6f5c7842f3cb8d660abec360b8cd9c3ff62af078f1ad94d25269d84c53a374e1",
-    "product": "sha256-bce5cda87ebbadd61961b2d4c3e8d2e0c2f3d99a1c711dbb8c7ab7eb9addf98b",
+    "plan": "sha256-8b4e41449545f8263c3732c9ac67811b3c7171df99f116b089886362055baaf3",
+    "product": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
     "run": [
       "freetype",
       "expat"
@@ -300,6 +326,19 @@
       "gmp",
       "mpfr",
       "mpc"
+    ]
+  },
+  "git": {
+    "version": "2.56.0",
+    "license": "GPL-2.0-only AND LGPL-2.1-or-later AND BSD-3-Clause AND MIT",
+    "by": "plan",
+    "plan": "sha256-ad00d16b6ed2a0523b5140f3d2005ccec597ddc3bdf692e1a1eca4ab40f1eda2",
+    "product": "sha256-e8edb96f2a4073be981cde578a89bda0461415fd9bf41c0a6c707419d8cacf77",
+    "run": [
+      "curl",
+      "zlib",
+      "expat",
+      "pcre2"
     ]
   },
   "glib": {
@@ -474,19 +513,38 @@
     "version": "1.32.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-ca05a6cb112e72577d7d23ff15a75cb60fae5e45060d1a1cdce6647de9afbc85",
+    "plan": "sha256-90836c3cb328ffc7b9246d2971ae372a7bf760cbb1ec7bd6eeace3a08f61809b",
     "product": "sha256-1650ffce17660808b7ba9820f6a9766fc320f5b5881a0864a663360e09e2b828",
     "run": [
       "libevdev",
       "libudev-zero"
     ]
   },
+  "libpulse": {
+    "version": "17.0",
+    "license": "LGPL-2.1-or-later",
+    "by": "plan",
+    "plan": "sha256-82cff7ec2d53878f6d1e85c0b39c1a1e0f81122f4fd0c48d1970fc78273f2ca4",
+    "product": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63",
+    "run": [
+      "glib",
+      "libsndfile"
+    ]
+  },
+  "libsndfile": {
+    "version": "1.2.2",
+    "license": "LGPL-2.1-or-later",
+    "by": "plan",
+    "plan": "sha256-5b19c147744ee49458972311056534fa40adfe6b3e3e507f74ec59deab033d10",
+    "product": "sha256-ee0a0bae6d374ba5347c55506fc6124902412c49ce25a5a98f0ac0e290e552a0",
+    "run": []
+  },
   "libudev-zero": {
     "version": "1.0.5",
     "license": "ISC",
     "by": "plan",
-    "plan": "sha256-6135b2402060ce4dd1cac4c6c9c753d676e54402f83274866465ee126945538c",
-    "product": "sha256-ab04e124dca4a03a2eaf6d17e9f55e885509740f3cb73266e6cce746dc179ede",
+    "plan": "sha256-287a4e09678f996d071683e41bc321e11e41420c381bb57e46e71f28cec4bc45",
+    "product": "sha256-cbc552b7f0b26124a7367046a607c0a754bac70127cac1a06296bf1c76510d5f",
     "run": []
   },
   "libx11": {
@@ -798,7 +856,7 @@
     "version": "1.58.2",
     "license": "LGPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-4e848e0c704acdcb10d383823d36f5c4e804ec2e2d4d57c7e42228da8f2b28cd",
+    "plan": "sha256-ac814cccd7e8cbf29616f5d526fc9a61406c7f71483046d5260053c7d0bff46d",
     "product": "sha256-f32334c125dda044b0bf0f3d53e7e1c750ba0f87225c6469b474aaaa0e27f26e",
     "run": [
       "glib",
@@ -843,6 +901,20 @@
     "plan": "sha256-2c66db1d383e9e2e66a3f0175b1e688a8ceb74df10a2bfa08bee7692a745b7b5",
     "product": "sha256-63b56053bfcb6a5c1103ac5a946edf20d04167d8063e0347252f0f4c9bff3510",
     "run": []
+  },
+  "pipewire": {
+    "version": "1.6.9",
+    "license": "MIT AND LGPL-2.1-or-later",
+    "by": "plan",
+    "plan": "sha256-5693145dae3ea9b3cd5844e19a9faf7ca2a066ab19a7d2839a357d2c694c5f67",
+    "product": "sha256-cd23a26bb28b9336cbdad793392bd79424335c9746538ef271c0fb8bb1192391",
+    "run": [
+      "alsa-lib",
+      "libudev-zero",
+      "libsndfile",
+      "dbus",
+      "ncurses"
+    ]
   },
   "pixman": {
     "version": "0.46.4",
@@ -921,7 +993,7 @@
     "version": "0.1.0",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-19f4de368dc1c5bee74d7e66e132a5811ab4667718cd8b7e7dd08a1e5f5472cc",
+    "plan": "sha256-6ffd39c7a6d2f61e28cfe8c4fe66056376d7c34652f6990f654f1b8a3aafe468",
     "product": "sha256-d029c479ac39c3d68192f753c04fbf604047d37a3ba5c6aeda842da603254ab4",
     "run": [
       "wlroots",
@@ -965,16 +1037,20 @@
     "version": "0.1.0",
     "license": "LicenseRef-Sola AND ISC AND CC0-1.0 AND GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-964ffa7d917fa30510c823e6b73cffcee801438b5f763c724a6abed67f4393a6",
-    "product": "sha256-36d2cf0f234e9b985936cf115ad6846b6a3472cba38242af6cbf92144f542924",
+    "plan": "sha256-26cfda6454683758ec92679b2d6d4a9596b74d03ca9cf955303ff70ae76802a7",
+    "product": "sha256-3b329152dbdf339d5d17ac2a348cc857bb9d569cb8394d528c9f9d8528bd7095",
     "run": [
       "gcc",
       "wayland",
       "libxkbcommon",
       "mesa",
       "tmux",
+      "pipewire",
+      "wireplumber",
       "fontconfig",
-      "font-inter",
+      "font-noto",
+      "font-noto-cjk",
+      "font-noto-emoji",
       "font-iosevka-term-slab"
     ]
   },
@@ -982,11 +1058,12 @@
     "version": "0.1.0",
     "license": "LicenseRef-Sola",
     "by": "plan",
-    "plan": "sha256-2000c6937af40a3b1b04a7456fd579709b11ba8dcf81bc29d53afffa5a827692",
-    "product": "sha256-1f62cdffe6b3054f52a808e31188ca0fb5147225c10b94dc34b76f76db276291",
+    "plan": "sha256-412bb96d9f8de905cbf741e2987e949e6ac7225142e97fc10236d8e942bd2f41",
+    "product": "sha256-230fa10d9e5dda40a95a265d99750f55aa880d3bd8a06e9646f650bae508724e",
     "run": [
       "sola",
-      "cef"
+      "cef",
+      "libpulse"
     ]
   },
   "sola-crates": {
@@ -1053,11 +1130,22 @@
     "product": "sha256-7a8a358cf0f3325b4d5821273f7ecc9d1530602b24d102c4b140625a539de924",
     "run": []
   },
+  "wireplumber": {
+    "version": "0.5.18",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-533bf9e77b114fae036d4f4cb4ef9be1b6ea7ce79bc4b7bc00c1356e52da894b",
+    "product": "sha256-3861ca5c3d44217add73b0377f881411d4db751cf3ef5dd0f6cc914fab3cf610",
+    "run": [
+      "glib",
+      "pipewire"
+    ]
+  },
   "wlroots": {
     "version": "0.20.2",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-383b6dd87cfe5181120bd0031d1ddb1145c0462b13ad2b08db7d124d12b22f36",
+    "plan": "sha256-6003c03fe64626185c19c777c2c16e9feca7d4e4792d673ebc4f8e179705ee68",
     "product": "sha256-f744c237b35f479b1cf393321d925b4b9140317ce8e825831810123a7fb610c2",
     "run": [
       "wayland",

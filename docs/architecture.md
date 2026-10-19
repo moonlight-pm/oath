@@ -106,7 +106,7 @@ btrfs
 | DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root; renews the lease |
 | `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |
 
-The `desk` profile adds (R20, R21; `svc:screen` is off):
+The `desk` profile adds (R20–R22; `svc:screen` is off):
 
 | Process | From | Runs as |
 |---------|------|---------|
@@ -116,6 +116,9 @@ The `desk` profile adds (R20, R21; `svc:screen` is off):
 | `svc:sola-river` | Sola's window manager, a client of rivulet's River protocols | `home` |
 | `svc:sola-shell` | the menubar, launcher and switcher | `home` |
 | `svc:sola-session` | launches apps (`sola-terminal`, `sola-browser`); their logs are `/home/.local/state/sola/app-*.log` | `home` |
+| `svc:sola-kvm` | `sola-kvm listen --bind 0.0.0.0:4242`: novus's `sola-kvm server` sends it pointer and keys when its cursor crosses the edge | `home` |
+| `svc:dbus-session` | `/bin/dbus-daemon --session` on `/run/user/1/bus` (`DBUS_SESSION_BUS_ADDRESS` in `host:local` env) | `home` |
+| `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse` | PipeWire, its session manager and its PulseAudio server (`/run/user/1/pulse/native`, which CEF's libpulse finds) | `home` |
 
 Every supervised process has its own cgroup,
 `/sys/fs/cgroup/oath/<kind>-<name>`, and writes stdout+stderr into a

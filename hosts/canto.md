@@ -16,14 +16,15 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `046e945ded35`, the `desk` profile
-  (R20, R21: base plus seatd, rivulet, Sola with its terminal and
-  browser, and their packages), installed on 2026-10-18 with `cargo
-  make install --target home@10.0.0.3 --disk /dev/sda --hostname canto
-  --overlay hosts/canto.json --output 046e945ded35 --confirm`. Passes
-  all 38 `metal` cases (`cargo make check --target home@10.0.0.3`),
-  `desk` and `desk-sola` among them. The base system before it was
-  `218fd2e1e03b` (GCC and glibc, R17, R18).
+- **Running now:** build output `b5a58ee98753`, the `desk` profile
+  (R20–R22: base plus seatd, rivulet, Sola with its terminal, browser
+  and KVM, PipeWire, Noto, the tools that build Sola, and their
+  packages), installed on 2026-10-18 with `cargo make install --target
+  home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
+  hosts/canto.json --output b5a58ee98753 --confirm`. Passes all METAL
+  `metal` cases (`cargo make check --target home@10.0.0.3`), `desk`,
+  `desk-sola` and `desk-sound` among them. The base system before it
+  was `218fd2e1e03b` (GCC and glibc, R17, R18).
 - **Backup:** `backup-send` mounts the NAS export as NFS 4.0
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no
   version). Mounting and unmounting it was checked on 2026-10-18; the
@@ -40,6 +41,18 @@ Overwrite this file when facts change; do not append a diary.
   `solactl session launch sola-terminal` or `sola-browser` opens an
   app (`XDG_RUNTIME_DIR=/run/user/1`), and `solactl compositor
   screenshot -o <png>` captures the screen. `svc:screen` is off.
+- **Sound:** PipeWire's sinks are the Intel HDA analog output (the
+  default; `alsa_output._sys_devices_pci0000_00_0000_00_1b.0_…`, named by
+  sysfs path because libudev-zero has no `ID_PATH`) and the monitor's
+  HDMI/DP audio on the GPU at `06:00.1`; the other GPU's HDMI, with
+  nothing attached, has none. The shell's volume menu switches them.
+- **KVM:** novus's `sola-kvm server --input evdev` (its
+  `~/.config/sola-kvm/config.toml`: canto at 10.0.0.3:4242, to the
+  right) reaches `svc:sola-kvm` here; its clipboard channel connects at
+  boot.
+- **Building Sola here:** a login shell has `PKG_CONFIG_PATH`; `cargo
+  build` of oath-sola's session crates from a fresh clone took 5 min 45 s
+  (debug, 8 threads) on 2026-10-18.
 - **Modules:** at boot ahci, sd_mod, tg3, xhci_pci, ehci_pci, usbhid,
   hid_apple, hid_generic, btusb, i2c_i801, evdev, x86_pkg_temp_thermal; after
   services start amdgpu (both GPUs) and snd_hda_intel with the Cirrus

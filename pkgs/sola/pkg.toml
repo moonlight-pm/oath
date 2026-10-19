@@ -1,6 +1,6 @@
 # Sola from oath-sola (forks/sola): the session services PID 1 runs
 # (svc:sola-bus, sola-call, sola-river, sola-shell, sola-session),
-# solactl, sola-terminal and sola-oath, with share/: Sola's, Lucide's and
+# solactl, sola-terminal, sola-oath and sola-kvm, with share/: Sola's, Lucide's and
 # Simple Icons' icons and the McMojave cursors. crates/sola, Sola's own
 # process manager, is not built. Wayland, xkbcommon, EGL and Vulkan are
 # opened at run time, not linked.
@@ -9,10 +9,10 @@ license = "LicenseRef-Sola AND ISC AND CC0-1.0 AND GPL-3.0-only"
 description = "Sola: the desktop session on rivulet, and its terminal."
 home = "https://github.com/moonlight-pm/Sola"
 tree = "forks/sola"
-build = ["rust", "pkgconf", "sola-crates"]
+build = ["rust", "pkgconf", "sola-crates", "libxkbcommon"]
 run = [
-	"gcc", "wayland", "libxkbcommon", "mesa", "tmux", "fontconfig", "font-inter",
-	"font-iosevka-term-slab",
+	"gcc", "wayland", "libxkbcommon", "mesa", "tmux", "pipewire", "wireplumber",
+	"fontconfig", "font-noto", "font-noto-cjk", "font-noto-emoji", "font-iosevka-term-slab",
 ]
 
 [[source]]

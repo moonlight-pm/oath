@@ -1,0 +1,168 @@
+# Noto's Latin, Greek and Cyrillic faces (Sans, Serif, Sans Mono),
+# Symbols, Math and the scripts web pages need, as unhinted slim variable
+# fonts (weights Regular to Bold; FreeType's light hinting ignores
+# TrueType hints anyway), from upstream's monthly distribution tag. Noto
+# Sans Hebrew is the static pair: its variable build names its default
+# instance Light.
+version = "2026.10.01"
+license = "OFL-1.1"
+description = "Noto: the desk's UI, serif, symbol and script faces."
+home = "https://notofonts.github.io/"
+purl = "pkg:github/notofonts/notofonts.github.io@noto-monthly-release-2026.10.01"
+build = []
+unsigned = "a file of the noto-monthly-release-2026.10.01 tag of notofonts/notofonts.github.io; upstream publishes no signature or checksum"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoNaskhArabic/unhinted/slim-variable-ttf/NotoNaskhArabic%5Bwght%5D.ttf"
+sha256 = "6d5f74a8c0e1b0e54ae876f0a287690642a1a6c3e84bdcf68ff467f24d799edd"
+file = "NotoNaskhArabic[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSans/unhinted/slim-variable-ttf/NotoSans-Italic%5Bwght%5D.ttf"
+sha256 = "28602f4b032ed8f5d91445e830585f34aba54ff9d3ac3e58c0b8834f3d6ae684"
+file = "NotoSans-Italic[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSans/unhinted/slim-variable-ttf/NotoSans%5Bwght%5D.ttf"
+sha256 = "fb53504de62e767a54695416123d68d67f71c9b69722175184ad56e7dd13547b"
+file = "NotoSans[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansArabic/unhinted/slim-variable-ttf/NotoSansArabic%5Bwght%5D.ttf"
+sha256 = "3fae4d7239d1faa55b234bda8091019a5251ff79df40d5e29367d84bed2a8138"
+file = "NotoSansArabic[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansArmenian/unhinted/slim-variable-ttf/NotoSansArmenian%5Bwght%5D.ttf"
+sha256 = "e979dfaed56ddb4bfd05121958b25425eb7593253d64b6b3654c77c11c5cda94"
+file = "NotoSansArmenian[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansBengali/unhinted/slim-variable-ttf/NotoSansBengali%5Bwght%5D.ttf"
+sha256 = "dc9defe97bb041876b6609e9029d9e1e228a686259acde2fe2a9f99d793ee17d"
+file = "NotoSansBengali[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansDevanagari/unhinted/slim-variable-ttf/NotoSansDevanagari%5Bwght%5D.ttf"
+sha256 = "bf99bf762743ff3259e73196852520ab0ffe8d384238bff3e4806a84b981e972"
+file = "NotoSansDevanagari[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansEthiopic/unhinted/slim-variable-ttf/NotoSansEthiopic%5Bwght%5D.ttf"
+sha256 = "93f223089e300b983dbfd693c7be619e0e76565a70d639e71a4fe0bfd72cf66f"
+file = "NotoSansEthiopic[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansGeorgian/unhinted/slim-variable-ttf/NotoSansGeorgian%5Bwght%5D.ttf"
+sha256 = "42f4a8bf4fe0af8afd91ee3c19e81e14f1bc74ddbd9b6a59a4182f67a596adb4"
+file = "NotoSansGeorgian[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansGujarati/unhinted/slim-variable-ttf/NotoSansGujarati%5Bwght%5D.ttf"
+sha256 = "83d1bde74d64fb389f97a5e27b2699d8ee8bad4c15a02be347228e6c10011248"
+file = "NotoSansGujarati[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansGurmukhi/unhinted/slim-variable-ttf/NotoSansGurmukhi%5Bwght%5D.ttf"
+sha256 = "8a3096ee2166f6383501e2df7b368fce88cfa4068c8d75bcb6af07da353a00ea"
+file = "NotoSansGurmukhi[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Bold.ttf"
+sha256 = "dfdb3056de1f4542b888c77a1a8a750548a802e271479f56e52152423b64dde8"
+file = "NotoSansHebrew-Bold.ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansHebrew/unhinted/ttf/NotoSansHebrew-Regular.ttf"
+sha256 = "04272f5600d0ec816d31d0df73b23aa8d3501ea359ebe820da31c11ffcf00853"
+file = "NotoSansHebrew-Regular.ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansKannada/unhinted/slim-variable-ttf/NotoSansKannada%5Bwght%5D.ttf"
+sha256 = "b6b11505d76eddf916667d73adfec19095ec777742444dc662dae81471461f4e"
+file = "NotoSansKannada[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansKhmer/unhinted/slim-variable-ttf/NotoSansKhmer%5Bwght%5D.ttf"
+sha256 = "56f89948a84cc0b01962ed6af573ac4ac885bd7bb6e7e40f9afc72a435728b70"
+file = "NotoSansKhmer[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansLao/unhinted/slim-variable-ttf/NotoSansLao%5Bwght%5D.ttf"
+sha256 = "fc138d605aa998d8407789ee6a7f5554aae8b54f5cd98d66dd2c33e79d15b67e"
+file = "NotoSansLao[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansMalayalam/unhinted/slim-variable-ttf/NotoSansMalayalam%5Bwght%5D.ttf"
+sha256 = "94cddc94a03fa9a5e8d1784090ba97b267def6933d60762081eaa003751142c5"
+file = "NotoSansMalayalam[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansMath/unhinted/ttf/NotoSansMath-Regular.ttf"
+sha256 = "b127e84699212b6b2ef50aff58e0ebebeec04ffe6db1b9eb9e209c8c3d97b4aa"
+file = "NotoSansMath-Regular.ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansMono/unhinted/slim-variable-ttf/NotoSansMono%5Bwght%5D.ttf"
+sha256 = "3c874b97ce11dc54de004c81df02c8f0974033ed1b113377130cbdd71d478f11"
+file = "NotoSansMono[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansMyanmar/unhinted/slim-variable-ttf/NotoSansMyanmar%5Bwght%5D.ttf"
+sha256 = "e0b280aa3080aab922800c88fa9a2015a4bec3103bb8b70491a92e4a04f3a3a3"
+file = "NotoSansMyanmar[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansOriya/unhinted/slim-variable-ttf/NotoSansOriya%5Bwght%5D.ttf"
+sha256 = "37f482d0179d0a50e3128d004f007ff1c1741ad5f6b0b2bcc7238b257ef1caa0"
+file = "NotoSansOriya[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansSinhala/unhinted/slim-variable-ttf/NotoSansSinhala%5Bwght%5D.ttf"
+sha256 = "3fd7c6a61cb6dfb8a2ca7af5b4078bd24e9c8ad9b55839a0177277db6e4d1326"
+file = "NotoSansSinhala[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansSymbols/unhinted/slim-variable-ttf/NotoSansSymbols%5Bwght%5D.ttf"
+sha256 = "63724daeff6755a45933b9a5e3a3b41df5df8fe925c0f4c991f2f68c08a4182d"
+file = "NotoSansSymbols[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansSymbols2/unhinted/ttf/NotoSansSymbols2-Regular.ttf"
+sha256 = "c4a0a80f0041ce4be81e2478faad22776d23edb98ae3f0d19bd37044820ecf9d"
+file = "NotoSansSymbols2-Regular.ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansTamil/unhinted/slim-variable-ttf/NotoSansTamil%5Bwght%5D.ttf"
+sha256 = "37e151cdec4a8cfb15c432f7bb164a83b98df69419d47e50b35aa7073963716b"
+file = "NotoSansTamil[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansTelugu/unhinted/slim-variable-ttf/NotoSansTelugu%5Bwght%5D.ttf"
+sha256 = "6c06de88b2d420d899543724a13765994191cd29860c6226efca098b51fec64b"
+file = "NotoSansTelugu[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSansThai/unhinted/slim-variable-ttf/NotoSansThai%5Bwght%5D.ttf"
+sha256 = "13f52f79b04f01f2751a81052a5dee2df639fd4e13f4ac30821ab45c8dd5f7e7"
+file = "NotoSansThai[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSerif/unhinted/slim-variable-ttf/NotoSerif-Italic%5Bwght%5D.ttf"
+sha256 = "30f1c0204b6bb16d7b6f0984ce6e355ad61d05656201b3d13a2b19bb9baa6779"
+file = "NotoSerif-Italic[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSerif/unhinted/slim-variable-ttf/NotoSerif%5Bwght%5D.ttf"
+sha256 = "9374c4d81d2e21b03ac03fbc165458e8cf63e434a44c82193aa0305d20dc1037"
+file = "NotoSerif[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/NotoSerifHebrew/unhinted/slim-variable-ttf/NotoSerifHebrew%5Bwght%5D.ttf"
+sha256 = "e7888a35e01652fd6703e6223f101f2f67a1120b09de422329987efce053c17f"
+file = "NotoSerifHebrew[wght].ttf"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/notofonts.github.io/noto-monthly-release-2026.10.01/fonts/LICENSE"
+sha256 = "f2095b08bed08b23a6fe26112fcd679a2bee3f002eef077eb05d215ed1051bd8"
+file = "Noto-LICENSE"

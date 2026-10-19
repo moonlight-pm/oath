@@ -1,0 +1,31 @@
+# The static OTC collections, Regular and Bold, as Debian ships them:
+# every region (JP, KR, SC, TC, HK) in one file each, and Noto Sans Mono
+# CJK. Versioned by the Serif tag's date (Sans2.004, Serif2.003).
+version = "20240730"
+license = "OFL-1.1"
+description = "Noto Sans and Serif CJK: Chinese, Japanese and Korean."
+home = "https://github.com/notofonts/noto-cjk"
+purl = "pkg:github/notofonts/noto-cjk@Serif2.003"
+build = []
+unsigned = "files of the Sans2.004 and Serif2.003 tags, which are lightweight and unsigned; upstream publishes no signature or checksum"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/NotoSansCJK-Regular.ttc"
+sha256 = "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/NotoSansCJK-Bold.ttc"
+sha256 = "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/noto-cjk/Serif2.003/Serif/OTC/NotoSerifCJK-Regular.ttc"
+sha256 = "5d9c31a059600193c9d7968a998bde886ccdc77e934006ad243b41794c496a7d"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/noto-cjk/Serif2.003/Serif/OTC/NotoSerifCJK-Bold.ttc"
+sha256 = "1505ee3b9c0890fae6302ee0e9c6fd74d690f4a55a6ace1d9944f3f6352d622d"
+
+[[source]]
+url = "https://raw.githubusercontent.com/notofonts/noto-cjk/Serif2.003/Serif/LICENSE"
+sha256 = "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+file = "Noto-CJK-LICENSE"

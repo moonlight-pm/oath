@@ -33,7 +33,7 @@
     },
     {
       "id": "pkg:fontconfig",
-      "hash": "sha256-bce5cda87ebbadd61961b2d4c3e8d2e0c2f3d99a1c711dbb8c7ab7eb9addf98b"
+      "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b"
     },
     {
       "id": "pkg:freetype",
@@ -123,7 +123,7 @@
   "run_needs": [
     {
       "id": "pkg:fontconfig",
-      "hash": "sha256-bce5cda87ebbadd61961b2d4c3e8d2e0c2f3d99a1c711dbb8c7ab7eb9addf98b"
+      "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b"
     },
     {
       "id": "pkg:freetype",

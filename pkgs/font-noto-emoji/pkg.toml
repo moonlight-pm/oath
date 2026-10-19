@@ -1,0 +1,18 @@
+# The CBDT (bitmap) build, not COLRv1: Sola's iced text stack draws CBDT
+# and COLR v0 only; CEF draws both.
+version = "2.057"
+license = "OFL-1.1"
+description = "Noto Color Emoji."
+home = "https://github.com/googlefonts/noto-emoji"
+purl = "pkg:github/googlefonts/noto-emoji@v2026-09-24-unicode18_0"
+build = []
+unsigned = "a file of the v2026-09-24-unicode18_0 tag, which is lightweight and unsigned; the font is not a release asset and has no signature"
+
+[[source]]
+url = "https://raw.githubusercontent.com/googlefonts/noto-emoji/v2026-09-24-unicode18_0/2D/fonts/NotoColorEmoji.ttf"
+sha256 = "15671215ab769fdc7162a045d56fd7d7e477c51b04e6b3c761d914d8fdd6cc44"
+
+[[source]]
+url = "https://raw.githubusercontent.com/googlefonts/noto-emoji/v2026-09-24-unicode18_0/2D/fonts/LICENSE"
+sha256 = "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+file = "Noto-Emoji-LICENSE"

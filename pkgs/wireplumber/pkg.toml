@@ -1,0 +1,25 @@
+# Lua 5.5 is WirePlumber's own subproject, linked in statically: its
+# tarball and meson's wrap patch are pinned here and put in meson's
+# package cache, so nothing is downloaded.
+version = "0.5.18"
+license = "MIT"
+description = "WirePlumber: PipeWire's session manager, and wpctl."
+home = "https://pipewire.pages.freedesktop.org/wireplumber/"
+purl = "pkg:generic/wireplumber@0.5.18"
+build = ["meson", "ninja", "python", "pkgconf", "glib", "pipewire"]
+run = ["glib", "pipewire"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/pipewire/wireplumber/-/archive/0.5.18/wireplumber-0.5.18.tar.gz"
+sha256 = "8c8a326a5b2a570681c1503c83f1fce0cc54ba862019815604b2bc92a7d483a1"
+unsigned = "a GitLab tag archive; WirePlumber publishes no tarball or signature and its tags are lightweight"
+
+[[source]]
+url = "https://www.lua.org/ftp/lua-5.5.0.tar.gz"
+sha256 = "57ccc32bbbd005cab75bcc52444052535af691789dba2b9016d5c50640d68b3d"
+unsigned = "lua.org publishes sha256 sums on its download page, no signatures"
+
+[[source]]
+url = "https://github.com/mesonbuild/wrapdb/releases/download/lua_5.5.0-1/lua_5.5.0-1_patch.zip"
+sha256 = "69ec4a2dd99ecf8e84830093d418f3a5be1202f16ba8d636b3008b67506e5cca"
+unsigned = "a GitHub release asset of meson's wrapdb; upstream publishes no signature"

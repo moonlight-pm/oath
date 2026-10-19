@@ -1,0 +1,13 @@
+# The PulseAudio client libraries only; pipewire-pulse is the server.
+version = "17.0"
+license = "LGPL-2.1-or-later"
+description = "libpulse, libpulse-simple and libpulse-mainloop-glib, pactl and pacat (PulseAudio 17's client)."
+home = "https://www.freedesktop.org/wiki/Software/PulseAudio/"
+purl = "pkg:generic/pulseaudio@17.0"
+build = ["meson", "ninja", "python", "pkgconf", "m4", "glib", "libsndfile"]
+run = ["glib", "libsndfile"]
+
+[[source]]
+url = "https://www.freedesktop.org/software/pulseaudio/releases/pulseaudio-17.0.tar.xz"
+sha256 = "053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5"
+unsigned = "freedesktop.org publishes the dist tarball with a sha256sum only; the v17.0 git tag is signed, the tarball is not"

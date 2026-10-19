@@ -64,7 +64,9 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   pass PID 1 sets `/dev/null`, `zero`, `full`, `tty`, `ptmx`, `random`
   and `urandom` to mode 0666, whatever devtmpfs made them, and the GPU
   render nodes (`/dev/dri/renderD*`) too, again whenever a `drm` device
-  is added: GL clients open them themselves. Display (`card*`) and
+  is added: GL clients open them themselves. Sound nodes (`/dev/snd/*`)
+  are root:home 0660, again whenever a `sound` device is added, so the
+  desk's PipeWire opens them as `home` (R22). Display (`card*`) and
   input nodes stay root's 0600; seatd opens those for the desk (R20).
 
 ## Hotplug (built)

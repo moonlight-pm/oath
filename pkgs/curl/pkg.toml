@@ -1,6 +1,6 @@
 version = "8.23.0"
 license = "curl AND MPL-2.0"
-description = "curl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca)."
+description = "curl and libcurl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca)."
 home = "https://curl.se/"
 build = ["pkgconf", "mbedtls", "zlib"]
 run = ["mbedtls", "zlib"]

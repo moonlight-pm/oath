@@ -4,7 +4,9 @@
     "host:local": {
       "env": {
         "LANG": "en_US.UTF-8",
-        "SSL_CERT_FILE": "/oath/store/pkg/curl/live/ssl/cert.pem"
+        "SSL_CERT_FILE": "/oath/store/pkg/curl/live/ssl/cert.pem",
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1/bus",
+        "PKG_CONFIG_PATH": "/oath/store/pkg/alsa-lib/live/lib/pkgconfig:/oath/store/pkg/at-spi2-core/live/lib/pkgconfig:/oath/store/pkg/cairo/live/lib/pkgconfig:/oath/store/pkg/cups/live/lib/pkgconfig:/oath/store/pkg/curl/live/lib/pkgconfig:/oath/store/pkg/dbus/live/lib/pkgconfig:/oath/store/pkg/elfutils/live/lib/pkgconfig:/oath/store/pkg/expat/live/lib/pkgconfig:/oath/store/pkg/fontconfig/live/lib/pkgconfig:/oath/store/pkg/freetype/live/lib/pkgconfig:/oath/store/pkg/fribidi/live/lib/pkgconfig:/oath/store/pkg/glib/live/lib/pkgconfig:/oath/store/pkg/gmp/live/lib/pkgconfig:/oath/store/pkg/harfbuzz/live/lib/pkgconfig:/oath/store/pkg/libdisplay-info/live/lib/pkgconfig:/oath/store/pkg/libdrm/live/lib/pkgconfig:/oath/store/pkg/libepoxy/live/lib/pkgconfig:/oath/store/pkg/libevdev/live/lib/pkgconfig:/oath/store/pkg/libevent/live/lib/pkgconfig:/oath/store/pkg/libffi/live/lib/pkgconfig:/oath/store/pkg/libfontenc/live/lib/pkgconfig:/oath/store/pkg/libinput/live/lib/pkgconfig:/oath/store/pkg/libpulse/live/lib/pkgconfig:/oath/store/pkg/libsndfile/live/lib/pkgconfig:/oath/store/pkg/libudev-zero/live/lib/pkgconfig:/oath/store/pkg/libx11/live/lib/pkgconfig:/oath/store/pkg/libxau/live/lib/pkgconfig:/oath/store/pkg/libxcb/live/lib/pkgconfig:/oath/store/pkg/libxcomposite/live/lib/pkgconfig:/oath/store/pkg/libxcvt/live/lib/pkgconfig:/oath/store/pkg/libxdamage/live/lib/pkgconfig:/oath/store/pkg/libxext/live/lib/pkgconfig:/oath/store/pkg/libxfixes/live/lib/pkgconfig:/oath/store/pkg/libxfont2/live/lib/pkgconfig:/oath/store/pkg/libxkbcommon/live/lib/pkgconfig:/oath/store/pkg/libxkbfile/live/lib/pkgconfig:/oath/store/pkg/libxrandr/live/lib/pkgconfig:/oath/store/pkg/libxrender/live/lib/pkgconfig:/oath/store/pkg/libxshmfence/live/lib/pkgconfig:/oath/store/pkg/libxxf86vm/live/lib/pkgconfig:/oath/store/pkg/lzo/live/lib/pkgconfig:/oath/store/pkg/mesa/live/lib/pkgconfig:/oath/store/pkg/mpc/live/lib/pkgconfig:/oath/store/pkg/mpfr/live/lib/pkgconfig:/oath/store/pkg/ncurses/live/lib/pkgconfig:/oath/store/pkg/nettle/live/lib/pkgconfig:/oath/store/pkg/nspr/live/lib/pkgconfig:/oath/store/pkg/nss/live/lib/pkgconfig:/oath/store/pkg/pango/live/lib/pkgconfig:/oath/store/pkg/pcre2/live/lib/pkgconfig:/oath/store/pkg/pipewire/live/lib/pkgconfig:/oath/store/pkg/pixman/live/lib/pkgconfig:/oath/store/pkg/procps/live/lib/pkgconfig:/oath/store/pkg/python/live/lib/pkgconfig:/oath/store/pkg/seatd/live/lib/pkgconfig:/oath/store/pkg/util-linux/live/lib/pkgconfig:/oath/store/pkg/wayland/live/lib/pkgconfig:/oath/store/pkg/wireplumber/live/lib/pkgconfig:/oath/store/pkg/wlroots/live/lib/pkgconfig:/oath/store/pkg/xcb-util-errors/live/lib/pkgconfig:/oath/store/pkg/xcb-util-wm/live/lib/pkgconfig:/oath/store/pkg/xkbcomp/live/lib/pkgconfig:/oath/store/pkg/xkeyboard-config/live/lib/pkgconfig:/oath/store/pkg/xwayland/live/lib/pkgconfig:/oath/store/pkg/xz/live/lib/pkgconfig:/oath/store/pkg/zlib/live/lib/pkgconfig:/oath/store/pkg/zstd/live/lib/pkgconfig"
       }
     },
     "svc:screen": {
@@ -101,7 +103,9 @@
         "/bin/sola-shell"
       ],
       "wants": [
-        "svc:sola-river"
+        "svc:sola-river",
+        "svc:pipewire-pulse",
+        "svc:wireplumber"
       ],
       "restart": "on-failure",
       "enabled": true,
@@ -133,6 +137,73 @@
         "SHELL": "/bin/bash"
       }
     },
+    "svc:dbus-session": {
+      "exec": [
+        "/bin/dbus-daemon",
+        "--session",
+        "--nofork",
+        "--nopidfile",
+        "--address=unix:path=/run/user/1/bus"
+      ],
+      "wants": [],
+      "restart": "always",
+      "enabled": true,
+      "user": "home"
+    },
+    "svc:sola-kvm": {
+      "exec": [
+        "/bin/sola-kvm",
+        "listen",
+        "--bind",
+        "0.0.0.0:4242"
+      ],
+      "wants": [
+        "svc:sola-river"
+      ],
+      "restart": "always",
+      "enabled": true,
+      "user": "home",
+      "env": {
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave",
+        "SOLA_LOG_DIR": "/home/.local/state/sola",
+        "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
+        "SHELL": "/bin/bash"
+      }
+    },
+    "svc:pipewire": {
+      "exec": [
+        "/bin/pipewire"
+      ],
+      "wants": [
+        "svc:dbus-session"
+      ],
+      "restart": "always",
+      "enabled": true,
+      "user": "home"
+    },
+    "svc:wireplumber": {
+      "exec": [
+        "/bin/wireplumber"
+      ],
+      "wants": [
+        "svc:pipewire"
+      ],
+      "restart": "always",
+      "enabled": true,
+      "user": "home"
+    },
+    "svc:pipewire-pulse": {
+      "exec": [
+        "/bin/pipewire-pulse"
+      ],
+      "wants": [
+        "svc:pipewire"
+      ],
+      "restart": "always",
+      "enabled": true,
+      "user": "home"
+    },
     "pkg:alsa-lib": {
       "present": true,
       "description": "alsa-lib, shared, and its configuration: sound devices (CEF).",
@@ -152,6 +223,11 @@
       "present": true,
       "description": "CEF, the Chromium Embedded Framework, for sola-browser.",
       "home": "https://bitbucket.org/chromiumembedded/cef"
+    },
+    "pkg:cmake": {
+      "present": true,
+      "description": "CMake, with its bundled libraries and no OpenSSL. A build tool (crates' build scripts on the desk).",
+      "home": "https://cmake.org/"
     },
     "pkg:cups": {
       "present": true,
@@ -173,15 +249,25 @@
       "description": "libexpat, shared: wayland-scanner's and Mesa's XML parser.",
       "home": "https://libexpat.github.io/"
     },
-    "pkg:font-inter": {
-      "present": true,
-      "description": "Inter, the desk's UI typeface (Sola asks for SF Pro, which Apple licenses only for its own platforms).",
-      "home": "https://rsms.me/inter/"
-    },
     "pkg:font-iosevka-term-slab": {
       "present": true,
       "description": "Iosevka Term Slab, the desk's monospace typeface (terminal, code).",
       "home": "https://typeof.net/Iosevka/"
+    },
+    "pkg:font-noto": {
+      "present": true,
+      "description": "Noto: the desk's UI, serif, symbol and script faces.",
+      "home": "https://notofonts.github.io/"
+    },
+    "pkg:font-noto-cjk": {
+      "present": true,
+      "description": "Noto Sans and Serif CJK: Chinese, Japanese and Korean.",
+      "home": "https://github.com/notofonts/noto-cjk"
+    },
+    "pkg:font-noto-emoji": {
+      "present": true,
+      "description": "Noto Color Emoji.",
+      "home": "https://github.com/googlefonts/noto-emoji"
     },
     "pkg:fontconfig": {
       "present": true,
@@ -202,6 +288,11 @@
       "present": true,
       "description": "GCC 16 (C, C++) and binutils 2.47. cc / c++ link dynamically against glibc through /lib.",
       "home": "https://gcc.gnu.org/"
+    },
+    "pkg:git": {
+      "present": true,
+      "description": "git, with https through libcurl; no Perl, Python, Tcl/Tk, gettext or Rust parts.",
+      "home": "https://git-scm.com/"
     },
     "pkg:glib": {
       "present": true,
@@ -252,6 +343,16 @@
       "present": true,
       "description": "libinput, shared, and the libinput tool: input devices for wlroots.",
       "home": "https://gitlab.freedesktop.org/libinput/libinput"
+    },
+    "pkg:libpulse": {
+      "present": true,
+      "description": "libpulse, libpulse-simple and libpulse-mainloop-glib, pactl and pacat (PulseAudio 17's client).",
+      "home": "https://www.freedesktop.org/wiki/Software/PulseAudio/"
+    },
+    "pkg:libsndfile": {
+      "present": true,
+      "description": "libsndfile, shared, PCM formats only (no external codecs): pw-cat's and libpulse's sound files.",
+      "home": "https://libsndfile.github.io/libsndfile/"
     },
     "pkg:libudev-zero": {
       "present": true,
@@ -338,10 +439,20 @@
       "description": "Compiled locales C.UTF-8 and en_US.UTF-8, from glibc's sources.",
       "home": "https://www.gnu.org/software/libc/"
     },
+    "pkg:make": {
+      "present": true,
+      "description": "GNU make. A build tool; not in the base image.",
+      "home": "https://www.gnu.org/software/make/"
+    },
     "pkg:mesa": {
       "present": true,
       "description": "Mesa: radeonsi and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX).",
       "home": "https://mesa3d.org/"
+    },
+    "pkg:meson": {
+      "present": true,
+      "description": "Meson. A build tool; not in the base image.",
+      "home": "https://mesonbuild.com/"
     },
     "pkg:mpc": {
       "present": true,
@@ -352,6 +463,11 @@
       "present": true,
       "description": "Nettle, shared, without public-key code: Xwayland's SHA-1.",
       "home": "https://www.lysator.liu.se/~nisse/nettle/"
+    },
+    "pkg:ninja": {
+      "present": true,
+      "description": "Ninja. A build tool; not in the base image.",
+      "home": "https://ninja-build.org/"
     },
     "pkg:nspr": {
       "present": true,
@@ -373,15 +489,40 @@
       "description": "PCRE2, shared (8-bit, with JIT): glib's regular expressions.",
       "home": "https://github.com/PCRE2Project/pcre2"
     },
+    "pkg:perl": {
+      "present": true,
+      "description": "Perl 5. A build tool (the kernel generates its OID registry with it); not in the base image.",
+      "home": "https://www.perl.org/"
+    },
+    "pkg:pipewire": {
+      "present": true,
+      "description": "PipeWire: the audio server, pipewire-pulse, the ALSA plugin and the pw-* tools.",
+      "home": "https://pipewire.org/"
+    },
     "pkg:pixman": {
       "present": true,
       "description": "pixman, shared: wlroots' software renderer and buffer maths.",
       "home": "https://pixman.org/"
     },
+    "pkg:pkgconf": {
+      "present": true,
+      "description": "pkg-config. A build tool; not in the base image.",
+      "home": "https://github.com/pkgconf/pkgconf"
+    },
+    "pkg:python": {
+      "present": true,
+      "description": "CPython. A build tool (glibc's and meson's builds need it); not in the base image.",
+      "home": "https://www.python.org/"
+    },
     "pkg:rivulet": {
       "present": true,
       "description": "rivulet, Oath's Wayland compositor: River 0.4.5 ported to C, with Xwayland.",
       "home": "https://github.com/moonlight-pm/oath"
+    },
+    "pkg:rust": {
+      "present": true,
+      "description": "Rust: rustc, cargo and the glibc and UEFI standard libraries.",
+      "home": "https://www.rust-lang.org/"
     },
     "pkg:seatd": {
       "present": true,
@@ -407,6 +548,11 @@
       "present": true,
       "description": "Wayland: libwayland-client, -server, -cursor and -egl, and wayland-scanner.",
       "home": "https://wayland.freedesktop.org/"
+    },
+    "pkg:wireplumber": {
+      "present": true,
+      "description": "WirePlumber: PipeWire's session manager, and wpctl.",
+      "home": "https://pipewire.pages.freedesktop.org/wireplumber/"
     },
     "pkg:wlroots": {
       "present": true,

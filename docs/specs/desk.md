@@ -7,9 +7,11 @@ built natively from `pkgs/`, with Sola on top. It is phase 8 of the
 ([scope.md](scope.md)) builds on it.
 
 **Status:** built and running on canto since 2026-10-18 (the `desk`
-profile, R20, R21): rivulet drives DP-10 with radeonsi on ACO, input
+profile, R20–R22): rivulet drives DP-10 with radeonsi on ACO, input
 comes through seatd, Xwayland serves X clients, and Sola's session runs
-with its terminal and browser. No audio yet.
+with its terminal and browser, sound through PipeWire, Noto fonts, the
+tools that build Sola on the machine, and novus's keyboard and mouse
+through `sola-kvm`.
 
 ## Packages (built)
 
@@ -96,11 +98,13 @@ too), and `pkg:sola` and `pkg:sola-browser` build from the tree
 
 | Package | What |
 |---------|------|
-| `sola` | `sola-bus`, `sola-call`, `sola-river`, `sola-shell`, `sola-session`, `solactl`, `sola-terminal`, `sola-oath`; `share/`: Sola's, Lucide's and Simple Icons' icons, the McMojave cursors (pinned GitHub archives, as Sola pins them) |
+| `sola` | `sola-bus`, `sola-call`, `sola-river`, `sola-shell`, `sola-session`, `solactl`, `sola-terminal`, `sola-oath`, `sola-kvm`; `share/`: Sola's, Lucide's and Simple Icons' icons, the McMojave cursors (pinned GitHub archives, as Sola pins them) |
 | `sola-browser` | `sola-browser`, with `cef/` linked to `pkg:cef` and a RUNPATH into CEF's `Release` |
 | `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader), `cef/Resources`; 539 MB |
 | CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
-| Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif and serif to Inter, monospace to Iosevka Term Slab), `freetype`, `font-inter`, `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
+| Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif, serif and system-ui to Noto, monospace to Iosevka Term Slab then Noto Sans Mono, emoji and math to Noto's; `45-noto-cjk.conf`, ahead of it, picks the CJK face by language; both bind weakly, so a page's language outranks the family list), `freetype`, `font-noto` (Sans, Serif, Sans Mono, Symbols, Math and the scripts web pages need, slim variable TTFs from the 2026.10.01 monthly tag), `font-noto-cjk` (Sans and Serif CJK, Regular and Bold OTCs), `font-noto-emoji` (Noto Color Emoji, CBDT), `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
+| Sound | `pipewire` 1.6.9 (`pipewire`, `pipewire-pulse`, the `pw-*` tools; no session manager of its own), `wireplumber` 0.5.18 (with Lua 5.5 built in; `50-oath.conf` turns off Bluetooth, portals and D-Bus device reservation), `libpulse` (PulseAudio 17's client, `autospawn = no`), `libsndfile` (PCM formats only), `libudev-zero` with upstream PR 69 so PipeWire's ALSA monitor sees sound cards |
+| Development | `rust`, `gcc`, `pkgconf`, `cmake` 4.4.4, `meson`, `ninja`, `make`, `perl`, `python`, `git` 2.56.0 (https through libcurl, which `curl` now ships with its headers) |
 | Terminal | `tmux`, `libevent` |
 
 PID 1 runs Sola's processes as `home` services (`svc:sola-bus`,
@@ -113,19 +117,38 @@ and `SOLA_LOG_DIR=/home/.local/state/sola` (`/oath/log` is root's;
 apps log to `app-<name>.log` there). `host:local` sets
 `LANG=en_US.UTF-8` (tmux refuses a non-UTF-8 locale) and
 `SSL_CERT_FILE` (curl's Mozilla bundle, for rustls in the browser's
-vault). Apps open with `solactl session launch sola-terminal` or
+vault and for cargo), `DBUS_SESSION_BUS_ADDRESS` and `PKG_CONFIG_PATH`
+(every desk package's `lib/pkgconfig`: `.pc` files stay with their
+pack, so a build on the machine looks in each). Apps open with `solactl session launch sola-terminal` or
 `sola-browser`. wgpu runs on GL through Mesa's EGL; there is no Vulkan
 loader.
 
 The `desk-sola` case (metal only: `qemu = false`) checks the services,
 opens the terminal and the browser and loads `https://example.com`.
 
+## Sound, session bus, KVM (built)
+
+`svc:dbus-session` (`dbus-daemon --session` on `/run/user/1/bus`),
+`svc:pipewire`, `svc:wireplumber` and `svc:pipewire-pulse` run as
+`home`; `svc:sola-shell` wants the last two. PID 1 makes `/dev/snd/*`
+root:home 0660 ([devices.md](devices.md)). The shell's volume menu runs
+`wpctl` and `pw-dump`; Chromium opens `libpulse.so.0` and finds
+pipewire-pulse at `/run/user/1/pulse/native`. The bus is there for
+Chromium (MPRIS, notifications), at-spi and WirePlumber's optional
+parts; libdbus itself is a library CEF links.
+
+`svc:sola-kvm` runs `sola-kvm listen --bind 0.0.0.0:4242` (UDP). novus
+runs `sola-kvm server --input evdev` with canto (10.0.0.3) to its right;
+when novus's cursor crosses that edge, its pointer and keys drive
+canto's desk.
+
 ## Signatures to watch
 
-Fourteen keys were added for the desk (Joshua, 2026-10-18): seven for
-rivulet's libraries and seven for Sola's (freetype, gperf, libevent,
-pcre2, dbus, cups, alsa). cmake's was approved too, but CEF's wrapper
-needs cmake only on Windows and macOS, so it is not in `pkgs/keys`. Facts that will matter at the next version bump:
+Seventeen keys were added for the desk (Joshua, 2026-10-18): seven for
+rivulet's libraries, seven for Sola's (freetype, gperf, libevent,
+pcre2, dbus, cups, alsa), and cmake, git (Junio C Hamano) and
+libsndfile (David Seifert) for sound and building on the machine. Facts
+that will matter at the next version bump:
 
 - `hutterer` is DSA-1024 and signs with SHA-1 (libevdev, Xwayland,
   xkbcomp, libXfont2). Xwayland's signer alternates: Olivier Fourdan
@@ -162,17 +185,23 @@ stack adds: GNOME's tarballs (glib, at-spi2-core, pango; sha256sum
 files only), Mozilla's (nspr, nss; SHA256SUMS only), GitHub release
 assets (tmux, harfbuzz, fribidi, the fonts, Sola's icon archives),
 fontconfig's GitLab package, cairo's inline-signed sha256sum (the
-pixman format), and CEF (Spotify's CDN, sha1 and sha256 only).
+pixman format), and CEF (Spotify's CDN, sha1 and sha256 only). Sound
+and fonts add: PipeWire's and WirePlumber's GitLab tag archives
+(lightweight tags), Lua (sha256 on lua.org) and meson's wrapdb patch,
+PulseAudio's tarball (a sha256sum; only its git tag is signed), and
+Noto's files from lightweight git tags.
 
 ## Known defects
 
 - Sola's shell has no GL context in QEMU (softpipe gives wgpu no GLES 3
   context), so Sola runs only on a machine with a GPU Mesa drives; the
   `desk-sola` case is metal only.
-- Fonts: Inter and Iosevka Term Slab only, so Arabic, Hebrew, CJK and
-  emoji show boxes; the set is Joshua's to choose (decisions, Open).
-- No audio (PipeWire), no session D-Bus (CEF and at-spi2 log about it),
-  no Bluetooth: the shell's audio and Bluetooth menus are empty.
+- PipeWire runs without realtime priority (no `RLIMIT_RTPRIO` for
+  services yet), and no Bluetooth: the shell's Bluetooth menu is empty.
+- libudev-zero sees sound cards present at boot; a hot-plugged USB
+  card's late `initialized` state is what PR 69 papers over, untested.
+- `PKG_CONFIG_PATH` is a fixed list in the `desk` profile: a package
+  added later is not on it until the list is edited.
 - The desk image carries all of `pkg:gcc` (393 MB) because Mesa loads
   libstdc++ and libgcc_s; a runtime-only split of GCC's libraries would
   save it.
@@ -188,6 +217,5 @@ pixman format), and CEF (Spotify's CDN, sha1 and sha256 only).
 
 ## Target
 
-- **Audio** (PipeWire), a session bus, and the font set (Open).
 - **Sola's other apps** when Joshua wants them (R21).
 - **Later:** Vulkan (RADV), 32-bit Mesa and glibc for Steam.
