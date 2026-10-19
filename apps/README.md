@@ -19,7 +19,7 @@ cargo make store --name hello --from apps/hello --tar
 cargo make publish --dest <dir>
 ```
 
-writes `.cache/oath/store/pkg/hello/<hash>/` and an optional `.tar`,
+writes `~/.local/share/oath/store/pkg/hello/<hash>/` and an optional `.tar`,
 then copies the tars into an origin tree at `<dir>`.
 
 Optional, next to `bin/`:
@@ -45,4 +45,4 @@ around its snapshot. No hook is the default (crash-consistent).
 The pins in `hello.plan` and `reloc.plan` name products in
 `pkgs/lock.json` (as of 2026-10-18); re-pin them when those change.
 Build them on the build host with `cargo make store` for the source
-pack, then `oath --root .cache/oath build --file apps/hello.plan`.
+pack, then `oath --root ~/.local/share/oath build --file apps/hello.plan`.

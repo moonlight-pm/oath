@@ -12,7 +12,7 @@
 //! signature, by a key pinned in `pkgs/keys/<key>.asc`, on every fetch; a
 //! source without one says why (`unsigned`).
 //!
-//! Builds run in the catalog at `.cache/oath` (its store is the host store
+//! Builds run in the catalog at `~/.local/share/oath` (its store is the host store
 //! cache the image build reads).
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -141,7 +141,7 @@ pub fn pkgs_dir(repo: &Path) -> PathBuf {
     repo.join("pkgs")
 }
 
-/// The build catalog: `.cache/oath`, whose `store/` is the host store cache.
+/// The build catalog: `~/.local/share/oath`, whose `store/` is the host store cache.
 pub fn build_catalog(repo: &Path) -> Result<PathBuf> {
     let root = crate::pack::host_store_cache(repo)
         .parent()

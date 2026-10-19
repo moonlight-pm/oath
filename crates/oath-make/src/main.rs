@@ -151,7 +151,7 @@ enum Cmd {
         #[arg(long)]
         fetch: bool,
     },
-    /// Hash a pack directory into `.cache/oath/store` (same layout as the guest).
+    /// Hash a pack directory into `~/.local/share/oath/store` (same layout as the guest).
     Store {
         /// Pack directory (`bin/`, `lib/`, …).
         #[arg(long)]
@@ -171,7 +171,7 @@ enum Cmd {
         dest: PathBuf,
     },
     /// Query OSV for packed trees that have `components.json`; write
-    /// `.cache/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
+    /// `~/.local/share/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
     /// Then `cargo make publish` copies `adv/`.
     Advisories {
         /// Only this slot (`curl` or `pkg:curl`). Default: every pack in the cache.

@@ -109,7 +109,7 @@ tool's own plan.
 fetch and verify the sources; put them (and the package's extra files)
 in a `pkg:<name>-src` pack; write `<name>.plan` with the source pack, the
 base packs and the packs `build` names, all pinned by hash from
-`lock.json`; run `oath build` in the catalog at `.cache/oath`; record the
+`lock.json`; run `oath build` in the catalog at `~/.local/share/oath`; record the
 product in `lock.json`. A package whose plan has not changed is not
 rebuilt. The base packs are rebuilt here by their stage-1 selves; run
 `cargo make pkgs` again and everything rebuilds with the stage-2 tools.

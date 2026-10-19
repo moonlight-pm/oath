@@ -127,7 +127,7 @@ The build cache is keyed on the plan hash and the input set, so an
 edited script always rebuilds.
 
 Known gap: the base image does not carry `pkg:gcc`, so
-`apps/hello.plan` builds on the build host (in `.cache/oath`), not on
+`apps/hello.plan` builds on the build host (in `~/.local/share/oath`), not on
 the box. The plans in `pkgs/` are the larger examples.
 
 ## Recipes
@@ -161,7 +161,7 @@ login and history are under `/home/.claude` and `/home/.claude.json`.
 
 ## Host store cache and publishing
 
-The build host keeps the same layout under `.cache/oath/store` (or
+The build host keeps the same layout under `~/.local/share/oath/store` (or
 `$OATH_STORE`):
 
 ```

@@ -137,7 +137,7 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   own build packs, with what each of those runs with (bison runs m4),
   all from `pkgs/lock.json`; the lock records each product's run needs
   as it was built. It runs in the same user-namespace `oath build`
-  sandbox against the build catalog at `.cache/oath`; GNU tar there
+  sandbox against the build catalog at `~/.local/share/oath`; GNU tar there
   does not restore owners (`TAR_OPTIONS=--no-same-owner`). The host's
   compilers are not inputs. How a package is written: `pkgs/README.md`.
 - **The toolchain by plan.** `pkgs/glibc/build.sh` builds glibc and the
@@ -217,7 +217,7 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   one that exists is verified, never written into. Every store writer
   (install, fetch, promote, the host cache) goes through the same step.
 - The script's stdout and stderr go to `log/plan/<name>.log` in the
-  catalog (`/oath/log/plan/<name>.log`; `.cache/oath/log/plan/` for
+  catalog (`/oath/log/plan/<name>.log`; `~/.local/share/oath/log/plan/` for
   `cargo make pkgs`), headed by the plan hash and time and ended by the
   product or the failure. The build before is `<name>.log.1`.
   `oath build` prints the log's path, a failed build the log's last

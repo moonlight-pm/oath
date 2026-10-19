@@ -966,7 +966,7 @@ pub fn adv_path(catalog_root: &Path, name: &str, hash: &str) -> PathBuf {
     adv_path_store(&catalog_root.join("store"), name, hash)
 }
 
-/// Store-root helper: guest `/oath/store`, host `.cache/oath/store`.
+/// Store-root helper: guest `/oath/store`, host `~/.local/share/oath/store`.
 pub fn adv_path_store(store: &Path, name: &str, hash: &str) -> PathBuf {
     store.join("adv").join(name).join(format!("{hash}.json"))
 }

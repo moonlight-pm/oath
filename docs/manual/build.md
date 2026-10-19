@@ -77,7 +77,7 @@ rebuilt; `cargo make pkgs oath` does this step alone. Then `build`
 writes the boot initrd and the
 installer initrd, stages the root tree, seeds `/oath` from the profile,
 packs the profile's packages into the hashed store (also cached under
-`.cache/oath/store`), and writes a **build output**:
+`~/.local/share/oath/store`), and writes a **build output**:
 
 ```
 build/out/<id>/

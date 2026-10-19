@@ -8,7 +8,8 @@
 #
 # It writes build/rivulet-smoke.plan (rivulet's run closure and the base
 # packs, pinned from pkgs/lock.json) and builds it as pkg:rivulet-smoke
-# in .cache/oath; the product holds the logs.
+# in the build catalog ($OATH_STORE's parent, else ~/.local/share/oath);
+# the product holds the logs.
 set -eu
 cd "$(dirname "$0")/../../.."
 plan=build/rivulet-smoke.plan
@@ -55,9 +56,10 @@ echo "rivulet exit $rc" >>/out/version
 '''
 open(sys.argv[1], "w").write("#!oath-plan\n" + json.dumps(plan, indent=2) + "\n---\n" + script)
 EOF
+cat_root=$(dirname "${OATH_STORE:-${XDG_DATA_HOME:-$HOME/.local/share}/oath/store}")
 cargo build -q -p oath
-product=$(target/debug/oath --root .cache/oath build --file "$plan" 2>/dev/null | awk '/^pkg:rivulet-smoke /{print $2}')
-out=.cache/oath/store/pkg/rivulet-smoke/$product
+product=$(target/debug/oath --root "$cat_root" build --file "$plan" 2>/dev/null | awk '/^pkg:rivulet-smoke /{print $2}')
+out=$cat_root/store/pkg/rivulet-smoke/$product
 cat "$out/version" "$out/xkbcomp.txt"
 grep -q 'Xserver is ready' "$out/rivulet.log" && echo "Xwayland: ready"
 echo "keymap: $(wc -l <"$out/keymap.xkb" 2>/dev/null || echo 0) lines; logs in $out"

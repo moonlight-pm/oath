@@ -688,10 +688,22 @@ fn settle_pkg_applied(oath_root: &Path) -> Result<()> {
     Ok(())
 }
 
+/// The host store: `$OATH_STORE`, else `$XDG_DATA_HOME/oath/store`
+/// (`~/.local/share/oath/store`). It lives outside the checkout, so a
+/// `git clean`, a fresh clone or a worktree shares it; its parent is the
+/// build catalog.
 pub fn host_store_cache(repo: &Path) -> PathBuf {
-    std::env::var("OATH_STORE")
+    if let Some(p) = std::env::var_os("OATH_STORE").filter(|p| !p.is_empty()) {
+        return PathBuf::from(p);
+    }
+    let data = std::env::var_os("XDG_DATA_HOME")
+        .filter(|p| !p.is_empty())
         .map(PathBuf::from)
-        .unwrap_or_else(|_| repo.join(".cache/oath/store"))
+        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")));
+    match data {
+        Some(d) => d.join("oath/store"),
+        None => repo.join(".cache/oath/store"),
+    }
 }
 
 /// Install a pack directory into the host cache and print the hash.

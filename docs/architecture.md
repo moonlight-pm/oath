@@ -148,7 +148,7 @@ cargo make pkgs [names]
     build/fetch/sig/, checked against pkgs/keys/<key>.asc)
   pkgs/<name>/pkg.toml + build.sh → source pack pkg:<name>-src
     + pkgs/<name>/<name>.plan (build packs pinned from pkgs/lock.json)
-  `oath build` in the sandbox of the build catalog at .cache/oath
+  `oath build` in the sandbox of the build catalog at ~/.local/share/oath
   product hash, version, licence, plan hash → pkgs/lock.json
   the base packs rebuild themselves; python, meson and ninja are
     build-only packs, and so are m4, flex, bison, bc, perl and elfutils
@@ -168,7 +168,9 @@ cargo make build [--profile base]
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (glibc, bash, coreutils, btrfs, dropbear, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)
-  .cache/oath/store/      host copy of every packed tree, by hash
+  ~/.local/share/oath/store/
+                          host copy of every packed tree, by hash
+                          (OATH_STORE; outside the checkout)
   build/out/<id>/         one build output, written once (<id>: the
                           manifest's hash; an unchanged tree reuses it;
                           build/out/latest names the newest; five kept)

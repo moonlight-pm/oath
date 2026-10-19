@@ -100,7 +100,7 @@ An origin is any HTTPS tree of `pkg/<name>/<hash>.tar` and
 not a repository kind and not canonical.
 
 Host side: `cargo make store --name <n> --from <dir> [--tar]` hashes a
-tree into `.cache/oath/store`. `cargo make publish --dest <dir>` copies
+tree into `~/.local/share/oath/store`. `cargo make publish --dest <dir>` copies
 the publishable packs and their advisories into an origin tree (below).
 
 ## Components and advisories (built)

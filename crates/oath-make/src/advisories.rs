@@ -1,5 +1,5 @@
 //! Host publisher: query OSV from pack `components.json`, write
-//! `.cache/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
+//! `~/.local/share/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
