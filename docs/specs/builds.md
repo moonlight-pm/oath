@@ -168,7 +168,8 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   xz, bzip2, procps-ng, less, Vim (ncurses), iproute2, iputils, dhcpcd,
   chrony, util-linux, btrfs-progs (zlib, zstd, LZO), dropbear, OpenSSH's
   client tools (no OpenSSL), mbedTLS, curl (pinned CA bundle),
-  dosfstools, kexec-tools and linux-firmware blobs pinned one by one.
+  BIND 9.20's dig, host and nslookup (no named, DoH or IDN) with
+  OpenSSL 4.0, libuv, liburcu and libcap, dosfstools, kexec-tools and linux-firmware blobs pinned one by one.
   Libraries are shared; a package names what it loads under `run`.
 - **Rust** (`pkgs/rust`). The vendor's release, pinned by sha256 (R7):
   rustc and cargo 1.99.1 built for a glibc host, and the standard

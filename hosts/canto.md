@@ -8,7 +8,9 @@ Overwrite this file when facts change; do not append a diary.
   Bluetooth. Two tg3 Ethernet ports. Disk `/dev/sda` (250 GB; GPT:
   512 MiB ESP + btrfs `@`). No serial port.
 - **Network:** the cable is in the first port (`00:3e:e1:cb:06:08`),
-  DHCP 10.0.0.3, which novus's `/etc/hosts` calls `canto`. The second
+  DHCP 10.0.0.3, which novus's `/etc/hosts` calls `canto`. The lease's
+  DNS (10.0.0.146, then 1.1.1.1) answers `novus` with 10.0.0.5, so
+  `host:local.hosts` is empty. The second
   port (`00:3e:e1:cb:04:f0`) has no cable. PID 1 picks the NIC with
   carrier at boot; moving the cable needs a reboot. Reach:
   `ssh home@10.0.0.3`, host key pinned in `build/known_hosts`.
@@ -16,16 +18,21 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `54580085cacb`, the `desk` profile
+- **Running now:** build output `7cabe23131c4`, the `desk` profile
   (R20–R22: base plus seatd, rivulet, Sola with its terminal,
   Workspaces, browser and KVM, PipeWire, Noto, the tools that build
   Sola, and their packages), reached on 2026-10-19 by `cargo make
-  update --target home@10.0.0.3 --confirm` and a reboot, from
-  `b5a58ee98753`, which `cargo make install --target home@10.0.0.3
-  --disk /dev/sda --hostname canto --overlay hosts/canto.json
-  --confirm` wrote on 2026-10-18. Passes all 40 `metal` cases (`cargo
-  make check --target home@10.0.0.3`), `desk`, `desk-sola`,
-  `desk-sound` and `recipe-builds-here` among them.
+  update --target home@10.0.0.3 --confirm --reboot`; the system was
+  `cargo make install --target home@10.0.0.3 --disk /dev/sda
+  --hostname canto --overlay hosts/canto.json --confirm` on
+  2026-10-18. Passes all 40 `metal` cases (`cargo make check --target
+  home@10.0.0.3`), `desk`, `desk-sola`, `desk-sound`,
+  `native-userland` (`dig`) and `recipe-builds-here` among them.
+- **dig (R24):** `pkg:bind`, `pkg:openssl`, `pkg:libuv`,
+  `pkg:liburcu` and `pkg:libcap` came after the install: `cargo make
+  update` shipped their packs, and their objects were made by hand on
+  2026-10-19 (`oath new … --from-json` with the image's seed values,
+  generation 108).
 - **Claude Code:** the recipe (R23) came after the install, so its
   objects were made by hand on 2026-10-19 as `cargo make update`
   suggests (`oath set plan:claude-code --from-file`, `oath new

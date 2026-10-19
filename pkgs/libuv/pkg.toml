@@ -1,0 +1,12 @@
+version = "1.53.0"
+license = "MIT AND BSD-2-Clause AND ISC"
+description = "libuv, shared: BIND's event loop."
+home = "https://libuv.org/"
+purl = "pkg:github/libuv/libuv@v1.53.0"
+build = []
+
+[[source]]
+url = "https://dist.libuv.org/dist/v1.53.0/libuv-v1.53.0-dist.tar.gz"
+sha256 = "21425fa398be98b51181a1885df31428092d5435c4373a396351e427322e5f1b"
+sig = "https://dist.libuv.org/dist/v1.53.0/libuv-v1.53.0-dist.tar.gz.sign"
+key = "libuv"

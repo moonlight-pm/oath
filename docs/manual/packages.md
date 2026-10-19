@@ -35,9 +35,11 @@ Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
 `kill`), `less`, `vim` (also `vi`), `iputils` (`ping`, `tracepath`,
 `arping`), `chrony` (`svc:time`), `openssh` (client tools: `ssh`, `scp`,
 `sftp`, `ssh-keygen`, `sftp-server`), `dosfstools` (`mkfs.fat`), `curl`
-(Mbed TLS, CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`), and
-the libraries they load: `ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`,
-`lzo`, `mbedtls`. A pack's `needs` lists the libraries it loads, so
+(Mbed TLS, CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`),
+`bind` (`dig`, `host`, `nslookup`; no `named`), `openssl` (`openssl`;
+no CA certificates of its own), and the libraries they load:
+`ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`, `lzo`, `mbedtls`, `libuv`,
+`liburcu`, `libcap`. A pack's `needs` lists the libraries it loads, so
 apply refuses removing `pkg:ncurses` while `pkg:less` is present.
 
 Every pack is built from pinned source on the build host: the Oath

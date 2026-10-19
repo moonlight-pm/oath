@@ -145,9 +145,9 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 5 svc and host, 33 packages, a recipe (two packages and its plan),
+    // 5 svc and host, 38 packages, a recipe (two packages and its plan),
     // net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 44, "{ids:?}");
+    assert_eq!(ids.len(), 49, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));

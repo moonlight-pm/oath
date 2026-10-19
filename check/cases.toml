@@ -371,17 +371,18 @@ steps = [
 
 [[case]]
 name = "native-userland"
-about = "The base tools are the native builds: GNU, linked through /lib's loader (no /lib64), Oath's own static; they work (curl's CA bundle included)."
+about = "The base tools are the native builds: GNU, linked through /lib's loader (no /lib64), Oath's own static; they work (curl's CA bundle included, dig asks the network's DNS)."
 metal = true
 steps = [
   { run = "echo x > /dev/null && head -c 16 /dev/urandom > /dev/null && stat -c '%a %n' /dev/null /dev/zero /dev/urandom /dev/ptmx", expect = ["666 /dev/null", "666 /dev/urandom"] },
-  { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux"] },
-  { run = "for b in bash ls curl dropbear ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
+  { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version; dig -v 2>&1; openssl version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux", "DiG 9.20.29", "OpenSSL 4.0.3"] },
+  { run = "for b in bash ls curl dropbear ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping dig host nslookup openssl; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
   { run = "ldd /lib/oath/init; ldd $(readlink -f /bin/oath); test ! -e /lib64 && echo NO_LIB64", expect = ["statically linked", "NO_LIB64"], reject = ["=>"] },
   { run = "bash --version; ls --version; vim --version | head -1; chronyd --version; dhcpcd --version; ip -V; ping -V", expect = ["GNU bash", "GNU coreutils", "VIM - Vi IMproved", "chronyd (chrony)", "dhcpcd 10", "iproute2", "iputils"] },
   { run = "ssh-keygen -q -t ed25519 -N '' -f /tmp/k && test -s /tmp/k.pub && test -x /bin/sftp-server && echo KEYGEN_OK", expect = ["KEYGEN_OK"] },
   { run = "id -un; ping -c 1 -W 3 $(ip route | awk '/^default/ { print $3; exit }')", expect = ["home", "1 received"] },
   { run = "curl -sS -o /dev/null -w '%{http_code}\\n' https://curl.se/", expect = ["200"] },
+  { run = "dig +short +time=3 +tries=2 curl.se A | grep -qE '^[0-9]+([.][0-9]+){3}$' && echo DIG_RESOLVED; host -W 3 curl.se", expect = ["DIG_RESOLVED", "curl.se has address"] },
 ]
 
 [[case]]

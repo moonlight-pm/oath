@@ -228,6 +228,31 @@
       "description": "curl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca).",
       "home": "https://curl.se/"
     },
+    "pkg:bind": {
+      "present": true,
+      "description": "dig, host and nslookup from BIND 9 (no named).",
+      "home": "https://www.isc.org/bind/"
+    },
+    "pkg:openssl": {
+      "present": true,
+      "description": "OpenSSL, shared: libcrypto and libssl (BIND's), and the openssl tool.",
+      "home": "https://openssl-library.org/"
+    },
+    "pkg:libuv": {
+      "present": true,
+      "description": "libuv, shared: BIND's event loop.",
+      "home": "https://libuv.org/"
+    },
+    "pkg:liburcu": {
+      "present": true,
+      "description": "Userspace RCU, shared: BIND's read-copy-update.",
+      "home": "https://liburcu.org/"
+    },
+    "pkg:libcap": {
+      "present": true,
+      "description": "libcap, shared: BIND's POSIX capabilities.",
+      "home": "https://sites.google.com/site/fullycapable/"
+    },
     "pkg:claude-code": {
       "present": false,
       "description": "Claude Code: Anthropic's agentic coding tool for the terminal.",

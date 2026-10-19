@@ -5,7 +5,7 @@ items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
 **As of:** 2026-10-19 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R22 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R24 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -16,7 +16,7 @@ append history (git has it).
    (CEF 147);
    PipeWire sound, a session bus, Noto fonts, the tools that build Sola
    on the machine, and `svc:sola-kvm` for novus's keyboard and mouse.
-   Output `54580085cacb` passes the QEMU suite and the metal suite
+   Output `7cabe23131c4` passes the QEMU suite and the metal suite
    ([docs/specs/desk.md](docs/specs/desk.md)). Next: Joshua starts the
    Sola fork's work on canto; realtime priority for PipeWire.
 2. **Claude Code as a recipe (R23).** Every catalog carries
@@ -46,9 +46,10 @@ cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
 device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
 `cargo make update`. The screen is a `home` shell when no desk owns it
-(R15). The newest output, `82d28b1c33b1` (`desk`, with
-`host:local.hosts` for LAN names), passes all 50 QEMU cases; canto
-runs `54580085cacb`, which passes all 40 metal cases. Left by design until
+(R15). The newest output, `7cabe23131c4` (`desk`, with
+`host:local.hosts` for LAN names and BIND's `dig` in base, R24),
+passes all 50 QEMU cases, and canto runs it and passes all 40 metal
+cases. Left by design until
 something needs them: root SSH as a field, more NICs, device rules as
 fields.
 
@@ -56,7 +57,7 @@ fields.
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `54580085cacb`, the `desk` profile (rivulet and Sola on DP-10); [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `7cabe23131c4`, the `desk` profile (rivulet and Sola on DP-10); [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

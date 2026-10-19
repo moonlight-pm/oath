@@ -1,0 +1,12 @@
+version = "2.78"
+license = "BSD-3-Clause OR GPL-2.0-only"
+description = "libcap, shared: BIND's POSIX capabilities."
+home = "https://sites.google.com/site/fullycapable/"
+build = []
+
+[[source]]
+url = "https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.78.tar.xz"
+sha256 = "0d621e562fd932ccf67b9660fb018e468a683d7b827541df27813228c996bb11"
+sig = "https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.78.tar.sign"
+decompress = "xz"
+key = "libcap"

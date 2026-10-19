@@ -47,10 +47,11 @@ servers, lease length and when it was renewed
 
 ## Names
 
-Names resolve through the DNS servers the lease names (or that
-`/etc/resolv.conf` has), then `/etc/hosts`. A LAN machine the DNS does
-not know goes in `host:local.hosts`, which `/etc/hosts` lists after
-localhost and this hostname:
+Names resolve through `/etc/hosts`, then the DNS servers the lease
+names (or that `/etc/resolv.conf` has): `/etc/nsswitch.conf` says
+`hosts: files dns`. A LAN machine the DNS does not know goes in
+`host:local.hosts`, which `/etc/hosts` lists after localhost and this
+hostname:
 
 ```
 sudo oath set host:local hosts='{"novus": "10.0.0.5", "nas": "10.0.0.12"}'
@@ -63,6 +64,11 @@ getent hosts novus
 DNS can serve a name, add it there instead, for every machine at once.
 A machine-specific map belongs in the host's install overlay
 (`hosts/<name>.json`).
+
+`dig`, `host` and `nslookup` (BIND 9, `pkg:bind`) ask the DNS servers
+in `/etc/resolv.conf` directly and never read `/etc/hosts`; `getent
+hosts <name>` shows what programs get. `dig @<server> <name>` asks one
+server, `dig +trace <name>` walks down from the root.
 
 ## Time
 

@@ -34,6 +34,19 @@
     "product": "sha256-6f659b036f253c1540adde9362039bac4261bb205a76e3a6b0ad1d9ad5c830bf",
     "run": []
   },
+  "bind": {
+    "version": "9.20.29",
+    "license": "MPL-2.0 AND ISC AND MIT AND BSD-3-Clause AND BSD-2-Clause",
+    "by": "plan",
+    "plan": "sha256-563c6f343c1d9e4f99062ea53021a8d075b0a27ce69931b3d66e47074e35890c",
+    "product": "sha256-9f73cab893f1f329106045a0894b2b39c9f791600cb0b363803c3b2ec0a08f9e",
+    "run": [
+      "openssl",
+      "libuv",
+      "liburcu",
+      "libcap"
+    ]
+  },
   "bison": {
     "version": "3.8.2",
     "license": "GPL-3.0-or-later",
@@ -457,6 +470,14 @@
       "ncurses"
     ]
   },
+  "libcap": {
+    "version": "2.78",
+    "license": "BSD-3-Clause OR GPL-2.0-only",
+    "by": "plan",
+    "plan": "sha256-b9c35d9cac95605df30ac67f49e542f18a85c6806c9e9b405b667c3782c98f86",
+    "product": "sha256-d2ee87194174ccf3902e5f105e08b6155ee2f7d5930da918c7db8bf4ad03ad53",
+    "run": []
+  },
   "libdisplay-info": {
     "version": "0.4.0",
     "license": "MIT",
@@ -553,6 +574,22 @@
     "by": "plan",
     "plan": "sha256-287a4e09678f996d071683e41bc321e11e41420c381bb57e46e71f28cec4bc45",
     "product": "sha256-cbc552b7f0b26124a7367046a607c0a754bac70127cac1a06296bf1c76510d5f",
+    "run": []
+  },
+  "liburcu": {
+    "version": "0.15.7",
+    "license": "LGPL-2.1-or-later AND MIT AND LicenseRef-Boehm-GC",
+    "by": "plan",
+    "plan": "sha256-ed3d762e3aba01cbf58e0aff0a1c1122ac20292dbecf757e213ffac71f3931b1",
+    "product": "sha256-161368c0c7101a7923f756371d7247ba5e3cdced5db5dd9305f27c3852d77e88",
+    "run": []
+  },
+  "libuv": {
+    "version": "1.53.0",
+    "license": "MIT AND BSD-2-Clause AND ISC",
+    "by": "plan",
+    "plan": "sha256-dbed8b2bfbc12bcaf80e1f4307e5e172c0768506cd1db012f78292e2153fd1c8",
+    "product": "sha256-da8201e8ddb4c5a913e3213ab8476657c6ad3c6421d5e6f7d1d392769da2c3ef",
     "run": []
   },
   "libx11": {
@@ -859,6 +896,14 @@
     "run": [
       "zlib"
     ]
+  },
+  "openssl": {
+    "version": "4.0.3",
+    "license": "Apache-2.0",
+    "by": "plan",
+    "plan": "sha256-9267048071d42ea38e810b60e4efdb1a62cad53c02d52a715d170b9b995d55b8",
+    "product": "sha256-400a44864127ba2976d080e9854bee9ce909244dd4717b5442ea73380f935f0c",
+    "run": []
   },
   "pango": {
     "version": "1.58.2",

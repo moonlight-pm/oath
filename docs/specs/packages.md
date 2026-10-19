@@ -143,9 +143,10 @@ and binutils (`pkg:gcc`, with gmp, mpfr and mpc); the GNU userland
 tar, gzip, xz, bzip2, make, procps-ng, less, vim with ncurses);
 util-linux, iproute2, iputils, dhcpcd, chrony, btrfs-progs
 (`pkg:btrfs`), dropbear, OpenSSH (client, scp, sftp, ssh-keygen,
-sftp-server; no OpenSSL), dosfstools and curl (with the CA bundle at
-`/oath/store/pkg/curl/live/ssl/cert.pem`) and the libraries they load
-(zlib, zstd, lzo, mbedTLS); the kernel (`pkg:linux`) and firmware
+sftp-server; no OpenSSL), dosfstools, curl (with the CA bundle at
+`/oath/store/pkg/curl/live/ssl/cert.pem`), BIND 9's dig, host and
+nslookup (`pkg:bind`, 2026-10-19), OpenSSL and the libraries they load
+(zlib, zstd, lzo, mbedTLS, libuv, liburcu, libcap); the kernel (`pkg:linux`) and firmware
 (individual linux-firmware blobs); kexec-tools (`pkg:kexec`, static)
 for the installer; and the build tools (`pkg:rust`, python, meson,
 ninja, perl, m4, flex, bison, bc, elfutils, pkgconf, patchelf).
@@ -160,7 +161,9 @@ package's `lib/` entries (not `oath/`, `modules/`, `firmware/` or
 `pkgconfig/`), made and removed with its `/bin` links, so a re-pin of
 a library changes the programs that load it, as on any distro; sonames
 keep incompatible versions apart, the `needs` graph checks the set,
-and undo takes a bad re-pin back. No RPATHs, no `/lib64`. The image
+and undo takes a bad re-pin back. No `/lib64`, and Oath sets no
+RPATHs; libtool builds keep one naming their own slot's `live/lib`
+(curl, BIND), which `/lib` links anyway. The image
 writes each pack's `needs` from the lock's run packs (the libraries it
 loads), so apply refuses removing `pkg:ncurses` while `pkg:less` is
 present.

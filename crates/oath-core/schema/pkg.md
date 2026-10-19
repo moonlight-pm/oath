@@ -87,7 +87,8 @@ oath undo
 The `base` profile ships every package present: the fixed ones above,
 one GNU tool for each job (coreutils, sed, grep, gawk, findutils,
 diffutils, tar, gzip, xz, bzip2, procps-ng, less, vim), ping, chrony,
-OpenSSH's client tools, dosfstools, curl, and the libraries they load.
+OpenSSH's client tools, dosfstools, curl, dig, host and nslookup
+(`pkg:bind`), openssl, and the libraries they load.
 A library a present package needs cannot be removed: apply refuses a
 broken `needs` graph. All but `pkg:oath` (built by cargo) come from
 plans in `pkgs/`, built from source with GCC against glibc. Programs
