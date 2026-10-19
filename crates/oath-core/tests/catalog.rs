@@ -50,6 +50,7 @@ impl ApplyHooks for MemHooks {
             power: HostPower::Run,
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
+            hosts: desired.hosts.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {
@@ -701,6 +702,32 @@ fn set_refuses_a_value_of_the_wrong_type() {
     set(&cat, "net:net0", "ipv4", json!("10.0.0.3/24")).unwrap();
     let hold = cat.get(&"svc:hold".parse().unwrap()).unwrap();
     assert_eq!(hold.desired["restart"], "always");
+}
+
+#[test]
+fn host_names_other_machines() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "host:local".parse().unwrap();
+    for bad in [
+        json!({"novus": "10.0.0.300"}),
+        json!({"no vus": "10.0.0.5"}),
+        json!({"localhost": "10.0.0.5"}),
+        json!({"oath": "10.0.0.5"}),
+        json!(["novus"]),
+    ] {
+        assert!(set(&cat, "host:local", "hosts", bad.clone()).is_err(), "{bad}");
+    }
+    set(&cat, "host:local", "hosts", json!({"novus": "10.0.0.5", "nas": "fd00::12"})).unwrap();
+    assert_eq!(cat.diff(Some(&id)).unwrap().len(), 1);
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["hosts"]["novus"], "10.0.0.5");
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+    set(&cat, "host:local", "hosts", json!({})).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["hosts"], json!({}));
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
 }
 
 #[test]

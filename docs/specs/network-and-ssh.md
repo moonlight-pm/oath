@@ -98,7 +98,13 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   `/bin/sh`). There are no others and no user kind. `/etc/passwd`,
   `/etc/group`, `/etc/shadow` and `/etc/shells` are written at pack
   time; `/etc/hostname`, `/etc/hosts` and `/etc/profile` are side
-  effects of converging `host:local`.
+  effects of converging `host:local` (and of PID 1 reading it at
+  boot), through one writer (`seat::write_side_effects`).
+  `/etc/hosts` is localhost, the hostname, then `host:local.hosts`
+  (built 2026-10-19): host name to one IPv4 or IPv6 address, for LAN
+  machines the network's DNS does not serve. Names follow the
+  hostname's characters (at most 253); `localhost`, the machine's own
+  hostname and an address that does not parse are refused at `set`.
 - `home` runs `sudo <cmd>` with no password. `/bin/sudo` is a setuid
   helper at `/lib/oath/sudo`, not PAM and not a package. Applying is
   `sudo oath apply`. `sudo [-n] [--] command [args…]` refuses any

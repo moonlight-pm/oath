@@ -102,6 +102,7 @@ impl ApplyHooks for Live {
             power: HostPower::Run,
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
+            hosts: desired.hosts.clone(),
         })
     }
 

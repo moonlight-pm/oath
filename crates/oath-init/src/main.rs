@@ -817,18 +817,14 @@ fn apply_host() {
     } else {
         tel("init", "hostname", json!({ "ok": true, "name": host.hostname }));
     }
-    let _ = fs::create_dir_all("/etc");
-    let _ = fs::write("/etc/hostname", format!("{}\n", host.hostname));
-    let _ = fs::write(
-        "/etc/hosts",
-        format!("127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {}\n", host.hostname),
-    );
+    // /etc/hostname, /etc/hosts (with host:local.hosts), /etc/profile.
     let _ = oath_core::seat::write_side_effects(&host);
     let actual = Host {
         hostname: host.hostname,
         power: oath_core::HostPower::Run,
         env: host.env,
         timezone: host.timezone,
+        hosts: host.hosts,
     };
     let _ = oath_core::write_json(&status(&id), &actual);
     let _ = cat.write_index();

@@ -37,7 +37,8 @@ impl Meta {
     }
 }
 
-/// This machine: its name, power state, environment and timezone.
+/// This machine: its name, power state, environment, timezone and the
+/// other machines it names in /etc/hosts.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Host {
     /// Linux hostname: letters, digits, `-` and `.`, at most 63. Source of
@@ -56,6 +57,11 @@ pub struct Host {
     /// UTC.
     #[serde(default)]
     pub timezone: String,
+    /// Other machines by name: host name to IPv4 or IPv6 address, written
+    /// to /etc/hosts after localhost and this hostname (a side effect; the
+    /// catalog is truth). For names the network's DNS does not serve.
+    #[serde(default)]
+    pub hosts: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]

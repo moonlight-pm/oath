@@ -130,6 +130,7 @@ impl ApplyHooks for NullHooks {
             power: crate::kinds::HostPower::Run,
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
+            hosts: desired.hosts.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {

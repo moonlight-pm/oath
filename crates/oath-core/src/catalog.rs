@@ -876,17 +876,33 @@ impl Catalog {
         match id.kind.as_str() {
             KIND_HOST => {
                 let h: Host = serde_json::from_value(doc.clone()).map_err(bad)?;
-                if h.hostname.is_empty()
-                    || h.hostname.len() > 63
-                    || !h
-                        .hostname
-                        .chars()
-                        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.')
-                {
+                if !crate::seat::is_host_name(&h.hostname, 63) {
                     return Err(Error::hint(
                         format!("{id}: hostname `{}` is not a host name", h.hostname),
                         hint(),
                     ));
+                }
+                for (name, addr) in &h.hosts {
+                    if !crate::seat::is_host_name(name, 253) {
+                        return Err(Error::hint(
+                            format!("{id}: hosts: `{name}` is not a host name"),
+                            hint(),
+                        ));
+                    }
+                    if name == "localhost" || name.eq_ignore_ascii_case(&h.hostname) {
+                        return Err(Error::hint(
+                            format!("{id}: hosts: `{name}` is this machine; /etc/hosts has it"),
+                            hint(),
+                        ));
+                    }
+                    if addr.parse::<std::net::IpAddr>().is_err() {
+                        return Err(Error::hint(
+                            format!(
+                                "{id}: hosts: `{name}`'s `{addr}` is not an IPv4 or IPv6 address"
+                            ),
+                            hint(),
+                        ));
+                    }
                 }
             }
             KIND_SVC => {

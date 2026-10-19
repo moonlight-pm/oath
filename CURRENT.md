@@ -46,8 +46,9 @@ cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
 device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
 `cargo make update`. The screen is a `home` shell when no desk owns it
-(R15). The newest output, `54580085cacb` (`desk`), passes all 49 QEMU
-cases and, on canto, all 40 metal cases. Left by design until
+(R15). The newest output, `82d28b1c33b1` (`desk`, with
+`host:local.hosts` for LAN names), passes all 50 QEMU cases; canto
+runs `54580085cacb`, which passes all 40 metal cases. Left by design until
 something needs them: root SSH as a field, more NICs, device rules as
 fields.
 

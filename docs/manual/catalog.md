@@ -103,5 +103,5 @@ a hot-plugged device asks for ([devices spec](../specs/devices.md)).
 
 PID 1 also mounts, outside the catalog: `/proc`, `/sys`, devtmpfs
 `/dev` with `/dev/pts`, tmpfs `/tmp`, `/dev/shm` and `/run`, and
-cgroup2 at `/sys/fs/cgroup`. `/etc/hosts` has `localhost` and the
-hostname.
+cgroup2 at `/sys/fs/cgroup`. `/etc/hosts` has `localhost`, the
+hostname and `host:local.hosts` ([Network](network.md#names)).

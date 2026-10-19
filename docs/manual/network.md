@@ -45,6 +45,25 @@ in actual: `lease` is the address and `dhcp` has the router, DNS
 servers, lease length and when it was renewed
 (`oath get net:net0 --actual`).
 
+## Names
+
+Names resolve through the DNS servers the lease names (or that
+`/etc/resolv.conf` has), then `/etc/hosts`. A LAN machine the DNS does
+not know goes in `host:local.hosts`, which `/etc/hosts` lists after
+localhost and this hostname:
+
+```
+sudo oath set host:local hosts='{"novus": "10.0.0.5", "nas": "10.0.0.12"}'
+sudo oath apply host:local
+getent hosts novus
+```
+
+`set` replaces the whole map; `oath undo` takes it back. Do not edit
+`/etc/hosts`: every apply and boot writes it again. When the network's
+DNS can serve a name, add it there instead, for every machine at once.
+A machine-specific map belongs in the host's install overlay
+(`hosts/<name>.json`).
+
 ## Time
 
 `svc:time` is `chronyd -d` against `0`–`3.pool.ntp.org` (decisions

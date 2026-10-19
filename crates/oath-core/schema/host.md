@@ -3,7 +3,8 @@
 The machine itself. There is exactly one object: `host:local`.
 
 **When to use:** change the hostname; reboot or halt; set the
-environment every service gets; set the local timezone.
+environment every service gets; set the local timezone; name other
+machines the network's DNS does not.
 
 **When not:** do not invent extra host objects. Network and packages are
 not this kind. Do not add a Unix user kind — the accounts are always
@@ -26,6 +27,13 @@ not this kind. Do not add a Unix user kind — the accounts are always
 - `timezone` — POSIX TZ string (`MST7MDT,M3.2.0,M11.1.0`). Empty is UTC.
   Every service and every login gets `TZ` from this, unless `env` sets
   `TZ` itself. The system clock and logs stay UTC.
+- `hosts` — other machines by name: a map of host name to one IPv4 or
+  IPv6 address. `/etc/hosts` is localhost, this `hostname`, then these,
+  rewritten on every apply and boot, so do not edit it. A name is
+  letters, digits, `-` and `.`; `localhost` and this hostname are
+  refused (`/etc/hosts` has them). `set` replaces the whole map. Empty
+  in the `base` profile. Prefer the network's DNS when it can serve the
+  name: it covers every machine at once.
 
 ## Example
 
@@ -45,6 +53,14 @@ oath apply
 ```
 
 Running services keep their old `TZ` until they restart.
+
+Another machine on the LAN by name:
+
+```
+oath set host:local hosts='{"novus": "10.0.0.5"}'
+oath apply host:local
+getent hosts novus
+```
 
 Reboot (owner asked):
 
