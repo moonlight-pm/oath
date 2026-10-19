@@ -613,7 +613,7 @@ steps = [
 
 [[case]]
 name = "desk-sola"
-about = "Sola runs on the desk: its services are up, and the terminal and the browser open, run a shell and load a page."
+about = "Sola runs on the desk: its services are up, and the terminal, Workspaces and the browser open, run a shell, answer the call plane and load a page."
 metal = true
 qemu = false
 profile = "desk"
@@ -621,6 +621,8 @@ steps = [
   { run = "for s in sola-bus sola-call sola-river sola-shell sola-session; do printf '%s ' $s; oath get svc:$s | grep '  state:'; done", expect = ["sola-shell   state: \"running\"", "sola-river   state: \"running\""], reject = ["failed", "restarting"] },
   { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-terminal && sleep 5 && solactl compositor windows", expect = ["\"sola-terminal\""] },
   { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-terminal" },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-workspaces && sleep 5 && solactl compositor windows && solactl workspaces project.list", expect = ["\"sola-workspaces\"", "\"projects\""], reject = ["no method", "not found"] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-workspaces" },
   { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-browser && sleep 8 && solactl browser goto https://example.com && sleep 6 && solactl browser tabs", expect = ["Example Domain"], timeout = 90 },
   { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-browser" },
 ]

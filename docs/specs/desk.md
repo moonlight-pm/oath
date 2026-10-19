@@ -9,7 +9,7 @@ built natively from `pkgs/`, with Sola on top. It is phase 8 of the
 **Status:** built and running on canto since 2026-10-18 (the `desk`
 profile, R20–R22): rivulet drives DP-10 with radeonsi on ACO, input
 comes through seatd, Xwayland serves X clients, and Sola's session runs
-with its terminal and browser, sound through PipeWire, Noto fonts, the
+with its terminal, Workspaces and browser, sound through PipeWire, Noto fonts, the
 tools that build Sola on the machine, and novus's keyboard and mouse
 through `sola-kvm`.
 
@@ -98,7 +98,7 @@ too), and `pkg:sola` and `pkg:sola-browser` build from the tree
 
 | Package | What |
 |---------|------|
-| `sola` | `sola-bus`, `sola-call`, `sola-river`, `sola-shell`, `sola-session`, `solactl`, `sola-terminal`, `sola-oath`, `sola-kvm`; `share/`: Sola's, Lucide's and Simple Icons' icons, the McMojave cursors (pinned GitHub archives, as Sola pins them) |
+| `sola` | `sola-bus`, `sola-call`, `sola-river`, `sola-shell`, `sola-session`, `solactl`, `sola-terminal`, `sola-workspaces`, `sola-oath`, `sola-kvm`; `share/`: Sola's, Lucide's and Simple Icons' icons, the McMojave cursors (pinned GitHub archives, as Sola pins them) |
 | `sola-browser` | `sola-browser`, with `cef/` linked to `pkg:cef` and a RUNPATH into CEF's `Release` |
 | `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader), `cef/Resources`; 539 MB |
 | CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
@@ -119,12 +119,19 @@ apps log to `app-<name>.log` there). `host:local` sets
 `SSL_CERT_FILE` (curl's Mozilla bundle, for rustls in the browser's
 vault and for cargo), `DBUS_SESSION_BUS_ADDRESS` and `PKG_CONFIG_PATH`
 (every desk package's `lib/pkgconfig`: `.pc` files stay with their
-pack, so a build on the machine looks in each). Apps open with `solactl session launch sola-terminal` or
+pack, so a build on the machine looks in each). Apps open with
+`solactl session launch sola-terminal`, `sola-workspaces` or
 `sola-browser`. wgpu runs on GL through Mesa's EGL; there is no Vulkan
 loader.
 
 The `desk-sola` case (metal only: `qemu = false`) checks the services,
-opens the terminal and the browser and loads `https://example.com`.
+opens the terminal, Workspaces (its call plane answers `project.list`)
+and the browser, and loads `https://example.com`. Workspaces' tabs run
+in tmux on socket `sola-ws`; on start it merges its status hooks into
+`/home/.claude/settings.json`, `/home/.codex/hooks.json` and
+`/home/.grok/hooks`, which call `curl` on its socket
+(`/run/user/1/sola-ws-hooks.sock`). The agents' CLIs are not part of
+the desk.
 
 ## Sound, session bus, KVM (built)
 

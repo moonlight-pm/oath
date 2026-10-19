@@ -16,12 +16,14 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `b5a58ee98753`, the `desk` profile
-  (R20–R22: base plus seatd, rivulet, Sola with its terminal, browser
-  and KVM, PipeWire, Noto, the tools that build Sola, and their
-  packages), installed on 2026-10-18 with `cargo make install --target
+- **Running now:** build output `6783cb7d7f13`, the `desk` profile
+  (R20–R22: base plus seatd, rivulet, Sola with its terminal,
+  Workspaces, browser and KVM, PipeWire, Noto, the tools that build
+  Sola, and their packages), reached on 2026-10-19 by `cargo make
+  update --target home@10.0.0.3 --confirm` (generation 27) and a
+  reboot, from `b5a58ee98753`, which `cargo make install --target
   home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
-  hosts/canto.json --output b5a58ee98753 --confirm`. Passes all METAL
+  hosts/canto.json --confirm` wrote on 2026-10-18. Passes all 39
   `metal` cases (`cargo make check --target home@10.0.0.3`), `desk`,
   `desk-sola` and `desk-sound` among them. The base system before it
   was `218fd2e1e03b` (GCC and glibc, R17, R18).

@@ -196,8 +196,9 @@ fn ship_packs(r: &Remote, stage: &Path) -> Result<()> {
     Ok(())
 }
 
-/// 4. The output's pins for the packages the machine has, applied in one
-/// generation. Objects the output's seed has and the machine does not are
+/// 4. The output's pins (`hash` and `needs`) for the packages the machine
+/// has, applied in one generation: a package whose own tree is unchanged
+/// still moves its `needs` when what it runs with was rebuilt. Objects the output's seed has and the machine does not are
 /// reported, not created: the catalog is the owner's.
 fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
     let ids = install::ssh_out(r, "oath ls")?;
@@ -205,17 +206,19 @@ fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
     let missing: Vec<String> =
         stage_ids(stage)?.into_iter().filter(|id| !have.contains(&id.as_str())).collect();
     let mut changed = Vec::new();
-    for (name, pin) in stage_pins(stage)? {
+    for (name, pin, needs) in stage_pins(stage)? {
         let id = format!("pkg:{name}");
         if !have.contains(&id.as_str()) {
             continue;
         }
         let cur = install::ssh_out(r, &format!("oath --json get {id} --desired"))?;
         let cur: Value = serde_json::from_str(&cur).with_context(|| format!("{id}: {cur}"))?;
-        if cur.get("hash").and_then(Value::as_str) == Some(pin.as_str()) {
+        let cur_needs = cur.get("needs").cloned().unwrap_or_else(|| Value::Array(vec![]));
+        if cur.get("hash").and_then(Value::as_str) == Some(pin.as_str()) && cur_needs == needs {
             continue;
         }
-        install::ssh_run(r, &format!("oath set {id} hash={pin}"))?;
+        let set = serde_json::json!({ "hash": pin, "needs": needs }).to_string();
+        install::ssh_run(r, &format!("oath set {id} --from-json {}", sh_quote(&set)))?;
         changed.push(id);
     }
     if !missing.is_empty() {
@@ -398,8 +401,8 @@ fn stage_ids(stage: &Path) -> Result<Vec<String>> {
     Ok(out)
 }
 
-/// `(name, pin)` of every package the output's seed pins.
-fn stage_pins(stage: &Path) -> Result<Vec<(String, String)>> {
+/// `(name, pin, needs)` of every package the output's seed pins.
+fn stage_pins(stage: &Path) -> Result<Vec<(String, String, Value)>> {
     let mut out = Vec::new();
     let dir = stage.join("oath/objects/pkg");
     for e in fs::read_dir(&dir).with_context(|| format!("read {}", dir.display()))? {
@@ -407,10 +410,11 @@ fn stage_pins(stage: &Path) -> Result<Vec<(String, String)>> {
         let v: Value = oath_core::read_json(&e.path().join("desired.json"))
             .map_err(|err| anyhow::anyhow!("{}: {err}", e.path().display()))?;
         if let Some(h) = v.get("hash").and_then(Value::as_str).filter(|h| !h.is_empty()) {
-            out.push((e.file_name().to_string_lossy().into_owned(), h.to_string()));
+            let needs = v.get("needs").cloned().unwrap_or_else(|| Value::Array(vec![]));
+            out.push((e.file_name().to_string_lossy().into_owned(), h.to_string(), needs));
         }
     }
-    out.sort();
+    out.sort_by(|a, b| a.0.cmp(&b.0));
     Ok(out)
 }
 

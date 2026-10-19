@@ -205,7 +205,7 @@ mkdir -p "$CARGO_HOME" "$HOME"
 cp /oath/store/pkg/sola-crates/live/vendor.toml "$CARGO_HOME/config.toml"
 cp -R "$SRC/sola" /tmp/sola
 cd /tmp/sola
-bins="sola-bus sola-call sola-river sola-shell sola-session sola-terminal solactl sola-oath sola-kvm"
+bins="sola-bus sola-call sola-river sola-shell sola-session sola-terminal sola-workspaces solactl sola-oath sola-kvm"
 cargo build --release --frozen $(for b in $bins; do printf -- '-p %s ' "$b"; done)
 mkdir -p /out/bin
 for b in $bins; do

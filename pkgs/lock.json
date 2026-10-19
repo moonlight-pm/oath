@@ -1037,8 +1037,8 @@
     "version": "0.1.0",
     "license": "LicenseRef-Sola AND ISC AND CC0-1.0 AND GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-26cfda6454683758ec92679b2d6d4a9596b74d03ca9cf955303ff70ae76802a7",
-    "product": "sha256-3b329152dbdf339d5d17ac2a348cc857bb9d569cb8394d528c9f9d8528bd7095",
+    "plan": "sha256-05abe82546f271999f6d6ffac46490a8888781fe861c6a0df82baac991a1c98c",
+    "product": "sha256-9bd53b52bc85a7842bcd6b19352611f84ae710ffc3b34033ffb823f157bb94e1",
     "run": [
       "gcc",
       "wayland",

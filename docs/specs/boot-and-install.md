@@ -144,10 +144,13 @@ trusting only the host key `install` pinned:
    userspace.
 3. Ship every store realization of the output that the machine lacks:
    a tar stream into `<slot>/.<hash>.part`, renamed into place.
-4. `oath set pkg:<name> hash=<pin>` for each package the machine has
-   whose pin differs from the output's seed, then one `oath apply`:
-   one generation, undoable, and apply re-hashes each tree before
-   linking it. Packages the machine lacks are reported, not created.
+4. `oath set pkg:<name>` to the output seed's `hash` and `needs` for
+   each package the machine has whose pin or needs differ, then one
+   `oath apply`: one generation, undoable, and apply re-hashes each
+   tree before linking it. `needs` moves too: a package whose own tree
+   is unchanged still pins what it runs with (on 2026-10-19 a rebuilt
+   `pkg:sola` left `pkg:sola-browser` pinning the old one, and apply
+   refused). Packages the machine lacks are reported, not created.
 5. Replace the image's files outside the catalog (`/lib/oath`,
    `/etc/passwd`, `group`, `shadow`, `shells`, `nsswitch.conf`,
    `ssh/ssh_config`, `/sbin/init`, `/bin/sudo`), each written beside

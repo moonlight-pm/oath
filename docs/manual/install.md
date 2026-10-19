@@ -116,8 +116,8 @@ has pending changes, or has an apply on probation. Then it:
 
 1. snapshots `@` as `@boot-<id>` before changing anything;
 2. ships the output's store packs the machine lacks;
-3. sets each package the machine has to the output's pin and runs
-   `oath apply` once (`oath undo` takes it back; objects the output's
+3. sets each package the machine has to the output's pin and needs
+   and runs `oath apply` once (`oath undo` takes it back; objects the output's
    seed has and the machine does not, a new base service say, are
    listed, not created: add them with `oath new`);
 4. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`

@@ -531,7 +531,7 @@
     },
     "pkg:sola": {
       "present": true,
-      "description": "Sola: the desktop session on rivulet, and its terminal.",
+      "description": "Sola: the desktop session on rivulet, its terminal and Workspaces.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
     "pkg:sola-browser": {
