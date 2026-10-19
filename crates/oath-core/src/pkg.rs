@@ -1131,12 +1131,20 @@ pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
 
 /// T20 fetch: curl `url` (or `{url}/pkg/{name}/{hash}.tar`) into the store.
 /// A `.tar` / gzip is a pack tree; a single file becomes `bin/<name>`.
-/// Plan pre-build uses this with `present` still false.
-pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Result<()> {
+/// With `file` (R23), `url` is one file and the tree is that file alone at
+/// the path `file` names. Plan pre-build uses this with `present` still
+/// false.
+pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &str) -> Result<()> {
     if store_present(catalog_root, name, hash) {
         return Ok(());
     }
-    let url = fetch_url(url, name, hash);
+    if !file.is_empty() && !is_tree_path(file) {
+        return Err(Error::hint(
+            format!("pkg:{name} file {file:?} is not a relative path in the tree"),
+            "oath schema pkg",
+        ));
+    }
+    let url = if file.is_empty() { fetch_url(url, name, hash) } else { url.trim().to_string() };
     if url.is_empty() {
         return Ok(());
     }
@@ -1153,7 +1161,15 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
         let _ = fs::remove_dir_all(&tmpdir);
         return Err(Error::hint(format!("fetch pkg:{name} failed"), "oath schema pkg"));
     }
-    let result = if looks_like_tar(&blob) {
+    let result = if !file.is_empty() {
+        let tree = tmpdir.join("tree");
+        let dest = tree.join(file);
+        fs::create_dir_all(dest.parent().unwrap())?;
+        fs::rename(&blob, &dest)?;
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&dest, fs::Permissions::from_mode(0o644))?;
+        install_tree(catalog_root, name, &tree, None, hash)
+    } else if looks_like_tar(&blob) {
         let tree = tmpdir.join("tree");
         fs::create_dir_all(&tree)?;
         extract_tar(&blob, &tree)?;
@@ -1164,6 +1180,13 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
     };
     let _ = fs::remove_dir_all(&tmpdir);
     result.map(|_| ())
+}
+
+/// A relative path of plain components (`src/claude`).
+fn is_tree_path(p: &str) -> bool {
+    !p.is_empty()
+        && !p.starts_with('/')
+        && p.split('/').all(|c| !c.is_empty() && c != "." && c != "..")
 }
 
 fn find_bin(name: &str) -> PathBuf {
@@ -1257,6 +1280,7 @@ mod needs_tests {
         Pkg {
             present,
             url: String::new(),
+            file: String::new(),
             hash: hash.to_string(),
             needs: needs
                 .iter()
@@ -1356,6 +1380,30 @@ mod needs_tests {
         .unwrap();
         let c = read_components(&tree).expect("bare list");
         assert_eq!(c[0].purl, "pkg:generic/zlib@1.3.2");
+    }
+
+    #[test]
+    fn fetch_a_vendor_file_into_its_path() {
+        let d = tempfile::tempdir().unwrap();
+        let vendor = d.path().join("claude");
+        fs::write(&vendor, b"\x7fELF vendor bytes\n").unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&vendor, fs::Permissions::from_mode(0o755)).unwrap();
+        let want = d.path().join("want");
+        fs::create_dir_all(want.join("src")).unwrap();
+        fs::write(want.join("src/claude"), b"\x7fELF vendor bytes\n").unwrap();
+        let pin = hash_tree(&want).unwrap();
+        let cat = d.path().join("cat");
+        fs::create_dir_all(cat.join("store/pkg")).unwrap();
+        let url = format!("file://{}", vendor.display());
+        // Not an origin: the URL is fetched as it is, and the file is data.
+        fetch_pkg(&cat, "claude-code-src", &url, "src/claude", &pin).unwrap();
+        assert!(store_present(&cat, "claude-code-src", &pin));
+        let got = cat.join("store/pkg/claude-code-src").join(&pin).join("src/claude");
+        assert_eq!(fs::metadata(&got).unwrap().permissions().mode() & 0o111, 0);
+        let other = "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+        assert!(fetch_pkg(&cat, "claude-code-src", &url, "src/claude", other).is_err());
+        assert!(fetch_pkg(&cat, "x-src", &url, "../claude", &pin).is_err());
     }
 
     #[test]

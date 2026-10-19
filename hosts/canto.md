@@ -16,16 +16,23 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `6783cb7d7f13`, the `desk` profile
+- **Running now:** build output `54580085cacb`, the `desk` profile
   (R20–R22: base plus seatd, rivulet, Sola with its terminal,
   Workspaces, browser and KVM, PipeWire, Noto, the tools that build
   Sola, and their packages), reached on 2026-10-19 by `cargo make
-  update --target home@10.0.0.3 --confirm` (generation 27) and a
-  reboot, from `b5a58ee98753`, which `cargo make install --target
-  home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
-  hosts/canto.json --confirm` wrote on 2026-10-18. Passes all 39
-  `metal` cases (`cargo make check --target home@10.0.0.3`), `desk`,
-  `desk-sola` and `desk-sound` among them. The base system before it
+  update --target home@10.0.0.3 --confirm` and a reboot, from
+  `b5a58ee98753`, which `cargo make install --target home@10.0.0.3
+  --disk /dev/sda --hostname canto --overlay hosts/canto.json
+  --confirm` wrote on 2026-10-18. Passes all 40 `metal` cases (`cargo
+  make check --target home@10.0.0.3`), `desk`, `desk-sola`,
+  `desk-sound` and `recipe-builds-here` among them.
+- **Claude Code:** the recipe (R23) came after the install, so its
+  objects were made by hand on 2026-10-19 as `cargo make update`
+  suggests (`oath set plan:claude-code --from-file`, `oath new
+  pkg:claude-code-src`, `oath new pkg:claude-code`, the values the
+  image seeds). `oath build plan:claude-code` made the pack novus made
+  (`sha256-cb973b8f…`), and `pkg:claude-code` is present: `claude`
+  2.1.292. Not signed in yet (`claude`, then `/login`). The base system before it
   was `218fd2e1e03b` (GCC and glibc, R17, R18).
 - **Backup:** `backup-send` mounts the NAS export as NFS 4.0
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no

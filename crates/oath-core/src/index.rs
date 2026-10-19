@@ -42,7 +42,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          (ssh -T home@<host> oath mcp)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
-{probation}{damage}
+{probation}{damage}{recipes}
 ## Kinds here
 
 {kinds}
@@ -74,7 +74,37 @@ Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
         kinds = kinds_block.trim_end(),
         probation = probation_block(cat),
         damage = damage_block(cat),
+        recipes = recipe_block(cat),
     ))
+}
+
+/// Packages that are a plan here and not a shipped pack (R23): the owner
+/// builds them on this machine.
+fn recipe_block(cat: &Catalog) -> String {
+    let mut lines = Vec::new();
+    for id in cat.ls(Some("plan")).unwrap_or_default() {
+        let pkg = crate::ObjectId::new("pkg", &id.name);
+        let Ok(obj) = cat.get(&pkg) else { continue };
+        if obj.desired.get("present") != Some(&serde_json::json!(false)) {
+            continue;
+        }
+        let what = obj.desired.get("description").and_then(|d| d.as_str()).unwrap_or("");
+        let n = &id.name;
+        lines.push(format!(
+            "- `{pkg}` {what} `sudo oath build plan:{n}`, then `sudo oath set {pkg} \
+             present=true` and `sudo oath apply {pkg}`.\n"
+        ));
+    }
+    if lines.is_empty() {
+        return String::new();
+    }
+    format!(
+        "\n## Recipes\n\n\
+         These packages are not in the image: their licences do not allow \
+         redistribution. Each is a plan that fetches the vendor's own file and \
+         builds the package on this machine.\n\n{}",
+        lines.concat()
+    )
 }
 
 /// An open probation, said where an agent looks first.

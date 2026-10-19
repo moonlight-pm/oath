@@ -86,7 +86,9 @@ A tree reaches the store one of three ways:
 
 1. Packed into the image by `cargo make build`.
 2. Fetched: when `url` is set and the pinned tree is missing, apply
-   fetches either the URL itself (a `.tar`) or
+   (or a plan's pre-build) fetches the URL itself when `file` is set
+   (one file, placed at that path, not executable: a vendor's release,
+   R23), or the URL itself (a `.tar`) or
    `{url}/pkg/<name>/<hash>.tar` from an origin, unpacks it, hashes it,
    and refuses a mismatch. `url` without `hash` fetches and reports the
    hash (discovery, not a pin). The local store wins when the tree is
@@ -121,6 +123,13 @@ the publishable packs and their advisories into an origin tree (below).
 - Every package is either built from source by an Oath plan, or is the
   vendor's own binary release pinned by sha256 (examples: the Rust
   toolchain, linux-firmware, Steam, CEF).
+- A package whose licence does not allow redistribution is a recipe
+  (R23, built 2026-10-19): every catalog holds its plan
+  (`plan:<name>`) and its source as a pin on the vendor's file
+  (`pkg:<name>-src` with `url` and `file`), and `pkg:<name>` absent
+  at the product hash the build host got. The machine fetches the file
+  and builds the pack with `oath build plan:<name>`; no image or origin
+  carries the pack. Claude Code (`pkg:claude-code`) is the first.
 - Never another distribution's packages: no Nix closures, no `.deb`,
   no Arch packages, no third-party rebuilds of an upstream.
 - A build host's compiler may bootstrap the first toolchain. It never

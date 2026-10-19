@@ -16,10 +16,18 @@ append history (git has it).
    (CEF 147);
    PipeWire sound, a session bus, Noto fonts, the tools that build Sola
    on the machine, and `svc:sola-kvm` for novus's keyboard and mouse.
-   Output `6783cb7d7f13` passes the QEMU suite and the metal suite
+   Output `54580085cacb` passes the QEMU suite and the metal suite
    ([docs/specs/desk.md](docs/specs/desk.md)). Next: Joshua starts the
    Sola fork's work on canto; realtime priority for PipeWire.
-2. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
+2. **Claude Code as a recipe (R23).** Every catalog carries
+   `plan:claude-code` (Anthropic's stable 2.1.292, pinned to the signed
+   manifest's sha256); the machine fetches the binary and builds it
+   (`oath build plan:claude-code`), and images and origins hold only the
+   plan. canto built the build host's exact pack and runs `claude`.
+   Next: Joshua signs in on canto; a new stable is a new pin in
+   `pkgs/claude-code` (`cargo make pkgs claude-code`, then `cargo make
+   update`, which says how to rebuild a built recipe).
+3. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
    `cargo make install --usb` stick, or `cargo make update` once it
@@ -38,8 +46,8 @@ cycle reasons and reverse-`wants` shutdown, DHCP renewals in actual,
 device discovery and hotplug, PID 1 surviving its own panic, power
 changes without a generation, install's build-host guard and
 `cargo make update`. The screen is a `home` shell when no desk owns it
-(R15). The newest output, `6783cb7d7f13` (`desk`), passes all 48 QEMU
-cases and, on canto, all 39 metal cases. Left by design until
+(R15). The newest output, `54580085cacb` (`desk`), passes all 49 QEMU
+cases and, on canto, all 40 metal cases. Left by design until
 something needs them: root SSH as a field, more NICs, device rules as
 fields.
 
@@ -47,7 +55,7 @@ fields.
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `6783cb7d7f13`, the `desk` profile (rivulet and Sola on DP-10); [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `54580085cacb`, the `desk` profile (rivulet and Sola on DP-10); [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

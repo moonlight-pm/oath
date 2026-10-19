@@ -115,6 +115,14 @@
     "product": "sha256-dc8d8505af2b2d236b3026c5f8da1dfb3ee3a0168b492f544ebcccfdc0770a05",
     "run": []
   },
+  "claude-code": {
+    "version": "2.1.292",
+    "license": "LicenseRef-Anthropic-Commercial-Terms",
+    "by": "plan",
+    "plan": "sha256-589b1255a219e340c46d73bf0122257e13ed7ed4675a881b057bab6c47c8760b",
+    "product": "sha256-cb973b8ff285b43e7f96b90640b283b4e975b69d5dec1370596af5584b9b985f",
+    "run": []
+  },
   "cmake": {
     "version": "4.4.4",
     "license": "BSD-3-Clause AND curl AND MIT AND BSD-2-Clause AND Zlib AND 0BSD AND Apache-2.0",

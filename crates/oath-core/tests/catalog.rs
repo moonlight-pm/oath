@@ -133,6 +133,9 @@ fn seed_lists_host() {
         "pkg:util-linux",
         "pkg:dosfstools",
         "pkg:curl",
+        "pkg:claude-code",
+        "pkg:claude-code-src",
+        "plan:claude-code",
         "net:net0",
         "ssh:local",
         "snap:current",
@@ -141,11 +144,15 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 5 svc and host, 33 packages, net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 41, "{ids:?}");
+    // 5 svc and host, 33 packages, a recipe (two packages and its plan),
+    // net:net0, ssh:local, snap:current.
+    assert_eq!(ids.len(), 44, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
+    // The recipe (R23) is where an agent looks first.
+    assert!(idx.contains("## Recipes"), "{idx}");
+    assert!(idx.contains("`sudo oath build plan:claude-code`"), "{idx}");
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
     assert_eq!(host.desired, json!({"hostname": "oath", "power": "run"}));
     let net = cat.get(&"net:net0".parse().unwrap()).unwrap();

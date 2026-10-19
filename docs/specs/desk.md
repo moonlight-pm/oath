@@ -131,7 +131,8 @@ in tmux on socket `sola-ws`; on start it merges its status hooks into
 `/home/.claude/settings.json`, `/home/.codex/hooks.json` and
 `/home/.grok/hooks`, which call `curl` on its socket
 (`/run/user/1/sola-ws-hooks.sock`). The agents' CLIs are not part of
-the desk.
+the desk: Claude Code is a recipe in every catalog (R23), built on the
+machine with `oath build plan:claude-code`.
 
 ## Sound, session bus, KVM (built)
 

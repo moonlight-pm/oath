@@ -197,9 +197,14 @@ pub struct Pkg {
     /// If non-empty, apply fetches this URL into the store when present
     /// (the local store wins if the tree is already there). A .tar URL is
     /// a pack tree; an origin prefix plus hash fetches
-    /// {url}/pkg/{name}/{hash}.tar.
+    /// {url}/pkg/{name}/{hash}.tar; with `file`, the URL is one file.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub url: String,
+    /// With `url`: the URL is one file, a vendor's release (R23), and the
+    /// tree is that file alone at this relative path (`src/claude`), not
+    /// executable. A recipe's source package; `hash` pins the tree.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub file: String,
     /// Pin: realization id sha256-<64 hex> of the pack tree (oath-tree-v1).
     /// Apply verifies it. Empty is discovery (a fetch or the unique
     /// on-disk tree reports actual.hash).

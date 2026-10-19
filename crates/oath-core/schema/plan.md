@@ -24,5 +24,8 @@ Every `build_needs` pack must be in the store at its pinned hash.
 A missing one whose `pkg` object has a `url` is fetched **before** the
 sandbox starts. Network is off inside. The product's `present` stays
 false; installing it is `oath set pkg:<name> present=true` then apply.
+A recipe (R23: a package the image may not carry, `pkg:claude-code`)
+is such a plan in every catalog; its source is fetched this way, from
+the vendor.
 
 `built_from` on the **product** is not a proof. Hashes are.

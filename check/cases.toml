@@ -375,10 +375,28 @@ steps = [
 
 [[case]]
 name = "build-on-the-box"
-about = "oath build runs a bash-and-coreutils plan in the sandbox on the box, stores the product and logs to /oath/log/plan/."
+about = "oath build runs a bash-and-coreutils plan in the sandbox on the box, as home and as PID 1 with its own /proc, stores the product and logs to /oath/log/plan/."
 steps = [
-  { run = "b=$(readlink /oath/store/pkg/bash/live); c=$(readlink /oath/store/pkg/coreutils/live); g=$(readlink /oath/store/pkg/glibc/live)\ncat >/tmp/echo.plan <<EOF\n#!oath-plan\n{\"name\": \"echo\", \"produces\": \"pkg:echo\", \"build_needs\": [{\"id\": \"pkg:bash\", \"hash\": \"$b\"}, {\"id\": \"pkg:coreutils\", \"hash\": \"$c\"}, {\"id\": \"pkg:glibc\", \"hash\": \"$g\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-on-the-box\nmkdir -p /out/bin\necho hi >/out/bin/hi\nEOF\noath fmt -w /tmp/echo.plan && sudo oath build --file /tmp/echo.plan", expect = ["pkg:echo sha256-", "log /oath/log/plan/echo.log"], reject = ["built-on-the-box"] },
-  { run = "oath logs plan:echo && ls -a /oath/store/pkg /oath/store/pkg/echo", expect = ["# oath build plan:echo", "built-on-the-box", "# product sha256-"], reject = [".part"] },
+  { run = "b=$(readlink /oath/store/pkg/bash/live); c=$(readlink /oath/store/pkg/coreutils/live); g=$(readlink /oath/store/pkg/glibc/live)\ncat >/tmp/echo.plan <<EOF\n#!oath-plan\n{\"name\": \"echo\", \"produces\": \"pkg:echo\", \"build_needs\": [{\"id\": \"pkg:bash\", \"hash\": \"$b\"}, {\"id\": \"pkg:coreutils\", \"hash\": \"$c\"}, {\"id\": \"pkg:glibc\", \"hash\": \"$g\"}], \"run_needs\": []}\n---\n#!/bin/sh\nset -eu\necho built-on-the-box\necho \"pid \\$\\$ uid \\$(id -u) proc \\$(ls /proc/1/exe)\"\nmkdir -p /out/bin\necho hi >/out/bin/hi\nEOF\noath fmt -w /tmp/echo.plan && sudo oath build --file /tmp/echo.plan", expect = ["pkg:echo sha256-", "log /oath/log/plan/echo.log"], reject = ["built-on-the-box"] },
+  { run = "oath logs plan:echo && ls -a /oath/store/pkg /oath/store/pkg/echo", expect = ["# oath build plan:echo", "built-on-the-box", "pid 1 uid 1 proc /proc/1/exe", "# product sha256-"], reject = [".part"] },
+]
+
+[[case]]
+name = "recipe-in-the-catalog"
+about = "A recipe (R23) is in every catalog: plan:claude-code is pinned, its source names the vendor's file, pkg:claude-code is absent, and INDEX.md says how to build it."
+steps = [
+  { run = "oath get plan:claude-code --desired; oath get pkg:claude-code-src --desired; oath get pkg:claude-code --desired", expect = ["\"hash\": \"sha256-", "\"url\": \"https://downloads.claude.ai/claude-code-releases/", "\"file\": \"src/claude\"", "\"present\": false"], reject = ["\"present\": true"] },
+  { run = "oath | grep -A6 '^## Recipes'; test ! -e /bin/claude", expect = ["`sudo oath build plan:claude-code`"] },
+]
+
+[[case]]
+name = "recipe-builds-here"
+about = "The machine builds Claude Code from its recipe (R23): oath build fetches the vendor's file, checks it against the pin, and makes the very pack the build host made, which runs."
+metal = true
+qemu = false
+steps = [
+  { run = "p=$(oath --json get pkg:claude-code --desired | sed -n 's/.*\"hash\": \"\\(sha256-[0-9a-f]*\\)\".*/\\1/p' | head -n 1); sudo oath build plan:claude-code | grep -F \"pkg:claude-code $p\" && echo same-pack", expect = ["same-pack"], timeout = 900 },
+  { run = "p=$(oath --json get pkg:claude-code --desired | sed -n 's/.*\"hash\": \"\\(sha256-[0-9a-f]*\\)\".*/\\1/p' | head -n 1); /oath/store/pkg/claude-code/$p/libexec/claude-code/claude --version", expect = ["(Claude Code)"] },
 ]
 
 [[case]]

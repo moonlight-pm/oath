@@ -211,11 +211,12 @@ impl ApplyHooks for Live {
             self.catalog_root.join("bin")
         };
         if desired.present && !desired.url.is_empty() {
-            fetch_pkg(&self.catalog_root, &id.name, &desired.url, &desired.hash)?;
+            fetch_pkg(&self.catalog_root, &id.name, &desired.url, &desired.file, &desired.hash)?;
         }
         let mut actual =
             converge_pkg(&self.catalog_root, &bin, &id.name, desired.present, &desired.hash)?;
-        if !desired.url.is_empty() {
+        // A vendor's file (`file`) is not an origin: no advisories there.
+        if !desired.url.is_empty() && desired.file.is_empty() {
             let pin =
                 if !actual.hash.is_empty() { actual.hash.as_str() } else { desired.hash.as_str() };
             let _ = fetch_adv(&self.catalog_root, &id.name, &desired.url, pin);

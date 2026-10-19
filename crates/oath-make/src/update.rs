@@ -9,9 +9,10 @@
 //!    boot is the old kernel with the old userspace.
 //! 3. Ship the output's store packs the machine lacks (`.part`, renamed
 //!    into place).
-//! 4. Set every package the machine has to the output's pin and
-//!    `oath apply` them: one generation, undone by `oath undo`, and apply
-//!    re-hashes each tree before linking it.
+//! 4. Set every package the machine has to the output's pin and needs
+//!    (and a recipe's plan, `url` and `file`, R23) and `oath apply` them:
+//!    one generation, undone by `oath undo`, and apply re-hashes each tree
+//!    before linking it. A recipe the owner built is reported instead.
 //! 5. Replace the image's own files outside the catalog (`/lib/oath`, the
 //!    static `/etc` files, `/sbin/init`, `/bin/sudo`).
 //! 6. Archive the ESP's kernel and initrd as boot `<id>`, write the new
@@ -196,29 +197,55 @@ fn ship_packs(r: &Remote, stage: &Path) -> Result<()> {
     Ok(())
 }
 
-/// 4. The output's pins (`hash` and `needs`) for the packages the machine
-/// has, applied in one generation: a package whose own tree is unchanged
-/// still moves its `needs` when what it runs with was rebuilt. Objects the output's seed has and the machine does not are
-/// reported, not created: the catalog is the owner's.
+/// 4. The output's pins for what the machine has, applied in one
+/// generation: each package's `hash` and `needs` (a package whose own
+/// tree is unchanged still moves its `needs` when what it runs with was
+/// rebuilt), a recipe's `url` and `file`, and its plan (R23). A recipe
+/// the owner built stays at the pin it runs, since the output carries no
+/// tree for it; it is reported, to rebuild on the machine. Objects the
+/// output's seed has and the machine does not are reported, not created:
+/// the catalog is the owner's.
 fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
     let ids = install::ssh_out(r, "oath ls")?;
     let have: Vec<&str> = ids.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
     let missing: Vec<String> =
         stage_ids(stage)?.into_iter().filter(|id| !have.contains(&id.as_str())).collect();
+    set_plans(r, stage, &have)?;
     let mut changed = Vec::new();
-    for (name, pin, needs) in stage_pins(stage)? {
+    let mut rebuild = Vec::new();
+    for (name, pin, doc) in stage_pins(stage)? {
         let id = format!("pkg:{name}");
         if !have.contains(&id.as_str()) {
             continue;
         }
         let cur = install::ssh_out(r, &format!("oath --json get {id} --desired"))?;
         let cur: Value = serde_json::from_str(&cur).with_context(|| format!("{id}: {cur}"))?;
-        let cur_needs = cur.get("needs").cloned().unwrap_or_else(|| Value::Array(vec![]));
-        if cur.get("hash").and_then(Value::as_str) == Some(pin.as_str()) && cur_needs == needs {
+        let mut set = serde_json::json!({
+            "hash": pin,
+            "needs": doc.get("needs").cloned().unwrap_or_else(|| Value::Array(vec![])),
+        });
+        for k in ["url", "file"] {
+            if let Some(v) = doc.get(k) {
+                set[k] = v.clone();
+            }
+        }
+        let none = Value::Array(vec![]);
+        let differs = set.as_object().into_iter().flatten().any(|(k, v)| {
+            cur.get(k).unwrap_or(if k == "needs" { &none } else { &Value::Null }) != v
+        });
+        if !differs {
             continue;
         }
-        let set = serde_json::json!({ "hash": pin, "needs": needs }).to_string();
-        install::ssh_run(r, &format!("oath set {id} --from-json {}", sh_quote(&set)))?;
+        let shipped = stage.join("oath/store/pkg").join(&name).join(&pin).is_dir();
+        if !shipped && cur.get("present") == Some(&Value::Bool(true)) {
+            rebuild.push(format!(
+                "{id}: the output's recipe builds {pin}; on the machine run \
+                 `sudo oath build plan:{name}`, `sudo oath set {id} hash={pin}` and \
+                 `sudo oath apply {id}`"
+            ));
+            continue;
+        }
+        install::ssh_run(r, &format!("oath set {id} --from-json {}", sh_quote(&set.to_string())))?;
         changed.push(id);
     }
     if !missing.is_empty() {
@@ -227,12 +254,54 @@ fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
             missing.join(" ")
         );
     }
+    for line in &rebuild {
+        eprintln!("{line}");
+    }
     if changed.is_empty() {
         eprintln!("every package is already at the output's pin");
         return Ok(());
     }
     let applied = install::ssh_out(r, &format!("oath apply {}", changed.join(" ")))?;
     eprintln!("{applied}");
+    Ok(())
+}
+
+/// A recipe's plan (R23), filed again on the machine when the output's
+/// pin differs: the plan file goes over SSH, `oath set --from-file` lints
+/// and pins it.
+fn set_plans(r: &Remote, stage: &Path, have: &[&str]) -> Result<()> {
+    let Ok(dir) = fs::read_dir(stage.join("oath/objects/plan")) else { return Ok(()) };
+    for e in dir {
+        let name = e?.file_name().to_string_lossy().into_owned();
+        let id = format!("plan:{name}");
+        if !have.contains(&id.as_str()) {
+            continue;
+        }
+        let doc = stage.join("oath/objects/plan").join(&name).join("desired.json");
+        let v: Value = oath_core::read_json(&doc).map_err(|err| anyhow::anyhow!("{err}"))?;
+        let Some(pin) = v.get("hash").and_then(Value::as_str).filter(|h| !h.is_empty()) else {
+            continue;
+        };
+        let cur = install::ssh_out(r, &format!("oath --json get {id} --desired"))?;
+        let cur: Value = serde_json::from_str(&cur).with_context(|| format!("{id}: {cur}"))?;
+        if cur.get("hash").and_then(Value::as_str) == Some(pin) {
+            continue;
+        }
+        let path = stage.join("oath/store/plan").join(&name).join(pin).join("plan.plan");
+        let text = fs::read_to_string(&path).with_context(|| path.display().to_string())?;
+        if !text.ends_with('\n') || text.lines().any(|l| l == "OATH_PLAN_EOF") {
+            bail!("{}: cannot send it as a here-document", path.display());
+        }
+        let f = format!("{WORK}/{name}.plan");
+        install::ssh_run(
+            r,
+            &format!(
+                "set -e\nmkdir -p {WORK}\ncat > {f} <<'OATH_PLAN_EOF'\n{text}OATH_PLAN_EOF\n\
+                 oath set {id} --from-file {f}\nrm -f {f}\n"
+            ),
+        )?;
+        eprintln!(">> {id} {pin}");
+    }
     Ok(())
 }
 
@@ -401,7 +470,7 @@ fn stage_ids(stage: &Path) -> Result<Vec<String>> {
     Ok(out)
 }
 
-/// `(name, pin, needs)` of every package the output's seed pins.
+/// `(name, pin, desired doc)` of every package the output's seed pins.
 fn stage_pins(stage: &Path) -> Result<Vec<(String, String, Value)>> {
     let mut out = Vec::new();
     let dir = stage.join("oath/objects/pkg");
@@ -410,8 +479,7 @@ fn stage_pins(stage: &Path) -> Result<Vec<(String, String, Value)>> {
         let v: Value = oath_core::read_json(&e.path().join("desired.json"))
             .map_err(|err| anyhow::anyhow!("{}: {err}", e.path().display()))?;
         if let Some(h) = v.get("hash").and_then(Value::as_str).filter(|h| !h.is_empty()) {
-            let needs = v.get("needs").cloned().unwrap_or_else(|| Value::Array(vec![]));
-            out.push((e.file_name().to_string_lossy().into_owned(), h.to_string(), needs));
+            out.push((e.file_name().to_string_lossy().into_owned(), h.to_string(), v.clone()));
         }
     }
     out.sort_by(|a, b| a.0.cmp(&b.0));

@@ -88,7 +88,7 @@ btrfs
   .lock                    exclusive flock held by catalog writers
   .gens/<n>/objects/       copy snapshots (off btrfs or under --root only)
   store/pkg/<name>/<hash>/ package trees; `live` → the linked hash
-  store/plan/<name>/<hash>/plan.plan
+  store/plan/<name>/<hash>/plan.plan   plans; the image files each recipe's (R23)
   store/adv/<name>/<hash>.json   advisories
   ssh/host_ed25519         dropbear host key
   run/                     init.sock, fs/ (btrfs top level)
@@ -156,6 +156,9 @@ cargo make pkgs [names]
     its build packs run with (the lock records it)
   pkg:rust: the vendor's rustc, cargo and std (glibc, uefi); patchelf
     points its binaries at /lib's loader
+  a recipe (R23, pkg:claude-code): built here only for its product hash;
+    the image files its plan and pins pkg:<name>-src (the vendor's url
+    and file) and pkg:<name>, both absent; the machine builds it
   pkg:linux: boot/vmlinuz, boot/config, lib/modules/<release>/
 cargo make build [--profile base]
   pkg:oath: this tree + every crates.io crate in Cargo.lock → pkg:oath-src;

@@ -286,15 +286,17 @@ fn ensure_need(catalog_root: &Path, n: &PkgNeed) -> Result<()> {
     }
     let cat = Catalog::open(catalog_root)?;
     let obj = cat.get(&ObjectId::new(KIND_PKG, name)).ok();
-    let url =
-        obj.as_ref().and_then(|o| o.desired.get("url").and_then(|u| u.as_str())).unwrap_or("");
+    let field = |k: &str| {
+        obj.as_ref().and_then(|o| o.desired.get(k).and_then(|u| u.as_str())).unwrap_or("")
+    };
+    let (url, file) = (field("url"), field("file"));
     if url.is_empty() {
         return Err(Error::hint(
             format!("{} @ {} is not in the store", n.id, n.hash),
             "fetch it (pkg.url) or pack it first",
         ));
     }
-    fetch_pkg(catalog_root, name, url, &n.hash)?;
+    fetch_pkg(catalog_root, name, url, file, &n.hash)?;
     if !store_present(catalog_root, name, &n.hash) {
         return Err(Error::hint(
             format!("fetch {} did not produce {}", n.id, n.hash),
@@ -523,19 +525,13 @@ fn sandbox_in_child(
         return Err(Error::Msg("chroot failed".into()));
     }
     std::env::set_current_dir("/tmp")?;
-    // Drop to seat `home` only when we entered as host root (not a user ns).
-    if host_root {
-        unsafe {
-            libc::setgid(crate::seat::GID);
-            libc::setuid(crate::seat::UID);
-        }
-    }
 
     let mut cmd = Command::new("/bin/sh");
-    // SAFETY: mount(2) is async-signal-safe; nothing else runs between
-    // fork and exec. Builds that need no /proc still run without it.
+    // SAFETY: mount(2), setgroups(2), setgid(2) and setuid(2) are
+    // async-signal-safe; nothing else runs between fork and exec. Builds
+    // that need no /proc still run without it.
     unsafe {
-        cmd.pre_exec(|| {
+        cmd.pre_exec(move || {
             libc::mount(
                 c"proc".as_ptr(),
                 c"/proc".as_ptr(),
@@ -543,6 +539,17 @@ fn sandbox_in_child(
                 libc::MS_NOSUID | libc::MS_NODEV | libc::MS_NOEXEC,
                 std::ptr::null(),
             );
+            // Drop to seat `home` only when we entered as host root (not a
+            // user ns), and only after /proc: mounting it needs root. A
+            // machine's builds had no /proc before (Bun reads its bundle
+            // from /proc/self/exe).
+            if host_root
+                && (libc::setgroups(0, std::ptr::null()) != 0
+                    || libc::setgid(crate::seat::GID) != 0
+                    || libc::setuid(crate::seat::UID) != 0)
+            {
+                return Err(std::io::Error::last_os_error());
+            }
             Ok(())
         });
     }

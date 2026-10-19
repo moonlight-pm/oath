@@ -69,7 +69,8 @@ product's `pkg.needs`.
 3. Sandbox: new user, mount, network, IPC, UTS and PID namespaces; a
    chroot holding only the input packages and an empty `/out`;
    `PATH=/bin`; the script is PID 1 there, with a `/proc` that shows
-   only the build, and runs as `home` when the builder entered as root.
+   only the build, and runs as `home` when the builder entered as root
+   (it drops to `home` after mounting `/proc`, which needs root).
 4. Hash `/out` and write `/oath/store/pkg/<name>/<product>/`. Build
    never sets `present` and never links `/bin`; that is still
    `oath set` plus `oath apply`.
@@ -114,7 +115,7 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
 - **Sources** (`cargo make pkgs` and `bootstrap`, on the build host):
   every source is pinned by sha256 and, where its upstream signs, by an
   OpenPGP signature checked on every fetch against one key per upstream
-  in `pkgs/keys/<key>.asc` (39 keys). The key is the trust pin: a
+  in `pkgs/keys/<key>.asc` (57 keys). The key is the trust pin: a
   release signed by another key fails until a person adds that key.
   kernel.org signs the uncompressed tar (`decompress = "xz"`). Python
   signs only with Sigstore: its bundle is checked against Sigstore's
@@ -190,6 +191,22 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   macros stay shared), linked by `pkg:gcc`; the plan fails if one names
   an interpreter. oath-efi links with `/Brepro`, so its PE timestamp is
   a hash. The build host's Rust compiles only `oath-make`.
+
+- **Recipes** (R23, built 2026-10-19). A package whose licence does
+  not allow redistribution (`recipe` in its `pkg.toml`) is built on the
+  machine: its plan pins one source pack, the vendor's file alone as
+  `src/<file>`, and only packs the base profile ships, so a fresh
+  machine has every input but the file, which pre-build fetches by
+  `url` and `file` and checks against the pin. `cargo make pkgs`
+  builds it on the build host too, for the product hash the seed pins:
+  the machine's build must make that tree. `pkg:claude-code` is
+  Anthropic's binary (stable channel), checked on the build host
+  against the manifest Anthropic signs; its plan writes
+  `/lib/ld-linux-x86-64.so.2` over the ELF's `/lib64/…` name in place
+  (shorter, NUL-padded, so nothing moves: Bun's bundle is an ELF
+  section), adds `bin/claude` with `DISABLE_UPDATES=1`, and runs
+  `--version` in the sandbox. On novus it builds in seconds; on a
+  machine the fetch is about 240 MB.
 
 ## Products and logs (built)
 

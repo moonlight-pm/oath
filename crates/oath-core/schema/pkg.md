@@ -34,6 +34,9 @@ object, and an install overlay can add others.
   the tar. An origin prefix plus `hash` fetches
   `{url}/pkg/{name}/{hash}.tar`. A single file becomes `bin/<name>`.
   Local store wins if the realization is already there.
+- `file` — optional, with `url`: the URL is one file, a vendor's
+  release, and the tree is that file alone at this relative path, not
+  executable (`src/claude`). A recipe's source package (below).
 - `needs` — optional list of `{id, hash}` this pack needs at runtime.
   `hash` is required. Cycles refuse apply. `present=true` is refused
   if a need is missing or its live pin differs. `present=false` is
@@ -91,3 +94,12 @@ plans in `pkgs/`, built from source with GCC against glibc. Programs
 load their libraries from `/lib`, a link farm like `/bin`: a package's
 `lib/` entries are linked there when it is present. There is no C
 compiler on the box yet.
+
+**Recipes** (R23): a package whose licence does not allow
+redistribution is not in the image. The catalog has its plan
+(`plan:<name>`), its source (`pkg:<name>-src`, the vendor's file by
+`url` and `file`) and `pkg:<name>` absent at the pin the build host
+got; INDEX lists it under Recipes. Build it here with `sudo oath build
+plan:<name>`, then `oath set pkg:<name> present=true` and apply: the
+pin refuses a pack that is not the build host's. `pkg:claude-code` is
+one (`claude`).

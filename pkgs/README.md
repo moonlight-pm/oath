@@ -30,7 +30,9 @@ key = "m4"                 # pkgs/keys/m4.asc
 - `decompress = "xz"`: the signature is over the uncompressed file
   (kernel.org's `.tar.sign`).
 - `sums = "<url>"`: the signature is over a `sha256sum` list, which
-  must name the file with its `sha256` (CMake).
+  must name the file with its `sha256` (CMake), or over a JSON release
+  manifest whose `platforms.<p>` names it as `binary` with its
+  `checksum` (Claude Code).
 - `sigstore = "<url>"`, `identity = "<email or URI>"`,
   `issuer = "<OIDC issuer>"`: an upstream that signs only with
   Sigstore (Python). The bundle's certificate must chain to a Fulcio CA
@@ -45,6 +47,15 @@ key = "m4"                 # pkgs/keys/m4.asc
   goes into the source pack as `src/<dir>/`, so ignored build output
   stays out (a submodule, `forks/sola`, is listed by its own git); the
   manifest names the tree and the commit.
+- `recipe = "<why>"` (package level): the licence does not allow
+  redistribution, so the package is a recipe (R23): images and origins
+  carry its plan, never its pack, and each machine fetches the one
+  `[[source]]` itself and builds it (`oath build plan:<name>`). The
+  source pack is that file alone (`src/<file>`, not executable), as a
+  machine's fetch makes it; `build` is not prefixed with the base packs
+  and may name only packs the base profile ships; there are no other
+  files. A profile names `pkg:<name>` and `pkg:<name>-src` absent and
+  `plan:<name>`; the image fills in their pins (`pkgs/claude-code`).
 - `cargo_vendor = "<dir>"` (package level): the crates a Cargo
   workspace of this repository locks, crates.io and git alike, pinned
   by its `Cargo.lock`: `cargo vendor` on the build host writes them to

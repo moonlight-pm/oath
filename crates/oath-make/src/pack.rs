@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::os::unix::fs::{symlink, PermissionsExt};
 use std::path::{Path, PathBuf};
@@ -9,6 +9,7 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 
 use oath_core::{converge_with_link_root, promote_store, write_json};
+use serde_json::json;
 
 use crate::cpio;
 use crate::output::{self, Output};
@@ -135,6 +136,12 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     let all = crate::pkgs::load(root)?;
     let mut run_needs = BTreeSet::new();
     for name in &wanted {
+        if crate::pkgs::is_recipe(&all, name) {
+            bail!(
+                "profile {profile} wants pkg:{name} present, but it is a recipe (R23): no image \
+                 carries it; name it with present false and the machine builds it"
+            );
+        }
         if name != "oath" && !tools.packs.contains_key(name) {
             bail!("profile {profile} wants pkg:{name}, which this build cannot pack yet");
         }
@@ -270,6 +277,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     relink_present(&oath_root, &guest_bin)?;
     pin_run_needs(&oath_root, &run_needs)?;
     oath_core::sync_need_hashes(&oath_root).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let named = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.pkgs();
+    file_recipes(root, &oath_root, &all, &lock, &named)?;
     settle_pkg_applied(&oath_root)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
@@ -577,6 +586,95 @@ fn pin_run_needs(oath_root: &Path, needs: &BTreeSet<(String, String)>) -> Result
     Ok(())
 }
 
+/// R23: a recipe the profile names goes in as its plan, not its pack. The
+/// plan is filed in the image's store and pinned (`plan:<name>`);
+/// `pkg:<name>-src` gets the vendor's URL, the file's place and its pin,
+/// and `pkg:<name>` the product's pin and needs, both absent until the
+/// machine runs `oath build plan:<name>`. The plan must build with the
+/// packs the image ships, at the hashes it ships them.
+fn file_recipes(
+    root: &Path,
+    oath_root: &Path,
+    all: &BTreeMap<String, crate::pkgs::PkgToml>,
+    lock: &crate::pkgs::Lock,
+    named: &[String],
+) -> Result<()> {
+    for name in named.iter().filter(|n| crate::pkgs::is_recipe(all, n)) {
+        let e = lock
+            .get(name)
+            .with_context(|| format!("pkg:{name} is not built yet (cargo make pkgs {name})"))?;
+        let plan_path = crate::pkgs::pkgs_dir(root).join(name).join(format!("{name}.plan"));
+        let text = fs::read(&plan_path).with_context(|| plan_path.display().to_string())?;
+        if oath_core::file_hash(&text) != e.plan {
+            bail!(
+                "pkg:{name}: {} is not the plan that built {} (cargo make pkgs {name})",
+                plan_path.display(),
+                e.product
+            );
+        }
+        let plan = oath_core::parse_plan(&String::from_utf8_lossy(&text))
+            .map_err(|err| anyhow::anyhow!("{}: {err}", plan_path.display()))?;
+        let src_id = format!("pkg:{name}-src");
+        let mut src = None;
+        for n in plan.build_needs.iter().chain(&plan.run_needs) {
+            if n.id == src_id {
+                src = Some(n.hash.clone());
+                continue;
+            }
+            let have = pkg_pin(oath_root, n.id.strip_prefix("pkg:").unwrap_or(&n.id));
+            if have.as_deref() != Some(n.hash.as_str()) {
+                bail!(
+                    "pkg:{name}: its plan needs {} at {}, and the image has {}: \
+                     cargo make pkgs {name}",
+                    n.id,
+                    n.hash,
+                    have.unwrap_or_else(|| "none".into())
+                );
+            }
+        }
+        let src = src.with_context(|| format!("{}: no {src_id}", plan_path.display()))?;
+        if !oath_root.join("objects/plan").join(name).is_dir() {
+            bail!("pkg:{name} is a recipe: the profile names it, so it names plan:{name} too");
+        }
+        oath_core::file_plan(oath_root, &text).map_err(|err| anyhow::anyhow!("{err}"))?;
+        let s = &all[name].source[0];
+        patch_pkg(
+            oath_root,
+            &format!("{name}-src"),
+            json!({ "url": s.url, "file": format!("src/{}", s.file()), "hash": src }),
+        )?;
+        let needs: Vec<_> =
+            plan.run_needs.iter().map(|n| json!({ "id": n.id, "hash": n.hash })).collect();
+        patch_pkg(oath_root, name, json!({ "hash": e.product, "needs": needs }))?;
+        eprintln!("   recipe pkg:{name} {} (plan {}, built on the machine)", e.product, e.plan);
+    }
+    oath_core::Catalog::open(oath_root)
+        .and_then(|c| c.write_index())
+        .map_err(|err| anyhow::anyhow!("{err}"))
+}
+
+/// The pin the image's catalog gives `pkg:<name>`, if it names it.
+fn pkg_pin(oath_root: &Path, name: &str) -> Option<String> {
+    let v: serde_json::Value =
+        oath_core::read_json(&oath_root.join("objects/pkg").join(name).join("desired.json"))
+            .ok()?;
+    v.get("hash").and_then(|h| h.as_str()).filter(|h| !h.is_empty()).map(str::to_string)
+}
+
+/// Merge `fields` into a seeded, absent `pkg:<name>`'s desired doc.
+fn patch_pkg(oath_root: &Path, name: &str, fields: serde_json::Value) -> Result<()> {
+    let p = oath_root.join("objects/pkg").join(name).join("desired.json");
+    let mut v: serde_json::Value = oath_core::read_json(&p)
+        .map_err(|err| anyhow::anyhow!("pkg:{name} (a recipe's; the profile names it): {err}"))?;
+    if v.get("present") != Some(&json!(false)) {
+        bail!("pkg:{name} belongs to a recipe (R23), so the profile names it with present false");
+    }
+    for (k, val) in fields.as_object().context("fields")? {
+        v[k] = val.clone();
+    }
+    write_json(&p, &v).map_err(|err| anyhow::anyhow!("{err}"))
+}
+
 /// Keep every `pkg`'s desired doc (with its pin) as applied, the way apply
 /// would: the image links what its seed pins, so it starts in sync.
 fn settle_pkg_applied(oath_root: &Path) -> Result<()> {
@@ -646,6 +744,12 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
     }
     let lock = crate::pkgs::read_lock(repo)?;
     let all = crate::pkgs::load(repo)?;
+    // A recipe (R23) is published as its plan alone: no pack, no source.
+    let recipes: BTreeSet<String> =
+        named.iter().filter(|n| crate::pkgs::is_recipe(&all, n)).cloned().collect();
+    named.retain(|n| {
+        !recipes.contains(n) && !n.strip_suffix("-src").is_some_and(|r| recipes.contains(r))
+    });
     let cache = host_store_cache(repo);
     let mut rows: Vec<Published> = Vec::new();
     for name in &named {
@@ -714,6 +818,20 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
             println!("adv:{name} {hash}.json");
         }
     }
+    let mut plans = Vec::new();
+    for name in &recipes {
+        let e = lock.get(name).with_context(|| format!("pkg:{name}: cargo make pkgs {name}"))?;
+        let plan_path = crate::pkgs::pkgs_dir(repo).join(name).join(format!("{name}.plan"));
+        let plan = fs::read(&plan_path).with_context(|| plan_path.display().to_string())?;
+        if oath_core::file_hash(&plan) != e.plan {
+            bail!("pkg:{name}: {} is not its locked plan", plan_path.display());
+        }
+        let out = dest.join("plan").join(name).join(format!("{}.plan", e.plan));
+        fs::create_dir_all(out.parent().context("parent")?)?;
+        fs::write(&out, &plan).with_context(|| format!("write {}", out.display()))?;
+        println!("plan:{name} {} (a recipe: no pack, R23)", e.plan);
+        plans.push((name.clone(), e.product.clone(), e.license.clone(), e.plan.clone()));
+    }
     let mut skipped: Vec<String> = fs::read_dir(cache.join("pkg"))?
         .filter_map(|e| e.ok())
         .map(|e| e.file_name().to_string_lossy().into_owned())
@@ -739,6 +857,17 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
             "| `{}` | `{}` | {} | `{}` | `{}` |\n",
             r.name, r.hash, r.license, r.plan_hash, r.src
         ));
+    }
+    if !plans.is_empty() {
+        index.push_str(
+            "\nRecipes (R23): their licences allow no redistribution, so only the plan is \
+             here. A machine fetches the vendor's file itself and `oath build`s the pack.\n\n\
+             | name | builds | licence | plan |\n\
+             |------|--------|---------|------|\n",
+        );
+        for (name, product, license, plan) in &plans {
+            index.push_str(&format!("| `{name}` | `{product}` | {license} | `{plan}` |\n"));
+        }
     }
     fs::write(dest.join("INDEX.md"), index)?;
     println!("{} ({} packs)", dest.display(), rows.len());

@@ -62,6 +62,13 @@ pub struct PkgToml {
     /// Why the sources without `sig` have no signature to check.
     #[serde(default)]
     pub unsigned: Option<String>,
+    /// Why the pack may not be redistributed (R23). The package is then a
+    /// recipe: its plan goes into catalogs and origins, its pack into
+    /// none. It has one source, the vendor's file, which each machine
+    /// fetches for itself as `pkg:<name>-src` (`url` and `file`), and it
+    /// builds with `build` alone, packs every machine has.
+    #[serde(default)]
+    pub recipe: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -103,7 +110,7 @@ pub struct Source {
 
 impl Source {
     /// Path under `src/` (and under build/fetch); may contain directories.
-    fn file(&self) -> String {
+    pub(crate) fn file(&self) -> String {
         self.file.clone().unwrap_or_else(|| {
             let last = self.url.rsplit('/').next().unwrap_or("source");
             last.split('?').next().unwrap_or(last).to_string()
@@ -182,11 +189,15 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
         let text = fs::read_to_string(&toml_p)?;
         let mut p: PkgToml =
             toml::from_str(&text).with_context(|| format!("parse {}", toml_p.display()))?;
-        let extra = std::mem::take(&mut p.build);
-        p.build = BASE.iter().map(|b| b.to_string()).collect();
-        for d in extra {
-            if !p.build.contains(&d) {
-                p.build.push(d);
+        if p.recipe.is_some() {
+            check_recipe(repo, &name, &p).with_context(|| format!("pkgs/{name}/pkg.toml"))?;
+        } else {
+            let extra = std::mem::take(&mut p.build);
+            p.build = BASE.iter().map(|b| b.to_string()).collect();
+            for d in extra {
+                if !p.build.contains(&d) {
+                    p.build.push(d);
+                }
             }
         }
         for s in &p.source {
@@ -203,6 +214,41 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
         out.insert(name, p);
     }
     Ok(out)
+}
+
+/// A recipe (R23) is what a machine can rebuild alone: one source file
+/// (the in-pack name is `file`), no tree, vendor or extra files, and build
+/// packs the base profile ships, since every machine has those.
+fn check_recipe(repo: &Path, name: &str, p: &PkgToml) -> Result<()> {
+    if p.recipe.as_deref().is_some_and(str::is_empty) {
+        bail!("recipe says why the pack is not redistributed");
+    }
+    if p.source.len() != 1 || p.tree.is_some() || p.cargo_vendor.is_some() {
+        bail!("a recipe has exactly one [[source]] and no tree or cargo_vendor");
+    }
+    if p.source[0].file().contains('/') {
+        bail!("a recipe's source file is one name, not a path");
+    }
+    let base = oath_core::Profile::load(oath_core::DEFAULT_PROFILE)
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .present_pkgs();
+    for b in &p.build {
+        if !base.contains(b) {
+            bail!("a recipe builds on the machine: pkg:{b} is not in the base profile");
+        }
+    }
+    for e in fs::read_dir(pkgs_dir(repo).join(name))? {
+        let n = e?.file_name().to_string_lossy().into_owned();
+        if n != "pkg.toml" && n != "build.sh" && !n.ends_with(".plan") {
+            bail!("a recipe has only pkg.toml and build.sh; the machine never sees {n}");
+        }
+    }
+    Ok(())
+}
+
+/// Whether `name` is a recipe (R23): `pkgs/<name>/pkg.toml` has `recipe`.
+pub fn is_recipe(all: &BTreeMap<String, PkgToml>, name: &str) -> bool {
+    all.get(name).is_some_and(|p| p.recipe.is_some())
 }
 
 /// A source names its OpenPGP signature and key, or its Sigstore bundle
@@ -419,7 +465,8 @@ fn verify_sig(repo: &Path, s: &Source, file: &Path) -> Result<String> {
             let sums = cached(sums_url)?;
             let who = crate::openpgp::verify(&keys, &sig, &sums[..])?;
             let name = s.url.rsplit('/').next().unwrap_or("");
-            if !lists(&String::from_utf8_lossy(&sums), name, &s.sha256) {
+            let text = String::from_utf8_lossy(&sums);
+            if !lists(&text, name, &s.sha256) && !manifest_lists(&text, name, &s.sha256) {
                 bail!("{sums_url} does not list {name} with sha256 {}", s.sha256);
             }
             Ok(who)
@@ -456,6 +503,18 @@ fn lists(sums: &str, name: &str, sha256: &str) -> bool {
         let mut f = l.split_whitespace();
         matches!((f.next(), f.next()), (Some(h), Some(n))
             if h.eq_ignore_ascii_case(sha256) && n.trim_start_matches('*') == name)
+    })
+}
+
+/// Whether a JSON release manifest (Claude Code's `manifest.json`:
+/// `platforms.<platform>.binary` and `.checksum`) names `name` with `sha256`.
+fn manifest_lists(manifest: &str, name: &str, sha256: &str) -> bool {
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(manifest) else { return false };
+    v["platforms"].as_object().is_some_and(|ps| {
+        ps.values().any(|p| {
+            p["binary"].as_str() == Some(name)
+                && p["checksum"].as_str().is_some_and(|c| c.eq_ignore_ascii_case(sha256))
+        })
     })
 }
 
@@ -600,7 +659,8 @@ fn tree_name(tree: &str) -> &str {
 
 /// Hash a source pack into the store: the verbatim tarballs under `src/`,
 /// the package's `tree` under `src/<name>/`, and the package's own extra
-/// files and directories (configs, patches) under `files/`.
+/// files and directories (configs, patches) under `files/`. A recipe's is
+/// its one file under `src/`, as a machine fetches it.
 fn source_pack(
     repo: &Path,
     cat: &Path,
@@ -608,10 +668,21 @@ fn source_pack(
     files: &[(String, PathBuf)],
     tree: Option<&str>,
     vendor: Option<&str>,
+    recipe: bool,
 ) -> Result<String> {
     let stage = repo.join("build/pkgs/src").join(name);
     let _ = fs::remove_dir_all(&stage);
     fs::create_dir_all(stage.join("src"))?;
+    if recipe {
+        // What a machine's fetch makes of the vendor's file (`pkg.file`):
+        // the file alone, not executable.
+        let [(rel, f)] = files else { bail!("pkg:{name}: a recipe has one source") };
+        let to = stage.join("src").join(rel);
+        fs::copy(f, &to)?;
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&to, fs::Permissions::from_mode(0o644))?;
+        return store(cat, &format!("{name}-src"), &stage);
+    }
     fs::create_dir_all(stage.join("files"))?;
     for (rel, f) in files {
         let to = stage.join("src").join(rel);
@@ -668,8 +739,15 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
     for name in order(&all, &wanted, &lock)? {
         let p = &all[&name];
         let files = fetch(repo, p)?;
-        let src =
-            source_pack(repo, &cat, &name, &files, p.tree.as_deref(), p.cargo_vendor.as_deref())?;
+        let src = source_pack(
+            repo,
+            &cat,
+            &name,
+            &files,
+            p.tree.as_deref(),
+            p.cargo_vendor.as_deref(),
+            p.recipe.is_some(),
+        )?;
         let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.clone() }];
         for d in build_closure(repo, &all, &lock, &name, p) {
             build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(&lock, &d)? });
@@ -1046,6 +1124,17 @@ mod tests {
     }
 
     #[test]
+    fn a_release_manifest_lists_name_and_hash() {
+        let m = r#"{"version": "2.1.292", "platforms": {
+            "darwin-arm64": {"binary": "claude", "checksum": "aaaa", "size": 1},
+            "linux-x64": {"binary": "claude", "checksum": "a967", "size": 2}}}"#;
+        assert!(manifest_lists(m, "claude", "A967"));
+        assert!(!manifest_lists(m, "claude", "ffff"));
+        assert!(!manifest_lists(m, "claude.exe", "a967"));
+        assert!(!manifest_lists("a967  claude\n", "claude", "a967"));
+    }
+
+    #[test]
     fn a_tree_packs_what_git_would_add() {
         let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let files = tree_files(&repo, "apps/rivulet").unwrap();
@@ -1071,9 +1160,10 @@ mod tests {
             assert!(pkgs_dir(&repo).join(name).join("build.sh").is_file(), "pkgs/{name}/build.sh");
         }
         // Every package builds with the base, the base packs with
-        // earlier builds of themselves.
-        for (name, p) in &all {
+        // earlier builds of themselves; a recipe with what it names.
+        for (name, p) in all.iter().filter(|(_, p)| p.recipe.is_none()) {
             assert_eq!(p.build[..BASE.len()], *BASE, "pkgs/{name}");
         }
+        assert_eq!(all["claude-code"].build, ["bash", "coreutils", "grep", "glibc"]);
     }
 }

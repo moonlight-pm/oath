@@ -228,6 +228,17 @@
       "description": "curl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca).",
       "home": "https://curl.se/"
     },
+    "pkg:claude-code": {
+      "present": false,
+      "description": "Claude Code: Anthropic's agentic coding tool for the terminal.",
+      "home": "https://code.claude.com/docs"
+    },
+    "pkg:claude-code-src": {
+      "present": false,
+      "description": "The vendor's Claude Code binary, which plan:claude-code builds from; fetched from downloads.claude.ai when it builds.",
+      "home": "https://code.claude.com/docs"
+    },
+    "plan:claude-code": {},
     "ssh:local": {
       "authorized": []
     },
