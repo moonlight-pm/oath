@@ -118,6 +118,10 @@
   ],
   "run_needs": [
     {
+      "id": "pkg:libx11",
+      "hash": "sha256-b0dc36b6201c46bbd9552cccb7e7338800c735ad0d458df99faaebfa75e7b145"
+    },
+    {
       "id": "pkg:xkeyboard-config",
       "hash": "sha256-089cd18859102859ffedb44ced07e9a1c86e47ddb21dbfbf8f852963af243cf2"
     }
@@ -155,12 +159,14 @@ cat > /out/components.json <<'OATH_EOF'
   }
 ]
 OATH_EOF
-# libxkbcommon, shared, reading xkeyboard-config's slot. No X11 or
-# Wayland tools, no xkbregistry (libxml2), no docs.
+# libxkbcommon, shared, reading xkeyboard-config's slot for keymaps and
+# libX11's for Compose. No X11 or Wayland tools, no xkbregistry
+# (libxml2), no docs.
 tar -xf "$SRC/$SOURCES"
 cd "libxkbcommon-xkbcommon-$VERSION"
 meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release \
 	-Dxkb-config-root=/oath/store/pkg/xkeyboard-config/live/share/xkeyboard-config-2 \
+	-Dx-locale-root=/oath/store/pkg/libx11/live/share/X11/locale \
 	-Denable-x11=false -Denable-wayland=false -Denable-xkbregistry=false -Denable-tools=false \
 	-Denable-docs=false -Denable-bash-completion=false
 ninja -C build -j"$JOBS"

@@ -61,6 +61,9 @@ pub struct Case {
     /// default on every profile.
     #[serde(default)]
     pub profile: Option<String>,
+    /// `false`: a metal case that QEMU cannot run (no GL for Sola's shell).
+    #[serde(default = "yes")]
+    pub qemu: bool,
     pub steps: Vec<Step>,
 }
 
@@ -169,7 +172,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     let tools = crate::tools::load(root)?;
     let output = crate::output::pick(out, opts.output.as_deref(), false)?;
     let profile = output_profile(&output.dir)?;
-    let cases = for_profile(cases, &profile)?;
+    let cases = for_profile(cases.into_iter().filter(|c| c.qemu).collect(), &profile)?;
     let img = qemu::load_image(&output.dir)?;
     let base = out.join("check");
     fs::create_dir_all(&base)?;
@@ -284,6 +287,10 @@ pub fn require_checked(output: &Path) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn yes() -> bool {
+    true
 }
 
 /// The seed profile a build output was packed from (its manifest).

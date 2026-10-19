@@ -11,6 +11,8 @@
 # `run` must exit 0 unless `fails = true`; `expect` / `reject` are
 # substrings of stdout + stderr; `timeout` is seconds (default 60).
 #
+# `qemu = false` keeps a `metal` case off QEMU (Sola's shell needs a GPU).
+#
 # `profile = "base" | "desk"` runs a case only on images of that seed
 # profile (QEMU: the output's manifest; metal: the largest profile whose
 # objects the machine has). By default a case runs on every profile.
@@ -607,6 +609,20 @@ steps = [
   { run = "p=$(oath get svc:rivulet | sed -n 's/^  pid: //p'); ls -l /proc/$p/fd | grep -o '/dev/dri/card[0-9]*\\|/dev/input/event[0-9]*' | sed 's/[0-9]*$//' | sort -u", expect = ["/dev/dri/card", "/dev/input/event"] },
   { run = "stat -c 'mode=%a' /dev/dri/renderD*", expect = ["mode=666"], reject = ["mode=600"] },
   { run = "d=$(ls /tmp/.X11-unix | sed -n 's/^X/:/p' | head -1); timeout 30 xkbcomp \"$d\" /tmp/desk.xkb && echo \"symbols=$(grep -c xkb_symbols /tmp/desk.xkb)\"; rm -f /tmp/desk.xkb", expect = ["symbols=1"] },
+]
+
+[[case]]
+name = "desk-sola"
+about = "Sola runs on the desk: its services are up, and the terminal and the browser open, run a shell and load a page."
+metal = true
+qemu = false
+profile = "desk"
+steps = [
+  { run = "for s in sola-bus sola-call sola-river sola-shell sola-session; do printf '%s ' $s; oath get svc:$s | grep '  state:'; done", expect = ["sola-shell   state: \"running\"", "sola-river   state: \"running\""], reject = ["failed", "restarting"] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-terminal && sleep 5 && solactl compositor windows", expect = ["\"sola-terminal\""] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-terminal" },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-browser && sleep 8 && solactl browser goto https://example.com && sleep 6 && solactl browser tabs", expect = ["Example Domain"], timeout = 90 },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-browser" },
 ]
 
 # ---- Known gaps (acceptance tests for later phases) ------------------

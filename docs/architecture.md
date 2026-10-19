@@ -106,6 +106,17 @@ btrfs
 | DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root; renews the lease |
 | `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |
 
+The `desk` profile adds (R20, R21; `svc:screen` is off):
+
+| Process | From | Runs as |
+|---------|------|---------|
+| `svc:seatd` | `/bin/seatd -u home -g home`; opens DRM and input devices for the seat | root |
+| `svc:rivulet` | `/bin/rivulet -c :`, the compositor (wlroots, DRM, libinput, Xwayland on demand) | `home` |
+| `svc:sola-bus`, `svc:sola-call` | Sola's message bus and call plane (`/run/user/1/sola-*`) | `home` |
+| `svc:sola-river` | Sola's window manager, a client of rivulet's River protocols | `home` |
+| `svc:sola-shell` | the menubar, launcher and switcher | `home` |
+| `svc:sola-session` | launches apps (`sola-terminal`, `sola-browser`); their logs are `/home/.local/state/sola/app-*.log` | `home` |
+
 Every supervised process has its own cgroup,
 `/sys/fs/cgroup/oath/<kind>-<name>`, and writes stdout+stderr into a
 pipe PID 1 drains into its log. Stopping a service signals the whole

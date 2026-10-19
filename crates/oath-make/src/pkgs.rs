@@ -47,6 +47,12 @@ pub struct PkgToml {
     /// this tree, so there is no upstream signature to check.
     #[serde(default)]
     pub tree: Option<String>,
+    /// A Cargo workspace of this repository whose dependencies (crates.io
+    /// and git, pinned by its Cargo.lock) `cargo vendor` on the build host
+    /// puts in the source pack: `src/vendor/` and `src/vendor.toml`, the
+    /// source replacement, with `@VENDOR@` where the directory goes.
+    #[serde(default)]
+    pub cargo_vendor: Option<String>,
     /// Packs on PATH in the build sandbox, by name (pinned from the lock).
     #[serde(default)]
     pub build: Vec<String>,
@@ -187,11 +193,11 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
             check_signed(repo, &p, s)
                 .with_context(|| format!("pkgs/{name}/pkg.toml: {}", s.url))?;
         }
-        if let Some(dir) = &p.tree {
+        for dir in p.tree.iter().chain(p.cargo_vendor.iter()) {
             if dir.split('/').any(|c| c.is_empty() || c == "." || c == "..")
                 || !repo.join(dir).is_dir()
             {
-                bail!("pkgs/{name}/pkg.toml: tree {dir:?} is not a directory of this repository");
+                bail!("pkgs/{name}/pkg.toml: {dir:?} is not a directory of this repository");
             }
         }
         out.insert(name, p);
@@ -516,23 +522,75 @@ fn components(name: &str, p: &PkgToml) -> serde_json::Value {
 
 /// The files of `tree` (a repo directory) that git tracks or would add,
 /// relative to the repo: not what `.gitignore` leaves out (build output).
+/// A submodule (`forks/sola`) is listed by its own git.
 fn tree_files(repo: &Path, tree: &str) -> Result<Vec<String>> {
-    let list = run_out(
-        Command::new("git")
-            .arg("-C")
-            .arg(repo)
-            .args(["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--"])
-            .arg(tree),
-    )?;
+    let submodule = repo.join(tree).join(".git").exists();
+    let mut git = Command::new("git");
+    git.arg("-C").arg(if submodule { repo.join(tree) } else { repo.to_path_buf() });
+    git.args(["ls-files", "-z", "--cached", "--others", "--exclude-standard"]);
+    if !submodule {
+        git.arg("--").arg(tree);
+    }
+    let list = run_out(&mut git)?;
     let files: Vec<String> = list
         .split('\0')
-        .filter(|f| !f.is_empty() && repo.join(f).is_file())
-        .map(String::from)
+        .filter(|f| !f.is_empty())
+        .map(|f| if submodule { format!("{tree}/{f}") } else { f.to_string() })
+        .filter(|f| repo.join(f).is_file())
         .collect();
     if files.is_empty() {
         bail!("tree {tree} has no files");
     }
     Ok(files)
+}
+
+/// `cargo vendor` the workspace at `dir` into `vendor` and return the
+/// source replacement it prints, the directory left as `@VENDOR@`. Crates
+/// for Windows only (`windows*`, `winapi*`; half the bytes, never built
+/// here) keep their manifest and build script, enough for cargo to
+/// resolve them, and an empty checksum list.
+fn cargo_vendor(repo: &Path, dir: &str, vendor: &Path) -> Result<String> {
+    let manifest = repo.join(dir).join("Cargo.toml");
+    let config = run_out(
+        Command::new("cargo")
+            .args(["vendor", "--locked", "--versioned-dirs", "--manifest-path"])
+            .arg(&manifest)
+            .arg(vendor),
+    )?;
+    for e in fs::read_dir(vendor)? {
+        let e = e?;
+        let n = e.file_name().to_string_lossy().into_owned();
+        if !(n.starts_with("windows") || n.starts_with("winapi")) {
+            continue;
+        }
+        let sums: serde_json::Value =
+            serde_json::from_slice(&fs::read(e.path().join(".cargo-checksum.json"))?)?;
+        for f in fs::read_dir(e.path())? {
+            let f = f?;
+            let keep = matches!(f.file_name().to_str(), Some("Cargo.toml" | "build.rs"));
+            if !keep {
+                if f.path().is_dir() {
+                    fs::remove_dir_all(f.path())?;
+                } else {
+                    fs::remove_file(f.path())?;
+                }
+            }
+        }
+        fs::create_dir_all(e.path().join("src"))?;
+        fs::write(e.path().join("src/lib.rs"), "")?;
+        let stub = json!({ "files": {}, "package": sums["package"] });
+        fs::write(e.path().join(".cargo-checksum.json"), stub.to_string())?;
+    }
+    let vendor_str = vendor.to_string_lossy();
+    Ok(config
+        .lines()
+        .filter(|l| !l.starts_with("To use vendored sources"))
+        .map(|l| l.replace(&format!("\"{vendor_str}\""), "\"@VENDOR@\""))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .trim()
+        .to_string()
+        + "\n")
 }
 
 /// The name a package's `tree` has under `src/`: its last component.
@@ -549,6 +607,7 @@ fn source_pack(
     name: &str,
     files: &[(String, PathBuf)],
     tree: Option<&str>,
+    vendor: Option<&str>,
 ) -> Result<String> {
     let stage = repo.join("build/pkgs/src").join(name);
     let _ = fs::remove_dir_all(&stage);
@@ -565,6 +624,10 @@ fn source_pack(
             let rel = f.strip_prefix(tree).unwrap_or(&f).trim_start_matches('/');
             crate::util::copy_file(&repo.join(&f), &to.join(rel))?;
         }
+    }
+    if let Some(dir) = vendor {
+        let config = cargo_vendor(repo, dir, &stage.join("src/vendor"))?;
+        fs::write(stage.join("src/vendor.toml"), config)?;
     }
     for e in fs::read_dir(pkgs_dir(repo).join(name))? {
         let e = e?;
@@ -605,7 +668,8 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
     for name in order(&all, &wanted, &lock)? {
         let p = &all[&name];
         let files = fetch(repo, p)?;
-        let src = source_pack(repo, &cat, &name, &files, p.tree.as_deref())?;
+        let src =
+            source_pack(repo, &cat, &name, &files, p.tree.as_deref(), p.cargo_vendor.as_deref())?;
         let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.clone() }];
         for d in build_closure(repo, &all, &lock, &name, p) {
             build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(&lock, &d)? });
@@ -618,6 +682,9 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
             .with_context(|| format!("pkgs/{name}/build.sh"))?;
         let mut files_list: Vec<String> = files.iter().map(|(rel, _)| rel.clone()).collect();
         files_list.extend(p.tree.as_deref().map(|t| tree_name(t).to_string()));
+        if p.cargo_vendor.is_some() {
+            files_list.extend(["vendor".to_string(), "vendor.toml".to_string()]);
+        }
         let script = format!(
             "# generated by cargo make pkgs from pkgs/{name}/\n\
              SRC=/oath/store/pkg/{name}-src/{src}/src\n\
@@ -813,6 +880,9 @@ pub fn list(repo: &Path) -> Result<()> {
         if let Some(tree) = &p.tree {
             sig.push(format!("tree {tree}"));
         }
+        if let Some(dir) = &p.cargo_vendor {
+            sig.push(format!("cargo vendor {dir}/Cargo.lock"));
+        }
         if !keys.is_empty() {
             sig.push(format!("signed by {}", keys.into_iter().collect::<Vec<_>>().join(", ")));
         }
@@ -982,6 +1052,12 @@ mod tests {
         assert!(files.iter().any(|f| f == "apps/rivulet/Makefile"));
         assert!(files.iter().all(|f| f.starts_with("apps/rivulet/") && !f.contains("/build/")));
         assert_eq!(tree_name("apps/rivulet"), "rivulet");
+        // A submodule is listed by its own git.
+        if repo.join("forks/sola/.git").exists() {
+            let files = tree_files(&repo, "forks/sola").unwrap();
+            assert!(files.iter().any(|f| f == "forks/sola/Cargo.lock"));
+            assert!(files.iter().all(|f| !f.starts_with("forks/sola/target/")));
+        }
     }
 
     #[test]

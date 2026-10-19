@@ -1,0 +1,16 @@
+# The font directories are the font packages' slots, listed in
+# fonts.conf; a new font package adds a line to build.sh. Programs that
+# parse fonts.conf without libfontconfig (Sola's iced) find it through
+# FONTCONFIG_FILE.
+version = "2.18.3"
+license = "HPND-sell-variant AND MIT AND MIT-Modern-Variant AND Unicode-DFS-2016"
+description = "fontconfig, shared, its tools and fonts.conf listing Oath's font packages."
+home = "https://www.freedesktop.org/wiki/Software/fontconfig/"
+purl = "pkg:generic/fontconfig@2.18.3"
+build = ["meson", "ninja", "python", "pkgconf", "gperf", "freetype", "expat"]
+run = ["freetype", "expat"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.18.3/fontconfig-2.18.3.tar.xz"
+sha256 = "4f7b554a38cdf78c033f666c8871f3749e14a094f65a07f630c91ed0b43d35e3"
+unsigned = "a GitLab generic-package dist tarball with only an unsigned .sha256sum; upstream signs the git tag, not the tarball"

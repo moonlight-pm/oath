@@ -1,0 +1,34 @@
+# Sola from oath-sola (forks/sola): the session services PID 1 runs
+# (svc:sola-bus, sola-call, sola-river, sola-shell, sola-session),
+# solactl, sola-terminal and sola-oath, with share/: Sola's, Lucide's and
+# Simple Icons' icons and the McMojave cursors. crates/sola, Sola's own
+# process manager, is not built. Wayland, xkbcommon, EGL and Vulkan are
+# opened at run time, not linked.
+version = "0.1.0"
+license = "LicenseRef-Sola AND ISC AND CC0-1.0 AND GPL-3.0-only"
+description = "Sola: the desktop session on rivulet, and its terminal."
+home = "https://github.com/moonlight-pm/Sola"
+tree = "forks/sola"
+build = ["rust", "pkgconf", "sola-crates"]
+run = [
+	"gcc", "wayland", "libxkbcommon", "mesa", "tmux", "fontconfig", "font-inter",
+	"font-iosevka-term-slab",
+]
+
+[[source]]
+url = "https://github.com/lucide-icons/lucide/archive/423afc6d03c1fb1b86090aa14b13f7f2fa6296e4.tar.gz"
+sha256 = "3c962079818c42c3085ee16042c2bcd57c7011b3725443d95e198ac580172362"
+file = "lucide-423afc6d03c1fb1b86090aa14b13f7f2fa6296e4.tar.gz"
+unsigned = "a GitHub commit archive (Sola's pin); upstream signs no archive"
+
+[[source]]
+url = "https://github.com/simple-icons/simple-icons/archive/48b3f924fdfd227a75abc0563f667825f8a6e714.tar.gz"
+sha256 = "cc37dbf4d7f889667316b6a265288bcbba5e573c08b039e27ee21fbd960489bb"
+file = "simple-icons-48b3f924fdfd227a75abc0563f667825f8a6e714.tar.gz"
+unsigned = "a GitHub commit archive (Sola's pin); upstream signs no archive"
+
+[[source]]
+url = "https://github.com/vinceliuice/McMojave-cursors/archive/7d0bfc1f91028191cdc220b87fd335a235ee4439.tar.gz"
+sha256 = "66150af26f6f6257c4b9160b47cb9569020482ef55ea05b819b14f0663621702"
+file = "McMojave-cursors-7d0bfc1f91028191cdc220b87fd335a235ee4439.tar.gz"
+unsigned = "a GitHub commit archive (Sola's pin); upstream signs no archive"

@@ -1,0 +1,12 @@
+version = "2.1.13"
+license = "BSD-3-Clause AND ISC AND MIT"
+description = "libevent, shared, without OpenSSL: tmux's event loop."
+home = "https://libevent.org/"
+purl = "pkg:github/libevent/libevent@release-2.1.13-stable"
+build = []
+
+[[source]]
+url = "https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz"
+sha256 = "f7e9383b8c0baa81b687e5b5eecc01beefaf1b19b64151d95ed61647fe7a315c"
+sig = "https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz.asc"
+key = "libevent"

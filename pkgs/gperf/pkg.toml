@@ -1,0 +1,13 @@
+version = "3.3"
+license = "GPL-3.0-or-later"
+description = "gperf, the perfect hash generator fontconfig's build needs. A build tool; not in an image."
+home = "https://www.gnu.org/software/gperf/"
+purl = "pkg:generic/gperf@3.3"
+build = []
+run = ["gcc"]
+
+[[source]]
+url = "https://ftp.gnu.org/gnu/gperf/gperf-3.3.tar.gz"
+sha256 = "fd87e0aba7e43ae054837afd6cd4db03a3f2693deb3619085e6ed9d8d9604ad8"
+sig = "https://ftp.gnu.org/gnu/gperf/gperf-3.3.tar.gz.sig"
+key = "gperf"

@@ -1,0 +1,11 @@
+version = "4.1"
+license = "OFL-1.1"
+description = "Inter, the desk's UI typeface (Sola asks for SF Pro, which Apple licenses only for its own platforms)."
+home = "https://rsms.me/inter/"
+purl = "pkg:github/rsms/inter@v4.1"
+build = ["python"]
+
+[[source]]
+url = "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip"
+sha256 = "9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e"
+unsigned = "a GitHub release asset; upstream publishes no signature or checksum"

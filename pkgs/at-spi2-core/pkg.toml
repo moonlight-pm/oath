@@ -1,0 +1,13 @@
+# patches/: libxml2 is only for the tests, which are not built.
+version = "2.62.1"
+license = "LGPL-2.1-or-later"
+description = "at-spi2-core: libatspi, libatk-1.0 and libatk-bridge-2.0 (CEF's accessibility)."
+home = "https://gitlab.gnome.org/GNOME/at-spi2-core"
+purl = "pkg:generic/at-spi2-core@2.62.1"
+build = ["meson", "ninja", "python", "pkgconf", "glib", "dbus"]
+run = ["glib", "dbus"]
+
+[[source]]
+url = "https://download.gnome.org/sources/at-spi2-core/2.62/at-spi2-core-2.62.1.tar.xz"
+sha256 = "cca6b6a86e4389d89b370288761ce2385ddeceb10c4412da78689bc30c88af2d"
+unsigned = "GNOME publishes its tarballs with a sha256sum file over HTTPS, not a signature"

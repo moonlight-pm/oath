@@ -1,0 +1,14 @@
+# The legacy make build (no gyp). NSS's own SQLite is built in, as
+# libsqlite3.so; a future pkg:sqlite would clash with it.
+version = "3.131"
+license = "MPL-2.0 AND MIT AND Apache-2.0 AND BSD-3-Clause AND blessing"
+description = "NSS, shared: CEF's certificates and crypto."
+home = "https://firefox-source-docs.mozilla.org/security/nss/"
+purl = "pkg:generic/nss@3.131"
+build = ["perl", "nspr", "zlib"]
+run = ["nspr", "zlib"]
+
+[[source]]
+url = "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_131_RTM/src/nss-3.131.tar.gz"
+sha256 = "ca0005bc77e9255d9942103e6f9756cfe311a3df72afa99860709e386eb3c167"
+unsigned = "Mozilla publishes NSS with SHA256SUMS files only, no signature"

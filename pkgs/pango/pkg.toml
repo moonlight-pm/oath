@@ -1,0 +1,15 @@
+version = "1.58.2"
+license = "LGPL-2.0-or-later"
+description = "Pango, shared: text layout (CEF)."
+home = "https://gitlab.gnome.org/GNOME/pango"
+purl = "pkg:generic/pango@1.58.2"
+build = [
+	"meson", "ninja", "python", "pkgconf", "glib", "harfbuzz", "fribidi", "fontconfig",
+	"freetype", "cairo",
+]
+run = ["glib", "harfbuzz", "fribidi", "fontconfig", "freetype", "cairo", "gcc"]
+
+[[source]]
+url = "https://download.gnome.org/sources/pango/1.58/pango-1.58.2.tar.xz"
+sha256 = "342385b6ca3b7c73455d7c80a13b7dbe4489e00bc3bd4c5bd6ed4dce421e374a"
+unsigned = "GNOME publishes its tarballs with a sha256sum file over HTTPS, not a signature"

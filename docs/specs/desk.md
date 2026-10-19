@@ -7,8 +7,9 @@ built natively from `pkgs/`, with Sola on top. It is phase 8 of the
 ([scope.md](scope.md)) builds on it.
 
 **Status:** built and running on canto since 2026-10-18 (the `desk`
-profile, R20): rivulet drives DP-10 with radeonsi on ACO, input comes
-through seatd, and Xwayland serves X clients. Sola is not there yet.
+profile, R20, R21): rivulet drives DP-10 with radeonsi on ACO, input
+comes through seatd, Xwayland serves X clients, and Sola's session runs
+with its terminal and browser. No audio yet.
 
 ## Packages (built)
 
@@ -85,10 +86,46 @@ metal) asserts seatd and rivulet run, rivulet holds a `card` and
 `event` nodes that seatd opened, a connector is connected, render nodes
 are 0666, and an X client gets a keymap through Xwayland.
 
+## Sola (built)
+
+Sola comes from oath-sola (`forks/sola`, merged with Sola `master` on
+2026-10-18). It builds offline: `pkg:sola-crates` is `cargo vendor` of
+its Cargo.lock (`cargo_vendor = "forks/sola"`, 1.1k crates, the git ones
+too), and `pkg:sola` and `pkg:sola-browser` build from the tree
+(`tree = "forks/sola"`) with `pkg:rust`.
+
+| Package | What |
+|---------|------|
+| `sola` | `sola-bus`, `sola-call`, `sola-river`, `sola-shell`, `sola-session`, `solactl`, `sola-terminal`, `sola-oath`; `share/`: Sola's, Lucide's and Simple Icons' icons, the McMojave cursors (pinned GitHub archives, as Sola pins them) |
+| `sola-browser` | `sola-browser`, with `cef/` linked to `pkg:cef` and a RUNPATH into CEF's `Release` |
+| `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader), `cef/Resources`; 539 MB |
+| CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
+| Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif and serif to Inter, monospace to Iosevka Term Slab), `freetype`, `font-inter`, `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
+| Terminal | `tmux`, `libevent` |
+
+PID 1 runs Sola's processes as `home` services (`svc:sola-bus`,
+`sola-call`, `sola-river` wanting `svc:rivulet`, `sola-shell`,
+`sola-session`); `crates/sola`, Sola's own process manager, is neither
+built nor run. Their environment names what NixOS gets from its
+session: `XCURSOR_PATH`/`XCURSOR_THEME` (rivulet too),
+`FONTCONFIG_FILE` (iced parses fonts.conf itself), `SHELL=/bin/bash`
+and `SOLA_LOG_DIR=/home/.local/state/sola` (`/oath/log` is root's;
+apps log to `app-<name>.log` there). `host:local` sets
+`LANG=en_US.UTF-8` (tmux refuses a non-UTF-8 locale) and
+`SSL_CERT_FILE` (curl's Mozilla bundle, for rustls in the browser's
+vault). Apps open with `solactl session launch sola-terminal` or
+`sola-browser`. wgpu runs on GL through Mesa's EGL; there is no Vulkan
+loader.
+
+The `desk-sola` case (metal only: `qemu = false`) checks the services,
+opens the terminal and the browser and loads `https://example.com`.
+
 ## Signatures to watch
 
-Seven keys were added for the desk (Joshua, 2026-10-18). Facts that
-will matter at the next version bump:
+Fourteen keys were added for the desk (Joshua, 2026-10-18): seven for
+rivulet's libraries and seven for Sola's (freetype, gperf, libevent,
+pcre2, dbus, cups, alsa). cmake's was approved too, but CEF's wrapper
+needs cmake only on Windows and macOS, so it is not in `pkgs/keys`. Facts that will matter at the next version bump:
 
 - `hutterer` is DSA-1024 and signs with SHA-1 (libevdev, Xwayland,
   xkbcomp, libXfont2). Xwayland's signer alternates: Olivier Fourdan
@@ -108,21 +145,34 @@ will matter at the next version bump:
   wayland-protocols' release managers rotate (Samuel Pitoiset, Jonas
   Ådahl signed earlier releases).
 - `gmp` (Niels Möller) had expired before it signed nettle 4.0.
+- `libevent`'s signing subkey expires 2027-06-16; `dbus`'s 2028-07-27.
+  CEF moves on (147.0.14 on its branch, 152 to 154 stable): a bump is a
+  new Sola `cef-version` and a new pin.
 
-Twelve sources have no signature the verifier can check, each saying
-why in its `pkg.toml`: libffi, libudev-zero, libxkbcommon, seatd,
-libepoxy, mako and PyYAML publish none; libinput (since 1.19.4)
+For rivulet's libraries, twelve sources have no signature the verifier
+can check, each saying why in its `pkg.toml`: libffi, libudev-zero,
+libxkbcommon, seatd, libepoxy, mako and PyYAML publish none; libinput (since 1.19.4)
 and hwdata sign only git tags; pixman signs only an inline-signed sha512
 list; MarkupSafe and packaging have PEP 740 attestations (Sigstore DSSE),
 which `sigstore.rs` does not read. Teaching the verifier those two
 formats would sign three of them. Forge tag archives (libinput,
 libudev-zero, libxkbcommon, hwdata) can be regenerated with new bytes;
-a sha256 mismatch on one of those is not by itself an attack.
+a sha256 mismatch on one of those is not by itself an attack. Sola's
+stack adds: GNOME's tarballs (glib, at-spi2-core, pango; sha256sum
+files only), Mozilla's (nspr, nss; SHA256SUMS only), GitHub release
+assets (tmux, harfbuzz, fribidi, the fonts, Sola's icon archives),
+fontconfig's GitLab package, cairo's inline-signed sha256sum (the
+pixman format), and CEF (Spotify's CDN, sha1 and sha256 only).
 
 ## Known defects
 
-- No window manager runs yet (Sola is next), so nothing maps a window
-  and rivulet's output is empty.
+- Sola's shell has no GL context in QEMU (softpipe gives wgpu no GLES 3
+  context), so Sola runs only on a machine with a GPU Mesa drives; the
+  `desk-sola` case is metal only.
+- Fonts: Inter and Iosevka Term Slab only, so Arabic, Hebrew, CJK and
+  emoji show boxes; the set is Joshua's to choose (decisions, Open).
+- No audio (PipeWire), no session D-Bus (CEF and at-spi2 log about it),
+  no Bluetooth: the shell's audio and Bluetooth menus are empty.
 - The desk image carries all of `pkg:gcc` (393 MB) because Mesa loads
   libstdc++ and libgcc_s; a runtime-only split of GCC's libraries would
   save it.
@@ -138,7 +188,6 @@ a sha256 mismatch on one of those is not by itself an attack.
 
 ## Target
 
-- **Sola natively.** oath-sola starts and reaps `rivulet`, not `river`
-  (`forks/sola/crates/sola/src/river.rs`); then audio, fonts and Sola's
-  own packages.
+- **Audio** (PipeWire), a session bus, and the font set (Open).
+- **Sola's other apps** when Joshua wants them (R21).
 - **Later:** Vulkan (RADV), 32-bit Mesa and glibc for Steam.

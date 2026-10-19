@@ -129,8 +129,8 @@ on wlroots and a hard fork without Zig (R19, 2026-10-18).
 
 Slice 2, the desk: rivulet and its 41 packages (Mesa with ACO and GLX,
 wlroots, libinput, Xwayland and the X libraries) build natively, and
-the `desk` profile (seatd, R20) runs rivulet on canto (2026-10-18;
-[specs/desk.md](specs/desk.md)).
+the `desk` profile (seatd, R20) runs rivulet and Sola's session, terminal
+and browser on canto (R21; 2026-10-18; [specs/desk.md](specs/desk.md)).
 
 ## 9. Steam + Minecraft desk — planned
 

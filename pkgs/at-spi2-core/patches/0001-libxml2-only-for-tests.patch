@@ -1,0 +1,21 @@
+--- a/meson.build
++++ b/meson.build
+@@ -151,7 +151,7 @@
+   endif
+ endif
+ gmodule_dep = dependency('gmodule-2.0', version: gmodule_req_version)
+-libxml_dep = dependency('libxml-2.0', version: libxml_req_version)
++libxml_dep = dependency('libxml-2.0', version: libxml_req_version, required: false)
+ 
+ x11_deps = []
+ x11_dep = dependency('x11', required: get_option('x11'))
+@@ -222,7 +222,8 @@
+   subdir('registryd')
+   subdir('droute')
+   subdir('atk-adaptor')
+-  subdir('tests')
++  # Oath: tests need libxml2, which nothing else here does.
++  # subdir('tests')
+   if python.found()
+     subdir('python')
+   endif

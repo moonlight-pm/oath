@@ -1,0 +1,11 @@
+--- a/cups/dest.c
++++ b/cups/dest.c
+@@ -127,6 +127,8 @@
+   cups_dest_t	*dests;			/* Destinations */
+   char		def_name[1024],		/* Default printer name, if any */
+ 		*def_instance;		/* Default printer instance, if any */
++  int		num_local;		/* Number of local cupsd queues (Oath: used without DNS-SD too) */
++  cups_dest_t	*local_dests;		/* Local cupsd queues */
+ } _cups_getdata_t;
+ 
+ typedef struct _cups_namedata_s

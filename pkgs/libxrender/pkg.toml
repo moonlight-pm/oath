@@ -1,0 +1,13 @@
+version = "0.9.13"
+license = "HPND-sell-variant"
+description = "libXrender, shared: the RENDER extension (libXrandr)."
+home = "https://www.x.org/"
+purl = "pkg:generic/libXrender@0.9.13"
+build = ["pkgconf", "xorgproto", "libx11"]
+run = ["libx11"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXrender-0.9.13.tar.xz"
+sha256 = "3fe88c609df6782e1e7af2e4de36b2563d70cd70ff7dcb1cda561ad64912bb64"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libXrender-0.9.13.tar.xz.sig"
+key = "coopersmith"

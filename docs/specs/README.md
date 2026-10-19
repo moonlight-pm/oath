@@ -15,7 +15,7 @@ in [../decisions.md](../decisions.md).
 | [network-and-ssh.md](network-and-ssh.md) | `net`, `ssh`, the `home` account, `sudo` | partly built |
 | [devices.md](devices.md) | `dev`, modules, firmware | partly built |
 | [boot-and-install.md](boot-and-install.md) | The one kernel, `oath-efi`, profiles, overlays, install | partly built |
-| [desk.md](desk.md) | The graphical session: rivulet, wlroots, Mesa, libinput, Xwayland, and the seat | running on canto (no Sola yet) |
+| [desk.md](desk.md) | The graphical session: rivulet, wlroots, Mesa, Xwayland, the seat, Sola | running on canto |
 | [agent.md](agent.md) | `oath mcp`: the verbs as MCP tools over SSH; the real-model acceptance check | partly built (phase 7) |
 
 Each spec has a **Status** line, then sections labelled *built*, *known

@@ -1,0 +1,13 @@
+version = "1.5.5"
+license = "HPND-sell-variant"
+description = "libXrandr, shared: the RandR extension (CEF)."
+home = "https://www.x.org/"
+purl = "pkg:generic/libXrandr@1.5.5"
+build = ["pkgconf", "xorgproto", "libx11", "libxext", "libxrender"]
+run = ["libx11", "libxext", "libxrender"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXrandr-1.5.5.tar.xz"
+sha256 = "72b922c2e765434e9e9f0960148070bd4504b288263e2868a4ccce1b7cf2767a"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libXrandr-1.5.5.tar.xz.sig"
+key = "coopersmith"

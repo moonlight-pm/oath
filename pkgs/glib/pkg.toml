@@ -1,0 +1,12 @@
+version = "2.90.1"
+license = "LGPL-2.1-or-later"
+description = "GLib, GObject and GIO, shared: CEF's, at-spi2-core's and pango's base."
+home = "https://gitlab.gnome.org/GNOME/glib"
+purl = "pkg:generic/glib@2.90.1"
+build = ["meson", "ninja", "python", "pkgconf", "pcre2", "libffi", "zlib"]
+run = ["pcre2", "libffi", "zlib"]
+
+[[source]]
+url = "https://download.gnome.org/sources/glib/2.90/glib-2.90.1.tar.xz"
+sha256 = "93c941aa17d5eb1d53fe838365f29a8b4e539c222a256d974ec8f30fc413e396"
+unsigned = "GNOME publishes its tarballs with a sha256sum file over HTTPS, not a signature"

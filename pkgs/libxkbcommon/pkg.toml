@@ -5,7 +5,7 @@ description = "libxkbcommon, shared: keymaps and key state, reading xkeyboard-co
 home = "https://xkbcommon.org/"
 purl = "pkg:github/xkbcommon/libxkbcommon@xkbcommon-1.13.2"
 build = ["meson", "ninja", "python", "pkgconf", "bison", "xkeyboard-config"]
-run = ["xkeyboard-config"]
+run = ["xkeyboard-config", "libx11"]
 
 [[source]]
 url = "https://github.com/xkbcommon/libxkbcommon/archive/refs/tags/xkbcommon-1.13.2.tar.gz"

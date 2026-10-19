@@ -1,0 +1,11 @@
+version = "4.40"
+license = "MPL-2.0"
+description = "NSPR, shared: the portable runtime under NSS (CEF)."
+home = "https://firefox-source-docs.mozilla.org/nspr/"
+purl = "pkg:generic/nspr@4.40"
+build = ["perl"]
+
+[[source]]
+url = "https://ftp.mozilla.org/pub/nspr/releases/v4.40/src/nspr-4.40.tar.gz"
+sha256 = "c0c1884c627f3db7a783f7c7314c695226b2043696791d15519e7e0578c19bdc"
+unsigned = "Mozilla publishes NSPR with SHA256SUMS files only, no signature"

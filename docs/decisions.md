@@ -8,6 +8,12 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 - **Steam + Minecraft desk.** Which machine, and when. Not before the
   native desk exists.
+- **The desk's fonts.** Sola asks for SF Pro (UI) and Iosevka Term
+  Slab (mono). Apple licenses SF Pro only for mock-ups of software for
+  its own platforms, so it cannot ship in Oath's packages. The desk
+  uses Inter and Iosevka Term Slab (OFL); pages in scripts neither
+  covers (Arabic, Hebrew, CJK) show boxes. Joshua (2026-10-18) may pick
+  a different set (Noto would cover those scripts).
 - **Permissive alternatives.** Joshua (2026-10-16) would like
   permissive replacements for the GPL packages (btrfs-progs,
   util-linux, dosfstools) some day; not now. R17 and R18 (GCC, glibc,
@@ -37,6 +43,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R18 | No busybox: one GNU tool for each job. bash (also `/bin/sh`), coreutils, sed, grep, gawk, findutils, diffutils, patch, tar, gzip, xz, procps-ng, less and iproute2; dhcpcd is the DHCP client and chrony keeps time (`svc:time`, still pool.ntp.org, R12); vim is the editor, and iputils gives `ping`. `reboot`, `poweroff` and `halt` are PID 1's own binary, as `modprobe` is. Why: R17 made Oath a GNU system, upstream builds assume GNU tools, and each busybox applet duplicated one (awk beside gawk, wget beside curl, mount beside util-linux). | Decided by Joshua 2026-10-17; built 2026-10-17 (phase 8, slice 1) |
 | R19 | Oath's compositor is River ported to C on wlroots and named rivulet: a hard fork of River 0.4.5 (upstream `f6d9617` and Oath's five patches), its source in `apps/rivulet/`, GPL-3.0-only like its origin. It serves the same protocols (river-window-management-v1 at version 4 and the other `river-*` protocols), so `sola-river` drives it unchanged. Upstream River and Zig leave the build (R9); `forks/river` goes when rivulet runs Sola. One Rust process that merges the compositor and `sola-river` (`sola-wm`, on Smithay) is a possible later goal, built in Sola, not Oath. Why: Sola uses a small part of River's protocol, and wlroots keeps Xwayland, capture and the drivers' edge cases someone else's problem; a Smithay rewrite of River's protocol would take Smithay's gaps and River's complexity at once. | Decided by Joshua 2026-10-18 |
 | R20 | The desk's seat is seatd: `svc:seatd` runs as root and gives `home` the GPU's display node and the input devices through libseat (`-u home -g home`; rivulet sets `LIBSEAT_BACKEND=seatd`). No logind, no udevd: PID 1 opens the render nodes to everyone (GL clients open them themselves) and passes kernel uevents on to libudev-zero (netlink group 4). The `desk` seed profile extends `base` with `svc:seatd`, `svc:rivulet` (as `home`) and their packages, and turns `svc:screen` off. Why: it is what worked on the pre-cut desk, and seatd revokes devices on a VT switch where libseat's noop backend cannot. | Decided by Joshua 2026-10-18 |
+| R21 | Sola on the desk is its session (bus, call, the River window manager, shell, session manager) as `svc:sola-*` under PID 1, with two apps: the terminal and the browser. Other Sola apps wait. Sola is built from oath-sola (`forks/sola`, kept merged with Sola `master`) by `pkg:rust`, offline against `pkg:sola-crates` (`cargo vendor` of its Cargo.lock); the browser runs on CEF, the vendor's binary release (R7), with its library stack built here. | Decided by Joshua 2026-10-18 |
 
 ## Standing
 

@@ -43,7 +43,13 @@ key = "m4"                 # pkgs/keys/m4.asc
 - `tree = "apps/<dir>"` (package level): first-party source from this
   repository, not an upstream's. What git tracks or would add there
   goes into the source pack as `src/<dir>/`, so ignored build output
-  stays out; the manifest names the tree and the commit.
+  stays out (a submodule, `forks/sola`, is listed by its own git); the
+  manifest names the tree and the commit.
+- `cargo_vendor = "<dir>"` (package level): the crates a Cargo
+  workspace of this repository locks, crates.io and git alike, pinned
+  by its `Cargo.lock`: `cargo vendor` on the build host writes them to
+  `src/vendor/` with the source replacement in `src/vendor.toml`.
+  Windows-only crates keep only their manifests (`pkg:sola-crates`).
 
 Every fetch checks the sha256 pin, then the signature (cached under
 `build/fetch/sig/`). A key file holds exactly the key that signs the

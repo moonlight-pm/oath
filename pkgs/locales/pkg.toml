@@ -1,0 +1,7 @@
+# glibc's localedir is /lib/locale (R17); this pack's lib/locale is
+# linked there. The sources are pkg:glibc's share/i18n.
+version = "2.44"
+license = "LGPL-2.1-or-later"
+description = "Compiled locales C.UTF-8 and en_US.UTF-8, from glibc's sources."
+home = "https://www.gnu.org/software/libc/"
+build = []

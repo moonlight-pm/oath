@@ -117,7 +117,7 @@
     },
     {
       "id": "pkg:libxkbcommon",
-      "hash": "sha256-5b04e58574fd7b393bcfa7abee18286ba852a3eb4b025a0857d492e40d5abba7"
+      "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f"
     },
     {
       "id": "pkg:libxkbfile",
@@ -243,7 +243,7 @@
     },
     {
       "id": "pkg:libxkbcommon",
-      "hash": "sha256-5b04e58574fd7b393bcfa7abee18286ba852a3eb4b025a0857d492e40d5abba7"
+      "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f"
     },
     {
       "id": "pkg:pixman",

@@ -16,14 +16,14 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `deccfcf151b6`, the `desk` profile
-  (R20: base plus seatd, rivulet and their packages), installed on
-  2026-10-18 with `cargo make install --target home@10.0.0.3 --disk
-  /dev/sda --hostname canto --overlay hosts/canto.json --output
-  deccfcf151b6 --confirm`. The base system before it was
-  `218fd2e1e03b` (GCC and glibc, R17, R18). Passes all 37 `metal`
-  cases on the desk (`cargo make check --target home@10.0.0.3`,
-  2026-10-18), the `desk` case among them.
+- **Running now:** build output `046e945ded35`, the `desk` profile
+  (R20, R21: base plus seatd, rivulet, Sola with its terminal and
+  browser, and their packages), installed on 2026-10-18 with `cargo
+  make install --target home@10.0.0.3 --disk /dev/sda --hostname canto
+  --overlay hosts/canto.json --output 046e945ded35 --confirm`. Passes
+  all 38 `metal` cases (`cargo make check --target home@10.0.0.3`),
+  `desk` and `desk-sola` among them. The base system before it was
+  `218fd2e1e03b` (GCC and glibc, R17, R18).
 - **Backup:** `backup-send` mounts the NAS export as NFS 4.0
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no
   version). Mounting and unmounting it was checked on 2026-10-18; the
@@ -36,9 +36,10 @@ Overwrite this file when facts change; do not append a diary.
   until amdgpu loads (about 8 s after `svc:rivulet` starts, which waits
   for it), then rivulet modesets DP-10 and renders with radeonsi on
   ACO (`pitcairn, ACO`), both GPUs open; libinput has the Razer Taipan
-  and the Apple Magic Keyboard through seatd. With no window manager
-  yet the output is empty. `svc:screen` (the `home` shell on tty1) is
-  off in the desk profile.
+  and the Apple Magic Keyboard through seatd. Sola's menubar is up;
+  `solactl session launch sola-terminal` or `sola-browser` opens an
+  app (`XDG_RUNTIME_DIR=/run/user/1`), and `solactl compositor
+  screenshot -o <png>` captures the screen. `svc:screen` is off.
 - **Modules:** at boot ahci, sd_mod, tg3, xhci_pci, ehci_pci, usbhid,
   hid_apple, hid_generic, btusb, i2c_i801, evdev, x86_pkg_temp_thermal; after
   services start amdgpu (both GPUs) and snd_hda_intel with the Cirrus

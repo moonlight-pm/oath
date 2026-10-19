@@ -1,6 +1,12 @@
 {
   "extends": "base",
   "objects": {
+    "host:local": {
+      "env": {
+        "LANG": "en_US.UTF-8",
+        "SSL_CERT_FILE": "/oath/store/pkg/curl/live/ssl/cert.pem"
+      }
+    },
     "svc:screen": {
       "enabled": false
     },
@@ -31,8 +37,131 @@
       "enabled": true,
       "user": "home",
       "env": {
-        "LIBSEAT_BACKEND": "seatd"
+        "LIBSEAT_BACKEND": "seatd",
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave"
       }
+    },
+    "svc:sola-bus": {
+      "exec": [
+        "/bin/sola-bus"
+      ],
+      "wants": [],
+      "restart": "always",
+      "enabled": true,
+      "user": "home",
+      "env": {
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave",
+        "SOLA_LOG_DIR": "/home/.local/state/sola",
+        "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
+        "SHELL": "/bin/bash"
+      }
+    },
+    "svc:sola-call": {
+      "exec": [
+        "/bin/sola-call"
+      ],
+      "wants": [
+        "svc:sola-bus"
+      ],
+      "restart": "always",
+      "enabled": true,
+      "user": "home",
+      "env": {
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave",
+        "SOLA_LOG_DIR": "/home/.local/state/sola",
+        "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
+        "SHELL": "/bin/bash"
+      }
+    },
+    "svc:sola-river": {
+      "exec": [
+        "/bin/sola-river"
+      ],
+      "wants": [
+        "svc:rivulet",
+        "svc:sola-bus",
+        "svc:sola-call"
+      ],
+      "restart": "always",
+      "enabled": true,
+      "user": "home",
+      "env": {
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave",
+        "SOLA_LOG_DIR": "/home/.local/state/sola",
+        "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
+        "SHELL": "/bin/bash"
+      }
+    },
+    "svc:sola-shell": {
+      "exec": [
+        "/bin/sola-shell"
+      ],
+      "wants": [
+        "svc:sola-river"
+      ],
+      "restart": "on-failure",
+      "enabled": true,
+      "user": "home",
+      "env": {
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave",
+        "SOLA_LOG_DIR": "/home/.local/state/sola",
+        "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
+        "SHELL": "/bin/bash"
+      }
+    },
+    "svc:sola-session": {
+      "exec": [
+        "/bin/sola-session"
+      ],
+      "wants": [
+        "svc:sola-bus",
+        "svc:sola-call"
+      ],
+      "restart": "on-failure",
+      "enabled": true,
+      "user": "home",
+      "env": {
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave",
+        "SOLA_LOG_DIR": "/home/.local/state/sola",
+        "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
+        "SHELL": "/bin/bash"
+      }
+    },
+    "pkg:alsa-lib": {
+      "present": true,
+      "description": "alsa-lib, shared, and its configuration: sound devices (CEF).",
+      "home": "https://www.alsa-project.org/"
+    },
+    "pkg:at-spi2-core": {
+      "present": true,
+      "description": "at-spi2-core: libatspi, libatk-1.0 and libatk-bridge-2.0 (CEF's accessibility).",
+      "home": "https://gitlab.gnome.org/GNOME/at-spi2-core"
+    },
+    "pkg:cairo": {
+      "present": true,
+      "description": "cairo, shared: image surfaces with FreeType and fontconfig (pango, CEF).",
+      "home": "https://www.cairographics.org/"
+    },
+    "pkg:cef": {
+      "present": true,
+      "description": "CEF, the Chromium Embedded Framework, for sola-browser.",
+      "home": "https://bitbucket.org/chromiumembedded/cef"
+    },
+    "pkg:cups": {
+      "present": true,
+      "description": "libcups.so.2, the CUPS client library CEF prints through.",
+      "home": "https://openprinting.github.io/cups/"
+    },
+    "pkg:dbus": {
+      "present": true,
+      "description": "D-Bus: libdbus, shared, and the message bus (at-spi2-core, CEF).",
+      "home": "https://www.freedesktop.org/wiki/Software/dbus/"
     },
     "pkg:elfutils": {
       "present": true,
@@ -44,10 +173,45 @@
       "description": "libexpat, shared: wayland-scanner's and Mesa's XML parser.",
       "home": "https://libexpat.github.io/"
     },
+    "pkg:font-inter": {
+      "present": true,
+      "description": "Inter, the desk's UI typeface (Sola asks for SF Pro, which Apple licenses only for its own platforms).",
+      "home": "https://rsms.me/inter/"
+    },
+    "pkg:font-iosevka-term-slab": {
+      "present": true,
+      "description": "Iosevka Term Slab, the desk's monospace typeface (terminal, code).",
+      "home": "https://typeof.net/Iosevka/"
+    },
+    "pkg:fontconfig": {
+      "present": true,
+      "description": "fontconfig, shared, its tools and fonts.conf listing Oath's font packages.",
+      "home": "https://www.freedesktop.org/wiki/Software/fontconfig/"
+    },
+    "pkg:freetype": {
+      "present": true,
+      "description": "FreeType, shared: font rasterizing for fontconfig, cairo, pango and CEF.",
+      "home": "https://freetype.org/"
+    },
+    "pkg:fribidi": {
+      "present": true,
+      "description": "GNU FriBidi, shared: the Unicode bidirectional algorithm for pango.",
+      "home": "https://github.com/fribidi/fribidi"
+    },
     "pkg:gcc": {
       "present": true,
       "description": "GCC 16 (C, C++) and binutils 2.47. cc / c++ link dynamically against glibc through /lib.",
       "home": "https://gcc.gnu.org/"
+    },
+    "pkg:glib": {
+      "present": true,
+      "description": "GLib, GObject and GIO, shared: CEF's, at-spi2-core's and pango's base.",
+      "home": "https://gitlab.gnome.org/GNOME/glib"
+    },
+    "pkg:harfbuzz": {
+      "present": true,
+      "description": "HarfBuzz, shared, with FreeType and GLib: text shaping for pango.",
+      "home": "https://harfbuzz.github.io/"
     },
     "pkg:libdisplay-info": {
       "present": true,
@@ -68,6 +232,11 @@
       "present": true,
       "description": "libevdev, shared: how libinput reads input devices.",
       "home": "https://www.freedesktop.org/wiki/Software/libevdev/"
+    },
+    "pkg:libevent": {
+      "present": true,
+      "description": "libevent, shared, without OpenSSL: tmux's event loop.",
+      "home": "https://libevent.org/"
     },
     "pkg:libffi": {
       "present": true,
@@ -104,9 +273,19 @@
       "description": "libxcb, shared, with every extension library (composite, glx, dri3, present, render, res, xfixes, ...).",
       "home": "https://www.x.org/"
     },
+    "pkg:libxcomposite": {
+      "present": true,
+      "description": "libXcomposite, shared: the Composite extension (CEF).",
+      "home": "https://www.x.org/"
+    },
     "pkg:libxcvt": {
       "present": true,
       "description": "libxcvt, shared, and cvt: VESA CVT modelines (Xwayland's mode list).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxdamage": {
+      "present": true,
+      "description": "libXdamage, shared: the DAMAGE extension (CEF).",
       "home": "https://www.x.org/"
     },
     "pkg:libxext": {
@@ -134,6 +313,16 @@
       "description": "libxkbfile, shared: XKB file handling for xkbcomp.",
       "home": "https://www.x.org/"
     },
+    "pkg:libxrandr": {
+      "present": true,
+      "description": "libXrandr, shared: the RandR extension (CEF).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxrender": {
+      "present": true,
+      "description": "libXrender, shared: the RENDER extension (libXrandr).",
+      "home": "https://www.x.org/"
+    },
     "pkg:libxshmfence": {
       "present": true,
       "description": "libxshmfence, shared: the DRI3 fences Xwayland and GLX share.",
@@ -143,6 +332,11 @@
       "present": true,
       "description": "libXxf86vm, shared: XF86VidMode, which Mesa's direct GLX calls.",
       "home": "https://www.x.org/"
+    },
+    "pkg:locales": {
+      "present": true,
+      "description": "Compiled locales C.UTF-8 and en_US.UTF-8, from glibc's sources.",
+      "home": "https://www.gnu.org/software/libc/"
     },
     "pkg:mesa": {
       "present": true,
@@ -159,6 +353,26 @@
       "description": "Nettle, shared, without public-key code: Xwayland's SHA-1.",
       "home": "https://www.lysator.liu.se/~nisse/nettle/"
     },
+    "pkg:nspr": {
+      "present": true,
+      "description": "NSPR, shared: the portable runtime under NSS (CEF).",
+      "home": "https://firefox-source-docs.mozilla.org/nspr/"
+    },
+    "pkg:nss": {
+      "present": true,
+      "description": "NSS, shared: CEF's certificates and crypto.",
+      "home": "https://firefox-source-docs.mozilla.org/security/nss/"
+    },
+    "pkg:pango": {
+      "present": true,
+      "description": "Pango, shared: text layout (CEF).",
+      "home": "https://gitlab.gnome.org/GNOME/pango"
+    },
+    "pkg:pcre2": {
+      "present": true,
+      "description": "PCRE2, shared (8-bit, with JIT): glib's regular expressions.",
+      "home": "https://github.com/PCRE2Project/pcre2"
+    },
     "pkg:pixman": {
       "present": true,
       "description": "pixman, shared: wlroots' software renderer and buffer maths.",
@@ -173,6 +387,21 @@
       "present": true,
       "description": "seatd and libseat: who may open the GPU and input devices (wlroots' session).",
       "home": "https://sr.ht/~kennylevinsen/seatd/"
+    },
+    "pkg:sola": {
+      "present": true,
+      "description": "Sola: the desktop session on rivulet, and its terminal.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-browser": {
+      "present": true,
+      "description": "Sola's browser: iced chrome on CEF.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:tmux": {
+      "present": true,
+      "description": "tmux, which sola-terminal runs every shell in.",
+      "home": "https://github.com/tmux/tmux/wiki"
     },
     "pkg:wayland": {
       "present": true,
