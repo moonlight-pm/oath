@@ -38,11 +38,11 @@
 <section id="works">
 <h2>What works today</h2>
 <dl class="features">
-<div><dt>PID 1</dt><dd>Runs only applied <code>svc</code> specs, each in its own cgroup with its own log. Restarts a failing service with backoff, then marks it <code>failed</code> with a reason. Stops services in reverse order at shutdown, loads kernel modules by modalias, and survives its own panic.</dd></div>
-<div><dt><code>oath</code></dt><dd><code>ls schema get set new rm diff apply keep undo verify log logs fmt build mcp</code>, each with <code>--json</code>. A failure names the next step to take.</dd></div>
+<div><dt>PID 1</dt><dd>Runs only applied <code>svc</code> specs, each in its own cgroup with its own log. Restarts a failing service with backoff, then marks it <code>failed</code> with a reason. Restarts a service when an apply moves the package its program comes from. Stops services in reverse order at shutdown, loads kernel modules by modalias, and survives its own panic.</dd></div>
+<div><dt><code>oath</code></dt><dd><code>ls schema get set new rm diff apply keep undo verify log logs fmt build store mcp</code>, each with <code>--json</code>. A failure names the next step to take.</dd></div>
 <div><dt>Agents</dt><dd><code>oath mcp</code> over SSH: one tool per verb, the INDEX as instructions, <code>--read-only</code> for an agent that only looks. The apply log records which agent made each change.</dd></div>
 <div><dt>Generations</dt><dd>A btrfs snapshot before every apply. <code>oath undo</code> repeats to go further back. The boot menu keeps the last five boots.</dd></div>
-<div><dt>Packages</dt><dd>A store addressed by hash, <code>/bin</code> and <code>/lib</code> link farms, a <code>needs</code> graph, origins tried in order, and <code>oath verify</code> at every boot. A package whose licence forbids redistribution ships as a recipe that the machine builds itself.</dd></div>
+<div><dt>Packages</dt><dd>A store addressed by hash, <code>/bin</code> and <code>/lib</code> link farms, a <code>needs</code> graph, origins tried in order, <code>oath store</code> for a tree built on the machine, and <code>oath verify</code> at every boot. A package whose licence forbids redistribution ships as a recipe that the machine builds itself.</dd></div>
 <div><dt>Plans</dt><dd>Builds in a sandbox with no network and its own PID namespace, cached by plan and inputs. Everything in the image is a plan product: the kernel, the toolchain and Oath's own binaries.</dd></div>
 <div><dt>Toolchain</dt><dd>GCC, binutils and glibc built from source, bootstrapped once by the build host and then rebuilt by themselves. bash and the GNU userland; zsh is the login shell.</dd></div>
 <div><dt>Kernel and boot</dt><dd>Linux from kernel.org, pinned by sha256 and built as a plan. <code>oath-efi</code> is the only boot loader, and the initrd runs Oath's PID 1.</dd></div>
@@ -65,7 +65,7 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 20 October 2026 the current build passes all 53 test cases in QEMU and all 42 hardware cases on the Mac Pro. Not there yet:</p>
+<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 20 October 2026 the current build passes all 55 test cases in QEMU and all 42 hardware cases on the Mac Pro. Not there yet:</p>
 <ul>
 <li>Releases. x86-64 with UEFI is the only platform.</li>
 <li>Signed packages. Packages are pinned by hash and their sources are checked against upstream signatures, but Oath does not yet sign what it publishes.</li>

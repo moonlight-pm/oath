@@ -47,8 +47,8 @@ append history (git has it).
 
 **State:** phases 1–5 and 7 are done; 6 (buccina left) and 8 are
 active ([docs/roadmap.md](docs/roadmap.md)). The newest checked output,
-`6b16187831bc` (`desk`: `oath store`, services that follow their
-package), passes all 55 QEMU cases; canto runs its userspace. Left by
+`923bc0cef779` (`desk`: `oath store`, services that follow their
+package, pinned packs), passes all 55 QEMU cases; canto runs it. Left by
 design until something needs them: root SSH as a field, more NICs,
 device rules as fields.
 
@@ -56,7 +56,7 @@ device rules as fields.
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `6b16187831bc`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `923bc0cef779`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

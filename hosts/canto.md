@@ -18,22 +18,21 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `b845739dac07` (`cargo make build
-  --profile desk`, so the update moved `pkg:sola` and
-  `pkg:sola-browser` too), the `desk` profile
-  (R20–R22: base plus seatd, rivulet, Sola with its terminal,
-  Workspaces, browser and KVM, PipeWire, Noto, the tools that build
-  Sola, and their packages), reached on 2026-10-20 by `cargo make
-  update --target home@10.0.0.3 --confirm` (PID 1 and the kernel
-  from it run after the next reboot); the system was
+- **Running now:** build output `923bc0cef779` (`cargo make build
+  --profile desk`: `oath store`, services that follow their package,
+  pinned packs; R28), the `desk` profile (R20–R22: base plus seatd,
+  rivulet, Sola with its terminal, Workspaces, browser, Design and KVM,
+  PipeWire, Noto, the tools that build Sola, and their packages),
+  reached on 2026-10-20 by `cargo make update --target home@10.0.0.3
+  --confirm` (generation 202, `pkg:oath` only). Its PID 1 runs from
+  the reboot started from novus right after that update
+  (`build/runs/canto-reboot.sh`'s check, last line `RESULT:`, is
+  `build/runs/canto-reboot-latest.log` on novus). The system was
   `cargo make install --target home@10.0.0.3 --disk /dev/sda
   --hostname canto --overlay hosts/canto.json --confirm` on
   2026-10-18. Passed all 42 `metal` cases (`cargo make check --target
-  home@10.0.0.3`, 2026-10-20) on `f897ffcbda55`, `desk`, `desk-sola`,
-  `desk-sound`, `login-shell`, `native-userland` (`dig`),
-  `recipe-builds-here` and `pkg-default-origin` (`m4` from R2) among
-  them; on `b845739dac07`, `desk-sola` passes, Design included (the
-  full run was not repeated).
+  home@10.0.0.3`, 2026-10-20) on `f897ffcbda55`; on `b845739dac07`,
+  `desk-sola` passes, Design included (the full run was not repeated).
 - **Design (R21):** `pkg:sola-design` came after the install, so it was
   made by hand on 2026-10-20 from the image's seed values (`oath new
   pkg:sola-design --from-json`, generation 200). Design is open and in

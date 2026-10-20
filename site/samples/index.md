@@ -23,6 +23,9 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          (plan:<name>), or PID 1 (no id)
     oath fmt <path>      canonical plan.plan
     oath build           isolated plan build (no /bin link; log in /oath/log/plan/)
+    oath store pkg:<name> <dir|tar>
+                         put a tree built elsewhere into the store and print
+                         its hash; `oath set pkg:<name> hash=…` pins it
     oath mcp             these verbs as an MCP server on stdin/stdout
                          (ssh -T home@<host> oath mcp)
 
@@ -60,4 +63,6 @@ Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
 `oath new` makes a `svc` or `pkg`; `oath rm` removes one. Both, like
 `set`, only change the spec: nothing happens until `oath apply`, and
 `oath undo` takes back the last apply. Changes that can cut off SSH
-(sshd, `ssh:local` keys, `net:net0`) need `--confirm`.
+(sshd, `ssh:local` keys, `net:net0`, a new `pkg:dropbear` hash) need
+`--confirm`. A service restarts when an apply moves the package its
+program comes from.
