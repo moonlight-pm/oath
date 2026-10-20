@@ -676,14 +676,7 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
     for name in order(&all, &wanted, &lock)? {
         let p = &all[&name];
         let files = fetch(repo, p)?;
-        let src = source_pack(
-            repo,
-            &cat,
-            &name,
-            &files,
-            p.tree.as_deref(),
-            p.recipe.is_some(),
-        )?;
+        let src = source_pack(repo, &cat, &name, &files, p.tree.as_deref(), p.recipe.is_some())?;
         let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.clone() }];
         for d in build_closure(repo, &all, &lock, &name, p) {
             build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(&lock, &d)? });

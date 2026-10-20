@@ -84,10 +84,8 @@ pub fn make(
             let e =
                 lock.get(&name).with_context(|| format!("pkg:{name} is not in pkgs/lock.json"))?;
             let p = all.get(&name).with_context(|| format!("pkgs/{name}/pkg.toml"))?;
-            let tree = p
-                .tree
-                .iter()
-                .map(|t| json!({ "tree": t, "commit": commit(root, &[t.as_str()]) }));
+            let tree =
+                p.tree.iter().map(|t| json!({ "tree": t, "commit": commit(root, &[t.as_str()]) }));
             let sources: Vec<Value> = p
                 .source
                 .iter()
