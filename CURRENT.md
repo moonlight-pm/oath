@@ -9,16 +9,23 @@ append history (git has it).
 
 ## Now
 
-1. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
-   (R19–R22): rivulet on DP-10 (radeonsi on ACO), seatd, Xwayland;
-   Sola's session as `svc:sola-*` with the terminal, Workspaces and the
-   browser (CEF 147); PipeWire, Noto, Sola's build tools, `svc:sola-kvm`
-   ([docs/specs/desk.md](docs/specs/desk.md)). The tmux servers are
-   `svc:sola-tmux` and `svc:sola-tmux-ws`, so shells outlive a session
-   restart, and the terminal rebuilds its saved tabs after a reboot.
-   Sola Design runs there too (R21, 2026-10-20). Next: realtime
+1. **eMudhra CA compromise: respond within days (Joshua, 2026-10-20).**
+   Eight eMudhra intermediate CA keys leaked
+   ([emudhra.we-have-a-problem.com](https://emudhra.we-have-a-problem.com/)).
+   `pkg:curl`'s bundle (`cacert-2026-09-25.pem`) has their cross-signer,
+   emSign ECC Root CA - G3, so curl, git, `oath`'s fetches and
+   `SSL_CERT_FILE` users accept the bad chain (canto: 200 from the
+   page's test host). Packs and sources are sha256-pinned; Sola's
+   browser refuses it. Next: `pkgs/curl` to `cacert-2026-10-20.pem`
+   (`796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe`),
+   NSS 3.131.1; build, check, publish, update canto; test Claude Code.
+2. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
+   (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
+   Xwayland, Sola's session as `svc:sola-*` (terminal, Workspaces,
+   browser, Design), PipeWire, Noto, `svc:sola-kvm`. Shells outlive a
+   session restart; tabs come back after a reboot. Next: realtime
    priority for PipeWire.
-2. **Sola packages itself (R28).** `forks/sola` is frozen at
+3. **Sola packages itself (R28).** `forks/sola` is frozen at
    `aa548c8a`; Sola builds, stores and publishes its own packs. Oath's
    generic side is built (2026-10-20): `oath store`; services restart
    when their program's package moves; a profile can pin a pack built
@@ -28,29 +35,23 @@ append history (git has it).
    `sola-design` in `desk.json`; delete `pkgs/sola*`, their lock
    entries, `forks/sola` and an unused `cargo_vendor`; fix R21,
    forks/README.md, AGENTS.md, desk.md and builds.md.
-3. **Claude Code as a recipe (R23).** Every catalog carries
+4. **Claude Code as a recipe (R23).** Every catalog carries
    `plan:claude-code` (stable 2.1.292, pinned to the signed manifest);
    canto built the build host's exact pack and runs `claude`, signed
    in. Next: a new stable is a new pin in `pkgs/claude-code`, then
    `cargo make update`.
-4. **Packs from anywhere (R25).** Machines fetch from
-   `host:local.origins` in order (a pkg's `url` wins); the default is
-   the R2 bucket at `https://store.oath.moonlight.pm`, written only by
-   `cargo make publish` with the build host's key
-   (`~/.config/oath/origin.env`). Next: publish after every build that
-   changes a pack; signatures on `INDEX.md` when a second publisher or
-   mirror appears.
-5. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
-   with a new host key and refuses the build host's key as root. Next,
-   when Joshua picks it up: the Wicket deploy key, a `--usb` stick, or
-   `cargo make update` once it runs an Oath base.
+5. **Packs from anywhere (R25).** Machines fetch from
+   `host:local.origins` in order (a pkg's `url` wins); the default R2
+   bucket, `https://store.oath.moonlight.pm`, is written only by `cargo
+   make publish` with the build host's key. Next: publish after every
+   build that changes a pack; sign `INDEX.md` when a second publisher
+   or mirror appears.
 
-**State:** phases 1–5 and 7 are done; 6 (buccina left) and 8 are
-active ([docs/roadmap.md](docs/roadmap.md)). The newest checked output,
-`923bc0cef779` (`desk`: `oath store`, services that follow their
-package, pinned packs), passes all 55 QEMU cases; canto runs it. Left by
-design until something needs them: root SSH as a field, more NICs,
-device rules as fields.
+**State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
+[hosts/buccina.md](hosts/buccina.md)) and 8 are active
+([docs/roadmap.md](docs/roadmap.md)). canto runs `923bc0cef779`
+(`desk`), the newest checked output (all 55 QEMU cases). Left until
+something needs them: root SSH as a field, more NICs, device rules as fields.
 
 ## Machines
 
