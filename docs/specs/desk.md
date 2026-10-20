@@ -125,9 +125,30 @@ pack, so a build on the machine looks in each). Apps open with
 `sola-browser`. wgpu runs on GL through Mesa's EGL; there is no Vulkan
 loader.
 
-The `desk-sola` case (metal only: `qemu = false`) checks the services,
-opens the terminal, Workspaces (its call plane answers `project.list`)
-and the browser, and loads `https://example.com`. Workspaces' tabs run
+**The session comes back.** The two tmux servers that hold every
+shell, the terminal's (socket `sola`) and Workspaces' (`sola-ws`), are
+their own services, `svc:sola-tmux` and `svc:sola-tmux-ws` (`tmux -L
+<socket> -f /home/.config/sola/tmux.conf -D`, in the foreground, which
+`sola-session` wants), as NixOS gives each its own systemd user unit.
+Started by an app instead, they were in `svc:sola-session`'s cgroup,
+and PID 1 killed every shell whenever that service restarted. Now a
+restart of `svc:sola-session` closes only the windows: it reopens the
+apps in Sola's `SessionApps`
+(`/home/.config/sola/state.yaml`), and they reattach to their live
+tmux sessions with the programs, scrollback and layout as they were.
+After a reboot the shells are new: the terminal rebuilds each saved
+tab with its splits and working directories, and Workspaces opens each
+workspace's pane in its path. Panes take `WAYLAND_DISPLAY` and
+`XDG_SESSION_TYPE` from the app that made the session (Sola's
+`tmux.conf`, `update-environment`), since the servers start before the
+compositor names its socket.
+
+The `desk-sola` case (metal only: `qemu = false`) checks the services
+and that the tmux servers and shells are outside `svc:sola-session`'s
+cgroup, opens the terminal, Workspaces (its call plane answers
+`project.list`) and the browser unless they are open, and loads
+`https://example.com` in a tab of its own. It closes only what it
+opened: closing an app also drops it from `SessionApps`. Workspaces' tabs run
 in tmux on socket `sola-ws`; on start it merges its status hooks into
 `/home/.claude/settings.json`, `/home/.codex/hooks.json` and
 `/home/.grok/hooks`, which call `curl` on its socket

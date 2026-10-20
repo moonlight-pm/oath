@@ -22,9 +22,9 @@ gaps · `target` designed, not built.
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; netless sandbox in its own PID namespace; cache keyed on plan and inputs; logs in `/oath/log/plan/`; every image package, the kernel and Oath binaries included, is a plan product | — |
 | Toolchain and native packages | partial | `cargo make bootstrap`: GCC 16.2 + binutils 2.47 + glibc 2.44 (R17); `cargo make pkgs`: 130 plan products (sha256 pins, OpenPGP and Sigstore signatures, SPDX licences, `pkgs/lock.json`); GNU userland (R18); bit-identical rebuilds; compilers on the desk | Perl unsigned |
 | Network | partial | `net:net0` dhcp or static; NIC renamed `net0`; supervised dhcpcd, renewals in actual; LAN names in `host:local.hosts`; `dig`; chrony | One NIC, chosen at boot |
-| SSH | shipped | dropbear server as `home` (login shell zsh, R27), keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` for `home` (clean env) | — |
+| SSH | shipped | dropbear server as `home` (login shell zsh, R27), keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` (clean env) | — |
 | Devices | partial | modules by modalias at boot, on kernel request and on hotplug; `dev:*` discovered from sysfs (disks by bus path, `net0`…, UARTs) at boot and on change | Node ownership and mounts are not fields yet |
-| Seed and overlays | shipped | profile `base`, free of test fixtures; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
+| Seed and overlays | shipped | profile `base`, no test fixtures; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, a plan built by `pkg:gcc` (7.3-rc1, Oath fragment and patches, depmod index); vermagic checked | — |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `cargo make update` moves an installed machine to a new output (canto) | — |
 | Image build | shipped | `cargo make build` packs `pkg:oath` and the locked packages into an immutable `build/out/<id>/` with a manifest; install and `esp` take its id | — |
@@ -35,6 +35,6 @@ gaps · `target` designed, not built.
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Workspaces, browser; PipeWire; Noto; builds Sola; sola-kvm; on canto (R20–R22). Gaps: other apps, RT priority |
+| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Workspaces, browser; shells outlive session restarts, reboots reopen tabs; PipeWire; Noto; canto (R20–R22). Gaps: other apps, RT priority |
 | Wicket host | target | Left core (R1); Wicket will ship its own packages and overlay. buccina still runs the trial image. |
 | Steam + Minecraft desk | target | Future requirement (R2): native desk, Steam runtime, JVM. |

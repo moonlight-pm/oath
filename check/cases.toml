@@ -676,18 +676,18 @@ steps = [
 
 [[case]]
 name = "desk-sola"
-about = "Sola runs on the desk: its services are up, and the terminal, Workspaces and the browser open, run a shell, answer the call plane and load a page."
+about = "Sola runs on the desk: its services are up, its tmux servers are their own services, and the terminal, Workspaces and the browser open, answer the call plane and load a page. An app already open (the owner's) is left as it is; only what the case opened is closed."
 metal = true
 qemu = false
 profile = "desk"
 steps = [
-  { run = "for s in sola-bus sola-call sola-river sola-shell sola-session; do printf '%s ' $s; oath get svc:$s | grep '  state:'; done", expect = ["sola-shell   state: \"running\"", "sola-river   state: \"running\""], reject = ["failed", "restarting"] },
-  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-terminal && sleep 5 && solactl compositor windows", expect = ["\"sola-terminal\""] },
-  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-terminal" },
-  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-workspaces && sleep 5 && solactl compositor windows && solactl workspaces project.list", expect = ["\"sola-workspaces\"", "\"projects\""], reject = ["no method", "not found"] },
-  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-workspaces" },
-  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session launch sola-browser && sleep 8 && solactl browser goto https://example.com && sleep 6 && solactl browser tabs", expect = ["Example Domain"], timeout = 90 },
-  { run = "export XDG_RUNTIME_DIR=/run/user/1; solactl session close sola-browser" },
+  { run = "for s in sola-bus sola-call sola-river sola-shell sola-session sola-tmux sola-tmux-ws; do printf '%s ' $s; oath get svc:$s | grep '  state:'; done", expect = ["sola-shell   state: \"running\"", "sola-river   state: \"running\"", "sola-tmux-ws   state: \"running\""], reject = ["failed", "restarting"] },
+  { run = "for s in sola sola-ws; do cat /proc/$(pgrep -f \"^/bin/tmux -L $s -f .* -D$\")/cgroup; done; pgrep -f '^-?zsh' | xargs -I{} cat /proc/{}/cgroup | sort -u", expect = ["/oath/svc-sola-tmux\n", "/oath/svc-sola-tmux-ws"], reject = ["svc-sola-session"] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; for a in sola-terminal sola-workspaces sola-browser; do solactl compositor windows | grep -q \"\\\"$a\\\"\" || touch /tmp/check-opened-$a; done; ls /tmp | grep check-opened; true" },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; [ -e /tmp/check-opened-sola-terminal ] && solactl session launch sola-terminal && sleep 5; solactl compositor windows", expect = ["\"sola-terminal\""] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; [ -e /tmp/check-opened-sola-workspaces ] && solactl session launch sola-workspaces && sleep 5; solactl compositor windows && solactl workspaces project.list", expect = ["\"sola-workspaces\"", "\"projects\""], reject = ["no method", "not found"] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; [ -e /tmp/check-opened-sola-browser ] && solactl session launch sola-browser && sleep 8; t=$(solactl browser tab.open --url https://example.com/#oath-check | sed -n 's/.*\"id\": *\\([0-9]*\\).*/\\1/p') && sleep 6 && solactl browser tabs; solactl browser tab.close --tab $t", expect = ["Example Domain", "example.com/#oath-check"], timeout = 90 },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1; for a in sola-terminal sola-workspaces sola-browser; do [ -e /tmp/check-opened-$a ] && solactl session close $a; rm -f /tmp/check-opened-$a; done; true" },
 ]
 
 [[case]]

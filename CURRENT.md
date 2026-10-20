@@ -13,8 +13,12 @@ append history (git has it).
    (R19–R22): rivulet on DP-10 (radeonsi on ACO), seatd, Xwayland;
    Sola's session as `svc:sola-*` with the terminal, Workspaces and the
    browser (CEF 147); PipeWire, Noto, Sola's build tools, `svc:sola-kvm`
-   ([docs/specs/desk.md](docs/specs/desk.md)). Next: Joshua starts the
-   Sola fork's work on canto; realtime priority for PipeWire.
+   ([docs/specs/desk.md](docs/specs/desk.md)). The tmux servers are
+   `svc:sola-tmux` and `svc:sola-tmux-ws`, so shells outlive a session
+   restart, and the terminal rebuilds its saved tabs after a reboot
+   (two Sola-generic commits in the fork, not yet on Sola `master`).
+   Next: Sola Design on canto (Joshua, 2026-10-20); realtime priority
+   for PipeWire.
 2. **Claude Code as a recipe (R23).** Every catalog carries
    `plan:claude-code` (stable 2.1.292, pinned to the signed manifest);
    canto built the build host's exact pack and runs `claude`. Next:
@@ -41,16 +45,16 @@ append history (git has it).
 active ([docs/roadmap.md](docs/roadmap.md)). Phase 7 finished
 2026-10-18 (haiku passed all five agent tasks, R16); Oath became a GCC,
 glibc and GNU system 2026-10-17 (R17, R18). The newest checked output,
-`f897ffcbda55` (`base`, zsh as `home`'s login shell, R27), passes all 53
-QEMU cases, and canto (`desk` objects) runs it and passes all 42 metal
-cases. Left by design until something needs them: root SSH as a field,
+`64c80ede5e5b` (`desk`), passes all 53 QEMU cases, and canto runs it;
+canto passed all 42 metal cases on `f897ffcbda55` (`base`, zsh as
+`home`'s login shell, R27) and `desk-sola` on `64c80ede5e5b`. Left by design until something needs them: root SSH as a field,
 more NICs, device rules as fields.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `f897ffcbda55`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `64c80ede5e5b`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

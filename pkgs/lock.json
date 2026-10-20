@@ -1090,8 +1090,8 @@
     "version": "0.1.0",
     "license": "LicenseRef-Sola AND ISC AND CC0-1.0 AND GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-05abe82546f271999f6d6ffac46490a8888781fe861c6a0df82baac991a1c98c",
-    "product": "sha256-9bd53b52bc85a7842bcd6b19352611f84ae710ffc3b34033ffb823f157bb94e1",
+    "plan": "sha256-746ee8ecd301b9f5ecd1728d6491da98c01de25744dbeaf61092667afa6446e3",
+    "product": "sha256-19208a3c23ef55e8c51061e9dcf247e09f913b98dc230c81d7927948f5c7b101",
     "run": [
       "gcc",
       "wayland",
@@ -1111,8 +1111,8 @@
     "version": "0.1.0",
     "license": "LicenseRef-Sola",
     "by": "plan",
-    "plan": "sha256-412bb96d9f8de905cbf741e2987e949e6ac7225142e97fc10236d8e942bd2f41",
-    "product": "sha256-230fa10d9e5dda40a95a265d99750f55aa880d3bd8a06e9646f650bae508724e",
+    "plan": "sha256-f308c5a93b67c18578940fa204c89088c9caf39e3aa56d671e9cc0c9a84bab2b",
+    "product": "sha256-e4236ff0a115871ceff66ff806417bfdc8922db0a7ac9170f1f9c125909a1167",
     "run": [
       "sola",
       "cef",
