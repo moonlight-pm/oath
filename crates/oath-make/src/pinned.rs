@@ -103,7 +103,11 @@ pub fn fetch(
                 bail!(
                     "pkg:{name} {} is pinned from elsewhere, and nowhere served it ({})",
                     p.hash,
-                    if failed.is_empty() { "no url and no origins".into() } else { failed.join("; ") }
+                    if failed.is_empty() {
+                        "no url and no origins".into()
+                    } else {
+                        failed.join("; ")
+                    }
                 );
             }
         }
@@ -135,7 +139,10 @@ fn fetch_one(catalog: &Path, name: &str, origin: &str, hash: &str) -> Result<()>
 
 /// The needs each pinned pack names at another hash than the image ships
 /// (`ships(need)`), so it was built against packs since rebuilt.
-pub fn stale(pins: &BTreeMap<String, Pinned>, ships: impl Fn(&str) -> Option<String>) -> Vec<Stale> {
+pub fn stale(
+    pins: &BTreeMap<String, Pinned>,
+    ships: impl Fn(&str) -> Option<String>,
+) -> Vec<Stale> {
     let mut out = Vec::new();
     for (pkg, p) in pins {
         for (need, pinned) in &p.needs {
@@ -167,7 +174,9 @@ pub fn manifest_entry(p: &Pinned, stale: &[Stale], places: &BTreeSet<&str>) -> V
     if !stale.is_empty() {
         v["stale_needs"] = json!(stale
             .iter()
-            .map(|s| json!({ "id": format!("pkg:{}", s.need), "pinned": s.pinned, "ships": s.ships }))
+            .map(
+                |s| json!({ "id": format!("pkg:{}", s.need), "pinned": s.pinned, "ships": s.ships })
+            )
             .collect::<Vec<_>>());
     }
     v
@@ -264,7 +273,12 @@ mod tests {
         let s = stale(&pins, ships);
         assert_eq!(
             s,
-            vec![Stale { pkg: "sola".into(), need: "wayland".into(), pinned: B.into(), ships: C.into() }]
+            vec![Stale {
+                pkg: "sola".into(),
+                need: "wayland".into(),
+                pinned: B.into(),
+                ships: C.into()
+            }]
         );
         let e = manifest_entry(&pins["sola"], &s, &BTreeSet::from(["rootfs"]));
         assert_eq!(e["pinned"], json!(true));
@@ -278,7 +292,10 @@ mod tests {
             "needs": [{ "id": "pkg:wayland", "hash": B }, { "id": "pkg:mesa", "hash": C }]
         });
         let (set, moved) = keep_machine_pin(&machine, ships).unwrap();
-        assert_eq!(set, json!({ "needs": [{ "id": "pkg:wayland", "hash": C }, { "id": "pkg:mesa", "hash": C }] }));
+        assert_eq!(
+            set,
+            json!({ "needs": [{ "id": "pkg:wayland", "hash": C }, { "id": "pkg:mesa", "hash": C }] })
+        );
         assert_eq!(moved.len(), 1);
         assert!(keep_machine_pin(&machine, |_| None).is_none());
     }
@@ -301,7 +318,10 @@ mod tests {
         let store = d.path().join("host/store");
         fs::create_dir_all(&store).unwrap();
         let mut pins = BTreeMap::new();
-        pins.insert("sola".to_string(), Pinned { hash: pin.clone(), needs: vec![], url: String::new() });
+        pins.insert(
+            "sola".to_string(),
+            Pinned { hash: pin.clone(), needs: vec![], url: String::new() },
+        );
         let gone = format!("file://{}/gone", d.path().display());
         let good = format!("file://{}", origin.display());
         let got = fetch(&store, &pins, &[gone.clone(), good]).unwrap();

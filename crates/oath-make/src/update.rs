@@ -215,11 +215,7 @@ fn ship_packs(r: &Remote, stage: &Path) -> Result<()> {
 /// output fixes is made when the machine lacks it, since the image's own
 /// files need it; other objects the output's seed has and the machine does
 /// not are reported, not created: the catalog is the owner's.
-fn set_pins(
-    r: &Remote,
-    stage: &Path,
-    pinned: &std::collections::BTreeSet<String>,
-) -> Result<()> {
+fn set_pins(r: &Remote, stage: &Path, pinned: &std::collections::BTreeSet<String>) -> Result<()> {
     let ids = install::ssh_out(r, "oath ls")?;
     let have: Vec<&str> = ids.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
     let mut missing: Vec<String> =
@@ -247,7 +243,9 @@ fn set_pins(
         let cur: Value = serde_json::from_str(&cur).with_context(|| format!("{id}: {cur}"))?;
         let mine = cur.get("hash").and_then(Value::as_str).unwrap_or("").to_string();
         if pinned.contains(&name) && mine != pin {
-            eprintln!(">> {id} keeps the machine's pin {mine} (built elsewhere; the output pins {pin})");
+            eprintln!(
+                ">> {id} keeps the machine's pin {mine} (built elsewhere; the output pins {pin})"
+            );
             if let Some((set, moved)) = crate::pinned::keep_machine_pin(&cur, ships) {
                 eprintln!(
                     "   its needs move with the output ({}); its owner should build it again \
