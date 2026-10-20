@@ -69,8 +69,11 @@ descriptive fields.
   error, never a silent upgrade.
 - **Removable.** The seed profile lists fixed packages (`glibc`,
   `bash`, `coreutils`, `util-linux`, `iproute2`, `dhcpcd`, `btrfs`,
-  `oath`, `dropbear`), recorded as `fixed` in their
+  `oath`, `dropbear`, `zsh`), recorded as `fixed` in their
   `meta.json`; `present=false` or `oath rm` on one of them is refused.
+  A package the running `oath`'s `base` profile fixes counts as fixed
+  without the mark (a machine updated to an image that added it made
+  it with `oath new`), and an undo of the apply that made it keeps it.
   Actual `removable` reports it.
 - **Needs.** A list of `{id, hash}`: other packages this one needs at
   run time, each at a pin. Apply refuses cycles, refuses `present=true`

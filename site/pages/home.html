@@ -17,16 +17,16 @@
 
 <section id="catalog" class="catalog">
 <h2>The catalog</h2>
-<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are eight kinds. The counts are from one machine on 19 October 2026: a 2013 Mac Pro that runs Oath as a desktop.</p>
+<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are eight kinds. The counts are from one machine on 20 October 2026: a 2013 Mac Pro that runs Oath as a desktop.</p>
 <div class="table-wrap">
 <table class="kinds">
 <thead><tr><th scope="col">Kind</th><th scope="col">One object is</th><th scope="col" class="count">Count</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>host</code></th><td>The machine itself: hostname, timezone, environment, power state, package origins.<span class="ids">host:local</span></td><td class="count">1</td></tr>
 <tr><th scope="row"><code>svc</code></th><td>A process PID 1 supervises: its command, user, restart policy and the services it wants up first.<span class="ids">svc:sshd · svc:time · svc:pipewire</span></td><td class="count">17</td></tr>
-<tr><th scope="row"><code>pkg</code></th><td>A package tree in the store, named by its hash and linked into <code>/bin</code> and <code>/lib</code>.<span class="ids">pkg:curl · pkg:gcc · pkg:mesa</span></td><td class="count">116</td></tr>
+<tr><th scope="row"><code>pkg</code></th><td>A package tree in the store, named by its hash and linked into <code>/bin</code> and <code>/lib</code>.<span class="ids">pkg:curl · pkg:gcc · pkg:mesa</span></td><td class="count">117</td></tr>
 <tr><th scope="row"><code>plan</code></th><td>A build pinned by hash. <code>oath build</code> runs it in a sandbox with no network.<span class="ids">plan:claude-code</span></td><td class="count">1</td></tr>
-<tr><th scope="row"><code>snap</code></th><td>A btrfs generation of the root filesystem, taken by each apply.<span class="ids">snap:current · snap:162</span></td><td class="count">163</td></tr>
+<tr><th scope="row"><code>snap</code></th><td>A btrfs generation of the root filesystem, taken by each apply.<span class="ids">snap:current · snap:162</span></td><td class="count">193</td></tr>
 <tr><th scope="row"><code>net</code></th><td>The network link, by DHCP or a static address.<span class="ids">net:net0</span></td><td class="count">1</td></tr>
 <tr><th scope="row"><code>ssh</code></th><td>The keys that may log in as <code>home</code>.<span class="ids">ssh:local</span></td><td class="count">1</td></tr>
 <tr><th scope="row"><code>dev</code></th><td>A device found in sysfs: a disk by its bus path, a network card, a serial port.<span class="ids">dev:net0 · dev:disk-pci-0000.0e.00.0-ata-1</span></td><td class="count">3</td></tr>
@@ -44,7 +44,7 @@
 <div><dt>Generations</dt><dd>A btrfs snapshot before every apply. <code>oath undo</code> repeats to go further back. The boot menu keeps the last five boots.</dd></div>
 <div><dt>Packages</dt><dd>A store addressed by hash, <code>/bin</code> and <code>/lib</code> link farms, a <code>needs</code> graph, origins tried in order, and <code>oath verify</code> at every boot. A package whose licence forbids redistribution ships as a recipe that the machine builds itself.</dd></div>
 <div><dt>Plans</dt><dd>Builds in a sandbox with no network and its own PID namespace, cached by plan and inputs. Everything in the image is a plan product: the kernel, the toolchain and Oath's own binaries.</dd></div>
-<div><dt>Toolchain</dt><dd>GCC, binutils and glibc built from source, bootstrapped once by the build host and then rebuilt by themselves. bash and the GNU userland.</dd></div>
+<div><dt>Toolchain</dt><dd>GCC, binutils and glibc built from source, bootstrapped once by the build host and then rebuilt by themselves. bash and the GNU userland; zsh is the login shell.</dd></div>
 <div><dt>Kernel and boot</dt><dd>Linux from kernel.org, pinned by sha256 and built as a plan. <code>oath-efi</code> is the only boot loader, and the initrd runs Oath's PID 1.</dd></div>
 <div><dt>Network and SSH</dt><dd><code>net0</code> by DHCP or a static address, time from pool.ntp.org, dropbear for SSH as <code>home</code> with root login refused, the OpenSSH client tools and <code>dig</code>.</dd></div>
 <div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick. <code>cargo make update</code> moves an installed machine to a newer build without wiping it.</dd></div>
@@ -65,7 +65,7 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 19 October 2026 the current build passes all 52 test cases in QEMU and all 41 hardware cases on the Mac Pro. Not there yet:</p>
+<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 20 October 2026 the current build passes all 53 test cases in QEMU and all 42 hardware cases on the Mac Pro. Not there yet:</p>
 <ul>
 <li>Releases. x86-64 with UEFI is the only platform.</li>
 <li>Signed packages. Packages are pinned by hash and their sources are checked against upstream signatures, but Oath does not yet sign what it publishes.</li>

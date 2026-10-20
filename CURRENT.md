@@ -4,8 +4,8 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-19 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
-· decisions R1–R25 in [docs/decisions.md](docs/decisions.md)
+**As of:** 2026-10-20 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+· decisions R1–R27 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -41,8 +41,8 @@ append history (git has it).
 active ([docs/roadmap.md](docs/roadmap.md)). Phase 7 finished
 2026-10-18 (haiku passed all five agent tasks, R16); Oath became a GCC,
 glibc and GNU system 2026-10-17 (R17, R18). The newest checked output,
-`0f7ae5f7f797` (`base`, with `host:local.origins`, R25), passes all 52
-QEMU cases, and canto (`desk` objects) runs it and passes all 41 metal
+`f897ffcbda55` (`base`, zsh as `home`'s login shell, R27), passes all 53
+QEMU cases, and canto (`desk` objects) runs it and passes all 42 metal
 cases. Left by design until something needs them: root SSH as a field,
 more NICs, device rules as fields.
 
@@ -50,7 +50,7 @@ more NICs, device rules as fields.
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `0f7ae5f7f797`, the `desk` profile (rivulet and Sola on DP-10); [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `f897ffcbda55`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

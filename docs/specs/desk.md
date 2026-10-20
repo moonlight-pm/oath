@@ -112,7 +112,8 @@ PID 1 runs Sola's processes as `home` services (`svc:sola-bus`,
 `sola-session`); `crates/sola`, Sola's own process manager, is neither
 built nor run. Their environment names what NixOS gets from its
 session: `XCURSOR_PATH`/`XCURSOR_THEME` (rivulet too),
-`FONTCONFIG_FILE` (iced parses fonts.conf itself), `SHELL=/bin/bash`
+`FONTCONFIG_FILE` (iced parses fonts.conf itself), `SHELL=/bin/zsh`
+(the login shell, R27)
 and `SOLA_LOG_DIR=/home/.local/state/sola` (`/oath/log` is root's;
 apps log to `app-<name>.log` there). `host:local` sets
 `LANG=en_US.UTF-8` (tmux refuses a non-UTF-8 locale) and

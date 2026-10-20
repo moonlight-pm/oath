@@ -50,7 +50,9 @@ Then it converges those objects (hostname, `pkg:*` links, `net:net0`,
 back, and logs `undo:N`. Run it again to step back one more apply.
 
 Undo does not touch the apply log, the package store, the SSH host
-keys, or objects the apply did not touch. A pending `oath set` on some
+keys, or objects the apply did not touch. It keeps a package that the
+image fixes even when that apply created it (`cargo make update` makes
+one a machine lacks): the image's own files need it. A pending `oath set` on some
 other object survives an undo.
 
 An apply that can cut off SSH is on probation (`/oath/probation.json`)

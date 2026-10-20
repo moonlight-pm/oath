@@ -555,7 +555,8 @@ impl Conn {
 
 pub(crate) fn ssh(conn: &Conn, cmd: &str, timeout: Duration) -> Shell {
     let mut c = Command::new("ssh");
-    c.args(&conn.args).arg(cmd);
+    // Steps are sh scripts; home's login shell (zsh) only starts sh.
+    c.args(&conn.args).arg(format!("/bin/sh -c {}", crate::install::sh_quote(cmd)));
     c.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     let Ok(mut child) = c.spawn() else {
         return Shell { code: -1, text: "could not run ssh".into() };

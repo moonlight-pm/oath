@@ -10,9 +10,11 @@
 //! 3. Ship the output's store packs the machine lacks (`.part`, renamed
 //!    into place).
 //! 4. Set every package the machine has to the output's pin and needs
-//!    (and a recipe's plan, `url` and `file`, R23) and `oath apply` them:
-//!    one generation, undone by `oath undo`, and apply re-hashes each tree
-//!    before linking it. A recipe the owner built is reported instead.
+//!    (and a recipe's plan, `url` and `file`, R23), make each package the
+//!    output fixes that the machine lacks (`/etc/passwd` names `pkg:zsh`'s
+//!    shell), and `oath apply` them: one generation, undone by `oath undo`
+//!    (which keeps a fixed package), and apply re-hashes each tree before
+//!    linking it. A recipe the owner built is reported instead.
 //! 5. Replace the image's own files outside the catalog (`/lib/oath`, the
 //!    static `/etc` files, `/sbin/init`, `/bin/sudo`).
 //! 6. Archive the ESP's kernel and initrd as boot `<id>`, write the new
@@ -202,13 +204,14 @@ fn ship_packs(r: &Remote, stage: &Path) -> Result<()> {
 /// tree is unchanged still moves its `needs` when what it runs with was
 /// rebuilt), a recipe's `url` and `file`, and its plan (R23). A recipe
 /// the owner built stays at the pin it runs, since the output carries no
-/// tree for it; it is reported, to rebuild on the machine. Objects the
-/// output's seed has and the machine does not are reported, not created:
-/// the catalog is the owner's.
+/// tree for it; it is reported, to rebuild on the machine. A package the
+/// output fixes is made when the machine lacks it, since the image's own
+/// files need it; other objects the output's seed has and the machine does
+/// not are reported, not created: the catalog is the owner's.
 fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
     let ids = install::ssh_out(r, "oath ls")?;
     let have: Vec<&str> = ids.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
-    let missing: Vec<String> =
+    let mut missing: Vec<String> =
         stage_ids(stage)?.into_iter().filter(|id| !have.contains(&id.as_str())).collect();
     set_plans(r, stage, &have)?;
     let mut changed = Vec::new();
@@ -216,6 +219,15 @@ fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
     for (name, pin, doc) in stage_pins(stage)? {
         let id = format!("pkg:{name}");
         if !have.contains(&id.as_str()) {
+            if stage_fixed(stage, &name)? {
+                install::ssh_run(
+                    r,
+                    &format!("oath new {id} --from-json {}", sh_quote(&doc.to_string())),
+                )?;
+                eprintln!(">> {id} {pin} (the output fixes it)");
+                missing.retain(|m| *m != id);
+                changed.push(id);
+            }
             continue;
         }
         let cur = install::ssh_out(r, &format!("oath --json get {id} --desired"))?;
@@ -484,6 +496,13 @@ fn stage_pins(stage: &Path) -> Result<Vec<(String, String, Value)>> {
     }
     out.sort_by(|a, b| a.0.cmp(&b.0));
     Ok(out)
+}
+
+/// Whether the output's seed fixes `pkg:<name>`.
+fn stage_fixed(stage: &Path, name: &str) -> Result<bool> {
+    let p = stage.join("oath/objects/pkg").join(name).join("meta.json");
+    let meta: Value = oath_core::read_json(&p).map_err(|e| anyhow::anyhow!("{}: {e}", p.display()))?;
+    Ok(meta.get("fixed") == Some(&Value::Bool(true)))
 }
 
 /// Archive ids in an ESP listing of `loader/entries` and `oath/boot`.

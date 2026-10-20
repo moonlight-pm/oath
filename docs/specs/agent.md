@@ -58,8 +58,8 @@ claude mcp add canto -- ssh -T -o BatchMode=yes home@10.0.0.3 oath mcp
   halfway is worse than a late answer.
 - `oath mcp --read-only` lists only the read tools and never runs
   `sudo`; there `verify` runs unprivileged and only reports. `--root` works as for every verb (tests, the harness).
-- dropbear runs the command through `home`'s login shell (`/bin/sh
-  -c`); `-T` keeps a terminal out of the byte stream.
+- dropbear runs the command through `home`'s login shell (`zsh -c`,
+  R27); `-T` keeps a terminal out of the byte stream.
 
 ## Protocol versions (built)
 

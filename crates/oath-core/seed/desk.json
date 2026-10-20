@@ -57,7 +57,7 @@
         "XCURSOR_THEME": "McMojave",
         "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
-        "SHELL": "/bin/bash"
+        "SHELL": "/bin/zsh"
       }
     },
     "svc:sola-call": {
@@ -75,7 +75,7 @@
         "XCURSOR_THEME": "McMojave",
         "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
-        "SHELL": "/bin/bash"
+        "SHELL": "/bin/zsh"
       }
     },
     "svc:sola-river": {
@@ -95,7 +95,7 @@
         "XCURSOR_THEME": "McMojave",
         "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
-        "SHELL": "/bin/bash"
+        "SHELL": "/bin/zsh"
       }
     },
     "svc:sola-shell": {
@@ -115,7 +115,7 @@
         "XCURSOR_THEME": "McMojave",
         "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
-        "SHELL": "/bin/bash"
+        "SHELL": "/bin/zsh"
       }
     },
     "svc:sola-session": {
@@ -134,7 +134,7 @@
         "XCURSOR_THEME": "McMojave",
         "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
-        "SHELL": "/bin/bash"
+        "SHELL": "/bin/zsh"
       }
     },
     "svc:dbus-session": {
@@ -168,7 +168,7 @@
         "XCURSOR_THEME": "McMojave",
         "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
-        "SHELL": "/bin/bash"
+        "SHELL": "/bin/zsh"
       }
     },
     "svc:pipewire": {

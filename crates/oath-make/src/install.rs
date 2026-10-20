@@ -714,7 +714,7 @@ fn write_catalog_overlay(opts: &Opts, hostname: &str, r: &Remote) -> Result<()> 
     ssh_run(r, "/bin/oath --root /mnt/oath seed --overlay /tmp/oath-overlay.json")
 }
 
-fn sh_quote(s: &str) -> String {
+pub(crate) fn sh_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', "'\\''"))
 }
 

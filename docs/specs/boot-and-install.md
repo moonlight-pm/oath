@@ -150,7 +150,10 @@ trusting only the host key `install` pinned:
    tree before linking it. `needs` moves too: a package whose own tree
    is unchanged still pins what it runs with (on 2026-10-19 a rebuilt
    `pkg:sola` left `pkg:sola-browser` pinning the old one, and apply
-   refused). Packages the machine lacks are reported, not created.
+   refused). A package the output fixes that the machine lacks is made
+   (`oath new`) in the same apply, since the image's own files need it
+   (`/etc/passwd` names `pkg:zsh`'s shell, R27); other objects the
+   machine lacks are reported, not created.
 5. Replace the image's files outside the catalog (`/lib/oath`,
    `/etc/passwd`, `group`, `shadow`, `shells`, `nsswitch.conf`,
    `ssh/ssh_config`, `/sbin/init`, `/bin/sudo`), each written beside

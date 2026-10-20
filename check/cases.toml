@@ -1,6 +1,7 @@
 # cargo make check — each case boots a fresh VM from build/out/latest/oath.qcow2.
 #
-# A step either runs a shell command over SSH as `home` (`run`) or
+# A step either runs an sh command over SSH as `home` (`run`, through
+# `/bin/sh -c`, whatever home's login shell) or
 # reboots (`reboot = "catalog" | "force" | "signal"`) and waits for SSH.
 #
 # `metal = true` also runs the case on a real machine
@@ -378,13 +379,25 @@ steps = [
 ]
 
 [[case]]
+name = "login-shell"
+about = "home's login shell is zsh (R27): the prompt takes the hostname's colors, a login zsh gets host:local's env through /etc/profile, and pkg:zsh is not removable."
+metal = true
+steps = [
+  { run = "getent passwd home; echo SHELL=$SHELL; grep -x /bin/zsh /etc/shells", expect = [":/home:/bin/zsh", "SHELL=/bin/zsh\n/bin/zsh"] },
+  { run = "zsh -ic 'print -r -- $PROMPT; bindkey \"^[[3~\"' < /dev/null; head -1 /etc/zshrc", expect = ["%n@%m", "$(git_branch)", " § ", "delete-char", "its hostname picks the prompt's color"] },
+  { run = "sudo oath set host:local timezone=UTC0 && sudo oath apply host:local && zsh -lc 'echo TZ=$TZ'", expect = ["TZ=UTC0"] },
+  { run = "sudo oath undo && oath diff", expect = ["in-sync"] },
+  { run = "sudo oath set pkg:zsh present=false", fails = true, expect = ["not removable"] },
+]
+
+[[case]]
 name = "screen-is-home"
 about = "With no desk, svc:screen runs a login shell as home on tty1, which home owns."
 metal = true
 profile = "base"
 steps = [
   { run = "oath get svc:screen", expect = ["state: \"running\""] },
-  { run = "p=$(oath get svc:screen | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; readlink /proc/$p/fd/0; tr '\\0' ' ' < /proc/$p/cmdline; echo; stat -c 'owner=%u mode=%a' /dev/tty1", expect = ["Uid:\t1\t1\t1\t1", "/dev/tty1", "/bin/bash -l", "owner=1 mode=600"] },
+  { run = "p=$(oath get svc:screen | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; readlink /proc/$p/fd/0; tr '\\0' ' ' < /proc/$p/cmdline; echo; stat -c 'owner=%u mode=%a' /dev/tty1", expect = ["Uid:\t1\t1\t1\t1", "/dev/tty1", "/bin/zsh -l", "owner=1 mode=600"] },
 ]
 
 # ---- Phase 5: native packages ----------------------------------------
@@ -396,9 +409,9 @@ metal = true
 steps = [
   { run = "echo x > /dev/null && head -c 16 /dev/urandom > /dev/null && stat -c '%a %n' /dev/null /dev/zero /dev/urandom /dev/ptmx", expect = ["666 /dev/null", "666 /dev/urandom"] },
   { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version; dig -v 2>&1; openssl version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux", "DiG 9.20.29", "OpenSSL 4.0.3"] },
-  { run = "for b in bash ls curl dropbear ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping dig host nslookup openssl; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
+  { run = "for b in bash zsh ls curl dropbear ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping dig host nslookup openssl; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
   { run = "ldd /lib/oath/init; ldd $(readlink -f /bin/oath); test ! -e /lib64 && echo NO_LIB64", expect = ["statically linked", "NO_LIB64"], reject = ["=>"] },
-  { run = "bash --version; ls --version; vim --version | head -1; chronyd --version; dhcpcd --version; ip -V; ping -V", expect = ["GNU bash", "GNU coreutils", "VIM - Vi IMproved", "chronyd (chrony)", "dhcpcd 10", "iproute2", "iputils"] },
+  { run = "bash --version; zsh --version; ls --version; vim --version | head -1; chronyd --version; dhcpcd --version; ip -V; ping -V", expect = ["GNU bash", "zsh 5.9.2", "GNU coreutils", "VIM - Vi IMproved", "chronyd (chrony)", "dhcpcd 10", "iproute2", "iputils"] },
   { run = "ssh-keygen -q -t ed25519 -N '' -f /tmp/k && test -s /tmp/k.pub && test -x /bin/sftp-server && echo KEYGEN_OK", expect = ["KEYGEN_OK"] },
   { run = "id -un; ping -c 1 -W 3 $(ip route | awk '/^default/ { print $3; exit }')", expect = ["home", "1 received"] },
   { run = "curl -sS -o /dev/null -w '%{http_code}\\n' https://curl.se/", expect = ["200"] },

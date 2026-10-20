@@ -101,7 +101,7 @@ btrfs
 | `oath-init` | initrd `/init` | PID 1, root |
 | `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused); `keep_children` |
 | `svc:serial` | `/lib/oath/serial-login` on ttyS0 (idles with no UART) | root (break-glass) |
-| `svc:screen` | `/lib/oath/screen-login` on tty1, then `bash -l` | `home` |
+| `svc:screen` | `/lib/oath/screen-login` on tty1, then `zsh -l` | `home` |
 | `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | root |
 | DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root; renews the lease |
 | `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |

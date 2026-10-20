@@ -135,6 +135,7 @@ fn seed_lists_host() {
         "pkg:util-linux",
         "pkg:dosfstools",
         "pkg:curl",
+        "pkg:zsh",
         "pkg:claude-code",
         "pkg:claude-code-src",
         "plan:claude-code",
@@ -146,9 +147,9 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 5 svc and host, 38 packages, a recipe (two packages and its plan),
+    // 5 svc and host, 39 packages, a recipe (two packages and its plan),
     // net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 49, "{ids:?}");
+    assert_eq!(ids.len(), 50, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -173,6 +174,7 @@ fn seed_lists_host() {
     assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
     let oath = cat.get(&"pkg:oath".parse().unwrap()).unwrap();
     assert!(oath.meta.fixed);
+    assert!(cat.get(&"pkg:zsh".parse().unwrap()).unwrap().meta.fixed, "the login shell");
     let curl = cat.get(&"pkg:curl".parse().unwrap()).unwrap();
     assert!(!curl.meta.fixed);
     // Seeding writes spec; status is the machine's to observe.
@@ -419,6 +421,29 @@ fn pkg_not_removable_refuses_absent() {
         Error::Hint { message, .. } => assert!(message.contains("not removable"), "{message}"),
         other => panic!("{other:?}"),
     }
+}
+
+/// A machine updated to an image whose base profile fixes a new package
+/// (`pkg:zsh`, home's login shell) gets it through `oath new`: it is not
+/// removable all the same, and undoing the apply that made it keeps it.
+#[test]
+fn base_fixed_package_made_by_new_stays() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:zsh".parse().unwrap();
+    std::fs::remove_dir_all(d.path().join("objects/pkg/zsh")).unwrap();
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(true));
+    cat.new_object(&id, fields).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert!(!obj.meta.fixed);
+    assert_eq!(obj.actual["removable"], json!(false));
+    let err = cat.remove_object(&id).unwrap_err();
+    assert!(err.to_string().contains("not removable"), "{err}");
+
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired["present"], json!(true));
 }
 
 #[test]

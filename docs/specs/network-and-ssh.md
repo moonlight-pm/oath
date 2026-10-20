@@ -94,12 +94,21 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 
 ## Accounts (built)
 
-- `root` (uid 0) and `home` (uid 1, gid 1, `HOME=/home`, shell
-  `/bin/sh`). There are no others and no user kind. `/etc/passwd`,
-  `/etc/group`, `/etc/shadow` and `/etc/shells` are written at pack
-  time; `/etc/hostname`, `/etc/hosts` and `/etc/profile` are side
-  effects of converging `host:local` (and of PID 1 reading it at
+- `root` (uid 0, shell `/bin/sh`) and `home` (uid 1, gid 1,
+  `HOME=/home`, shell `/bin/zsh`, R27). There are no others and no
+  user kind. `/etc/passwd`, `/etc/group`, `/etc/shadow` and
+  `/etc/shells` are written at pack time; `/etc/hostname`,
+  `/etc/hosts`, `/etc/profile`, `/etc/zprofile` and `/etc/zshrc` are
+  side effects of converging `host:local` (and of PID 1 reading it at
   boot), through one writer (`seat::write_side_effects`).
+- zsh (`pkg:zsh`, fixed) is the login shell. `/etc/zprofile` reads
+  `/etc/profile` in sh emulation, so a login zsh has `host:local`
+  env. `/etc/zshrc` is the prompt Joshua's NixOS machine uses (time,
+  `%n@%m`, `%2~`, the git branch, `§`) with `user@host` and the branch
+  in a hue from the FNV-1a hash of the hostname (at #3B9DC2's and
+  #2A7A9E's saturation and lightness), history in `~/.zsh_history`,
+  emacs keys with Home, End and Delete, and `compinit`. The zsh
+  package has no `newuser` script, so a first shell asks nothing.
   `/etc/hosts` is localhost, the hostname, then `host:local.hosts`
   (built 2026-10-19): host name to one IPv4 or IPv6 address, for LAN
   machines the network's DNS does not serve. Names follow the

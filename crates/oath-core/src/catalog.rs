@@ -31,6 +31,12 @@ pub const STATUS_DIR: &str = "status";
 pub fn status_path(root: &Path, id: &ObjectId) -> PathBuf {
     root.join(STATUS_DIR).join(&id.kind).join(format!("{}.json", id.name))
 }
+/// A package that can never be removed: seeded fixed, or fixed by this
+/// build's `base` profile.
+fn fixed(obj: &Object) -> bool {
+    obj.meta.fixed || (obj.id.kind == KIND_PKG && crate::seed::base_fixes(&obj.id))
+}
+
 /// Kinds `oath new` / `oath rm` work on. host, net, ssh, snap and dev are
 /// singletons or inventory owned by the engine.
 const CREATABLE: &[&str] = &[KIND_SVC, KIND_PKG];
@@ -247,10 +253,11 @@ impl Catalog {
     pub fn observe(&self, _lock: &CatalogLock, bin_dir: &Path) -> Result<()> {
         for id in self.ls(Some(KIND_PKG))? {
             let obj = self.get(&id)?;
+            let removable = !fixed(&obj);
             let spec = self.applied(&id)?.unwrap_or(obj.desired);
             let Ok(spec) = serde_json::from_value::<Pkg>(spec) else { continue };
             let mut actual = crate::pkg::observe(&self.root, bin_dir, &id.name, spec.present);
-            actual.removable = !obj.meta.fixed;
+            actual.removable = removable;
             actual.url = spec.url;
             actual.needs = spec.needs;
             actual.description = spec.description;
@@ -401,9 +408,7 @@ impl Catalog {
         if self.obj_dir(id).join(REMOVE_MARK).exists() {
             return Err(Error::hint(format!("{id} is being removed"), "oath apply, or oath undo"));
         }
-        if id.kind == KIND_PKG
-            && fields.get("present") == Some(&Value::Bool(false))
-            && obj.meta.fixed
+        if id.kind == KIND_PKG && fields.get("present") == Some(&Value::Bool(false)) && fixed(&obj)
         {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
@@ -469,7 +474,7 @@ impl Catalog {
             return Err(Error::hint(format!("{id} cannot be removed"), "oath schema"));
         }
         let obj = self.get(id)?;
-        if id.kind == KIND_PKG && obj.meta.fixed {
+        if id.kind == KIND_PKG && fixed(&obj) {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
         let dir = self.obj_dir(id);
@@ -1175,6 +1180,12 @@ impl Catalog {
         let from = snap.join("objects").join(&id.kind).join(&id.name);
         let to = self.obj_dir(id);
         let existed = from.join("desired.json").is_file() && !from.join(NEW_MARK).exists();
+        if !existed && id.kind == KIND_PKG && to.join("desired.json").is_file() {
+            // A package the image fixes stays: the image's own files need it.
+            if fixed(&self.get(id)?) {
+                return Ok(true);
+            }
+        }
         if !existed {
             if to.join("desired.json").is_file() {
                 match id.kind.as_str() {
@@ -1314,7 +1325,7 @@ impl Catalog {
     fn converge_one_pkg(&self, id: &ObjectId, hooks: &dyn ApplyHooks) -> Result<Value> {
         let obj = self.get(id)?;
         let pkg: Pkg = serde_json::from_value(obj.desired.clone())?;
-        let removable = !obj.meta.fixed;
+        let removable = !fixed(&obj);
         if !pkg.present && !removable {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }

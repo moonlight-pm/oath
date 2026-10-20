@@ -89,7 +89,7 @@ To use other servers, change its `exec` (`oath set svc:time
 
 ## SSH
 
-SSH login is **home** (uid 1, `HOME=/home`, shell `/bin/sh`). Root SSH
+SSH login is **home** (uid 1, `HOME=/home`, login shell `/bin/zsh`). Root SSH
 is denied and passwords are off. `sudo` has no password. Serial is
 root when `svc:serial` is enabled. There is **no private key in the
 image**.

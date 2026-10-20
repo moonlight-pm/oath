@@ -108,12 +108,31 @@ package store, or the SSH host keys.
 ## Who you are
 
 Serial login is **root** (break-glass) when `svc:serial` is enabled.
-The screen and keyboard are **home** when `svc:screen` is enabled. SSH is **home** (uid 1, `HOME=/home`, shell `/bin/sh`). `sudo` (no
+The screen and keyboard are **home** when `svc:screen` is enabled. SSH is **home** (uid 1, `HOME=/home`, login shell zsh). `sudo` (no
 password) becomes root. The only groups are `root` and `home`. The
 apply log records uid and tty. `host:local.env` and `TZ` (from
 `host:local.timezone`) are injected by PID 1 into services and written
 to root-owned `/etc/profile` for logins. `oath apply` does not write
 `$HOME/.profile`.
+
+### The shell
+
+`home`'s login shell is zsh (`pkg:zsh`, not removable); `/bin/sh` is
+bash, and root's shell. A login zsh reads `/etc/profile` through
+`/etc/zprofile`. `/etc/zshrc` sets the prompt, history in
+`~/.zsh_history`, emacs keys and completion:
+
+```
+14:02:07 home@canto Workspace/sola main § 
+```
+
+The time, `user@host`, the last two directories of the working
+directory, the git branch, and `§`. `user@host` and the branch take a
+color from a hash of the hostname, so each machine keeps its own and a
+new hostname gets a new one. oath writes `/etc/zprofile` and
+`/etc/zshrc` with `/etc/profile`, when `host:local` converges and at
+boot; put your own settings in `~/.zshrc`. `ssh home@host 'command'`
+runs the command through zsh.
 
 ## Agents
 

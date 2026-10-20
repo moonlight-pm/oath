@@ -39,8 +39,8 @@ fn main() {
     );
     let home = std::env::var("HOME").unwrap_or_else(|_| "/home".into());
     let _ = std::env::set_current_dir(&home);
-    let err =
-        Command::new("/bin/bash").arg("-l").env("TERM", "linux").env("PS1", "\\w \\$ ").exec();
-    eprintln!("exec bash: {err}");
+    let shell = oath_core::seat::SHELL;
+    let err = Command::new(shell).arg("-l").env("TERM", "linux").env("SHELL", shell).exec();
+    eprintln!("exec {shell}: {err}");
     std::process::exit(1);
 }

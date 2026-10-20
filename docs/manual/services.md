@@ -117,7 +117,9 @@ Oath has two Unix accounts: `root` and `home` (uid 1, gid 1). `user`
 is `root` or `home`; absent means `root`.
 
 Every service gets `PATH=/bin`, `HOME`, `USER`, `LOGNAME`,
-`SHELL=/bin/sh` and `XDG_RUNTIME_DIR` for its account, then
+`SHELL=/bin/sh` and `XDG_RUNTIME_DIR` for its account (the `desk`
+profile's Sola services set `SHELL=/bin/zsh`, so terminals start the
+login shell), then
 `host:local.env`, then `TZ` from `host:local.timezone` (unless `env`
 already sets `TZ`), then its own `env`. The service's `env` wins on
 the same name.

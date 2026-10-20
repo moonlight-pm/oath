@@ -8,7 +8,8 @@
     "pkg:dhcpcd",
     "pkg:btrfs",
     "pkg:oath",
-    "pkg:dropbear"
+    "pkg:dropbear",
+    "pkg:zsh"
   ],
   "objects": {
     "host:local": {
@@ -75,6 +76,11 @@
       "present": true,
       "description": "GNU bash, the shell; also /bin/sh.",
       "home": "https://www.gnu.org/software/bash/"
+    },
+    "pkg:zsh": {
+      "present": true,
+      "description": "zsh, home's login shell.",
+      "home": "https://www.zsh.org/"
     },
     "pkg:coreutils": {
       "present": true,

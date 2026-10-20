@@ -18,17 +18,22 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `0f7ae5f7f797`, the `desk` profile
+- **Running now:** build output `f897ffcbda55`, the `desk` profile
   (R20–R22: base plus seatd, rivulet, Sola with its terminal,
   Workspaces, browser and KVM, PipeWire, Noto, the tools that build
-  Sola, and their packages), reached on 2026-10-19 by `cargo make
+  Sola, and their packages), reached on 2026-10-20 by `cargo make
   update --target home@10.0.0.3 --confirm --reboot`; the system was
   `cargo make install --target home@10.0.0.3 --disk /dev/sda
   --hostname canto --overlay hosts/canto.json --confirm` on
-  2026-10-18. Passes all 41 `metal` cases (`cargo make check --target
-  home@10.0.0.3`, 2026-10-19), `desk`, `desk-sola`, `desk-sound`,
-  `native-userland` (`dig`), `recipe-builds-here` and
+  2026-10-18. Passes all 42 `metal` cases (`cargo make check --target
+  home@10.0.0.3`, 2026-10-20), `desk`, `desk-sola`, `desk-sound`,
+  `login-shell`, `native-userland` (`dig`), `recipe-builds-here` and
   `pkg-default-origin` (`m4` from R2) among them.
+- **Shell (R27):** `home` logs in to zsh. The update made `pkg:zsh`
+  (generation 164); the six `svc:sola-*` were set to `SHELL=/bin/zsh`
+  by hand (generation 165), as the `desk` seed now has them, so the
+  terminal's tmux starts `-zsh`. The prompt's colors are `#8D3CC3`
+  (`home@canto`) and `#6F2A9D` (the branch).
 - **Origins (R25):** `host:local.origins` is
   `["https://store.oath.moonlight.pm"]`, set by hand on 2026-10-19
   (generation 135) because the install predates the field; a fresh
@@ -50,6 +55,12 @@ Overwrite this file when facts change; do not append a diary.
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no
   version). Mounting and unmounting it was checked on 2026-10-18; the
   first send from this system is the 04:00 run.
+- **SSH to novus:** `home` has an ed25519 key (`/home/.ssh/id_ed25519`,
+  `home@canto`, made 2026-10-20) that novus's `joshua` accepts from
+  10.0.0.3 only (`from="10.0.0.3"` in `~joshua/.ssh/authorized_keys`);
+  `/home/.ssh/config` names `joshua` for `novus`, so `ssh novus` logs
+  in. The key lives in `/home`, outside the catalog: undo and update
+  leave it, a reinstall loses it.
 - **Agent:** `ssh -T home@10.0.0.3 oath mcp` serves the verbs as MCP
   tools. All five real-model tasks passed here with haiku on
   `e3a11645f14c` (2026-10-17); not run since the reinstall.

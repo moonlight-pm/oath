@@ -1319,6 +1319,16 @@
     "product": "sha256-b6d23a9b5dc6b51202879ba481a78cdaaa1a05418515ffa715a2bf3bb2904528",
     "run": []
   },
+  "zsh": {
+    "version": "5.9.2",
+    "license": "MIT-Modern-Variant",
+    "by": "plan",
+    "plan": "sha256-0758cd61c23e315cd42db9d038a31c8c933f4b2bf00ac17ea1b64fed15920ed7",
+    "product": "sha256-013d0918169443fad84d46c77880ad23839c059eafdd3590c756160bfd200a3a",
+    "run": [
+      "ncurses"
+    ]
+  },
   "zstd": {
     "version": "1.5.7",
     "license": "BSD-3-Clause OR GPL-2.0-only",

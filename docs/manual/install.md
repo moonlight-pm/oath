@@ -116,10 +116,13 @@ has pending changes, or has an apply on probation. Then it:
 
 1. snapshots `@` as `@boot-<id>` before changing anything;
 2. ships the output's store packs the machine lacks;
-3. sets each package the machine has to the output's pin and needs
-   and runs `oath apply` once (`oath undo` takes it back; objects the output's
-   seed has and the machine does not, a new base service say, are
-   listed, not created: add them with `oath new`);
+3. sets each package the machine has to the output's pin and needs,
+   makes each package the output fixes that the machine lacks (the
+   image's files need it: `/etc/passwd` names `pkg:zsh`'s shell), and
+   runs `oath apply` once (`oath undo` takes it back but keeps a fixed
+   package; other objects the output's seed has and the machine does
+   not, a new base service say, are listed, not created: add them with
+   `oath new`);
 4. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
    and `/bin/sudo`;
 5. archives the ESP's kernel and initrd as boot `<id>` (with the

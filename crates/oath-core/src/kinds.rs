@@ -18,7 +18,8 @@ pub struct Meta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_generation: Option<u64>,
     /// A package the seed profile fixes: `present=false` and `oath rm` are
-    /// refused.
+    /// refused. A package this build's `base` profile fixes counts as fixed
+    /// without it (`seed::base_fixes`).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub fixed: bool,
 }

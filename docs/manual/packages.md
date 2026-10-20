@@ -29,6 +29,7 @@ Not removable (`present=false` is refused):
 | `pkg:btrfs` | `btrfs`, `mkfs.btrfs` |
 | `pkg:oath` | `oath` |
 | `pkg:dropbear` | the SSH server: `dropbear`, `dropbearkey` |
+| `pkg:zsh` | `zsh`, `home`'s login shell |
 
 Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
 `tar`, `gzip`, `xz`, `bzip2`, `procps` (`ps`, `pidof`, `free`, `top`,

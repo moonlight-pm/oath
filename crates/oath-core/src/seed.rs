@@ -8,6 +8,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
+use std::sync::OnceLock;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -23,6 +24,17 @@ pub const PROFILES: &[(&str, &str)] =
     &[("base", include_str!("../seed/base.json")), ("desk", include_str!("../seed/desk.json"))];
 
 pub const DEFAULT_PROFILE: &str = "base";
+
+/// Whether this build's `base` profile fixes `id`. The image's own files
+/// need such a package (`/etc/passwd` names `pkg:zsh`'s shell), so it is
+/// never removable, however the machine came to have it: seeded, or made
+/// by `cargo make update` for an image that added it.
+pub fn base_fixes(id: &ObjectId) -> bool {
+    static FIXED: OnceLock<BTreeSet<String>> = OnceLock::new();
+    FIXED
+        .get_or_init(|| Profile::load(DEFAULT_PROFILE).map(|p| p.fixed).unwrap_or_default())
+        .contains(&id.to_string())
+}
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
