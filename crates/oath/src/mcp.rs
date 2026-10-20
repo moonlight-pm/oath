@@ -879,7 +879,8 @@ fn tools() -> Vec<Tool> {
         "apply",
         "Check, snapshot, then converge all drift (or only `ids`). If a check fails nothing \
          changes. Halt, reboot, boot generation changes and changes that can cut off SSH \
-         (`svc:sshd`, `ssh:local` keys, `net:net0`) need `confirm: true`: do not pass it unless \
+         (`svc:sshd`, `ssh:local` keys, `net:net0`, a new `pkg:dropbear` hash) need \
+         `confirm: true`: do not pass it unless \
          the owner asked for that class of change. A change that can cut off SSH then goes on \
          probation: PID 1 undoes it after `probation_secs` unless `keep` runs from a connection \
          opened after the apply. A reboot or halt ends this connection; the server exits."

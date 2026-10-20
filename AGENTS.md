@@ -101,8 +101,8 @@ without a decision in `docs/decisions.md`.
 
 ## Forks
 
-`forks/sola` is **oath-sola**; Joshua's NixOS desk runs **Sola**
-(`moonlight-pm/Sola`). Pull Sola into the fork; never push
-Oath-compat changes the other way. A mixed change is two commits
-(generic first). Commands: [forks/README.md](forks/README.md). The
-desk is out of the image until it builds natively (roadmap phase 8).
+`forks/sola` is **oath-sola**, frozen at `aa548c8a` (R28): do not
+merge Sola into it. Sola packages itself from its own repo
+(`moonlight-pm/Sola`), and the fork goes once Sola publishes its packs.
+Oath's side of that stays generic and never names Sola. Do not edit
+the Sola repo from here; its own session does that.

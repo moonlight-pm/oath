@@ -69,12 +69,22 @@ trees for this name), and `verified` (`ok`, `at`; `got` when the tree
 no longer hashes to `hash`). If `removable` is false, `present=false`
 is refused (not `--confirm`).
 
+A tree built on the machine reaches the store with `sudo oath store
+pkg:<name> <dir|file.tar>`: it hashes the tree, copies it in (each file
+0755 or 0644, as the hash records it; a special file is refused) and
+prints the hash (`--json`: `{"hash": …, "id": …}`). It changes no
+object and no link: `oath set pkg:<name> hash=… needs=[…]` (or `oath
+new`) and `oath apply` do that. A service whose program (`exec[0]`
+through `/bin`) is in this package restarts when apply moves the pin.
+
 Integrity: apply hashes the tree again before linking and refuses a
 changed one. `oath verify` re-hashes every linked tree (PID 1 runs it
 after each boot); a damaged package has status `error` and INDEX lists
 it. Fetch it again (`url`) or reinstall.
 
-Safety: `mutate`. Apply snapshots, then converges links.
+Safety: `mutate`. Apply snapshots, then converges links. Moving the
+`hash` of the package `svc:sshd` runs from (`pkg:dropbear`) restarts
+sshd, so it needs `--confirm` and goes on probation.
 
 ## Example
 

@@ -53,9 +53,15 @@ impl Exit {
     }
 }
 
+/// The package realization a service's program runs from, `(name,
+/// hash)`: `exec[0]` followed through `/bin` into the store.
+type Program = Option<(String, String)>;
+
 struct Kid {
     id: String,
     spec: Svc,
+    /// What `exec[0]` resolved to when it started.
+    program: Program,
     started: Instant,
     /// Read end of the child's stdout+stderr pipe (non-blocking).
     out: Option<fs::File>,
@@ -82,8 +88,9 @@ pub struct Supervisor {
     kids: HashMap<i32, Kid>,
     oneshot_done: HashSet<String>,
     pending: Vec<Pending>,
-    /// Gave up on this spec; a different applied spec tries again.
-    failed: HashMap<String, Svc>,
+    /// Gave up on this spec and program; a different applied spec, or the
+    /// program moving to another realization, tries again.
+    failed: HashMap<String, (Svc, Program)>,
     history: HashMap<String, History>,
     /// One-shot helpers PID 1 runs for itself (the probation rollback), by
     /// pid. Their output goes to `init.log`.
@@ -101,7 +108,7 @@ pub struct State {
     kids: Vec<KidState>,
     oneshot_done: Vec<String>,
     pending: Vec<(String, Svc, u64)>,
-    failed: Vec<(String, Svc)>,
+    failed: Vec<(String, Svc, Program)>,
     history: Vec<(String, u32, u32, Option<Exit>, Option<String>)>,
     tasks: Vec<(i32, String)>,
 }
@@ -118,6 +125,8 @@ struct KidState {
     pid: i32,
     id: String,
     spec: Svc,
+    #[serde(default)]
+    program: Program,
     /// Milliseconds it had run.
     ran_ms: u64,
     out: Option<i32>,
@@ -142,6 +151,7 @@ impl Supervisor {
                     pid,
                     id: k.id,
                     spec: k.spec,
+                    program: k.program,
                     ran_ms: k.started.elapsed().as_millis() as u64,
                     out,
                     partial: k.partial,
@@ -156,7 +166,7 @@ impl Supervisor {
                 .drain(..)
                 .map(|p| (p.id, p.spec, p.due.saturating_duration_since(now).as_millis() as u64))
                 .collect(),
-            failed: self.failed.drain().collect(),
+            failed: self.failed.drain().map(|(id, (spec, prog))| (id, spec, prog)).collect(),
             history: self
                 .history
                 .drain()
@@ -176,7 +186,10 @@ impl Supervisor {
                 unsafe { fs::File::from_raw_fd(fd) }
             });
             let started = now.checked_sub(Duration::from_millis(k.ran_ms)).unwrap_or(now);
-            s.kids.insert(k.pid, Kid { id: k.id, spec: k.spec, started, out, partial: k.partial });
+            s.kids.insert(
+                k.pid,
+                Kid { id: k.id, spec: k.spec, program: k.program, started, out, partial: k.partial },
+            );
         }
         s.oneshot_done = state.oneshot_done.into_iter().collect();
         s.pending = state
@@ -184,7 +197,8 @@ impl Supervisor {
             .into_iter()
             .map(|(id, spec, ms)| Pending { id, spec, due: now + Duration::from_millis(ms) })
             .collect();
-        s.failed = state.failed.into_iter().collect();
+        s.failed =
+            state.failed.into_iter().map(|(id, spec, prog)| (id, (spec, prog))).collect();
         s.history = state
             .history
             .into_iter()
@@ -217,20 +231,42 @@ impl Supervisor {
             }
         }
 
-        let running: Vec<(String, Svc)> =
-            self.kids.values().map(|k| (k.id.clone(), k.spec.clone())).collect();
-        for (id, spec) in running {
-            let keep = wanted
-                .get(&id)
-                .map(|s| s.enabled && !s.exec.is_empty() && s.same_spawn(&spec))
-                .unwrap_or(false);
-            if !keep {
+        let running: Vec<(String, Svc, Program)> =
+            self.kids.values().map(|k| (k.id.clone(), k.spec.clone(), k.program.clone())).collect();
+        for (id, spec, was) in running {
+            let Some(want) =
+                wanted.get(&id).filter(|s| s.enabled && !s.exec.is_empty() && s.same_spawn(&spec))
+            else {
                 self.stop(&id);
+                continue;
+            };
+            // A service follows its package: an apply that moved the
+            // realization its program resolves to restarts it.
+            if let (Some((name, hash)), true) = (program(want), id.starts_with("svc:")) {
+                if was.as_ref().is_some_and(|w| *w != (name.clone(), hash.clone())) {
+                    log(&format!("{id}: {} is now pkg:{name} {hash}; restarting", want.exec[0]));
+                    tel("init", "svc_follow", json!({ "id": id, "pkg": name, "hash": hash }));
+                    self.stop(&id);
+                }
             }
         }
         self.pending
             .retain(|p| wanted.get(&p.id).is_some_and(|s| s.enabled && s.same_spawn(&p.spec)));
-        self.failed.retain(|id, spec| wanted.get(id).is_some_and(|s| s == spec));
+        // A new spec, or a new program, gets a fresh run of quick failures.
+        let retry: Vec<String> = self
+            .failed
+            .iter()
+            .filter(|(id, (spec, prog))| {
+                !wanted.get(*id).is_some_and(|s| s == spec && program(s) == *prog)
+            })
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in retry {
+            self.failed.remove(&id);
+            if let Some(h) = self.history.get_mut(&id) {
+                h.quick = 0;
+            }
+        }
 
         let items: Vec<(String, Svc)> =
             wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();
@@ -310,15 +346,16 @@ impl Supervisor {
                 self.write_actual(&kid.id, "stopped", None);
             } else if quick >= GIVE_UP {
                 log(&format!(
-                    "{}: {quick} quick failures in a row; giving up until the spec changes",
+                    "{}: {quick} quick failures in a row; giving up until the spec or the \
+                     program changes",
                     kid.id
                 ));
                 let why = format!(
-                    "exited within {} s {quick} times in a row; waits for a new spec",
+                    "exited within {} s {quick} times in a row; waits for a new spec or program",
                     QUICK.as_secs()
                 );
                 self.history.entry(kid.id.clone()).or_default().why = Some(why.clone());
-                self.failed.insert(kid.id.clone(), kid.spec.clone());
+                self.failed.insert(kid.id.clone(), (kid.spec.clone(), kid.program.clone()));
                 self.write_actual_why(&kid.id, "failed", None, Some(&why));
             } else {
                 // 1 s, 2 s, 4 s, 8 s after quick failures; at once after a long run.
@@ -436,6 +473,7 @@ impl Supervisor {
     }
 
     fn start(&mut self, id: &str, spec: &Svc) {
+        let program = program(spec);
         match spawn(id, spec) {
             Ok(kid) => {
                 let pid = kid.0;
@@ -448,6 +486,7 @@ impl Supervisor {
                     Kid {
                         id: id.to_string(),
                         spec: spec.clone(),
+                        program,
                         started: Instant::now(),
                         out: Some(kid.1),
                         partial: Vec::new(),
@@ -465,7 +504,7 @@ impl Supervisor {
                 let h = self.history.entry(id.to_string()).or_default();
                 h.quick += 1;
                 h.why = Some(why.clone());
-                self.failed.insert(id.to_string(), spec.clone());
+                self.failed.insert(id.to_string(), (spec.clone(), program));
                 self.write_actual_why(id, "failed", None, Some(&why));
             }
         }
@@ -537,6 +576,10 @@ impl Supervisor {
         if let Some(why) = why {
             v["reason"] = json!(why);
         }
+        let running = pid.and_then(|p| self.kids.get(&p));
+        if let Some((name, hash)) = running.and_then(|k| k.program.as_ref()) {
+            v["pkg"] = json!({ "id": format!("pkg:{name}"), "hash": hash });
+        }
         // A service's own record of its last run (backup-send writes one)
         // lives with its log, so it outlives the status tmpfs.
         let last = Path::new(LOG_ROOT).join("svc").join(format!("{}.last.json", oid.name));
@@ -551,6 +594,11 @@ impl Supervisor {
         }
         let _ = oath_core::write_json(&oath_core::status_path(Path::new(DEFAULT_ROOT), &oid), &v);
     }
+}
+
+fn program(spec: &Svc) -> Program {
+    let exe = spec.exec.first()?;
+    oath_core::program_realization(Path::new(DEFAULT_ROOT), Path::new(exe))
 }
 
 /// Applied service specs, plus the DHCP client when `net:net0` is dhcp,
@@ -799,7 +847,8 @@ mod tests {
             spec: spec.clone(),
             due: Instant::now() + Duration::from_secs(4),
         });
-        sup.failed.insert("svc:b".into(), spec.clone());
+        let prog = Some(("sleep".to_string(), "sha256-0".to_string()));
+        sup.failed.insert("svc:b".into(), (spec.clone(), prog.clone()));
         sup.history.insert(
             "svc:b".into(),
             History {
@@ -816,7 +865,7 @@ mod tests {
         let back = Supervisor::import(serde_json::from_str(&text).unwrap());
         assert_eq!(back.pending[0].id, "svc:a");
         assert!(back.pending[0].due > Instant::now() + Duration::from_secs(3));
-        assert_eq!(back.failed["svc:b"], spec);
+        assert_eq!(back.failed["svc:b"], (spec, prog));
         let h = &back.history["svc:b"];
         assert_eq!((h.restarts, h.quick, h.why.as_deref()), (2, 5, Some("x")));
         assert!(matches!(h.last_exit, Some(Exit::Code(3))));

@@ -50,10 +50,11 @@ pub use packhash::{
 pub use pkg::{
     check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root, fetch_adv,
     fetch_pkg, fetch_pkg_any, host_origins, ingest_file, install_tree, list_realization_ids,
-    list_realizations, normalize_need as normalize_pkg_need, pin_desired_hash, promote_slot,
-    promote_store, put_tree, read_advisories, read_advisories_store, read_components, resolve_tree,
-    store_present, sync_need_hashes, verify_tree, write_advisories, write_advisories_store,
-    write_slot_links, COMPONENTS_NAME,
+    list_realizations, normalize_need as normalize_pkg_need, pin_desired_hash,
+    program_realization, promote_slot, promote_store, put_tree, read_advisories,
+    read_advisories_store, read_components, resolve_tree, store_pkg, store_present,
+    sync_need_hashes, verify_tree, write_advisories, write_advisories_store, write_slot_links,
+    COMPONENTS_NAME,
 };
 pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,

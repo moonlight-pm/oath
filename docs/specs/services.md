@@ -45,9 +45,21 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 
 Actual: `state` (`running`, `restarting`, `stopped`, `failed`), `pid`,
 `restarts` (restarts this boot), `last_exit` (`{"code": n}` or
-`{"signal": n}`), `since`, and for `failed` a `reason` (in a wants
-cycle and with whom, waiting on one, quick failures, or the spawn
-error).
+`{"signal": n}`), `since`, `pkg` (the package realization its program
+runs from), and for `failed` a `reason` (in a wants cycle and with
+whom, waiting on one, quick failures, or the spawn error).
+
+A service follows its package (is, 2026-10-20). PID 1 records, at each
+start, the realization `exec[0]` resolves to through `/bin`
+(`/oath/store/pkg/<name>/<hash>/…`). Apply tells PID 1 to converge once
+every package in it has moved; a running `svc:*` whose program now
+resolves to another realization is stopped and started again, and a
+`failed` one tries again. Nothing else restarts: a service whose
+libraries moved keeps running until it restarts, and PID 1's own DHCP
+client does not follow `pkg:dhcpcd`. Because `svc:sshd` follows
+`pkg:dropbear`, moving that package's `hash` needs `--confirm` and goes
+on probation, as any change that can cut off SSH does.
+
 `applied.json` is the spec PID 1 runs: `oath apply` writes it after the
 document passes its checks, and `oath undo` puts back the previous one.
 Desired is what the owner is staging; PID 1 never reads it while an
@@ -124,7 +136,8 @@ still starts. PID
   `restart` decides whether it runs again. A run of 10 s or more
   restarts at once; quick failures wait 1, 2, 4 then 8 s. After five
   quick failures in a row the service is `failed` and stays down until
-  its applied spec changes. A spawn error is also `failed`.
+  its applied spec or its program's package changes, which starts a
+  fresh count. A spawn error is also `failed`.
 - **Cgroups.** One cgroup per service under `/sys/fs/cgroup/oath/`.
   Stop sends SIGTERM to every process in it, waits up to 5 s, then
   `cgroup.kill`s the rest; an exit cleans up leftover children the same

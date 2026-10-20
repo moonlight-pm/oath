@@ -1014,14 +1014,24 @@ impl Catalog {
         hooks: &dyn ApplyHooks,
         report: &mut ApplyReport,
     ) -> Result<()> {
+        let mut result = Ok(());
         for d in selected {
-            if self.removing(&d.id) {
-                self.converge_removal(&d.id, hooks)?;
-                continue;
+            result = if self.removing(&d.id) {
+                self.converge_removal(&d.id, hooks)
+            } else {
+                self.converge_one(&d.id, hooks, report)
+            };
+            if result.is_err() {
+                break;
             }
-            self.converge_one(&d.id, hooks, report)?;
         }
-        Ok(())
+        // A service follows its package: PID 1 restarts one whose program
+        // now resolves to another realization. It hears once, after every
+        // package in the apply has moved, failed or not.
+        if selected.iter().any(|d| d.id.kind == KIND_PKG) {
+            result = result.and(hooks.notify_init());
+        }
+        result
     }
 
     /// Converge `id` and wait for PID 1 when it is a service. Once its spec
@@ -1460,8 +1470,21 @@ impl Catalog {
                 })
             }
             (KIND_NET, "net0") => ["up", "ipv4", "gateway"].iter().any(|k| changed(k).is_some()),
+            // PID 1 restarts sshd when the package it runs from moves.
+            (KIND_PKG, name) => changed("hash").is_some() && self.sshd_runs_from(name),
             _ => false,
         }
+    }
+
+    /// Whether `svc:sshd`'s program resolves into `pkg:<name>`'s store.
+    fn sshd_runs_from(&self, name: &str) -> bool {
+        let sshd = ObjectId::new(KIND_SVC, "sshd");
+        let spec = match self.applied(&sshd) {
+            Ok(Some(v)) => v,
+            _ => return false,
+        };
+        let Some(exe) = spec.pointer("/exec/0").and_then(Value::as_str) else { return false };
+        crate::pkg::program_realization(&self.root, Path::new(exe)).is_some_and(|(n, _)| n == name)
     }
 
     fn current_generation(&self) -> Result<u64> {
@@ -1499,7 +1522,13 @@ impl Catalog {
                 }
             }
         }
-        for dir in [Path::new(BTRFS_TOP), self.root.join(".gens").as_path()] {
+        let gens = self.root.join(".gens");
+        let mut dirs = vec![gens.as_path()];
+        // The machine's generation subvolumes number only its own catalog.
+        if self.root == Path::new(crate::DEFAULT_ROOT) {
+            dirs.push(Path::new(BTRFS_TOP));
+        }
+        for dir in dirs {
             if let Ok(rd) = fs::read_dir(dir) {
                 for e in rd.flatten() {
                     let name = e.file_name();

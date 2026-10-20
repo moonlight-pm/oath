@@ -462,6 +462,26 @@ steps = [
   { run = "sudo oath set pkg:dosfstools present=false && sudo oath apply pkg:dosfstools && sudo oath set pkg:dosfstools present=true && sudo oath apply pkg:dosfstools", fails = true, expect = ["store is damaged"] },
 ]
 
+[[case]]
+name = "store-and-follow"
+about = "oath store puts a tree made on the machine (a directory, or a tar of one) into the store and prints its hash, changing no object; pinning a new hash moves the package, and PID 1 restarts the service whose program it is, and no other."
+metal = true
+steps = [
+  { run = "rm -rf /tmp/follow && mkdir -p /tmp/follow/bin && printf '#!/bin/sh\\necho follow-one\\nexec /bin/sleep 86400001\\n' >/tmp/follow/bin/follow && chmod 755 /tmp/follow/bin/follow && sudo oath store pkg:follow /tmp/follow | tee /tmp/follow.out && test ! -e /oath/objects/pkg/follow && test ! -e /bin/follow && echo NO_OBJECT", expect = ["pkg:follow sha256-", "NO_OBJECT"] },
+  { run = "sudo oath new pkg:follow hash=$(cut -d' ' -f2 /tmp/follow.out) && sudo oath new svc:follow --from-json '{\"exec\":[\"/bin/follow\"]}' && sudo oath new svc:hold --from-json '{\"exec\":[\"/bin/sleep\",\"86400000\"]}' && sudo oath apply pkg:follow svc:follow svc:hold && sleep 1 && pgrep -fx '/bin/sleep 86400001' >/tmp/follow.pid && pgrep -fx '/bin/sleep 86400000' >/tmp/hold.pid && oath get svc:follow --actual", expect = ["\"id\": \"pkg:follow\"", "\"state\": \"running\""] },
+  { run = "sed -i s/follow-one/follow-two/ /tmp/follow/bin/follow && tar -C /tmp/follow -cf /tmp/follow.tar . && sudo oath --json store pkg:follow /tmp/follow.tar | tee /tmp/follow.json && sudo oath set pkg:follow hash=$(sed -n 's/.*\"hash\":\"\\(sha256-[0-9a-f]*\\)\".*/\\1/p' /tmp/follow.json) && sudo oath apply pkg:follow && sleep 1 && p=$(pgrep -fx '/bin/sleep 86400001') && test \"$p\" != \"$(cat /tmp/follow.pid)\" && pgrep -fx '/bin/sleep 86400000' | diff /tmp/hold.pid - && echo HOLD_KEPT", expect = ["\"id\":\"pkg:follow\"", "HOLD_KEPT"] },
+  { run = "oath logs svc:follow; oath logs -n 400 | grep 'is now pkg:follow'", expect = ["follow-one", "follow-two", "svc:follow: /bin/follow is now pkg:follow sha256-"] },
+]
+
+[[case]]
+name = "sshd-follows-dropbear-on-probation"
+about = "Moving the package sshd runs from restarts sshd, so it needs --confirm and goes on probation, like any change that can cut off SSH; a new login keeps it."
+steps = [
+  { run = "mkdir -p /tmp/db && cp -a /oath/store/pkg/dropbear/live/. /tmp/db/ && echo check >/tmp/db/oath-check && sudo oath store pkg:dropbear /tmp/db | cut -d' ' -f2 >/tmp/db.hash && sudo oath set pkg:dropbear hash=$(cat /tmp/db.hash) && sudo oath apply pkg:dropbear", fails = true, expect = ["pkg:dropbear needs --confirm"] },
+  { run = "pgrep -o dropbear >/tmp/sshd.pid; sudo oath apply --confirm pkg:dropbear; echo SURVIVED", expect = ["on probation", "SURVIVED"] },
+  { run = "sudo oath keep && oath logs -n 400 | grep 'svc:sshd: /bin/dropbear is now pkg:dropbear' && test \"$(pgrep -o dropbear)\" != \"$(cat /tmp/sshd.pid)\" && oath get svc:sshd --actual", expect = ["kept generation", "running", "\"id\": \"pkg:dropbear\""] },
+]
+
 # ---- Phase 6: metal -------------------------------------------------
 
 [[case]]

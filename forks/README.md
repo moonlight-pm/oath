@@ -25,6 +25,11 @@ programs we wrote (`hello`, `fetchme`, later canaries) live in
 
 ## Sola: generic fixes vs Oath-compat
 
+**Frozen (R28, 2026-10-20) at `aa548c8a`.** Sola's own branch carries
+what oath-sola had, and Sola packages itself on an Oath machine. Do not
+merge Sola into the fork again; it is deleted once Sola publishes its
+own packs. The rest of this section is how it was kept.
+
 `forks/sola` is [oath-sola](https://github.com/moonlight-pm/oath-sola).
 The NixOS daily driver is [Sola](https://github.com/moonlight-pm/Sola).
 T23: pull Sola into the fork; never push **Oath-compat** the other way.

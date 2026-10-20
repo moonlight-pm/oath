@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 use oath_core::{
     apply_overlay, build_file, build_pinned, file_plan, fmt_plan, lint_bytes, lint_path,
     parse_plan, seed_profile, tel, Actor, BuildReport, Catalog, Error, ObjectId, DEFAULT_PROFILE,
-    DEFAULT_ROOT, EXIT_CONFIRM, KIND_PLAN,
+    DEFAULT_ROOT, EXIT_CONFIRM, KIND_PKG, KIND_PLAN,
 };
 use serde_json::{json, Map, Value};
 
@@ -73,6 +73,13 @@ enum Cmd {
         path: PathBuf,
         #[arg(short = 'w')]
         write: bool,
+    },
+    /// Put a tree built elsewhere (a directory, or a tar of one) into the
+    /// store as a realization of `pkg:<name>`, and print its hash. Changes
+    /// no object: `oath set pkg:<name> hash=…` and `oath apply` link it.
+    Store {
+        id: String,
+        src: PathBuf,
     },
     /// Isolated plan build. Does not link /bin.
     Build {
@@ -184,6 +191,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::New { .. }) => "new",
         Some(Cmd::Rm { .. }) => "rm",
         Some(Cmd::Fmt { .. }) => "fmt",
+        Some(Cmd::Store { .. }) => "store",
         Some(Cmd::Build { .. }) => "build",
         Some(Cmd::Diff { .. }) => "diff",
         Some(Cmd::Apply { .. }) => "apply",
@@ -338,6 +346,23 @@ fn run() -> oath_core::Result<i32> {
                 std::fs::write(&path, &out)?;
             } else {
                 print!("{out}");
+            }
+            Ok(0)
+        }
+        Some(Cmd::Store { id, src }) => {
+            let id: ObjectId = id.parse()?;
+            if id.kind != KIND_PKG {
+                return Err(Error::hint(
+                    "oath store takes pkg:<name> and a directory or tar",
+                    "oath store pkg:<name> <dir|file.tar>",
+                ));
+            }
+            let hash = oath_core::store_pkg(&cli.root, &id.name, &src)?;
+            tel("oath", "store", json!({ "id": id.to_string(), "hash": hash }));
+            if cli.json {
+                println!("{}", json!({ "id": id.to_string(), "hash": hash }));
+            } else {
+                println!("{id} {hash}");
             }
             Ok(0)
         }

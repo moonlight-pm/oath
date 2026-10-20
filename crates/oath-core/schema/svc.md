@@ -35,26 +35,30 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
   keep running (`svc:sshd` sets this so login sessions survive).
 
 Changing `exec`, `user`, `env`, or `bind_low_ports` restarts the
-process on the next converge.
+process on the next converge. So does an apply that moves the package
+its program comes from (`exec[0]` through `/bin` into
+`/oath/store/pkg/<name>/<hash>/`): a service follows its package.
 
 Actual is runtime: `state` (`running`, `restarting`, `stopped`, or
 `failed`), `pid`, `restarts` (how many times PID 1 restarted it this
-boot), `last_exit` (`{"code": n}` or `{"signal": n}`), `since`, and
+boot), `last_exit` (`{"code": n}` or `{"signal": n}`), `since`, `pkg`
+(`{id, hash}`: the package realization its program runs from), and
 for `failed` the `reason`.
 A process that exits is restarted after 1, 2, 4, 8 s when it keeps
 dying within 10 s of starting; after five quick failures in a row it
-is `failed` and stays down until its applied spec changes. Its output
+is `failed` and stays down until its applied spec, or its program's
+package, changes. Its output
 (stdout and stderr) is in `/oath/log/svc/<name>.log`: `oath logs
 svc:<name>`. Drift is desired against `applied.json` (the last applied
 desired), not against actual.
 
-Safety: `mutate`, except `svc:sshd`: disabling or removing it, or
-changing its `exec`, `user` or `env`, needs `--confirm` and goes on
-probation (a new SSH session runs `sudo oath keep`, or PID 1 undoes it
-after 180 s). Apply checks
-the document, writes `applied.json`, then notifies PID 1. PID 1 runs
-only `applied.json`: a `set` without `apply` never reaches a running
-service, and a file it cannot read leaves the process running. A
+Safety: `mutate`, except `svc:sshd`: disabling or removing it,
+changing its `exec`, `user` or `env`, or moving the package it runs
+from (`pkg:dropbear`), needs `--confirm` and goes on probation (a new
+SSH session runs `sudo oath keep`, or PID 1 undoes it after 180 s).
+Apply checks the document, writes `applied.json`, then notifies PID
+1. PID 1 runs only `applied.json`: a `set` without `apply` never
+reaches a running service, and a file it cannot read leaves the process running. A
 `wants` cycle that reaches PID 1 skips only the services in it (they
 are `failed`, `reason` names the cycle). At shutdown a service stops
 before the services it wants.

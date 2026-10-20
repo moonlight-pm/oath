@@ -671,6 +671,48 @@ pub fn put_tree(slot: &Path, hash: &str, src: &Path) -> Result<PathBuf> {
     Ok(dest)
 }
 
+/// The package realization a program runs from: `path` (a service's
+/// `exec[0]`, usually `/bin/<file>`) followed through its links into
+/// `<catalog_root>/store/pkg/<name>/<hash>/`. `None` for a program outside
+/// the store, or one that is not there.
+pub fn program_realization(catalog_root: &Path, path: &Path) -> Option<(String, String)> {
+    let real = fs::canonicalize(path).ok()?;
+    let store = fs::canonicalize(catalog_root.join("store/pkg")).ok()?;
+    let mut parts = real.strip_prefix(&store).ok()?.components();
+    let name = parts.next()?.as_os_str().to_str()?.to_string();
+    let hash = parts.next()?.as_os_str().to_str()?.to_string();
+    is_realization_id(&hash).then_some((name, hash))
+}
+
+/// `oath store`: put a tree made elsewhere (a directory, or a tar of one)
+/// into the store as a realization of `pkg:<name>`, with the refusals a
+/// fetch has, and return its hash. No object and no link changes: the
+/// caller pins the hash (`oath set pkg:<name> hash=…`) and applies.
+pub fn store_pkg(catalog_root: &Path, name: &str, src: &Path) -> Result<String> {
+    let _lock = crate::Catalog::open(catalog_root)?.lock()?;
+    let slot = slot_dir(catalog_root, name);
+    if src.is_dir() {
+        let hash = hash_tree(src)?;
+        put_tree(&slot, &hash, src)?;
+        return Ok(hash);
+    }
+    if !src.is_file() || !looks_like_tar(src) {
+        return Err(Error::hint(
+            format!("not a directory or a tar: {}", src.display()),
+            "oath store pkg:<name> <dir|file.tar>",
+        ));
+    }
+    let tmp = catalog_root.join("store/pkg").join(format!(".{name}.store"));
+    let _ = fs::remove_dir_all(&tmp);
+    let tree = tmp.join("tree");
+    fs::create_dir_all(&tree)?;
+    let got = extract_tar(src, &tree)
+        .and_then(|()| hash_tree(&tree))
+        .and_then(|hash| put_tree(&slot, &hash, &tree).map(|_| hash));
+    let _ = fs::remove_dir_all(&tmp);
+    got
+}
+
 /// Copy `src` (a pack directory) into the hashed store. Also writes
 /// `live` + slot compat links. Optional host cache gets the same tree.
 pub fn install_tree(
@@ -922,7 +964,11 @@ pub fn pin_desired_hash(catalog_root: &Path, name: &str, hash: &str) -> Result<(
     Ok(())
 }
 
+/// Copy a pack tree. A file gets the mode its hash records (0755 when any
+/// exec bit is set, else 0644), so the store never keeps a setuid,
+/// setgid or writable bit the hash cannot see.
 pub fn copy_tree(src: &Path, dst: &Path) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
     if !src.is_dir() {
         return Err(Error::hint(format!("not a directory: {}", src.display()), "oath schema pkg"));
     }
@@ -941,11 +987,18 @@ pub fn copy_tree(src: &Path, dst: &Path) -> Result<()> {
             symlink(&target, &to).map_err(|err| {
                 Error::Msg(format!("symlink {} -> {}: {err}", to.display(), target.display()))
             })?;
+        } else if !ft.is_file() {
+            return Err(Error::hint(
+                format!("pack contains a special file: {}", e.path().display()),
+                "oath schema pkg",
+            ));
         } else {
             if let Some(p) = to.parent() {
                 fs::create_dir_all(p)?;
             }
             fs::copy(e.path(), &to)?;
+            let exec = fs::metadata(&to)?.permissions().mode() & 0o111 != 0;
+            fs::set_permissions(&to, fs::Permissions::from_mode(if exec { 0o755 } else { 0o644 }))?;
         }
     }
     Ok(())
@@ -1296,7 +1349,10 @@ fn extract_tar(blob: &Path, dest: &Path) -> Result<()> {
     cmd.arg(blob);
     let st = cmd.stdout(std::io::stderr()).status().map_err(|e| Error::Msg(format!("tar: {e}")))?;
     if !st.success() {
-        return Err(Error::hint("fetch pack tar extract failed", "oath schema pkg"));
+        return Err(Error::hint(
+            format!("tar could not unpack {}", blob.display()),
+            "oath schema pkg",
+        ));
     }
     Ok(())
 }
@@ -1458,6 +1514,75 @@ mod needs_tests {
         let other = "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
         assert!(fetch_pkg(&cat, "claude-code-src", &url, "src/claude", other).is_err());
         assert!(fetch_pkg(&cat, "x-src", &url, "../claude", &pin).is_err());
+    }
+
+    #[test]
+    fn store_a_tree_built_elsewhere() {
+        use std::os::unix::fs::PermissionsExt;
+        let d = tempfile::tempdir().unwrap();
+        let cat = d.path().join("cat");
+        crate::seed(&cat).unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        fs::set_permissions(tree.join("bin/hello"), fs::Permissions::from_mode(0o4777)).unwrap();
+        fs::write(tree.join("README"), b"read me\n").unwrap();
+        fs::set_permissions(tree.join("README"), fs::Permissions::from_mode(0o666)).unwrap();
+        let pin = hash_tree(&tree).unwrap();
+        assert_eq!(store_pkg(&cat, "hello", &tree).unwrap(), pin);
+        let got = realization_dir(&cat, "hello", &pin);
+        // The store keeps only the mode the hash records.
+        let mode = |p: &Path| fs::metadata(p).unwrap().permissions().mode() & 0o7777;
+        assert_eq!(mode(&got.join("bin/hello")), 0o755);
+        assert_eq!(mode(&got.join("README")), 0o644);
+        assert_eq!(hash_tree(&got).unwrap(), pin);
+        // Nothing is linked and no object is made: the caller pins and applies.
+        assert!(fs::symlink_metadata(slot_dir(&cat, "hello").join(LIVE_NAME)).is_err());
+        assert!(!cat.join("objects/pkg/hello").exists());
+        // Again is the same hash; a tar of the tree is too, plain or gzip.
+        assert_eq!(store_pkg(&cat, "hello", &tree).unwrap(), pin);
+        for (flag, file) in [("-cf", "t.tar"), ("-czf", "t.tar.gz")] {
+            let tar = d.path().join(file);
+            let st = Command::new("tar")
+                .args(["-C", tree.to_str().unwrap(), flag, tar.to_str().unwrap(), "."])
+                .status()
+                .unwrap();
+            assert!(st.success());
+            assert_eq!(store_pkg(&cat, "hello-tar", &tar).unwrap(), pin);
+        }
+        assert!(store_present(&cat, "hello-tar", &pin));
+        let names: Vec<String> = fs::read_dir(cat.join("store/pkg"))
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert!(names.iter().all(|n| !n.starts_with('.')), "{names:?}");
+        // Refused as a fetch is: a special file, or something that is no tree.
+        let fifo = tree.join("pipe");
+        let c = std::ffi::CString::new(fifo.to_str().unwrap()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(c.as_ptr(), 0o644) }, 0);
+        let e = store_pkg(&cat, "hello", &tree).unwrap_err().to_string();
+        assert!(e.contains("special file"), "{e}");
+        let e = store_pkg(&cat, "hello", &tree.join("README")).unwrap_err().to_string();
+        assert!(e.contains("not a directory or a tar"), "{e}");
+    }
+
+    #[test]
+    fn program_realization_follows_bin_links() {
+        let d = tempfile::tempdir().unwrap();
+        let cat = d.path().join("cat");
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let pin = install_tree(&cat, "hello", &tree, None, "").unwrap();
+        let bin = d.path().join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        symlink(realization_dir(&cat, "hello", &pin).join("bin/hello"), bin.join("hello")).unwrap();
+        symlink(slot_dir(&cat, "hello").join("live/bin/hello"), bin.join("via-live")).unwrap();
+        let want = Some(("hello".to_string(), pin.clone()));
+        assert_eq!(program_realization(&cat, &bin.join("hello")), want);
+        assert_eq!(program_realization(&cat, &bin.join("via-live")), want);
+        assert_eq!(program_realization(&cat, &tree.join("bin/hello")), None);
+        assert_eq!(program_realization(&cat, &bin.join("missing")), None);
     }
 
     #[test]

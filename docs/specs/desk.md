@@ -90,8 +90,12 @@ are 0666, and an X client gets a keymap through Xwayland.
 
 ## Sola (built)
 
+Will be (R28): Sola packages itself from its own repo with `oath
+store` and `oath build`, the `desk` profile pins its packs by hash, and
+`pkgs/sola*` and `forks/sola` go. Is, until Sola publishes them:
+
 Sola comes from oath-sola (`forks/sola`, merged with Sola `master` on
-2026-10-20). It builds offline: `pkg:sola-crates` is `cargo vendor` of
+2026-10-20, now frozen). It builds offline: `pkg:sola-crates` is `cargo vendor` of
 its Cargo.lock (`cargo_vendor = "forks/sola"`, 1.1k crates, the git ones
 too), and `pkg:sola`, `pkg:sola-browser` and `pkg:sola-design` build
 from the tree (`tree = "forks/sola"`) with `pkg:rust`.

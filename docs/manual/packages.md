@@ -92,6 +92,30 @@ package is refused (not `--confirm`).
   lists it. Apply does not change the other objects for you.
 - `description` and `home` are prose and a project URL.
 
+## A tree built here
+
+`oath store` puts a tree built on the machine (a directory, or a `.tar`
+or `.tar.gz` of one) into the store and prints its hash. It changes no
+object and no link; pinning the hash and applying does:
+
+```
+sudo oath store pkg:hello ./out            # pkg:hello sha256-…
+sudo oath --json store pkg:hello out.tar   # {"hash":"sha256-…","id":"pkg:hello"}
+sudo oath set pkg:hello hash=sha256-… needs='[{"id":"pkg:glibc","hash":"sha256-…"}]'
+sudo oath apply pkg:hello
+```
+
+A new name is `oath new pkg:hello hash=…` instead of `set`; a source
+pack a plan builds with is `oath new pkg:hello-src hash=… present=false`
+and goes in the plan's `build_needs`. Every file is stored 0755 or 0644
+(the hash records only whether it is executable), and a pipe, socket or
+device in the tree is refused, as a fetch refuses it.
+
+A service follows its package: when an apply moves the pin of the
+package a service's program comes from (`exec[0]`, through `/bin`),
+PID 1 restarts that service, and no other. So a change to a program is
+build, `oath store`, `oath set … hash=`, `oath apply`.
+
 Upstream identity is `components.json` at the pack root (`name`,
 `version`, `purl`); it is part of the tree hash, and missing means
 unknown. Advisories for a pin live at

@@ -70,7 +70,8 @@ oath logs                   # PID 1's own log
 ```
 
 Actual has `state`, `pid`, `restarts` (restarts this boot),
-`last_exit` (`{"code": 3}` or `{"signal": 15}`) and `since` (UTC).
+`last_exit` (`{"code": 3}` or `{"signal": 15}`), `since` (UTC) and,
+while it runs from a package, `pkg` (that package and hash).
 `state` is:
 
 - `running` — the process is up.
@@ -80,8 +81,8 @@ Actual has `state`, `pid`, `restarts` (restarts this boot),
   waits on one), or it died within 10 s of starting five times in a
   row; `reason` in actual says which. Restarts wait 1, 2, 4, then 8 s between
   those quick failures; a run of 10 s or more restarts at once. A
-  `failed` service stays down until its applied spec changes: fix it
-  with `oath set` and `oath apply`.
+  `failed` service stays down until its applied spec or its program's
+  package changes: fix it with `oath set` and `oath apply`.
 
 A service's stdout and stderr go to `/oath/log/svc/<name>.log`, one
 line each with a UTC time in front, rotated to `<name>.log.1` past
@@ -135,7 +136,14 @@ oath apply svc:web
 ```
 
 Changing `exec`, `user`, `env`, or `bind_low_ports` restarts the
-process.
+process. So does an apply that moves the package its program comes
+from: PID 1 follows `exec[0]` through `/bin` into the store
+(`/oath/store/pkg/<name>/<hash>/…`), and when that realization changes
+it restarts the service. Actual `pkg` names it (`{"id": "pkg:sola",
+"hash": "sha256-…"}`). A service whose program is in another package
+keeps running; one that was `failed` tries again with the new program.
+Moving `pkg:dropbear` restarts `svc:sshd`, so it needs `--confirm` and
+goes on probation.
 
 ## Reboot and power off
 

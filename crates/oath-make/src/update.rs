@@ -14,7 +14,9 @@
 //!    output fixes that the machine lacks (`/etc/passwd` names `pkg:zsh`'s
 //!    shell), and `oath apply` them: one generation, undone by `oath undo`
 //!    (which keeps a fixed package), and apply re-hashes each tree before
-//!    linking it. A recipe the owner built is reported instead.
+//!    linking it. PID 1 restarts each service whose program moved; when
+//!    sshd's did, the apply is on probation and a new SSH login keeps it.
+//!    A recipe the owner built is reported instead.
 //! 5. Replace the image's own files outside the catalog (`/lib/oath`, the
 //!    static `/etc` files, `/sbin/init`, `/bin/sudo`).
 //! 6. Archive the ESP's kernel and initrd as boot `<id>`, write the new
@@ -273,8 +275,13 @@ fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
         eprintln!("every package is already at the output's pin");
         return Ok(());
     }
-    let applied = install::ssh_out(r, &format!("oath apply {}", changed.join(" ")))?;
+    // `--confirm` is the update's own: a package that moves sshd's program
+    // restarts sshd, so its apply goes on probation, and a new login keeps it.
+    let applied = install::ssh_out(r, &format!("oath apply --confirm {}", changed.join(" ")))?;
     eprintln!("{applied}");
+    if applied.contains("on probation") {
+        eprintln!("{}", install::ssh_out(r, "oath keep")?);
+    }
     Ok(())
 }
 
