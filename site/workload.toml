@@ -2,8 +2,8 @@
 # Apply: wicketctl workload apply aulos --file site/workload.toml --confirm
 #
 # The id is the workload Thoxa's workloads/oath created; the site moved
-# here and keeps it. oath.wicket.cloud, its first address, answers with a
-# redirect to oath.moonlight.pm (CANONICAL in src/main.rs).
+# here and keeps it. oath.wicket.cloud, its first address, went when
+# wicket.cloud was parked (2026-10-20); no route, no redirect.
 
 schema = "wicket.workload/v0"
 
@@ -18,10 +18,5 @@ ports = [{ name = "http" }]
 
 [[routes]]
 host = "oath.moonlight.pm"
-container = "web"
-port = "http"
-
-[[routes]]
-host = "oath.wicket.cloud"
 container = "web"
 port = "http"
