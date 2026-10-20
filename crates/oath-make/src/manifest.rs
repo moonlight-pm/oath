@@ -15,8 +15,15 @@ use crate::tools::Tools;
 use crate::util::run_out;
 
 /// The manifest of the image `cargo make build` would pack now. pkg:oath
-/// must be built.
-pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
+/// must be built. A pack the profile pins from elsewhere (`pins`, R28) is
+/// recorded by its pin and needs, and the needs it names at other hashes
+/// than the image ships (`stale_needs`).
+pub fn make(
+    root: &Path,
+    tools: &Tools,
+    profile: &str,
+    pins: &BTreeMap<String, crate::pinned::Pinned>,
+) -> Result<Value> {
     // Where each pack ships: `rootfs` (the profile's store), `initrd`,
     // `installer` (the install initramfs's own tools), `esp`.
     let mut ships: BTreeMap<String, BTreeSet<&str>> = BTreeMap::new();
@@ -50,10 +57,20 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
 
     let lock = crate::pkgs::read_lock(root)?;
     let all = crate::pkgs::load(root)?;
+    let oath = crate::oath_pkg::built(root)?;
+    let shipped = |n: &str| match pins.get(n) {
+        _ if n == "oath" => Some(oath.product.clone()),
+        Some(p) => Some(p.hash.clone()),
+        None => lock.get(n).map(|e| e.product.clone()),
+    };
+    let stale = crate::pinned::stale(pins, shipped);
     let mut packs = serde_json::Map::new();
     for (name, places) in ships {
-        let entry = if name == "oath" {
-            let b = crate::oath_pkg::built(root)?;
+        let entry = if let Some(p) = pins.get(&name) {
+            let mine: Vec<_> = stale.iter().filter(|s| s.pkg == name).cloned().collect();
+            crate::pinned::manifest_entry(p, &mine, &places)
+        } else if name == "oath" {
+            let b = &oath;
             let tree = crate::pack::host_store_cache(root).join("pkg/oath").join(&b.product);
             json!({
                 "hash": b.product,
@@ -105,6 +122,9 @@ pub fn make(root: &Path, tools: &Tools, profile: &str) -> Result<Value> {
     }
     let kernel = crate::kernel::check(&tools.kernel, &tools.modules)?;
     let mut m = json!({ "profile": profile, "kernel": kernel, "packs": packs });
+    if !pins.is_empty() {
+        m["pinned"] = json!(pins.keys().collect::<Vec<_>>());
+    }
     if !own_kernel {
         m["kernel_override"] = json!({
             "vmlinuz": crate::util::sha256_file(&tools.kernel)?,

@@ -76,6 +76,18 @@ impl Profile {
         self.objects.keys().filter_map(|id| id.strip_prefix("pkg:")).map(str::to_string).collect()
     }
 
+    /// Every `pkg:*` object the profile pins with a `hash`, by name, with its
+    /// spec: a pack built elsewhere (R28), not from `pkgs/`.
+    pub fn pinned_pkgs(&self) -> BTreeMap<String, Value> {
+        self.objects
+            .iter()
+            .filter(|(id, v)| {
+                id.starts_with("pkg:") && v["hash"].as_str().is_some_and(|h| !h.is_empty())
+            })
+            .map(|(id, v)| (id["pkg:".len()..].to_string(), v.clone()))
+            .collect()
+    }
+
     /// `host:local.origins` as the profile seeds it: where its machines
     /// fetch packs, in order.
     pub fn origins(&self) -> Vec<String> {
@@ -322,7 +334,8 @@ mod tests {
         let extra = r#"{"extends": "base", "objects": {
             "host:local": {"env": {"EDITOR": "vi"}},
             "pkg:extra": {"present": true},
-            "pkg:later": {"present": false}
+            "pkg:later": {"present": false},
+            "pkg:elsewhere": {"present": true, "hash": "sha256-0000000000000000000000000000000000000000000000000000000000000000"}
         }}"#;
         let looped = r#"{"extends": "looped"}"#;
         let profiles = [PROFILES[0], ("extra", extra), ("looped", looped)];
@@ -335,6 +348,9 @@ mod tests {
         assert!(!p.present_pkgs().contains(&"util".to_string()));
         assert!(!p.present_pkgs().contains(&"later".to_string()));
         assert!(p.pkgs().contains(&"later".to_string()) && p.pkgs().contains(&"oath".to_string()));
+        // Only a package the profile pins by hash is built elsewhere (R28).
+        assert_eq!(p.pinned_pkgs().keys().collect::<Vec<_>>(), vec!["elsewhere"]);
+        assert!(Profile::load("desk").unwrap().pinned_pkgs().is_empty());
         assert!(Profile::load_from("looped", &profiles).is_err());
         assert!(Profile::load_from("nope", &profiles).is_err());
     }

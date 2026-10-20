@@ -440,7 +440,7 @@ pub fn fetch(repo: &Path, pkg: &PkgToml) -> Result<Vec<(String, PathBuf)>> {
     Ok(out)
 }
 
-fn download(url: &str, dest: &Path, quiet: bool) -> Result<()> {
+pub(crate) fn download(url: &str, dest: &Path, quiet: bool) -> Result<()> {
     fs::create_dir_all(dest.parent().context("parent")?)?;
     let tmp = dest.with_extension("part");
     let mut curl = Command::new("curl");

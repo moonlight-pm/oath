@@ -209,6 +209,22 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   `--version` in the sandbox. On novus it builds in seconds; on a
   machine the fetch is about 240 MB.
 
+- **Packs built elsewhere** (R28, built 2026-10-20). A seed profile
+  may pin a package Oath does not build: its entry carries `hash`,
+  `needs` (`{id, hash}` each) and optionally `url`, and there is no
+  `pkgs/<name>/` (both is an error). Its owner builds it (on an Oath
+  machine with `oath store` or `oath build`) and publishes it. When the
+  image ships it, `cargo make build` fetches it from its `url`, else from the profile's
+  `host:local.origins` in order, into the host store, refusing any tree
+  that is not the pin; the manifest records it as `pinned`, with its
+  needs. A need the profile pins at another hash than the image ships
+  (its owner built against a wayland or mesa since rebuilt) is listed
+  as `stale_needs`: the image moves the need to the shipped hash, and
+  `build`, `check` and `update` warn that the owner should build it
+  again. `cargo make publish` leaves it out. `cargo make update` keeps
+  the pin the machine has (the owner moves it, with `oath set`), and
+  moves only its needs to the output's hashes.
+
 ## Products and logs (built)
 
 - The script writes `/out` in a scratch directory. The product is

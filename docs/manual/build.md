@@ -104,6 +104,27 @@ store, `initrd`, `installer` for the install initramfs's own tools,
 of this tree instead, with `-dirty` when its sources had uncommitted
 changes.
 
+A profile can pin a package Oath does not build (R28): its entry has
+`hash` and `needs` (and `url` if it is not on the profile's origins),
+and there is no `pkgs/<name>/`:
+
+```json
+"pkg:hello": {
+  "present": true,
+  "hash": "sha256-…",
+  "needs": [{ "id": "pkg:glibc", "hash": "sha256-…" }]
+}
+```
+
+When the profile ships it (`present`), `build` fetches it into
+`~/.local/share/oath/store` and the manifest marks its entry
+`"pinned": true`; the manifest's `pinned` lists every package the
+profile pins this way, shipped or not. When a need's hash is not the one the image
+ships, the manifest lists it under `stale_needs`, the image takes the
+shipped hash, and `build`, `check` and `update` print a warning: its
+owner should build it again. `publish` leaves it out, and `update`
+keeps whatever pin the machine has for it, moving only its needs.
+
 ## Test it
 
 ```sh

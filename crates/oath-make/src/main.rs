@@ -12,6 +12,7 @@ mod openpgp;
 mod origin;
 mod output;
 mod pack;
+mod pinned;
 mod pkgs;
 mod qemu;
 mod sigstore;

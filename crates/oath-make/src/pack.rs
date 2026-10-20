@@ -130,12 +130,24 @@ pub(crate) fn ramdisk_packs(tools: &Tools, programs: &[(&str, &str)]) -> Result<
 /// tree. The profile's present packages are packed; anything else it
 /// names stays absent. `out` is the build directory.
 pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Output> {
-    let wanted =
-        oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
+    let p = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let wanted = p.present_pkgs();
     let lock = crate::pkgs::read_lock(root)?;
     let all = crate::pkgs::load(root)?;
+    // Packs built elsewhere (R28): the ones the image ships are fetched
+    // into the host store.
+    let pins = crate::pinned::of_profile(root, profile)?;
+    let shipped_pins = pins.clone().into_iter().filter(|(n, _)| wanted.contains(n)).collect();
+    let pinned = crate::pinned::fetch(&host_store_cache(root), &shipped_pins, &p.origins())?;
     let mut run_needs = BTreeSet::new();
-    for name in &wanted {
+    for (name, pin) in &pins {
+        for (need, _) in &pin.needs {
+            if wanted.contains(name) && !wanted.contains(need) {
+                bail!("profile {profile}: pkg:{name} runs with pkg:{need}, which it does not ship");
+            }
+        }
+    }
+    for name in wanted.iter().filter(|n| !pins.contains_key(*n)) {
         if crate::pkgs::is_recipe(&all, name) {
             bail!(
                 "profile {profile} wants pkg:{name} present, but it is a recipe (R23): no image \
@@ -154,7 +166,8 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     }
     // The Oath binaries: pkg:oath, this tree built by pkg:rust.
     let oath = crate::oath_pkg::build(root)?;
-    let manifest = crate::manifest::make(root, tools, profile)?;
+    let manifest = crate::manifest::make(root, tools, profile, &pins)?;
+    crate::pinned::warn_stale(&manifest);
     let id = output::id(&manifest);
     if let Some(o) = output::reuse(out, &id)? {
         eprintln!("output {} (unchanged tree)", o.dir.display());
@@ -263,7 +276,11 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     // The profile's packages as they were built: native packs
     // (pkgs/lock.json), and pkg:oath from this tree.
     for name in &wanted {
-        let tree = if name == "oath" { oath.as_path() } else { tools.pack(name)? };
+        let tree = match pinned.get(name) {
+            _ if name == "oath" => oath.as_path(),
+            Some(t) => t.as_path(),
+            None => tools.pack(name)?,
+        };
         copy_tree(tree, &oath_root.join("store/pkg").join(name))?;
         link_pkg(&oath_root, &guest_bin, name)?;
     }
@@ -790,6 +807,9 @@ fn collect_publication(repo: &Path) -> Result<Publication> {
     }
     let lock = crate::pkgs::read_lock(repo)?;
     named.extend(lock.keys().cloned());
+    // A pack pinned from elsewhere (R28) is its owner's to publish.
+    let pinned = crate::pinned::all(repo)?;
+    named.retain(|n| !pinned.contains(n));
     let all = crate::pkgs::load(repo)?;
     // A recipe (R23) is published as its plan alone: no pack, no source.
     let recipes: BTreeSet<String> =
@@ -891,6 +911,7 @@ fn collect_publication(repo: &Path) -> Result<Publication> {
         .map(|e| e.file_name().to_string_lossy().into_owned())
         .filter(|n| !n.starts_with('.'))
         .filter(|n| !named.contains(n) && !rows.iter().any(|r| *n == format!("{}-src", r.name)))
+        .filter(|n| !pinned.contains(n))
         .filter(|n| !recipes.contains(n.strip_suffix("-src").unwrap_or(n)))
         .collect();
     skipped.sort();

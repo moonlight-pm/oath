@@ -174,6 +174,9 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     let tools = crate::tools::load(root)?;
     let output = crate::output::pick(out, opts.output.as_deref(), false)?;
     let profile = output_profile(&output.dir)?;
+    if let Ok(m) = fs::read(output.file("manifest.json")) {
+        crate::pinned::warn_stale(&serde_json::from_slice(&m)?);
+    }
     let cases = for_profile(cases.into_iter().filter(|c| c.qemu).collect(), &profile)?;
     let img = qemu::load_image(&output.dir)?;
     let base = out.join("check");

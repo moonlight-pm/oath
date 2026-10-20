@@ -2,7 +2,7 @@
 
 What exists today and what is missing, per capability. Target design is
 in [specs/](specs/); priority is in [CURRENT.md](../CURRENT.md). Keep
-this file under 800 words. Update a row in the same change as the code.
+this file under 800 words. Update a row with the code.
 
 **Status:** `shipped` works and is tested · `partial` works with listed
 gaps · `target` designed, not built.
@@ -26,8 +26,8 @@ gaps · `target` designed, not built.
 | Devices | partial | modules by modalias at boot, on kernel request and on hotplug; `dev:*` discovered from sysfs (disks by bus path, `net0`…, UARTs) at boot and on change | Node ownership and mounts are not fields yet |
 | Seed and overlays | shipped | profile `base`, no test fixtures; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, a plan built by `pkg:gcc` (7.3-rc1, Oath fragment and patches, depmod index); vermagic checked | — |
-| Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `cargo make update` moves an installed machine to a new output (canto) | — |
-| Image build | shipped | `cargo make build` packs `pkg:oath` and the locked packages into an immutable `build/out/<id>/` with a manifest | — |
+| Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `cargo make update` moves a machine to a new output | — |
+| Image build | shipped | `cargo make build` packs `pkg:oath`, the locked packages and packs a profile pins from elsewhere (R28) into an immutable `build/out/<id>/` with a manifest | — |
 | Install | shipped | installer ramdisk over SSH; GPT + ESP + btrfs `@`; `--overlay`; pins the host key; `--qemu`; `--usb`; checked outputs only | — |
 | Test harness | shipped | `cargo make check`: one QEMU per case, real reboots, known gaps per phase, `check-pass` per output; `--target`: the `metal` cases on a machine, undone after each; `--agent`: real-model tasks (opt-in) | — |
 

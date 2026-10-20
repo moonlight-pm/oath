@@ -122,7 +122,10 @@ has pending changes, or has an apply on probation. Then it:
    runs `oath apply` once (`oath undo` takes it back but keeps a fixed
    package; other objects the output's seed has and the machine does
    not, a new base service say, are listed, not created: add them with
-   `oath new`);
+   `oath new`). A package the profile pins from elsewhere (R28) keeps
+   the machine's own pin, and only its needs move to the output's
+   hashes. Each service whose program moved restarts; when sshd's
+   did, the apply is on probation and a new login keeps it;
 4. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
    and `/bin/sudo`;
 5. archives the ESP's kernel and initrd as boot `<id>` (with the

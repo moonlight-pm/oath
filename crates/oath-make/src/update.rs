@@ -104,6 +104,9 @@ pub fn run_update(root: &Path, out: &Path, opts: Opts) -> Result<()> {
 /// Steps 1–6 on a reachable machine.
 fn update(r: &Remote, o: &Output, esp: Option<&str>, qemu: bool) -> Result<()> {
     let stage = o.file("stage");
+    let manifest: Value = serde_json::from_slice(&fs::read(o.file("manifest.json"))?)?;
+    crate::pinned::warn_stale(&manifest);
+    let pinned = crate::pinned::in_manifest(&manifest);
     preflight(r)?;
     let root_dev = cmdline_val(&install::ssh_out(r, "cat /proc/cmdline")?, "oath.root")
         .context("the running kernel has no oath.root= (not booted from an Oath ESP)")?;
@@ -139,7 +142,7 @@ fn update(r: &Remote, o: &Output, esp: Option<&str>, qemu: bool) -> Result<()> {
         )?;
 
         ship_packs(r, &stage)?;
-        set_pins(r, &stage)?;
+        set_pins(r, &stage, &pinned)?;
         replace_root_files(r, &stage)?;
         write_esp(r, o, &plan, &root_dev, &extra, qemu)?;
         Ok(())
@@ -206,11 +209,17 @@ fn ship_packs(r: &Remote, stage: &Path) -> Result<()> {
 /// tree is unchanged still moves its `needs` when what it runs with was
 /// rebuilt), a recipe's `url` and `file`, and its plan (R23). A recipe
 /// the owner built stays at the pin it runs, since the output carries no
-/// tree for it; it is reported, to rebuild on the machine. A package the
+/// tree for it; it is reported, to rebuild on the machine. A package
+/// pinned from elsewhere (`pinned`, R28) keeps the machine's own pin, its
+/// owner's to move, and only its needs follow the output. A package the
 /// output fixes is made when the machine lacks it, since the image's own
 /// files need it; other objects the output's seed has and the machine does
 /// not are reported, not created: the catalog is the owner's.
-fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
+fn set_pins(
+    r: &Remote,
+    stage: &Path,
+    pinned: &std::collections::BTreeSet<String>,
+) -> Result<()> {
     let ids = install::ssh_out(r, "oath ls")?;
     let have: Vec<&str> = ids.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
     let mut missing: Vec<String> =
@@ -218,7 +227,9 @@ fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
     set_plans(r, stage, &have)?;
     let mut changed = Vec::new();
     let mut rebuild = Vec::new();
-    for (name, pin, doc) in stage_pins(stage)? {
+    let pins = stage_pins(stage)?;
+    let ships = |n: &str| pins.iter().find(|(p, _, _)| p == n).map(|(_, h, _)| h.clone());
+    for (name, pin, doc) in pins.iter().cloned() {
         let id = format!("pkg:{name}");
         if !have.contains(&id.as_str()) {
             if stage_fixed(stage, &name)? {
@@ -234,6 +245,23 @@ fn set_pins(r: &Remote, stage: &Path) -> Result<()> {
         }
         let cur = install::ssh_out(r, &format!("oath --json get {id} --desired"))?;
         let cur: Value = serde_json::from_str(&cur).with_context(|| format!("{id}: {cur}"))?;
+        let mine = cur.get("hash").and_then(Value::as_str).unwrap_or("").to_string();
+        if pinned.contains(&name) && mine != pin {
+            eprintln!(">> {id} keeps the machine's pin {mine} (built elsewhere; the output pins {pin})");
+            if let Some((set, moved)) = crate::pinned::keep_machine_pin(&cur, ships) {
+                eprintln!(
+                    "   its needs move with the output ({}); its owner should build it again \
+                     against them",
+                    moved.join(", ")
+                );
+                install::ssh_run(
+                    r,
+                    &format!("oath set {id} --from-json {}", sh_quote(&set.to_string())),
+                )?;
+                changed.push(id);
+            }
+            continue;
+        }
         let mut set = serde_json::json!({
             "hash": pin,
             "needs": doc.get("needs").cloned().unwrap_or_else(|| Value::Array(vec![])),
