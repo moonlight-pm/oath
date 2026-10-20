@@ -1182,6 +1182,59 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &
     result.map(|_| ())
 }
 
+/// `host:local.origins` from its spec, in order; empty when it has none.
+pub fn host_origins(catalog_root: &Path) -> Vec<String> {
+    let id = crate::ObjectId::new(crate::KIND_HOST, "local");
+    let Ok(obj) = crate::Catalog::open(catalog_root).and_then(|c| c.get(&id)) else {
+        return Vec::new();
+    };
+    obj.desired
+        .get("origins")
+        .and_then(|v| v.as_array())
+        .map(|a| a.iter().filter_map(|o| o.as_str().map(str::to_string)).collect())
+        .unwrap_or_default()
+}
+
+/// Fetch a pack the store does not have from where its consumer looks:
+/// the pkg's own `url`, else (with a pin, no `file`) each of
+/// `host:local.origins` in order until one serves the pinned tree.
+/// Returns where it came from; `None` when the store already had it or
+/// there is nowhere to look.
+pub fn fetch_pkg_any(
+    catalog_root: &Path,
+    name: &str,
+    url: &str,
+    file: &str,
+    hash: &str,
+) -> Result<Option<String>> {
+    if store_present(catalog_root, name, hash) {
+        return Ok(None);
+    }
+    if !url.trim().is_empty() {
+        fetch_pkg(catalog_root, name, url, file, hash)?;
+        return Ok(Some(url.trim().to_string()));
+    }
+    if !file.is_empty() || !is_realization_id(hash) {
+        return Ok(None);
+    }
+    let origins = host_origins(catalog_root);
+    let mut failed = Vec::new();
+    for o in &origins {
+        match fetch_pkg(catalog_root, name, o, "", hash) {
+            Ok(()) if store_present(catalog_root, name, hash) => return Ok(Some(o.clone())),
+            Ok(()) => failed.push(format!("{o}: no tree")),
+            Err(e) => failed.push(format!("{o}: {e}")),
+        }
+    }
+    if failed.is_empty() {
+        return Ok(None);
+    }
+    Err(Error::hint(
+        format!("fetch pkg:{name} {hash}: no origin served it ({})", failed.join("; ")),
+        "oath get host:local (origins); oath schema host",
+    ))
+}
+
 /// A relative path of plain components (`src/claude`).
 fn is_tree_path(p: &str) -> bool {
     !p.is_empty()
@@ -1404,6 +1457,43 @@ mod needs_tests {
         let other = "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
         assert!(fetch_pkg(&cat, "claude-code-src", &url, "src/claude", other).is_err());
         assert!(fetch_pkg(&cat, "x-src", &url, "../claude", &pin).is_err());
+    }
+
+    #[test]
+    fn fetch_tries_each_origin_in_order() {
+        let d = tempfile::tempdir().unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let pin = hash_tree(&tree).unwrap();
+        let good = d.path().join("good");
+        fs::create_dir_all(good.join("pkg/hello")).unwrap();
+        let tar = good.join("pkg/hello").join(format!("{pin}.tar"));
+        let st = Command::new("tar")
+            .args(["-C", tree.to_str().unwrap(), "-cf", tar.to_str().unwrap(), "."])
+            .status()
+            .unwrap();
+        assert!(st.success());
+        let cat = d.path().join("cat");
+        crate::seed(&cat).unwrap();
+        // The consumer lists where it looks: one origin without the pack, then one with it.
+        let host = cat.join("objects/host/local/desired.json");
+        let mut h: serde_json::Value = crate::read_json(&host).unwrap();
+        let (gone, good) =
+            (format!("file://{}/gone", d.path().display()), format!("file://{}", good.display()));
+        h["origins"] = serde_json::json!([gone, good]);
+        write_json(&host, &h).unwrap();
+        assert_eq!(host_origins(&cat), vec![gone.clone(), good.clone()]);
+        assert_eq!(fetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), Some(good.clone()));
+        assert!(store_present(&cat, "hello", &pin));
+        // The store wins; nothing is fetched again.
+        assert_eq!(fetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), None);
+        let other = "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+        let e = fetch_pkg_any(&cat, "hello", "", "", other).unwrap_err().to_string();
+        assert!(e.contains("no origin served it") && e.contains(&gone), "{e}");
+        // An origin needs a pin, and a vendor's file is never looked for on one.
+        assert_eq!(fetch_pkg_any(&cat, "hello", "", "", "").unwrap(), None);
+        assert_eq!(fetch_pkg_any(&cat, "x-src", "", "src/x", other).unwrap(), None);
     }
 
     #[test]

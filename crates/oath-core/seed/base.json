@@ -13,7 +13,10 @@
   "objects": {
     "host:local": {
       "hostname": "oath",
-      "power": "run"
+      "power": "run",
+      "origins": [
+        "https://store.oath.moonlight.pm"
+      ]
     },
     "svc:serial": {
       "exec": [

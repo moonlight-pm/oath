@@ -80,6 +80,8 @@ package is refused (not `--confirm`).
 - `url`: if `present` and the store is missing, apply fetches it, then
   links. A `.tar` is a pack tree. An origin prefix plus `hash` fetches
   `{url}/pkg/{name}/{hash}.tar`. A single file becomes `bin/<name>`.
+  With no `url`, a pinned pack the store lacks comes from the machine's
+  origins (below).
 - `file`: with `url`, the URL is one file, a vendor's release, and the
   tree is that file alone at this path, not executable (a recipe's
   source; see Recipes).
@@ -93,8 +95,40 @@ Upstream identity is `components.json` at the pack root (`name`,
 `version`, `purl`); it is part of the tree hash, and missing means
 unknown. Advisories for a pin live at
 `/oath/store/adv/<name>/<hash>.json`, fetched from the origin when
-`url` is one. `oath get` shows both in actual. An empty list is not a
-safety proof.
+`url` is one, or from the origin that just served the pack. `oath get`
+shows both in actual. An empty list is not a safety proof.
+
+## Origins
+
+A pack is its hash; it does not know where it is hosted. The machine
+says where it looks: `host:local.origins`, a list of `http://` or
+`https://` prefixes tried in order as `{origin}/pkg/<name>/<hash>.tar`
+until one serves the pinned tree. Apply uses them for a pinned pkg with
+no `url`; `oath build` uses them for a build pack the store lacks. The
+`base` profile lists the default origin, the R2 bucket at
+`https://store.oath.moonlight.pm`, which carries every locked pack
+(build packs too) with its plan and source; its `INDEX.md` lists names
+and hashes.
+
+```
+oath get host:local                                   # origins
+curl -fsS https://store.oath.moonlight.pm/INDEX.md    # what it serves
+sudo oath new pkg:m4 --from-json '{"present":true,"hash":"sha256-…"}'
+sudo oath apply pkg:m4
+sudo grep '"fetched"' /oath/log/oath.jsonl | tail -1  # where it came from
+```
+
+Put a LAN mirror first to prefer it (any directory `cargo make publish
+--dest` wrote, served over HTTP):
+
+```
+sudo oath set host:local origins='["http://10.0.0.5:8080", "https://store.oath.moonlight.pm"]'
+sudo oath apply host:local
+```
+
+An empty list fetches nothing without a `url`. A failed origin is
+skipped; apply fails only when none serves the pin, and says what each
+answered.
 
 ## Plans
 
@@ -162,29 +196,42 @@ login and history are under `/home/.claude` and `/home/.claude.json`.
 ## Host store cache and publishing
 
 The build host keeps the same layout under `~/.local/share/oath/store` (or
-`$OATH_STORE`):
+`$OATH_STORE`), outside the checkout:
 
 ```
 cargo make store --name hello --from apps/hello --tar
 cargo make advisories            # OSV lookup from components.json
-cargo make publish --dest <dir>  # the profiles' packages and their sources: pkg/, plan/, adv/, INDEX.md
+cargo make publish               # upload to the default origin what it lacks
+cargo make publish --dest <dir>  # or write the same tree into a directory
 ```
 
-`publish` copies only the packages a seed profile names (today the
-33 in `base`, besides the recipe), each at the hash this tree records for it: the
-product in `pkgs/lock.json`, or `pkg:oath`'s last `cargo make build`.
-Each needs a licence on record: `lock.json`'s, or for `pkg:oath` the
-workspace licence AND every crate's in its `components.json`. It
-refuses, before copying anything, a package that is not built, has no
-licence, or needs a package no profile names. Each pack goes out with
-its source: the plan that built it (`plan/<name>/<plan hash>.plan`)
-and the source pack the plan pins (`pkg/<name>-src/<hash>.tar`); a
-pack whose plan is missing or does not match the record is refused.
-`INDEX.md` lists name, hash, licence, plan and source. A recipe goes
-out as its plan only, listed with the product hash it builds. Build tools
-(`gcc`, `rust`, ...), test packs and other hashes in the cache are
-never published; the last line names what was left out. A pack made with `cargo make store`
-is published only if a profile names it.
+`publish` carries every pack `pkgs/lock.json` records, build packs
+included (`gcc`, `rust`, `python`, …), and every package a seed profile
+names, each at the hash this tree records for it: the product in
+`pkgs/lock.json`, or `pkg:oath`'s last `cargo make build`. Each needs a
+licence on record: `lock.json`'s, or for `pkg:oath` the workspace
+licence AND every crate's in its `components.json`. Each pack goes out
+with its source: the plan that built it (`plan/<name>/<plan
+hash>.plan`) and the source pack the plan pins
+(`pkg/<name>-src/<hash>.tar`). It refuses, before writing anything, a
+package that is not built, has no licence, has no plan matching the
+record, needs a package that is not published, or whose plan builds
+with a pack not published at the hash it pins: an origin alone rebuilds
+every plan on it. `INDEX.md` lists name, hash, licence, plan and source,
+and goes up last. A recipe goes out as its plan only, listed with the
+product hash it builds. Test packs and other hashes in the cache are
+never published; the last line names what was left out.
+
+To the default origin, `publish` lists the bucket, uploads only the
+hashed files it lacks (`pkg/` and `plan/` never change) plus `adv/` and
+`INDEX.md`, and reads `INDEX.md` back from
+`https://store.oath.moonlight.pm`. The write key is the build host's
+alone: `OATH_ORIGIN_S3` (`https://<account>.r2.cloudflarestorage.com/oath-store`),
+`OATH_ORIGIN_KEY_ID` and `OATH_ORIGIN_SECRET`, from the environment or
+`~/.config/oath/origin.env` (mode 600, never committed). They are an R2
+S3 key: a Cloudflare account token allowed to read and write objects
+in `oath-store` only; its id is the key id and the SHA-256 of its value
+the secret.
 
 Optional backup hooks in a pack (not catalog fields):
 `libexec/oath-backup-quiesce` and `libexec/oath-backup-thaw`. See

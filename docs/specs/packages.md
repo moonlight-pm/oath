@@ -85,23 +85,39 @@ descriptive fields.
 A tree reaches the store one of three ways:
 
 1. Packed into the image by `cargo make build`.
-2. Fetched: when `url` is set and the pinned tree is missing, apply
+2. Fetched: when the pinned tree is missing and `url` is set, apply
    (or a plan's pre-build) fetches the URL itself when `file` is set
    (one file, placed at that path, not executable: a vendor's release,
    R23), or the URL itself (a `.tar`) or
    `{url}/pkg/<name>/<hash>.tar` from an origin, unpacks it, hashes it,
    and refuses a mismatch. `url` without `hash` fetches and reports the
-   hash (discovery, not a pin). The local store wins when the tree is
-   already there.
+   hash (discovery, not a pin). With no `url` and a pin, apply and a
+   plan's pre-build try each of `host:local.origins` in order (R25,
+   built 2026-10-19) until one serves the pinned tree. The local store
+   wins when the tree is already there.
 3. Built by `oath build` from a plan (see builds.md).
 
-An origin is any HTTPS tree of `pkg/<name>/<hash>.tar` and
-`adv/<name>/<hash>.json`: a static bucket, or another Oath box. It is
-not a repository kind and not canonical.
+An origin is any HTTPS tree of `pkg/<name>/<hash>.tar`,
+`plan/<name>/<hash>.plan`, `adv/<name>/<hash>.json` and `INDEX.md`: a
+static bucket, a LAN mirror, or another Oath box. It is not a
+repository kind and not canonical. Packs come from anywhere (R25): a
+pack is its hash and records no location (its tree, its plan and its
+source pack hold no URL), so any origin may serve any pack and the
+hash decides. Only the consumer says where it looks:
+`host:local.origins`, in order, or one pkg's own `url`. The machine's
+log (`/oath/log/oath.jsonl`, a `pkg` event's `fetched`) records the URL
+a tree came from; the pkg object does not.
+
+The default origin (is, 2026-10-19) is `https://store.oath.moonlight.pm`,
+first in the `base` profile's `host:local.origins`: the R2 bucket
+`oath-store` behind a Cloudflare custom domain, public read; only the
+build host's key writes it. The product page at `oath.moonlight.pm` is
+separate (Wicket).
 
 Host side: `cargo make store --name <n> --from <dir> [--tar]` hashes a
-tree into `~/.local/share/oath/store`. `cargo make publish --dest <dir>` copies
-the publishable packs and their advisories into an origin tree (below).
+tree into `~/.local/share/oath/store`. `cargo make publish` uploads the
+publishable packs, their plans, sources and advisories to the default
+origin; `--dest <dir>` writes the same tree into a directory (below).
 
 ## Components and advisories (built)
 
@@ -115,7 +131,8 @@ the publishable packs and their advisories into an origin tree (below).
 - Advisories change after the bits freeze, so they live outside the
   tree at `adv/<name>/<hash>.json`. The build host computes them from
   OSV (`cargo make advisories`). The guest never queries a feed; apply
-  fetches the file best-effort from the origin. Offline apply still
+  fetches the file best-effort from the pkg's `url` (every apply) or
+  from the origin that just served the pack. Offline apply still
   works.
 
 ## Native packages (policy, D7)
@@ -176,19 +193,25 @@ present.
 
 ## Publish allowlist (built)
 
-`cargo make publish` puts on an origin only the packages a seed profile
-names (present or not), at the hash the tree records (`pkgs/lock.json`,
-or `pkg:oath`'s last build), each with a licence on record: the SPDX
-expression in `lock.json`, or for `pkg:oath` the workspace licence AND
-every crate's from its `components.json`. Beside each pack it puts
-what built it (R13): the plan, at `plan/<name>/<plan hash>.plan`, and
-the source pack that plan pins, at `pkg/<name>-src/<hash>.tar` (the
-verbatim upstream files, patches and `build.sh` inputs). It refuses the
-whole publish if one is not built, has no licence, has no plan whose
-hash matches the record, or has a `run` need that no profile names.
-`INDEX.md` lists name, hash, licence, plan and source. The build packs
-a plan pins (`pkg:gcc`, `pkg:rust`, `pkg:python`, ...) are not
-published.
+`cargo make publish` puts on an origin every pack `pkgs/lock.json`
+records, build packs included (`pkg:gcc`, `pkg:rust`, `pkg:python`, …,
+R25), and every package a seed profile names (present or not), at the
+hash the tree records (`pkgs/lock.json`, or `pkg:oath`'s last build),
+each with a licence on record: the SPDX expression in `lock.json`, or
+for `pkg:oath` the workspace licence AND every crate's from its
+`components.json`. Beside each pack it puts what built it (R13): the
+plan, at `plan/<name>/<plan hash>.plan`, and the source pack that plan
+pins, at `pkg/<name>-src/<hash>.tar` (the verbatim upstream files,
+patches and `build.sh` inputs). It refuses the whole publish if one is
+not built, has no licence, has no plan whose hash matches the record,
+has a `run` need that is not published, or has a plan whose build packs
+are not published at the hashes it pins; so an origin alone rebuilds
+every plan it carries. Recipes go out as their plan alone (R23).
+`INDEX.md` lists name, hash, licence, plan and source; it goes up last.
+To the default origin, publish lists the bucket and uploads only the
+hashed files it lacks (`pkg/`, `plan/` never change), and `adv/` and
+`INDEX.md` every time; then it reads `INDEX.md` back from the public
+URL.
 
 ## Pack manifest (built)
 

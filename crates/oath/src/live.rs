@@ -6,9 +6,9 @@ use std::process::Command;
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    converge_dev, converge_net, converge_pkg, converge_ssh, fetch_adv, fetch_pkg, gen_subvol_name,
-    tel, ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg, PkgActual, Result,
-    Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
+    converge_dev, converge_net, converge_pkg, converge_ssh, fetch_adv, fetch_pkg_any,
+    gen_subvol_name, tel, ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg,
+    PkgActual, Result, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -103,6 +103,7 @@ impl ApplyHooks for Live {
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
+            origins: desired.origins.clone(),
         })
     }
 
@@ -211,27 +212,34 @@ impl ApplyHooks for Live {
         } else {
             self.catalog_root.join("bin")
         };
-        if desired.present && !desired.url.is_empty() {
-            fetch_pkg(&self.catalog_root, &id.name, &desired.url, &desired.file, &desired.hash)?;
-        }
+        let from = if desired.present {
+            fetch_pkg_any(&self.catalog_root, &id.name, &desired.url, &desired.file, &desired.hash)?
+        } else {
+            None
+        };
         let mut actual =
             converge_pkg(&self.catalog_root, &bin, &id.name, desired.present, &desired.hash)?;
-        // A vendor's file (`file`) is not an origin: no advisories there.
-        if !desired.url.is_empty() && desired.file.is_empty() {
+        // Advisories come from the pkg's own url on every apply, and from an
+        // origin when it has just served the pack. A vendor's file (`file`)
+        // is not an origin: no advisories there.
+        let adv =
+            if !desired.url.is_empty() { Some(desired.url.as_str()) } else { from.as_deref() };
+        if let Some(src) = adv.filter(|_| desired.file.is_empty()) {
             let pin =
                 if !actual.hash.is_empty() { actual.hash.as_str() } else { desired.hash.as_str() };
-            let _ = fetch_adv(&self.catalog_root, &id.name, &desired.url, pin);
+            let _ = fetch_adv(&self.catalog_root, &id.name, src, pin);
             actual.advisories = oath_core::read_advisories(&self.catalog_root, &id.name, pin);
         }
-        tel(
-            "oath",
-            "pkg",
-            json!({
-                "id": id.to_string(),
-                "present": actual.present,
-                "links": actual.links,
-            }),
-        );
+        let mut ev = json!({
+            "id": id.to_string(),
+            "present": actual.present,
+            "links": actual.links,
+        });
+        // The consumer records where a fetched pack came from; the pack does not.
+        if let Some(src) = &from {
+            ev["fetched"] = json!(oath_core::fetch_url(src, &id.name, &desired.hash));
+        }
+        tel("oath", "pkg", ev);
         Ok(actual)
     }
 }

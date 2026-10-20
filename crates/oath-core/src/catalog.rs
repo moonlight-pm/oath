@@ -904,6 +904,20 @@ impl Catalog {
                         ));
                     }
                 }
+                for (i, o) in h.origins.iter().enumerate() {
+                    if !crate::is_origin(o) {
+                        return Err(Error::hint(
+                            format!(
+                                "{id}: origins: `{o}` is not an origin (an http:// or https:// \
+                                 prefix, no query, fragment or .tar)"
+                            ),
+                            hint(),
+                        ));
+                    }
+                    if h.origins[..i].contains(o) {
+                        return Err(Error::hint(format!("{id}: origins: `{o}` twice"), hint()));
+                    }
+                }
             }
             KIND_SVC => {
                 let s: Svc = serde_json::from_value(doc.clone()).map_err(bad)?;

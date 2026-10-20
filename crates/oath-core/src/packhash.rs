@@ -192,6 +192,18 @@ pub fn fetch_adv_url(url: &str, name: &str, hash: &str) -> String {
     format!("{}/adv/{name}/{hash}.json", u.trim_end_matches('/'))
 }
 
+/// An origin prefix for `host:local.origins`: `http://` or `https://`, a
+/// host, no whitespace, query or fragment, and not a pack's own `.tar`.
+pub fn is_origin(o: &str) -> bool {
+    let rest = o.strip_prefix("https://").or_else(|| o.strip_prefix("http://"));
+    let lower = o.to_ascii_lowercase();
+    rest.is_some_and(|r| !r.is_empty() && !r.starts_with('/'))
+        && !o.chars().any(|c| c.is_whitespace() || c.is_control() || matches!(c, '?' | '#' | '"'))
+        && !lower.ends_with(".tar")
+        && !lower.ends_with(".tar.gz")
+        && !lower.ends_with(".tgz")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -298,6 +310,26 @@ mod tests {
             fetch_url("http://10.0.2.2:18765/fetchme", "fetchme", ""),
             "http://10.0.2.2:18765/fetchme"
         );
+    }
+
+    #[test]
+    fn origins_are_http_prefixes() {
+        assert!(is_origin("https://store.oath.moonlight.pm"));
+        assert!(is_origin("http://10.0.2.2:18765/oath/"));
+        for bad in [
+            "",
+            "https://",
+            "https:///x",
+            "ftp://x",
+            "file:///x",
+            "https://a b",
+            "https://x?y",
+            "https://x#y",
+            "https://x/pkg/a/b.tar",
+            "https://x/a.tgz",
+        ] {
+            assert!(!is_origin(bad), "{bad}");
+        }
     }
 
     #[test]

@@ -62,6 +62,13 @@ pub struct Host {
     /// catalog is truth). For names the network's DNS does not serve.
     #[serde(default)]
     pub hosts: BTreeMap<String, String>,
+    /// Where this machine fetches a pinned pack it does not have, in
+    /// order: origin prefixes (`https://store.oath.moonlight.pm`), each
+    /// tried as {origin}/pkg/{name}/{hash}.tar until one serves the pinned
+    /// tree. A pkg's own `url` wins. Packs record no location; any origin
+    /// may serve any pack, and the hash decides.
+    #[serde(default)]
+    pub origins: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]

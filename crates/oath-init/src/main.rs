@@ -825,6 +825,7 @@ fn apply_host() {
         env: host.env,
         timezone: host.timezone,
         hosts: host.hosts,
+        origins: host.origins,
     };
     let _ = oath_core::write_json(&status(&id), &actual);
     let _ = cat.write_index();

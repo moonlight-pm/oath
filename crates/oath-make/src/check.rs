@@ -31,7 +31,9 @@ use crate::tools::Tools;
 use crate::util::{sha256_file, utc_rfc3339, utc_stamp, write_pretty};
 
 /// The fetch canary. Cases make `pkg:fetchme` with `url`
-/// http://10.0.2.2:18765/fetchme, which QEMU's user net sends here.
+/// http://10.0.2.2:18765/fetchme, which QEMU's user net sends here, or
+/// pin it and list http://10.0.2.2:18765/origin in `host:local.origins`:
+/// an origin with `INDEX.md` and `pkg/fetchme/<hash>.tar` (apps/fetchme).
 const FETCH_PORT: u16 = 18765;
 const FIRST_SSH_PORT: u16 = 2300;
 pub(crate) const BOOT_WAIT: Duration = Duration::from_secs(90);
@@ -180,7 +182,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     let dir = base.join(utc_stamp());
     fs::create_dir_all(&dir)?;
     let fetchme = fs::read(root.join("apps/fetchme/bin/fetchme")).context("apps/fetchme")?;
-    serve_fetchme(fetchme)?;
+    serve_fetchme(fetchme, fetchme_origin(root)?)?;
 
     eprintln!(
         "check: output {} ({profile}), {} cases, {} at a time, logs in {}",
@@ -375,8 +377,26 @@ pub(crate) fn harness_key(base: &Path) -> Result<(PathBuf, PathBuf)> {
     Ok((key, key_pub))
 }
 
+/// The canary's origin: path to body, `INDEX.md` and the pack's tar.
+fn fetchme_origin(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
+    let tree = root.join("apps/fetchme");
+    let pin = oath_core::hash_tree(&tree).map_err(|e| anyhow::anyhow!("apps/fetchme: {e}"))?;
+    let out = Command::new("tar").arg("-C").arg(&tree).args(["-cf", "-", "."]).output()?;
+    if !out.status.success() {
+        bail!("tar apps/fetchme failed");
+    }
+    let index = format!(
+        "# Oath pack origin\n\n| name | hash | licence | plan | source |\n\
+         |------|------|---------|------|--------|\n| `fetchme` | `{pin}` | MIT | | |\n"
+    );
+    Ok(vec![
+        ("/origin/INDEX.md".into(), index.into_bytes()),
+        (format!("/origin/pkg/fetchme/{pin}.tar"), out.stdout),
+    ])
+}
+
 /// HTTP for the fetch canary. Thread lives for the rest of the process.
-fn serve_fetchme(body: Vec<u8>) -> Result<()> {
+fn serve_fetchme(body: Vec<u8>, origin: Vec<(String, Vec<u8>)>) -> Result<()> {
     let listener = TcpListener::bind(("127.0.0.1", FETCH_PORT))
         .with_context(|| format!("127.0.0.1:{FETCH_PORT} is busy (the fetch canary needs it)"))?;
     thread::spawn(move || {
@@ -386,13 +406,18 @@ fn serve_fetchme(body: Vec<u8>) -> Result<()> {
             let n = conn.read(&mut buf).unwrap_or(0);
             let req = String::from_utf8_lossy(&buf[..n]);
             let path = req.split_whitespace().nth(1).unwrap_or("");
-            let resp = if path == "/fetchme" {
+            let found = if path == "/fetchme" {
+                Some(&body)
+            } else {
+                origin.iter().find(|(p, _)| p == path).map(|(_, b)| b)
+            };
+            let resp = if let Some(body) = found {
                 let mut r = format!(
                     "HTTP/1.0 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                     body.len()
                 )
                 .into_bytes();
-                r.extend_from_slice(&body);
+                r.extend_from_slice(body);
                 r
             } else {
                 b"HTTP/1.0 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec()

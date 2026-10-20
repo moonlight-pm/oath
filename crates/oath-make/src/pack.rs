@@ -14,7 +14,7 @@ use serde_json::json;
 use crate::cpio;
 use crate::output::{self, Output};
 use crate::tools::Tools;
-use crate::util::{chmod_exec, copy_file, copy_tree, run, sudo};
+use crate::util::{chmod_exec, copy_file, copy_tree, run, run_out, sudo};
 
 /// The boot initrd's one program besides PID 1 (static): the shell PID 1
 /// falls back to.
@@ -739,22 +739,57 @@ fn write_pack_tar(tree: &Path, tarball: &Path) -> Result<PathBuf> {
     Ok(tarball.to_path_buf())
 }
 
-/// `cargo make publish`: copy into an origin tree (`pkg/<name>/<hash>.tar`,
-/// `adv/<name>/<hash>.json`, `INDEX.md`) every package a seed profile
-/// names, at the hash this tree records for it (`pkgs/lock.json`, or
-/// pkg:oath's last build), each with a licence on record, and beside it
-/// what it was built from (R13): the plan (`plan/<name>/<hash>.plan`) and
-/// the source pack it pins (`pkg/<name>-src/<hash>.tar`). Nothing else in
-/// the cache is published: not build tools or other hashes. Refuses before
-/// copying anything if a package is not built, has no licence or plan, or
-/// needs a package no profile names.
-pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
+/// `cargo make publish`: every package a seed profile names and every
+/// pack `pkgs/lock.json` records (build packs too, R25), at the hash this
+/// tree records for it (the lock, or pkg:oath's last build), each with a
+/// licence on record, and beside it what it was built from (R13): the
+/// plan (`plan/<name>/<hash>.plan`) and the source pack it pins
+/// (`pkg/<name>-src/<hash>.tar`); then advisories (`adv/<name>/<hash>.json`)
+/// and `INDEX.md`. Every pack a published plan builds with goes out at
+/// the hash it pins, so an origin alone rebuilds any of them. Nothing
+/// else in the cache does: not test packs or other hashes. Refuses before
+/// writing anything if a package is not built, has no licence or plan, or
+/// needs a package that is not published. With `dest`, writes that
+/// directory (an origin is any such tree); without, uploads to the
+/// default origin what it does not have yet.
+pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
+    let p = collect_publication(repo)?;
+    match dest {
+        Some(d) => write_publication(repo, &p, d)?,
+        None => upload_publication(repo, &p)?,
+    }
+    if !p.skipped.is_empty() {
+        println!("not locked or named by a seed profile, not published: {}", p.skipped.join(" "));
+    }
+    Ok(())
+}
+
+/// What a publish puts on an origin: each file under its key, in order
+/// (`INDEX.md` last, so it never lists what is not there yet).
+struct Publication {
+    files: Vec<(String, Body)>,
+    packs: usize,
+    skipped: Vec<String>,
+}
+
+enum Body {
+    /// A pack tree in the cache, as a tar.
+    Tar {
+        name: String,
+        hash: String,
+    },
+    File(PathBuf),
+    Bytes(Vec<u8>),
+}
+
+fn collect_publication(repo: &Path) -> Result<Publication> {
     let mut named = BTreeSet::new();
     for (profile, _) in oath_core::PROFILES {
         let p = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
         named.extend(p.pkgs());
     }
     let lock = crate::pkgs::read_lock(repo)?;
+    named.extend(lock.keys().cloned());
     let all = crate::pkgs::load(repo)?;
     // A recipe (R23) is published as its plan alone: no pack, no source.
     let recipes: BTreeSet<String> =
@@ -785,7 +820,7 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
         }
         for need in all.get(name).map(|p| p.run.as_slice()).unwrap_or_default() {
             if !named.contains(need) {
-                bail!("pkg:{name} needs pkg:{need}, which no seed profile names");
+                bail!("pkg:{name} needs pkg:{need}, which is not published");
             }
         }
         let plan = fs::read(&plan_path).unwrap_or_default();
@@ -808,26 +843,36 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
         if !cache.join("pkg").join(format!("{name}-src")).join(&src).is_dir() {
             bail!("{src_id} {src} is not in {}", cache.display());
         }
+        for n in parsed.build_needs.iter().filter(|n| n.id != src_id) {
+            let need = n.id.strip_prefix("pkg:").unwrap_or(&n.id);
+            let published = if need == "oath" { None } else { lock.get(need) };
+            if !named.contains(need) || published.is_some_and(|e| e.product != n.hash) {
+                bail!(
+                    "pkg:{name}'s plan builds with {} {}, which is not published at that hash \
+                     (cargo make pkgs {name})",
+                    n.id,
+                    n.hash
+                );
+            }
+        }
         rows.push(Published { name: name.clone(), hash, license, plan, plan_hash, src });
     }
 
+    let mut files = Vec::new();
     for r in &rows {
-        let (name, hash, license) = (&r.name, &r.hash, &r.license);
-        copy_pack_tar(&cache, dest, name, hash)?;
-        println!("pkg:{name} {hash} {license}");
-        copy_pack_tar(&cache, dest, &format!("{name}-src"), &r.src)?;
-        println!("pkg:{name}-src {}", r.src);
-        let out = dest.join("plan").join(name).join(format!("{}.plan", r.plan_hash));
-        fs::create_dir_all(out.parent().context("parent")?)?;
-        fs::write(&out, &r.plan).with_context(|| format!("write {}", out.display()))?;
-        println!("plan:{name} {}", r.plan_hash);
-        let adv = cache.join("adv").join(name).join(format!("{hash}.json"));
+        let name = &r.name;
+        files.push((
+            format!("pkg/{name}/{}.tar", r.hash),
+            Body::Tar { name: name.clone(), hash: r.hash.clone() },
+        ));
+        files.push((
+            format!("pkg/{name}-src/{}.tar", r.src),
+            Body::Tar { name: format!("{name}-src"), hash: r.src.clone() },
+        ));
+        files.push((format!("plan/{name}/{}.plan", r.plan_hash), Body::Bytes(r.plan.clone())));
+        let adv = cache.join("adv").join(name).join(format!("{}.json", r.hash));
         if adv.is_file() {
-            let out = dest.join("adv").join(name).join(format!("{hash}.json"));
-            fs::create_dir_all(out.parent().context("parent")?)?;
-            fs::copy(&adv, &out)
-                .with_context(|| format!("copy {} -> {}", adv.display(), out.display()))?;
-            println!("adv:{name} {hash}.json");
+            files.push((format!("adv/{name}/{}.json", r.hash), Body::File(adv)));
         }
     }
     let mut plans = Vec::new();
@@ -838,29 +883,26 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
         if oath_core::file_hash(&plan) != e.plan {
             bail!("pkg:{name}: {} is not its locked plan", plan_path.display());
         }
-        let out = dest.join("plan").join(name).join(format!("{}.plan", e.plan));
-        fs::create_dir_all(out.parent().context("parent")?)?;
-        fs::write(&out, &plan).with_context(|| format!("write {}", out.display()))?;
-        println!("plan:{name} {} (a recipe: no pack, R23)", e.plan);
+        files.push((format!("plan/{name}/{}.plan", e.plan), Body::Bytes(plan)));
         plans.push((name.clone(), e.product.clone(), e.license.clone(), e.plan.clone()));
     }
     let mut skipped: Vec<String> = fs::read_dir(cache.join("pkg"))?
         .filter_map(|e| e.ok())
         .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| !n.starts_with('.'))
         .filter(|n| !named.contains(n) && !rows.iter().any(|r| *n == format!("{}-src", r.name)))
         .collect();
     skipped.sort();
-    if !skipped.is_empty() {
-        println!("not named by a seed profile, not published: {}", skipped.join(" "));
-    }
 
     let mut index = String::from(
         "# Oath pack origin\n\n\
          Not a package manager. Trees are `oath-tree-v1` (SHA-256). \
-         Fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`. \
+         Fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`; any origin may serve \
+         any pack, and the hash decides. \
          Advisories are `{origin}/adv/<name>/<hash>.json` (not part of the pack hash). \
          Each pack was built by `{origin}/plan/<name>/<plan>.plan` from the source pack \
-         `{origin}/pkg/<name>-src/<source>.tar` that the plan pins.\n\n\
+         `{origin}/pkg/<name>-src/<source>.tar` that the plan pins; every pack a plan builds \
+         with is here too.\n\n\
          | name | hash | licence | plan | source |\n\
          |------|------|---------|------|--------|\n",
     );
@@ -881,11 +923,97 @@ pub fn publish_store(repo: &Path, dest: &Path) -> Result<()> {
             index.push_str(&format!("| `{name}` | `{product}` | {license} | `{plan}` |\n"));
         }
     }
-    fs::write(dest.join("INDEX.md"), index)?;
-    println!("{} ({} packs)", dest.display(), rows.len());
+    files.push(("INDEX.md".into(), Body::Bytes(index.into_bytes())));
+    Ok(Publication { files, packs: rows.len(), skipped })
+}
+
+/// Write the publication into `dest`, an origin tree on disk.
+fn write_publication(repo: &Path, p: &Publication, dest: &Path) -> Result<()> {
+    let cache = host_store_cache(repo);
+    for (key, body) in &p.files {
+        let out = dest.join(key);
+        fs::create_dir_all(out.parent().context("parent")?)?;
+        match body {
+            Body::Tar { name, hash } => {
+                let tar = pack_tar(&cache, name, hash)?;
+                fs::copy(&tar, &out)
+            }
+            Body::File(f) => fs::copy(f, &out),
+            Body::Bytes(b) => fs::write(&out, b).map(|_| 0),
+        }
+        .with_context(|| format!("write {}", out.display()))?;
+        println!("{key}");
+    }
+    println!("{} ({} packs)", dest.display(), p.packs);
     Ok(())
 }
 
+/// Upload to the default origin every file it lacks (`INDEX.md` and
+/// advisories every time), then read `INDEX.md` back from where machines
+/// fetch it: the first of the `base` profile's `host:local.origins`.
+fn upload_publication(repo: &Path, p: &Publication) -> Result<()> {
+    let origin = crate::origin::Origin::from_env()?;
+    let cache = host_store_cache(repo);
+    let tmp = cache.parent().context("store cache has no parent")?.join("publish");
+    let _ = fs::remove_dir_all(&tmp);
+    fs::create_dir_all(&tmp)?;
+    let have = origin.keys()?;
+    let (mut put, mut kept, mut bytes) = (0usize, 0usize, 0u64);
+    for (key, body) in &p.files {
+        if crate::origin::is_immutable(key) && have.contains(key) {
+            kept += 1;
+            continue;
+        }
+        // A tar the cache does not keep is written for the upload and removed.
+        let (file, temp) = match body {
+            Body::Tar { name, hash } => {
+                let cached = cache.join("pkg").join(name).join(format!("{hash}.tar"));
+                if cached.is_file() {
+                    (cached, false)
+                } else {
+                    let t = tmp.join(format!("{name}-{hash}.tar"));
+                    write_pack_tar(&cache.join("pkg").join(name).join(hash), &t)?;
+                    (t, true)
+                }
+            }
+            Body::File(f) => (f.clone(), false),
+            Body::Bytes(b) => {
+                let t = tmp.join(key.replace('/', "_"));
+                fs::write(&t, b)?;
+                (t, true)
+            }
+        };
+        let size = fs::metadata(&file).map(|m| m.len()).unwrap_or(0);
+        origin.put(key, &file)?;
+        if temp {
+            let _ = fs::remove_file(&file);
+        }
+        put += 1;
+        bytes += size;
+        println!("put {key} ({:.1} MB)", size as f64 / 1e6);
+    }
+    let _ = fs::remove_dir_all(&tmp);
+    println!(
+        "{put} files put ({:.2} GB), {kept} already there ({} packs)",
+        bytes as f64 / 1e9,
+        p.packs
+    );
+    let base = oath_core::Profile::load("base").map_err(|e| anyhow::anyhow!("{e}"))?;
+    let public = base
+        .origins()
+        .first()
+        .context("the base profile names no origin (host:local.origins)")?
+        .trim_end_matches('/')
+        .to_string();
+    let Some((_, Body::Bytes(index))) = p.files.last() else { bail!("no INDEX.md") };
+    let url = format!("{public}/INDEX.md?v={}", oath_core::file_hash(index));
+    let got = run_out(Command::new("curl").args(["-fsSL", &url]))?;
+    if got.trim() != String::from_utf8_lossy(index).trim() {
+        bail!("{url} does not serve the INDEX.md just put");
+    }
+    println!("{public}/INDEX.md serves it");
+    Ok(())
+}
 /// One package on an origin, with the plan and source pack it was built from.
 struct Published {
     name: String,
@@ -896,18 +1024,14 @@ struct Published {
     src: String,
 }
 
-/// Copy `pkg/<name>/<hash>.tar` into the origin, writing the tar from the
-/// cached tree first if it is not there yet.
-fn copy_pack_tar(cache: &Path, dest: &Path, name: &str, hash: &str) -> Result<()> {
-    let tree = cache.join("pkg").join(name).join(hash);
+/// `pkg/<name>/<hash>.tar` beside the cached tree, written first if it
+/// is not there yet.
+fn pack_tar(cache: &Path, name: &str, hash: &str) -> Result<PathBuf> {
     let tar = cache.join("pkg").join(name).join(format!("{hash}.tar"));
     if !tar.is_file() {
-        write_pack_tar(&tree, &tar)?;
+        write_pack_tar(&cache.join("pkg").join(name).join(hash), &tar)?;
     }
-    let out = dest.join("pkg").join(name).join(format!("{hash}.tar"));
-    fs::create_dir_all(out.parent().context("parent")?)?;
-    fs::copy(&tar, &out).with_context(|| format!("copy {} -> {}", tar.display(), out.display()))?;
-    Ok(())
+    Ok(tar)
 }
 
 fn host_mount() -> String {

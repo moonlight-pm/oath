@@ -9,6 +9,7 @@ mod kernel;
 mod manifest;
 mod oath_pkg;
 mod openpgp;
+mod origin;
 mod output;
 mod pack;
 mod pkgs;
@@ -163,12 +164,13 @@ enum Cmd {
         #[arg(long)]
         tar: bool,
     },
-    /// Copy every package a seed profile names, at its locked hash and with
-    /// its licence, into a store origin tree (`pkg/<name>/<hash>.tar`).
+    /// Publish every locked pack and every package a seed profile names, each
+    /// with its licence, plan and source (`pkg/<name>/<hash>.tar`, `plan/`,
+    /// `adv/`, `INDEX.md`): to the default origin, or into a directory.
     Publish {
-        /// Destination directory.
+        /// Write this directory instead of uploading to the default origin.
         #[arg(long)]
-        dest: PathBuf,
+        dest: Option<PathBuf>,
     },
     /// Query OSV for packed trees that have `components.json`; write
     /// `~/.local/share/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
@@ -315,7 +317,7 @@ fn real() -> Result<()> {
             }
         }
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
-        Cmd::Publish { dest } => pack::publish_store(&root, &dest)?,
+        Cmd::Publish { dest } => pack::publish_store(&root, dest.as_deref())?,
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
         Cmd::Update { target, qemu, confirm, reboot, esp, output, unchecked } => {
             update::run_update(

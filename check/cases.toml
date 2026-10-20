@@ -88,6 +88,26 @@ steps = [
 ]
 
 [[case]]
+name = "pkg-origins"
+about = "A pinned package with no url comes from the first of host:local.origins that serves it; the machine's log, not the package, records where."
+steps = [
+  { run = "oath get host:local", expect = ["https://store.oath.moonlight.pm"] },
+  { run = "sudo oath set host:local origins='[\"http://10.0.2.2:18765/gone\", \"http://10.0.2.2:18765/origin\"]' && sudo oath apply host:local" },
+  { run = "h=$(curl -fsS http://10.0.2.2:18765/origin/INDEX.md | awk -F'`' '$2 == \"fetchme\" {print $4}') && sudo oath new pkg:fetchme --from-json \"{\\\"present\\\":true,\\\"hash\\\":\\\"$h\\\"}\" && sudo oath apply pkg:fetchme && fetchme", expect = ["fetched"] },
+  { run = "sudo grep '\"fetched\"' /oath/log/oath.jsonl | tail -1", expect = ["http://10.0.2.2:18765/origin/pkg/fetchme/sha256-"] },
+  { run = "oath get pkg:fetchme", reject = ["10.0.2.2"] },
+]
+
+[[case]]
+name = "pkg-default-origin"
+about = "A build pack no profile installs (m4) comes from the default origin, at the hash its INDEX.md lists."
+metal = true
+steps = [
+  { run = "h=$(curl -fsS https://store.oath.moonlight.pm/INDEX.md | awk -F'`' '$2 == \"m4\" {print $4}') && test -n \"$h\" && sudo oath new pkg:m4 --from-json \"{\\\"present\\\":true,\\\"hash\\\":\\\"$h\\\"}\" && sudo oath apply pkg:m4 && m4 --version", expect = ["GNU M4"] },
+  { run = "sudo grep '\"fetched\"' /oath/log/oath.jsonl | tail -1", expect = ["https://store.oath.moonlight.pm/pkg/m4/sha256-"] },
+]
+
+[[case]]
 name = "pkg-base-not-removable"
 about = "Base packages refuse present=false."
 metal = true

@@ -185,9 +185,16 @@ cargo make build [--profile base]
                           libraries it loads (install bakes keys into a
                           copy)
     check-pass            a clean `cargo make check` of this output
+cargo make publish [--dest <dir>]
+  every locked pack and every profile-named one, with its plan, source
+  pack and advisories, then INDEX.md (R25): without --dest, curl
+  --aws-sigv4 lists the R2 bucket oath-store and puts what it lacks,
+  key from ~/.config/oath/origin.env; machines read it at
+  https://store.oath.moonlight.pm (host:local.origins)
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
-  build/check/key; serves the fetch canary on 127.0.0.1:18765; cases
+  build/check/key; serves the fetch canary and a one-pack origin
+  (/origin/INDEX.md, /origin/pkg/fetchme/…) on 127.0.0.1:18765; cases
   make their own fixtures (`oath new`); a clean run writes
   build/out/<id>/check-pass (kernel, initrd, image sha256)
 cargo make check --target home@<host>

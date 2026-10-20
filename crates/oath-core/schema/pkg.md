@@ -33,7 +33,9 @@ object, and an install overlay can add others.
   `.tar` (or `.tar.gz`) is a pack tree; the hash is of the tree, not
   the tar. An origin prefix plus `hash` fetches
   `{url}/pkg/{name}/{hash}.tar`. A single file becomes `bin/<name>`.
-  Local store wins if the realization is already there.
+  Local store wins if the realization is already there. Empty with a
+  `hash`: the machine's `host:local.origins`, in order. A pack does
+  not know where it is hosted; `url` is this machine's choice.
 - `file` — optional, with `url`: the URL is one file, a vendor's
   release, and the tree is that file alone at this relative path, not
   executable (`src/claude`). A recipe's source package (below).
@@ -51,7 +53,9 @@ unknown, not safe. Actual copies the live tree's list.
 
 Advisories (not desired; not in the pack):
 `/oath/store/adv/<name>/<hash>.json`, fetched from
-`{origin}/adv/<name>/<hash>.json` when `url` is an origin. A failed
+`{origin}/adv/<name>/<hash>.json` when `url` is an origin (every
+apply), or from the `host:local.origins` entry that just served the
+pack. A failed
 fetch does not refuse apply. Actual `advisories` is omitted when never
 fetched. An empty list is not a safety proof. The box never calls
 OSV or NVD.

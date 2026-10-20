@@ -58,10 +58,20 @@ impl Profile {
         self.fixed.contains(&id)
     }
 
-    /// Every `pkg:*` object the profile names, present or not. These are
-    /// what `cargo make publish` may put on an origin.
+    /// Every `pkg:*` object the profile names, present or not. These and
+    /// every locked pack are what `cargo make publish` puts on an origin.
     pub fn pkgs(&self) -> Vec<String> {
         self.objects.keys().filter_map(|id| id.strip_prefix("pkg:")).map(str::to_string).collect()
+    }
+
+    /// `host:local.origins` as the profile seeds it: where its machines
+    /// fetch packs, in order.
+    pub fn origins(&self) -> Vec<String> {
+        self.objects
+            .get("host:local")
+            .and_then(|h| h["origins"].as_array())
+            .map(|a| a.iter().filter_map(|o| o.as_str().map(str::to_string)).collect())
+            .unwrap_or_default()
     }
 
     /// Every object the profile seeds.

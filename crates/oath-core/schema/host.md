@@ -4,7 +4,7 @@ The machine itself. There is exactly one object: `host:local`.
 
 **When to use:** change the hostname; reboot or halt; set the
 environment every service gets; set the local timezone; name other
-machines the network's DNS does not.
+machines the network's DNS does not; say where packs come from.
 
 **When not:** do not invent extra host objects. Network and packages are
 not this kind. Do not add a Unix user kind — the accounts are always
@@ -34,6 +34,15 @@ not this kind. Do not add a Unix user kind — the accounts are always
   refused (`/etc/hosts` has them). `set` replaces the whole map. Empty
   in the `base` profile. Prefer the network's DNS when it can serve the
   name: it covers every machine at once.
+- `origins` — where this machine fetches a pinned pack it does not
+  have, in order: a list of `http://` or `https://` prefixes, each tried
+  as `{origin}/pkg/<name>/<hash>.tar` until one serves the pinned tree
+  (the hash decides, so any origin may serve any pack). Used by apply
+  for a `pkg` with a `hash` and no `url`, and by `oath build` for a
+  missing build need. A pkg's own `url` wins. Packs record no location;
+  the machine's log does (`/oath/log/oath.jsonl`, `"fetched"`). The `base`
+  profile lists the default origin, `https://store.oath.moonlight.pm`;
+  put a LAN mirror first to prefer it. `set` replaces the whole list.
 
 ## Example
 
@@ -60,6 +69,13 @@ Another machine on the LAN by name:
 oath set host:local hosts='{"novus": "10.0.0.5"}'
 oath apply host:local
 getent hosts novus
+```
+
+A LAN mirror before the default origin:
+
+```
+oath set host:local origins='["http://10.0.0.5:8080", "https://store.oath.moonlight.pm"]'
+oath apply host:local
 ```
 
 Reboot (owner asked):

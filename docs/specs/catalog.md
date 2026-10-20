@@ -156,7 +156,9 @@ a root-owned `/etc/profile`. `timezone` is a POSIX TZ string; when set,
 every service and login gets `TZ` from it unless `env.TZ` is set. The
 system clock stays UTC, and recorded timestamps are RFC 3339 with `Z`.
 A `power` other than `run` needs `--confirm`. A hostname is letters,
-digits, `-` and `.`, at most 63 characters.
+digits, `-` and `.`, at most 63 characters. `hosts` names other machines in
+`/etc/hosts`; `origins` (R25) is the ordered list of origin prefixes
+the machine fetches pinned packs from (packages.md).
 
 **`snap:current`** — the live generation number. Changing it directly
 needs `--confirm`; `oath undo` is the normal path.

@@ -41,6 +41,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R22 | The desk's fonts are Noto (UI, serif, CJK, colour emoji, math and the other scripts) with Iosevka Term Slab first for monospace; SF Pro cannot ship (Apple licenses it only for its own platforms). Sound is PipeWire: `svc:pipewire`, `svc:wireplumber` and `svc:pipewire-pulse` as `home`, beside a session bus (`svc:dbus-session`); PID 1 gives `/dev/snd` to `home`. The desk carries what builds Sola on the machine (rust, gcc, pkgconf, cmake, meson, ninja, make, perl, python, git; `PKG_CONFIG_PATH` in `host:local` env), and `svc:sola-kvm` listens on UDP 4242 so novus's `sola-kvm server` drives canto. | Decided by Joshua 2026-10-18 |
 | R23 | A package whose licence does not allow redistribution ships as a **recipe**, never a pack: its plan and its pinned vendor source are in every catalog (and on an origin), and each machine fetches the vendor's file itself and makes the pack with `oath build plan:<name>`. `pkgs/<name>/pkg.toml` says why (`recipe = "…"`); a recipe has one source and builds only with packs the base profile ships; images and `cargo make publish` carry its plan, not its pack; the seed pins the product hash the build host got, so a machine's build must match it. The first is `pkg:claude-code`: Claude Code from Anthropic's `stable` channel (2.1.292), pinned by version and sha256 and checked on the build host against the manifest Anthropic signs (`pkgs/keys/anthropic.asc`, `31DD DE24 DDFA B679 F42D 7BD2 BAA9 29FF 1A7E CACE`); its loader name is rewritten in place to `/lib`'s, and `bin/claude` runs it with `DISABLE_UPDATES=1`, so a new version is a new pin. It stands alone: in the base profile, absent, and Sola Workspaces does not depend on it. | Decided by Joshua 2026-10-19 |
 | R24 | The base profile ships BIND 9's `dig`, `host` and `nslookup` (`pkg:bind`, no `named`) on every machine, so an agent can ask the DNS itself; with them come OpenSSL (BIND needs it; Mbed TLS stays curl's TLS), libuv, liburcu and libcap. Joshua trusted their signing keys: ISC's Michał Kępień `706B 6C28 620E 76F9 1D11 F7DF 510A 642A 06C5 2CEC`, OpenSSL `B146 647E 45A7 B339 47AB 226B 2A2C 87D1 6169 2D40`, libuv's Santiago Gimeno `612F 0EAD 9401 6223 79DF 4402 F28C 3C8D A33C 03BE`, userspace-rcu's Mathieu Desnoyers `2A0B 4ED9 15F2 D3FA 45F5 B162 1728 0A97 8118 6ACF` and libcap's Andrew G. Morgan `38A6 4469 8C69 7873 44E9 54CE 29EE 848A E2CC F3F4`. | Decided by Joshua 2026-10-19 |
+| R25 | Packs come from anywhere: a pack is its hash and records no location, and only the consumer says where it looks. `host:local.origins` is that list, in order (http:// or https:// prefixes, each tried as `{origin}/pkg/<name>/<hash>.tar` until one serves the pinned tree); a pkg's own `url` wins; apply uses it for a pinned pkg with no `url`, `oath build` for a missing build need, and the machine's log, not the pack, records where a fetched tree came from. The `base` profile lists the default origin, `https://store.oath.moonlight.pm`: the R2 bucket `oath-store` (Cloudflare account moonlight(pm), WNAM), public read, written only by the build host's key (`~/.config/oath/origin.env`, never committed). `cargo make publish` uploads every locked pack, build packs included, and every package a profile names, each with its plan and source (R13), so an origin alone rebuilds any published plan; recipes stay plan-only (R23). The page at `oath.moonlight.pm` stays on Wicket; the old `oath-store` workload (`store.oath.wicket.cloud`, T20) goes once the new origin passes. The host store moved out of the checkout to `~/.local/share/oath/store` the same day. | Decided by Joshua 2026-10-19 |
 
 ## Standing
 
@@ -68,8 +69,9 @@ acting on anything under **Open**. Replaces `open-questions.md`
   is `{id, hash}`; apply refuses a broken graph. `description` /
   `home` are prose. `components.json` is in the tree hash;
   advisories are hash-keyed files; the guest never calls OSV.
-  `pkg.url` / `{origin}/pkg/<name>/<hash>.tar` fetch; no repository
-  kind. Builds are `plan` objects, netless sandbox, pinned inputs.
+  `pkg.url`, else `host:local.origins` in order (R25), fetch
+  `{origin}/pkg/<name>/<hash>.tar`; packs record no location; no
+  repository kind. Builds are `plan` objects, netless sandbox, pinned inputs.
 - **Network and SSH.** `net:net0` is the one NIC (dhcp by default).
   Host keys live under `/oath/ssh/`; owner public keys in `ssh:local`.
   No baked private keys.
@@ -92,5 +94,5 @@ Oath (T21–T29, T36, T40), seat device rules (T22, T31 parts), Grok
 and Thoxa packs (T30, `pkg:thoxa`), the glibc runtime pack, T35's
 glibc-default `cc` → removed with the desk; returns as native
 packages. T37, T39 → R2. Package hosting on Wicket (T20 origin
-default) → no default origin. T33 backup → kept as a script and a
+default) → no default origin → R25 (R2, `host:local.origins`). T33 backup → kept as a script and a
 canto overlay, not a seed default.

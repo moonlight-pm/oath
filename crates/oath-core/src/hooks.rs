@@ -131,6 +131,7 @@ impl ApplyHooks for NullHooks {
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
+            origins: desired.origins.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {

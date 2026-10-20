@@ -51,6 +51,7 @@ impl ApplyHooks for MemHooks {
             env: desired.env.clone(),
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
+            origins: desired.origins.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {
@@ -155,7 +156,10 @@ fn seed_lists_host() {
     assert!(idx.contains("## Recipes"), "{idx}");
     assert!(idx.contains("`sudo oath build plan:claude-code`"), "{idx}");
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
-    assert_eq!(host.desired, json!({"hostname": "oath", "power": "run"}));
+    assert_eq!(
+        host.desired,
+        json!({"hostname": "oath", "power": "run", "origins": ["https://store.oath.moonlight.pm"]})
+    );
     let net = cat.get(&"net:net0".parse().unwrap()).unwrap();
     assert_eq!(net.desired["ipv4"], "dhcp");
     let serial = cat.get(&"svc:serial".parse().unwrap()).unwrap();
@@ -728,6 +732,32 @@ fn host_names_other_machines() {
     cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().actual["hosts"], json!({}));
     assert!(cat.diff(Some(&id)).unwrap().is_empty());
+}
+
+#[test]
+fn host_lists_origins_in_order() {
+    let (_d, cat) = tmp();
+    let id: ObjectId = "host:local".parse().unwrap();
+    assert_eq!(
+        cat.get(&id).unwrap().desired["origins"],
+        json!(["https://store.oath.moonlight.pm"])
+    );
+    for bad in [
+        json!(["ftp://store.example"]),
+        json!(["https://"]),
+        json!(["https://store example"]),
+        json!(["https://store.example/pkg/hello/x.tar"]),
+        json!(["https://store.example/?x"]),
+        json!(["https://store.example", "https://store.example"]),
+        json!("https://store.example"),
+    ] {
+        assert!(set(&cat, "host:local", "origins", bad.clone()).is_err(), "{bad}");
+    }
+    let two = json!(["http://10.0.0.5:8080/oath", "https://store.oath.moonlight.pm"]);
+    set(&cat, "host:local", "origins", two.clone()).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired["origins"], two);
+    set(&cat, "host:local", "origins", json!([])).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired["origins"], json!([]));
 }
 
 #[test]
