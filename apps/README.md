@@ -20,7 +20,8 @@ cargo make publish --dest <dir>
 ```
 
 writes `~/.local/share/oath/store/pkg/hello/<hash>/` and an optional `.tar`,
-then copies the tars into an origin tree at `<dir>`.
+then copies the tars into an origin tree at `<dir>` (without `--dest`,
+publish uploads to the default origin, R25).
 
 Optional, next to `bin/`:
 

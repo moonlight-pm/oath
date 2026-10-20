@@ -77,8 +77,9 @@ and glibc on 2026-10-17 (phase 8, R17). Sources
 are checked against upstream OpenPGP signatures by keys pinned in
 `pkgs/keys/`, and Python's against its Sigstore bundle (2026-10-16).
 
-`cargo make publish` carries only the packages a seed profile names,
-each with its licence, and `cargo make build` writes immutable outputs
+`cargo make publish` carries the packages a seed profile names, each
+with its licence (since 2026-10-19 every locked pack too, to the
+default origin, R25), and `cargo make build` writes immutable outputs
 (`build/out/<id>/`, with a manifest of every shipped pack) that install
 and `esp` take by id (2026-10-16).
 
