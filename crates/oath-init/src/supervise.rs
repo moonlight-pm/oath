@@ -188,7 +188,14 @@ impl Supervisor {
             let started = now.checked_sub(Duration::from_millis(k.ran_ms)).unwrap_or(now);
             s.kids.insert(
                 k.pid,
-                Kid { id: k.id, spec: k.spec, program: k.program, started, out, partial: k.partial },
+                Kid {
+                    id: k.id,
+                    spec: k.spec,
+                    program: k.program,
+                    started,
+                    out,
+                    partial: k.partial,
+                },
             );
         }
         s.oneshot_done = state.oneshot_done.into_iter().collect();
@@ -197,8 +204,7 @@ impl Supervisor {
             .into_iter()
             .map(|(id, spec, ms)| Pending { id, spec, due: now + Duration::from_millis(ms) })
             .collect();
-        s.failed =
-            state.failed.into_iter().map(|(id, spec, prog)| (id, (spec, prog))).collect();
+        s.failed = state.failed.into_iter().map(|(id, spec, prog)| (id, (spec, prog))).collect();
         s.history = state
             .history
             .into_iter()

@@ -508,7 +508,8 @@ fn stage_pins(stage: &Path) -> Result<Vec<(String, String, Value)>> {
 /// Whether the output's seed fixes `pkg:<name>`.
 fn stage_fixed(stage: &Path, name: &str) -> Result<bool> {
     let p = stage.join("oath/objects/pkg").join(name).join("meta.json");
-    let meta: Value = oath_core::read_json(&p).map_err(|e| anyhow::anyhow!("{}: {e}", p.display()))?;
+    let meta: Value =
+        oath_core::read_json(&p).map_err(|e| anyhow::anyhow!("{}: {e}", p.display()))?;
     Ok(meta.get("fixed") == Some(&Value::Bool(true)))
 }
 
