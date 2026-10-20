@@ -149,6 +149,7 @@ pre code {
 }
 
 pre .comment { color: var(--faint); }
+pre .line { display: block; }
 pre .prompt { color: var(--accent); }
 pre .cmd { font-weight: 600; }
 
@@ -196,6 +197,7 @@ header.site nav {
 header.site nav a {
     color: var(--muted);
     text-decoration: none;
+    padding: 0.75rem 0;
 }
 
 header.site nav a:hover,
@@ -340,7 +342,10 @@ footer.site a { color: var(--muted); }
     margin: 0;
 }
 
-.facts a { font-weight: 600; }
+.facts a {
+    font-weight: 600;
+    padding: 0.2rem 0;
+}
 
 #goals p strong {
     font-weight: 700;
@@ -563,6 +568,7 @@ footer.site a { color: var(--muted); }
 .contents-inline summary {
     cursor: pointer;
     font-weight: 650;
+    padding: 0.35rem 0;
 }
 
 .contents-inline .toc {
@@ -754,6 +760,24 @@ h5:hover .anchor,
         font-size: 0.78rem;
         padding: 0.75rem 0.85rem;
     }
+
+    /* The home page's samples wrap rather than hide behind a sideways
+       scroll; a wrapped terminal line hangs under its first characters.
+       The manual's code keeps its columns and scrolls. */
+    .home pre,
+    .home pre code {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .home pre .line {
+        padding-left: 2ch;
+        text-indent: -2ch;
+    }
+
+    .home pre .h4 { padding-left: 4ch; text-indent: -4ch; }
+    .home pre .h6 { padding-left: 6ch; text-indent: -6ch; }
+    .home pre .h8 { padding-left: 8ch; text-indent: -8ch; }
 
     footer.site div {
         padding: 1.25rem 1rem;

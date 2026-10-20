@@ -114,29 +114,41 @@ fn seal() -> &'static str {
 
 /// A recorded terminal session: each `$ ` line is the command typed.
 fn session(text: &str) -> String {
-    text.trim_end()
-        .lines()
-        .map(|line| match line.strip_prefix("$ ") {
-            Some(cmd) => format!("<span class=\"prompt\">$ </span><span class=\"cmd\">{}</span>", escape(cmd)),
-            None => escape(line),
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
+    lines(text, |line| match line.strip_prefix("$ ") {
+        Some(cmd) => format!("<span class=\"prompt\">$ </span><span class=\"cmd\">{}</span>", escape(cmd)),
+        None => escape(line),
+    })
 }
 
 /// The INDEX as an agent sees it, its Markdown headings in bold.
 fn index(text: &str) -> String {
+    lines(text, |line| {
+        if line.starts_with('#') {
+            format!("<span class=\"cmd\">{}</span>", escape(line))
+        } else {
+            escape(line)
+        }
+    })
+}
+
+/// Each line of terminal output in its own block, so a narrow screen can
+/// wrap a long one under a hanging indent and still show where it began.
+/// An indented line hangs deeper (`h4`, `h6`, `h8`: two past its indent,
+/// at most eight), so its continuation sits inside it, not left of it.
+fn lines(text: &str, mark: impl Fn(&str) -> String) -> String {
     text.trim_end()
         .lines()
         .map(|line| {
-            if line.starts_with('#') {
-                format!("<span class=\"cmd\">{}</span>", escape(line))
-            } else {
-                escape(line)
-            }
+            let class = match line.len() - line.trim_start().len() {
+                0 => "line",
+                1..=2 => "line h4",
+                3..=4 => "line h6",
+                _ => "line h8",
+            };
+            let inner = if line.is_empty() { " ".to_string() } else { mark(line) };
+            format!("<span class=\"{class}\">{inner}</span>")
         })
-        .collect::<Vec<_>>()
-        .join("\n")
+        .collect()
 }
 
 pub fn escape(text: &str) -> String {
@@ -175,7 +187,11 @@ mod tests {
 
     #[test]
     fn a_session_marks_commands_and_escapes_output() {
-        let s = session("$ oath get <id>\na < b\n");
-        assert_eq!(s, "<span class=\"prompt\">$ </span><span class=\"cmd\">oath get &lt;id&gt;</span>\na &lt; b");
+        let s = session("$ oath get <id>\n\n  a < b\n");
+        assert_eq!(
+            s,
+            "<span class=\"line\"><span class=\"prompt\">$ </span><span class=\"cmd\">oath get &lt;id&gt;</span></span>\
+             <span class=\"line\"> </span><span class=\"line h4\">  a &lt; b</span>"
+        );
     }
 }
