@@ -891,6 +891,7 @@ fn collect_publication(repo: &Path) -> Result<Publication> {
         .map(|e| e.file_name().to_string_lossy().into_owned())
         .filter(|n| !n.starts_with('.'))
         .filter(|n| !named.contains(n) && !rows.iter().any(|r| *n == format!("{}-src", r.name)))
+        .filter(|n| !recipes.contains(n.strip_suffix("-src").unwrap_or(n)))
         .collect();
     skipped.sort();
 
