@@ -23,13 +23,14 @@ append history (git has it).
 3. **Packs from anywhere (R25).** A pack records no location; the
    machine looks in `host:local.origins` in order (a pkg's `url` wins)
    and logs where a tree came from. Default origin: the R2 bucket
-   `oath-store` at `https://store.oath.moonlight.pm` (public read, the
-   build host's key writes); `cargo make publish` uploads every locked
-   pack with plan and source. The host store is
-   `~/.local/share/oath/store`. Next: the write key in
-   `~/.config/oath/origin.env`, the first publish, the QEMU and metal
-   suites (`pkg-origins`, `pkg-default-origin`), `origins` on canto,
-   then delete Wicket's old `oath-store` workload.
+   `oath-store` at `https://store.oath.moonlight.pm`, public read,
+   written by `cargo make publish` with the build host's key
+   (`~/.config/oath/origin.env`): every locked pack, build packs too,
+   with plan and source (404 files, 6.24 GB on 2026-10-19). The host
+   store is `~/.local/share/oath/store`; Wicket's old `oath-store`
+   workload is deleted. Next: publish after every `cargo make pkgs` or
+   build that changes a pack; signatures on `INDEX.md` when a second
+   publisher or mirror appears.
 4. **buccina (phase 6), parked by Joshua.** It answers at 10.0.0.149
    with a new host key and refuses the build host's key as root. Next,
    when Joshua picks it up: the Wicket deploy key, a
@@ -40,8 +41,8 @@ append history (git has it).
 active ([docs/roadmap.md](docs/roadmap.md)). Phase 7 finished
 2026-10-18 (haiku passed all five agent tasks, R16); Oath became a GCC,
 glibc and GNU system 2026-10-17 (R17, R18). The newest checked output,
-`7cabe23131c4` (`desk`, with `host:local.hosts` and BIND's `dig`, R24),
-passes all 50 QEMU cases, and canto runs it and passes all 40 metal
+`0f7ae5f7f797` (`base`, with `host:local.origins`, R25), passes all 52
+QEMU cases, and canto (`desk` objects) runs it and passes all 41 metal
 cases. Left by design until something needs them: root SSH as a field,
 more NICs, device rules as fields.
 
@@ -49,7 +50,7 @@ more NICs, device rules as fields.
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `7cabe23131c4`, the `desk` profile (rivulet and Sola on DP-10); [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `0f7ae5f7f797`, the `desk` profile (rivulet and Sola on DP-10); [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.
