@@ -322,9 +322,13 @@ mod tests {
             "needs": [{ "id": "pkg:sola", "hash": A }, { "id": "pkg:cef", "hash": B }]
         });
         let (set, moved) = keep_machine_pin(&browser, &ships).unwrap();
-        assert_eq!(set["needs"], json!([{ "id": "pkg:sola", "hash": A }, { "id": "pkg:cef", "hash": C }]));
+        assert_eq!(
+            set["needs"],
+            json!([{ "id": "pkg:sola", "hash": A }, { "id": "pkg:cef", "hash": C }])
+        );
         assert_eq!(moved, vec![format!("pkg:cef {B} -> {C}")]);
-        let moved_wrong = json!({ "needs": [{ "id": "pkg:sola", "hash": B }, { "id": "pkg:cef", "hash": C }] });
+        let moved_wrong =
+            json!({ "needs": [{ "id": "pkg:sola", "hash": B }, { "id": "pkg:cef", "hash": C }] });
         let (set, _) = keep_machine_pin(&moved_wrong, &ships).unwrap();
         assert_eq!(set["needs"][0]["hash"], json!(A));
     }
