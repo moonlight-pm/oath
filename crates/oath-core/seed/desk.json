@@ -55,7 +55,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -73,7 +72,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -93,7 +91,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -113,7 +110,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -134,7 +130,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -155,7 +150,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -176,7 +170,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -210,7 +203,6 @@
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave",
-        "SOLA_LOG_DIR": "/home/.local/state/sola",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       }
@@ -575,16 +567,97 @@
     },
     "pkg:sola": {
       "present": true,
+      "hash": "sha256-58089ce24f8871dc9bbb91c70a692b5f74d0491812c168fae05225faf1ef0b12",
+      "needs": [
+        {
+          "id": "pkg:gcc",
+          "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+        },
+        {
+          "id": "pkg:wayland",
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac"
+        },
+        {
+          "id": "pkg:libxkbcommon",
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f"
+        },
+        {
+          "id": "pkg:mesa",
+          "hash": "sha256-057d7efa073ca29a169f7b9f96df4a4b37ceffb88f27993c7effdcfb226b5aae"
+        },
+        {
+          "id": "pkg:tmux",
+          "hash": "sha256-555791eae4aa3ac05bc70962bb93e5a275d0cc97a054f8696b58dcc04aeeec55"
+        },
+        {
+          "id": "pkg:pipewire",
+          "hash": "sha256-cd23a26bb28b9336cbdad793392bd79424335c9746538ef271c0fb8bb1192391"
+        },
+        {
+          "id": "pkg:wireplumber",
+          "hash": "sha256-3861ca5c3d44217add73b0377f881411d4db751cf3ef5dd0f6cc914fab3cf610"
+        },
+        {
+          "id": "pkg:fontconfig",
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b"
+        },
+        {
+          "id": "pkg:font-noto",
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982"
+        },
+        {
+          "id": "pkg:font-noto-cjk",
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51"
+        },
+        {
+          "id": "pkg:font-noto-emoji",
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b"
+        },
+        {
+          "id": "pkg:font-iosevka-term-slab",
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad"
+        }
+      ],
       "description": "Sola: the desktop session on rivulet, its terminal and Workspaces.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
     "pkg:sola-browser": {
       "present": true,
+      "hash": "sha256-69f6f57df4578db8573d63865afc6a65379008ef736e3bec569f145afefc68b4",
+      "needs": [
+        {
+          "id": "pkg:sola",
+          "hash": "sha256-58089ce24f8871dc9bbb91c70a692b5f74d0491812c168fae05225faf1ef0b12"
+        },
+        {
+          "id": "pkg:cef",
+          "hash": "sha256-355ac7f45920ab9d7ef913560e645b93af3eff6f655ff424732f74dd962ad5e7"
+        },
+        {
+          "id": "pkg:libpulse",
+          "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63"
+        }
+      ],
       "description": "Sola's browser: iced chrome on CEF.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
     "pkg:sola-design": {
       "present": true,
+      "hash": "sha256-d9a6c2f0ca38262dadf706d99a9da7dd872199f0fc1384f3698bf1a9ab88a554",
+      "needs": [
+        {
+          "id": "pkg:sola",
+          "hash": "sha256-58089ce24f8871dc9bbb91c70a692b5f74d0491812c168fae05225faf1ef0b12"
+        },
+        {
+          "id": "pkg:cef",
+          "hash": "sha256-355ac7f45920ab9d7ef913560e645b93af3eff6f655ff424732f74dd962ad5e7"
+        },
+        {
+          "id": "pkg:libpulse",
+          "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63"
+        }
+      ],
       "description": "Sola Design: HTML artboards on a canvas, edited by agents.",
       "home": "https://github.com/moonlight-pm/Sola"
     },

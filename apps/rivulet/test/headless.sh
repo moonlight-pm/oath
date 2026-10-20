@@ -7,7 +7,7 @@
 #   nix-shell apps/rivulet/dev.nix --run 'apps/rivulet/test/headless.sh compare <out-a> <out-b>'
 #
 # SOLA_BIN names a directory holding sola-bus, sola-call, sola-river and
-# solactl built from forks/sola. Each run gets its own runtime dir, config,
+# solactl built from Sola (moonlight-pm/Sola). Each run gets its own runtime dir, config,
 # home and Sola log dir, so a desk on the same machine is not touched.
 set -u
 

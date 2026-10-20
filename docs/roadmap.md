@@ -117,8 +117,8 @@ Done 2026-10-18: haiku passed all five tasks on canto (output
 
 ## 8. Native desk — active
 
-River, wlroots, mesa, input, audio, fonts and Sola built natively.
-Sola-compat rules from the old fork workflow still apply.
+River, wlroots, mesa, input, audio and fonts built natively; Sola
+packages itself, and the `desk` profile pins its packs (R28).
 
 Slice 1 (R17, R18), built 2026-10-17: the toolchain is GCC 16.2,
 binutils 2.47 and glibc 2.44, programs link dynamically through a

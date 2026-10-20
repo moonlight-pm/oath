@@ -37,9 +37,10 @@ Sanitizers: `make BUILD=<dir> CFLAGS='-O1 -g -fsanitize=address,undefined'
 LDFLAGS='-fsanitize=address,undefined'`.
 
 The test needs `sola-bus`, `sola-call`, `sola-river` and `solactl` from
-`forks/sola`. Build them with `--manifest-path` from a directory outside
-this repo, because Oath's `.cargo/config.toml` and Sola's both define a
-`make` alias and Cargo refuses to merge them. Then:
+a checkout of [Sola](https://github.com/moonlight-pm/Sola). Build them
+with `--manifest-path` from a directory outside this repo, because
+Oath's `.cargo/config.toml` and Sola's both define a `make` alias and
+Cargo refuses to merge them. Then:
 
 ```
 SOLA_BIN=<dir> test/headless.sh run <compositor> <out>
@@ -65,10 +66,9 @@ build sandbox: rivulet headless on pixman, and as its init an X client
 
 - It is `rivulet`: the binary, `-version` (`0.1.0`), the init file
   (`$XDG_CONFIG_HOME/rivulet/init`), the nested output's title and app
-  id, and its log lines. The protocols keep River's names. Sola's
-  session starts and reaps a binary named `river`
-  (`forks/sola/crates/sola/src/river.rs`), so oath-sola must name
-  `rivulet` there.
+  id, and its log lines. The protocols keep River's names. Sola's own
+  process manager (`crates/sola`) starts a binary named `river`; on
+  Oath it does not run, and PID 1 runs `svc:rivulet`.
 - When wlroots cannot make a GPU renderer and `WLR_RENDERER` is unset,
   rivulet uses the pixman renderer instead of exiting (QEMU's virtio-gpu,
   a GPU Mesa has no driver for).

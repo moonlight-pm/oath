@@ -83,7 +83,7 @@ check/            cases.toml for `cargo make check` (the QEMU harness), agent.to
 apps/             first-party package sources and example plans
 site/             oath.moonlight.pm: home page and docs/manual as one page, its own Cargo workspace, Wicket workload
 brand/            the seal: oath.svg (vector), oath.png, logo-white.png
-forks/            submodules for the future native desk (sola, river, wlroots)
+forks/            submodules of patched upstreams (river, wlroots)
 apocrypha/        gitignored scratch — never a source of truth
 ```
 
@@ -101,8 +101,8 @@ without a decision in `docs/decisions.md`.
 
 ## Forks
 
-`forks/sola` is **oath-sola**, frozen at `aa548c8a` (R28): do not
-merge Sola into it. Sola packages itself from its own repo
-(`moonlight-pm/Sola`), and the fork goes once Sola publishes its packs.
-Oath's side of that stays generic and never names Sola. Do not edit
-the Sola repo from here; its own session does that.
+There is no Sola fork (R28): Sola packages itself from its own repo
+(`moonlight-pm/Sola`) and publishes its packs, and the `desk` profile
+pins them by hash (`hash`, `needs`). Oath's tools stay generic and
+never name Sola. Do not edit the Sola repo from here; its own session
+does that.

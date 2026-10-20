@@ -1,5 +1,5 @@
 # The vendor's binary release (R7), pinned by sha256: the minimal
-# distribution Sola's browser is built against (forks/sola/cef-version).
+# distribution Sola's browser is built against (Sola's cef-version).
 version = "147.0.10+gd58e84d+chromium-147.0.7727.118"
 license = "BSD-3-Clause AND LicenseRef-Chromium-Credits"
 description = "CEF, the Chromium Embedded Framework, for sola-browser."

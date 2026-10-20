@@ -350,7 +350,10 @@ mod tests {
         assert!(p.pkgs().contains(&"later".to_string()) && p.pkgs().contains(&"oath".to_string()));
         // Only a package the profile pins by hash is built elsewhere (R28).
         assert_eq!(p.pinned_pkgs().keys().collect::<Vec<_>>(), vec!["elsewhere"]);
-        assert!(Profile::load("desk").unwrap().pinned_pkgs().is_empty());
+        assert_eq!(
+            Profile::load("desk").unwrap().pinned_pkgs().keys().collect::<Vec<_>>(),
+            vec!["sola", "sola-browser", "sola-design"]
+        );
         assert!(Profile::load_from("looped", &profiles).is_err());
         assert!(Profile::load_from("nope", &profiles).is_err());
     }

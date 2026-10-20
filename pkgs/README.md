@@ -1,7 +1,9 @@
 # pkgs/
 
 Every package that ships in Oath is built from source here (R7 in
-[../docs/decisions.md](../docs/decisions.md)).
+[../docs/decisions.md](../docs/decisions.md)), except a pack a seed
+profile pins by hash from elsewhere (R28): its owner builds and
+publishes it, and it has no directory here (Sola's, in `desk`).
 
 | File | What |
 |------|------|
@@ -45,8 +47,7 @@ key = "m4"                 # pkgs/keys/m4.asc
 - `tree = "apps/<dir>"` (package level): first-party source from this
   repository, not an upstream's. What git tracks or would add there
   goes into the source pack as `src/<dir>/`, so ignored build output
-  stays out (a submodule, `forks/sola`, is listed by its own git); the
-  manifest names the tree and the commit.
+  stays out; the manifest names the tree and the commit.
 - `recipe = "<why>"` (package level): the licence does not allow
   redistribution, so the package is a recipe (R23): images and origins
   carry its plan, never its pack, and each machine fetches the one
@@ -56,11 +57,6 @@ key = "m4"                 # pkgs/keys/m4.asc
   and may name only packs the base profile ships; there are no other
   files. A profile names `pkg:<name>` and `pkg:<name>-src` absent and
   `plan:<name>`; the image fills in their pins (`pkgs/claude-code`).
-- `cargo_vendor = "<dir>"` (package level): the crates a Cargo
-  workspace of this repository locks, crates.io and git alike, pinned
-  by its `Cargo.lock`: `cargo vendor` on the build host writes them to
-  `src/vendor/` with the source replacement in `src/vendor.toml`.
-  Windows-only crates keep only their manifests (`pkg:sola-crates`).
 
 Every fetch checks the sha256 pin, then the signature (cached under
 `build/fetch/sig/`). A key file holds exactly the key that signs the

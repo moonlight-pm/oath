@@ -25,16 +25,13 @@ append history (git has it).
    browser, Design), PipeWire, Noto, `svc:sola-kvm`. Shells outlive a
    session restart; tabs come back after a reboot. Next: realtime
    priority for PipeWire.
-3. **Sola packages itself (R28).** `forks/sola` is frozen at
-   `aa548c8a`; Sola builds, stores and publishes its own packs. Oath's
-   generic side is built (2026-10-20): `oath store`; services restart
-   when their program's package moves; a profile can pin a pack built
-   elsewhere (`build` fetches it, `publish` skips it, `update` keeps
-   the machine's pin and warns on stale needs). Next: with the Sola
-   tab's first published hashes, pin `pkg:sola`, `sola-browser` and
-   `sola-design` in `desk.json`; delete `pkgs/sola*`, their lock
-   entries, `forks/sola` and an unused `cargo_vendor`; fix R21,
-   forks/README.md, AGENTS.md, desk.md and builds.md.
+3. **Sola packages itself (R28).** The fork is gone (2026-10-20):
+   `desk.json` pins `pkg:sola`, `sola-browser` and `sola-design` to
+   Sola's first published packs (from its `next` at `2ed8fe24`), and
+   `pkgs/sola*`, `forks/sola` and `cargo_vendor` are deleted. Oath's
+   side is generic: `oath store`, services that follow their package,
+   pinned packs. canto keeps Sola's dev pins. Next: a new pin when the
+   Sola tab publishes; a stale-needs warning means Sola rebuilds.
 4. **Claude Code as a recipe (R23).** Every catalog carries
    `plan:claude-code` (stable 2.1.292, pinned to the signed manifest);
    canto built the build host's exact pack and runs `claude`, signed

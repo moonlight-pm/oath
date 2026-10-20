@@ -1086,59 +1086,6 @@
     "product": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819",
     "run": []
   },
-  "sola": {
-    "version": "0.1.0",
-    "license": "LicenseRef-Sola AND ISC AND CC0-1.0 AND GPL-3.0-only",
-    "by": "plan",
-    "plan": "sha256-339ef13caebdcee986524d36ef4eaa6bc5cb817dfef06b8235aece00d1f7d5b7",
-    "product": "sha256-599c3507746a7ecfbd6e2583f3e3ad20e2d29f422a1c8c3e31d38d129a1bde56",
-    "run": [
-      "gcc",
-      "wayland",
-      "libxkbcommon",
-      "mesa",
-      "tmux",
-      "pipewire",
-      "wireplumber",
-      "fontconfig",
-      "font-noto",
-      "font-noto-cjk",
-      "font-noto-emoji",
-      "font-iosevka-term-slab"
-    ]
-  },
-  "sola-browser": {
-    "version": "0.1.0",
-    "license": "LicenseRef-Sola",
-    "by": "plan",
-    "plan": "sha256-fd3703a3b08545c22434c668b5c492422ed282f39aaff81250b938022aa4d03f",
-    "product": "sha256-806e1fc63ce24433cbd088cf0e0e70fa603c22e2d61d7ec5b9ff5d742c6c260a",
-    "run": [
-      "sola",
-      "cef",
-      "libpulse"
-    ]
-  },
-  "sola-crates": {
-    "version": "2026.10.18",
-    "license": "LicenseRef-Cargo-Crates",
-    "by": "plan",
-    "plan": "sha256-bf27585de7cd141cd3e183b446d6b3e019449f0ba26861ff8a1fb4336c1c2329",
-    "product": "sha256-d868ad5e8bf9d3aa82e6ac334ede5125061aa69765c69dbf2c27e4075a79f82f",
-    "run": []
-  },
-  "sola-design": {
-    "version": "0.1.0",
-    "license": "LicenseRef-Sola",
-    "by": "plan",
-    "plan": "sha256-bb2b6225d4470b22ba6aa3a08059dd6b80a6b985001cc33d482a9b2b79b1c19d",
-    "product": "sha256-1c9148c9286c956f71bedf25bf17f28494593a20a98810c63e2e62e82b3292e5",
-    "run": [
-      "sola",
-      "cef",
-      "libpulse"
-    ]
-  },
   "tar": {
     "version": "1.35",
     "license": "GPL-3.0-or-later",

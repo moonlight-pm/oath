@@ -90,21 +90,18 @@ are 0666, and an X client gets a keymap through Xwayland.
 
 ## Sola (built)
 
-Will be (R28): Sola packages itself from its own repo with `oath
-store` and `oath build`, the `desk` profile pins its packs by hash, and
-`pkgs/sola*` and `forks/sola` go. Is, until Sola publishes them:
-
-Sola comes from oath-sola (`forks/sola`, merged with Sola `master` on
-2026-10-20, now frozen). It builds offline: `pkg:sola-crates` is `cargo vendor` of
-its Cargo.lock (`cargo_vendor = "forks/sola"`, 1.1k crates, the git ones
-too), and `pkg:sola`, `pkg:sola-browser` and `pkg:sola-design` build
-from the tree (`tree = "forks/sola"`) with `pkg:rust`.
+Sola packages itself (R28): its own repo builds `pkg:sola`,
+`sola-browser` and `sola-design` on an Oath machine (`oath store` for a
+dev pack, `oath build` of a plan it generates for a release) and
+publishes them to the default origin. Oath builds none of them: the
+`desk` profile pins each by `hash` and `needs` (Sola's release of
+2026-10-20, from its `next` at `2ed8fe24`), `cargo make build` fetches
+them into the image, `publish` leaves them out, and `update` keeps the
+pin a machine already has (canto runs Sola's dev packs).
 
 | Package | What |
 |---------|------|
-| `sola` | `sola-bus`, `sola-call`, `sola-river`, `sola-shell`, `sola-session`, `solactl`, `sola-terminal`, `sola-workspaces`, `sola-oath`, `sola-kvm`; `share/`: Sola's, Lucide's and Simple Icons' icons, the McMojave cursors (pinned GitHub archives, as Sola pins them) |
-| `sola-browser` | `sola-browser`, with `cef/` linked to `pkg:cef` and a RUNPATH into CEF's `Release` |
-| `sola-design` | `sola-design` (Design: HTML artboards on a canvas, R21), built as `sola-browser` is, since it embeds the same CEF engine; sharing a canvas needs `cloudflared`, which Oath does not ship |
+| `sola`, `sola-browser`, `sola-design` | Sola's packs, pinned (R28): the `/bin/sola-*` programs the services run, `solactl`, and `share/cursors` (McMojave) for `XCURSOR_PATH`. The browser and Design run on `pkg:cef`; sharing a canvas needs `cloudflared`, which Oath does not ship |
 | `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader), `cef/Resources`; 539 MB |
 | CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
 | Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif, serif and system-ui to Noto, monospace to Iosevka Term Slab then Noto Sans Mono, emoji and math to Noto's; `45-noto-cjk.conf`, ahead of it, picks the CJK face by language; both bind weakly, so a page's language outranks the family list), `freetype`, `font-noto` (Sans, Serif, Sans Mono, Symbols, Math and the scripts web pages need, slim variable TTFs from the 2026.10.01 monthly tag), `font-noto-cjk` (Sans and Serif CJK, Regular and Bold OTCs), `font-noto-emoji` (Noto Color Emoji, CBDT), `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
@@ -114,13 +111,12 @@ from the tree (`tree = "forks/sola"`) with `pkg:rust`.
 
 PID 1 runs Sola's processes as `home` services (`svc:sola-bus`,
 `sola-call`, `sola-river` wanting `svc:rivulet`, `sola-shell`,
-`sola-session`); `crates/sola`, Sola's own process manager, is neither
-built nor run. Their environment names what NixOS gets from its
+`sola-session`); `crates/sola`, Sola's own process manager, does not
+run. Their environment names what NixOS gets from its
 session: `XCURSOR_PATH`/`XCURSOR_THEME` (rivulet too),
 `FONTCONFIG_FILE` (iced parses fonts.conf itself), `SHELL=/bin/zsh`
-(the login shell, R27)
-and `SOLA_LOG_DIR=/home/.local/state/sola` (`/oath/log` is root's;
-apps log to `app-<name>.log` there). `host:local` sets
+(the login shell, R27). Sola logs to `/home/.local/state/sola`, its
+default (`/oath/log` is root's). `host:local` sets
 `LANG=en_US.UTF-8` (tmux refuses a non-UTF-8 locale) and
 `SSL_CERT_FILE` (curl's Mozilla bundle, for rustls in the browser's
 vault and for cargo), `DBUS_SESSION_BUS_ADDRESS` and `PKG_CONFIG_PATH`
@@ -205,7 +201,8 @@ that will matter at the next version bump:
 - `gmp` (Niels Möller) had expired before it signed nettle 4.0.
 - `libevent`'s signing subkey expires 2027-06-16; `dbus`'s 2028-07-27.
   CEF moves on (147.0.14 on its branch, 152 to 154 stable): a bump is a
-  new Sola `cef-version` and a new pin.
+  new pin in `pkgs/cef`, and Sola's browser and Design are stale (the
+  build warns) until Sola builds them against it.
 
 For rivulet's libraries, twelve sources have no signature the verifier
 can check, each saying why in its `pkg.toml`: libffi, libudev-zero,
@@ -218,7 +215,7 @@ libudev-zero, libxkbcommon, hwdata) can be regenerated with new bytes;
 a sha256 mismatch on one of those is not by itself an attack. Sola's
 stack adds: GNOME's tarballs (glib, at-spi2-core, pango; sha256sum
 files only), Mozilla's (nspr, nss; SHA256SUMS only), GitHub release
-assets (tmux, harfbuzz, fribidi, the fonts, Sola's icon archives),
+assets (tmux, harfbuzz, fribidi, the fonts),
 fontconfig's GitLab package, cairo's inline-signed sha256sum (the
 pixman format), and CEF (Spotify's CDN, sha1 and sha256 only). Sound
 and fonts add: PipeWire's and WirePlumber's GitLab tag archives

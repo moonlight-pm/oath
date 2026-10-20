@@ -98,7 +98,7 @@ Overwrite this file when facts change; do not append a diary.
   right) reaches `svc:sola-kvm` here; its clipboard channel connects at
   boot.
 - **Building Sola here:** a login shell has `PKG_CONFIG_PATH`; `cargo
-  build` of oath-sola's session crates from a fresh clone took 5 min 45 s
+  build` of Sola's session crates from a fresh clone took 5 min 45 s
   (debug, 8 threads) on 2026-10-18.
 - **Modules:** at boot ahci, sd_mod, tg3, xhci_pci, ehci_pci, usbhid,
   hid_apple, hid_generic, btusb, i2c_i801, evdev, x86_pkg_temp_thermal; after

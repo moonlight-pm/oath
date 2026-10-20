@@ -87,11 +87,7 @@ pub fn make(
             let tree = p
                 .tree
                 .iter()
-                .map(|t| json!({ "tree": t, "commit": commit(root, &[t.as_str()]) }))
-                .chain(p.cargo_vendor.iter().map(|d| {
-                    let lock = format!("{d}/Cargo.lock");
-                    json!({ "cargo_vendor": lock, "commit": commit(root, &[d.as_str()]) })
-                }));
+                .map(|t| json!({ "tree": t, "commit": commit(root, &[t.as_str()]) }));
             let sources: Vec<Value> = p
                 .source
                 .iter()

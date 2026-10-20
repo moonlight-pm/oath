@@ -223,7 +223,9 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   `build`, `check` and `update` warn that the owner should build it
   again. `cargo make publish` leaves it out. `cargo make update` keeps
   the pin the machine has (the owner moves it, with `oath set`), and
-  moves only its needs to the output's hashes.
+  moves only its needs to the output's hashes. The `desk` profile pins
+  Sola's three packs this way (2026-10-20), from the default origin;
+  Sola builds them from its own repo with `oath build`.
 
 ## Products and logs (built)
 
@@ -241,8 +243,9 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
 
 ## Target
 
-- **The desk's session.** Its packages are built ([desk.md](desk.md));
-  audio, fonts and Sola as plans remain (phase 8).
+- **The desk's session.** Its packages, sound and fonts included, are
+  built ([desk.md](desk.md)), and Sola's are pinned from Sola (R28);
+  what remains of phase 8 is in desk.md's Target.
 
 ## Out
 
