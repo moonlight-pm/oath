@@ -139,7 +139,7 @@ step waits up to five minutes for a new boot id. Logs are under
 ```sh
 ANTHROPIC_API_KEY=… cargo make check --agent              # every task, haiku
 cargo make check --agent --case rename --model sonnet
-cargo make check --agent --target home@10.0.0.3           # on a machine
+cargo make check --agent --target home@<host>             # on a machine
 ```
 
 `--agent` gives a model that has never seen Oath one MCP server, the

@@ -124,8 +124,8 @@ and the INDEX as its instructions. Nothing listens on a port; the
 server lives as long as the SSH connection.
 
 ```
-claude mcp add canto -- ssh -T -o BatchMode=yes home@10.0.0.3 oath mcp
-ssh -T home@10.0.0.3 oath mcp --read-only    # only the tools that look
+claude mcp add oath -- ssh -T -o BatchMode=yes home@<host> oath mcp
+ssh -T home@<host> oath mcp --read-only    # only the tools that look
 ```
 
 Each tool runs one `oath --json` command and returns its JSON: `index`,

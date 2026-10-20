@@ -17,10 +17,10 @@
 
 <section id="catalog" class="catalog">
 <h2>The catalog</h2>
-<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are eight kinds. The counts are from canto, the test machine, on 19 October 2026.</p>
+<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are eight kinds. The counts are from one machine on 19 October 2026: a 2013 Mac Pro that runs Oath as a desktop.</p>
 <div class="table-wrap">
 <table class="kinds">
-<thead><tr><th scope="col">Kind</th><th scope="col">One object is</th><th scope="col" class="count">On canto</th></tr></thead>
+<thead><tr><th scope="col">Kind</th><th scope="col">One object is</th><th scope="col" class="count">Count</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>host</code></th><td>The machine itself: hostname, timezone, environment, power state, package origins.<span class="ids">host:local</span></td><td class="count">1</td></tr>
 <tr><th scope="row"><code>svc</code></th><td>A process PID 1 supervises: its command, user, restart policy and the services it wants up first.<span class="ids">svc:sshd · svc:time · svc:pipewire</span></td><td class="count">17</td></tr>
@@ -49,29 +49,29 @@
 <div><dt>Network and SSH</dt><dd><code>net0</code> by DHCP or a static address, time from pool.ntp.org, dropbear for SSH as <code>home</code> with root login refused, the OpenSSH client tools and <code>dig</code>.</dd></div>
 <div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick. <code>cargo make update</code> moves an installed machine to a newer build without wiping it.</dd></div>
 <div><dt>Testing</dt><dd><code>cargo make check</code> boots one QEMU machine per case and reboots for real. <code>--target</code> runs the hardware cases on an installed machine and undoes each one. <code>--agent</code> gives a real model five administration tasks.</dd></div>
-<div><dt>Desk</dt><dd>Optional. rivulet, a C port of the River compositor on wlroots, runs Sola's shell, terminal, Workspaces and browser, with PipeWire for sound.</dd></div>
+<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Workspaces and browser of <a href="https://sola.computer">Sola</a>, with PipeWire for sound.</dd></div>
 </dl>
 <p class="more">The <a href="/manual">manual</a> covers each of these in detail.</p>
 </section>
 
 <section id="session">
 <h2>A session</h2>
-<p>Recorded on canto. The first <code>set</code> is refused because <code>sometimes</code> is not a restart policy the kind allows, and nothing is written. The apply takes generation 162 before it changes the service; the undo returns to the generation before it, and the log records both.</p>
+<p>Recorded on the same Mac Pro. The first <code>set</code> is refused because <code>sometimes</code> is not a restart policy the kind allows, and nothing is written. The apply takes generation 162 before it changes the service; the undo returns to the generation before it, and the log records both.</p>
 <pre class="term"><code>{{session}}</code></pre>
 <h3>What an agent reads first</h3>
-<p><code>oath</code> with no arguments prints <code>/oath/INDEX.md</code>, which is generated from the live catalog. This is canto's.</p>
+<p><code>oath</code> with no arguments prints <code>/oath/INDEX.md</code>, which is generated from the live catalog. This is the Mac Pro's.</p>
 <pre class="term index"><code>{{index}}</code></pre>
 </section>
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 19 October 2026 the current build passes all 52 QEMU test cases, and canto, a 2013 Mac Pro that runs the desk, passes all 41 hardware cases. Not there yet:</p>
+<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 19 October 2026 the current build passes all 52 test cases in QEMU and all 41 hardware cases on the Mac Pro. Not there yet:</p>
 <ul>
 <li>Releases. x86-64 with UEFI is the only platform.</li>
 <li>Signed packages. Packages are pinned by hash and their sources are checked against upstream signatures, but Oath does not yet sign what it publishes.</li>
 <li>More than one network interface. One is chosen at boot.</li>
 <li>Device node ownership and mounts as catalog fields.</li>
-<li>Desk applications beyond Sola's terminal, Workspaces and browser. Steam is planned.</li>
+<li>Desktop applications beyond Sola's terminal, Workspaces and browser. Steam is planned.</li>
 </ul>
 <p>The work under way is in <a href="{{repository}}/blob/master/CURRENT.md">CURRENT.md</a>, the decisions behind it in <a href="{{repository}}/blob/master/docs/decisions.md">docs/decisions.md</a>, and what each part can do in <a href="{{repository}}/blob/master/docs/capabilities.md">docs/capabilities.md</a>.</p>
 </section>
