@@ -1096,8 +1096,9 @@ pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
         return Err(Error::Msg(format!("adv tmp: {e}")));
     }
     let blob = tmpdir.join("blob");
+    // Quiet: most packs have no advisory file, and its 404 is not a failure.
     let st = Command::new(find_bin("curl"))
-        .args(["-fsSL", "-o", blob.to_str().unwrap(), &adv_url])
+        .args(["-fsL", "-o", blob.to_str().unwrap(), &adv_url])
         .stdout(std::io::stderr())
         .status()
         .map_err(|e| Error::Msg(format!("curl: {e}")));
