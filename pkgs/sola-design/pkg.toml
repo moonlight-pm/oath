@@ -1,0 +1,12 @@
+# From the same tree and crates as pkg:sola. Design embeds the browser's
+# CEF engine: cef/ links to pkg:cef, where it looks beside its prefix, and
+# libcef.so is found by the RUNPATH Sola's build bakes in, which names
+# pkg:cef's slot. Sharing a canvas needs cloudflared, which Oath does not
+# ship.
+version = "0.1.0"
+license = "LicenseRef-Sola"
+description = "Sola Design: HTML artboards on a canvas, edited by agents."
+home = "https://github.com/moonlight-pm/Sola"
+tree = "forks/sola"
+build = ["rust", "pkgconf", "sola-crates", "cef"]
+run = ["sola", "cef", "libpulse"]

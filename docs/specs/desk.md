@@ -91,15 +91,16 @@ are 0666, and an X client gets a keymap through Xwayland.
 ## Sola (built)
 
 Sola comes from oath-sola (`forks/sola`, merged with Sola `master` on
-2026-10-18). It builds offline: `pkg:sola-crates` is `cargo vendor` of
+2026-10-20). It builds offline: `pkg:sola-crates` is `cargo vendor` of
 its Cargo.lock (`cargo_vendor = "forks/sola"`, 1.1k crates, the git ones
-too), and `pkg:sola` and `pkg:sola-browser` build from the tree
-(`tree = "forks/sola"`) with `pkg:rust`.
+too), and `pkg:sola`, `pkg:sola-browser` and `pkg:sola-design` build
+from the tree (`tree = "forks/sola"`) with `pkg:rust`.
 
 | Package | What |
 |---------|------|
 | `sola` | `sola-bus`, `sola-call`, `sola-river`, `sola-shell`, `sola-session`, `solactl`, `sola-terminal`, `sola-workspaces`, `sola-oath`, `sola-kvm`; `share/`: Sola's, Lucide's and Simple Icons' icons, the McMojave cursors (pinned GitHub archives, as Sola pins them) |
 | `sola-browser` | `sola-browser`, with `cef/` linked to `pkg:cef` and a RUNPATH into CEF's `Release` |
+| `sola-design` | `sola-design` (Design: HTML artboards on a canvas, R21), built as `sola-browser` is, since it embeds the same CEF engine; sharing a canvas needs `cloudflared`, which Oath does not ship |
 | `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader), `cef/Resources`; 539 MB |
 | CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
 | Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif, serif and system-ui to Noto, monospace to Iosevka Term Slab then Noto Sans Mono, emoji and math to Noto's; `45-noto-cjk.conf`, ahead of it, picks the CJK face by language; both bind weakly, so a page's language outranks the family list), `freetype`, `font-noto` (Sans, Serif, Sans Mono, Symbols, Math and the scripts web pages need, slim variable TTFs from the 2026.10.01 monthly tag), `font-noto-cjk` (Sans and Serif CJK, Regular and Bold OTCs), `font-noto-emoji` (Noto Color Emoji, CBDT), `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
@@ -121,8 +122,8 @@ apps log to `app-<name>.log` there). `host:local` sets
 vault and for cargo), `DBUS_SESSION_BUS_ADDRESS` and `PKG_CONFIG_PATH`
 (every desk package's `lib/pkgconfig`: `.pc` files stay with their
 pack, so a build on the machine looks in each). Apps open with
-`solactl session launch sola-terminal`, `sola-workspaces` or
-`sola-browser`. wgpu runs on GL through Mesa's EGL; there is no Vulkan
+`solactl session launch sola-terminal`, `sola-workspaces`,
+`sola-browser` or `sola-design`, or from the shell's launcher. wgpu runs on GL through Mesa's EGL; there is no Vulkan
 loader.
 
 **The session comes back.** The two tmux servers that hold every
@@ -145,8 +146,8 @@ compositor names its socket.
 
 The `desk-sola` case (metal only: `qemu = false`) checks the services
 and that the tmux servers and shells are outside `svc:sola-session`'s
-cgroup, opens the terminal, Workspaces (its call plane answers
-`project.list`) and the browser unless they are open, and loads
+cgroup, opens the terminal, Workspaces and Design (their call planes
+answer `project.list`) and the browser unless they are open, and loads
 `https://example.com` in a tab of its own. It closes only what it
 opened: closing an app also drops it from `SessionApps`. Workspaces' tabs run
 in tmux on socket `sola-ws`; on start it merges its status hooks into

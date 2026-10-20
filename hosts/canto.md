@@ -18,21 +18,27 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `64c80ede5e5b` (`cargo make build
+- **Running now:** build output `b845739dac07` (`cargo make build
   --profile desk`, so the update moved `pkg:sola` and
   `pkg:sola-browser` too), the `desk` profile
   (R20–R22: base plus seatd, rivulet, Sola with its terminal,
   Workspaces, browser and KVM, PipeWire, Noto, the tools that build
   Sola, and their packages), reached on 2026-10-20 by `cargo make
-  update --target home@10.0.0.3 --confirm` and a reboot; the system was
+  update --target home@10.0.0.3 --confirm` (PID 1 and the kernel
+  from it run after the next reboot); the system was
   `cargo make install --target home@10.0.0.3 --disk /dev/sda
   --hostname canto --overlay hosts/canto.json --confirm` on
   2026-10-18. Passed all 42 `metal` cases (`cargo make check --target
   home@10.0.0.3`, 2026-10-20) on `f897ffcbda55`, `desk`, `desk-sola`,
   `desk-sound`, `login-shell`, `native-userland` (`dig`),
   `recipe-builds-here` and `pkg-default-origin` (`m4` from R2) among
-  them; on `64c80ede5e5b`, `desk-sola` passes (the full run was not
-  repeated).
+  them; on `b845739dac07`, `desk-sola` passes, Design included (the
+  full run was not repeated).
+- **Design (R21):** `pkg:sola-design` came after the install, so it was
+  made by hand on 2026-10-20 from the image's seed values (`oath new
+  pkg:sola-design --from-json`, generation 200). Design is open and in
+  Sola's saved session; a test canvas rendered its board through CEF.
+  Sharing needs `cloudflared`, which canto does not have.
 - **Session restore:** `svc:sola-tmux` and `svc:sola-tmux-ws` were made
   by hand on 2026-10-20 as the `desk` seed has them (generations 195 and
   196: `svc:sola-session` stopped, the two made, the session started

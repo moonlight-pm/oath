@@ -583,6 +583,11 @@
       "description": "Sola's browser: iced chrome on CEF.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
+    "pkg:sola-design": {
+      "present": true,
+      "description": "Sola Design: HTML artboards on a canvas, edited by agents.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
     "pkg:tmux": {
       "present": true,
       "description": "tmux, which sola-terminal runs every shell in.",

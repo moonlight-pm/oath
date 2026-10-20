@@ -35,6 +35,6 @@ gaps · `target` designed, not built.
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Workspaces, browser; shells outlive session restarts, reboots reopen tabs; PipeWire; Noto; canto (R20–R22). Gaps: other apps, RT priority |
+| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Workspaces, browser, Design; shells survive session restarts; PipeWire; Noto; canto (R20–22). Gaps: other apps, RT priority |
 | Wicket host | target | Left core (R1); Wicket will ship its own packages and overlay. buccina still runs the trial image. |
 | Steam + Minecraft desk | target | Future requirement (R2): native desk, Steam runtime, JVM. |
