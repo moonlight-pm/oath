@@ -11,7 +11,7 @@ root `Cargo.lock` and `pkg:oath`. Not part of the OS.
 | `src/manual.rs` | Markdown to HTML (pulldown-cmark): chapters numbered, headings anchored, links between chapters made anchors, other relative links sent to GitHub, raw HTML shown as text |
 | `src/main.rs` | HTTP/1.1, GET and HEAD; ETags and 304s; security headers; `oath.wicket.cloud` redirects here |
 | `samples/` | `session.txt` and `index.md`, recorded on canto, shown on the home page |
-| `static/` | `style.css`, the favicon, fonts (OFL, licences beside them) |
+| `static/` | `style.css`, the favicons (SVG, and `favicon.ico` and `apple-touch-icon.png` rendered from it for browsers that take only raster icons), fonts (OFL, licences beside them) |
 
 The seal is `brand/oath.svg`, drawn in `currentColor`.
 

@@ -37,6 +37,8 @@ const STATIC: &[(&str, &[u8], &str, &str)] = &[
     ("/style.css", include_bytes!("../static/style.css"), "text/css; charset=utf-8", CHECK),
     ("/seal.svg", SEAL.as_bytes(), "image/svg+xml", DAY),
     ("/favicon.svg", include_bytes!("../static/favicon.svg"), "image/svg+xml", DAY),
+    ("/favicon.ico", include_bytes!("../static/favicon.ico"), "image/x-icon", DAY),
+    ("/apple-touch-icon.png", include_bytes!("../static/apple-touch-icon.png"), "image/png", DAY),
     ("/fonts/PublicSans.woff2", include_bytes!("../static/fonts/PublicSans.woff2"), "font/woff2", DAY),
     ("/fonts/PublicSans-Italic.woff2", include_bytes!("../static/fonts/PublicSans-Italic.woff2"), "font/woff2", DAY),
     ("/fonts/BarlowCondensed-600.woff2", include_bytes!("../static/fonts/BarlowCondensed-600.woff2"), "font/woff2", DAY),
