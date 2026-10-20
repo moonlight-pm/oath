@@ -28,6 +28,8 @@ description: Oath session start and the end-of-slice doc update. Use at the star
 7. `docs/decisions.md`: record any decision Joshua made, and close or
    add Open items.
 8. `docs/roadmap.md`: only when a whole phase changes status.
+9. `site/pages/home.html`: its Status section and catalog counts, when
+   a capability or a gap they name changed (see `site/README.md`).
 
 Do not create session diaries, handoff files, `STATUS.md` or plan
 checklists. Write plain declarative sentences with absolute dates.

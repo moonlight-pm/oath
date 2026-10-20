@@ -1,0 +1,761 @@
+/* oath.moonlight.pm: neutral ink and paper, one brass accent from the
+   seal's metal. Public Sans for reading, Barlow Condensed for the few
+   display lines, JetBrains Mono for everything typed at a machine. */
+
+@font-face {
+    font-family: "Public Sans";
+    src: url("/fonts/PublicSans.woff2") format("woff2");
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Public Sans";
+    src: url("/fonts/PublicSans-Italic.woff2") format("woff2");
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Barlow Condensed";
+    src: url("/fonts/BarlowCondensed-600.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("/fonts/JetBrainsMono.woff2") format("woff2");
+    font-weight: 400 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    color-scheme: light dark;
+    --ground: #fbfbfa;
+    --raised: #f0f0ee;
+    --code-ground: #f5f5f3;
+    --ink: #17171a;
+    --muted: #55555c;
+    --faint: #85858c;
+    --line: #e2e2df;
+    --rule: #cbcbc6;
+    --accent: #866626;
+    --sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --measure: 46rem;
+    --page: 78rem;
+    --header: 3.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ground: #0f0f11;
+        --raised: #1a1a1d;
+        --code-ground: #151518;
+        --ink: #ebebe8;
+        --muted: #a6a6ad;
+        --faint: #76767e;
+        --line: #29292d;
+        --rule: #3b3b40;
+        --accent: #d2b483;
+    }
+}
+
+* { box-sizing: border-box; }
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--ink);
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+}
+
+a:hover { color: var(--accent); }
+
+a:focus-visible,
+summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+::selection {
+    background: var(--accent);
+    color: var(--ground);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+    font-weight: 650;
+}
+
+[id] {
+    scroll-margin-top: calc(var(--header) + 1rem);
+}
+
+strong { font-weight: 650; }
+
+code,
+pre {
+    font-family: var(--mono);
+    font-variant-ligatures: none;
+}
+
+code {
+    font-size: 0.84em;
+    background: var(--raised);
+    padding: 0.08em 0.3em;
+    border-radius: 3px;
+    overflow-wrap: break-word;
+}
+
+pre {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin: 1rem 0 1.25rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--code-ground);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow-x: auto;
+    tab-size: 4;
+}
+
+pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    overflow-wrap: normal;
+}
+
+pre .comment { color: var(--faint); }
+pre .prompt { color: var(--accent); }
+pre .cmd { font-weight: 600; }
+
+.seal {
+    display: block;
+    fill: currentColor;
+    flex: none;
+}
+
+.skip {
+    position: absolute;
+    left: 1rem;
+    top: -3rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--ink);
+    color: var(--ground);
+    z-index: 20;
+}
+
+.skip:focus { top: 0.5rem; }
+
+/* Site header and footer */
+
+header.site {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: var(--header);
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+}
+
+header.site nav {
+    max-width: var(--page);
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    font-size: 0.9375rem;
+}
+
+header.site nav a {
+    color: var(--muted);
+    text-decoration: none;
+}
+
+header.site nav a:hover,
+header.site nav a[aria-current] {
+    color: var(--ink);
+}
+
+header.site nav a[aria-current] {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.45em;
+}
+
+header.site .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-right: auto;
+    color: var(--ink);
+}
+
+header.site .brand .seal {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+header.site .brand span {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.35rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    line-height: 1;
+    padding-top: 0.1rem;
+}
+
+footer.site {
+    border-top: 1px solid var(--line);
+    margin-top: 4.5rem;
+}
+
+footer.site div {
+    max-width: var(--page);
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+}
+
+footer.site p { margin: 0; }
+
+footer.site a { color: var(--muted); }
+
+.principles {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+/* Home */
+
+.home {
+    max-width: calc(var(--measure) + 3rem);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.home section {
+    margin-top: 4rem;
+}
+
+.home h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 2rem;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    margin: 0 0 1.1rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--rule);
+}
+
+.home h3 {
+    font-size: 1.1rem;
+    margin: 2.25rem 0 0.5rem;
+}
+
+.intro {
+    padding: 4rem 0 0.5rem;
+}
+
+.intro .title {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    margin: 0 0 1.4rem;
+}
+
+.intro .title .seal {
+    width: 4.75rem;
+    height: 4.75rem;
+}
+
+.intro h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 5.25rem;
+    line-height: 0.85;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0;
+    padding-top: 0.08em;
+}
+
+.intro h1.plain {
+    font-size: 2.5rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    margin-bottom: 1rem;
+}
+
+.lede {
+    font-size: 1.25rem;
+    line-height: 1.5;
+    margin: 0 0 1.25rem;
+}
+
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.25rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+}
+
+.facts a { font-weight: 600; }
+
+#goals p strong {
+    font-weight: 700;
+}
+
+/* The catalog: eight kinds, a ledger with canto's counts. */
+
+.table-wrap {
+    overflow-x: auto;
+    margin: 1rem 0 1.5rem;
+}
+
+.kinds {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.kinds thead th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--faint);
+    text-align: left;
+    padding: 0 1rem 0.5rem 0;
+    border-bottom: 1px solid var(--rule);
+}
+
+.kinds tbody th,
+.kinds td {
+    vertical-align: top;
+    padding: 0.85rem 1rem 0.85rem 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.kinds tbody th {
+    text-align: left;
+    width: 5.5rem;
+}
+
+.kinds tbody th code {
+    background: none;
+    padding: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.kinds .ids {
+    display: block;
+    margin-top: 0.3rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--faint);
+    overflow-wrap: anywhere;
+}
+
+.kinds .count {
+    text-align: right;
+    padding-right: 0;
+    width: 5rem;
+}
+
+.kinds td.count {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 2.1rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    padding-top: 0.7rem;
+}
+
+/* What works */
+
+.features {
+    margin: 0;
+}
+
+.features > div {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 0 1.25rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.features dt {
+    font-weight: 650;
+    font-size: 0.95rem;
+    padding-top: 0.1rem;
+}
+
+.features dt code {
+    background: none;
+    padding: 0;
+    font-size: 0.92em;
+}
+
+.features dd {
+    margin: 0;
+}
+
+.more {
+    margin-top: 1rem;
+    color: var(--muted);
+}
+
+#status ul {
+    padding-left: 1.25rem;
+}
+
+#status li {
+    margin: 0.3rem 0;
+}
+
+/* Manual */
+
+.manual {
+    max-width: var(--page);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 16.5rem minmax(0, 1fr);
+    gap: 3rem;
+}
+
+.contents {
+    position: sticky;
+    top: var(--header);
+    align-self: start;
+    max-height: calc(100vh - var(--header));
+    overflow-y: auto;
+    padding: 2rem 0.5rem 2rem 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.contents-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 0.75rem;
+}
+
+.toc,
+.toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.toc > li {
+    margin-bottom: 0.9rem;
+}
+
+.toc > li > a {
+    font-weight: 650;
+    color: var(--ink);
+}
+
+.toc ol {
+    margin-top: 0.2rem;
+}
+
+.toc a {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.12rem 0;
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.toc a:hover {
+    color: var(--accent);
+}
+
+.toc .number {
+    flex: none;
+    min-width: 2.1rem;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.toc code {
+    font-size: 0.92em;
+    background: none;
+    padding: 0;
+}
+
+.manual-body {
+    min-width: 0;
+    max-width: var(--measure);
+    padding: 2rem 0;
+}
+
+.manual-head h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 2.75rem;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    margin: 0.5rem 0 1rem;
+}
+
+.manual-head p {
+    color: var(--muted);
+    margin: 0 0 1rem;
+}
+
+.contents-inline {
+    display: none;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.9rem;
+}
+
+.contents-inline summary {
+    cursor: pointer;
+    font-weight: 650;
+}
+
+.contents-inline .toc {
+    margin-top: 0.75rem;
+}
+
+.chapter h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 2.1rem;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    margin: 3.5rem 0 1rem;
+    padding-top: 1.25rem;
+    border-top: 2px solid var(--rule);
+}
+
+.chapter h3 {
+    font-size: 1.3rem;
+    margin: 2.5rem 0 0.75rem;
+}
+
+.chapter h4 {
+    font-size: 1.1rem;
+    margin: 2rem 0 0.6rem;
+}
+
+.chapter h5,
+.chapter h6 {
+    font-size: 1rem;
+    margin: 1.5rem 0 0.5rem;
+}
+
+.chapter :is(h2, h3, h4) code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+}
+
+.chapter .number {
+    color: var(--faint);
+    font-weight: 500;
+    margin-right: 0.55em;
+    font-variant-numeric: tabular-nums;
+}
+
+.chapter h2 .number {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.anchor {
+    margin-left: 0.4em;
+    color: var(--faint);
+    text-decoration: none;
+    font-weight: 400;
+    opacity: 0;
+}
+
+h2:hover .anchor,
+h3:hover .anchor,
+h4:hover .anchor,
+h5:hover .anchor,
+.anchor:focus-visible {
+    opacity: 1;
+}
+
+.chapter ul,
+.chapter ol {
+    padding-left: 1.4rem;
+}
+
+.chapter li {
+    margin: 0.25rem 0;
+}
+
+.chapter li > pre {
+    margin: 0.5rem 0 0.75rem;
+}
+
+.chapter blockquote {
+    margin: 1rem 0;
+    padding: 0.1rem 0 0.1rem 1rem;
+    border-left: 3px solid var(--accent);
+    color: var(--muted);
+}
+
+.chapter table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.chapter th,
+.chapter td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.45rem 0.75rem 0.45rem 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.chapter th {
+    font-weight: 650;
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+}
+
+.chapter td code {
+    font-size: 0.84em;
+}
+
+@media (min-width: 40rem) {
+    .chapter td:first-child code {
+        white-space: nowrap;
+    }
+}
+
+/* Narrow screens: contents fold into the page; 16px gutters. */
+
+@media (max-width: 60rem) {
+    .manual {
+        display: block;
+        padding: 0 1rem;
+    }
+
+    .contents {
+        display: none;
+    }
+
+    .contents-inline {
+        display: block;
+    }
+}
+
+@media (max-width: 40rem) {
+    body {
+        font-size: 1rem;
+    }
+
+    header.site nav {
+        padding: 0 1rem;
+        gap: 1.1rem;
+    }
+
+    .home {
+        padding: 0 1rem;
+    }
+
+    .intro {
+        padding-top: 2.5rem;
+    }
+
+    .intro .title .seal {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
+
+    .intro h1 {
+        font-size: 3.9rem;
+    }
+
+    .lede {
+        font-size: 1.1rem;
+    }
+
+    .home h2 {
+        font-size: 1.75rem;
+    }
+
+    .features > div {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kinds tbody th {
+        width: 4rem;
+    }
+
+    .kinds .count {
+        width: 3.25rem;
+    }
+
+    .kinds td.count {
+        font-size: 1.6rem;
+    }
+
+    pre {
+        font-size: 0.78rem;
+        padding: 0.75rem 0.85rem;
+    }
+
+    footer.site div {
+        padding: 1.25rem 1rem;
+    }
+}

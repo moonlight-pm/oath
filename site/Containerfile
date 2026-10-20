@@ -1,0 +1,27 @@
+# oath.moonlight.pm: the product page and the manual.
+#
+# Built from the repo root, because the binary compiles docs/manual and
+# the seal (brand/oath.svg) in: an image serves the manual of the commit
+# it was built from. The Rust base is pinned by digest (bump it by hand);
+# the final image is that one static binary, run as nobody.
+#
+#   podman build -f site/Containerfile --ignorefile site/.containerignore \
+#     -t registry.wicket.cloud/oath-site:latest .
+#
+# Wicket injects PORT; `podman run --rm -p 8080:8080 oath-site` without it.
+
+FROM docker.io/library/rust:1.95-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1 AS build
+WORKDIR /build
+COPY docs/manual docs/manual
+COPY brand/oath.svg brand/oath.svg
+COPY site site
+RUN cd site \
+ && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --locked --target x86_64-unknown-linux-gnu \
+ && cp target/x86_64-unknown-linux-gnu/release/oath-site /oath-site
+
+FROM scratch
+COPY --from=build /oath-site /oath-site
+USER 65534:65534
+ENV OATH_SITE_PORT=8080
+EXPOSE 8080
+ENTRYPOINT ["/oath-site"]

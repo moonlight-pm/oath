@@ -1,0 +1,17 @@
+$ sudo oath set svc:time restart=sometimes
+svc:time: unknown variant `sometimes`, expected one of `never`, `always`, `on-failure` (setting restart)
+hint: oath schema svc
+$ sudo oath set svc:time restart=on-failure
+$ oath diff
+svc:time
+  restart: "always" -> "on-failure"
+$ sudo oath apply
+Create readonly snapshot of '/oath/run/fs/@' in '/oath/run/fs/@gen-162'
+applied generation 162 (svc:time)
+$ sudo oath undo
+undid to generation 135
+$ oath diff
+in-sync
+$ oath log -n 2
+{"actor":{"tty":"unknown","uid":0},"error":null,"generation":162,"ids":["svc:time"],"parent_generation":135,"result":"ok","time":"2026-10-20T03:34:37Z"}
+{"actor":{"tty":"unknown","uid":0},"error":null,"generation":135,"ids":["undo:162"],"parent_generation":162,"result":"ok","time":"2026-10-20T03:34:37Z"}

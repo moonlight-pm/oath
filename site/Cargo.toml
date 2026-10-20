@@ -1,0 +1,18 @@
+# oath.moonlight.pm: the product page and the manual. Its own workspace,
+# so the site's crates stay out of the root Cargo.lock and pkg:oath.
+[workspace]
+
+[package]
+name = "oath-site"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = "symbols"

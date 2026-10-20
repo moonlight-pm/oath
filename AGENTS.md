@@ -43,6 +43,7 @@ item 1. Do not re-plan from scratch.
 | `docs/roadmap.md` | phase status | flip only at phase level |
 | `docs/architecture.md` | as-built map: processes, trees, paths | |
 | `hosts/<name>.md` + `.json` | one machine's facts and install overlay | overwrite, no diary |
+| `site/pages/home.html` | oath.moonlight.pm: goals, the kinds, status | Status and counts dated; follow capabilities |
 
 Code wins over a stale doc; then fix the doc. No session diaries,
 handoff files or status files beyond these. The end-of-slice checklist
@@ -80,6 +81,8 @@ pkgs/             every package that ships: pkg.toml + build.sh per package, loc
 image/            host.nix (QEMU + OVMF, build host only)
 check/            cases.toml for `cargo make check` (the QEMU harness), agent.toml for `--agent`
 apps/             first-party package sources and example plans
+site/             oath.moonlight.pm: home page and docs/manual as one page, its own Cargo workspace, Wicket workload
+brand/            the seal: oath.svg (vector), oath.png, logo-white.png
 forks/            submodules for the future native desk (sola, river, wlroots)
 apocrypha/        gitignored scratch — never a source of truth
 ```

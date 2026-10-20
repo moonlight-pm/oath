@@ -106,4 +106,5 @@ image/             kernel build, host.nix (QEMU for the build host)
 check/             harness cases for cargo make check
 hosts/             per-machine facts and install overlays
 docs/              decisions, capabilities, roadmap, specs, manual
+site/              oath.moonlight.pm (the manual is docs/manual)
 ```

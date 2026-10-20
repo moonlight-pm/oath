@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/PublicSans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/BarlowCondensed-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body id="top">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site">
+<nav aria-label="Site">
+<a class="brand" href="/">{{seal}}<span>Oath</span></a>
+<a href="/manual"{{manual_current}}>Manual</a>
+<a href="{{repository}}">Source</a>
+</nav>
+</header>
+{{body}}
+<footer class="site">
+<div>
+<p>Oath is pre-alpha. Source and issues: <a href="{{repository}}">github.com/moonlight-pm/oath</a>. MIT licence. This site is a Rust program in <a href="{{repository}}/tree/master/site">site/</a>.</p>
+<p class="principles">Independence · Simplicity · Openness · Courage</p>
+</div>
+</footer>
+</body>
+</html>
