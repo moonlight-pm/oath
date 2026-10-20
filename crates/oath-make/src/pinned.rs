@@ -210,6 +210,17 @@ pub fn in_manifest(manifest: &Value) -> BTreeSet<String> {
         .collect()
 }
 
+/// What a machine's packs pinned from elsewhere need of `need` after an
+/// update: a pack the machine keeps at its own pin (`kept`, by name) at
+/// that pin, since its owner built them together; anything else at the
+/// output's pin (`output`).
+pub fn needed_at<'a>(
+    kept: &'a BTreeMap<String, String>,
+    output: impl Fn(&str) -> Option<String> + 'a,
+) -> impl Fn(&str) -> Option<String> + 'a {
+    move |need| kept.get(need).cloned().or_else(|| output(need))
+}
+
 /// What `cargo make update` sets on a machine's pinned package that is
 /// not at the output's pin: the machine's own pin stays, and each need the
 /// output ships at another hash moves to it. `None` when nothing moves.
@@ -298,6 +309,24 @@ mod tests {
         );
         assert_eq!(moved.len(), 1);
         assert!(keep_machine_pin(&machine, |_| None).is_none());
+        // Its need on another pack it keeps stays at the machine's pin of
+        // that pack, and goes back to it if an update moved it.
+        let kept = BTreeMap::from([("sola".to_string(), A.to_string())]);
+        let ships = needed_at(&kept, |n: &str| match n {
+            "sola" => Some(B.to_string()),
+            "cef" => Some(C.to_string()),
+            _ => None,
+        });
+        let browser = json!({
+            "hash": C,
+            "needs": [{ "id": "pkg:sola", "hash": A }, { "id": "pkg:cef", "hash": B }]
+        });
+        let (set, moved) = keep_machine_pin(&browser, &ships).unwrap();
+        assert_eq!(set["needs"], json!([{ "id": "pkg:sola", "hash": A }, { "id": "pkg:cef", "hash": C }]));
+        assert_eq!(moved, vec![format!("pkg:cef {B} -> {C}")]);
+        let moved_wrong = json!({ "needs": [{ "id": "pkg:sola", "hash": B }, { "id": "pkg:cef", "hash": C }] });
+        let (set, _) = keep_machine_pin(&moved_wrong, &ships).unwrap();
+        assert_eq!(set["needs"][0]["hash"], json!(A));
     }
 
     #[test]
