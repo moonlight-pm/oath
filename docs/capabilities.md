@@ -20,7 +20,7 @@ gaps · `target` designed, not built.
 | Services (PID 1) | shipped | runs only applied specs; per-service logs; exit codes, backoff, `failed` with a `reason`; a cgroup per service; shutdown in reverse `wants` order; a cycle skips only its members; survives its own panic; a service restarts when apply moves its program's package | — |
 | Packages | shipped | hash-in-path store, `/bin` and `/lib` farms (R17), pins, `needs` graph, components + advisories; fetch by `url` or `host:local.origins` (R25; default `store.oath.moonlight.pm`); `oath store` for a tree built on the machine; recipes (R23); publish uploads every locked pack with licence, plan and source; `oath verify` each boot | Oath's packs unsigned |
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; netless sandbox in its own PID namespace; cache keyed on plan and inputs; logs in `/oath/log/plan/`; every image package, the kernel and Oath binaries included, is a plan product | — |
-| Toolchain and native packages | partial | `cargo make bootstrap`: GCC 16.2 + binutils 2.47 + glibc 2.44 (R17); `cargo make pkgs`: 130 plan products (pinned and signature-checked sources, SPDX licences, `pkgs/lock.json`); GNU userland (R18); bit-identical rebuilds; compilers on the desk | Perl unsigned |
+| Toolchain and native packages | partial | `cargo make bootstrap`: GCC 16.2 + binutils 2.47 + glibc 2.44 (R17); `cargo make pkgs`: 134 plan products (pinned and signature-checked sources, SPDX licences, `pkgs/lock.json`); GNU userland (R18); bit-identical rebuilds; compilers on the desk | Perl unsigned |
 | Network | partial | `net:net0` dhcp or static; NIC renamed `net0`; supervised dhcpcd, renewals in actual; LAN names in `host:local.hosts`; `dig`; chrony | One NIC, chosen at boot |
 | SSH | shipped | dropbear server as `home` (login shell zsh, R27), keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` (clean env) | — |
 | Devices | partial | modules by modalias at boot, on kernel request and on hotplug; `dev:*` discovered from sysfs (disks by bus path, `net0`…, UARTs) at boot and on change | Node ownership and mounts are not fields yet |
@@ -35,6 +35,6 @@ gaps · `target` designed, not built.
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Workspaces, browser, Design; shells survive session restarts; PipeWire; Noto; canto (R20–22). Gaps: other apps, RT priority |
+| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Workspaces, browser, Design; shells survive session restarts; PipeWire; Noto; Vulkan (RADV); canto (R20–22). Gaps: other apps, RT priority |
 | Wicket host | target | Left core (R1); Wicket will ship its own packages and overlay. buccina still runs the trial image. |
 | Steam + Minecraft desk | target | Future requirement (R2): native desk, Steam runtime, JVM. |

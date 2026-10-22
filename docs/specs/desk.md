@@ -15,24 +15,25 @@ through `sola-kvm`.
 
 ## Packages (built)
 
-`cargo make pkgs rivulet` builds 52 packages in dependency order; 41 of
-them are the desk's:
+The desk's packages, built in dependency order by `cargo make pkgs`
+(`cargo make pkgs rivulet` builds the compositor and what it needs):
 
 | Layer | Packages |
 |-------|----------|
 | Compositor | `rivulet` (`tree = "apps/rivulet"`), `wlroots` 0.20.2 with Oath's two patches (`pkgs/wlroots/patches/`, from `forks/wlroots`) |
 | Wayland | `wayland`, `wayland-protocols`, `libffi`, `expat` |
-| GPU | `mesa` 26.2.5 (radeonsi compiled by ACO, softpipe; GBM, EGL, GLES, GL and GLX; no LLVM, no Vulkan), `libdrm` (amdgpu, radeon), `elfutils`' libelf |
+| GPU | `mesa` 26.2.5 (radeonsi and RADV, compiled by ACO; softpipe; GBM, EGL, GLES, GL, GLX and Vulkan, with the device-select layer; no LLVM), `vulkan-loader`, `vulkan-tools` (`vulkaninfo`), `libdrm` (amdgpu, radeon), `elfutils`' libelf |
 | Input and seat | `libinput` (no libwacom, mtdev or Lua), `libevdev`, `libudev-zero`, `seatd` (seatd, libseat with the seatd, builtin and noop backends) |
 | Keyboard | `libxkbcommon`, `xkeyboard-config` |
 | Display data | `libdisplay-info`, `hwdata` (pnp.ids only), `pixman` |
 | X11 | `xwayland` 24.1.14 (glamor on GBM, GLX), `xkbcomp`, `libx11`, `libxcb`, `xcb-proto`, `libxau`, `xorgproto`, `xtrans`, `libxext`, `libxfixes`, `libxxf86vm`, `libxshmfence`, `libxkbfile`, `libxcvt`, `libxfont2`, `libfontenc`, `libepoxy`, `nettle` (SHA-1), `xcb-util-wm`, `xcb-util-errors` |
-| Build tools | `python-mako`, `python-markupsafe`, `python-pyyaml`, `python-packaging` (Mesa's build) |
+| Build tools | `python-mako`, `python-markupsafe`, `python-pyyaml`, `python-packaging`, `glslang` (Mesa's build: RADV's BVH shaders), `vulkan-headers` (the loader's and vulkaninfo's), `cmake` |
 
-The 41 products are 65 MB; Mesa is 31 MB of it (radeonsi, swrast,
-`libGL`, no LLVM). Rebuilding nettle rebuilt Xwayland, wlroots and
-rivulet to the same hashes. rivulet's lock entry follows `apps/rivulet`:
-after a change there, `cargo make pkgs rivulet` before an image build.
+Mesa is 50 MB (radeonsi, RADV, swrast, `libGL`; no LLVM). Rebuilding
+nettle rebuilt Xwayland, wlroots and rivulet to the same hashes; adding
+RADV to Mesa rebuilt those, libepoxy and CEF, also to the same hashes.
+rivulet's lock entry follows `apps/rivulet`: after a change there,
+`cargo make pkgs rivulet` before an image build.
 
 `apps/rivulet/test/sandbox.sh` runs the built rivulet in the build
 sandbox, headless on the pixman renderer; its init command, `xkbcomp`
@@ -123,8 +124,28 @@ vault and for cargo), `DBUS_SESSION_BUS_ADDRESS` and `PKG_CONFIG_PATH`
 (every desk package's `lib/pkgconfig`: `.pc` files stay with their
 pack, so a build on the machine looks in each). Apps open with
 `solactl session launch sola-terminal`, `sola-workspaces`,
-`sola-browser` or `sola-design`, or from the shell's launcher. wgpu runs on GL through Mesa's EGL; there is no Vulkan
-loader.
+`sola-browser` or `sola-design`, or from the shell's launcher.
+
+**Vulkan.** Sola's apps draw with wgpu, which prefers Vulkan to GL:
+RADV, Mesa's Vulkan driver for amdgpu (Vulkan 1.3 on GFX6).
+`WGPU_BACKEND=gl` forces Mesa's EGL instead; CEF's pages draw in its
+own GPU process, not through wgpu. `pkg:vulkan-loader`
+(`/lib/libvulkan.so.1`, which wgpu opens with dlopen) finds drivers and
+layers by their JSON manifests. There is no `/usr/share`, so the data
+directory it falls back to when `XDG_DATA_DIRS` is unset is Mesa's
+slot, compiled in as fontconfig names the font packs:
+`/oath/store/pkg/mesa/live/share/vulkan/icd.d` (RADV) and
+`implicit_layer.d` (device-select). A program that sets
+`XDG_DATA_DIRS` has to list `/oath/store/pkg/mesa/live/share`.
+`/etc/vulkan` and `~/.local/share/vulkan` are read too, and
+`VK_DRIVER_FILES` replaces the search. The manifests name each library
+by name, which glibc finds in `/lib`. With two GPUs, Mesa's
+device-select layer lists the compositor's primary GPU first: it asks
+the compositor over Wayland (linux-dmabuf feedback), else takes the
+boot VGA card. `DRI_PRIME=pci-0000_02_00_0` puts another card first,
+and `NODEVICE_SELECT=1` turns the layer off. `vulkaninfo --summary`
+lists the devices, and `VK_LOADER_DEBUG=driver,layer` shows where the
+loader looked.
 
 **The session comes back.** The two tmux servers that hold every
 shell, the terminal's (socket `sola`) and Workspaces' (`sola-ws`), are
@@ -250,4 +271,4 @@ Noto's files from lightweight git tags.
 ## Target
 
 - **Sola's other apps** when Joshua wants them (R21).
-- **Later:** Vulkan (RADV), 32-bit Mesa and glibc for Steam.
+- **Later:** 32-bit Mesa and glibc for Steam.

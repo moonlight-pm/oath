@@ -4,7 +4,7 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-21 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-10-22 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · decisions R1–R28 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
@@ -22,16 +22,17 @@ append history (git has it).
 2. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, Sola's session as `svc:sola-*` (terminal, Workspaces,
-   browser, Design), PipeWire, Noto, `svc:sola-kvm`. Shells outlive a
-   session restart; tabs come back after a reboot. Next: realtime
-   priority for PipeWire.
+   browser, Design), PipeWire, Noto, `svc:sola-kvm`, Vulkan (RADV, the
+   compositor's GPU first). Shells outlive a session restart; tabs come
+   back after a reboot. Next: realtime priority for PipeWire.
 3. **Sola packages itself (R28).** The fork is gone (2026-10-20):
    `desk.json` pins `pkg:sola`, `sola-browser` and `sola-design` to
    Sola's first published packs (from its `next` at `2ed8fe24`), and
    `pkgs/sola*`, `forks/sola` and `cargo_vendor` are deleted. Oath's
    side is generic: `oath store`, services that follow their package,
-   pinned packs. canto keeps Sola's dev pins. Next: a new pin when the
-   Sola tab publishes; a stale-needs warning means Sola rebuilds.
+   pinned packs. canto keeps Sola's dev pins. Next: `pkg:sola` was
+   built against Mesa `057d7efa`; RADV's Mesa (`ff8d0975`) makes that
+   need stale, so new pins when the Sola tab rebuilds and publishes.
 4. **Claude Code as a recipe (R23).** Every catalog carries
    `plan:claude-code` (stable 2.1.292, pinned to the signed manifest);
    canto built the build host's exact pack and runs `claude`, signed
@@ -46,15 +47,15 @@ append history (git has it).
 
 **State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). canto runs `730de3c2b6e5`
-(`desk`), the newest checked output (all 55 QEMU cases). Left until
+([docs/roadmap.md](docs/roadmap.md)). canto runs `d279314e35b6`
+(`desk`), the newest checked output (all 56 QEMU cases). Left until
 something needs them: root SSH as a field, more NICs, device rules as fields.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `730de3c2b6e5`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `d279314e35b6`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

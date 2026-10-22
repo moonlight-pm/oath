@@ -18,18 +18,20 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `730de3c2b6e5` (`cargo make build
-  --profile desk`: Sola's packs pinned from Sola, R28, and a re-pin
-  that unlinks what the new tree dropped), the `desk` profile (R20–R22:
-  base plus seatd, rivulet, Sola with its terminal, Projects, browser,
-  Design and KVM, PipeWire, Noto, the tools that build Sola, and their
-  packages), reached on 2026-10-21 by `cargo make update --target
-  home@10.0.0.3 --confirm` (generation 221, `pkg:oath` only;
-  `pkg:sola`, `sola-browser` and `sola-design` stay at Sola's dev pins,
-  which Sola sets with `oath store`); `store-and-follow` passed on it.
-  PID 1 is `4ec147de8bb5`'s, from the reboot of 2026-10-21 15:52Z
-  (`build/runs/canto-reboot.sh` on novus); the next reboot runs
-  `730de3c2b6e5`'s. The system was
+- **Running now:** build output `d279314e35b6` (`cargo make build
+  --profile desk`: Vulkan, with RADV in Mesa), the `desk` profile
+  (R20–R22: base plus seatd, rivulet, Sola with its terminal, Projects,
+  browser, Design and KVM, PipeWire, Noto, Vulkan, the tools that
+  build Sola, and their packages), reached on 2026-10-22 by `cargo make
+  update --target home@10.0.0.3 --confirm` (generation 231: Mesa, and
+  the needs on it), then `oath new` of `pkg:vulkan-loader` and
+  `pkg:vulkan-tools` from the output's seed (generation 232; update
+  leaves a new object to the machine). `pkg:sola`, `sola-browser` and
+  `sola-design` stay at Sola's dev pins, which Sola sets with `oath
+  store`; nothing restarted. `desk`, `desk-sound`, `desk-vulkan` and
+  `desk-vulkan-gpu` passed on it. PID 1 is `4ec147de8bb5`'s, from the
+  reboot of 2026-10-21 15:52Z (`build/runs/canto-reboot.sh` on novus);
+  the next reboot runs `d279314e35b6`'s. The system was
   `cargo make install --target home@10.0.0.3 --disk /dev/sda
   --hostname canto --overlay hosts/canto.json --confirm` on
   2026-10-18. Passed all 42 `metal` cases (`cargo make check --target
@@ -90,6 +92,11 @@ Overwrite this file when facts change; do not append a diary.
   `solactl session launch sola-terminal` or `sola-browser` opens an
   app (`XDG_RUNTIME_DIR=/run/user/1`), and `solactl compositor
   screenshot -o <png>` captures the screen. `svc:screen` is off.
+- **Vulkan:** both GPUs are RADV devices (`AMD Radeon R9 200 Series
+  (RADV PITCAIRN)`, Vulkan 1.3). The loader alone lists `02:00.0`
+  first; the device-select layer puts `06:00.0`, rivulet's, first for
+  a Wayland client (it asks rivulet) and for any other (the boot VGA
+  card).
 - **Sound:** PipeWire's sinks are the Intel HDA analog output (the
   default; `alsa_output._sys_devices_pci0000_00_0000_00_1b.0_…`, named by
   sysfs path because libudev-zero has no `ID_PATH`) and the monitor's
