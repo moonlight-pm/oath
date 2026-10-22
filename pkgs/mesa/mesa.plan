@@ -52,6 +52,10 @@
       "hash": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592"
     },
     {
+      "id": "pkg:glslang",
+      "hash": "sha256-d78e68d9286f6a69dcd0b7b0d542810b327d3ab5756da6030f1ecede1aae3ed5"
+    },
+    {
       "id": "pkg:gmp",
       "hash": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2"
     },
@@ -273,7 +277,9 @@ cat > /out/components.json <<'OATH_EOF'
 OATH_EOF
 # Mesa: libEGL, libGLESv2, libGL (GLX), libgbm and the radeonsi and
 # softpipe drivers, on Wayland and X11. drirc's per-program workarounds
-# are on (xmlconfig, expat).
+# are on (xmlconfig, expat). RADV, the Vulkan driver for amdgpu, and the
+# device-select layer, which puts the compositor's GPU first: their
+# manifests (share/vulkan) name each library by its name, found in /lib.
 tar -xf "$SRC/$SOURCES"
 cd "mesa-$VERSION"
 PYTHONPATH=
@@ -282,7 +288,8 @@ for m in mako markupsafe pyyaml packaging; do
 done
 export PYTHONPATH
 meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release --wrap-mode=nofallback \
-	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe -Dvulkan-drivers= \
+	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe \
+	-Dvulkan-drivers=amd -Dvulkan-layers=device-select -Dvulkan-manifest-per-architecture=false \
 	-Dllvm=disabled -Damd-use-llvm=false -Ddraw-use-llvm=false \
 	-Degl=enabled -Dgbm=enabled -Dgles2=enabled -Dgles1=disabled -Dopengl=true \
 	-Dglx=dri -Dglvnd=disabled -Dxlib-lease=disabled \
@@ -295,3 +302,4 @@ meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release --wrap-mode=
 ninja -C build -j"$JOBS"
 DESTDIR=/tmp/dest ninja -C build install
 cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" "/tmp/dest$LIVE/share" /out/
+grep -q '"library_path": "libvulkan_radeon.so"' /out/share/vulkan/icd.d/radeon_icd.json

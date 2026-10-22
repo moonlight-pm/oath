@@ -94,7 +94,7 @@
     "version": "147.0.10+gd58e84d+chromium-147.0.7727.118",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-d9fe5bd9b5a64b8dd28470224dd85b0b1560146b0c676c8d0fc53327fc30f2fe",
+    "plan": "sha256-49b4446cde78873f0a5904435ce4e5afed5216838a07ce091ff74794bcf8b2f9",
     "product": "sha256-355ac7f45920ab9d7ef913560e645b93af3eff6f655ff424732f74dd962ad5e7",
     "run": [
       "glib",
@@ -382,6 +382,16 @@
     "product": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592",
     "run": []
   },
+  "glslang": {
+    "version": "16.6.0",
+    "license": "BSD-3-Clause AND BSD-2-Clause AND MIT AND MIT-Khronos-old AND Apache-2.0 AND GPL-3.0-or-later WITH Bison-exception-2.2 AND AML-glslang",
+    "by": "plan",
+    "plan": "sha256-a55848b1ddc43126610a1040c132237a00a0cf5a141b65888b3f12d758c53e0f",
+    "product": "sha256-d78e68d9286f6a69dcd0b7b0d542810b327d3ab5756da6030f1ecede1aae3ed5",
+    "run": [
+      "gcc"
+    ]
+  },
   "gmp": {
     "version": "6.3.0",
     "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
@@ -498,7 +508,7 @@
     "version": "1.5.10",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-5867db250403fe7577b6f8e7e083e4dc2fd2d26a26ee3cacc0c5f474bc0d626f",
+    "plan": "sha256-f0e7d3782b2dfc95ba13a90c5c876408ebcd63248741c640d04fd2d47db4f36a",
     "product": "sha256-c1d5160c1fef7a69e0132c2e4fa275fa700de8661b80d12a01c30b3cbd4077e7",
     "run": [
       "mesa"
@@ -795,8 +805,8 @@
     "version": "26.2.5",
     "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-442725a751ec3a81315aba5e1370bb411a4d3368aa69887f7603ca9cc0b7b5fa",
-    "product": "sha256-057d7efa073ca29a169f7b9f96df4a4b37ceffb88f27993c7effdcfb226b5aae",
+    "plan": "sha256-c68580590db9cf15e605885ff474b3760045246864001d92fde6f8263b69ada0",
+    "product": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e",
     "run": [
       "gcc",
       "libdrm",
@@ -1046,7 +1056,7 @@
     "version": "0.1.0",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-6ffd39c7a6d2f61e28cfe8c4fe66056376d7c34652f6990f654f1b8a3aafe468",
+    "plan": "sha256-67d2731cd9ba8ca273c8ffa3790f5cf09145054536c85b409c97a7380ae64c63",
     "product": "sha256-d029c479ac39c3d68192f753c04fbf604047d37a3ba5c6aeda842da603254ab4",
     "run": [
       "wlroots",
@@ -1123,6 +1133,36 @@
       "ncurses"
     ]
   },
+  "vulkan-headers": {
+    "version": "1.4.365",
+    "license": "Apache-2.0 OR MIT",
+    "by": "plan",
+    "plan": "sha256-171ba7760135c8880261f02ec519c2ca4b2ae69f3f4cf766529bbbb103100751",
+    "product": "sha256-680280536e73c335078c0e6ae43d7d3f3c00ed07ded4720bc5945cd2a6ddf3d5",
+    "run": []
+  },
+  "vulkan-loader": {
+    "version": "1.4.365",
+    "license": "Apache-2.0 AND MIT",
+    "by": "plan",
+    "plan": "sha256-9ce46b9d9e9d5ea4faaee6d5396ae604e9a436cb4879c9453a452f73437b164b",
+    "product": "sha256-f445a6bb467bb6b38b79a7c185017ebeb807910803273273b7dbd1053e9f05f4",
+    "run": []
+  },
+  "vulkan-tools": {
+    "version": "1.4.365",
+    "license": "Apache-2.0",
+    "by": "plan",
+    "plan": "sha256-18fd30f03586ab2dca2de347fb6450805fc2084e2a4adadf159ec5cdbe8c4faa",
+    "product": "sha256-f4819e41fc4926142cd532a8866f5206980f821f40c4a3c847c008606c39fa67",
+    "run": [
+      "vulkan-loader",
+      "libx11",
+      "libxcb",
+      "wayland",
+      "gcc"
+    ]
+  },
   "wayland": {
     "version": "1.26.0",
     "license": "MIT",
@@ -1157,7 +1197,7 @@
     "version": "0.20.2",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-6003c03fe64626185c19c777c2c16e9feca7d4e4792d673ebc4f8e179705ee68",
+    "plan": "sha256-6aa3b75f5ff7a967c3cca2994a99ea0234e36a3fcf8e0484c9d5d27e5fb778f3",
     "product": "sha256-f744c237b35f479b1cf393321d925b4b9140317ce8e825831810123a7fb610c2",
     "run": [
       "wayland",
@@ -1243,7 +1283,7 @@
     "version": "24.1.14",
     "license": "MIT AND X11 AND HPND-sell-variant AND BSD-3-Clause",
     "by": "plan",
-    "plan": "sha256-6b1462bc9aab720340199b225ddedf63f2a701326c1f9a9a3effaf045f6ce2e7",
+    "plan": "sha256-f330734e6d4af948886aa9e8f1fe9aa6fb2c68699a94d6ae5e3cbadee5e6fa0a",
     "product": "sha256-4de85bc27fcfb59c2c9947b7c06878ca9e23bee3369100ab8240e5dd559ebe0a",
     "run": [
       "libxau",
