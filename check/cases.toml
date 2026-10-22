@@ -737,13 +737,14 @@ steps = [
 
 [[case]]
 name = "desk-vulkan-gpu"
-about = "On the desk's AMD GPUs, every card is a RADV device, and the first one a Wayland client sees is the card the compositor draws on (device-select asks it)."
+about = "On the desk's AMD GPUs every card is a RADV device, and the first one a Wayland client sees is the compositor's primary GPU, the one wlroots renders on: device-select asks the compositor for it."
 metal = true
 qemu = false
 profile = "desk"
 steps = [
   { run = "vulkaninfo --summary", expect = ["(RADV "], reject = ["llvmpipe", "WARNING"] },
-  { run = "export XDG_RUNTIME_DIR=/run/user/1 WAYLAND_DISPLAY=$(ls /run/user/1 | grep -m1 '^wayland-[0-9]*$'); p=$(oath get svc:rivulet | sed -n 's/^  pid: //p'); c=$(ls -l /proc/$p/fd | grep -o '/dev/dri/card[0-9]*' | head -1); want=$(basename $(readlink -f /sys/class/drm/${c#/dev/dri/}/device)); got=$(printf '%04x:%02x:%02x.%x' $(vulkaninfo 2>/dev/null | awk '/^GPU1:/ { exit } /^[[:space:]]*pci(Domain|Bus|Device|Function) *=/ { print $3 }')); echo \"scanout=$want first=$got\"; [ \"$got\" = \"$want\" ] && echo FIRST_IS_SCANOUT", expect = ["FIRST_IS_SCANOUT"] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1 WAYLAND_DISPLAY=$(ls /run/user/1 | grep -m1 '^wayland-[0-9]*$'); MESA_VK_DEVICE_SELECT_DEBUG=1 vulkaninfo --summary 2>&1 | grep 'device-select' | sort -u", expect = ["device_select_find_wayland_pci_default selected"] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1 WAYLAND_DISPLAY=$(ls /run/user/1 | grep -m1 '^wayland-[0-9]*$'); c=$(oath logs svc:rivulet -n 5000 | awk '/Found [0-9]+ GPUs/ { c = \"\" } /Initializing DRM backend for/ && c == \"\" { c = $0 } END { print c }' | grep -o 'card[0-9]*'); want=$(basename $(readlink -f /sys/class/drm/$c/device)); got=$(printf '%04x:%02x:%02x.%x' $(vulkaninfo 2>/dev/null | awk '/^GPU1:/ { exit } /^[[:space:]]*pci(Domain|Bus|Device|Function) *=/ { print $3 }')); echo \"compositor=$c $want first=$got\"; [ \"$got\" = \"$want\" ] && echo FIRST_IS_COMPOSITORS", expect = ["FIRST_IS_COMPOSITORS"] },
 ]
 
 # ---- Known gaps (acceptance tests for later phases) ------------------
