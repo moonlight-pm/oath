@@ -18,17 +18,18 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `4ec147de8bb5` (`cargo make build
-  --profile desk`, the first with Sola's packs pinned from Sola, R28),
-  the `desk` profile (R20–R22: base plus seatd, rivulet, Sola with its
-  terminal, Workspaces, browser, Design and KVM, PipeWire, Noto, the
-  tools that build Sola, and their packages), reached on 2026-10-20 by
-  `cargo make update --target home@10.0.0.3 --confirm` (generation
-  206, `pkg:oath` only; `pkg:sola`, `sola-browser` and `sola-design`
-  stay at Sola's dev pins, which Sola sets with `oath store`). PID 1
-  is still `923bc0cef779`'s, from the reboot after the update before
+- **Running now:** build output `730de3c2b6e5` (`cargo make build
+  --profile desk`: Sola's packs pinned from Sola, R28, and a re-pin
+  that unlinks what the new tree dropped), the `desk` profile (R20–R22:
+  base plus seatd, rivulet, Sola with its terminal, Projects, browser,
+  Design and KVM, PipeWire, Noto, the tools that build Sola, and their
+  packages), reached on 2026-10-21 by `cargo make update --target
+  home@10.0.0.3 --confirm` (generation 221, `pkg:oath` only;
+  `pkg:sola`, `sola-browser` and `sola-design` stay at Sola's dev pins,
+  which Sola sets with `oath store`); `store-and-follow` passed on it.
+  PID 1 is `4ec147de8bb5`'s, from the reboot of 2026-10-21 15:52Z
   (`build/runs/canto-reboot.sh` on novus); the next reboot runs
-  `4ec147de8bb5`'s, which differs only in its seed. The system was
+  `730de3c2b6e5`'s. The system was
   `cargo make install --target home@10.0.0.3 --disk /dev/sda
   --hostname canto --overlay hosts/canto.json --confirm` on
   2026-10-18. Passed all 42 `metal` cases (`cargo make check --target
