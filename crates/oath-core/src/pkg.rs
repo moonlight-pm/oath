@@ -1642,7 +1642,9 @@ mod needs_tests {
             v
         };
         assert_eq!(names(&bin), ["app", "new", "other", "reboot"]);
-        assert!(fs::read_link(bin.join("app")).unwrap().starts_with(realization_dir(&cat, "app", &new)));
+        assert!(fs::read_link(bin.join("app"))
+            .unwrap()
+            .starts_with(realization_dir(&cat, "app", &new)));
         assert!(names(&lib).is_empty());
         // Removed: no link into its slot is left, from any realization.
         symlink(realization_dir(&cat, "app", &old).join("bin/gone"), bin.join("gone")).unwrap();
