@@ -1,0 +1,15 @@
+# vulkaninfo only: not vkcube or the mock driver. It loads
+# libvulkan.so.1 with dlopen, so it needs the loader without linking it.
+version = "1.4.365"
+license = "Apache-2.0"
+description = "vulkaninfo: the Vulkan devices, drivers, layers and surfaces this machine has."
+home = "https://github.com/KhronosGroup/Vulkan-Tools"
+purl = "pkg:github/KhronosGroup/Vulkan-Tools@v1.4.365"
+build = ["cmake", "pkgconf", "vulkan-headers", "xorgproto", "libx11", "libxcb", "wayland"]
+run = ["vulkan-loader", "libx11", "libxcb", "wayland", "gcc"]
+
+[[source]]
+url = "https://github.com/KhronosGroup/Vulkan-Tools/archive/refs/tags/v1.4.365.tar.gz"
+sha256 = "c55db29b4b2a4d222053ddcc7f925b8cad7f16f5640a05d4ee16d44a9dc02aac"
+file = "Vulkan-Tools-1.4.365.tar.gz"
+unsigned = "a GitHub tag archive; Khronos publishes no tarball or signature, and its tags are unsigned"

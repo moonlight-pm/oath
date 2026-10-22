@@ -482,7 +482,7 @@
     },
     "pkg:mesa": {
       "present": true,
-      "description": "Mesa: radeonsi and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX).",
+      "description": "Mesa: radeonsi, RADV (Vulkan) and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX).",
       "home": "https://mesa3d.org/"
     },
     "pkg:meson": {
@@ -665,6 +665,16 @@
       "present": true,
       "description": "tmux, which sola-terminal runs every shell in.",
       "home": "https://github.com/tmux/tmux/wiki"
+    },
+    "pkg:vulkan-loader": {
+      "present": true,
+      "description": "The Vulkan loader, libvulkan.so.1: it finds Mesa's RADV and device-select layer.",
+      "home": "https://github.com/KhronosGroup/Vulkan-Loader"
+    },
+    "pkg:vulkan-tools": {
+      "present": true,
+      "description": "vulkaninfo: the Vulkan devices, drivers, layers and surfaces this machine has.",
+      "home": "https://github.com/KhronosGroup/Vulkan-Tools"
     },
     "pkg:wayland": {
       "present": true,

@@ -1,14 +1,15 @@
-# radeonsi compiles with ACO (GFX6 and newer), so no LLVM. softpipe is the
-# software fallback, and Xwayland's GLX falls back to it (swrast_dri.so).
+# radeonsi and RADV compile with ACO (GFX6 and newer), so no LLVM; RADV
+# builds its BVH shaders with glslang. softpipe is the software
+# fallback, and Xwayland's GLX falls back to it (swrast_dri.so).
 # libXfixes is not linked, but gl.pc requires it, so what builds with
 # mesa finds it.
 version = "26.2.5"
 license = "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0"
-description = "Mesa: radeonsi and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX)."
+description = "Mesa: radeonsi, RADV (Vulkan) and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX)."
 home = "https://mesa3d.org/"
 purl = "pkg:generic/mesa@26.2.5"
 build = [
-	"meson", "ninja", "python", "pkgconf", "bison", "flex",
+	"meson", "ninja", "python", "pkgconf", "bison", "flex", "glslang",
 	"python-mako", "python-pyyaml", "python-packaging",
 	"libdrm", "wayland", "wayland-protocols", "expat", "zlib", "zstd", "elfutils",
 	"xorgproto", "libx11", "libxcb", "libxext", "libxxf86vm", "libxshmfence",

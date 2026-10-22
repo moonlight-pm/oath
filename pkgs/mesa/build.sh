@@ -1,6 +1,8 @@
 # Mesa: libEGL, libGLESv2, libGL (GLX), libgbm and the radeonsi and
 # softpipe drivers, on Wayland and X11. drirc's per-program workarounds
-# are on (xmlconfig, expat).
+# are on (xmlconfig, expat). RADV, the Vulkan driver for amdgpu, and the
+# device-select layer, which puts the compositor's GPU first: their
+# manifests (share/vulkan) name each library by its name, found in /lib.
 tar -xf "$SRC/$SOURCES"
 cd "mesa-$VERSION"
 PYTHONPATH=
@@ -9,7 +11,8 @@ for m in mako markupsafe pyyaml packaging; do
 done
 export PYTHONPATH
 meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release --wrap-mode=nofallback \
-	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe -Dvulkan-drivers= \
+	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe \
+	-Dvulkan-drivers=amd -Dvulkan-layers=device-select -Dvulkan-manifest-per-architecture=false \
 	-Dllvm=disabled -Damd-use-llvm=false -Ddraw-use-llvm=false \
 	-Degl=enabled -Dgbm=enabled -Dgles2=enabled -Dgles1=disabled -Dopengl=true \
 	-Dglx=dri -Dglvnd=disabled -Dxlib-lease=disabled \
@@ -22,3 +25,4 @@ meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release --wrap-mode=
 ninja -C build -j"$JOBS"
 DESTDIR=/tmp/dest ninja -C build install
 cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" "/tmp/dest$LIVE/share" /out/
+grep -q '"library_path": "libvulkan_radeon.so"' /out/share/vulkan/icd.d/radeon_icd.json

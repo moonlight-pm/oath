@@ -726,6 +726,26 @@ steps = [
   { run = "grep -i ':1092 ' /proc/net/udp", expect = ["00000000:1092"] },
 ]
 
+[[case]]
+name = "desk-vulkan"
+about = "The Vulkan loader finds RADV's manifest and the device-select layer's in Mesa's slot and loads both from /lib. QEMU has no AMD GPU, so there RADV lists no device and vulkaninfo fails after loading them."
+metal = true
+profile = "desk"
+steps = [
+  { run = "VK_LOADER_DEBUG=driver,layer vulkaninfo --summary 2>&1 || true", expect = ["Found ICD manifest file /oath/store/pkg/mesa/live/share/vulkan/icd.d/radeon_icd.json", "Searching for ICD drivers named libvulkan_radeon.so", "VK_LAYER_MESA_device_select"], reject = ["cannot open shared object file", "Found no drivers"] },
+]
+
+[[case]]
+name = "desk-vulkan-gpu"
+about = "On the desk's AMD GPUs, every card is a RADV device, and the first one a Wayland client sees is the card the compositor draws on (device-select asks it)."
+metal = true
+qemu = false
+profile = "desk"
+steps = [
+  { run = "vulkaninfo --summary", expect = ["(RADV "], reject = ["llvmpipe", "WARNING"] },
+  { run = "export XDG_RUNTIME_DIR=/run/user/1 WAYLAND_DISPLAY=$(ls /run/user/1 | grep -m1 '^wayland-[0-9]*$'); p=$(oath get svc:rivulet | sed -n 's/^  pid: //p'); c=$(ls -l /proc/$p/fd | grep -o '/dev/dri/card[0-9]*' | head -1); want=$(basename $(readlink -f /sys/class/drm/${c#/dev/dri/}/device)); got=$(printf '%04x:%02x:%02x.%x' $(vulkaninfo 2>/dev/null | awk '/^GPU1:/ { exit } /^[[:space:]]*pci(Domain|Bus|Device|Function) *=/ { print $3 }')); echo \"scanout=$want first=$got\"; [ \"$got\" = \"$want\" ] && echo FIRST_IS_SCANOUT", expect = ["FIRST_IS_SCANOUT"] },
+]
+
 # ---- Known gaps (acceptance tests for later phases) ------------------
 #
 # None today. Add a case with `gap = "phase N: …"` when a defect is found

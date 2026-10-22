@@ -1,0 +1,15 @@
+# Mesa's build compiles RADV's ray-tracing (BVH) shaders to SPIR-V with
+# glslangValidator. No spirv-opt: SPIRV-Tools is not packaged.
+version = "16.6.0"
+license = "BSD-3-Clause AND BSD-2-Clause AND MIT AND MIT-Khronos-old AND Apache-2.0 AND GPL-3.0-or-later WITH Bison-exception-2.2 AND AML-glslang"
+description = "glslang: glslangValidator, GLSL to SPIR-V. A build tool (Mesa's RADV); not in an image."
+home = "https://github.com/KhronosGroup/glslang"
+purl = "pkg:github/KhronosGroup/glslang@16.6.0"
+build = ["cmake", "python"]
+run = ["gcc"]
+
+[[source]]
+url = "https://github.com/KhronosGroup/glslang/archive/refs/tags/16.6.0.tar.gz"
+sha256 = "9c09b901149c729df745057dafa815278aaa101b84d2b6e14f16a42de52f97f2"
+file = "glslang-16.6.0.tar.gz"
+unsigned = "a GitHub tag archive; upstream publishes binaries but no source tarball, and its tags are unsigned"
