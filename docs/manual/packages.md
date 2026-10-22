@@ -67,7 +67,8 @@ oath undo
 ```
 
 `present=false` removes **this object's** `/bin` links. The store tree
-stays, so a re-install needs no network. Apply refuses to clobber a
+stays, so a re-install needs no network. A new `hash` relinks, and a
+program the new tree no longer has leaves `/bin`. Apply refuses to clobber a
 `/bin` name it does not own. `present=false` on a non-removable
 package is refused (not `--confirm`).
 

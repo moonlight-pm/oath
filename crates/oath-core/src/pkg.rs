@@ -104,6 +104,8 @@ pub fn converge_with_link_root(
             })?;
             links.push(n.clone());
         }
+        unlink_dropped(bin_dir, name, &names)?;
+        unlink_dropped(&lib_dir, name, &libs)?;
         let mut actual = pkg_actual(true, links, live_hash, store_root, name);
         actual.verified = verified;
         Ok(actual)
@@ -114,6 +116,8 @@ pub fn converge_with_link_root(
         for n in &libs {
             unlink_ours(&lib_dir, "lib", link_root, store_root, name, n, &tree)?;
         }
+        unlink_dropped(bin_dir, name, &[])?;
+        unlink_dropped(&lib_dir, name, &[])?;
         Ok(pkg_actual(false, Vec::new(), live_hash, store_root, name))
     }
 }
@@ -353,6 +357,25 @@ fn unlink_ours(
         && is_our_link(&dest, &target, &store.join(n), &slot_dir(store_root, name))
     {
         fs::remove_file(&dest)?;
+    }
+    Ok(())
+}
+
+/// Remove the links in `dir_path` into pkg:`name`'s slot whose names are
+/// not in `keep`: what an earlier realization had and this one dropped.
+fn unlink_dropped(dir_path: &Path, name: &str, keep: &[String]) -> Result<()> {
+    let Ok(entries) = fs::read_dir(dir_path) else { return Ok(()) };
+    let ours = format!("/store/pkg/{name}/");
+    for e in entries {
+        let e = e?;
+        let n = e.file_name().to_string_lossy().into_owned();
+        if keep.contains(&n) || LIB_NOT_LINKED.contains(&n.as_str()) || !e.file_type()?.is_symlink()
+        {
+            continue;
+        }
+        if fs::read_link(e.path())?.to_string_lossy().contains(&ours) {
+            fs::remove_file(e.path())?;
+        }
     }
     Ok(())
 }
@@ -1583,6 +1606,48 @@ mod needs_tests {
         assert_eq!(program_realization(&cat, &bin.join("via-live")), want);
         assert_eq!(program_realization(&cat, &tree.join("bin/hello")), None);
         assert_eq!(program_realization(&cat, &bin.join("missing")), None);
+    }
+
+    #[test]
+    fn a_name_the_new_tree_drops_is_unlinked() {
+        let d = tempfile::tempdir().unwrap();
+        let cat = d.path().join("cat");
+        let (bin, lib) = (d.path().join("bin"), d.path().join("lib"));
+        let tree = |files: &[&str]| {
+            let t = tempfile::tempdir_in(d.path()).unwrap();
+            for f in files {
+                fs::create_dir_all(t.path().join(f).parent().unwrap()).unwrap();
+                fs::write(t.path().join(f), f.as_bytes()).unwrap();
+            }
+            t
+        };
+        let old = tree(&["bin/app", "bin/gone", "lib/libgone.so"]);
+        let old = install_tree(&cat, "app", old.path(), None, "").unwrap();
+        let new = tree(&["bin/app", "bin/new"]);
+        let new = install_tree(&cat, "app", new.path(), None, "").unwrap();
+        let other = tree(&["bin/other"]);
+        let other = install_tree(&cat, "app-other", other.path(), None, "").unwrap();
+        converge_with_link_root(&cat, &bin, &cat, "app", true, &old).unwrap();
+        converge_with_link_root(&cat, &bin, &cat, "app-other", true, &other).unwrap();
+        symlink("../lib/oath/init", bin.join("reboot")).unwrap();
+        assert!(bin.join("gone").symlink_metadata().is_ok());
+        assert!(lib.join("libgone.so").symlink_metadata().is_ok());
+        converge_with_link_root(&cat, &bin, &cat, "app", true, &new).unwrap();
+        let names = |dir: &Path| {
+            let mut v: Vec<String> = fs::read_dir(dir)
+                .unwrap()
+                .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+                .collect();
+            v.sort();
+            v
+        };
+        assert_eq!(names(&bin), ["app", "new", "other", "reboot"]);
+        assert!(fs::read_link(bin.join("app")).unwrap().starts_with(realization_dir(&cat, "app", &new)));
+        assert!(names(&lib).is_empty());
+        // Removed: no link into its slot is left, from any realization.
+        symlink(realization_dir(&cat, "app", &old).join("bin/gone"), bin.join("gone")).unwrap();
+        converge_with_link_root(&cat, &bin, &cat, "app", false, &new).unwrap();
+        assert_eq!(names(&bin), ["other", "reboot"]);
     }
 
     #[test]

@@ -32,7 +32,9 @@ parts of T24 and T35.
   is copied beside its slot, hashed, and renamed into place.
 - `/bin` is a symlink farm. `/bin/<file>` points at
   `/oath/store/pkg/<name>/<hash>/bin/<file>`. There is no `/usr` and no
-  second PATH. Two packages that ship the same `/bin` name refuse.
+  second PATH. Two packages that ship the same `/bin` name refuse. A
+  re-pin removes the links of names the new tree no longer has, so a
+  program a package drops leaves `/bin`.
 - One live realization per name. Other hashes of the same name may stay
   on disk. Two programs runnable at once are two names
   (`pkg:foo`, `pkg:foo-wip`).

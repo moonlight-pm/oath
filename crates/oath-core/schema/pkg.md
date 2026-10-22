@@ -19,9 +19,10 @@ object, and an install overlay can add others.
 
 ## Fields
 
-- `present` — `true` links `store/.../<hash>/bin/*` into `/bin`.
-  `false` removes **this object's** links. The store tree stays, so a
-  re-install needs no network.
+- `present` — `true` links `store/.../<hash>/bin/*` into `/bin`, and
+  removes its links to names that hash no longer has (a program the
+  package dropped). `false` removes **this object's** links. The store
+  tree stays, so a re-install needs no network.
 - `hash` — optional pin. Realization id is `sha256-` plus 64 lowercase
   hex of the pack tree (`oath-tree-v1`). Apply verifies the bytes
   match; it does not choose. Empty hash is discovery: the unique
