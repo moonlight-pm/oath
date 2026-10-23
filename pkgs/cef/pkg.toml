@@ -10,6 +10,7 @@ run = [
 	"glib", "nspr", "nss", "at-spi2-core", "dbus", "cups", "libx11", "libxcomposite",
 	"libxdamage", "libxext", "libxfixes", "libxrandr", "mesa", "expat", "libxcb",
 	"libxkbcommon", "cairo", "pango", "libudev-zero", "alsa-lib", "gcc",
+	"vulkan-loader",
 ]
 
 [[source]]

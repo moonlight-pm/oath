@@ -103,7 +103,7 @@ pin a machine already has (canto runs Sola's dev packs).
 | Package | What |
 |---------|------|
 | `sola`, `sola-browser`, `sola-design` | Sola's packs, pinned (R28): the `/bin/sola-*` programs the services run, `solactl`, and `share/cursors` (McMojave) for `XCURSOR_PATH`. The browser and Design run on `pkg:cef`; sharing a canvas needs `cloudflared`, which Oath does not ship |
-| `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader), `cef/Resources`; 539 MB |
+| `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader; not Chromium's Vulkan loader), `cef/Resources`; 539 MB |
 | CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
 | Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif, serif and system-ui to Noto, monospace to Iosevka Term Slab then Noto Sans Mono, emoji and math to Noto's; `45-noto-cjk.conf`, ahead of it, picks the CJK face by language; both bind weakly, so a page's language outranks the family list), `freetype`, `font-noto` (Sans, Serif, Sans Mono, Symbols, Math and the scripts web pages need, slim variable TTFs from the 2026.10.01 monthly tag), `font-noto-cjk` (Sans and Serif CJK, Regular and Bold OTCs), `font-noto-emoji` (Noto Color Emoji, CBDT), `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
 | Sound | `pipewire` 1.6.9 (`pipewire`, `pipewire-pulse`, the `pw-*` tools; no session manager of its own), `wireplumber` 0.5.18 (with Lua 5.5 built in; `50-oath.conf` turns off Bluetooth, portals and D-Bus device reservation), `libpulse` (PulseAudio 17's client, `autospawn = no`), `libsndfile` (PCM formats only), `libudev-zero` with upstream PR 69 so PipeWire's ALSA monitor sees sound cards |
@@ -139,7 +139,12 @@ slot, compiled in as fontconfig names the font packs:
 `XDG_DATA_DIRS` has to list `/oath/store/pkg/mesa/live/share`.
 `/etc/vulkan` and `~/.local/share/vulkan` are read too, and
 `VK_DRIVER_FILES` replaces the search. The manifests name each library
-by name, which glibc finds in `/lib`. With two GPUs, Mesa's
+by name, which glibc finds in `/lib`. There is one loader: `pkg:cef`
+leaves out the `libvulkan.so.1` Chromium ships in `Release`, whose
+search (`/etc/xdg`, `/usr/share`) finds nothing here, and which a
+program with `Release` in its RUNPATH (Sola's browser and Design) would
+load before `/lib`'s. CEF's SwiftShader (`vk_swiftshader_icd.json`,
+named by `VK_ICD_FILENAMES`) runs through Oath's loader. With two GPUs, Mesa's
 device-select layer lists the compositor's primary GPU first: it asks
 the compositor over Wayland (linux-dmabuf feedback), else takes the
 boot VGA card. `DRI_PRIME=pci-0000_02_00_0` puts another card first,

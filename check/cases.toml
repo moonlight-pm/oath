@@ -728,11 +728,12 @@ steps = [
 
 [[case]]
 name = "desk-vulkan"
-about = "The Vulkan loader finds RADV's manifest and the device-select layer's in Mesa's slot and loads both from /lib. QEMU has no AMD GPU, so there RADV lists no device and vulkaninfo fails after loading them."
+about = "The Vulkan loader finds RADV's manifest and the device-select layer's in Mesa's slot and loads both from /lib, also for a program that looks in CEF's Release first (as one built against it does): pkg:cef carries no loader of its own. QEMU has no AMD GPU, so there RADV lists no device and vulkaninfo fails after loading them."
 metal = true
 profile = "desk"
 steps = [
   { run = "VK_LOADER_DEBUG=driver,layer vulkaninfo --summary 2>&1 || true", expect = ["Found ICD manifest file /oath/store/pkg/mesa/live/share/vulkan/icd.d/radeon_icd.json", "Searching for ICD drivers named libvulkan_radeon.so", "VK_LAYER_MESA_device_select"], reject = ["cannot open shared object file", "Found no drivers"] },
+  { run = "echo \"loaders=$(ls /oath/store/pkg/cef/live/cef/Release | grep -c '^libvulkan')\"; LD_LIBRARY_PATH=/oath/store/pkg/cef/live/cef/Release VK_LOADER_DEBUG=driver vulkaninfo --summary 2>&1 || true", expect = ["loaders=0", "Found ICD manifest file /oath/store/pkg/mesa/live/share/vulkan/icd.d/radeon_icd.json"], reject = ["Found no drivers"] },
 ]
 
 [[case]]
