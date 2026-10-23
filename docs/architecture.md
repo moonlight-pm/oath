@@ -115,8 +115,8 @@ The `desk` profile adds (R20–R22; `svc:screen` is off):
 | `svc:sola-bus`, `svc:sola-call` | Sola's message bus and call plane (`/run/user/1/sola-*`) | `home` |
 | `svc:sola-river` | Sola's window manager, a client of rivulet's River protocols | `home` |
 | `svc:sola-shell` | the menubar, launcher and switcher | `home` |
-| `svc:sola-session` | launches apps (`sola-terminal`, `sola-workspaces`, `sola-browser`) and reopens the ones open before; their logs are `/home/.local/state/sola/app-*.log` | `home` |
-| `svc:sola-tmux`, `svc:sola-tmux-ws` | the tmux servers (sockets `sola`, `sola-ws`) that hold the terminal's and Workspaces' shells, outside the session's cgroup so they outlive its restarts | `home` |
+| `svc:sola-session` | launches apps (`sola-terminal`, `sola-projects`, `sola-browser`, `sola-design`) and reopens the ones open before; their logs are `/home/.local/state/sola/app-*.log` | `home` |
+| `svc:sola-tmux`, `svc:sola-tmux-ws` | the tmux servers (sockets `sola`, `sola-ws`) that hold the terminal's and Projects' shells, outside the session's cgroup so they outlive its restarts | `home` |
 | `svc:sola-kvm` | `sola-kvm listen --bind 0.0.0.0:4242`: novus's `sola-kvm server` sends it pointer and keys when its cursor crosses the edge | `home` |
 | `svc:dbus-session` | `/bin/dbus-daemon --session` on `/run/user/1/bus` (`DBUS_SESSION_BUS_ADDRESS` in `host:local` env) | `home` |
 | `svc:pipewire`, `svc:wireplumber`, `svc:pipewire-pulse` | PipeWire, its session manager and its PulseAudio server (`/run/user/1/pulse/native`, which CEF's libpulse finds) | `home` |

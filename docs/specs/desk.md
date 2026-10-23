@@ -9,7 +9,7 @@ built natively from `pkgs/`, with Sola on top. It is phase 8 of the
 **Status:** built and running on canto since 2026-10-18 (the `desk`
 profile, R20–R22): rivulet drives DP-10 with radeonsi on ACO, input
 comes through seatd, Xwayland serves X clients, and Sola's session runs
-with its terminal, Workspaces and browser, sound through PipeWire, Noto fonts, the
+with its terminal, Projects and browser, sound through PipeWire, Noto fonts, the
 tools that build Sola on the machine, and novus's keyboard and mouse
 through `sola-kvm`.
 
@@ -123,7 +123,7 @@ default (`/oath/log` is root's). `host:local` sets
 vault and for cargo), `DBUS_SESSION_BUS_ADDRESS` and `PKG_CONFIG_PATH`
 (every desk package's `lib/pkgconfig`: `.pc` files stay with their
 pack, so a build on the machine looks in each). Apps open with
-`solactl session launch sola-terminal`, `sola-workspaces`,
+`solactl session launch sola-terminal`, `sola-projects`,
 `sola-browser` or `sola-design`, or from the shell's launcher.
 
 **Vulkan.** Sola's apps draw with wgpu, which prefers Vulkan to GL:
@@ -148,7 +148,7 @@ lists the devices, and `VK_LOADER_DEBUG=driver,layer` shows where the
 loader looked.
 
 **The session comes back.** The two tmux servers that hold every
-shell, the terminal's (socket `sola`) and Workspaces' (`sola-ws`), are
+shell, the terminal's (socket `sola`) and Projects' (`sola-ws`), are
 their own services, `svc:sola-tmux` and `svc:sola-tmux-ws` (`tmux -L
 <socket> -f /home/.config/sola/tmux.conf -D`, in the foreground, which
 `sola-session` wants), as NixOS gives each its own systemd user unit.
@@ -159,18 +159,18 @@ apps in Sola's `SessionApps`
 (`/home/.config/sola/state.yaml`), and they reattach to their live
 tmux sessions with the programs, scrollback and layout as they were.
 After a reboot the shells are new: the terminal rebuilds each saved
-tab with its splits and working directories, and Workspaces opens each
-workspace's pane in its path. Panes take `WAYLAND_DISPLAY` and
+tab with its splits and working directories, and Projects opens each
+project's panes in their paths. Panes take `WAYLAND_DISPLAY` and
 `XDG_SESSION_TYPE` from the app that made the session (Sola's
 `tmux.conf`, `update-environment`), since the servers start before the
 compositor names its socket.
 
 The `desk-sola` case (metal only: `qemu = false`) checks the services
 and that the tmux servers and shells are outside `svc:sola-session`'s
-cgroup, opens the terminal, Workspaces and Design (their call planes
+cgroup, opens the terminal, Projects and Design (their call planes
 answer `project.list`) and the browser unless they are open, and loads
 `https://example.com` in a tab of its own. It closes only what it
-opened: closing an app also drops it from `SessionApps`. Workspaces' tabs run
+opened: closing an app also drops it from `SessionApps`. Projects' tabs run
 in tmux on socket `sola-ws`; on start it merges its status hooks into
 `/home/.claude/settings.json`, `/home/.codex/hooks.json` and
 `/home/.grok/hooks`, which call `curl` on its socket

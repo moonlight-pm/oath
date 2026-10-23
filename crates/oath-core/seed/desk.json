@@ -567,7 +567,7 @@
     },
     "pkg:sola": {
       "present": true,
-      "hash": "sha256-58089ce24f8871dc9bbb91c70a692b5f74d0491812c168fae05225faf1ef0b12",
+      "hash": "sha256-e3b326ae8815546caca757e4a263d8e30870a36b3dffc54f39c7789134394649",
       "needs": [
         {
           "id": "pkg:gcc",
@@ -583,7 +583,7 @@
         },
         {
           "id": "pkg:mesa",
-          "hash": "sha256-057d7efa073ca29a169f7b9f96df4a4b37ceffb88f27993c7effdcfb226b5aae"
+          "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
         },
         {
           "id": "pkg:tmux",
@@ -618,16 +618,16 @@
           "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad"
         }
       ],
-      "description": "Sola: the desktop session on rivulet, its terminal and Workspaces.",
+      "description": "Sola: the desktop session on rivulet, its terminal and Projects.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
     "pkg:sola-browser": {
       "present": true,
-      "hash": "sha256-69f6f57df4578db8573d63865afc6a65379008ef736e3bec569f145afefc68b4",
+      "hash": "sha256-36d11469f5043db2151b88b52389cfcf9c03e01b8e303f6bf311885fb9641f79",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-58089ce24f8871dc9bbb91c70a692b5f74d0491812c168fae05225faf1ef0b12"
+          "hash": "sha256-e3b326ae8815546caca757e4a263d8e30870a36b3dffc54f39c7789134394649"
         },
         {
           "id": "pkg:cef",
@@ -643,11 +643,11 @@
     },
     "pkg:sola-design": {
       "present": true,
-      "hash": "sha256-d9a6c2f0ca38262dadf706d99a9da7dd872199f0fc1384f3698bf1a9ab88a554",
+      "hash": "sha256-212f264f88307c35f0cd9fcaabc306fb7a0cccb385145cf38fbea81dfa79d043",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-58089ce24f8871dc9bbb91c70a692b5f74d0491812c168fae05225faf1ef0b12"
+          "hash": "sha256-e3b326ae8815546caca757e4a263d8e30870a36b3dffc54f39c7789134394649"
         },
         {
           "id": "pkg:cef",

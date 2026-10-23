@@ -21,7 +21,7 @@ append history (git has it).
    NSS 3.131.1; build, check, publish, update canto; test Claude Code.
 2. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, Sola's session as `svc:sola-*` (terminal, Workspaces,
+   Xwayland, Sola's session as `svc:sola-*` (terminal, Projects,
    browser, Design), PipeWire, Noto, `svc:sola-kvm`, Vulkan (RADV, the
    compositor's GPU first). Shells outlive a session restart; tabs come
    back after a reboot. Next: realtime priority for PipeWire.

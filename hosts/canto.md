@@ -47,7 +47,7 @@ Overwrite this file when facts change; do not append a diary.
   196: `svc:sola-session` stopped, the two made, the session started
   wanting them). Restarting `svc:sola-session` kept the shells (same
   pids, scrollback); after a reboot the terminal's tab came back in
-  `/home/Projects` and Workspaces' pane in `/home/Projects/Sola`.
+  `/home/Projects` and Projects' pane in `/home/Projects/Sola`.
 - **Shell (R27):** `home` logs in to zsh. The update made `pkg:zsh`
   (generation 164); the six `svc:sola-*` were set to `SHELL=/bin/zsh`
   by hand (generation 165), as the `desk` seed now has them, so the
