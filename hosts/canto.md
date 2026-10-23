@@ -18,20 +18,22 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `d279314e35b6` (`cargo make build
-  --profile desk`: Vulkan, with RADV in Mesa), the `desk` profile
-  (R20–R22: base plus seatd, rivulet, Sola with its terminal, Projects,
-  browser, Design and KVM, PipeWire, Noto, Vulkan, the tools that
-  build Sola, and their packages), reached on 2026-10-22 by `cargo make
-  update --target home@10.0.0.3 --confirm` (generation 231: Mesa, and
-  the needs on it), then `oath new` of `pkg:vulkan-loader` and
-  `pkg:vulkan-tools` from the output's seed (generation 232; update
-  leaves a new object to the machine). `pkg:sola`, `sola-browser` and
-  `sola-design` stay at Sola's dev pins, which Sola sets with `oath
-  store`; nothing restarted. `desk`, `desk-sound`, `desk-vulkan` and
-  `desk-vulkan-gpu` passed on it. PID 1 is `4ec147de8bb5`'s, from the
-  reboot of 2026-10-21 15:52Z (`build/runs/canto-reboot.sh` on novus);
-  the next reboot runs `d279314e35b6`'s. The system was
+- **Running now:** build output `6e4fc1b59fae` (`cargo make build
+  --profile desk`: Sola's packs from its `next` at `c53b18e4`), the
+  `desk` profile (R20–R22: base plus seatd, rivulet, Sola with its
+  terminal, Projects, browser, Design and KVM, PipeWire, Noto, Vulkan,
+  the tools that build Sola, and their packages), reached on 2026-10-22
+  by `cargo make update --target home@10.0.0.3 --confirm` (generation
+  233, `pkg:oath` only). Generation 231 moved Mesa to RADV's, and 232
+  made `pkg:vulkan-loader` and `pkg:vulkan-tools` by `oath new` from the
+  output's seed (update leaves a new object to the machine).
+  `pkg:sola`, `sola-browser` and `sola-design` stay at Sola's dev pins
+  (`5f720d2a…`, `c5204daa…`, `605dc2c6…`), which Sola sets with `oath
+  store`, not the output's; nothing restarted. `desk`, `desk-sola`,
+  `desk-sound`, `desk-vulkan` and `desk-vulkan-gpu` passed on it. PID 1
+  is `4ec147de8bb5`'s, from the reboot of 2026-10-21 15:52Z
+  (`build/runs/canto-reboot.sh` on novus); the next reboot runs
+  `6e4fc1b59fae`'s. The system was
   `cargo make install --target home@10.0.0.3 --disk /dev/sda
   --hostname canto --overlay hosts/canto.json --confirm` on
   2026-10-18. Passed all 42 `metal` cases (`cargo make check --target
