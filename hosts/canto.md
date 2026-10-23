@@ -18,22 +18,22 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `1b15debb661c` (`cargo make build
-  --profile desk`: `pkg:cef` without its Vulkan loader), the `desk`
-  profile (R20–R22: base plus seatd, rivulet, Sola with its terminal,
-  Projects, browser, Design and KVM, PipeWire, Noto, Vulkan, the tools
-  that build Sola, and their packages), reached on 2026-10-22 by `cargo
-  make update --target home@10.0.0.3 --confirm` (generation 235:
-  `pkg:cef`, and the needs on it). Before it, 231 moved Mesa to RADV's,
-  232 made `pkg:vulkan-loader` and `pkg:vulkan-tools` by `oath new`
-  (update leaves a new object to the machine), and the Sola tab set
-  `pkg:sola`, `sola-browser` and `sola-design` to Sola's published
-  packs (234, which restarted Sola's services). Update keeps those pins
-  and restarted nothing. `desk`, `desk-sola`, `desk-sound`,
-  `desk-vulkan` and `desk-vulkan-gpu` passed on it. PID 1 is
-  `4ec147de8bb5`'s, from the reboot of 2026-10-21 15:52Z
-  (`build/runs/canto-reboot.sh` on novus); the next reboot runs
-  `1b15debb661c`'s. The system was
+- **Running now:** build output `415b3be87633` (`cargo make build
+  --profile desk`: Sola's packs from its `next` at `c6cda58b`), the
+  `desk` profile (R20–R22: base plus seatd, rivulet, Sola with its
+  terminal, Projects, browser, Design and KVM, PipeWire, Noto, Vulkan,
+  the tools that build Sola, and their packages), reached on 2026-10-22
+  by `cargo make update --target home@10.0.0.3 --confirm` (generation
+  237: `pkg:oath`; it rewrote the Sola pins' needs in the profile's
+  order, same hashes). The Sola tab had set those pins to the same
+  packs in 236, which restarted Sola's services; 237 restarted nothing.
+  Earlier that day 231 moved Mesa to RADV's, 232 made
+  `pkg:vulkan-loader` and `pkg:vulkan-tools` by `oath new` (update
+  leaves a new object to the machine), and 235 took `pkg:cef` without
+  its Vulkan loader. `desk`, `desk-sola`, `desk-sound`, `desk-vulkan`
+  and `desk-vulkan-gpu` passed on it. PID 1 is `4ec147de8bb5`'s, from
+  the reboot of 2026-10-21 15:52Z (`build/runs/canto-reboot.sh` on
+  novus); the next reboot runs `415b3be87633`'s. The system was
   `cargo make install --target home@10.0.0.3 --disk /dev/sda
   --hostname canto --overlay hosts/canto.json --confirm` on
   2026-10-18. Passed all 42 `metal` cases (`cargo make check --target
@@ -99,7 +99,9 @@ Overwrite this file when facts change; do not append a diary.
   first; the device-select layer puts `06:00.0`, rivulet's, first for
   a Wayland client (it asks rivulet) and for any other (the boot VGA
   card). A program with CEF's `Release` in its RUNPATH loads
-  `/lib/libvulkan.so.1` too, since `pkg:cef` dropped Chromium's.
+  `/lib/libvulkan.so.1` too, since `pkg:cef` dropped Chromium's: all
+  of Sola's apps, the browser and Design included, draw with RADV on
+  `06:00.0` (the Sola tab, 2026-10-22).
 - **Sound:** PipeWire's sinks are the Intel HDA analog output (the
   default; `alsa_output._sys_devices_pci0000_00_0000_00_1b.0_…`, named by
   sysfs path because libudev-zero has no `ID_PATH`) and the monitor's
