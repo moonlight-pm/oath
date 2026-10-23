@@ -96,7 +96,8 @@ Sola packages itself (R28): its own repo builds `pkg:sola`,
 dev pack, `oath build` of a plan it generates for a release) and
 publishes them to the default origin. Oath builds none of them: the
 `desk` profile pins each by `hash` and `needs` (Sola's release of
-2026-10-22, from its `next` at `c53b18e4`, built against RADV's Mesa), `cargo make build` fetches
+2026-10-22, from its `next` at `c6cda58b`, built against RADV's Mesa
+and the `pkg:cef` without a Vulkan loader), `cargo make build` fetches
 them into the image, `publish` leaves them out, and `update` keeps the
 pin a machine already has (canto runs Sola's dev packs).
 

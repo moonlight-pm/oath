@@ -27,11 +27,10 @@ append history (git has it).
    back after a reboot. Next: realtime priority for PipeWire.
 3. **Sola packages itself (R28).** No fork: `desk.json` pins
    `pkg:sola`, `sola-browser` and `sola-design` to Sola's published
-   packs, now its `next` at `c53b18e4` (Projects, RADV's Mesa); the
-   origin has every pack they need. Oath's side is generic: `oath
-   store`, services that follow their package, pinned packs. Next:
-   `pkg:cef` lost its Vulkan loader (`cd90948f`), so `sola-browser` and
-   `sola-design`'s CEF need is stale: new pins when Sola rebuilds.
+   packs, now its `next` at `c6cda58b` (Projects; every app on
+   Vulkan); the origin has every pack they need. Oath's side is
+   generic: `oath store`, services that follow their package, pinned
+   packs. Next: new pins when the Sola tab publishes again.
 4. **Claude Code as a recipe (R23).** Every catalog carries
    `plan:claude-code` (stable 2.1.292, pinned to the signed manifest);
    canto built the build host's exact pack and runs `claude`, signed

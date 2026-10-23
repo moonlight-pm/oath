@@ -567,7 +567,7 @@
     },
     "pkg:sola": {
       "present": true,
-      "hash": "sha256-e3b326ae8815546caca757e4a263d8e30870a36b3dffc54f39c7789134394649",
+      "hash": "sha256-6fb7b2bb35e8e6d7b424a24c841e3b5975c5e0718a4150596c4178b820cddade",
       "needs": [
         {
           "id": "pkg:gcc",
@@ -623,15 +623,15 @@
     },
     "pkg:sola-browser": {
       "present": true,
-      "hash": "sha256-36d11469f5043db2151b88b52389cfcf9c03e01b8e303f6bf311885fb9641f79",
+      "hash": "sha256-60704d4b6661c5f656ccf14dab9122acedd3b9875a138e38767046916db51491",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-e3b326ae8815546caca757e4a263d8e30870a36b3dffc54f39c7789134394649"
+          "hash": "sha256-6fb7b2bb35e8e6d7b424a24c841e3b5975c5e0718a4150596c4178b820cddade"
         },
         {
           "id": "pkg:cef",
-          "hash": "sha256-355ac7f45920ab9d7ef913560e645b93af3eff6f655ff424732f74dd962ad5e7"
+          "hash": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb"
         },
         {
           "id": "pkg:libpulse",
@@ -643,15 +643,15 @@
     },
     "pkg:sola-design": {
       "present": true,
-      "hash": "sha256-212f264f88307c35f0cd9fcaabc306fb7a0cccb385145cf38fbea81dfa79d043",
+      "hash": "sha256-31a35a61bf92b340c435c67873936fde3ba22dde44fcfad863da016b402d225b",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-e3b326ae8815546caca757e4a263d8e30870a36b3dffc54f39c7789134394649"
+          "hash": "sha256-6fb7b2bb35e8e6d7b424a24c841e3b5975c5e0718a4150596c4178b820cddade"
         },
         {
           "id": "pkg:cef",
-          "hash": "sha256-355ac7f45920ab9d7ef913560e645b93af3eff6f655ff424732f74dd962ad5e7"
+          "hash": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb"
         },
         {
           "id": "pkg:libpulse",
