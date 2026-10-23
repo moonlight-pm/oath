@@ -29,9 +29,9 @@ append history (git has it).
    `pkg:sola`, `sola-browser` and `sola-design` to Sola's published
    packs, now its `next` at `c53b18e4` (Projects, RADV's Mesa); the
    origin has every pack they need. Oath's side is generic: `oath
-   store`, services that follow their package, pinned packs. canto
-   keeps Sola's dev pins. Next: new pins when the Sola tab publishes;
-   drop `pkg:cef`'s `sola/cef-<version>` link when `pkg:cef` changes.
+   store`, services that follow their package, pinned packs. Next:
+   `pkg:cef` lost its Vulkan loader (`cd90948f`), so `sola-browser` and
+   `sola-design`'s CEF need is stale: new pins when Sola rebuilds.
 4. **Claude Code as a recipe (R23).** Every catalog carries
    `plan:claude-code` (stable 2.1.292, pinned to the signed manifest);
    canto built the build host's exact pack and runs `claude`, signed
@@ -46,7 +46,7 @@ append history (git has it).
 
 **State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). canto runs `6e4fc1b59fae`
+([docs/roadmap.md](docs/roadmap.md)). canto runs `1b15debb661c`
 (`desk`), the newest checked output (all 56 QEMU cases), published to
 the origin. Left until
 something needs them: root SSH as a field, more NICs, device rules as fields.
@@ -55,7 +55,7 @@ something needs them: root SSH as a field, more NICs, device rules as fields.
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `6e4fc1b59fae`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `1b15debb661c`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.
