@@ -94,8 +94,8 @@
     "version": "147.0.10+gd58e84d+chromium-147.0.7727.118",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-49b4446cde78873f0a5904435ce4e5afed5216838a07ce091ff74794bcf8b2f9",
-    "product": "sha256-355ac7f45920ab9d7ef913560e645b93af3eff6f655ff424732f74dd962ad5e7",
+    "plan": "sha256-b300ef5d9751a7316746191b002b90be7e9fed13b99161dcc35fc1d772b6ea03",
+    "product": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb",
     "run": [
       "glib",
       "nspr",
@@ -117,7 +117,8 @@
       "pango",
       "libudev-zero",
       "alsa-lib",
-      "gcc"
+      "gcc",
+      "vulkan-loader"
     ]
   },
   "chrony": {
