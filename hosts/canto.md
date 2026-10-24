@@ -29,10 +29,10 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `048c0e633cd7` (`cargo make build
-  --profile desk` of `7e98d25` in novus's `~/Workspace/Oath-mounts`:
-  `354ea2f12b66` of `d048068` plus `host:local.mounts`; Sola's packs
-  from its `next` at `c6cda58b`), the `desk` profile (R20–R22: base plus seatd, rivulet,
+- **Running now:** build output `0c51592c7cf7` (`cargo make build
+  --profile desk` of `1ee6771`: `host:local.mounts` and the pad rule,
+  R30), reached on 2026-10-24 by `cargo make update` (generation 283:
+  `pkg:oath` only; the Sola tab's pins kept), the `desk` profile (R20–R22: base plus seatd, rivulet,
   Sola with its terminal, Projects, browser, Design and KVM, PipeWire,
   Noto, Vulkan, the tools that build Sola, Steam, and their packages),
   reached on 2026-10-23 by `cargo make update --target home@10.0.0.3
@@ -42,7 +42,8 @@ Overwrite this file when facts change; do not append a diary.
   moved only `pkg:oath` to `048c0e633cd7`'s, and 277 set
   `host:local.mounts`). PID 1, initrd and kernel (`pkg:linux`
   333089ed: uinput, the pad drivers, uas) are `048c0e633cd7`'s since
-  the reboot of 2026-10-24 04:31Z (`build/runs/canto-reboot-mounts.sh`
+  the reboot of 2026-10-24 04:31Z; the next boot runs `0c51592c7cf7`'s
+  PID 1, which opens the pads' nodes to `home` (`build/runs/canto-reboot-mounts.sh`
   on novus: PID 1 matched, `/mnt/warehouse` mounted, store-and-follow
   passed). The system was `cargo make install
   --target home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
