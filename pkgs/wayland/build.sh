@@ -11,5 +11,5 @@ ninja -C build -j"$JOBS"
 DESTDIR=/tmp/dest ninja -C build install
 cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" /out/
 for d in bin share; do
-	[ -d "/tmp/dest$LIVE/$d" ] && cp -a "/tmp/dest$LIVE/$d" /out/
+	if [ -d "/tmp/dest$LIVE/$d" ]; then cp -a "/tmp/dest$LIVE/$d" /out/; fi
 done
