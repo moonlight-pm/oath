@@ -29,12 +29,13 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `bd95b5c889e0` (`cargo make build
-  --profile desk` of `fca6d2d`: Steam's sandbox without `/lib`'s own
-  directories), reached on 2026-10-24 by `cargo make update` (generation
-  284: `plan:steam` only, then `pkg:steam` built here, 285; the Sola
-  tab's pins kept); before it `0c51592c7cf7` (generation 283:
-  `pkg:oath` with the pad rule, R30), the `desk` profile (R20–R22: base plus seatd, rivulet,
+- **Running now:** build output `d2bcc23eda7e` (`cargo make build
+  --profile desk` of `2eba93d`: the coding agents' recipes, R31),
+  reached on 2026-10-24 by `cargo make update` (generation 297:
+  `pkg:oath` only; the Sola tab's pins kept); before it `ab9f8013cc5d`
+  (294, `pkg:oath`; Codex and Grok Build made by hand, 295 and 296),
+  `bd95b5c889e0` (284, `plan:steam`; `pkg:steam` built here, 285) and
+  `0c51592c7cf7` (283, `pkg:oath` with the pad rule, R30), the `desk` profile (R20–R22: base plus seatd, rivulet,
   Sola with its terminal, Projects, browser, Design and KVM, PipeWire,
   Noto, Vulkan, the tools that build Sola, Steam, and their packages),
   reached on 2026-10-23 by `cargo make update --target home@10.0.0.3
@@ -44,8 +45,8 @@ Overwrite this file when facts change; do not append a diary.
   moved only `pkg:oath` to `048c0e633cd7`'s, and 277 set
   `host:local.mounts`). PID 1, initrd and kernel (`pkg:linux`
   333089ed: uinput, the pad drivers, uas) are `048c0e633cd7`'s since
-  the reboot of 2026-10-24 04:31Z; the next boot runs `bd95b5c889e0`'s
-  PID 1 (`0c51592c7cf7`'s), which opens the pads' nodes to `home` (`build/runs/canto-reboot-mounts.sh`
+  the reboot of 2026-10-24 04:31Z; the next boot runs `d2bcc23eda7e`'s
+  PID 1, which opens the pads' nodes to `home` (`build/runs/canto-reboot-mounts.sh`
   on novus: PID 1 matched, `/mnt/warehouse` mounted, store-and-follow
   passed). The system was `cargo make install
   --target home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
@@ -102,6 +103,15 @@ Overwrite this file when facts change; do not append a diary.
   (`sha256-cb973b8f…`), and `pkg:claude-code` is present: `claude`
   2.1.292. Not signed in yet (`claude`, then `/login`). The base system before it
   was `218fd2e1e03b` (GCC and glibc, R17, R18).
+- **Codex and Grok Build (R31):** their recipes came after the install,
+  so their objects were made by hand on 2026-10-24 as the update listed
+  them (`oath new pkg:<name>-src` and `pkg:<name> --from-json` with the
+  output's documents, `oath set plan:<name> --from-file`). `oath build`
+  made novus's packs (`codex` `sha256-37194dc8…`, `grok-build`
+  `sha256-14d75ad7…`), present since generation 295. `codex` 0.164.0
+  and `grok` 1.0.70 run; neither is signed in (`codex login`, `grok
+  login`). `bin/grok` wrote `auto_update = false` to
+  `~/.grok/config.toml`; `~/.codex/hooks.json` (2026-10-21) predates it.
 - **Backup:** `backup-send` mounts the NAS export as NFS 4.0
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no
   version). Mounting and unmounting it was checked on 2026-10-18; the

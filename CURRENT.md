@@ -47,8 +47,8 @@ append history (git has it).
 
 **State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). canto runs `bd95b5c889e0`
-(`desk`, R30; generation 285), the newest checked output (all 57 QEMU
+([docs/roadmap.md](docs/roadmap.md)). canto runs `d2bcc23eda7e`
+(`desk`, R30, R31; generation 297), the newest checked output (all 57 QEMU
 cases), published 2026-10-24 (155 packs); its kernel and PID 1 are
 `048c0e633cd7`'s, from the reboot of 2026-10-24 04:31Z. Left until
 something needs them: root SSH as a field, more NICs, device-node rules as fields.
@@ -57,7 +57,7 @@ something needs them: root SSH as a field, more NICs, device-node rules as field
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `bd95b5c889e0`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `d2bcc23eda7e`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.
