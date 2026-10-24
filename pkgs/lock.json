@@ -1258,8 +1258,8 @@
     "version": "1.0.0.87",
     "license": "LicenseRef-Steam-Subscriber-Agreement AND MIT",
     "by": "plan",
-    "plan": "sha256-8992f4ef543b44e037aee90511236d45a25580a0aaccac6aa0c2b8e8fe54b1ad",
-    "product": "sha256-4302fc2c88294bd244312f538dc40f4f6dcf2ee2ef22f332a140ffe0d237dd1d",
+    "plan": "sha256-7e9aefaf9e8db0680424512977aa532f1377d5e4544c6aa04ec2a48f29bd2852",
+    "product": "sha256-a25d01f1fd0ed6a2653bc039fa02093ca22d0d8f156a436a690945d9e4b1abab",
     "run": [
       "bubblewrap",
       "glibc-i386",

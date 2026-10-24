@@ -29,10 +29,12 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `0c51592c7cf7` (`cargo make build
-  --profile desk` of `1ee6771`: `host:local.mounts` and the pad rule,
-  R30), reached on 2026-10-24 by `cargo make update` (generation 283:
-  `pkg:oath` only; the Sola tab's pins kept), the `desk` profile (R20–R22: base plus seatd, rivulet,
+- **Running now:** build output `bd95b5c889e0` (`cargo make build
+  --profile desk` of `fca6d2d`: Steam's sandbox without `/lib`'s own
+  directories), reached on 2026-10-24 by `cargo make update` (generation
+  284: `plan:steam` only, then `pkg:steam` built here, 285; the Sola
+  tab's pins kept); before it `0c51592c7cf7` (generation 283:
+  `pkg:oath` with the pad rule, R30), the `desk` profile (R20–R22: base plus seatd, rivulet,
   Sola with its terminal, Projects, browser, Design and KVM, PipeWire,
   Noto, Vulkan, the tools that build Sola, Steam, and their packages),
   reached on 2026-10-23 by `cargo make update --target home@10.0.0.3
@@ -42,8 +44,8 @@ Overwrite this file when facts change; do not append a diary.
   moved only `pkg:oath` to `048c0e633cd7`'s, and 277 set
   `host:local.mounts`). PID 1, initrd and kernel (`pkg:linux`
   333089ed: uinput, the pad drivers, uas) are `048c0e633cd7`'s since
-  the reboot of 2026-10-24 04:31Z; the next boot runs `0c51592c7cf7`'s
-  PID 1, which opens the pads' nodes to `home` (`build/runs/canto-reboot-mounts.sh`
+  the reboot of 2026-10-24 04:31Z; the next boot runs `bd95b5c889e0`'s
+  PID 1 (`0c51592c7cf7`'s), which opens the pads' nodes to `home` (`build/runs/canto-reboot-mounts.sh`
   on novus: PID 1 matched, `/mnt/warehouse` mounted, store-and-follow
   passed). The system was `cargo make install
   --target home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
@@ -59,10 +61,13 @@ Overwrite this file when facts change; do not append a diary.
   them (273) and `pkg:glibc32`, its first glibc for i386, removed
   (274). `/bin/steam` runs Valve's 64-bit client (publicbeta, client
   1792711043) on DP-10, signed in as Joshua since 2026-10-23 20:46
-  (and again by itself after the reboot);
+  (and again by itself after the reboot; restarted on `pkg:steam`
+  `a25d01f1…` on 2026-10-24 08:49);
   its webhelper is on radeonsi through ANGLE, and its container imports
   `mesa-i386` (no 32-bit GL or Vulkan errors). No game installed yet.
-  Steam's data is `/home/.local/share/Steam`. Both FirePros show in
+  Steam's data and its one library are `/home/.local/share/Steam`;
+  Steam names the library's drive `/home` (before `a25d01f1…`,
+  `/run/host/usr/lib/oath`: see [steam.md](../docs/specs/steam.md)). Both FirePros show in
   Vulkan as RADV PITCAIRN (1.3.354).
 - **Design (R21):** `pkg:sola-design` came after the install, so it was
   made by hand on 2026-10-20 from the image's seed values (`oath new
