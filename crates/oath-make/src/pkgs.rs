@@ -862,7 +862,6 @@ for d in /oath/store/pkg/*/live; do
 \t[ -d \"$d/lib/pkgconfig\" ] && pc=\"${pc:+$pc:}$d/lib/pkgconfig\"
 done
 PKG_CONFIG_PATH=\"$PKG_CONFIG_PATH${pc:+:$pc}\"
-CPPFLAGS=\"$CPPFLAGS -I/oath/store/pkg/glibc-i386/live/include\"
 ";
 
 /// Every library a new product's programs load (`DT_NEEDED`) must be in
