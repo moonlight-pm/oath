@@ -28,7 +28,7 @@ An agent that has never seen Oath should be able to:
 
 Kinds: `host`, `svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`.
 
-## Status (2026-10-17)
+## Status (2026-10-23)
 
 Early and not a daily driver. A review on 2026-10-13 cut the desk, the
 Steam and Omarchy experiments and the Wicket host image out of the core
@@ -55,6 +55,11 @@ What is true today:
   MCP tools, the INDEX as instructions, writes through `sudo` and in
   the apply log like the owner's. `cargo make check --agent` tests that
   against a real model that has never seen Oath.
+- The desk came back on 2026-10-18 as the optional `desk` profile
+  (R19–R22): rivulet on wlroots, Mesa (radeonsi, and RADV for Vulkan),
+  PipeWire, and Sola's session and apps, which Sola builds and
+  publishes itself and the profile pins by hash (R28). The Mac Pro runs
+  it.
 - Still compiled by the build host: stage 0 of the toolchain, and the
   build tool `oath-make`. QEMU and its UEFI firmware come from Nix to
   run images on the build host. None of that ships.

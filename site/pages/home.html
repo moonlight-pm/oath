@@ -49,7 +49,7 @@
 <div><dt>Network and SSH</dt><dd><code>net0</code> by DHCP or a static address, time from pool.ntp.org, dropbear for SSH as <code>home</code> with root login refused, the OpenSSH client tools and <code>dig</code>.</dd></div>
 <div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick. <code>cargo make update</code> moves an installed machine to a newer build without wiping it.</dd></div>
 <div><dt>Testing</dt><dd><code>cargo make check</code> boots one QEMU machine per case and reboots for real. <code>--target</code> runs the hardware cases on an installed machine and undoes each one. <code>--agent</code> gives a real model five administration tasks.</dd></div>
-<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects and browser of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV for Vulkan and PipeWire for sound.</dd></div>
+<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV for Vulkan and PipeWire for sound.</dd></div>
 </dl>
 <p class="more">The <a href="/manual">manual</a> covers each of these in detail.</p>
 </section>
@@ -65,13 +65,13 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 20 October 2026 the current build passes all 55 test cases in QEMU and all 42 hardware cases on the Mac Pro. Not there yet:</p>
+<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 23 October 2026 the current build passes all 56 test cases in QEMU and the desk's hardware cases on the Mac Pro; all 42 hardware cases of the time passed on 20 October. Not there yet:</p>
 <ul>
 <li>Releases. x86-64 with UEFI is the only platform.</li>
 <li>Signed packages. Packages are pinned by hash and their sources are checked against upstream signatures, but Oath does not yet sign what it publishes.</li>
 <li>More than one network interface. One is chosen at boot.</li>
 <li>Device node ownership and mounts as catalog fields.</li>
-<li>Desktop applications beyond Sola's terminal, Projects and browser. Steam is planned.</li>
+<li>Desktop applications beyond Sola's terminal, Projects, browser and Design. Steam is planned.</li>
 </ul>
 <p>The work under way is in <a href="{{repository}}/blob/master/CURRENT.md">CURRENT.md</a>, the decisions behind it in <a href="{{repository}}/blob/master/docs/decisions.md">docs/decisions.md</a>, and what each part can do in <a href="{{repository}}/blob/master/docs/capabilities.md">docs/capabilities.md</a>.</p>
 </section>

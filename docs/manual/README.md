@@ -4,8 +4,9 @@ How the system works **today**. Not a roadmap. If it is not here, do
 not assume Debian, systemd, or another distro.
 
 Oath is a Linux you administer with `oath`. The live catalog is
-`/oath`. There is no desktop: you reach it over SSH or on the screen
-and keyboard as `home`, or on the serial console as root.
+`/oath`. The `base` profile has no desktop: you reach it over SSH or
+on the screen and keyboard as `home`, or on the serial console as root.
+The optional `desk` profile adds one ([desk spec](../specs/desk.md)).
 
 | Page | What |
 |------|------|
