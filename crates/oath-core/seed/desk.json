@@ -250,6 +250,11 @@
       "description": "at-spi2-core: libatspi, libatk-1.0 and libatk-bridge-2.0 (CEF's accessibility).",
       "home": "https://gitlab.gnome.org/GNOME/at-spi2-core"
     },
+    "pkg:bubblewrap": {
+      "present": true,
+      "description": "bubblewrap: bwrap, unprivileged sandboxes in user namespaces (Steam's).",
+      "home": "https://github.com/containers/bubblewrap"
+    },
     "pkg:cairo": {
       "present": true,
       "description": "cairo, shared: image surfaces with FreeType and fontconfig (pango, CEF).",
@@ -335,6 +340,11 @@
       "description": "GLib, GObject and GIO, shared: CEF's, at-spi2-core's and pango's base.",
       "home": "https://gitlab.gnome.org/GNOME/glib"
     },
+    "pkg:glibc32": {
+      "present": true,
+      "description": "glibc for i386 programs: lib32/ and the loader ld-linux.so.2.",
+      "home": "https://www.gnu.org/software/libc/"
+    },
     "pkg:harfbuzz": {
       "present": true,
       "description": "HarfBuzz, shared, with FreeType and GLib: text shaping for pango.",
@@ -414,6 +424,11 @@
       "present": true,
       "description": "libXcomposite, shared: the Composite extension (CEF).",
       "home": "https://www.x.org/"
+    },
+    "pkg:libxcrypt": {
+      "present": true,
+      "description": "libxcrypt, shared: libcrypt.so.1, glibc's crypt(3) ABI (Steam).",
+      "home": "https://github.com/besser82/libxcrypt"
     },
     "pkg:libxcvt": {
       "present": true,
@@ -661,6 +676,16 @@
       "description": "Sola Design: HTML artboards on a canvas, edited by agents.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
+    "pkg:steam": {
+      "present": false,
+      "description": "Steam's launcher, in a sandbox with the paths Steam assumes; it installs the client in ~/.local/share/Steam.",
+      "home": "https://store.steampowered.com/about/"
+    },
+    "pkg:steam-src": {
+      "present": false,
+      "description": "Valve's Steam launcher tarball, which plan:steam builds from; fetched from repo.steampowered.com when it builds.",
+      "home": "https://store.steampowered.com/about/"
+    },
     "pkg:tmux": {
       "present": true,
       "description": "tmux, which sola-terminal runs every shell in.",
@@ -715,6 +740,7 @@
       "present": true,
       "description": "Xwayland: X11 clients under rivulet, with glamor on GBM and GLX.",
       "home": "https://gitlab.freedesktop.org/xorg/xserver"
-    }
+    },
+    "plan:steam": {}
   }
 }
