@@ -218,7 +218,8 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
         }
         out.insert(name, p);
     }
-    let i386: Vec<String> = out.iter().filter(|(_, p)| p.i386.is_some()).map(|(n, _)| n.clone()).collect();
+    let i386: Vec<String> =
+        out.iter().filter(|(_, p)| p.i386.is_some()).map(|(n, _)| n.clone()).collect();
     for name in i386 {
         let base = out[&name].i386.clone().unwrap_or_default();
         let ctx = || format!("pkgs/{name}/pkg.toml: i386 = {base:?}");
@@ -231,7 +232,11 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
         if name != format!("{base}-i386") {
             bail!("{}: the package is named {base}-i386", ctx());
         }
-        if !p.version.is_empty() || !p.license.is_empty() || !p.source.is_empty() || p.recipe.is_some() {
+        if !p.version.is_empty()
+            || !p.license.is_empty()
+            || !p.source.is_empty()
+            || p.recipe.is_some()
+        {
             bail!("{}: its version, licence and sources are pkgs/{base}'s", ctx());
         }
         p.version = b.version;
