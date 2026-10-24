@@ -1,6 +1,7 @@
 //! Upstream signature checks for `cargo make pkgs`: detached OpenPGP v4
 //! signatures (RFC 9580) by RSA, DSA or Ed25519 keys over SHA-1 or SHA-2,
-//! which is what upstream release signatures use. The keys come from files pinned
+//! which is what upstream release signatures use, and cleartext-signed
+//! lists (a Debian `.dsc`). The keys come from files pinned
 //! in `pkgs/keys/`; every key in such a file is trusted as it stands, so
 //! there are no expiry, revocation or subkey-binding checks.
 
@@ -15,6 +16,9 @@ use sha2::digest::DynDigest;
 use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
 
 const TAG_SIGNATURE: u8 = 2;
+/// Signature types: a binary document, and canonical text (cleartext).
+const BINARY: u8 = 0x00;
+const TEXT: u8 = 0x01;
 const TAG_PUBLIC_KEY: u8 = 6;
 const TAG_PUBLIC_SUBKEY: u8 = 14;
 
@@ -46,14 +50,54 @@ struct Signature {
 /// Check that `sig` (armored or binary) is a signature over everything
 /// `data` yields by a key in `keys` (armored or binary). Returns the
 /// signing key's fingerprint.
-pub fn verify(keys: &[u8], sig: &[u8], mut data: impl Read) -> Result<String> {
+pub fn verify(keys: &[u8], sig: &[u8], data: impl Read) -> Result<String> {
+    verify_class(keys, sig, BINARY, data)
+}
+
+/// Whether `data` is a cleartext-signed message (`-----BEGIN PGP SIGNED
+/// MESSAGE-----`), which `verify_cleartext` checks.
+pub fn is_cleartext(data: &[u8]) -> bool {
+    data.trim_ascii_start().starts_with(b"-----BEGIN PGP SIGNED MESSAGE-----")
+}
+
+/// Check a cleartext-signed message (RFC 9580 section 7), as Debian's
+/// `.dsc` files are: a text signature (type 0x01) over the message with
+/// its dash-escapes undone, each line's trailing spaces and tabs dropped
+/// and its lines joined by CR LF. Returns the signing key's fingerprint
+/// and the signed text, lines joined by LF.
+pub fn verify_cleartext(keys: &[u8], msg: &[u8]) -> Result<(String, String)> {
+    let text = std::str::from_utf8(msg).context("a cleartext-signed message is not UTF-8")?;
+    let mut lines = text.split('\n').map(|l| l.strip_suffix('\r').unwrap_or(l));
+    if lines.by_ref().find(|l| !l.trim().is_empty()) != Some("-----BEGIN PGP SIGNED MESSAGE-----")
+    {
+        bail!("not a cleartext-signed message");
+    }
+    // Hash: headers end at the first blank line.
+    lines.by_ref().find(|l| l.is_empty());
+    let mut body = Vec::new();
+    let mut armor = None;
+    for l in lines.by_ref() {
+        if l == "-----BEGIN PGP SIGNATURE-----" {
+            armor = Some(l);
+            break;
+        }
+        body.push(l.strip_prefix("- ").unwrap_or(l).trim_end_matches([' ', '\t']));
+    }
+    let Some(begin) = armor else { bail!("the cleartext message has no signature") };
+    let sig = std::iter::once(begin).chain(lines).collect::<Vec<_>>().join("\n");
+    let who = verify_class(keys, sig.as_bytes(), TEXT, body.join("\r\n").as_bytes())?;
+    Ok((who, body.join("\n")))
+}
+
+fn verify_class(keys: &[u8], sig: &[u8], class: u8, mut data: impl Read) -> Result<String> {
     let keys = parse_keys(&dearmor(keys)?)?;
     if keys.is_empty() {
         bail!("the key file holds no v4 RSA, DSA or Ed25519 key");
     }
-    let sigs = parse_signatures(&dearmor(sig)?)?;
+    let sigs = parse_signatures(&dearmor(sig)?, class)?;
     if sigs.is_empty() {
-        bail!("no v4 RSA, DSA or EdDSA signature over a binary document");
+        let what = if class == TEXT { "text" } else { "binary document" };
+        bail!("no v4 RSA, DSA or EdDSA signature over a {what}");
     }
     let mut hashers = sigs.iter().map(|s| hasher(s.hash)).collect::<Result<Vec<_>>>()?;
     let mut buf = vec![0u8; 1 << 20];
@@ -212,11 +256,11 @@ fn key(body: &[u8]) -> Result<Option<Key>> {
     Ok(Some(Key { fingerprint: hex(&h.finalize()), material }))
 }
 
-fn parse_signatures(data: &[u8]) -> Result<Vec<Signature>> {
+fn parse_signatures(data: &[u8], class: u8) -> Result<Vec<Signature>> {
     let mut out = Vec::new();
     for (tag, body) in packets(data)? {
         if tag == TAG_SIGNATURE {
-            if let Some(s) = signature(body)? {
+            if let Some(s) = signature(body, class)? {
                 out.push(s);
             }
         }
@@ -224,12 +268,13 @@ fn parse_signatures(data: &[u8]) -> Result<Vec<Signature>> {
     Ok(out)
 }
 
-/// A v4 signature of a binary document (type 0x00) by RSA, DSA or EdDSA.
-fn signature(body: &[u8]) -> Result<Option<Signature>> {
+/// A v4 signature of type `class` (a binary document or text) by RSA,
+/// DSA or EdDSA.
+fn signature(body: &[u8], class: u8) -> Result<Option<Signature>> {
     let mut d = body;
     let head = take(&mut d, 4)?;
-    let (version, class, algo, hash) = (head[0], head[1], head[2], head[3]);
-    if version != 4 || class != 0 {
+    let (version, kind, algo, hash) = (head[0], head[1], head[2], head[3]);
+    if version != 4 || kind != class {
         return Ok(None);
     }
     let hlen = u16::from_be_bytes(take(&mut d, 2)?.try_into()?) as usize;
@@ -318,7 +363,7 @@ fn mpi<'a>(d: &mut &'a [u8]) -> Result<&'a [u8]> {
 
 /// The binary packets of an armored signature or public key block, or
 /// `data` itself when it is not armored. A clearsigned message is not
-/// accepted.
+/// accepted (`verify_cleartext` takes those).
 fn dearmor(data: &[u8]) -> Result<Vec<u8>> {
     let Ok(text) = std::str::from_utf8(data) else { return Ok(data.to_vec()) };
     if !text.trim_start().starts_with("-----BEGIN PGP ") {
@@ -414,6 +459,27 @@ mod tests {
             "{e}"
         );
         assert!(verify(RSA, DATA, DATA).is_err());
+    }
+
+    // Valve's .dsc for the Steam launcher, signed by its Steam for Linux key.
+    const DSC: &[u8] = include_bytes!("../testdata/openpgp/steam_1.0.0.87.dsc");
+    const VALVE: &[u8] = include_bytes!("../../../pkgs/keys/valve.asc");
+
+    #[test]
+    fn cleartext_signatures() {
+        assert!(is_cleartext(DSC) && !is_cleartext(DATA));
+        let (who, text) = verify_cleartext(VALVE, DSC).unwrap();
+        assert_eq!(who, "DB23C56BF0F377FD02970A2A84706F31879D59CB");
+        assert!(text.starts_with("Format: 3.0 (native)\n"), "{text}");
+        assert!(text.contains(
+            " 649375d2f9377f8009aaf3e2ff09978041eb9114897d9c5a3886f1d82e27ba1f 20409598 steam_1.0.0.87.tar.gz"
+        ));
+        let bad = String::from_utf8_lossy(DSC).replace("1.0.0.87.tar.gz", "1.0.0.88.tar.gz");
+        let e = verify_cleartext(VALVE, bad.as_bytes()).unwrap_err().to_string();
+        assert!(e.starts_with("BAD signature"), "{e}");
+        assert!(verify_cleartext(RSA, DSC).unwrap_err().to_string().contains("not a pinned key"));
+        // A detached binary signature is not a text signature.
+        assert!(verify(VALVE, DSC, DATA).is_err());
     }
 
     #[test]

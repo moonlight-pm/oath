@@ -74,7 +74,8 @@ pub struct Source {
     #[serde(default)]
     pub file: Option<String>,
     /// URL of the upstream's detached OpenPGP signature over the file (or
-    /// over `sums`, or over the file after `decompress`).
+    /// over `sums`, or over the file after `decompress`), or of a
+    /// clearsigned list that names the file with its sha256 (a `.dsc`).
     #[serde(default)]
     pub sig: Option<String>,
     /// The signing key: `pkgs/keys/<key>.asc`.
@@ -454,6 +455,18 @@ fn verify_sig(repo: &Path, s: &Source, file: &Path) -> Result<String> {
     let keys = fs::read(key_file(repo, key))?;
     let cached = |url: &str| fetch_sig(repo, url);
     let sig = cached(sig_url)?;
+    if crate::openpgp::is_cleartext(&sig) {
+        // A clearsigned list (a Debian `.dsc`) is its own signature.
+        if s.sums.is_some() || s.decompress.is_some() {
+            bail!("{sig_url} is clearsigned: it takes no sums or decompress");
+        }
+        let (who, text) = crate::openpgp::verify_cleartext(&keys, &sig)?;
+        let name = s.url.rsplit('/').next().unwrap_or("");
+        if !lists(&text, name, &s.sha256) && !dsc_lists(&text, name, &s.sha256) {
+            bail!("{sig_url} does not list {name} with sha256 {}", s.sha256);
+        }
+        return Ok(who);
+    }
     match (&s.sums, s.decompress.as_deref()) {
         (Some(sums_url), _) => {
             let sums = cached(sums_url)?;
@@ -497,6 +510,16 @@ fn lists(sums: &str, name: &str, sha256: &str) -> bool {
         let mut f = l.split_whitespace();
         matches!((f.next(), f.next()), (Some(h), Some(n))
             if h.eq_ignore_ascii_case(sha256) && n.trim_start_matches('*') == name)
+    })
+}
+
+/// Whether a Debian `.dsc` names `name` with `sha256` in its
+/// `Checksums-Sha256` field (` <sha256> <size> <name>`).
+fn dsc_lists(dsc: &str, name: &str, sha256: &str) -> bool {
+    dsc.lines().any(|l| {
+        let f: Vec<&str> = l.split_whitespace().collect();
+        matches!(f.as_slice(), [h, size, n]
+            if h.eq_ignore_ascii_case(sha256) && size.bytes().all(|b| b.is_ascii_digit()) && *n == name)
     })
 }
 
@@ -1044,6 +1067,10 @@ mod tests {
         assert!(lists(sums, "bin.tar.gz", "ffff"));
         assert!(!lists(sums, "cmake-4.4.4.tar.gz", "abcd"));
         assert!(!lists(sums, "cmake-4.4.4.tar", "bd24"));
+        let dsc = "Checksums-Sha256: \n abcd 20409598 steam_1.0.0.87.tar.gz\n";
+        assert!(dsc_lists(dsc, "steam_1.0.0.87.tar.gz", "ABCD"));
+        assert!(!dsc_lists(dsc, "steam_1.0.0.86.tar.gz", "abcd"));
+        assert!(!dsc_lists(" abcd big steam_1.0.0.87.tar.gz", "steam_1.0.0.87.tar.gz", "abcd"));
     }
 
     #[test]
