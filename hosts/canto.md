@@ -10,15 +10,13 @@ Overwrite this file when facts change; do not append a diary.
 - **USB disk:** Seagate BarracudaFastSSD (2 TB, `0bc2:aa16`, USB 3 at
   5 Gb/s), wiped 2026-10-23 to GPT with one btrfs partition, label
   `warehouse`. It speaks UAS; the running kernel has no `uas`, so it
-  is on usb-storage with no TRIM until canto boots a kernel built with
-  `CONFIG_USB_UAS` (2026-10-23). Its mount is `host:local.mounts`
-  (`/mnt/warehouse`, `noatime,compress=zstd:1`; in the overlay), but
-  canto's `oath` and PID 1 predate the field: until an update and a
-  reboot bring them, mount it by hand after a boot (`sudo mount -o
-  noatime,compress=zstd:1 LABEL=warehouse /mnt/warehouse`), then set
-  `mounts` as the overlay has it and apply. It holds the cargo target
-  dirs of Sola and Oath (`~/Projects/{Sola,Oath}/target` link to
-  `/mnt/warehouse/{Sola,Oath}/target`), so builds fail until it is
+  is on usb-storage with no TRIM until the next boot (the ESP's kernel
+  has it). `host:local.mounts` mounts it at `/mnt/warehouse`
+  (`noatime,compress=zstd:1`) since generation 277; the running PID 1
+  predates the field, so the boot mount starts with the next boot. It
+  holds the cargo target dirs of Sola and Oath
+  (`~/Projects/{Sola,Oath}/target` link to
+  `/mnt/warehouse/{Sola,Oath}/target`), so builds fail while it is not
   mounted. Nothing the machine boots or runs needs it.
 - **Network:** the cable is in the first port (`00:3e:e1:cb:06:08`),
   DHCP 10.0.0.3, which novus's `/etc/hosts` calls `canto`. The lease's
@@ -31,19 +29,22 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `354ea2f12b66` (`cargo make build
-  --profile desk` of `d048068`: Sola's packs from its `next` at
-  `c6cda58b`), the `desk` profile (R20–R22: base plus seatd, rivulet,
+- **Running now:** build output `048c0e633cd7` (`cargo make build
+  --profile desk` of `7e98d25` in novus's `~/Workspace/Oath-mounts`:
+  `354ea2f12b66` of `d048068` plus `host:local.mounts`; Sola's packs
+  from its `next` at `c6cda58b`), the `desk` profile (R20–R22: base plus seatd, rivulet,
   Sola with its terminal, Projects, browser, Design and KVM, PipeWire,
   Noto, Vulkan, the tools that build Sola, Steam, and their packages),
   reached on 2026-10-23 by `cargo make update --target home@10.0.0.3
   --confirm` (generation 271: `pkg:oath`, `pkg:gcc` with `-m32` and
   the 17 packs whose build scripts changed; no service restarted;
-  Sola's dev pins kept, their need on `pkg:gcc` moved). PID 1 and the
+  Sola's dev pins kept, their need on `pkg:gcc` moved; generation 276
+  moved only `pkg:oath` to `048c0e633cd7`'s, and 277 set
+  `host:local.mounts`). PID 1 and the
   kernel are `4ec147de8bb5`'s, from the reboot of 2026-10-21 15:52Z
   (`build/runs/canto-reboot.sh` on novus); the ESP holds
-  `354ea2f12b66`'s kernel (`pkg:linux` 333089ed: uinput, the pad
-  drivers, uas) for the next boot. The system was `cargo make install
+  `048c0e633cd7`'s kernel (`pkg:linux` 333089ed: uinput, the pad
+  drivers, uas) and initrd (the PID 1 that mounts) for the next boot. The system was `cargo make install
   --target home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
   hosts/canto.json --confirm` on 2026-10-18. Passed all 42 `metal`
   cases (`cargo make check --target home@10.0.0.3`, 2026-10-20) on
