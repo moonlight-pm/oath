@@ -1,5 +1,5 @@
 //! Sigstore bundles for `cargo make pkgs`, for upstreams that sign only
-//! that way (Python, Perl): a `hashedrekord` entry in Rekor (v1) and a
+//! that way (Python, Perl, Codex): a `hashedrekord` entry in Rekor (v1) and a
 //! short-lived Fulcio certificate, checked against Sigstore's trusted root
 //! pinned in `pkgs/keys/sigstore.json` and the identity pinned in
 //! `pkg.toml`. Checked: the certificate chains to a pinned Fulcio CA and
@@ -8,7 +8,9 @@
 //! entry timestamp) and, when the bundle carries one, the checkpoint whose
 //! tree the entry's inclusion proof leads to; the entry records that
 //! digest, signature and certificate, and its time falls inside the
-//! certificate's validity.
+//! certificate's validity. cosign's older bundle (a GitHub release's
+//! `.sigstore`) has no inclusion proof, so its signed entry timestamp alone
+//! vouches for the entry.
 
 use anyhow::{bail, Context, Result};
 use p256::ecdsa::signature::hazmat::PrehashVerifier;
@@ -42,17 +44,8 @@ pub fn verify(
 ) -> Result<String> {
     let root: Value = serde_json::from_slice(trusted_root).context("trusted root")?;
     let b: Value = serde_json::from_slice(bundle).context("bundle")?;
-    let media = b["mediaType"].as_str().unwrap_or("");
-    if !media.starts_with("application/vnd.dev.sigstore.bundle") {
-        bail!("not a Sigstore bundle ({media:?})");
-    }
+    let Parts { leaf_der, sig, signed_digest, log_id, entry } = parts(&b)?;
     let digest = hex(sha256)?;
-    let vm = &b["verificationMaterial"];
-    let leaf_b64 = vm["certificate"]["rawBytes"]
-        .as_str()
-        .or_else(|| vm["x509CertificateChain"]["certificates"][0]["rawBytes"].as_str())
-        .context("bundle has no certificate")?;
-    let leaf_der = base64(leaf_b64)?;
     let leaf = Certificate::from_der(&leaf_der).context("certificate")?;
 
     // Who signed.
@@ -95,12 +88,8 @@ pub fn verify(
     }
 
     // The certificate's key signed the artifact.
-    let ms = &b["messageSignature"];
-    let sig = base64(ms["signature"].as_str().context("bundle has no messageSignature")?)?;
-    if let Some(d) = ms["messageDigest"]["digest"].as_str() {
-        if base64(d)? != digest {
-            bail!("the bundle signs another digest");
-        }
+    if signed_digest.is_some_and(|d| d != digest) {
+        bail!("the bundle signs another digest");
     }
     let leaf_key = leaf.tbs_certificate.subject_public_key_info.subject_public_key.raw_bytes();
     if !ecdsa_ok(leaf_key, &digest, &sig) {
@@ -108,8 +97,6 @@ pub fn verify(
     }
 
     // Rekor logged it, inside the certificate's ten minutes.
-    let entry = &vm["tlogEntries"][0];
-    let log_id = base64(entry["logId"]["keyId"].as_str().context("bundle has no tlog entry")?)?;
     let log = root["tlogs"]
         .as_array()
         .context("trusted root tlogs")?
@@ -166,6 +153,58 @@ pub fn verify(
         bail!("the log entry records another certificate");
     }
     Ok(index.to_string())
+}
+
+/// What a bundle holds: the leaf certificate (DER), the artifact's
+/// signature, the digest it says it signs, and its Rekor entry: the log's
+/// ID and the entry in the bundle's own form (`integratedTime`,
+/// `logIndex`, `inclusionPromise`, `canonicalizedBody`, `inclusionProof`).
+struct Parts {
+    leaf_der: Vec<u8>,
+    sig: Vec<u8>,
+    signed_digest: Option<Vec<u8>>,
+    log_id: Vec<u8>,
+    entry: Value,
+}
+
+/// A Sigstore bundle, or cosign's older one (`base64Signature`, `cert`
+/// as base64 PEM, `rekorBundle`: the entry's payload and signed entry
+/// timestamp, no inclusion proof), which GitHub releases still carry.
+fn parts(b: &Value) -> Result<Parts> {
+    if b["rekorBundle"].is_object() {
+        let pem = base64(b["cert"].as_str().context("bundle has no certificate")?)?;
+        let p = &b["rekorBundle"]["Payload"];
+        return Ok(Parts {
+            leaf_der: pem_der(&String::from_utf8_lossy(&pem))?,
+            sig: base64(b["base64Signature"].as_str().context("bundle has no signature")?)?,
+            signed_digest: None,
+            log_id: hex(p["logID"].as_str().context("bundle has no tlog entry")?)?,
+            entry: json!({
+                "integratedTime": p["integratedTime"],
+                "logIndex": p["logIndex"],
+                "inclusionPromise": { "signedEntryTimestamp": b["rekorBundle"]["SignedEntryTimestamp"] },
+                "canonicalizedBody": p["body"],
+            }),
+        });
+    }
+    let media = b["mediaType"].as_str().unwrap_or("");
+    if !media.starts_with("application/vnd.dev.sigstore.bundle") {
+        bail!("not a Sigstore bundle ({media:?})");
+    }
+    let vm = &b["verificationMaterial"];
+    let leaf_b64 = vm["certificate"]["rawBytes"]
+        .as_str()
+        .or_else(|| vm["x509CertificateChain"]["certificates"][0]["rawBytes"].as_str())
+        .context("bundle has no certificate")?;
+    let ms = &b["messageSignature"];
+    let entry = &vm["tlogEntries"][0];
+    Ok(Parts {
+        leaf_der: base64(leaf_b64)?,
+        sig: base64(ms["signature"].as_str().context("bundle has no messageSignature")?)?,
+        signed_digest: ms["messageDigest"]["digest"].as_str().map(base64).transpose()?,
+        log_id: base64(entry["logId"]["keyId"].as_str().context("bundle has no tlog entry")?)?,
+        entry: entry.clone(),
+    })
 }
 
 /// The entry is in the tree its RFC 6962 proof leads to, and Rekor's key
@@ -316,10 +355,33 @@ mod tests {
     const PERL_XZ: &str = "505cf43912e9480495c344c70260452e32aa2a73c546a026b3f100053b23ce91";
     const PERL_GZ: &str = "3b855066b92491cb40e86affb1ca57d1a388aa43e51b91c7806a32c2f65f96c3";
     const GITHUB: &str = "https://github.com/login/oauth";
+    // cosign's older bundle, from a GitHub release.
+    const CODEX: &[u8] =
+        include_bytes!("../testdata/sigstore/codex-package-x86_64-unknown-linux-musl.tar.gz.sigstore");
+    const CODEX_SHA256: &str = "3ec55053109608d5038f7e50750f7d25f768dfd740fef071aa710e2559b63aac";
+    const CODEX_WORKFLOW: &str =
+        "https://github.com/openai/codex/.github/workflows/rust-release.yml@refs/tags/rust-v0.164.0";
+    const ACTIONS: &str = "https://token.actions.githubusercontent.com";
 
     #[test]
     fn python_release_verifies() {
         verify(ROOT, PYTHON, PYTHON_SHA256, "hugo@python.org", GITHUB).unwrap();
+    }
+
+    #[test]
+    fn cosign_bundle_verifies() {
+        verify(ROOT, CODEX, CODEX_SHA256, CODEX_WORKFLOW, ACTIONS).unwrap();
+        let e = verify(ROOT, CODEX, PYTHON_SHA256, CODEX_WORKFLOW, ACTIONS).unwrap_err();
+        assert!(e.to_string().contains("BAD signature"), "{e}");
+        let main = CODEX_WORKFLOW.replace("refs/tags/rust-v0.164.0", "refs/heads/main");
+        let e = verify(ROOT, CODEX, CODEX_SHA256, &main, ACTIONS).unwrap_err();
+        assert!(e.to_string().contains("not the pinned"), "{e}");
+        let mut b: Value = serde_json::from_slice(CODEX).unwrap();
+        let t = num(&b["rekorBundle"]["Payload"]["integratedTime"]).unwrap();
+        b["rekorBundle"]["Payload"]["integratedTime"] = json!(t + 1);
+        let e = verify(ROOT, b.to_string().as_bytes(), CODEX_SHA256, CODEX_WORKFLOW, ACTIONS)
+            .unwrap_err();
+        assert!(e.to_string().contains("BAD signed entry timestamp"), "{e}");
     }
 
     #[test]

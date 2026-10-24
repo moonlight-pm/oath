@@ -1,0 +1,19 @@
+# Grok Build, xAI's coding agent: the vendor's Linux build (R7), a static
+# Rust executable, from the stable channel at x.ai/cli. A recipe (R31):
+# like pkg:claude-code, each machine fetches the binary from x.ai and
+# builds it with `oath build plan:grok-build`. xAI's npm package of the
+# same version declares Apache-2.0; xai-org/grok-build is a periodic copy
+# of its source, older than this build.
+version = "1.0.70"
+license = "Apache-2.0"
+description = "Grok Build: xAI's coding agent for the terminal."
+home = "https://x.ai/cli"
+purl = "pkg:generic/grok-build@1.0.70"
+recipe = "xAI's own build, which each machine fetches, as it does Claude Code's (R31)"
+build = ["bash", "coreutils", "grep", "sed", "zstd", "glibc"]
+run = []
+
+[[source]]
+url = "https://x.ai/cli/grok-1.0.70-linux-x86_64.zst"
+sha256 = "e751b614949d8458702367b0e0f333904c58258ad3e431a7226b14a42b74f847"
+unsigned = "x.ai/cli publishes the binary with no checksum or signature, and its install.sh checks neither"

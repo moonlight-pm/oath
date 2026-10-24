@@ -1,0 +1,22 @@
+# Codex, OpenAI's coding agent: the vendor's Linux package (R7) from the
+# repository's stable GitHub releases: a static (musl) codex with its own
+# ripgrep, bubblewrap (its sandbox) and code-mode host, and a voice helper
+# with the GStreamer and GLib libraries it loads from beside it. A recipe
+# (R31): like pkg:claude-code, each machine fetches the package from
+# github.com and builds it with `oath build plan:codex`. The pin is the
+# archive's sha256, which OpenAI's release workflow signs with Sigstore.
+version = "0.164.0"
+license = "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib"
+description = "Codex: OpenAI's coding agent for the terminal."
+home = "https://developers.openai.com/codex/cli"
+purl = "pkg:github/openai/codex@rust-v0.164.0"
+recipe = "OpenAI's own build, which each machine fetches, as it does Claude Code's (R31)"
+build = ["bash", "coreutils", "grep", "tar", "zstd", "glibc"]
+run = []
+
+[[source]]
+url = "https://github.com/openai/codex/releases/download/rust-v0.164.0/codex-package-x86_64-unknown-linux-musl.tar.zst"
+sha256 = "7801ae47316395e3a638fb61964a9f28f84a6647c1b1ed90332e4d6b6da046d8"
+sigstore = "https://github.com/openai/codex/releases/download/rust-v0.164.0/codex-package-x86_64-unknown-linux-musl.tar.zst.sigstore"
+identity = "https://github.com/openai/codex/.github/workflows/rust-release.yml@refs/tags/rust-v0.164.0"
+issuer = "https://token.actions.githubusercontent.com"

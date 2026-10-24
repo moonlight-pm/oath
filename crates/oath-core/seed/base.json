@@ -273,6 +273,28 @@
       "home": "https://code.claude.com/docs"
     },
     "plan:claude-code": {},
+    "pkg:codex": {
+      "present": false,
+      "description": "Codex: OpenAI's coding agent for the terminal.",
+      "home": "https://developers.openai.com/codex/cli"
+    },
+    "pkg:codex-src": {
+      "present": false,
+      "description": "The vendor's Codex package, which plan:codex builds from; fetched from github.com when it builds.",
+      "home": "https://developers.openai.com/codex/cli"
+    },
+    "plan:codex": {},
+    "pkg:grok-build": {
+      "present": false,
+      "description": "Grok Build: xAI's coding agent for the terminal.",
+      "home": "https://x.ai/cli"
+    },
+    "pkg:grok-build-src": {
+      "present": false,
+      "description": "The vendor's Grok Build binary, which plan:grok-build builds from; fetched from x.ai when it builds.",
+      "home": "https://x.ai/cli"
+    },
+    "plan:grok-build": {},
     "ssh:local": {
       "authorized": []
     },

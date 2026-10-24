@@ -140,6 +140,12 @@ fn seed_lists_host() {
         "pkg:claude-code",
         "pkg:claude-code-src",
         "plan:claude-code",
+        "pkg:codex",
+        "pkg:codex-src",
+        "plan:codex",
+        "pkg:grok-build",
+        "pkg:grok-build-src",
+        "plan:grok-build",
         "net:net0",
         "ssh:local",
         "snap:current",
@@ -148,15 +154,17 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 5 svc and host, 39 packages, a recipe (two packages and its plan),
-    // net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 50, "{ids:?}");
+    // 5 svc and host, 39 packages, three recipes (two packages and a plan
+    // each), net:net0, ssh:local, snap:current.
+    assert_eq!(ids.len(), 56, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
     // The recipe (R23) is where an agent looks first.
     assert!(idx.contains("## Recipes"), "{idx}");
-    assert!(idx.contains("`sudo oath build plan:claude-code`"), "{idx}");
+    for plan in ["claude-code", "codex", "grok-build"] {
+        assert!(idx.contains(&format!("`sudo oath build plan:{plan}`")), "{idx}");
+    }
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
     assert_eq!(
         host.desired,
