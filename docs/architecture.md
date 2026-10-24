@@ -166,7 +166,7 @@ cargo make pkgs [names]
   pkgs/<name>-i386 (R29): <name>'s sources and build.sh with LIBDIR=lib32
     and cc -m32 into lib32/; the build sandbox links every pack's lib32/
     at /lib32 and an ld-linux.so.2 there at /lib/ld-linux.so.2
-  a recipe (R23, pkg:claude-code, pkg:steam): built here only for its product hash;
+  a recipe (R23, R31: pkg:claude-code, pkg:codex, pkg:grok-build, pkg:steam): built here only for its product hash;
     the image files its plan and pins pkg:<name>-src (the vendor's url
     and file) and pkg:<name>, both absent; the machine builds it
   pkg:linux: boot/vmlinuz, boot/config, lib/modules/<release>/

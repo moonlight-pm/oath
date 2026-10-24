@@ -193,8 +193,9 @@ the box. The plans in `pkgs/` are the larger examples.
 ## Recipes
 
 A package whose licence does not allow redistribution is a **recipe**
-(R23): the image holds its plan, not its pack, and the machine builds
-the pack itself from the vendor's own file. `oath` (INDEX.md) lists
+(R23), and so is a coding agent (R31): the image holds its plan, not
+its pack, and the machine builds the pack itself from the vendor's own
+file. `oath` (INDEX.md) lists
 the recipes under **Recipes** until their package is present. Claude
 Code is one:
 
@@ -218,6 +219,36 @@ a newer Claude Code is a new pin from the build host (`cargo make
 update` moves the plan and the source; a built `pkg:claude-code` is
 left at its version, with the commands to rebuild it). Its settings,
 login and history are under `/home/.claude` and `/home/.claude.json`.
+
+Codex (OpenAI) and Grok Build (xAI) are recipes the same way (R31),
+though their licences would allow a pack:
+
+```
+sudo oath build plan:codex               # fetches 117 MB from github.com
+sudo oath set pkg:codex present=true
+sudo oath apply pkg:codex
+codex --version                          # codex-cli 0.164.0
+
+sudo oath build plan:grok-build          # fetches 57 MB from x.ai
+sudo oath set pkg:grok-build present=true
+sudo oath apply pkg:grok-build
+grok --version                           # grok 1.0.70 (f50904eaee6c)
+```
+
+`codex` is OpenAI's package as it ships, with its own ripgrep and its
+own bubblewrap, which sandboxes the commands it runs; it starts with its
+update check off. `codex login` signs in; its settings and sessions are
+under `/home/.codex`. OpenAI signs the package with Sigstore, and the
+build host checks that signature. `grok` sets `auto_update = false` in
+`~/.grok/config.toml` before Grok starts, since that is the only switch
+its updater has. `grok login` signs in; its settings are under
+`/home/.grok`. xAI publishes no checksum or signature, so the pin is
+what the build host downloaded. Grok looks for `bwrap` only under
+`/usr`, so on Oath it runs commands without its sandbox. A machine
+installed before these recipes gets their objects the way the update
+names them: `oath new pkg:<name>-src --from-json` and `oath new
+pkg:<name> --from-json` with the output's documents, and `oath set
+plan:<name> --from-file pkgs/<name>/<name>.plan`.
 
 Steam is another, in the `desk` profile (R29): `pkg:steam` is Valve's
 launcher, from repo.steampowered.com, checked against Valve's signed

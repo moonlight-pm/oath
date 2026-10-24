@@ -106,8 +106,9 @@ fn recipe_block(cat: &Catalog) -> String {
     format!(
         "\n## Recipes\n\n\
          These packages are not in the image: their licences do not allow \
-         redistribution. Each is a plan that fetches the vendor's own file and \
-         builds the package on this machine.\n\n{}",
+         redistribution, or (coding agents) the machine takes the vendor's own \
+         build. Each is a plan that fetches the vendor's file and builds the \
+         package on this machine.\n\n{}",
         lines.concat()
     )
 }

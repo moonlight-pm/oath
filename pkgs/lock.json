@@ -157,6 +157,14 @@
       "gcc"
     ]
   },
+  "codex": {
+    "version": "0.164.0",
+    "license": "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib",
+    "by": "plan",
+    "plan": "sha256-d5ee39c29433b3fd9defba82f91661d9fdff931389b8f3b447fc7631d1aca082",
+    "product": "sha256-37194dc8e580d7015ff0a7f795504a24ca13ecbb15073df5d504647c7f4c169a",
+    "run": []
+  },
   "coreutils": {
     "version": "9.12",
     "license": "GPL-3.0-or-later",
@@ -453,6 +461,14 @@
     "by": "plan",
     "plan": "sha256-85615559e59440b3398d152fff942847c63d7f4dd2c0d8618c91406671798884",
     "product": "sha256-f4fa7ae2900d8fa5a5b390d16a5d2421a6ebd976a448947261f1c54a0118e8d5",
+    "run": []
+  },
+  "grok-build": {
+    "version": "1.0.70",
+    "license": "Apache-2.0",
+    "by": "plan",
+    "plan": "sha256-0e19e7fe7461fde2cf408e28426e980c4718024ede48c50b382960dcdbe4d9e8",
+    "product": "sha256-14d75ad7e1078432061e1d5c1a0efdff241867a75178c6c53666dc1c749b6a41",
     "run": []
   },
   "gzip": {

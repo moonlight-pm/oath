@@ -37,10 +37,10 @@ append history (git has it).
    packs (its `next` at `c6cda58b`); Oath's side is generic (`oath
    store`, services that follow their package, pinned packs). Next: new
    pins when the Sola tab publishes again.
-5. **Recipes and origins (R23, R25).** Every catalog carries
-   `plan:claude-code` (stable 2.1.292, pinned to the signed manifest)
-   and the desk's `plan:steam`; machines fetch packs from
-   `host:local.origins` in order, the default R2 bucket
+5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
+   coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
+   `grok-build` 1.0.70; canto has all three) and the desk's `plan:steam`;
+   machines fetch packs from `host:local.origins` in order, the R2 bucket
    (`https://store.oath.moonlight.pm`) written only by `cargo make
    publish`. Next: a new stable is a new pin; publish after every build
    that changes a pack; sign `INDEX.md` when a second publisher appears.
