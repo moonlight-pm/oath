@@ -356,8 +356,9 @@ mod tests {
     const PERL_GZ: &str = "3b855066b92491cb40e86affb1ca57d1a388aa43e51b91c7806a32c2f65f96c3";
     const GITHUB: &str = "https://github.com/login/oauth";
     // cosign's older bundle, from a GitHub release.
-    const CODEX: &[u8] =
-        include_bytes!("../testdata/sigstore/codex-package-x86_64-unknown-linux-musl.tar.gz.sigstore");
+    const CODEX: &[u8] = include_bytes!(
+        "../testdata/sigstore/codex-package-x86_64-unknown-linux-musl.tar.gz.sigstore"
+    );
     const CODEX_SHA256: &str = "3ec55053109608d5038f7e50750f7d25f768dfd740fef071aa710e2559b63aac";
     const CODEX_WORKFLOW: &str =
         "https://github.com/openai/codex/.github/workflows/rust-release.yml@refs/tags/rust-v0.164.0";
