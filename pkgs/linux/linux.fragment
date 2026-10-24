@@ -68,9 +68,12 @@ CONFIG_ACPI=y
 CONFIG_ACPI_VIDEO=m
 CONFIG_X86_INTEL_LPSS=y
 
-# Block / canto Apple SSD + virtio
+# Block / canto Apple SSD + virtio + USB disks (usb-storage leaves a disk
+# whose bridge speaks UAS to uas)
 CONFIG_SCSI=m
 CONFIG_BLK_DEV_SD=m
+CONFIG_USB_STORAGE=m
+CONFIG_USB_UAS=m
 CONFIG_ATA=m
 CONFIG_SATA_AHCI=m
 CONFIG_SATA_AHCI_PLATFORM=n
