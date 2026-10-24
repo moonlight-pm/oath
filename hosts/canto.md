@@ -13,7 +13,10 @@ Overwrite this file when facts change; do not append a diary.
   is on usb-storage with no TRIM until canto boots a kernel built with
   `CONFIG_USB_UAS` (2026-10-23). Nothing mounts it at boot (mounts are
   not fields yet): `sudo mount -o noatime,compress=zstd:1
-  LABEL=warehouse /mnt/warehouse`. Holds nothing yet.
+  LABEL=warehouse /mnt/warehouse`. It holds the cargo target dirs of
+  Sola and Oath (`~/Projects/{Sola,Oath}/target` link to
+  `/mnt/warehouse/{Sola,Oath}/target`), so builds fail until it is
+  mounted. Nothing the machine boots or runs needs it.
 - **Network:** the cable is in the first port (`00:3e:e1:cb:06:08`),
   DHCP 10.0.0.3, which novus's `/etc/hosts` calls `canto`. The lease's
   DNS (10.0.0.146, then 1.1.1.1) answers `novus` with 10.0.0.5, so
