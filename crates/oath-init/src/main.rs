@@ -302,6 +302,7 @@ fn open_dev_nodes() {
     let _ = fs::set_permissions(tty, fs::Permissions::from_mode(0o600));
     open_render_nodes();
     open_sound_nodes();
+    open_pad_nodes();
 }
 
 /// Sound devices belong to the seat: `/dev/snd/*` is root:home 0660, so
@@ -318,9 +319,69 @@ pub(crate) fn open_sound_nodes() {
     }
 }
 
+/// Game controllers belong to the seat (R30): their nodes are root:home
+/// 0660, so Steam (as `home`) reads them, and so is `/dev/uinput`, where
+/// Steam Input makes its virtual pads. `/dev/uinput` is a static node:
+/// opening it asks the kernel for `char-major-10-223`, and the module
+/// loads then. Other input nodes stay root's; seatd opens those.
+pub(crate) fn open_pad_nodes() {
+    let uinput = Path::new("/dev/uinput");
+    if uinput.symlink_metadata().is_err() {
+        let dev = libc::makedev(10, 223);
+        let _ = nix::sys::stat::mknod(
+            uinput,
+            nix::sys::stat::SFlag::S_IFCHR,
+            nix::sys::stat::Mode::from_bits_truncate(0o660),
+            dev,
+        );
+    }
+    let mut nodes = vec![uinput.to_path_buf()];
+    nodes.extend(pad_nodes(Path::new("/sys")).into_iter().map(|n| Path::new("/dev").join(n)));
+    for p in nodes {
+        let _ = std::os::unix::fs::chown(&p, Some(0), Some(oath_core::seat::GID));
+        let _ = fs::set_permissions(&p, fs::Permissions::from_mode(0o660));
+    }
+}
+
+/// The nodes (under `/dev`) of game controllers: every input device the
+/// kernel's joystick driver took (it has a `js*`), its `js*` and `event*`
+/// nodes, and the `hidraw*` of the HID device each is part of. joydev
+/// leaves out touchpads, tablets and accelerometers.
+pub(crate) fn pad_nodes(sys: &Path) -> Vec<String> {
+    let names = |dir: &Path| -> Vec<String> {
+        fs::read_dir(dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect()
+    };
+    let mut out = Vec::new();
+    let mut pads = Vec::new();
+    for js in names(&sys.join("class/input")).into_iter().filter(|n| n.starts_with("js")) {
+        let Ok(dev) = fs::canonicalize(sys.join("class/input").join(&js)) else { continue };
+        let Some(input) = dev.parent() else { continue };
+        out.push(format!("input/{js}"));
+        for ev in names(input).into_iter().filter(|n| n.starts_with("event")) {
+            out.push(format!("input/{ev}"));
+        }
+        pads.push(input.to_path_buf());
+    }
+    for h in names(&sys.join("class/hidraw")) {
+        let Ok(hid) = fs::canonicalize(sys.join("class/hidraw").join(&h).join("device")) else {
+            continue;
+        };
+        if pads.iter().any(|p| p.starts_with(&hid)) {
+            out.push(h);
+        }
+    }
+    out.sort();
+    out
+}
+
 /// GPU render nodes are open to every process: GL clients and wlroots
-/// open them themselves. Display (`card*`) and input nodes stay root's;
-/// seatd opens those for the desk.
+/// open them themselves. Display (`card*`) and input nodes but game
+/// controllers' stay root's; seatd opens those for the desk.
 pub(crate) fn open_render_nodes() {
     let Ok(dir) = fs::read_dir("/dev/dri") else { return };
     for e in dir.flatten() {
@@ -993,5 +1054,42 @@ fn fallback() {
             }
         }
         std::thread::sleep(Duration::from_secs(1));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn pad_nodes_are_joydevs_and_their_hidraw() {
+        // A DualSense (its input with js0 and event7, hidraw0) and a
+        // keyboard (event3, hidraw1), laid out as sysfs does.
+        let d = tempfile::tempdir().unwrap();
+        let sys = d.path();
+        let pad = sys.join("devices/usb1/1-1/0003:054C:0CE6.0001");
+        let kbd = sys.join("devices/usb1/1-2/0003:05AC:024F.0002");
+        for dir in [
+            pad.join("input/input5/js0"),
+            pad.join("input/input5/event7"),
+            pad.join("hidraw/hidraw0"),
+            kbd.join("input/input2/event3"),
+            kbd.join("hidraw/hidraw1"),
+            sys.join("class/input"),
+            sys.join("class/hidraw"),
+        ] {
+            fs::create_dir_all(dir).unwrap();
+        }
+        let input = sys.join("class/input");
+        symlink(pad.join("input/input5/js0"), input.join("js0")).unwrap();
+        symlink(pad.join("input/input5/event7"), input.join("event7")).unwrap();
+        symlink(kbd.join("input/input2/event3"), input.join("event3")).unwrap();
+        for (node, hid) in [("hidraw0", &pad), ("hidraw1", &kbd)] {
+            symlink(hid, hid.join("hidraw").join(node).join("device")).unwrap();
+            symlink(hid.join("hidraw").join(node), sys.join("class/hidraw").join(node)).unwrap();
+        }
+        assert_eq!(pad_nodes(sys), ["hidraw0", "input/event7", "input/js0"]);
+        assert!(pad_nodes(&sys.join("nothing")).is_empty());
     }
 }

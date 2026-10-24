@@ -86,11 +86,11 @@ exists. Steam's settings change them afterwards.
 
 - **Will be:** a 32-bit game run (Valve suggests Floating Point:
   small, 32-bit, OpenGL).
-- **Will be:** controllers. The kernel fragment adds `uinput`, `joydev`,
+- **Will be:** a controller tested. The kernel has `uinput`, `joydev`,
   `xpad`, `hid-steam`, `hid-nintendo`, `hid-microsoft` and
-  `hid-playstation` (`pkg:linux` 333089ed, on canto's ESP, live after a reboot);
-  `/dev/input/event*`, `/dev/uinput` and `/dev/hidraw*` are root's
-  (0600), so the seat's user needs node rules (devices.md).
+  `hid-playstation` (`pkg:linux` 333089ed, running on canto since
+  2026-10-24); PID 1 gives `home` the pads' nodes and `/dev/uinput`
+  (R30, [devices.md](devices.md)).
 - **Will be:** a check that i386 ELFs load what their run packs have
   (`check_loads` reads x86_64 only).
 - **Will be:** a launcher entry on the desk.

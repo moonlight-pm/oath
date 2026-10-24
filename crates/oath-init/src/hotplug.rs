@@ -107,6 +107,9 @@ impl Hotplug {
             if ev.subsystem == "sound" && ev.action == "add" {
                 crate::open_sound_nodes();
             }
+            if matches!(ev.subsystem.as_str(), "input" | "hidraw") && ev.action == "add" {
+                crate::open_pad_nodes();
+            }
         }
         if !aliases.is_empty() {
             self.load(&aliases);

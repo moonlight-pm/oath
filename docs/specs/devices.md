@@ -67,8 +67,14 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   render nodes (`/dev/dri/renderD*`) too, again whenever a `drm` device
   is added: GL clients open them themselves. Sound nodes (`/dev/snd/*`)
   are root:home 0660, again whenever a `sound` device is added, so the
-  desk's PipeWire opens them as `home` (R22). Display (`card*`) and
-  input nodes stay root's 0600; seatd opens those for the desk (R20).
+  desk's PipeWire opens them as `home` (R22). Game controllers are too
+  (R30), again whenever an `input` or `hidraw` device is added: each
+  input device joydev took (it has a `js*`), its `js*` and `event*`
+  nodes, and the `hidraw*` of its HID device; `/dev/uinput` is a static
+  node (c 10:223), root:home 0660, whose first open loads `uinput`
+  through the kernel's `char-major-10-223` request. Display (`card*`)
+  and other input nodes stay root's 0600; seatd opens those for the
+  desk (R20).
 
 ## Hotplug (built)
 
