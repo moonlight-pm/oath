@@ -56,6 +56,16 @@ pub fn overlay_disk(tools: &Tools, run: &Path, backing: &Path) -> Result<PathBuf
     Ok(overlay)
 }
 
+/// A blank raw disk of `mib` MiB in `run`, made once and kept across the
+/// run's boots (sparse, so it costs what is written).
+pub fn scratch_disk(run: &Path, mib: u32) -> Result<PathBuf> {
+    let disk = run.join("scratch.img");
+    if !disk.is_file() {
+        fs::File::create(&disk)?.set_len(u64::from(mib) << 20)?;
+    }
+    Ok(disk)
+}
+
 pub fn write_meta(
     run: &Path,
     tools: &Tools,
@@ -103,6 +113,8 @@ pub struct VmSpec<'a> {
     /// Host port forwarded to guest :22 (ignored on `OATH_BRIDGE`).
     pub ssh_port: u16,
     pub mem_mb: u32,
+    /// A raw second disk (`/dev/vdb`), for check cases that format one.
+    pub scratch: Option<&'a Path>,
 }
 
 pub fn qemu_args(tools: &Tools, img: &Image, vm: &VmSpec) -> Vec<String> {
@@ -154,6 +166,14 @@ pub fn qemu_args(tools: &Tools, img: &Image, vm: &VmSpec) -> Vec<String> {
         "virtio-mouse-pci".into(),
         "-drive".into(),
         format!("file={},if=virtio,format=qcow2,cache=writeback", overlay.display()),
+    ]);
+    if let Some(s) = vm.scratch {
+        a.extend([
+            "-drive".into(),
+            format!("file={},if=virtio,format=raw,cache=writeback", s.display()),
+        ]);
+    }
+    a.extend([
         "-d".into(),
         "guest_errors".into(),
         "-D".into(),
@@ -362,6 +382,7 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
             window: host_wants_window(),
             ssh_port: ssh_port(),
             mem_mb: 4096,
+            scratch: None,
         },
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
@@ -466,6 +487,7 @@ fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<Strin
             window: host_wants_window(),
             ssh_port: ssh_port(),
             mem_mb: 4096,
+            scratch: None,
         },
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;

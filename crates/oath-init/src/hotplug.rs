@@ -1,7 +1,7 @@
 //! Hotplug: PID 1 reads the kernel's uevents (netlink), loads the driver an
 //! added device asks for with the same index as coldplug, and has the
 //! `dev:*` inventory discovered again when a disk, NIC or serial port
-//! comes or goes. devtmpfs makes the nodes; there is no udev. PID 1 passes
+//! comes or goes, then mounts the `host:local.mounts` a new disk carries. devtmpfs makes the nodes; there is no udev. PID 1 passes
 //! each uevent on to group 4, where udevd would, for libudev-zero's
 //! monitors (libinput and wlroots hear hotplug there).
 
@@ -186,6 +186,7 @@ pub fn discover() -> bool {
     match cat.try_lock() {
         Ok(Some(lock)) => {
             sync(&cat, &lock);
+            crate::mount_host(false);
             true
         }
         Ok(None) => false,

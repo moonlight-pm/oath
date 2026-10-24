@@ -93,6 +93,17 @@ pub fn diff_values(desired: &Value, actual: &Value) -> Vec<(String, Value, Value
     out
 }
 
+/// Write down what the type fills in where drift compares a field whole:
+/// a `host:local.mounts` entry without `options` would otherwise differ
+/// from the spec apply records. `doc` has passed `validate`.
+pub(crate) fn normalize(id: &ObjectId, doc: &mut Value) -> Result<()> {
+    if id.kind == KIND_HOST && doc.get("mounts").is_some() {
+        let h: Host = serde_json::from_value(doc.clone())?;
+        doc["mounts"] = serde_json::to_value(&h.mounts)?;
+    }
+    Ok(())
+}
+
 /// Copy `src/objects` to `dst/objects`: what a copy snapshot keeps, and
 /// all undo reads back.
 pub fn copy_objects(src: &Path, dst: &Path) -> Result<()> {
@@ -429,6 +440,7 @@ impl Catalog {
             }
             other => other,
         })?;
+        normalize(id, &mut obj.desired)?;
         write_json(&self.obj_dir(id).join("desired.json"), &obj.desired)?;
         Ok(())
     }
@@ -923,6 +935,14 @@ impl Catalog {
                         return Err(Error::hint(format!("{id}: origins: `{o}` twice"), hint()));
                     }
                 }
+                for (path, m) in &h.mounts {
+                    let why = crate::mounts::check_path(path)
+                        .or_else(|| crate::mounts::check_source(&m.source))
+                        .or_else(|| crate::mounts::check_options(&m.options));
+                    if let Some(why) = why {
+                        return Err(Error::hint(format!("{id}: mounts: {why}"), hint()));
+                    }
+                }
             }
             KIND_SVC => {
                 let s: Svc = serde_json::from_value(doc.clone()).map_err(bad)?;
@@ -1095,7 +1115,9 @@ impl Catalog {
                     host.power = HostPower::Run;
                     write_json(&dir.join("desired.json"), &host)?;
                 }
-                let actual = hooks.converge_host(&host)?;
+                let previous: Option<Host> =
+                    self.applied(id)?.and_then(|v| serde_json::from_value(v).ok());
+                let actual = hooks.converge_host(&host, previous.as_ref())?;
                 self.write_actual(id, &actual)?;
                 report.rebooting |= reboot;
                 report.halting |= halt;

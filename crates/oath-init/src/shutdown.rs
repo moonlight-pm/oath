@@ -2,7 +2,7 @@
 //! SIGUSR2 (those commands are this binary, see [`command_main`]);
 //! Ctrl-Alt-Del sends SIGINT. `oath` power changes send the same
 //! signals. PID 1 stops every service, kills what is left, syncs,
-//! remounts `/` read-only, then reboots.
+//! unmounts `host:local.mounts`, remounts `/` read-only, then reboots.
 
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::time::{Duration, Instant};
@@ -98,6 +98,12 @@ pub fn finish(sup: &mut Supervisor, mode: Mode) -> ! {
     reap_for(Duration::from_millis(200));
     unsafe {
         libc::sync();
+    }
+    // host:local.mounts, deepest first; nothing uses them now.
+    for path in crate::host_mounts().iter().rev() {
+        if umount2(path.as_str(), MntFlags::empty()).is_err() {
+            let _ = umount2(path.as_str(), MntFlags::MNT_DETACH);
+        }
     }
     let _ = umount2(oath_core::BTRFS_TOP, MntFlags::MNT_DETACH);
     if let Err(e) = mount(

@@ -64,7 +64,9 @@ pub trait ApplyHooks {
     /// The catalog root inside `generation`'s snapshot (read-only). Undo
     /// copies spec files out of it.
     fn snapshot_catalog(&self, generation: u64) -> Result<std::path::PathBuf>;
-    fn converge_host(&self, desired: &Host) -> Result<Host>;
+    /// `previous` is the spec applied last (none on a first apply): what
+    /// `mounts` unmounts or remounts against.
+    fn converge_host(&self, desired: &Host, previous: Option<&Host>) -> Result<Host>;
     fn notify_init(&self) -> Result<()>;
     fn reboot(&self) -> Result<()>;
     fn halt(&self) -> Result<()>;
@@ -124,7 +126,7 @@ impl ApplyHooks for NullHooks {
     fn snapshot_catalog(&self, generation: u64) -> Result<std::path::PathBuf> {
         Err(crate::Error::Msg(format!("no snapshot of generation {generation} (NullHooks)")))
     }
-    fn converge_host(&self, desired: &Host) -> Result<Host> {
+    fn converge_host(&self, desired: &Host, _previous: Option<&Host>) -> Result<Host> {
         Ok(Host {
             hostname: desired.hostname.clone(),
             power: crate::kinds::HostPower::Run,
@@ -132,6 +134,7 @@ impl ApplyHooks for NullHooks {
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
+            mounts: desired.mounts.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {

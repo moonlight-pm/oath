@@ -70,6 +70,24 @@ pub struct Host {
     /// may serve any pack, and the hash decides.
     #[serde(default)]
     pub origins: Vec<String>,
+    /// Filesystems to mount: a path under /mnt or /home to its source.
+    /// PID 1 mounts each at boot and when its disk appears; apply mounts,
+    /// remounts and unmounts. A source that is not plugged in waits, and
+    /// is not an error. Status lists only what is mounted now.
+    #[serde(default)]
+    pub mounts: BTreeMap<String, Mount>,
+}
+
+/// One filesystem in `host:local.mounts`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct Mount {
+    /// `LABEL=…`, `UUID=…`, `PARTLABEL=…` or `PARTUUID=…`. Device names
+    /// (`/dev/sdb1`) move between boots and ports, so they are refused.
+    pub source: String,
+    /// mount(8) `-o` options (`noatime,compress=zstd:1`); empty is the
+    /// filesystem's defaults.
+    #[serde(default)]
+    pub options: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]

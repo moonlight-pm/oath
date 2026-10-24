@@ -156,7 +156,7 @@ fn damage_block(cat: &Catalog) -> String {
 
 fn kind_line(kind: &str) -> &'static str {
     match kind {
-        "host" => "this machine (hostname, power, env, timezone)",
+        "host" => "this machine (hostname, power, env, timezone, mounts)",
         "svc" => "a process PID 1 supervises",
         "snap" => "btrfs generations (apply / undo)",
         "pkg" => "a package (store + /bin links)",

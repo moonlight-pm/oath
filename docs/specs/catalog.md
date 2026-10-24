@@ -158,7 +158,9 @@ system clock stays UTC, and recorded timestamps are RFC 3339 with `Z`.
 A `power` other than `run` needs `--confirm`. A hostname is letters,
 digits, `-` and `.`, at most 63 characters. `hosts` names other machines in
 `/etc/hosts`; `origins` (R25) is the ordered list of origin prefixes
-the machine fetches pinned packs from (packages.md).
+the machine fetches pinned packs from (packages.md). `mounts` maps a
+path under `/mnt` or `/home` to a filesystem by label or UUID, which
+PID 1 and apply mount (devices.md).
 
 **`snap:current`** — the live generation number. Changing it directly
 needs `--confirm`; `oath undo` is the normal path.

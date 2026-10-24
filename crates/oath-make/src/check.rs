@@ -66,6 +66,10 @@ pub struct Case {
     /// `false`: a metal case that QEMU cannot run (no GL for Sola's shell).
     #[serde(default = "yes")]
     pub qemu: bool,
+    /// MiB of a blank second disk (`/dev/vdb`) for the case to format; it
+    /// keeps what was written across the case's reboots. QEMU only.
+    #[serde(default)]
+    pub scratch: u32,
     pub steps: Vec<Step>,
 }
 
@@ -346,6 +350,9 @@ pub fn parse_cases(text: &str) -> Result<Vec<Case>> {
         if !seen.insert(c.name.clone()) {
             bail!("case `{}` appears twice", c.name);
         }
+        if c.scratch > 0 && c.metal {
+            bail!("case `{}`: a scratch disk is QEMU's; a metal case has none", c.name);
+        }
         for (i, s) in c.steps.iter().enumerate() {
             match (&s.run, &s.reboot) {
                 (Some(_), None) | (None, Some(_)) => {}
@@ -436,8 +443,16 @@ pub(crate) struct Vm {
 }
 
 impl Vm {
-    pub(crate) fn boot(ctx: &Ctx, dir: &Path, port: u16, boot_no: u32) -> Result<Self> {
+    /// `scratch`: MiB of a blank second disk, made on the first boot.
+    pub(crate) fn boot(
+        ctx: &Ctx,
+        dir: &Path,
+        port: u16,
+        boot_no: u32,
+        scratch: u32,
+    ) -> Result<Self> {
         let overlay = qemu::overlay_disk(&ctx.tools, dir, &ctx.img.backing)?;
+        let scratch = (scratch > 0).then(|| qemu::scratch_disk(dir, scratch)).transpose()?;
         let serial_log = dir.join(format!("serial-{boot_no}.log"));
         let qemu_log = dir.join(format!("qemu-{boot_no}.log"));
         let args = qemu::qemu_args(
@@ -452,6 +467,7 @@ impl Vm {
                 window: false,
                 ssh_port: port,
                 mem_mb: 1024,
+                scratch: scratch.as_deref(),
             },
         );
         fs::write(dir.join("qemu.cmd"), args.join(" ") + "\n")?;
@@ -654,7 +670,7 @@ fn run_case(ctx: &Ctx, case: &Case, port: u16) -> Outcome {
     let result = (|| -> Result<(), String> {
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let mut boot_no = 1;
-        let mut vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
+        let mut vm = Vm::boot(ctx, &dir, port, boot_no, case.scratch).map_err(|e| e.to_string())?;
         if !wait_ssh(&conn, BOOT_WAIT) {
             return Err("no SSH after boot".into());
         }
@@ -672,7 +688,7 @@ fn run_case(ctx: &Ctx, case: &Case, port: u16) -> Outcome {
                 return Err(format!("step {n}: the VM did not reboot ({how})"));
             }
             boot_no += 1;
-            vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
+            vm = Vm::boot(ctx, &dir, port, boot_no, case.scratch).map_err(|e| e.to_string())?;
             if !wait_ssh(&conn, BOOT_WAIT) {
                 return Err(format!("step {n}: no SSH after reboot"));
             }

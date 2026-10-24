@@ -217,8 +217,9 @@ pub fn apply_overlay(root: &Path, overlay: &Value) -> Result<Vec<ObjectId>> {
         let path = dir.join("desired.json");
         let exists = path.is_file();
         let base = if exists { crate::read_json(&path)? } else { json!({}) };
-        let desired = merge_patch(base, patch);
+        let mut desired = merge_patch(base, patch);
         cat.validate(&oid, &desired)?;
+        crate::catalog::normalize(&oid, &mut desired)?;
         let boots_from_it =
             matches!(oid.kind.as_str(), KIND_SVC | crate::KIND_HOST | crate::KIND_NET | KIND_SSH);
         if exists {

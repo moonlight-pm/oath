@@ -51,7 +51,7 @@ append history (git has it).
 (`desk`, generation 270 with `pkg:steam`), the newest checked output
 (all 56 QEMU cases), not yet published; its PID 1 is the one before
 until it reboots. Left until
-something needs them: root SSH as a field, more NICs, device rules as fields.
+something needs them: root SSH as a field, more NICs, device-node rules as fields.
 
 ## Machines
 

@@ -11,10 +11,13 @@ Overwrite this file when facts change; do not append a diary.
   5 Gb/s), wiped 2026-10-23 to GPT with one btrfs partition, label
   `warehouse`. It speaks UAS; the running kernel has no `uas`, so it
   is on usb-storage with no TRIM until canto boots a kernel built with
-  `CONFIG_USB_UAS` (2026-10-23). Nothing mounts it at boot (mounts are
-  not fields yet): `sudo mount -o noatime,compress=zstd:1
-  LABEL=warehouse /mnt/warehouse`. It holds the cargo target dirs of
-  Sola and Oath (`~/Projects/{Sola,Oath}/target` link to
+  `CONFIG_USB_UAS` (2026-10-23). Its mount is `host:local.mounts`
+  (`/mnt/warehouse`, `noatime,compress=zstd:1`; in the overlay), but
+  canto's `oath` and PID 1 predate the field: until an update and a
+  reboot bring them, mount it by hand after a boot (`sudo mount -o
+  noatime,compress=zstd:1 LABEL=warehouse /mnt/warehouse`), then set
+  `mounts` as the overlay has it and apply. It holds the cargo target
+  dirs of Sola and Oath (`~/Projects/{Sola,Oath}/target` link to
   `/mnt/warehouse/{Sola,Oath}/target`), so builds fail until it is
   mounted. Nothing the machine boots or runs needs it.
 - **Network:** the cable is in the first port (`00:3e:e1:cb:06:08`),

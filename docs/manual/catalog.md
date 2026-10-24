@@ -36,7 +36,7 @@ Desired and actual are separate files. You may `cat` any of these;
 
 | Kind | Ids in the `base` profile | Role |
 |------|---------------------------|------|
-| `host` | `host:local` | Hostname, power, `env`, `timezone`, `hosts`, `origins` |
+| `host` | `host:local` | Hostname, power, `env`, `timezone`, `hosts`, `origins`, `mounts` |
 | `svc` | `svc:serial`, `svc:sshd`, `svc:time` | PID 1's only config |
 | `snap` | `snap:current`, then `snap:N` | Generations |
 | `pkg` | `glibc`, `bash`, `zsh`, `coreutils`, `btrfs`, `oath`, `dropbear`, `curl`, … (41 in `base`) | Store + `/bin` and `/lib` symlink farms |

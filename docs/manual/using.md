@@ -105,6 +105,26 @@ applies; `sudo oath undo` takes it back at once.
 it again to undo the apply before that. It never rewinds the log, the
 package store, or the SSH host keys.
 
+## Disks
+
+Another disk mounts through `host:local.mounts`: a path under `/mnt` or
+`/home`, the filesystem by label or UUID, and mount options.
+
+```
+sudo oath set host:local mounts='{"/mnt/warehouse": {"source": "LABEL=warehouse", "options": "noatime,compress=zstd:1"}}'
+sudo oath apply host:local
+```
+
+Apply mounts it now if the disk is plugged in, or prints that it waits
+for it. PID 1 mounts it at every boot and whenever the disk appears,
+and unmounts it at shutdown. `set` replaces the whole map:
+`mounts='{}'` and an apply unmount it, and `oath undo` takes a change
+back. `oath get host:local --actual` lists what is mounted now. Make
+the filesystem first (`sfdisk`, `mkfs.btrfs -L <label>`; `blkid` shows
+labels and UUIDs). A device name such as `/dev/sdb1` is refused: it
+changes with the port and the boot. A machine's mounts belong in its
+install overlay (`hosts/<name>.json`).
+
 ## Who you are
 
 Serial login is **root** (break-glass) when `svc:serial` is enabled.

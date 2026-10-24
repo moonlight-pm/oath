@@ -43,7 +43,7 @@ impl ApplyHooks for MemHooks {
             Err(Error::Msg(format!("no snap {generation}")))
         }
     }
-    fn converge_host(&self, desired: &Host) -> Result<Host> {
+    fn converge_host(&self, desired: &Host, _previous: Option<&Host>) -> Result<Host> {
         *self.hostname.lock().unwrap() = desired.hostname.clone();
         Ok(Host {
             hostname: desired.hostname.clone(),
@@ -52,6 +52,7 @@ impl ApplyHooks for MemHooks {
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
+            mounts: desired.mounts.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {
@@ -756,6 +757,47 @@ fn host_names_other_machines() {
     set(&cat, "host:local", "hosts", json!({})).unwrap();
     cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().actual["hosts"], json!({}));
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+}
+
+#[test]
+fn host_mounts_name_a_filesystem_under_mnt_or_home() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "host:local".parse().unwrap();
+    // A machine without mounts says nothing about them: no drift from an
+    // empty map an older applied.json never had.
+    assert!(cat.get(&id).unwrap().desired.get("mounts").is_none());
+    for bad in [
+        json!({"/etc/x": {"source": "LABEL=a"}}),
+        json!({"/mnt": {"source": "LABEL=a"}}),
+        json!({"/mnt/../etc": {"source": "LABEL=a"}}),
+        json!({"/mnt/a": {"source": "/dev/sdb1"}}),
+        json!({"/mnt/a": {"source": "LABEL="}}),
+        json!({"/mnt/a": {"source": "LABEL=a", "options": "bind"}}),
+        json!({"/mnt/a": {"source": "LABEL=a", "options": "ro;rm"}}),
+        json!({"/mnt/a": {"options": "ro"}}),
+        json!({"/mnt/a": "LABEL=a"}),
+    ] {
+        assert!(set(&cat, "host:local", "mounts", bad.clone()).is_err(), "{bad}");
+    }
+    let warehouse = json!({"/mnt/warehouse": {"source": "LABEL=warehouse", "options": "noatime,compress=zstd:1"}});
+    set(&cat, "host:local", "mounts", warehouse.clone()).unwrap();
+    assert_eq!(cat.diff(Some(&id)).unwrap().len(), 1);
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["mounts"], warehouse);
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+    // A left-out `options` is written down as empty, so it is no drift.
+    set(&cat, "host:local", "mounts", json!({"/home/games": {"source": "UUID=a8fa"}})).unwrap();
+    assert_eq!(
+        cat.get(&id).unwrap().desired["mounts"],
+        json!({"/home/games": {"source": "UUID=a8fa", "options": ""}})
+    );
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+    set(&cat, "host:local", "mounts", json!({})).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["mounts"], json!({}));
     assert!(cat.diff(Some(&id)).unwrap().is_empty());
 }
 

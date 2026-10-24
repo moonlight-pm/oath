@@ -102,7 +102,8 @@ execs.
 5. Seed only if `/oath/objects` is missing; regenerate a missing
    `INDEX.md`. Take the catalog lock for the boot-time writes.
 6. Converge `host:local`, `net:net0` and `ssh:local` from their applied
-   spec (`applied.json`), not from pending desired; discover `dev:*`.
+   spec (`applied.json`), not from pending desired; discover `dev:*`
+   and mount the `host:local.mounts` whose disk is there.
    Release the lock.
 7. Listen on `/oath/run/init.sock`, then start enabled services in
    `wants` order (and the DHCP client, below).
@@ -151,7 +152,8 @@ still starts. PID
   that nothing still running wants, so a service stops before the ones
   it wants (TERM to the layer, up to 5 s, KILL; `shutdown: stopping …`
   in `init.log`). Then it signals everything else, syncs, unmounts
-  `/oath/run/fs`, remounts `/` read-only, and calls the kernel.
+  `host:local.mounts` and `/oath/run/fs`, remounts `/` read-only, and
+  calls the kernel.
 - **DHCP client.** When the applied `net:net0` is up and `dhcp`, PID 1
   runs `dhcpcd -B … net0` as an internal service (id `net:net0`, not a
   catalog `svc`, log `/oath/log/net/net0.log`) with the same restart

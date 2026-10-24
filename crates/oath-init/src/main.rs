@@ -165,6 +165,8 @@ fn real_main() -> Result<(), String> {
     if let (Ok(cat), Ok(lock)) = (Catalog::open(DEFAULT_ROOT), &boot_lock) {
         hotplug::sync(&cat, lock);
     }
+    // A USB disk can take a few seconds more: hotplug mounts it then.
+    mount_host(true);
     ensure_home();
     inject_ssh_from_host();
     apply_ssh();
@@ -819,6 +821,7 @@ fn apply_host() {
     }
     // /etc/hostname, /etc/hosts (with host:local.hosts), /etc/profile.
     let _ = oath_core::seat::write_side_effects(&host);
+    // Nothing is mounted yet: mount_host runs once the disks are found.
     let actual = Host {
         hostname: host.hostname,
         power: oath_core::HostPower::Run,
@@ -826,9 +829,54 @@ fn apply_host() {
         timezone: host.timezone,
         hosts: host.hosts,
         origins: host.origins,
+        mounts: Default::default(),
     };
     let _ = oath_core::write_json(&status(&id), &actual);
     let _ = cat.write_index();
+}
+
+/// Mount what `host:local.mounts` names and is plugged in: at boot once
+/// the disks are discovered, and after every later discovery (a disk
+/// plugged in). PID 1 never unmounts one before shutdown. At boot it also
+/// says which wait for their disk.
+pub(crate) fn mount_host(boot: bool) {
+    let Ok(cat) = Catalog::open(DEFAULT_ROOT) else { return };
+    let id = ObjectId::new("host", "local");
+    let Ok(obj) = cat.get(&id) else { return };
+    let Some(host) = applied::<Host>(&cat, &obj) else { return };
+    if host.mounts.is_empty() {
+        return;
+    }
+    let m = oath_core::mounts::converge(&host.mounts, &host.mounts);
+    let mut actual = serde_json::from_value::<Host>(obj.actual)
+        .unwrap_or_else(|_| Host { mounts: Default::default(), ..host.clone() });
+    for (path, mount) in &m.mounted {
+        if !actual.mounts.contains_key(path) {
+            log(&format!("mount: {path} ({})", mount.source));
+            tel("init", "mount", json!({ "path": path, "source": mount.source }));
+        }
+    }
+    if boot {
+        for path in &m.waiting {
+            log(&format!("mount: {path} waits for {}", host.mounts[path].source));
+        }
+    }
+    for e in &m.errors {
+        log(&format!("mount: {e}"));
+        tel("init", "mount", json!({ "error": e }));
+    }
+    if actual.mounts != m.mounted {
+        actual.mounts = m.mounted;
+        let _ = oath_core::write_json(&status(&id), &actual);
+    }
+}
+
+/// The paths `host:local.mounts` names, for shutdown to unmount.
+pub(crate) fn host_mounts() -> Vec<String> {
+    let Ok(cat) = Catalog::open(DEFAULT_ROOT) else { return Vec::new() };
+    let id = ObjectId::new("host", "local");
+    let Ok(obj) = cat.get(&id) else { return Vec::new() };
+    applied::<Host>(&cat, &obj).map(|h| h.mounts.into_keys().collect()).unwrap_or_default()
 }
 
 fn apply_net() {

@@ -3,10 +3,11 @@
 Devices are hardware the system found, recorded as `dev:*` objects, and
 the kernel modules and firmware that make them work. Devices appear as
 objects on their own, and modules load by modalias at boot and on
-hotplug. Device-node and mount rules as fields are the target.
+hotplug. Filesystems to mount are `host:local.mounts`; device-node rules
+as fields are the target.
 
-**Status:** built, except rules as fields. Discovery and hotplug were
-built 2026-10-16.
+**Status:** built, except device-node rules as fields. Discovery and
+hotplug were built 2026-10-16, mounts 2026-10-23.
 
 Replaces: T13 (devices), the module and firmware parts of T27 and T38.
 
@@ -81,6 +82,28 @@ uevent is passed on, unchanged, to netlink group 4, where udevd would
 rebroadcast it: libudev-zero's monitors listen there, so libinput sees
 input devices come and go and wlroots sees a GPU appear.
 
+## Mounts (built)
+
+`host:local.mounts` maps a path under `/mnt` or `/home` to a `source`
+(`LABEL=`, `UUID=`, `PARTLABEL=` or `PARTUUID=`; never `/dev/sdX`,
+which moves between ports and boots) and mount(8) `options`. util-linux
+does the work: `findfs` says whether the source is plugged in, `mount`
+and `umount` act. A mount is outside `@`, so no generation holds what
+is on it.
+
+- At boot, after `dev:*` discovery, PID 1 mounts each entry whose
+  source is present (making the directory) and logs `mount: <path>
+  (<source>)`; one whose disk is absent is logged `waits for`. After
+  every later discovery (a block uevent, then a second's settle) it
+  mounts what appeared. It unmounts nothing until shutdown, which
+  unmounts them deepest first before `/` goes read-only.
+- `oath apply` mounts new entries, remounts one whose options changed
+  (an option taken out stays until the next mount), and unmounts one
+  that left the map or changed its source; a busy path is an apply
+  error. An absent disk is not: apply prints `<path> waits for
+  <source>`. `oath undo` converges the same way.
+- Status (`oath get host:local --actual`) lists only what is mounted.
+
 ## Unix floor (built)
 
 Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
@@ -92,12 +115,13 @@ Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
 
 - NICs other than `net0` are listed but not configured: one NIC, until
   a machine needs more (network-and-ssh.md).
+- A disk pulled out while mounted stays in the mount table until
+  shutdown, or an apply that takes its entry out.
 
 ## Target
 
 - **Rules as fields.** Ownership and mode of device nodes (sound for
-  the desk) and filesystems to mount (for a payload's data volume)
-  become fields on catalog objects, not code in PID 1.
+  the desk) become fields on catalog objects, not code in PID 1.
 
 ## Courage test
 

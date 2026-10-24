@@ -8,6 +8,7 @@ mod id;
 mod index;
 mod kinds;
 mod layout;
+pub mod mounts;
 mod net;
 mod packhash;
 mod pkg;
@@ -31,7 +32,7 @@ pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Net, Pkg, PkgActual, PkgAdvisory,
+    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Mount, Net, Pkg, PkgActual, PkgAdvisory,
     PkgComponent, PkgNeed, PkgRealization, PkgVerified, Plan, PlanActual, Snap, Ssh, SshActual,
     Svc, SvcActual, SvcRestart, SvcUser,
 };

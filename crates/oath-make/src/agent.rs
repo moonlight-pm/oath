@@ -195,7 +195,7 @@ fn task_in_vm(ctx: &Ctx, run: &Run, task: &Task, port: u16) -> Outcome {
     let result = (|| -> Result<(), String> {
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let mut boot_no = 1;
-        let mut vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
+        let mut vm = Vm::boot(ctx, &dir, port, boot_no, 0).map_err(|e| e.to_string())?;
         if !check::wait_ssh(&conn, check::BOOT_WAIT) {
             return Err("no SSH after boot".into());
         }
@@ -207,7 +207,7 @@ fn task_in_vm(ctx: &Ctx, run: &Run, task: &Task, port: u16) -> Outcome {
         }
         if vm.exited() {
             boot_no += 1;
-            vm = Vm::boot(ctx, &dir, port, boot_no).map_err(|e| e.to_string())?;
+            vm = Vm::boot(ctx, &dir, port, boot_no, 0).map_err(|e| e.to_string())?;
             if !check::wait_ssh(&conn, check::BOOT_WAIT) {
                 return Err("no SSH after the reboot".into());
             }

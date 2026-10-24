@@ -519,6 +519,21 @@ steps = [
 ]
 
 [[case]]
+name = "host-mounts"
+about = "host:local.mounts mounts a filesystem by label on apply, at boot and when its disk appears; a missing disk waits; removing the entry unmounts it and undo mounts it again."
+scratch = 256
+steps = [
+  { run = "sudo mkfs.btrfs -q -L scratch /dev/vdb && sudo oath set host:local mounts='{\"/mnt/scratch\": {\"source\": \"LABEL=scratch\", \"options\": \"noatime\"}}' && sudo oath apply host:local && grep ' /mnt/scratch ' /proc/self/mountinfo && sudo touch /mnt/scratch/kept", expect = ["applied generation", " /mnt/scratch rw,noatime"] },
+  { reboot = "catalog" },
+  { run = "ls /mnt/scratch && oath get host:local --actual && oath diff host:local && oath logs | grep 'mount:'", expect = ["kept", "\"/mnt/scratch\"", "in-sync", "mount: /mnt/scratch (LABEL=scratch)"] },
+  { run = "sudo umount /mnt/scratch && sudo sh -c 'echo add > /sys/block/vdb/uevent' && for i in $(seq 1 20); do grep -q ' /mnt/scratch ' /proc/self/mountinfo && break; sleep 1; done; ls /mnt/scratch", expect = ["kept"] },
+  { run = "sudo oath set host:local mounts='{\"/mnt/scratch\": {\"source\": \"LABEL=scratch\", \"options\": \"noatime\"}, \"/mnt/absent\": {\"source\": \"LABEL=nosuchdisk\"}}' && sudo oath apply host:local && ! grep -q ' /mnt/absent ' /proc/self/mountinfo && echo NOT-MOUNTED", expect = ["waits for LABEL=nosuchdisk", "applied generation", "NOT-MOUNTED"] },
+  { run = "sudo oath set host:local mounts='{\"/etc/x\": {\"source\": \"LABEL=scratch\"}}'", fails = true, expect = ["not under /mnt or /home"] },
+  { run = "sudo oath set host:local mounts='{}' && sudo oath apply host:local && ! grep -q ' /mnt/scratch ' /proc/self/mountinfo && echo UNMOUNTED", expect = ["applied generation", "UNMOUNTED"] },
+  { run = "sudo oath undo && ls /mnt/scratch", expect = ["undid to generation", "kept"] },
+]
+
+[[case]]
 name = "modprobe-helper"
 about = "The kernel loads a filesystem module on demand through /lib/oath/modprobe."
 metal = true

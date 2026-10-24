@@ -29,6 +29,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
       migrate a catalog from before R14 (old actual.json → applied.json)
     under /oath/.lock: apply host, net (one-shot dhcpcd for dhcp), ssh
       from their applied specs (applied.json); discover dev:* from sysfs;
+      mount the host:local.mounts whose disk is there;
       observe pkg:*, plan:* and snap:current into status/
     listen on /oath/run/init.sock; start svc:* from applied.json in
       `wants` order (a cycle skips only its members) and the DHCP client;
@@ -36,7 +37,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     main loop: shutdown request? reap, pump logs, start due restarts,
       the probation timer (runs `oath undo --expired` once it is up),
       uevents (load the module an added device asks for; discover
-      dev:* again after a block/net/tty change), answer converge requests;
+      dev:* again after a block/net/tty change and mount what appeared),
+      answer converge requests;
       a panic in a pass writes /run/oath/init-resume.json and execs
       /proc/self/exe oath-resume, which takes the state and fds back
 ```
@@ -136,8 +138,8 @@ then `cgroup.kill`s the rest.
 `reboot`, `halt`, `poweroff`, Ctrl-Alt-Del and `oath` `power=` all
 signal PID 1. It stops the services in reverse `wants` order, a layer
 at a time (TERM, 5 s, KILL), signals
-everything else, syncs, lazily unmounts `/oath/run/fs`, remounts `/`
-read-only, then calls `reboot(2)`.
+everything else, syncs, unmounts `host:local.mounts`, lazily unmounts
+`/oath/run/fs`, remounts `/` read-only, then calls `reboot(2)`.
 
 ## Host side (novus)
 

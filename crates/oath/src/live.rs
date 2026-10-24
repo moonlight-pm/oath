@@ -92,11 +92,35 @@ impl ApplyHooks for Live {
         Err(Error::Msg(format!("no snapshot of generation {generation}")))
     }
 
-    fn converge_host(&self, desired: &Host) -> Result<Host> {
+    fn converge_host(&self, desired: &Host, previous: Option<&Host>) -> Result<Host> {
         sethostname(desired.hostname.as_str())
             .map_err(|e| Error::Msg(format!("sethostname: {e}")))?;
         oath_core::seat::write_side_effects(desired)?;
         tel("oath", "hostname", json!({ "name": desired.hostname }));
+        // Mounts are this machine's: a catalog under --root is not.
+        let mut mounts = Default::default();
+        if self.catalog_root == Path::new("/oath") {
+            let was = previous.map(|p| p.mounts.clone()).unwrap_or_default();
+            let m = oath_core::mounts::converge(&desired.mounts, &was);
+            for path in &m.waiting {
+                eprintln!("host:local: {path} waits for {}", desired.mounts[path].source);
+            }
+            if !(m.waiting.is_empty() && m.errors.is_empty() && was == desired.mounts) {
+                let paths: Vec<_> = m.mounted.keys().collect();
+                tel(
+                    "oath",
+                    "mounts",
+                    json!({ "mounted": paths, "waiting": m.waiting, "errors": m.errors }),
+                );
+            }
+            if !m.errors.is_empty() {
+                return Err(Error::hint(
+                    format!("host:local: {}", m.errors.join("; ")),
+                    "oath get host:local; is the path in use (umount), or the option wrong?",
+                ));
+            }
+            mounts = m.mounted;
+        }
         Ok(Host {
             hostname: desired.hostname.clone(),
             power: HostPower::Run,
@@ -104,6 +128,7 @@ impl ApplyHooks for Live {
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
+            mounts,
         })
     }
 

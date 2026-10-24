@@ -23,7 +23,7 @@ gaps · `target` designed, not built.
 | Toolchain and native packages | partial | `cargo make bootstrap`: GCC 16.2 + binutils 2.47 + glibc 2.44 (R17); `cargo make pkgs`: 139 plan products (pinned and signature-checked sources, SPDX licences, `pkgs/lock.json`), i386 ones from the same scripts (R29); GNU userland (R18); bit-identical rebuilds | Perl unsigned; GCC `-m32` not built yet |
 | Network | partial | `net:net0` dhcp or static; NIC renamed `net0`; supervised dhcpcd, renewals in actual; LAN names in `host:local.hosts`; `dig`; chrony | One NIC, chosen at boot |
 | SSH | shipped | dropbear server as `home` (login shell zsh, R27), keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (no OpenSSL, ed25519); `sudo` (clean env) | — |
-| Devices | partial | modules by modalias at boot, on kernel request and on hotplug; `dev:*` discovered from sysfs (disks by bus path, `net0`…, UARTs) at boot and on change | Node ownership and mounts are not fields yet |
+| Devices | partial | modules by modalias (boot, request, hotplug); `dev:*` from sysfs (disks by bus path, `net0`…, UARTs) at boot and on change; `host:local.mounts` by label or UUID (boot, hotplug, apply) | Node ownership is not a field |
 | Seed and overlays | shipped | profile `base`, no test fixtures; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, a plan built by `pkg:gcc` (7.3-rc1, Oath fragment and patches, depmod index); vermagic checked | — |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `cargo make update` moves a machine to a new output | — |
