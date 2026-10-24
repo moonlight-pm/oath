@@ -1,0 +1,22 @@
+# Steam: Valve's launcher for Linux, the vendor's release (R7). A recipe
+# (R23): the Steam Subscriber Agreement grants no right to redistribute,
+# so each machine fetches the tarball from repo.steampowered.com and
+# builds it with `oath build plan:steam`. Valve signs the release's .dsc,
+# which lists the tarball's sha256. The launcher installs and updates the
+# Steam client, its runtimes and the games itself, in ~/.local/share/Steam;
+# Oath pins only the launcher. bin/steam runs it in a sandbox that has the
+# paths Steam assumes and a machine's root does not (R29).
+version = "1.0.0.87"
+license = "LicenseRef-Steam-Subscriber-Agreement AND MIT"
+description = "Steam's launcher, in a sandbox with the paths Steam assumes; it installs the client in ~/.local/share/Steam."
+home = "https://store.steampowered.com/about/"
+purl = "pkg:generic/steam@1.0.0.87"
+recipe = "the Steam Subscriber Agreement grants no right to redistribute; each machine fetches the launcher itself"
+build = ["bash", "coreutils", "sed", "grep", "tar", "gzip", "glibc"]
+run = ["bubblewrap", "glibc32", "libxcrypt"]
+
+[[source]]
+url = "https://repo.steampowered.com/steam/archive/stable/steam_1.0.0.87.tar.gz"
+sha256 = "649375d2f9377f8009aaf3e2ff09978041eb9114897d9c5a3886f1d82e27ba1f"
+sig = "https://repo.steampowered.com/steam/archive/stable/steam_1.0.0.87.dsc"
+key = "valve"

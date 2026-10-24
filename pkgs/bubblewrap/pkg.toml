@@ -1,0 +1,14 @@
+# bwrap builds Steam's sandbox (R29) in a user namespace, unprivileged:
+# not setuid.
+version = "0.13.1"
+license = "LGPL-2.0-or-later"
+description = "bubblewrap: bwrap, unprivileged sandboxes in user namespaces (Steam's)."
+home = "https://github.com/containers/bubblewrap"
+purl = "pkg:github/containers/bubblewrap@v0.13.1"
+build = ["meson", "ninja", "python", "pkgconf", "libcap"]
+run = ["libcap"]
+
+[[source]]
+url = "https://github.com/containers/bubblewrap/releases/download/v0.13.1/bubblewrap-0.13.1.tar.xz"
+sha256 = "0e85c8702248b8dd64144f594147553650cdd0e4c951690345faace79c217c4d"
+unsigned = "the vendor's GitHub release tarball; upstream publishes no signature"

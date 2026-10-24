@@ -68,8 +68,7 @@ pub fn is_cleartext(data: &[u8]) -> bool {
 pub fn verify_cleartext(keys: &[u8], msg: &[u8]) -> Result<(String, String)> {
     let text = std::str::from_utf8(msg).context("a cleartext-signed message is not UTF-8")?;
     let mut lines = text.split('\n').map(|l| l.strip_suffix('\r').unwrap_or(l));
-    if lines.by_ref().find(|l| !l.trim().is_empty()) != Some("-----BEGIN PGP SIGNED MESSAGE-----")
-    {
+    if lines.by_ref().find(|l| !l.trim().is_empty()) != Some("-----BEGIN PGP SIGNED MESSAGE-----") {
         bail!("not a cleartext-signed message");
     }
     // Hash: headers end at the first blank line.
