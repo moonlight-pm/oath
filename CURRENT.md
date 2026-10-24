@@ -24,9 +24,9 @@ append history (git has it).
    `.dsc` clearsigned) run in a bubblewrap sandbox with the paths Steam
    assumes; canto built it and runs Valve's 64-bit client, signed in,
    GPU-rendered, with the i386 stack (`pkg:gcc -m32`, `glibc-i386`,
-   `mesa-i386` and 15 more) imported into Steam's container. The kernel
-   with the pad drivers is on canto's ESP. Next: one reboot (Joshua's
-   OK; it also starts the boot mount), a 32-bit game, pad node rules.
+   `mesa-i386` and 15 more) imported into Steam's container; since the
+   reboot of 2026-10-24 the kernel has the pad drivers and uinput.
+   Next: a 32-bit game; pad and uinput node rules (Joshua's call).
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, Sola's session (`svc:sola-*`), PipeWire, Noto, `sola-kvm`,
@@ -49,8 +49,8 @@ append history (git has it).
 ([docs/roadmap.md](docs/roadmap.md)). canto runs `048c0e633cd7`
 (`desk`: `354ea2f12b66` plus `host:local.mounts`; generations 271–277),
 the newest checked output (all 57 QEMU cases; in novus's
-`~/Workspace/Oath-mounts`), not yet published; its PID 1 and kernel are
-the ones before until it reboots. Left until
+`~/Workspace/Oath-mounts`), not yet published; its PID 1 and kernel
+since the reboot of 2026-10-24 04:31Z. Left until
 something needs them: root SSH as a field, more NICs, device-node rules as fields.
 
 ## Machines
