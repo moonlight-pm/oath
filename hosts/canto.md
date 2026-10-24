@@ -31,31 +31,36 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `79301d6ea406` (`cargo make build
-  --profile desk`: Sola's packs from its `next` at `c6cda58b`), the
-  `desk` profile (R20–R22: base plus seatd, rivulet, Sola with its
-  terminal, Projects, browser, Design and KVM, PipeWire, Noto, Vulkan,
-  the tools that build Sola, and their packages), reached on 2026-10-23
-  by `cargo make update --target home@10.0.0.3 --confirm` (generation
-  268: `pkg:oath`; Sola's dev pins kept). PID 1 is `4ec147de8bb5`'s,
-  from the reboot of 2026-10-21 15:52Z (`build/runs/canto-reboot.sh` on
-  novus); the next reboot runs `79301d6ea406`'s. The system was
-  `cargo make install --target home@10.0.0.3 --disk /dev/sda
-  --hostname canto --overlay hosts/canto.json --confirm` on
-  2026-10-18. Passed all 42 `metal` cases (`cargo make check --target
-  home@10.0.0.3`, 2026-10-20) on `f897ffcbda55`; on `b845739dac07`,
-  `desk-sola` passes, Design included (the full run was not repeated).
-- **Steam (R29):** `pkg:glibc32`, `pkg:libxcrypt` and `pkg:bubblewrap`
-  went in by `oath store` from novus's packs on 2026-10-23 (generation
-  267, the hashes the lock has); `cargo make update` left
-  `pkg:steam-src`, `plan:steam` and `pkg:steam` to the machine, made as
-  the manual says (269, 270). `oath build plan:steam` made novus's pack
-  (`sha256-4302fc2c…`); `/bin/steam` runs Valve's 64-bit client
-  (publicbeta, client 1792711043) to its login screen on DP-10, its
-  webhelper on radeonsi through ANGLE; not signed in. Steam's data is
-  `/home/.local/share/Steam`. Both FirePros show in Vulkan as RADV
-  PITCAIRN (1.3.354). `pkg:glibc32` is `glibc-i386` from the next build
-  on; the 32-bit Mesa and the pad drivers come with it and a reboot.
+- **Running now:** build output `354ea2f12b66` (`cargo make build
+  --profile desk` of `d048068`: Sola's packs from its `next` at
+  `c6cda58b`), the `desk` profile (R20–R22: base plus seatd, rivulet,
+  Sola with its terminal, Projects, browser, Design and KVM, PipeWire,
+  Noto, Vulkan, the tools that build Sola, Steam, and their packages),
+  reached on 2026-10-23 by `cargo make update --target home@10.0.0.3
+  --confirm` (generation 271: `pkg:oath`, `pkg:gcc` with `-m32` and
+  the 17 packs whose build scripts changed; no service restarted;
+  Sola's dev pins kept, their need on `pkg:gcc` moved). PID 1 and the
+  kernel are `4ec147de8bb5`'s, from the reboot of 2026-10-21 15:52Z
+  (`build/runs/canto-reboot.sh` on novus); the ESP holds
+  `354ea2f12b66`'s kernel (`pkg:linux` 333089ed: uinput, the pad
+  drivers, uas) for the next boot. The system was `cargo make install
+  --target home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
+  hosts/canto.json --confirm` on 2026-10-18. Passed all 42 `metal`
+  cases (`cargo make check --target home@10.0.0.3`, 2026-10-20) on
+  `f897ffcbda55`; on `b845739dac07`, `desk-sola` passes, Design
+  included (the full run was not repeated).
+- **Steam (R29):** made by hand after the install, as the manual says:
+  `pkg:steam-src`, `plan:steam` and `pkg:steam` (generations 269, 270;
+  `oath build plan:steam` made novus's pack, `sha256-4302fc2c…`), then
+  the 17 `-i386` packs `cargo make update` left to the machine (272,
+  `oath new` with the output's documents), `pkg:steam`'s needs moved to
+  them (273) and `pkg:glibc32`, its first glibc for i386, removed
+  (274). `/bin/steam` runs Valve's 64-bit client (publicbeta, client
+  1792711043) on DP-10, signed in as Joshua since 2026-10-23 20:46;
+  its webhelper is on radeonsi through ANGLE, and its container imports
+  `mesa-i386` (no 32-bit GL or Vulkan errors). No game installed yet.
+  Steam's data is `/home/.local/share/Steam`. Both FirePros show in
+  Vulkan as RADV PITCAIRN (1.3.354).
 - **Design (R21):** `pkg:sola-design` came after the install, so it was
   made by hand on 2026-10-20 from the image's seed values (`oath new
   pkg:sola-design --from-json`, generation 200). Design is open and in

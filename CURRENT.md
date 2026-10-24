@@ -22,12 +22,11 @@ append history (git has it).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    `pkg:steam` is a recipe of Valve's launcher 1.0.0.87 (sha256-pinned,
    `.dsc` clearsigned) run in a bubblewrap sandbox with the paths Steam
-   assumes; canto built it and runs Valve's 64-bit client to its login,
-   GPU-rendered. novus is rebuilding every package for the 32-bit stack
-   (`pkg:gcc` with `-m32`, `glibc-i386`, `mesa-i386` and 15 more) and the
-   kernel's pad drivers (`build/runs/steam-c.sh`). Next: check, publish,
-   update canto, reboot it (ask), test a 32-bit game; then pad device
-   nodes for the seat.
+   assumes; canto built it and runs Valve's 64-bit client, signed in,
+   GPU-rendered, with the i386 stack (`pkg:gcc -m32`, `glibc-i386`,
+   `mesa-i386` and 15 more) imported into Steam's container. The kernel
+   with the pad drivers is on canto's ESP. Next: one reboot (Joshua's
+   OK; after oath-82's mounts update), a 32-bit game, pad node rules.
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, Sola's session (`svc:sola-*`), PipeWire, Noto, `sola-kvm`,
@@ -47,17 +46,17 @@ append history (git has it).
 
 **State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). canto runs `79301d6ea406`
-(`desk`, generation 270 with `pkg:steam`), the newest checked output
-(all 56 QEMU cases), not yet published; its PID 1 is the one before
-until it reboots. Left until
+([docs/roadmap.md](docs/roadmap.md)). canto runs `354ea2f12b66`
+(`desk`, generations 271–274 with the i386 packs), the newest checked
+output (all 56 QEMU cases), not yet published; its PID 1 and kernel are
+the ones before until it reboots. Left until
 something needs them: root SSH as a field, more NICs, device-node rules as fields.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `79301d6ea406`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `354ea2f12b66`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

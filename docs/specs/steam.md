@@ -6,12 +6,13 @@ Oath's. It is the Steam half of phase 9 ([roadmap](../roadmap.md),
 [scope.md](scope.md)); it builds on the [desk](desk.md).
 
 **Status:** is, on canto since 2026-10-23: `pkg:steam`, built there
-from its recipe, with glibc for i386 (installed as `pkg:glibc32`, its
-name before the i386 packages), `pkg:libxcrypt` and `pkg:bubblewrap`.
-Valve's 64-bit client installs and updates itself in the sandbox and
-reaches its login screen; its webhelper renders on the GPU (ANGLE on
-radeonsi, Mesa 26.2.5). Will be: the i386 packages and `-m32` GCC
-(building), 32-bit games, controllers, a launcher entry.
+from its recipe, with `pkg:bubblewrap`, `pkg:libxcrypt` and the i386
+packages (`pkg:gcc` with `-m32`, glibc, Mesa and 15 libraries). Valve's
+64-bit client installs and updates itself in the sandbox and is signed
+in; its webhelper renders on the GPU (ANGLE on radeonsi, Mesa 26.2.5);
+its container imports both Mesas, and its 32-bit GL and Vulkan probes
+find radeonsi and RADV. Will be: a 32-bit game tested, controllers (a
+reboot for the kernel's pad drivers, and node rules), a launcher entry.
 
 ## What Steam assumes
 
@@ -36,10 +37,10 @@ lists it. Against a machine's root:
 | Package | What |
 |---------|------|
 | `steam` | Recipe (R23) of `steam_1.0.0.87.tar.gz` from repo.steampowered.com, sha256-pinned, its `.dsc` clearsigned by Valve (`pkgs/keys/valve.asc`, `DB23C56B…879D59CB`). `libexec/steam/` holds Valve's `bin_steam.sh` and bootstrap tarball; `bin/steam` is the sandbox; `libexec/steam/bin/ldd` knows both loaders (steam.sh's library check). `libexec/steam/true` is a 129-byte static ELF (exit 0), written by `printf`. Runs with `bubblewrap`, `glibc-i386`, `libxcrypt`, `libxcrypt-i386` and `mesa-i386`. |
-| `glibc-i386` | Built (as `glibc32`). glibc 2.44, i386: `lib32/` with `ld-linux.so.2`, slibdir `/lib32` (`${LIB}` is `lib32`, Arch's pair), locales from `/lib/locale`. Built by a C compiler made in the same plan from `pkg:gcc`'s tarball for its 32-bit libgcc. Headers are `pkg:glibc`'s but `gnu/stubs-32.h` and `gnu/lib-names-32.h`. |
+| `glibc-i386` | Built. glibc 2.44, i386: `lib32/` with `ld-linux.so.2`, slibdir `/lib32` (`${LIB}` is `lib32`, Arch's pair), locales from `/lib/locale`. Built by a C compiler made in the same plan from `pkg:gcc`'s tarball for its 32-bit libgcc. Headers are `pkg:glibc`'s but `gnu/stubs-32.h` and `gnu/lib-names-32.h`. |
 | `libxcrypt` | Built. `libcrypt.so.1`, glibc's crypt ABI. |
 | `bubblewrap` | Built. `bwrap` 0.13.1, unprivileged (not setuid). |
-| `<name>-i386` | Building. zlib, zstd, expat, libffi, wayland, libdrm, elfutils (libelf), libxau, libxcb, libx11, libxext, libxfixes, libxxf86vm, libxshmfence, libxcrypt and mesa (radeonsi, RADV, softpipe, GLX, EGL, GBM). |
+| `<name>-i386` | Built. zlib, zstd, expat, libffi, wayland, libdrm, elfutils (libelf), libxau, libxcb, libx11, libxext, libxfixes, libxxf86vm, libxshmfence, libxcrypt and mesa (radeonsi, RADV, softpipe, GLX, EGL, GBM). |
 
 32-bit packs are `<name>-i386` with a `lib32/`. A machine's `/lib` farm
 links only `lib/`, so nothing 32-bit is in a machine's root; a build
@@ -83,12 +84,11 @@ exists. Steam's settings change them afterwards.
 
 ## Target
 
-- **Will be:** 32-bit games and Steam's 32-bit GPU probes, on
-  `mesa-i386`. Until then the probes report radeonsi and RADV missing
-  (`wrong ELF class`), which the 64-bit client survives.
+- **Will be:** a 32-bit game run (Valve suggests Floating Point:
+  small, 32-bit, OpenGL).
 - **Will be:** controllers. The kernel fragment adds `uinput`, `joydev`,
   `xpad`, `hid-steam`, `hid-nintendo`, `hid-microsoft` and
-  `hid-playstation` (built with the rebuild, live after a reboot);
+  `hid-playstation` (`pkg:linux` 333089ed, on canto's ESP, live after a reboot);
   `/dev/input/event*`, `/dev/uinput` and `/dev/hidraw*` are root's
   (0600), so the seat's user needs node rules (devices.md).
 - **Will be:** a check that i386 ELFs load what their run packs have
