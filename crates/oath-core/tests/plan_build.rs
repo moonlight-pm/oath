@@ -214,6 +214,41 @@ fn sandbox_links_each_packs_libraries_into_lib() {
 }
 
 #[test]
+fn sandbox_links_lib32_and_the_i386_loader() {
+    // R29: /lib32 is a farm of the packs' lib32/ entries, pkg-config per
+    // pack, and the i386 loader in a lib32/ is also /lib/ld-linux.so.2.
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_shell(d.path());
+    let stage = d.path().join("stage-c32");
+    std::fs::create_dir_all(stage.join("lib32/pkgconfig")).unwrap();
+    std::fs::write(stage.join("lib32/ld-linux.so.2"), "loader").unwrap();
+    std::fs::write(stage.join("lib32/libc.so.6"), "libc32").unwrap();
+    std::fs::write(stage.join("lib32/pkgconfig/c32.pc"), "").unwrap();
+    let h = hash_tree(&stage).unwrap();
+    oath_core::put_tree(&d.path().join("store/pkg/c32"), &h, &stage).unwrap();
+    let p = PlanFile {
+        name: "libs32".into(),
+        produces: "pkg:libs32".into(),
+        build_needs: vec![
+            PkgNeed { id: "pkg:bash".into(), hash: bb },
+            PkgNeed { id: "pkg:c32".into(), hash: h },
+        ],
+        run_needs: vec![],
+        script: "mkdir -p /out\ncat /lib32/libc.so.6 >/out/libc\ncat /lib/ld-linux.so.2 >/out/ld\n\
+                 if [ -e /lib32/pkgconfig ]; then echo yes >/out/pc; fi\n"
+            .into(),
+    };
+    let path = d.path().join("libs32.plan");
+    std::fs::write(&path, fmt_plan(&p)).unwrap();
+    let r = build_file(d.path(), &path).expect("build");
+    let tree = d.path().join("store/pkg/libs32").join(&r.product);
+    assert_eq!(std::fs::read_to_string(tree.join("libc")).unwrap(), "libc32");
+    assert_eq!(std::fs::read_to_string(tree.join("ld")).unwrap(), "loader");
+    assert!(!tree.join("pc").exists());
+}
+
+#[test]
 fn sandbox_has_its_own_proc() {
     // The kernel's objtool reads /proc/self/maps. The script is PID 1 of
     // the build's own PID namespace.

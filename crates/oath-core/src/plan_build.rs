@@ -448,6 +448,7 @@ fn sandbox_in_child(
 
     fs::create_dir_all(scratch.join("bin"))?;
     fs::create_dir_all(scratch.join("lib"))?;
+    fs::create_dir_all(scratch.join("lib32"))?;
     fs::create_dir_all(scratch.join("out"))?;
     fs::create_dir_all(scratch.join("tmp"))?;
     fs::create_dir_all(scratch.join("dev"))?;
@@ -482,16 +483,18 @@ fn sandbox_in_child(
         slot_compat(scratch, name, hash, src)?;
         // `/bin` and `/lib` are link farms of the packs' programs and
         // libraries, as on a machine (R17): glibc's loader is
-        // /lib/ld-linux-x86-64.so.2 and it searches /lib. The first pack to
-        // name an entry has it; pkg-config files stay per pack.
-        for dir in ["bin", "lib"] {
+        // /lib/ld-linux-x86-64.so.2 and it searches /lib. `/lib32` is the
+        // packs' i386 libraries (R29), which a machine's root never shows.
+        // The first pack to name an entry has it; pkg-config files stay
+        // per pack.
+        for dir in ["bin", "lib", "lib32"] {
             let from = dest.join(dir);
             if !from.is_dir() {
                 continue;
             }
             for e in fs::read_dir(&from)? {
                 let e = e?;
-                if dir == "lib" && e.file_name() == "pkgconfig" {
+                if dir != "bin" && e.file_name() == "pkgconfig" {
                     continue;
                 }
                 let link = scratch.join(dir).join(e.file_name());
@@ -506,6 +509,13 @@ fn sandbox_in_child(
                 symlink(&target, &link)?;
             }
         }
+    }
+    // The i386 loader at the path 32-bit programs name, when a pack's
+    // lib32/ has one (pkg:glibc32), so a 32-bit compiler's tests run.
+    let ld32 = scratch.join("lib32/ld-linux.so.2");
+    let at = scratch.join("lib/ld-linux.so.2");
+    if ld32.symlink_metadata().is_ok() && at.symlink_metadata().is_err() {
+        symlink(fs::read_link(&ld32)?, &at)?;
     }
     let build_sh = scratch.join("build.sh");
     fs::copy(script, &build_sh)?;
