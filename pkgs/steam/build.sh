@@ -60,11 +60,13 @@ if [ ! -d "$root" ]; then
 	t=$(mktemp -d "$base/.new.XXXXXX")
 	u=$t/usr
 	mkdir "$t/etc" "$u" "$u/bin" "$u/sbin" "$u/lib" "$u/lib32" "$u/share" "$u/local" "$u/local/bin"
-	# The machine's links; /lib's directories are bound over these.
+	# The machine's links. /lib's own directories (firmware, modules, oath:
+	# the kernel's and PID 1's) stay out: Steam needs none of them, and a
+	# bind from the root disk under /usr is that disk's first mount in
+	# Steam's container (/run/host/usr/lib/…), which Steam then names as
+	# the drive its library is on.
 	for d in bin sbin lib; do
-		for e in "/$d"/*; do
-			if [ -L "$e" ]; then cp -P "$e" "$u/$d/"; else mkdir "$u/$d/${e##*/}"; fi
-		done
+		for e in "/$d"/*; do [ ! -L "$e" ] || cp -P "$e" "$u/$d/"; done
 	done
 	for e in "$glibc"/sbin/*; do link "$u/sbin" "$e"; done
 	for d in /oath/store/pkg/*/live/lib32; do
@@ -102,7 +104,6 @@ done
 args+=(--ro-bind "$root/usr" /usr --dev-bind /dev /dev --bind /proc /proc --ro-bind /sys /sys)
 for n in bin sbin lib lib32; do args+=(--symlink "usr/$n" "/$n"); done
 args+=(--symlink usr/lib /lib64)
-for e in /lib/*; do [ -L "$e" ] || args+=(--ro-bind "$e" "/usr/lib/${e##*/}"); done
 # The machine's /etc entries, each bound over its name (bwrap makes it).
 args+=(--bind "$root/etc" /etc)
 for e in /etc/*; do

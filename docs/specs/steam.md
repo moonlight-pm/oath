@@ -62,10 +62,13 @@ Valve's `bin_steam.sh` in `bwrap` with a merged-`/usr` root:
 - `/usr/bin`, `/usr/sbin`, `/usr/lib`: real directories holding the
   root's `/bin`, `/sbin` and `/lib` links (absolute, into the store),
   glibc's `sbin/` (`ldconfig` is static-pie) and `ld-linux.so.2` from
-  the packs' `lib32/`; `/lib`'s real directories (`firmware`,
-  `modules`, `oath`) bound in. They are real because Steam's containers
+  the packs' `lib32/`. They are real because Steam's containers
   mount this `/usr` at `/run/host/usr`, where a link to `/sbin` would
-  name the container's.
+  name the container's. `/lib`'s own directories (`firmware`,
+  `modules`, `oath`) stay out: Steam needs none, and a bind from the
+  root disk under `/usr` would be that disk's first mount in Steam's
+  container, which Steam shows as the drive its library is on
+  (`/run/host/usr/lib/oath`). The first is `/home`.
 - `/usr/lib32` (every pack's `lib32/`), `/usr/share` (every pack's
   `share/`, two levels deep), `/usr/local/bin/true`;
 - `/bin`, `/sbin`, `/lib`, `/lib32`, `/lib64` → `usr/…`;
