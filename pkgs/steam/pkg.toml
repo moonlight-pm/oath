@@ -13,7 +13,7 @@ home = "https://store.steampowered.com/about/"
 purl = "pkg:generic/steam@1.0.0.87"
 recipe = "the Steam Subscriber Agreement grants no right to redistribute; each machine fetches the launcher itself"
 build = ["bash", "coreutils", "sed", "grep", "tar", "gzip", "glibc"]
-run = ["bubblewrap", "glibc32", "libxcrypt"]
+run = ["bubblewrap", "glibc-i386", "libxcrypt", "libxcrypt-i386", "mesa-i386"]
 
 [[source]]
 url = "https://repo.steampowered.com/steam/archive/stable/steam_1.0.0.87.tar.gz"

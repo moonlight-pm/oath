@@ -1,0 +1,5 @@
+# pkgs/libxcb for i386 (R29).
+i386 = "libxcb"
+description = "libxcb and its extension libraries, shared, for i386 programs (lib32/)."
+build = ["pkgconf", "python", "xcb-proto", "libxau-i386", "xorgproto"]
+run = ["libxau-i386"]

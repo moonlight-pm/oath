@@ -10,7 +10,7 @@ for m in mako markupsafe pyyaml packaging; do
 	PYTHONPATH="$PYTHONPATH${PYTHONPATH:+:}/oath/store/pkg/python-$m/live/lib/python"
 done
 export PYTHONPATH
-meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release --wrap-mode=nofallback \
+meson setup build --prefix="$LIVE" --libdir="$LIBDIR" --buildtype=release --wrap-mode=nofallback \
 	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe \
 	-Dvulkan-drivers=amd -Dvulkan-layers=device-select -Dvulkan-manifest-per-architecture=false \
 	-Dllvm=disabled -Damd-use-llvm=false -Ddraw-use-llvm=false \
@@ -24,5 +24,5 @@ meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release --wrap-mode=
 	-Ddisplay-info=disabled -Dspirv-tools=disabled -Dshader-cache=enabled -Dhtml-docs=disabled
 ninja -C build -j"$JOBS"
 DESTDIR=/tmp/dest ninja -C build install
-cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" "/tmp/dest$LIVE/share" /out/
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" "/tmp/dest$LIVE/share" /out/
 grep -q '"library_path": "libvulkan_radeon.so"' /out/share/vulkan/icd.d/radeon_icd.json

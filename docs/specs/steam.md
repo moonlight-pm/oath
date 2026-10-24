@@ -5,7 +5,7 @@ that gives Steam the root it assumes, on a machine whose root stays
 Oath's. It is the Steam half of phase 9 ([roadmap](../roadmap.md),
 [scope.md](scope.md)); it builds on the [desk](desk.md).
 
-**Status:** being brought up on canto (2026-10-23). `pkg:glibc32`,
+**Status:** being brought up on canto (2026-10-23). `pkg:glibc-i386`,
 `pkg:libxcrypt`, `pkg:bubblewrap` and the `pkg:steam` recipe are built;
 the client installs and updates itself in the sandbox. Not yet:
 32-bit Mesa, controllers, a launcher entry.
@@ -32,15 +32,21 @@ lists it. Against a machine's root:
 
 | Package | What |
 |---------|------|
-| `steam` | Recipe (R23) of `steam_1.0.0.87.tar.gz` from repo.steampowered.com, sha256-pinned, its `.dsc` clearsigned by Valve (`pkgs/keys/valve.asc`, `DB23C56B…879D59CB`). `libexec/steam/` holds Valve's `bin_steam.sh` and bootstrap tarball; `bin/steam` is the sandbox; `libexec/steam/bin/ldd` knows both loaders (steam.sh's library check). Runs with `bubblewrap`, `glibc32`, `libxcrypt`. |
-| `glibc32` | glibc 2.44, i386: `lib32/` with `ld-linux.so.2`, slibdir `/lib32` (`${LIB}` is `lib32`, Arch's pair), locales from `/lib/locale`. Built by a C compiler made in the same plan from `pkg:gcc`'s tarball for its 32-bit libgcc. Headers are `pkg:glibc`'s but `gnu/stubs-32.h` and `gnu/lib-names-32.h`. |
+| `steam` | Recipe (R23) of `steam_1.0.0.87.tar.gz` from repo.steampowered.com, sha256-pinned, its `.dsc` clearsigned by Valve (`pkgs/keys/valve.asc`, `DB23C56B…879D59CB`). `libexec/steam/` holds Valve's `bin_steam.sh` and bootstrap tarball; `bin/steam` is the sandbox; `libexec/steam/bin/ldd` knows both loaders (steam.sh's library check). Runs with `bubblewrap`, `glibc-i386`, `libxcrypt`. |
+| `glibc-i386` | glibc 2.44, i386: `lib32/` with `ld-linux.so.2`, slibdir `/lib32` (`${LIB}` is `lib32`, Arch's pair), locales from `/lib/locale`. Built by a C compiler made in the same plan from `pkg:gcc`'s tarball for its 32-bit libgcc. Headers are `pkg:glibc`'s but `gnu/stubs-32.h` and `gnu/lib-names-32.h`. |
 | `libxcrypt` | `libcrypt.so.1`, glibc's crypt ABI. |
 | `bubblewrap` | `bwrap` 0.13.1, unprivileged (not setuid). |
 
-32-bit packs are `<name>32` with a `lib32/`. A machine's `/lib` farm
+32-bit packs are `<name>-i386` with a `lib32/`. A machine's `/lib` farm
 links only `lib/`, so nothing 32-bit is in a machine's root; a build
-sandbox and Steam's sandbox show `lib32/` (is: Steam's; will be: the
-build sandbox's, for the 32-bit compiler).
+sandbox (every pack's `lib32/` at `/lib32`, the loader at
+`/lib/ld-linux.so.2`) and Steam's sandbox show them.
+`pkgs/<name>-i386/pkg.toml` with `i386 = "<name>"` builds that package's
+sources and build.sh for i386: its own `build` and `run` name i386 packs,
+pkg:glibc-i386 comes with it, and the build sees `LIBDIR=lib32` and
+`cc -m32`, with each pack's `lib32/pkgconfig` before any `lib/pkgconfig`.
+A build.sh that serves both uses `$LIBDIR` and ships `bin/` only for
+`lib`, since a pack's `bin/` is linked into `/bin`.
 
 ## The sandbox (`bin/steam`)
 

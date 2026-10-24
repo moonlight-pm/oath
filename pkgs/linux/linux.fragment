@@ -1,5 +1,5 @@
 # Oath x86_64 kernel fragment. Merged onto `defconfig` by pkgs/linux/build.sh.
-# Drivers we pack (initrd MODULE_ROOTS) plus EFI stub, 32-bit Steam, canto metal.
+# Drivers we pack (initrd MODULE_ROOTS) plus EFI stub, Steam (32-bit, pads), canto metal.
 # Not a distro generic config.
 
 CONFIG_EXPERT=y
@@ -142,6 +142,22 @@ CONFIG_USB_HID=m
 CONFIG_INPUT=y
 CONFIG_INPUT_EVDEV=m
 CONFIG_INPUT_MOUSEDEV=n
+
+# Game controllers (Steam, R29): Steam Input's virtual pads (uinput), the
+# joystick nodes, and the pads' drivers (Xbox, Steam, Switch, PlayStation).
+CONFIG_INPUT_UINPUT=m
+CONFIG_INPUT_JOYDEV=m
+CONFIG_JOYSTICK_XPAD=m
+CONFIG_JOYSTICK_XPAD_FF=y
+CONFIG_JOYSTICK_XPAD_LEDS=y
+CONFIG_HID_MICROSOFT=m
+CONFIG_HID_STEAM=m
+CONFIG_HID_NINTENDO=m
+CONFIG_NINTENDO_FF=y
+CONFIG_STEAM_FF=y
+CONFIG_LEDS_CLASS_MULTICOLOR=m
+CONFIG_HID_PLAYSTATION=m
+CONFIG_PLAYSTATION_FF=y
 
 # Bluetooth (canto Apple BCM20702 USB 05ac:828d). Menubar chip hides
 # without hci0. Core is a module so the running 7.3-rc1 can insmod

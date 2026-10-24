@@ -285,9 +285,19 @@
       "description": "libelf from elfutils, shared (objtool in the kernel build; Mesa's radeonsi).",
       "home": "https://sourceware.org/elfutils/"
     },
+    "pkg:elfutils-i386": {
+      "present": true,
+      "description": "libelf, shared, for i386 programs (lib32/): Mesa's radeonsi.",
+      "home": "https://sourceware.org/elfutils/"
+    },
     "pkg:expat": {
       "present": true,
       "description": "libexpat, shared: wayland-scanner's and Mesa's XML parser.",
+      "home": "https://libexpat.github.io/"
+    },
+    "pkg:expat-i386": {
+      "present": true,
+      "description": "libexpat, shared, for i386 programs (lib32/): Mesa's XML parser.",
       "home": "https://libexpat.github.io/"
     },
     "pkg:font-iosevka-term-slab": {
@@ -340,7 +350,7 @@
       "description": "GLib, GObject and GIO, shared: CEF's, at-spi2-core's and pango's base.",
       "home": "https://gitlab.gnome.org/GNOME/glib"
     },
-    "pkg:glibc32": {
+    "pkg:glibc-i386": {
       "present": true,
       "description": "glibc for i386 programs: lib32/ and the loader ld-linux.so.2.",
       "home": "https://www.gnu.org/software/libc/"
@@ -358,6 +368,11 @@
     "pkg:libdrm": {
       "present": true,
       "description": "libdrm, shared, with libdrm_amdgpu and libdrm_radeon.",
+      "home": "https://gitlab.freedesktop.org/mesa/drm"
+    },
+    "pkg:libdrm-i386": {
+      "present": true,
+      "description": "libdrm, libdrm_amdgpu and libdrm_radeon, shared, for i386 programs (lib32/).",
       "home": "https://gitlab.freedesktop.org/mesa/drm"
     },
     "pkg:libepoxy": {
@@ -378,6 +393,11 @@
     "pkg:libffi": {
       "present": true,
       "description": "libffi, shared: the Wayland libraries' calls into handlers.",
+      "home": "https://sourceware.org/libffi/"
+    },
+    "pkg:libffi-i386": {
+      "present": true,
+      "description": "libffi, shared, for i386 programs (lib32/): the Wayland libraries' calls.",
       "home": "https://sourceware.org/libffi/"
     },
     "pkg:libfontenc": {
@@ -410,14 +430,29 @@
       "description": "libX11 and libX11-xcb, shared, with the compose and locale data.",
       "home": "https://www.x.org/"
     },
+    "pkg:libx11-i386": {
+      "present": true,
+      "description": "libX11 and libX11-xcb, shared, for i386 programs (lib32/).",
+      "home": "https://www.x.org/"
+    },
     "pkg:libxau": {
       "present": true,
       "description": "libXau, shared: X authorization records.",
       "home": "https://www.x.org/"
     },
+    "pkg:libxau-i386": {
+      "present": true,
+      "description": "libXau, shared, for i386 programs (lib32/).",
+      "home": "https://www.x.org/"
+    },
     "pkg:libxcb": {
       "present": true,
       "description": "libxcb, shared, with every extension library (composite, glx, dri3, present, render, res, xfixes, ...).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxcb-i386": {
+      "present": true,
+      "description": "libxcb and its extension libraries, shared, for i386 programs (lib32/).",
       "home": "https://www.x.org/"
     },
     "pkg:libxcomposite": {
@@ -428,6 +463,11 @@
     "pkg:libxcrypt": {
       "present": true,
       "description": "libxcrypt, shared: libcrypt.so.1, glibc's crypt(3) ABI (Steam).",
+      "home": "https://github.com/besser82/libxcrypt"
+    },
+    "pkg:libxcrypt-i386": {
+      "present": true,
+      "description": "libcrypt.so.1 for i386 programs (lib32/): glibc's crypt(3) ABI (Steam).",
       "home": "https://github.com/besser82/libxcrypt"
     },
     "pkg:libxcvt": {
@@ -445,9 +485,19 @@
       "description": "libXext, shared: X extension calls (Mesa's GLX).",
       "home": "https://www.x.org/"
     },
+    "pkg:libxext-i386": {
+      "present": true,
+      "description": "libXext, shared, for i386 programs (lib32/).",
+      "home": "https://www.x.org/"
+    },
     "pkg:libxfixes": {
       "present": true,
       "description": "libXfixes, shared: the XFIXES extension (Mesa's gl.pc names it).",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxfixes-i386": {
+      "present": true,
+      "description": "libXfixes, shared, for i386 programs (lib32/).",
       "home": "https://www.x.org/"
     },
     "pkg:libxfont2": {
@@ -480,9 +530,19 @@
       "description": "libxshmfence, shared: the DRI3 fences Xwayland and GLX share.",
       "home": "https://www.x.org/"
     },
+    "pkg:libxshmfence-i386": {
+      "present": true,
+      "description": "libxshmfence, shared, for i386 programs (lib32/).",
+      "home": "https://www.x.org/"
+    },
     "pkg:libxxf86vm": {
       "present": true,
       "description": "libXxf86vm, shared: XF86VidMode, which Mesa's direct GLX calls.",
+      "home": "https://www.x.org/"
+    },
+    "pkg:libxxf86vm-i386": {
+      "present": true,
+      "description": "libXxf86vm, shared, for i386 programs (lib32/): Mesa's direct GLX.",
       "home": "https://www.x.org/"
     },
     "pkg:locales": {
@@ -498,6 +558,11 @@
     "pkg:mesa": {
       "present": true,
       "description": "Mesa: radeonsi, RADV (Vulkan) and softpipe, GBM, EGL, GLES and GL, on Wayland and X11 (GLX).",
+      "home": "https://mesa3d.org/"
+    },
+    "pkg:mesa-i386": {
+      "present": true,
+      "description": "Mesa for i386 programs (lib32/): radeonsi, RADV and softpipe, GBM, EGL, GLES, GL and GLX (Steam's 32-bit games).",
       "home": "https://mesa3d.org/"
     },
     "pkg:meson": {
@@ -706,6 +771,11 @@
       "description": "Wayland: libwayland-client, -server, -cursor and -egl, and wayland-scanner.",
       "home": "https://wayland.freedesktop.org/"
     },
+    "pkg:wayland-i386": {
+      "present": true,
+      "description": "The Wayland libraries for i386 programs (lib32/); the x86_64 pack's wayland-scanner builds them.",
+      "home": "https://wayland.freedesktop.org/"
+    },
     "pkg:wireplumber": {
       "present": true,
       "description": "WirePlumber: PipeWire's session manager, and wpctl.",
@@ -740,6 +810,16 @@
       "present": true,
       "description": "Xwayland: X11 clients under rivulet, with glamor on GBM and GLX.",
       "home": "https://gitlab.freedesktop.org/xorg/xserver"
+    },
+    "pkg:zlib-i386": {
+      "present": true,
+      "description": "zlib, shared, for i386 programs (lib32/).",
+      "home": "https://zlib.net/"
+    },
+    "pkg:zstd-i386": {
+      "present": true,
+      "description": "libzstd, shared, for i386 programs (lib32/).",
+      "home": "https://facebook.github.io/zstd/"
     },
     "plan:steam": {}
   }

@@ -30,7 +30,10 @@ use crate::util::{run, run_out};
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PkgToml {
+    /// Required, but for an `i386` package, which has its base's.
+    #[serde(default)]
     pub version: String,
+    #[serde(default)]
     pub license: String,
     #[serde(default)]
     pub description: String,
@@ -56,6 +59,13 @@ pub struct PkgToml {
     /// Why the sources without `sig` have no signature to check.
     #[serde(default)]
     pub unsigned: Option<String>,
+    /// `pkgs/<name>-i386` is `pkgs/<i386>` for 32-bit x86 (R29): that
+    /// package's version, licence, sources, extra files and build.sh, with
+    /// this file's description, `build` and `run` (its i386 packs) and
+    /// pkg:glibc-i386. The build sees `LIBDIR=lib32` and `cc -m32`; its
+    /// libraries go in `lib32/`, which a machine's `/lib` never links.
+    #[serde(default)]
+    pub i386: Option<String>,
     /// Why the pack may not be redistributed (R23). The package is then a
     /// recipe: its plan goes into catalogs and origins, its pack into
     /// none. It has one source, the vendor's file, which each machine
@@ -208,7 +218,46 @@ pub fn load(repo: &Path) -> Result<BTreeMap<String, PkgToml>> {
         }
         out.insert(name, p);
     }
+    let i386: Vec<String> = out.iter().filter(|(_, p)| p.i386.is_some()).map(|(n, _)| n.clone()).collect();
+    for name in i386 {
+        let base = out[&name].i386.clone().unwrap_or_default();
+        let ctx = || format!("pkgs/{name}/pkg.toml: i386 = {base:?}");
+        let b = out
+            .get(&base)
+            .filter(|b| b.i386.is_none() && b.recipe.is_none() && b.tree.is_none())
+            .with_context(|| format!("{}: not a package built from upstream sources", ctx()))?
+            .clone();
+        let p = out.get_mut(&name).unwrap();
+        if name != format!("{base}-i386") {
+            bail!("{}: the package is named {base}-i386", ctx());
+        }
+        if !p.version.is_empty() || !p.license.is_empty() || !p.source.is_empty() || p.recipe.is_some() {
+            bail!("{}: its version, licence and sources are pkgs/{base}'s", ctx());
+        }
+        p.version = b.version;
+        p.license = b.license;
+        p.purl = b.purl;
+        p.source = b.source;
+        p.unsigned = b.unsigned;
+        if p.home.is_empty() {
+            p.home = b.home;
+        }
+        if !p.build.iter().any(|d| d == "glibc-i386") {
+            p.build.push("glibc-i386".into());
+        }
+    }
+    for (name, p) in &out {
+        if p.version.is_empty() || p.license.is_empty() {
+            bail!("pkgs/{name}/pkg.toml: version and license are required");
+        }
+    }
     Ok(out)
+}
+
+/// The directory whose build.sh and extra files build `name`: its own, or
+/// for an i386 package its base's.
+fn script_dir(repo: &Path, all: &BTreeMap<String, PkgToml>, name: &str) -> PathBuf {
+    pkgs_dir(repo).join(all.get(name).and_then(|p| p.i386.as_deref()).unwrap_or(name))
 }
 
 /// A recipe (R23) is what a machine can rebuild alone: one source file
@@ -630,6 +679,7 @@ fn source_pack(
     repo: &Path,
     cat: &Path,
     name: &str,
+    dir: &Path,
     files: &[(String, PathBuf)],
     tree: Option<&str>,
     recipe: bool,
@@ -660,7 +710,7 @@ fn source_pack(
             crate::util::copy_file(&repo.join(&f), &to.join(rel))?;
         }
     }
-    for e in fs::read_dir(pkgs_dir(repo).join(name))? {
+    for e in fs::read_dir(dir)? {
         let e = e?;
         let n = e.file_name().to_string_lossy().into_owned();
         let to = stage.join("files").join(&n);
@@ -699,7 +749,9 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
     for name in order(&all, &wanted, &lock)? {
         let p = &all[&name];
         let files = fetch(repo, p)?;
-        let src = source_pack(repo, &cat, &name, &files, p.tree.as_deref(), p.recipe.is_some())?;
+        let dir = script_dir(repo, &all, &name);
+        let src =
+            source_pack(repo, &cat, &name, &dir, &files, p.tree.as_deref(), p.recipe.is_some())?;
         let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.clone() }];
         for d in build_closure(repo, &all, &lock, &name, p) {
             build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(&lock, &d)? });
@@ -708,8 +760,8 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
         for d in &p.run {
             run_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(&lock, d)? });
         }
-        let body = fs::read_to_string(pkgs_dir(repo).join(&name).join("build.sh"))
-            .with_context(|| format!("pkgs/{name}/build.sh"))?;
+        let body = fs::read_to_string(dir.join("build.sh"))
+            .with_context(|| format!("{}/build.sh", dir.display()))?;
         let mut files_list: Vec<String> = files.iter().map(|(rel, _)| rel.clone()).collect();
         files_list.extend(p.tree.as_deref().map(|t| tree_name(t).to_string()));
         let script = format!(
@@ -720,15 +772,8 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
              VERSION={version}\n\
              JOBS=$(nproc)\n\
              LIVE=/oath/store/pkg/{name}/live\n\
-             export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip\n\
+             {abi}\
              export CFLAGS=\"-O2 -pipe\" CXXFLAGS=\"-O2 -pipe\" SOURCE_DATE_EPOCH=0\n\
-             CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=\n\
-             for d in /oath/store/pkg/*/live; do\n\
-             \tcase $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac\n\
-             \t[ -d \"$d/include\" ] && CPPFLAGS=\"$CPPFLAGS -I$d/include\"\n\
-             \t[ -d \"$d/lib\" ] && LDFLAGS=\"$LDFLAGS -L$d/lib\"\n\
-             \t[ -d \"$d/lib/pkgconfig\" ] && PKG_CONFIG_PATH=\"$d/lib/pkgconfig${{PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}}\"\n\
-             done\n\
              export CPPFLAGS LDFLAGS PKG_CONFIG_PATH\n\
              # Hand-written Makefiles often ignore CPPFLAGS.\n\
              CFLAGS=\"$CFLAGS $CPPFLAGS\" CXXFLAGS=\"$CXXFLAGS $CPPFLAGS\"\n\
@@ -737,6 +782,7 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
              {body}",
             files = files_list.join(" "),
             version = p.version,
+            abi = if p.i386.is_some() { PRELUDE_I386 } else { PRELUDE },
             comp = serde_json::to_string_pretty(&components(&name, p))?,
         );
         let plan = PlanFile {
@@ -783,6 +829,36 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
     }
     Ok(())
 }
+
+/// The build environment's compiler and search paths: each pack's headers,
+/// libraries and pkg-config files (glibc's and gcc's are the compiler's).
+const PRELUDE: &str = "LIBDIR=lib
+export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
+CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
+for d in /oath/store/pkg/*/live; do
+\tcase $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
+\t[ -d \"$d/include\" ] && CPPFLAGS=\"$CPPFLAGS -I$d/include\"
+\t[ -d \"$d/lib\" ] && LDFLAGS=\"$LDFLAGS -L$d/lib\"
+\t[ -d \"$d/lib/pkgconfig\" ] && PKG_CONFIG_PATH=\"$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}\"
+done
+";
+
+/// An i386 package's (R29): `cc -m32`, libraries from each pack's lib32/,
+/// and the i386 packs' pkg-config files before the rest (the 64-bit tools'
+/// and the header packs'), so a 32-bit library always wins.
+const PRELUDE_I386: &str = "LIBDIR=lib32
+export CC=\"cc -m32\" CXX=\"c++ -m32\" AR=ar RANLIB=ranlib NM=nm STRIP=strip
+CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH= pc=
+for d in /oath/store/pkg/*/live; do
+\tcase $d in */gcc/live | */glibc/live | */glibc-i386/live | *-src/live) continue ;; esac
+\t[ -d \"$d/include\" ] && CPPFLAGS=\"$CPPFLAGS -I$d/include\"
+\t[ -d \"$d/lib32\" ] && LDFLAGS=\"$LDFLAGS -L$d/lib32\"
+\t[ -d \"$d/lib32/pkgconfig\" ] && PKG_CONFIG_PATH=\"${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}$d/lib32/pkgconfig\"
+\t[ -d \"$d/lib/pkgconfig\" ] && pc=\"${pc:+$pc:}$d/lib/pkgconfig\"
+done
+PKG_CONFIG_PATH=\"$PKG_CONFIG_PATH${pc:+:$pc}\"
+CPPFLAGS=\"$CPPFLAGS -I/oath/store/pkg/glibc-i386/live/include\"
+";
 
 /// Every library a new product's programs load (`DT_NEEDED`) must be in
 /// its own `lib/`, glibc's, or a pack it runs with (`run`, and what those
@@ -1101,7 +1177,8 @@ mod tests {
             for s in &p.source {
                 assert_eq!(s.sha256.len(), 64, "{name}: {}", s.url);
             }
-            assert!(pkgs_dir(&repo).join(name).join("build.sh").is_file(), "pkgs/{name}/build.sh");
+            let dir = script_dir(&repo, &all, name);
+            assert!(dir.join("build.sh").is_file(), "{}/build.sh", dir.display());
         }
         // Every package builds with the base, the base packs with
         // earlier builds of themselves; a recipe with what it names.

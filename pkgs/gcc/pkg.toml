@@ -1,16 +1,17 @@
 # The compiler (R17): GCC (C, C++) and binutils, linked against the GMP,
 # MPFR and MPC packages. Its runtime libraries (libgcc_s, libstdc++, libatomic,
-# libgomp) are in lib/. It links every program with glibc's loader at
+# libgomp) are in lib/, and their i386 builds in lib32/ (R29). It links
+# every program with glibc's loader at
 # /lib/ld-linux-x86-64.so.2 and reads glibc's headers from
 # /oath/store/pkg/glibc/live/include. `cargo make bootstrap` makes the
 # first one (stage 1 of pkgs/bootstrap.sh); build.sh rebuilds it with
 # itself.
 version = "16.2.0"
 license = "GPL-3.0-or-later WITH GCC-exception-3.1 AND GPL-3.0-or-later AND LGPL-3.0-or-later"
-description = "GCC 16 (C, C++) and binutils 2.47. cc / c++ link dynamically against glibc through /lib."
+description = "GCC 16 (C, C++) and binutils 2.47, x86_64 and i386 (-m32). cc / c++ link dynamically against glibc through /lib."
 home = "https://gcc.gnu.org/"
 purl = "pkg:generic/gcc@16.2.0"
-build = ["gmp", "mpfr", "mpc"]
+build = ["gmp", "mpfr", "mpc", "glibc-i386"]
 run = ["gmp", "mpfr", "mpc"]
 
 [[source]]

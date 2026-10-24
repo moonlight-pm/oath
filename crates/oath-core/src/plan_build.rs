@@ -511,7 +511,7 @@ fn sandbox_in_child(
         }
     }
     // The i386 loader at the path 32-bit programs name, when a pack's
-    // lib32/ has one (pkg:glibc32), so a 32-bit compiler's tests run.
+    // lib32/ has one (pkg:glibc-i386), so a 32-bit compiler's tests run.
     let ld32 = scratch.join("lib32/ld-linux.so.2");
     let at = scratch.join("lib/ld-linux.so.2");
     if ld32.symlink_metadata().is_ok() && at.symlink_metadata().is_err() {

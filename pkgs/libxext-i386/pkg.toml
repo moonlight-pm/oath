@@ -1,0 +1,5 @@
+# pkgs/libxext for i386 (R29).
+i386 = "libxext"
+description = "libXext, shared, for i386 programs (lib32/)."
+build = ["pkgconf", "xorgproto", "libx11-i386"]
+run = ["libx11-i386"]

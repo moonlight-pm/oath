@@ -1,0 +1,5 @@
+# pkgs/expat for i386 (R29).
+i386 = "expat"
+description = "libexpat, shared, for i386 programs (lib32/): Mesa's XML parser."
+build = []
+run = []

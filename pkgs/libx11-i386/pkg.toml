@@ -1,0 +1,5 @@
+# pkgs/libx11 for i386 (R29).
+i386 = "libx11"
+description = "libX11 and libX11-xcb, shared, for i386 programs (lib32/)."
+build = ["pkgconf", "xorgproto", "xtrans", "libxcb-i386"]
+run = ["libxcb-i386"]

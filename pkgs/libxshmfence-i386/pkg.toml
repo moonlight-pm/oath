@@ -1,0 +1,5 @@
+# pkgs/libxshmfence for i386 (R29).
+i386 = "libxshmfence"
+description = "libxshmfence, shared, for i386 programs (lib32/)."
+build = ["pkgconf", "xorgproto"]
+run = []

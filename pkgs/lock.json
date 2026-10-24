@@ -393,14 +393,6 @@
     "product": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592",
     "run": []
   },
-  "glibc32": {
-    "version": "2.44",
-    "license": "LGPL-2.1-or-later AND GPL-2.0-or-later AND GPL-2.0-only WITH Linux-syscall-note",
-    "by": "plan",
-    "plan": "sha256-b17bbe7abdc9d2342c0d9a3d4acd221fd63f8824c9f052608cc00bf96d6c1af1",
-    "product": "sha256-cf7f4495d61b36e84b75d5cfb27602f03ca72ff4c510e2f2bbe35ab190e3c920",
-    "run": []
-  },
   "glslang": {
     "version": "16.6.0",
     "license": "BSD-3-Clause AND BSD-2-Clause AND MIT AND MIT-Khronos-old AND Apache-2.0 AND GPL-3.0-or-later WITH Bison-exception-2.2 AND AML-glslang",

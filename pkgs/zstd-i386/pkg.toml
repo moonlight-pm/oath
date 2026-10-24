@@ -1,0 +1,5 @@
+# pkgs/zstd for i386 (R29).
+i386 = "zstd"
+description = "libzstd, shared, for i386 programs (lib32/)."
+build = []
+run = []

@@ -1,0 +1,5 @@
+# pkgs/wayland for i386 (R29).
+i386 = "wayland"
+description = "The Wayland libraries for i386 programs (lib32/); the x86_64 pack's wayland-scanner builds them."
+build = ["meson", "ninja", "python", "pkgconf", "libffi-i386", "expat-i386", "wayland"]
+run = ["libffi-i386", "expat-i386"]

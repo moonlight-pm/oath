@@ -1,0 +1,5 @@
+# pkgs/zlib for i386 (R29).
+i386 = "zlib"
+description = "zlib, shared, for i386 programs (lib32/)."
+build = []
+run = []

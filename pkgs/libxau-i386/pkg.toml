@@ -1,0 +1,5 @@
+# pkgs/libxau for i386 (R29).
+i386 = "libxau"
+description = "libXau, shared, for i386 programs (lib32/)."
+build = ["pkgconf", "xorgproto"]
+run = []
