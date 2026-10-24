@@ -1,6 +1,6 @@
 /apocrypha/
-/target/
-/site/target/
+/target
+/site/target
 /.worktrees/
 /.cache/
 /result
