@@ -12,7 +12,7 @@ Overwrite this file when facts change; do not append a diary.
   `canto-usb`. It speaks UAS, but the kernel has no `uas`, so it runs
   on usb-storage with no TRIM. Nothing mounts it at boot (mounts are
   not fields yet): `sudo mount -o noatime,compress=zstd:1
-  LABEL=canto-usb /mnt/usb`. Holds nothing yet.
+  LABEL=canto-usb /mnt/warehouse`. Holds nothing yet.
 - **Network:** the cable is in the first port (`00:3e:e1:cb:06:08`),
   DHCP 10.0.0.3, which novus's `/etc/hosts` calls `canto`. The lease's
   DNS (10.0.0.146, then 1.1.1.1) answers `novus` with 10.0.0.5, so
