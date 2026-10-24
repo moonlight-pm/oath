@@ -277,4 +277,4 @@ Noto's files from lightweight git tags.
 ## Target
 
 - **Sola's other apps** when Joshua wants them (R21).
-- **Later:** 32-bit Mesa and glibc for Steam.
+- **Steam:** its own spec, [steam.md](steam.md) (R29).

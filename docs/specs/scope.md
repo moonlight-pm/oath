@@ -63,12 +63,12 @@ launcher, a web control plane. The rules:
 
 The last commit with all of them is tagged `t37-t39-final`.
 
-## Future requirement: a Steam and Minecraft desk
+## Requirement: a Steam and Minecraft desk
 
 One of the first real uses of Oath is a desk for the owner's daughter
-that launches Steam and runs Minecraft. It is a requirement for later,
-not current work. It is planned once the native base and the native
-desk exist.
+that launches Steam and runs Minecraft. Steam is being brought up on
+canto since 2026-10-23 ([steam.md](steam.md), R29); Minecraft is not
+started.
 
 What it will need, as packages:
 

@@ -133,7 +133,9 @@ wlroots, libinput, Xwayland and the X libraries) build natively, and
 the `desk` profile (seatd, R20) runs rivulet and Sola's session, terminal
 and browser on canto (R21; 2026-10-18; [specs/desk.md](specs/desk.md)).
 
-## 9. Steam + Minecraft desk — planned
+## 9. Steam + Minecraft desk — active
 
 A desk for Joshua's daughter that launches Steam and runs Minecraft.
-Needs phase 8, Steam's runtime (vendor release) and a JVM.
+Steam is on canto since 2026-10-23 (R29, [specs/steam.md](specs/steam.md)):
+Valve's launcher as a recipe in a sandbox, the 64-bit client; the
+32-bit stack and pads are being built. Minecraft needs a JVM.

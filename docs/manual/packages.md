@@ -219,6 +219,30 @@ update` moves the plan and the source; a built `pkg:claude-code` is
 left at its version, with the commands to rebuild it). Its settings,
 login and history are under `/home/.claude` and `/home/.claude.json`.
 
+Steam is another, in the `desk` profile (R29): `pkg:steam` is Valve's
+launcher, from repo.steampowered.com, checked against Valve's signed
+`.dsc`. Its needs (bubblewrap, glibc for i386, libxcrypt) are present
+on the desk. A machine whose catalog lacks the objects (an update
+reports `pkg:steam pkg:steam-src plan:steam`) gets them as `oath new
+pkg:steam-src --from-json …` with the output's document and `oath set
+plan:steam --from-file pkgs/steam/steam.plan`. Then:
+
+```
+sudo oath build plan:steam               # fetches 20 MB from repo.steampowered.com
+sudo oath set pkg:steam present=true
+sudo oath apply pkg:steam
+steam                                    # on the desk; DISPLAY defaults to :0
+```
+
+`steam` starts Valve's launcher in a sandbox that gives Steam the
+root it assumes (`/usr`, `/lib64`, `/lib32`, `/sbin/ldconfig`, an
+ld.so cache, `/etc/ssl`) and leaves the machine's root as it is. On a
+first run it opts into Valve's 64-bit client (the beta channel), then
+downloads the client (about 1 GB) into `~/.local/share/Steam`, where
+Steam updates itself; Oath pins only the launcher. Its logs are
+`~/.local/share/Steam/logs/console-linux.txt`; the sandbox's tree is
+`$XDG_RUNTIME_DIR/oath-steam/`.
+
 ## Host store cache and publishing
 
 The build host keeps the same layout under `~/.local/share/oath/store` (or

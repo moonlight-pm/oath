@@ -19,42 +19,45 @@ append history (git has it).
    browser refuses it. Next: `pkgs/curl` to `cacert-2026-10-20.pem`
    (`796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe`),
    NSS 3.131.1; build, check, publish, update canto; test Claude Code.
-2. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
+2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
+   `pkg:steam` is a recipe of Valve's launcher 1.0.0.87 (sha256-pinned,
+   `.dsc` clearsigned) run in a bubblewrap sandbox with the paths Steam
+   assumes; canto built it and runs Valve's 64-bit client to its login,
+   GPU-rendered. novus is rebuilding every package for the 32-bit stack
+   (`pkg:gcc` with `-m32`, `glibc-i386`, `mesa-i386` and 15 more) and the
+   kernel's pad drivers (`build/runs/steam-c.sh`). Next: check, publish,
+   update canto, reboot it (ask), test a 32-bit game; then pad device
+   nodes for the seat.
+3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, Sola's session as `svc:sola-*` (terminal, Projects,
-   browser, Design), PipeWire, Noto, `svc:sola-kvm`, Vulkan (RADV, the
-   compositor's GPU first). Shells outlive a session restart; tabs come
-   back after a reboot. Next: realtime priority for PipeWire.
-3. **Sola packages itself (R28).** No fork: `desk.json` pins
+   Xwayland, Sola's session (`svc:sola-*`), PipeWire, Noto, `sola-kvm`,
+   Vulkan (RADV). Next: realtime priority for PipeWire.
+4. **Sola packages itself (R28).** No fork: `desk.json` pins
    `pkg:sola`, `sola-browser` and `sola-design` to Sola's published
-   packs, now its `next` at `c6cda58b` (Projects; every app on
-   Vulkan); the origin has every pack they need. Oath's side is
-   generic: `oath store`, services that follow their package, pinned
-   packs. Next: new pins when the Sola tab publishes again.
-4. **Claude Code as a recipe (R23).** Every catalog carries
-   `plan:claude-code` (stable 2.1.292, pinned to the signed manifest);
-   canto built the build host's exact pack and runs `claude`, signed
-   in. Next: a new stable is a new pin in `pkgs/claude-code`, then
-   `cargo make update`.
-5. **Packs from anywhere (R25).** Machines fetch from
-   `host:local.origins` in order (a pkg's `url` wins); the default R2
-   bucket, `https://store.oath.moonlight.pm`, is written only by `cargo
-   make publish` with the build host's key. Next: publish after every
-   build that changes a pack; sign `INDEX.md` when a second publisher
-   or mirror appears.
+   packs (its `next` at `c6cda58b`); Oath's side is generic (`oath
+   store`, services that follow their package, pinned packs). Next: new
+   pins when the Sola tab publishes again.
+5. **Recipes and origins (R23, R25).** Every catalog carries
+   `plan:claude-code` (stable 2.1.292, pinned to the signed manifest)
+   and the desk's `plan:steam`; machines fetch packs from
+   `host:local.origins` in order, the default R2 bucket
+   (`https://store.oath.moonlight.pm`) written only by `cargo make
+   publish`. Next: a new stable is a new pin; publish after every build
+   that changes a pack; sign `INDEX.md` when a second publisher appears.
 
 **State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). canto runs `415b3be87633`
-(`desk`), the newest checked output (all 56 QEMU cases), published to
-the origin. Left until
+([docs/roadmap.md](docs/roadmap.md)). canto runs `79301d6ea406`
+(`desk`, generation 270 with `pkg:steam`), the newest checked output
+(all 56 QEMU cases), not yet published; its PID 1 is the one before
+until it reboots. Left until
 something needs them: root SSH as a field, more NICs, device rules as fields.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `415b3be87633`, the `desk` profile (rivulet and Sola on DP-10); `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `79301d6ea406`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS). Not an Oath machine.

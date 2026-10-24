@@ -67,8 +67,12 @@ btrfs
             halt and poweroff → /lib/oath/init
 /lib/       symlink farm → /oath/store/pkg/<name>/<hash>/lib/<x> (R17): glibc's
             loader ld-linux-x86-64.so.2 and every linked package's libraries;
-            no /lib64. oath/, modules/ and firmware/ are not links
+            no /lib64. oath/, modules/ and firmware/ are not links. A pack's
+            lib32/ (i386, R29) is never linked: no /lib32 or ld-linux.so.2
 /home       the `home` account (uid 1); SSH logs in here
+/run/user/1/oath-steam/<key>/  Steam's sandbox tree (pkg:steam's bin/steam, R29):
+            a merged /usr of the root's links, every pack's lib32/ and share/,
+            etc/ (ld.so.conf, ld.so.cache, CA bundle); bwrap roots Steam in it
 /etc        written by PID 1 from host:local (hostname, hosts, profile, shells)
 /oath/      the catalog
   INDEX.md                 generated; what an agent reads first
@@ -157,7 +161,10 @@ cargo make pkgs [names]
     its build packs run with (the lock records it)
   pkg:rust: the vendor's rustc, cargo and std (glibc, uefi); patchelf
     points its binaries at /lib's loader
-  a recipe (R23, pkg:claude-code): built here only for its product hash;
+  pkgs/<name>-i386 (R29): <name>'s sources and build.sh with LIBDIR=lib32
+    and cc -m32 into lib32/; the build sandbox links every pack's lib32/
+    at /lib32 and an ld-linux.so.2 there at /lib/ld-linux.so.2
+  a recipe (R23, pkg:claude-code, pkg:steam): built here only for its product hash;
     the image files its plan and pins pkg:<name>-src (the vendor's url
     and file) and pkg:<name>, both absent; the machine builds it
   pkg:linux: boot/vmlinuz, boot/config, lib/modules/<release>/

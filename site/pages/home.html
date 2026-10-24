@@ -65,13 +65,13 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 23 October 2026 the current build passes all 56 test cases in QEMU and the desk's hardware cases on the Mac Pro; all 42 hardware cases of the time passed on 20 October. Not there yet:</p>
+<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 23 October 2026 the current build passes all 56 test cases in QEMU; the desk's hardware cases passed on the Mac Pro on 22 October, and all 42 hardware cases of the time on 20 October. Not there yet:</p>
 <ul>
 <li>Releases. x86-64 with UEFI is the only platform.</li>
 <li>Signed packages. Packages are pinned by hash and their sources are checked against upstream signatures, but Oath does not yet sign what it publishes.</li>
 <li>More than one network interface. One is chosen at boot.</li>
 <li>Device node ownership and mounts as catalog fields.</li>
-<li>Desktop applications beyond Sola's terminal, Projects, browser and Design. Steam is planned.</li>
+<li>Desktop applications beyond Sola's terminal, Projects, browser and Design, and Steam: its 64-bit client runs on the Mac Pro, but not yet 32-bit games or gamepads.</li>
 </ul>
 <p>The work under way is in <a href="{{repository}}/blob/master/CURRENT.md">CURRENT.md</a>, the decisions behind it in <a href="{{repository}}/blob/master/docs/decisions.md">docs/decisions.md</a>, and what each part can do in <a href="{{repository}}/blob/master/docs/capabilities.md">docs/capabilities.md</a>.</p>
 </section>
