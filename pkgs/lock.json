@@ -70,6 +70,16 @@
       "util-linux"
     ]
   },
+  "bubblewrap": {
+    "version": "0.13.1",
+    "license": "LGPL-2.0-or-later",
+    "by": "plan",
+    "plan": "sha256-7d3d2caadb067b06502875b2797c58dcc1df53378adb9ef9889a2e0f8042bafc",
+    "product": "sha256-4e1455a4c8d3d8701c330c545bf0a6418a3c0bf3ad5fcbcf7bbb65be8ac41aad",
+    "run": [
+      "libcap"
+    ]
+  },
   "bzip2": {
     "version": "1.0.8",
     "license": "bzip2-1.0.6",
@@ -383,6 +393,14 @@
     "product": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592",
     "run": []
   },
+  "glibc32": {
+    "version": "2.44",
+    "license": "LGPL-2.1-or-later AND GPL-2.0-or-later AND GPL-2.0-only WITH Linux-syscall-note",
+    "by": "plan",
+    "plan": "sha256-b17bbe7abdc9d2342c0d9a3d4acd221fd63f8824c9f052608cc00bf96d6c1af1",
+    "product": "sha256-cf7f4495d61b36e84b75d5cfb27602f03ca72ff4c510e2f2bbe35ab190e3c920",
+    "run": []
+  },
   "glslang": {
     "version": "16.6.0",
     "license": "BSD-3-Clause AND BSD-2-Clause AND MIT AND MIT-Khronos-old AND Apache-2.0 AND GPL-3.0-or-later WITH Bison-exception-2.2 AND AML-glslang",
@@ -641,6 +659,14 @@
       "libx11",
       "libxfixes"
     ]
+  },
+  "libxcrypt": {
+    "version": "4.5.2",
+    "license": "LGPL-2.1-or-later AND BSD-3-Clause AND 0BSD AND CC0-1.0",
+    "by": "plan",
+    "plan": "sha256-2d53cd0855a78ba93865d93cb3ce3aacdc79b5a99a568dd6020a07b8f2ba51d0",
+    "product": "sha256-25b0443398d100a4a94228a4dae7ad049598eecc20753fb8ae273a3f90625b5d",
+    "run": []
   },
   "libxcvt": {
     "version": "0.1.3",
@@ -1096,6 +1122,18 @@
     "plan": "sha256-731821349adbdf54a426f034d64929ab3963f03d28b31eda990a1a834869b95a",
     "product": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819",
     "run": []
+  },
+  "steam": {
+    "version": "1.0.0.87",
+    "license": "LicenseRef-Steam-Subscriber-Agreement AND MIT",
+    "by": "plan",
+    "plan": "sha256-78cabcecc803e32acb4a8607fd124d71e08bd045fdf874559d8c5ff33e063f00",
+    "product": "sha256-4302fc2c88294bd244312f538dc40f4f6dcf2ee2ef22f332a140ffe0d237dd1d",
+    "run": [
+      "bubblewrap",
+      "glibc32",
+      "libxcrypt"
+    ]
   },
   "tar": {
     "version": "1.35",
