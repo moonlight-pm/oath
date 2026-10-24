@@ -25,7 +25,7 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-e830e8033e44121fcf2bdbb35495474940d8d0ee53f00246bbfabc12997a5b75"
+      "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
     },
     {
       "id": "pkg:findutils",
@@ -37,7 +37,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glibc",
@@ -57,19 +57,19 @@
     },
     {
       "id": "pkg:libffi",
-      "hash": "sha256-eaec020f8be62accfd32bc1374f1fee926034e99048b76eb8bfcd06880b75c30"
+      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
     },
     {
       "id": "pkg:libx11",
-      "hash": "sha256-b0dc36b6201c46bbd9552cccb7e7338800c735ad0d458df99faaebfa75e7b145"
+      "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
     },
     {
       "id": "pkg:libxau",
-      "hash": "sha256-cdf237ba5f43cacdc75c9fd3e1b8b9fca8c65a3e0ce1eeec0b8303ad86bb4abb"
+      "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
     },
     {
       "id": "pkg:libxcb",
-      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
     },
     {
       "id": "pkg:make",
@@ -123,15 +123,15 @@
   "run_needs": [
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:libx11",
-      "hash": "sha256-b0dc36b6201c46bbd9552cccb7e7338800c735ad0d458df99faaebfa75e7b145"
+      "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
     },
     {
       "id": "pkg:libxcb",
-      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
     },
     {
       "id": "pkg:vulkan-loader",
@@ -153,8 +153,8 @@ SOURCES='Vulkan-Tools-1.4.365.tar.gz'
 VERSION=1.4.365
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/vulkan-tools/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -162,6 +162,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"

@@ -29,7 +29,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glibc",
@@ -49,7 +49,7 @@
     },
     {
       "id": "pkg:libxau",
-      "hash": "sha256-cdf237ba5f43cacdc75c9fd3e1b8b9fca8c65a3e0ce1eeec0b8303ad86bb4abb"
+      "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
     },
     {
       "id": "pkg:libxcb-src",
@@ -101,7 +101,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-b6d23a9b5dc6b51202879ba481a78cdaaa1a05418515ffa715a2bf3bb2904528"
+      "hash": "sha256-587ab69c17b6e7a290ddc2ac77443f63443e28738ddc045b948021bfe4e15b2c"
     },
     {
       "id": "pkg:zstd",
@@ -111,7 +111,7 @@
   "run_needs": [
     {
       "id": "pkg:libxau",
-      "hash": "sha256-cdf237ba5f43cacdc75c9fd3e1b8b9fca8c65a3e0ce1eeec0b8303ad86bb4abb"
+      "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
     }
   ]
 }
@@ -125,8 +125,8 @@ SOURCES='libxcb-1.17.0.tar.xz'
 VERSION=1.17.0
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/libxcb/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -134,6 +134,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
@@ -150,8 +151,8 @@ OATH_EOF
 # libxcb and its extension libraries, shared, generated from xcb-proto.
 tar -xf "$SRC/$SOURCES"
 cd "libxcb-$VERSION"
-./configure --prefix="$LIVE" --disable-static --disable-devel-docs --without-doxygen
+./configure --prefix="$LIVE" --libdir="$LIVE/$LIBDIR" --disable-static --disable-devel-docs --without-doxygen
 make -j"$JOBS"
 make install DESTDIR=/tmp/dest
-cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" /out/
-rm -f /out/lib/*.la
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" /out/
+rm -f "/out/$LIBDIR"/*.la

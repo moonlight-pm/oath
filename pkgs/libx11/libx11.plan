@@ -29,7 +29,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glibc",
@@ -53,11 +53,11 @@
     },
     {
       "id": "pkg:libxau",
-      "hash": "sha256-cdf237ba5f43cacdc75c9fd3e1b8b9fca8c65a3e0ce1eeec0b8303ad86bb4abb"
+      "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
     },
     {
       "id": "pkg:libxcb",
-      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
     },
     {
       "id": "pkg:make",
@@ -103,7 +103,7 @@
   "run_needs": [
     {
       "id": "pkg:libxcb",
-      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
     }
   ]
 }
@@ -117,8 +117,8 @@ SOURCES='libX11-1.8.14.tar.xz'
 VERSION=1.8.14
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/libx11/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -126,6 +126,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
@@ -143,10 +144,10 @@ OATH_EOF
 # XErrorDB). No specs or man pages.
 tar -xf "$SRC/$SOURCES"
 cd "libX11-$VERSION"
-./configure --prefix="$LIVE" --disable-static --disable-specs --without-xmlto --without-fop \
+./configure --prefix="$LIVE" --libdir="$LIVE/$LIBDIR" --disable-static --disable-specs --without-xmlto --without-fop \
 	--without-xsltproc --without-perl
 make -j"$JOBS"
 make install DESTDIR=/tmp/dest
-cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" "/tmp/dest$LIVE/share" /out/
-rm -f /out/lib/*.la
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" "/tmp/dest$LIVE/share" /out/
+rm -f "/out/$LIBDIR"/*.la
 rm -rf /out/share/man /out/share/doc

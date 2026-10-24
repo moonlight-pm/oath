@@ -29,7 +29,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glibc",
@@ -100,8 +100,8 @@ SOURCES='libXau-1.0.12.tar.xz'
 VERSION=1.0.12
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/libxau/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -109,6 +109,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
@@ -125,8 +126,8 @@ OATH_EOF
 # libXau, shared, with headers and pkg-config.
 tar -xf "$SRC/$SOURCES"
 cd "libXau-$VERSION"
-./configure --prefix="$LIVE" --disable-static
+./configure --prefix="$LIVE" --libdir="$LIVE/$LIBDIR" --disable-static
 make -j"$JOBS"
 make install DESTDIR=/tmp/dest
-cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" /out/
-rm -f /out/lib/*.la
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" /out/
+rm -f "/out/$LIBDIR"/*.la

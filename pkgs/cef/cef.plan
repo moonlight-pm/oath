@@ -33,7 +33,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glibc",
@@ -103,11 +103,11 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-e830e8033e44121fcf2bdbb35495474940d8d0ee53f00246bbfabc12997a5b75"
+      "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glib",
@@ -119,11 +119,11 @@
     },
     {
       "id": "pkg:libx11",
-      "hash": "sha256-b0dc36b6201c46bbd9552cccb7e7338800c735ad0d458df99faaebfa75e7b145"
+      "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
     },
     {
       "id": "pkg:libxcb",
-      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
     },
     {
       "id": "pkg:libxcomposite",
@@ -135,11 +135,11 @@
     },
     {
       "id": "pkg:libxext",
-      "hash": "sha256-d00c79356828a7e6408978f912f340ba89e1bec9c9533edd8592f953b5941ec4"
+      "hash": "sha256-ad3ac686b22f8fae4c99512cd2a9ca2d75e765972c734d1fbaa70e6208f3b009"
     },
     {
       "id": "pkg:libxfixes",
-      "hash": "sha256-d75d210b505179bdfaa3301afa5f53363f735538bbc653d186a13784c35cf099"
+      "hash": "sha256-c681ae24f18d6179018592914d25f6823c3466535abb7ec088d87b5552a0812b"
     },
     {
       "id": "pkg:libxkbcommon",
@@ -147,7 +147,7 @@
     },
     {
       "id": "pkg:libxrandr",
-      "hash": "sha256-38ec3a51179810d9ba9e91fbe9e76aad6615fb27764f81b654f8cdfa8b7867f1"
+      "hash": "sha256-89c214b4dcdde14c86a8333892a550f5f19d72220cc27dcbfe401eba4f24ef01"
     },
     {
       "id": "pkg:mesa",
@@ -155,11 +155,11 @@
     },
     {
       "id": "pkg:nspr",
-      "hash": "sha256-64223cdeccbd1dcf133cf247bbdef0493416aefe6c38bcc4e6cb9a2057fb666f"
+      "hash": "sha256-76157a1965599fa3daa9faea6480f2f3011fd870d33ae5d83ce909856b5f4779"
     },
     {
       "id": "pkg:nss",
-      "hash": "sha256-9449b881a6f7d1b5c0714cfd89776c800c3fb4b341271688266f0c7687ef1960"
+      "hash": "sha256-26d09d48fd5e26098397b7f49a295dba32d5a5cd142e740776056b94c341af64"
     },
     {
       "id": "pkg:pango",
@@ -181,8 +181,8 @@ SOURCES='cef_binary_147.0.10+gd58e84d+chromium-147.0.7727.118_linux64_minimal.ta
 VERSION=147.0.10+gd58e84d+chromium-147.0.7727.118
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/cef/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -190,6 +190,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"

@@ -46,12 +46,20 @@
       "hash": "sha256-4e1455a4c8d3d8701c330c545bf0a6418a3c0bf3ad5fcbcf7bbb65be8ac41aad"
     },
     {
-      "id": "pkg:glibc32",
-      "hash": "sha256-cf7f4495d61b36e84b75d5cfb27602f03ca72ff4c510e2f2bbe35ab190e3c920"
+      "id": "pkg:glibc-i386",
+      "hash": "sha256-2a10455cf1f348150936e25e3772c7f9f85027a73874ae0f799b5c73752bbec2"
     },
     {
       "id": "pkg:libxcrypt",
       "hash": "sha256-25b0443398d100a4a94228a4dae7ad049598eecc20753fb8ae273a3f90625b5d"
+    },
+    {
+      "id": "pkg:libxcrypt-i386",
+      "hash": "sha256-02f8643f11cb2a834a414736d76765ecf6a6997234161b1e6cd98aa784701a1d"
+    },
+    {
+      "id": "pkg:mesa-i386",
+      "hash": "sha256-7232d1cf39be136654ea28c39a022e4f54103a3ce50155e7ed965d36444c552e"
     }
   ]
 }
@@ -65,8 +73,8 @@ SOURCES='steam_1.0.0.87.tar.gz'
 VERSION=1.0.0.87
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/steam/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -74,6 +82,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"

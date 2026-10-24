@@ -29,7 +29,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glibc",
@@ -97,8 +97,8 @@ SOURCES='zstd-1.5.7.tar.gz'
 VERSION=1.5.7
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/zstd/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -106,6 +106,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
@@ -119,12 +120,16 @@ cat > /out/components.json <<'OATH_EOF'
   }
 ]
 OATH_EOF
-# libzstd, shared, with headers and pkg-config, and the zstd tool.
+# libzstd, shared, with headers and pkg-config, and (x86_64) the zstd tool.
 tar -xf "$SRC/$SOURCES"
 cd "zstd-$VERSION"
-make -j"$JOBS" -C lib libzstd PREFIX="$LIVE"
-make -j"$JOBS" -C programs zstd PREFIX="$LIVE"
-make -C lib install-shared install-includes install-pc PREFIX="$LIVE" DESTDIR=/tmp/dest
-mkdir -p /out/bin
-cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" /out/
-cp programs/zstd /out/bin/
+make -j"$JOBS" -C lib libzstd PREFIX="$LIVE" LIBDIR="$LIVE/$LIBDIR"
+make -C lib install-shared install-includes install-pc PREFIX="$LIVE" LIBDIR="$LIVE/$LIBDIR" \
+	DESTDIR=/tmp/dest
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" /out/
+# A pack's bin/ is linked into /bin: the tool is the x86_64 pack's.
+if [ "$LIBDIR" = lib ]; then
+	make -j"$JOBS" -C programs zstd PREFIX="$LIVE"
+	mkdir -p /out/bin
+	cp programs/zstd /out/bin/
+fi

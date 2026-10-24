@@ -21,11 +21,11 @@
     },
     {
       "id": "pkg:elfutils",
-      "hash": "sha256-a468120c4b617df7476a8a6d5a6b187ce2d47728057419f4c0b5be1ed0d13b4d"
+      "hash": "sha256-cd08cb781d5cb34faed8c0f43ad2f8c7832bcd479fc33b4bb13631fd24b9974a"
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-e830e8033e44121fcf2bdbb35495474940d8d0ee53f00246bbfabc12997a5b75"
+      "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
     },
     {
       "id": "pkg:findutils",
@@ -37,7 +37,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:glibc",
@@ -65,35 +65,35 @@
     },
     {
       "id": "pkg:libffi",
-      "hash": "sha256-eaec020f8be62accfd32bc1374f1fee926034e99048b76eb8bfcd06880b75c30"
+      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
     },
     {
       "id": "pkg:libx11",
-      "hash": "sha256-b0dc36b6201c46bbd9552cccb7e7338800c735ad0d458df99faaebfa75e7b145"
+      "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
     },
     {
       "id": "pkg:libxau",
-      "hash": "sha256-cdf237ba5f43cacdc75c9fd3e1b8b9fca8c65a3e0ce1eeec0b8303ad86bb4abb"
+      "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
     },
     {
       "id": "pkg:libxcb",
-      "hash": "sha256-4badd529a378f4d75b461ecde3a352777548bb2f15839ae49bbbaeaee7661e8c"
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
     },
     {
       "id": "pkg:libxext",
-      "hash": "sha256-d00c79356828a7e6408978f912f340ba89e1bec9c9533edd8592f953b5941ec4"
+      "hash": "sha256-ad3ac686b22f8fae4c99512cd2a9ca2d75e765972c734d1fbaa70e6208f3b009"
     },
     {
       "id": "pkg:libxfixes",
-      "hash": "sha256-d75d210b505179bdfaa3301afa5f53363f735538bbc653d186a13784c35cf099"
+      "hash": "sha256-c681ae24f18d6179018592914d25f6823c3466535abb7ec088d87b5552a0812b"
     },
     {
       "id": "pkg:libxshmfence",
-      "hash": "sha256-6aad437cdd1ac2098010057bab9bbf3235b6e7bc143bbb6cdf2de20284b36e8c"
+      "hash": "sha256-aeee2140dbdc35ff023f8d5fc790c4985e8d5128547c058bcc0562b35b8dc6fc"
     },
     {
       "id": "pkg:libxxf86vm",
-      "hash": "sha256-d656f2c5a186be24afa2132c39344c2fb9e8a16eaa0618bf3123096c44dc84ca"
+      "hash": "sha256-97d9bc43c8b59cfc8bf465ad813c13f30afe4aecdbd368d99ce9939d951640cb"
     },
     {
       "id": "pkg:make",
@@ -117,7 +117,7 @@
     },
     {
       "id": "pkg:ninja",
-      "hash": "sha256-7af4eba9e7734252b0b4c5cd6277eb84ea304152c6fdeb161eb70459ba5e0d56"
+      "hash": "sha256-583e82e21e3510376a1959a10c79ee043102dfad11bc51b9bf7ea4f36b9a74c5"
     },
     {
       "id": "pkg:patch",
@@ -153,7 +153,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-b6d23a9b5dc6b51202879ba481a78cdaaa1a05418515ffa715a2bf3bb2904528"
+      "hash": "sha256-587ab69c17b6e7a290ddc2ac77443f63443e28738ddc045b948021bfe4e15b2c"
     },
     {
       "id": "pkg:zstd",
@@ -177,8 +177,8 @@ SOURCES='libepoxy-1.5.10.tar.xz'
 VERSION=1.5.10
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/libepoxy/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -186,6 +186,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"

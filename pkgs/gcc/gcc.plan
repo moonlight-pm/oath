@@ -29,7 +29,7 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
     },
     {
       "id": "pkg:gcc-src",
@@ -38,6 +38,10 @@
     {
       "id": "pkg:glibc",
       "hash": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592"
+    },
+    {
+      "id": "pkg:glibc-i386",
+      "hash": "sha256-2a10455cf1f348150936e25e3772c7f9f85027a73874ae0f799b5c73752bbec2"
     },
     {
       "id": "pkg:gmp",
@@ -105,8 +109,8 @@ SOURCES='gcc-16.2.0.tar.xz binutils-2.47.tar.xz'
 VERSION=16.2.0
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/gcc/live
+LIBDIR=lib
 export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
-export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
 for d in /oath/store/pkg/*/live; do
 	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
@@ -114,6 +118,7 @@ for d in /oath/store/pkg/*/live; do
 	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
 	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
 export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
 # Hand-written Makefiles often ignore CPPFLAGS.
 CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
@@ -131,12 +136,18 @@ OATH_EOF
 # Every program it links names /lib/ld-linux-x86-64.so.2; it reads
 # glibc's headers from /oath/store/pkg/glibc/live/include and finds
 # glibc's libraries and startup files in /lib. It links the GMP, MPFR and
-# MPC packages.
+# MPC packages. With -m32 it compiles for i386 (R29): those programs name
+# /lib/ld-linux.so.2, its runtime libraries are in lib32/, it reads
+# glibc-i386's two 32-bit headers after glibc's, and it finds glibc-i386's
+# libraries in /lib32, which a build sandbox shows when glibc-i386 is one
+# of the build's packs.
 T=x86_64-pc-linux-gnu
 for f in $SOURCES; do tar -xf "$SRC/$f"; done
 g=gcc-$VERSION
 sed -i 's|/lib64/ld-linux-x86-64.so.2|/lib/ld-linux-x86-64.so.2|' "$g/gcc/config/i386/linux64.h"
 sed -i '/m64=/s/lib64/lib/' "$g/gcc/config/i386/t-linux64"
+sed -i 's|^MULTILIB_OSDIRNAMES+= m32=.*|MULTILIB_OSDIRNAMES+= m32=../lib32|' "$g/gcc/config/i386/t-linux64"
+grep -qx 'MULTILIB_OSDIRNAMES+= m32=../lib32' "$g/gcc/config/i386/t-linux64"
 # The compiler builds on its own terms.
 unset CPPFLAGS LDFLAGS
 export CFLAGS=-O2 CXXFLAGS=-O2
@@ -150,10 +161,11 @@ make -j"$JOBS" MAKEINFO=true
 make install DESTDIR=/out MAKEINFO=true
 cd ../b-gcc
 "../$g/configure" --build=$T --host=$T --target=$T --prefix= \
-	--disable-nls --disable-multilib --disable-bootstrap --enable-default-pie \
+	--disable-nls --enable-multilib --with-multilib-list=m32,m64 --disable-bootstrap --enable-default-pie \
 	--enable-default-ssp --enable-languages=c,c++ --disable-libsanitizer --disable-libssp \
 	--disable-libvtv --disable-libitm --disable-libquadmath --without-isl --without-zstd \
 	--with-native-system-header-dir=/oath/store/pkg/glibc/live/include \
+	--with-specs='%{m32:-idirafter /oath/store/pkg/glibc-i386/live/include}' \
 	--with-gmp=/oath/store/pkg/gmp/live --with-mpfr=/oath/store/pkg/mpfr/live \
 	--with-mpc=/oath/store/pkg/mpc/live \
 	--enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-lto \
@@ -168,4 +180,9 @@ mkdir -p lib/bfd-plugins
 ln -sf "../../libexec/gcc/$T/16/liblto_plugin.so" lib/bfd-plugins/liblto_plugin.so
 # binutils' tooldir copies, its headers and the docs are not needed.
 rm -rf "$T" share include/*.h
-find lib -name '*.la' -delete
+find lib lib32 -name '*.la' -delete
+# -m32 links and runs here: glibc-i386 is one of this build's packs.
+printf 'int main(void) { return 0; }\n' >/tmp/t.c
+bin/gcc -m32 -o /tmp/t32 /tmp/t.c -include assert.h
+/tmp/t32
+test -e lib32/libstdc++.so.6 && test -e lib32/libgcc_s.so.1

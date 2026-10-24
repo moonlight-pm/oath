@@ -1,0 +1,336 @@
+#!oath-plan
+{
+  "name": "mesa-i386",
+  "produces": "pkg:mesa-i386",
+  "build_needs": [
+    {
+      "id": "pkg:bash",
+      "hash": "sha256-80f160c2dd44f5d3801bd5627163e4203d513ea9bc1edf70cccb567a34f6c371"
+    },
+    {
+      "id": "pkg:bison",
+      "hash": "sha256-a275be513dd9c2d5d12518915a1ae8701d7c2d21d72791a973574244aa09d203"
+    },
+    {
+      "id": "pkg:bzip2",
+      "hash": "sha256-14b4d3dd447515672a1890ee020e2e577bc6604508ed21e6be53aba1cb025955"
+    },
+    {
+      "id": "pkg:coreutils",
+      "hash": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da"
+    },
+    {
+      "id": "pkg:diffutils",
+      "hash": "sha256-064d781760f48fb7ee12fa47f1de69b1c644c7cf72dbd83b476b89dad7149002"
+    },
+    {
+      "id": "pkg:elfutils-i386",
+      "hash": "sha256-ff17847c7f3bc4f3280bd0f6c326acc7456b9967f68218055cdee9baf373e49c"
+    },
+    {
+      "id": "pkg:expat",
+      "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
+    },
+    {
+      "id": "pkg:expat-i386",
+      "hash": "sha256-0f40befa6ecd881df86146be15e62c8231e84312fde732b77eff6c5a17a527b3"
+    },
+    {
+      "id": "pkg:findutils",
+      "hash": "sha256-0752f905b59e72a4bc41ae54d4f53629d49d82a129219a2eb4c4d2b67bb5fab7"
+    },
+    {
+      "id": "pkg:flex",
+      "hash": "sha256-eff7fdd6363c4c14466334063374f039e62b841aa7038af9b43d78cd3fcb9717"
+    },
+    {
+      "id": "pkg:gawk",
+      "hash": "sha256-b671a3d6d7871b775c6026322a73b8288a5f889814437a92432fe0f745db118c"
+    },
+    {
+      "id": "pkg:gcc",
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
+    },
+    {
+      "id": "pkg:glibc",
+      "hash": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592"
+    },
+    {
+      "id": "pkg:glibc-i386",
+      "hash": "sha256-2a10455cf1f348150936e25e3772c7f9f85027a73874ae0f799b5c73752bbec2"
+    },
+    {
+      "id": "pkg:glslang",
+      "hash": "sha256-d78e68d9286f6a69dcd0b7b0d542810b327d3ab5756da6030f1ecede1aae3ed5"
+    },
+    {
+      "id": "pkg:gmp",
+      "hash": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2"
+    },
+    {
+      "id": "pkg:grep",
+      "hash": "sha256-f4fa7ae2900d8fa5a5b390d16a5d2421a6ebd976a448947261f1c54a0118e8d5"
+    },
+    {
+      "id": "pkg:gzip",
+      "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
+    },
+    {
+      "id": "pkg:libdrm-i386",
+      "hash": "sha256-81c6ce8d65edb788f4f946b1920e3347efa942d9b42e27eae8813f5e55c0cf24"
+    },
+    {
+      "id": "pkg:libffi",
+      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
+    },
+    {
+      "id": "pkg:libffi-i386",
+      "hash": "sha256-afaebdcf88387f34371ca89f02f7a1bc066d7260a5d8ca00315711a59af4e7b2"
+    },
+    {
+      "id": "pkg:libx11-i386",
+      "hash": "sha256-e8d856a91aedbe0c6cabfd5aeb71ec47057ba27b5960edaa27062575887e7e13"
+    },
+    {
+      "id": "pkg:libxau-i386",
+      "hash": "sha256-68a6e10c0adbaae98073ef4ec0da705bbfc67812407b881d59d85d954d4b4a9b"
+    },
+    {
+      "id": "pkg:libxcb-i386",
+      "hash": "sha256-7c8a73f02e9f650f867eab1c8a715957acd01e8241a5821fe68ef38c54bcb372"
+    },
+    {
+      "id": "pkg:libxext-i386",
+      "hash": "sha256-3a6a63df1112ca755975bcc6d3a7159b2313cbb85932eb55ec67c0e2747e8bb5"
+    },
+    {
+      "id": "pkg:libxfixes-i386",
+      "hash": "sha256-b5f65352cd276e2e56316554b0adb2c8857bc85b97a0ce99ca18792911a44cb2"
+    },
+    {
+      "id": "pkg:libxshmfence-i386",
+      "hash": "sha256-05c9c1af8d3dacf2aad897734b98ed97c23cca5837193c17d5f61a8381afe854"
+    },
+    {
+      "id": "pkg:libxxf86vm-i386",
+      "hash": "sha256-daa3c7efa61227ad9d6e290f2504b13b05dddaec134f9030c3baf9070e1a9141"
+    },
+    {
+      "id": "pkg:m4",
+      "hash": "sha256-5b01994240ad12ea4732f2caf41ce8256cbed5632161490c213a4e557937da47"
+    },
+    {
+      "id": "pkg:make",
+      "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
+    },
+    {
+      "id": "pkg:mesa-i386-src",
+      "hash": "sha256-e46d8e6636e11536ef62baac42625d044c59c41412fd7b2309f5d1f63245967a"
+    },
+    {
+      "id": "pkg:meson",
+      "hash": "sha256-e681b9f9580b5670fc12fc8da7926b01b2fd4650c5ff09abb4d8d816cfe90dc6"
+    },
+    {
+      "id": "pkg:mpc",
+      "hash": "sha256-877f9c92df8a5af55c48573a0ee1ef5fc055e26c9a14ae866ab8753cbfd1a171"
+    },
+    {
+      "id": "pkg:mpfr",
+      "hash": "sha256-494241b048adac84186882cbd4d973464df07a671aaeebcfdaec9d460976e5e7"
+    },
+    {
+      "id": "pkg:ninja",
+      "hash": "sha256-583e82e21e3510376a1959a10c79ee043102dfad11bc51b9bf7ea4f36b9a74c5"
+    },
+    {
+      "id": "pkg:patch",
+      "hash": "sha256-61ab1745f2340a0c91fd938bb763c6a69c0640e66ff951e4c558575e0e7ff4ef"
+    },
+    {
+      "id": "pkg:pkgconf",
+      "hash": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f"
+    },
+    {
+      "id": "pkg:python",
+      "hash": "sha256-5336ee7c08ccba6fd538b203c4c7d155f276827686e827a7239fa8fb9845dabc"
+    },
+    {
+      "id": "pkg:python-mako",
+      "hash": "sha256-efe336c018f03c0bf6c2fb4d588e4cb732ca22dea90cebb8c767f3db6dac23cc"
+    },
+    {
+      "id": "pkg:python-markupsafe",
+      "hash": "sha256-b15485f9419e2d9044b4095614358fa4eb9bf1c74d55ce7b577f7e243e74032f"
+    },
+    {
+      "id": "pkg:python-packaging",
+      "hash": "sha256-c061c6b543f91a45b83c62e84193c10936ed7919c36ed741783385284fa81fa7"
+    },
+    {
+      "id": "pkg:python-pyyaml",
+      "hash": "sha256-a55e5c8ef2cd59ea62acc2282cd0a52ebc564af9417abfd23bcbbac7603b5c29"
+    },
+    {
+      "id": "pkg:sed",
+      "hash": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819"
+    },
+    {
+      "id": "pkg:tar",
+      "hash": "sha256-94263cf077bd23908966915fea3ab0cd481b04f7efa276407088a96b6de96128"
+    },
+    {
+      "id": "pkg:wayland",
+      "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac"
+    },
+    {
+      "id": "pkg:wayland-i386",
+      "hash": "sha256-9827cf2216029a12fdd44496f2add786347d14023fcb7bd56905dee41dc7c538"
+    },
+    {
+      "id": "pkg:wayland-protocols",
+      "hash": "sha256-7a8a358cf0f3325b4d5821273f7ecc9d1530602b24d102c4b140625a539de924"
+    },
+    {
+      "id": "pkg:xorgproto",
+      "hash": "sha256-0fc8bda924e9431b51ced4992b68de06757342614daa488502a71a29208ee81e"
+    },
+    {
+      "id": "pkg:xz",
+      "hash": "sha256-449080873772868f09eacc3db3243ca5f4376920782f3c1c1199d0302646b33b"
+    },
+    {
+      "id": "pkg:zlib",
+      "hash": "sha256-587ab69c17b6e7a290ddc2ac77443f63443e28738ddc045b948021bfe4e15b2c"
+    },
+    {
+      "id": "pkg:zlib-i386",
+      "hash": "sha256-28813ae65ee7b5def672e5d53aaaeb4edc1ed4bd2c69bee07d63cd1abb5d303b"
+    },
+    {
+      "id": "pkg:zstd",
+      "hash": "sha256-5bf91c19d01771beccc4dd6c715f577d57ee823e5d7e1a15f733e9d1f664fffa"
+    },
+    {
+      "id": "pkg:zstd-i386",
+      "hash": "sha256-659e595dbcf9a9205c3ef5135cffb5984e8c5ff5b2b4715de8fb31732cb94d93"
+    }
+  ],
+  "run_needs": [
+    {
+      "id": "pkg:elfutils-i386",
+      "hash": "sha256-ff17847c7f3bc4f3280bd0f6c326acc7456b9967f68218055cdee9baf373e49c"
+    },
+    {
+      "id": "pkg:expat-i386",
+      "hash": "sha256-0f40befa6ecd881df86146be15e62c8231e84312fde732b77eff6c5a17a527b3"
+    },
+    {
+      "id": "pkg:gcc",
+      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
+    },
+    {
+      "id": "pkg:libdrm-i386",
+      "hash": "sha256-81c6ce8d65edb788f4f946b1920e3347efa942d9b42e27eae8813f5e55c0cf24"
+    },
+    {
+      "id": "pkg:libx11-i386",
+      "hash": "sha256-e8d856a91aedbe0c6cabfd5aeb71ec47057ba27b5960edaa27062575887e7e13"
+    },
+    {
+      "id": "pkg:libxcb-i386",
+      "hash": "sha256-7c8a73f02e9f650f867eab1c8a715957acd01e8241a5821fe68ef38c54bcb372"
+    },
+    {
+      "id": "pkg:libxext-i386",
+      "hash": "sha256-3a6a63df1112ca755975bcc6d3a7159b2313cbb85932eb55ec67c0e2747e8bb5"
+    },
+    {
+      "id": "pkg:libxfixes-i386",
+      "hash": "sha256-b5f65352cd276e2e56316554b0adb2c8857bc85b97a0ce99ca18792911a44cb2"
+    },
+    {
+      "id": "pkg:libxshmfence-i386",
+      "hash": "sha256-05c9c1af8d3dacf2aad897734b98ed97c23cca5837193c17d5f61a8381afe854"
+    },
+    {
+      "id": "pkg:libxxf86vm-i386",
+      "hash": "sha256-daa3c7efa61227ad9d6e290f2504b13b05dddaec134f9030c3baf9070e1a9141"
+    },
+    {
+      "id": "pkg:wayland-i386",
+      "hash": "sha256-9827cf2216029a12fdd44496f2add786347d14023fcb7bd56905dee41dc7c538"
+    },
+    {
+      "id": "pkg:zlib-i386",
+      "hash": "sha256-28813ae65ee7b5def672e5d53aaaeb4edc1ed4bd2c69bee07d63cd1abb5d303b"
+    },
+    {
+      "id": "pkg:zstd-i386",
+      "hash": "sha256-659e595dbcf9a9205c3ef5135cffb5984e8c5ff5b2b4715de8fb31732cb94d93"
+    }
+  ]
+}
+---
+#!/bin/sh
+set -eu
+# generated by cargo make pkgs from pkgs/mesa-i386/
+SRC=/oath/store/pkg/mesa-i386-src/sha256-e46d8e6636e11536ef62baac42625d044c59c41412fd7b2309f5d1f63245967a/src
+FILES=/oath/store/pkg/mesa-i386-src/sha256-e46d8e6636e11536ef62baac42625d044c59c41412fd7b2309f5d1f63245967a/files
+SOURCES='mesa-26.2.5.tar.xz'
+VERSION=26.2.5
+JOBS=$(nproc)
+LIVE=/oath/store/pkg/mesa-i386/live
+LIBDIR=lib32
+export CC="cc -m32" CXX="c++ -m32" AR=ar RANLIB=ranlib NM=nm STRIP=strip
+CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH= pc=
+for d in /oath/store/pkg/*/live; do
+	case $d in */gcc/live | */glibc/live | */glibc-i386/live | *-src/live) continue ;; esac
+	[ -d "$d/include" ] && CPPFLAGS="$CPPFLAGS -I$d/include"
+	[ -d "$d/lib32" ] && LDFLAGS="$LDFLAGS -L$d/lib32"
+	[ -d "$d/lib32/pkgconfig" ] && PKG_CONFIG_PATH="${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}$d/lib32/pkgconfig"
+	[ -d "$d/lib/pkgconfig" ] && pc="${pc:+$pc:}$d/lib/pkgconfig"
+done
+PKG_CONFIG_PATH="$PKG_CONFIG_PATH${pc:+:$pc}"
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
+export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
+# Hand-written Makefiles often ignore CPPFLAGS.
+CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
+mkdir -p /out
+cat > /out/components.json <<'OATH_EOF'
+[
+  {
+    "name": "mesa-i386",
+    "purl": "pkg:generic/mesa@26.2.5",
+    "version": "26.2.5"
+  }
+]
+OATH_EOF
+# Mesa: libEGL, libGLESv2, libGL (GLX), libgbm and the radeonsi and
+# softpipe drivers, on Wayland and X11. drirc's per-program workarounds
+# are on (xmlconfig, expat). RADV, the Vulkan driver for amdgpu, and the
+# device-select layer, which puts the compositor's GPU first: their
+# manifests (share/vulkan) name each library by its name, found in /lib.
+tar -xf "$SRC/$SOURCES"
+cd "mesa-$VERSION"
+PYTHONPATH=
+for m in mako markupsafe pyyaml packaging; do
+	PYTHONPATH="$PYTHONPATH${PYTHONPATH:+:}/oath/store/pkg/python-$m/live/lib/python"
+done
+export PYTHONPATH
+meson setup build --prefix="$LIVE" --libdir="$LIBDIR" --buildtype=release --wrap-mode=nofallback \
+	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe \
+	-Dvulkan-drivers=amd -Dvulkan-layers=device-select -Dvulkan-manifest-per-architecture=false \
+	-Dllvm=disabled -Damd-use-llvm=false -Ddraw-use-llvm=false \
+	-Degl=enabled -Dgbm=enabled -Dgles2=enabled -Dgles1=disabled -Dopengl=true \
+	-Dglx=dri -Dglvnd=disabled -Dxlib-lease=disabled \
+	-Dgallium-va=disabled -Dgallium-rusticl=false -Dgallium-d3d10umd=false \
+	-Dgallium-mediafoundation=disabled -Dgallium-d3d12-video=disabled -Dmicrosoft-clc=disabled \
+	-Dvideo-codecs= -Dtools= -Dbuild-tests=false -Denable-glcpp-tests=false \
+	-Dvalgrind=disabled -Dlibunwind=disabled -Dlmsensors=disabled -Dperfetto=false \
+	-Dexpat=enabled -Dxmlconfig=enabled -Dzlib=enabled -Dzstd=enabled \
+	-Ddisplay-info=disabled -Dspirv-tools=disabled -Dshader-cache=enabled -Dhtml-docs=disabled
+ninja -C build -j"$JOBS"
+DESTDIR=/tmp/dest ninja -C build install
+cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" "/tmp/dest$LIVE/share" /out/
+grep -q '"library_path": "libvulkan_radeon.so"' /out/share/vulkan/icd.d/radeon_icd.json
