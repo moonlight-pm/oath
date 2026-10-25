@@ -1418,6 +1418,16 @@
       "pipewire"
     ]
   },
+  "wl-clipboard": {
+    "version": "2.3.0",
+    "license": "GPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-55b63a00196bb50ad6ab9134ee27fdeecbaccc3a82da3dfafb35775aa2fe3c67",
+    "product": "sha256-41f03fdfe098cbf5c83355ba45503116ccb58df38ee9154fc03cf40d88c70662",
+    "run": [
+      "wayland"
+    ]
+  },
   "wlroots": {
     "version": "0.20.2",
     "license": "MIT",

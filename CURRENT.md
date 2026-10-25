@@ -25,9 +25,9 @@ append history (git has it).
    from the next boot. Next: a 32-bit game and a pad, after that reboot.
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, PipeWire, Noto, Vulkan (RADV), and Sola's session from
-   Sola's own packs, which `desk.json` pins (R28, no fork; its `next` at
-   `c6cda58b`). Next: realtime priority for PipeWire; new pins when the
+   Xwayland, PipeWire, Noto, Vulkan (RADV), `wl-clipboard` (generation
+   319), and Sola's session from Sola's own packs, which `desk.json`
+   pins (R28, no fork; its `next` at `c6cda58b`). Next: realtime priority for PipeWire; new pins when the
    Sola tab publishes.
 4. **novus to Oath (R32–R34).** NixOS goes and novus gets its own Oath
    install; first Oath builds itself, proven on canto. Done: bootstrap

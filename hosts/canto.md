@@ -112,6 +112,13 @@ Overwrite this file when facts change; do not append a diary.
   and `grok` 1.0.70 run; neither is signed in (`codex login`, `grok
   login`). `bin/grok` wrote `auto_update = false` to
   `~/.grok/config.toml`; `~/.codex/hooks.json` (2026-10-21) predates it.
+- **wl-clipboard:** in `desk` after the install, so on 2026-10-25
+  05:00Z novus's pack (`sha256-41f03fdf…`, `cargo make pkgs
+  wl-clipboard`) was put here with `oath store`, made with `oath new
+  pkg:wl-clipboard --from-json` (needs `pkg:wayland`) and applied
+  (generation 319). `wl-copy` and `wl-paste` bind rivulet's
+  `ext_data_control_manager_v1`, no popup; a PNG copied and pasted back
+  matched byte for byte.
 - **Backup:** `backup-send` mounts the NAS export as NFS 4.0
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no
   version). Mounting and unmounting it was checked on 2026-10-18; the

@@ -21,7 +21,7 @@ The desk's packages, built in dependency order by `cargo make pkgs`
 | Layer | Packages |
 |-------|----------|
 | Compositor | `rivulet` (`tree = "apps/rivulet"`), `wlroots` 0.20.2 with Oath's two patches (`pkgs/wlroots/patches/`, from `forks/wlroots`) |
-| Wayland | `wayland`, `wayland-protocols`, `libffi`, `expat` |
+| Wayland | `wayland`, `wayland-protocols`, `libffi`, `expat`, `wl-clipboard` 2.3.0 (`wl-copy`, `wl-paste`: the clipboard from a shell over rivulet's ext-data-control, which Claude Code pastes images with) |
 | GPU | `mesa` 26.2.5 (radeonsi and RADV, compiled by ACO; softpipe; GBM, EGL, GLES, GL, GLX and Vulkan, with the device-select layer; no LLVM), `vulkan-loader`, `vulkan-tools` (`vulkaninfo`), `libdrm` (amdgpu, radeon), `elfutils`' libelf |
 | Input and seat | `libinput` (no libwacom, mtdev or Lua), `libevdev`, `libudev-zero`, `seatd` (seatd, libseat with the seatd, builtin and noop backends) |
 | Keyboard | `libxkbcommon`, `xkeyboard-config` |
