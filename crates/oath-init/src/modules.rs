@@ -21,8 +21,10 @@ use nix::kmod::{finit_module, ModuleInitFlags};
 pub const HELPER: &str = "/lib/oath/modprobe";
 
 /// Parameters a module always gets. amdgpu drives Southern and Sea
-/// Islands cards only when asked.
-const DEFAULT_PARAMS: &[(&str, &str)] = &[("amdgpu", "si_support=1 cik_support=1")];
+/// Islands cards only when asked; NVIDIA's DRM driver does kernel
+/// modesetting, which a Wayland compositor needs, only when asked.
+const DEFAULT_PARAMS: &[(&str, &str)] =
+    &[("amdgpu", "si_support=1 cik_support=1"), ("nvidia_drm", "modeset=1 fbdev=1")];
 
 /// Coldplug passes: loading a bus driver (virtio_pci, xhci) makes new
 /// devices appear, which ask for their own drivers.
@@ -31,6 +33,46 @@ const PASSES: usize = 8;
 pub fn base() -> PathBuf {
     let kver = fs::read_to_string("/proc/sys/kernel/osrelease").unwrap_or_default();
     Path::new("/lib/modules").join(kver.trim())
+}
+
+/// Module trees packages bring for kernel `kver` (R34: NVIDIA's): the
+/// `lib/modules/<kver>/` with an index of every package whose applied
+/// spec is present, but pkg:linux, whose tree is the kernel's own
+/// ([`base`]). In the initrd there is no catalog, so none.
+pub fn package_bases(oath: &Path, kver: &str) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let Ok(rd) = fs::read_dir(oath.join("objects/pkg")) else { return out };
+    for e in rd.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if name == "linux" {
+            continue;
+        }
+        let Some(spec) = read_json(&e.path().join("applied.json")) else { continue };
+        if spec.get("present").and_then(|p| p.as_bool()) == Some(false) {
+            continue;
+        }
+        let Some(hash) = spec.get("hash").and_then(|h| h.as_str()) else { continue };
+        let dir = oath.join("store/pkg").join(&name).join(hash).join("lib/modules").join(kver);
+        if dir.join("modules.dep").is_file() {
+            out.push(dir);
+        }
+    }
+    out.sort();
+    out
+}
+
+/// `host:local.module_options` as applied: parameters by module name.
+pub fn host_module_options(oath: &Path) -> HashMap<String, String> {
+    read_json(&oath.join("objects/host/local/applied.json"))
+        .and_then(|spec| spec.get("module_options").and_then(|o| o.as_object()).cloned())
+        .map(|o| {
+            o.into_iter().filter_map(|(m, p)| Some((norm(&m), p.as_str()?.to_string()))).collect()
+        })
+        .unwrap_or_default()
+}
+
+fn read_json(path: &Path) -> Option<serde_json::Value> {
+    serde_json::from_str(&fs::read_to_string(path).ok()?).ok()
 }
 
 /// depmod's view of the module tree.
@@ -46,6 +88,8 @@ pub struct Index {
     post: HashMap<String, Vec<String>>,
     builtin: HashSet<String>,
     cmdline: String,
+    /// `host:local.module_options`: one machine's parameters, by module.
+    options: HashMap<String, String>,
 }
 
 /// A module's name from its path: `kernel/fs/nls/nls_iso8859-1.ko` →
@@ -64,14 +108,48 @@ impl Index {
         let read = |f: &str| fs::read_to_string(base.join(f)).unwrap_or_default();
         let dep = fs::read_to_string(base.join("modules.dep")).ok()?;
         let cmdline = fs::read_to_string("/proc/cmdline").unwrap_or_default();
-        Some(Self::parse(
+        let mut idx = Self::parse(
             base,
             &dep,
             &read("modules.alias"),
             &read("modules.softdep"),
             &read("modules.builtin"),
             &cmdline,
-        ))
+        );
+        let oath = Path::new("/oath");
+        let kver = base.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        for dir in package_bases(oath, &kver) {
+            let read = |f: &str| fs::read_to_string(dir.join(f)).unwrap_or_default();
+            idx.merge(Self::parse(
+                &dir,
+                &read("modules.dep"),
+                &read("modules.alias"),
+                &read("modules.softdep"),
+                "",
+                &cmdline,
+            ));
+        }
+        idx.options = host_module_options(oath);
+        Some(idx)
+    }
+
+    /// Add a package's modules (R34): their paths are absolute, their
+    /// needs are names, which may be the kernel's own modules.
+    fn merge(&mut self, other: Self) {
+        for (name, rel) in other.paths {
+            let path = other.base.join(rel).to_string_lossy().into_owned();
+            self.paths.entry(name).or_insert(path);
+        }
+        for (name, needs) in other.deps {
+            self.deps.entry(name).or_insert(needs);
+        }
+        self.aliases.extend(other.aliases);
+        for (name, m) in other.pre {
+            self.pre.entry(name).or_default().extend(m);
+        }
+        for (name, m) in other.post {
+            self.post.entry(name).or_default().extend(m);
+        }
     }
 
     pub fn parse(
@@ -127,6 +205,7 @@ impl Index {
             post,
             builtin: builtin.lines().map(name_of).collect(),
             cmdline: cmdline.to_string(),
+            options: HashMap::new(),
         }
     }
 
@@ -154,14 +233,16 @@ impl Index {
             .is_some_and(|p| crate::gpu::takes_over_firmware_fb(p) || p.contains("/sound/"))
     }
 
-    /// Defaults, then `name.key=value` from the kernel command line (kmod
-    /// does the same; the kernel only applies those to built-ins).
+    /// Defaults, the machine's `host:local.module_options`, then
+    /// `name.key=value` from the kernel command line (kmod does the same;
+    /// the kernel only applies those to built-ins). A later value wins.
     fn params(&self, name: &str) -> String {
         let mut out: Vec<String> = DEFAULT_PARAMS
             .iter()
             .filter(|(m, _)| *m == name)
             .map(|(_, p)| (*p).to_string())
             .collect();
+        out.extend(self.options.get(name).cloned());
         for tok in self.cmdline.split_whitespace() {
             if let Some((m, kv)) = tok.split_once('.') {
                 if norm(m) == name && kv.contains('=') {
@@ -457,6 +538,65 @@ alias pci:v*d*sv*sd*bc04sc0[13]i* snd_hda_intel
         assert_eq!(i.pre["r8169"], ["realtek"]);
         assert_eq!(i.deps["btrfs"], ["raid6_pq", "xor"]);
         assert!(i.builtin.contains("af_packet"));
+    }
+
+    #[test]
+    fn package_modules_merge_by_name() {
+        let mut i = idx();
+        i.merge(Index::parse(
+            Path::new("/oath/store/pkg/nvidia/sha256-x/lib/modules/x"),
+            "nvidia.ko:\nnvidia-drm.ko: nvidia-modeset.ko libphy.ko\nnvidia-modeset.ko: nvidia.ko\n",
+            "alias pci:v000010DEd*sv*sd*bc03sc00i00 nvidia\n",
+            "softdep nvidia post: nvidia_modeset nvidia_drm\n",
+            "",
+            "",
+        ));
+        assert_eq!(i.paths["nvidia_drm"], "/oath/store/pkg/nvidia/sha256-x/lib/modules/x/nvidia-drm.ko");
+        assert_eq!(i.paths["tg3"], "kernel/drivers/net/ethernet/broadcom/tg3.ko");
+        assert_eq!(i.deps["nvidia_drm"], ["nvidia_modeset", "libphy"]);
+        assert_eq!(i.post["nvidia"], ["nvidia_modeset", "nvidia_drm"]);
+        assert_eq!(i.resolve("pci:v000010DEd00002203sv00001043sd000088A9bc03sc00i00"), ["nvidia"]);
+        assert!(i.deferred("nvidia") && i.deferred("nvidia_drm"));
+    }
+
+    #[test]
+    fn package_bases_are_present_packages_but_linux() {
+        let d = tempfile::tempdir().unwrap();
+        let o = d.path();
+        let pkg = |name: &str, spec: &str, tree: bool| {
+            fs::create_dir_all(o.join("objects/pkg").join(name)).unwrap();
+            fs::write(o.join("objects/pkg").join(name).join("applied.json"), spec).unwrap();
+            if tree {
+                let m = o.join("store/pkg").join(name).join("sha256-a/lib/modules/7.3.0");
+                fs::create_dir_all(&m).unwrap();
+                fs::write(m.join("modules.dep"), "").unwrap();
+            }
+        };
+        pkg("nvidia", r#"{"present": true, "hash": "sha256-a"}"#, true);
+        pkg("gone", r#"{"present": false, "hash": "sha256-a"}"#, true);
+        pkg("linux", r#"{"present": true, "hash": "sha256-a"}"#, true);
+        pkg("mesa", r#"{"present": true, "hash": "sha256-a"}"#, false);
+        assert_eq!(
+            package_bases(o, "7.3.0"),
+            [o.join("store/pkg/nvidia/sha256-a/lib/modules/7.3.0")]
+        );
+        assert!(package_bases(o, "7.2.0").is_empty());
+    }
+
+    #[test]
+    fn host_options_come_before_the_cmdline() {
+        let d = tempfile::tempdir().unwrap();
+        let h = d.path().join("objects/host/local");
+        fs::create_dir_all(&h).unwrap();
+        fs::write(
+            h.join("applied.json"),
+            r#"{"module_options": {"nvidia": "NVreg_EnableGpuFirmware=0"}}"#,
+        )
+        .unwrap();
+        let mut i = Index::parse(Path::new("/x"), "nvidia.ko:\n", "", "", "", "nvidia.NVreg_X=1");
+        i.options = host_module_options(d.path());
+        assert_eq!(i.params("nvidia"), "NVreg_EnableGpuFirmware=0 NVreg_X=1");
+        assert_eq!(i.params("nvidia_drm"), "modeset=1 fbdev=1");
     }
 
     #[test]

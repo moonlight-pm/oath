@@ -76,6 +76,14 @@ pub struct Host {
     /// is not an error. Status lists only what is mounted now.
     #[serde(default)]
     pub mounts: BTreeMap<String, Mount>,
+    /// Kernel module parameters for this machine, by module name
+    /// (`nvidia`: `NVreg_EnableGpuFirmware=0`): one machine's hardware
+    /// workarounds, never a default (R34). PID 1 passes them when it loads
+    /// the module, after its own defaults and before `module.key=value` on
+    /// the kernel command line; a module already loaded takes a change at
+    /// the next boot.
+    #[serde(default)]
+    pub module_options: BTreeMap<String, String>,
 }
 
 /// One filesystem in `host:local.mounts`.

@@ -129,6 +129,7 @@ impl ApplyHooks for Live {
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
             mounts,
+            module_options: desired.module_options.clone(),
         })
     }
 

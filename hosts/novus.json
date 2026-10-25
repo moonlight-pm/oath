@@ -1,0 +1,21 @@
+{
+  "objects": {
+    "host:local": {
+      "hostname": "novus",
+      "timezone": "MST7MDT,M3.2.0,M11.1.0",
+      "module_options": {
+        "nvidia": "NVreg_EnableGpuFirmware=0"
+      }
+    },
+    "svc:gpu-power": {
+      "exec": [
+        "/bin/sh",
+        "-c",
+        "i=0; while [ ! -d /proc/driver/nvidia/gpus ] && [ $i -lt 120 ]; do sleep 1; i=$((i + 1)); done; nvidia-smi -pm 1 && nvidia-smi -pl 250 && nvidia-smi -lgc 210,1500"
+      ],
+      "wants": [],
+      "restart": "on-failure",
+      "enabled": false
+    }
+  }
+}

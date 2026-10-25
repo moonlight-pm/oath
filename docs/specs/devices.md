@@ -52,9 +52,26 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   a link to PID 1's binary in the initrd and the root. The kernel runs
   it for a filesystem (`fs-btrfs` at the root mount, `fs-vfat`), a code
   page (`nls_cp437`) and the like. `backup-send` uses it for NFS.
-- Parameters: amdgpu always gets `si_support=1 cik_support=1`;
-  `module.key=value` on the kernel command line is passed to that
-  module when it loads, as kmod does.
+- Parameters: amdgpu always gets `si_support=1 cik_support=1`, and
+  `nvidia_drm` `modeset=1 fbdev=1`; then the machine's
+  `host:local.module_options` (one machine's hardware workarounds,
+  never a default: novus's `NVreg_EnableGpuFirmware=0`, R34); then
+  `module.key=value` on the kernel command line, as kmod does. A later
+  value wins.
+- **Modules a package brings** (R34, built 2026-10-25, not yet booted):
+  a present package's `lib/modules/<release>/` with an index of its own
+  (`modules.dep` naming each module's needs, which may be pkg:linux's
+  modules; `modules.alias`, `modules.softdep`) joins PID 1's index, read
+  from its applied spec and the store, so it loads by modalias like the
+  kernel's. pkg:linux's own tree is the base. The initrd has no catalog,
+  so such modules load in the pass after services start, as display
+  drivers do. `pkg:nvidia` is the first: built on the machine against
+  `pkg:linux-build`, the kernel's prepared tree, at pkg:linux's config,
+  compiler and `Module.symvers`, so its vermagic is pkg:linux's.
+  NVIDIA's driver makes no device nodes, so once `/proc/driver/nvidia`
+  is there PID 1 makes `/dev/nvidiactl`, `/dev/nvidia<N>`,
+  `/dev/nvidia-modeset` and `/dev/nvidia-uvm(-tools)` 0666, as it opens
+  render nodes.
 - Firmware is `pkg:firmware`: linux-firmware blobs from tag 20260916,
   each pinned by sha256 in `pkgs/firmware/pkg.toml` (today tg3 and SI
   Pitcairn for amdgpu and radeon). Modules and firmware are in the

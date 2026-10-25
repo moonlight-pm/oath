@@ -196,9 +196,10 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
 - **Recipes** (R23, built 2026-10-19). A package whose licence does
   not allow redistribution (`recipe` in its `pkg.toml`) is built on the
   machine: its plan pins one source pack, the vendor's file alone as
-  `src/<file>`, and only packs the base profile ships, so a fresh
-  machine has every input but the file, which pre-build fetches by
-  `url` and `file` and checks against the pin. `cargo make pkgs`
+  `src/<file>`, and its build packs by hash. A fresh machine has the
+  base packs; it fetches the vendor's file by `url` and `file` and
+  checks it against the pin, and any other build pack from its origins
+  (R35). `cargo make pkgs`
   builds it on the build host too, for the product hash the seed pins:
   the machine's build must make that tree. `pkg:claude-code` is
   Anthropic's binary (stable channel), checked on the build host

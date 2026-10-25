@@ -29,15 +29,15 @@ append history (git has it).
    319), and Sola's session from Sola's own packs, which `desk.json`
    pins (R28, no fork; its `next` at `c6cda58b`). Next: realtime priority for PipeWire; new pins when the
    Sola tab publishes.
-4. **novus to Oath (R32–R34).** NixOS goes and novus gets its own Oath
-   install; first Oath builds itself, proven on canto. Done: bootstrap
-   on an Oath host, `pkg:qemu` 11.1.2 with its OVMF, `/dev/kvm` for
-   `home`, novus's drivers in the kernel (NICs, ALC1220, webcam,
-   sensors, USB4, KVM, nftables, WireGuard, zram), the AX210's Bluetooth
-   firmware. canto runs `bootstrap` then `pkgs` from scratch (its Oath
-   project's `self-host` tab, since 03:30Z 25 Oct); the lock must not
-   change. NVIDIA (R34): 595.104.02 builds on 7.3-rc1, 580.142 does not.
-   Next: check an output, update and reboot canto; NVIDIA's modules.
+4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
+   goes; novus gets its own Oath install. Built: bootstrap on an Oath
+   host, `pkg:qemu`, `/dev/kvm` for `home`, novus's drivers (canto runs
+   them, `986513f8ce0b`, reboot pending), and NVIDIA 595.104.02 as a
+   recipe in `desk` (modules against `pkg:linux-build`, loaded from the
+   package by PID 1; `host:local.module_options`). canto runs
+   `bootstrap` then `pkgs` from scratch (`self-host` tab); the lock must
+   not change. Next: libglvnd and Mesa with glvnd; novus's trial on a
+   USB SSD (Joshua's disk and word).
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
@@ -60,7 +60,7 @@ root SSH as a field, more NICs, device-node rules as fields.
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `d2bcc23eda7e`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
-Build host: **novus** (NixOS), to become an Oath machine (R32).
+Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).
 
 ## Do not
 

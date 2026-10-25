@@ -919,9 +919,19 @@
     "version": "7.3-rc1",
     "license": "GPL-2.0-only WITH Linux-syscall-note",
     "by": "plan",
-    "plan": "sha256-5dd03e2e0588b8818e671e9d210778560bd9f4df5b8c536d1f410a42959bd5ba",
-    "product": "sha256-4214b9751b261de872d8c7c896c750fc95d45054a5274a56852130e22d60b969",
+    "plan": "sha256-97343649686174b62c6b0cae2f0809c241d0e0f21ce78c7b32199c2228927531",
+    "product": "sha256-9f7bf998ac0d1ce69ee6bd1f1e5444ac6ef6af3a69c05da1d173d747fdd22bc2",
     "run": []
+  },
+  "linux-build": {
+    "version": "7.3-rc1",
+    "license": "GPL-2.0-only WITH Linux-syscall-note",
+    "by": "plan",
+    "plan": "sha256-3b4233d8ecffc460724ea050800a0fb0c69ed6e8d3bd085f3d2f36746879fbb8",
+    "product": "sha256-176ee716af303756fb544688503a6adb7d27f2a64e7ff6c799e645f6f85bf813",
+    "run": [
+      "elfutils"
+    ]
   },
   "locales": {
     "version": "2.44",
@@ -1079,6 +1089,22 @@
     "run": [
       "nspr",
       "zlib"
+    ]
+  },
+  "nvidia": {
+    "version": "595.104.02",
+    "license": "LicenseRef-NVIDIA-Driver",
+    "by": "plan",
+    "plan": "sha256-b6787369fe319aaaa13de00ce62aaff1b2415685d24e09ecf9fb679c74cf3e98",
+    "product": "sha256-b290721d7af1898e5d1565d6b10c260048a53bbb4f99fb394e150e2ed1193c00",
+    "run": [
+      "gcc",
+      "libdrm",
+      "libx11",
+      "libxcb",
+      "libxext",
+      "mesa",
+      "wayland"
     ]
   },
   "openssh": {

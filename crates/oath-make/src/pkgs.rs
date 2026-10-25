@@ -266,8 +266,9 @@ fn script_dir(repo: &Path, all: &BTreeMap<String, PkgToml>, name: &str) -> PathB
 }
 
 /// A recipe (R23) is what a machine can rebuild alone: one source file
-/// (the in-pack name is `file`), no tree, vendor or extra files, and build
-/// packs the base profile ships, since every machine has those.
+/// (the in-pack name is `file`) and no tree, vendor or extra files. Its
+/// build packs can be any locked pack: a machine that lacks one fetches it
+/// by hash from its origins before it builds (R35).
 fn check_recipe(repo: &Path, name: &str, p: &PkgToml) -> Result<()> {
     if p.recipe.as_deref().is_some_and(str::is_empty) {
         bail!("recipe says why the pack is not redistributed");
@@ -277,14 +278,6 @@ fn check_recipe(repo: &Path, name: &str, p: &PkgToml) -> Result<()> {
     }
     if p.source[0].file().contains('/') {
         bail!("a recipe's source file is one name, not a path");
-    }
-    let base = oath_core::Profile::load(oath_core::DEFAULT_PROFILE)
-        .map_err(|e| anyhow::anyhow!("{e}"))?
-        .present_pkgs();
-    for b in &p.build {
-        if !base.contains(b) {
-            bail!("a recipe builds on the machine: pkg:{b} is not in the base profile");
-        }
     }
     for e in fs::read_dir(pkgs_dir(repo).join(name))? {
         let n = e?.file_name().to_string_lossy().into_owned();

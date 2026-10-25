@@ -125,6 +125,24 @@ labels and UUIDs). A device name such as `/dev/sdb1` is refused: it
 changes with the port and the boot. A machine's mounts belong in its
 install overlay (`hosts/<name>.json`).
 
+## Kernel module options
+
+A machine's hardware workarounds are module parameters in
+`host:local.module_options`, by module name. PID 1 passes them each
+time it loads the module; one already loaded takes a change at the
+next boot.
+
+```
+sudo oath set host:local module_options='{"nvidia": "NVreg_EnableGpuFirmware=0"}'
+sudo oath apply host:local
+```
+
+They come after the parameters Oath always gives a module (amdgpu's
+`si_support=1`, `nvidia_drm`'s `modeset=1`) and before `module.key=value`
+on the kernel command line, so a later one wins. Like mounts, they
+belong in the machine's overlay, never in a profile: another machine
+with the same driver gets none of them.
+
 ## Who you are
 
 Serial login is **root** (break-glass) when `svc:serial` is enabled.

@@ -148,7 +148,8 @@ cat > /out/components.json <<'OATH_EOF'
 ]
 OATH_EOF
 # The one Oath kernel, built by pkg:gcc. Output: boot/vmlinuz,
-# boot/config and lib/modules/<release>/ with depmod's index.
+# boot/config, boot/Module.symvers and lib/modules/<release>/ with
+# depmod's index.
 unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS CC CXX AR RANLIB NM STRIP
 tar -xf "$SRC/$SOURCES"
 cd linux-$VERSION
@@ -172,6 +173,9 @@ k INSTALL_MOD_PATH=/tmp/mods INSTALL_MOD_STRIP=1 modules_install
 mkdir -p /out/boot /out/lib/modules
 cp arch/x86/boot/bzImage /out/boot/vmlinuz
 cp .config /out/boot/config
+# The kernel's exported symbols, for modules built outside this tree
+# (pkg:linux-build).
+cp Module.symvers /out/boot/Module.symvers
 mod=/out/lib/modules/$rel
 mv "/tmp/mods/lib/modules/$rel" "$mod"
 rm -f "$mod/build" "$mod/source"

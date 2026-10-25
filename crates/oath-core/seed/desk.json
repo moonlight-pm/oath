@@ -751,6 +751,17 @@
       "description": "Valve's Steam launcher tarball, which plan:steam builds from; fetched from repo.steampowered.com when it builds.",
       "home": "https://store.steampowered.com/about/"
     },
+    "plan:nvidia": {},
+    "pkg:nvidia": {
+      "present": false,
+      "description": "NVIDIA's driver (R34): its closed kernel modules, built on the machine against pkg:linux-build, its GL, EGL, Vulkan, GBM and CUDA libraries, and nvidia-smi. For a machine with an NVIDIA card: `oath build plan:nvidia`, then present.",
+      "home": "https://www.nvidia.com/en-us/drivers/unix/"
+    },
+    "pkg:nvidia-src": {
+      "present": false,
+      "description": "NVIDIA's .run for Linux, which plan:nvidia builds from; fetched from download.nvidia.com when it builds.",
+      "home": "https://www.nvidia.com/en-us/drivers/unix/"
+    },
     "pkg:tmux": {
       "present": true,
       "description": "tmux, which sola-terminal runs every shell in.",

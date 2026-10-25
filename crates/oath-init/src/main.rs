@@ -304,6 +304,61 @@ fn open_dev_nodes() {
     open_sound_nodes();
     open_pad_nodes();
     open_kvm_node();
+    open_nvidia_nodes();
+}
+
+/// NVIDIA's driver (R34) makes no device nodes (its installer's
+/// nvidia-modprobe does), so PID 1 makes them once its modules are in,
+/// open to everyone as the render nodes are: GL, Vulkan and CUDA clients
+/// open them themselves. `/dev/nvidiactl` (c 195:255), `/dev/nvidia<N>`
+/// for each GPU's minor, `/dev/nvidia-modeset` (195:254) and
+/// `/dev/nvidia-uvm` and `-uvm-tools` (the major `/proc/devices` gives).
+pub(crate) fn open_nvidia_nodes() {
+    let Ok(gpus) = fs::read_dir("/proc/driver/nvidia/gpus") else { return };
+    let mut nodes = vec![("nvidiactl".to_string(), 195, 255)];
+    for g in gpus.flatten() {
+        let info = fs::read_to_string(g.path().join("information")).unwrap_or_default();
+        if let Some(minor) = nvidia_minor(&info) {
+            nodes.push((format!("nvidia{minor}"), 195, minor));
+        }
+    }
+    if Path::new("/sys/module/nvidia_modeset").is_dir() {
+        nodes.push(("nvidia-modeset".into(), 195, 254));
+    }
+    let devices = fs::read_to_string("/proc/devices").unwrap_or_default();
+    if let Some(major) = char_major(&devices, "nvidia-uvm") {
+        nodes.push(("nvidia-uvm".into(), major, 0));
+        nodes.push(("nvidia-uvm-tools".into(), major, 1));
+    }
+    for (name, major, minor) in nodes {
+        let p = Path::new("/dev").join(name);
+        if p.symlink_metadata().is_err() {
+            let _ = nix::sys::stat::mknod(
+                &p,
+                nix::sys::stat::SFlag::S_IFCHR,
+                nix::sys::stat::Mode::from_bits_truncate(0o666),
+                libc::makedev(major, minor),
+            );
+        }
+        let _ = fs::set_permissions(&p, fs::Permissions::from_mode(0o666));
+    }
+}
+
+/// The `Device Minor:` of a `/proc/driver/nvidia/gpus/*/information`.
+fn nvidia_minor(info: &str) -> Option<u32> {
+    info.lines().find_map(|l| l.strip_prefix("Device Minor:")?.trim().parse().ok())
+}
+
+/// A character device's major in `/proc/devices`.
+fn char_major(devices: &str, name: &str) -> Option<u32> {
+    devices
+        .lines()
+        .skip_while(|l| !l.starts_with("Character devices:"))
+        .take_while(|l| !l.starts_with("Block devices:"))
+        .find_map(|l| {
+            let (major, n) = l.trim().split_once(' ')?;
+            (n.trim() == name).then(|| major.parse().ok()).flatten()
+        })
 }
 
 /// `/dev/kvm` is root:home 0660 (R33), so the build host's QEMU harness
@@ -904,6 +959,7 @@ fn apply_host() {
         hosts: host.hosts,
         origins: host.origins,
         mounts: Default::default(),
+        module_options: host.module_options,
     };
     let _ = oath_core::write_json(&status(&id), &actual);
     let _ = cat.write_index();
@@ -1074,6 +1130,15 @@ fn fallback() {
 mod tests {
     use super::*;
     use std::os::unix::fs::symlink;
+
+    #[test]
+    fn nvidia_node_numbers() {
+        let info = "Model: \t\t NVIDIA GeForce RTX 3090 Ti\nIRQ:   \t\t 158\nDevice Minor: \t 0\n";
+        assert_eq!(nvidia_minor(info), Some(0));
+        let devices = "Character devices:\n  1 mem\n195 nvidia\n238 nvidia-uvm\n\nBlock devices:\n238 nvidia-uvm\n";
+        assert_eq!(char_major(devices, "nvidia-uvm"), Some(238));
+        assert_eq!(char_major(devices, "nvidia-caps"), None);
+    }
 
     #[test]
     fn pad_nodes_are_joydevs_and_their_hidraw() {

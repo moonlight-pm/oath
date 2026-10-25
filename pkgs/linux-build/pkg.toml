@@ -1,0 +1,15 @@
+# The kernel's build tree for modules built outside it (R34: NVIDIA's).
+# Same source and patches as pkg:linux (patches/ is pkgs/linux's), with
+# pkg:linux's own config and Module.symvers. Bump with pkgs/linux.
+version = "7.3-rc1"
+license = "GPL-2.0-only WITH Linux-syscall-note"
+description = "pkg:linux's build tree under build/: its config, exported symbols, prepared headers, scripts and objtool, for modules built outside the kernel."
+home = "https://www.kernel.org/"
+purl = "pkg:generic/linux@7.3-rc1"
+build = ["linux", "m4", "flex", "bison", "perl", "pkgconf", "zlib", "elfutils", "bc"]
+run = ["elfutils"]
+
+[[source]]
+url = "https://git.kernel.org/torvalds/t/linux-7.3-rc1.tar.gz"
+sha256 = "8d36fbfc7c8906ccfa1ebacc30f84998406504c3f13733a040bb3a3fbe8ac270"
+unsigned = "a cgit snapshot of Linus's signed tag; rc tarballs are not signed"

@@ -1,0 +1,22 @@
+# NVIDIA's driver for Linux (R34): its closed kernel modules, built on the
+# machine against pkg:linux-build, and its userspace (GLX, EGL, GLES and
+# Vulkan through libglvnd, GBM, CUDA, NVENC, nvidia-smi) and GSP firmware.
+# A recipe (R23, R35): each machine fetches NVIDIA's .run and builds it
+# with `oath build plan:nvidia`. No machine's settings live here: GSP
+# off and power caps are one machine's overlay.
+version = "595.104.02"
+license = "LicenseRef-NVIDIA-Driver"
+description = "NVIDIA's driver: closed kernel modules for pkg:linux, its GL, EGL, Vulkan, GBM and CUDA libraries, nvidia-smi and GSP firmware."
+home = "https://www.nvidia.com/en-us/drivers/unix/"
+purl = "pkg:generic/nvidia@595.104.02"
+recipe = "NVIDIA's own build, which each machine fetches and builds against its own kernel (R34)"
+build = [
+	"bash", "coreutils", "sed", "grep", "gawk", "findutils", "diffutils", "tar", "zstd", "make",
+	"gcc", "glibc", "elfutils", "linux-build",
+]
+run = ["gcc", "libdrm", "libx11", "libxcb", "libxext", "mesa", "wayland"]
+
+[[source]]
+url = "https://download.nvidia.com/XFree86/Linux-x86_64/595.104.02/NVIDIA-Linux-x86_64-595.104.02.run"
+sha256 = "e421c202e4c79f58c3c7f3161bbe71454ebb3d88936f88205a0e327cd04c59ca"
+unsigned = "NVIDIA publishes a sha256sum beside the .run over HTTPS, not a signature"

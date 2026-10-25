@@ -607,8 +607,9 @@ fn pin_run_needs(oath_root: &Path, needs: &BTreeSet<(String, String)>) -> Result
 /// plan is filed in the image's store and pinned (`plan:<name>`);
 /// `pkg:<name>-src` gets the vendor's URL, the file's place and its pin,
 /// and `pkg:<name>` the product's pin and needs, both absent until the
-/// machine runs `oath build plan:<name>`. The plan must build with the
-/// packs the image ships, at the hashes it ships them.
+/// machine runs `oath build plan:<name>`. The plan runs with packs the
+/// image ships, at the hashes it ships them, and builds with those or
+/// with locked packs, which a machine fetches from its origins (R35).
 fn file_recipes(
     root: &Path,
     oath_root: &Path,
@@ -633,13 +634,18 @@ fn file_recipes(
             .map_err(|err| anyhow::anyhow!("{}: {err}", plan_path.display()))?;
         let src_id = format!("pkg:{name}-src");
         let mut src = None;
+        let build: Vec<&str> = plan.build_needs.iter().map(|n| n.id.as_str()).collect();
         for n in plan.build_needs.iter().chain(&plan.run_needs) {
             if n.id == src_id {
                 src = Some(n.hash.clone());
                 continue;
             }
-            let have = pkg_pin(oath_root, n.id.strip_prefix("pkg:").unwrap_or(&n.id));
-            if have.as_deref() != Some(n.hash.as_str()) {
+            let pkg = n.id.strip_prefix("pkg:").unwrap_or(&n.id);
+            let have = pkg_pin(oath_root, pkg);
+            let fetched = have.is_none()
+                && build.contains(&n.id.as_str())
+                && lock.get(pkg).is_some_and(|l| l.product == n.hash);
+            if have.as_deref() != Some(n.hash.as_str()) && !fetched {
                 bail!(
                     "pkg:{name}: its plan needs {} at {}, and the image has {}: \
                      cargo make pkgs {name}",

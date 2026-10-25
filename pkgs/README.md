@@ -54,8 +54,9 @@ key = "m4"                 # pkgs/keys/m4.asc
   `[[source]]` itself and builds it (`oath build plan:<name>`). The
   source pack is that file alone (`src/<file>`, not executable), as a
   machine's fetch makes it; `build` is not prefixed with the base packs
-  and may name only packs the base profile ships; there are no other
-  files. A profile names `pkg:<name>` and `pkg:<name>-src` absent and
+  and may name any locked pack, which a machine that lacks it fetches
+  from its origins before building (R35); there are no other files. A
+  profile names `pkg:<name>` and `pkg:<name>-src` absent and
   `plan:<name>`; the image fills in their pins (`pkgs/claude-code`).
 
 Every fetch checks the sha256 pin, then the signature (cached under

@@ -13,7 +13,8 @@ pub fn firmware_fb_live() -> bool {
         || Path::new("/sys/devices/platform/simple-framebuffer.0").exists()
 }
 
-/// Module paths (under `kernel/drivers/...`) that replace the firmware fb.
+/// Module paths (under `kernel/drivers/...`) that replace the firmware fb,
+/// and NVIDIA's modules, which a package brings (R34).
 pub fn takes_over_firmware_fb(rel: &str) -> bool {
     let r = rel.replace('\\', "/");
     r.contains("/amd/amdgpu/")
@@ -21,6 +22,7 @@ pub fn takes_over_firmware_fb(rel: &str) -> bool {
         || r.contains("/gpu/drm/xe/")
         || r.contains("/gpu/drm/nouveau/")
         || r.contains("/gpu/drm/radeon/")
+        || r.rsplit('/').next().is_some_and(|f| f.starts_with("nvidia"))
 }
 
 #[cfg(test)]
@@ -32,6 +34,8 @@ mod tests {
         assert!(takes_over_firmware_fb("kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko"));
         assert!(takes_over_firmware_fb("kernel/drivers/gpu/drm/i915/i915.ko"));
         assert!(takes_over_firmware_fb("kernel/drivers/gpu/drm/nouveau/nouveau.ko"));
+        assert!(takes_over_firmware_fb("/oath/store/pkg/nvidia/sha256-0/lib/modules/7/nvidia-drm.ko"));
+        assert!(!takes_over_firmware_fb("kernel/drivers/net/ethernet/nvidia/forcedeth.ko"));
         assert!(!takes_over_firmware_fb("kernel/drivers/gpu/drm/virtio/virtio-gpu.ko"));
         assert!(!takes_over_firmware_fb("kernel/drivers/net/ethernet/broadcom/tg3.ko"));
         assert!(!takes_over_firmware_fb("kernel/fs/btrfs/btrfs.ko"));

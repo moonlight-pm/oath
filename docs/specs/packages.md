@@ -150,8 +150,9 @@ origin; `--dest <dir>` writes the same tree into a directory (below).
   (`plan:<name>`) and its source as a pin on the vendor's file
   (`pkg:<name>-src` with `url` and `file`), and `pkg:<name>` absent
   at the product hash the build host got. The machine fetches the file
-  and builds the pack with `oath build plan:<name>`; no image or origin
-  carries the pack. Claude Code (`pkg:claude-code`) is the first;
+  and builds the pack with `oath build plan:<name>`, fetching any build
+  pack it lacks from its origins (R35); no image or origin carries the
+  pack. Claude Code (`pkg:claude-code`) is the first;
   Codex and Grok Build follow it by choice, not licence (R31).
 - Never another distribution's packages: no Nix closures, no `.deb`,
   no Arch packages, no third-party rebuilds of an upstream.

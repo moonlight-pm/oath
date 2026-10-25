@@ -135,6 +135,7 @@ impl ApplyHooks for NullHooks {
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
             mounts: desired.mounts.clone(),
+            module_options: desired.module_options.clone(),
         })
     }
     fn notify_init(&self) -> Result<()> {
