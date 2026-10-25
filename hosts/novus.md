@@ -28,11 +28,14 @@ Overwrite this file when facts change; do not append a diary.
   until `pkg:nvidia` is present).
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
   GPU settings. No mounts yet: the trial leaves NixOS's disks alone.
-- **Oath on it:** none yet. Its kernel drivers are in `pkg:linux` and
-  the AX210's Bluetooth firmware in `pkg:firmware` since `51823cb`. The
-  trial is Oath on Joshua's Samsung Type-C 128 GB stick (`090c:1000`),
-  written by `cargo make install --local` with canto's `home` key added
-  (`OATH_SSH_PUBKEY`): while novus runs the stick, it is driven from
-  canto. Boot it from the firmware's boot menu; NixOS stays the default.
-  The stick only enumerates on a back-panel port: behind the keyboard's
-  USB 2.0 hub it resets four times and never becomes a disk.
+- **Oath on it:** the trial stick, Joshua's Samsung Type-C 128 GB
+  (`090c:1000`, serial `0354422110003481`; a Bazzite installer before),
+  written 2026-10-25 by `cargo make install --local` from `55c20bf6a86c`:
+  ESP `OATHESP`, btrfs `oath`, root `UUID=4b160377-a07a-43f7-bffe-0ee0738f26bf`,
+  booted once in QEMU. `ssh:local` has novus's key and canto's `home`
+  key: while novus runs the stick it is driven from canto,
+  `ssh -o UserKnownHostsFile=build/novus-oath.known_hosts home@novus` in
+  canto's checkout (the stick's host key, not NixOS's). Boot it from the
+  firmware's boot menu (F8); NixOS stays the default. It enumerates only
+  on a back-panel port: behind the keyboard's USB 2.0 hub it resets four
+  times and never becomes a disk.
