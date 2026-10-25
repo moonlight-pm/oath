@@ -101,11 +101,11 @@ steps = [
 
 [[case]]
 name = "pkg-default-origin"
-about = "A build pack no profile installs (m4) comes from the default origin, at the hash its INDEX.md lists."
+about = "A build pack no profile installs (bc) comes from the default origin, at the hash its INDEX.md lists."
 metal = true
 steps = [
-  { run = "h=$(curl -fsS https://store.oath.moonlight.pm/INDEX.md | awk -F'`' '$2 == \"m4\" {print $4}') && test -n \"$h\" && sudo oath new pkg:m4 --from-json \"{\\\"present\\\":true,\\\"hash\\\":\\\"$h\\\"}\" && sudo oath apply pkg:m4 && m4 --version", expect = ["GNU M4"] },
-  { run = "sudo grep '\"fetched\"' /oath/log/oath.jsonl | tail -1", expect = ["https://store.oath.moonlight.pm/pkg/m4/sha256-"] },
+  { run = "h=$(curl -fsS https://store.oath.moonlight.pm/INDEX.md | awk -F'`' '$2 == \"bc\" {print $4}') && test -n \"$h\" && sudo oath new pkg:bc --from-json \"{\\\"present\\\":true,\\\"hash\\\":\\\"$h\\\"}\" && sudo oath apply pkg:bc && bc --version", expect = ["bc 1."] },
+  { run = "sudo grep '\"fetched\"' /oath/log/oath.jsonl | tail -1", expect = ["https://store.oath.moonlight.pm/pkg/bc/sha256-"] },
 ]
 
 [[case]]

@@ -32,11 +32,11 @@ append history (git has it).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, `/dev/kvm` for `home`, novus's drivers, NVIDIA
-   595.104.02 as a recipe in `desk`; in `a435d482ad9a`, a root named by
+   595.104.02 as a recipe in `desk`; in `55c20bf6a86c`, a root named by
    btrfs UUID that PID 1 waits for, `install --local` onto a USB disk,
    and `pkg:bison`, `pkg:m4` in `desk` (canto's bootstrap stopped at
-   glibc without bison, 2026-10-25). Next: once `a435d482ad9a` passes
-   check, write novus's trial stick (Joshua's Samsung 128 GB, his word
+   glibc without bison, 2026-10-25). Next: `55c20bf6a86c` passed all 57
+   cases; write novus's trial stick (Joshua's Samsung 128 GB, his word
    2026-10-25); update and reboot canto, rerun `bootstrap` and `pkgs`
    (the lock must not change); then libglvnd and Mesa with glvnd.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
