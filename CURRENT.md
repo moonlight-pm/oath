@@ -31,15 +31,13 @@ append history (git has it).
    Sola tab publishes.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
-   host, `pkg:qemu`, `/dev/kvm` for `home`, novus's drivers, NVIDIA
-   595.104.02 as a recipe in `desk`; since `55c20bf6a86c` (all 57
-   cases), a root named by btrfs UUID that PID 1 waits for, `install
-   --local` onto a USB disk, and `pkg:bison`, `pkg:m4` in `desk`.
-   canto's rerun of `bootstrap` and `pkgs` (since 22:25Z) must leave the
-   lock unchanged. The trial stick is written (2026-10-25). Next: Joshua
-   boots novus from it; from canto, NICs, audio, Bluetooth, sensors and
-   the display, then `oath build plan:nvidia` and `svc:gpu-power`; then
-   libglvnd and Mesa with glvnd.
+   host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
+   in `desk`, a root by btrfs UUID, `install --local`, `pkg:bison` and
+   `pkg:m4` (`55c20bf6a86c`). canto reruns `bootstrap` and `pkgs` (since
+   22:25Z; the lock must not change). The trial stick is written
+   (2026-10-25). Next: Joshua boots novus from it; from canto, NICs,
+   audio, Bluetooth, sensors, the display, then `oath build plan:nvidia`
+   and `svc:gpu-power`; then libglvnd and Mesa with glvnd.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
