@@ -78,7 +78,9 @@ sources.
 and the base tools from their own (R17, R18 in
 [../docs/decisions.md](../docs/decisions.md)):
 
-1. **Stage 0**, with the build host's gcc (`nix-shell bootstrap.nix`):
+1. **Stage 0**, with the build host's gcc (`nix-shell bootstrap.nix`
+   on NixOS; `/bin` on an Oath machine, where stage 1 is still a cross
+   build: its build triple is named `x86_64-unknown-linux-gnu`):
    a cross toolchain for `x86_64-oath-linux-gnu`: binutils, a C-only
    GCC, the Linux UAPI headers, glibc, then the whole GCC (C, C++,
    shared libgcc, libstdc++). It starts from an empty prefix every time,

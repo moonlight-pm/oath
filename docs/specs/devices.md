@@ -72,7 +72,10 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   input device joydev took (it has a `js*`), its `js*` and `event*`
   nodes, and the `hidraw*` of its HID device; `/dev/uinput` is a static
   node (c 10:223), root:home 0660, whose first open loads `uinput`
-  through the kernel's `char-major-10-223` request. Display (`card*`)
+  through the kernel's `char-major-10-223` request. `/dev/kvm` is
+  root:home 0660 too (R33), so a build host's QEMU runs as `home` with
+  KVM; devtmpfs makes it when coldplug loads `kvm-intel` or `kvm-amd`
+  for the CPU, and a machine without virtualization has none. Display (`card*`)
   and other input nodes stay root's 0600; seatd opens those for the
   desk (R20).
 

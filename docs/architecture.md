@@ -145,7 +145,7 @@ everything else, syncs, unmounts `host:local.mounts`, lazily unmounts
 
 ```
 cargo make bootstrap
-  stage 0 (host gcc, nix-shell pkgs/bootstrap.nix): a cross binutils, GCC
+  stage 0 (host gcc: nix-shell pkgs/bootstrap.nix on NixOS, /bin on Oath): a cross binutils, GCC
     and glibc for x86_64-oath-linux-gnu, under build/bootstrap/, never ships
   stage 1 (by stage 0): pkg:gcc, pkg:glibc and the GNU base tools (bash,
     coreutils, sed, grep, gawk, findutils, diffutils, patch, tar, gzip, xz,
@@ -177,7 +177,7 @@ cargo make build [--profile base]
     lib/oath/{init,serial-login,screen-login,sudo}, boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (glibc, bash, coreutils, btrfs, dropbear, …)
-    from pkgs/lock.json; QEMU + OVMF from image/host.nix (host only)
+    from pkgs/lock.json; QEMU + OVMF from image/host.nix, or pkg:qemu on an Oath host
   ~/.local/share/oath/store/
                           host copy of every packed tree, by hash
                           (OATH_STORE; outside the checkout)

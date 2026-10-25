@@ -1,0 +1,65 @@
+From: Joshua Kifer <joshua@moonlight.pm>
+Subject: [PATCH] configure: run meson from PATH, without a venv
+
+QEMU's configure makes a Python venv and pip-installs its vendored
+meson and its Python tooling into it. Oath's Python has no pip (it is
+built without ensurepip), and Oath has meson as pkg:meson. Use the
+plain interpreter and the meson on PATH, and skip the tooling group,
+which only QEMU's tests use.
+---
+--- a/configure
++++ b/configure
+@@ -937,10 +937,8 @@
+ echo "python determined to be '$python'"
+ echo "python version: $($python --version)"
+ 
+-python="$($python -B "${source_path}/python/scripts/mkvenv.py" create pyvenv)"
+-if test "$?" -ne 0 ; then
+-    error_exit "python venv creation failed"
+-fi
++# Oath: no venv. Oath's Python has no pip to install the vendored wheels
++# with, and its meson is pkg:meson on PATH.
+ 
+ # Suppress writing compiled files
+ python="$python -B"
+@@ -950,13 +948,7 @@
+ # Even if PyPI is allowed, we disallow it here to force installation
+ # from our preferred vendored versions.
+ 
+-$mkvenv ensuregroup --dir "${source_path}/python/wheels" \
+-     ${source_path}/pythondeps.toml meson || exit 1
+-
+-# At this point, we expect Meson to be installed and available.
+-# We expect mkvenv or pip to have created pyvenv/bin/meson for us.
+-# We ignore PATH completely here: we want to use the venv's Meson
+-# *exclusively*.
++# Oath: Meson is the one on PATH.
+ 
+ # for msys2
+ get_pwd() {
+@@ -967,10 +959,8 @@
+     fi
+ }
+ 
+-meson="$(cd pyvenv/bin; get_pwd)/meson"
+-if [ -f "$meson$EXESUF" ]; then
+-  meson="$meson$EXESUF"
+-fi
++meson="$(command -v meson)"
++test -n "$meson" || error_exit "meson not found on PATH"
+ 
+ # On Haiku, meson might show up in a "non-packaged" subfolder instead, see
+ # https://github.com/haiku/haiku/blob/r1beta5/docs/user/storage/storageintro.dox
+@@ -983,11 +973,7 @@
+     mkvenv_online_flag=" --online"
+ fi
+ 
+-# Unconditionally install our tooling group. PyPI is allowed if enabled here.
+-
+-$mkvenv ensuregroup $mkvenv_online_flag \
+-        --dir "${source_path}/python/wheels" \
+-        ${source_path}/pythondeps.toml tooling || exit 1
++# Oath: no tooling group (QEMU's Python packages, for its tests).
+ 
+ # Conditionally ensure Sphinx is installed.
+ 

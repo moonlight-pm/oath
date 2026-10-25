@@ -288,8 +288,8 @@
     "version": "20260916",
     "license": "LicenseRef-linux-firmware",
     "by": "plan",
-    "plan": "sha256-eeeab5da539e1a4dc91e72d1b42d6558fccb893011f1ac69120489e1ba17d5f7",
-    "product": "sha256-9e7eafd45d7b1a8d7e72b54e26ae01d8e8a8cee941f7500312540d0bd8636298",
+    "plan": "sha256-eea74a4a891280775eaa365f73a346af855b753b325b5900fb619b03f9d56818",
+    "product": "sha256-9bbb81862198f0502f943473470eeab9b68709abf087f5ddbdddecb4a81fdb3b",
     "run": []
   },
   "flex": {
@@ -639,6 +639,16 @@
       "libsndfile"
     ]
   },
+  "libslirp": {
+    "version": "4.9.6",
+    "license": "BSD-3-Clause AND MIT",
+    "by": "plan",
+    "plan": "sha256-534333d5a0b3a27d2004fa6f029c55d11ed5715a3735e822fd06509736084e54",
+    "product": "sha256-8d6d882ce1f570cec270a4be9042cd92648841b5ab5447b94f283ff76deeb78a",
+    "run": [
+      "glib"
+    ]
+  },
   "libsndfile": {
     "version": "1.2.2",
     "license": "LGPL-2.1-or-later",
@@ -909,8 +919,8 @@
     "version": "7.3-rc1",
     "license": "GPL-2.0-only WITH Linux-syscall-note",
     "by": "plan",
-    "plan": "sha256-bab0826c937a95fd2e4269bacebe6f442d9132d59e1a1335275a31857490d90c",
-    "product": "sha256-333089ede9a20db4f519c4d584b1df33cbc32b1e61e91782fdf2ab8206fe9d2e",
+    "plan": "sha256-5dd03e2e0588b8818e671e9d210778560bd9f4df5b8c536d1f410a42959bd5ba",
+    "product": "sha256-4214b9751b261de872d8c7c896c750fc95d45054a5274a56852130e22d60b969",
     "run": []
   },
   "locales": {
@@ -1225,6 +1235,22 @@
     "plan": "sha256-80eb8cac191b5183b01c31d0ca32a16d1475117c4eab62462bf5b87a4cdbbb33",
     "product": "sha256-a55e5c8ef2cd59ea62acc2282cd0a52ebc564af9417abfd23bcbbac7603b5c29",
     "run": []
+  },
+  "qemu": {
+    "version": "11.1.2",
+    "license": "GPL-2.0-only AND GPL-2.0-or-later AND LGPL-3.0-only AND BSD-2-Clause-Patent AND MIT AND OpenSSL",
+    "by": "plan",
+    "plan": "sha256-c7ef5bd65ecae65afa2b2fe51b57d27b4c9ad32fc944e8a21aeeb7b50e51d32f",
+    "product": "sha256-e63cdfdf2f8b7da60735581a7a871fb44d50f93e73874819754a6452053deec1",
+    "run": [
+      "glib",
+      "pixman",
+      "zlib",
+      "libslirp",
+      "bzip2",
+      "zstd",
+      "gcc"
+    ]
   },
   "rivulet": {
     "version": "0.1.0",

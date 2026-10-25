@@ -1,0 +1,15 @@
+# The build host's emulator (R32): `cargo make run|check|install --qemu`
+# on an Oath machine. Not in any profile.
+version = "11.1.2"
+license = "GPL-2.0-only AND GPL-2.0-or-later AND LGPL-3.0-only AND BSD-2-Clause-Patent AND MIT AND OpenSSL"
+description = "QEMU: qemu-system-x86_64 with KVM and user networking, qemu-img, and the x86 firmware of its release (SeaBIOS, iPXE, edk2's OVMF)."
+home = "https://www.qemu.org/"
+purl = "pkg:generic/qemu@11.1.2"
+build = ["meson", "ninja", "python", "pkgconf", "glib", "pixman", "zlib", "libslirp", "flex", "bison"]
+run = ["glib", "pixman", "zlib", "libslirp", "bzip2", "zstd", "gcc"]
+
+[[source]]
+url = "https://download.qemu.org/qemu-11.1.2.tar.xz"
+sha256 = "731b5681e4bb18be313231579b8efd0296c5b015fa36dc533874b639ba838016"
+sig = "https://download.qemu.org/qemu-11.1.2.tar.xz.sig"
+key = "qemu"

@@ -1,7 +1,8 @@
 //! What `cargo make` builds images from: the native packs pinned in
 //! pkgs/lock.json (built by `cargo make bootstrap` and `cargo make pkgs`),
-//! the one kernel among them (`pkg:linux`), and build-host tools that never
-//! ship (QEMU and its UEFI firmware, from image/host.nix).
+//! the one kernel among them (`pkg:linux`), and the build host's own tools,
+//! which no image carries (QEMU and its UEFI firmware: image/host.nix on a
+//! Nix host, pkg:qemu on an Oath one).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -72,15 +73,18 @@ pub fn load(root: &Path) -> Result<Tools> {
         bail!("{BUILD_KERNEL}");
     }
 
-    eprintln!("loading host tools via nix-build image/host.nix ...");
-    let host = PathBuf::from(run_out(
-        Command::new("nix-build")
-            .args([root.join("image/host.nix").to_str().unwrap(), "--no-out-link"]),
-    )?);
-    prepend_path(&host.join("bin"));
-    let opt = |name: &str| -> Option<PathBuf> {
-        let p = host.join(name);
-        p.is_file().then_some(p)
+    // A Nix host gets QEMU and OVMF from image/host.nix; an Oath host has
+    // pkg:qemu (R32) on PATH.
+    let host = if which("nix-build").is_some() {
+        eprintln!("loading host tools via nix-build image/host.nix ...");
+        let host = PathBuf::from(run_out(
+            Command::new("nix-build")
+                .args([root.join("image/host.nix").to_str().unwrap(), "--no-out-link"]),
+        )?);
+        prepend_path(&host.join("bin"));
+        Some(host)
+    } else {
+        None
     };
     // `cargo make esp` needs no QEMU; NixOS has no /bin/true.
     let qemu = which("qemu-system-x86_64")
@@ -88,12 +92,24 @@ pub fn load(root: &Path) -> Result<Tools> {
         .unwrap_or_else(|| PathBuf::from("/bin/true"));
     let qemu_img =
         which("qemu-img").or_else(|| which("true")).unwrap_or_else(|| PathBuf::from("/bin/true"));
+    // OVMF: host.nix's links, else the edk2 build in QEMU's own share/qemu.
+    let share = qemu
+        .canonicalize()
+        .ok()
+        .and_then(|q| q.parent()?.parent().map(|p| p.join("share/qemu")));
+    let firmware = |nix: &str, qemu_file: &str| -> Option<PathBuf> {
+        let p = match &host {
+            Some(h) => h.join(nix),
+            None => share.as_ref()?.join(qemu_file),
+        };
+        p.is_file().then_some(p)
+    };
     Ok(Tools {
         kernel,
         modules,
         packs,
-        ovmf_code: opt("OVMF_CODE.fd"),
-        ovmf_vars: opt("OVMF_VARS.fd"),
+        ovmf_code: firmware("OVMF_CODE.fd", "edk2-x86_64-code.fd"),
+        ovmf_vars: firmware("OVMF_VARS.fd", "edk2-i386-vars.fd"),
         qemu,
         qemu_img,
     })

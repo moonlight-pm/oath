@@ -47,7 +47,34 @@ CONFIG_UNIX=y
 CONFIG_INET=y
 CONFIG_IPV6=y
 CONFIG_PACKET=y
-CONFIG_NETFILTER=n
+# nftables with NAT, for a WireGuard server's masquerade and containers'
+# networks; modules, loaded when a rule asks for them. defconfig's
+# built-in iptables and conntrack helpers stay out.
+CONFIG_NETFILTER=y
+CONFIG_NETFILTER_ADVANCED=y
+CONFIG_NF_CONNTRACK=m
+CONFIG_NF_CONNTRACK_FTP=n
+CONFIG_NF_CONNTRACK_IRC=n
+CONFIG_NF_CONNTRACK_SIP=n
+CONFIG_NF_CT_NETLINK=n
+CONFIG_NF_NAT=m
+CONFIG_NF_TABLES=m
+CONFIG_NF_TABLES_INET=y
+CONFIG_NF_TABLES_IPV4=y
+CONFIG_NF_TABLES_IPV6=y
+CONFIG_NFT_CT=m
+CONFIG_NFT_NAT=m
+CONFIG_NFT_MASQ=m
+CONFIG_NFT_REJECT=m
+CONFIG_NETFILTER_XTABLES=n
+CONFIG_IP_NF_IPTABLES=n
+CONFIG_IP6_NF_IPTABLES=n
+# Tunnels and virtual links: WireGuard, tun (VPN clients, QEMU), veth and
+# bridges (containers).
+CONFIG_TUN=m
+CONFIG_WIREGUARD=m
+CONFIG_VETH=m
+CONFIG_BRIDGE=m
 # No wireless regdb ships, and its signature check is the only thing
 # that wants the trusted keyring, whose certs/extract-cert needs OpenSSL.
 # The check can only be turned off with CERTIFICATION_ONUS, and
@@ -90,6 +117,10 @@ CONFIG_E1000E=m
 CONFIG_IGB=m
 CONFIG_NET_VENDOR_REALTEK=y
 CONFIG_R8169=m
+# novus: Intel I225-V 2.5 GbE, Aquantia AQC113 10 GbE
+CONFIG_IGC=m
+CONFIG_NET_VENDOR_AQUANTIA=y
+CONFIG_AQTION=m
 CONFIG_PHYLIB=m
 CONFIG_MDIO_DEVICE=m
 CONFIG_PTP_1588_CLOCK=m
@@ -179,14 +210,44 @@ CONFIG_CRYPTO_CMAC=m
 CONFIG_CRYPTO_ECDH=m
 CONFIG_CRYPTO_USER_API_HASH=m
 
-# Sound: canto Cirrus HDA + Pitcairn HDMI
+# Sound: canto Cirrus HDA + Pitcairn HDMI, novus Realtek ALC1220 (the
+# ALC882 driver) + NVIDIA HDMI
 CONFIG_SOUND=m
 CONFIG_SND=m
 CONFIG_SND_HDA_INTEL=m
 CONFIG_SND_HDA_CODEC_HDMI=m
 CONFIG_SND_HDA_CODEC_CIRRUS=m
+CONFIG_SND_HDA_CODEC_REALTEK=m
 CONFIG_SND_HDA_GENERIC=m
 CONFIG_SND_USB_AUDIO=m
+
+# USB webcams (novus's LifeCam Cinema)
+CONFIG_MEDIA_SUPPORT=m
+CONFIG_MEDIA_SUPPORT_FILTER=y
+CONFIG_MEDIA_CAMERA_SUPPORT=y
+CONFIG_MEDIA_USB_SUPPORT=y
+CONFIG_VIDEO_DEV=m
+CONFIG_USB_VIDEO_CLASS=m
+
+# novus's board: the Nuvoton NCT6798D (fans, the radiator's included),
+# the Ryzen's temperatures, Thunderbolt 4 (Maple Ridge)
+CONFIG_SENSORS_NCT6775=m
+CONFIG_SENSORS_K10TEMP=m
+CONFIG_USB4=m
+
+# KVM for the build host's QEMU harness: canto's Xeon, novus's Ryzen
+CONFIG_VIRTUALIZATION=y
+CONFIG_KVM=m
+CONFIG_KVM_INTEL=m
+CONFIG_KVM_AMD=m
+
+# Compressed swap in RAM; overlay and FUSE filesystems (containers,
+# AppImages)
+CONFIG_ZRAM=m
+CONFIG_ZRAM_BACKEND_ZSTD=y
+CONFIG_ZRAM_DEF_COMP_ZSTD=y
+CONFIG_OVERLAY_FS=m
+CONFIG_FUSE_FS=m
 
 # Filesystems
 CONFIG_BTRFS_FS=m

@@ -6,10 +6,14 @@ Everything is built on the build host with `cargo make` (crate
 Built here, from source: the kernel; the toolchain (GCC, binutils,
 glibc); every package in the image (`pkgs/`); PID 1 (`oath-init`,
 `serial-login`, `sudo`), `oath`, and the UEFI loader `oath-efi`
-(`pkg:oath`, built by the vendor's Rust release, `pkg:rust`). The only
-things taken from Nix are QEMU and its UEFI firmware for running images
-on the build host (`image/host.nix`), and the host compilers that build
-stage 0 of the toolchain and `oath-make` itself. None of it ships.
+(`pkg:oath`, built by the vendor's Rust release, `pkg:rust`). On a
+NixOS build host, Nix gives QEMU and its UEFI firmware for running
+images (`image/host.nix`), and the host compilers that build stage 0 of
+the toolchain and `oath-make` itself. None of it ships. An Oath machine
+can be the build host too (R32): its own gcc builds stage 0, its
+`pkg:rust` builds `oath-make`, and `pkg:qemu` (in no profile; add it to
+the machine) runs images, with the edk2 firmware from QEMU's release as
+OVMF. `home` has `/dev/kvm` there (R33).
 
 ## The toolchain and packages
 

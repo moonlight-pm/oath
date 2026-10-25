@@ -1,0 +1,12 @@
+version = "4.9.6"
+license = "BSD-3-Clause AND MIT"
+description = "libslirp, shared: the user-mode TCP/IP stack under QEMU's user networking."
+home = "https://gitlab.freedesktop.org/slirp/libslirp"
+purl = "pkg:generic/libslirp@4.9.6"
+build = ["meson", "ninja", "python", "pkgconf", "glib"]
+run = ["glib"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v4.9.6/libslirp-v4.9.6.tar.gz"
+sha256 = "5bb4d30fd74042c23b4a0475f44d974a8e41dfdcf005476f03754bebc756b760"
+unsigned = "libslirp publishes no tarball or signature, only GitLab's archive of the v4.9.6 tag"

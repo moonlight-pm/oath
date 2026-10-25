@@ -303,6 +303,19 @@ fn open_dev_nodes() {
     open_render_nodes();
     open_sound_nodes();
     open_pad_nodes();
+    open_kvm_node();
+}
+
+/// `/dev/kvm` is root:home 0660 (R33), so the build host's QEMU harness
+/// runs as `home` with KVM. The node appears when coldplug loads
+/// kvm-intel or kvm-amd for the CPU; a machine without virtualization
+/// has none, and gets none.
+pub(crate) fn open_kvm_node() {
+    let kvm = Path::new("/dev/kvm");
+    if kvm.exists() {
+        let _ = std::os::unix::fs::chown(kvm, Some(0), Some(oath_core::seat::GID));
+        let _ = fs::set_permissions(kvm, fs::Permissions::from_mode(0o660));
+    }
 }
 
 /// Sound devices belong to the seat: `/dev/snd/*` is root:home 0660, so

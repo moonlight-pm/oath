@@ -1,5 +1,6 @@
 # Firmware blobs the base kernel loads: tg3 (tigon) for canto's Broadcom
-# NIC and SI Pitcairn (amdgpu, radeon) for canto's GPUs. Vendor files from
+# NIC, SI Pitcairn (amdgpu, radeon) for canto's GPUs and the Intel AX210's
+# Bluetooth (btintel) for novus. Vendor files from
 # linux-firmware tag 20260916, pinned one by one. Add a blob here when a
 # machine needs it.
 version = "20260916"
@@ -138,3 +139,13 @@ file = "firmware/tigon/tg3_tso5.bin"
 url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/tigon/tg3_tso.bin?h=20260916"
 sha256 = "519197f0b5431733845b9542c5d94972639c6b9475a3091e06aabb0491c8a8ea"
 file = "firmware/tigon/tg3_tso.bin"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/intel/ibt-0041-0041.sfi?h=20260916"
+sha256 = "2d891022ded1d2d8b208cc5b7632f3098c761ae099024de971e4158dd5681a9c"
+file = "firmware/intel/ibt-0041-0041.sfi"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/intel/ibt-0041-0041.ddc?h=20260916"
+sha256 = "fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077"
+file = "firmware/intel/ibt-0041-0041.ddc"
