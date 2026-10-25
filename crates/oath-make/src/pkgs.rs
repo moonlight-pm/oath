@@ -1042,10 +1042,16 @@ pub fn bootstrap(repo: &Path, jobs: usize) -> Result<()> {
         out.display(),
         pkgs_dir(repo).join("bootstrap.sh").display(),
     );
-    run(Command::new("nice")
-        .args(["-n", "10", "nix-shell"])
-        .arg(pkgs_dir(repo).join("bootstrap.nix"))
-        .args(["--run", &script]))?;
+    // A Nix host gets the stage-0 tools from bootstrap.nix; an Oath host
+    // has them in /bin (pkg:gcc and the base).
+    let mut cmd = Command::new("nice");
+    cmd.args(["-n", "10"]);
+    if crate::util::which("nix-shell").is_some() {
+        cmd.arg("nix-shell").arg(pkgs_dir(repo).join("bootstrap.nix")).args(["--run", &script]);
+    } else {
+        cmd.args(["sh", "-c", &script]);
+    }
+    run(&mut cmd)?;
     let mut lock = read_lock(repo)?;
     for name in BASE {
         let p = get(name)?;

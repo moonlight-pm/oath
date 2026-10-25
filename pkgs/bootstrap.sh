@@ -1,7 +1,8 @@
 #!/bin/sh
 # Bootstrap the Oath toolchain from source (R17). Run by `cargo make
-# bootstrap` inside `nix-shell pkgs/bootstrap.nix` (host compilers,
-# build-time only).
+# bootstrap` with the build host's compilers: inside `nix-shell
+# pkgs/bootstrap.nix` on a Nix host, from /bin on an Oath one
+# (build-time only).
 #
 #   stage 0  with the host's gcc: a cross toolchain for $T0 (binutils,
 #            GCC C/C++) and its sysroot (Linux UAPI headers, glibc,
@@ -38,6 +39,10 @@ SYS0=$S0/sysroot
 GLIBC_HEADERS=/oath/store/pkg/glibc/live/include
 LOADER=/lib/ld-linux-x86-64.so.2
 BUILD=$(gcc -dumpmachine)
+# Stage 1 is cross-built from the build host. An Oath host's gcc is $T
+# itself, so name the build machine as Nix's gcc does; with build equal
+# to host, configure would take stage 1 for a native build.
+[ "$BUILD" != "$T" ] || BUILD=x86_64-unknown-linux-gnu
 mkdir -p "$WORK" "$OUT" "$S0" "$SYS0"
 export PATH="$S0/bin:$PATH"
 
