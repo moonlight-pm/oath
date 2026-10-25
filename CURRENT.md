@@ -32,7 +32,7 @@ append history (git has it).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, `/dev/kvm` for `home`, novus's drivers (canto runs
-   them, `986513f8ce0b`, reboot pending), and NVIDIA 595.104.02 as a
+   them, `9466271b702e`, reboot pending), and NVIDIA 595.104.02 as a
    recipe in `desk` (modules against `pkg:linux-build`, loaded from the
    package by PID 1; `host:local.module_options`). canto runs
    `bootstrap` then `pkgs` from scratch (`self-host` tab); the lock must

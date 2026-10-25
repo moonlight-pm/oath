@@ -29,12 +29,13 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `986513f8ce0b` (`cargo make build
-  --profile desk` of `51823cb`: R32–R34, `/dev/kvm` for `home`, the
-  kernel with novus's drivers and KVM; all 57 QEMU cases), reached on
-  2026-10-25 by `cargo make update` without a reboot (generation 322:
-  `pkg:oath` only; the Sola tab's pins kept, generations 298–321 its
-  own). Its kernel, initrd and PID 1 wait on the ESP for a reboot,
+- **Running now:** build output `9466271b702e` (`cargo make build
+  --profile desk` of `9958487`: R32–R35, `/dev/kvm` for `home`, the
+  kernel with novus's drivers and KVM, PID 1 loading package modules,
+  `plan:nvidia` absent; all 57 QEMU cases), reached on 2026-10-25 by
+  `cargo make update` without a reboot (generation 324: `pkg:oath`
+  only; `986513f8ce0b` at 322 before it; the Sola tab's pins kept,
+  298–321 its own). Its kernel, initrd and PID 1 wait on the ESP for a reboot,
   which also brings `kvm-intel` and the `/dev/kvm` rule; the reboot
   waits for the self-hosting run in the Oath project's `self-host` tab
   (`cargo make bootstrap` then `pkgs` in `~/Projects/Oath` at
@@ -52,7 +53,7 @@ Overwrite this file when facts change; do not append a diary.
   moved only `pkg:oath` to `048c0e633cd7`'s, and 277 set
   `host:local.mounts`). PID 1, initrd and kernel (`pkg:linux`
   333089ed: uinput, the pad drivers, uas) are `048c0e633cd7`'s since
-  the reboot of 2026-10-24 04:31Z; the next boot runs `986513f8ce0b`'s
+  the reboot of 2026-10-24 04:31Z; the next boot runs `9466271b702e`'s
   kernel and PID 1, which open the pads' nodes and `/dev/kvm` to `home`
   (`build/runs/canto-reboot-mounts.sh` on novus checks a reboot: PID 1
   matched, `/mnt/warehouse` mounted, store-and-follow passed). The system was `cargo make install
