@@ -49,7 +49,7 @@ append history (git has it).
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
 ([docs/roadmap.md](docs/roadmap.md)). canto runs `9466271b702e`
 (`desk`, R32–R35; generation 324), the newest checked output (all 57 QEMU
-cases), not yet published; its kernel and PID 1 are `048c0e633cd7`'s
+cases), published 2026-10-25 (159 packs; NVIDIA as its plan only); its kernel and PID 1 are `048c0e633cd7`'s
 (reboot of 2026-10-24 04:31Z) until the next boot. Left until needed:
 root SSH as a field, more NICs, device-node rules as fields.
 
