@@ -32,13 +32,13 @@ append history (git has it).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, `/dev/kvm` for `home`, novus's drivers, NVIDIA
-   595.104.02 as a recipe in `desk`; in `55c20bf6a86c`, a root named by
-   btrfs UUID that PID 1 waits for, `install --local` onto a USB disk,
-   and `pkg:bison`, `pkg:m4` in `desk` (canto's bootstrap stopped at
-   glibc without bison, 2026-10-25). Next: `55c20bf6a86c` passed all 57
-   cases; write novus's trial stick (Joshua's Samsung 128 GB, his word
-   2026-10-25); update and reboot canto, rerun `bootstrap` and `pkgs`
-   (the lock must not change); then libglvnd and Mesa with glvnd.
+   595.104.02 as a recipe in `desk`; since `55c20bf6a86c` (all 57
+   cases), a root named by btrfs UUID that PID 1 waits for, `install
+   --local` onto a USB disk, and `pkg:bison`, `pkg:m4` in `desk`.
+   canto's rerun of `bootstrap` and `pkgs` (since 22:25Z) must leave the
+   lock unchanged. Next: write novus's trial stick (Joshua's Samsung
+   128 GB, his word 2026-10-25) once it is on a back-panel port; then
+   libglvnd and Mesa with glvnd.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
@@ -48,16 +48,16 @@ append history (git has it).
 
 **State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). canto runs `9466271b702e`
-(generation 324, published 2026-10-25: 159 packs), with
-`048c0e633cd7`'s kernel and PID 1 until its next boot. Left until
+([docs/roadmap.md](docs/roadmap.md)). canto runs `55c20bf6a86c`
+(generation 329, booted 2026-10-25 22:19Z with KVM; published: 159
+packs). Left until
 needed: root SSH as a field, more NICs, device-node rules as fields.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `9466271b702e`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `55c20bf6a86c`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).

@@ -29,34 +29,21 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Running now:** build output `9466271b702e` (`cargo make build
-  --profile desk` of `9958487`: R32–R35, `/dev/kvm` for `home`, the
-  kernel with novus's drivers and KVM, PID 1 loading package modules,
+- **Running now:** build output `55c20bf6a86c` (`cargo make build
+  --profile desk` of `f466082`: R32–R35, the kernel with novus's drivers
+  and KVM, PID 1 loading package modules and finding a `UUID=` root,
   `plan:nvidia` absent; all 57 QEMU cases), reached on 2026-10-25 by
-  `cargo make update` without a reboot (generation 324: `pkg:oath`
-  only; `986513f8ce0b` at 322 before it; the Sola tab's pins kept,
-  298–321 its own). Its kernel, initrd and PID 1 wait on the ESP for a reboot,
-  which also brings `kvm-intel` and the `/dev/kvm` rule; the reboot
-  waits for the self-hosting run in the Oath project's `self-host` tab
-  (`cargo make bootstrap` then `pkgs` in `~/Projects/Oath` at
-  `518e14c`, its log `build/selfhost.log`). Before it `d2bcc23eda7e`
-  (297, the coding agents' recipes, R31), `ab9f8013cc5d`
-  (294, `pkg:oath`; Codex and Grok Build made by hand, 295 and 296),
-  `bd95b5c889e0` (284, `plan:steam`; `pkg:steam` built here, 285) and
-  `0c51592c7cf7` (283, `pkg:oath` with the pad rule, R30), the `desk` profile (R20–R22: base plus seatd, rivulet,
-  Sola with its terminal, Projects, browser, Design and KVM, PipeWire,
-  Noto, Vulkan, the tools that build Sola, Steam, and their packages),
-  reached on 2026-10-23 by `cargo make update --target home@10.0.0.3
-  --confirm` (generation 271: `pkg:oath`, `pkg:gcc` with `-m32` and
-  the 17 packs whose build scripts changed; no service restarted;
-  Sola's dev pins kept, their need on `pkg:gcc` moved; generation 276
-  moved only `pkg:oath` to `048c0e633cd7`'s, and 277 set
-  `host:local.mounts`). PID 1, initrd and kernel (`pkg:linux`
-  333089ed: uinput, the pad drivers, uas) are `048c0e633cd7`'s since
-  the reboot of 2026-10-24 04:31Z; the next boot runs `9466271b702e`'s
-  kernel and PID 1, which open the pads' nodes and `/dev/kvm` to `home`
-  (`build/runs/canto-reboot-mounts.sh` on novus checks a reboot: PID 1
-  matched, `/mnt/warehouse` mounted, store-and-follow passed). The system was `cargo make install
+  `cargo make update --confirm --reboot` (generation 328: `pkg:oath`;
+  329 added `pkg:m4` and `pkg:bison` by hand; the Sola tab's pins kept).
+  Booted 2026-10-25 22:19Z: `kvm_intel` loaded, `/dev/kvm` root:home
+  0660. Its root is still named `oath.root=/dev/sda2`. The Oath
+  project's `self-host` tab runs `cargo make bootstrap` then `pkgs` in
+  `~/Projects/Oath` at `6a47464` (log `build/selfhost.log`; the first
+  stopped at a download, the second at glibc's configure without
+  bison). The `desk` profile: base plus seatd, rivulet, Sola with its
+  terminal, Projects, browser, Design and KVM, PipeWire, Noto, Vulkan,
+  the tools that build Sola, Steam, and their packages.
+  The system was `cargo make install
   --target home@10.0.0.3 --disk /dev/sda --hostname canto --overlay
   hosts/canto.json --confirm` on 2026-10-18. Passed all 42 `metal`
   cases (`cargo make check --target home@10.0.0.3`, 2026-10-20) on
