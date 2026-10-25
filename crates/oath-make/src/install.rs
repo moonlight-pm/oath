@@ -16,7 +16,7 @@ use crate::output;
 use crate::pack;
 use crate::qemu;
 use crate::tools::{self, Tools};
-use crate::util::{copy_file, kvm, run, sudo, utc_stamp};
+use crate::util::{copy_file, kvm, new_uuid, run, sudo, utc_stamp};
 
 pub struct Opts {
     pub target: Option<String>,
@@ -24,6 +24,9 @@ pub struct Opts {
     pub confirm: bool,
     pub qemu: bool,
     pub usb: bool,
+    /// Install onto a removable disk plugged into this host, through the
+    /// installer ramdisk in QEMU.
+    pub local: bool,
     pub hostname: Option<String>,
     /// Catalog overlay merged into the installed catalog (`oath seed --overlay`).
     pub overlay: Option<PathBuf>,
@@ -75,6 +78,9 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     if opts.disk.is_empty() || !opts.disk.starts_with("/dev/") {
         bail!("--disk must be a /dev/ node (got {:?})", opts.disk);
     }
+    if opts.local && (opts.qemu || opts.usb || opts.target.is_some()) {
+        bail!("--local installs onto a disk plugged into this host: no --qemu, --usb or --target");
+    }
     let tools = tools::load(root)?;
     let o = match &opts.output {
         Some(id) => output::open(out, id)?,
@@ -108,6 +114,9 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     }
     if opts.qemu {
         return install_qemu(&run_dir, &tools, &p, &opts);
+    }
+    if opts.local {
+        return install_local(&run_dir, &tools, &p, &opts);
     }
     let target = opts.target.as_deref().context("--target user@host (or --qemu or --usb)")?;
     let remote = parse_target(target)?;
@@ -532,8 +541,12 @@ pub(crate) fn wait_ssh(r: &Remote, timeout: Duration) -> Result<()> {
 fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
     let (p1, p2) = parts(&opts.disk);
     let hostname = opts.hostname.clone().unwrap_or_else(|| "oath".into());
-    eprintln!("format {} -> ESP {p1} + btrfs {p2}", opts.disk);
-    let script = format_disk_script(&opts.disk, &p1, &p2);
+    // The boot entry names the root by this UUID, not by its node: a disk's
+    // letter is the order it was found in (a USB root comes after the SATA
+    // disks).
+    let uuid = new_uuid()?;
+    eprintln!("format {} -> ESP {p1} + btrfs {p2} (UUID={uuid})", opts.disk);
+    let script = format_disk_script(&opts.disk, &p1, &p2, &uuid);
     ssh_run(r, &format!("PATH=/bin sh -c {}", sh_quote(&script)))?;
 
     eprintln!("copy packed root");
@@ -586,7 +599,7 @@ fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
         r,
         "cp /opt/oath-install/BOOTX64.EFI /esp/EFI/BOOT/BOOTX64.EFI && cp /opt/oath-install/vmlinuz /esp/vmlinuz && cp /opt/oath-install/initrd.gz /esp/initrd.gz && sync",
     )?;
-    let entry = crate::boot::current_bls(&p2, "");
+    let entry = crate::boot::current_bls(&format!("UUID={uuid}"), "");
     let loader =
         if opts.qemu { crate::boot::LOADER_CONF_QEMU } else { crate::boot::LOADER_CONF_METAL };
     let boots = crate::boot::format_oath_boots(&[String::from("oath.conf")]);
@@ -637,7 +650,7 @@ pub fn pin_host_key(file: &Path, host: &str, port: u16, key: &str) -> Result<()>
     fs::write(file, body).with_context(|| format!("write {}", file.display()))
 }
 
-fn format_disk_script(disk: &str, p1: &str, p2: &str) -> String {
+fn format_disk_script(disk: &str, p1: &str, p2: &str, uuid: &str) -> String {
     format!(
         r#"
 set -e
@@ -656,7 +669,7 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
 done
 [ -b "$P1" ] && [ -b "$P2" ]
 mkfs.fat -F 32 -n OATHESP "$P1"
-mkfs.btrfs -f -L oath "$P2"
+mkfs.btrfs -f -L oath -U {uuid} "$P2"
 mkdir -p /mnt /esp
 mount -t btrfs "$P2" /mnt
 btrfs subvolume create /mnt/@
@@ -842,8 +855,6 @@ fn install_remote(out: &Path, tools: &Tools, p: &Payload, opts: &Opts, r: &Remot
 }
 
 fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Result<()> {
-    let ovmf_code = tools.ovmf_code.as_ref().context("OVMF_CODE.fd missing")?;
-    let ovmf_vars_src = tools.ovmf_vars.as_ref().context("OVMF_VARS.fd missing")?;
     let disk = run_dir.join("disk.qcow2");
     run(Command::new(&tools.qemu_img).args([
         "create",
@@ -852,12 +863,52 @@ fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Resu
         disk.to_str().unwrap(),
         "8G",
     ]))?;
+    let drive = format!("file={},if=none,id=hd0,format=qcow2", disk.display());
+    install_in_qemu(run_dir, tools, p, opts, &drive, &opts.disk, false)
+}
+
+/// `--local`: the installer ramdisk runs in QEMU with the raw disk as its
+/// own, then OVMF boots it once and powers it off. The disk boots metal
+/// next: its loader waits five seconds, and its root is named by UUID.
+fn install_local(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Result<()> {
+    assert_usb_stick(&opts.disk)?;
+    let mounts = fs::read_to_string("/proc/mounts").unwrap_or_default();
+    if let Some(m) = mounts.lines().find(|l| l.starts_with(opts.disk.as_str())) {
+        bail!("{} is mounted ({m}); unmount it first", opts.disk);
+    }
+    let owner = crate::util::run_out(Command::new("stat").args(["-c", "%u:%g", &opts.disk]))?;
+    let uid = unsafe { libc::getuid() }.to_string();
+    sudo(&["chown", &uid, &opts.disk])?;
+    eprintln!("{} -> QEMU as /dev/vda (lent to this user; back to {owner} after)", opts.disk);
+    let drive = format!("file={},if=none,id=hd0,format=raw,cache=none", opts.disk);
+    let res = install_in_qemu(run_dir, tools, p, opts, &drive, "/dev/vda", true);
+    let _ = sudo(&["sync"]);
+    let _ = sudo(&["chown", &owner, &opts.disk]);
+    res?;
+    eprintln!("Oath is on {}: boot it from the firmware's boot menu", opts.disk);
+    Ok(())
+}
+
+/// Install through the installer ramdisk in QEMU onto `drive` (the guest's
+/// `disk`), then boot it through OVMF and check it. `metal`: the disk is
+/// real and boots a machine next, so it gets the metal loader menu and
+/// is powered off cleanly.
+fn install_in_qemu(
+    run_dir: &Path,
+    tools: &Tools,
+    p: &Payload,
+    opts: &Opts,
+    drive: &str,
+    disk: &str,
+    metal: bool,
+) -> Result<()> {
+    let ovmf_code = tools.ovmf_code.as_ref().context("OVMF_CODE.fd missing")?;
+    let ovmf_vars_src = tools.ovmf_vars.as_ref().context("OVMF_VARS.fd missing")?;
     let port = qemu::ssh_port();
     let serial = run_dir.join("serial.log");
     let netdev = format!("user,id=n0,hostfwd=tcp:127.0.0.1:{port}-:22");
-    let drive = format!("file={},if=none,id=hd0,format=qcow2", disk.display());
     let mut qemu_cmd = Command::new(&tools.qemu);
-    qemu_headless(&mut qemu_cmd, &serial, &netdev, &drive);
+    qemu_headless(&mut qemu_cmd, &serial, &netdev, drive);
     if kvm() {
         qemu_cmd.arg("-enable-kvm");
     }
@@ -885,10 +936,11 @@ fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Resu
     }
     let qopts = Opts {
         target: None,
-        disk: opts.disk.clone(),
+        disk: disk.to_string(),
         confirm: true,
-        qemu: true,
+        qemu: !metal,
         usb: false,
+        local: false,
         hostname: opts.hostname.clone().or_else(|| Some("oath".into())),
         overlay: opts.overlay.clone(),
         unchecked: true,
@@ -923,7 +975,7 @@ fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Resu
         "-drive",
         &format!("if=pflash,format=raw,file={}", vars.display()),
     ]);
-    qemu_headless(&mut boot, &serial_boot, &netdev, &drive);
+    qemu_headless(&mut boot, &serial_boot, &netdev, drive);
     let boot_err = fs::File::create(&qemu_boot_log).context("qemu-boot.log")?;
     boot.stdout(Stdio::null()).stderr(Stdio::from(boot_err));
     eprintln!(">> OVMF boot {}", run_dir.display());
@@ -946,6 +998,9 @@ fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Resu
             dump_serial(&serial_boot);
             bail!("installed system has no host:local");
         }
+        if metal {
+            power_off(live, &mut boot_child);
+        }
     }
     let _ = boot_child.kill();
     let _ = boot_child.wait();
@@ -956,6 +1011,21 @@ fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Resu
     }
     eprintln!("QEMU-EFI rehearsal ok  {}", run_dir.display());
     Ok(())
+}
+
+/// Power the booted system off through its PID 1 and wait for QEMU to
+/// exit, so the disk's first shutdown is a clean one.
+fn power_off(live: &Remote, child: &mut std::process::Child) {
+    eprintln!("power off");
+    ssh_fire(live, "sudo poweroff");
+    let deadline = Instant::now() + Duration::from_secs(90);
+    while Instant::now() < deadline {
+        if let Ok(Some(_)) = child.try_wait() {
+            return;
+        }
+        thread::sleep(Duration::from_millis(500));
+    }
+    eprintln!("warning: QEMU still running 90 s after poweroff; killing it");
 }
 
 pub(crate) fn qemu_headless(cmd: &mut Command, serial: &Path, netdev: &str, drive: &str) {
@@ -1080,8 +1150,8 @@ mod tests {
 
     #[test]
     fn format_is_esp_plus_one_pool() {
-        let script = format_disk_script("/dev/sda", "/dev/sda1", "/dev/sda2");
-        assert!(script.contains("mkfs.btrfs -f -L oath"));
+        let script = format_disk_script("/dev/sda", "/dev/sda1", "/dev/sda2", "3f1e9c1e-5b7a");
+        assert!(script.contains("mkfs.btrfs -f -L oath -U 3f1e9c1e-5b7a \"$P2\""));
         assert!(script.contains("btrfs subvolume create /mnt/@\n"));
         assert!(!script.contains("preserve"));
     }

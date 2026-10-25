@@ -29,5 +29,10 @@ Overwrite this file when facts change; do not append a diary.
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
   GPU settings. No mounts yet: the trial leaves NixOS's disks alone.
 - **Oath on it:** none yet. Its kernel drivers are in `pkg:linux` and
-  the AX210's Bluetooth firmware in `pkg:firmware` since `51823cb`; the
-  first trial is Oath on a USB SSD, booted from the firmware's menu.
+  the AX210's Bluetooth firmware in `pkg:firmware` since `51823cb`. The
+  trial is Oath on Joshua's Samsung Type-C 128 GB stick (`090c:1000`),
+  written by `cargo make install --local` with canto's `home` key added
+  (`OATH_SSH_PUBKEY`): while novus runs the stick, it is driven from
+  canto. Boot it from the firmware's boot menu; NixOS stays the default.
+  The stick only enumerates on a back-panel port: behind the keyboard's
+  USB 2.0 hub it resets four times and never becomes a disk.

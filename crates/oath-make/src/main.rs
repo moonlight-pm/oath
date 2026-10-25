@@ -118,6 +118,10 @@ enum Cmd {
         /// Write an EFI installer to `--disk` (must be a removable USB). No `--target`.
         #[arg(long)]
         usb: bool,
+        /// Install Oath onto `--disk`, a removable USB disk plugged into this
+        /// host (the installer runs in QEMU), and boot it once in QEMU. No `--target`.
+        #[arg(long)]
+        local: bool,
         /// `host:local` hostname after install (default: oath).
         #[arg(long)]
         hostname: Option<String>,
@@ -279,7 +283,18 @@ fn real() -> Result<()> {
             let rc = qemu::ssh(&out, &args)?;
             std::process::exit(rc);
         }
-        Cmd::Install { target, disk, confirm, qemu, usb, hostname, overlay, unchecked, output } => {
+        Cmd::Install {
+            target,
+            disk,
+            confirm,
+            qemu,
+            usb,
+            local,
+            hostname,
+            overlay,
+            unchecked,
+            output,
+        } => {
             install::run_install(
                 &root,
                 &out,
@@ -289,6 +304,7 @@ fn real() -> Result<()> {
                     confirm,
                     qemu,
                     usb,
+                    local,
                     hostname,
                     overlay,
                     unchecked,

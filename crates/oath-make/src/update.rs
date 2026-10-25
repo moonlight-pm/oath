@@ -112,7 +112,14 @@ fn update(r: &Remote, o: &Output, esp: Option<&str>, qemu: bool) -> Result<()> {
         .context("the running kernel has no oath.root= (not booted from an Oath ESP)")?;
     let esp = match esp {
         Some(e) => e.to_string(),
-        None => esp_of(&root_dev).with_context(|| format!("no ESP for {root_dev}: pass --esp"))?,
+        None => {
+            let node = if root_dev.starts_with("UUID=") {
+                install::ssh_out(r, &format!("findfs {}", sh_quote(&root_dev)))?
+            } else {
+                root_dev.clone()
+            };
+            esp_of(&node).with_context(|| format!("no ESP for {root_dev}: pass --esp"))?
+        }
     };
 
     // 2. The boot rotation, planned before anything changes.
@@ -678,6 +685,7 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
             confirm: true,
             qemu: true,
             usb: false,
+            local: false,
             hostname: None,
             overlay: None,
             unchecked: true,

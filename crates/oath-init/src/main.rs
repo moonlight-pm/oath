@@ -20,6 +20,7 @@ mod hotplug;
 mod modules;
 mod probation;
 mod resume;
+mod rootdev;
 mod shutdown;
 mod supervise;
 
@@ -498,18 +499,43 @@ fn root_subvol() -> String {
         .unwrap_or_else(|| oath_core::LIVE_SUBVOL.to_string())
 }
 
+/// How long the boot waits for the root disk to appear.
+const ROOT_WAIT: Duration = Duration::from_secs(30);
+
+/// The root filesystem's device, found once (`oath.root=`: a node or
+/// `UUID=`). A disk on USB appears a second or more after its drivers
+/// load, and its disk driver only after that, so the wait loads drivers
+/// again for what came meanwhile.
 fn root_dev() -> String {
-    cmdline_val("oath.root").unwrap_or_else(|| {
-        if Path::new("/dev/vda").exists() {
-            "/dev/vda".into()
-        } else if Path::new("/dev/sda2").exists() {
-            "/dev/sda2".into()
-        } else if Path::new("/dev/nvme0n1p2").exists() {
-            "/dev/nvme0n1p2".into()
-        } else {
-            "/dev/vda".into()
+    static ROOT: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    ROOT.get_or_init(|| {
+        let Some(want) = cmdline_val("oath.root") else { return guess_root_dev() };
+        let deadline = Instant::now() + ROOT_WAIT;
+        loop {
+            if let Some(dev) = rootdev::find(&want) {
+                return dev;
+            }
+            if Instant::now() >= deadline {
+                log(&format!("root {want} did not appear in {}s", ROOT_WAIT.as_secs()));
+                return want;
+            }
+            std::thread::sleep(Duration::from_millis(500));
+            load_modules(true);
         }
     })
+    .clone()
+}
+
+fn guess_root_dev() -> String {
+    if Path::new("/dev/vda").exists() {
+        "/dev/vda".into()
+    } else if Path::new("/dev/sda2").exists() {
+        "/dev/sda2".into()
+    } else if Path::new("/dev/nvme0n1p2").exists() {
+        "/dev/nvme0n1p2".into()
+    } else {
+        "/dev/vda".into()
+    }
 }
 
 fn install_ramdisk() -> Result<(), String> {

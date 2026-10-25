@@ -68,9 +68,14 @@ of T24, and D3 (seed as data).
   only loader on the ESP, USB stick and installer.
 - `oath-efi` draws the mark with GOP, shows the menu (timeout 5 s on
   metal, 0 in QEMU), and starts the kernel with `LoadImage`.
-- The kernel command line names the root device (`oath.root=`) and
-  subvolume (`oath.subvol=`): `@`, `@boot-N` or `@gen-N`. Anything else
-  falls back to `@`. Metal BLS entries and QEMU both carry `panic=10`,
+- The kernel command line names the root (`oath.root=`) and subvolume
+  (`oath.subvol=`): `@`, `@boot-N` or `@gen-N`. Anything else falls back
+  to `@`. `install` names the root `UUID=<fsid>`, a UUID it gives the
+  btrfs filesystem (`mkfs.btrfs -U`), since a disk's node is the order it
+  was found in; a device node (`/dev/sda2`, canto's) still works. PID 1
+  reads the btrfs superblocks itself (the initrd has no blkid) and waits
+  up to 30 s for the root to appear, loading drivers again for what came
+  meanwhile: a USB disk shows up seconds after its drivers load. Metal BLS entries and QEMU both carry `panic=10`,
   so a PID 1 panic reboots after ten seconds instead of hanging.
 - The initrd's `/init` is PID 1. It mounts the root subvolume and
   switch_roots into it (moves `/dev`, `/proc`, `/sys`, `/run` across,
@@ -138,7 +143,8 @@ trusting only the host key `install` pinned:
 1. Refuse unless the output passed `check` (or `--unchecked`), the
    target has `/oath/INDEX.md`, is not this machine (`boot_id`), is
    in-sync, and has nothing on probation.
-2. Mount the ESP (default: partition 1 of the disk in `oath.root=`),
+2. Mount the ESP (default: partition 1 of the disk in `oath.root=`,
+   through `findfs` for a `UUID=`),
    plan the rotation as `esp` does, and snapshot `@` as `@boot-<id>`
    first, so the archived boot pairs the old kernel with the old
    userspace.

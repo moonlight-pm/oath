@@ -31,7 +31,9 @@ files are written with `dd`, so the user's login shell does not matter.
    `kexec`, copied to the target, so the live OS needs none).
 3. Partitions GPT with the ramdisk's native tools (`wipefs`, `sfdisk`):
    a 512 MiB ESP (`mkfs.fat`), then btrfs (`mkfs.btrfs`) with subvolume
-   `@`.
+   `@` and a new UUID, which the boot entry names the root by
+   (`oath.root=UUID=…`): the disk's node changes with the order disks
+   are found in.
 4. Copies the packed root tree (GNU `tar`).
 5. Merges the catalog overlay with the ramdisk's `oath`
    (`oath --root /mnt/oath seed --overlay`): `host:local.hostname`
@@ -89,6 +91,21 @@ cargo make install --qemu --disk /dev/vda --confirm
 
 That runs the same steps against a fresh qcow2 in QEMU with OVMF, then
 boots it through `oath-efi`.
+
+## Onto a USB disk plugged into this host
+
+```sh
+cargo make install --local --disk /dev/sdd --confirm \
+  --hostname novus --overlay hosts/novus.json
+```
+
+For a machine that boots Oath from a USB disk, the build host itself
+included. The disk must be removable, USB and not mounted. The installer
+ramdisk runs in QEMU with the raw disk as its own (`/dev/vda`; the disk
+is lent to your user for the run), does steps 3 to 6, then OVMF boots
+the disk once, `oath ls` must answer, and it is powered off cleanly. Its
+loader waits 5 s, as on metal. Boot it from the firmware's boot menu;
+nothing changes the firmware's boot order.
 
 ## USB installer stick
 

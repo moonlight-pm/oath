@@ -551,7 +551,10 @@ alias pci:v*d*sv*sd*bc04sc0[13]i* snd_hda_intel
             "",
             "",
         ));
-        assert_eq!(i.paths["nvidia_drm"], "/oath/store/pkg/nvidia/sha256-x/lib/modules/x/nvidia-drm.ko");
+        assert_eq!(
+            i.paths["nvidia_drm"],
+            "/oath/store/pkg/nvidia/sha256-x/lib/modules/x/nvidia-drm.ko"
+        );
         assert_eq!(i.paths["tg3"], "kernel/drivers/net/ethernet/broadcom/tg3.ko");
         assert_eq!(i.deps["nvidia_drm"], ["nvidia_modeset", "libphy"]);
         assert_eq!(i.post["nvidia"], ["nvidia_modeset", "nvidia_drm"]);

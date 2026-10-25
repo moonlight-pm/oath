@@ -31,13 +31,14 @@ append history (git has it).
    Sola tab publishes.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
-   host, `pkg:qemu`, `/dev/kvm` for `home`, novus's drivers (canto runs
-   them, `9466271b702e`, reboot pending), and NVIDIA 595.104.02 as a
-   recipe in `desk` (modules against `pkg:linux-build`, loaded from the
-   package by PID 1; `host:local.module_options`). canto runs
-   `bootstrap` then `pkgs` from scratch (`self-host` tab); the lock must
-   not change. Next: libglvnd and Mesa with glvnd; novus's trial on a
-   USB SSD (Joshua's disk and word).
+   host, `pkg:qemu`, `/dev/kvm` for `home`, novus's drivers, NVIDIA
+   595.104.02 as a recipe in `desk`; in `a435d482ad9a`, a root named by
+   btrfs UUID that PID 1 waits for, `install --local` onto a USB disk,
+   and `pkg:bison`, `pkg:m4` in `desk` (canto's bootstrap stopped at
+   glibc without bison, 2026-10-25). Next: once `a435d482ad9a` passes
+   check, write novus's trial stick (Joshua's Samsung 128 GB, his word
+   2026-10-25); update and reboot canto, rerun `bootstrap` and `pkgs`
+   (the lock must not change); then libglvnd and Mesa with glvnd.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
@@ -48,10 +49,9 @@ append history (git has it).
 **State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
 [hosts/buccina.md](hosts/buccina.md)) and 8 are active
 ([docs/roadmap.md](docs/roadmap.md)). canto runs `9466271b702e`
-(`desk`, R32–R35; generation 324), the newest checked output (all 57 QEMU
-cases), published 2026-10-25 (159 packs; NVIDIA as its plan only); its kernel and PID 1 are `048c0e633cd7`'s
-(reboot of 2026-10-24 04:31Z) until the next boot. Left until needed:
-root SSH as a field, more NICs, device-node rules as fields.
+(generation 324, published 2026-10-25: 159 packs), with
+`048c0e633cd7`'s kernel and PID 1 until its next boot. Left until
+needed: root SSH as a field, more NICs, device-node rules as fields.
 
 ## Machines
 

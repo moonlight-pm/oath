@@ -93,10 +93,8 @@ pub fn load(root: &Path) -> Result<Tools> {
     let qemu_img =
         which("qemu-img").or_else(|| which("true")).unwrap_or_else(|| PathBuf::from("/bin/true"));
     // OVMF: host.nix's links, else the edk2 build in QEMU's own share/qemu.
-    let share = qemu
-        .canonicalize()
-        .ok()
-        .and_then(|q| q.parent()?.parent().map(|p| p.join("share/qemu")));
+    let share =
+        qemu.canonicalize().ok().and_then(|q| q.parent()?.parent().map(|p| p.join("share/qemu")));
     let firmware = |nix: &str, qemu_file: &str| -> Option<PathBuf> {
         let p = match &host {
             Some(h) => h.join(nix),

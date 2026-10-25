@@ -250,6 +250,11 @@
       "description": "at-spi2-core: libatspi, libatk-1.0 and libatk-bridge-2.0 (CEF's accessibility).",
       "home": "https://gitlab.gnome.org/GNOME/at-spi2-core"
     },
+    "pkg:bison": {
+      "present": true,
+      "description": "GNU Bison. A build tool (glibc's configure needs it, for the toolchain bootstrap on Oath); not in the base image.",
+      "home": "https://www.gnu.org/software/bison/"
+    },
     "pkg:bubblewrap": {
       "present": true,
       "description": "bubblewrap: bwrap, unprivileged sandboxes in user namespaces (Steam's).",
@@ -549,6 +554,11 @@
       "present": true,
       "description": "Compiled locales C.UTF-8 and en_US.UTF-8, from glibc's sources.",
       "home": "https://www.gnu.org/software/libc/"
+    },
+    "pkg:m4": {
+      "present": true,
+      "description": "GNU m4. A build tool (bison runs it); not in the base image.",
+      "home": "https://www.gnu.org/software/m4/"
     },
     "pkg:make": {
       "present": true,

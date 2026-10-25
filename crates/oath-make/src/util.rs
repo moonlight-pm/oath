@@ -131,3 +131,28 @@ pub fn chmod_exec(path: &Path) -> io::Result<()> {
     p.set_mode(p.mode() | 0o755);
     fs::set_permissions(path, p)
 }
+
+/// A random (version 4) UUID, as `mkfs.btrfs -U` takes it.
+pub fn new_uuid() -> Result<String> {
+    let mut b = [0u8; 16];
+    fs::File::open("/dev/urandom")
+        .and_then(|mut f| f.read_exact(&mut b))
+        .context("/dev/urandom")?;
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    let h: String = b.iter().map(|x| format!("{x:02x}")).collect();
+    Ok(format!("{}-{}-{}-{}-{}", &h[0..8], &h[8..12], &h[12..16], &h[16..20], &h[20..32]))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn uuid_is_version_4() {
+        let u = super::new_uuid().unwrap();
+        let parts: Vec<&str> = u.split('-').collect();
+        assert_eq!(parts.iter().map(|p| p.len()).collect::<Vec<_>>(), [8, 4, 4, 4, 12]);
+        assert!(parts[2].starts_with('4'));
+        assert!(matches!(&parts[3][..1], "8" | "9" | "a" | "b"));
+        assert_ne!(u, super::new_uuid().unwrap());
+    }
+}

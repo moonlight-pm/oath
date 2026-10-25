@@ -12,7 +12,7 @@ tree changes.
 firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loader)
             loader/entries/oath.conf  + oath-N.conf (last 5 boots)
             vmlinuz (own build, 7.3.0-rc1) + initrd.gz
-  kernel cmdline: oath.root=<dev> oath.subvol=@ console=ttyS0 panic=10 …
+  kernel cmdline: oath.root=UUID=<btrfs fsid> (or a node) oath.subvol=@ console=ttyS0 panic=10 …
   initrd /init = oath-init (PID 1, static against glibc); bash (and its
     libraries and glibc's loader in /lib) for the fallback shell
     catch SIGTERM/SIGINT (reboot), SIGUSR1 (halt), SIGUSR2 (poweroff)
@@ -21,6 +21,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     kernel modprobe helper = /lib/oath/modprobe (this binary)
     coldplug by modalias (display and sound wait until services start;
       the screen keeps the EFI mark until then, then shows tty1, svc:screen)
+    find <root> (waits up to 30 s, coldplugging again: a USB disk is late)
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)

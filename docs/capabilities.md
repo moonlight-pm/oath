@@ -28,7 +28,7 @@ gaps · `target` designed, not built.
 | Kernel | shipped | `pkg:linux`, a plan built by `pkg:gcc` (7.3-rc1, fragment, patches, depmod index; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | Package modules not yet booted |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `cargo make update` moves a machine to a new output | — |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, the locked packages and packs a profile pins from elsewhere (R28) into an immutable `build/out/<id>/` with a manifest | — |
-| Install | shipped | installer ramdisk over SSH; GPT, ESP, btrfs `@`; `--overlay`; pins the host key; `--qemu`; `--usb`; checked outputs only | — |
+| Install | shipped | installer ramdisk; GPT, ESP, btrfs `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only | — |
 | Test harness | shipped | `cargo make check`: one QEMU per case (Nix's, or `pkg:qemu`, R32, R33), real reboots, known gaps per phase, `check-pass` per output; `--target`: the `metal` cases on a machine; `--agent`: opt-in real-model tasks | — |
 
 ## Payload (outside core)

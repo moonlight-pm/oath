@@ -34,7 +34,9 @@ mod tests {
         assert!(takes_over_firmware_fb("kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko"));
         assert!(takes_over_firmware_fb("kernel/drivers/gpu/drm/i915/i915.ko"));
         assert!(takes_over_firmware_fb("kernel/drivers/gpu/drm/nouveau/nouveau.ko"));
-        assert!(takes_over_firmware_fb("/oath/store/pkg/nvidia/sha256-0/lib/modules/7/nvidia-drm.ko"));
+        assert!(takes_over_firmware_fb(
+            "/oath/store/pkg/nvidia/sha256-0/lib/modules/7/nvidia-drm.ko"
+        ));
         assert!(!takes_over_firmware_fb("kernel/drivers/net/ethernet/nvidia/forcedeth.ko"));
         assert!(!takes_over_firmware_fb("kernel/drivers/gpu/drm/virtio/virtio-gpu.ko"));
         assert!(!takes_over_firmware_fb("kernel/drivers/net/ethernet/broadcom/tg3.ko"));
