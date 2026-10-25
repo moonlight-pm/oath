@@ -781,6 +781,11 @@
       "description": "WirePlumber: PipeWire's session manager, and wpctl.",
       "home": "https://pipewire.pages.freedesktop.org/wireplumber/"
     },
+    "pkg:wl-clipboard": {
+      "present": true,
+      "description": "wl-clipboard: wl-copy and wl-paste, the Wayland clipboard from a shell (Claude Code pastes images with it).",
+      "home": "https://github.com/bugaevc/wl-clipboard"
+    },
     "pkg:wlroots": {
       "present": true,
       "description": "wlroots, shared: the compositor library under rivulet (DRM, libinput, GLES2, Xwayland).",

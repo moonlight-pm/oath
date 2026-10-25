@@ -1,0 +1,13 @@
+version = "2.3.0"
+license = "GPL-3.0-or-later"
+description = "wl-clipboard: wl-copy and wl-paste, the Wayland clipboard from a shell (Claude Code pastes images with it)."
+home = "https://github.com/bugaevc/wl-clipboard"
+purl = "pkg:github/bugaevc/wl-clipboard@v2.3.0"
+build = ["meson", "ninja", "python", "pkgconf", "wayland", "wayland-protocols"]
+run = ["wayland"]
+
+[[source]]
+url = "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v2.3.0.tar.gz"
+sha256 = "b4dc560973f0cd74e02f817ffa2fd44ba645a4f1ea94b7b9614dacc9f895f402"
+file = "wl-clipboard-2.3.0.tar.gz"
+unsigned = "a GitHub tag archive; upstream ships no tarballs and its tags are unsigned"
