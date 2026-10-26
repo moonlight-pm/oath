@@ -738,12 +738,22 @@ pub(crate) fn product(lock: &Lock, name: &str) -> Result<String> {
 
 /// `cargo make pkgs [names]`: build in dependency order; with no names,
 /// every package.
+/// Every package, for a run without names: the base first, its tools
+/// before glibc and gcc, so that after `bootstrap` the rest build with
+/// plan products. GCC's option tables come from awk scripts that only a
+/// gawk with MPFR gets right, and the seed's has none; pkg:gcc and
+/// glibc-i386's compiler would otherwise run it when they sort first.
+fn full_run(all: &BTreeMap<String, PkgToml>) -> Vec<String> {
+    let chain = ["glibc", "gcc"];
+    let tools = BASE.iter().copied().filter(|b| !chain.contains(b));
+    tools.chain(chain).map(String::from).chain(all.keys().cloned()).collect()
+}
+
 pub fn build(repo: &Path, names: &[String]) -> Result<()> {
     let all = load(repo)?;
     let cat = build_catalog(repo)?;
     let mut lock = read_lock(repo)?;
-    let wanted: Vec<String> =
-        if names.is_empty() { all.keys().cloned().collect() } else { names.to_vec() };
+    let wanted: Vec<String> = if names.is_empty() { full_run(&all) } else { names.to_vec() };
     for name in order(&all, &wanted, &lock)? {
         let p = &all[&name];
         let files = fetch(repo, p)?;
@@ -1100,6 +1110,35 @@ mod tests {
         let mut locked = Lock::new();
         locked.insert("a".into(), LockEntry::default());
         assert_eq!(order(&all, &["a".into()], &locked).unwrap(), vec!["b", "a"]);
+    }
+
+    #[test]
+    fn a_full_run_rebuilds_the_base_first() {
+        let mut all = BTreeMap::new();
+        for b in BASE {
+            all.insert(b.to_string(), pkg(BASE));
+        }
+        let mut gawk = pkg(BASE);
+        gawk.build.push("mpfr".into());
+        all.insert("gawk".into(), gawk);
+        all.insert("mpfr".into(), pkg(BASE));
+        let mut gcc = pkg(BASE);
+        gcc.build.push("glibc-i386".into());
+        all.insert("gcc".into(), gcc);
+        all.insert("glibc-i386".into(), pkg(BASE));
+        let mut elfutils = pkg(BASE);
+        elfutils.build.push("glibc-i386".into());
+        all.insert("elfutils-i386".into(), elfutils);
+        let mut locked = Lock::new();
+        for b in BASE {
+            locked.insert(b.to_string(), LockEntry::default());
+        }
+        let o = order(&all, &full_run(&all), &locked).unwrap();
+        let at = |n: &str| o.iter().position(|x| x == n).unwrap();
+        assert!(at("mpfr") < at("gawk") && at("gawk") < at("glibc-i386"));
+        assert!(at("make") < at("glibc") && at("glibc") < at("gcc"));
+        assert!(at("gcc") < at("elfutils-i386"));
+        assert_eq!(o.len(), all.len());
     }
 
     #[test]

@@ -38,9 +38,11 @@ Overwrite this file when facts change; do not append a diary.
   Booted 2026-10-25 22:19Z: `kvm_intel` loaded, `/dev/kvm` root:home
   0660. Its root is still named `oath.root=/dev/sda2`. The Oath
   project's `self-host` tab runs `cargo make bootstrap` then `pkgs` in
-  `~/Projects/Oath` at `6a47464` (log `build/selfhost.log`; the first
-  stopped at a download, the second at glibc's configure without
-  bison). When it ends, `build/selfhost-passes.sh` runs in the same tab:
+  `~/Projects/Oath` (log `build/selfhost.log`; the first stopped at a
+  download, the second at glibc's configure without bison, the third at
+  glibc-i386's GCC, built before gawk with the seed's MPFR-less gawk).
+  The fourth, `pkgs` alone from 2026-10-26, rebuilds the base first.
+  When it ends, `build/selfhost-passes.sh` runs in the same tab:
   `pkgs` again until a pass builds nothing (`selfhost-pass<N>.log`),
   then the products that differ from the commit's lock
   (`selfhost-result.txt`). The `desk` profile: base plus seatd, rivulet, Sola with its
