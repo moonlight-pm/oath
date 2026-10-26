@@ -9,12 +9,10 @@ Overwrite this file when facts change; do not append a diary.
   512 MiB ESP + btrfs `@`). No serial port.
 - **USB disk:** Seagate BarracudaFastSSD (2 TB, `0bc2:aa16`, USB 3 at
   5 Gb/s), wiped 2026-10-23 to GPT with one btrfs partition, label
-  `warehouse`. It speaks UAS; the running kernel has no `uas`, so it
-  is on usb-storage with no TRIM until the next boot (the ESP's kernel
-  has it). `host:local.mounts` mounts it at `/mnt/warehouse`
-  (`noatime,compress=zstd:1`) since generation 277; the running PID 1
-  predates the field, so the boot mount starts with the next boot. It
-  holds the cargo target dirs of Sola and Oath
+  `warehouse`. It is on `uas` since the boot of 2026-10-24 04:31Z.
+  `host:local.mounts` (generation 277) mounts it at `/mnt/warehouse`
+  (`noatime,compress=zstd:1`); PID 1 has mounted it at boot since
+  then (2026-10-24 04:32Z, 2026-10-25 22:20Z). It holds the cargo target dirs of Sola and Oath
   (`~/Projects/{Sola,Oath}/target` link to
   `/mnt/warehouse/{Sola,Oath}/target`), so builds fail while it is not
   mounted. Nothing the machine boots or runs needs it.
@@ -63,6 +61,8 @@ Overwrite this file when facts change; do not append a diary.
   `a25d01f1…` on 2026-10-24 08:49);
   its webhelper is on radeonsi through ANGLE, and its container imports
   `mesa-i386` (no 32-bit GL or Vulkan errors). No game installed yet.
+  Since the boot of 2026-10-25 22:19Z `/dev/uinput` is root:home 0660
+  (R30); no pad tried yet.
   Steam's data and its one library are `/home/.local/share/Steam`;
   Steam names the library's drive `/home` (before `a25d01f1…`,
   `/run/host/usr/lib/oath`: see [steam.md](../docs/specs/steam.md)). Both FirePros show in
@@ -115,7 +115,9 @@ Overwrite this file when facts change; do not append a diary.
   pkg:wl-clipboard --from-json` (needs `pkg:wayland`) and applied
   (generation 319). `wl-copy` and `wl-paste` bind rivulet's
   `ext_data_control_manager_v1`, no popup; a PNG copied and pasted back
-  matched byte for byte.
+  matched byte for byte. Claude Code pastes a Super+Shift+4 screenshot
+  (Joshua, 2026-10-26). The Sola tab's pin of `pkg:sola` (`a6751239…`)
+  needs it (Sola `bd8d8152`); `desk.json`'s older pin does not yet.
 - **Backup:** `backup-send` mounts the NAS export as NFS 4.0
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no
   version). Mounting and unmounting it was checked on 2026-10-18; the

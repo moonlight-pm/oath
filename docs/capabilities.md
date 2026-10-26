@@ -7,7 +7,7 @@ this file under 800 words. Update a row with the code.
 **Status:** `shipped` works and is tested · `partial` works with listed
 gaps · `target` designed, not built.
 
-**As of:** 2026-10-24
+**As of:** 2026-10-26
 
 ## Core
 
@@ -25,16 +25,16 @@ gaps · `target` designed, not built.
 | SSH | shipped | dropbear as `home` (login shell zsh, R27), keys from `ssh:local`, root denied; OpenSSH client tools and `sftp-server` (ed25519); `sudo` (clean env) | — |
 | Devices | partial | modules by modalias (boot, request, hotplug); `dev:*` from sysfs (disks, `net0`…, UARTs) at boot and on change; `host:local.mounts` by label or UUID (boot, hotplug, apply); `host:local.module_options`; sound, pads and `/dev/kvm` `home`'s (R22, R30, R33) | Node ownership is not a field |
 | Seed and overlays | shipped | profile `base`, no test fixtures; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
-| Kernel | shipped | `pkg:linux`, a plan built by `pkg:gcc` (7.3-rc1, fragment, patches, depmod index; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | Package modules not yet booted |
+| Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3-rc1, fragment, patches, depmod index; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | Package modules not yet booted |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `cargo make update` moves a machine to a new output | — |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, the locked packages and packs a profile pins from elsewhere (R28) into an immutable `build/out/<id>/` with a manifest | — |
-| Install | shipped | installer ramdisk; GPT, ESP, btrfs `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only | — |
+| Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only | — |
 | Test harness | shipped | `cargo make check`: one QEMU per case (Nix's, or `pkg:qemu`, R32, R33), real reboots, known gaps per phase, `check-pass` per output; `--target`: the `metal` cases on a machine; `--agent`: opt-in real-model tasks | — |
 
 ## Payload (outside core)
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Projects, browser, Design; shells survive restarts; PipeWire; Noto; Vulkan (RADV); canto (R20–22). Gaps: other apps, RT priority |
+| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Projects, browser, Design; shells survive restarts; PipeWire; Noto; Vulkan (RADV); `wl-clipboard` (screenshot paste); canto (R20–22). Gaps: other apps, RT priority |
 | Wicket host | target | Left core (R1); Wicket ships its own packages. |
 | Steam + Minecraft desk | partial | Steam (R29): Valve's launcher, a recipe, sandboxed; the 64-bit client signed in on canto with 32-bit Mesa. Gaps: no 32-bit game or pad tried; Minecraft |

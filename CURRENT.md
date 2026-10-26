@@ -4,7 +4,7 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-24 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-10-26 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
 · decisions R1–R34 in [docs/decisions.md](docs/decisions.md)
 
@@ -22,13 +22,13 @@ append history (git has it).
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
    `mesa-i386` and 15 more). PID 1 gives `home` the pads' nodes (R30)
-   from the next boot. Next: a 32-bit game and a pad, after that reboot.
+   since the boot of 2026-10-25. Next: a 32-bit game and a pad.
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, PipeWire, Noto, Vulkan (RADV), `wl-clipboard` (generation
-   319), and Sola's session from Sola's own packs, which `desk.json`
-   pins (R28, no fork; its `next` at `c6cda58b`). Next: realtime priority for PipeWire; new pins when the
-   Sola tab publishes.
+   Xwayland, PipeWire, Noto, Vulkan (RADV), `wl-clipboard` (pasting
+   screenshots, 2026-10-26) and Sola's packs, which `desk.json` pins
+   (R28, no fork; `next` at `c6cda58b`). Next: realtime priority for
+   PipeWire; new pins when the Sola tab publishes.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
@@ -50,8 +50,8 @@ append history (git has it).
 2026-10-26: [hosts/buccina.md](hosts/buccina.md)) and 8 are active
 ([docs/roadmap.md](docs/roadmap.md)). canto runs `55c20bf6a86c`
 (generation 329, booted 2026-10-25 22:19Z with KVM; published: 159
-packs). Left until
-needed: root SSH as a field, more NICs, device-node rules as fields.
+packs). Left until needed: root SSH as a field, more NICs, device-node
+rules as fields.
 
 ## Machines
 

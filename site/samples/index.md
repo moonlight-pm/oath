@@ -34,7 +34,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
 ## Kinds here
 
 - `dev` — a hardware device (inventory)  (`oath schema dev`)
-- `host` — this machine (hostname, power, env, timezone)  (`oath schema host`)
+- `host` — this machine (hostname, power, env, timezone, mounts)  (`oath schema host`)
 - `net` — a network link (net0, dhcp or static)  (`oath schema net`)
 - `pkg` — a package (store + /bin links)  (`oath schema pkg`)
 - `plan` — a build plan (hash-pinned file; oath build)  (`oath schema plan`)
