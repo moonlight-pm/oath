@@ -433,6 +433,12 @@ fn sandbox_in_child(
             "oath schema plan",
         ));
     }
+    // One host name on every builder, so a build that records it (vim's
+    // `:version`) is the same on each.
+    let host = b"build";
+    if unsafe { libc::sethostname(host.as_ptr().cast(), host.len()) } != 0 {
+        return Err(Error::Msg("sethostname failed".into()));
+    }
     if unsafe {
         libc::mount(
             std::ptr::null(),

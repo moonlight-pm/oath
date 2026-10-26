@@ -1,4 +1,5 @@
 # Vim, the editor (R18), also vi. Its runtime files are under this slot.
+# `:version` names the builder's host, which the sandbox makes `build`.
 tar -xf "$SRC/$SOURCES"
 cd "vim-$VERSION"
 ./configure --prefix="$LIVE" --with-features=huge --enable-multibyte --disable-gui \

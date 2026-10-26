@@ -38,7 +38,7 @@
     "version": "9.20.29",
     "license": "MPL-2.0 AND ISC AND MIT AND BSD-3-Clause AND BSD-2-Clause",
     "by": "plan",
-    "plan": "sha256-33a4fc33c78bb69c755039d0f047a4f11c1e2bc3ddfb0a83a8d97300adce877c",
+    "plan": "sha256-a457f95807b42c276b7ed048da1277ead6c18eff3050ce6c5bc2dbc224ca29ee",
     "product": "sha256-9f73cab893f1f329106045a0894b2b39c9f791600cb0b363803c3b2ec0a08f9e",
     "run": [
       "openssl",
@@ -104,7 +104,7 @@
     "version": "147.0.10+gd58e84d+chromium-147.0.7727.118",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-3ad96766ea5c094163ce5244f0c6b5418a5ba41154ee46386e425d046354011c",
+    "plan": "sha256-695f9d04805ea95c3d5ac29b635e640c8d99a4143b7b791f8adab1a9cdeb2c2e",
     "product": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb",
     "run": [
       "glib",
@@ -169,7 +169,7 @@
     "version": "9.12",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-d949c44834c2e60042cab002fddae5b7ec5bf00f14343bd170cfb70fd830c37e",
+    "plan": "sha256-7ebaf75b42c5f62c8e9ce6b968d2adb3d40d2d9592be21676dadd442101ba0d8",
     "product": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da",
     "run": [
       "gmp"
@@ -234,8 +234,8 @@
     "version": "2026.94",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-9337164baecef55915a79f923c19237b1175af627d394e14c56d810232d478c6",
-    "product": "sha256-d8d21706904b0d8b8138f00adfd603ecccb354f9e7012d9aa3154af56bde346a",
+    "plan": "sha256-7248d8b361c31546b42f1f6921015d4463eb2e590d8caaa5e293c2550a075888",
+    "product": "sha256-8eaa7ae26c2b7ba953d7206a4e642f55601d42717afcd7835588c9ee2c8aa49e",
     "run": [
       "zlib"
     ]
@@ -280,7 +280,7 @@
     "version": "4.11.0",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-0aa7dad6edb6d5291485e7b43cd7e9184bd7a362fd1a4a31ee866a819145e2aa",
+    "plan": "sha256-69d3063b562762ba8a0317248d154b86bfd982f42307b86a8d702a976a439164",
     "product": "sha256-0752f905b59e72a4bc41ae54d4f53629d49d82a129219a2eb4c4d2b67bb5fab7",
     "run": []
   },
@@ -1076,16 +1076,16 @@
     "version": "4.40",
     "license": "MPL-2.0",
     "by": "plan",
-    "plan": "sha256-72cd1291fdf3f792070043ab15a9e833516bf8e4bd89d25d2271f93d429c9eba",
-    "product": "sha256-76157a1965599fa3daa9faea6480f2f3011fd870d33ae5d83ce909856b5f4779",
+    "plan": "sha256-513d41acc976e4c38a2bbeec3da8d018bfe0b68fa6633080cf9d6c50d5844c5b",
+    "product": "sha256-a848e3a7605e96f635b0257bc1b4dace62b894068007697cf8f7bbcfe116814a",
     "run": []
   },
   "nss": {
     "version": "3.131",
     "license": "MPL-2.0 AND MIT AND Apache-2.0 AND BSD-3-Clause AND blessing",
     "by": "plan",
-    "plan": "sha256-ec5f73c735f2cb7bcbaeec230e20906a33d1612186342a802b0b1031a454ef4a",
-    "product": "sha256-26d09d48fd5e26098397b7f49a295dba32d5a5cd142e740776056b94c341af64",
+    "plan": "sha256-c3d499cd0857cd0303a01de3c83c3d96e5478ea83afdd2b2dbe8f9daad321c0e",
+    "product": "sha256-05855a83709832e663f84fb842782ae79adc786a5979c96e8844f7d159819b13",
     "run": [
       "nspr",
       "zlib"
@@ -1121,8 +1121,8 @@
     "version": "4.0.3",
     "license": "Apache-2.0",
     "by": "plan",
-    "plan": "sha256-6cdfef06755c079a2d53bb8fdc8a251077a4f53e3eb24121846e789f8c8fb565",
-    "product": "sha256-400a44864127ba2976d080e9854bee9ce909244dd4717b5442ea73380f935f0c",
+    "plan": "sha256-98747a23b85ce615c2b473caf72792ffcc8ae8009c96f60d5be82572920f0368",
+    "product": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403",
     "run": []
   },
   "pango": {
@@ -1367,8 +1367,8 @@
     "version": "9.2.1202",
     "license": "Vim",
     "by": "plan",
-    "plan": "sha256-c4fad4277fce6de092b5f3dc1491fff27e614fb8ad6dc2ee2bc73a5f7dcaf604",
-    "product": "sha256-9c2b7551f1719b1561f651dd37d323deb1756346bb9cd4636d1ed4f91b51525d",
+    "plan": "sha256-bff6f5e80ec972b5a841d6ac1c85cd83ffe66b7695cd612a4e6dd7937a37ac7a",
+    "product": "sha256-9bc9b318d591e3aceaf83c58deaff641eac0571892da9637471be1539407f4a8",
     "run": [
       "ncurses"
     ]

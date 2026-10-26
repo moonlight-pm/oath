@@ -66,7 +66,8 @@ product's `pkg.needs`.
 2. Pre-build: every `build_needs` package must be in the store at its
    hash. Missing ones with a `url` are fetched and verified. This is
    the only step that uses the network.
-3. Sandbox: new user, mount, network, IPC, UTS and PID namespaces; a
+3. Sandbox: new user, mount, network, IPC, UTS and PID namespaces,
+   with the host name `build` on every builder; a
    chroot holding only the input packages and an empty `/out`;
    `PATH=/bin`; the script is PID 1 there, with a `/proc` that shows
    only the build, and runs as `home` when the builder entered as root

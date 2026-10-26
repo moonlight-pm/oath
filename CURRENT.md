@@ -33,12 +33,12 @@ append history (git has it).
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
    in `desk`, a root by btrfs UUID, `install --local`, `pkg:bison` and
-   `pkg:m4` (`55c20bf6a86c`). Self-host runs on buccina: `bootstrap`,
-   then `pkgs` (the base in rounds until settled, then the rest once),
-   then the lock against the commit's (`build/selfhost-result.txt`).
-   The trial stick is written (2026-10-25). Next: Joshua boots novus from it; from canto, NICs,
-   audio, Bluetooth, sensors, the display, then `oath build plan:nvidia`
-   and `svc:gpu-power`; then libglvnd and Mesa with glvnd.
+   `pkg:m4`. Self-host on buccina (2026-10-26: 2h24m, the base settled
+   in 4 rounds) matched the commit in 158 of 163 products; the other
+   five recorded the clock, host name, a random key or the kernel, now
+   pinned. Next: self-host again for 163 of 163; Joshua boots novus from
+   the trial stick; from canto, NICs, audio, Bluetooth, sensors, the
+   display, `plan:nvidia`, `svc:gpu-power`; then libglvnd and glvnd Mesa.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from

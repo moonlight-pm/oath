@@ -150,7 +150,9 @@ The screen and keyboard are **home** when `svc:screen` is enabled. SSH is **home
 password) becomes root. The only groups are `root` and `home`. The
 apply log records uid and tty. `host:local.env` and `TZ` (from
 `host:local.timezone`) are injected by PID 1 into services and written
-to root-owned `/etc/profile` for logins. `oath apply` does not write
+to root-owned `/etc/profile` for logins. sshd passes its copy to every
+SSH session, so `ssh host 'command'` has them too, as of sshd's start
+(less root's `XDG_RUNTIME_DIR`). `oath apply` does not write
 `$HOME/.profile`.
 
 ### The shell
@@ -170,7 +172,7 @@ color from a hash of the hostname, so each machine keeps its own and a
 new hostname gets a new one. oath writes `/etc/zprofile` and
 `/etc/zshrc` with `/etc/profile`, when `host:local` converges and at
 boot; put your own settings in `~/.zshrc`. `ssh home@host 'command'`
-runs the command through zsh.
+runs the command through zsh, with `host:local` env from sshd.
 
 ## Agents
 

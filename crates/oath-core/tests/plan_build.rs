@@ -273,6 +273,25 @@ fn sandbox_has_its_own_proc() {
 }
 
 #[test]
+fn sandbox_host_name_is_build() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_shell(d.path());
+    let p = PlanFile {
+        name: "host".into(),
+        produces: "pkg:host".into(),
+        build_needs: vec![PkgNeed { id: "pkg:bash".into(), hash: bb }],
+        run_needs: vec![],
+        script: "mkdir -p /out\ncat /proc/sys/kernel/hostname >/out/host\n".into(),
+    };
+    let path = d.path().join("host.plan");
+    std::fs::write(&path, fmt_plan(&p)).unwrap();
+    let r = build_file(d.path(), &path).expect("build");
+    let tree = d.path().join("store/pkg/host").join(&r.product);
+    assert_eq!(std::fs::read_to_string(tree.join("host")).unwrap(), "build\n");
+}
+
+#[test]
 fn a_build_logs_its_output_and_rotates() {
     let d = tmp();
     seed(d.path()).unwrap();

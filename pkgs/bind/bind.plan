@@ -77,7 +77,7 @@
     },
     {
       "id": "pkg:openssl",
-      "hash": "sha256-400a44864127ba2976d080e9854bee9ce909244dd4717b5442ea73380f935f0c"
+      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
     },
     {
       "id": "pkg:patch",
@@ -115,7 +115,7 @@
     },
     {
       "id": "pkg:openssl",
-      "hash": "sha256-400a44864127ba2976d080e9854bee9ce909244dd4717b5442ea73380f935f0c"
+      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
     }
   ]
 }

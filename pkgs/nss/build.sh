@@ -11,6 +11,14 @@ make all BUILD_OPT=1 USE_64=1 NSPR_INCLUDE_DIR="$nspr/include/nspr" NSPR_LIB_DIR
 	XCFLAGS="$CPPFLAGS"
 obj=$(echo ../dist/Linux*_x86_64_cc_glibc_PTH_64_OPT.OBJ)
 mkdir -p /out/lib/pkgconfig /out/include/nss
+# shlibsign keys each .chk's HMAC with a fresh random key, which the .chk
+# carries; one fixed key (the ASCII of "Oath fixed key for NSS .chk HMAC")
+# checks the same and builds the same every time.
+for c in "$obj"/lib/*.chk; do
+	LD_LIBRARY_PATH="$obj/lib:$nspr/lib" "$obj"/bin/shlibsign -C \
+		-K 4f617468206669786564206b657920666f72204e5353202e63686b20484d4143 \
+		-i "${c%.chk}.so"
+done
 cp "$obj"/lib/*.so "$obj"/lib/*.chk /out/lib/
 cp -RL ../dist/public/nss/. /out/include/nss/
 nspr_version=$(sed -n 's/^Version: //p' "$nspr/lib/pkgconfig/nspr.pc")

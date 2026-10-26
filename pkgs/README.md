@@ -142,7 +142,11 @@ packs with `lib/python/<module>` that the build puts on `PYTHONPATH`
 (Mesa). Write the result to `/out`. A product
 must not name its compiler's store path (`/oath/store/pkg/gcc/<hash>`),
 or it changes with every `pkg:gcc`: strip debug info from anything built
-with `-g` (python does).
+with `-g` (python does). Nor may it depend on the builder: the sandbox's
+host name is always `build`, a recorded time comes from the source
+(nspr), a key is fixed (nss's `.chk` files), and a configure probe of
+the builder's kernel is pinned (gnulib's fstatat in coreutils and
+findutils), so another builder makes the same product.
 
 `rust/` is the vendor's Rust release rather than a source build: its
 tarballs are the pinned sources, and its plan points the vendor's

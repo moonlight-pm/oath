@@ -155,11 +155,11 @@
     },
     {
       "id": "pkg:nspr",
-      "hash": "sha256-76157a1965599fa3daa9faea6480f2f3011fd870d33ae5d83ce909856b5f4779"
+      "hash": "sha256-a848e3a7605e96f635b0257bc1b4dace62b894068007697cf8f7bbcfe116814a"
     },
     {
       "id": "pkg:nss",
-      "hash": "sha256-26d09d48fd5e26098397b7f49a295dba32d5a5cd142e740776056b94c341af64"
+      "hash": "sha256-05855a83709832e663f84fb842782ae79adc786a5979c96e8844f7d159819b13"
     },
     {
       "id": "pkg:pango",

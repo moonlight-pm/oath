@@ -75,6 +75,11 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   signals only the listener, so open login sessions survive (and `oath
   apply` waits for PID 1 to have restarted it). `pkg:dropbear` is
   fixed (not removable) and carries only `dropbear` and `dropbearkey`.
+  Its patch (`session-env.patch`) makes sessions keep sshd's
+  environment, which PID 1 sets from `host:local` env and `TZ`, less
+  `XDG_RUNTIME_DIR` (root's); dropbear then sets `USER`, `HOME`,
+  `SHELL` and `PATH`. So `ssh host 'command'`, which reads no
+  `/etc/profile`, has `SSL_CERT_FILE`, `TZ` and `LANG`.
 - The OpenSSH client tools are `pkg:openssh` (OpenSSH 10.6p1, built
   without OpenSSL; present and removable): `ssh`, `scp`, `sftp`,
   `ssh-keygen` and `sftp-server`. Dropbear is built to run

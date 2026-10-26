@@ -169,7 +169,8 @@ util-linux, iproute2, iputils, dhcpcd, chrony, btrfs-progs
 (`pkg:btrfs`), dropbear, OpenSSH (client, scp, sftp, ssh-keygen,
 sftp-server; no OpenSSL), dosfstools, curl (with the CA bundle at
 `/oath/store/pkg/curl/live/ssl/cert.pem`), BIND 9's dig, host and
-nslookup (`pkg:bind`, 2026-10-19), OpenSSL and the libraries they load
+nslookup (`pkg:bind`, 2026-10-19), OpenSSL (its `ssl/cert.pem` links
+to curl's bundle) and the libraries they load
 (zlib, zstd, lzo, mbedTLS, libuv, liburcu, libcap); the kernel (`pkg:linux`) and firmware
 (individual linux-firmware blobs); kexec-tools (`pkg:kexec`, static)
 for the installer; and the build tools (`pkg:rust`, python, meson,

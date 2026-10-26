@@ -151,8 +151,8 @@ at build and install time only (see boot-and-install.md).
 ## Kinds owned here
 
 **`host:local`** — `hostname`, `power` (`run`, `reboot`, `halt`),
-`env`, `timezone`. `env` is injected into every service and written to
-a root-owned `/etc/profile`. `timezone` is a POSIX TZ string; when set,
+`env`, `timezone`. `env` is injected into every service (sshd passes it
+on to SSH sessions) and written to a root-owned `/etc/profile`. `timezone` is a POSIX TZ string; when set,
 every service and login gets `TZ` from it unless `env.TZ` is set. The
 system clock stays UTC, and recorded timestamps are RFC 3339 with `Z`.
 A `power` other than `run` needs `--confirm`. A hostname is letters,

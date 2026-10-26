@@ -26,7 +26,7 @@ lists it. Against a machine's root:
 | `/lib/ld-linux.so.2` and i386 libraries (glibc, libGL, …) | none | from every pack's `lib32/` |
 | `/usr/bin/env`, `/usr/lib`, `/usr/share` | no `/usr` | a merged `/usr`: the root's links in `/usr/bin`, `/usr/sbin`, `/usr/lib`; `/usr/share`, every pack's `share/` |
 | `/sbin/ldconfig -XNv`, `/etc/ld.so.cache` | neither | glibc's `ldconfig`; the cache made on first start |
-| CA bundle at `/etc/ssl/certs/ca-certificates.crt` | `SSL_CERT_FILE` only | `pkg:curl`'s bundle at the usual three paths |
+| CA bundle at `/etc/ssl/certs/ca-certificates.crt` | `SSL_CERT_FILE` and OpenSSL's `ssl/cert.pem` only | `pkg:curl`'s bundle at the usual three paths |
 | `libcrypt.so.1` | glibc 2.44 has none | `pkg:libxcrypt` |
 | unprivileged user and mount namespaces | yes | Steam's containers nest; its probe runs `true` in a root of `/usr`, `/bin`, `/lib*`, `/sbin` and `/etc` alone, so a static one is at `/usr/local/bin/true` |
 | libraries' real paths under `/usr`, `/lib*`, `/nix` or `/gnu/store` | under `/oath/store` | `PRESSURE_VESSEL_FILESYSTEMS_RO=/oath/store` |
