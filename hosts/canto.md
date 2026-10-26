@@ -36,16 +36,10 @@ Overwrite this file when facts change; do not append a diary.
   `cargo make update --confirm --reboot` (generation 328: `pkg:oath`;
   329 added `pkg:m4` and `pkg:bison` by hand; the Sola tab's pins kept).
   Booted 2026-10-25 22:19Z: `kvm_intel` loaded, `/dev/kvm` root:home
-  0660. Its root is still named `oath.root=/dev/sda2`. The Oath
-  project's `self-host` tab runs `cargo make bootstrap` then `pkgs` in
-  `~/Projects/Oath` (log `build/selfhost.log`; the first stopped at a
-  download, the second at glibc's configure without bison, the third at
-  glibc-i386's GCC, built before gawk with the seed's MPFR-less gawk).
-  The fourth, `pkgs` alone from 2026-10-26, rebuilds the base first.
-  When it ends, `build/selfhost-passes.sh` runs in the same tab:
-  `pkgs` again until a pass builds nothing (`selfhost-pass<N>.log`),
-  then the products that differ from the commit's lock
-  (`selfhost-result.txt`). The `desk` profile: base plus seatd, rivulet, Sola with its
+  0660. Its root is still named `oath.root=/dev/sda2`. Self-host ran here
+  until 2026-10-26 (`build/selfhost*.log`: a download, glibc without
+  bison, then glibc-i386's GCC with the seed's MPFR-less gawk) and moved
+  to buccina; canto is Joshua's Sola R&D desk. The `desk` profile: base plus seatd, rivulet, Sola with its
   terminal, Projects, browser, Design and KVM, PipeWire, Noto, Vulkan,
   the tools that build Sola, Steam, and their packages.
   The system was `cargo make install

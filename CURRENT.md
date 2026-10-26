@@ -33,10 +33,10 @@ append history (git has it).
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
    in `desk`, a root by btrfs UUID, `install --local`, `pkg:bison` and
-   `pkg:m4` (`55c20bf6a86c`). canto reran `bootstrap` and `pkgs` from new
-   seeds; `pkgs` reruns until a pass builds nothing, then the lock must
-   equal the commit's (`build/selfhost-result.txt`). The trial stick is
-   written (2026-10-25). Next: Joshua boots novus from it; from canto, NICs,
+   `pkg:m4` (`55c20bf6a86c`). Self-host runs on buccina: `bootstrap`,
+   then `pkgs` (the base in rounds until settled, then the rest once),
+   then the lock against the commit's (`build/selfhost-result.txt`).
+   The trial stick is written (2026-10-25). Next: Joshua boots novus from it; from canto, NICs,
    audio, Bluetooth, sensors, the display, then `oath build plan:nvidia`
    and `svc:gpu-power`; then libglvnd and Mesa with glvnd.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
@@ -46,8 +46,8 @@ append history (git has it).
    publish`. Next: a new stable is a new pin; publish after every build
    that changes a pack; sign `INDEX.md` when a second publisher appears.
 
-**State:** phases 1–5 and 7 are done; 6 (buccina, parked by Joshua:
-[hosts/buccina.md](hosts/buccina.md)) and 8 are active
+**State:** phases 1–5 and 7 are done; 6 (buccina, reinstalled
+2026-10-26: [hosts/buccina.md](hosts/buccina.md)) and 8 are active
 ([docs/roadmap.md](docs/roadmap.md)). canto runs `55c20bf6a86c`
 (generation 329, booted 2026-10-25 22:19Z with KVM; published: 159
 packs). Left until
@@ -57,18 +57,18 @@ needed: root SSH as a field, more NICs, device-node rules as fields.
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine; output `55c20bf6a86c`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
-| buccina | 10.0.0.149, no working key | microserver; Wicket trial image, not reinstalled; [hosts/buccina.md](hosts/buccina.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `55c20bf6a86c`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host); output `55c20bf6a86c`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).
 
 ## Do not
 
 - `cargo make install --confirm` (wipes a disk) on anything but canto
-  unless Joshua asks. Canto is the test machine: install, update,
-  reboot and wipe it without asking (Joshua, 2026-10-18).
+  and buccina unless Joshua asks; install, update, reboot and wipe
+  those two without asking (Joshua, 2026-10-18 and 2026-10-26).
 - `cargo make update --target` (writes a real machine's ESP and store)
-  on anything but canto unless Joshua asks; `--qemu` rehearsals are fine.
+  on anything else unless Joshua asks; `--qemu` rehearsals are fine.
 - Write a USB stick or real disk Joshua did not ask for.
 - Change novus's OS, or write its disks, before Joshua says so (R32).
 - Invent answers to open decisions in [docs/decisions.md](docs/decisions.md).
