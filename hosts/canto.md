@@ -37,9 +37,12 @@ Overwrite this file when facts change; do not append a diary.
   329 added `pkg:m4` and `pkg:bison` by hand; the Sola tab's pins kept).
   Booted 2026-10-25 22:19Z: `kvm_intel` loaded, `/dev/kvm` root:home
   0660. Its root is still named `oath.root=/dev/sda2`. Self-host ran here
-  until 2026-10-26 (`build/selfhost*.log`: a download, glibc without
-  bison, then glibc-i386's GCC with the seed's MPFR-less gawk) and moved
-  to buccina; canto is Joshua's Sola R&D desk. The `desk` profile: base plus seatd, rivulet, Sola with its
+  until 2026-10-26 (it stopped at a download, glibc without bison, then
+  glibc-i386's GCC with the seed's MPFR-less gawk) and moved to buccina;
+  its build catalog (`~/.local/share/oath`), `build/bootstrap`,
+  `build/pkgs`, `build/fetch` and logs were deleted that day, and the
+  `@gen-N` snapshots of 2026-10-25 still hold their blocks. canto is
+  Joshua's Sola R&D desk. The `desk` profile: base plus seatd, rivulet, Sola with its
   terminal, Projects, browser, Design and KVM, PipeWire, Noto, Vulkan,
   the tools that build Sola, Steam, and their packages.
   The system was `cargo make install
