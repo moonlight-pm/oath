@@ -19,7 +19,7 @@ OVMF. `home` has `/dev/kvm` there (R33).
 
 ```sh
 cargo make bootstrap        # once: stage 0 + stage 1 toolchain (an hour or more)
-cargo make pkgs             # every package, in dependency order
+cargo make pkgs             # every package: the base until it settles, then the rest
 cargo make pkgs --list      # versions, licences, what pkgs/lock.json pins
 cargo make pkgs curl        # one package (and what it builds with)
 ```

@@ -158,7 +158,9 @@ cargo make pkgs [names]
     + pkgs/<name>/<name>.plan (build packs pinned from pkgs/lock.json)
   `oath build` in the sandbox of the build catalog at ~/.local/share/oath
   product hash, version, licence, plan hash → pkgs/lock.json
-  the base packs rebuild themselves; python, meson and ninja are
+  the base packs rebuild themselves; with no names, the base and what
+    it builds with are rebuilt in rounds until one builds nothing (at
+    most 5), then the rest once; python, meson and ninja are
     build-only packs, and so are m4, flex, bison, bc, perl and elfutils
     (libelf), which the kernel's plan needs; each build also gets what
     its build packs run with (the lock records it)

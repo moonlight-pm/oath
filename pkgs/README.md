@@ -110,9 +110,12 @@ in a `pkg:<name>-src` pack; write `<name>.plan` with the source pack, the
 base packs and the packs `build` names, all pinned by hash from
 `lock.json`; run `oath build` in the catalog at `~/.local/share/oath`; record the
 product in `lock.json`. A package whose plan has not changed is not
-rebuilt. The base packs are rebuilt here by their stage-1 selves; run
-`cargo make pkgs` again and everything rebuilds with the stage-2 tools.
-Packages that build each other (glibc and python) use the locked
+rebuilt. With no names, `cargo make pkgs` first rebuilds the base packs
+and what they build with (25 packages: the tools, then glibc, then gcc)
+round after round until a round builds nothing, at most 5, and then
+builds the rest once; after `bootstrap` the first round starts from the
+stage-1 seeds. The lock it leaves is settled: every plan names the
+products the lock holds. Packages that build each other (glibc and python) use the locked
 product of the one asked for, so `cargo make pkgs glibc` builds python
 first. `cargo make pkgs --fetch [names]` only fetches and checks
 sources.
