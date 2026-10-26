@@ -18,10 +18,17 @@ Overwrite this file when facts change; do not append a diary.
   other long Oath work run here, so canto stays free for Sola R&D.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** build output `55c20bf6a86c` (the `desk` profile),
-  installed 2026-10-26 by `cargo make install --target
+- **Running now:** build output `4a9cf96cdf39` (the `desk` profile;
+  dropbear passing `host:local` env to SSH sessions), by `cargo make
+  update --reboot` on 2026-10-26 (generation 1). Installed earlier that
+  day as `55c20bf6a86c` by `cargo make install --target
   root@10.0.0.149 --disk /dev/nvme0n1` over the Wicket trial image
-  (reached with the Wicket deploy key). The install's reboot landed on
-  the USB stick; the installed kernel was started by kexec from it, the
+  (reached with the Wicket deploy key); that install's reboot landed on
+  the USB stick, the installed kernel was started by kexec from it, the
   boot order fixed, and a reboot came up from the NVMe. Root by UUID
   `daaa7fe6-6358-41d5-b968-5760983c1ba7`.
+- **Self-host:** `/home/Projects/Oath` (pushed from novus),
+  `build/selfhost.sh` in tmux session `selfhost`; log
+  `build/selfhost.log`, result `build/selfhost-result.txt`. Run 1
+  (2026-10-26, `c5615fb`): bootstrap 32 min, `pkgs` 1 h 52 min, 158 of
+  163 products as committed. Run 2 (`b34d189`) started 23:43Z.
