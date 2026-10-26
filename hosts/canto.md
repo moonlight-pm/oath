@@ -40,7 +40,10 @@ Overwrite this file when facts change; do not append a diary.
   project's `self-host` tab runs `cargo make bootstrap` then `pkgs` in
   `~/Projects/Oath` at `6a47464` (log `build/selfhost.log`; the first
   stopped at a download, the second at glibc's configure without
-  bison). The `desk` profile: base plus seatd, rivulet, Sola with its
+  bison). When it ends, `build/selfhost-passes.sh` runs in the same tab:
+  `pkgs` again until a pass builds nothing (`selfhost-pass<N>.log`),
+  then the products that differ from the commit's lock
+  (`selfhost-result.txt`). The `desk` profile: base plus seatd, rivulet, Sola with its
   terminal, Projects, browser, Design and KVM, PipeWire, Noto, Vulkan,
   the tools that build Sola, Steam, and their packages.
   The system was `cargo make install

@@ -136,7 +136,11 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   pinned to its source pack (`pkg:<name>-src`), the base packs and its
   own build packs, with what each of those runs with (bison runs m4),
   all from `pkgs/lock.json`; the lock records each product's run needs
-  as it was built. It runs in the same user-namespace `oath build`
+  as it was built. One run is one pass: a plan whose needs were rebuilt
+  after it is rebuilt on the next run. `bootstrap` replaces the base
+  packs with new seeds, so the first pass after it changes every hash,
+  and the lock settles when a pass builds nothing; the committed lock is
+  such a fixed point. It runs in the same user-namespace `oath build`
   sandbox against the build catalog at `~/.local/share/oath`; GNU tar there
   does not restore owners (`TAR_OPTIONS=--no-same-owner`). The host's
   compilers are not inputs. How a package is written: `pkgs/README.md`.

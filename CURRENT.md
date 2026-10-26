@@ -33,9 +33,10 @@ append history (git has it).
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
    in `desk`, a root by btrfs UUID, `install --local`, `pkg:bison` and
-   `pkg:m4` (`55c20bf6a86c`). canto reruns `bootstrap` and `pkgs` (since
-   22:25Z; the lock must not change). The trial stick is written
-   (2026-10-25). Next: Joshua boots novus from it; from canto, NICs,
+   `pkg:m4` (`55c20bf6a86c`). canto reran `bootstrap` and `pkgs` from new
+   seeds; `pkgs` reruns until a pass builds nothing, then the lock must
+   equal the commit's (`build/selfhost-result.txt`). The trial stick is
+   written (2026-10-25). Next: Joshua boots novus from it; from canto, NICs,
    audio, Bluetooth, sensors, the display, then `oath build plan:nvidia`
    and `svc:gpu-power`; then libglvnd and Mesa with glvnd.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
