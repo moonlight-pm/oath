@@ -435,6 +435,24 @@ fn pkg_not_removable_refuses_absent() {
     }
 }
 
+/// A package seeded fixed that this build's base no longer fixes (dropbear
+/// after R36) can be removed: `meta.fixed` is what the seed said then.
+#[test]
+fn pkg_the_base_no_longer_fixes_is_removable() {
+    let (d, cat) = tmp();
+    let id: ObjectId = "pkg:curl".parse().unwrap();
+    let meta_path = d.path().join("objects/pkg/curl/meta.json");
+    let mut meta: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&meta_path).unwrap()).unwrap();
+    meta["fixed"] = json!(true);
+    oath_core::write_json(&meta_path, &meta).unwrap();
+    assert!(cat.get(&id).unwrap().meta.fixed);
+    let mut fields = Map::new();
+    fields.insert("present".into(), json!(false));
+    cat.set_fields(&id, fields).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired["present"], json!(false));
+}
+
 /// A machine updated to an image whose base profile fixes a new package
 /// (`pkg:zsh`, home's login shell) gets it through `oath new`: it is not
 /// removable all the same, and undoing the apply that made it keeps it.

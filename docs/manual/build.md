@@ -20,6 +20,7 @@ OVMF. `home` has `/dev/kvm` there (R33).
 ```sh
 cargo make bootstrap        # once: stage 0 + stage 1 toolchain (an hour or more)
 cargo make pkgs             # every package: the base until it settles, then the rest
+cargo make pkgs -j 4        # the same, four packages at a time after the base
 cargo make pkgs --list      # versions, licences, what pkgs/lock.json pins
 cargo make pkgs curl        # one package (and what it builds with)
 ```
@@ -156,7 +157,11 @@ instead: one at a time, as `home`, trusting only the host key that
 in-sync (`oath diff`). After each case the harness runs `oath undo`
 back to the generation the case started from and requires `oath diff`
 to say `in-sync` again; if it does not, the run stops there. A reboot
-step waits up to five minutes for a new boot id. Logs are under
+step waits up to five minutes for a new boot id. A case that `needs`
+hardware (`needs = { what = "a connected display", run = "…" }`) runs
+that test first and is `SKIP`ped on a machine that fails it: the
+desk's display and Sola cases on a headless machine, the RADV case
+without an AMD GPU. QEMU always has what they need. Logs are under
 `build/check/<time>-<host>/`. No stamp is written.
 
 ### A real model

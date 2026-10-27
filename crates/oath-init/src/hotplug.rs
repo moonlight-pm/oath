@@ -3,7 +3,8 @@
 //! `dev:*` inventory discovered again when a disk, NIC or serial port
 //! comes or goes, then mounts the `host:local.mounts` a new disk carries. devtmpfs makes the nodes; there is no udev. PID 1 passes
 //! each uevent on to group 4, where udevd would, for libudev-zero's
-//! monitors (libinput and wlroots hear hotplug there).
+//! monitors (libinput, wlroots and WirePlumber hear hotplug there), after
+//! it has made the new nodes the seat's.
 
 use std::collections::HashSet;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
@@ -92,7 +93,26 @@ impl Hotplug {
     /// Handle what arrived since the last call. Never blocks.
     pub fn tick(&mut self) {
         let mut aliases = Vec::new();
-        for ev in self.drain() {
+        let events = self.drain();
+        let added = |subs: &[&str]| {
+            events.iter().any(|(ev, _)| ev.action == "add" && subs.contains(&ev.subsystem.as_str()))
+        };
+        // A new node is the seat's before anyone hears of it: WirePlumber
+        // opens a sound card the moment its event arrives, and skips one
+        // it may not open (a card the driver registers after boot's pass).
+        if added(&["drm"]) {
+            crate::open_render_nodes();
+        }
+        if added(&["sound"]) {
+            crate::open_sound_nodes();
+        }
+        if added(&["input", "hidraw"]) {
+            crate::open_pad_nodes();
+        }
+        for (ev, raw) in &events {
+            if let Some(sock) = &self.sock {
+                forward(sock, raw);
+            }
             if ev.action == "add" && !ev.modalias.is_empty() {
                 aliases.push(ev.modalias.clone());
             }
@@ -100,15 +120,6 @@ impl Hotplug {
                 && matches!(ev.action.as_str(), "add" | "remove" | "move" | "change")
             {
                 self.rediscover = Some(Instant::now() + SETTLE);
-            }
-            if ev.subsystem == "drm" && ev.action == "add" {
-                crate::open_render_nodes();
-            }
-            if ev.subsystem == "sound" && ev.action == "add" {
-                crate::open_sound_nodes();
-            }
-            if matches!(ev.subsystem.as_str(), "input" | "hidraw") && ev.action == "add" {
-                crate::open_pad_nodes();
             }
         }
         if !aliases.is_empty() {
@@ -119,7 +130,8 @@ impl Hotplug {
         }
     }
 
-    fn drain(&mut self) -> Vec<Event> {
+    /// Each event with its message as the kernel sent it.
+    fn drain(&mut self) -> Vec<(Event, Vec<u8>)> {
         let Some(sock) = &self.sock else { return Vec::new() };
         let mut out = Vec::new();
         let mut buf = vec![0u8; 16 * 1024];
@@ -133,8 +145,7 @@ impl Hotplug {
                 break;
             }
             if let Some(ev) = parse(&buf[..n as usize]) {
-                forward(sock, &buf[..n as usize]);
-                out.push(ev);
+                out.push((ev, buf[..n as usize].to_vec()));
             }
         }
         out

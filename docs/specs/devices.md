@@ -106,7 +106,12 @@ load is logged `hotplug: <module> for <alias>`. Block, net and tty
 events schedule discovery. devtmpfs makes the nodes. Every kernel
 uevent is passed on, unchanged, to netlink group 4, where udevd would
 rebroadcast it: libudev-zero's monitors listen there, so libinput sees
-input devices come and go and wlroots sees a GPU appear.
+input devices come and go, wlroots sees a GPU appear and WirePlumber a
+sound card. A batch's nodes are made the seat's (render, sound and pad
+nodes) before its events are passed on, so a listener can open what it
+hears of: WirePlumber skips a card it may not open, and a sound driver
+that registers its card after boot's pass (buccina's, behind i915) lost
+it that way until 2026-10-27.
 
 ## Mounts (built)
 

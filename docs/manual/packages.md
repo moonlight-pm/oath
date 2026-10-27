@@ -31,6 +31,10 @@ Not removable (`present=false` is refused):
 | `pkg:openssh` | the SSH server `sshd` (R36), and `ssh`, `scp`, `sftp`, `ssh-keygen`, `sftp-server` |
 | `pkg:zsh` | `zsh`, `home`'s login shell |
 
+What the running `oath`'s base profile fixes is what counts: a package a
+machine was seeded with as fixed and the base no longer fixes
+(`pkg:dropbear`, before R36) can be removed.
+
 Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
 `tar`, `gzip`, `xz`, `bzip2`, `procps` (`ps`, `pidof`, `free`, `top`,
 `kill`), `less`, `vim` (also `vi`), `iputils` (`ping`, `tracepath`,

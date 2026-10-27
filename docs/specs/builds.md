@@ -143,7 +143,11 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   has no MPFR, and GCC's sources, which pkg:gcc and glibc-i386 compile,
   need a gawk with it. Then it builds the other packages once, so the
   lock it leaves is settled: every plan names the products the lock
-  holds, and the next run builds nothing. After `bootstrap` every hash
+  holds, and the next run builds nothing. `-j N` builds N packages at
+  a time outside the base rounds (which stay one at a time, in order),
+  each once every earlier package it builds or runs with is built, so
+  each plan names what it would one at a time; the script runs without
+  the catalog lock, taken only to store a product. After `bootstrap` every hash
   changes, and a run then comes back to the committed lock: on buccina
   (an Oath host, 2026-10-27) a fresh `bootstrap` and `pkgs` built all
   163 products as novus had, bit for bit. It runs in the same user-namespace `oath build`

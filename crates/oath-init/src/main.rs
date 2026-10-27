@@ -100,6 +100,18 @@ fn real_main() -> Result<(), String> {
     // ICMP echo sockets for every group: `ping` works as home with no
     // setuid bit or capability.
     let _ = fs::write("/proc/sys/net/ipv4/ping_group_range", "0 2147483647");
+    // The kernel's link protections, off by default and on in every other
+    // distribution: no following another user's symlink, or hard-linking
+    // a file one cannot write, in a sticky world-writable directory (/tmp),
+    // and no opening another's FIFO or file there with O_CREAT.
+    for (k, v) in [
+        ("protected_symlinks", "1"),
+        ("protected_hardlinks", "1"),
+        ("protected_fifos", "1"),
+        ("protected_regular", "1"),
+    ] {
+        let _ = fs::write(format!("/proc/sys/fs/{k}"), v);
+    }
     mount_devpts();
     unix_floor();
 

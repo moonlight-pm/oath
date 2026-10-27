@@ -371,11 +371,12 @@ steps = [
 
 [[case]]
 name = "sudo"
-about = "sudo gives root with a clean environment and refuses options it does not know."
+about = "sudo gives root with a clean environment and refuses options it does not know; the kernel's link protections are on."
 metal = true
 steps = [
   { run = "FOO=leak sudo -n -- sh -c 'id -u; id -G; echo FOO=$FOO'", expect = ["0\n0\nFOO="], reject = ["leak"] },
   { run = "sudo -E true", fails = true, expect = ["not supported"] },
+  { run = "cd /proc/sys/fs; for k in protected_symlinks protected_hardlinks protected_fifos protected_regular; do echo $k=$(cat $k); done", expect = ["protected_symlinks=1", "protected_hardlinks=1", "protected_fifos=1", "protected_regular=1"] },
 ]
 
 [[case]]
@@ -725,6 +726,7 @@ name = "desk"
 about = "The desk profile: rivulet runs as home on a KMS device and input devices that seatd opened for it, render nodes are open, and Xwayland serves an X client."
 metal = true
 profile = "desk"
+needs = { what = "a connected display", run = "grep -qx connected /sys/class/drm/card*-*/status" }
 steps = [
   { run = "oath get svc:seatd", expect = ["state: \"running\""] },
   { run = "oath get svc:rivulet", expect = ["state: \"running\""] },
@@ -740,6 +742,7 @@ about = "Sola runs on the desk: its services are up, its tmux servers are their 
 metal = true
 qemu = false
 profile = "desk"
+needs = { what = "a connected display", run = "grep -qx connected /sys/class/drm/card*-*/status" }
 steps = [
   { run = "for s in sola-bus sola-call sola-river sola-shell sola-session sola-tmux sola-tmux-ws; do printf '%s ' $s; oath get svc:$s | grep '  state:'; done", expect = ["sola-shell   state: \"running\"", "sola-river   state: \"running\"", "sola-tmux-ws   state: \"running\""], reject = ["failed", "restarting"] },
   { run = "for s in sola sola-ws; do cat /proc/$(pgrep -f \"^/bin/tmux -L $s -f .* -D$\")/cgroup; done; pgrep -f '^-?zsh' | xargs -I{} cat /proc/{}/cgroup | sort -u", expect = ["/oath/svc-sola-tmux\n", "/oath/svc-sola-tmux-ws"], reject = ["svc-sola-session"] },
@@ -767,6 +770,16 @@ steps = [
 ]
 
 [[case]]
+name = "python-https"
+about = "The desk's Python has ssl, hashlib's OpenSSL algorithms and ctypes: it fetches over HTTPS, verifying with OpenSSL's bundle (curl's)."
+metal = true
+profile = "desk"
+steps = [
+  { run = "python3 -c 'import ssl, ctypes, hashlib; print(ssl.OPENSSL_VERSION); print(\"sha3\" if \"sha3_256\" in hashlib.algorithms_available else \"no-sha3\")'", expect = ["OpenSSL 4.0", "sha3"] },
+  { run = "python3 -c 'import urllib.request; print(urllib.request.urlopen(\"https://curl.se/\", timeout=30).status)'", expect = ["200"], timeout = 60 },
+]
+
+[[case]]
 name = "desk-vulkan"
 about = "The Vulkan loader finds RADV's manifest and the device-select layer's in Mesa's slot and loads both from /lib, also for a program that looks in CEF's Release first (as one built against it does): pkg:cef carries no loader of its own. QEMU has no AMD GPU, so there RADV lists no device and vulkaninfo fails after loading them."
 metal = true
@@ -782,6 +795,7 @@ about = "On the desk's AMD GPUs every card is a RADV device, and the first one a
 metal = true
 qemu = false
 profile = "desk"
+needs = { what = "an AMD GPU", run = "grep -qx 0x1002 /sys/class/drm/card[0-9]*/device/vendor" }
 steps = [
   { run = "vulkaninfo --summary", expect = ["(RADV "], reject = ["llvmpipe", "WARNING"] },
   { run = "export XDG_RUNTIME_DIR=/run/user/1 WAYLAND_DISPLAY=$(ls /run/user/1 | grep -m1 '^wayland-[0-9]*$'); MESA_VK_DEVICE_SELECT_DEBUG=1 vulkaninfo --summary 2>&1 | grep 'device-select' | sort -u", expect = ["device_select_find_wayland_pci_default selected"] },

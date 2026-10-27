@@ -19,6 +19,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::{Condvar, Mutex};
 
 use anyhow::{bail, Context, Result};
 use oath_core::{fmt_plan, PkgNeed, PlanFile};
@@ -752,25 +753,25 @@ fn base_run() -> Vec<String> {
 /// `cargo make pkgs [names]`: build in dependency order. With no names,
 /// every package: the base and what it builds with, round after round
 /// until a round builds nothing, then the rest once. Every plan then names
-/// the products the lock holds, so the next run builds nothing.
-pub fn build(repo: &Path, names: &[String]) -> Result<()> {
+/// the products the lock holds, so the next run builds nothing. `jobs`
+/// packages build at a time, each as soon as what it builds and runs with
+/// is built; the base rounds build one at a time, in order.
+pub fn build(repo: &Path, names: &[String], jobs: usize) -> Result<()> {
     let all = load(repo)?;
     let cat = build_catalog(repo)?;
-    let mut lock = read_lock(repo)?;
+    let lock = Mutex::new(read_lock(repo)?);
     if !names.is_empty() {
-        for name in order(&all, names, &lock)? {
-            build_one(repo, &all, &cat, &mut lock, &name)?;
-        }
-        return Ok(());
+        let todo = order(&all, names, &lock.lock().unwrap())?;
+        return build_set(repo, &all, &cat, &lock, &todo, jobs);
     }
-    let base = order(&all, &base_run(), &lock)?;
+    let base = order(&all, &base_run(), &lock.lock().unwrap())?;
     let mut round = 0;
     loop {
         round += 1;
         eprintln!("== base, round {round} of at most {BASE_ROUNDS}");
         let mut built = Vec::new();
         for name in &base {
-            if build_one(repo, &all, &cat, &mut lock, name)? {
+            if build_one(repo, &all, &cat, &lock, name, false)? {
                 built.push(name.as_str());
             }
         }
@@ -785,12 +786,108 @@ pub fn build(repo: &Path, names: &[String]) -> Result<()> {
         }
     }
     let rest: Vec<String> = all.keys().filter(|n| !base.contains(n)).cloned().collect();
-    for name in order(&all, &rest, &lock)? {
-        if !base.contains(&name) {
-            build_one(repo, &all, &cat, &mut lock, &name)?;
+    let rest: Vec<String> = order(&all, &rest, &lock.lock().unwrap())?
+        .into_iter()
+        .filter(|n| !base.contains(n))
+        .collect();
+    build_set(repo, &all, &cat, &lock, &rest, jobs)
+}
+
+/// Build `todo` (in [`order`]'s order), `jobs` at a time. A package waits
+/// for each one before it in `todo` that it builds or runs with, directly
+/// or through others, so its plan names the same products as when they
+/// build one at a time. Sources are fetched first, one at a time (packages
+/// share tarballs). After a failure no new build starts; those running
+/// finish, and the first error is returned.
+fn build_set(
+    repo: &Path,
+    all: &BTreeMap<String, PkgToml>,
+    cat: &Path,
+    lock: &Mutex<Lock>,
+    todo: &[String],
+    jobs: usize,
+) -> Result<()> {
+    if jobs <= 1 {
+        for name in todo {
+            build_one(repo, all, cat, lock, name, false)?;
         }
+        return Ok(());
     }
-    Ok(())
+    for name in todo {
+        fetch(repo, &all[name]).with_context(|| format!("pkgs/{name}"))?;
+    }
+    let waits = waits(all, todo);
+    struct Sched {
+        started: Vec<bool>,
+        done: Vec<bool>,
+        err: Option<anyhow::Error>,
+    }
+    let sched = Mutex::new(Sched {
+        started: vec![false; todo.len()],
+        done: vec![false; todo.len()],
+        err: None,
+    });
+    let turn = Condvar::new();
+    std::thread::scope(|scope| {
+        for _ in 0..jobs {
+            scope.spawn(|| loop {
+                let i = {
+                    let mut st = sched.lock().unwrap();
+                    loop {
+                        if st.err.is_some() || st.started.iter().all(|&b| b) {
+                            return;
+                        }
+                        let ready = (0..todo.len())
+                            .find(|&i| !st.started[i] && waits[i].iter().all(|&j| st.done[j]));
+                        if let Some(i) = ready {
+                            st.started[i] = true;
+                            break i;
+                        }
+                        st = turn.wait(st).unwrap();
+                    }
+                };
+                let r = build_one(repo, all, cat, lock, &todo[i], true);
+                let mut st = sched.lock().unwrap();
+                match r {
+                    Ok(_) => st.done[i] = true,
+                    Err(e) => {
+                        eprintln!("== pkg:{} failed; waiting for the builds running", todo[i]);
+                        st.err.get_or_insert(e);
+                    }
+                }
+                turn.notify_all();
+            });
+        }
+    });
+    match sched.into_inner().unwrap().err {
+        Some(e) => Err(e),
+        None => Ok(()),
+    }
+}
+
+/// For each package in `todo`, the earlier ones it builds or runs with,
+/// through any chain of `build` and `run` (pkg.toml's).
+fn waits(all: &BTreeMap<String, PkgToml>, todo: &[String]) -> Vec<Vec<usize>> {
+    let at: BTreeMap<&str, usize> = todo.iter().enumerate().map(|(i, n)| (n.as_str(), i)).collect();
+    todo.iter()
+        .enumerate()
+        .map(|(i, name)| {
+            let mut seen = BTreeSet::new();
+            let mut stack = vec![name.as_str()];
+            while let Some(n) = stack.pop() {
+                let Some(p) = all.get(n) else { continue };
+                for d in p.build.iter().chain(p.run.iter()) {
+                    if d != name && seen.insert(d.as_str()) {
+                        stack.push(d);
+                    }
+                }
+            }
+            let mut w: Vec<usize> =
+                seen.iter().filter_map(|d| at.get(d).copied()).filter(|&j| j < i).collect();
+            w.sort_unstable();
+            w
+        })
+        .collect()
 }
 
 /// Write `name`'s plan from the lock and build it unless the lock already
@@ -799,14 +896,68 @@ fn build_one(
     repo: &Path,
     all: &BTreeMap<String, PkgToml>,
     cat: &Path,
-    lock: &mut Lock,
+    lock: &Mutex<Lock>,
     name: &str,
+    concurrent: bool,
 ) -> Result<bool> {
     let p = &all[name];
     let files = fetch(repo, p)?;
     let dir = script_dir(repo, all, name);
     let src = source_pack(repo, cat, name, &dir, &files, p.tree.as_deref(), p.recipe.is_some())?;
-    let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.clone() }];
+    let plan_path = pkgs_dir(repo).join(name).join(format!("{name}.plan"));
+    let plan_hash = {
+        let lock = lock.lock().unwrap();
+        let Some(hash) = write_plan(repo, all, cat, &lock, name, &src, &files, &plan_path)? else {
+            return Ok(false);
+        };
+        hash
+    };
+    eprintln!(
+        "== pkg:{name} {} building, log {}",
+        p.version,
+        oath_core::build_log(cat, name).display()
+    );
+    let r = if concurrent {
+        oath_core::build_file_concurrent(cat, &plan_path)
+    } else {
+        oath_core::build_file(cat, &plan_path)
+    }
+    .map_err(|e| anyhow::anyhow!("pkg:{name}: {e}"))?;
+    let mut lock = lock.lock().unwrap();
+    check_loads(repo, cat, all, &lock, name, &r.product)?;
+    eprintln!("== pkg:{name} {}", r.product);
+    lock.insert(
+        name.to_string(),
+        LockEntry {
+            version: p.version.clone(),
+            license: p.license.clone(),
+            by: "plan".into(),
+            plan: plan_hash,
+            product: r.product,
+            run: Some(p.run.clone()),
+        },
+    );
+    write_lock(repo, &lock)?;
+    Ok(true)
+}
+
+/// Write `name`'s plan to `plan_path`, pinned to its source pack `src`
+/// and to the products `lock` holds. Its hash, or `None` when the lock
+/// already holds its product (cached).
+#[allow(clippy::too_many_arguments)]
+fn write_plan(
+    repo: &Path,
+    all: &BTreeMap<String, PkgToml>,
+    cat: &Path,
+    lock: &Lock,
+    name: &str,
+    src: &str,
+    files: &[(String, PathBuf)],
+    plan_path: &Path,
+) -> Result<Option<String>> {
+    let p = &all[name];
+    let dir = script_dir(repo, all, name);
+    let mut build_needs = vec![PkgNeed { id: format!("pkg:{name}-src"), hash: src.to_string() }];
     for d in build_closure(repo, all, lock, name, p) {
         build_needs.push(PkgNeed { id: format!("pkg:{d}"), hash: product(lock, &d)? });
     }
@@ -847,8 +998,7 @@ fn build_one(
         script,
     };
     let text = fmt_plan(&plan);
-    let plan_path = pkgs_dir(repo).join(name).join(format!("{name}.plan"));
-    fs::write(&plan_path, &text)?;
+    fs::write(plan_path, &text)?;
     let plan_hash = oath_core::file_hash(text.as_bytes());
     if let Some(e) = lock.get(name) {
         if e.by == "plan"
@@ -856,31 +1006,10 @@ fn build_one(
             && cat.join("store/pkg").join(name).join(&e.product).is_dir()
         {
             eprintln!("== pkg:{name} {} (cached)", e.product);
-            return Ok(false);
+            return Ok(None);
         }
     }
-    eprintln!(
-        "== pkg:{name} {} building, log {}",
-        p.version,
-        oath_core::build_log(cat, name).display()
-    );
-    let r =
-        oath_core::build_file(cat, &plan_path).map_err(|e| anyhow::anyhow!("pkg:{name}: {e}"))?;
-    check_loads(repo, cat, all, lock, name, &r.product)?;
-    eprintln!("== pkg:{name} {}", r.product);
-    lock.insert(
-        name.to_string(),
-        LockEntry {
-            version: p.version.clone(),
-            license: p.license.clone(),
-            by: "plan".into(),
-            plan: plan_hash,
-            product: r.product,
-            run: Some(p.run.clone()),
-        },
-    );
-    write_lock(repo, lock)?;
-    Ok(true)
+    Ok(Some(plan_hash))
 }
 
 /// The build environment's compiler and search paths: each pack's headers,
@@ -1155,6 +1284,23 @@ mod tests {
         let mut locked = Lock::new();
         locked.insert("a".into(), LockEntry::default());
         assert_eq!(order(&all, &["a".into()], &locked).unwrap(), vec!["b", "a"]);
+    }
+
+    #[test]
+    fn a_package_waits_for_what_it_builds_or_runs_with() {
+        let mut all = BTreeMap::new();
+        all.insert("zlib".to_string(), pkg(&["gcc"]));
+        all.insert("xz".to_string(), pkg(&["gcc"]));
+        let mut curl = pkg(&["gcc", "mbedtls"]);
+        curl.run.push("zlib".into());
+        all.insert("curl".to_string(), curl);
+        all.insert("mbedtls".to_string(), pkg(&["gcc"]));
+        all.insert("git".to_string(), pkg(&["gcc", "curl"]));
+        let todo: Vec<String> =
+            ["zlib", "xz", "mbedtls", "curl", "git"].iter().map(|s| s.to_string()).collect();
+        // gcc is the base: built, not in `todo`. git waits for curl and,
+        // through it, zlib and mbedtls; xz and zlib wait for nothing.
+        assert_eq!(waits(&all, &todo), vec![vec![], vec![], vec![], vec![0, 2], vec![0, 2, 3]]);
     }
 
     #[test]

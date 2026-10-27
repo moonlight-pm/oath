@@ -257,8 +257,14 @@ Noto's files from lightweight git tags.
   `desk-sola` case is metal only.
 - PipeWire runs without realtime priority (no `RLIMIT_RTPRIO` for
   services yet), and no Bluetooth: the shell's Bluetooth menu is empty.
-- libudev-zero sees sound cards present at boot; a hot-plugged USB
-  card's late `initialized` state is what PR 69 papers over, untested.
+- libudev-zero sees sound cards present at boot and ones a driver
+  registers later (buccina's HDA card, and a rebind under a running
+  WirePlumber, 2026-10-27); a hot-plugged USB card's late `initialized`
+  state is what PR 69 papers over, untested.
+- Mesa drives AMD GPUs only (radeonsi, RADV) and softpipe: Intel's iris
+  and ANV need Mesa's OpenCL C compiler, which needs LLVM and Clang
+  (R17 took them out). On an Intel GPU (buccina's) Sola's shell has no
+  GL context.
 - `PKG_CONFIG_PATH` is a fixed list in the `desk` profile: a package
   added later is not on it until the list is edited.
 - The desk image carries all of `pkg:gcc` (393 MB) because Mesa loads

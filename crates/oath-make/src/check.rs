@@ -9,7 +9,8 @@
 //! `--target user@host` runs the cases marked `metal` against a real
 //! machine instead, one at a time. After each case the harness undoes back
 //! to the generation the case started from and requires `oath diff` to be
-//! in-sync; a machine left otherwise stops the run.
+//! in-sync; a machine left otherwise stops the run. A case that `needs`
+//! hardware the machine lacks (a display, an AMD GPU) is skipped there.
 
 use std::collections::{BTreeSet, VecDeque};
 use std::fs;
@@ -66,11 +67,25 @@ pub struct Case {
     /// `false`: a metal case that QEMU cannot run (no GL for Sola's shell).
     #[serde(default = "yes")]
     pub qemu: bool,
+    /// Hardware the case is about, which a real machine may lack: tested
+    /// there before the steps, and the case is skipped when the test
+    /// fails. QEMU's machine has it, so the case always runs there.
+    #[serde(default)]
+    pub needs: Option<Needs>,
     /// MiB of a blank second disk (`/dev/vdb`) for the case to format; it
     /// keeps what was written across the case's reboots. QEMU only.
     #[serde(default)]
     pub scratch: u32,
     pub steps: Vec<Step>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Needs {
+    /// What the machine must have, in a few words (`a connected display`).
+    pub what: String,
+    /// Shell command run as `home`; exit 0 means the machine has it.
+    pub run: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -109,6 +124,8 @@ pub enum Verdict {
     Gap,
     /// Known gap that now passes: remove the gap.
     Fixed,
+    /// A real machine without the hardware the case `needs`.
+    Skip,
 }
 
 impl Verdict {
@@ -118,11 +135,12 @@ impl Verdict {
             Self::Fail => "FAIL",
             Self::Gap => "GAP",
             Self::Fixed => "FIXED",
+            Self::Skip => "SKIP",
         }
     }
 
     fn ok(self) -> bool {
-        matches!(self, Self::Pass | Self::Gap)
+        matches!(self, Self::Pass | Self::Gap | Self::Skip)
     }
 }
 
@@ -262,8 +280,12 @@ fn summarize(results: &[Outcome], dir: &Path) -> Result<bool> {
         };
         println!("{:5}  {}{note}", r.verdict.word(), r.name);
     }
+    let skipped = match count(Verdict::Skip) {
+        0 => String::new(),
+        n => format!(", {n} skipped"),
+    };
     println!(
-        "\n{} pass, {} fail, {} known gaps, {} fixed gaps — {}",
+        "\n{} pass, {} fail, {} known gaps, {} fixed gaps{skipped} — {}",
         count(Verdict::Pass),
         count(Verdict::Fail),
         count(Verdict::Gap),
@@ -773,6 +795,24 @@ fn run_target_case(conn: &Conn, case: &Case, dir: &Path) -> (Outcome, Result<(),
     let dir = dir.join(&case.name);
     let _ = fs::create_dir_all(&dir);
     let mut log = String::new();
+    if let Some(needs) = &case.needs {
+        let r = ssh(conn, &needs.run, Duration::from_secs(30));
+        log.push_str(&format!(
+            "## needs {}\n$ {}\n{}\n[exit {}]\n",
+            needs.what, needs.run, r.text, r.code
+        ));
+        if r.code != 0 {
+            let _ = fs::write(dir.join("steps.log"), &log);
+            let o = Outcome {
+                name: case.name.clone(),
+                about: case.about.clone(),
+                gap: case.gap.clone(),
+                verdict: Verdict::Skip,
+                detail: format!("needs {}", needs.what),
+            };
+            return (o, Ok(()));
+        }
+    }
     let start = generation(conn);
     let result = (|| -> Result<(), String> {
         start.clone()?;
@@ -918,6 +958,7 @@ mod tests {
         assert_eq!(verdict(false, false), Verdict::Fail);
         assert_eq!(verdict(true, false), Verdict::Gap);
         assert_eq!(verdict(true, true), Verdict::Fixed);
-        assert!(Verdict::Gap.ok() && !Verdict::Fixed.ok() && !Verdict::Fail.ok());
+        assert!(Verdict::Gap.ok() && Verdict::Skip.ok());
+        assert!(!Verdict::Fixed.ok() && !Verdict::Fail.ok());
     }
 }

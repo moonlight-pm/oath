@@ -77,6 +77,10 @@ of T24, and D3 (seed as data).
   up to 30 s for the root to appear, loading drivers again for what came
   meanwhile: a USB disk shows up seconds after its drivers load. Metal BLS entries and QEMU both carry `panic=10`,
   so a PID 1 panic reboots after ten seconds instead of hanging.
+- PID 1 sets the kernel's knobs before anything else runs: itself as
+  the modprobe helper, ICMP echo sockets for every group, and the link
+  protections every other distribution turns on (`fs.protected_symlinks`,
+  `_hardlinks`, `_fifos` and `_regular`, built 2026-10-27).
 - The initrd's `/init` is PID 1. It mounts the root subvolume and
   switch_roots into it (moves `/dev`, `/proc`, `/sys`, `/run` across,
   moves the root over `/`, chroots): no `/newroot` is left behind. The

@@ -85,7 +85,33 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
 pub fn build_file(catalog_root: &Path, path: &Path) -> Result<BuildReport> {
     let _lock = Catalog::open(catalog_root)?.lock()?;
     let (plan, bytes) = lint_path(path)?;
-    build_inner(catalog_root, &plan, &file_hash(&bytes), None)
+    build_inner(catalog_root, &plan, &file_hash(&bytes), None, false)
+}
+
+/// [`build_file`] for a caller that runs several builds of different
+/// plans at once (`cargo make pkgs -j`): the script runs without the
+/// catalog lock, which is held only while a pack is fetched or the
+/// product stored, one build of this process at a time.
+pub fn build_file_concurrent(catalog_root: &Path, path: &Path) -> Result<BuildReport> {
+    let (plan, bytes) = lint_path(path)?;
+    build_inner(catalog_root, &plan, &file_hash(&bytes), None, true)
+}
+
+/// Serializes the store writes of this process's concurrent builds, so
+/// each takes the catalog lock in turn and none waits out its timeout.
+static STORE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// The catalog lock for a concurrent build's store write; none for a
+/// build whose caller holds it already.
+fn store_lock(
+    catalog_root: &Path,
+    concurrent: bool,
+) -> Result<Option<(std::sync::MutexGuard<'static, ()>, crate::CatalogLock)>> {
+    if !concurrent {
+        return Ok(None);
+    }
+    let turn = STORE.lock().unwrap_or_else(|e| e.into_inner());
+    Ok(Some((turn, Catalog::open(catalog_root)?.lock()?)))
 }
 
 pub fn build_pinned(catalog_root: &Path, name: &str) -> Result<BuildReport> {
@@ -114,7 +140,7 @@ pub fn build_pinned(catalog_root: &Path, name: &str) -> Result<BuildReport> {
             "oath set plan:<name> --from-file <path>",
         ));
     }
-    build_inner(catalog_root, &plan, &hash, Some(&id))
+    build_inner(catalog_root, &plan, &hash, Some(&id), false)
 }
 
 fn build_inner(
@@ -122,6 +148,7 @@ fn build_inner(
     plan: &PlanFile,
     plan_hash: &str,
     plan_id: Option<&ObjectId>,
+    concurrent: bool,
 ) -> Result<BuildReport> {
     let inputs = input_set_hash(&plan.build_needs);
     if let Some(id) = plan_id {
@@ -147,7 +174,7 @@ fn build_inner(
     }
 
     for n in &plan.build_needs {
-        ensure_need(catalog_root, n)?;
+        ensure_need(catalog_root, n, concurrent)?;
     }
 
     let scratch = catalog_root.join("run/plan-build").join(&plan.name);
@@ -215,6 +242,7 @@ fn build_inner(
         }
     }
 
+    let _store = store_lock(catalog_root, concurrent)?;
     let dest = realization_dir(catalog_root, &plan.name, &product);
     if dest.is_dir() {
         let existing = hash_tree(&dest)?;
@@ -269,7 +297,7 @@ fn ensure_pkg_object(catalog_root: &Path, plan: &PlanFile, product: &str) -> Res
     Ok(())
 }
 
-fn ensure_need(catalog_root: &Path, n: &PkgNeed) -> Result<()> {
+fn ensure_need(catalog_root: &Path, n: &PkgNeed, concurrent: bool) -> Result<()> {
     let name = n.id.strip_prefix("pkg:").ok_or_else(|| {
         Error::hint(format!("build_needs id must be pkg:*, got {}", n.id), "oath schema plan")
     })?;
@@ -282,6 +310,11 @@ fn ensure_need(catalog_root: &Path, n: &PkgNeed) -> Result<()> {
                 "oath schema plan",
             ));
         }
+        return Ok(());
+    }
+    let _store = store_lock(catalog_root, concurrent)?;
+    if store_present(catalog_root, name, &n.hash) {
+        // Another build fetched it while this one waited its turn.
         return Ok(());
     }
     let cat = Catalog::open(catalog_root)?;

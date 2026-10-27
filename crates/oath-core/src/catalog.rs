@@ -33,8 +33,16 @@ pub fn status_path(root: &Path, id: &ObjectId) -> PathBuf {
 }
 /// A package that can never be removed: seeded fixed, or fixed by this
 /// build's `base` profile.
+/// A package is fixed when this build's `base` profile fixes it, whatever
+/// its `meta.fixed` says: that was written when the machine was seeded,
+/// and a package a later base no longer fixes (dropbear, R36) is the
+/// owner's to remove.
 fn fixed(obj: &Object) -> bool {
-    obj.meta.fixed || (obj.id.kind == KIND_PKG && crate::seed::base_fixes(&obj.id))
+    if obj.id.kind == KIND_PKG {
+        crate::seed::base_fixes(&obj.id)
+    } else {
+        obj.meta.fixed
+    }
 }
 
 /// Kinds `oath new` / `oath rm` work on. host, net, ssh, snap and dev are

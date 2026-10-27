@@ -156,6 +156,10 @@ enum Cmd {
         /// packages, or all, without building.
         #[arg(long)]
         fetch: bool,
+        /// Packages built at a time, each when what it builds with is
+        /// built (the base rounds build one at a time).
+        #[arg(short, long, default_value_t = 1)]
+        jobs: usize,
     },
     /// Hash a pack directory into `~/.local/share/oath/store` (same layout as the guest).
     Store {
@@ -316,7 +320,7 @@ fn real() -> Result<()> {
             let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2);
             pkgs::bootstrap(&root, jobs.unwrap_or(n / 2).max(1))?
         }
-        Cmd::Pkgs { names, list, fetch } => {
+        Cmd::Pkgs { names, list, fetch, jobs } => {
             // `oath` is this tree (pkg:oath), not a pkgs/ package.
             let (oath, rest): (Vec<String>, Vec<String>) =
                 names.into_iter().partition(|n| n == "oath");
@@ -326,7 +330,7 @@ fn real() -> Result<()> {
                 pkgs::fetch_all(&root, &rest)?
             } else {
                 if oath.is_empty() || !rest.is_empty() {
-                    pkgs::build(&root, &rest)?
+                    pkgs::build(&root, &rest, jobs)?
                 }
                 if !oath.is_empty() {
                     oath_pkg::build(&root)?;
