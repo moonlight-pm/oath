@@ -181,10 +181,8 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   keyring are off: nothing else wanted the keyring, and its
   `extract-cert` needs OpenSSL. defconfig's `WERROR` is off: a compiler
   newer than the kernel may warn where it did not. The source is
-  git.kernel.org's snapshot of Linus's `v7.3` tag, pinned by sha256; on
-  2026-10-27 its tree was compared with kernel.org's `linux-7.3.tar.xz`,
-  which bears Greg Kroah-Hartman's signature, and matched. (7.3 has the
-  kbuild fix rc1 needed a patch for.)
+  kernel.org's `linux-7.3.tar.xz`, checked against Greg Kroah-Hartman's
+  signature (R37). (7.3 has the kbuild fix rc1 needed a patch for.)
 - **The base on machines** (plan products): glibc, bash, coreutils,
   sed, grep, gawk (with GMP and MPFR), findutils, diffutils, tar, gzip,
   xz, bzip2, procps-ng, less, Vim (ncurses), iproute2, iputils, dhcpcd,

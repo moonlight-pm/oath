@@ -18,6 +18,9 @@ key = "glibc"
 
 # Same pinned tarball as pkgs/linux; only the UAPI headers are used.
 [[source]]
-url = "https://git.kernel.org/torvalds/t/linux-7.3.tar.gz"
-sha256 = "fd00c1da5cb8d190679248673ca6424492336818e3874a4752144ded942ff68b"
-unsigned = "a cgit snapshot of Linus's signed tag v7.3: the same tree as kernel.org's linux-7.3.tar.xz, whose signature is Greg Kroah-Hartman's (no key for it is pinned here)"
+url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.tar.xz"
+sha256 = "87363c24f10e06321eb362765521094e94471f6bff8bce2d6b3e40f39f004953"
+# kernel.org signs the uncompressed tar.
+sig = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.tar.sign"
+key = "linux"
+decompress = "xz"

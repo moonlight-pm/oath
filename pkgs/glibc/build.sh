@@ -8,7 +8,7 @@ tar -xf "$SRC/glibc-$VERSION.tar.xz"
 for p in "$FILES"/patches/*.patch; do
 	patch -d "glibc-$VERSION" -p1 -s -i "$p"
 done
-tar -xf "$SRC/linux-7.3.tar.gz"
+tar -xf "$SRC/linux-7.3.tar.xz"
 # The UAPI headers, as headers_install makes them but without rsync.
 make -C linux-7.3 ARCH=x86_64 HOSTCC=cc headers
 find linux-7.3/usr/include -type f ! -name '*.h' -delete

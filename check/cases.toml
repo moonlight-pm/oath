@@ -409,7 +409,7 @@ about = "The base tools are the native builds: GNU, linked through /lib's loader
 metal = true
 steps = [
   { run = "echo x > /dev/null && head -c 16 /dev/urandom > /dev/null && stat -c '%a %n' /dev/null /dev/zero /dev/urandom /dev/ptmx", expect = ["666 /dev/null", "666 /dev/urandom"] },
-  { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version; dig -v 2>&1; openssl version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux", "DiG 9.20.29", "OpenSSL 4.0.3"] },
+  { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version; dig -v 2>&1; openssl version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux", "DiG 9.20.30", "OpenSSL 4.0.3"] },
   { run = "for b in bash zsh ls curl sshd ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping dig host nslookup openssl; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
   { run = "ldd /lib/oath/init; ldd $(readlink -f /bin/oath); test ! -e /lib64 && echo NO_LIB64", expect = ["statically linked", "NO_LIB64"], reject = ["=>"] },
   { run = "bash --version; zsh --version; ls --version; vim --version | head -1; chronyd --version; dhcpcd --version; ip -V; ping -V", expect = ["GNU bash", "zsh 5.9.2", "GNU coreutils", "VIM - Vi IMproved", "chronyd (chrony)", "dhcpcd 10", "iproute2", "iputils"] },

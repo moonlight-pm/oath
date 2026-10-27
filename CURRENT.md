@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-10-26 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R36 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R37 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -14,9 +14,9 @@ append history (git has it).
    upstream: Linux 7.3 (R10), glibc's 2.44 branch, two libstdc++ fixes,
    curl's CA bundle and NSS 3.132 (no eMudhra roots), Python 3.15.2
    (with ssl), patch 2.8.1, elfutils 0.197, vim 9.2.1250, harfbuzz 15.0.0;
-   unreleased fixes as `patches/`. Next: build, check, publish, update
-   buccina; canto and novus later. Open: two keys, CEF 156 with Sola
-   ([decisions](docs/decisions.md)); expat 2.10.0 (due 11-02).
+   BIND 9.20.30 and kernel.org's signed tarball (R37); unreleased fixes as
+   `patches/`. Next: build, check, publish, update buccina; canto and
+   novus later; CEF 156 once the Sola tab publishes; expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,

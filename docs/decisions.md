@@ -12,18 +12,6 @@ acting on anything under **Open**. Replaces `open-questions.md`
   permissive replacements for the GPL packages (btrfs-progs,
   util-linux, dosfstools) some day; not now. R17 and R18 (GCC, glibc,
   the GNU userland) moved the toolchain, libc and tools the other way.
-- **Two signing keys (security sweep, 2026-10-27).** BIND 9.20.30
-  (four CVEs, all in `named`, which Oath does not build) is signed by
-  ISC's Michal Nowak, `D99C CEAF 8797 4701 4F03 8D63 182E 2357 9462
-  EFAA` (on isc.org/pgpkey), not the Michał Kępień key `isc.asc` pins.
-  Kernel releases are signed by Greg Kroah-Hartman, `647F 2865 4894
-  E3BD 4571 99BE 38DB BDC8 6092 693E`; `pkgs/linux` takes Linus's
-  unsigned tag snapshot instead. Trust either?
-- **CEF 147 → 156 (security sweep, 2026-10-27).** CEF 147 (Chromium
-  147.0.7727.118) gets no more builds and misses about 3,400 Chromium
-  CVEs, three exploited in the wild; 156.0.14 is current. Sola's browser
-  and Design are built against CEF's API, so Sola rebuilds them against
-  156 first, then `pkgs/cef` and the `desk` pins move together. When?
 
 ## 2026-10-13 review (briefing D1–D8)
 
@@ -65,6 +53,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R34 | novus's RTX 3090 Ti runs NVIDIA's driver as it does on NixOS: the closed kernel module built against `pkg:linux`, and its userspace through libglvnd, as a recipe, at 595.104.02 (Joshua, 2026-10-24: 580.142, what NixOS runs, does not build against 7.3-rc1, which has no `linux/of_gpio.h`; 595.104.02, NVIDIA's newest, builds all five modules); the first module built outside the kernel's tree, an exception to "driver patches first" for a card Oath does not swap. A card's workarounds are one machine's settings, not defaults: novus's overlay turns GSP firmware off (`NVreg_EnableGpuFirmware=0`) and caps power and clocks (`nvidia-smi -pm 1 -pl 250 -lgc 210,1500`); another machine with the driver gets none of them (Joshua, 2026-10-24). | Decided by Joshua 2026-10-24 |
 | R35 | A recipe may build with any pack, not only the base profile's (Joshua, 2026-10-25, for NVIDIA's module, which needs `pkg:gcc`, `pkg:make` and `pkg:linux-build`): its plan pins every build pack by hash, as before, and a machine fetches the ones it lacks from `host:local.origins` (R25) before `oath build`. The base profile is unchanged. Amends R23. | Decided by Joshua 2026-10-25 |
 | R36 | A third account, `void`: uid and gid 65534 (the kernel's overflow id), home `/var/empty` (empty, root's), shell `/bin/false`; it owns no files and cannot log in. It is the unprivileged account for generic use: daemons drop to it (sshd's unauthenticated process, dhcpcd's network processes, chronyd after start-up) and a service may run as it (`svc` `user: "void"`). OpenSSH's sshd replaces dropbear, by R18's rule of one tool for each job (OpenSSH already gave the client tools and `sftp-server`); it needs such an account, and dropbear read the network as root. It links `pkg:openssl`, so RSA keys (the build host's) still log in. Machines keep their host key (dropbear's, converted). Why: sshd, dhcpcd and chronyd read untrusted packets, and ran as root. Joshua chose the name, four letters like `root` and `home`, over `nobody`, `nemo`, `none` and `away`. Amends the Principal entry below. | Decided by Joshua 2026-10-26 |
+| R37 | Two signing keys Joshua trusted in the security sweep (2026-10-27): ISC's Michal Nowak, `D99C CEAF 8797 4701 4F03 8D63 182E 2357 9462 EFAA` (isc.org's keyblock), who signed BIND 9.20.30, in `isc.asc` in place of Michał Kępień's (R24); and Greg Kroah-Hartman, `647F 2865 4894 E3BD 4571 99BE 38DB BDC8 6092 693E` (kernel.org's pgpkeys.git), who signs kernel.org's release tarballs, in `linux.asc`: `pkgs/linux`, `linux-build` and glibc's UAPI headers take the signed `linux-7.3.tar.xz`, not Linus's unsigned tag snapshot. He also had the Sola tab move CEF to 156 (it rebuilds sola-browser and sola-design first; `pkgs/cef` and the `desk` pins then move together). | Decided by Joshua 2026-10-27 |
 
 ## Standing
 
