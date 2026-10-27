@@ -99,19 +99,30 @@ pub fn build_file_concurrent(catalog_root: &Path, path: &Path) -> Result<BuildRe
 
 /// Serializes the store writes of this process's concurrent builds, so
 /// each takes the catalog lock in turn and none waits out its timeout.
+/// A sandbox forks only with it held (`sandbox_child`): its child lives
+/// for the whole build without exec'ing, and would keep an inherited
+/// lock file open, and so the lock held, until the build ends.
 static STORE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// The catalog lock and this process's turn at it. Fields drop in order:
+/// the lock goes before the turn, so no fork sees it held.
+struct StoreLock {
+    _lock: crate::CatalogLock,
+    _turn: std::sync::MutexGuard<'static, ()>,
+}
+
+fn store_turn() -> std::sync::MutexGuard<'static, ()> {
+    STORE.lock().unwrap_or_else(|e| e.into_inner())
+}
 
 /// The catalog lock for a concurrent build's store write; none for a
 /// build whose caller holds it already.
-fn store_lock(
-    catalog_root: &Path,
-    concurrent: bool,
-) -> Result<Option<(std::sync::MutexGuard<'static, ()>, crate::CatalogLock)>> {
+fn store_lock(catalog_root: &Path, concurrent: bool) -> Result<Option<StoreLock>> {
     if !concurrent {
         return Ok(None);
     }
-    let turn = STORE.lock().unwrap_or_else(|e| e.into_inner());
-    Ok(Some((turn, Catalog::open(catalog_root)?.lock()?)))
+    let turn = store_turn();
+    Ok(Some(StoreLock { _lock: Catalog::open(catalog_root)?.lock()?, _turn: turn }))
 }
 
 pub fn build_pinned(catalog_root: &Path, name: &str) -> Result<BuildReport> {
@@ -377,11 +388,14 @@ fn sandbox_child(
     let host_root = unsafe { libc::geteuid() } == 0;
     let uid = unsafe { libc::getuid() };
     let gid = unsafe { libc::getgid() };
+    // Not while another of this process's builds holds the catalog lock.
+    let turn = store_turn();
     let pid = unsafe { libc::fork() };
     if pid < 0 {
         return Err(Error::Msg("fork failed".into()));
     }
     if pid > 0 {
+        drop(turn);
         unsafe {
             libc::close(pipe_a[1]);
             libc::close(pipe_b[0]);
@@ -433,6 +447,8 @@ fn sandbox_child(
         libc::close(pipe_a[1]);
         libc::close(pipe_b[0]);
     }
+    // The child ends with _exit; its copy of the turn is never unlocked.
+    std::mem::forget(turn);
 
     let err = scratch.join("err");
     let code = match sandbox_in_child(&packs, &script, &out, &scratch, host_root, log) {
