@@ -26,7 +26,10 @@ cd /tmp/oath
 gnu="--frozen --target x86_64-unknown-linux-gnu -p oath -p oath-init"
 efi="--frozen --target x86_64-unknown-uefi -p oath-efi --features uefi-app"
 cargo build --release $gnu
-RUSTFLAGS= cargo build --release $efi
+# Unset, not empty: cargo takes an empty RUSTFLAGS over the config's
+# rustflags, and oath-efi's /Brepro (a hash, not the link time, in the
+# PE header) is one of those.
+env -u RUSTFLAGS cargo build --release $efi
 r=target/x86_64-unknown-linux-gnu/release
 mkdir -p /out/bin /out/lib/oath /out/boot
 cp $r/oath /out/bin/oath

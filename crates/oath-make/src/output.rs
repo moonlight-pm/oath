@@ -43,11 +43,21 @@ fn root(out: &Path) -> PathBuf {
     out.join("out")
 }
 
-/// The id of a manifest: what the output is made of, not the commit.
+/// The id of a manifest: what the output is made of, not the commit
+/// (pkg:oath's, and a first-party tree's in a pack's `sources`).
 pub fn id(manifest: &Value) -> String {
     let mut m = manifest.clone();
     if let Some(oath) = m.pointer_mut("/packs/oath").and_then(Value::as_object_mut) {
         oath.remove("commit");
+    }
+    if let Some(packs) = m.get_mut("packs").and_then(Value::as_object_mut) {
+        for sources in packs.values_mut().filter_map(|p| p.get_mut("sources")) {
+            for s in sources.as_array_mut().into_iter().flatten() {
+                if let Some(s) = s.as_object_mut() {
+                    s.remove("commit");
+                }
+            }
+        }
     }
     let hash = oath_core::file_hash(serde_json::to_string(&m).unwrap_or_default().as_bytes());
     hash.trim_start_matches("sha256-")[..12].to_string()
@@ -178,6 +188,8 @@ mod tests {
         assert_eq!(id(&a), id(&b));
         assert_ne!(id(&a), id(&c));
         assert_eq!(id(&a).len(), 12);
+        let tree = |commit: &str| json!({"packs": {"rivulet": {"hash": "r", "sources": [{"tree": "apps/rivulet", "commit": commit}]}}});
+        assert_eq!(id(&tree("abc")), id(&tree("def")));
     }
 
     #[test]
