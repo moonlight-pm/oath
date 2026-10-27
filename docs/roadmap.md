@@ -83,7 +83,7 @@ default origin, R25), and `cargo make build` writes immutable outputs
 (`build/out/<id>/`, with a manifest of every shipped pack) that install
 and `esp` take by id (2026-10-16).
 
-## 6. Reinstall — active
+## 6. Reinstall — done (2026-10-27)
 
 Wipe canto and buccina, install the native base from a clean build,
 run the harness against both over SSH, load modules by modalias.
@@ -98,7 +98,10 @@ loads exactly its own drivers and passes all 24 metal cases
 (2026-10-15). `svc:time` keeps the clock from pool.ntp.org (R12).
 Devices are discovered and hot-plugged, and `cargo make update` moves
 an installed machine to a new output without a reinstall
-(2026-10-16). Left: buccina (parked by Joshua).
+(2026-10-16). buccina (an Intel OptiPlex, headless) was reinstalled on
+2026-10-26 and passes every metal case that applies to it (44 of 47 on
+2026-10-27; the display and AMD-GPU cases skip where the hardware is
+missing).
 
 ## 7. Agent surface — done (2026-10-18)
 

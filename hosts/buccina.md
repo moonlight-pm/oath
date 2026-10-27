@@ -18,21 +18,27 @@ Overwrite this file when facts change; do not append a diary.
   other long Oath work run here, so canto stays free for Sola R&D.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** build output `a14d1acd3c2a` (the `desk` profile, R36:
-  OpenSSH's sshd, `void`), by `cargo make update --reboot` on
-  2026-10-27 (generation 3 moved `svc:sshd` from dropbear; its host key
-  is the one it had, converted). Installed on 2026-10-26 as
-  `55c20bf6a86c` by `cargo make install --target root@10.0.0.149 --disk
-  /dev/nvme0n1` over the Wicket trial image (reached with the Wicket
-  deploy key); that install's reboot landed on the USB stick, the
-  installed kernel was started by kexec from it, the boot order fixed,
-  and a reboot came up from the NVMe. Root by UUID
-  `daaa7fe6-6358-41d5-b968-5760983c1ba7`. `pkg:dropbear` is still
-  present, unused. Its clock is about 14 s fast at boot until chrony
-  steps it.
+- **Running now:** build output `f443df24beec` (the `desk` profile:
+  Linux 7.3 and the 2026-10-27 security sweep), by `cargo make update
+  --reboot` on 2026-10-27. Since R36 its sshd is OpenSSH (generation 3
+  moved it from dropbear, keeping the host key); `pkg:dropbear` was
+  removed (generation 35); `pkg:qemu` and `pkg:libslirp` were added for
+  the build-host run (generations 33 and 36). It passes every metal case
+  that applies to it (44 on 2026-10-27; the display and AMD-GPU cases
+  skip: it is headless, and Mesa has no Intel driver), sound included:
+  PipeWire takes its HDA card, which registers after i915, at boot and
+  on hot-plug. Installed on 2026-10-26 as `55c20bf6a86c` by `cargo make
+  install --target root@10.0.0.149 --disk /dev/nvme0n1` over the Wicket
+  trial image; that install's reboot landed on an old USB stick, the
+  boot order was fixed, and a reboot came up from the NVMe. Root by UUID
+  `daaa7fe6-6358-41d5-b968-5760983c1ba7`. Its clock is about 14 s fast
+  at boot until chrony steps it.
 - **Self-host:** `/home/Projects/Oath` (pushed from novus),
   `build/selfhost.sh` in tmux session `selfhost`; log
   `build/selfhost.log`, result `build/selfhost-result.txt`. Run 1
   (2026-10-26, `c5615fb`): bootstrap 32 min, `pkgs` 1 h 52 min, 158 of
   163 products as committed. Run 2 (`b34d189`, 2026-10-26 23:43Z to
-  02:07Z): the same times, 163 of 163 as committed.
+  02:07Z): the same times, 163 of 163 as committed. Security sweep
+  (2026-10-27, `build/buildhost.sh` in tmux `buildhost`, log
+  `build/buildhost.log`): `pkgs -j 4` from the committed lock gave the
+  162 products novus got; the 135 after the base took 26 min.

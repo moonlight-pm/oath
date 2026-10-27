@@ -15,9 +15,9 @@ append history (git has it).
    bundle and NSS 3.132 (no eMudhra), Python 3.15.2 (ssl), BIND 9.20.30
    and kernel.org's signed tarball (R37), patch, elfutils, vim, harfbuzz;
    unreleased fixes as `patches/`. novus and buccina built all 162
-   products identically; desk 61/61 and base 58/58 QEMU cases pass.
-   Next: publish, update buccina; canto and novus later; CEF 156 (R37);
-   expat 2.10.0 (11-02).
+   products identically; buccina runs it (`f443df24beec`, published).
+   Next: canto and novus when Joshua says; CEF 156 (R37); expat 2.10.0
+   (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
@@ -46,9 +46,9 @@ append history (git has it).
    publish`. Next: a new stable is a new pin; publish after every build
    that changes a pack; sign `INDEX.md` when a second publisher appears.
 
-**State:** phases 1–5 and 7 are done; 6 (buccina, reinstalled
-2026-10-26: [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). R36 (2026-10-26): account `void`;
+**State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
+metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
+are active ([docs/roadmap.md](docs/roadmap.md)). R36 (2026-10-26): account `void`;
 OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`;
 canto (`55c20bf6a86c`, generation 329) keeps dropbear until its next
 `update --reboot`. Left until needed: root SSH, more NICs, node rules.
@@ -58,7 +58,7 @@ canto (`55c20bf6a86c`, generation 329) keeps dropbear until its next
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `55c20bf6a86c`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
-| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host); output `a14d1acd3c2a`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host); output `f443df24beec`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).
 
