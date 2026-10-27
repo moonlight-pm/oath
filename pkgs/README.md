@@ -111,7 +111,7 @@ base packs and the packs `build` names, all pinned by hash from
 `lock.json`; run `oath build` in the catalog at `~/.local/share/oath`; record the
 product in `lock.json`. A package whose plan has not changed is not
 rebuilt. With no names, `cargo make pkgs` first rebuilds the base packs
-and what they build with (25 packages: the tools, then glibc, then gcc)
+and what they build with (28 packages: the tools, then glibc, then gcc)
 round after round until a round builds nothing, at most 5, and then
 builds the rest once; after `bootstrap` the first round starts from the
 stage-1 seeds. The lock it leaves is settled: every plan names the

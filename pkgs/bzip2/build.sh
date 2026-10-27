@@ -1,6 +1,11 @@
 # bzip2 and libbz2 (shared). It has no configure: its two Makefiles.
+# patches/: bzip2recover's block-count fix (CVE-2026-42250), from
+# upstream git; no release has it.
 tar -xf "$SRC/$SOURCES"
 cd "bzip2-$VERSION"
+for p in "$FILES"/patches/*.patch; do
+	patch -p1 -i "$p"
+done
 make -f Makefile-libbz2_so CC="$CC" CFLAGS="$CFLAGS -fPIC -D_FILE_OFFSET_BITS=64"
 make clean
 make CC="$CC" CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64" libbz2.a bzip2 bzip2recover

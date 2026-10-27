@@ -1,9 +1,13 @@
 # One perl binary with every core XS module linked in (no dynamic
 # loading). It finds its library under the slot path. Configure records
 # who, where and when it ran; those are fixed so the same plan gives the
-# same product.
+# same product. patches/: the fix for CVE-2026-15534 (regex
+# superlinear cache overflow), from perl 5.45.2; no stable perl has it.
 tar -xf "$SRC/$SOURCES"
 cd perl-$VERSION
+for p in "$FILES"/patches/*.patch; do
+	patch -p1 -i "$p"
+done
 sh Configure -des -Dprefix="$LIVE" -Dcc=cc -Dld=cc -Dar=ar -Dnm=nm \
 	-Doptimize=-O2 -Uusedl -Dusenm=false \
 	-Dman1dir=none -Dman3dir=none \

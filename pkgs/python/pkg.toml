@@ -1,17 +1,17 @@
 # Python's tree carries expat (pyexpat) and HACL* (hashlib, MIT or
 # Apache-2.0); _decimal needs a system libmpdec, which Oath does not
 # package, so it is not built.
-version = "3.15.0"
+version = "3.15.2"
 license = "PSF-2.0 AND MIT"
 description = "CPython. A build tool (glibc's and meson's builds need it); not in the base image."
 home = "https://www.python.org/"
-purl = "pkg:generic/cpython@3.15.0"
-build = ["pkgconf", "zlib", "zstd"]
-run = ["bzip2", "xz", "zlib", "zstd"]
+purl = "pkg:generic/cpython@3.15.2"
+build = ["pkgconf", "zlib", "zstd", "openssl", "libffi"]
+run = ["bzip2", "xz", "zlib", "zstd", "openssl", "libffi"]
 
 [[source]]
-url = "https://www.python.org/ftp/python/3.15.0/Python-3.15.0.tar.xz"
-sha256 = "ba4bed1ba346b916890b76d9e320451420aa69f6408997d33c66482eeae3d575"
-sigstore = "https://www.python.org/ftp/python/3.15.0/Python-3.15.0.tar.xz.sigstore"
+url = "https://www.python.org/ftp/python/3.15.2/Python-3.15.2.tar.xz"
+sha256 = "8b5536d280142ecf6cdfe15d12a21ba1c65e300bbf7b28a8d0cdb849575797de"
+sigstore = "https://www.python.org/ftp/python/3.15.2/Python-3.15.2.tar.xz.sigstore"
 identity = "hugo@python.org"
 issuer = "https://github.com/login/oauth"

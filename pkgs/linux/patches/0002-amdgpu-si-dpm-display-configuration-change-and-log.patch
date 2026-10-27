@@ -1,6 +1,9 @@
 From: Oath <oath@local>
 Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
 
+Linux 7.3 sets PPSMC_SYSTEMFLAG_GPIO_DC only on mobility parts, which
+this patch used to do for a desktop on AC power; that hunk is gone.
+
 --- a/drivers/gpu/drm/amd/pm/legacy-dpm/si_dpm.c
 +++ b/drivers/gpu/drm/amd/pm/legacy-dpm/si_dpm.c
 @@ -23,6 +23,7 @@
@@ -63,26 +66,6 @@ Subject: 0002-amdgpu-si-dpm-display-configuration-change-and-log.patch
  	} else if (level == AMD_DPM_FORCED_LEVEL_LOW) {
  		if (si_send_msg_to_smc_with_parameter(adev, PPSMC_MSG_SetForcedLevels, 0) != PPSMC_Result_OK)
  			return -EINVAL;
-@@ -5263,8 +5287,18 @@
- 		break;
- 	}
- 
--	if (adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC)
-+	/*
-+	 * VBIOS HARDWAREDC makes the SMC watch a DC GPIO. On a desktop
-+	 * (no ACPI battery, ac_power) that pin floats as DC, the SMC
-+	 * clamps to the 300/150 MHz DC state, and SetForcedLevels(1)
-+	 * returns 0xff. Only enable the GPIO when we are actually on DC.
-+	 */
-+	if ((adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC) &&
-+	    !adev->pm.ac_power)
- 		table->systemFlags |= PPSMC_SYSTEMFLAG_GPIO_DC;
-+	else if (adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_HARDWAREDC)
-+		drm_info(adev_to_drm(adev),
-+			 "si dpm: skip GPIO_DC (ac_power=%d)\n", adev->pm.ac_power);
- 
- 	if (adev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_REGULATOR_HOT) {
- 		if ((adev->pdev->device != 0x6818) && (adev->pdev->device != 0x6819))
 @@ -7210,6 +7244,17 @@
  	si_program_display_gap(adev);
  }

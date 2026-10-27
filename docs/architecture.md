@@ -11,7 +11,7 @@ tree changes.
 ```
 firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loader)
             loader/entries/oath.conf  + oath-N.conf (last 5 boots)
-            vmlinuz (own build, 7.3.0-rc1) + initrd.gz
+            vmlinuz (own build, 7.3.0) + initrd.gz
   kernel cmdline: oath.root=UUID=<btrfs fsid> (or a node) oath.subvol=@ console=ttyS0 panic=10 …
   initrd /init = oath-init (PID 1, static against glibc); bash (and its
     libraries and glibc's loader in /lib) for the fallback shell

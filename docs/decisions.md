@@ -12,6 +12,18 @@ acting on anything under **Open**. Replaces `open-questions.md`
   permissive replacements for the GPL packages (btrfs-progs,
   util-linux, dosfstools) some day; not now. R17 and R18 (GCC, glibc,
   the GNU userland) moved the toolchain, libc and tools the other way.
+- **Two signing keys (security sweep, 2026-10-27).** BIND 9.20.30
+  (four CVEs, all in `named`, which Oath does not build) is signed by
+  ISC's Michal Nowak, `D99C CEAF 8797 4701 4F03 8D63 182E 2357 9462
+  EFAA` (on isc.org/pgpkey), not the Michał Kępień key `isc.asc` pins.
+  Kernel releases are signed by Greg Kroah-Hartman, `647F 2865 4894
+  E3BD 4571 99BE 38DB BDC8 6092 693E`; `pkgs/linux` takes Linus's
+  unsigned tag snapshot instead. Trust either?
+- **CEF 147 → 156 (security sweep, 2026-10-27).** CEF 147 (Chromium
+  147.0.7727.118) gets no more builds and misses about 3,400 Chromium
+  CVEs, three exploited in the wild; 156.0.14 is current. Sola's browser
+  and Design are built against CEF's API, so Sola rebuilds them against
+  156 first, then `pkgs/cef` and the `desk` pins move together. When?
 
 ## 2026-10-13 review (briefing D1–D8)
 
@@ -26,7 +38,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R7 | Native packages from the outset: built from source by an Oath plan, or the vendor's release pinned by sha256. Never another distro's packages. Build-host compilers bootstrap only. | Done 2026-10-14 (phase 5); the toolchain and the kernel are plan products since 2026-10-15 (`pkg:gcc` and `pkg:glibc` since 2026-10-17, R17), and the Oath binaries (built by the vendor's Rust, `pkg:rust`) since 2026-10-16; only stage 0 uses the host's gcc, and only `oath-make` the host's Rust |
 | R8 | Reset the progress docs ("slash and burn"). | Done in the cut |
 | R9 | No Zig anywhere in Oath (Joshua, 2026-10-13). `pkg:cc` and the `dev` profile were removed. | Done |
-| R10 | Keep the pinned 7.3-rc1 kernel for now. | Decided 2026-10-13 |
+| R10 | Keep the pinned 7.3-rc1 kernel for now. | Decided 2026-10-13; amended 2026-10-27: 7.3 (released 2026-10-18) replaces rc1 in the security sweep Joshua asked for, for its fixes of KVM guest-to-host and local-root bugs |
 | R11 | The system toolchain is Clang/LLVM (clang, lld, compiler-rt, libunwind, libc++) on musl, built from source: stage 0 by the build host's gcc, stage 1 (`pkg:llvm`) by stage 0. One toolchain for every target; mesa needs LLVM anyway. | Decided 2026-10-14; superseded by R17 |
 | R12 | Time comes from pool.ntp.org (`0`–`3.pool.ntp.org`): busybox `ntpd` as `svc:time` in the `base` seed. | Decided by Joshua 2026-10-15; done; the daemon is chrony since 2026-10-17 (R18) |
 | R13 | An origin carries each package's source beside it: `cargo make publish` copies the plan that built a pack and the `-src` pack that plan pins, for every published package, GPL or not. | Decided by Joshua 2026-10-16; done |

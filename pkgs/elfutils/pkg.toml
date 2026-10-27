@@ -1,16 +1,16 @@
 # Only libelf is built: objtool, which every x86_64 kernel build runs,
 # links it, and so does Mesa's radeonsi. Not in the base image; the desk
 # ships it.
-version = "0.196"
+version = "0.197"
 license = "GPL-2.0-or-later OR LGPL-3.0-or-later"
 description = "libelf from elfutils, shared (objtool in the kernel build; Mesa's radeonsi)."
 home = "https://sourceware.org/elfutils/"
-purl = "pkg:generic/elfutils@0.196"
+purl = "pkg:generic/elfutils@0.197"
 build = ["pkgconf", "zlib"]
 run = ["zlib"]
 
 [[source]]
-url = "https://sourceware.org/elfutils/ftp/0.196/elfutils-0.196.tar.bz2"
-sha256 = "fd5cc6b77ad6773cac93cb3f415f9318ac3b3455eecf801f6b4a742c4f6c7209"
-sig = "https://sourceware.org/elfutils/ftp/0.196/elfutils-0.196.tar.bz2.sig"
+url = "https://sourceware.org/elfutils/ftp/0.197/elfutils-0.197.tar.bz2"
+sha256 = "1fdf525f22dcf796d99a99ba3ea00a1f7b1ae5421bc62e8443a708920b99b904"
+sig = "https://sourceware.org/elfutils/ftp/0.197/elfutils-0.197.tar.bz2.sig"
 key = "elfutils"

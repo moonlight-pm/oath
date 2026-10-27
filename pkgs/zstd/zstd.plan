@@ -9,7 +9,7 @@
     },
     {
       "id": "pkg:bzip2",
-      "hash": "sha256-14b4d3dd447515672a1890ee020e2e577bc6604508ed21e6be53aba1cb025955"
+      "hash": "sha256-3e16469f204827a9164fdf7e23e7c001f2174df6bc135f84624d56c1d76bb288"
     },
     {
       "id": "pkg:coreutils",
@@ -61,7 +61,7 @@
     },
     {
       "id": "pkg:patch",
-      "hash": "sha256-61ab1745f2340a0c91fd938bb763c6a69c0640e66ff951e4c558575e0e7ff4ef"
+      "hash": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899"
     },
     {
       "id": "pkg:sed",

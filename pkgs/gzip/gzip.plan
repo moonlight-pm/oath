@@ -65,7 +65,7 @@
     },
     {
       "id": "pkg:patch",
-      "hash": "sha256-61ab1745f2340a0c91fd938bb763c6a69c0640e66ff951e4c558575e0e7ff4ef"
+      "hash": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899"
     },
     {
       "id": "pkg:sed",

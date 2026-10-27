@@ -10,14 +10,13 @@ append history (git has it).
 
 ## Now
 
-1. **eMudhra CA compromise: respond within days (Joshua, 2026-10-20).**
-   Eight eMudhra intermediate keys leaked
-   ([emudhra.we-have-a-problem.com](https://emudhra.we-have-a-problem.com/));
-   `pkg:curl`'s bundle (`cacert-2026-09-25.pem`) trusts their
-   cross-signer, emSign ECC Root CA - G3 (packs and sources are
-   sha256-pinned; Sola's browser refuses it). Next: `pkgs/curl` to `cacert-2026-10-20.pem`
-   (`796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe`),
-   NSS 3.131.1; build, check, publish, update canto; test Claude Code.
+1. **Security sweep (Joshua, 2026-10-27).** Every package checked
+   upstream: Linux 7.3 (R10), glibc's 2.44 branch, two libstdc++ fixes,
+   curl's CA bundle and NSS 3.132 (no eMudhra roots), Python 3.15.2
+   (with ssl), patch 2.8.1, elfutils 0.197, vim 9.2.1250, harfbuzz 15.0.0;
+   unreleased fixes as `patches/`. Next: build, check, publish, update
+   buccina; canto and novus later. Open: two keys, CEF 156 with Sola
+   ([decisions](docs/decisions.md)); expat 2.10.0 (due 11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,

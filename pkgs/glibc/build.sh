@@ -1,14 +1,19 @@
 # glibc and the Linux UAPI headers, built by pkg:gcc (R17). Headers in
 # include/, libraries and the loader in lib/: slibdir and rtlddir are
 # /lib, and there is no /lib64.
+# patches/: release/2.44/master from sourceware (the 2.44 branch's fixes,
+# GLIBC-SA-2026-0015 to -0024 among them), diffed from the glibc-2.44 tag.
 T=x86_64-pc-linux-gnu
 tar -xf "$SRC/glibc-$VERSION.tar.xz"
-tar -xf "$SRC/linux-7.3-rc1.tar.gz"
+for p in "$FILES"/patches/*.patch; do
+	patch -d "glibc-$VERSION" -p1 -s -i "$p"
+done
+tar -xf "$SRC/linux-7.3.tar.gz"
 # The UAPI headers, as headers_install makes them but without rsync.
-make -C linux-7.3-rc1 ARCH=x86_64 HOSTCC=cc headers
-find linux-7.3-rc1/usr/include -type f ! -name '*.h' -delete
+make -C linux-7.3 ARCH=x86_64 HOSTCC=cc headers
+find linux-7.3/usr/include -type f ! -name '*.h' -delete
 mkdir -p /tmp/uapi
-cp -r linux-7.3-rc1/usr/include /tmp/uapi/
+cp -r linux-7.3/usr/include /tmp/uapi/
 # glibc builds on its own terms: no other pack's headers or libraries,
 # and it requires optimization.
 unset CPPFLAGS LDFLAGS

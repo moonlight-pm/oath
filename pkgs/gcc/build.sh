@@ -7,9 +7,14 @@
 # glibc-i386's two 32-bit headers after glibc's, and it finds glibc-i386's
 # libraries in /lib32, which a build sandbox shows when glibc-i386 is one
 # of the build's packs.
+# patches/: two libstdc++ fixes from releases/gcc-16 that no release has
+# yet (CVE-2026-95619, aligned new; CVE-2026-102010, pb_ds binary heap).
 T=x86_64-pc-linux-gnu
 for f in $SOURCES; do tar -xf "$SRC/$f"; done
 g=gcc-$VERSION
+for p in "$FILES"/patches/*.patch; do
+	patch -d "$g" -p1 -i "$p"
+done
 sed -i 's|/lib64/ld-linux-x86-64.so.2|/lib/ld-linux-x86-64.so.2|' "$g/gcc/config/i386/linux64.h"
 sed -i '/m64=/s/lib64/lib/' "$g/gcc/config/i386/t-linux64"
 sed -i 's|^MULTILIB_OSDIRNAMES+= m32=.*|MULTILIB_OSDIRNAMES+= m32=../lib32|' "$g/gcc/config/i386/t-linux64"

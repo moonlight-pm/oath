@@ -1,12 +1,12 @@
-version = "14.6.0"
+version = "15.0.0"
 license = "MIT-Modern-Variant AND MIT"
 description = "HarfBuzz, shared, with FreeType and GLib: text shaping for pango."
 home = "https://harfbuzz.github.io/"
-purl = "pkg:github/harfbuzz/harfbuzz@14.6.0"
+purl = "pkg:github/harfbuzz/harfbuzz@15.0.0"
 build = ["meson", "ninja", "python", "pkgconf", "freetype", "glib"]
 run = ["freetype", "glib", "gcc"]
 
 [[source]]
-url = "https://github.com/harfbuzz/harfbuzz/releases/download/14.6.0/harfbuzz-14.6.0.tar.xz"
-sha256 = "d07a007327277708a2a73ae437887cdbaf282937f6d03ca5467723e9099af586"
+url = "https://github.com/harfbuzz/harfbuzz/releases/download/15.0.0/harfbuzz-15.0.0.tar.xz"
+sha256 = "968536e9abd782f07f7954044c0c4020199fcdd39b41d221ec42d2a3be4a44df"
 unsigned = "a GitHub release asset; HarfBuzz signs only its git tags"

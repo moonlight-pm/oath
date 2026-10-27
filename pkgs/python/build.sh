@@ -1,6 +1,7 @@
-# CPython, with its stdlib extensions as shared modules (lib-dynload).
-# Not built: those whose libraries Oath does not have (OpenSSL, libffi,
-# SQLite, Tk). It finds its stdlib by its own path.
+# CPython, with its stdlib extensions as shared modules (lib-dynload):
+# ssl and hashlib against pkg:openssl (which trusts curl's CA bundle),
+# ctypes against pkg:libffi. Not built: those whose libraries Oath does
+# not have (SQLite, Tk). It finds its stdlib by its own path.
 tar -xf "$SRC/$SOURCES"
 cd "Python-$VERSION"
 ./configure --prefix=/ --without-ensurepip --disable-test-modules

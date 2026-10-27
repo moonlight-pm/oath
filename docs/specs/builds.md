@@ -138,7 +138,7 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   own build packs, with what each of those runs with (bison runs m4),
   all from `pkgs/lock.json`; the lock records each product's run needs
   as it was built. A run over every package rebuilds the base and what
-  it builds with (25 packages) round after round until a round builds
+  it builds with (28 packages) round after round until a round builds
   nothing (at most 5), its tools before glibc and gcc: the seed's gawk
   has no MPFR, and GCC's sources, which pkg:gcc and glibc-i386 compile,
   need a gawk with it. Then it builds the other packages once, so the
@@ -160,23 +160,31 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   packages. gawk 5.4.1 is built with MPFR: without it, it miscompiles
   the awk scripts that generate GCC 16.2's option tables.
 - **Build tools** (plan products, not in the image): Ninja 1.13.2 (its
-  own bootstrap), Meson 1.12.1 and CPython 3.15.0 (stdlib extensions as
-  shared modules; no `_ctypes`, `_decimal`, `_ssl` or `_sqlite3`: no
-  libffi, libmpdec, OpenSSL or SQLite pack). A product must not name its
+  own bootstrap), Meson 1.12.1 and CPython 3.15.2 (stdlib extensions as
+  shared modules; `_ssl` and `_hashlib` with OpenSSL, `_ctypes` with
+  libffi; no `_decimal` or `_sqlite3`: no libmpdec or SQLite pack; on
+  the desk it is `python3`). A product must not name its
   compiler's store path: CPython's `-g` DWARF did, so it is stripped of
   debug info. For the kernel: GNU m4 1.4.21, flex 2.6.4, Bison 3.8.2,
   bc 1.08.2, Perl 5.44.0 (every core XS module linked in) and libelf
-  from elfutils 0.196.
-- **The kernel** (`pkgs/linux`): kernel.org 7.3-rc1, `patches/` and
+  from elfutils 0.197.
+- **Fixes upstream has not released** go in a package's `patches/`,
+  each named for what it fixes, and its build.sh says where they come
+  from (2026-10-27): glibc's release/2.44/master branch, two libstdc++
+  fixes from releases/gcc-16, and commits from zlib, bzip2, Perl,
+  alsa-lib and libsndfile (two of those ported to the release).
+- **The kernel** (`pkgs/linux`): kernel.org 7.3 (R10), `patches/` and
   `linux.fragment` over `defconfig`, built by `pkg:gcc`. Build user,
   host, time and counter are fixed. The plan writes `modules.dep`,
   `modules.alias` and `modules.softdep` from each module's `.modinfo`
   with `objcopy` (no kmod). The signed wireless regdb and the trusted
   keyring are off: nothing else wanted the keyring, and its
   `extract-cert` needs OpenSSL. defconfig's `WERROR` is off: a compiler
-  newer than the rc may warn where the rc did not. `patches/` also
-  carries a kbuild fix for a parallel-build race in 7.3-rc1 (the
-  asm-headers sweep deleted another rule's temp file).
+  newer than the kernel may warn where it did not. The source is
+  git.kernel.org's snapshot of Linus's `v7.3` tag, pinned by sha256; on
+  2026-10-27 its tree was compared with kernel.org's `linux-7.3.tar.xz`,
+  which bears Greg Kroah-Hartman's signature, and matched. (7.3 has the
+  kbuild fix rc1 needed a patch for.)
 - **The base on machines** (plan products): glibc, bash, coreutils,
   sed, grep, gawk (with GMP and MPFR), findutils, diffutils, tar, gzip,
   xz, bzip2, procps-ng, less, Vim (ncurses), iproute2, iputils, dhcpcd,

@@ -3,13 +3,17 @@
 # -m32 (static libgcc, no C library) and compiles glibc with it. slibdir
 # is /lib32, so ${LIB} is lib32 and the loader searches /lib32; rtlddir is
 # /lib, the loader's interoperable path that 32-bit programs name.
+# patches/: pkgs/glibc's, the 2.44 branch.
 T=x86_64-pc-linux-gnu
 for f in $SOURCES; do tar -xf "$SRC/$f"; done
-make -C linux-7.3-rc1 ARCH=x86_64 HOSTCC=cc headers
-find linux-7.3-rc1/usr/include -type f ! -name '*.h' -delete
+for p in "$FILES"/patches/*.patch; do
+	patch -d "glibc-$VERSION" -p1 -s -i "$p"
+done
+make -C linux-7.3 ARCH=x86_64 HOSTCC=cc headers
+find linux-7.3/usr/include -type f ! -name '*.h' -delete
 mkdir -p /tmp/uapi
-cp -r linux-7.3-rc1/usr/include /tmp/uapi/
-rm -rf linux-7.3-rc1
+cp -r linux-7.3/usr/include /tmp/uapi/
+rm -rf linux-7.3
 unset CPPFLAGS LDFLAGS
 export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe"
 # The compiler: C only, both ABIs, libgcc alone.

@@ -84,8 +84,8 @@
     "version": "1.0.8",
     "license": "bzip2-1.0.6",
     "by": "plan",
-    "plan": "sha256-448c8cfbaeafd9f0eb8ef5eec0e62af22c76ca3ade43edd9a75db0dee3bec6ac",
-    "product": "sha256-14b4d3dd447515672a1890ee020e2e577bc6604508ed21e6be53aba1cb025955",
+    "plan": "sha256-430f00f1ed18291612acca6978a3fd9c32dc14d4e627545a19f8897a2cacaab7",
+    "product": "sha256-3e16469f204827a9164fdf7e23e7c001f2174df6bc135f84624d56c1d76bb288",
     "run": []
   },
   "cairo": {
@@ -467,7 +467,7 @@
     "version": "1.15",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-bd02f579ef6db92218ea1e9e6ee24e437f3cff18ed681e687b51700a273fd8db",
+    "plan": "sha256-5aee998ea3c31c0132f8002ad2238be71a2e015926aaaf1c563a112abd26e200",
     "product": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6",
     "run": []
   },
@@ -953,7 +953,7 @@
     "version": "4.4.1",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-31d686164c83a1969bd7b2f16c0ede9d0140997feb867f679990074b24386ee1",
+    "plan": "sha256-064004aaf059e4bfb51e9ccdf4e47316413d169fd3cb108a462e60231b852616",
     "product": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1",
     "run": []
   },
@@ -1136,11 +1136,11 @@
     ]
   },
   "patch": {
-    "version": "2.8",
+    "version": "2.8.1",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-d2f403cfda4ffec7ec3eedcbe0889952fb22d6942330c4dfc6a8c7151bce6390",
-    "product": "sha256-61ab1745f2340a0c91fd938bb763c6a69c0640e66ff951e4c558575e0e7ff4ef",
+    "plan": "sha256-9c2deffb6c2717af127d22ac7c2e0803037f315965f492650513b0e8a4f479ce",
+    "product": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899",
     "run": []
   },
   "patchelf": {
@@ -1195,7 +1195,7 @@
     "version": "3.0.8",
     "license": "ISC",
     "by": "plan",
-    "plan": "sha256-53e8cf8f928918d484fb5966c79ce851d3e10e88c3e239bee4977d63e23ca8c1",
+    "plan": "sha256-2b2c93c624d1aba4444453e1a0105a5b3961384ce2078122952f392450b9d078",
     "product": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f",
     "run": []
   },
@@ -1334,7 +1334,7 @@
     "version": "1.35",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-95ad44f17ec45e3375463da43d97466fb828ae6ef70813356c3f9a4d813d94ae",
+    "plan": "sha256-83ccecd73e606b3d2ca4bc2baae21f1a835075b3a8b8141a0ace1efcda3a2e9b",
     "product": "sha256-94263cf077bd23908966915fea3ab0cd481b04f7efa276407088a96b6de96128",
     "run": []
   },
@@ -1561,7 +1561,7 @@
     "version": "5.8.4",
     "license": "0BSD AND GPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-8bcdadbf19625029b308efb22005c7b2b19e3f6f2173881cbed1fd6f97d1c116",
+    "plan": "sha256-cfa14bbf187675f84d380fb11798671e56e2406d0f4f3d957a9c1991cc7f414d",
     "product": "sha256-449080873772868f09eacc3db3243ca5f4376920782f3c1c1199d0302646b33b",
     "run": []
   },
@@ -1569,8 +1569,8 @@
     "version": "1.3.2",
     "license": "Zlib",
     "by": "plan",
-    "plan": "sha256-c62dc427bf6410bcc95754f156b4be9ca5a8e7d0d8596999b52510abc2351054",
-    "product": "sha256-587ab69c17b6e7a290ddc2ac77443f63443e28738ddc045b948021bfe4e15b2c",
+    "plan": "sha256-ecd690a8ef16c4dbfb8ad2b073bf9b010cf2668598156fb373b554cfc37621a1",
+    "product": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa",
     "run": []
   },
   "zlib-i386": {
@@ -1595,7 +1595,7 @@
     "version": "1.5.7",
     "license": "BSD-3-Clause OR GPL-2.0-only",
     "by": "plan",
-    "plan": "sha256-96209b993e2af916a7f68b7c2cf161e4cf6dd88297861137f5e540e2ba7e7ea8",
+    "plan": "sha256-e79c9f8e15b0f0bd09b70e13a9c77b686e9dc35bfb9b6f69a8b7867eee33b8b7",
     "product": "sha256-5bf91c19d01771beccc4dd6c715f577d57ee823e5d7e1a15f733e9d1f664fffa",
     "run": [
       "xz"
