@@ -32,13 +32,13 @@ append history (git has it).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
-   in `desk`, a root by btrfs UUID, `install --local`, `pkg:bison` and
-   `pkg:m4`. Self-host on buccina (2026-10-27, `b34d189`: 2h24m, the
-   base settled in 4 rounds) built all 163 products as committed, bit
-   for bit. Next: Joshua boots novus from the trial stick (pre-R36,
-   dropbear; fine for the trial); from canto, NICs, audio, Bluetooth,
-   sensors, the display, `plan:nvidia`, `svc:gpu-power`; then libglvnd
-   and glvnd Mesa.
+   in `desk`, a root by btrfs UUID, `install --local`. buccina did a
+   build host's whole job (2026-10-27): every product, the desk output
+   novus made (`5d9bce056737`), 61/61 QEMU cases (`pkg:qemu` and
+   `pkg:libslirp` added by hand). Next: Joshua boots novus from the
+   trial stick (pre-R36, dropbear; fine for the trial); from canto, NICs,
+   audio, Bluetooth, sensors, the display, `plan:nvidia`,
+   `svc:gpu-power`; then libglvnd and glvnd Mesa.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from

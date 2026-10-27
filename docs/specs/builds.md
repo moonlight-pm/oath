@@ -153,7 +153,9 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   after the base in 26 min (37 one at a time); four builds share the
   CPUs, so each is slower, and the base rounds stay the long part. In
   the security sweep (2026-10-27) novus and buccina, each with `-j 4`,
-  built all 162 products identically. After `bootstrap` every hash
+  built all 162 products identically, and then the same desk output
+  (`5d9bce056737`: every pack, `pkg:oath` and oath-efi included, once
+  oath-efi linked with `/Brepro`). After `bootstrap` every hash
   changes, and a run then comes back to the committed lock: on buccina
   (an Oath host, 2026-10-27) a fresh `bootstrap` and `pkgs` built all
   163 products as novus had, bit for bit. It runs in the same user-namespace `oath build`
