@@ -61,7 +61,7 @@
     },
     {
       "id": "pkg:libudev-zero",
-      "hash": "sha256-cbc552b7f0b26124a7367046a607c0a754bac70127cac1a06296bf1c76510d5f"
+      "hash": "sha256-8ac284efe597237c97bab063236fdd3be4a20f2e06e36f69d5c17dc225e4a613"
     },
     {
       "id": "pkg:make",
@@ -127,7 +127,7 @@
     },
     {
       "id": "pkg:libudev-zero",
-      "hash": "sha256-cbc552b7f0b26124a7367046a607c0a754bac70127cac1a06296bf1c76510d5f"
+      "hash": "sha256-8ac284efe597237c97bab063236fdd3be4a20f2e06e36f69d5c17dc225e4a613"
     }
   ]
 }

@@ -104,7 +104,7 @@
     "version": "147.0.10+gd58e84d+chromium-147.0.7727.118",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-b25f91b938d86e99f4535af9e862c54763b89dd01d59b46eeef0eece8fc34532",
+    "plan": "sha256-2ffa11217a5d4682d3a7632c6ce46d48782a70355e64493b7ff8046fe2c747a3",
     "product": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb",
     "run": [
       "glib",
@@ -613,7 +613,7 @@
     "version": "1.32.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-c372cfde694f4afa421941ef88fd0e85270b601297bcb3e378cfa4a0b69594c9",
+    "plan": "sha256-1edda5695c8c0e027bd77b70e9ef3b61e7cd0d3c249fb5f37e924b673d812dc3",
     "product": "sha256-1650ffce17660808b7ba9820f6a9766fc320f5b5881a0864a663360e09e2b828",
     "run": [
       "libevdev",
@@ -653,8 +653,8 @@
     "version": "1.0.5",
     "license": "ISC",
     "by": "plan",
-    "plan": "sha256-10f683c3c5bc05454ffdf016fe55db9aa9294b6871d6ad8626da475733f5a436",
-    "product": "sha256-cbc552b7f0b26124a7367046a607c0a754bac70127cac1a06296bf1c76510d5f",
+    "plan": "sha256-6ac4a78a632ec725b06be2ca82e811f1c1c389dddc2a29dfbb2537e8f39a085a",
+    "product": "sha256-8ac284efe597237c97bab063236fdd3be4a20f2e06e36f69d5c17dc225e4a613",
     "run": []
   },
   "liburcu": {
@@ -1173,7 +1173,7 @@
     "version": "1.6.9",
     "license": "MIT AND LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-b200cfbba7e295202ad7c3f3df93530a2fd1a30c20177d89069d8f604ca1c7dc",
+    "plan": "sha256-a875c2634e369fcd3c24cd066d090cf02d5f074ebe80fe95999ecb15ba63987e",
     "product": "sha256-cd23a26bb28b9336cbdad793392bd79424335c9746538ef271c0fb8bb1192391",
     "run": [
       "alsa-lib",
@@ -1278,7 +1278,7 @@
     "version": "0.1.0",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-7f63b5554350e98c3ce23fb7ff93b2f8d78563753728b116d2508772c94479b6",
+    "plan": "sha256-ae8be09da2bceebf0cac0e9c86af65afe4a952b4fb5ba1930e086e6ce3b8480a",
     "product": "sha256-d029c479ac39c3d68192f753c04fbf604047d37a3ba5c6aeda842da603254ab4",
     "run": [
       "wlroots",
@@ -1433,7 +1433,7 @@
     "version": "0.5.18",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-3846d369a71b0ab208aeaa4c168226f9e346d3d763c37e753572140bffc45169",
+    "plan": "sha256-c3bfc17e198ecbb629a4ba65d738a7aab62064f9f253aa924c1e0de0706119e7",
     "product": "sha256-3861ca5c3d44217add73b0377f881411d4db751cf3ef5dd0f6cc914fab3cf610",
     "run": [
       "glib",
@@ -1454,7 +1454,7 @@
     "version": "0.20.2",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-1469b96f8a1b46cdf9a7807a86ff69a46f8b697030635dede9db80b4e512f3a0",
+    "plan": "sha256-44b4b4863a1692cea3a450f77195aa455158f72c892a112be47716cd8a4e985c",
     "product": "sha256-f744c237b35f479b1cf393321d925b4b9140317ce8e825831810123a7fb610c2",
     "run": [
       "wayland",
