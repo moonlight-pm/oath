@@ -14,12 +14,17 @@ can be the build host too (R32): its own gcc builds stage 0, its
 `pkg:rust` builds `oath-make`, and `pkg:qemu` (in no profile; add it to
 the machine) runs images, with the edk2 firmware from QEMU's release as
 OVMF. `home` has `/dev/kvm` there (R33). Without it, `build`, `check`
-and the QEMU rehearsals stop and say so:
+and the QEMU rehearsals stop and say so. QEMU loads `libslirp`, which no
+profile has either, and a pack's `needs` must name the machine's packs
+at the hashes it runs with: those are `run_needs` in its plan on the
+origin (`INDEX.md` gives each pack's hash and plan).
 
 ```sh
-h=$(curl -fsS https://store.oath.moonlight.pm/INDEX.md | awk -F'`' '$2 == "qemu" {print $4}')
-sudo oath new pkg:qemu --from-json "{\"present\":true,\"hash\":\"$h\"}"
-sudo oath apply pkg:qemu
+curl -fsS https://store.oath.moonlight.pm/INDEX.md | grep -E '`(qemu|libslirp)`'
+sudo oath new pkg:libslirp --from-json '{"present":true,"hash":"sha256-…"}'
+curl -fsS https://store.oath.moonlight.pm/plan/qemu/sha256-….plan   # its run_needs
+sudo oath new pkg:qemu --from-json '{"present":true,"hash":"sha256-…","needs":[…]}'
+sudo oath apply pkg:libslirp pkg:qemu
 ```
 
 ## The toolchain and packages

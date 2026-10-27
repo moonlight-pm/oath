@@ -109,9 +109,12 @@ rebroadcast it: libudev-zero's monitors listen there, so libinput sees
 input devices come and go, wlroots sees a GPU appear and WirePlumber a
 sound card. A batch's nodes are made the seat's (render, sound and pad
 nodes) before its events are passed on, so a listener can open what it
-hears of: WirePlumber skips a card it may not open, and a sound driver
-that registers its card after boot's pass (buccina's, behind i915) lost
-it that way until 2026-10-27.
+hears of. When a card's control device (`controlC<N>`) is added, PID 1
+writes `change` to the card's `uevent`, as udev's sound rules do: the
+card is announced again once it is whole, and libudev-zero marks it
+`SOUND_INITIALIZED`, which PipeWire waits for. Until 2026-10-27 a card
+that appeared after WirePlumber started (buccina's HDA, which registers
+after i915) was never taken.
 
 ## Mounts (built)
 

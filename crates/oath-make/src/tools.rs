@@ -33,9 +33,8 @@ impl Tools {
             if p.file_name() == Some(std::ffi::OsStr::new("true")) {
                 bail!(
                     "no qemu-system-x86_64 or qemu-img on PATH: on an Oath host they are \
-                     pkg:qemu (R32), which no profile installs; add it with the hash the \
-                     origin's INDEX.md lists: sudo oath new pkg:qemu --from-json \
-                     '{{\"present\":true,\"hash\":\"sha256-…\"}}' && sudo oath apply pkg:qemu"
+                     pkg:qemu (R32), which no profile installs; add it and pkg:libslirp \
+                     from the origin with their needs (docs/manual/build.md)"
                 );
             }
         }

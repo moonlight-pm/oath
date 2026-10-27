@@ -105,7 +105,7 @@ about = "A build pack no profile installs (bc) comes from the default origin, at
 metal = true
 steps = [
   { run = "h=$(curl -fsS https://store.oath.moonlight.pm/INDEX.md | awk -F'`' '$2 == \"bc\" {print $4}') && test -n \"$h\" && sudo oath new pkg:bc --from-json \"{\\\"present\\\":true,\\\"hash\\\":\\\"$h\\\"}\" && sudo oath apply pkg:bc && bc --version", expect = ["bc 1."] },
-  { run = "sudo grep '\"fetched\"' /oath/log/oath.jsonl | tail -1", expect = ["https://store.oath.moonlight.pm/pkg/bc/sha256-"] },
+  { run = "sudo grep '\"fetched\"' /oath/log/oath.jsonl | grep '\"id\":\"pkg:bc\"' | tail -1", expect = ["https://store.oath.moonlight.pm/pkg/bc/sha256-"] },
 ]
 
 [[case]]

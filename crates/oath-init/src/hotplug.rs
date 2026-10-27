@@ -38,6 +38,7 @@ pub struct Event {
     pub action: String,
     pub subsystem: String,
     pub modalias: String,
+    pub devpath: String,
 }
 
 impl Hotplug {
@@ -108,6 +109,15 @@ impl Hotplug {
         }
         if added(&["input", "hidraw"]) {
             crate::open_pad_nodes();
+        }
+        // A card's `add` can come before its control device exists, and
+        // PipeWire takes a card only once it has one (SOUND_INITIALIZED, set
+        // by libudev-zero): when the control device comes, the kernel
+        // announces the card again, as udev's sound rules have it do.
+        for (ev, _) in &events {
+            if let Some(card) = card_of_control(ev) {
+                let _ = std::fs::write(format!("/sys{card}/uevent"), "change");
+            }
         }
         for (ev, raw) in &events {
             if let Some(sock) = &self.sock {
@@ -224,6 +234,16 @@ pub fn sync(cat: &Catalog, lock: &oath_core::CatalogLock) {
     }
 }
 
+/// The card (`DEVPATH`) of a sound control device just added.
+fn card_of_control(ev: &Event) -> Option<&str> {
+    if ev.subsystem != "sound" || ev.action != "add" {
+        return None;
+    }
+    let (card, name) = ev.devpath.rsplit_once('/')?;
+    let n = name.strip_prefix("controlC")?;
+    (!n.is_empty() && n.bytes().all(|b| b.is_ascii_digit())).then_some(card)
+}
+
 /// `add@/devices/…\0ACTION=add\0SUBSYSTEM=pci\0MODALIAS=…\0…`. Messages
 /// from udev's library (`libudev` first) are not the kernel's.
 pub fn parse(msg: &[u8]) -> Option<Event> {
@@ -239,6 +259,7 @@ pub fn parse(msg: &[u8]) -> Option<Event> {
                 "ACTION" => ev.action = v.to_string(),
                 "SUBSYSTEM" => ev.subsystem = v.to_string(),
                 "MODALIAS" => ev.modalias = v.to_string(),
+                "DEVPATH" => ev.devpath = v.to_string(),
                 _ => {}
             }
         }
@@ -258,5 +279,9 @@ mod tests {
         assert_eq!(ev.subsystem, "pci");
         assert!(ev.modalias.starts_with("pci:v00001AF4"));
         assert!(parse(b"libudev\0\xfe\xed").is_none());
+        let ctl = parse(b"add@/devices/pci0000:00/0000:00:1f.3/sound/card0/controlC0\0ACTION=add\0DEVPATH=/devices/pci0000:00/0000:00:1f.3/sound/card0/controlC0\0SUBSYSTEM=sound\0SEQNUM=9\0").unwrap();
+        assert_eq!(card_of_control(&ctl), Some("/devices/pci0000:00/0000:00:1f.3/sound/card0"));
+        let pcm = Event { devpath: "/devices/x/sound/card0/pcmC0D0p".into(), ..ctl };
+        assert_eq!(card_of_control(&pcm), None);
     }
 }

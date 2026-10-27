@@ -2,7 +2,9 @@
 # /sys and hears hotplug on netlink group 4, where PID 1 rebroadcasts
 # the kernel's uevents. patches/: upstream PR #69 (open), which marks
 # sound cards SOUND_INITIALIZED and enumerates the card itself; without
-# it PipeWire's ALSA monitor sees no card.
+# it PipeWire's ALSA monitor sees no card. 0002 does the same for the
+# devices a monitor makes from uevents, so a card that comes later is
+# taken too.
 tar -xf "$SRC/$SOURCES"
 cd "libudev-zero-$VERSION"
 for p in "$FILES"/patches/*.patch; do

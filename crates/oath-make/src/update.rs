@@ -234,7 +234,8 @@ fn ship_packs(r: &Remote, stage: &Path) -> Result<()> {
 /// tree for it; it is reported, to rebuild on the machine. A package
 /// pinned from elsewhere (`pinned`, R28) keeps the machine's own pin, its
 /// owner's to move, and only its needs follow the output, except a need
-/// on another such pack the machine keeps, which stays at that pin. A
+/// on another such pack the machine keeps, which stays at that pin; so
+/// does a package the output does not carry at all. A
 /// package the output fixes is made when the machine lacks it, since the
 /// image's own files need it; other objects the output's seed has and the
 /// machine does not are reported, not created: the catalog is the owner's.
@@ -326,6 +327,26 @@ fn set_pins(r: &Remote, stage: &Path, pinned: &std::collections::BTreeSet<String
         }
         install::ssh_run(r, &format!("oath set {id} --from-json {}", sh_quote(&set.to_string())))?;
         changed.push(id);
+    }
+    // A package the output does not carry (pkg:dropbear after R36, one the
+    // owner added) keeps its pin the same way, and its needs move with the
+    // output: one left needing an old hash fails the whole apply.
+    for name in have.iter().filter_map(|id| id.strip_prefix("pkg:")) {
+        if pins.iter().any(|(n, _, _)| n == name) {
+            continue;
+        }
+        let id = format!("pkg:{name}");
+        if let Some((set, moved)) = crate::pinned::keep_machine_pin(&desired(&id)?, &ships) {
+            eprintln!(
+                ">> {id} is not in the output and keeps its pin; its needs move with it ({})",
+                moved.join(", ")
+            );
+            install::ssh_run(
+                r,
+                &format!("oath set {id} --from-json {}", sh_quote(&set.to_string())),
+            )?;
+            changed.push(id);
+        }
     }
     if !missing.is_empty() {
         eprintln!(

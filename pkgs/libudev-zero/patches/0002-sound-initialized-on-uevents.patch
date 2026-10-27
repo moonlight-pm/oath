@@ -1,0 +1,18 @@
+From: Oath <oath@local>
+Subject: Mark sound cards SOUND_INITIALIZED in monitor events too
+
+PR 69 sets SOUND_INITIALIZED on devices made from sysfs
+(udev_device_new_from_syspath), which enumeration uses; a monitor builds
+its devices from the uevent (udev_device_new_from_uevent), so PipeWire
+ignored every card that appeared after its monitor started.
+
+--- a/udev_device.c
++++ b/udev_device.c
+@@ -746,6 +746,7 @@
+ 
+     set_properties_from_props(udev_device);
+     set_properties_from_evdev(udev_device);
++    is_sound_initialized(udev_device, syspath);
+     return udev_device;
+ }
+ 

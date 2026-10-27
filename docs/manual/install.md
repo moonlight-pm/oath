@@ -144,7 +144,9 @@ has pending changes, or has an apply on probation. Then it:
    `oath new`). A package the profile pins from elsewhere (R28) keeps
    the machine's own pin, and only its needs move to the output's
    hashes (a need on another such package the machine keeps stays at
-   the machine's pin). Each service whose program moved restarts; when sshd's
+   the machine's pin); so does a package the output does not carry
+   (`pkg:dropbear` after R36, one its owner added). Each service whose
+   program moved restarts; when sshd's
    did, the apply is on probation and a new login keeps it;
 4. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
    and `/bin/sudo`;
