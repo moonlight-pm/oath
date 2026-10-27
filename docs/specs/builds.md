@@ -144,7 +144,9 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   need a gawk with it. Then it builds the other packages once, so the
   lock it leaves is settled: every plan names the products the lock
   holds, and the next run builds nothing. After `bootstrap` every hash
-  changes. It runs in the same user-namespace `oath build`
+  changes, and a run then comes back to the committed lock: on buccina
+  (an Oath host, 2026-10-27) a fresh `bootstrap` and `pkgs` built all
+  163 products as novus had, bit for bit. It runs in the same user-namespace `oath build`
   sandbox against the build catalog at `~/.local/share/oath`; GNU tar there
   does not restore owners (`TAR_OPTIONS=--no-same-owner`). The host's
   compilers are not inputs. How a package is written: `pkgs/README.md`.

@@ -33,12 +33,12 @@ append history (git has it).
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
    in `desk`, a root by btrfs UUID, `install --local`, `pkg:bison` and
-   `pkg:m4`. Self-host on buccina (2026-10-26: 2h24m, the base settled
-   in 4 rounds) matched the commit in 158 of 163 products; the other
-   five recorded the clock, host name, a random key or the kernel, now
-   pinned. Next: self-host again for 163 of 163; Joshua boots novus from
-   the trial stick; from canto, NICs, audio, Bluetooth, sensors, the
-   display, `plan:nvidia`, `svc:gpu-power`; then libglvnd and glvnd Mesa.
+   `pkg:m4`. Self-host on buccina (2026-10-27, `b34d189`: 2h24m, the
+   base settled in 4 rounds) built all 163 products as committed, bit
+   for bit. Next: Joshua boots novus from the trial stick (pre-R36,
+   dropbear; fine for the trial); from canto, NICs, audio, Bluetooth,
+   sensors, the display, `plan:nvidia`, `svc:gpu-power`; then libglvnd
+   and glvnd Mesa.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
@@ -58,7 +58,7 @@ canto (`55c20bf6a86c`, generation 329) keeps dropbear until its next
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `55c20bf6a86c`, the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
-| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host); output `4a9cf96cdf39`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host); output `a14d1acd3c2a`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).
 
