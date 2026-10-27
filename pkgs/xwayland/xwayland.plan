@@ -9,7 +9,7 @@
     },
     {
       "id": "pkg:bzip2",
-      "hash": "sha256-14b4d3dd447515672a1890ee020e2e577bc6604508ed21e6be53aba1cb025955"
+      "hash": "sha256-3e16469f204827a9164fdf7e23e7c001f2174df6bc135f84624d56c1d76bb288"
     },
     {
       "id": "pkg:coreutils",
@@ -21,7 +21,7 @@
     },
     {
       "id": "pkg:elfutils",
-      "hash": "sha256-cd08cb781d5cb34faed8c0f43ad2f8c7832bcd479fc33b4bb13631fd24b9974a"
+      "hash": "sha256-1ea5c6282c4bca5122a78116f13c6fc9985ff0c650f45525001f511eeb30a243"
     },
     {
       "id": "pkg:expat",
@@ -37,11 +37,11 @@
     },
     {
       "id": "pkg:gcc",
-      "hash": "sha256-c94284d586fce427cf17eb5529f9b45141da68fdb0971f40620f6b843c04ed2e"
+      "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
     },
     {
       "id": "pkg:glibc",
-      "hash": "sha256-4d25877618b9c251cf35a3ae6c772356825b5a4324cfd669cd619305014b7592"
+      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
     },
     {
       "id": "pkg:gmp",
@@ -137,11 +137,15 @@
     },
     {
       "id": "pkg:ninja",
-      "hash": "sha256-583e82e21e3510376a1959a10c79ee043102dfad11bc51b9bf7ea4f36b9a74c5"
+      "hash": "sha256-96e5d8c682a37a969fec42b691487a24e56773fd49e84ad79b1f583ecde9819a"
+    },
+    {
+      "id": "pkg:openssl",
+      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
     },
     {
       "id": "pkg:patch",
-      "hash": "sha256-61ab1745f2340a0c91fd938bb763c6a69c0640e66ff951e4c558575e0e7ff4ef"
+      "hash": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899"
     },
     {
       "id": "pkg:pixman",
@@ -153,7 +157,7 @@
     },
     {
       "id": "pkg:python",
-      "hash": "sha256-5336ee7c08ccba6fd538b203c4c7d155f276827686e827a7239fa8fb9845dabc"
+      "hash": "sha256-6de9caef5c674adf4847dd92afa404643b3d17e9964fcfc88593fd1666209d1d"
     },
     {
       "id": "pkg:sed",
@@ -197,7 +201,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-587ab69c17b6e7a290ddc2ac77443f63443e28738ddc045b948021bfe4e15b2c"
+      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
     },
     {
       "id": "pkg:zstd",
@@ -259,7 +263,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-587ab69c17b6e7a290ddc2ac77443f63443e28738ddc045b948021bfe4e15b2c"
+      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
     }
   ]
 }

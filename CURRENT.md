@@ -11,12 +11,13 @@ append history (git has it).
 ## Now
 
 1. **Security sweep (Joshua, 2026-10-27).** Every package checked
-   upstream: Linux 7.3 (R10), glibc's 2.44 branch, two libstdc++ fixes,
-   curl's CA bundle and NSS 3.132 (no eMudhra roots), Python 3.15.2
-   (with ssl), patch 2.8.1, elfutils 0.197, vim 9.2.1250, harfbuzz 15.0.0;
-   BIND 9.20.30 and kernel.org's signed tarball (R37); unreleased fixes as
-   `patches/`. Next: build, check, publish, update buccina; canto and
-   novus later; CEF 156 once the Sola tab publishes; expat 2.10.0 (11-02).
+   upstream: Linux 7.3 (R10), glibc's 2.44 branch, libstdc++ fixes, CA
+   bundle and NSS 3.132 (no eMudhra), Python 3.15.2 (ssl), BIND 9.20.30
+   and kernel.org's signed tarball (R37), patch, elfutils, vim, harfbuzz;
+   unreleased fixes as `patches/`. novus and buccina built all 162
+   products identically; desk 61/61 and base 58/58 QEMU cases pass.
+   Next: publish, update buccina; canto and novus later; CEF 156 (R37);
+   expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,

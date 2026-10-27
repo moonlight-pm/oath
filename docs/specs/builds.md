@@ -147,7 +147,13 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   a time outside the base rounds (which stay one at a time, in order),
   each once every earlier package it builds or runs with is built, so
   each plan names what it would one at a time; the script runs without
-  the catalog lock, taken only to store a product. After `bootstrap` every hash
+  the catalog lock, taken only to store a product (a sandbox forks only
+  outside it: its child, which never execs, would hold an inherited
+  lock until its build ended). On buccina `-j 4` built the 135 packages
+  after the base in 26 min (37 one at a time); four builds share the
+  CPUs, so each is slower, and the base rounds stay the long part. In
+  the security sweep (2026-10-27) novus and buccina, each with `-j 4`,
+  built all 162 products identically. After `bootstrap` every hash
   changes, and a run then comes back to the committed lock: on buccina
   (an Oath host, 2026-10-27) a fresh `bootstrap` and `pkgs` built all
   163 products as novus had, bit for bit. It runs in the same user-namespace `oath build`
