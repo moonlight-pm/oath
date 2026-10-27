@@ -135,9 +135,11 @@
     "version": "4.9",
     "license": "GPL-2.0-only",
     "by": "plan",
-    "plan": "sha256-663cb5438188f78ca62de6e0ef5e23117064fdf36ebe6af4a5f06c18ec3651a4",
-    "product": "sha256-dc8d8505af2b2d236b3026c5f8da1dfb3ee3a0168b492f544ebcccfdc0770a05",
-    "run": []
+    "plan": "sha256-cac2946bef204a143ba8eb21fd94153eec6d166d9bb7bc9b7c3de531166eeeac",
+    "product": "sha256-2b9386c5aeb0ee1c1ecb94912fd39b30ce5fa5e856923933cb919932cf88e699",
+    "run": [
+      "libcap"
+    ]
   },
   "claude-code": {
     "version": "2.1.292",
@@ -210,8 +212,8 @@
     "version": "10.5.2",
     "license": "BSD-2-Clause",
     "by": "plan",
-    "plan": "sha256-5fc0c6bd5b6b303a10476b0af25fce409c69beb97ac32bbe5d04a18e0539bfb2",
-    "product": "sha256-466b2012ad64d614248f5bcae159a7eed166825e8f8a842c54a9586d68867ef1",
+    "plan": "sha256-e734d6290e2806d396d68e5f9dff62e9ff18ce0b69479bddd5bc3b7c3a355076",
+    "product": "sha256-4685243aac085be478ceeb17e0991d8b0a811b2d2c02092a24d4fe93fddc357a",
     "run": []
   },
   "diffutils": {
@@ -229,16 +231,6 @@
     "plan": "sha256-371f73c36dc7c4333e3c363e9f87311149f779d289edc94339ec38911ab10ab0",
     "product": "sha256-9ced812a8451338f5d08de787b5e604b9954aaac2508e44a290b19dba042c555",
     "run": []
-  },
-  "dropbear": {
-    "version": "2026.94",
-    "license": "MIT",
-    "by": "plan",
-    "plan": "sha256-7248d8b361c31546b42f1f6921015d4463eb2e590d8caaa5e293c2550a075888",
-    "product": "sha256-8eaa7ae26c2b7ba953d7206a4e642f55601d42717afcd7835588c9ee2c8aa49e",
-    "run": [
-      "zlib"
-    ]
   },
   "elfutils": {
     "version": "0.196",
@@ -1111,10 +1103,12 @@
     "version": "10.6p1",
     "license": "BSD-2-Clause AND BSD-3-Clause AND ISC AND MIT",
     "by": "plan",
-    "plan": "sha256-18a8778803d9bf41219c530f9fe973b2af559a609e4a9774b0d12c5b6ac1590f",
-    "product": "sha256-4785eb871cea292ea43d1dd77d5d0e0028d4fc381951ae6350d25405a4ef0efc",
+    "plan": "sha256-b750618276b9326aabd127ad0e46af1034946063c0bee1b9b7a3eaeb05877417",
+    "product": "sha256-b4ce36cfb7297e4c7f6f4f0ca2e48af3701610aa136072502446abe8f8bc5a22",
     "run": [
-      "zlib"
+      "zlib",
+      "libxcrypt",
+      "openssl"
     ]
   },
   "openssl": {

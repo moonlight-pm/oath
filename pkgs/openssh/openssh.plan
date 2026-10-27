@@ -48,6 +48,10 @@
       "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
     },
     {
+      "id": "pkg:libxcrypt",
+      "hash": "sha256-25b0443398d100a4a94228a4dae7ad049598eecc20753fb8ae273a3f90625b5d"
+    },
+    {
       "id": "pkg:make",
       "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
     },
@@ -62,6 +66,10 @@
     {
       "id": "pkg:openssh-src",
       "hash": "sha256-e4243d9f4decf34e7efce1a618b1623e5b0c350c27079a05ccf09d7e4eeb719a"
+    },
+    {
+      "id": "pkg:openssl",
+      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
     },
     {
       "id": "pkg:patch",
@@ -85,6 +93,14 @@
     }
   ],
   "run_needs": [
+    {
+      "id": "pkg:libxcrypt",
+      "hash": "sha256-25b0443398d100a4a94228a4dae7ad049598eecc20753fb8ae273a3f90625b5d"
+    },
+    {
+      "id": "pkg:openssl",
+      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
+    },
     {
       "id": "pkg:zlib",
       "hash": "sha256-587ab69c17b6e7a290ddc2ac77443f63443e28738ddc045b948021bfe4e15b2c"
@@ -124,13 +140,22 @@ cat > /out/components.json <<'OATH_EOF'
   }
 ]
 OATH_EOF
+# OpenSSH against pkg:openssl (RSA and ECDSA keys from libcrypto; ed25519,
+# chacha20-poly1305 and ML-KEM its own): sshd (svc:sshd, R36), whose
+# unauthenticated process runs as void,
+# chrooted in /var/empty, and sshd-session and sshd-auth beside it in
+# libexec/; and the client tools, ssh-keygen and sftp-server. No PAM, no
+# utmp, wtmp or lastlog. sshd links crypt(3), which glibc 2.39 dropped,
+# from libxcrypt.
 tar -xf "$SRC/$SOURCES"
 cd openssh-$VERSION
-./configure --prefix=/ --sysconfdir=/etc/ssh --without-openssl \
-	--with-privsep-path=/var/empty --disable-strip --without-pam \
-	--without-selinux --without-kerberos5 --without-ldns \
-	--without-security-key-builtin --with-default-path=/bin \
-	--with-sftp-server=/bin/sftp-server
-make -j"$JOBS" ssh scp sftp sftp-server ssh-keygen
-mkdir -p /out/bin
-cp ssh scp sftp sftp-server ssh-keygen /out/bin/
+./configure --prefix=/ --sysconfdir=/etc/ssh --libexecdir="$LIVE/libexec" \
+	--with-privsep-user=void --with-privsep-path=/var/empty --with-pid-dir=/run \
+	--disable-strip --without-pam --without-selinux --without-kerberos5 --without-ldns \
+	--without-security-key-builtin --with-default-path=/bin --with-superuser-path=/bin \
+	--disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx \
+	--disable-pututline --disable-pututxline
+make -j"$JOBS" sshd sshd-session sshd-auth ssh scp sftp sftp-server ssh-keygen
+mkdir -p /out/bin /out/libexec
+cp sshd ssh scp sftp sftp-server ssh-keygen /out/bin/
+cp sshd-session sshd-auth /out/libexec/

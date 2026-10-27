@@ -28,19 +28,18 @@ Not removable (`present=false` is refused):
 | `pkg:dhcpcd` | the DHCP client of `net:net0` |
 | `pkg:btrfs` | `btrfs`, `mkfs.btrfs` |
 | `pkg:oath` | `oath` |
-| `pkg:dropbear` | the SSH server: `dropbear`, `dropbearkey` |
+| `pkg:openssh` | the SSH server `sshd` (R36), and `ssh`, `scp`, `sftp`, `ssh-keygen`, `sftp-server` |
 | `pkg:zsh` | `zsh`, `home`'s login shell |
 
 Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
 `tar`, `gzip`, `xz`, `bzip2`, `procps` (`ps`, `pidof`, `free`, `top`,
 `kill`), `less`, `vim` (also `vi`), `iputils` (`ping`, `tracepath`,
-`arping`), `chrony` (`svc:time`), `openssh` (client tools: `ssh`, `scp`,
-`sftp`, `ssh-keygen`, `sftp-server`), `dosfstools` (`mkfs.fat`), `curl`
+`arping`), `chrony` (`svc:time`), `dosfstools` (`mkfs.fat`), `curl`
 (Mbed TLS, CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`),
 `bind` (`dig`, `host`, `nslookup`; no `named`), `openssl` (`openssl`;
 its default `ssl/cert.pem` links to curl's bundle), and the libraries they load:
 `ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`, `lzo`, `mbedtls`, `libuv`,
-`liburcu`, `libcap`. A pack's `needs` lists the libraries it loads, so
+`liburcu`, `libcap`, `libxcrypt`. A pack's `needs` lists the libraries it loads, so
 apply refuses removing `pkg:ncurses` while `pkg:less` is present.
 
 Every pack is built from pinned source on the build host: the Oath

@@ -8,7 +8,8 @@
 //!    snapshot `@` as `@boot-<id>` before anything changes: the archived
 //!    boot is the old kernel with the old userspace.
 //! 3. Ship the output's store packs the machine lacks (`.part`, renamed
-//!    into place).
+//!    into place), and write its accounts (`void`, R36) and `/var/empty`:
+//!    the services step 4 restarts drop to `void`.
 //! 4. Set every package the machine has to the output's pin and needs
 //!    (and a recipe's plan, `url` and `file`, R23), make each package the
 //!    output fixes that the machine lacks (`/etc/passwd` names `pkg:zsh`'s
@@ -23,6 +24,12 @@
 //!    kernel, initrd and oath-efi, keep five.
 //! 7. With `--reboot`: reboot through PID 1, wait for a new boot, and
 //!    require the output's PID 1 and an in-sync catalog.
+//! 8. A machine from before R36 runs dropbear as `svc:sshd`. Once it has
+//!    booted a PID 1 that wrote `/etc/ssh/sshd_config` and carried
+//!    dropbear's host key over (the same key, so known_hosts holds),
+//!    `svc:sshd` moves to the output's OpenSSH (at the start of an update,
+//!    or after step 7), on probation: a new login keeps it, and if none
+//!    gets in, PID 1 undoes it and dropbear returns.
 //!
 //! `--qemu <output>` rehearses it: `install --qemu` of that older output,
 //! boot it through OVMF, update it to the new one, reboot, check.
@@ -54,6 +61,8 @@ pub struct Opts {
     pub esp: Option<String>,
 }
 
+/// The accounts, written before the apply (step 3) as well as in step 5.
+const ACCOUNT_FILES: &[&str] = &["etc/passwd", "etc/group", "etc/shadow"];
 /// The image's files outside `/oath` that an update replaces. The rest of
 /// the root tree is the catalog's (`/bin` links, `/etc/hosts`) or the
 /// machine's own.
@@ -95,6 +104,7 @@ pub fn run_update(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     update(&r, &o, opts.esp.as_deref(), false)?;
     if opts.reboot {
         reboot_and_verify(&r, &o, None)?;
+        move_sshd(&r, &o.file("stage"))?;
     } else {
         eprintln!("updated; reboot to run the new kernel, initrd and PID 1");
     }
@@ -108,6 +118,7 @@ fn update(r: &Remote, o: &Output, esp: Option<&str>, qemu: bool) -> Result<()> {
     crate::pinned::warn_stale(&manifest);
     let pinned = crate::pinned::in_manifest(&manifest);
     preflight(r)?;
+    move_sshd(r, &stage)?;
     let root_dev = cmdline_val(&install::ssh_out(r, "cat /proc/cmdline")?, "oath.root")
         .context("the running kernel has no oath.root= (not booted from an Oath ESP)")?;
     let esp = match esp {
@@ -149,8 +160,12 @@ fn update(r: &Remote, o: &Output, esp: Option<&str>, qemu: bool) -> Result<()> {
         )?;
 
         ship_packs(r, &stage)?;
+        // home's login shell first (R27): every machine has had it since.
+        if install::ssh_out(r, "test -x /bin/zsh && echo zsh; true")?.trim() == "zsh" {
+            put_root_files(r, &stage, ACCOUNT_FILES)?;
+        }
         set_pins(r, &stage, &pinned)?;
-        replace_root_files(r, &stage)?;
+        put_root_files(r, &stage, ROOT_FILES)?;
         write_esp(r, o, &plan, &root_dev, &extra, qemu)?;
         Ok(())
     })();
@@ -377,13 +392,13 @@ fn set_plans(r: &Remote, stage: &Path, have: &[&str]) -> Result<()> {
 /// 5. `/lib/oath`, the static `/etc` files, `/sbin/init`, `/bin/sudo`:
 /// each written beside itself and renamed over, so a running program
 /// keeps its old file and nothing is ever half there.
-fn replace_root_files(r: &Remote, stage: &Path) -> Result<()> {
-    eprintln!(">> /lib/oath and the image's /etc files");
+fn put_root_files(r: &Remote, stage: &Path, files: &[&str]) -> Result<()> {
+    eprintln!(">> {}", files.join(" "));
     let mut tar = Command::new("tar")
         .arg("-C")
         .arg(stage)
         .args(["--owner=0", "--group=0", "--numeric-owner", "-cf", "-"])
-        .args(ROOT_FILES)
+        .args(files)
         .stdout(Stdio::piped())
         .spawn()
         .context("tar")?;
@@ -396,7 +411,9 @@ fn replace_root_files(r: &Remote, stage: &Path) -> Result<()> {
          \tcp -a \"$f\" \"$t.oath-new\"\n\
          \tmv -f \"$t.oath-new\" \"$t\"\n\
          done\n\
-         chown 0:0 /lib/oath/sudo\nchmod 4755 /lib/oath/sudo\n"
+         if test -e /lib/oath/sudo; then chown 0:0 /lib/oath/sudo; chmod 4755 /lib/oath/sudo; fi\n\
+         mkdir -p {void}\nchown 0:0 {void}\nchmod 755 {void}\n",
+        void = oath_core::seat::VOID_HOME,
     );
     let mut ssh = install::ssh_base(r);
     let run = format!("sh -c {}", sh_quote(&script));
@@ -407,6 +424,51 @@ fn replace_root_files(r: &Remote, stage: &Path) -> Result<()> {
     if !st.success() || !tst.success() {
         bail!("replacing the root files failed (ssh {st}, tar {tst})");
     }
+    Ok(())
+}
+
+/// Step 8: `svc:sshd` from dropbear to the output's OpenSSH, once the
+/// machine's PID 1 has made sshd's config and host key.
+fn move_sshd(r: &Remote, stage: &Path) -> Result<()> {
+    let cur: Value =
+        serde_json::from_str(&install::ssh_out(r, "oath --json get svc:sshd --desired")?)
+            .context("svc:sshd")?;
+    if cur.pointer("/exec/0").and_then(Value::as_str) != Some("/bin/dropbear") {
+        return Ok(());
+    }
+    let ready = install::ssh_out(
+        r,
+        &format!(
+            "test -x /bin/sshd && test -s {} && test -s {} && echo ready; true",
+            oath_core::SSHD_CONFIG,
+            oath_core::SSH_HOST_KEY
+        ),
+    )?;
+    if ready.trim() != "ready" {
+        eprintln!("svc:sshd runs dropbear until the machine boots this output (update --reboot)");
+        return Ok(());
+    }
+    let want: Value = oath_core::read_json(&stage.join("oath/objects/svc/sshd/desired.json"))
+        .map_err(|e| anyhow::anyhow!("the output's svc:sshd: {e}"))?;
+    let set = serde_json::json!({ "exec": want["exec"] });
+    eprintln!(">> svc:sshd: dropbear to OpenSSH");
+    install::ssh_run(r, &format!("oath set svc:sshd --from-json {}", sh_quote(&set.to_string())))?;
+    eprintln!("{}", install::ssh_out(r, "oath apply --confirm svc:sshd")?);
+    // A new login, to the new sshd, keeps it.
+    let deadline = Instant::now() + Duration::from_secs(60);
+    let kept = loop {
+        match install::ssh_out(r, "oath keep") {
+            Ok(out) => break out,
+            Err(e) if Instant::now() > deadline => {
+                return Err(e.context(
+                    "OpenSSH's sshd took no login: PID 1 undoes the move when its probation \
+                     ends, and dropbear serves again",
+                ));
+            }
+            Err(_) => thread::sleep(Duration::from_secs(3)),
+        }
+    };
+    eprintln!("{kept}");
     Ok(())
 }
 
@@ -713,6 +775,7 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
     let r = Remote { sudo: true, ..r };
     update(&r, o, None, true)?;
     reboot_and_verify(&r, o, Some(&mut vm))?;
+    move_sshd(&r, &o.file("stage"))?;
     let entries = install::ssh_out(&r, &format!(
         "mkdir -p {ESP_MNT} && sudo -n mount -t vfat /dev/vda1 {ESP_MNT} && cat {ESP_MNT}/loader/oath-boots; sudo -n umount {ESP_MNT}; true"
     ))?;

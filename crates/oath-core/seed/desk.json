@@ -465,11 +465,6 @@
       "description": "libXcomposite, shared: the Composite extension (CEF).",
       "home": "https://www.x.org/"
     },
-    "pkg:libxcrypt": {
-      "present": true,
-      "description": "libxcrypt, shared: libcrypt.so.1, glibc's crypt(3) ABI (Steam).",
-      "home": "https://github.com/besser82/libxcrypt"
-    },
     "pkg:libxcrypt-i386": {
       "present": true,
       "description": "libcrypt.so.1 for i386 programs (lib32/): glibc's crypt(3) ABI (Steam).",

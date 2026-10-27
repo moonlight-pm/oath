@@ -65,7 +65,7 @@ pub use seed::{
     apply_overlay, merge_patch, seed, seed_profile, write_schemas, Profile, DEFAULT_PROFILE,
     PROFILES,
 };
-pub use ssh::{converge as converge_ssh, HOST_KEY as SSH_HOST_KEY};
+pub use ssh::{converge as converge_ssh, DROPBEAR_HOST_KEY, HOST_KEY as SSH_HOST_KEY, SSHD_CONFIG};
 pub use svc_order::{
     start_order as svc_start_order, start_order_lenient as svc_start_order_lenient,
     stop_layers as svc_stop_layers, stuck_reasons as svc_stuck_reasons,

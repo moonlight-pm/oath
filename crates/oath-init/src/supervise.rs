@@ -670,7 +670,7 @@ fn spawn(id: &str, spec: &Svc) -> Result<(i32, fs::File), String> {
     cmd.args(&spec.exec[1..]);
     let xdg = plan.xdg_runtime_dir.clone();
     let _ = fs::create_dir_all(&xdg);
-    if plan.cred.user == oath_core::SvcUser::Home {
+    if plan.cred.user != oath_core::SvcUser::Root {
         let _ = std::os::unix::fs::chown(&xdg, Some(plan.cred.uid), Some(plan.cred.gid));
         let _ = fs::set_permissions(&xdg, std::os::unix::fs::PermissionsExt::from_mode(0o700));
     }

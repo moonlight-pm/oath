@@ -71,7 +71,7 @@ Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
 `oath new` makes a `svc` or `pkg`; `oath rm` removes one. Both, like
 `set`, only change the spec: nothing happens until `oath apply`, and
 `oath undo` takes back the last apply. Changes that can cut off SSH
-(sshd, `ssh:local` keys, `net:net0`, a new `pkg:dropbear` hash) need
+(sshd, `ssh:local` keys, `net:net0`, a new `pkg:openssh` hash) need
 `--confirm`. A service restarts when an apply moves the package its
 program comes from.
 "#,

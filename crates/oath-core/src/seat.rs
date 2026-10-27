@@ -1,4 +1,5 @@
 //! Single seat: Unix name `home`, HOME=/home. Root is privilege, not login.
+//! `void` (R36) is the unprivileged account daemons drop to.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -17,21 +18,32 @@ pub const HELPERS: &str = "/lib/oath";
 /// fixes. Root's stays `/bin/sh`.
 pub const SHELL: &str = "/bin/zsh";
 
+/// The unprivileged account (R36): uid and gid 65534, the kernel's
+/// overflow id. It owns no files and cannot log in (no key, no listed
+/// shell); sshd, dhcpcd and chronyd drop to it, and a service may run as it.
+pub const VOID: &str = "void";
+pub const VOID_ID: u32 = 65534;
+/// Its home: empty, root's, and the chroot sshd and dhcpcd use.
+pub const VOID_HOME: &str = "/var/empty";
+
 pub fn passwd_file() -> String {
-    format!("root:x:0:0:root:/root:/bin/sh\n{NAME}:x:{UID}:{GID}:{NAME}:{HOME}:{SHELL}\n")
+    format!(
+        "root:x:0:0:root:/root:/bin/sh\n{NAME}:x:{UID}:{GID}:{NAME}:{HOME}:{SHELL}\n\
+         {VOID}:x:{VOID_ID}:{VOID_ID}:{VOID}:{VOID_HOME}:/bin/false\n"
+    )
 }
 
-/// Dropbear (and getusershell) reject logins whose pw_shell is not listed here.
+/// The login shells (getusershell); `void`'s `/bin/false` is not one.
 pub fn shells_file() -> String {
     format!("/bin/sh\n/bin/bash\n{SHELL}\n")
 }
 
 pub fn group_file() -> String {
-    format!("root:x:0:\n{NAME}:x:{GID}:\n")
+    format!("root:x:0:\n{NAME}:x:{GID}:\n{VOID}:x:{VOID_ID}:\n")
 }
 
 pub fn shadow_file() -> String {
-    format!("root:*:1:0:99999:7:::\n{NAME}:*:1:0:99999:7:::\n")
+    format!("root:*:1:0:99999:7:::\n{NAME}:*:1:0:99999:7:::\n{VOID}:*:1:0:99999:7:::\n")
 }
 
 pub fn write_side_effects(desired: &Host) -> Result<()> {
@@ -39,10 +51,20 @@ pub fn write_side_effects(desired: &Host) -> Result<()> {
     fs::write("/etc/hostname", format!("{}\n", desired.hostname))?;
     fs::write("/etc/hosts", hosts_file(desired))?;
     write_profile(&login_env(desired))?;
+    let _ = fs::create_dir_all("/etc/ssh");
+    write_etc(crate::ssh::SSHD_CONFIG, &crate::ssh::sshd_config(&login_env(desired)))?;
     write_etc("/etc/zprofile", ZPROFILE)?;
     write_etc("/etc/zshrc", &zshrc(&desired.hostname))?;
     fs::write("/etc/shells", shells_file())?;
     Ok(())
+}
+
+/// `void`'s home: empty and root's (mode 0755), as sshd requires of its
+/// privilege-separation chroot.
+pub fn ensure_void_home() -> std::io::Result<()> {
+    fs::create_dir_all(VOID_HOME)?;
+    std::os::unix::fs::chown(VOID_HOME, Some(0), Some(0))?;
+    fs::set_permissions(VOID_HOME, fs::Permissions::from_mode(0o755))
 }
 
 /// A login zsh reads `host:local` env as a login bash does.
@@ -79,9 +101,8 @@ pub fn zshrc(hostname: &str) -> String {
 /// saturation and lightness of the blue the prompt was drawn in (#3B9DC2
 /// for user@host, #2A7A9E for the branch). Each machine keeps its own.
 pub fn prompt_colors(hostname: &str) -> (String, String) {
-    let hash = hostname
-        .bytes()
-        .fold(0x811c_9dc5u32, |h, b| (h ^ u32::from(b)).wrapping_mul(0x0100_0193));
+    let hash =
+        hostname.bytes().fold(0x811c_9dc5u32, |h, b| (h ^ u32::from(b)).wrapping_mul(0x0100_0193));
     let hue = f64::from(hash % 360);
     (hsl_hex(hue, 0.53, 0.50), hsl_hex(hue, 0.58, 0.39))
 }
@@ -193,6 +214,14 @@ mod tests {
         assert!(!g.contains("wheel"));
         assert!(!g.contains("video"));
         assert!(!g.contains("seat:"));
+    }
+
+    #[test]
+    fn void_is_65534_with_no_login() {
+        assert!(passwd_file().contains("void:x:65534:65534:void:/var/empty:/bin/false"));
+        assert!(group_file().contains("void:x:65534:"));
+        assert!(shadow_file().contains("void:*:"));
+        assert!(!shells_file().contains("/bin/false"));
     }
 
     #[test]

@@ -52,6 +52,10 @@
       "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
     },
     {
+      "id": "pkg:libcap",
+      "hash": "sha256-d2ee87194174ccf3902e5f105e08b6155ee2f7d5930da918c7db8bf4ad03ad53"
+    },
+    {
       "id": "pkg:make",
       "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
     },
@@ -80,7 +84,12 @@
       "hash": "sha256-449080873772868f09eacc3db3243ca5f4376920782f3c1c1199d0302646b33b"
     }
   ],
-  "run_needs": []
+  "run_needs": [
+    {
+      "id": "pkg:libcap",
+      "hash": "sha256-d2ee87194174ccf3902e5f105e08b6155ee2f7d5930da918c7db8bf4ad03ad53"
+    }
+  ]
 }
 ---
 #!/bin/sh
@@ -117,11 +126,13 @@ cat > /out/components.json <<'OATH_EOF'
 OATH_EOF
 # chrony: chronyd keeps the clock (svc:time, R12, R18). It takes its
 # directives on the command line; it has no command socket (no chronyc).
+# After start-up it drops to void (R36), keeping only the capability to
+# set the clock (libcap).
 tar -xf "$SRC/$SOURCES"
 cd "chrony-$VERSION"
 ./configure --prefix="$LIVE" --sbindir="$LIVE/bin" --sysconfdir=/etc --localstatedir=/var \
-	--with-pidfile=/run/chronyd.pid --disable-cmdmon --disable-nts --disable-privdrop \
-	--disable-scfilter --disable-readline --without-editline --without-libcap \
+	--with-pidfile=/run/chronyd.pid --with-user=void --disable-cmdmon --disable-nts \
+	--disable-scfilter --disable-readline --without-editline \
 	--without-seccomp --without-nettle --without-nss --without-tomcrypt --without-gnutls
 make -j"$JOBS"
 mkdir -p /out/bin

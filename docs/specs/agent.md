@@ -58,8 +58,9 @@ claude mcp add canto -- ssh -T -o BatchMode=yes home@10.0.0.3 oath mcp
   halfway is worse than a late answer.
 - `oath mcp --read-only` lists only the read tools and never runs
   `sudo`; there `verify` runs unprivileged and only reports. `--root` works as for every verb (tests, the harness).
-- dropbear runs the command through `home`'s login shell (`zsh -c`,
-  R27); `-T` keeps a terminal out of the byte stream.
+- sshd runs the command through `home`'s login shell (`zsh -c`,
+  R27), with `host:local` env from its `SetEnv`; `-T` keeps a terminal
+  out of the byte stream.
 
 ## Protocol versions (built)
 
@@ -213,7 +214,7 @@ not instructions.
   An apply that went on probation gets a line saying so and that
   this connection cannot keep it.
 - `oath --json` writes only its answer to stdout: the commands an
-  apply starts (the btrfs snapshot, `dropbearkey`, `ip`, `wget`,
+  apply starts (the btrfs snapshot, `ssh-keygen`, `ip`, `wget`,
   `tar`) write theirs to stderr. Before 2026-10-17 the snapshot's
   "Create readonly snapshot" line came first on stdout.
 - There is no `structuredContent` in step 1: legacy clients need an
@@ -232,7 +233,7 @@ not instructions.
   confirm-class apply is refused and logged `refused`, as on the CLI.
 - **Probation.** `keep` runs `oath keep` under the server, so the
   new-session check walks the server's own ancestors: `oath mcp`, the
-  shell and dropbear's connection. A connection opened before the
+  shell and sshd's per-connection processes (`sshd-session`). A connection opened before the
   apply cannot keep it. The client starts a new `ssh … oath mcp`, or
   the owner runs `ssh home@<host> sudo oath keep`. A model that holds
   one connection cannot keep its own lockout-class change, and the

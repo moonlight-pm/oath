@@ -132,7 +132,7 @@ fn seed_lists_host() {
         "pkg:chrony",
         "pkg:btrfs",
         "pkg:oath",
-        "pkg:dropbear",
+        "pkg:libxcrypt",
         "pkg:openssh",
         "pkg:util-linux",
         "pkg:dosfstools",
@@ -180,8 +180,10 @@ fn seed_lists_host() {
     assert_eq!(screen.desired["user"], "home");
     let sshd = cat.get(&"svc:sshd".parse().unwrap()).unwrap();
     let exec = sshd.desired["exec"].as_array().unwrap();
-    assert!(exec.iter().any(|v| v == "-w"));
+    // OpenSSH (R36); sshd_config, not the argv, refuses root.
+    assert_eq!(exec[0], "/bin/sshd");
     assert!(!exec.iter().any(|v| v.as_str().unwrap_or("").contains("/root/.ssh")));
+    assert!(cat.get(&"pkg:openssh".parse().unwrap()).unwrap().meta.fixed, "sshd");
     let oath = cat.get(&"pkg:oath".parse().unwrap()).unwrap();
     assert!(oath.meta.fixed);
     assert!(cat.get(&"pkg:zsh".parse().unwrap()).unwrap().meta.fixed, "the login shell");

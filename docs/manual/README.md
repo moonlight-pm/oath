@@ -14,7 +14,7 @@ The optional `desk` profile adds one ([desk spec](../specs/desk.md)).
 | [Catalog](catalog.md) | Objects, kinds, seed profiles, overlays, devices |
 | [Services](services.md) | PID 1 and `svc:*` |
 | [Packages](packages.md) | Store, `/bin` links, plans, the host store cache |
-| [Network and SSH](network.md) | `net:net0`, `ssh:local`, dropbear |
+| [Network and SSH](network.md) | `net:net0`, `ssh:local`, sshd |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N`, boot menu |
 | [Build and QEMU](build.md) | Kernel, image, profiles, running it |
 | [Install](install.md) | `cargo make install` to a named disk; USB stick |

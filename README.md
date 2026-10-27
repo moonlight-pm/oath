@@ -42,7 +42,7 @@ What is true today:
   ours, in Rust, statically linked against glibc.
 - The kernel is vanilla kernel.org source, pinned by sha256, and every
   other package in the image (glibc, bash and the GNU userland,
-  util-linux, iproute2, dhcpcd, chrony, btrfs-progs, dropbear, OpenSSH,
+  util-linux, iproute2, dhcpcd, chrony, btrfs-progs, OpenSSH,
   curl, vim, kexec-tools, firmware) is built from pinned source in
   `pkgs/` by our own GCC on glibc, and rebuilds bit-identically.
   Programs load their libraries through a `/lib` link farm. That GCC

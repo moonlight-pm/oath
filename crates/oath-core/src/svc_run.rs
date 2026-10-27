@@ -47,16 +47,19 @@ pub struct SvcSpawn {
 /// Effective account for `spec`: the `user` field, or `root` when absent.
 pub fn svc_spawn(_id: &str, spec: &Svc) -> SvcSpawn {
     let user = spec.user.unwrap_or(SvcUser::Root);
-    let as_home = user == SvcUser::Home;
     SvcSpawn {
         cred: SvcCred {
             user,
             uid: user.uid(),
             gid: user.gid(),
-            bind_low_ports: as_home && spec.bind_low_ports,
+            bind_low_ports: user != SvcUser::Root && spec.bind_low_ports,
         },
-        home: if as_home { seat::HOME } else { "/root" },
-        user_name: if as_home { seat::NAME } else { "root" },
+        home: match user {
+            SvcUser::Root => "/root",
+            SvcUser::Home => seat::HOME,
+            SvcUser::Void => seat::VOID_HOME,
+        },
+        user_name: user.as_str(),
         shell: "/bin/sh",
         xdg_runtime_dir: format!("/run/user/{}", user.uid()),
     }
@@ -76,7 +79,7 @@ pub fn svc_env_pairs(spec: &Svc) -> Vec<(String, String)> {
 
 /// Drop to the service account. Root returns immediately.
 ///
-/// A home process gets `CAP_NET_BIND_SERVICE` only when `bind_low_ports`
+/// A home or void process gets `CAP_NET_BIND_SERVICE` only when `bind_low_ports`
 /// is set. The kernel clears the ambient set on the uid change even if
 /// permitted is kept, so the ambient bit is raised after `setuid`. Exec
 /// of an ordinary binary then keeps the capability.
@@ -209,6 +212,18 @@ mod tests {
     }
 
     #[test]
+    fn user_void_is_65534_at_var_empty() {
+        let mut spec = bare(&["/bin/app"]);
+        spec.user = Some(SvcUser::Void);
+        let spawn = svc_spawn("svc:app", &spec);
+        assert_eq!((spawn.cred.uid, spawn.cred.gid), (65534, 65534));
+        assert_eq!(spawn.home, "/var/empty");
+        assert_eq!(spawn.user_name, "void");
+        spec.bind_low_ports = true;
+        assert!(svc_spawn("svc:app", &spec).cred.bind_low_ports);
+    }
+
+    #[test]
     fn absent_user_is_root_and_explicit_user_wins() {
         let spec = bare(&["/bin/app"]);
         assert_eq!(svc_spawn("svc:app", &spec).cred.uid, 0);
@@ -269,6 +284,8 @@ mod tests {
         }
         assert_child(SvcUser::Home, false);
         assert_child(SvcUser::Home, true);
+        assert_child(SvcUser::Void, false);
+        assert_child(SvcUser::Void, true);
         assert_child(SvcUser::Root, false);
         assert_child(SvcUser::Root, true);
     }
@@ -312,8 +329,8 @@ mod tests {
         let amb = parse_hex(got.get("amb").map(String::as_str).unwrap_or(""));
         let bind_bit = 1u128 << CAP_NET_BIND_SERVICE;
         let setuid_bit = 1u128 << CAP_SETUID;
-        if user == SvcUser::Home {
-            assert_eq!(prm & setuid_bit, 0, "home kept CAP_SETUID\n{text}");
+        if user != SvcUser::Root {
+            assert_eq!(prm & setuid_bit, 0, "{user:?} kept CAP_SETUID\n{text}");
             if bind_flag {
                 assert_ne!(prm & bind_bit, 0, "{text}");
                 assert_ne!(eff & bind_bit, 0, "{text}");

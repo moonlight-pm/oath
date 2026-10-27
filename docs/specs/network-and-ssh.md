@@ -34,7 +34,11 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   IPv4 only (`-4`), keep the address when they stop (`-p`), take no
   link-local address (`-L`), identify by the hardware address
   (`-I ''`) and run `/lib/oath/dhcpcd.hook` in place of dhcpcd's own
-  hooks (`-c`). Its log is
+  hooks (`-c`). dhcpcd separates privileges (R36): the processes that
+  read the network run as `void`, chrooted in `/var/empty`, and its root
+  process configures the address and runs the hook. Its seccomp filter
+  is built off, since a syscall missing from its list would kill those
+  processes and cut a headless machine off. Its log is
   `/oath/log/net/net0.log` (`oath logs net:net0`). Apply notifies PID 1
   after every `net` converge; a spec that wants no client (static, or
   down) is handed to PID 1 first, so the client is stopped before the
@@ -67,41 +71,57 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   600. At boot PID 1 applies the keys last applied (`applied.json`),
   not pending desired.
 - `oath undo` never restores `/oath/ssh/`: host keys do not roll back.
-- The host key is generated on first converge at
-  `/oath/ssh/host_ed25519` with `dropbearkey`. No image ships a private
-  key.
-- `svc:sshd` runs dropbear in the foreground with `-s` (no passwords)
-  and `-w` (no root login), with `keep_children`: restarting sshd
-  signals only the listener, so open login sessions survive (and `oath
-  apply` waits for PID 1 to have restarted it). `pkg:dropbear` is
-  fixed (not removable) and carries only `dropbear` and `dropbearkey`.
-  Its patch (`session-env.patch`) makes sessions keep sshd's
-  environment, which PID 1 sets from `host:local` env and `TZ`, less
-  `XDG_RUNTIME_DIR` (root's); dropbear then sets `USER`, `HOME`,
-  `SHELL` and `PATH`. So `ssh host 'command'`, which reads no
-  `/etc/profile`, has `SSL_CERT_FILE`, `TZ` and `LANG`.
-- The OpenSSH client tools are `pkg:openssh` (OpenSSH 10.6p1, built
-  without OpenSSL; present and removable): `ssh`, `scp`, `sftp`,
-  `ssh-keygen` and `sftp-server`. Dropbear is built to run
-  `/bin/sftp-server` for SFTP.
+- The host key is `/oath/ssh/ssh_host_ed25519_key` (and `.pub`),
+  made on first converge with `ssh-keygen`, or by the installer, which
+  pins it. No image ships a private key. A machine from before R36 has
+  dropbear's key at `/oath/ssh/host_ed25519`: converge writes the same
+  key in OpenSSH's format once, so the pins in known_hosts still hold.
+- `svc:sshd` is OpenSSH's sshd (R36), `/bin/sshd -D -e`, with
+  `keep_children`: restarting sshd signals only the listener, so open
+  login sessions survive (and `oath apply` waits for PID 1 to have
+  restarted it). `pkg:openssh` (OpenSSH 10.6p1, with `pkg:openssl` for
+  RSA and ECDSA keys: owners' keys are often RSA) is fixed (not removable): `sshd`, with `sshd-session`
+  and `sshd-auth` in its `libexec/`, `ssh`, `scp`, `sftp`, `ssh-keygen`
+  and `sftp-server`; it links `crypt(3)` from `pkg:libxcrypt`. Its
+  unauthenticated process runs as `void`, chrooted in `/var/empty`.
+- `/etc/ssh/sshd_config` is written with `/etc/profile` (one writer,
+  from `host:local`): the host key, keys only (no passwords, no
+  keyboard-interactive), `PermitRootLogin no`, no pid file, SFTP by
+  `/bin/sftp-server`, and one `SetEnv` line with `host:local` env and
+  `TZ`. So `ssh host 'command'`, which reads no `/etc/profile`, has
+  `SSL_CERT_FILE`, `TZ` and `LANG`; sshd sets `USER`, `HOME`, `SHELL`
+  and `PATH` itself. sshd reads the file when it starts, so a changed
+  env reaches SSH commands after sshd restarts (a login shell reads
+  `/etc/profile` each time).
+- `cargo make update` moves a machine from dropbear: once it has booted
+  a PID 1 that wrote the config and converted the key, `svc:sshd` is
+  set to OpenSSH's sshd and applied on probation; a new login keeps
+  it. `pkg:dropbear` stays on such a machine, unused, until its owner
+  removes it.
 - The installer writes the build host's public keys into `ssh:local`
   through the install overlay (boot-and-install.md).
 
 ## Time (built)
 
 - `svc:time` in the `base` seed runs `/bin/chronyd -d 'server
-  0.pool.ntp.org iburst' … 'makestep 1 3'` as root (R12, R18): its
+  0.pool.ntp.org iburst' … 'makestep 1 3'` (R12, R18): its
   directives are arguments, there is no config file, and it is built
-  without a command socket (no `chronyc`) or NTS. It steps an offset
+  without a command socket (no `chronyc`) or NTS. It starts as root and
+  drops to `void` (R36, built `--with-user=void`), keeping only
+  `CAP_SYS_TIME` and `CAP_NET_BIND_SERVICE` through libcap. It steps an offset
   over one second in its first three updates and slews after that; its
   own log lines are the service log.
 - The RTC is not written; every boot steps the clock again.
 
 ## Accounts (built)
 
-- `root` (uid 0, shell `/bin/sh`) and `home` (uid 1, gid 1,
-  `HOME=/home`, shell `/bin/zsh`, R27). There are no others and no
-  user kind. `/etc/passwd`, `/etc/group`, `/etc/shadow` and
+- `root` (uid 0, shell `/bin/sh`), `home` (uid 1, gid 1,
+  `HOME=/home`, shell `/bin/zsh`, R27) and `void` (R36: uid and gid
+  65534, home `/var/empty`, shell `/bin/false`, which `/etc/shells`
+  does not list). There are no others and no user kind. `void` owns no
+  files and has no keys; sshd, dhcpcd and chronyd drop to it, and a
+  service may run as it. PID 1 makes `/var/empty` (root's, 0755) at
+  boot. `/etc/passwd`, `/etc/group`, `/etc/shadow` and
   `/etc/shells` are written at pack time; `/etc/hostname`,
   `/etc/hosts`, `/etc/profile`, `/etc/zprofile` and `/etc/zshrc` are
   side effects of converging `host:local` (and of PID 1 reading it at
@@ -127,7 +147,7 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   `HOME=/root`), keeping only `TERM` and `TZ`.
 - The serial console logs in as root; the screen (`svc:screen`, tty1)
   as `home`, so `/dev/tty1` is home's (PID 1 sets it 0600 after every
-  discovery pass). The installer ramdisk accepts
+  discovery pass). The installer ramdisk's sshd accepts
   root over SSH with the baked host keys; the installed system does not.
 
 ## Known defects (from the 2026-10-13 review)

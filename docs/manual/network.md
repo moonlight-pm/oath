@@ -36,7 +36,8 @@ host `127.0.0.1:2222` to guest port 22 (`OATH_SSH_PORT`).
 With `ipv4: dhcp`, converge takes the first lease with a one-shot
 `dhcpcd -1`, and PID 1 keeps `dhcpcd -B … net0` running so the lease
 renews (IPv4 only, no config file; Oath's hook
-`/lib/oath/dhcpcd.hook` writes `/etc/resolv.conf`). `ps` shows it as
+`/lib/oath/dhcpcd.hook` writes `/etc/resolv.conf`; the processes that
+read the network run as `void`, chrooted in `/var/empty`). `ps` shows it as
 `dhcpcd: net0 [ip4]`; `sudo dhcpcd -4 -n net0` makes it rebind now. That client is PID 1's, not a `svc` object; it restarts with
 backoff like a service, and its log is `oath logs net:net0`. Applying a
 static address stops it before the address changes; applying `dhcp`
@@ -73,7 +74,8 @@ server, `dig +trace <name>` walks down from the root.
 ## Time
 
 `svc:time` is `chronyd -d` against `0`–`3.pool.ntp.org` (decisions
-R12, R18), configured on its command line, with no config file. In its
+R12, R18), configured on its command line, with no config file; after
+start-up it runs as `void`, keeping only the right to set the clock. In its
 first three updates it steps a clock that is off by more than a second
 (`makestep 1 3`), then slews. Its log is chrony's own:
 
@@ -123,11 +125,16 @@ Where the first keys come from:
   guest, and PID 1 adds them to `ssh:local` (desired and applied) at
   boot. `cargo make check` passes its own throwaway key the same way.
 
-`svc:sshd` is dropbear (`pkg:dropbear`, not removable: `dropbear` and
-`dropbearkey` only). The OpenSSH client tools are `pkg:openssh`
-(removable, built without OpenSSL): `/bin/ssh`, `/bin/scp`,
-`/bin/sftp`, `/bin/ssh-keygen`, and `/bin/sftp-server`, which dropbear
-runs for SFTP (removing `pkg:openssh` turns SFTP off). Guest `/etc/ssh/ssh_config` is
+`svc:sshd` is OpenSSH's sshd (`pkg:openssh`, not removable, with
+OpenSSL: RSA, ECDSA and ed25519 keys log in), which also gives `/bin/ssh`, `/bin/scp`,
+`/bin/sftp`, `/bin/ssh-keygen` and `/bin/sftp-server`. Logins are
+`home`'s, by key; passwords and root are refused. Before a login, sshd
+reads the network as `void`, chrooted in `/var/empty`. oath writes
+`/etc/ssh/sshd_config` from `host:local` with `/etc/profile`, so a
+command over SSH (`ssh host 'cmd'`, no login shell) gets `host:local`
+env and `TZ` too, as of sshd's last start. The host key is
+`/oath/ssh/ssh_host_ed25519_key`; a machine that ran dropbear keeps its
+key. Guest `/etc/ssh/ssh_config` is
 `StrictHostKeyChecking accept-new`. `scp` and `sftp` as `home` work:
 
 ```

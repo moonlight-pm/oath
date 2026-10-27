@@ -12,8 +12,8 @@ The `base` profile:
 |----|------|---------|-------|
 | `svc:serial` | `/lib/oath/serial-login` | enabled, `restart=always` | Root shell on the serial console (`ttyS0` / `hvc0`). With no UART it idles and logs `no serial console`. Do not disable it unless you have another way in. |
 | `svc:screen` | `/lib/oath/screen-login`, `user: home` | enabled, `restart=always` | Login shell as `home` on the screen and keyboard (tty1); `sudo` for root. The screen shows it once the display driver loads, just before services start. A desk turns it off. |
-| `svc:sshd` | `/bin/dropbear -F -E -s -w -r /oath/ssh/host_ed25519 -p 22` | enabled, `restart=always`, `keep_children` | Keys in `ssh:local`. Passwords off (`-s`), root login off (`-w`). Restarting it keeps open sessions. |
-| `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | enabled, `restart=always` | Keeps the clock (see [Network](network.md)). |
+| `svc:sshd` | `/bin/sshd -D -e` (OpenSSH) | enabled, `restart=always`, `keep_children` | Keys in `ssh:local`; `/etc/ssh/sshd_config` comes from `host:local`. Passwords and root login off. Restarting it keeps open sessions. |
+| `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | enabled, `restart=always` | Keeps the clock (see [Network](network.md)); runs as `void` after start-up. |
 
 Add a service on the box with `oath new` and `oath apply` (below), or
 at install time with an overlay (see [Catalog](catalog.md)).
@@ -114,8 +114,11 @@ undoes the change after 180 s.
 
 ## Account, environment, low ports
 
-Oath has two Unix accounts: `root` and `home` (uid 1, gid 1). `user`
-is `root` or `home`; absent means `root`.
+Oath has three Unix accounts: `root`, `home` (uid 1, gid 1) and
+`void` (uid and gid 65534, home `/var/empty`), the unprivileged one
+that owns nothing and cannot log in. `user` is `root`, `home` or
+`void`; absent means `root`. A service that needs no files of its own
+and no privilege runs as `void`.
 
 Every service gets `PATH=/bin`, `HOME`, `USER`, `LOGNAME`,
 `SHELL=/bin/sh` and `XDG_RUNTIME_DIR` for its account (the `desk`
@@ -125,7 +128,7 @@ login shell), then
 already sets `TZ`), then its own `env`. The service's `env` wins on
 the same name.
 
-`bind_low_ports` lets a `home` service bind ports below 1024
+`bind_low_ports` lets a `home` or `void` service bind ports below 1024
 (`CAP_NET_BIND_SERVICE`). Root can bind them either way. On a
 service an overlay added (here `svc:web`):
 
@@ -142,7 +145,7 @@ from: PID 1 follows `exec[0]` through `/bin` into the store
 it restarts the service. Actual `pkg` names it (`{"id": "pkg:sola",
 "hash": "sha256-…"}`). A service whose program is in another package
 keeps running; one that was `failed` tries again with the new program.
-Moving `pkg:dropbear` restarts `svc:sshd`, so it needs `--confirm` and
+Moving `pkg:openssh` restarts `svc:sshd`, so it needs `--confirm` and
 goes on probation.
 
 ## Reboot and power off

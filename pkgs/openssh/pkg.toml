@@ -1,9 +1,9 @@
 version = "10.6p1"
 license = "BSD-2-Clause AND BSD-3-Clause AND ISC AND MIT"
-description = "OpenSSH client tools: ssh, scp, sftp, ssh-keygen, and sftp-server for dropbear. Built without OpenSSL (ed25519)."
+description = "OpenSSH: sshd (svc:sshd, R36), ssh, scp, sftp, ssh-keygen and sftp-server, with OpenSSL (RSA, ECDSA and ed25519 keys)."
 home = "https://www.openssh.com/portable.html"
-build = ["zlib"]
-run = ["zlib"]
+build = ["zlib", "libxcrypt", "openssl"]
+run = ["zlib", "libxcrypt", "openssl"]
 
 [[source]]
 url = "https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p1.tar.gz"

@@ -116,7 +116,7 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
 - **Sources** (`cargo make pkgs` and `bootstrap`, on the build host):
   every source is pinned by sha256 and, where its upstream signs, by an
   OpenPGP signature checked on every fetch against one key per upstream
-  in `pkgs/keys/<key>.asc` (57 keys). The key is the trust pin: a
+  in `pkgs/keys/<key>.asc` (65 keys). The key is the trust pin: a
   release signed by another key fails until a person adds that key.
   kernel.org signs the uncompressed tar (`decompress = "xz"`). Python
   signs only with Sigstore: its bundle is checked against Sigstore's
@@ -174,8 +174,8 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
 - **The base on machines** (plan products): glibc, bash, coreutils,
   sed, grep, gawk (with GMP and MPFR), findutils, diffutils, tar, gzip,
   xz, bzip2, procps-ng, less, Vim (ncurses), iproute2, iputils, dhcpcd,
-  chrony, util-linux, btrfs-progs (zlib, zstd, LZO), dropbear, OpenSSH's
-  client tools (no OpenSSL), mbedTLS, curl (pinned CA bundle),
+  chrony (libcap), util-linux, btrfs-progs (zlib, zstd, LZO), OpenSSH
+  (sshd and the client tools; OpenSSL, libxcrypt), mbedTLS, curl (pinned CA bundle),
   BIND 9.20's dig, host and nslookup (no named, DoH or IDN) with
   OpenSSL 4.0, libuv, liburcu and libcap, dosfstools, kexec-tools and linux-firmware blobs pinned one by one.
   Libraries are shared; a package names what it loads under `run`.

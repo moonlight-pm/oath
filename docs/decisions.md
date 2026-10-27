@@ -52,6 +52,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R33 | `/dev/kvm` belongs to `home`, as `/dev/uinput` does (R30): PID 1 makes it root:home 0660, so the build host's QEMU harness runs as `home` with KVM. The kernel has `kvm-intel` and `kvm-amd`. | Decided by Joshua 2026-10-24 |
 | R34 | novus's RTX 3090 Ti runs NVIDIA's driver as it does on NixOS: the closed kernel module built against `pkg:linux`, and its userspace through libglvnd, as a recipe, at 595.104.02 (Joshua, 2026-10-24: 580.142, what NixOS runs, does not build against 7.3-rc1, which has no `linux/of_gpio.h`; 595.104.02, NVIDIA's newest, builds all five modules); the first module built outside the kernel's tree, an exception to "driver patches first" for a card Oath does not swap. A card's workarounds are one machine's settings, not defaults: novus's overlay turns GSP firmware off (`NVreg_EnableGpuFirmware=0`) and caps power and clocks (`nvidia-smi -pm 1 -pl 250 -lgc 210,1500`); another machine with the driver gets none of them (Joshua, 2026-10-24). | Decided by Joshua 2026-10-24 |
 | R35 | A recipe may build with any pack, not only the base profile's (Joshua, 2026-10-25, for NVIDIA's module, which needs `pkg:gcc`, `pkg:make` and `pkg:linux-build`): its plan pins every build pack by hash, as before, and a machine fetches the ones it lacks from `host:local.origins` (R25) before `oath build`. The base profile is unchanged. Amends R23. | Decided by Joshua 2026-10-25 |
+| R36 | A third account, `void`: uid and gid 65534 (the kernel's overflow id), home `/var/empty` (empty, root's), shell `/bin/false`; it owns no files and cannot log in. It is the unprivileged account for generic use: daemons drop to it (sshd's unauthenticated process, dhcpcd's network processes, chronyd after start-up) and a service may run as it (`svc` `user: "void"`). OpenSSH's sshd replaces dropbear, by R18's rule of one tool for each job (OpenSSH already gave the client tools and `sftp-server`); it needs such an account, and dropbear read the network as root. It links `pkg:openssl`, so RSA keys (the build host's) still log in. Machines keep their host key (dropbear's, converted). Why: sshd, dhcpcd and chronyd read untrusted packets, and ran as root. Joshua chose the name, four letters like `root` and `home`, over `nobody`, `nemo`, `none` and `away`. Amends the Principal entry below. | Decided by Joshua 2026-10-26 |
 
 ## Standing
 
@@ -71,8 +72,9 @@ acting on anything under **Open**. Replaces `open-questions.md`
   Undo is the snapshot. qcow snapshots are host debugging only.
 - **Principal.** Serial console is root (break-glass). SSH, the screen
   (tty1, when no desk owns it; R15) and daily use are Unix user `home`
-  (uid 1, `HOME=/home`). The agent is not a third user. Root SSH is
-  off (`dropbear -w`).
+  (uid 1, `HOME=/home`). The agent is not another user. Root SSH is
+  off (`PermitRootLogin no`). `void` (uid 65534, R36) is the one
+  unprivileged account; nobody logs in as it.
 - **Packages.** Store `/oath/store/pkg/<name>/<hash>/`, hash is
   SHA-256 of `oath-tree-v1`; `/bin` is a symlink farm; `desired.hash`
   pins and apply verifies. Base packages are not removable. `needs`

@@ -1,6 +1,6 @@
 version = "2.78"
 license = "BSD-3-Clause OR GPL-2.0-only"
-description = "libcap, shared: BIND's POSIX capabilities."
+description = "libcap, shared: POSIX capabilities for BIND, bubblewrap and chronyd."
 home = "https://sites.google.com/site/fullycapable/"
 build = []
 

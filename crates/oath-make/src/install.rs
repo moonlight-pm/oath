@@ -226,7 +226,7 @@ options console=ttyS0,115200 console=tty0 nomodeset net.ifnames=0 random.trust_c
     result?;
     eprintln!(
         "USB installer ready on {}. Plug into canto, hold Option, boot EFI.\n\
-         tty0 should get a shell; DHCP + dropbear on the live NIC.\n\
+         tty0 should get a shell; DHCP + sshd on the live NIC.\n\
          Then: cargo make install --target root@canto --disk /dev/sda --confirm --hostname canto",
         opts.disk
     );
@@ -588,7 +588,7 @@ fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
     )?;
 
     write_catalog_overlay(opts, &hostname, r)?;
-    let host_key = make_host_key(r)?;
+    let host_key = make_host_key(r, stage)?;
 
     ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/loader/entries")?;
     ssh_run(
@@ -617,22 +617,32 @@ fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
     Ok(host_key)
 }
 
-/// The installer's dropbearkey writes the key PID 1 would otherwise make
-/// at first boot (`oath_core::SSH_HOST_KEY`).
-fn make_host_key(r: &Remote) -> Result<String> {
-    let key = format!("/mnt{}", oath_core::SSH_HOST_KEY);
+/// The installer's ssh-keygen writes the key PID 1 would otherwise make
+/// at first boot (`oath_core::SSH_HOST_KEY`). An output from before R36
+/// (its `svc:sshd` is dropbear; `update --qemu` installs one) gets
+/// dropbear's key, made by its own ramdisk's dropbearkey.
+fn make_host_key(r: &Remote, stage: &Path) -> Result<String> {
+    let sshd: serde_json::Value =
+        oath_core::read_json(&stage.join("oath/objects/svc/sshd/desired.json"))
+            .map_err(|e| anyhow::anyhow!("the output's svc:sshd: {e}"))?;
+    let dropbear = sshd.pointer("/exec/0").and_then(|v| v.as_str()) == Some("/bin/dropbear");
+    let key = if dropbear {
+        format!("/mnt{}", oath_core::DROPBEAR_HOST_KEY)
+    } else {
+        format!("/mnt{}", oath_core::SSH_HOST_KEY)
+    };
     let dir = key.rsplit_once('/').map(|(d, _)| d).unwrap_or("/mnt/oath/ssh");
-    let out = ssh_out(
-        r,
-        &format!(
-            "mkdir -p {dir} && rm -f {key} && dropbearkey -t ed25519 -f {key} >/dev/null 2>&1 && dropbearkey -y -f {key}"
-        ),
-    )?;
+    let make = if dropbear {
+        format!("dropbearkey -t ed25519 -f {key} >/dev/null 2>&1 && dropbearkey -y -f {key}")
+    } else {
+        format!("ssh-keygen -q -t ed25519 -N '' -C '' -f {key} && cat {key}.pub")
+    };
+    let out = ssh_out(r, &format!("mkdir -p {dir} && rm -f {key} {key}.pub && {make}"))?;
     let line = out
         .lines()
         .find(|l| l.starts_with("ssh-ed25519 "))
-        .context("dropbearkey printed no public key")?;
-    // known_hosts wants `type blob`; drop dropbear's `root@host` comment.
+        .context("the installer printed no public host key")?;
+    // known_hosts wants `type blob` (dropbearkey adds a comment).
     let mut words = line.split_whitespace();
     Ok(format!("{} {}", words.next().unwrap_or(""), words.next().unwrap_or("")))
 }

@@ -409,7 +409,7 @@ metal = true
 steps = [
   { run = "echo x > /dev/null && head -c 16 /dev/urandom > /dev/null && stat -c '%a %n' /dev/null /dev/zero /dev/urandom /dev/ptmx", expect = ["666 /dev/null", "666 /dev/urandom"] },
   { run = "curl --version; ssh -V; btrfs --version; sfdisk --version; lsblk --version; dig -v 2>&1; openssl version", expect = ["mbedTLS", "OpenSSH_", "btrfs-progs v", "util-linux", "DiG 9.20.29", "OpenSSL 4.0.3"] },
-  { run = "for b in bash zsh ls curl dropbear ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping dig host nslookup openssl; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
+  { run = "for b in bash zsh ls curl sshd ssh btrfs sfdisk mkfs.fat ip dhcpcd chronyd vim ping dig host nslookup openssl; do ldd $(readlink -f /bin/$b) | grep -q 'not found' && echo MISSING $b; ldd $(readlink -f /bin/$b) | grep -q '/lib/ld-linux-x86-64.so.2' || echo NO_LOADER $b; done; echo checked", expect = ["checked"], reject = ["MISSING", "NO_LOADER"] },
   { run = "ldd /lib/oath/init; ldd $(readlink -f /bin/oath); test ! -e /lib64 && echo NO_LIB64", expect = ["statically linked", "NO_LIB64"], reject = ["=>"] },
   { run = "bash --version; zsh --version; ls --version; vim --version | head -1; chronyd --version; dhcpcd --version; ip -V; ping -V", expect = ["GNU bash", "zsh 5.9.2", "GNU coreutils", "VIM - Vi IMproved", "chronyd (chrony)", "dhcpcd 10", "iproute2", "iputils"] },
   { run = "ssh-keygen -q -t ed25519 -N '' -f /tmp/k && test -s /tmp/k.pub && test -x /bin/sftp-server && echo KEYGEN_OK", expect = ["KEYGEN_OK"] },
@@ -474,12 +474,37 @@ steps = [
 ]
 
 [[case]]
-name = "sshd-follows-dropbear-on-probation"
+name = "sshd-follows-openssh-on-probation"
 about = "Moving the package sshd runs from restarts sshd, so it needs --confirm and goes on probation, like any change that can cut off SSH; a new login keeps it."
 steps = [
-  { run = "mkdir -p /tmp/db && cp -a /oath/store/pkg/dropbear/live/. /tmp/db/ && echo check >/tmp/db/oath-check && sudo oath store pkg:dropbear /tmp/db | cut -d' ' -f2 >/tmp/db.hash && sudo oath set pkg:dropbear hash=$(cat /tmp/db.hash) && sudo oath apply pkg:dropbear", fails = true, expect = ["pkg:dropbear needs --confirm"] },
-  { run = "pgrep -o dropbear >/tmp/sshd.pid; sudo oath apply --confirm pkg:dropbear; echo SURVIVED", expect = ["on probation", "SURVIVED"] },
-  { run = "sudo oath keep && oath logs -n 400 | grep 'svc:sshd: /bin/dropbear is now pkg:dropbear' && test \"$(pgrep -o dropbear)\" != \"$(cat /tmp/sshd.pid)\" && oath get svc:sshd --actual", expect = ["kept generation", "running", "\"id\": \"pkg:dropbear\""] },
+  { run = "mkdir -p /tmp/os && cp -a /oath/store/pkg/openssh/live/. /tmp/os/ && echo check >/tmp/os/oath-check && sudo oath store pkg:openssh /tmp/os | cut -d' ' -f2 >/tmp/os.hash && sudo oath set pkg:openssh hash=$(cat /tmp/os.hash) && sudo oath apply pkg:openssh", fails = true, expect = ["pkg:openssh needs --confirm"] },
+  { run = "pgrep -o -x sshd >/tmp/sshd.pid; sudo oath apply --confirm pkg:openssh; echo SURVIVED", expect = ["on probation", "SURVIVED"] },
+  { run = "sudo oath keep && oath logs -n 400 | grep 'svc:sshd: /bin/sshd is now pkg:openssh' && test \"$(pgrep -o -x sshd)\" != \"$(cat /tmp/sshd.pid)\" && oath get svc:sshd --actual", expect = ["kept generation", "running", "\"id\": \"pkg:openssh\""] },
+]
+
+[[case]]
+name = "void-runs-what-reads-the-network"
+about = "void (R36) is uid 65534 with an empty, root-owned home and no login; chronyd runs as void, dhcpcd's network processes do, and sshd is OpenSSH's, with root logins off."
+metal = true
+steps = [
+  { run = "grep -x 'void:x:65534:65534:void:/var/empty:/bin/false' /etc/passwd && stat -c 'owner=%U mode=%a' /var/empty && echo \"entries=$(ls -A /var/empty | wc -l)\" && ! grep -q /bin/false /etc/shells && echo NO_LOGIN", expect = ["void:x:65534", "owner=root mode=755", "entries=0", "NO_LOGIN"] },
+  { run = "echo \"chronyd=$(ps -o user= -C chronyd)\"; echo \"dhcpcd=$(ps -o user= -C dhcpcd | sort -u | tr '\\n' ' ')\"", expect = ["chronyd=void", "dhcpcd=root void"] },
+  { run = "readlink -f /bin/sshd; sudo sshd -T | grep -iE '^(permitrootlogin|passwordauthentication|hostkey) '", expect = ["/oath/store/pkg/openssh/", "PermitRootLogin no", "PasswordAuthentication no", "HostKey /oath/ssh/ssh_host_ed25519_key"] },
+]
+
+[[case]]
+name = "sshd-takes-rsa-keys"
+about = "sshd is built with OpenSSL: an RSA key logs in (owners' keys are often RSA), as an ed25519 one does."
+steps = [
+  { run = "ssh-keygen -q -t rsa -b 3072 -N '' -C '' -f /tmp/rsa && cp /tmp/rsa.pub /tmp/rsa-ak && sudo /bin/sshd -f /dev/null -p 2200 -h /oath/ssh/ssh_host_ed25519_key -o AuthorizedKeysFile=/tmp/rsa-ak -o StrictModes=no -o PidFile=/tmp/sshd-rsa.pid && sleep 1 && ssh -p 2200 -i /tmp/rsa -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null home@127.0.0.1 echo RSA_OK; sudo kill $(cat /tmp/sshd-rsa.pid)", expect = ["RSA_OK"] },
+]
+
+[[case]]
+name = "ssh-commands-get-host-env"
+about = "A command over SSH (no login shell) has host:local env from sshd's SetEnv, as a login shell has it from /etc/profile."
+profile = "desk"
+steps = [
+  { run = "echo \"SSL=$SSL_CERT_FILE\"; echo \"LANG=$LANG\"; grep -c '^SetEnv ' /etc/ssh/sshd_config", expect = ["SSL=/oath/store/pkg/curl/live/ssl/cert.pem", "LANG=en_US.UTF-8", "1"] },
 ]
 
 # ---- Phase 6: metal -------------------------------------------------

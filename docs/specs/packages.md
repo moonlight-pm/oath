@@ -71,7 +71,7 @@ descriptive fields.
   error, never a silent upgrade.
 - **Removable.** The seed profile lists fixed packages (`glibc`,
   `bash`, `coreutils`, `util-linux`, `iproute2`, `dhcpcd`, `btrfs`,
-  `oath`, `dropbear`, `zsh`), recorded as `fixed` in their
+  `oath`, `openssh`, `zsh`), recorded as `fixed` in their
   `meta.json`; `present=false` or `oath rm` on one of them is refused.
   A package the running `oath`'s `base` profile fixes counts as fixed
   without the mark (a machine updated to an image that added it made
@@ -166,8 +166,8 @@ and binutils (`pkg:gcc`, with gmp, mpfr and mpc); the GNU userland
 (R18: bash, coreutils, sed, grep, gawk, findutils, diffutils, patch,
 tar, gzip, xz, bzip2, make, procps-ng, less, vim with ncurses);
 util-linux, iproute2, iputils, dhcpcd, chrony, btrfs-progs
-(`pkg:btrfs`), dropbear, OpenSSH (client, scp, sftp, ssh-keygen,
-sftp-server; no OpenSSL), dosfstools, curl (with the CA bundle at
+(`pkg:btrfs`), OpenSSH (sshd, R36, with libxcrypt for `crypt(3)`;
+client, scp, sftp, ssh-keygen, sftp-server; with OpenSSL), dosfstools, curl (with the CA bundle at
 `/oath/store/pkg/curl/live/ssl/cert.pem`), BIND 9's dig, host and
 nslookup (`pkg:bind`, 2026-10-19), OpenSSL (its `ssl/cert.pem` links
 to curl's bundle) and the libraries they load

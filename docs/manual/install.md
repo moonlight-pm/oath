@@ -26,7 +26,7 @@ files are written with `dd`, so the user's login shell does not matter.
    anything is wiped, and refuses a `--target` that is the machine it
    runs on (the same `boot_id`).
 2. Boots an **installer ramdisk** on the target (`oath.install=1`,
-   dropbear, the build host's keys for root). On EFI machines this is
+   OpenSSH's sshd, the build host's keys for root). On EFI machines this is
    a one-shot loader entry; kexec is the fallback (Oath's own static
    `kexec`, copied to the target, so the live OS needs none).
 3. Partitions GPT with the ramdisk's native tools (`wipefs`, `sfdisk`):
@@ -132,7 +132,9 @@ It takes the newest output `cargo make check` passed (`--output <id>`,
 has pending changes, or has an apply on probation. Then it:
 
 1. snapshots `@` as `@boot-<id>` before changing anything;
-2. ships the output's store packs the machine lacks;
+2. ships the output's store packs the machine lacks, and writes the
+   output's accounts (`/etc/passwd`, `group`, `shadow`) and `/var/empty`,
+   since services that restart next drop to `void` (R36);
 3. sets each package the machine has to the output's pin and needs,
    makes each package the output fixes that the machine lacks (the
    image's files need it: `/etc/passwd` names `pkg:zsh`'s shell), and
@@ -151,7 +153,13 @@ has pending changes, or has an apply on probation. Then it:
    `oath-efi`, keeping five archives (`--esp`, default partition 1 of
    the root disk);
 6. with `--reboot`, reboots through PID 1 and requires the output's
-   PID 1 and an in-sync catalog.
+   PID 1 and an in-sync catalog;
+7. on a machine that still runs dropbear as `svc:sshd` and has booted a
+   PID 1 that wrote `/etc/ssh/sshd_config` and its host key in OpenSSH's
+   format (the same key), sets `svc:sshd` to OpenSSH's sshd and applies
+   it on probation; a new login keeps it, and if none gets in, PID 1
+   undoes it and dropbear serves again. Without `--reboot` this waits
+   for the next update after a reboot.
 
 If the new boot fails, pick the archived boot in the firmware menu: it
 is the old kernel with the old userspace.

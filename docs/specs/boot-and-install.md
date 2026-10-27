@@ -38,9 +38,9 @@ of T24, and D3 (seed as data).
   of a fresh catalog and their first desired documents. `extends`
   layers profiles. `fixed` lists packages that can never be removed.
 - `base` is a headless machine reached over SSH: host, net (DHCP), ssh,
-  serial, screen, sshd, time, and 33 packages: glibc, the GNU userland
+  serial, screen, sshd, time, and 39 packages: glibc, the GNU userland
   (R18), util-linux, iproute2, iputils, dhcpcd, chrony, btrfs, oath,
-  dropbear, openssh, dosfstools, curl, vim and the libraries they load. It carries no test fixtures: the image
+  openssh (sshd, R36), dosfstools, curl, vim and the libraries they load. It carries no test fixtures: the image
   the harness checks is the image `install` ships.
 - `desk` extends `base` with the graphical session (R20): `svc:seatd`,
   `svc:rivulet`, and rivulet's 35 packages (Mesa, wlroots, Xwayland,
@@ -113,7 +113,8 @@ not matter (canto's September image logged `home` into Thoxa).
    the target has one, otherwise kexec (the native `pkg:kexec` binary,
    copied to the target). The installer is the same
    kernel with `oath.install`; PID 1 brings up a NIC with DHCP, starts
-   dropbear for root, and waits.
+   OpenSSH's sshd for root (a host key made that boot, its unauthenticated
+   process as `void`), and waits.
 4. Over SSH, with the installer's native tools: `wipefs` and `sfdisk`
    write a GPT with a 512 MiB ESP and a btrfs partition; `mkfs.fat` and
    `mkfs.btrfs` format them; `@` gets the staged root through GNU
@@ -121,7 +122,7 @@ not matter (canto's September image logged `home` into Thoxa).
 5. Write the catalog overlay (hostname, the build host's keys for
    `home`, then the user's overlay) with
    `oath --root /mnt/oath seed --overlay`. Make the new system's host
-   key with the installer's `dropbearkey` and pin it in
+   key with the installer's `ssh-keygen` and pin it in
    `build/known_hosts`.
 6. Write the ESP and BLS, unmount, reboot, and wait for
    `home@<host>` to answer with an INDEX, accepting only the pinned

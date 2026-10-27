@@ -116,12 +116,14 @@ impl HostPower {
     }
 }
 
-/// Unix account a service runs as. Oath has these two and no others.
+/// Unix account a service runs as. Oath has these three and no others:
+/// `void` (R36) is the unprivileged one, for a service that needs nothing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum SvcUser {
     Root,
     Home,
+    Void,
 }
 
 impl SvcUser {
@@ -129,6 +131,7 @@ impl SvcUser {
         match self {
             Self::Root => "root",
             Self::Home => "home",
+            Self::Void => crate::seat::VOID,
         }
     }
 
@@ -136,6 +139,7 @@ impl SvcUser {
         match self {
             Self::Root => 0,
             Self::Home => crate::seat::UID,
+            Self::Void => crate::seat::VOID_ID,
         }
     }
 
@@ -143,6 +147,7 @@ impl SvcUser {
         match self {
             Self::Root => 0,
             Self::Home => crate::seat::GID,
+            Self::Void => crate::seat::VOID_ID,
         }
     }
 }

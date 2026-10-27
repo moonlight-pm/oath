@@ -21,10 +21,13 @@ use crate::util::{chmod_exec, copy_file, copy_tree, run, run_out, sudo};
 pub(crate) const INITRD_TOOLS: &[(&str, &str)] = &[("bash", "bash")];
 
 /// What the installer ramdisk runs, over SSH and on its console: pack and
-/// file under its `bin/`. Each comes with the libraries it loads.
+/// file under its `bin/` (or a path in the pack: sshd's helpers are in
+/// `libexec/`). Each comes with the libraries it loads.
 pub(crate) const INSTALLER_TOOLS: &[(&str, &str)] = &[
-    ("dropbear", "dropbear"),
-    ("dropbear", "dropbearkey"),
+    ("openssh", "sshd"),
+    ("openssh", "libexec/sshd-session"),
+    ("openssh", "libexec/sshd-auth"),
+    ("openssh", "ssh-keygen"),
     ("btrfs", "btrfs"),
     ("btrfs", "mkfs.btrfs"),
     ("util-linux", "sfdisk"),
@@ -66,10 +69,16 @@ impl<'a> Ramdisk<'a> {
         Self { root, tools, done: BTreeSet::new(), packs: BTreeSet::new() }
     }
 
-    /// `bin/<file>` of `pack`, as `bin/<file>`.
+    /// `bin/<file>` of `pack` (or the pack's `<dir>/<file>`), as `bin/<file>`.
     pub fn program(&mut self, pack: &str, file: &str) -> Result<()> {
-        let src = self.tools.bin(pack, file)?;
-        let dest = self.root.join("bin").join(file);
+        let (src, name) = match file.rsplit_once('/') {
+            Some((_, name)) => (self.tools.pack(pack)?.join(file), name),
+            None => (self.tools.bin(pack, file)?, file),
+        };
+        if !src.is_file() {
+            bail!("pkg:{pack} has no {file}");
+        }
+        let dest = self.root.join("bin").join(name);
         fs::create_dir_all(dest.parent().context("bin")?)?;
         let _ = fs::remove_file(&dest);
         copy_file(&src, &dest)?;
@@ -261,6 +270,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     )?;
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("var/lib/dhcpcd"))?;
+    // void's home (R36): empty, the chroot of sshd's and dhcpcd's
+    // unprivileged processes.
+    fs::create_dir_all(stage.join(&oath_core::seat::VOID_HOME[1..]))?;
+    fs::set_permissions(
+        stage.join(&oath_core::seat::VOID_HOME[1..]),
+        fs::Permissions::from_mode(0o755),
+    )?;
     fs::create_dir_all(stage.join("root/.ssh"))?;
     fs::create_dir_all(stage.join("home/.ssh"))?;
     run(Command::new(oath.join("bin/oath")).args([

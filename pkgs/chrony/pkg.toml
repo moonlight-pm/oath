@@ -3,7 +3,8 @@ license = "GPL-2.0-only"
 description = "chrony: chronyd keeps the clock from pool.ntp.org (svc:time)."
 home = "https://chrony-project.org/"
 purl = "pkg:generic/chrony@4.9"
-build = []
+build = ["libcap"]
+run = ["libcap"]
 
 [[source]]
 url = "https://chrony-project.org/releases/chrony-4.9.tar.gz"

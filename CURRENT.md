@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-10-26 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R34 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R36 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -48,10 +48,10 @@ append history (git has it).
 
 **State:** phases 1–5 and 7 are done; 6 (buccina, reinstalled
 2026-10-26: [hosts/buccina.md](hosts/buccina.md)) and 8 are active
-([docs/roadmap.md](docs/roadmap.md)). canto runs `55c20bf6a86c`
-(generation 329, booted 2026-10-25 22:19Z with KVM; published: 159
-packs). Left until needed: root SSH as a field, more NICs, device-node
-rules as fields.
+([docs/roadmap.md](docs/roadmap.md)). R36 (2026-10-26): account `void`;
+OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`;
+canto (`55c20bf6a86c`, generation 329) keeps dropbear until its next
+`update --reboot`. Left until needed: root SSH, more NICs, node rules.
 
 ## Machines
 

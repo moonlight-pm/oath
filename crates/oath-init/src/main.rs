@@ -169,6 +169,9 @@ fn real_main() -> Result<(), String> {
     // A USB disk can take a few seconds more: hotplug mounts it then.
     mount_host(true);
     ensure_home();
+    if let Err(e) = oath_core::seat::ensure_void_home() {
+        log(&format!("{}: {e}", oath_core::seat::VOID_HOME));
+    }
     inject_ssh_from_host();
     apply_ssh();
     // Packages, plans and the generation: observed from the store and /bin.
@@ -545,9 +548,16 @@ fn install_ramdisk() -> Result<(), String> {
     let _ = fs::create_dir_all("/var/run");
     let _ = fs::create_dir_all("/oath/log");
     let _ = fs::create_dir_all("/run/oath-install");
-    if !Path::new("/etc/passwd").exists() {
-        let _ = fs::write("/etc/passwd", "root:x:0:0:root:/root:/bin/sh\n");
+    // Root logs in; sshd's unauthenticated process runs as void (R36).
+    {
+        use oath_core::seat::{VOID, VOID_HOME, VOID_ID};
+        let _ = fs::write(
+            "/etc/passwd",
+            format!("root:x:0:0:root:/root:/bin/sh\n{VOID}:x:{VOID_ID}:{VOID_ID}:{VOID}:{VOID_HOME}:/bin/false\n"),
+        );
+        let _ = fs::write("/etc/group", format!("root:x:0:\n{VOID}:x:{VOID_ID}:\n"));
     }
+    let _ = oath_core::seat::ensure_void_home();
     let _ = fs::set_permissions("/root/.ssh", fs::Permissions::from_mode(0o700));
     start_install_tty0();
     bring_up_install_net();
@@ -556,9 +566,9 @@ fn install_ramdisk() -> Result<(), String> {
         dump_kexec_debug();
         bring_up_install_net();
     }
-    start_install_dropbear();
+    start_install_sshd();
     let _ = fs::write("/run/oath-install/ready", "1\n");
-    log("install ramdisk ready (dropbear)");
+    log("install ramdisk ready (sshd)");
     tel("init", "install", json!({ "ready": true }));
     loop {
         std::thread::sleep(Duration::from_secs(1));
@@ -790,14 +800,27 @@ fn dump_kexec_debug() {
     }
 }
 
-fn start_install_dropbear() {
-    let _ = Command::new("/bin/dropbearkey")
-        .args(["-t", "ed25519", "-f", "/run/oath-install/host_ed25519"])
+/// OpenSSH's sshd for the installer: root by key, a key made this boot,
+/// no config file, its helpers beside it in `/bin`. It detaches.
+fn start_install_sshd() {
+    let key = "/run/oath-install/ssh_host_ed25519_key";
+    let _ = Command::new("/bin/ssh-keygen")
+        .args(["-q", "-t", "ed25519", "-N", "", "-C", "", "-f", key])
         .status();
-    let st = Command::new("/bin/dropbear")
-        .args(["-E", "-s", "-D", "/root/.ssh", "-r", "/run/oath-install/host_ed25519", "-p", "22"])
-        .status();
-    log(&format!("dropbear -> {st:?}"));
+    let mut args = vec!["-f", "/dev/null", "-h", key, "-E", "/oath/log/sshd.log"];
+    for o in [
+        "PermitRootLogin=prohibit-password",
+        "AuthorizedKeysFile=/root/.ssh/authorized_keys",
+        "PasswordAuthentication=no",
+        "KbdInteractiveAuthentication=no",
+        "PidFile=none",
+        "SshdSessionPath=/bin/sshd-session",
+        "SshdAuthPath=/bin/sshd-auth",
+    ] {
+        args.extend(["-o", o]);
+    }
+    let st = Command::new("/bin/sshd").args(&args).status();
+    log(&format!("sshd -> {st:?}"));
 }
 
 fn mount_root(dev: &str, subvol: &str) -> Result<(), String> {

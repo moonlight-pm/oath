@@ -20,7 +20,7 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 
 ```json
 {
-  "exec": ["/bin/dropbear", "-F", "-E", "-s", "-w", "-r", "/oath/ssh/host_ed25519", "-p", "22"],
+  "exec": ["/bin/sshd", "-D", "-e"],
   "wants": [],
   "restart": "always",
   "enabled": true
@@ -33,12 +33,13 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
   `refused`).
 - `restart` — `never`, `always` or `on-failure`.
 - `enabled` — when false, the process is not running.
-- `user` — `root` (the default when absent) or `home`. Oath has these
-  two accounts and no others.
+- `user` — `root` (the default when absent), `home`, or `void` (R36:
+  uid 65534, home `/var/empty`, for a service that needs nothing). Oath
+  has these three accounts and no others.
 - `env` — extra environment for this process. It wins over
   `host:local.env`.
-- `bind_low_ports` — a `home` process keeps `CAP_NET_BIND_SERVICE`.
-  Ignored for root.
+- `bind_low_ports` — a `home` or `void` process keeps
+  `CAP_NET_BIND_SERVICE`. Ignored for root.
 - `keep_children` — stop and restart signal only the main process; its
   children keep running. Default false: the whole process tree stops.
   `svc:sshd` sets it so login sessions survive an sshd restart.
@@ -57,7 +58,7 @@ resolves to another realization is stopped and started again, and a
 `failed` one tries again. Nothing else restarts: a service whose
 libraries moved keeps running until it restarts, and PID 1's own DHCP
 client does not follow `pkg:dhcpcd`. Because `svc:sshd` follows
-`pkg:dropbear`, moving that package's `hash` needs `--confirm` and goes
+`pkg:openssh`, moving that package's `hash` needs `--confirm` and goes
 on probation, as any change that can cut off SSH does.
 
 `applied.json` is the spec PID 1 runs: `oath apply` writes it after the

@@ -73,10 +73,12 @@ btrfs
             no /lib64. oath/, modules/ and firmware/ are not links. A pack's
             lib32/ (i386, R29) is never linked: no /lib32 or ld-linux.so.2
 /home       the `home` account (uid 1); SSH logs in here
+/var/empty  `void`'s home (uid 65534, R36): empty, root's; sshd's and dhcpcd's chroot
 /run/user/1/oath-steam/<key>/  Steam's sandbox tree (pkg:steam's bin/steam, R29):
             a merged /usr of the root's links, every pack's lib32/ and share/,
             etc/ (ld.so.conf, ld.so.cache, CA bundle); bwrap roots Steam in it
-/etc        written by PID 1 from host:local (hostname, hosts, profile, shells)
+/etc        written by PID 1 from host:local (hostname, hosts, profile, shells,
+            ssh/sshd_config with its SetEnv)
 /oath/      the catalog
   INDEX.md                 generated; what an agent reads first
   schema/<kind>.json|.md   per-kind schema (generated from the type) and
@@ -97,7 +99,8 @@ btrfs
   store/pkg/<name>/<hash>/ package trees; `live` → the linked hash
   store/plan/<name>/<hash>/plan.plan   plans; the image files each recipe's (R23)
   store/adv/<name>/<hash>.json   advisories
-  ssh/host_ed25519         dropbear host key
+  ssh/ssh_host_ed25519_key sshd's host key (+ .pub); host_ed25519 is
+                           dropbear's, on machines from before R36
   run/                     init.sock, fs/ (btrfs top level)
 ```
 
@@ -106,11 +109,11 @@ btrfs
 | Process | From | Runs as |
 |---------|------|---------|
 | `oath-init` | initrd `/init` | PID 1, root |
-| `svc:sshd` | `/bin/dropbear -F -E -s -w` | root (logins are `home`; root refused); `keep_children` |
+| `svc:sshd` | `/bin/sshd -D -e` (OpenSSH), `/etc/ssh/sshd_config` | root; before a login, `void` in `/var/empty`; logins are `home` (root refused); `keep_children` |
 | `svc:serial` | `/lib/oath/serial-login` on ttyS0 (idles with no UART) | root (break-glass) |
 | `svc:screen` | `/lib/oath/screen-login` on tty1, then `zsh -l` | `home` |
-| `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | root |
-| DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root; renews the lease |
+| `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | root, then `void` with `CAP_SYS_TIME` |
+| DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root (address, hook); its network processes `void` in `/var/empty`; renews the lease |
 | `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |
 
 The `desk` profile adds (R20–R22; `svc:screen` is off):
@@ -179,7 +182,7 @@ cargo make build [--profile base]
     linked by pkg:gcc → bin/oath,
     lib/oath/{init,serial-login,screen-login,sudo}, boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
-  every userspace pack (glibc, bash, coreutils, btrfs, dropbear, …)
+  every userspace pack (glibc, bash, coreutils, btrfs, openssh, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix, or pkg:qemu on an Oath host
   ~/.local/share/oath/store/
                           host copy of every packed tree, by hash
@@ -192,7 +195,7 @@ cargo make build [--profile base]
     stage/                the root tree; `oath seed --profile` writes /oath
     oath.qcow2            btrfs @ with the stage
     bzImage, initrd.gz, BOOTX64.EFI
-    initrd-install.gz     installer ramdisk: dropbear, sfdisk, wipefs,
+    initrd-install.gz     installer ramdisk: sshd, ssh-keygen, sfdisk, wipefs,
                           mkfs.fat, mkfs.btrfs, btrfs, mount, ip, dhcpcd,
                           tar, coreutils, oath, oath-efi, each with the
                           libraries it loads (install bakes keys into a

@@ -8,7 +8,7 @@
     "pkg:dhcpcd",
     "pkg:btrfs",
     "pkg:oath",
-    "pkg:dropbear",
+    "pkg:openssh",
     "pkg:zsh"
   ],
   "objects": {
@@ -38,15 +38,9 @@
     },
     "svc:sshd": {
       "exec": [
-        "/bin/dropbear",
-        "-F",
-        "-E",
-        "-s",
-        "-w",
-        "-r",
-        "/oath/ssh/host_ed25519",
-        "-p",
-        "22"
+        "/bin/sshd",
+        "-D",
+        "-e"
       ],
       "wants": [],
       "restart": "always",
@@ -212,15 +206,15 @@
       "description": "Catalog CLI \u2014 the only admin surface.",
       "home": "https://github.com/moonlight-pm/oath"
     },
-    "pkg:dropbear": {
-      "present": true,
-      "description": "Dropbear SSH server and dropbearkey.",
-      "home": "https://matt.ucc.asn.au/dropbear/dropbear.html"
-    },
     "pkg:openssh": {
       "present": true,
-      "description": "OpenSSH client tools: ssh, scp, sftp, ssh-keygen, and sftp-server for dropbear. Built without OpenSSL (ed25519).",
+      "description": "OpenSSH: sshd (svc:sshd, R36), ssh, scp, sftp, ssh-keygen and sftp-server, with OpenSSL (RSA, ECDSA and ed25519 keys).",
       "home": "https://www.openssh.com/portable.html"
+    },
+    "pkg:libxcrypt": {
+      "present": true,
+      "description": "libxcrypt, shared: libcrypt.so.1, glibc's crypt(3) ABI (sshd, Steam).",
+      "home": "https://github.com/besser82/libxcrypt"
     },
     "pkg:util-linux": {
       "present": true,
@@ -259,7 +253,7 @@
     },
     "pkg:libcap": {
       "present": true,
-      "description": "libcap, shared: BIND's POSIX capabilities.",
+      "description": "libcap, shared: POSIX capabilities for BIND, bubblewrap and chronyd.",
       "home": "https://sites.google.com/site/fullycapable/"
     },
     "pkg:claude-code": {
