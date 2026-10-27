@@ -194,6 +194,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
         return run_target(out, cases, target);
     }
     let tools = crate::tools::load(root)?;
+    tools.require_qemu()?;
     let output = crate::output::pick(out, opts.output.as_deref(), false)?;
     let profile = output_profile(&output.dir)?;
     if let Ok(m) = fs::read(output.file("manifest.json")) {

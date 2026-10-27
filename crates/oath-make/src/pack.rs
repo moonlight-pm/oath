@@ -139,6 +139,7 @@ pub(crate) fn ramdisk_packs(tools: &Tools, programs: &[(&str, &str)]) -> Result<
 /// tree. The profile's present packages are packed; anything else it
 /// names stays absent. `out` is the build directory.
 pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Output> {
+    tools.require_qemu()?;
     let p = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
     let wanted = p.present_pkgs();
     let lock = crate::pkgs::read_lock(root)?;

@@ -865,6 +865,7 @@ fn install_remote(out: &Path, tools: &Tools, p: &Payload, opts: &Opts, r: &Remot
 }
 
 fn install_qemu(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Result<()> {
+    tools.require_qemu()?;
     let disk = run_dir.join("disk.qcow2");
     run(Command::new(&tools.qemu_img).args([
         "create",
@@ -912,6 +913,7 @@ fn install_in_qemu(
     disk: &str,
     metal: bool,
 ) -> Result<()> {
+    tools.require_qemu()?;
     let ovmf_code = tools.ovmf_code.as_ref().context("OVMF_CODE.fd missing")?;
     let ovmf_vars_src = tools.ovmf_vars.as_ref().context("OVMF_VARS.fd missing")?;
     let port = qemu::ssh_port();

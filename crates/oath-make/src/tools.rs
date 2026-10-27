@@ -24,6 +24,24 @@ pub struct Tools {
 }
 
 impl Tools {
+    /// QEMU and qemu-img, which `build`, `check` and the QEMU rehearsals
+    /// need. `load` lets a host without them through (as `/bin/true`) for
+    /// `cargo make esp`; everything else asks here first, or an image
+    /// "made" by `true create` reaches mkfs.btrfs as a missing file.
+    pub fn require_qemu(&self) -> Result<()> {
+        for p in [&self.qemu, &self.qemu_img] {
+            if p.file_name() == Some(std::ffi::OsStr::new("true")) {
+                bail!(
+                    "no qemu-system-x86_64 or qemu-img on PATH: on an Oath host they are \
+                     pkg:qemu (R32), which no profile installs; add it with the hash the \
+                     origin's INDEX.md lists: sudo oath new pkg:qemu --from-json \
+                     '{{\"present\":true,\"hash\":\"sha256-…\"}}' && sudo oath apply pkg:qemu"
+                );
+            }
+        }
+        Ok(())
+    }
+
     /// A native pack's tree, or how to build it.
     pub fn pack(&self, name: &str) -> Result<&Path> {
         self.packs.get(name).map(PathBuf::as_path).with_context(|| {

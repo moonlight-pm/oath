@@ -13,7 +13,14 @@ the toolchain and `oath-make` itself. None of it ships. An Oath machine
 can be the build host too (R32): its own gcc builds stage 0, its
 `pkg:rust` builds `oath-make`, and `pkg:qemu` (in no profile; add it to
 the machine) runs images, with the edk2 firmware from QEMU's release as
-OVMF. `home` has `/dev/kvm` there (R33).
+OVMF. `home` has `/dev/kvm` there (R33). Without it, `build`, `check`
+and the QEMU rehearsals stop and say so:
+
+```sh
+h=$(curl -fsS https://store.oath.moonlight.pm/INDEX.md | awk -F'`' '$2 == "qemu" {print $4}')
+sudo oath new pkg:qemu --from-json "{\"present\":true,\"hash\":\"$h\"}"
+sudo oath apply pkg:qemu
+```
 
 ## The toolchain and packages
 
