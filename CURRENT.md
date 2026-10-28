@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-10-28 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R37 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R39 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -58,9 +58,9 @@ canto moved with its first `oath update`
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `e433824d38d0` (pulled 2026-10-28), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
-| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host) and publisher; output `e433824d38d0`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `e433824d38d0`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
 
-Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).
+Oath work happens on **buccina** (R39). **novus** (NixOS) is Joshua's desk, to become Oath ([hosts/novus.md](hosts/novus.md)).
 
 ## Do not
 

@@ -2,8 +2,10 @@
 
 Overwrite this file when facts change; do not append a diary.
 
-- **Role:** Joshua's daily machine and Oath's build host, on NixOS 25.11
-  (`/etc/nixos/configuration.nix`). It leaves NixOS for its own Oath
+- **Role:** Joshua's daily machine, on NixOS 25.11
+  (`/etc/nixos/configuration.nix`). It was Oath's build host until
+  2026-10-28, when Oath work moved to buccina (R39); its checkout of
+  `moonlight-pm/oath` matches GitHub. It leaves NixOS for its own Oath
   install (R32); until then nothing writes its disks or changes its OS
   without Joshua's word.
 - **Hardware:** ASUS ProArt X570-Creator WiFi, Ryzen 9 5950X (16 cores,

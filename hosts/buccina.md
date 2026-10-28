@@ -14,8 +14,13 @@ Overwrite this file when facts change; do not append a diary.
 - **Network:** DHCP, 10.0.0.149 (MAC `08:92:04:e3:29:15`, `net0`).
   Reach: `ssh home@10.0.0.149`, host key pinned in `build/known_hosts`.
 - **Overlay:** [buccina.json](buccina.json) — hostname and Mountain time.
-- **Role:** the Oath build machine (Joshua, 2026-10-26): self-host and
-  other long Oath work run here, so canto stays free for Sola R&D.
+- **Role:** where Oath work happens (R39, Joshua 2026-10-28; builds
+  since 2026-10-26): agent sessions, the checkout, self-host, checks
+  and publishing, so canto stays free for Sola R&D and novus is
+  Joshua's desk. Claude Code 2.1.292 was built here on 2026-10-28
+  (`oath build plan:claude-code`, generation 100: novus's pack); not
+  signed in yet. Reach: `ssh home@10.0.0.149` (DHCP; Joshua adds it to
+  the local DNS).
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
 - **Running now:** output `e433824d38d0` (the `desk` profile), pulled
@@ -31,14 +36,19 @@ Overwrite this file when facts change; do not append a diary.
   36). It passes every metal case that applies to it (44 on 2026-10-27;
   the display and AMD-GPU cases skip: it is headless, and Mesa has no
   Intel driver), sound included: PipeWire takes its HDA card, which
-  registers after i915, at boot and
-  on hot-plug. Installed on 2026-10-26 as `55c20bf6a86c` by `cargo make
+  registers after i915, at boot and on hot-plug. Installed on 2026-10-26 as `55c20bf6a86c` by `cargo make
   install --target root@10.0.0.149 --disk /dev/nvme0n1` over the Wicket
   trial image; that install's reboot landed on an old USB stick, the
   boot order was fixed, and a reboot came up from the NVMe. Root by UUID
   `daaa7fe6-6358-41d5-b968-5760983c1ba7`. Its clock is about 14 s fast
   at boot until chrony steps it.
-- **Self-host:** `/home/Projects/Oath` (pushed from novus),
+- **Self-host:** `/home/Projects/Oath`, the working checkout (R39):
+  `origin` is `git@github.com:moonlight-pm/oath.git` (novus pushed to
+  it until 2026-10-28). Its GitHub key is `/home/.ssh/github_ed25519`
+  (`home@buccina (github)`, on Joshua's account as "buccina
+  (home@buccina)", 2026-10-28; `~/.ssh/config` names it for
+  github.com); git commits as Joshua Kifer. The trial stick's host key
+  is in `build/novus-oath.known_hosts`. Scripts and logs:
   `build/selfhost.sh` in tmux session `selfhost`; log
   `build/selfhost.log`, result `build/selfhost-result.txt`. Run 1
   (2026-10-26, `c5615fb`): bootstrap 32 min, `pkgs` 1 h 52 min, 158 of
