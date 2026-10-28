@@ -13,11 +13,11 @@ append history (git has it).
 1. **Pull updates (R38, Joshua 2026-10-28).** Machines update
    themselves: `cargo make publish` puts the newest checked output on
    the bucket, signed by buccina's key (`base` trusts it), and `sudo
-   oath update --confirm --reboot` takes it. canto pulled `3b2d49886ff7`
-   on 2026-10-28 (the security sweep, Linux 7.3, OpenSSH); a reset
-   fetch left it half moved, so `oath update` now fetches every pack
-   first. Next: the next published output carries that `oath`; the Sola
-   tab re-pins its codecs CEF (CEF 156, R37); expat 2.10.0 (11-02).
+   oath update --confirm --reboot` takes it (also `update` in `oath
+   mcp`). canto and buccina run `e433824d38d0` (2026-10-28); it fetches
+   every pack first and checks each lands. Gap: an output's changed
+   `svc` fields (`rtprio`) reach a machine only by `oath set`. Next: the
+   Sola tab re-pins its codecs CEF (CEF 156, R37); expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
@@ -28,7 +28,7 @@ append history (git has it).
    Xwayland, PipeWire, Noto, Vulkan (RADV), `wl-clipboard` (pasting
    screenshots, 2026-10-26) and Sola's packs, which `desk.json` pins
    (R28, no fork; `next` at `c6cda58b`). `svc.rtprio` gives PipeWire
-   realtime (2026-10-28). Next: canto runs it; new Sola pins.
+   `SCHED_FIFO` (QEMU, buccina; canto at its next boot). Next: new pins.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
@@ -57,8 +57,8 @@ canto moved with its first `oath update`
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `3b2d49886ff7` (pulled 2026-10-28), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
-| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host); output `f443df24beec`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `e433824d38d0` (pulled 2026-10-28; its PID 1 at the next boot), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host) and publisher; output `e433824d38d0`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).
 

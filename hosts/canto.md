@@ -36,16 +36,24 @@ Overwrite this file when facts change; do not append a diary.
   (novus fetched it in 2 s), leaving the apply half done (376). `oath
   apply` finished it (378); a second `oath update --confirm` wrote the
   root files and the ESP, and the pre-update `@boot-28` was put back by
-  hand after it. `pkg:cef` is Oath's vendor build again, without the
+  hand after it. Its later pulls the same day were ordinary:
+  `1fa3b09a85ca` and `e433824d38d0` (no package but `pkg:oath` moved).
+  The pull of `0c6eebe617d2` hit the pre-download bug (its `oath`
+  pinned `pkg:oath` as it fetched it, so the apply left it unlinked);
+  set back and forward by hand (383–384), and `e433824d38d0`'s `oath`
+  (`sha256-4eec034d2bb9…`) was taken by hand first (386). `pkg:cef` is
+  Oath's vendor build again, without the
   Sola tab's H.264/AAC codecs build (`sha256-252cc3ea5deb`), until the
   Sola tab pins its own. Its Oath checkout (`~/Projects/Oath`, a clean
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** output `3b2d49886ff7`, the `desk` build buccina
-  published on 2026-10-28 (the 2026-10-27 security sweep, Linux 7.3,
-  OpenSSH, account `void`; 61/61 QEMU cases), booted 2026-10-28 21:41Z
-  with PID 1 `fcc67e336314`. `oath update --confirm` after that boot
+- **Running now:** output `e433824d38d0` (pulled 2026-10-28 22:35Z,
+  not yet booted: PID 1 is still `fcc67e336314`, `3b2d49886ff7`'s; the
+  Sola tab was working here). `svc:pipewire` and `svc:pipewire-pulse`
+  have `rtprio` 95 (generation 385), which the new PID 1 applies at the
+  next boot. `3b2d49886ff7` (the 2026-10-27 security sweep, Linux 7.3,
+  OpenSSH, account `void`) booted 2026-10-28 21:41Z. `oath update --confirm` after that boot
   moved `svc:sshd` from dropbear to OpenSSH (generation 380, kept from
   a new session; dropbear's host key carried over). The Sola tab's pins
   of `pkg:sola`, `sola-browser` and `sola-design` stayed. Every service

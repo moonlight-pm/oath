@@ -18,15 +18,20 @@ Overwrite this file when facts change; do not append a diary.
   other long Oath work run here, so canto stays free for Sola R&D.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** build output `f443df24beec` (the `desk` profile:
-  Linux 7.3 and the 2026-10-27 security sweep), by `cargo make update
-  --reboot` on 2026-10-27. Since R36 its sshd is OpenSSH (generation 3
-  moved it from dropbear, keeping the host key); `pkg:dropbear` was
-  removed (generation 35); `pkg:qemu` and `pkg:libslirp` were added for
-  the build-host run (generations 33 and 36). It passes every metal case
-  that applies to it (44 on 2026-10-27; the display and AMD-GPU cases
-  skip: it is headless, and Mesa has no Intel driver), sound included:
-  PipeWire takes its HDA card, which registers after i915, at boot and
+- **Running now:** output `e433824d38d0` (the `desk` profile), pulled
+  from the bucket with `oath update --confirm --reboot` on 2026-10-28
+  after `pkg:oath`, `host:local.profile` and `publishers` were set by
+  hand (generation 96–97; it had no `/oath/output.json` before, and no
+  package moved). `svc:pipewire` and `svc:pipewire-pulse` got `rtprio`
+  95 by hand (generation 98): the data thread is `SCHED_FIFO`. Before
+  that, `f443df24beec` by the push update of 2026-10-27. Since R36 its
+  sshd is OpenSSH (generation 3 moved it from dropbear, keeping the
+  host key); `pkg:dropbear` was removed (generation 35); `pkg:qemu` and
+  `pkg:libslirp` were added for the build-host run (generations 33 and
+  36). It passes every metal case that applies to it (44 on 2026-10-27;
+  the display and AMD-GPU cases skip: it is headless, and Mesa has no
+  Intel driver), sound included: PipeWire takes its HDA card, which
+  registers after i915, at boot and
   on hot-plug. Installed on 2026-10-26 as `55c20bf6a86c` by `cargo make
   install --target root@10.0.0.149 --disk /dev/nvme0n1` over the Wicket
   trial image; that install's reboot landed on an old USB stick, the
@@ -48,6 +53,8 @@ Overwrite this file when facts change; do not append a diary.
   `SHA256:PjyzPel8Vz4kHkbMUpFUEWigcvdJs4uOs71fMxBzF9w`, in the `base`
   profile's `host:local.publishers`). The bucket's write key is
   `/home/.config/oath/origin.env` (mode 600), a copy of novus's token
-  "oath-store publish (novus)" (Joshua, 2026-10-28). First publish
-  2026-10-28T20:51Z: release `3b2d49886ff7` for `desk` and `pkg:oath`
-  `sha256-6e563f2d6c69` (log `build/publish.log`).
+  "oath-store publish (novus)" (Joshua, 2026-10-28). Published on
+  2026-10-28: `3b2d49886ff7` (20:51Z, the first), `1fa3b09a85ca`,
+  `0c6eebe617d2` and `e433824d38d0` (22:33Z), each after 61/61 QEMU
+  cases and a `cargo make update --qemu` from the one before, by
+  `build/next.sh` (log `build/next.log`).
