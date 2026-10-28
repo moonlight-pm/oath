@@ -34,8 +34,9 @@ Overwrite this file when facts change; do not append a diary.
   ESP `OATHESP`, btrfs `oath`, root `UUID=4b160377-a07a-43f7-bffe-0ee0738f26bf`,
   booted once in QEMU. `ssh:local` has novus's key and canto's `home`
   key: while novus runs the stick it is driven from canto,
-  `ssh -o UserKnownHostsFile=build/novus-oath.known_hosts home@novus` in
-  canto's checkout (the stick's host key, not NixOS's). Boot it from the
+  `ssh -o UserKnownHostsFile=~/.ssh/novus-oath.known_hosts home@novus`
+  (the stick's host key, not NixOS's; novus keeps a copy in
+  `build/novus-oath.known_hosts`). Boot it from the
   firmware's boot menu (F8); NixOS stays the default. It enumerates only
   on a back-panel port: behind the keyboard's USB 2.0 hub it resets four
   times and never becomes a disk.
