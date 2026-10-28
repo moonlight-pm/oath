@@ -19,8 +19,13 @@ Overwrite this file when facts change; do not append a diary.
   and publishing, so canto stays free for Sola R&D and novus is
   Joshua's desk. Claude Code 2.1.292 was built here on 2026-10-28
   (`oath build plan:claude-code`, generation 100: novus's pack); not
-  signed in yet. Reach: `ssh home@10.0.0.149` (DHCP; Joshua adds it to
-  the local DNS).
+  signed in by Joshua on 2026-10-28. Reach: `ssh home@10.0.0.149`
+  (DHCP; Joshua adds it to the local DNS).
+- **SSH to and from canto** (Joshua, 2026-10-28): `ssh canto` uses
+  `home@buccina` (`/home/.ssh/id_ed25519`, which canto's `ssh:local`
+  lists; `~/.ssh/config` names 10.0.0.3, and canto's host key is pinned
+  in `~/.ssh/known_hosts`). `ssh:local` here lists `home@canto`
+  (generation 101) beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
 - **Running now:** output `e433824d38d0` (the `desk` profile), pulled

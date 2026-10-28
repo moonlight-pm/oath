@@ -146,12 +146,17 @@ Overwrite this file when facts change; do not append a diary.
   (`-t nfs -o vers=4,addr=…`; the kernel refuses `-t nfs4` with no
   version). Mounting and unmounting it was checked on 2026-10-18; the
   first send from this system is the 04:00 run.
-- **SSH to novus:** `home` has an ed25519 key (`/home/.ssh/id_ed25519`,
-  `home@canto`, made 2026-10-20) that novus's `joshua` accepts from
-  10.0.0.3 only (`from="10.0.0.3"` in `~joshua/.ssh/authorized_keys`);
-  `/home/.ssh/config` names `joshua` for `novus`, so `ssh novus` logs
-  in. The key lives in `/home`, outside the catalog: undo and update
-  leave it, a reinstall loses it.
+- **SSH to novus and buccina:** `home` has an ed25519 key
+  (`/home/.ssh/id_ed25519`, `home@canto`, made 2026-10-20) that novus's
+  `joshua` accepts from 10.0.0.3 only (`from="10.0.0.3"` in
+  `~joshua/.ssh/authorized_keys`) and buccina's `ssh:local` lists
+  (2026-10-28, Joshua). `/home/.ssh/config` names `joshua` for `novus`
+  and 10.0.0.149 for `buccina`, so `ssh novus` and `ssh buccina` log
+  in; buccina's host key is pinned in `~/.ssh/known_hosts`. The key
+  lives in `/home`, outside the catalog: undo and update leave it, a
+  reinstall loses it.
+- **SSH from buccina:** `ssh:local` lists `home@buccina` (generation
+  387, 2026-10-28, Joshua), beside Joshua's `root@hub`.
 - **Agent:** `ssh -T home@10.0.0.3 oath mcp` serves the verbs as MCP
   tools. All five real-model tasks passed here with haiku on
   `e3a11645f14c` (2026-10-17); not run since the reinstall.
