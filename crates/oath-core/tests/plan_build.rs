@@ -127,7 +127,10 @@ while [ $# -gt 0 ]; do\n\
     *) shift ;;\n\
   esac\n\
 done\n\
-printf '#!/bin/sh\\nprintf hello\\\\n\\n' > \"$out\"\n\
+cat > \"$out\" <<'EOF'\n\
+#!/bin/sh\n\
+echo hello\n\
+EOF\n\
 chmod 0755 \"$out\"\n";
         std::fs::write(bin.join("cc"), body).unwrap();
         let mut p = std::fs::metadata(bin.join("cc")).unwrap().permissions();
