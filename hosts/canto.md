@@ -27,28 +27,30 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
-- **Updates (R38):** canto pulls its own from the bucket, and predates
-  `oath update`: it first takes the newer `pkg:oath`, then
-  `host:local.profile=desk` and buccina's key in `publishers`, by hand
-  ([install.md](../docs/manual/install.md)), then `sudo oath update
-  --confirm --reboot`, and once more after that boot for dropbear to
-  OpenSSH (R36). The update puts `pkg:cef` back at Oath's vendor build,
-  without the Sola tab's H.264/AAC codecs build (`sha256-252cc3ea5deb`);
-  the Sola tab pins its own again. The `pkg:oath` to take is
-  `sha256-6e563f2d6c69…` (on the bucket since 2026-10-28). Waiting for
-  Joshua's window (with CEF 156, R37). Its Oath checkout
-  (`~/Projects/Oath`, a clean `d8817f9`; cargo's target on
-  `/mnt/warehouse/Oath`) goes once the Steam session that runs in it
-  closes; the novus trial stick's host key moved to
-  `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** build output `55c20bf6a86c` (`cargo make build
-  --profile desk` of `f466082`: R32–R35, the kernel with novus's drivers
-  and KVM, PID 1 loading package modules and finding a `UUID=` root,
-  `plan:nvidia` absent; all 57 QEMU cases), reached on 2026-10-25 by
-  `cargo make update --confirm --reboot` (generation 328: `pkg:oath`;
-  329 added `pkg:m4` and `pkg:bison` by hand; the Sola tab's pins kept).
-  Booted 2026-10-25 22:19Z: `kvm_intel` loaded, `/dev/kvm` root:home
-  0660. Its root is still named `oath.root=/dev/sda2`. Self-host ran here
+- **Updates (R38):** canto pulls its own from the bucket. Its
+  `host:local` names `profile=desk` and buccina's key in `publishers`,
+  set by hand with the newer `pkg:oath` on 2026-10-28 (generations
+  374–375), as [install.md](../docs/manual/install.md) says for a
+  machine from before R38. The first pull, of `3b2d49886ff7`, stopped at
+  `pkg:perl`: canto's link to Cloudflare reset that 99 MB fetch twice
+  (novus fetched it in 2 s), leaving the apply half done (376). `oath
+  apply` finished it (378); a second `oath update --confirm` wrote the
+  root files and the ESP, and the pre-update `@boot-28` was put back by
+  hand after it. `pkg:cef` is Oath's vendor build again, without the
+  Sola tab's H.264/AAC codecs build (`sha256-252cc3ea5deb`), until the
+  Sola tab pins its own. Its Oath checkout (`~/Projects/Oath`, a clean
+  `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
+  Steam session in it closes (Sola restored it after the reboot); the
+  novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
+- **Running now:** output `3b2d49886ff7`, the `desk` build buccina
+  published on 2026-10-28 (the 2026-10-27 security sweep, Linux 7.3,
+  OpenSSH, account `void`; 61/61 QEMU cases), booted 2026-10-28 21:41Z
+  with PID 1 `fcc67e336314`. `oath update --confirm` after that boot
+  moved `svc:sshd` from dropbear to OpenSSH (generation 380, kept from
+  a new session; dropbear's host key carried over). The Sola tab's pins
+  of `pkg:sola`, `sola-browser` and `sola-design` stayed. Every service
+  runs; amdgpu, HDA and `/mnt/warehouse` came up; `/dev/kvm` is
+  root:home 0660. Its root is still named `oath.root=/dev/sda2`. Self-host ran here
   until 2026-10-26 (it stopped at a download, glibc without bison, then
   glibc-i386's GCC with the seed's MPFR-less gawk) and moved to buccina;
   its build catalog (`~/.local/share/oath`), `build/bootstrap`,

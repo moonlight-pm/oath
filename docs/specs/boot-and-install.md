@@ -216,6 +216,14 @@ one generation, a reboot into Linux 7.3 and the output's PID 1. Before
 R38, `cargo make update --target` pushed the same steps over SSH
 (built 2026-10-16); it is gone.
 
+On metal, canto pulled `3b2d49886ff7` from the bucket on 2026-10-28,
+dropbear to OpenSSH included ([canto.md](../../hosts/canto.md)). **Gap:**
+apply fetches each pack as it converges it, with no retry, so a fetch
+that fails partway (canto's link reset `pkg:perl` twice) leaves the
+machine half moved, and `oath update --confirm` then refuses the drift;
+`oath apply` finishes it. It will fetch every pack before it changes
+anything.
+
 ## Target
 
 None open short of the desk (phase 8).
