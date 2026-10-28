@@ -164,14 +164,15 @@ publishes each output it checked, and each machine moves itself:
   1. Refuses a release older than `/oath/output.json` (the release the
      machine runs) unless `--output` names it, a bundle whose hash is
      not the release's, pending changes, and an apply on probation.
-  2. Mounts the ESP (partition 1 of the disk in `oath.root=`, through
-     `findfs` for a `UUID=`), plans the rotation as `esp` does, and
-     snapshots `@` as `@boot-<n>` first, so the archived boot pairs the
-     old kernel with the old userspace.
+  2. Fetches every pack the moves pin that the store lacks, so a fetch
+     that fails leaves the machine as it was. Mounts the ESP (partition
+     1 of the disk in `oath.root=`, through `findfs` for a `UUID=`),
+     plans the rotation as `esp` does, and snapshots `@` as `@boot-<n>`,
+     so the archived boot pairs the old kernel with the old userspace.
   3. Writes the accounts, files the output's plans the machine has, and
      sets each package to the output's `hash` and `needs`, then one
-     `oath apply`: one generation, undoable, and apply fetches each
-     pack from the origins and hashes it. `needs` moves too: a package
+     `oath apply`: one generation, undoable, and apply hashes each
+     pack step 2 put in the store. `needs` moves too: a package
      whose own tree is unchanged still pins what it runs with (on
      2026-10-19 a rebuilt `pkg:sola` left `pkg:sola-browser` pinning
      the old one, and apply refused). A package packed elsewhere (R28)
@@ -217,12 +218,13 @@ R38, `cargo make update --target` pushed the same steps over SSH
 (built 2026-10-16); it is gone.
 
 On metal, canto pulled `3b2d49886ff7` from the bucket on 2026-10-28,
-dropbear to OpenSSH included ([canto.md](../../hosts/canto.md)). **Gap:**
-apply fetches each pack as it converges it, with no retry, so a fetch
-that fails partway (canto's link reset `pkg:perl` twice) leaves the
-machine half moved, and `oath update --confirm` then refuses the drift;
-`oath apply` finishes it. It will fetch every pack before it changes
-anything.
+dropbear to OpenSSH included ([canto.md](../../hosts/canto.md)). Its
+`oath` fetched each pack as the apply converged it, with no retry, and
+canto's link reset `pkg:perl` twice, leaving it half moved. So since
+that day `oath update --confirm` fetches every pack its moves pin that
+the store lacks before it snapshots or sets anything, and a pack fetch
+tries a network error (or a stall under 1 KB/s for 30 s) twice more;
+machines get it with the next output buccina publishes.
 
 ## Target
 

@@ -136,13 +136,17 @@ than the release the machine runs (`/oath/output.json`) unless
 `--output <id>` names it. It also refuses pending changes and an apply
 on probation. With `--confirm`, it:
 
-1. snapshots `@` as `@boot-<n>` before changing anything;
-2. writes the output's accounts (`/etc/passwd`, `group`, `shadow`) and
+1. fetches every pack it will pin that the store lacks, before it
+   changes anything: a fetch that fails (a network error is tried
+   twice more) leaves the machine as it was, and running it again
+   fetches the rest;
+2. snapshots `@` as `@boot-<n>`;
+3. writes the output's accounts (`/etc/passwd`, `group`, `shadow`) and
    `/var/empty`, since services that restart next drop to `void` (R36);
-3. sets each package the machine has to the output's pin and needs,
+4. sets each package the machine has to the output's pin and needs,
    makes each package the output fixes that the machine lacks (the
    image's files need it: `/etc/passwd` names `pkg:zsh`'s shell), and
-   runs `oath apply` once, which fetches each pack from the origins
+   runs `oath apply` once
    (`oath undo` takes it back but keeps a fixed package; other objects
    the output's seed has and the machine does not, a new base service
    say, are listed, not created: add them with `oath new`). A package
@@ -155,13 +159,13 @@ on probation. With `--confirm`, it:
    restarts; when sshd's did, the apply is on probation, and the
    update waits until you open a **new** SSH session and run `sudo oath
    keep` there;
-4. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
+5. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
    and `/bin/sudo`;
-5. archives the ESP's kernel and initrd as boot `<n>` (with the
-   snapshot from step 1) and writes the new kernel, initrd and
+6. archives the ESP's kernel and initrd as boot `<n>` (with the
+   snapshot from step 2) and writes the new kernel, initrd and
    `oath-efi`, keeping five archives (`--esp`, default partition 1 of
    the root disk);
-6. with `--reboot`, reboots. `oath update` afterwards says whether
+7. with `--reboot`, reboots. `oath update` afterwards says whether
    PID 1 is the output's.
 
 A machine that still runs dropbear as `svc:sshd` (from before R36)
@@ -169,6 +173,13 @@ moves to OpenSSH after it has booted the new PID 1, which writes
 `/etc/ssh/sshd_config` and carries dropbear's host key over: run `sudo
 oath update --confirm` again, then `sudo oath keep` from a new SSH
 session. If none gets in, PID 1 undoes it and dropbear serves again.
+
+An `oath` from before step 1 (`pkg:oath` `sha256-6e563f2d6c69…` and
+older) fetches during the apply instead; if a fetch fails there, the
+machine is half moved and `oath update` refuses the pending changes.
+`sudo oath apply` finishes them; the update run after it snapshots the
+half-moved `@` as `@boot-<n>`, so move the first one aside and back if
+the archived boot should keep the old userspace.
 
 A machine from before R38 has no `oath update` yet. Give it the newer
 `oath` first (the pin is `pkg:oath`'s `hash` in the output's seed,
@@ -190,6 +201,6 @@ origin on the build host.
 If the new boot fails, pick the archived boot in the firmware menu: it
 is the old kernel with the old userspace.
 
-`cargo make esp` does steps 1 and 5 on the Oath machine itself, for an
+`cargo make esp` does steps 2 and 6 on the Oath machine itself, for an
 ESP you mount there. See [Generations](generations.md) for why it must
 not be pointed at the build host's own ESP.

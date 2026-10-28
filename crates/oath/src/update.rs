@@ -7,7 +7,9 @@
 //!    machine runs (`/oath/output.json`) is refused unless named.
 //! 2. Fetch its bundle and check it against the release's hash.
 //! 3. Say what moves. With `--confirm`, as root:
-//! 4. Refuse unless in sync with nothing on probation. Mount the ESP, plan
+//! 4. Refuse unless in sync with nothing on probation. Fetch every pack the
+//!    moves pin that the store lacks, before anything changes, so a fetch
+//!    that fails leaves the machine as it was. Mount the ESP, plan
 //!    the boot rotation, and snapshot `@` as `@boot-<n>` first: the
 //!    archived boot is the old kernel with the old userspace.
 //! 5. Write the accounts, file the output's plans, set every package to
@@ -205,7 +207,8 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         return Ok(0);
     }
 
-    // 4–6.
+    // 4–6, every pack first.
+    prefetch(root, cat, &moves)?;
     move_sshd(root, cat, actor, &bundle)?;
     let root_dev =
         cmdline_val(&fs::read_to_string("/proc/cmdline")?, "oath.root").ok_or_else(|| {
@@ -498,6 +501,41 @@ fn preflight(root: &Path, cat: &Catalog) -> Result<()> {
     Ok(())
 }
 
+/// Every pack the moves pin that the store lacks, fetched before this
+/// machine changes: a fetch that fails leaves it as it was, and the next
+/// run starts with what came.
+fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
+    let mut want = Vec::new();
+    for m in moves {
+        let Some(set) = m.fields().and_then(Value::as_object) else { continue };
+        let id: ObjectId = m.id().parse()?;
+        let mut d = cat.get(&id).map(|o| o.desired).unwrap_or_else(|_| json!({}));
+        for (k, v) in set {
+            d[k] = v.clone();
+        }
+        let hash = d["hash"].as_str().unwrap_or("");
+        if d["present"].as_bool() != Some(false)
+            && !hash.is_empty()
+            && !oath_core::store_present(root, &id.name, hash)
+        {
+            want.push((id.name, d));
+        }
+    }
+    if !want.is_empty() {
+        eprintln!(">> fetch {} packs before anything changes", want.len());
+    }
+    for (name, d) in &want {
+        let s = |k: &str| d[k].as_str().unwrap_or("").to_string();
+        oath_core::fetch_pkg_any(root, name, &s("url"), &s("file"), &s("hash")).map_err(|e| {
+            Error::hint(
+                e.to_string(),
+                "nothing on this machine changed; `sudo oath update --confirm` again fetches the rest",
+            )
+        })?;
+    }
+    Ok(())
+}
+
 fn sshd_is_dropbear(cat: &Catalog) -> Result<bool> {
     let cur = cat.get(&ObjectId::new("svc", "sshd"))?.desired;
     Ok(cur.pointer("/exec/0").and_then(Value::as_str) == Some("/bin/dropbear"))
@@ -654,6 +692,49 @@ mod tests {
         assert_eq!(esp_of("/dev/vda2").as_deref(), Some("/dev/vda1"));
         assert_eq!(esp_of("/dev/nvme0n1p2").as_deref(), Some("/dev/nvme0n1p1"));
         assert_eq!(esp_of("/dev/sda"), None);
+    }
+
+    #[test]
+    fn prefetch_takes_every_pack_before_anything_changes() {
+        let d = tempfile::tempdir().unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let pin = oath_core::hash_tree(&tree).unwrap();
+        let origin = d.path().join("origin");
+        fs::create_dir_all(origin.join("pkg/hello")).unwrap();
+        let tar = origin.join("pkg/hello").join(format!("{pin}.tar"));
+        sh(Command::new("tar").arg("-C").arg(&tree).arg("-cf").arg(&tar).arg(".")).unwrap();
+        let root = d.path().join("cat");
+        oath_core::seed(&root).unwrap();
+        let host = root.join("objects/host/local/desired.json");
+        let mut h: Value = oath_core::read_json(&host).unwrap();
+        h["origins"] = json!([format!("file://{}", origin.display())]);
+        oath_core::write_json(&host, &h).unwrap();
+        let cat = Catalog::open(&root).unwrap();
+        let pin_to = |name: &str, to: &str| Move::Pin {
+            name: name.into(),
+            from: String::new(),
+            to: to.into(),
+            set: json!({ "hash": to }),
+        };
+        let gone = "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+        // One the origin lacks: an error that says nothing changed, and the
+        // pack the origin has is already in the store for the next run.
+        let e = prefetch(&root, &cat, &[pin_to("hello", &pin), pin_to("gone", gone)])
+            .unwrap_err()
+            .to_string();
+        assert!(e.contains("no origin served it"), "{e}");
+        assert!(oath_core::store_present(&root, "hello", &pin));
+        assert!(cat.get(&"pkg:hello".parse().unwrap()).is_err());
+        // Removed packages and pins the store has fetch nothing.
+        let off = Move::Pin {
+            name: "gone".into(),
+            from: String::new(),
+            to: gone.into(),
+            set: json!({ "hash": gone, "present": false }),
+        };
+        prefetch(&root, &cat, &[pin_to("hello", &pin), off]).unwrap();
     }
 
     #[test]

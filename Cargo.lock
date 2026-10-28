@@ -735,6 +735,7 @@ dependencies = [
  "nix",
  "oath-core",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]

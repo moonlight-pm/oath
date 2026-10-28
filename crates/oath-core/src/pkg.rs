@@ -1229,11 +1229,25 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &
     let _ = fs::remove_dir_all(&tmpdir);
     fs::create_dir_all(&tmpdir)?;
     let blob = tmpdir.join("blob");
-    let st = Command::new(find_bin("curl"))
-        .args(["-fsSL", "-o", blob.to_str().unwrap(), &url])
-        .stdout(std::io::stderr())
-        .status()
-        .map_err(|e| Error::Msg(format!("curl: {e}")))?;
+    // A network error, or a stall under 1 KB/s for 30 s, is tried again
+    // (canto's link reset a 99 MB pack twice on 2026-10-28); an HTTP error
+    // is the origin's answer.
+    let mut tries = 0;
+    let st = loop {
+        let st = Command::new(find_bin("curl"))
+            .args(["-fsSL", "--speed-limit", "1024", "--speed-time", "30", "-o"])
+            .arg(&blob)
+            .arg(&url)
+            .stdout(std::io::stderr())
+            .status()
+            .map_err(|e| Error::Msg(format!("curl: {e}")))?;
+        tries += 1;
+        if st.success() || tries == FETCH_TRIES || !curl_transient(st.code()) {
+            break st;
+        }
+        eprintln!("fetch pkg:{name}: curl exit {}, trying again", st.code().unwrap_or(-1));
+        std::thread::sleep(std::time::Duration::from_secs(2 * tries));
+    };
     if !st.success() {
         let _ = fs::remove_dir_all(&tmpdir);
         return Err(Error::hint(format!("fetch pkg:{name} failed"), "oath schema pkg"));
@@ -1257,6 +1271,15 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &
     };
     let _ = fs::remove_dir_all(&tmpdir);
     result.map(|_| ())
+}
+
+const FETCH_TRIES: u64 = 3;
+
+/// curl's exit codes for a network that failed partway (connect, partial
+/// file, timeout or stall, TLS connect, empty reply, send, receive,
+/// HTTP/2 stream), not an answer from the origin.
+fn curl_transient(code: Option<i32>) -> bool {
+    matches!(code, Some(7 | 18 | 28 | 35 | 52 | 55 | 56 | 92))
 }
 
 /// `host:local.origins` from its spec, in order; empty when it has none.
@@ -1689,6 +1712,46 @@ mod needs_tests {
         // An origin needs a pin, and a vendor's file is never looked for on one.
         assert_eq!(fetch_pkg_any(&cat, "hello", "", "", "").unwrap(), None);
         assert_eq!(fetch_pkg_any(&cat, "x-src", "", "src/x", other).unwrap(), None);
+    }
+
+    #[test]
+    fn fetch_tries_again_after_a_reset() {
+        use std::io::Write;
+        let d = tempfile::tempdir().unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let pin = hash_tree(&tree).unwrap();
+        let tar = d.path().join("hello.tar");
+        let st = Command::new("tar")
+            .args(["-C", tree.to_str().unwrap(), "-cf", tar.to_str().unwrap(), "."])
+            .status()
+            .unwrap();
+        assert!(st.success());
+        let body = fs::read(&tar).unwrap();
+        // The origin drops the first connection unanswered, then serves.
+        let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let origin = format!("http://{}", l.local_addr().unwrap());
+        let server = std::thread::spawn(move || {
+            for n in 0..2 {
+                let (mut s, _) = l.accept().unwrap();
+                let mut req = [0u8; 4096];
+                let _ = s.read(&mut req);
+                if n == 1 {
+                    let head = format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        body.len()
+                    );
+                    s.write_all(head.as_bytes()).unwrap();
+                    s.write_all(&body).unwrap();
+                }
+            }
+        });
+        let cat = d.path().join("cat");
+        crate::seed(&cat).unwrap();
+        fetch_pkg(&cat, "hello", &origin, "", &pin).unwrap();
+        server.join().unwrap();
+        assert!(store_present(&cat, "hello", &pin));
     }
 
     #[test]

@@ -14,10 +14,10 @@ append history (git has it).
    themselves: `cargo make publish` puts the newest checked output on
    the bucket, signed by buccina's key (`base` trusts it), and `sudo
    oath update --confirm --reboot` takes it. canto pulled `3b2d49886ff7`
-   on 2026-10-28 (the security sweep, Linux 7.3, OpenSSH). Next: `oath
-   update` fetches every pack before it changes anything (a reset fetch
-   left canto half moved); the Sola tab re-pins its codecs CEF (CEF 156,
-   R37); expat 2.10.0 (11-02).
+   on 2026-10-28 (the security sweep, Linux 7.3, OpenSSH); a reset
+   fetch left it half moved, so `oath update` now fetches every pack
+   first. Next: the next published output carries that `oath`; the Sola
+   tab re-pins its codecs CEF (CEF 156, R37); expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
