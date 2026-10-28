@@ -17,6 +17,9 @@
       "power": "run",
       "origins": [
         "https://store.oath.moonlight.pm"
+      ],
+      "publishers": [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+YKD3yXYsGJMxwpBIWSYP7VuQvjhzGG+LWvYhKTESD oath@buccina"
       ]
     },
     "svc:serial": {

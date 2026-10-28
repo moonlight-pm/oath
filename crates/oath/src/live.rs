@@ -128,6 +128,8 @@ impl ApplyHooks for Live {
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
+            profile: desired.profile.clone(),
+            publishers: desired.publishers.clone(),
             mounts,
             module_options: desired.module_options.clone(),
         })

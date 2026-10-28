@@ -52,6 +52,8 @@ impl ApplyHooks for MemHooks {
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
+            profile: desired.profile.clone(),
+            publishers: desired.publishers.clone(),
             mounts: desired.mounts.clone(),
             module_options: desired.module_options.clone(),
         })
@@ -169,7 +171,15 @@ fn seed_lists_host() {
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();
     assert_eq!(
         host.desired,
-        json!({"hostname": "oath", "power": "run", "origins": ["https://store.oath.moonlight.pm"]})
+        json!({
+            "hostname": "oath",
+            "power": "run",
+            "origins": ["https://store.oath.moonlight.pm"],
+            "profile": "base",
+            "publishers": [
+                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+YKD3yXYsGJMxwpBIWSYP7VuQvjhzGG+LWvYhKTESD oath@buccina"
+            ]
+        })
     );
     let net = cat.get(&"net:net0".parse().unwrap()).unwrap();
     assert_eq!(net.desired["ipv4"], "dhcp");

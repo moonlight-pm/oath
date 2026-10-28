@@ -92,10 +92,12 @@ cargo make install --target user@host --disk /dev/sda --hostname name \
   --overlay hosts/name.json --confirm
 ```
 
-Move an installed machine to a newer build output without wiping it:
+Publish the newest checked output, signed (R38), and move an installed
+machine to it without wiping it, on that machine:
 
 ```sh
-cargo make update --target home@host --confirm --reboot
+cargo make publish
+sudo oath update --confirm --reboot
 ```
 
 ## Repo

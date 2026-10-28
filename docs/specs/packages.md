@@ -103,7 +103,9 @@ A tree reaches the store one of three ways:
 3. Built by `oath build` from a plan (see builds.md).
 
 An origin is any HTTPS tree of `pkg/<name>/<hash>.tar`,
-`plan/<name>/<hash>.plan`, `adv/<name>/<hash>.json` and `INDEX.md`: a
+`plan/<name>/<hash>.plan`, `adv/<name>/<hash>.json` and `INDEX.md`,
+and of the signed releases machines update to (`out/`, R38,
+[boot-and-install.md](boot-and-install.md)): a
 static bucket, a LAN mirror, or another Oath box. It is not a
 repository kind and not canonical. Packs come from anywhere (R25): a
 pack is its hash and records no location (its tree, its plan and its
@@ -115,14 +117,15 @@ a tree came from; the pkg object does not.
 
 The default origin (is, 2026-10-19) is `https://store.oath.moonlight.pm`,
 first in the `base` profile's `host:local.origins`: the R2 bucket
-`oath-store` behind a Cloudflare custom domain, public read; only the
-build host's key writes it. The product page at `oath.moonlight.pm` is
+`oath-store` behind a Cloudflare custom domain, public read; only a
+build host's key writes it (buccina's, R38). The product page at `oath.moonlight.pm` is
 separate (Wicket).
 
 Host side: `cargo make store --name <n> --from <dir> [--tar]` hashes a
 tree into `~/.local/share/oath/store`. `cargo make publish` uploads the
 publishable packs, their plans, sources and advisories to the default
-origin; `--dest <dir>` writes the same tree into a directory (below).
+origin, then the newest checked output's signed release; `--dest
+<dir>` writes the same tree into a directory (below).
 
 ## Components and advisories (built)
 

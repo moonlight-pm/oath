@@ -120,48 +120,72 @@ host; it sees `/run/oath-install/ready` and skips step 2.
 
 ## Update an installed machine
 
-From the build host, without wiping:
+Each machine updates itself from its origins (R38). The build host
+publishes every output it checked (`cargo make publish`,
+[Packages](packages.md)); on the machine:
 
 ```sh
-cargo make update --target home@canto --confirm --reboot
-cargo make update --qemu <older output> --confirm   # rehearsal in QEMU
+oath update                           # the newest output for this machine, and what moves
+sudo oath update --confirm --reboot   # move to it, then boot it
 ```
 
-It takes the newest output `cargo make check` passed (`--output <id>`,
-`--unchecked`), and refuses a machine that is not Oath, is this machine,
-has pending changes, or has an apply on probation. Then it:
+It takes the newest release for `host:local.profile` from the first of
+`host:local.origins` that serves one a key in `host:local.publishers`
+signed (the `base` profile trusts buccina's), and refuses one older
+than the release the machine runs (`/oath/output.json`) unless
+`--output <id>` names it. It also refuses pending changes and an apply
+on probation. With `--confirm`, it:
 
-1. snapshots `@` as `@boot-<id>` before changing anything;
-2. ships the output's store packs the machine lacks, and writes the
-   output's accounts (`/etc/passwd`, `group`, `shadow`) and `/var/empty`,
-   since services that restart next drop to `void` (R36);
+1. snapshots `@` as `@boot-<n>` before changing anything;
+2. writes the output's accounts (`/etc/passwd`, `group`, `shadow`) and
+   `/var/empty`, since services that restart next drop to `void` (R36);
 3. sets each package the machine has to the output's pin and needs,
    makes each package the output fixes that the machine lacks (the
    image's files need it: `/etc/passwd` names `pkg:zsh`'s shell), and
-   runs `oath apply` once (`oath undo` takes it back but keeps a fixed
-   package; other objects the output's seed has and the machine does
-   not, a new base service say, are listed, not created: add them with
-   `oath new`). A package the profile pins from elsewhere (R28) keeps
-   the machine's own pin, and only its needs move to the output's
-   hashes (a need on another such package the machine keeps stays at
-   the machine's pin); so does a package the output does not carry
-   (`pkg:dropbear` after R36, one its owner added). Each service whose
-   program moved restarts; when sshd's
-   did, the apply is on probation and a new login keeps it;
+   runs `oath apply` once, which fetches each pack from the origins
+   (`oath undo` takes it back but keeps a fixed package; other objects
+   the output's seed has and the machine does not, a new base service
+   say, are listed, not created: add them with `oath new`). A package
+   the profile pins from elsewhere (R28) keeps the machine's own pin,
+   and only its needs move to the output's hashes (a need on another
+   such package the machine keeps stays at the machine's pin); so does
+   a package the output does not carry (`pkg:dropbear` after R36, one
+   its owner added). A recipe the owner built is listed with the
+   commands that build it here. Each service whose program moved
+   restarts; when sshd's did, the apply is on probation, and the
+   update waits until you open a **new** SSH session and run `sudo oath
+   keep` there;
 4. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
    and `/bin/sudo`;
-5. archives the ESP's kernel and initrd as boot `<id>` (with the
+5. archives the ESP's kernel and initrd as boot `<n>` (with the
    snapshot from step 1) and writes the new kernel, initrd and
    `oath-efi`, keeping five archives (`--esp`, default partition 1 of
    the root disk);
-6. with `--reboot`, reboots through PID 1 and requires the output's
-   PID 1 and an in-sync catalog;
-7. on a machine that still runs dropbear as `svc:sshd` and has booted a
-   PID 1 that wrote `/etc/ssh/sshd_config` and its host key in OpenSSH's
-   format (the same key), sets `svc:sshd` to OpenSSH's sshd and applies
-   it on probation; a new login keeps it, and if none gets in, PID 1
-   undoes it and dropbear serves again. Without `--reboot` this waits
-   for the next update after a reboot.
+6. with `--reboot`, reboots. `oath update` afterwards says whether
+   PID 1 is the output's.
+
+A machine that still runs dropbear as `svc:sshd` (from before R36)
+moves to OpenSSH after it has booted the new PID 1, which writes
+`/etc/ssh/sshd_config` and carries dropbear's host key over: run `sudo
+oath update --confirm` again, then `sudo oath keep` from a new SSH
+session. If none gets in, PID 1 undoes it and dropbear serves again.
+
+A machine from before R38 has no `oath update` yet. Give it the newer
+`oath` first (the pin is `pkg:oath`'s `hash` in the output's seed,
+`oath get pkg:oath` on any newer machine), then the profile it follows
+and the key it trusts:
+
+```sh
+sudo oath set pkg:oath hash=sha256-… && sudo oath apply pkg:oath
+sudo oath set host:local profile=desk \
+  publishers='["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+YKD3yXYsGJMxwpBIWSYP7VuQvjhzGG+LWvYhKTESD oath@buccina"]'
+sudo oath apply host:local
+sudo oath update --confirm --reboot
+```
+
+To try an output first, `cargo make update --qemu <older output>`
+installs the older one in QEMU and runs the same update from a local
+origin on the build host.
 
 If the new boot fails, pick the archived boot in the firmware menu: it
 is the old kernel with the old userspace.

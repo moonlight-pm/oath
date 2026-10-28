@@ -42,3 +42,10 @@ Overwrite this file when facts change; do not append a diary.
   (2026-10-27, `build/buildhost.sh` in tmux `buildhost`, log
   `build/buildhost.log`): `pkgs -j 4` from the committed lock gave the
   162 products novus got; the 135 after the base took 26 min.
+- **Publisher (R38):** buccina publishes the outputs machines pull.
+  Its signing key is `/home/.config/oath/sign_ed25519` (made
+  2026-10-28; public half `oath@buccina`,
+  `SHA256:PjyzPel8Vz4kHkbMUpFUEWigcvdJs4uOs71fMxBzF9w`, in the `base`
+  profile's `host:local.publishers`). The bucket's write key goes in
+  `/home/.config/oath/origin.env` (mode 600), a Cloudflare token of its
+  own; not there yet.

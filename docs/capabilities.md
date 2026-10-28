@@ -26,7 +26,7 @@ gaps · `target` designed, not built.
 | Devices | partial | modules by modalias (boot, request, hotplug); `dev:*` from sysfs (disks, `net0`…, UARTs) at boot and on change; `host:local.mounts` by label or UUID (boot, hotplug, apply); `host:local.module_options`; sound, pads and `/dev/kvm` `home`'s (R22, R30, R33) | Node ownership is not a field |
 | Seed and overlays | shipped | profile `base`, no test fixtures; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3, fragment, patches, depmod index; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | Package modules not yet booted |
-| Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `cargo make update` moves a machine to a new output | — |
+| Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `oath update` pulls the newest signed output (R38) | — |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, the locked packages and packs a profile pins from elsewhere (R28) into an immutable `build/out/<id>/` with a manifest | — |
 | Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only | — |
 | Test harness | shipped | `cargo make check`: one QEMU per case (Nix's, or `pkg:qemu`, R32, R33), real reboots, known gaps per phase, `check-pass` per output; `--target`: the `metal` cases on a machine; `--agent`: opt-in real-model tasks | — |

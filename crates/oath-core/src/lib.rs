@@ -3,6 +3,7 @@
 mod catalog;
 mod dev;
 mod error;
+pub mod esp;
 mod hooks;
 mod id;
 mod index;
@@ -19,9 +20,11 @@ pub mod schema;
 pub mod seat;
 mod seed;
 mod ssh;
+pub mod sshsig;
 mod svc_order;
 mod svc_run;
 mod tel;
+pub mod update;
 
 pub use catalog::{
     copy_objects, diff_values, status_path, Catalog, CatalogLock, Drift, Object, Verified,
@@ -50,11 +53,12 @@ pub use packhash::{
 };
 pub use pkg::{
     check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root, fetch_adv,
-    fetch_pkg, fetch_pkg_any, host_origins, ingest_file, install_tree, list_realization_ids,
-    list_realizations, normalize_need as normalize_pkg_need, pin_desired_hash, program_realization,
-    promote_slot, promote_store, put_tree, read_advisories, read_advisories_store, read_components,
-    resolve_tree, store_pkg, store_present, sync_need_hashes, verify_tree, write_advisories,
-    write_advisories_store, write_slot_links, COMPONENTS_NAME,
+    fetch_pkg, fetch_pkg_any, find_bin, host_origins, ingest_file, install_tree,
+    list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
+    pin_desired_hash, program_realization, promote_slot, promote_store, put_tree, read_advisories,
+    read_advisories_store, read_components, resolve_tree, store_pkg, store_present,
+    sync_need_hashes, verify_tree, write_advisories, write_advisories_store, write_slot_links,
+    COMPONENTS_NAME,
 };
 pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,

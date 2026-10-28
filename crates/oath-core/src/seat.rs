@@ -268,6 +268,8 @@ mod tests {
             timezone: String::new(),
             hosts: BTreeMap::new(),
             origins: Vec::new(),
+            profile: String::new(),
+            publishers: Vec::new(),
             mounts: BTreeMap::new(),
             module_options: BTreeMap::new(),
         };
@@ -291,6 +293,8 @@ mod tests {
             timezone: "MST7MDT".into(),
             hosts: BTreeMap::new(),
             origins: Vec::new(),
+            profile: String::new(),
+            publishers: Vec::new(),
             mounts: BTreeMap::new(),
             module_options: BTreeMap::new(),
         };

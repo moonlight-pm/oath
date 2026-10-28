@@ -12,6 +12,7 @@ use serde_json::{json, Map, Value};
 
 mod live;
 mod mcp;
+mod update;
 
 #[derive(Parser)]
 #[command(name = "oath", about = "Oath catalog — the only admin surface.")]
@@ -114,6 +115,20 @@ enum Cmd {
         #[arg(long, hide = true)]
         expired: bool,
     },
+    /// Move this machine to the newest output published for its profile
+    /// (`host:local.profile`) when a key in `host:local.publishers` signed
+    /// it (R38). Without --confirm it says what would change.
+    Update {
+        /// A named output instead of the newest (an older one is a rollback).
+        #[arg(long)]
+        output: Option<String>,
+        /// Reboot through PID 1 when it is done.
+        #[arg(long)]
+        reboot: bool,
+        /// The ESP's node (default: partition 1 of the root disk).
+        #[arg(long)]
+        esp: Option<String>,
+    },
     Log {
         /// Last N entries (default all).
         #[arg(short = 'n', long)]
@@ -198,6 +213,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Keep) => "keep",
         Some(Cmd::Verify { .. }) => "verify",
         Some(Cmd::Undo { .. }) => "undo",
+        Some(Cmd::Update { .. }) => "update",
         Some(Cmd::Log { .. }) => "log",
         Some(Cmd::Logs { .. }) => "logs",
         Some(Cmd::Mcp { .. }) => "mcp",
@@ -568,6 +584,12 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
+        Some(Cmd::Update { output, reboot, esp }) => update::run(
+            &cli.root,
+            &cat,
+            &actor,
+            update::Opts { confirm: cli.confirm, output, reboot, esp, json: cli.json },
+        ),
         Some(Cmd::Logs { id, lines }) => {
             let path = match &id {
                 Some(id) => {

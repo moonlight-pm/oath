@@ -742,6 +742,7 @@ name = "oath-core"
 version = "0.0.0"
 dependencies = [
  "chrono",
+ "ed25519-dalek",
  "libc",
  "schemars",
  "serde",

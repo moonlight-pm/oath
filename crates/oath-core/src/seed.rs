@@ -28,7 +28,7 @@ pub const DEFAULT_PROFILE: &str = "base";
 /// Whether this build's `base` profile fixes `id`. The image's own files
 /// need such a package (`/etc/passwd` names `pkg:zsh`'s shell), so it is
 /// never removable, however the machine came to have it: seeded, or made
-/// by `cargo make update` for an image that added it.
+/// by `oath update` for an image that added it.
 pub fn base_fixes(id: &ObjectId) -> bool {
     static FIXED: OnceLock<BTreeSet<String>> = OnceLock::new();
     FIXED
@@ -131,6 +131,10 @@ impl Profile {
             None => Self::default(),
         };
         out.layer(file)?;
+        // The machine follows the profile it was made from (`oath update`).
+        if let Some(h) = out.objects.get_mut("host:local") {
+            h["profile"] = json!(name);
+        }
         Ok(out)
     }
 

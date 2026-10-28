@@ -140,47 +140,81 @@ not matter (canto's September image logged `home` into Thoxa).
 
 ## Update (built)
 
-`cargo make update --target home@host --confirm [--reboot] [--esp
-<node>] [--output <id>]` moves an installed machine to a build output
-without wiping it (built 2026-10-16), over SSH as `home` with `sudo`,
-trusting only the host key `install` pinned:
+Machines pull their updates (R38, built 2026-10-28). A build host
+publishes each output it checked, and each machine moves itself:
 
-1. Refuse unless the output passed `check` (or `--unchecked`), the
-   target has `/oath/INDEX.md`, is not this machine (`boot_id`), is
-   in-sync, and has nothing on probation.
-2. Mount the ESP (default: partition 1 of the disk in `oath.root=`,
-   through `findfs` for a `UUID=`),
-   plan the rotation as `esp` does, and snapshot `@` as `@boot-<id>`
-   first, so the archived boot pairs the old kernel with the old
-   userspace.
-3. Ship every store realization of the output that the machine lacks:
-   a tar stream into `<slot>/.<hash>.part`, renamed into place.
-4. `oath set pkg:<name>` to the output seed's `hash` and `needs` for
-   each package the machine has whose pin or needs differ, then one
-   `oath apply`: one generation, undoable, and apply re-hashes each
-   tree before linking it. `needs` moves too: a package whose own tree
-   is unchanged still pins what it runs with (on 2026-10-19 a rebuilt
-   `pkg:sola` left `pkg:sola-browser` pinning the old one, and apply
-   refused). A package the output fixes that the machine lacks is made
-   (`oath new`) in the same apply, since the image's own files need it
-   (`/etc/passwd` names `pkg:zsh`'s shell, R27); other objects the
-   machine lacks are reported, not created.
-5. Replace the image's files outside the catalog (`/lib/oath`,
-   `/etc/passwd`, `group`, `shadow`, `shells`, `nsswitch.conf`,
-   `ssh/ssh_config`, `/sbin/init`, `/bin/sudo`), each written beside
-   itself and renamed over.
-6. Archive the ESP's kernel and initrd as boot `<id>`, prune beyond
-   five (and their `@boot-*`), write the new kernel, initrd, `oath-efi`
-   and entries.
-7. With `--reboot`: reboot through PID 1, wait for a new `boot_id`,
-   require `/proc/1/exe` to be the output's PID 1 and `oath diff` to be
-   in-sync.
+- **Release.** `cargo make publish` puts the newest checked output on
+  the origin after its packs: `out/<id>/update.tar` (the manifest, the
+  seed's objects and plans, the image's own files, kernel, initrd and
+  oath-efi, as a tar with no times or owners), `out/<id>.json` (id,
+  profile, publish time, the bundle's hash and size, PID 1's hash) and
+  `out/<profile>.json`, the newest for that profile. Each `.json` has
+  a `.sig` beside it, made by `ssh-keygen -Y sign -n oath-output` with
+  the build host's own key (`~/.config/oath/sign_ed25519`). It refuses
+  an output whose root-filesystem packs the origin lacks, and leaves an
+  output already there as it is, so the profile's newest never moves
+  back.
+- **Trust.** A machine follows `host:local.profile` (the image sets it)
+  and trusts the keys in `host:local.publishers`: the `base` profile
+  lists buccina's, and a person adds any other. `oath` checks the
+  signature itself (`oath_core::sshsig`, ed25519 only).
+- **`oath update`.** Without `--confirm` it fetches the release and its
+  bundle and says what moves. `sudo oath update --confirm [--reboot]
+  [--output <id>] [--esp <node>]`:
+  1. Refuses a release older than `/oath/output.json` (the release the
+     machine runs) unless `--output` names it, a bundle whose hash is
+     not the release's, pending changes, and an apply on probation.
+  2. Mounts the ESP (partition 1 of the disk in `oath.root=`, through
+     `findfs` for a `UUID=`), plans the rotation as `esp` does, and
+     snapshots `@` as `@boot-<n>` first, so the archived boot pairs the
+     old kernel with the old userspace.
+  3. Writes the accounts, files the output's plans the machine has, and
+     sets each package to the output's `hash` and `needs`, then one
+     `oath apply`: one generation, undoable, and apply fetches each
+     pack from the origins and hashes it. `needs` moves too: a package
+     whose own tree is unchanged still pins what it runs with (on
+     2026-10-19 a rebuilt `pkg:sola` left `pkg:sola-browser` pinning
+     the old one, and apply refused). A package packed elsewhere (R28)
+     keeps the machine's pin, and only its needs move; so does one the
+     output does not carry. A package the output fixes that the machine
+     lacks is made in the same apply, since the image's own files need
+     it (`/etc/passwd` names `pkg:zsh`'s shell, R27). A recipe the owner
+     built is reported, to build on the machine. An apply that moves
+     sshd's program goes on probation, and the update waits for `sudo
+     oath keep` from a new SSH session; if PID 1 undoes it, the update
+     stops there.
+  4. Replaces the image's files outside the catalog (`/lib/oath`,
+     `/etc/passwd`, `group`, `shadow`, `shells`, `nsswitch.conf`,
+     `ssh/ssh_config`, `/sbin/init`, `/bin/sudo`), each written beside
+     itself and renamed over.
+  5. Archives the ESP's kernel and initrd as boot `<n>`, prunes beyond
+     five (and their `@boot-*`), writes the new kernel, initrd,
+     `oath-efi` and entries, keeps the machine's `loader.conf`, and
+     records the release in `/oath/output.json`.
+  6. With `--reboot`, reboots. Afterwards `oath update` says whether
+     PID 1 is the output's.
+- **A machine from before R36** runs dropbear as `svc:sshd`. Once it
+  has booted a PID 1 that wrote sshd's config and carried dropbear's
+  host key over, `sudo oath update --confirm` moves `svc:sshd` to
+  OpenSSH, on probation.
+- **A machine from before R38** has no `oath update`: its owner sets
+  `pkg:oath` to the newer pin and applies it (apply fetches it from the
+  origin), then sets `host:local.profile` and `publishers`
+  ([install.md](../manual/install.md)).
 
-`--qemu <older output>` rehearses it: `install --qemu` of the older
-output, an OVMF boot, the update, a reboot and the checks. On
-2026-10-16 it moved `30ae9c0094cd` to `7d6e132eb1cb`, and
-`b0e9cee21d59` (from before R14) to `f4bc274b6ee4`, whose PID 1
-migrated the old catalog at boot (20 objects) and came up in sync.
+`cargo make update --qemu <older output>` rehearses it: `install
+--qemu` of the older output, an OVMF boot, a local origin on the build
+host (`http://10.0.2.2:<port>` from QEMU) serving the newer output's
+release signed with the host's key and the packs the older one lacks;
+the machine is pointed at it as a person would (origins, `pkg:oath` if
+it predates `oath update`, profile, publishers), then `oath update
+--confirm`, a reboot, and checks: the output's PID 1, the catalog in
+sync, the old boot archived. On 2026-10-28 on buccina it moved
+`a14d1acd3c2a` (before the security sweep, Linux 7.3-rc1) to
+`3b2d49886ff7`: `pkg:oath` first, then five plans and 46 packages in
+one generation, a reboot into Linux 7.3 and the output's PID 1. Before
+R38, `cargo make update --target` pushed the same steps over SSH
+(built 2026-10-16); it is gone.
 
 ## Target
 

@@ -27,6 +27,19 @@ Overwrite this file when facts change; do not append a diary.
   nightly `btrfs send` to the NAS at `10.0.0.12:/mnt/alpha/backup/canto`.
 - **Permissions:** the test machine. Agents install, update, reboot
   and wipe it without asking (Joshua, 2026-10-18).
+- **Updates (R38):** canto pulls its own from the bucket, and predates
+  `oath update`: it first takes the newer `pkg:oath`, then
+  `host:local.profile=desk` and buccina's key in `publishers`, by hand
+  ([install.md](../docs/manual/install.md)), then `sudo oath update
+  --confirm --reboot`, and once more after that boot for dropbear to
+  OpenSSH (R36). The update puts `pkg:cef` back at Oath's vendor build,
+  without the Sola tab's H.264/AAC codecs build (`sha256-252cc3ea5deb`);
+  the Sola tab pins its own again. Waiting for buccina's bucket key and
+  Joshua's window (with CEF 156, R37). Its Oath checkout
+  (`~/Projects/Oath`, a clean `d8817f9`; cargo's target on
+  `/mnt/warehouse/Oath`) goes once the Steam session that runs in it
+  closes; the novus trial stick's host key moved to
+  `~/.ssh/novus-oath.known_hosts`.
 - **Running now:** build output `55c20bf6a86c` (`cargo make build
   --profile desk` of `f466082`: R32–R35, the kernel with novus's drivers
   and KVM, PID 1 loading package modules and finding a `UUID=` root,

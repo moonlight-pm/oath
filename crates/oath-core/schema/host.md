@@ -43,6 +43,13 @@ not this kind. Do not add a Unix user kind — the accounts are always
   the machine's log does (`/oath/log/oath.jsonl`, `"fetched"`). The `base`
   profile lists the default origin, `https://store.oath.moonlight.pm`;
   put a LAN mirror first to prefer it. `set` replaces the whole list.
+- `profile` — the seed profile this machine was made from (`base`,
+  `desk`). `oath update` takes the newest output published for it,
+  `{origin}/out/<profile>.json`. The image sets it; empty takes no
+  updates.
+- `publishers` — the keys whose signed outputs `oath update` takes:
+  `ssh-ed25519 AAAA… name` lines, one per build host. The `base`
+  profile lists buccina's. A person adds a key; an agent does not.
 
 ## Example
 

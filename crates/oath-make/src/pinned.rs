@@ -1,7 +1,7 @@
 //! Packs a seed profile pins that Oath did not build (R28): a `pkg` entry
 //! with a `hash`, its `needs` and optionally a `url`, and no `pkgs/<name>/`.
 //! Its owner builds and publishes it. The image build fetches it from its
-//! `url` or the profile's origins into the host store, `cargo make update`
+//! `url` or the profile's origins into the host store, `oath update`
 //! keeps the pin a machine has, and `cargo make publish` leaves it out.
 //! When a pack it needs was rebuilt, the image moves the need to the new
 //! hash and says so: the owner has to build it again against this desk.
@@ -199,49 +199,6 @@ pub fn warn_stale(manifest: &Value) {
     }
 }
 
-/// The packages a build output's profile pins from elsewhere, shipped
-/// or not (its manifest's `pinned`).
-pub fn in_manifest(manifest: &Value) -> BTreeSet<String> {
-    manifest["pinned"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|n| n.as_str().map(str::to_string))
-        .collect()
-}
-
-/// What a machine's packs pinned from elsewhere need of `need` after an
-/// update: a pack the machine keeps at its own pin (`kept`, by name) at
-/// that pin, since its owner built them together; anything else at the
-/// output's pin (`output`).
-pub fn needed_at<'a>(
-    kept: &'a BTreeMap<String, String>,
-    output: impl Fn(&str) -> Option<String> + 'a,
-) -> impl Fn(&str) -> Option<String> + 'a {
-    move |need| kept.get(need).cloned().or_else(|| output(need))
-}
-
-/// What `cargo make update` sets on a machine's pinned package that is
-/// not at the output's pin: the machine's own pin stays, and each need the
-/// output ships at another hash moves to it. `None` when nothing moves.
-/// `machine` is the machine's desired doc; `ships(need)` is the output's pin.
-pub fn keep_machine_pin(
-    machine: &Value,
-    ships: impl Fn(&str) -> Option<String>,
-) -> Option<(Value, Vec<String>)> {
-    let mut needs = machine["needs"].as_array().cloned().unwrap_or_default();
-    let mut moved = Vec::new();
-    for n in needs.iter_mut() {
-        let Some(id) = n["id"].as_str().map(str::to_string) else { continue };
-        let name = id.trim_start_matches("pkg:");
-        if let Some(s) = ships(name).filter(|s| n["hash"].as_str() != Some(s.as_str())) {
-            moved.push(format!("{id} {} -> {s}", n["hash"].as_str().unwrap_or("")));
-            n["hash"] = json!(s);
-        }
-    }
-    (!moved.is_empty()).then(|| (json!({ "needs": needs }), moved))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -294,43 +251,6 @@ mod tests {
         let e = manifest_entry(&pins["sola"], &s, &BTreeSet::from(["rootfs"]));
         assert_eq!(e["pinned"], json!(true));
         assert_eq!(e["stale_needs"][0]["id"], json!("pkg:wayland"));
-        let m = json!({ "pinned": ["sola", "sola-src"], "packs": { "sola": e, "bash": { "hash": A } } });
-        assert_eq!(in_manifest(&m), BTreeSet::from(["sola".to_string(), "sola-src".to_string()]));
-        // A machine keeps its own pin; only the needs this output moved move.
-        let machine = json!({
-            "present": true,
-            "hash": B,
-            "needs": [{ "id": "pkg:wayland", "hash": B }, { "id": "pkg:mesa", "hash": C }]
-        });
-        let (set, moved) = keep_machine_pin(&machine, ships).unwrap();
-        assert_eq!(
-            set,
-            json!({ "needs": [{ "id": "pkg:wayland", "hash": C }, { "id": "pkg:mesa", "hash": C }] })
-        );
-        assert_eq!(moved.len(), 1);
-        assert!(keep_machine_pin(&machine, |_| None).is_none());
-        // Its need on another pack it keeps stays at the machine's pin of
-        // that pack, and goes back to it if an update moved it.
-        let kept = BTreeMap::from([("sola".to_string(), A.to_string())]);
-        let ships = needed_at(&kept, |n: &str| match n {
-            "sola" => Some(B.to_string()),
-            "cef" => Some(C.to_string()),
-            _ => None,
-        });
-        let browser = json!({
-            "hash": C,
-            "needs": [{ "id": "pkg:sola", "hash": A }, { "id": "pkg:cef", "hash": B }]
-        });
-        let (set, moved) = keep_machine_pin(&browser, &ships).unwrap();
-        assert_eq!(
-            set["needs"],
-            json!([{ "id": "pkg:sola", "hash": A }, { "id": "pkg:cef", "hash": C }])
-        );
-        assert_eq!(moved, vec![format!("pkg:cef {B} -> {C}")]);
-        let moved_wrong =
-            json!({ "needs": [{ "id": "pkg:sola", "hash": B }, { "id": "pkg:cef", "hash": C }] });
-        let (set, _) = keep_machine_pin(&moved_wrong, &ships).unwrap();
-        assert_eq!(set["needs"][0]["hash"], json!(A));
     }
 
     #[test]

@@ -943,6 +943,17 @@ impl Catalog {
                         return Err(Error::hint(format!("{id}: origins: `{o}` twice"), hint()));
                     }
                 }
+                if !h.profile.is_empty() && !crate::PROFILES.iter().any(|(p, _)| *p == h.profile) {
+                    let names: Vec<&str> = crate::PROFILES.iter().map(|(p, _)| *p).collect();
+                    return Err(Error::hint(
+                        format!("{id}: profile: no seed profile `{}`", h.profile),
+                        format!("profiles: {}", names.join(", ")),
+                    ));
+                }
+                for key in &h.publishers {
+                    crate::sshsig::parse_public_key(key)
+                        .map_err(|e| Error::hint(format!("{id}: publishers: {e}"), hint()))?;
+                }
                 for (path, m) in &h.mounts {
                     let why = crate::mounts::check_path(path)
                         .or_else(|| crate::mounts::check_source(&m.source))

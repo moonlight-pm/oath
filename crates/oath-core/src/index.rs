@@ -33,6 +33,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath keep            keep an apply on probation (from a new SSH session)
     oath undo            put back the spec the last apply changed, and converge
     oath verify          hash linked package trees again against their pins
+    oath update          what the newest output for this machine would change;
+                         `sudo oath update --confirm [--reboot]` moves to it
     oath log             apply log
     oath logs [id]       output of svc:<name>, net:net0, a plan's last build
                          (plan:<name>), or PID 1 (no id)
@@ -74,6 +76,12 @@ Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
 (sshd, `ssh:local` keys, `net:net0`, a new `pkg:openssh` hash) need
 `--confirm`. A service restarts when an apply moves the package its
 program comes from.
+
+Updates come from the origins (`host:local.origins`): a build host
+publishes each output it checked, signed, and `oath update` takes the
+newest for `host:local.profile` when a key in `host:local.publishers`
+signed it. It moves every package in one generation, then the kernel,
+initrd and PID 1 for the next boot; the boot before stays in the menu.
 "#,
         index = cat.root().join("INDEX.md").display(),
         kinds = kinds_block.trim_end(),

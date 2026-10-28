@@ -1319,7 +1319,9 @@ fn is_tree_path(p: &str) -> bool {
         && p.split('/').all(|c| !c.is_empty() && c != "." && c != "..")
 }
 
-fn find_bin(name: &str) -> PathBuf {
+/// A program in /bin, /usr/bin or PATH (bare name if none: the spawn
+/// error says which).
+pub fn find_bin(name: &str) -> PathBuf {
     for dir in ["/bin", "/usr/bin"] {
         let p = PathBuf::from(dir).join(name);
         if p.is_file() {

@@ -15,6 +15,7 @@ mod pack;
 mod pinned;
 mod pkgs;
 mod qemu;
+mod release;
 mod sigstore;
 mod tools;
 mod update;
@@ -175,11 +176,16 @@ enum Cmd {
     },
     /// Publish every locked pack and every package a seed profile names, each
     /// with its licence, plan and source (`pkg/<name>/<hash>.tar`, `plan/`,
-    /// `adv/`, `INDEX.md`): to the default origin, or into a directory.
+    /// `adv/`, `INDEX.md`), then the newest checked output's signed release
+    /// (`out/`, R38): to the default origin, or into a directory.
     Publish {
         /// Write this directory instead of uploading to the default origin.
         #[arg(long)]
         dest: Option<PathBuf>,
+        /// The output whose release goes out (default: the newest one
+        /// `check` passed), signed with ~/.config/oath/sign_ed25519.
+        #[arg(long)]
+        output: Option<String>,
     },
     /// Query OSV for packed trees that have `components.json`; write
     /// `~/.local/share/oath/store/adv/<name>/<hash>.json`. Guest never calls OSV.
@@ -193,23 +199,13 @@ enum Cmd {
     /// ship missing packs, apply the output's pins (one generation), replace
     /// /lib/oath, archive the old boot and write the new one to its ESP.
     /// Requires `--confirm`.
+    /// Rehearse a machine's own update (`oath update`, R38) in QEMU:
+    /// install this older output, serve the newer one's signed release and
+    /// packs from a local origin, update, reboot, check.
     Update {
-        /// `home@host[:port]` of a machine `install` wrote (its host key is
-        /// pinned in build/known_hosts).
-        #[arg(long)]
-        target: Option<String>,
-        /// Rehearse in QEMU: `install --qemu` this older output, then update it.
+        /// The older output to install first.
         #[arg(long, value_name = "OUTPUT")]
-        qemu: Option<String>,
-        /// Required. Writes the machine's boot files.
-        #[arg(long)]
-        confirm: bool,
-        /// Reboot into the new boot and check it.
-        #[arg(long)]
-        reboot: bool,
-        /// The target's ESP node (default: partition 1 of its root disk).
-        #[arg(long)]
-        esp: Option<String>,
+        qemu: String,
         /// Build output to update to (default: the newest one `check` passed).
         #[arg(long)]
         output: Option<String>,
@@ -338,14 +334,12 @@ fn real() -> Result<()> {
             }
         }
         Cmd::Store { from, name, tar } => pack::store_pack(&root, &name, &from, tar)?,
-        Cmd::Publish { dest } => pack::publish_store(&root, dest.as_deref())?,
+        Cmd::Publish { dest, output } => {
+            pack::publish_store(&root, &out, dest.as_deref(), output.as_deref())?
+        }
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
-        Cmd::Update { target, qemu, confirm, reboot, esp, output, unchecked } => {
-            update::run_update(
-                &root,
-                &out,
-                update::Opts { target, qemu, output, unchecked, confirm, reboot, esp },
-            )?;
+        Cmd::Update { qemu, output, unchecked } => {
+            update::run_update(&root, &out, update::Opts { qemu, output, unchecked })?;
         }
         Cmd::Esp { esp, confirm, root: root_dev, output, unchecked } => {
             install::update_esp(

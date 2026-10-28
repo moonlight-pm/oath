@@ -93,10 +93,10 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   and `PATH` itself. sshd reads the file when it starts, so a changed
   env reaches SSH commands after sshd restarts (a login shell reads
   `/etc/profile` each time).
-- `cargo make update` moves a machine from dropbear: once it has booted
-  a PID 1 that wrote the config and converted the key, `svc:sshd` is
-  set to OpenSSH's sshd and applied on probation; a new login keeps
-  it. `pkg:dropbear` stays on such a machine, unused, until its owner
+- `oath update` moves a machine from dropbear: once it has booted a
+  PID 1 that wrote the config and converted the key, `sudo oath update
+  --confirm` sets `svc:sshd` to OpenSSH's sshd and applies it on
+  probation; a new login keeps it. `pkg:dropbear` stays on such a machine, unused, until its owner
   removes it.
 - The installer writes the build host's public keys into `ssh:local`
   through the install overlay (boot-and-install.md).

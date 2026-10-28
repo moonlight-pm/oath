@@ -56,17 +56,17 @@ hygiene; normal git on `master` (status, diff, log, add, commit);
 `cargo test`; `cargo make build`; `cargo make check`; local QEMU of
 images this repo built. **Anything on canto**, the test machine
 (Joshua, 2026-10-18): `cargo make install --target home@10.0.0.3
---disk /dev/sda … --confirm`, `cargo make update --target`, reboots,
-`sudo`, wiping its disk. **Anything on buccina**, the Oath build
+--disk /dev/sda … --confirm`, `sudo oath update --confirm` there,
+reboots, `sudo`, wiping its disk. **Anything on buccina**, the Oath build
 machine (Joshua, 2026-10-26: Oath work such as self-host moves there;
 canto is for Sola R&D, so keep long Oath builds off it): installs,
 updates, reboots, `sudo`, wiping its disk.
 
 **Ask first:** force-push or hard reset of published history; writing
 to any other real disk or USB stick Joshua did not ask for (`cargo make
-install --confirm`, `--usb`, `cargo make update --target`); changing
-novus (the NixOS build host);
-committing secrets; answering an Open decision.
+install --confirm`, `--usb`, `sudo oath update --confirm` elsewhere);
+changing novus (the NixOS build host); committing secrets; answering an
+Open decision.
 
 ## Tree
 

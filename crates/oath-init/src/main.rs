@@ -1019,6 +1019,8 @@ fn apply_host() {
         timezone: host.timezone,
         hosts: host.hosts,
         origins: host.origins,
+        profile: host.profile,
+        publishers: host.publishers,
         mounts: Default::default(),
         module_options: host.module_options,
     };

@@ -4,20 +4,20 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-26 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-10-28 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
 · decisions R1–R37 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **Security sweep (Joshua, 2026-10-27).** Every package checked
-   upstream: Linux 7.3 (R10), glibc's 2.44 branch, libstdc++ fixes, CA
-   bundle and NSS 3.132 (no eMudhra), Python 3.15.2 (ssl), BIND 9.20.30
-   and kernel.org's signed tarball (R37), patch, elfutils, vim, harfbuzz;
-   unreleased fixes as `patches/`. novus and buccina built all 162
-   products identically; buccina runs it (`f443df24beec`, published).
-   Next: canto and novus when Joshua says; CEF 156 (R37); expat 2.10.0
-   (11-02).
+1. **Pull updates (R38, Joshua 2026-10-28).** Machines update
+   themselves: `cargo make publish` puts the newest checked output on
+   the bucket, signed by buccina's key (`base` trusts it), and `sudo
+   oath update --confirm --reboot` takes it (rehearsed in QEMU on
+   buccina), the 2026-10-27 security sweep with it. Next: buccina's
+   bucket token (Joshua), then buccina publishes `3b2d49886ff7`; canto
+   takes `pkg:oath` and the key by hand and pulls in the CEF 156 window
+   (R37); expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
@@ -43,15 +43,15 @@ append history (git has it).
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
    `host:local.origins`, the R2 bucket written only by `cargo make
-   publish`. Next: a new stable is a new pin; publish after every build
-   that changes a pack; sign `INDEX.md` when a second publisher appears.
+   publish` (buccina's, R38). Next: a new stable is a new pin; publish
+   after every build that changes a pack.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). R36 (2026-10-26): account `void`;
 OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`;
-canto (`55c20bf6a86c`, generation 329) keeps dropbear until its next
-`update --reboot`. Left until needed: root SSH, more NICs, node rules.
+canto (`55c20bf6a86c`, generation 329) keeps dropbear until its first
+`oath update`. Left until needed: root SSH, more NICs, node rules.
 
 ## Machines
 
@@ -67,8 +67,8 @@ Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md))
 - `cargo make install --confirm` (wipes a disk) on anything but canto
   and buccina unless Joshua asks; install, update, reboot and wipe
   those two without asking (Joshua, 2026-10-18 and 2026-10-26).
-- `cargo make update --target` (writes a real machine's ESP and store)
-  on anything else unless Joshua asks; `--qemu` rehearsals are fine.
+- `sudo oath update --confirm` (writes a machine's ESP and store) on
+  anything else unless Joshua asks; `--qemu` rehearsals are fine.
 - Write a USB stick or real disk Joshua did not ask for.
 - Change novus's OS, or write its disks, before Joshua says so (R32).
 - Invent answers to open decisions in [docs/decisions.md](docs/decisions.md).

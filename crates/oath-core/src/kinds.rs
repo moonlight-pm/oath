@@ -70,6 +70,16 @@ pub struct Host {
     /// may serve any pack, and the hash decides.
     #[serde(default)]
     pub origins: Vec<String>,
+    /// The seed profile this machine follows (`desk`): `oath update` takes
+    /// the newest output published for it, {origin}/out/{profile}.json.
+    /// The image sets it; empty takes no updates.
+    #[serde(default)]
+    pub profile: String,
+    /// The keys whose signed outputs `oath update` takes (R38):
+    /// `ssh-ed25519 AAAA… name` lines, each a build host's signing key. A
+    /// person adds one; an agent does not.
+    #[serde(default)]
+    pub publishers: Vec<String>,
     /// Filesystems to mount: a path under /mnt or /home to its source.
     /// PID 1 mounts each at boot and when its disk appears; apply mounts,
     /// remounts and unmounts. A source that is not plugged in waits, and

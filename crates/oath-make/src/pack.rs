@@ -792,7 +792,12 @@ fn write_pack_tar(tree: &Path, tarball: &Path) -> Result<PathBuf> {
 /// needs a package that is not published. With `dest`, writes that
 /// directory (an origin is any such tree); without, uploads to the
 /// default origin what it does not have yet.
-pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
+pub fn publish_store(
+    repo: &Path,
+    out: &Path,
+    dest: Option<&Path>,
+    output: Option<&str>,
+) -> Result<()> {
     let p = collect_publication(repo)?;
     match dest {
         Some(d) => write_publication(repo, &p, d)?,
@@ -801,7 +806,15 @@ pub fn publish_store(repo: &Path, dest: Option<&Path>) -> Result<()> {
     if !p.skipped.is_empty() {
         println!("not locked or named by a seed profile, not published: {}", p.skipped.join(" "));
     }
-    Ok(())
+    // R38: the newest checked output goes out after its packs.
+    match crate::output::pick(out, output, true) {
+        Ok(o) => crate::release::publish(&o, dest, &out.join("release").join(&o.id)),
+        Err(e) if output.is_none() => {
+            println!("no output published: {e:#}");
+            Ok(())
+        }
+        Err(e) => Err(e),
+    }
 }
 
 /// What a publish puts on an origin: each file under its key, in order

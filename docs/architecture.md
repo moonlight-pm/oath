@@ -88,6 +88,7 @@ btrfs
   status/<kind>/<name>.json  actual: tmpfs mounted by PID 1, rebuilt each boot
   log/apply.jsonl          one line per apply (ok, error, refused), undo or keep
   probation.json           the apply on probation (lockout class), while open
+  output.json              the release this machine runs, from `oath update` (R38)
   log/init.log             PID 1's messages (`oath logs`)
   log/svc/<name>.log       each service's stdout+stderr, UTC-stamped,
                            rotated to .1 past 256 KiB (`oath logs svc:<name>`)
@@ -101,7 +102,8 @@ btrfs
   store/adv/<name>/<hash>.json   advisories
   ssh/ssh_host_ed25519_key sshd's host key (+ .pub); host_ed25519 is
                            dropbear's, on machines from before R36
-  run/                     init.sock, fs/ (btrfs top level)
+  run/                     init.sock, fs/ (btrfs top level); update/ and
+                           update-esp/ while `oath update` runs
 ```
 
 ## Processes (base profile)
@@ -201,12 +203,16 @@ cargo make build [--profile base]
                           libraries it loads (install bakes keys into a
                           copy)
     check-pass            a clean `cargo make check` of this output
-cargo make publish [--dest <dir>]
+cargo make publish [--dest <dir>] [--output <id>]
   every locked pack and every profile-named one, with its plan, source
   pack and advisories, then INDEX.md (R25): without --dest, curl
   --aws-sigv4 lists the R2 bucket oath-store and puts what it lacks,
   key from ~/.config/oath/origin.env; machines read it at
-  https://store.oath.moonlight.pm (host:local.origins)
+  https://store.oath.moonlight.pm (host:local.origins). Then the newest
+  checked output's release (R38): out/<id>/update.tar, out/<id>.json
+  and out/<profile>.json, each .json with a .sig from
+  ~/.config/oath/sign_ed25519 (ssh-keygen -Y sign -n oath-output),
+  made in build/release/<id>/
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
   build/check/key; serves the fetch canary and a one-pack origin
@@ -232,10 +238,10 @@ cargo make install --target … --disk … --overlay hosts/<name>.json --confirm
   installer, partition (sfdisk, wipefs), format, copy the stage, write
   the overlay with `oath seed --overlay`, make the host key and pin it
   in build/known_hosts, write the ESP, reboot; refuses the build host
-cargo make update --target home@<host> --confirm [--reboot]
-  over SSH with the pinned key: snapshot @ as @boot-<id>, tar the
-  missing store packs into /oath/store, `oath set` the output's pins
-  and one `oath apply`, replace /lib/oath and the static /etc files,
-  rotate the ESP (archive the old boot), reboot and check PID 1;
-  `--qemu <older output>` rehearses it in build/runs/<time>-install/
+cargo make update --qemu <older output>
+  rehearses a machine's `oath update` (R38) in build/runs/<time>-install/:
+  installs the older output, serves the newer one's signed release and
+  the packs the older lacks from origin/ on 127.0.0.1:<port>
+  (http://10.0.2.2:<port> in QEMU), points the machine at it, updates,
+  reboots, checks PID 1 and the ESP
 ```

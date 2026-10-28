@@ -317,6 +317,18 @@ S3 key: a Cloudflare account token allowed to read and write objects
 in `oath-store` only; its id is the key id and the SHA-256 of its value
 the secret.
 
+Then `publish` puts out the newest output `cargo make check` passed
+(`--output <id>` for another), which machines update to (R38,
+[Install](install.md)): `out/<id>/update.tar`, `out/<id>.json` and
+`out/<profile>.json`, each `.json` with a `.sig` from the build host's
+signing key, `~/.config/oath/sign_ed25519` (`OATH_SIGN_KEY`; make one
+with `ssh-keygen -t ed25519 -N '' -C oath@<host> -f
+~/.config/oath/sign_ed25519`). Machines take it only if that key's
+public half is in their `host:local.publishers`. It refuses an output
+whose packs the origin lacks (a pack pinned from elsewhere is its
+owner's to publish), and an output already published stays as it was,
+so publishing an older one again never moves a profile back.
+
 Optional backup hooks in a pack (not catalog fields):
 `libexec/oath-backup-quiesce` and `libexec/oath-backup-thaw`. See
 [Services](services.md).

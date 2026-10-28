@@ -250,7 +250,7 @@ library (R17 in [decisions](../decisions.md)); the base tools are GNU's
   (its owner built against a wayland or mesa since rebuilt) is listed
   as `stale_needs`: the image moves the need to the shipped hash, and
   `build`, `check` and `update` warn that the owner should build it
-  again. `cargo make publish` leaves it out. `cargo make update` keeps
+  again. `cargo make publish` leaves it out. `oath update` keeps
   the pin the machine has (the owner moves it, with `oath set`), and
   moves only its needs to the output's hashes; a need on another pinned
   pack the machine keeps stays at the machine's pin, since the owner

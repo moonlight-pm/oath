@@ -134,6 +134,8 @@ impl ApplyHooks for NullHooks {
             timezone: desired.timezone.clone(),
             hosts: desired.hosts.clone(),
             origins: desired.origins.clone(),
+            profile: desired.profile.clone(),
+            publishers: desired.publishers.clone(),
             mounts: desired.mounts.clone(),
             module_options: desired.module_options.clone(),
         })
