@@ -191,8 +191,9 @@ ssh -T home@<host> oath mcp --read-only    # only the tools that look
 Each tool runs one `oath --json` command and returns its JSON: `index`,
 `ls`, `schema`, `get`, `diff`, `log`, `logs` and `verify` look;
 `set_host`, `set_svc`, `set_pkg`, `set_net`, `set_ssh`, `new_svc`,
-`new_pkg`, `rm`, `apply`, `undo`, `keep`, `file_plan` (a plan from its
-text) and `build` run through `sudo`, as the owner's would. The same
+`new_pkg`, `rm`, `apply`, `undo`, `keep`, `update` (what the newest
+output would move, or with `confirm` move to it), `file_plan` (a plan
+from its text) and `build` run through `sudo`, as the owner's would. The same
 reads are resources too: `oath://index`, `oath://schema/<kind>` and
 `oath://object/<kind>/<name>`. A client that sends a `progressToken`
 hears every 5 s that a long `build` or `apply` is still running. A tool's `fields` are the kind's schema,

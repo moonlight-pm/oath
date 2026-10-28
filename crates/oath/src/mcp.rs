@@ -588,6 +588,19 @@ impl Server {
                 rest = ids("ids");
             }
             "undo" | "keep" => v.push(tool.into()),
+            "update" => {
+                let confirm = a.get("confirm") == Some(&json!(true));
+                if confirm {
+                    v.push("--confirm".into());
+                }
+                v.push("update".into());
+                if let Some(o) = s("output") {
+                    v.push(format!("--output={o}"));
+                }
+                if confirm && a.get("reboot") == Some(&json!(true)) {
+                    v.push("--reboot".into());
+                }
+            }
             "build" => {
                 v.push("build".into());
                 rest.extend(s("plan").map(|p| format!("plan:{p}")));
@@ -924,6 +937,27 @@ fn tools() -> Vec<Tool> {
         false,
     ));
     t.push(write(
+        "update",
+        "Without `confirm`: what the newest output published for this machine's profile \
+         (`host:local.profile`, signed by a key in `host:local.publishers`) would move. With \
+         `confirm: true`: move to it. Every pack is fetched first, so a failed fetch changes \
+         nothing; then the packages move in one generation, the image's own files and the ESP \
+         are written, and the boot it replaced stays in the firmware menu. Its kernel and \
+         PID 1 run after a reboot (`reboot: true`, which ends this connection). On a machine \
+         still running dropbear, a `confirm` after that reboot moves sshd to OpenSSH on \
+         probation: `keep` from a new connection. Do not pass `confirm` unless the owner \
+         asked for an update."
+            .into(),
+        vec![
+            p("confirm", Ty::Bool, false, "Only when the owner asked for this update."),
+            p("reboot", Ty::Bool, false, "With `confirm`: reboot when done."),
+            p("output", Ty::Name, false, "A named output (12 hex) instead of the newest."),
+        ],
+        true,
+        false,
+        true,
+    ));
+    t.push(write(
         "file_plan",
         "File a build plan from its text: the whole plan file (`#!oath-plan`, its JSON header, \
          `---`, then the build script). Its header's `name` must be `name`. It is stored by its \
@@ -1214,6 +1248,7 @@ mod tests {
                 "apply",
                 "undo",
                 "keep",
+                "update",
                 "file_plan",
                 "build"
             ]
@@ -1238,7 +1273,7 @@ mod tests {
         assert_eq!(m.last()[4], "mcp:claudecode", "the label keeps A-Za-z0-9._/-");
 
         let r = modern(&mut s, &m, "tools/list", json!({}));
-        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 21);
+        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 22);
         assert_eq!(r["result"]["ttlMs"], TTL_MS);
         let r = modern(&mut s, &m, "tools/call", json!({ "name": "ls", "arguments": {} }));
         assert_eq!(r["result"]["resultType"], "complete");
@@ -1346,6 +1381,14 @@ mod tests {
             ("apply", json!({ "confirm": false }), true, vec!["apply"]),
             ("undo", json!({}), true, vec!["undo"]),
             ("keep", json!({}), true, vec!["keep"]),
+            ("update", json!({}), true, vec!["update"]),
+            ("update", json!({ "reboot": true }), true, vec!["update"]),
+            (
+                "update",
+                json!({ "confirm": true, "reboot": true, "output": "3b2d49886ff7" }),
+                true,
+                vec!["--confirm", "update", "--output=3b2d49886ff7", "--reboot"],
+            ),
             ("build", json!({ "plan": "hello" }), true, vec!["build", "--", "plan:hello"]),
             (
                 "file_plan",

@@ -150,6 +150,7 @@ The list is built at startup, always in this order.
 | `apply` | `ids?`, `confirm?`, `probation_secs?` | `sudo oath --json [--confirm] apply [--probation s] [ids]` | destructive, open world |
 | `undo` | — | `sudo oath --json undo` | destructive |
 | `keep` | — | `sudo oath --json keep` | |
+| `update` | `confirm?`, `reboot?`, `output?` | `sudo oath --json [--confirm] update [--output=<id>] [--reboot]` (`--reboot` only with `confirm`) | destructive, open world |
 | `file_plan` | `name`, `text` | `sudo oath --json set plan:<name> --from-file -`, `text` on stdin | idempotent |
 | `build` | `plan` | `sudo oath --json build plan:<name>` | idempotent |
 
@@ -157,7 +158,8 @@ The list is built at startup, always in this order.
 `idempotentHint`, `openWorldHint`); unlisted ones are false. `verify`
 is read-only because it changes only status. `set`, `new` and `rm`
 change spec but nothing on the machine until `apply`. `apply` is open
-world because a `pkg` with a `url` fetches. `sudo` is always `sudo -n`.
+world because a `pkg` with a `url` fetches; `update` because it fetches
+the release, its bundle and packs from the origins (R38). `sudo` is always `sudo -n`.
 
 Input schemas:
 
