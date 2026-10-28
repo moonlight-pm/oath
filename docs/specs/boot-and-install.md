@@ -222,9 +222,14 @@ dropbear to OpenSSH included ([canto.md](../../hosts/canto.md)). Its
 `oath` fetched each pack as the apply converged it, with no retry, and
 canto's link reset `pkg:perl` twice, leaving it half moved. So since
 that day `oath update --confirm` fetches every pack its moves pin that
-the store lacks before it snapshots or sets anything, and a pack fetch
-tries a network error (or a stall under 1 KB/s for 30 s) twice more;
-machines get it with the next output buccina publishes.
+the store lacks before it snapshots or sets anything, into the store
+alone (`prefetch_pkg_any`), and a pack fetch tries a network error (or a
+stall under 1 KB/s for 30 s) twice more. Its first two builds fetched
+through apply's own path, which also links `live` and writes the pin
+into `applied.json`, so the apply saw no drift and left canto's
+`pkg:oath` unlinked. Now the update checks that every package it pinned
+is linked at its pin after the apply, and the rehearsal checks every
+package's `actual` against its pin, which `oath diff` cannot see.
 
 ## Target
 

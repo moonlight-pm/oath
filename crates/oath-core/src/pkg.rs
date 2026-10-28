@@ -745,6 +745,20 @@ pub fn install_tree(
     cache: Option<&Path>,
     pin: &str,
 ) -> Result<String> {
+    let (got, dest) = store_tree(catalog_root, name, src, pin)?;
+    if let Some(cache) = cache {
+        put_tree(&cache.join("pkg").join(name), &got, &dest)?;
+    }
+    write_slot_links(catalog_root, name, &got)?;
+    if !pin.is_empty() {
+        pin_desired_hash(catalog_root, name, &got)?;
+    }
+    Ok(got)
+}
+
+/// Put a pack tree in the store under its hash, checked against `pin`
+/// when there is one. Nothing links it and no object changes.
+fn store_tree(catalog_root: &Path, name: &str, src: &Path, pin: &str) -> Result<(String, PathBuf)> {
     if !src.is_dir() {
         return Err(Error::hint(
             format!("not a pack directory: {}", src.display()),
@@ -759,14 +773,7 @@ pub fn install_tree(
         ));
     }
     let dest = put_tree(&slot_dir(catalog_root, name), &got, src)?;
-    if let Some(cache) = cache {
-        put_tree(&cache.join("pkg").join(name), &got, &dest)?;
-    }
-    write_slot_links(catalog_root, name, &got)?;
-    if !pin.is_empty() {
-        pin_desired_hash(catalog_root, name, &got)?;
-    }
-    Ok(got)
+    Ok((got, dest))
 }
 
 /// Hash an old-layout slot (`store/pkg/<name>/{bin,lib,…}`) into
@@ -1212,6 +1219,19 @@ pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
 /// the path `file` names. Plan pre-build uses this with `present` still
 /// false.
 pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &str) -> Result<()> {
+    fetch_tree(catalog_root, name, url, file, hash, true)
+}
+
+/// `fetch_pkg`; with `link` false the pack only goes in the store, and
+/// neither `live` nor the object's pin moves.
+fn fetch_tree(
+    catalog_root: &Path,
+    name: &str,
+    url: &str,
+    file: &str,
+    hash: &str,
+    link: bool,
+) -> Result<()> {
     if store_present(catalog_root, name, hash) {
         return Ok(());
     }
@@ -1259,15 +1279,26 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &
         fs::rename(&blob, &dest)?;
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(&dest, fs::Permissions::from_mode(0o644))?;
-        install_tree(catalog_root, name, &tree, None, hash)
+        tree
     } else if looks_like_tar(&blob) {
         let tree = tmpdir.join("tree");
         fs::create_dir_all(&tree)?;
         extract_tar(&blob, &tree)?;
-        install_tree(catalog_root, name, &tree, None, hash)
+        tree
     } else {
-        let bytes = fs::read(&blob)?;
-        ingest_file(catalog_root, name, &bytes, None, hash)
+        // A single file is the pack's `bin/<name>`.
+        let tree = tmpdir.join("tree");
+        let dest = tree.join("bin").join(name);
+        fs::create_dir_all(dest.parent().unwrap())?;
+        fs::rename(&blob, &dest)?;
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&dest, fs::Permissions::from_mode(0o755))?;
+        tree
+    };
+    let result = if link {
+        install_tree(catalog_root, name, &result, None, hash)
+    } else {
+        store_tree(catalog_root, name, &result, hash).map(|(got, _)| got)
     };
     let _ = fs::remove_dir_all(&tmpdir);
     result.map(|_| ())
@@ -1307,11 +1338,35 @@ pub fn fetch_pkg_any(
     file: &str,
     hash: &str,
 ) -> Result<Option<String>> {
+    fetch_any(catalog_root, name, url, file, hash, true)
+}
+
+/// `fetch_pkg_any` into the store alone: `live` and the object's pin stay
+/// where they are until apply converges the package. `oath update` fetches
+/// every pack this way before it changes anything.
+pub fn prefetch_pkg_any(
+    catalog_root: &Path,
+    name: &str,
+    url: &str,
+    file: &str,
+    hash: &str,
+) -> Result<Option<String>> {
+    fetch_any(catalog_root, name, url, file, hash, false)
+}
+
+fn fetch_any(
+    catalog_root: &Path,
+    name: &str,
+    url: &str,
+    file: &str,
+    hash: &str,
+    link: bool,
+) -> Result<Option<String>> {
     if store_present(catalog_root, name, hash) {
         return Ok(None);
     }
     if !url.trim().is_empty() {
-        fetch_pkg(catalog_root, name, url, file, hash)?;
+        fetch_tree(catalog_root, name, url, file, hash, link)?;
         return Ok(Some(url.trim().to_string()));
     }
     if !file.is_empty() || !is_realization_id(hash) {
@@ -1320,7 +1375,7 @@ pub fn fetch_pkg_any(
     let origins = host_origins(catalog_root);
     let mut failed = Vec::new();
     for o in &origins {
-        match fetch_pkg(catalog_root, name, o, "", hash) {
+        match fetch_tree(catalog_root, name, o, "", hash, link) {
             Ok(()) if store_present(catalog_root, name, hash) => return Ok(Some(o.clone())),
             Ok(()) => failed.push(format!("{o}: no tree")),
             Err(e) => failed.push(format!("{o}: {e}")),
@@ -1712,6 +1767,47 @@ mod needs_tests {
         // An origin needs a pin, and a vendor's file is never looked for on one.
         assert_eq!(fetch_pkg_any(&cat, "hello", "", "", "").unwrap(), None);
         assert_eq!(fetch_pkg_any(&cat, "x-src", "", "src/x", other).unwrap(), None);
+    }
+
+    #[test]
+    fn prefetch_stores_but_neither_links_nor_pins() {
+        let d = tempfile::tempdir().unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let pin = hash_tree(&tree).unwrap();
+        let origin = d.path().join("origin");
+        fs::create_dir_all(origin.join("pkg/hello")).unwrap();
+        let tar = origin.join("pkg/hello").join(format!("{pin}.tar"));
+        let st = Command::new("tar")
+            .args(["-C", tree.to_str().unwrap(), "-cf", tar.to_str().unwrap(), "."])
+            .status()
+            .unwrap();
+        assert!(st.success());
+        let cat = d.path().join("cat");
+        crate::seed(&cat).unwrap();
+        let host = cat.join("objects/host/local/desired.json");
+        let mut h: serde_json::Value = crate::read_json(&host).unwrap();
+        h["origins"] = serde_json::json!([format!("file://{}", origin.display())]);
+        write_json(&host, &h).unwrap();
+        // An object applied at another pin (canto's pkg:oath, 2026-10-28):
+        // the fetch must leave its spec and its links for apply to move.
+        let obj = cat.join("objects/pkg/hello");
+        fs::create_dir_all(&obj).unwrap();
+        let spec = serde_json::json!({ "present": true, "hash": H });
+        for f in ["desired.json", "applied.json"] {
+            write_json(&obj.join(f), &spec).unwrap();
+        }
+        let from = format!("file://{}", origin.display());
+        assert_eq!(prefetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), Some(from));
+        assert!(store_present(&cat, "hello", &pin));
+        assert!(slot_dir(&cat, "hello").join(LIVE_NAME).symlink_metadata().is_err());
+        for f in ["desired.json", "applied.json"] {
+            let v: serde_json::Value = crate::read_json(&obj.join(f)).unwrap();
+            assert_eq!(v["hash"], H, "{f}");
+        }
+        // Apply's own fetch finds it in the store and fetches nothing.
+        assert_eq!(fetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), None);
     }
 
     #[test]

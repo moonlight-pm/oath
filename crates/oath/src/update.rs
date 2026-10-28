@@ -336,6 +336,24 @@ fn update(
         )?;
         generation = r.generation;
         eprintln!("applied generation {}", r.generation);
+        // Each package the update pinned is linked at its pin, or it stops
+        // here: `oath diff` cannot see a pin that was never linked.
+        let off: Vec<String> = changed
+            .iter()
+            .filter_map(|id| {
+                let o = cat.get(id).ok()?;
+                let pin = o.desired["hash"].as_str().filter(|h| !h.is_empty())?;
+                let got = o.actual["hash"].as_str().unwrap_or("none");
+                (o.desired["present"] != json!(false) && got != pin)
+                    .then(|| format!("{id} is {}, pinned {}", up::short(got), up::short(pin)))
+            })
+            .collect();
+        if !off.is_empty() {
+            return Err(Error::hint(
+                format!("the apply left packages off their pins: {}", off.join("; ")),
+                "oath get <id>; `sudo oath apply <id>` links it",
+            ));
+        }
         if let Some(secs) = r.probation {
             wait_kept(root, r.generation, secs)?;
             // PID 1's undo puts the old pins back.
@@ -526,7 +544,7 @@ fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
     }
     for (name, d) in &want {
         let s = |k: &str| d[k].as_str().unwrap_or("").to_string();
-        oath_core::fetch_pkg_any(root, name, &s("url"), &s("file"), &s("hash")).map_err(|e| {
+        oath_core::prefetch_pkg_any(root, name, &s("url"), &s("file"), &s("hash")).map_err(|e| {
             Error::hint(
                 e.to_string(),
                 "nothing on this machine changed; `sudo oath update --confirm` again fetches the rest",

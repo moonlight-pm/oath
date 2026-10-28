@@ -284,8 +284,47 @@ fn reboot_and_verify(r: &Remote, o: &Output, vm: &mut Vm) -> Result<()> {
     if diff.trim() != "in-sync" {
         bail!("after the update the catalog is not in sync:\n{diff}");
     }
-    eprintln!("the machine runs output {}: PID 1 {}, catalog in sync", o.id, &want[..12]);
+    let off = unconverged(r)?;
+    if !off.is_empty() {
+        bail!("after the update packages are not at their pins:\n{}", off.join("\n"));
+    }
+    eprintln!(
+        "the machine runs output {}: PID 1 {}, catalog in sync, every package at its pin",
+        o.id,
+        &want[..12]
+    );
     Ok(())
+}
+
+/// Packages whose recorded `actual` hash is not their pin. `oath diff`
+/// compares the spec with the one last applied, so it cannot see a pack
+/// that was pinned but never linked (canto's `pkg:oath`, 2026-10-28).
+fn unconverged(r: &Remote) -> Result<Vec<String>> {
+    let rows = install::ssh_out(
+        r,
+        "cd /oath && for f in objects/pkg/*/desired.json; do n=${f#objects/pkg/}; \
+         n=${n%/desired.json}; printf '%s\\t' \"$n\"; tr -d '\\n' < \"$f\"; printf '\\t'; \
+         tr -d '\\n' < \"status/pkg/$n.json\" 2>/dev/null; echo; done",
+    )?;
+    let mut off = Vec::new();
+    for row in rows.lines() {
+        let mut cols = row.splitn(3, '\t');
+        let (Some(name), Some(desired), actual) = (cols.next(), cols.next(), cols.next()) else {
+            continue;
+        };
+        let desired: serde_json::Value = serde_json::from_str(desired)?;
+        let actual: serde_json::Value =
+            serde_json::from_str(actual.unwrap_or("")).unwrap_or(serde_json::Value::Null);
+        let pin = desired["hash"].as_str().unwrap_or("");
+        if desired["present"] == false || pin.is_empty() {
+            continue;
+        }
+        let got = actual["hash"].as_str().unwrap_or("none");
+        if got != pin {
+            off.push(format!("pkg:{name} is {got}, pinned {pin}"));
+        }
+    }
+    Ok(off)
 }
 
 /// Serve `dir` read-only over HTTP on a free local port, for the life of

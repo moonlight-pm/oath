@@ -179,7 +179,11 @@ older) fetches during the apply instead; if a fetch fails there, the
 machine is half moved and `oath update` refuses the pending changes.
 `sudo oath apply` finishes them; the update run after it snapshots the
 half-moved `@` as `@boot-<n>`, so move the first one aside and back if
-the archived boot should keep the old userspace.
+the archived boot should keep the old userspace. Two builds of step 1
+(`pkg:oath` `sha256-e3790fbd2f8b…` and `sha256-fa9f700146a9…`) also
+pinned each pack as they fetched it, so the apply skipped a package
+that had been applied before and left it unlinked: on a machine with
+either, take the newer `oath` by hand first, as above, then update.
 
 A machine from before R38 has no `oath update` yet. Give it the newer
 `oath` first (the pin is `pkg:oath`'s `hash` in the output's seed,
