@@ -35,6 +35,34 @@ fn copy_exec(src: &Path, dest: &Path) {
     std::fs::set_permissions(dest, p).unwrap();
 }
 
+/// The shared libraries `bin`'s programs load from outside /nix/store
+/// (the sandbox sees that store only in these tests), copied into `lib`
+/// under the names the loader asks for. An Oath host's tools load glibc
+/// from /lib, which the sandbox makes from the packs' lib/ entries.
+fn copy_libs(bin: &Path, lib: &Path) {
+    for e in std::fs::read_dir(bin).unwrap() {
+        let path = e.unwrap().path();
+        let Ok(out) = std::process::Command::new("ldd").arg(&path).output() else { return };
+        for line in String::from_utf8_lossy(&out.stdout).lines() {
+            let line = line.trim();
+            let (name, from) = match line.split_once(" => ") {
+                Some((name, rest)) => (name, rest.split(" (").next().unwrap_or("")),
+                None => {
+                    let from = line.split(" (").next().unwrap_or("");
+                    (from.rsplit('/').next().unwrap_or(""), from)
+                }
+            };
+            if !from.starts_with('/') || from.starts_with("/nix/store/") {
+                continue;
+            }
+            std::fs::create_dir_all(lib).unwrap();
+            if !lib.join(name).exists() {
+                std::fs::copy(from, lib.join(name)).unwrap();
+            }
+        }
+    }
+}
+
 fn pack_shell(root: &Path) -> String {
     let stage = root.join("stage-shell");
     let bin = stage.join("bin");
@@ -46,6 +74,7 @@ fn pack_shell(root: &Path) -> String {
             copy_exec(&p, &bin.join(t));
         }
     }
+    copy_libs(&bin, &stage.join("lib"));
     let h = hash_tree(&stage).unwrap();
     oath_core::put_tree(&root.join("store/pkg/bash"), &h, &stage).unwrap();
     h
@@ -81,7 +110,12 @@ fn pack_gcc(root: &Path) -> String {
     let stage = root.join("stage-gcc");
     let bin = stage.join("bin");
     std::fs::create_dir_all(&bin).unwrap();
-    if let Some(cc) = which("cc").or_else(|| which("gcc")) {
+    // NixOS's cc is a wrapper whose toolchain is all in /nix/store; a
+    // driver from anywhere else needs its cc1, as and ld beside it.
+    let host_cc = which("cc")
+        .or_else(|| which("gcc"))
+        .filter(|cc| std::fs::canonicalize(cc).is_ok_and(|c| c.starts_with("/nix/store")));
+    if let Some(cc) = host_cc {
         copy_exec(&cc, &bin.join("cc"));
     } else {
         let body = "#!/bin/sh\n\
@@ -116,6 +150,7 @@ fn pack_shell_old(root: &Path) -> String {
             copy_exec(&p, &bin.join(t));
         }
     }
+    copy_libs(&bin, &dest.join("lib"));
     hash_tree(&dest).unwrap()
 }
 
