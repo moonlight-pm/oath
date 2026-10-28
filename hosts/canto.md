@@ -48,12 +48,12 @@ Overwrite this file when facts change; do not append a diary.
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** output `e433824d38d0` (pulled 2026-10-28 22:35Z,
-  not yet booted: PID 1 is still `fcc67e336314`, `3b2d49886ff7`'s; the
-  Sola tab was working here). `svc:pipewire` and `svc:pipewire-pulse`
-  have `rtprio` 95 (generation 385), which the new PID 1 applies at the
-  next boot. `3b2d49886ff7` (the 2026-10-27 security sweep, Linux 7.3,
-  OpenSSH, account `void`) booted 2026-10-28 21:41Z. `oath update --confirm` after that boot
+- **Running now:** output `e433824d38d0` (pulled 2026-10-28 22:35Z),
+  booted 22:48Z with its PID 1 `b922d6d8b855`; every service runs.
+  `svc:pipewire` and `svc:pipewire-pulse` have `rtprio` 95 (generation
+  385, by hand): PipeWire's data thread is `SCHED_FIFO` and module-rt
+  no longer warns. `3b2d49886ff7` (the 2026-10-27 security sweep, Linux
+  7.3, OpenSSH, account `void`) booted 2026-10-28 21:41Z. `oath update --confirm` after that boot
   moved `svc:sshd` from dropbear to OpenSSH (generation 380, kept from
   a new session; dropbear's host key carried over). The Sola tab's pins
   of `pkg:sola`, `sola-browser` and `sola-design` stayed. Every service

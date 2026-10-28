@@ -28,7 +28,7 @@ append history (git has it).
    Xwayland, PipeWire, Noto, Vulkan (RADV), `wl-clipboard` (pasting
    screenshots, 2026-10-26) and Sola's packs, which `desk.json` pins
    (R28, no fork; `next` at `c6cda58b`). `svc.rtprio` gives PipeWire
-   `SCHED_FIFO` (QEMU, buccina; canto at its next boot). Next: new pins.
+   `SCHED_FIFO` (QEMU, buccina, canto). Next: new Sola pins.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
@@ -57,7 +57,7 @@ canto moved with its first `oath update`
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `e433824d38d0` (pulled 2026-10-28; its PID 1 at the next boot), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `e433824d38d0` (pulled 2026-10-28), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` works from it; [hosts/canto.md](hosts/canto.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; the Oath build machine (self-host) and publisher; output `e433824d38d0`, `desk`; [hosts/buccina.md](hosts/buccina.md) |
 
 Build host: **novus** (NixOS), to become Oath ([hosts/novus.md](hosts/novus.md)).
