@@ -968,6 +968,9 @@ impl Catalog {
                 if s.enabled && s.exec.is_empty() {
                     return Err(Error::hint(format!("{id}: enabled with an empty exec"), hint()));
                 }
+                if s.rtprio.is_some_and(|p| !(1..=99).contains(&p)) {
+                    return Err(Error::hint(format!("{id}: rtprio is 1 to 99"), hint()));
+                }
             }
             KIND_PKG => {
                 let p: Pkg = serde_json::from_value(doc.clone()).map_err(bad)?;

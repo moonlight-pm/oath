@@ -723,7 +723,7 @@ reject = ['"name":"apply"', '"name":"set_host"', '"name":"undo"', '"name":"keep"
 
 [[case]]
 name = "desk"
-about = "The desk profile: rivulet runs as home on a KMS device and input devices that seatd opened for it, render nodes are open, and Xwayland serves an X client."
+about = "The desk profile: rivulet runs as home on a KMS device and input devices that seatd opened for it, render nodes are open, Xwayland serves an X client, and PipeWire's data thread is SCHED_FIFO (rtprio)."
 metal = true
 profile = "desk"
 needs = { what = "a connected display", run = "grep -qx connected /sys/class/drm/card*-*/status" }
@@ -734,6 +734,7 @@ steps = [
   { run = "p=$(oath get svc:rivulet | sed -n 's/^  pid: //p'); ls -l /proc/$p/fd | grep -o '/dev/dri/card[0-9]*\\|/dev/input/event[0-9]*' | sed 's/[0-9]*$//' | sort -u", expect = ["/dev/dri/card", "/dev/input/event"] },
   { run = "stat -c 'mode=%a' /dev/dri/renderD*", expect = ["mode=666"], reject = ["mode=600"] },
   { run = "d=$(ls /tmp/.X11-unix | sed -n 's/^X/:/p' | head -1); timeout 30 xkbcomp \"$d\" /tmp/desk.xkb && echo \"symbols=$(grep -c xkb_symbols /tmp/desk.xkb)\"; rm -f /tmp/desk.xkb", expect = ["symbols=1"] },
+  { run = "p=$(pgrep -x pipewire | head -1); grep 'Max realtime priority' /proc/$p/limits; cat /proc/$p/task/*/stat | awk '$41 == 1 { f = 1 } END { print f ? \"data-loop-fifo\" : \"no-fifo\" }'", expect = ["Max realtime priority     95", "data-loop-fifo"], reject = ["no-fifo"] },
 ]
 
 [[case]]

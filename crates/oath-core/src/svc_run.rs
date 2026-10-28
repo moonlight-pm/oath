@@ -32,6 +32,8 @@ pub struct SvcCred {
     pub gid: u32,
     /// Grant `CAP_NET_BIND_SERVICE` to a non-root process. Always false for root.
     pub bind_low_ports: bool,
+    /// `RLIMIT_RTPRIO` for the process, and `RLIMIT_NICE` to -20 with it.
+    pub rtprio: Option<u8>,
 }
 
 /// How PID 1 spawns one service.
@@ -53,6 +55,7 @@ pub fn svc_spawn(_id: &str, spec: &Svc) -> SvcSpawn {
             uid: user.uid(),
             gid: user.gid(),
             bind_low_ports: user != SvcUser::Root && spec.bind_low_ports,
+            rtprio: spec.rtprio,
         },
         home: match user {
             SvcUser::Root => "/root",
@@ -84,6 +87,11 @@ pub fn svc_env_pairs(spec: &Svc) -> Vec<(String, String)> {
 /// permitted is kept, so the ambient bit is raised after `setuid`. Exec
 /// of an ordinary binary then keeps the capability.
 pub fn apply_svc_cred(cred: &SvcCred) -> io::Result<()> {
+    // Raising a hard limit needs root, so the limits come before the drop.
+    if let Some(prio) = cred.rtprio {
+        set_rlimit(libc::RLIMIT_RTPRIO, prio.into())?;
+        set_rlimit(libc::RLIMIT_NICE, 40)?;
+    }
     if cred.user == SvcUser::Root {
         return Ok(());
     }
@@ -110,6 +118,15 @@ pub fn apply_svc_cred(cred: &SvcCred) -> io::Result<()> {
         raise_ambient_bind()?;
     }
     Ok(())
+}
+
+fn set_rlimit(resource: libc::__rlimit_resource_t, value: u64) -> io::Result<()> {
+    let lim = libc::rlimit { rlim_cur: value, rlim_max: value };
+    if unsafe { libc::setrlimit(resource, &lim) } == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
 }
 
 fn bit(cap: u32) -> u32 {
@@ -182,6 +199,7 @@ mod tests {
             env: BTreeMap::new(),
             bind_low_ports: false,
             keep_children: false,
+            rtprio: None,
         }
     }
 
@@ -246,6 +264,18 @@ mod tests {
         let spawn = svc_spawn("svc:caddy", &root);
         assert_eq!(spawn.cred.user, SvcUser::Root);
         assert!(!spawn.cred.bind_low_ports);
+    }
+
+    #[test]
+    fn rtprio_goes_with_the_process() {
+        let mut spec = bare(&["/bin/pipewire"]);
+        assert_eq!(svc_spawn("svc:pipewire", &spec).cred.rtprio, None);
+        spec.user = Some(SvcUser::Home);
+        spec.rtprio = Some(95);
+        assert_eq!(svc_spawn("svc:pipewire", &spec).cred.rtprio, Some(95));
+        let mut other = spec.clone();
+        other.rtprio = None;
+        assert!(!spec.same_spawn(&other), "a new rtprio restarts the process");
     }
 
     #[test]

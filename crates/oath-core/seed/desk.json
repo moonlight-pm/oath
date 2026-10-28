@@ -216,7 +216,8 @@
       ],
       "restart": "always",
       "enabled": true,
-      "user": "home"
+      "user": "home",
+      "rtprio": 95
     },
     "svc:wireplumber": {
       "exec": [
@@ -238,7 +239,8 @@
       ],
       "restart": "always",
       "enabled": true,
-      "user": "home"
+      "user": "home",
+      "rtprio": 95
     },
     "pkg:alsa-lib": {
       "present": true,

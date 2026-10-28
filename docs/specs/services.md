@@ -43,6 +43,12 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 - `keep_children` — stop and restart signal only the main process; its
   children keep running. Default false: the whole process tree stops.
   `svc:sshd` sets it so login sessions survive an sshd restart.
+- `rtprio` — 1 to 99: PID 1 sets the process's `RLIMIT_RTPRIO` to it
+  and `RLIMIT_NICE` to 40 before it drops to the account, so the
+  process may give its threads that realtime priority and renice to
+  -20 itself. Absent: neither. `desk` gives `svc:pipewire` and
+  `svc:pipewire-pulse` 95; PipeWire's module-rt then makes its data
+  threads `SCHED_FIFO` (88) without RTKit or a system bus.
 
 Actual: `state` (`running`, `restarting`, `stopped`, `failed`), `pid`,
 `restarts` (restarts this boot), `last_exit` (`{"code": n}` or

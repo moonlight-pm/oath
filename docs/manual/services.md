@@ -138,8 +138,12 @@ oath set svc:web --from-json '{"env":{"WEB_ROOT":"/home/site"}}'
 oath apply svc:web
 ```
 
-Changing `exec`, `user`, `env`, or `bind_low_ports` restarts the
-process. So does an apply that moves the package its program comes
+`rtprio` (1–99) lets a service give its threads realtime priority up
+to that value and renice itself to -20 (`RLIMIT_RTPRIO`,
+`RLIMIT_NICE`); the `desk` profile gives PipeWire 95.
+
+Changing `exec`, `user`, `env`, `bind_low_ports` or `rtprio` restarts
+the process. So does an apply that moves the package its program comes
 from: PID 1 follows `exec[0]` through `/bin` into the store
 (`/oath/store/pkg/<name>/<hash>/…`), and when that realization changes
 it restarts the service. Actual `pkg` names it (`{"id": "pkg:sola",

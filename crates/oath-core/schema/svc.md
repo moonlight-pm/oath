@@ -21,8 +21,9 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
   PID 1 starts it when enabled and does not start it again after it
   exits, until `enabled` goes false then true (or the next boot).
 - `enabled` — if false, the process is not running.
-- `user` — `root` or `home`. Oath has those two Unix accounts and no
-  others (`home` is uid 1, gid 1). Absent means `root`.
+- `user` — `root`, `home` or `void`. Oath has those three Unix
+  accounts and no others (`home` is uid 1, gid 1; `void` is 65534, home
+  `/var/empty`, for a service that needs nothing). Absent means `root`.
 - `env` — string map, empty when absent. PID 1 puts these in the
   process environment after `host:local.env` and `TZ`. The same name
   on this object wins.
@@ -33,9 +34,12 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
   its own cgroup, and stopping it stops the whole process tree. When
   true, stop and restart signal only the main process and its children
   keep running (`svc:sshd` sets this so login sessions survive).
+- `rtprio` — 1 to 99, absent by default. The process may give its
+  threads realtime priority up to this (`RLIMIT_RTPRIO`) and renice
+  itself to -20 (`RLIMIT_NICE`); `desk` gives PipeWire 95.
 
-Changing `exec`, `user`, `env`, or `bind_low_ports` restarts the
-process on the next converge. So does an apply that moves the package
+Changing `exec`, `user`, `env`, `bind_low_ports` or `rtprio` restarts
+the process on the next converge. So does an apply that moves the package
 its program comes from (`exec[0]` through `/bin` into
 `/oath/store/pkg/<name>/<hash>/`): a service follows its package.
 

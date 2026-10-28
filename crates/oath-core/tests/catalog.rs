@@ -1209,13 +1209,18 @@ fn new_fills_in_what_the_type_defaults() {
                 "user",
                 "env",
                 "bind_low_ports",
-                "keep_children"
+                "keep_children",
+                "rtprio"
             ]
             .contains(&k.as_str()),
             "{k}"
         );
     }
     assert!(set(&cat, "svc:short", "keep_children", json!(true)).is_ok());
+    assert!(set(&cat, "svc:short", "rtprio", json!(95)).is_ok());
+    for bad in [json!(0), json!(100), json!(-1), json!("95")] {
+        assert!(set(&cat, "svc:short", "rtprio", bad.clone()).is_err(), "{bad}");
+    }
     assert!(set(&cat, "svc:short", "nonsense", json!(true)).is_err());
 }
 

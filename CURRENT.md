@@ -27,8 +27,8 @@ append history (git has it).
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, PipeWire, Noto, Vulkan (RADV), `wl-clipboard` (pasting
    screenshots, 2026-10-26) and Sola's packs, which `desk.json` pins
-   (R28, no fork; `next` at `c6cda58b`). Next: realtime priority for
-   PipeWire; new pins when the Sola tab publishes.
+   (R28, no fork; `next` at `c6cda58b`). `svc.rtprio` gives PipeWire
+   realtime (2026-10-28). Next: canto runs it; new Sola pins.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe

@@ -650,6 +650,7 @@ fn dhcp_spec() -> Svc {
         env: Default::default(),
         bind_low_ports: false,
         keep_children: false,
+        rtprio: None,
     }
 }
 

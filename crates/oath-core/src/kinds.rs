@@ -194,6 +194,12 @@ pub struct Svc {
     /// whole process tree (the service's cgroup) stops.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub keep_children: bool,
+    /// The highest realtime priority (1-99) the process may give its
+    /// threads (`RLIMIT_RTPRIO`); it may then also renice itself to -20
+    /// (`RLIMIT_NICE`). Neither when absent. PipeWire's data threads.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(range(min = 1, max = 99))]
+    pub rtprio: Option<u8>,
 }
 
 fn default_restart() -> SvcRestart {
@@ -208,6 +214,7 @@ impl Svc {
             && self.user == other.user
             && self.env == other.env
             && self.bind_low_ports == other.bind_low_ports
+            && self.rtprio == other.rtprio
     }
 }
 
