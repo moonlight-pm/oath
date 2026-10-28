@@ -14,10 +14,10 @@ append history (git has it).
    themselves: `cargo make publish` puts the newest checked output on
    the bucket, signed by buccina's key (`base` trusts it), and `sudo
    oath update --confirm --reboot` takes it (rehearsed in QEMU on
-   buccina), the 2026-10-27 security sweep with it. Next: buccina's
-   bucket token (Joshua), then buccina publishes `3b2d49886ff7`; canto
-   takes `pkg:oath` and the key by hand and pulls in the CEF 156 window
-   (R37); expat 2.10.0 (11-02).
+   buccina), the 2026-10-27 security sweep with it. buccina published
+   `3b2d49886ff7` for `desk` (2026-10-28). Next: canto takes `pkg:oath`
+   and the key by hand and pulls in the CEF 156 window (R37); expat
+   2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,

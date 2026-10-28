@@ -34,7 +34,8 @@ Overwrite this file when facts change; do not append a diary.
   --confirm --reboot`, and once more after that boot for dropbear to
   OpenSSH (R36). The update puts `pkg:cef` back at Oath's vendor build,
   without the Sola tab's H.264/AAC codecs build (`sha256-252cc3ea5deb`);
-  the Sola tab pins its own again. Waiting for buccina's bucket key and
+  the Sola tab pins its own again. The `pkg:oath` to take is
+  `sha256-6e563f2d6c69…` (on the bucket since 2026-10-28). Waiting for
   Joshua's window (with CEF 156, R37). Its Oath checkout
   (`~/Projects/Oath`, a clean `d8817f9`; cargo's target on
   `/mnt/warehouse/Oath`) goes once the Steam session that runs in it

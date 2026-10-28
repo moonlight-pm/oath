@@ -46,6 +46,8 @@ Overwrite this file when facts change; do not append a diary.
   Its signing key is `/home/.config/oath/sign_ed25519` (made
   2026-10-28; public half `oath@buccina`,
   `SHA256:PjyzPel8Vz4kHkbMUpFUEWigcvdJs4uOs71fMxBzF9w`, in the `base`
-  profile's `host:local.publishers`). The bucket's write key goes in
-  `/home/.config/oath/origin.env` (mode 600), a Cloudflare token of its
-  own; not there yet.
+  profile's `host:local.publishers`). The bucket's write key is
+  `/home/.config/oath/origin.env` (mode 600), a copy of novus's token
+  "oath-store publish (novus)" (Joshua, 2026-10-28). First publish
+  2026-10-28T20:51Z: release `3b2d49886ff7` for `desk` and `pkg:oath`
+  `sha256-6e563f2d6c69` (log `build/publish.log`).
