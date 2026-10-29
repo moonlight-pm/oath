@@ -11,4 +11,7 @@ run = []
 [[source]]
 url = "https://www.kernel.org/pub/linux/bluetooth/sbc-2.2.tar.xz"
 sha256 = "a1ada76ef35e5af9c2fbd063754dc9e37a8d989417c6eb1ecebb089b1383ae9e"
-unsigned = "kernel.org signs the tar (sbc-2.2.tar.sign) with Marcel Holtmann's key 06CA9F5D1DCF2659, which Oath does not trust yet"
+# kernel.org signs the uncompressed tar.
+sig = "https://www.kernel.org/pub/linux/bluetooth/sbc-2.2.tar.sign"
+key = "holtmann"
+decompress = "xz"

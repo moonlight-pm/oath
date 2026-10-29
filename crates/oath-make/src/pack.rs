@@ -786,19 +786,30 @@ fn write_pack_tar(tree: &Path, tarball: &Path) -> Result<PathBuf> {
 /// plan (`plan/<name>/<hash>.plan`) and the source pack it pins
 /// (`pkg/<name>-src/<hash>.tar`); then advisories (`adv/<name>/<hash>.json`)
 /// and `INDEX.md`. Every pack a published plan builds with goes out at
-/// the hash it pins, so an origin alone rebuilds any of them. Nothing
-/// else in the cache does: not test packs or other hashes. Refuses before
-/// writing anything if a package is not built, has no licence or plan, or
-/// needs a package that is not published. With `dest`, writes that
-/// directory (an origin is any such tree); without, uploads to the
-/// default origin what it does not have yet.
+/// the hash it pins, or is on the origin at that hash already (an earlier
+/// publish put it there with its own plan: a pack its build inputs moved
+/// past, CEF's, waits for its next build), so an origin alone rebuilds
+/// any of them. Nothing else in the cache does: not test packs or other
+/// hashes. Refuses before writing anything if a package is not built, has
+/// no licence or plan, or needs a package that is not published. With
+/// `dest`, writes that directory (an origin is any such tree); without,
+/// uploads to the default origin what it does not have yet.
 pub fn publish_store(
     repo: &Path,
     out: &Path,
     dest: Option<&Path>,
     output: Option<&str>,
 ) -> Result<()> {
-    let p = collect_publication(repo)?;
+    let origin = match dest {
+        Some(_) => None,
+        None => Some(crate::origin::Origin::from_env()?),
+    };
+    let have = match &origin {
+        Some(o) => o.keys()?,
+        None => BTreeSet::new(),
+    };
+    let there = |key: &str| have.contains(key) || dest.is_some_and(|d| d.join(key).is_file());
+    let p = collect_publication(repo, there)?;
     match dest {
         Some(d) => write_publication(repo, &p, d)?,
         None => upload_publication(repo, &p)?,
@@ -835,7 +846,7 @@ enum Body {
     Bytes(Vec<u8>),
 }
 
-fn collect_publication(repo: &Path) -> Result<Publication> {
+fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publication> {
     let mut named = BTreeSet::new();
     for (profile, _) in oath_core::PROFILES {
         let p = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -902,7 +913,8 @@ fn collect_publication(repo: &Path) -> Result<Publication> {
         for n in parsed.build_needs.iter().filter(|n| n.id != src_id) {
             let need = n.id.strip_prefix("pkg:").unwrap_or(&n.id);
             let published = if need == "oath" { None } else { lock.get(need) };
-            if !named.contains(need) || published.is_some_and(|e| e.product != n.hash) {
+            let moved = published.is_some_and(|e| e.product != n.hash);
+            if !named.contains(need) || (moved && !there(&format!("pkg/{need}/{}.tar", n.hash))) {
                 bail!(
                     "pkg:{name}'s plan builds with {} {}, which is not published at that hash \
                      (cargo make pkgs {name})",

@@ -47,11 +47,11 @@ Overwrite this file when facts change; do not append a diary.
 - **Oath on it:** the trial stick, Joshua's Samsung Type-C 128 GB
   (`090c:1000`, serial `0354422110003481`; a Bazzite installer before),
   rewritten 2026-10-29 on buccina by `cargo make install --local` from
-  desk output `67d5d5c1160c` (R41; checked, not published): ESP
+  desk output `67d5d5c1160c` (R41; its packs published, its release not): ESP
   `OATHESP`, btrfs `oath`, root `UUID=e9cd5765-f83c-4d4d-a451-be9029ccdaa3`.
   In QEMU it built `plan:nvidia` (`pkg:nvidia` `48b78914`, as buccina's
   build; `nvidia.ko` loads and finds no GPU; `pkg:linux-build`
-  `b80fd3da` copied in from buccina's store, since the bucket lacks it),
+  `b80fd3da` copied in from buccina's store before the bucket had it),
   and `pkg:nvidia` and `svc:gpu-power` are on (generation 1); libglvnd
   loads NVIDIA's EGL vendor and Mesa's, and the Vulkan loader finds
   `nvidia_icd.json`. Its `ssh:local` has buccina's,

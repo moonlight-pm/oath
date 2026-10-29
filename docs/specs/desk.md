@@ -248,6 +248,8 @@ that will matter at the next version bump:
   verifier ignores expiry, but a refreshed export is due.
 - `turner` holds only Matt Turner's current Ed25519 signing subkey: the
   verifier checks no revocations, and his revoked subkeys stay out.
+- `holtmann` (Marcel Holtmann, RSA-4096, 2011, from kernel.org's
+  pgpkeys.git) signs BlueZ and SBC; kernel.org signs the uncompressed tar.
 - Mesa 26.3 is signed by Dylan Baker (Ed25519
   `71C4B75620BC75708B4BDB254C95FAAB3EB073EC`), not `engestrom`. Mesa's
   published keyring holds a copy that expired 2020; keyserver.ubuntu.com

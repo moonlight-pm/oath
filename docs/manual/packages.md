@@ -317,8 +317,9 @@ hash>.plan`) and the source pack the plan pins
 (`pkg/<name>-src/<hash>.tar`). It refuses, before writing anything, a
 package that is not built, has no licence, has no plan matching the
 record, needs a package that is not published, or whose plan builds
-with a pack not published at the hash it pins: an origin alone rebuilds
-every plan on it. `INDEX.md` lists name, hash, licence, plan and source,
+with a pack not published at the hash it pins (the lock's, or one the
+origin already has from an earlier publish, as CEF's older Mesa): an
+origin alone rebuilds every plan on it. `INDEX.md` lists name, hash, licence, plan and source,
 and goes up last. A recipe goes out as its plan only, listed with the
 product hash it builds. Test packs and other hashes in the cache are
 never published; the last line names what was left out.
