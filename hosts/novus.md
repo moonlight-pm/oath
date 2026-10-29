@@ -27,18 +27,26 @@ Overwrite this file when facts change; do not append a diary.
   gets `pkg:nvidia` 595.104.02, a recipe in the `desk` profile, and its
   overlay carries the card's settings: GSP off as
   `host:local.module_options`, and `svc:gpu-power` for the caps (off
-  until `pkg:nvidia` is present).
+  until `pkg:nvidia` is present). The kernel has no other display driver
+  (no simpledrm, efifb or nouveau), so without `pkg:nvidia` the screen
+  stays dark. The desk cannot draw on the card yet: no libglvnd for its
+  EGL and GL, and neither the Vulkan loader nor Mesa's libgbm looks in
+  `pkg:nvidia`'s directories.
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
   GPU settings. No mounts yet: the trial leaves NixOS's disks alone.
 - **Oath on it:** the trial stick, Joshua's Samsung Type-C 128 GB
   (`090c:1000`, serial `0354422110003481`; a Bazzite installer before),
-  written 2026-10-25 by `cargo make install --local` from `55c20bf6a86c`:
-  ESP `OATHESP`, btrfs `oath`, root `UUID=4b160377-a07a-43f7-bffe-0ee0738f26bf`,
-  booted once in QEMU. `ssh:local` has novus's key and canto's `home`
-  key: while novus runs the stick it is driven from canto,
-  `ssh -o UserKnownHostsFile=~/.ssh/novus-oath.known_hosts home@novus`
-  (the stick's host key, not NixOS's; novus keeps a copy in
-  `build/novus-oath.known_hosts`). Boot it from the
+  rewritten 2026-10-29 on buccina by `cargo make install --local` from
+  desk output `c4cd226761d3` (OpenSSH, `void`, `oath update`): ESP
+  `OATHESP`, btrfs `oath`, root `UUID=59c62972-920c-4824-941d-c31886774374`.
+  In QEMU it built `plan:nvidia` (`pkg:nvidia` `2f1f8c80`, vermagic
+  7.3.0; `nvidia.ko` loads and finds no GPU), and `pkg:nvidia` and
+  `svc:gpu-power` are on (generation 1). Its `ssh:local` has buccina's,
+  canto's and `root@hub`'s keys; while novus runs the stick, buccina or
+  canto drive it:
+  `ssh -o UserKnownHostsFile=~/.ssh/novus-oath.known_hosts home@novus` on
+  canto, `build/novus-oath.known_hosts` on buccina (the stick's host key,
+  not NixOS's). Boot it from the
   firmware's boot menu (F8); NixOS stays the default. It enumerates only
   on a back-panel port: behind the keyboard's USB 2.0 hub it resets four
   times and never becomes a disk.

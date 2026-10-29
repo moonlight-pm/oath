@@ -34,12 +34,11 @@ append history (git has it).
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
    in `desk`, a root by btrfs UUID, `install --local`. buccina did a
-   build host's whole job (2026-10-27): every product, the desk output
-   novus made (`5d9bce056737`), 61/61 QEMU cases (`pkg:qemu` and
-   `pkg:libslirp` added by hand). Next: Joshua boots novus from the
-   trial stick (pre-R36, dropbear; fine for the trial); from canto, NICs,
-   audio, Bluetooth, sensors, the display, `plan:nvidia`,
-   `svc:gpu-power`; then libglvnd and glvnd Mesa.
+   build host's whole job (2026-10-27). The trial stick is desk output
+   `c4cd226761d3` (2026-10-29) with `pkg:nvidia` built and on, and the
+   caps. Next: Joshua boots novus from it (F8); from buccina, NICs,
+   audio, Bluetooth, sensors, `nvidia-smi`; then the desk on the card:
+   libglvnd, glvnd Mesa, NVIDIA's Vulkan manifest and GBM backend.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from

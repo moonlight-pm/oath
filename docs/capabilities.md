@@ -25,7 +25,7 @@ gaps · `target` designed, not built.
 | SSH | shipped | OpenSSH's sshd (R36) as `home` (zsh, R27), keys from `ssh:local`, root denied, `host:local` env; `sftp-server`; daemons drop to `void`; `sudo` | — |
 | Devices | partial | modules by modalias (boot, request, hotplug); `dev:*` from sysfs at boot and on change; `host:local.mounts` by label or UUID (boot, hotplug, apply); `host:local.module_options`; sound, pads and `/dev/kvm` `home`'s (R22, R30, R33) | Node ownership is not a field |
 | Seed and overlays | shipped | profile `base`; `svc:screen` is a `home` shell on tty1; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
-| Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | Package modules not yet booted |
+| Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | NVIDIA's module loads in QEMU (no GPU), not yet on a card |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `oath update` pulls the newest signed output (R38) | — |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, the locked packages and packs a profile pins from elsewhere (R28) into an immutable `build/out/<id>/` with a manifest | — |
 | Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only | — |
