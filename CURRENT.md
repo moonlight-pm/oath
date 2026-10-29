@@ -28,7 +28,9 @@ append history (git has it).
    Xwayland, PipeWire (`SCHED_FIFO`), Noto, Vulkan, `wl-clipboard` and
    Sola's packs, pinned in `desk.json` (R28; `next` at `c6cda58b`).
    `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`), on no
-   machine: Sola's pins are on 147, so publish no desk output until they
+   machine; its desk output `4bb854a8b1d9` passes 61/61 in QEMU. Sola's
+   browser asks CEF for API version 999999 (the newest), not 14700, so
+   its 147 build won't run on 156: publish no desk output until the pins
    move. Next: canto takes it, Sola rebuilds against it, pins move (R37).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
