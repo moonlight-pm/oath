@@ -28,11 +28,16 @@ Overwrite this file when facts change; do not append a diary.
   (generation 101) beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `e433824d38d0` (the `desk` profile), pulled
-  from the bucket with `oath update --confirm --reboot` on 2026-10-28
-  after `pkg:oath`, `host:local.profile` and `publishers` were set by
-  hand (generation 96–97; it had no `/oath/output.json` before, and no
-  package moved). `svc:pipewire` and `svc:pipewire-pulse` got `rtprio`
+- **Running now:** output `c4cd226761d3` (the `desk` profile: CEF 156
+  with codecs, Sola from `83df4558`), pulled with `oath update
+  --confirm` on 2026-10-29 (generation 102), not rebooted, so PID 1,
+  the kernel and initrd are still `e433824d38d0`'s. Its `oath` then
+  predated moving Sola's pins, so they were set by hand (generation
+  103) and `/oath/output.json` was replaced with the signed release,
+  which lists them. Before that, `e433824d38d0`, pulled with `oath
+  update --confirm --reboot` on 2026-10-28 after `pkg:oath`,
+  `host:local.profile` and `publishers` were set by hand (generation
+  96–97). `svc:pipewire` and `svc:pipewire-pulse` got `rtprio`
   95 by hand (generation 98): the data thread is `SCHED_FIFO`. Before
   that, `f443df24beec` by the push update of 2026-10-27. Since R36 its
   sshd is OpenSSH (generation 3 moved it from dropbear, keeping the
@@ -70,6 +75,7 @@ Overwrite this file when facts change; do not append a diary.
   `/home/.config/oath/origin.env` (mode 600), a copy of novus's token
   "oath-store publish (novus)" (Joshua, 2026-10-28). Published on
   2026-10-28: `3b2d49886ff7` (20:51Z, the first), `1fa3b09a85ca`,
-  `0c6eebe617d2` and `e433824d38d0` (22:33Z), each after 61/61 QEMU
-  cases and a `cargo make update --qemu` from the one before, by
-  `build/next.sh` (log `build/next.log`).
+  `0c6eebe617d2` and `e433824d38d0` (22:33Z); on 2026-10-29
+  `36de66963ac1` and `c4cd226761d3` (18:14Z, the first whose release
+  lists Sola's pins); each after 61/61 QEMU cases and a `cargo make
+  update --qemu` from the one before.

@@ -13,11 +13,11 @@ append history (git has it).
 1. **Pull updates (R38, Joshua 2026-10-28).** Machines update
    themselves: `cargo make publish` puts the newest checked output on
    the bucket, signed by buccina's key (`base` trusts it), and `sudo
-   oath update --confirm --reboot` takes it (also `update` in `oath
-   mcp`). canto and buccina run `e433824d38d0` (2026-10-28); it fetches
-   every pack first and checks each lands. Gap: an output's changed
-   `svc` fields (`rtprio`) reach a machine only by `oath set`. Next:
-   expat 2.10.0 (11-02).
+   oath update --confirm --reboot` takes it (also in `oath mcp`): every
+   pack fetched first, Sola's moved while at the pins its release lists.
+   buccina runs `c4cd226761d3` (2026-10-29, not rebooted), canto
+   `e433824d38d0`. Gap: an output's changed `svc` fields (`rtprio`)
+   reach a machine only by `oath set`. Next: expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
@@ -28,8 +28,8 @@ append history (git has it).
    Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28).
    `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`); Sola's
    packs from `83df4558` are built on it and pinned (R37 done
-   2026-10-29); canto runs both. Next: publish desk output
-   `36de66963ac1` (61/61, QEMU pull from `e433824d38d0` ok); buccina.
+   2026-10-29), in desk output `c4cd226761d3`; canto and buccina run
+   both. Next: the desk's gaps ([docs/capabilities.md](docs/capabilities.md)).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
