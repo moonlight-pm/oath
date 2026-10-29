@@ -25,13 +25,11 @@ append history (git has it).
    since the boot of 2026-10-25. Next: a 32-bit game and a pad.
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, PipeWire (`SCHED_FIFO`), Noto, Vulkan, `wl-clipboard` and
-   Sola's packs, pinned in `desk.json` (R28; `next` at `c6cda58b`).
-   `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`), on no
-   machine; its desk output `4bb854a8b1d9` passes 61/61 in QEMU. Sola's
-   browser asks CEF for API version 999999 (the newest), not 14700, so
-   its 147 build won't run on 156: publish no desk output until the pins
-   move. Next: canto takes it, Sola rebuilds against it, pins move (R37).
+   Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28).
+   `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`; desk output
+   `4bb854a8b1d9`, 61/61 in QEMU), on no machine: Sola's 147 browser asks
+   for CEF API 999999, not 14700, so publish no desk output until the
+   pins move. Next: canto takes it, Sola rebuilds against it (R37).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
