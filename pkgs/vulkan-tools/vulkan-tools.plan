@@ -135,7 +135,7 @@
     },
     {
       "id": "pkg:vulkan-loader",
-      "hash": "sha256-f445a6bb467bb6b38b79a7c185017ebeb807910803273273b7dbd1053e9f05f4"
+      "hash": "sha256-64ea990069069ed910f77c5646b0ab0a2a7049f9bdc702e5262409f1c4071892"
     },
     {
       "id": "pkg:wayland",

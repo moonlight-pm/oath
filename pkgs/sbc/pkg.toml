@@ -1,0 +1,14 @@
+# The SBC codec, A2DP's own, which PipeWire's Bluetooth plugin encodes
+# and decodes with. The library alone.
+version = "2.2"
+license = "LGPL-2.1-or-later"
+description = "SBC: the Bluetooth audio codec library (PipeWire's A2DP)."
+home = "https://www.kernel.org/pub/linux/bluetooth/"
+purl = "pkg:generic/sbc@2.2"
+build = ["pkgconf"]
+run = []
+
+[[source]]
+url = "https://www.kernel.org/pub/linux/bluetooth/sbc-2.2.tar.xz"
+sha256 = "a1ada76ef35e5af9c2fbd063754dc9e37a8d989417c6eb1ecebb089b1383ae9e"
+unsigned = "kernel.org signs the tar (sbc-2.2.tar.sign) with Marcel Holtmann's key 06CA9F5D1DCF2659, which Oath does not trust yet"

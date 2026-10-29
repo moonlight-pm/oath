@@ -40,7 +40,7 @@ lists it. Against a machine's root:
 | `glibc-i386` | Built. glibc 2.44, i386: `lib32/` with `ld-linux.so.2`, slibdir `/lib32` (`${LIB}` is `lib32`, Arch's pair), locales from `/lib/locale`. Built by a C compiler made in the same plan from `pkg:gcc`'s tarball for its 32-bit libgcc. Headers are `pkg:glibc`'s but `gnu/stubs-32.h` and `gnu/lib-names-32.h`. |
 | `libxcrypt` | Built. `libcrypt.so.1`, glibc's crypt ABI. |
 | `bubblewrap` | Built. `bwrap` 0.13.1, unprivileged (not setuid). |
-| `<name>-i386` | Built. zlib, zstd, expat, libffi, wayland, libdrm, elfutils (libelf), libxau, libxcb, libx11, libxext, libxfixes, libxxf86vm, libxshmfence, libxcrypt and mesa (radeonsi, RADV, softpipe, GLX, EGL, GBM). |
+| `<name>-i386` | Built. zlib, zstd, expat, libffi, wayland, libdrm, elfutils (libelf), libxau, libxcb, libx11, libxext, libxfixes, libxxf86vm, libxshmfence, libxcrypt, libglvnd (libGL, libEGL, libGLX: the dispatch) and mesa (radeonsi, RADV, softpipe, GLX, EGL, GBM, as libglvnd's vendor). `pkg:nvidia`, a recipe, brings NVIDIA's own 32-bit libraries in its `lib32/` (R34). |
 
 32-bit packs are `<name>-i386` with a `lib32/`. A machine's `/lib` farm
 links only `lib/`, so nothing 32-bit is in a machine's root; a build
@@ -70,7 +70,9 @@ Valve's `bin_steam.sh` in `bwrap` with a merged-`/usr` root:
   container, which Steam shows as the drive its library is on
   (`/run/host/usr/lib/oath`). The first is `/home`.
 - `/usr/lib32` (every pack's `lib32/`), `/usr/share` (every pack's
-  `share/`, two levels deep), `/usr/local/bin/true`;
+  `share/`, two levels deep, and three in the loaders' manifest
+  directories: `vulkan/icd.d` and its layers' and `glvnd/egl_vendor.d`
+  hold Mesa's and NVIDIA's files side by side), `/usr/local/bin/true`;
 - `/bin`, `/sbin`, `/lib`, `/lib32`, `/lib64` → `usr/…`;
 - `/etc` from the tree (`ld.so.conf`, the cache, the CA bundle), the
   root's entries bound over their names;

@@ -58,7 +58,7 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   never a default: novus's `NVreg_EnableGpuFirmware=0`, R34); then
   `module.key=value` on the kernel command line, as kmod does. A later
   value wins.
-- **Modules a package brings** (R34, built 2026-10-25, not yet booted):
+- **Modules a package brings** (R34, built 2026-10-25; `nvidia.ko` loads in QEMU and finds no GPU, 2026-10-29):
   a present package's `lib/modules/<release>/` with an index of its own
   (`modules.dep` naming each module's needs, which may be pkg:linux's
   modules; `modules.alias`, `modules.softdep`) joins PID 1's index, read

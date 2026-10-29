@@ -72,6 +72,10 @@
       "hash": "sha256-c15e3a6dfb55cab94f5702332c3ff31a0b227a27c39c30d4668dc9a36455a5b4"
     },
     {
+      "id": "pkg:libglvnd",
+      "hash": "sha256-2e2258ee2b411a8dbff5c6b35acac638707b9b99e19310804977be5836f45b99"
+    },
+    {
       "id": "pkg:libx11",
       "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
     },
@@ -117,7 +121,7 @@
     },
     {
       "id": "pkg:mesa",
-      "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
+      "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f"
     },
     {
       "id": "pkg:meson",
@@ -222,6 +226,10 @@
       "hash": "sha256-c15e3a6dfb55cab94f5702332c3ff31a0b227a27c39c30d4668dc9a36455a5b4"
     },
     {
+      "id": "pkg:libglvnd",
+      "hash": "sha256-2e2258ee2b411a8dbff5c6b35acac638707b9b99e19310804977be5836f45b99"
+    },
+    {
       "id": "pkg:libxau",
       "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
     },
@@ -239,7 +247,7 @@
     },
     {
       "id": "pkg:mesa",
-      "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
+      "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f"
     },
     {
       "id": "pkg:nettle",
@@ -303,8 +311,8 @@ OATH_EOF
 # Xwayland with glamor on GBM (DRI3) and GLX, SHA-1 from nettle and the
 # built-in fonts. Keymaps are compiled by xkbcomp from xkeyboard-config,
 # both in their slots. No XDMCP, secure RPC (libtirpc), libdecor or
-# libei. GLX links libGL, and Mesa's gl.pc needs the X libraries' .pc
-# files to resolve.
+# libei. GLX links libGL, pkg:libglvnd's (R34), which sends each client
+# to the vendor this server names: Mesa's, or NVIDIA's on its GBM.
 tar -xf "$SRC/$SOURCES"
 cd "xwayland-$VERSION"
 meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release \

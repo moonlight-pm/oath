@@ -277,6 +277,23 @@ Steam updates itself; Oath pins only the launcher. Its logs are
 `~/.local/share/Steam/logs/console-linux.txt`; the sandbox's tree is
 `$XDG_RUNTIME_DIR/oath-steam/`.
 
+NVIDIA's driver is a third, in `desk` (R34), for a machine with an
+NVIDIA card. Its build compiles the kernel modules against
+`pkg:linux-build`, so it is made again after a kernel update moves
+`pkg:linux`:
+
+```
+sudo oath build plan:nvidia              # fetches NVIDIA's 420 MB .run from download.nvidia.com
+sudo oath set pkg:nvidia present=true
+sudo oath apply pkg:nvidia
+nvidia-smi                               # once its modules load (the pass after services, or the next boot)
+```
+
+libglvnd sends GL and EGL to it, the Vulkan loader and libgbm find it,
+and its 32-bit libraries serve Steam. A card's own settings (GSP off,
+power caps) belong in the machine's overlay ([Kernel module
+options](using.md#kernel-module-options)).
+
 ## Host store cache and publishing
 
 The build host keeps the same layout under `~/.local/share/oath/store` (or

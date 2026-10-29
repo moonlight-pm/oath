@@ -21,7 +21,7 @@
     },
     {
       "id": "pkg:dbus",
-      "hash": "sha256-e6e71272e53915e45e234cd682c49d694af8dd0d59d4ca8c418bd00a105754e7"
+      "hash": "sha256-1dadfcfc6d418c31be891adba815f2a1a4a639217943742fe7beb6da0ab58ea3"
     },
     {
       "id": "pkg:diffutils",
@@ -131,7 +131,7 @@
   "run_needs": [
     {
       "id": "pkg:dbus",
-      "hash": "sha256-e6e71272e53915e45e234cd682c49d694af8dd0d59d4ca8c418bd00a105754e7"
+      "hash": "sha256-1dadfcfc6d418c31be891adba815f2a1a4a639217943742fe7beb6da0ab58ea3"
     },
     {
       "id": "pkg:glib",

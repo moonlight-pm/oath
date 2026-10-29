@@ -1,8 +1,8 @@
 # Xwayland with glamor on GBM (DRI3) and GLX, SHA-1 from nettle and the
 # built-in fonts. Keymaps are compiled by xkbcomp from xkeyboard-config,
 # both in their slots. No XDMCP, secure RPC (libtirpc), libdecor or
-# libei. GLX links libGL, and Mesa's gl.pc needs the X libraries' .pc
-# files to resolve.
+# libei. GLX links libGL, pkg:libglvnd's (R34), which sends each client
+# to the vendor this server names: Mesa's, or NVIDIA's on its GBM.
 tar -xf "$SRC/$SOURCES"
 cd "xwayland-$VERSION"
 meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release \

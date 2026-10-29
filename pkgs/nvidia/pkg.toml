@@ -6,7 +6,7 @@
 # off and power caps are one machine's overlay.
 version = "595.104.02"
 license = "LicenseRef-NVIDIA-Driver"
-description = "NVIDIA's driver: closed kernel modules for pkg:linux, its GL, EGL, Vulkan, GBM and CUDA libraries, nvidia-smi and GSP firmware."
+description = "NVIDIA's driver: closed kernel modules for pkg:linux, its GL, EGL, Vulkan, GBM and CUDA libraries (and their 32-bit ones), nvidia-smi and GSP firmware."
 home = "https://www.nvidia.com/en-us/drivers/unix/"
 purl = "pkg:generic/nvidia@595.104.02"
 recipe = "NVIDIA's own build, which each machine fetches and builds against its own kernel (R34)"
@@ -14,7 +14,10 @@ build = [
 	"bash", "coreutils", "sed", "grep", "gawk", "findutils", "diffutils", "tar", "zstd", "make",
 	"gcc", "glibc", "elfutils", "linux-build",
 ]
-run = ["gcc", "libdrm", "libx11", "libxcb", "libxext", "mesa", "wayland"]
+run = [
+	"gcc", "libdrm", "libx11", "libxcb", "libxext", "mesa", "wayland", "libglvnd", "libglvnd-i386",
+	"libx11-i386", "libxext-i386",
+]
 
 [[source]]
 url = "https://download.nvidia.com/XFree86/Linux-x86_64/595.104.02/NVIDIA-Linux-x86_64-595.104.02.run"

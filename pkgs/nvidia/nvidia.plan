@@ -45,7 +45,7 @@
     },
     {
       "id": "pkg:linux-build",
-      "hash": "sha256-88933d4f8782b124cdecf9792c5d1b6a24ab7735ba8c403032a660651a95bfb0"
+      "hash": "sha256-b80fd3dab0060ee2507257d88703b2219c5659ac7604140ecc0523356f6e4bf9"
     },
     {
       "id": "pkg:make",
@@ -94,8 +94,20 @@
       "hash": "sha256-15e17b25ad84dafb657672840e83cfd322d33f05050f6f5607b7fcc56806f9a8"
     },
     {
+      "id": "pkg:libglvnd",
+      "hash": "sha256-2e2258ee2b411a8dbff5c6b35acac638707b9b99e19310804977be5836f45b99"
+    },
+    {
+      "id": "pkg:libglvnd-i386",
+      "hash": "sha256-1d71324122bf70dff6793e4c588b7142b7c01a95b5b1490a0d4f12b33fc9b66a"
+    },
+    {
       "id": "pkg:libx11",
       "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
+    },
+    {
+      "id": "pkg:libx11-i386",
+      "hash": "sha256-e8d856a91aedbe0c6cabfd5aeb71ec47057ba27b5960edaa27062575887e7e13"
     },
     {
       "id": "pkg:libxcb",
@@ -106,8 +118,12 @@
       "hash": "sha256-ad3ac686b22f8fae4c99512cd2a9ca2d75e765972c734d1fbaa70e6208f3b009"
     },
     {
+      "id": "pkg:libxext-i386",
+      "hash": "sha256-3a6a63df1112ca755975bcc6d3a7159b2313cbb85932eb55ec67c0e2747e8bb5"
+    },
+    {
       "id": "pkg:mesa",
-      "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
+      "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f"
     },
     {
       "id": "pkg:wayland",
@@ -158,6 +174,8 @@ OATH_EOF
 #   libEGL, libGLX, libOpenGL, libGLdispatch, libGLES*) come from
 #   pkg:libglvnd instead, and the X server's, GTK's, OpenCL's loader and
 #   confidential computing's are left out.
+# - Its 32-bit libraries in lib32/, likewise (R29: Steam's sandbox puts
+#   every pack's lib32/ at /lib32; pkg:libglvnd-i386 dispatches to them).
 # - The manifests in share/: Vulkan's ICD and layers, glvnd's EGL vendor.
 # - NVIDIA's own lookups under lib/nvidia/ (linked as /lib/nvidia): EGL's
 #   external platforms (Wayland, GBM, X), whose second directory
@@ -215,18 +233,30 @@ done
 ln -s libcuda.so.1 /out/lib/libcuda.so
 ln -s ../../libnvidia-allocator.so.1 /out/lib/nvidia/gbm/nvidia-drm_gbm.so
 cp [0-9][0-9]_nvidia_*.json /out/lib/nvidia/egl_external_platform.d/
+mkdir -p /out/lib32
+for f in 32/lib*.so.*; do
+	b=${f#32/}
+	case $b in
+	libGL.so.* | libEGL.so.* | libGLX.so.* | libOpenGL.so.* | libGLdispatch.so.* | \
+		libGLESv1_CM.so.* | libGLESv2.so.* | libOpenCL.so.*) continue ;;
+	esac
+	cp "$f" /out/lib32/
+	so=$(readelf -d "$f" | sed -n 's/.*(SONAME).*\[\(.*\)\]/\1/p')
+	[ -z "$so" ] || [ "$so" = "$b" ] || ln -sf "$b" "/out/lib32/$so"
+done
 # The new list is shorter; NUL pads it, and nothing in the file moves.
-e=/out/lib/libEGL_nvidia.so.$VERSION
 old=/etc/egl/egl_external_platform.d:/usr/share/egl/egl_external_platform.d
 new=/etc/egl/egl_external_platform.d:/lib/nvidia/egl_external_platform.d
-off=$(grep -obUaF "$old" "$e" | head -n 1 | cut -d: -f1)
-[ -n "$off" ]
-{
-	printf '%s' "$new"
-	i=${#new}
-	while [ "$i" -lt "${#old}" ]; do printf '\0'; i=$((i + 1)); done
-} | dd of="$e" bs=1 seek="$off" conv=notrunc status=none
-grep -qaF "$new" "$e"
+for e in /out/lib/libEGL_nvidia.so.$VERSION /out/lib32/libEGL_nvidia.so.$VERSION; do
+	off=$(grep -obUaF "$old" "$e" | head -n 1 | cut -d: -f1)
+	[ -n "$off" ]
+	{
+		printf '%s' "$new"
+		i=${#new}
+		while [ "$i" -lt "${#old}" ]; do printf '\0'; i=$((i + 1)); done
+	} | dd of="$e" bs=1 seek="$off" conv=notrunc status=none
+	grep -qaF "$new" "$e"
+done
 
 s=/out/share
 mkdir -p "$s/vulkan/icd.d" "$s/vulkan/implicit_layer.d" "$s/glvnd/egl_vendor.d"

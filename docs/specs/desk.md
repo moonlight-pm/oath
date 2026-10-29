@@ -22,7 +22,7 @@ The desk's packages, built in dependency order by `cargo make pkgs`
 |-------|----------|
 | Compositor | `rivulet` (`tree = "apps/rivulet"`), `wlroots` 0.20.2 with Oath's two patches (`pkgs/wlroots/patches/`, from `forks/wlroots`) |
 | Wayland | `wayland`, `wayland-protocols`, `libffi`, `expat`, `wl-clipboard` 2.3.0 (`wl-copy`, `wl-paste`: the clipboard from a shell over rivulet's ext-data-control, which Claude Code pastes images with) |
-| GPU | `mesa` 26.2.5 (radeonsi and RADV, compiled by ACO; softpipe; GBM, EGL, GLES, GL, GLX and Vulkan, with the device-select layer; no LLVM), `vulkan-loader`, `vulkan-tools` (`vulkaninfo`), `libdrm` (amdgpu, radeon), `elfutils`' libelf |
+| GPU | `mesa` 26.2.5 (radeonsi and RADV, compiled by ACO; softpipe; GBM, and EGL, GLES, GL and GLX as libglvnd's vendor, and Vulkan, with the device-select layer; no LLVM), `libglvnd` 1.7.0 (libEGL, libGL, libGLX, libOpenGL, libGLESv2; and `-i386`), `nvidia` 595.104.02 (a recipe, R34), `vulkan-loader`, `vulkan-tools` (`vulkaninfo`), `libdrm` (amdgpu, radeon), `elfutils`' libelf |
 | Input and seat | `libinput` (no libwacom, mtdev or Lua), `libevdev`, `libudev-zero`, `seatd` (seatd, libseat with the seatd, builtin and noop backends) |
 | Keyboard | `libxkbcommon`, `xkeyboard-config` |
 | Display data | `libdisplay-info`, `hwdata` (pnp.ids only), `pixman` |
@@ -58,9 +58,11 @@ How they fit the sandbox:
 - A build pack brings its `run` packs, not what its `.pc` file
   requires. The X libraries' `.pc` files require xorgproto's, which is
   headers only and no one's `run`, so every package that builds against
-  libxcb, libX11 or Mesa's `gl.pc` names `xorgproto` in `build`.
-- Mesa has GLX, so there is a `libGL`: libepoxy aborts when Xwayland's
-  glamor makes a desktop GL context and no `libGL` exists.
+  libxcb, libX11 or libglvnd's `gl.pc` names `xorgproto` in `build`.
+- libglvnd has GLX, so there is a `libGL`: libepoxy aborts when
+  Xwayland's glamor makes a desktop GL context and no `libGL` exists.
+  What builds against EGL or GL names `libglvnd` (its headers and
+  `egl.pc`, `gl.pc`, `glesv2.pc`); `gbm.pc` is still Mesa's.
 
 ## Seat and profile (built)
 
@@ -135,11 +137,11 @@ RADV, Mesa's Vulkan driver for amdgpu (Vulkan 1.3 on GFX6).
 own GPU process, not through wgpu. `pkg:vulkan-loader`
 (`/lib/libvulkan.so.1`, which wgpu opens with dlopen) finds drivers and
 layers by their JSON manifests. There is no `/usr/share`, so the data
-directory it falls back to when `XDG_DATA_DIRS` is unset is Mesa's
-slot, compiled in as fontconfig names the font packs:
+directories it falls back to when `XDG_DATA_DIRS` is unset are Mesa's
+slot and NVIDIA's, compiled in as fontconfig names the font packs:
 `/oath/store/pkg/mesa/live/share/vulkan/icd.d` (RADV) and
-`implicit_layer.d` (device-select). A program that sets
-`XDG_DATA_DIRS` has to list `/oath/store/pkg/mesa/live/share`.
+`implicit_layer.d` (device-select), then `pkg:nvidia`'s `share/vulkan`.
+A program that sets `XDG_DATA_DIRS` has to list them.
 `/etc/vulkan` and `~/.local/share/vulkan` are read too, and
 `VK_DRIVER_FILES` replaces the search. The manifests name each library
 by name, which glibc finds in `/lib`. There is one loader: `pkg:cef`
@@ -154,6 +156,22 @@ boot VGA card. `DRI_PRIME=pci-0000_02_00_0` puts another card first,
 and `NODEVICE_SELECT=1` turns the layer off. `vulkaninfo --summary`
 lists the devices, and `VK_LOADER_DEBUG=driver,layer` shows where the
 loader looked.
+
+**GL, EGL and NVIDIA (R34).** `pkg:libglvnd` owns `libEGL.so.1`,
+`libGL.so.1`, `libGLX.so.0`, `libOpenGL.so.0` and `libGLESv2.so.2` and
+sends each display's calls to its vendor: Mesa's `libEGL_mesa` and
+`libGLX_mesa`, or NVIDIA's. EGL vendors are JSON files in
+`/etc/glvnd/egl_vendor.d`, then `pkg:nvidia`'s slot, then Mesa's
+(`share/glvnd/egl_vendor.d`, compiled in), so a machine with the card
+tries NVIDIA's first; a GLX client gets the vendor the X server names
+(Xwayland names NVIDIA's on its GBM). Mesa's libgbm loads a GPU's own
+backend from its `lib/gbm` or, on x86_64, `pkg:nvidia`'s
+`lib/nvidia/gbm` (`nvidia-drm_gbm.so`), so wlroots and Xwayland's
+glamor allocate on the card. `pkg:nvidia` is a recipe a machine builds
+with `oath build plan:nvidia` and then makes present: the kernel
+modules, its 64-bit userspace in `lib/` and its 32-bit in `lib32/`
+(Steam), Vulkan's manifest, EGL's external platforms (Wayland, GBM, X)
+in `/lib/nvidia`. A machine without it finds only Mesa's.
 
 **The session comes back.** The two tmux servers that hold every
 shell, the terminal's (socket `sola`) and Projects' (`sola-ws`), are
@@ -186,7 +204,7 @@ in tmux on socket `sola-ws`; on start it merges its status hooks into
 the desk: Claude Code is a recipe in every catalog (R23), built on the
 machine with `oath build plan:claude-code`.
 
-## Sound, session bus, KVM (built)
+## Sound, Bluetooth, the buses, KVM (built)
 
 `svc:dbus-session` (`dbus-daemon --session` on `/run/user/1/bus`),
 `svc:pipewire`, `svc:wireplumber` and `svc:pipewire-pulse` run as
@@ -196,6 +214,16 @@ root:home 0660 ([devices.md](devices.md)). The shell's volume menu runs
 pipewire-pulse at `/run/user/1/pulse/native`. The bus is there for
 Chromium (MPRIS, notifications), at-spi and WirePlumber's optional
 parts; libdbus itself is a library CEF links.
+
+Bluetooth is BlueZ 5.87 on the system bus. `svc:dbus-system`
+(`dbus-daemon --system` on `/run/dbus/system_bus_socket`, as `void`,
+R36) reads its own policy and BlueZ's, from `pkg:bluez`'s slot;
+`svc:bluetooth` runs `bluetoothd` as root (its state in
+`/var/lib/bluetooth`). `bluetoothctl` pairs and connects. PipeWire's
+Bluetooth plugin plays and records through it (A2DP with SBC; HSP and
+HFP of its own), and WirePlumber, which wants the system bus, makes a
+node for each device; a Bluetooth LE controller or keyboard is an input
+device through `uhid`. No OBEX, mesh, MIDI or LE Audio codecs.
 
 `svc:sola-kvm` runs `sola-kvm listen --bind 0.0.0.0:4242` (UDP). novus
 runs `sola-kvm server --input evdev` with canto (10.0.0.3) to its right;
@@ -260,11 +288,12 @@ Noto's files from lightweight git tags.
 - Sola's shell has no GL context in QEMU (softpipe gives wgpu no GLES 3
   context), so Sola runs only on a machine with a GPU Mesa drives; the
   `desk-sola` case is metal only.
-- PipeWire has no Bluetooth: the shell's Bluetooth menu is empty.
 - libudev-zero marks a sound card `SOUND_INITIALIZED` when it has a
   control device, in enumeration (upstream PR 69) and, since 2026-10-27,
   in monitor events (Oath's second patch), which PID 1's `change` on the
   card makes whole; a hot-plugged USB card is untested.
+- NVIDIA's userspace has run in QEMU only (no card): the desk on
+  novus's RTX 3090 Ti is untested until it boots the trial stick.
 - Mesa drives AMD GPUs only (radeonsi, RADV) and softpipe: Intel's iris
   and ANV need Mesa's OpenCL C compiler, which needs LLVM and Clang
   (R17 took them out). On an Intel GPU (buccina's) Sola's shell has no

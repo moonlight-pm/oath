@@ -3,8 +3,8 @@ license = "MIT"
 description = "libepoxy, shared: GL function loading for Xwayland's glamor, through EGL."
 home = "https://github.com/anholt/libepoxy"
 purl = "pkg:github/anholt/libepoxy@1.5.10"
-build = ["meson", "ninja", "python", "pkgconf", "xorgproto", "mesa"]
-run = ["mesa"]
+build = ["meson", "ninja", "python", "pkgconf", "xorgproto", "libglvnd"]
+run = ["libglvnd"]
 
 [[source]]
 url = "https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz"

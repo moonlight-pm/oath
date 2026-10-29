@@ -15,6 +15,13 @@ The `base` profile:
 | `svc:sshd` | `/bin/sshd -D -e` (OpenSSH) | enabled, `restart=always`, `keep_children` | Keys in `ssh:local`; `/etc/ssh/sshd_config` comes from `host:local`. Passwords and root login off. Restarting it keeps open sessions. |
 | `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | enabled, `restart=always` | Keeps the clock (see [Network](network.md)); runs as `void` after start-up. |
 
+The `desk` profile adds the desk's own (rivulet, Sola's, PipeWire's)
+and two for Bluetooth: `svc:dbus-system`, the system bus
+(`/run/dbus/system_bus_socket`, as `void`), and `svc:bluetooth`,
+BlueZ's `bluetoothd`. Pair a device with `bluetoothctl`: `power on`,
+`scan on`, then `pair`, `trust` and `connect` with its address;
+`devices` lists the known ones. Headphones then show in `wpctl status`.
+
 Add a service on the box with `oath new` and `oath apply` (below), or
 at install time with an overlay (see [Catalog](catalog.md)).
 

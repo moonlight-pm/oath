@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-10-29 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R40 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R41 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -34,17 +34,18 @@ append history (git has it).
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
    in `desk`, a root by btrfs UUID, `install --local`. buccina did a
-   build host's whole job (2026-10-27). The trial stick is desk output
-   `c4cd226761d3` (2026-10-29) with `pkg:nvidia` built and on, and the
-   caps. Next: Joshua boots novus from it (F8); from buccina, NICs,
-   audio, Bluetooth, sensors, `nvidia-smi`; then the desk on the card:
-   libglvnd, glvnd Mesa, NVIDIA's Vulkan manifest and GBM backend.
+   build host's whole job (2026-10-27). R41 (2026-10-29): libglvnd and
+   NVIDIA's lookups for the desk, BlueZ on a system bus, the fan curve;
+   the trial stick is desk output `67d5d5c1160c` (61/61, not published:
+   its packs wait on Joshua's go) with `pkg:nvidia` built and on. Next:
+   Joshua boots novus from it (F8); from buccina, the desk on the card,
+   sound, pairing, fans, `nvidia-smi`; then publish it.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
    `host:local.origins`, the R2 bucket written only by `cargo make
    publish` (buccina's, R38). Next: a new stable is a new pin; publish
-   after every build that changes a pack.
+   after every build that changes a pack (R41's are not yet).
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9

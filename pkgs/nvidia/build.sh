@@ -8,6 +8,8 @@
 #   libEGL, libGLX, libOpenGL, libGLdispatch, libGLES*) come from
 #   pkg:libglvnd instead, and the X server's, GTK's, OpenCL's loader and
 #   confidential computing's are left out.
+# - Its 32-bit libraries in lib32/, likewise (R29: Steam's sandbox puts
+#   every pack's lib32/ at /lib32; pkg:libglvnd-i386 dispatches to them).
 # - The manifests in share/: Vulkan's ICD and layers, glvnd's EGL vendor.
 # - NVIDIA's own lookups under lib/nvidia/ (linked as /lib/nvidia): EGL's
 #   external platforms (Wayland, GBM, X), whose second directory
@@ -65,18 +67,30 @@ done
 ln -s libcuda.so.1 /out/lib/libcuda.so
 ln -s ../../libnvidia-allocator.so.1 /out/lib/nvidia/gbm/nvidia-drm_gbm.so
 cp [0-9][0-9]_nvidia_*.json /out/lib/nvidia/egl_external_platform.d/
+mkdir -p /out/lib32
+for f in 32/lib*.so.*; do
+	b=${f#32/}
+	case $b in
+	libGL.so.* | libEGL.so.* | libGLX.so.* | libOpenGL.so.* | libGLdispatch.so.* | \
+		libGLESv1_CM.so.* | libGLESv2.so.* | libOpenCL.so.*) continue ;;
+	esac
+	cp "$f" /out/lib32/
+	so=$(readelf -d "$f" | sed -n 's/.*(SONAME).*\[\(.*\)\]/\1/p')
+	[ -z "$so" ] || [ "$so" = "$b" ] || ln -sf "$b" "/out/lib32/$so"
+done
 # The new list is shorter; NUL pads it, and nothing in the file moves.
-e=/out/lib/libEGL_nvidia.so.$VERSION
 old=/etc/egl/egl_external_platform.d:/usr/share/egl/egl_external_platform.d
 new=/etc/egl/egl_external_platform.d:/lib/nvidia/egl_external_platform.d
-off=$(grep -obUaF "$old" "$e" | head -n 1 | cut -d: -f1)
-[ -n "$off" ]
-{
-	printf '%s' "$new"
-	i=${#new}
-	while [ "$i" -lt "${#old}" ]; do printf '\0'; i=$((i + 1)); done
-} | dd of="$e" bs=1 seek="$off" conv=notrunc status=none
-grep -qaF "$new" "$e"
+for e in /out/lib/libEGL_nvidia.so.$VERSION /out/lib32/libEGL_nvidia.so.$VERSION; do
+	off=$(grep -obUaF "$old" "$e" | head -n 1 | cut -d: -f1)
+	[ -n "$off" ]
+	{
+		printf '%s' "$new"
+		i=${#new}
+		while [ "$i" -lt "${#old}" ]; do printf '\0'; i=$((i + 1)); done
+	} | dd of="$e" bs=1 seek="$off" conv=notrunc status=none
+	grep -qaF "$new" "$e"
+done
 
 s=/out/share
 mkdir -p "$s/vulkan/icd.d" "$s/vulkan/implicit_layer.d" "$s/glvnd/egl_vendor.d"

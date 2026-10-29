@@ -1,12 +1,12 @@
 # pkgs/mesa for i386 (R29).
 i386 = "mesa"
-description = "Mesa for i386 programs (lib32/): radeonsi, RADV and softpipe, GBM, EGL, GLES, GL and GLX (Steam's 32-bit games)."
+description = "Mesa for i386 programs (lib32/): radeonsi, RADV and softpipe, GBM, and EGL, GLES, GL and GLX through libglvnd (Steam's 32-bit games)."
 build = [
 	"meson", "ninja", "python", "pkgconf", "bison", "flex", "glslang",
 	"python-mako", "python-pyyaml", "python-packaging", "libdrm-i386",
 	"wayland-i386", "wayland", "wayland-protocols", "expat-i386", "zlib-i386",
 	"zstd-i386", "elfutils-i386", "xorgproto", "libx11-i386", "libxcb-i386",
-	"libxext-i386", "libxxf86vm-i386", "libxshmfence-i386", "libxfixes-i386",
+	"libxext-i386", "libxxf86vm-i386", "libxshmfence-i386", "libxfixes-i386", "libglvnd-i386",
 ]
 run = [
 	"gcc", "libdrm-i386", "wayland-i386", "expat-i386", "zlib-i386", "zstd-i386",

@@ -84,6 +84,10 @@
       "hash": "sha256-c15e3a6dfb55cab94f5702332c3ff31a0b227a27c39c30d4668dc9a36455a5b4"
     },
     {
+      "id": "pkg:libglvnd",
+      "hash": "sha256-2e2258ee2b411a8dbff5c6b35acac638707b9b99e19310804977be5836f45b99"
+    },
+    {
       "id": "pkg:libinput",
       "hash": "sha256-1650ffce17660808b7ba9820f6a9766fc320f5b5881a0864a663360e09e2b828"
     },
@@ -141,7 +145,7 @@
     },
     {
       "id": "pkg:mesa",
-      "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
+      "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f"
     },
     {
       "id": "pkg:meson",
@@ -229,7 +233,7 @@
     },
     {
       "id": "pkg:xwayland",
-      "hash": "sha256-4de85bc27fcfb59c2c9947b7c06878ca9e23bee3369100ab8240e5dd559ebe0a"
+      "hash": "sha256-bf752264b0ddd3f14fd83d9dc101c7aeca85d762fd95dc7284846102b488b109"
     },
     {
       "id": "pkg:xz",
@@ -254,6 +258,10 @@
       "hash": "sha256-15e17b25ad84dafb657672840e83cfd322d33f05050f6f5607b7fcc56806f9a8"
     },
     {
+      "id": "pkg:libglvnd",
+      "hash": "sha256-2e2258ee2b411a8dbff5c6b35acac638707b9b99e19310804977be5836f45b99"
+    },
+    {
       "id": "pkg:libinput",
       "hash": "sha256-1650ffce17660808b7ba9820f6a9766fc320f5b5881a0864a663360e09e2b828"
     },
@@ -271,7 +279,7 @@
     },
     {
       "id": "pkg:mesa",
-      "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
+      "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f"
     },
     {
       "id": "pkg:pixman",
@@ -295,7 +303,7 @@
     },
     {
       "id": "pkg:xwayland",
-      "hash": "sha256-4de85bc27fcfb59c2c9947b7c06878ca9e23bee3369100ab8240e5dd559ebe0a"
+      "hash": "sha256-bf752264b0ddd3f14fd83d9dc101c7aeca85d762fd95dc7284846102b488b109"
     }
   ]
 }

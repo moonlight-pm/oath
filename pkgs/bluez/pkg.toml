@@ -1,0 +1,17 @@
+# BlueZ: bluetoothd, the Bluetooth daemon, on the system bus
+# (svc:dbus-system, as root), with its profiles built in (A2DP and AVRCP
+# for PipeWire, HID and HoG for controllers and keyboards); bluetoothctl
+# and btmgmt to pair and manage; btmon; libbluetooth, which PipeWire's
+# Bluetooth plugin builds with. No OBEX, mesh, MIDI, CUPS or udev rules.
+version = "5.87"
+license = "GPL-2.0-or-later AND LGPL-2.1-or-later"
+description = "BlueZ: bluetoothd, bluetoothctl, btmgmt, btmon and libbluetooth."
+home = "https://www.bluez.org/"
+purl = "pkg:generic/bluez@5.87"
+build = ["pkgconf", "glib", "dbus", "readline", "ncurses"]
+run = ["glib", "dbus", "readline", "ncurses"]
+
+[[source]]
+url = "https://www.kernel.org/pub/linux/bluetooth/bluez-5.87.tar.xz"
+sha256 = "26bdcf2cebd7310c6f598850606b037ef0c515fe6608ebc54d22c50c4c32b35f"
+unsigned = "kernel.org signs the tar (bluez-5.87.tar.sign) with Marcel Holtmann's key 06CA9F5D1DCF2659, which Oath does not trust yet"

@@ -10,10 +10,11 @@ build = [
 	"meson", "ninja", "python", "pkgconf", "wayland", "wayland-protocols", "hwdata",
 	"libdrm", "mesa", "libinput", "libxkbcommon", "pixman", "seatd", "libudev-zero",
 	"libdisplay-info", "xorgproto", "libxcb", "xcb-util-wm", "xcb-util-errors", "xwayland",
+	"libglvnd",
 ]
 run = [
 	"wayland", "libdrm", "mesa", "libinput", "libxkbcommon", "pixman", "seatd", "libudev-zero",
-	"libdisplay-info", "libxcb", "xcb-util-wm", "xcb-util-errors", "xwayland",
+	"libdisplay-info", "libxcb", "xcb-util-wm", "xcb-util-errors", "xwayland", "libglvnd",
 ]
 
 [[source]]

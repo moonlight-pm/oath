@@ -1,12 +1,13 @@
 # Programs load libvulkan.so.1 (wgpu with dlopen), and it loads the
 # drivers its JSON manifests name. Oath has no /usr/share: the data
-# directory it falls back to when XDG_DATA_DIRS is unset is Mesa's slot,
-# with RADV's manifest (vulkan/icd.d) and the device-select layer's
-# (vulkan/implicit_layer.d). It also reads /etc/vulkan, /etc/xdg/vulkan
-# and ~/.local/share/vulkan; VK_DRIVER_FILES overrides them all.
+# directories it falls back to when XDG_DATA_DIRS is unset are Mesa's
+# slot, with RADV's manifest (vulkan/icd.d) and the device-select layer's
+# (vulkan/implicit_layer.d), and NVIDIA's (R34). It also reads
+# /etc/vulkan, /etc/xdg/vulkan and ~/.local/share/vulkan;
+# VK_DRIVER_FILES overrides them all.
 version = "1.4.365"
 license = "Apache-2.0 AND MIT"
-description = "The Vulkan loader, libvulkan.so.1: it finds Mesa's RADV and device-select layer."
+description = "The Vulkan loader, libvulkan.so.1: it finds Mesa's RADV and device-select layer, and NVIDIA's driver."
 home = "https://github.com/KhronosGroup/Vulkan-Loader"
 purl = "pkg:github/KhronosGroup/Vulkan-Loader@v1.4.365"
 build = ["cmake", "pkgconf", "vulkan-headers", "xorgproto", "libx11", "libxcb", "libxrandr"]

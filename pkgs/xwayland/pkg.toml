@@ -6,12 +6,12 @@ purl = "pkg:generic/xwayland@24.1.14"
 build = [
 	"meson", "ninja", "python", "pkgconf", "xorgproto", "xtrans", "libxau", "libx11",
 	"libxext", "libxfixes", "libxxf86vm", "libxcb", "libxkbfile", "libxfont2", "libfontenc", "libxcvt", "libxshmfence", "libepoxy", "nettle",
-	"pixman", "libdrm", "mesa", "wayland", "wayland-protocols", "zlib", "xkbcomp",
+	"pixman", "libdrm", "mesa", "libglvnd", "wayland", "wayland-protocols", "zlib", "xkbcomp",
 	"xkeyboard-config",
 ]
 run = [
 	"libxau", "libxfont2", "libfontenc", "libxcvt", "libxshmfence", "libepoxy", "nettle",
-	"pixman", "libdrm", "mesa", "wayland", "zlib", "xkbcomp", "xkeyboard-config",
+	"pixman", "libdrm", "mesa", "libglvnd", "wayland", "zlib", "xkbcomp", "xkeyboard-config",
 ]
 
 [[source]]

@@ -88,6 +88,10 @@
       "hash": "sha256-afaebdcf88387f34371ca89f02f7a1bc066d7260a5d8ca00315711a59af4e7b2"
     },
     {
+      "id": "pkg:libglvnd-i386",
+      "hash": "sha256-1d71324122bf70dff6793e4c588b7142b7c01a95b5b1490a0d4f12b33fc9b66a"
+    },
+    {
       "id": "pkg:libx11-i386",
       "hash": "sha256-e8d856a91aedbe0c6cabfd5aeb71ec47057ba27b5960edaa27062575887e7e13"
     },
@@ -310,11 +314,15 @@ cat > /out/components.json <<'OATH_EOF'
   }
 ]
 OATH_EOF
-# Mesa: libEGL, libGLESv2, libGL (GLX), libgbm and the radeonsi and
-# softpipe drivers, on Wayland and X11. drirc's per-program workarounds
+# Mesa as libglvnd's vendor (R34): libEGL_mesa, libGLX_mesa and libgbm,
+# with the radeonsi and softpipe drivers, on Wayland and X11; libEGL,
+# libGL and libGLESv2 are pkg:libglvnd's, which finds Mesa by
+# share/glvnd/egl_vendor.d/50_mesa.json. drirc's per-program workarounds
 # are on (xmlconfig, expat). RADV, the Vulkan driver for amdgpu, and the
 # device-select layer, which puts the compositor's GPU first: their
 # manifests (share/vulkan) name each library by its name, found in /lib.
+# libgbm loads a GPU's own backend (<driver>_gbm.so) from its lib/gbm
+# or, on x86_64, NVIDIA's slot, and else its DRI one.
 tar -xf "$SRC/$SOURCES"
 cd "mesa-$VERSION"
 PYTHONPATH=
@@ -322,12 +330,14 @@ for m in mako markupsafe pyyaml packaging; do
 	PYTHONPATH="$PYTHONPATH${PYTHONPATH:+:}/oath/store/pkg/python-$m/live/lib/python"
 done
 export PYTHONPATH
+gbm=$LIVE/$LIBDIR/gbm
+[ "$LIBDIR" != lib ] || gbm=$gbm:/oath/store/pkg/nvidia/live/lib/nvidia/gbm
 meson setup build --prefix="$LIVE" --libdir="$LIBDIR" --buildtype=release --wrap-mode=nofallback \
 	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe \
 	-Dvulkan-drivers=amd -Dvulkan-layers=device-select -Dvulkan-manifest-per-architecture=false \
 	-Dllvm=disabled -Damd-use-llvm=false -Ddraw-use-llvm=false \
 	-Degl=enabled -Dgbm=enabled -Dgles2=enabled -Dgles1=disabled -Dopengl=true \
-	-Dglx=dri -Dglvnd=disabled -Dxlib-lease=disabled \
+	-Dglx=dri -Dglvnd=enabled -Dgbm-backends-path="$gbm" -Dxlib-lease=disabled \
 	-Dgallium-va=disabled -Dgallium-rusticl=false -Dgallium-d3d10umd=false \
 	-Dgallium-mediafoundation=disabled -Dgallium-d3d12-video=disabled -Dmicrosoft-clc=disabled \
 	-Dvideo-codecs= -Dtools= -Dbuild-tests=false -Denable-glcpp-tests=false \
@@ -338,3 +348,5 @@ ninja -C build -j"$JOBS"
 DESTDIR=/tmp/dest ninja -C build install
 cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/$LIBDIR" "/tmp/dest$LIVE/share" /out/
 grep -q '"library_path": "libvulkan_radeon.so"' /out/share/vulkan/icd.d/radeon_icd.json
+grep -q '"library_path" : "libEGL_mesa.so.0"' /out/share/glvnd/egl_vendor.d/50_mesa.json
+strings "/out/$LIBDIR/libgbm.so.1" | grep -qxF "$gbm"

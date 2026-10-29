@@ -209,6 +209,11 @@ CONFIG_CRC16=m
 CONFIG_CRYPTO_CMAC=m
 CONFIG_CRYPTO_ECDH=m
 CONFIG_CRYPTO_USER_API_HASH=m
+# bluetoothd's own crypto (AES through AF_ALG), and uhid, through which
+# it makes a Bluetooth LE HID device (novus's Xbox Wireless Controller)
+CONFIG_CRYPTO_USER_API_SKCIPHER=m
+CONFIG_CRYPTO_ECB=y
+CONFIG_UHID=m
 
 # Sound: canto Cirrus HDA + Pitcairn HDMI, novus Realtek ALC1220 (the
 # ALC882 driver) + NVIDIA HDMI
@@ -230,8 +235,10 @@ CONFIG_VIDEO_DEV=m
 CONFIG_USB_VIDEO_CLASS=m
 
 # novus's board: the Nuvoton NCT6798D (fans, the radiator's included),
-# the Ryzen's temperatures, Thunderbolt 4 (Maple Ridge)
+# ASUS's EC (chipset, VRM and the loop's T_Sensor, which its fan curve
+# reads), the Ryzen's temperatures, Thunderbolt 4 (Maple Ridge)
 CONFIG_SENSORS_NCT6775=m
+CONFIG_SENSORS_ASUS_EC=m
 CONFIG_SENSORS_K10TEMP=m
 CONFIG_USB4=m
 

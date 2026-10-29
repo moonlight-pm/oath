@@ -16,6 +16,16 @@
       "wants": [],
       "restart": "on-failure",
       "enabled": false
+    },
+    "svc:fan-curve": {
+      "exec": [
+        "/bin/sh",
+        "-c",
+        "modprobe nct6775; i=0; nct=; ec=; while [ $i -lt 60 ]; do for d in /sys/class/hwmon/hwmon*; do case $(cat $d/name) in nct6798) nct=$d ;; asusec) ec=$d ;; esac; done; [ -n \"$nct\" ] && [ -n \"$ec\" ] && break; sleep 1; i=$((i + 1)); done; t=; for l in $ec/temp*_label; do [ \"$(cat $l)\" = T_Sensor ] && t=${l%_label}_input; done; [ -n \"$nct\" ] && [ -n \"$t\" ] || { echo \"fan-curve: no nct6798 or asusec T_Sensor\"; exit 1; }; saved=; for n in 1 2 3 4 5 7; do saved=\"$saved $n:$(cat $nct/pwm${n}_enable)\"; done; restore() { for s in $saved; do echo ${s#*:} >$nct/pwm${s%%:*}_enable; done; exit 0; }; trap restore TERM INT; for n in 1 2 3 4 5 7; do echo 1 >$nct/pwm${n}_enable; done; echo \"fan-curve: $t, pwm 100-255 over 32-42 C\"; while :; do c=$(cat $t) || c=99000; if [ \"$c\" -le 32000 ]; then p=100; elif [ \"$c\" -ge 42000 ]; then p=255; else p=$((100 + (c - 32000) * 155 / 10000)); fi; for n in 1 2 3 4 5 7; do echo $p >$nct/pwm$n; done; sleep 5 & wait $!; done"
+      ],
+      "wants": [],
+      "restart": "always",
+      "enabled": true
     }
   }
 }

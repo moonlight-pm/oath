@@ -29,19 +29,32 @@ Overwrite this file when facts change; do not append a diary.
   `host:local.module_options`, and `svc:gpu-power` for the caps (off
   until `pkg:nvidia` is present). The kernel has no other display driver
   (no simpledrm, efifb or nouveau), so without `pkg:nvidia` the screen
-  stays dark. The desk cannot draw on the card yet: no libglvnd for its
-  EGL and GL, and neither the Vulkan loader nor Mesa's libgbm looks in
-  `pkg:nvidia`'s directories.
+  stays dark. The desk draws on the card through libglvnd, NVIDIA's GBM
+  backend and its Vulkan driver (R41); the monitor is a Dell U4025QW on
+  DP-2, and its speakers (the card's DP audio) are NixOS's default sink.
+- **Board (R41):** fans on the NCT6798D (`nct6775`, loaded by
+  `svc:fan-curve`), temperatures from ASUS's EC (`asus_ec_sensors`, by
+  DMI alias). NixOS's fancontrol ramps fans 1–5 and 7 from PWM 100 at a
+  T_Sensor (the loop) of 32 °C to 255 at 42 °C; `svc:fan-curve` does the
+  same every 5 s and gives the fans back to the board when stopped.
+- **Bluetooth:** the AX210's (`btintel`, `ibt-0041-0041`). Paired on
+  NixOS: an Xbox Wireless Controller (`68:6C:E6:31:87:67`) and Sony
+  WH-CH520 headphones (`14:06:A7:0E:A5:DA`); Oath's BlueZ has its own
+  pairings, so each pairs again from the stick.
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
-  GPU settings. No mounts yet: the trial leaves NixOS's disks alone.
+  GPU settings, the fan curve. No mounts yet: the trial leaves NixOS's
+  disks alone.
 - **Oath on it:** the trial stick, Joshua's Samsung Type-C 128 GB
   (`090c:1000`, serial `0354422110003481`; a Bazzite installer before),
   rewritten 2026-10-29 on buccina by `cargo make install --local` from
-  desk output `c4cd226761d3` (OpenSSH, `void`, `oath update`): ESP
-  `OATHESP`, btrfs `oath`, root `UUID=59c62972-920c-4824-941d-c31886774374`.
-  In QEMU it built `plan:nvidia` (`pkg:nvidia` `2f1f8c80`, vermagic
-  7.3.0; `nvidia.ko` loads and finds no GPU), and `pkg:nvidia` and
-  `svc:gpu-power` are on (generation 1). Its `ssh:local` has buccina's,
+  desk output `67d5d5c1160c` (R41; checked, not published): ESP
+  `OATHESP`, btrfs `oath`, root `UUID=e9cd5765-f83c-4d4d-a451-be9029ccdaa3`.
+  In QEMU it built `plan:nvidia` (`pkg:nvidia` `48b78914`, as buccina's
+  build; `nvidia.ko` loads and finds no GPU; `pkg:linux-build`
+  `b80fd3da` copied in from buccina's store, since the bucket lacks it),
+  and `pkg:nvidia` and `svc:gpu-power` are on (generation 1); libglvnd
+  loads NVIDIA's EGL vendor and Mesa's, and the Vulkan loader finds
+  `nvidia_icd.json`. Its `ssh:local` has buccina's,
   canto's and `root@hub`'s keys; while novus runs the stick, buccina or
   canto drive it:
   `ssh -o UserKnownHostsFile=~/.ssh/novus-oath.known_hosts home@novus` on

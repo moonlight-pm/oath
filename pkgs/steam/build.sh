@@ -75,12 +75,23 @@ if [ ! -d "$root" ]; then
 	[ -L "$u/lib32/ld-linux.so.2" ] && link "$u/lib" "$(readlink "$u/lib32/ld-linux.so.2")"
 	ln -s lib "$u/lib64"
 	cp "$live/libexec/steam/true" "$u/local/bin/true"
-	# share/<a>/<b> from every pack: Vulkan's icd.d, fonts, X11, drirc.d.
+	# share/<a>/<b> from every pack: fonts, X11, drirc.d; and each file of
+	# the loaders' manifest directories, which more than one pack fills
+	# (Vulkan's icd.d and layers, glvnd's egl_vendor.d: Mesa's and
+	# NVIDIA's).
 	for s in /oath/store/pkg/*/live/share/*; do
 		a=$u/share/${s##*/}
 		if [ -d "$s" ] && [ ! -L "$a" ]; then
 			mkdir -p "$a"
-			for e in "$s"/*; do link "$a" "$e"; done
+			for e in "$s"/*; do
+				case ${e##*/} in
+				icd.d | implicit_layer.d | explicit_layer.d | egl_vendor.d)
+					mkdir -p "$a/${e##*/}"
+					for f in "$e"/*; do link "$a/${e##*/}" "$f"; done
+					;;
+				*) link "$a" "$e" ;;
+				esac
+			done
 		else
 			link "$u/share" "$s"
 		fi

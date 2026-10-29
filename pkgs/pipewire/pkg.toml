@@ -1,10 +1,13 @@
 version = "1.6.9"
 license = "MIT AND LGPL-2.1-or-later"
-description = "PipeWire: the audio server, pipewire-pulse, the ALSA plugin and the pw-* tools."
+description = "PipeWire: the audio server, pipewire-pulse, the ALSA plugin, Bluetooth audio and the pw-* tools."
 home = "https://pipewire.org/"
 purl = "pkg:generic/pipewire@1.6.9"
-build = ["meson", "ninja", "python", "pkgconf", "alsa-lib", "libudev-zero", "libsndfile", "dbus", "ncurses"]
-run = ["alsa-lib", "libudev-zero", "libsndfile", "dbus", "ncurses"]
+build = [
+	"meson", "ninja", "python", "pkgconf", "alsa-lib", "libudev-zero", "libsndfile", "dbus", "ncurses",
+	"glib", "bluez", "sbc",
+]
+run = ["alsa-lib", "libudev-zero", "libsndfile", "dbus", "ncurses", "glib", "bluez", "sbc"]
 
 [[source]]
 url = "https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/1.6.9/pipewire-1.6.9.tar.gz"

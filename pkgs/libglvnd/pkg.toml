@@ -1,0 +1,18 @@
+# libglvnd, GL's vendor-neutral dispatch (R34): libEGL, libGL, libGLX,
+# libOpenGL, libGLESv2 and libGLdispatch, with Khronos's headers and
+# their pkg-config files. Each display's calls go to its vendor: Mesa's
+# (libEGL_mesa, libGLX_mesa) or NVIDIA's. EGL vendors are their JSON
+# files in /etc/glvnd/egl_vendor.d, then NVIDIA's and Mesa's slots; a
+# GLX vendor is the one the X server names.
+version = "1.7.0"
+license = "MIT AND Apache-2.0"
+description = "libglvnd: libEGL, libGL, libGLX, libOpenGL and libGLESv2, dispatching to Mesa or NVIDIA."
+home = "https://gitlab.freedesktop.org/glvnd/libglvnd"
+purl = "pkg:generic/libglvnd@1.7.0"
+build = ["meson", "ninja", "python", "pkgconf", "xorgproto", "libx11", "libxext"]
+run = ["libx11", "libxext"]
+
+[[source]]
+url = "https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v1.7.0/libglvnd-v1.7.0.tar.gz"
+sha256 = "2b6e15b06aafb4c0b6e2348124808cbd9b291c647299eaaba2e3202f51ff2f3d"
+unsigned = "libglvnd releases are lightweight git tags with GitLab's generated archive; there is no signature"

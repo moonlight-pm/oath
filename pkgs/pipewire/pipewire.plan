@@ -12,6 +12,10 @@
       "hash": "sha256-80f160c2dd44f5d3801bd5627163e4203d513ea9bc1edf70cccb567a34f6c371"
     },
     {
+      "id": "pkg:bluez",
+      "hash": "sha256-128c66ed2fe2d6634f5ce4abb0214cf1bf96f4cd868c3d9a5459cadeffa18cb0"
+    },
+    {
       "id": "pkg:bzip2",
       "hash": "sha256-3e16469f204827a9164fdf7e23e7c001f2174df6bc135f84624d56c1d76bb288"
     },
@@ -21,7 +25,7 @@
     },
     {
       "id": "pkg:dbus",
-      "hash": "sha256-e6e71272e53915e45e234cd682c49d694af8dd0d59d4ca8c418bd00a105754e7"
+      "hash": "sha256-1dadfcfc6d418c31be891adba815f2a1a4a639217943742fe7beb6da0ab58ea3"
     },
     {
       "id": "pkg:diffutils",
@@ -42,6 +46,10 @@
     {
       "id": "pkg:gcc",
       "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
+    },
+    {
+      "id": "pkg:glib",
+      "hash": "sha256-d54a5306276245833ff98fe2b85ed125e1f207e7d56a0f776ddb6f7643d588e7"
     },
     {
       "id": "pkg:glibc",
@@ -104,6 +112,10 @@
       "hash": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899"
     },
     {
+      "id": "pkg:pcre2",
+      "hash": "sha256-2865eb487beed29930b59c6cfd1d3d5cb56518368e82731120b8d92446a3d95a"
+    },
+    {
       "id": "pkg:pipewire-src",
       "hash": "sha256-72b0571802aa5e19692b14b931d3e8176a7ddc732c752cd6488c11e9efd02952"
     },
@@ -114,6 +126,14 @@
     {
       "id": "pkg:python",
       "hash": "sha256-6de9caef5c674adf4847dd92afa404643b3d17e9964fcfc88593fd1666209d1d"
+    },
+    {
+      "id": "pkg:readline",
+      "hash": "sha256-138b6698cf445742b5c956ad461aff4eee141f782a0c5ace109ce3fdddf319b7"
+    },
+    {
+      "id": "pkg:sbc",
+      "hash": "sha256-d5b22a8b0638174cc7175b34bcecf35a3d37d96d85a8604a1c49b67ab7be0257"
     },
     {
       "id": "pkg:sed",
@@ -142,8 +162,16 @@
       "hash": "sha256-28dceee11a3bebc5cb12fa2e70d1bc7448ed2842090887874e47fc192d5c9137"
     },
     {
+      "id": "pkg:bluez",
+      "hash": "sha256-128c66ed2fe2d6634f5ce4abb0214cf1bf96f4cd868c3d9a5459cadeffa18cb0"
+    },
+    {
       "id": "pkg:dbus",
-      "hash": "sha256-e6e71272e53915e45e234cd682c49d694af8dd0d59d4ca8c418bd00a105754e7"
+      "hash": "sha256-1dadfcfc6d418c31be891adba815f2a1a4a639217943742fe7beb6da0ab58ea3"
+    },
+    {
+      "id": "pkg:glib",
+      "hash": "sha256-d54a5306276245833ff98fe2b85ed125e1f207e7d56a0f776ddb6f7643d588e7"
     },
     {
       "id": "pkg:libsndfile",
@@ -156,6 +184,10 @@
     {
       "id": "pkg:ncurses",
       "hash": "sha256-57d92009aaabace2bc64854cb9f66f500f955eaf685fa78fb847aa2c6a5865c6"
+    },
+    {
+      "id": "pkg:sbc",
+      "hash": "sha256-d5b22a8b0638174cc7175b34bcecf35a3d37d96d85a8604a1c49b67ab7be0257"
     }
   ]
 }
@@ -193,9 +225,9 @@ cat > /out/components.json <<'OATH_EOF'
 ]
 OATH_EOF
 # PipeWire with ALSA (devices through libudev-zero), pipewire-pulse (the
-# pulse protocol, no libpulse), the ALSA plugin and the tools; no session
-# manager (WirePlumber is its own pack), Bluetooth, JACK, video, systemd
-# or docs. Options that turn themselves on when a library is present
+# pulse protocol, no libpulse), the ALSA plugin, the tools and Bluetooth
+# audio through BlueZ (A2DP with SBC, HSP and HFP of its own); no session
+# manager (WirePlumber is its own pack), JACK, video, systemd or docs. Options that turn themselves on when a library is present
 # (X11, GSettings, Flatpak) are turned off.
 tar -xf "$SRC/$SOURCES"
 cd "pipewire-$VERSION"
@@ -207,7 +239,11 @@ meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release --wrap-mode=
 	-Dsystemd-user-service=disabled -Dselinux=disabled -Dpipewire-alsa=enabled -Dalsa=enabled \
 	-Dudev=enabled -Dudevrulesdir="$LIVE/lib/udev/rules.d" -Dpipewire-jack=disabled \
 	-Djack=disabled -Dpipewire-v4l2=disabled -Dv4l2=disabled -Dlibcamera=disabled \
-	-Dbluez5=disabled -Dffmpeg=disabled -Dpw-cat-ffmpeg=disabled -Dvulkan=disabled \
+	-Dbluez5=enabled -Dbluez5-backend-native-mm=disabled -Dbluez5-backend-ofono=disabled \
+	-Dbluez5-backend-hsphfpd=disabled -Dbluez5-codec-aptx=disabled -Dbluez5-codec-ldac=disabled \
+	-Dbluez5-codec-ldac-dec=disabled -Dbluez5-codec-aac=disabled -Dbluez5-codec-lc3plus=disabled \
+	-Dbluez5-codec-opus=disabled -Dbluez5-codec-lc3=disabled -Dbluez5-plc-spandsp=disabled \
+	-Dffmpeg=disabled -Dpw-cat-ffmpeg=disabled -Dvulkan=disabled \
 	-Dsdl2=disabled -Dvideoconvert=disabled -Dvideotestsrc=disabled -Dvolume=disabled \
 	-Dtest=disabled -Devl=disabled -Dpw-cat=enabled -Dsndfile=enabled -Dlibpulse=disabled \
 	-Droc=disabled -Davahi=disabled -Decho-cancel-webrtc=disabled -Dlibusb=disabled \
@@ -220,3 +256,4 @@ ninja -C build -j"$JOBS"
 DESTDIR=/tmp/dest ninja -C build install
 cp -a "/tmp/dest$LIVE/." /out/
 rm -rf /out/lib/udev /out/lib/cmake /out/share/locale
+[ -f /out/lib/spa-0.2/bluez5/libspa-bluez5.so ]
