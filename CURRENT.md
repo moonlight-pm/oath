@@ -29,7 +29,7 @@ append history (git has it).
    `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`); Sola's
    packs from `83df4558` are built on it and pinned (R37 done
    2026-10-29); canto runs both. Next: publish desk output
-   `36de66963ac1` (61/61 in QEMU) and move buccina to it.
+   `36de66963ac1` (61/61, QEMU pull from `e433824d38d0` ok); buccina.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
