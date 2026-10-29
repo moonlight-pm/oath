@@ -42,9 +42,9 @@ Overwrite this file when facts change; do not append a diary.
   pinned `pkg:oath` as it fetched it, so the apply left it unlinked);
   set back and forward by hand (383–384), and `e433824d38d0`'s `oath`
   (`sha256-4eec034d2bb9…`) was taken by hand first (386). `pkg:cef` is
-  Oath's vendor build again, without the
-  Sola tab's H.264/AAC codecs build (`sha256-252cc3ea5deb`), until the
-  Sola tab pins its own. Its Oath checkout (`~/Projects/Oath`, a clean
+  Oath's vendor build of CEF 147 again, without the
+  Sola tab's H.264/AAC codecs build (`sha256-252cc3ea5deb`), until it
+  takes Oath's CEF 156 with codecs (R40) and Sola's packs built against it. Its Oath checkout (`~/Projects/Oath`, a clean
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.

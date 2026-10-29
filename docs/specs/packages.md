@@ -147,7 +147,8 @@ origin, then the newest checked output's signed release; `--dest
 
 - Every package is either built from source by an Oath plan, or is the
   vendor's own binary release pinned by sha256 (examples: the Rust
-  toolchain, linux-firmware, Steam, CEF).
+  toolchain, linux-firmware, Steam). CEF is built from source with
+  Chromium's own Clang and Rust as build inputs (R40).
 - A package whose licence does not allow redistribution is a recipe
   (R23, built 2026-10-19): every catalog holds its plan
   (`plan:<name>`) and its source as a pin on the vendor's file

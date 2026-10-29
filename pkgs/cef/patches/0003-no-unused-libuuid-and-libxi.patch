@@ -1,0 +1,33 @@
+--- a/third_party/fontconfig/BUILD.gn
++++ b/third_party/fontconfig/BUILD.gn
+@@ -163,10 +163,6 @@
+         "-Wno-pointer-bool-conversion",
+       ]
+     }
+-
+-    if (!is_win) {
+-      libs = [ "uuid" ]
+-    }
+   }
+ } else {
+   config("fontconfig_config") {
+--- a/third_party/angle/BUILD.gn
++++ b/third_party/angle/BUILD.gn
+@@ -759,7 +759,6 @@
+       defines += [ "GPU_INFO_USE_X11" ]
+       libs += [
+         "X11",
+-        "Xi",
+         "Xext",
+       ]
+     }
+--- a/third_party/angle/src/libANGLE/renderer/gl/BUILD.gn
++++ b/third_party/angle/src/libANGLE/renderer/gl/BUILD.gn
+@@ -57,7 +57,6 @@
+   if (angle_use_x11) {
+     libs = [
+       "X11",
+-      "Xi",
+       "Xext",
+     ]
+   }

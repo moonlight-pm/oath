@@ -1,0 +1,75 @@
+--- a/cef/tools/git_util.py
++++ b/cef/tools/git_util.py
+@@ -15,14 +15,26 @@
+   git_exe = 'git'
+   patch_exe = 'patch'
+ 
++# A source tarball has no .git. CEF_TARBALL_COMMIT ("<hash> <commit number>
++# <patch version>") answers for CEF's own tree what git would: its version
++# comes from these. Chromium's tree stays a non-checkout, patched by `patch`.
++_TARBALL = os.environ.get('CEF_TARBALL_COMMIT', '').split()
++
++
++def _tarball(path):
++  return len(_TARBALL) == 3 and os.path.isfile(
++      os.path.join(path, 'VERSION.in'))
++
+ 
+ def is_checkout(path):
+   """ Returns true if the path represents a git checkout. """
+-  return os.path.exists(os.path.join(path, '.git'))
++  return os.path.exists(os.path.join(path, '.git')) or _tarball(path)
+ 
+ 
+ def is_ancestor(path='.', commit1='HEAD', commit2='master'):
+   """ Returns whether |commit1| is an ancestor of |commit2|. """
++  if _tarball(path):
++    return True
+   cmd = "%s merge-base --is-ancestor %s %s" % (git_exe, commit1, commit2)
+   result = exec_cmd(cmd, path)
+   return result['ret'] == 0
+@@ -52,6 +64,8 @@
+ 
+ def get_hash(path='.', branch='HEAD'):
+   """ Returns the git hash for the specified branch/tag/hash. """
++  if _tarball(path):
++    return _TARBALL[0]
+   cmd = "rev-parse %s" % branch
+   result = exec_git_cmd(cmd, path)
+   return 'Unknown' if result is None else result
+@@ -78,6 +92,8 @@
+ 
+ def get_url(path='.'):
+   """ Returns the origin url for the specified path. """
++  if _tarball(path):
++    return 'https://github.com/chromiumembedded/cef.git'
+   cmd = "config --get remote.origin.url"
+   result = exec_git_cmd(cmd, path)
+   return 'Unknown' if result is None else result
+@@ -85,6 +101,8 @@
+ 
+ def get_commit_number(path='.', branch='HEAD'):
+   """ Returns the number of commits in the specified branch/tag/hash. """
++  if _tarball(path):
++    return _TARBALL[1]
+   cmd = "rev-list --count %s" % (branch)
+   result = exec_git_cmd(cmd, path)
+   return '0' if result is None else result
+@@ -92,6 +110,8 @@
+ 
+ def get_changed_files(path, hash):
+   """ Retrieves the list of changed files. """
++  if _tarball(path):
++    return []
+   if hash == 'unstaged':
+     cmd = "diff --name-only"
+   elif hash == 'staged':
+@@ -105,6 +125,8 @@
+ def get_branch_hashes(path='.', branch='HEAD', ref='origin/master'):
+   """ Returns an ordered list of hashes for commits that have been applied since
+       branching from ref. """
++  if _tarball(path):
++    return ['tarball'] * int(_TARBALL[2])
+   cmd = "cherry %s %s" % (ref, branch)
+   result = exec_git_cmd(cmd, path)
+   if result is None:

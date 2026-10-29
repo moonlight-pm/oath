@@ -92,7 +92,9 @@ in (`OATH_SANDBOX_NIX_STORE`).
 GCC 16.2.0 and binutils 2.47 on glibc 2.44 are the toolchain and the C
 library (R17 in [decisions](../decisions.md)); the base tools are GNU's
 (R18). Clang/LLVM and musl (R11) left on 2026-10-17. Zig is not used
-(R9).
+(R9). One plan builds with another compiler: `pkg:cef`, whose Chromium
+builds only with its own Clang and Rust, unpacked from the toolchain
+packages Chromium's DEPS pins and used only in that sandbox (R40).
 
 - **Stage 0** (`cargo make bootstrap`, `pkgs/bootstrap.sh`): a cross
   toolchain for `x86_64-oath-linux-gnu` built by the build host's gcc:

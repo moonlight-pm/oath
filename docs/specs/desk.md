@@ -104,7 +104,7 @@ pin a machine already has (canto runs Sola's dev packs).
 | Package | What |
 |---------|------|
 | `sola`, `sola-browser`, `sola-design` | Sola's packs, pinned (R28): the `/bin/sola-*` programs the services run, `solactl`, and `share/cursors` (McMojave) for `XCURSOR_PATH`. The browser and Design run on `pkg:cef`; sharing a canvas needs `cloudflared`, which Oath does not ship |
-| `cef` | CEF 147 minimal, the vendor's binary (R7): `cef/Release` (libcef.so without its 1 GB of DWARF, ANGLE, SwiftShader; not Chromium's Vulkan loader), `cef/Resources`; 539 MB |
+| `cef` | CEF 156.0.14 built from Chromium's and CEF's source with H.264 and AAC (R40), laid out as the vendor's minimal distribution: `cef/Release` (libcef.so, SwiftShader; not Chromium's Vulkan loader), `cef/Resources`; 609 MB. The desk pins Sola's packs built against CEF 147 until Sola rebuilds them against it (R37) |
 | CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
 | Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif, serif and system-ui to Noto, monospace to Iosevka Term Slab then Noto Sans Mono, emoji and math to Noto's; `45-noto-cjk.conf`, ahead of it, picks the CJK face by language; both bind weakly, so a page's language outranks the family list), `freetype`, `font-noto` (Sans, Serif, Sans Mono, Symbols, Math and the scripts web pages need, slim variable TTFs from the 2026.10.01 monthly tag), `font-noto-cjk` (Sans and Serif CJK, Regular and Bold OTCs), `font-noto-emoji` (Noto Color Emoji, CBDT), `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
 | Sound | `pipewire` 1.6.9 (`pipewire`, `pipewire-pulse`, the `pw-*` tools; no session manager of its own), `wireplumber` 0.5.18 (with Lua 5.5 built in; `50-oath.conf` turns off Bluetooth, portals and D-Bus device reservation), `libpulse` (PulseAudio 17's client, `autospawn = no`), `libsndfile` (PCM formats only), `libudev-zero` with upstream PR 69 so PipeWire's ALSA monitor sees sound cards; `svc:pipewire` and `svc:pipewire-pulse` have `rtprio` 95, so module-rt runs their data threads `SCHED_FIFO` without RTKit |
@@ -227,9 +227,10 @@ that will matter at the next version bump:
   Ådahl signed earlier releases).
 - `gmp` (Niels Möller) had expired before it signed nettle 4.0.
 - `libevent`'s signing subkey expires 2027-06-16; `dbus`'s 2028-07-27.
-  CEF moves on (147.0.14 on its branch, 152 to 154 stable): a bump is a
-  new pin in `pkgs/cef`, and Sola's browser and Design are stale (the
-  build warns) until Sola builds them against it.
+  CEF moves on: a bump is a new CEF commit, Chromium tarball and the
+  toolchain pins its DEPS names in `pkgs/cef` (a build of several hours),
+  and Sola's browser and Design are stale (the build warns) until Sola
+  builds them against it.
 
 For rivulet's libraries, twelve sources have no signature the verifier
 can check, each saying why in its `pkg.toml`: libffi, libudev-zero,
@@ -244,7 +245,9 @@ stack adds: GNOME's tarballs (glib, at-spi2-core, pango; sha256sum
 files only), Mozilla's (nspr, nss; SHA256SUMS only), GitHub release
 assets (tmux, harfbuzz, fribidi, the fonts),
 fontconfig's GitLab package, cairo's inline-signed sha256sum (the
-pixman format), and CEF (Spotify's CDN, sha1 and sha256 only). Sound
+pixman format), and CEF (Google's Chromium tarball with an unsigned
+`.hashes` file, the toolchain packages its DEPS pins by sha256, and a
+GitHub archive of CEF's commit). Sound
 and fonts add: PipeWire's and WirePlumber's GitLab tag archives
 (lightweight tags), Lua (sha256 on lua.org) and meson's wrapdb patch,
 PulseAudio's tarball (a sha256sum; only its git tag is signed), and

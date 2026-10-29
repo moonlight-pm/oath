@@ -264,13 +264,13 @@
     },
     "pkg:cairo": {
       "present": true,
-      "description": "cairo, shared: image surfaces with FreeType and fontconfig (pango, CEF).",
+      "description": "cairo, shared: image surfaces with FreeType and fontconfig (pango, Sola's browser and Design).",
       "home": "https://www.cairographics.org/"
     },
     "pkg:cef": {
       "present": true,
-      "description": "CEF, the Chromium Embedded Framework, for sola-browser.",
-      "home": "https://bitbucket.org/chromiumembedded/cef"
+      "description": "CEF, the Chromium Embedded Framework, with H.264 and AAC, for sola-browser.",
+      "home": "https://github.com/chromiumembedded/cef"
     },
     "pkg:cmake": {
       "present": true,
@@ -464,7 +464,7 @@
     },
     "pkg:libxcomposite": {
       "present": true,
-      "description": "libXcomposite, shared: the Composite extension (CEF).",
+      "description": "libXcomposite, shared: the Composite extension (Sola's browser and Design).",
       "home": "https://www.x.org/"
     },
     "pkg:libxcrypt-i386": {
@@ -479,7 +479,7 @@
     },
     "pkg:libxdamage": {
       "present": true,
-      "description": "libXdamage, shared: the DAMAGE extension (CEF).",
+      "description": "libXdamage, shared: the DAMAGE extension (Sola's browser and Design).",
       "home": "https://www.x.org/"
     },
     "pkg:libxext": {
@@ -519,7 +519,7 @@
     },
     "pkg:libxrandr": {
       "present": true,
-      "description": "libXrandr, shared: the RandR extension (CEF).",
+      "description": "libXrandr, shared: the RandR extension (Sola's browser and Design).",
       "home": "https://www.x.org/"
     },
     "pkg:libxrender": {
@@ -604,7 +604,7 @@
     },
     "pkg:pango": {
       "present": true,
-      "description": "Pango, shared: text layout (CEF).",
+      "description": "Pango, shared: text layout (Sola's browser and Design).",
       "home": "https://gitlab.gnome.org/GNOME/pango"
     },
     "pkg:pcre2": {

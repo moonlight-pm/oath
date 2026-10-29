@@ -101,11 +101,11 @@
     ]
   },
   "cef": {
-    "version": "147.0.10+gd58e84d+chromium-147.0.7727.118",
+    "version": "156.0.14+g4fa4ab5+chromium-156.0.8078.48",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-2ffa11217a5d4682d3a7632c6ce46d48782a70355e64493b7ff8046fe2c747a3",
-    "product": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb",
+    "plan": "sha256-71dd21c923e288fb487fe899039821e75260c83ceae84eaa1e3b6f25a50daa6b",
+    "product": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49",
     "run": [
       "glib",
       "nspr",
@@ -114,21 +114,16 @@
       "dbus",
       "cups",
       "libx11",
-      "libxcomposite",
-      "libxdamage",
-      "libxext",
-      "libxfixes",
-      "libxrandr",
-      "mesa",
-      "expat",
       "libxcb",
       "libxkbcommon",
-      "cairo",
-      "pango",
+      "mesa",
+      "expat",
+      "libffi",
       "libudev-zero",
       "alsa-lib",
       "gcc",
-      "vulkan-loader"
+      "vulkan-loader",
+      "libpulse"
     ]
   },
   "chrony": {

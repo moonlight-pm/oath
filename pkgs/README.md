@@ -148,6 +148,12 @@ host name is always `build`, a recorded time comes from the source
 the builder's kernel is pinned (gnulib's fstatat in coreutils and
 findutils), so another builder makes the same product.
 
+`cef/` is Chromium and CEF from source (R40), built by the toolchain
+Chromium's own DEPS pins (its Clang, lld, Rust and node, as more
+sources), against Oath's glibc and libraries through Chromium's unbundle
+toolchain; `build.sh` says how and why each GN argument is set. A build
+takes hours.
+
 `rust/` is the vendor's Rust release rather than a source build: its
 tarballs are the pinned sources, and its plan points the vendor's
 binaries at `/lib`'s loader (they name `/lib64/…`). It builds the Oath

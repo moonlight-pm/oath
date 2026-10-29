@@ -4,84 +4,6 @@
   "produces": "pkg:cef",
   "build_needs": [
     {
-      "id": "pkg:bash",
-      "hash": "sha256-80f160c2dd44f5d3801bd5627163e4203d513ea9bc1edf70cccb567a34f6c371"
-    },
-    {
-      "id": "pkg:bzip2",
-      "hash": "sha256-3e16469f204827a9164fdf7e23e7c001f2174df6bc135f84624d56c1d76bb288"
-    },
-    {
-      "id": "pkg:cef-src",
-      "hash": "sha256-2ee47099b6094df300a5c0ecacb981a0ec71956c382d5807634e345061bff408"
-    },
-    {
-      "id": "pkg:coreutils",
-      "hash": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da"
-    },
-    {
-      "id": "pkg:diffutils",
-      "hash": "sha256-064d781760f48fb7ee12fa47f1de69b1c644c7cf72dbd83b476b89dad7149002"
-    },
-    {
-      "id": "pkg:findutils",
-      "hash": "sha256-0752f905b59e72a4bc41ae54d4f53629d49d82a129219a2eb4c4d2b67bb5fab7"
-    },
-    {
-      "id": "pkg:gawk",
-      "hash": "sha256-b671a3d6d7871b775c6026322a73b8288a5f889814437a92432fe0f745db118c"
-    },
-    {
-      "id": "pkg:gcc",
-      "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
-    },
-    {
-      "id": "pkg:glibc",
-      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
-    },
-    {
-      "id": "pkg:gmp",
-      "hash": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2"
-    },
-    {
-      "id": "pkg:grep",
-      "hash": "sha256-f4fa7ae2900d8fa5a5b390d16a5d2421a6ebd976a448947261f1c54a0118e8d5"
-    },
-    {
-      "id": "pkg:gzip",
-      "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
-    },
-    {
-      "id": "pkg:make",
-      "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
-    },
-    {
-      "id": "pkg:mpc",
-      "hash": "sha256-877f9c92df8a5af55c48573a0ee1ef5fc055e26c9a14ae866ab8753cbfd1a171"
-    },
-    {
-      "id": "pkg:mpfr",
-      "hash": "sha256-494241b048adac84186882cbd4d973464df07a671aaeebcfdaec9d460976e5e7"
-    },
-    {
-      "id": "pkg:patch",
-      "hash": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899"
-    },
-    {
-      "id": "pkg:sed",
-      "hash": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819"
-    },
-    {
-      "id": "pkg:tar",
-      "hash": "sha256-94263cf077bd23908966915fea3ab0cd481b04f7efa276407088a96b6de96128"
-    },
-    {
-      "id": "pkg:xz",
-      "hash": "sha256-449080873772868f09eacc3db3243ca5f4376920782f3c1c1199d0302646b33b"
-    }
-  ],
-  "run_needs": [
-    {
       "id": "pkg:alsa-lib",
       "hash": "sha256-28dceee11a3bebc5cb12fa2e70d1bc7448ed2842090887874e47fc192d5c9137"
     },
@@ -90,8 +12,24 @@
       "hash": "sha256-da9d824eed12dd5d31093b59b67c6cf9e757db938128e332639495137f80906d"
     },
     {
+      "id": "pkg:bash",
+      "hash": "sha256-80f160c2dd44f5d3801bd5627163e4203d513ea9bc1edf70cccb567a34f6c371"
+    },
+    {
+      "id": "pkg:bzip2",
+      "hash": "sha256-3e16469f204827a9164fdf7e23e7c001f2174df6bc135f84624d56c1d76bb288"
+    },
+    {
       "id": "pkg:cairo",
       "hash": "sha256-4c6511f9ad09fed016040c4c4c052e19bf42c3cfae356d51ce5f97e36274cf2e"
+    },
+    {
+      "id": "pkg:cef-src",
+      "hash": "sha256-00414d82b74c7e0cf6f0948260f4ecdf2d2e3d764a163c41c9f37f4ec2ce3f50"
+    },
+    {
+      "id": "pkg:coreutils",
+      "hash": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da"
     },
     {
       "id": "pkg:cups",
@@ -102,8 +40,36 @@
       "hash": "sha256-e6e71272e53915e45e234cd682c49d694af8dd0d59d4ca8c418bd00a105754e7"
     },
     {
+      "id": "pkg:diffutils",
+      "hash": "sha256-064d781760f48fb7ee12fa47f1de69b1c644c7cf72dbd83b476b89dad7149002"
+    },
+    {
+      "id": "pkg:elfutils",
+      "hash": "sha256-1ea5c6282c4bca5122a78116f13c6fc9985ff0c650f45525001f511eeb30a243"
+    },
+    {
       "id": "pkg:expat",
       "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
+    },
+    {
+      "id": "pkg:findutils",
+      "hash": "sha256-0752f905b59e72a4bc41ae54d4f53629d49d82a129219a2eb4c4d2b67bb5fab7"
+    },
+    {
+      "id": "pkg:fontconfig",
+      "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b"
+    },
+    {
+      "id": "pkg:freetype",
+      "hash": "sha256-dfd9298125c5457647d50e4f1c9020d3c112fa5d014ded8491b2b21f748fd697"
+    },
+    {
+      "id": "pkg:fribidi",
+      "hash": "sha256-484b099cb4cd28571c0d20f6dd10493937e57a2dda299cf45e7b65982eb14cbd"
+    },
+    {
+      "id": "pkg:gawk",
+      "hash": "sha256-b671a3d6d7871b775c6026322a73b8288a5f889814437a92432fe0f745db118c"
     },
     {
       "id": "pkg:gcc",
@@ -114,12 +80,56 @@
       "hash": "sha256-d54a5306276245833ff98fe2b85ed125e1f207e7d56a0f776ddb6f7643d588e7"
     },
     {
+      "id": "pkg:glibc",
+      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
+    },
+    {
+      "id": "pkg:gmp",
+      "hash": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2"
+    },
+    {
+      "id": "pkg:gperf",
+      "hash": "sha256-c963820f29153b5a8b79d20f17fbd92502a926d68b6def99e4c9c537b12e736a"
+    },
+    {
+      "id": "pkg:grep",
+      "hash": "sha256-f4fa7ae2900d8fa5a5b390d16a5d2421a6ebd976a448947261f1c54a0118e8d5"
+    },
+    {
+      "id": "pkg:gzip",
+      "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
+    },
+    {
+      "id": "pkg:harfbuzz",
+      "hash": "sha256-dc4300bcf7313d059e65bd61bb89d91d50b181c95845145b9af0331a9bcbc237"
+    },
+    {
+      "id": "pkg:libdrm",
+      "hash": "sha256-15e17b25ad84dafb657672840e83cfd322d33f05050f6f5607b7fcc56806f9a8"
+    },
+    {
+      "id": "pkg:libffi",
+      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
+    },
+    {
+      "id": "pkg:libpulse",
+      "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63"
+    },
+    {
+      "id": "pkg:libsndfile",
+      "hash": "sha256-40325b4c813ff82227b349a17684f3e6a9c47dce4d0b5114a7bedb01731951b3"
+    },
+    {
       "id": "pkg:libudev-zero",
       "hash": "sha256-8ac284efe597237c97bab063236fdd3be4a20f2e06e36f69d5c17dc225e4a613"
     },
     {
       "id": "pkg:libx11",
       "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
+    },
+    {
+      "id": "pkg:libxau",
+      "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
     },
     {
       "id": "pkg:libxcb",
@@ -150,6 +160,168 @@
       "hash": "sha256-89c214b4dcdde14c86a8333892a550f5f19d72220cc27dcbfe401eba4f24ef01"
     },
     {
+      "id": "pkg:libxrender",
+      "hash": "sha256-c0724162707d2c56715d4352075d52dcb28cb9337f377926882da75e1bebe5c6"
+    },
+    {
+      "id": "pkg:libxshmfence",
+      "hash": "sha256-aeee2140dbdc35ff023f8d5fc790c4985e8d5128547c058bcc0562b35b8dc6fc"
+    },
+    {
+      "id": "pkg:libxxf86vm",
+      "hash": "sha256-97d9bc43c8b59cfc8bf465ad813c13f30afe4aecdbd368d99ce9939d951640cb"
+    },
+    {
+      "id": "pkg:make",
+      "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
+    },
+    {
+      "id": "pkg:mesa",
+      "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
+    },
+    {
+      "id": "pkg:mpc",
+      "hash": "sha256-877f9c92df8a5af55c48573a0ee1ef5fc055e26c9a14ae866ab8753cbfd1a171"
+    },
+    {
+      "id": "pkg:mpfr",
+      "hash": "sha256-494241b048adac84186882cbd4d973464df07a671aaeebcfdaec9d460976e5e7"
+    },
+    {
+      "id": "pkg:ninja",
+      "hash": "sha256-96e5d8c682a37a969fec42b691487a24e56773fd49e84ad79b1f583ecde9819a"
+    },
+    {
+      "id": "pkg:nspr",
+      "hash": "sha256-a848e3a7605e96f635b0257bc1b4dace62b894068007697cf8f7bbcfe116814a"
+    },
+    {
+      "id": "pkg:nss",
+      "hash": "sha256-c34376dfaa46713d271ca4d1f5db69503716b141c3ad81812e0256dac3ef3131"
+    },
+    {
+      "id": "pkg:openssl",
+      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
+    },
+    {
+      "id": "pkg:pango",
+      "hash": "sha256-f32334c125dda044b0bf0f3d53e7e1c750ba0f87225c6469b474aaaa0e27f26e"
+    },
+    {
+      "id": "pkg:patch",
+      "hash": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899"
+    },
+    {
+      "id": "pkg:patchelf",
+      "hash": "sha256-1410ace35b9ac3c80b681d91ef95de9c2765afbe4f9aa6d9933205dbb5de051d"
+    },
+    {
+      "id": "pkg:pcre2",
+      "hash": "sha256-2865eb487beed29930b59c6cfd1d3d5cb56518368e82731120b8d92446a3d95a"
+    },
+    {
+      "id": "pkg:pixman",
+      "hash": "sha256-0528602f2f5666250dbe8c697ca33864ffd02293bcfac5666292cacfb147a1b5"
+    },
+    {
+      "id": "pkg:pkgconf",
+      "hash": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f"
+    },
+    {
+      "id": "pkg:python",
+      "hash": "sha256-6de9caef5c674adf4847dd92afa404643b3d17e9964fcfc88593fd1666209d1d"
+    },
+    {
+      "id": "pkg:sed",
+      "hash": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819"
+    },
+    {
+      "id": "pkg:tar",
+      "hash": "sha256-94263cf077bd23908966915fea3ab0cd481b04f7efa276407088a96b6de96128"
+    },
+    {
+      "id": "pkg:vulkan-loader",
+      "hash": "sha256-f445a6bb467bb6b38b79a7c185017ebeb807910803273273b7dbd1053e9f05f4"
+    },
+    {
+      "id": "pkg:wayland",
+      "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac"
+    },
+    {
+      "id": "pkg:xkeyboard-config",
+      "hash": "sha256-089cd18859102859ffedb44ced07e9a1c86e47ddb21dbfbf8f852963af243cf2"
+    },
+    {
+      "id": "pkg:xorgproto",
+      "hash": "sha256-0fc8bda924e9431b51ced4992b68de06757342614daa488502a71a29208ee81e"
+    },
+    {
+      "id": "pkg:xz",
+      "hash": "sha256-449080873772868f09eacc3db3243ca5f4376920782f3c1c1199d0302646b33b"
+    },
+    {
+      "id": "pkg:zlib",
+      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
+    },
+    {
+      "id": "pkg:zstd",
+      "hash": "sha256-5bf91c19d01771beccc4dd6c715f577d57ee823e5d7e1a15f733e9d1f664fffa"
+    }
+  ],
+  "run_needs": [
+    {
+      "id": "pkg:alsa-lib",
+      "hash": "sha256-28dceee11a3bebc5cb12fa2e70d1bc7448ed2842090887874e47fc192d5c9137"
+    },
+    {
+      "id": "pkg:at-spi2-core",
+      "hash": "sha256-da9d824eed12dd5d31093b59b67c6cf9e757db938128e332639495137f80906d"
+    },
+    {
+      "id": "pkg:cups",
+      "hash": "sha256-d4aad568d056af92765f4520544048affa4fc177f3cc993d4a0e4c5fa5339c10"
+    },
+    {
+      "id": "pkg:dbus",
+      "hash": "sha256-e6e71272e53915e45e234cd682c49d694af8dd0d59d4ca8c418bd00a105754e7"
+    },
+    {
+      "id": "pkg:expat",
+      "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
+    },
+    {
+      "id": "pkg:gcc",
+      "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
+    },
+    {
+      "id": "pkg:glib",
+      "hash": "sha256-d54a5306276245833ff98fe2b85ed125e1f207e7d56a0f776ddb6f7643d588e7"
+    },
+    {
+      "id": "pkg:libffi",
+      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
+    },
+    {
+      "id": "pkg:libpulse",
+      "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63"
+    },
+    {
+      "id": "pkg:libudev-zero",
+      "hash": "sha256-8ac284efe597237c97bab063236fdd3be4a20f2e06e36f69d5c17dc225e4a613"
+    },
+    {
+      "id": "pkg:libx11",
+      "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
+    },
+    {
+      "id": "pkg:libxcb",
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
+    },
+    {
+      "id": "pkg:libxkbcommon",
+      "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f"
+    },
+    {
       "id": "pkg:mesa",
       "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
     },
@@ -162,10 +334,6 @@
       "hash": "sha256-c34376dfaa46713d271ca4d1f5db69503716b141c3ad81812e0256dac3ef3131"
     },
     {
-      "id": "pkg:pango",
-      "hash": "sha256-f32334c125dda044b0bf0f3d53e7e1c750ba0f87225c6469b474aaaa0e27f26e"
-    },
-    {
       "id": "pkg:vulkan-loader",
       "hash": "sha256-f445a6bb467bb6b38b79a7c185017ebeb807910803273273b7dbd1053e9f05f4"
     }
@@ -175,10 +343,10 @@
 #!/bin/sh
 set -eu
 # generated by cargo make pkgs from pkgs/cef/
-SRC=/oath/store/pkg/cef-src/sha256-2ee47099b6094df300a5c0ecacb981a0ec71956c382d5807634e345061bff408/src
-FILES=/oath/store/pkg/cef-src/sha256-2ee47099b6094df300a5c0ecacb981a0ec71956c382d5807634e345061bff408/files
-SOURCES='cef_binary_147.0.10+gd58e84d+chromium-147.0.7727.118_linux64_minimal.tar.bz2'
-VERSION=147.0.10+gd58e84d+chromium-147.0.7727.118
+SRC=/oath/store/pkg/cef-src/sha256-00414d82b74c7e0cf6f0948260f4ecdf2d2e3d764a163c41c9f37f4ec2ce3f50/src
+FILES=/oath/store/pkg/cef-src/sha256-00414d82b74c7e0cf6f0948260f4ecdf2d2e3d764a163c41c9f37f4ec2ce3f50/files
+SOURCES='chromium-156.0.8078.48.tar.xz cef-4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f.tar.gz clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz node-linux-x64-744e6926ffdd4a4fb2080ae2b9ce4575490261e7.tar.gz test_fonts-9c07d19d9c5ee1ff94f717e6fb17e0c8c354e6f9.tar.gz'
+VERSION=156.0.14+g4fa4ab5+chromium-156.0.8078.48
 JOBS=$(nproc)
 LIVE=/oath/store/pkg/cef/live
 LIBDIR=lib
@@ -199,27 +367,142 @@ cat > /out/components.json <<'OATH_EOF'
 [
   {
     "name": "cef",
-    "purl": "pkg:generic/cef@147.0.10+gd58e84d+chromium-147.0.7727.118",
-    "version": "147.0.10+gd58e84d+chromium-147.0.7727.118"
+    "purl": "pkg:generic/cef@156.0.14+g4fa4ab5+chromium-156.0.8078.48",
+    "version": "156.0.14+g4fa4ab5+chromium-156.0.8078.48"
   }
 ]
 OATH_EOF
-# cef/Release (libcef.so, ANGLE, SwiftShader, the V8 snapshot) and
-# cef/Resources, whose files are also linked into Release, where CEF
-# looks beside libcef.so. libcef.so keeps its symbols but not its 1 GB
-# of DWARF. lib/libcef.so is for the load check: sola-browser loads
-# libcef.so by RUNPATH from Release, beside what CEF opens from there.
-# No chrome-sandbox: Sola runs CEF without its setuid sandbox. No
-# libvulkan.so.1: Chromium's loader searches /etc/xdg and /usr/share,
-# which hold no manifests here, and a program with Release in its
-# RUNPATH would load it instead of /lib's (pkg:vulkan-loader), which
-# finds Mesa's; SwiftShader's manifest stays and works through that.
-tar -xf "$SRC/$SOURCES" -C /tmp
-d=$(echo /tmp/cef_binary_*_linux64_minimal)
-mkdir -p /out/cef /out/lib
-cp -a "$d/Release" "$d/Resources" "$d/LICENSE.txt" "$d/CREDITS.html" /out/cef/
-rm /out/cef/Release/chrome-sandbox /out/cef/Release/libvulkan.so.1
-strip --strip-debug /out/cef/Release/libcef.so
+# Chromium with CEF's patches, built as CEF's own builds are (is_official_build,
+# ThinLTO, CFI) with proprietary_codecs and ffmpeg_branding="Chrome": Chromium's
+# FFmpeg then decodes H.264 and AAC, and its demuxers read MP4 (HEVC Chromium
+# decodes only in hardware, through VA-API, which is off). The toolchain is
+# Chromium's (R40), unpacked where `gclient` puts it, its loader set to /lib's:
+# Clang and lld, the Rust toolchain, node, and the gn, esbuild and clang-format
+# in the tarball. There is no sysroot (Chromium's is Debian's, R7): Chromium's
+# unbundle toolchain hands clang glibc's headers after its own, GCC's crt files
+# and libgcc, and /lib's loader for what the build runs; libraries come from
+# pkg-config and /lib. libcef.so carries Chromium's libc++, as the vendor's does.
+# patches/: CEF reads its version from git, which a tarball lacks, so git_util
+# answers from CEF_TARBALL_COMMIT (the hash and commit number of CEF's 156.0.14);
+# Oath's Python has no POSIX semaphores (its configure found no /dev/shm), so
+# the mojom parser and Blink's bindings generator run in one process; fontconfig
+# and ANGLE link libuuid and libXi, which they never call and Oath does not ship.
+#
+# The layout is the vendor's minimal distribution's: cef/Release (libcef.so,
+# SwiftShader, the V8 snapshot) and cef/Resources, whose files are also linked
+# into Release, where CEF looks beside libcef.so. lib/libcef.so is for the load
+# check: sola-browser loads libcef.so by RUNPATH from Release, beside what CEF
+# opens from there. No chrome-sandbox: Sola runs CEF without its setuid sandbox.
+# No libvulkan.so.1: Chromium's loader searches /etc/xdg and /usr/share, which
+# hold no manifests here, and a program with Release in its RUNPATH would load
+# it instead of /lib's (pkg:vulkan-loader), which finds Mesa's; SwiftShader's
+# manifest stays and works through that.
+CEF_COMMIT=4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f
+CEF_NUMBER=3659
+CHROMIUM=${VERSION##*chromium-}
+CEF_PATCH=${VERSION%%+*}
+CEF_PATCH=${CEF_PATCH##*.}
+tar -xf "$SRC/chromium-$CHROMIUM.tar.xz" -C /tmp
+mv "/tmp/chromium-$CHROMIUM" /tmp/src
+cd /tmp/src
+tar -xf "$SRC/cef-$CEF_COMMIT.tar.gz"
+mv "cef-$CEF_COMMIT" cef
+mkdir -p third_party/llvm-build/Release+Asserts third_party/rust-toolchain \
+	third_party/node/linux third_party/test_fonts/test_fonts
+tar -xf "$SRC"/clang-llvmorg-*.tar.xz -C third_party/llvm-build/Release+Asserts
+tar -xf "$SRC"/rust-toolchain-*.tar.xz -C third_party/rust-toolchain
+tar -xf "$SRC"/node-linux-x64-*.tar.gz -C third_party/node/linux
+tar -xf "$SRC"/test_fonts-*.tar.gz -C third_party/test_fonts/test_fonts
+for f in third_party/llvm-build/Release+Asserts/bin/* third_party/rust-toolchain/bin/* \
+	third_party/rust-toolchain/libexec/* third_party/node/linux/node-linux-x64/bin/node \
+	buildtools/linux64/gn buildtools/linux64-format/clang-format \
+	third_party/devtools-frontend/src/third_party/esbuild/esbuild; do
+	[ -f "$f" ] && [ ! -L "$f" ] || continue
+	patchelf --print-interpreter "$f" >/dev/null 2>&1 || continue
+	patchelf --set-interpreter /lib/ld-linux-x86-64.so.2 "$f"
+done
+for p in "$FILES"/patches/*.patch; do
+	echo "patch ${p##*/}"
+	patch -p1 -i "$p"
+done
+# protoc runs these plugins by their #! line, /usr/bin/env, and there is no /usr.
+sed -i '1s|^#!/usr/bin/env python3$|#!/bin/python3|' tools/protoc_wrapper/protoc-gen-ts_proto.py \
+	third_party/dom_distiller_js/protoc_plugins/json_values_converter.py
+# gn's Python (for gn gen and V8's `gn desc`) and Blink's gperf are Oath's, not
+# the CIPD binaries in the tarball.
+sed -i 's|^script_executable = .*|script_executable = "/bin/python3"|' .gn
+ln -sf /bin/gperf third_party/gperf/cipd/bin/gperf
+
+# Chromium includes some headers without asking pkg-config (xcb, X11,
+# xkbcommon, expat, ffi), from where a distribution keeps them, /usr/include:
+# glibc's and every pack's include/ stand in for it, after Chromium's own and
+# clang's. bindgen's libclang takes the same.
+SYS="-idirafter /oath/store/pkg/glibc/live/include"
+for i in $CPPFLAGS; do
+	SYS="$SYS -idirafter ${i#-I}"
+done
+# Chromium's printing asks cups-config, which libcups' pack does not ship;
+# libcups' pkg-config file has the same answers.
+mkdir -p /tmp/bin
+cat > /tmp/bin/cups-config <<'EOF'
+#!/bin/sh
+case "$1" in
+--api-version) pkg-config --modversion cups | cut -d. -f1,2 ;;
+*) pkg-config --cflags --libs cups ;;
+esac
+EOF
+chmod +x /tmp/bin/cups-config
+LLVM=/tmp/src/third_party/llvm-build/Release+Asserts/bin
+export PATH="/tmp/bin:/tmp/src/buildtools/linux64:$PATH"
+export CC="$LLVM/clang" CXX="$LLVM/clang++" AR="$LLVM/llvm-ar" NM="$LLVM/llvm-nm"
+export CFLAGS="$SYS" CXXFLAGS="$SYS" CPPFLAGS= BINDGEN_EXTRA_CLANG_ARGS="$SYS"
+export LDFLAGS="--gcc-install-dir=/oath/store/pkg/gcc/live/lib/gcc/x86_64-pc-linux-gnu/16 \
+-Wl,--dynamic-linker=/lib/ld-linux-x86-64.so.2"
+export BUILD_CC="$CC" BUILD_CXX="$CXX" BUILD_AR="$AR" BUILD_NM="$NM"
+export BUILD_CFLAGS="$CFLAGS" BUILD_CXXFLAGS="$CXXFLAGS" BUILD_CPPFLAGS= BUILD_LDFLAGS="$LDFLAGS"
+export CEF_TARBALL_COMMIT="$CEF_COMMIT $CEF_NUMBER $CEF_PATCH"
+# Oath's libffi, not the static libffi_pic Chromium takes from Debian's sysroot.
+# No WebRTC screen capture of an X11 session (libXtst and libXi, which Oath does
+# not ship): the desk is Wayland. V8's instance types come from Torque, not
+# from metagen, whose libclang reads flags from `gn desc`, without the
+# toolchain's include dirs. Crashpad uploads over its own socket and BoringSSL,
+# as on Android, not libcurl. No OpenXR: there is no XR runtime here for its
+# loader to find.
+export GN_OUT_CONFIGS=Release_GN_x64
+export GN_DEFINES="is_official_build=true proprietary_codecs=true ffmpeg_branding=Chrome \
+chrome_pgo_phase=0 symbol_level=0 blink_symbol_level=0 v8_symbol_level=0 \
+treat_warnings_as_errors=false use_sysroot=false use_siso=false \
+custom_toolchain=\"//build/toolchain/linux/unbundle:default\" \
+host_toolchain=\"//build/toolchain/linux/unbundle:default\" \
+use_vaapi=false use_gtk=false cef_use_gtk=false use_kerberos=false use_libpci=false \
+use_system_libffi=true rtc_use_x11_extensions=false v8_use_metagen_instance_types=false \
+crashpad_http_transport_impl=\"socket\" enable_openxr=false"
+
+# What CEF's gclient hook does, without depot_tools: CEF's generated files,
+# its patches to Chromium (by `patch`, as the tree is no checkout), args.gn.
+(cd cef && python3 tools/version_manager.py -u --fast-check && python3 tools/patcher.py)
+python3 - <<'EOF'
+import os, sys
+sys.path.insert(0, 'cef/tools')
+from gn_args import GetAllPlatformConfigs, GetConfigFileContents
+for d, c in GetAllPlatformConfigs({}).items():
+    os.makedirs('out/' + d, exist_ok=True)
+    open('out/%s/args.gn' % d, 'w').write(GetConfigFileContents(c) + '\n')
+EOF
+gn gen out/Release_GN_x64
+
+# Build.
+ninja -C out/Release_GN_x64 -j"$JOBS" cefsimple
+
+o=out/Release_GN_x64
+mkdir -p /out/cef/Release /out/cef/Resources/locales /out/lib
+cp "$o/libcef.so" "$o/libvk_swiftshader.so" "$o/vk_swiftshader_icd.json" \
+	"$o/v8_context_snapshot.bin" /out/cef/Release/
+cp "$o/chrome_100_percent.pak" "$o/chrome_200_percent.pak" "$o/resources.pak" \
+	"$o/icudtl.dat" /out/cef/Resources/
+cp "$o"/locales/*.pak /out/cef/Resources/locales/
+cp cef/LICENSE.txt /out/cef/
+cp "$o/gen/components/resources/about_credits.html" /out/cef/CREDITS.html
 for f in /out/cef/Resources/*; do
 	ln -s "../Resources/${f##*/}" "/out/cef/Release/${f##*/}"
 done

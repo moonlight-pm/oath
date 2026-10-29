@@ -1,20 +1,65 @@
-# The vendor's binary release (R7), pinned by sha256: the minimal
-# distribution Sola's browser is built against (Sola's cef-version).
-version = "147.0.10+gd58e84d+chromium-147.0.7727.118"
+# CEF, the Chromium Embedded Framework that Sola's browser is built
+# against, built from Chromium's and CEF's source with Chrome's codecs
+# (H.264 and AAC in MP4; Joshua, 2026-10-28), which the vendor's binary
+# leaves out. The same commit as the vendor's 156.0.14, so a program
+# built against its headers loads this libcef.so. Chromium builds only
+# with its own Clang and Rust (R40): the toolchain packages its DEPS
+# pins, build inputs here and never on a machine.
+version = "156.0.14+g4fa4ab5+chromium-156.0.8078.48"
 license = "BSD-3-Clause AND LicenseRef-Chromium-Credits"
-description = "CEF, the Chromium Embedded Framework, for sola-browser."
-home = "https://bitbucket.org/chromiumembedded/cef"
-purl = "pkg:generic/cef@147.0.10+gd58e84d+chromium-147.0.7727.118"
-build = []
-run = [
+description = "CEF, the Chromium Embedded Framework, with H.264 and AAC, for sola-browser."
+home = "https://github.com/chromiumembedded/cef"
+purl = "pkg:generic/cef@156.0.14+g4fa4ab5+chromium-156.0.8078.48"
+build = [
+	"python", "ninja", "pkgconf", "patchelf", "libdrm", "libpulse", "harfbuzz", "fribidi",
+	"freetype", "fontconfig", "pixman", "xorgproto", "gperf",
 	"glib", "nspr", "nss", "at-spi2-core", "dbus", "cups", "libx11", "libxcomposite",
 	"libxdamage", "libxext", "libxfixes", "libxrandr", "mesa", "expat", "libxcb",
-	"libxkbcommon", "cairo", "pango", "libudev-zero", "alsa-lib", "gcc",
-	"vulkan-loader",
+	"libxkbcommon", "cairo", "pango", "libudev-zero", "alsa-lib", "vulkan-loader",
+]
+# What libcef.so links (DT_NEEDED) and what it opens: Mesa's EGL and GL, the
+# Vulkan loader, libpulse for sound.
+run = [
+	"glib", "nspr", "nss", "at-spi2-core", "dbus", "cups", "libx11", "libxcb",
+	"libxkbcommon", "mesa", "expat", "libffi", "libudev-zero", "alsa-lib", "gcc",
+	"vulkan-loader", "libpulse",
 ]
 
+# Google's release tarball, with every DEPS source a build reads.
 [[source]]
-url = "https://cef-builds.spotifycdn.com/cef_binary_147.0.10%2Bgd58e84d%2Bchromium-147.0.7727.118_linux64_minimal.tar.bz2"
-sha256 = "087ccfa1f0438429e20d91293b15cae08ee9e7b4988cc018d47568dd59dad1ef"
-file = "cef_binary_147.0.10+gd58e84d+chromium-147.0.7727.118_linux64_minimal.tar.bz2"
-unsigned = "the vendor's binary from cef-builds.spotifycdn.com, which publishes only unsigned .sha1/.sha256 files and index.json"
+url = "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-156.0.8078.48.tar.xz"
+sha256 = "534ae40171f394650b89e33716be4a450c78d93a862e2b0e4fae03113e10f90b"
+unsigned = "Google publishes Chromium's release tarballs with an unsigned .hashes file only"
+
+# CEF's tree at the commit of its 156.0.14 (branch 8078).
+[[source]]
+url = "https://github.com/chromiumembedded/cef/archive/4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f.tar.gz"
+sha256 = "d1696db8f0a5470474eef22121a4aeae985dc63d31897e92f54ace5e24e73bc4"
+file = "cef-4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f.tar.gz"
+unsigned = "a GitHub commit archive; CEF signs neither its commits nor its tags"
+
+# What Chromium's DEPS fetches from Google's storage for a Linux build,
+# pinned there by sha256 (the pins here are those): Clang and lld, the
+# Rust toolchain (with bindgen and libclang), node, and the test fonts
+# that CEF's test support carries as data.
+[[source]]
+url = "https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz"
+sha256 = "53c3bfd12b5d01378c6277bbebcacec595ef9d9fc4ec54f155c03a1b2cae4dbf"
+unsigned = "Chromium's toolchain package; the tarball's DEPS pins its sha256, with no signature"
+
+[[source]]
+url = "https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz"
+sha256 = "5a56edc35db24efbbe0373c724457c31a1febd75cbef6ac7fc9a1c5bca6fc697"
+unsigned = "Chromium's toolchain package; the tarball's DEPS pins its sha256, with no signature"
+
+[[source]]
+url = "https://storage.googleapis.com/chromium-nodejs/744e6926ffdd4a4fb2080ae2b9ce4575490261e7"
+sha256 = "bdea62a6857735d62165ec97242d79a693564c72d551890c4d009d2355abf14c"
+file = "node-linux-x64-744e6926ffdd4a4fb2080ae2b9ce4575490261e7.tar.gz"
+unsigned = "Chromium's copy of Node.js; the tarball's DEPS pins its sha256, with no signature"
+
+[[source]]
+url = "https://storage.googleapis.com/chromium-fonts/9c07d19d9c5ee1ff94f717e6fb17e0c8c354e6f9"
+sha256 = "f0e9628f9e43e3f3476cde06a1849058de460e0e037b7449ce0d42b9a73c37d5"
+file = "test_fonts-9c07d19d9c5ee1ff94f717e6fb17e0c8c354e6f9.tar.gz"
+unsigned = "Chromium's test fonts; the tarball's DEPS pins their sha256, with no signature"

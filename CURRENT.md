@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-28 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-10-29 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R39 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R40 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -16,8 +16,8 @@ append history (git has it).
    oath update --confirm --reboot` takes it (also `update` in `oath
    mcp`). canto and buccina run `e433824d38d0` (2026-10-28); it fetches
    every pack first and checks each lands. Gap: an output's changed
-   `svc` fields (`rtprio`) reach a machine only by `oath set`. Next: the
-   Sola tab re-pins its codecs CEF (CEF 156, R37); expat 2.10.0 (11-02).
+   `svc` fields (`rtprio`) reach a machine only by `oath set`. Next:
+   expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
@@ -25,10 +25,11 @@ append history (git has it).
    since the boot of 2026-10-25. Next: a 32-bit game and a pad.
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, PipeWire, Noto, Vulkan (RADV), `wl-clipboard` (pasting
-   screenshots, 2026-10-26) and Sola's packs, which `desk.json` pins
-   (R28, no fork; `next` at `c6cda58b`). `svc.rtprio` gives PipeWire
-   `SCHED_FIFO` (QEMU, buccina, canto). Next: new Sola pins.
+   Xwayland, PipeWire (`SCHED_FIFO`), Noto, Vulkan, `wl-clipboard` and
+   Sola's packs, pinned in `desk.json` (R28; `next` at `c6cda58b`).
+   `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`), on no
+   machine: Sola's pins are on 147, so publish no desk output until they
+   move. Next: canto takes it, Sola rebuilds against it, pins move (R37).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
@@ -49,9 +50,8 @@ append history (git has it).
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). R36 (2026-10-26): account `void`;
-OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`;
-canto moved with its first `oath update`
-(2026-10-28). Left until needed: root SSH, more NICs, node rules.
+OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
+(canto since 2026-10-28). Left until needed: root SSH, more NICs, node rules.
 
 ## Machines
 
