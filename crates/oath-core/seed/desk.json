@@ -654,11 +654,11 @@
     },
     "pkg:sola": {
       "present": true,
-      "hash": "sha256-6fb7b2bb35e8e6d7b424a24c841e3b5975c5e0718a4150596c4178b820cddade",
+      "hash": "sha256-2458e92ba6a415466e86d472e1c54c99dbe9b27d8a3fd2cc673d7b4437a6078d",
       "needs": [
         {
           "id": "pkg:gcc",
-          "hash": "sha256-a45239afa4df545c2ab95d11296467b1586e283113d303cc3da768202242dd63"
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
         },
         {
           "id": "pkg:wayland",
@@ -675,6 +675,10 @@
         {
           "id": "pkg:tmux",
           "hash": "sha256-555791eae4aa3ac05bc70962bb93e5a275d0cc97a054f8696b58dcc04aeeec55"
+        },
+        {
+          "id": "pkg:wl-clipboard",
+          "hash": "sha256-41f03fdfe098cbf5c83355ba45503116ccb58df38ee9154fc03cf40d88c70662"
         },
         {
           "id": "pkg:pipewire",
@@ -710,15 +714,15 @@
     },
     "pkg:sola-browser": {
       "present": true,
-      "hash": "sha256-60704d4b6661c5f656ccf14dab9122acedd3b9875a138e38767046916db51491",
+      "hash": "sha256-9a7a283e381ee33a70c2563704d24449873c4e784a0e128d793e46635a7c8953",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-6fb7b2bb35e8e6d7b424a24c841e3b5975c5e0718a4150596c4178b820cddade"
+          "hash": "sha256-2458e92ba6a415466e86d472e1c54c99dbe9b27d8a3fd2cc673d7b4437a6078d"
         },
         {
           "id": "pkg:cef",
-          "hash": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb"
+          "hash": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49"
         },
         {
           "id": "pkg:libpulse",
@@ -730,15 +734,15 @@
     },
     "pkg:sola-design": {
       "present": true,
-      "hash": "sha256-31a35a61bf92b340c435c67873936fde3ba22dde44fcfad863da016b402d225b",
+      "hash": "sha256-c697e4a4817c2cc1dbe7145ad88b188389af39be9580cab03124757d0860fbd4",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-6fb7b2bb35e8e6d7b424a24c841e3b5975c5e0718a4150596c4178b820cddade"
+          "hash": "sha256-2458e92ba6a415466e86d472e1c54c99dbe9b27d8a3fd2cc673d7b4437a6078d"
         },
         {
           "id": "pkg:cef",
-          "hash": "sha256-cd90948f94be30ddff39b221b443281194cf4e28db3d8ef0ea271fc518ae3ffb"
+          "hash": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49"
         },
         {
           "id": "pkg:libpulse",

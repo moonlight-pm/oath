@@ -96,15 +96,16 @@ Sola packages itself (R28): its own repo builds `pkg:sola`,
 dev pack, `oath build` of a plan it generates for a release) and
 publishes them to the default origin. Oath builds none of them: the
 `desk` profile pins each by `hash` and `needs` (Sola's release of
-2026-10-22, from its `next` at `c6cda58b`, built against RADV's Mesa
-and the `pkg:cef` without a Vulkan loader), `cargo make build` fetches
+2026-10-29, from its `next` at `83df4558`, built against `pkg:cef` 156
+with the `cef` crate 156.2.0; its engine asks libcef for API version
+15600, not the experimental one), `cargo make build` fetches
 them into the image, `publish` leaves them out, and `update` keeps the
 pin a machine already has (canto runs Sola's dev packs).
 
 | Package | What |
 |---------|------|
 | `sola`, `sola-browser`, `sola-design` | Sola's packs, pinned (R28): the `/bin/sola-*` programs the services run, `solactl`, and `share/cursors` (McMojave) for `XCURSOR_PATH`. The browser and Design run on `pkg:cef`; sharing a canvas needs `cloudflared`, which Oath does not ship |
-| `cef` | CEF 156.0.14 built from Chromium's and CEF's source with H.264 and AAC (R40), laid out as the vendor's minimal distribution: `cef/Release` (libcef.so, SwiftShader; not Chromium's Vulkan loader), `cef/Resources`; 609 MB. The desk pins Sola's packs built against CEF 147 until Sola rebuilds them against it (R37) |
+| `cef` | CEF 156.0.14 built from Chromium's and CEF's source with H.264 and AAC (R40), laid out as the vendor's minimal distribution: `cef/Release` (libcef.so, SwiftShader; not Chromium's Vulkan loader), `cef/Resources`; 609 MB. Sola's packs are built against it (R37) |
 | CEF's libraries | `glib` (with `pcre2`), `nspr`, `nss`, `dbus`, `at-spi2-core` (patched: libxml2 only for its tests), `cups` (libcups only, no TLS; patched to build without DNS-SD), `libxcomposite`, `libxdamage`, `libxrandr`, `libxrender`, `cairo`, `pango`, `harfbuzz`, `fribidi`, `alsa-lib` |
 | Text | `fontconfig` (its fonts.conf lists the font packages; `50-oath-families.conf` maps sans-serif, serif and system-ui to Noto, monospace to Iosevka Term Slab then Noto Sans Mono, emoji and math to Noto's; `45-noto-cjk.conf`, ahead of it, picks the CJK face by language; both bind weakly, so a page's language outranks the family list), `freetype`, `font-noto` (Sans, Serif, Sans Mono, Symbols, Math and the scripts web pages need, slim variable TTFs from the 2026.10.01 monthly tag), `font-noto-cjk` (Sans and Serif CJK, Regular and Bold OTCs), `font-noto-emoji` (Noto Color Emoji, CBDT), `font-iosevka-term-slab` (Regular and Bold), `locales` (C.UTF-8 and en_US.UTF-8 in `/lib/locale`) |
 | Sound | `pipewire` 1.6.9 (`pipewire`, `pipewire-pulse`, the `pw-*` tools; no session manager of its own), `wireplumber` 0.5.18 (with Lua 5.5 built in; `50-oath.conf` turns off Bluetooth, portals and D-Bus device reservation), `libpulse` (PulseAudio 17's client, `autospawn = no`), `libsndfile` (PCM formats only), `libudev-zero` with upstream PR 69 so PipeWire's ALSA monitor sees sound cards; `svc:pipewire` and `svc:pipewire-pulse` have `rtprio` 95, so module-rt runs their data threads `SCHED_FIFO` without RTKit |

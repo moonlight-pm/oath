@@ -35,6 +35,6 @@ gaps · `target` designed, not built.
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Projects, browser, Design; shells survive restarts; PipeWire, realtime; Noto; Vulkan (RADV); `wl-clipboard`; H.264 and AAC in CEF (R40); canto (R20–22). Gaps: Sola's packs on CEF 147, other apps, AMD GPUs only |
+| Desk (rivulet, Sola) | partial | Sola's shell, terminal, Projects, browser, Design; shells survive restarts; PipeWire, realtime; Noto; Vulkan (RADV); `wl-clipboard`; H.264 and AAC in CEF (R40); canto (R20–22). Gaps: other apps, AMD GPUs only |
 | Wicket host | target | Left core (R1); Wicket ships its own packages. |
 | Steam + Minecraft desk | partial | Steam (R29): Valve's launcher, a recipe, sandboxed; the 64-bit client on canto with 32-bit Mesa. Gaps: no 32-bit game or pad tried; Minecraft |
