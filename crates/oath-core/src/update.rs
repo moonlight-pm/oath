@@ -58,6 +58,11 @@ pub struct Release {
     pub bundle: Bundle,
     /// The hash of its PID 1 (`/lib/oath/init`), to check after the reboot.
     pub init: String,
+    /// The pins of the packages it pins from elsewhere (R28), by name. A
+    /// machine still at the pin the release it runs set moves with the next
+    /// output; one its owner moved keeps its own.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub pinned: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -87,8 +92,9 @@ pub enum Move {
     /// To the output's pin: `set` is its hash and needs (and a recipe's
     /// `url` and `file`).
     Pin { name: String, from: String, to: String, set: Value },
-    /// Packed elsewhere (R28): the machine keeps its own pin, its owner's
-    /// to move; `set` moves only its needs, when any moved.
+    /// Packed elsewhere (R28) and moved by its owner off the pin the
+    /// release the machine runs set: the machine keeps its own pin, its
+    /// owner's to move; `set` moves only its needs, when any moved.
     Keep { name: String, pin: String, output: String, set: Option<Value>, moved: Vec<String> },
     /// Not in the output (one the owner added, `pkg:dropbear` after R36):
     /// its pin stays and its needs move.
@@ -129,7 +135,8 @@ impl Move {
             }
             Self::Pin { from, to, .. } => format!("{id} {} -> {}", short(from), short(to)),
             Self::Keep { pin, output, moved, .. } => format!(
-                "{id} keeps this machine's pin {} (packed elsewhere; the output has {}){}",
+                "{id} keeps this machine's pin {} (packed elsewhere and moved here; the output \
+                 has {}){}",
                 short(pin),
                 short(output),
                 needs_moved(moved)
@@ -236,22 +243,26 @@ pub fn seed_ids(bundle: &Path) -> Result<Vec<String>> {
 /// `output`. `have(name, hash)`: the machine can get that tree (its store
 /// has it, or an origin serves it). Each package takes the output's pin
 /// and needs; a package whose own tree is unchanged still moves its needs
-/// when what it runs with was rebuilt. A pack packed elsewhere keeps the
-/// machine's pin, and a need on another such pack the machine keeps stays
-/// at that pin.
+/// when what it runs with was rebuilt. A pack packed elsewhere moves too
+/// while the machine's pin is the one the release it runs set (`ran`, its
+/// `pinned`); one its owner moved keeps the machine's pin, and a need on
+/// another such pack the machine keeps stays at that pin.
 pub fn plan(
     machine: &BTreeMap<String, Value>,
     output: &Output,
+    ran: &BTreeMap<String, String>,
     have: impl Fn(&str, &str) -> bool,
 ) -> Vec<Move> {
     let pin = |doc: &Value| doc["hash"].as_str().unwrap_or("").to_string();
+    let owners_pin = |n: &str, mine: &str| {
+        output.pinned.contains(n) && ran.get(n).map(String::as_str) != Some(mine)
+    };
     let kept: BTreeMap<String, String> = output
         .pins
         .iter()
-        .filter(|(n, _, _)| output.pinned.contains(n))
         .filter_map(|(n, p, _)| {
             let mine = pin(machine.get(n)?);
-            (mine != *p).then(|| (n.clone(), mine))
+            (owners_pin(n, &mine) && mine != *p).then(|| (n.clone(), mine))
         })
         .collect();
     let ships = needed_at(&kept, |n: &str| output.pin(n).map(str::to_string));
@@ -264,7 +275,7 @@ pub fn plan(
             continue;
         };
         let mine = pin(cur);
-        if output.pinned.contains(name) && mine != *to {
+        if kept.contains_key(name) {
             let (set, moved) = match keep_machine_pin(cur, &ships) {
                 Some((s, m)) => (Some(s), m),
                 None => (None, Vec::new()),
@@ -278,10 +289,15 @@ pub fn plan(
             });
             continue;
         }
-        let mut set = json!({
-            "hash": to,
-            "needs": doc.get("needs").cloned().unwrap_or_else(|| json!([])),
-        });
+        // A need on a pack the machine keeps stays at the machine's pin.
+        let mut needs = doc.get("needs").cloned().unwrap_or_else(|| json!([]));
+        for n in needs.as_array_mut().into_iter().flatten() {
+            let need = n["id"].as_str().unwrap_or("").trim_start_matches("pkg:");
+            if let Some(k) = kept.get(need) {
+                n["hash"] = json!(k);
+            }
+        }
+        let mut set = json!({ "hash": to, "needs": needs });
         for k in ["url", "file"] {
             if let Some(v) = doc.get(k) {
                 set[k] = v.clone();
@@ -387,7 +403,7 @@ mod tests {
         ]);
         let out = output();
         let have = |n: &str, h: &str| out.packs.get(n).map(String::as_str) == Some(h);
-        let moves = plan(&machine, &out, have);
+        let moves = plan(&machine, &out, &BTreeMap::new(), have);
         let ids: Vec<String> = moves.iter().map(|m| m.describe()).collect();
         assert_eq!(moves.len(), 6, "{ids:#?}");
         assert!(matches!(&moves[0], Move::Pin { name, to, .. } if name == "bash" && to == B));
@@ -407,7 +423,48 @@ mod tests {
             ("bash".to_string(), json!({ "present": true, "hash": B })),
             ("zsh".to_string(), json!({ "present": true, "hash": B })),
         ]);
-        assert!(plan(&done, &out, |_, _| true).is_empty());
+        assert!(plan(&done, &out, &BTreeMap::new(), |_, _| true).is_empty());
+    }
+
+    #[test]
+    fn a_pin_its_output_set_moves_with_the_next() {
+        let mut out = output();
+        out.pins.push((
+            "sola-browser".into(),
+            C.into(),
+            json!({ "present": true, "hash": C, "needs": [{ "id": "pkg:sola", "hash": B }] }),
+        ));
+        out.pinned.insert("sola-browser".into());
+        let machine = BTreeMap::from([
+            ("sola".to_string(), json!({ "present": true, "hash": A })),
+            (
+                "sola-browser".to_string(),
+                json!({ "present": true, "hash": A, "needs": [{ "id": "pkg:sola", "hash": A }] }),
+            ),
+        ]);
+        let ran = |sola: &str| {
+            BTreeMap::from([("sola".to_string(), sola.into()), ("sola-browser".into(), A.into())])
+        };
+        let of = |moves: &[Move], name: &str| {
+            moves.iter().find(|m| m.id() == format!("pkg:{name}")).cloned().unwrap()
+        };
+        // At the pins the release it runs set: both move to the output's.
+        let moves = plan(&machine, &out, &ran(A), |_, _| true);
+        let Move::Pin { to, set, .. } = of(&moves, "sola") else { panic!("{moves:#?}") };
+        assert_eq!((to.as_str(), &set["needs"][0]["hash"]), (B, &json!(C)));
+        let Move::Pin { to, set, .. } = of(&moves, "sola-browser") else { panic!("{moves:#?}") };
+        assert_eq!((to.as_str(), &set["needs"][0]["hash"]), (C, &json!(B)));
+        // Its owner moved sola: it keeps its pin, and the browser, which
+        // moves, needs it at that pin.
+        let moves = plan(&machine, &out, &ran(C), |_, _| true);
+        let Move::Keep { pin, .. } = of(&moves, "sola") else { panic!("{moves:#?}") };
+        assert_eq!(pin, A);
+        let Move::Pin { set, .. } = of(&moves, "sola-browser") else { panic!("{moves:#?}") };
+        assert_eq!(set["needs"][0]["hash"], json!(A));
+        // A release that names no pins (from before it signed them) moves neither.
+        let moves = plan(&machine, &out, &BTreeMap::new(), |_, _| true);
+        assert!(matches!(of(&moves, "sola"), Move::Keep { .. }), "{moves:#?}");
+        assert!(matches!(of(&moves, "sola-browser"), Move::Keep { .. }), "{moves:#?}");
     }
 
     #[test]

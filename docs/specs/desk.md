@@ -99,8 +99,9 @@ publishes them to the default origin. Oath builds none of them: the
 2026-10-29, from its `next` at `83df4558`, built against `pkg:cef` 156
 with the `cef` crate 156.2.0; its engine asks libcef for API version
 15600, not the experimental one), `cargo make build` fetches
-them into the image, `publish` leaves them out, and `update` keeps the
-pin a machine already has (canto runs Sola's dev packs).
+them into the image, `publish` leaves them out, and `update` moves a
+machine still at the pins its release set and keeps one its owner moved
+(canto runs Sola's dev packs).
 
 | Package | What |
 |---------|------|

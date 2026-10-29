@@ -4,7 +4,7 @@
 //! (`~/.config/oath/sign_ed25519`, `ssh-keygen -Y sign`), then
 //! `out/<profile>.json`, the newest for its profile.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -81,6 +81,7 @@ pub fn make(o: &Output, dir: &Path) -> Result<Made> {
         published: oath_core::now_rfc3339(),
         bundle: Bundle { hash: oath_core::file_hash(&bytes), size: bytes.len() as u64 },
         init: oath_core::file_hash(&fs::read(o.file("stage/lib/oath/init"))?),
+        pinned: pinned(&manifest),
     };
     let path = dir.join("release.json");
     let mut text = serde_json::to_string_pretty(&release)?;
@@ -109,6 +110,20 @@ pub fn make(o: &Output, dir: &Path) -> Result<Made> {
         bytes.len() as f64 / 1e6
     );
     Ok(Made { output: o.id.clone(), profile: profile.to_string(), bundle, release: path, sig })
+}
+
+/// The output's pins of the packs it pins from elsewhere (R28): a machine
+/// still at one moves with the next output.
+fn pinned(manifest: &Value) -> BTreeMap<String, String> {
+    manifest["pinned"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|n| {
+            let n = n.as_str()?;
+            Some((n.to_string(), manifest["packs"][n]["hash"].as_str()?.to_string()))
+        })
+        .collect()
 }
 
 /// The bundle: the manifest, the boot files, the seed's objects (desired

@@ -150,11 +150,14 @@ on probation. With `--confirm`, it:
    (`oath undo` takes it back but keeps a fixed package; other objects
    the output's seed has and the machine does not, a new base service
    say, are listed, not created: add them with `oath new`). A package
-   the profile pins from elsewhere (R28) keeps the machine's own pin,
-   and only its needs move to the output's hashes (a need on another
-   such package the machine keeps stays at the machine's pin); so does
-   a package the output does not carry (`pkg:dropbear` after R36, one
-   its owner added). A recipe the owner built is listed with the
+   the profile pins from elsewhere (R28) moves too while the machine's
+   pin is the one the release it runs set (each release lists those
+   pins, `pinned`); one its owner moved keeps the machine's own pin, and
+   only its needs move to the output's hashes (a need on another such
+   package the machine keeps stays at the machine's pin). A machine
+   whose release lists none (`36de66963ac1` and older) keeps them
+   all, as does a package the output does not carry (`pkg:dropbear`
+   after R36, one its owner added). A recipe the owner built is listed with the
    commands that build it here. Each service whose program moved
    restarts; when sshd's did, the apply is on probation, and the
    update waits until you open a **new** SSH session and run `sudo oath

@@ -172,7 +172,8 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     let have = |n: &str, h: &str| {
         output.packs.get(n).map(String::as_str) == Some(h) || oath_core::store_present(root, n, h)
     };
-    let moves = up::plan(&machine, &output, have);
+    let ran = current.as_ref().map(|c| c.pinned.clone()).unwrap_or_default();
+    let moves = up::plan(&machine, &output, &ran, have);
     let plans = plan_moves(cat, &bundle)?;
     let have_ids: Vec<String> = cat.ls(None)?.iter().map(|i| i.to_string()).collect();
     let missing: Vec<String> = up::seed_ids(&bundle)?

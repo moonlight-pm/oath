@@ -6,10 +6,14 @@
 //!    serve it, with every pack the older output lacks, from a local
 //!    origin (`http://10.0.2.2:<port>` from inside QEMU).
 //! 3. Point the machine at that origin and trust this host's key, as a
-//!    person does on a real machine. One older than `oath update` first
-//!    takes the newer `pkg:oath` from the origin (docs/manual/install.md).
+//!    person does on a real machine, and record the older output's release
+//!    as the one it runs, as a pull of it would (the one this host
+//!    published, else one made here). One older than `oath
+//!    update` first takes the newer `pkg:oath` from the origin
+//!    (docs/manual/install.md).
 //! 4. `sudo oath update --confirm`, reboot, and require the output's PID 1
-//!    with the catalog in sync and the old boot archived on the ESP.
+//!    with the catalog in sync, each pack pinned from elsewhere at the
+//!    newer output's pin, and the old boot archived on the ESP.
 //! 5. A machine from before R36 then moves `svc:sshd` to OpenSSH with a
 //!    second `oath update --confirm`, kept from a new SSH session.
 //!
@@ -25,6 +29,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
+use oath_core::update as up;
 use serde_json::{json, Value};
 
 use crate::install::{self, Remote};
@@ -134,8 +139,17 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
         .find(|d| !before.contains(d))
         .context("install --qemu left no run directory")?;
 
-    // 2. The local origin.
+    // 2. The local origin. The older output's release first, so the newer
+    // one is not older than the release the machine records.
     let origin = dir.join("origin");
+    let published = out.join("release").join(&old.id).join("release.json");
+    let ran = if published.is_file() {
+        published
+    } else {
+        crate::release::make(&old, &dir.join("release-old"))?.release
+    };
+    let record = fs::read_to_string(&ran)?;
+    let ran: up::Release = serde_json::from_str(&record)?;
     let made = crate::release::make(o, &dir.join("release"))?;
     for (key, file) in made.files() {
         let to = origin.join(&key);
@@ -201,11 +215,16 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
     }
     let public = crate::release::public_key()?;
     set("host:local", json!({ "profile": made.profile, "publishers": [public] }))?;
+    install::ssh_run(
+        &r,
+        &format!("printf '%s' {} > /oath/{}\n", install::sh_quote(&record), up::RECORD),
+    )?;
 
     // 4. The update.
     eprintln!("{}", install::ssh_out(&r, "oath update 2>&1")?);
     eprintln!("{}", install::ssh_out(&r, "oath update --confirm 2>&1")?);
     reboot_and_verify(&r, o, &mut vm)?;
+    pinned_moved(&r, &old, o, &ran)?;
 
     // 5. dropbear to OpenSSH, kept from a new session.
     let sshd = install::ssh_out(&r, "oath --json get svc:sshd --desired")?;
@@ -253,6 +272,38 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
     eprintln!("{}", install::ssh_out(&r, "oath update 2>&1")?);
     eprintln!("QEMU update rehearsal ok: {} -> {}  {}", old.id, o.id, dir.display());
     copy_file(&dir.join("known_hosts"), &dir.join("known_hosts.kept")).ok();
+    Ok(())
+}
+
+/// Each pack the newer output pins from elsewhere (R28) that the machine had
+/// at the pin its release lists is at the newer output's: the owner never
+/// moved it, so it moves with the output. A release from before it listed
+/// them leaves them where they were.
+fn pinned_moved(r: &Remote, old: &Output, o: &Output, ran: &up::Release) -> Result<()> {
+    let manifest = |o: &Output| -> Result<Value> {
+        Ok(serde_json::from_slice(&fs::read(o.file("manifest.json"))?)?)
+    };
+    let (was, now) = (manifest(old)?, manifest(o)?);
+    let mut off = Vec::new();
+    for name in now["pinned"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+        let (from, to) = (&was["packs"][name]["hash"], &now["packs"][name]["hash"]);
+        if from.is_null() || from == to {
+            continue;
+        }
+        let doc = install::ssh_out(r, &format!("oath --json get pkg:{name} --desired"))?;
+        let got: Value = serde_json::from_str(&doc).unwrap_or(Value::Null);
+        let got = got.get("hash").unwrap_or(&Value::Null);
+        if got == to {
+            eprintln!("pkg:{name} moved with the output: {from} -> {to}");
+        } else if ran.pinned.get(name).is_some_and(|p| from == p) {
+            off.push(format!("pkg:{name} is {got}, the output pins {to}"));
+        } else {
+            eprintln!("pkg:{name} keeps {got}: the release it ran lists no pin for it");
+        }
+    }
+    if !off.is_empty() {
+        bail!("packs pinned from elsewhere did not move with the output:\n{}", off.join("\n"));
+    }
     Ok(())
 }
 
