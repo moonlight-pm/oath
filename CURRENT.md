@@ -27,9 +27,9 @@ append history (git has it).
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28).
    `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`; desk output
-   `4bb854a8b1d9`, 61/61 in QEMU), on no machine: Sola's 147 browser asks
-   for CEF API 999999, not 14700, so publish no desk output until the
-   pins move. Next: canto takes it, Sola rebuilds against it (R37).
+   `4bb854a8b1d9`, 61/61 in QEMU), on the bucket (2026-10-29), on no
+   machine: Sola's 147 browser asks for CEF API 999999, not 14700, so no
+   desk output until the pins move. Next: Sola rebuilds on it (R37).
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
