@@ -47,7 +47,7 @@
 <div><dt>Toolchain</dt><dd>GCC, binutils and glibc built from source, bootstrapped once by the build host and then rebuilt by themselves. bash and the GNU userland; zsh is the login shell.</dd></div>
 <div><dt>Kernel and boot</dt><dd>Linux from kernel.org, pinned by sha256 and built as a plan. <code>oath-efi</code> is the only boot loader, and the initrd runs Oath's PID 1.</dd></div>
 <div><dt>Network and SSH</dt><dd><code>net0</code> by DHCP or a static address, time from pool.ntp.org, OpenSSH for SSH as <code>home</code> with root login refused, the network daemons dropped to the unprivileged <code>void</code>, and <code>dig</code>.</dd></div>
-<div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick. Each machine updates itself: <code>oath update</code> takes the newest output its build host signed, without wiping it.</dd></div>
+<div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick; from a stick booted on the machine, <code>oath install</code> lists the disks and copies the system onto the one you name, with home in its own subvolume. Each machine updates itself: <code>oath update</code> takes the newest output its build host signed, without wiping it.</dd></div>
 <div><dt>Testing</dt><dd><code>cargo make check</code> boots one QEMU machine per case and reboots for real. <code>--target</code> runs the hardware cases on an installed machine and undoes each one. <code>--agent</code> gives a real model five administration tasks.</dd></div>
 <div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV for Vulkan and PipeWire for sound.</dd></div>
 </dl>
@@ -65,7 +65,7 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH. As of 29 October 2026 the current build passes all 61 test cases in QEMU; the desk's hardware cases passed on the Mac Pro on 22 October, and the hardware cases that apply to a headless Intel machine on 27 October. Not there yet:</p>
+<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 30 October 2026 the current build passes all 63 test cases in QEMU, and <code>oath install</code> its rehearsal; the desk's hardware cases passed on the Mac Pro on 22 October, and the hardware cases that apply to a headless Intel machine on 27 October. Not there yet:</p>
 <ul>
 <li>Releases. x86-64 with UEFI is the only platform.</li>
 <li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures, and machines update only to builds their build host signed, but the index of the pack origin is not signed.</li>
@@ -86,6 +86,6 @@ cargo make pkgs         <span class="comment"># every package in pkgs/, from sou
 cargo make build        <span class="comment"># the base image</span>
 cargo make check        <span class="comment"># the QEMU test cases</span>
 cargo make run          <span class="comment"># boot it, with the serial console in this terminal</span></code></pre>
-<p>Installing wipes the target disk and needs SSH access to the machine; the <a href="/manual#install">manual</a> has the steps.</p>
+<p>Installing wipes the target disk: from the build host over SSH, or with <code>oath install</code> from an Oath stick booted on the machine; the <a href="/manual#install">manual</a> has the steps.</p>
 </section>
 </main>

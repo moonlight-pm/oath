@@ -133,6 +133,7 @@ fn real_main() -> Result<(), String> {
     let _ = fs::create_dir_all("/tmp");
     let _ = fs::create_dir_all("/root");
     mount_toplevel();
+    mount_home();
     mount_status();
 
     // Seed only a machine with no catalog at all. A missing INDEX.md is
@@ -977,6 +978,25 @@ fn mount_toplevel() {
     }
 }
 
+/// An install's home (R43): `@home` beside `@`, so no generation or boot
+/// snapshot holds it and an older boot runs on today's files, mounted at
+/// /home before anything reads it. A machine installed before 2026-10-30
+/// keeps /home in `@`.
+fn mount_home() {
+    let home = oath_core::seat::HOME;
+    if !Path::new(BTRFS_TOP).join("@home").is_dir() || mounted(home) {
+        return;
+    }
+    let dev = root_dev();
+    let _ = fs::create_dir_all(home);
+    let r = mount(Some(dev.as_str()), home, Some("btrfs"), MsFlags::empty(), Some("subvol=@home"));
+    let err = r.err().map(|e| e.to_string());
+    tel("init", "home", json!({ "path": home, "ok": err.is_none(), "err": err }));
+    if let Some(e) = err {
+        log(&format!("mount @home at {home}: {e}; /home is @'s this boot"));
+    }
+}
+
 /// What was last applied (`applied.json`). A catalog from before
 /// applied.json kept it in `actual`; one that has never been applied
 /// starts from `desired`. Pending `oath set` edits do not take effect
@@ -1156,13 +1176,16 @@ fn apply_ssh() {
 }
 
 /// `/home` and `/home/.ssh` exist and belong to `home`.
+/// Home's own directory and `.ssh`, not what is in them: a recursive chown
+/// at every boot rewrote every file's metadata, and went down into the
+/// disks `host:local.mounts` puts under /home.
 fn ensure_home() {
     use oath_core::seat;
     let home = Path::new(seat::HOME);
     let ssh = home.join(".ssh");
     let _ = fs::create_dir_all(&ssh);
     let own = format!("{}:{}", seat::UID, seat::GID);
-    let _ = Command::new("/bin/chown").args(["-R", &own, seat::HOME]).status();
+    let _ = Command::new("/bin/chown").args([&own, seat::HOME, &ssh.to_string_lossy()]).status();
     let _ = Command::new("/bin/chmod").args(["755", seat::HOME]).status();
     let _ = Command::new("/bin/chmod").args(["700", &ssh.to_string_lossy()]).status();
 }

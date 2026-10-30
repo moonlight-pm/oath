@@ -7,6 +7,7 @@ mod elf;
 mod install;
 mod kernel;
 mod manifest;
+mod oath_install;
 mod oath_pkg;
 mod openpgp;
 mod origin;
@@ -137,6 +138,12 @@ enum Cmd {
         /// one `check` passed, or the latest with `--qemu` / `--unchecked`).
         #[arg(long)]
         output: Option<String>,
+        /// With --qemu: rehearse `oath install` (R43). Install the output on
+        /// a stick, boot it beside a blank disk and one that must not
+        /// change, run `oath install <serial> --confirm`, then boot the
+        /// firmware's first entry. --disk is ignored.
+        #[arg(long, requires = "qemu")]
+        oath_install: bool,
     },
     /// Build the toolchain from source on this host (stage 0 and 1) and
     /// store the base packs (pkg:gcc, pkg:glibc and the GNU tools). Hours, not minutes.
@@ -303,6 +310,7 @@ fn real() -> Result<()> {
             overlay,
             unchecked,
             output,
+            oath_install,
         } => {
             install::run_install(
                 &root,
@@ -318,6 +326,7 @@ fn real() -> Result<()> {
                     overlay,
                     unchecked,
                     output,
+                    oath_install,
                 },
             )?;
         }

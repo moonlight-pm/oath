@@ -4,7 +4,9 @@ Oath boots one kernel: vanilla kernel.org source, pinned by sha256,
 compiled here with Oath's patches and config fragment. `oath-efi` is
 the firmware menu. The image is a seed profile plus the packages it
 names, packed on the build host. Installing wipes a named disk through
-an installer ramdisk and writes machine facts from a host overlay.
+an installer ramdisk and writes machine facts from a host overlay, or,
+on the machine itself, `oath install` copies the system it runs from a
+stick onto a disk (R43).
 
 **Status:** partly built. The kernel pin and version check, the menu,
 boot rotation, profiles, overlays, the install flow, the `esp`
@@ -131,6 +133,81 @@ not matter (canto's September image logged `home` into Thoxa).
 6. Write the ESP and BLS, unmount, reboot, and wait for
    `home@<host>` to answer with an INDEX, accepting only the pinned
    host key.
+
+## oath install (built 2026-10-30, R43)
+
+The installer a person runs: boot an Oath stick on the machine, open a
+terminal, `oath install`. It is in `oath` (`crates/oath/src/install.rs`),
+so an agent runs the same over SSH; the stick is any Oath install on a
+removable disk (`cargo make install --local`), with the machine's
+overlay and its recipes built (novus's NVIDIA driver).
+
+- `oath install` lists the disks from `lsblk`: node, size (decimal, as
+  the drive's label says), port, model, serial; as root, each
+  partition's filesystem type and label (`blkid`). It marks the disk this
+  system runs from and disks with something mounted. Node names are the
+  order the kernel found disks in (novus's 4 TB is NixOS's `sdb` and
+  Oath's `sda`), so the serial is the name to trust.
+- `oath install <disk>` (a node, `sdb`, or a serial), as root, is the
+  preview: the disk, every partition it erases, what it writes, what it
+  copies, and the firmware's boot entries it adds, removes and keeps.
+  It refuses the disk the running root is on, a disk with anything
+  mounted or swapped on, a catalog with changes not applied, an apply
+  on probation, and a boot of an older entry (`oath.subvol` not `@`).
+- `--confirm`: `wipefs`, `sfdisk` (GPT: a 512 MiB ESP with a partition
+  GUID it chose, then `oath` for the rest), `mkfs.fat -n OATHESP`,
+  `mkfs.btrfs -L oath -U <new uuid>`; subvolumes `@` and `@home`. A
+  read-only snapshot of the running `@` (`@install`, under the catalog
+  lock) is copied with GNU tar (numeric owners, modes, setuid, links,
+  xattrs) without `home/*`, `root/*`, `tmp/*`, `oath/log/*`,
+  `oath/run/*`, `oath/status/*`, `oath/ssh/*`, `oath/login/*`,
+  `oath/objects/snap/*` and `var/lib/*/*`; then generation 0 (`snap:
+  current`), an empty apply log, `@home` owned by `home` with `.ssh`
+  (PID 1 writes `authorized_keys` at boot from `ssh:local`), a new SSH
+  host key (printed), and a new INDEX. The ESP gets the running ESP's
+  `oath-efi`, kernel and initrd, its `loader.conf`, and one entry naming
+  the new root by UUID with the running entry's extra options. The
+  snapshot is deleted and everything unmounted, also on failure.
+- The firmware (efi.rs): with `/sys/firmware/efi`, `oath install`
+  mounts efivarfs (read-only for the preview, read-write for the
+  write; Oath leaves it unmounted otherwise, so no stray write can
+  reach the firmware's variables), adds `Boot####` "Oath" (the lowest
+  free number; `HD(1, GPT, <esp guid>, start, size)/File(\EFI\BOOT\
+  BOOTX64.EFI)`), writes `BootOrder` with it first and the kept entries
+  after in their order, then deletes each entry that loads a file from
+  a disk partition (a hard-drive node and a file node: NixOS's `Linux
+  Boot Manager`, Windows', a firmware's entry for a disk's fallback
+  loader), clearing efivarfs's immutable flag on that one file, and
+  `BootNext` if it named one. The firmware's own entries (a firmware
+  volume, a whole device, a network card) stay. On buccina's OptiPlex
+  the preview read `UEFI PC801 NVMe …` (remove) and the NIC and HTTPs
+  boots (keep). Without UEFI the boot list is left alone.
+- PID 1 mounts `@home` at `/home` (`subvol=@home`) right after the
+  btrfs top level, when the root filesystem has one, and unmounts it at
+  shutdown after `host:local.mounts`; a machine installed before
+  2026-10-30 keeps `/home` in `@`. PID 1 and `ssh:local` chown only
+  `/home`, `.ssh` and `authorized_keys`, no longer the whole home (it
+  would rewrite every file's metadata at each boot, and go into disks
+  mounted under `/home`).
+- Rehearsal: `cargo make install --qemu --oath-install --disk /dev/vda
+  --confirm` installs the output on a stick (qcow2), boots it through
+  OVMF beside a blank target and a btrfs "storage" disk, with no
+  `bootindex` (OVMF rewrites `BootOrder` from it at every boot, which
+  no machine does), writes a stand-in `Linux Boot Manager` entry, runs
+  `oath install` (list, preview, the refusal of its own disk,
+  `--confirm` by serial), requires the other disk's sha256 unchanged,
+  and boots again: the firmware must start the target (its new host
+  key answers, its UUID is `oath.root`) with `@home` at `/home`,
+  generation 0, the catalog in sync and the stand-in gone. The install
+  rehearsals stop QEMU with SIGTERM, so it writes its qcow2 out: FAT's
+  sync sends the disk no cache flush, and a SIGKILL after the installer
+  left the ESP's entry as zeros (2026-10-30; the stick booted with no
+  `oath.root`).
+- Rehearsed on desk output `cf238ebe3360` (2026-10-30): `oath install
+  OATHTARGET01 --confirm` from the stick added `Boot0009 Oath` first,
+  removed the stand-in, kept OVMF's nine entries; the other disk's
+  sha256 held; the firmware then started the target, whose 21 services
+  ran (`svc:screen` held for the desk).
 
 ## Known defects (from the 2026-10-13 review)
 

@@ -105,7 +105,40 @@ ramdisk runs in QEMU with the raw disk as its own (`/dev/vda`; the disk
 is lent to your user for the run), does steps 3 to 6, then OVMF boots
 the disk once, `oath ls` must answer, and it is powered off cleanly. Its
 loader waits 5 s, as on metal. Boot it from the firmware's boot menu;
-nothing changes the firmware's boot order.
+nothing changes the firmware's boot order. Such a stick is also an
+installer: `oath install` (below).
+
+## From a stick, on the machine: oath install
+
+Boot an Oath stick (the one above) on the machine, open a terminal:
+
+```sh
+oath install                          # the disks: node, size, port, model, serial
+sudo oath install /dev/sdb            # what it would erase and write; writes nothing
+sudo oath install /dev/sdb --confirm  # wipe it and install
+reboot                                # remove the stick first
+```
+
+The disk is a node (`/dev/sdb`, `sdb`) or a serial; `sudo oath install`
+also shows each filesystem's type and label. Node names follow the
+order the kernel found the disks in and can differ from another
+system's, so check the model and serial the preview repeats.
+
+`--confirm` wipes that disk: a GPT with a 512 MiB ESP and btrfs for the
+rest, with `@` (the system) and `@home` (mounted at `/home`, outside
+every generation and boot snapshot). It copies the system the stick
+runs: its packages (NVIDIA's driver too, if the stick built it), its
+settings (hostname, overlay, SSH keys it trusts) and its release, at
+generation 0, with an empty home, a new SSH host key (printed at the
+end), and none of the stick's history, password or pairings. It writes
+the ESP, adds `Oath` to the firmware's boot list first and removes the
+other systems' entries; the firmware's own (USB, network, setup) stay,
+and nothing else in the firmware's variables is touched.
+
+It checks no backups and reads no other disk: knowing what is on them
+is yours. It refuses only the disk the stick runs from and a disk with
+something mounted. Agents run the same over SSH (`--json` for each
+step).
 
 ## USB installer stick
 

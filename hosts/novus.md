@@ -16,10 +16,18 @@ Overwrite this file when facts change; do not append a diary.
 - **Network:** the cable is in the Intel I225-V (`igc`,
   `04:42:1a:e7:35:6f`, at 1 Gb/s), DHCP 10.0.0.5. The Aquantia AQC113
   10 GbE (`atlantic`, `04:42:1a:e7:35:6e`) and the Wi-Fi have no link.
-- **Disks:** three SATA SSDs. `sda` (WD Blue, 500 GB): NixOS's root and
-  `/nix`. `sdc` (WD Blue, 2 TB): NixOS's ESP and `/home` (btrfs
-  `@home`, `@snapshots`). `sdb` (SPCC, 4 TB): `/mnt/storage` (btrfs
-  `@data`, `@backups`, the hourly btrbk target).
+- **Disks:** three SATA SSDs, named here by serial: the kernel finds
+  them in another order under Oath (NixOS's `sda`, `sdb`, `sdc` are
+  Oath's `sdb`, `sda`, `sdc`). WD Blue 500 GB `21385X801116`: btrfs
+  `nixos`, NixOS's root and `/nix`. WD Blue 2 TB `21351E801362`: NixOS's
+  ESP and btrfs `home` (`@home`, `@snapshots`). SPCC 4 TB
+  `AA250217S304TB00619`: btrfs `storage` (`@data`, `@backups`, the
+  hourly btrbk target; newest `home.20261030T1200` on 2026-10-30).
+- **Install plan (R43):** `oath install 21385X801116 --confirm` from the
+  stick puts Oath on the 500 GB (ESP, btrfs `@` and `@home`) and makes
+  the firmware boot it first, removing NixOS's entry; the 2 TB and 4 TB
+  are not touched. Home moves to the 2 TB later; Joshua restores from
+  the 4 TB by hand.
 - **GPU (R34):** on NixOS, NVIDIA 580.142's closed module with GSP off
   (`NVreg_EnableGpuFirmware=0`), capped at 250 W with the core clock
   locked to 210–1500 MHz by `nvidia-smi`, after repeated Xid 79 ("fallen

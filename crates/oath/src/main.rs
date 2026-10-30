@@ -10,6 +10,7 @@ use oath_core::{
 };
 use serde_json::{json, Map, Value};
 
+mod install;
 mod live;
 mod login;
 mod mcp;
@@ -136,6 +137,15 @@ enum Cmd {
         #[arg(long)]
         esp: Option<String>,
     },
+    /// Put the system this machine runs on a disk (R43). Without a disk it
+    /// lists the disks; with one it says what it would erase and write;
+    /// with --confirm it wipes that disk, writes an ESP and a btrfs root
+    /// (`@`, `@home`), copies this system as a fresh install and makes the
+    /// firmware boot it first.
+    Install {
+        /// The disk: its node (/dev/sdb) or its serial.
+        disk: Option<String>,
+    },
     Log {
         /// Last N entries (default all).
         #[arg(short = 'n', long)]
@@ -237,6 +247,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Verify { .. }) => "verify",
         Some(Cmd::Undo { .. }) => "undo",
         Some(Cmd::Update { .. }) => "update",
+        Some(Cmd::Install { .. }) => "install",
         Some(Cmd::Log { .. }) => "log",
         Some(Cmd::Logs { .. }) => "logs",
         Some(Cmd::Mcp { .. }) => "mcp",
@@ -622,6 +633,11 @@ fn run() -> oath_core::Result<i32> {
             &cat,
             &actor,
             update::Opts { confirm: cli.confirm, output, reboot, esp, json: cli.json },
+        ),
+        Some(Cmd::Install { disk }) => install::run(
+            &cli.root,
+            &cat,
+            install::Opts { disk, confirm: cli.confirm, json: cli.json },
         ),
         Some(Cmd::Logs { id, lines }) => {
             let path = match &id {

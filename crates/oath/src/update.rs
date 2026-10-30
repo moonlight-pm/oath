@@ -542,7 +542,7 @@ fn fetch(url: &str, dest: &Path) -> Result<()> {
 }
 
 /// In sync, and nothing on probation.
-fn preflight(root: &Path, cat: &Catalog) -> Result<()> {
+pub(crate) fn preflight(root: &Path, cat: &Catalog) -> Result<()> {
     let drift = cat.diff(None)?;
     if !drift.is_empty() {
         let ids: Vec<String> = drift.iter().map(|d| d.id.to_string()).collect();
@@ -792,7 +792,7 @@ fn finish(opts: &Opts, v: Value, text: &str) {
     }
 }
 
-fn sh(c: &mut Command) -> Result<()> {
+pub(crate) fn sh(c: &mut Command) -> Result<()> {
     let st = c.status().map_err(|e| Error::Msg(format!("{c:?}: {e}")))?;
     if !st.success() {
         return Err(Error::Msg(format!("{c:?}: {st}")));
@@ -800,7 +800,7 @@ fn sh(c: &mut Command) -> Result<()> {
     Ok(())
 }
 
-fn sh_out(c: &mut Command) -> Result<String> {
+pub(crate) fn sh_out(c: &mut Command) -> Result<String> {
     let out = c.output().map_err(|e| Error::Msg(format!("{c:?}: {e}")))?;
     if !out.status.success() {
         return Err(Error::Msg(format!("{c:?}: {}", String::from_utf8_lossy(&out.stderr).trim())));
@@ -812,7 +812,7 @@ fn sh_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', r"'\''"))
 }
 
-fn is_mounted(p: &Path) -> bool {
+pub(crate) fn is_mounted(p: &Path) -> bool {
     let p = p.display().to_string();
     fs::read_to_string("/proc/mounts")
         .unwrap_or_default()
@@ -820,14 +820,14 @@ fn is_mounted(p: &Path) -> bool {
         .any(|l| l.split_whitespace().nth(1) == Some(p.as_str()))
 }
 
-fn cmdline_val(cmdline: &str, key: &str) -> Option<String> {
+pub(crate) fn cmdline_val(cmdline: &str, key: &str) -> Option<String> {
     let prefix = format!("{key}=");
     cmdline.split_whitespace().find_map(|t| t.strip_prefix(&prefix).map(str::to_string))
 }
 
 /// Partition 1 of the disk that holds `root` (`/dev/sda2` → `/dev/sda1`,
 /// `/dev/nvme0n1p2` → `/dev/nvme0n1p1`).
-fn esp_of(root: &str) -> Option<String> {
+pub(crate) fn esp_of(root: &str) -> Option<String> {
     let disk = root.trim_end_matches(|c: char| c.is_ascii_digit());
     if disk == root || !disk.starts_with("/dev/") {
         return None;
@@ -837,7 +837,7 @@ fn esp_of(root: &str) -> Option<String> {
 
 /// The kernel options of the current entry that `esp::kernel_options`
 /// does not write itself.
-fn extra_options(current: &str) -> String {
+pub(crate) fn extra_options(current: &str) -> String {
     let own = esp::kernel_options("", "", "");
     let own: Vec<&str> = own.split_whitespace().filter(|t| !t.starts_with("oath.")).collect();
     current

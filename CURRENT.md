@@ -31,15 +31,14 @@ append history (git has it).
    `oath desk` ([docs/specs/login.md](docs/specs/login.md)), published
    in `fdecb1ec3d68`; canto has its objects (generation 411). Next:
    Sola's `sola-lock`, Settings → Login and Exit Sola tried on canto.
-4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
-   goes; novus gets its own Oath install. Built: bootstrap on an Oath
-   host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
-   in `desk`, a root by btrfs UUID, `install --local`. buccina did a
-   build host's whole job (2026-10-27). R41 (2026-10-29): libglvnd and
-   NVIDIA's lookups for the desk, BlueZ on a system bus, the fan curve;
-   the trial stick is desk output `67d5d5c1160c` with `pkg:nvidia` built
-   and on. Next: Joshua boots novus from it (F8); from buccina, the
-   desk on the card, sound, pairing, fans, `nvidia-smi`.
+4. **novus to Oath (R32–R35, R41, R43, [hosts/novus.md](hosts/novus.md)).**
+   The trial stick (desk output `67d5d5c1160c`, `pkg:nvidia` built) booted
+   novus to the desk on 2026-10-30. R43: `oath install` on the machine
+   copies the system the stick runs onto a disk (`@`, `@home`) and puts
+   Oath first in the firmware's boot list; desk output `cf238ebe3360`
+   passes 63/63 and its rehearsal. Next: rewrite the stick (on buccina,
+   `sda`) with it and novus's overlay, and Joshua runs `oath install
+   21385X801116 --confirm` (the 500 GB) on novus.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from

@@ -34,8 +34,10 @@ pub fn converge(desired: &Ssh) -> Result<SshActual> {
         }
     }
     fs::write(authorized, &body)?;
+    // Not -R: home's files are its own, and a disk host:local.mounts puts
+    // under /home is not home's to re-own.
     let own = format!("{}:{}", crate::seat::UID, crate::seat::GID);
-    let _ = Command::new("/bin/chown").args(["-R", &own, home]).status();
+    let _ = Command::new("/bin/chown").args([&own, home, &ssh_dir, authorized]).status();
     let _ = Command::new("/bin/chmod").args(["755", home]).status();
     let _ = Command::new("/bin/chmod").args(["700", &ssh_dir]).status();
     let _ = Command::new("/bin/chmod").args(["600", authorized]).status();

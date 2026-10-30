@@ -3,6 +3,7 @@
 mod catalog;
 mod dev;
 mod error;
+pub mod efi;
 pub mod esp;
 mod hooks;
 mod id;

@@ -142,6 +142,7 @@ fn rehearse(root: &Path, out: &Path, o: &Output, opts: &Opts) -> Result<()> {
             overlay: None,
             unchecked: true,
             output: Some(old.id.clone()),
+            oath_install: false,
         },
     )?;
 

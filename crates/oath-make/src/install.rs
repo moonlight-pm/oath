@@ -35,6 +35,9 @@ pub struct Opts {
     /// The build output to install (default: the newest checked one; the
     /// latest with `--qemu` or `--unchecked`).
     pub output: Option<String>,
+    /// With `--qemu`: rehearse `oath install` from the installed stick
+    /// onto a second disk (oath_install.rs).
+    pub oath_install: bool,
 }
 
 pub struct EspOpts {
@@ -47,7 +50,7 @@ pub struct EspOpts {
 
 /// What an install writes, all from one build output, with this host's
 /// SSH keys baked into the installer initrd of this run.
-struct Payload {
+pub(crate) struct Payload {
     kernel: PathBuf,
     initrd_install: PathBuf,
     stage: PathBuf,
@@ -123,6 +126,8 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
     };
     if opts.usb {
         write_usb_installer(out, &tools, &p, &opts)?;
+    } else if opts.qemu && opts.oath_install {
+        crate::oath_install::rehearse(&run_dir, &tools, &p, &opts)?;
     } else if opts.qemu {
         install_qemu(&run_dir, &tools, &p, &opts)?;
     } else if opts.local {
@@ -916,7 +921,7 @@ fn install_local(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Res
 /// `disk`), then boot it through OVMF and check it. `metal`: the disk is
 /// real and boots a machine next, so it gets the metal loader menu and
 /// is powered off cleanly.
-fn install_in_qemu(
+pub(crate) fn install_in_qemu(
     run_dir: &Path,
     tools: &Tools,
     p: &Payload,
@@ -969,6 +974,7 @@ fn install_in_qemu(
         overlay: opts.overlay.clone(),
         unchecked: true,
         output: opts.output.clone(),
+        oath_install: false,
     };
     let key = match format_and_copy(p, &qopts, &inst) {
         Ok(k) => k,
@@ -981,8 +987,7 @@ fn install_in_qemu(
     // The rehearsal pins too, so the first login proves the key it wrote.
     let pins = run_dir.join("known_hosts");
     pin_host_key(&pins, "127.0.0.1", port, &key)?;
-    let _ = child.kill();
-    let _ = child.wait();
+    stop_qemu(&mut child);
 
     let vars = run_dir.join("OVMF_VARS.fd");
     copy_file(ovmf_vars_src, &vars)?;
@@ -1026,8 +1031,7 @@ fn install_in_qemu(
             power_off(live, &mut boot_child);
         }
     }
-    let _ = boot_child.kill();
-    let _ = boot_child.wait();
+    stop_qemu(&mut boot_child);
     if !ok {
         dump_serial(&qemu_boot_log);
         dump_serial(&serial_boot);
@@ -1037,9 +1041,33 @@ fn install_in_qemu(
     Ok(())
 }
 
+/// Stop QEMU so that it writes its disk out: on SIGTERM it flushes and
+/// closes its drives; SIGKILL only if it is still running after 30 s. A
+/// SIGKILL loses the qcow2 metadata of writes the guest never flushed,
+/// and FAT's sync sends no cache flush: on 2026-10-30 the installer's ESP
+/// entry, written last, read back as zeros, and the stick booted with no
+/// `oath.root`.
+pub(crate) fn stop_qemu(child: &mut std::process::Child) {
+    if let Ok(Some(_)) = child.try_wait() {
+        return;
+    }
+    unsafe {
+        libc::kill(child.id() as libc::pid_t, libc::SIGTERM);
+    }
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while Instant::now() < deadline {
+        if let Ok(Some(_)) = child.try_wait() {
+            return;
+        }
+        thread::sleep(Duration::from_millis(200));
+    }
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
 /// Power the booted system off through its PID 1 and wait for QEMU to
 /// exit, so the disk's first shutdown is a clean one.
-fn power_off(live: &Remote, child: &mut std::process::Child) {
+pub(crate) fn power_off(live: &Remote, child: &mut std::process::Child) {
     eprintln!("power off");
     ssh_fire(live, "sudo poweroff");
     let deadline = Instant::now() + Duration::from_secs(90);

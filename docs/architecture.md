@@ -25,6 +25,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
+    mount subvol=@home at /home when the root has one (R43)
     tmpfs at /oath/status (status; no snapshot holds it)
     seed only if /oath/objects is missing; regenerate a missing INDEX.md;
       migrate a catalog from before R14 (old actual.json → applied.json)
@@ -54,9 +55,12 @@ QEMU (`cargo make run|up|start`) boots the same kernel and initrd with
 GPT  1: ESP (vfat, 512M)     2: btrfs "oath"
 btrfs
   @           live root
+  @home       /home, mounted by PID 1 (R43; installs by `oath install`;
+              older installs keep /home in @)
   @gen-N      read-only snapshot taken by each apply; undo copies the
               touched objects' spec back out of @gen-N/oath/objects
   @boot-N     snapshot taken when `cargo make esp` archives a boot
+  @install    oath install's read-only snapshot of @, while it copies
 ```
 
 ## Root tree
@@ -72,7 +76,7 @@ btrfs
             loader ld-linux-x86-64.so.2 and every linked package's libraries;
             no /lib64. oath/, modules/ and firmware/ are not links. A pack's
             lib32/ (i386, R29) is never linked: no /lib32 or ld-linux.so.2
-/home       the `home` account (uid 1); SSH logs in here
+/home       the `home` account (uid 1); SSH logs in here; `@home` when the root has one
 /var/empty  `void`'s home (uid 65534, R36): empty, root's; sshd's and dhcpcd's chroot
 /run/user/1/oath-steam/<key>/  Steam's sandbox tree (pkg:steam's bin/steam, R29):
             a merged /usr of the root's links, every pack's lib32/ and share/,
