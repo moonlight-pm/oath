@@ -172,8 +172,9 @@ sudo oath update --confirm --reboot   # move to it, then boot it
 It takes the newest release for `host:local.profile` from the first of
 `host:local.origins` that serves one a key in `host:local.publishers`
 signed (the `base` profile trusts buccina's), and refuses one older
-than the release the machine runs (`/oath/output.json`) unless
-`--output <id>` names it. It also refuses pending changes and an apply
+than the release the machine runs (`/oath/output.json`, written by the
+install too), or one it cannot order against it, unless `--output <id>`
+names it. It also refuses pending changes and an apply
 on probation, and a set of moves that would leave a package needing
 another at a hash it will not have (the check `oath apply` makes, made
 first, so the preview says it too). With `--confirm`, it:

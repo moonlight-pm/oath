@@ -33,9 +33,13 @@ Overwrite this file when facts change; do not append a diary.
   OS` to remove, yet it was there after the reset, and Oath was not
   first: Joshua moved it up in the firmware's setup. Removing the 2 TB's
   ESP (or its `\EFI\BOOT\BOOTX64.EFI`) should end the `UEFI OS` entry.
-- **Home:** Oath's `@home` on the 500 GB, empty at install. Next: move
-  home to the 2 TB and restore from the 4 TB by hand, picking what to
-  keep.
+- **Home:** at install Oath's `@home` on the 500 GB. Since the update to
+  `fed6fb141a5e` (whose PID 1 predates `@home`), /home is `@`'s
+  directory; `@home` still holds the home from before it. canto's session
+  made `@oath-home` on the 2 TB's btrfs `home` (`UUID=580d861c-…`, beside
+  NixOS's `@home` and `@snapshots`, untouched) and copied /home into it.
+  Next (R45): from an output that has it, `host:local.mounts` `/home` on
+  `@oath-home`, from the next boot; then restore from the 4 TB by hand.
 - **GPU (R34):** NVIDIA 595.104.02 (`pkg:nvidia` `48b78914`, a recipe in
   the `desk` profile) with GSP off (`NVreg_EnableGpuFirmware=0`, in
   `host:local.module_options`), capped by `svc:gpu-power` at 250 W with
@@ -59,10 +63,12 @@ Overwrite this file when facts change; do not append a diary.
   `nixos-root/var/lib/bluetooth`.
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
   GPU settings, the fan curve. No mounts yet.
-- **Oath on it:** desk output `cf238ebe3360` (its release not published)
-  at generation 0, installed 2026-10-30 by `oath install 21385X801116
-  --confirm` from the stick. It boots from the 500 GB to the desk on the
-  card; 21 services run, `svc:screen` held for the desk. Its `ssh:local`
+- **Oath on it:** installed 2026-10-30 by `oath install 21385X801116
+  --confirm` from the stick: desk output `cf238ebe3360` (never published)
+  at generation 0, with no `/oath/output.json` (R45 makes installs write
+  one). Joshua's `sudo oath update --confirm` then moved it to the older
+  published `fed6fb141a5e` (generation 1, 22:39Z) and he rebooted. It
+  boots from the 500 GB to the desk on the card. Its `ssh:local`
   has buccina's, canto's and `root@hub`'s keys; buccina reaches it with
   `ssh -o UserKnownHostsFile=build/novus-oath.known_hosts home@10.0.0.5`
   (the host key the install printed, ending `Suecii`). canto's

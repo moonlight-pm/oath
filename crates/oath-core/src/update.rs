@@ -51,10 +51,17 @@ pub struct Release {
     pub output: String,
     /// The seed profile it was built from; a machine follows one.
     pub profile: String,
-    /// When it was published (RFC 3339, UTC). A machine takes no release
-    /// older than the one it runs unless its owner names it.
+    /// When it was published (RFC 3339, UTC). Empty in the record an
+    /// install writes (`/oath/output.json`) for an output never published.
+    #[serde(default)]
     pub published: String,
-    /// `out/<output>/update.tar`.
+    /// When the commit it was built from was made (RFC 3339, UTC): the
+    /// order of outputs, published or not ([`newer`]). Releases published
+    /// before 2026-10-31 have none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub committed: Option<String>,
+    /// `out/<output>/update.tar`; empty in an install's record.
+    #[serde(default)]
     pub bundle: Bundle,
     /// The hash of its PID 1 (`/lib/oath/init`), to check after the reboot.
     pub init: String,
@@ -65,7 +72,21 @@ pub struct Release {
     pub pinned: BTreeMap<String, String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Whether `ran`, the release this machine runs, is newer than `next`: by
+/// the times of the commits they were built from when both say, else by
+/// when they were published. None when neither tells: an install's record
+/// of an output never published, against a release from before
+/// `committed`. A machine takes no older release, and none of unknown
+/// order, unless its owner names it (`oath update --output`).
+pub fn newer(ran: &Release, next: &Release) -> Option<bool> {
+    match (&ran.committed, &next.committed) {
+        (Some(a), Some(b)) => Some(a > b),
+        _ if !ran.published.is_empty() => Some(ran.published > next.published),
+        _ => None,
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Bundle {
     /// `sha256-<hex>` of the tar file.
     pub hash: String,
@@ -407,6 +428,37 @@ mod tests {
     const A: &str = "sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const B: &str = "sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     const C: &str = "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
+    fn release(published: &str, committed: Option<&str>) -> Release {
+        Release {
+            output: "000000000000".into(),
+            profile: "desk".into(),
+            published: published.into(),
+            committed: committed.map(Into::into),
+            bundle: Bundle::default(),
+            init: A.into(),
+            pinned: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn releases_order_by_commit_then_publication() {
+        let t = |s: &str| format!("2026-10-30T{s}:00:00Z");
+        // Both built from known commits: the commit decides, not publication.
+        let ran = release(&t("23"), Some(&t("20")));
+        assert_eq!(newer(&ran, &release(&t("23"), Some(&t("21")))), Some(false));
+        assert_eq!(newer(&ran, &release(&t("23"), Some(&t("19")))), Some(true));
+        // A release from before `committed`: publication decides.
+        let old = release(&t("14"), None);
+        assert_eq!(newer(&release(&t("13"), None), &old), Some(false));
+        assert_eq!(newer(&release(&t("15"), None), &old), Some(true));
+        // An install of an output never published (novus, 2026-10-30): its
+        // commit is newer than a release that has one, and of unknown order
+        // against one that has none, which is refused, not taken.
+        let installed = release("", Some(&t("20")));
+        assert_eq!(newer(&installed, &release(&t("14"), Some(&t("13")))), Some(true));
+        assert_eq!(newer(&installed, &old), None);
+    }
 
     fn output() -> Output {
         let pins = vec![

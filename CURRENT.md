@@ -31,13 +31,14 @@ append history (git has it).
    `be2a874d`), and pair by key; `svc:sola-kvm` is off in the profile.
    Next (Sola's session): `sola-kvm`'s capture and pairing; `sola-lock`,
    Settings → Login and Exit Sola tried on canto.
-4. **novus on Oath (R32–R35, R41, R43, [hosts/novus.md](hosts/novus.md)).**
-   `oath install` from the stick put desk output `cf238ebe3360` on the
-   500 GB on 2026-10-30; novus boots it to the desk on the card. Its AMI
-   firmware kept `UEFI OS` (its own entry for the 2 TB's old ESP), which
-   the preview said it would remove, and did not start Oath first until
-   Joshua set the order in setup. Next: home to the 2 TB, restored by
-   hand from the 4 TB; then the installer on AMI firmware.
+4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
+   `oath install` put `cf238ebe3360` on the 500 GB (2026-10-30); its
+   `oath update` then took the older published `fed6fb141a5e`, whose PID
+   1 has no `@home` (R45: installs now record their release, and releases
+   order by commit). R45 lets `/home` itself be a `host:local.mounts` key,
+   mounted at boot; canto's session copied /home to `@oath-home` on the
+   2 TB. Next: publish `d5a031ace04e` (Joshua's word), then canto's
+   session updates novus, re-syncs /home, sets the mount and reboots.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
@@ -56,7 +57,7 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `fdecb1ec3d68` (booted 2026-10-29), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
-| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; output `cf238ebe3360` (installed 2026-10-30 by `oath install`), `desk` with `pkg:nvidia`; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install` (`cf238ebe3360`), now `fed6fb141a5e` (`oath update`, generation 1), `desk` with `pkg:nvidia`; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `fed6fb141a5e` (not rebooted since 2026-10-28), `desk`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 Oath work happens on **buccina** (R39). **novus**, Joshua's desk, runs Oath since 2026-10-30.

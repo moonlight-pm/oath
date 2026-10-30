@@ -572,6 +572,20 @@ steps = [
 ]
 
 [[case]]
+name = "home-mount"
+about = "host:local.mounts names /home itself (R45): apply leaves /home as it is until the next boot; the boot mounts it before sshd and writes authorized_keys onto it, so the harness logs in again; with its source missing the boot falls back to @home or @'s /home, keys written; removing the entry leaves the boot's /home."
+scratch = 256
+steps = [
+  { run = "sudo mkfs.btrfs -q -L homes /dev/vdb && sudo mkdir -p /tmp/h && sudo mount /dev/vdb /tmp/h && sudo btrfs subvolume create /tmp/h/@oath-home >/dev/null && sudo touch /tmp/h/@oath-home/on-homes && sudo chown -R 1:1 /tmp/h/@oath-home && sudo umount /tmp/h && touch /home/on-root && sudo oath set host:local mounts='{\"/home\": {\"source\": \"LABEL=homes\", \"options\": \"subvol=@oath-home,noatime\"}}' && sudo oath apply host:local && ls /home", expect = ["/home is LABEL=homes from the next boot", "applied generation", "on-root"], reject = ["on-homes"] },
+  { reboot = "catalog" },
+  { run = "ls -a /home; grep ' /home ' /proc/self/mountinfo; test -s /home/.ssh/authorized_keys && echo KEYS; stat -c '%u:%g %n' /home /home/.ssh; oath diff host:local; oath logs | grep 'mount: /home'", expect = ["on-homes", "/@oath-home /home rw,noatime", "KEYS", "1:1 /home", "1:1 /home/.ssh", "in-sync", "mount: /home (LABEL=homes)"], reject = ["on-root"] },
+  { run = "sudo oath set host:local mounts='{\"/home\": {\"source\": \"LABEL=nosuchdisk\"}}' && sudo oath apply host:local", expect = ["/home is LABEL=nosuchdisk from the next boot", "applied generation"] },
+  { reboot = "catalog" },
+  { run = "ls -a /home; test -s /home/.ssh/authorized_keys && echo KEYS; oath logs | grep 'mount: /home'", expect = ["on-root", "KEYS", "/home is not LABEL=nosuchdisk this boot"], reject = ["on-homes"] },
+  { run = "sudo oath set host:local mounts='{}' && sudo oath apply host:local && ls /home", expect = ["applied generation", "on-root"] },
+]
+
+[[case]]
 name = "modprobe-helper"
 about = "The kernel loads a filesystem module on demand through /lib/oath/modprobe."
 metal = true

@@ -79,6 +79,7 @@ pub fn make(o: &Output, dir: &Path) -> Result<Made> {
         output: o.id.clone(),
         profile: profile.to_string(),
         published: oath_core::now_rfc3339(),
+        committed: committed(&manifest),
         bundle: Bundle { hash: oath_core::file_hash(&bytes), size: bytes.len() as u64 },
         init: oath_core::file_hash(&fs::read(o.file("stage/lib/oath/init"))?),
         pinned: pinned(&manifest),
@@ -112,9 +113,26 @@ pub fn make(o: &Output, dir: &Path) -> Result<Made> {
     Ok(Made { output: o.id.clone(), profile: profile.to_string(), bundle, release: path, sig })
 }
 
+/// When the commit pkg:oath in `manifest` was built from was made (RFC
+/// 3339, UTC), as this checkout's git knows it: the order of outputs
+/// (`oath_core::update::newer`). None when git does not have the commit.
+pub(crate) fn committed(manifest: &Value) -> Option<String> {
+    let commit = manifest["packs"]["oath"]["commit"].as_str()?.trim_end_matches("-dirty");
+    let out = run_out(
+        Command::new("git")
+            .arg("-C")
+            .arg(crate::util::repo_root())
+            .args(["show", "-s", "--format=%ct", commit]),
+    )
+    .ok()?;
+    let secs: i64 = out.trim().parse().ok()?;
+    chrono::DateTime::from_timestamp(secs, 0)
+        .map(|t| t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+}
+
 /// The output's pins of the packs it pins from elsewhere (R28): a machine
 /// still at one moves with the next output.
-fn pinned(manifest: &Value) -> BTreeMap<String, String> {
+pub(crate) fn pinned(manifest: &Value) -> BTreeMap<String, String> {
     manifest["pinned"]
         .as_array()
         .into_iter()

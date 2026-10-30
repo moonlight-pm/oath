@@ -208,6 +208,17 @@ overlay and its recipes built (novus's NVIDIA driver).
   removed the stand-in, kept OVMF's nine entries; the other disk's
   sha256 held; the firmware then started the target, whose 21 services
   ran (`svc:screen` held for the desk).
+- The release record (R45, built 2026-10-30): `cargo make install`
+  writes `/oath/output.json` for the output it installs (its id,
+  profile, PID 1's hash, pins and `committed`, with `published` empty
+  when it was never published), and `oath install` copies it with the
+  system. Before, an install had none, so `oath update` could not order
+  the release it was offered against the one installed: novus, installed
+  from the unpublished `cf238ebe3360`, was moved back to `fed6fb141a5e`
+  and lost `@home`'s mount. The `oath install` rehearsal requires it.
+  Desk output `d5a031ace04e` (R44's rivulet, R45) passes 64/64, the
+  `oath install` rehearsal, and updates from `fed6fb141a5e` (novus,
+  buccina) and `fdecb1ec3d68` with Steam (canto, rebuilt bit for bit).
 - On metal (novus, an ASUS ProArt X570-Creator with AMI firmware,
   2026-10-30): `oath install 21385X801116 --confirm` from the stick put
   `cf238ebe3360` on the 500 GB, which boots to the desk. Two gaps, not
@@ -252,7 +263,10 @@ publishes each output it checked, and each machine moves itself:
   bundle and says what moves. `sudo oath update --confirm [--reboot]
   [--output <id>] [--esp <node>]`:
   1. Refuses a release older than `/oath/output.json` (the release the
-     machine runs) unless `--output` names it, a bundle whose hash is
+     machine runs, which every install writes too, R45), or one whose
+     order it cannot tell, unless `--output` names it: releases order by
+     `committed` (the time of the commit pkg:oath was built from), else
+     by `published`; a bundle whose hash is
      not the release's, pending changes, an apply on probation, and
      moves that would fail apply's needs check (`check_pkg_needs` on
      the packages as the moves leave them; the preview runs it too).

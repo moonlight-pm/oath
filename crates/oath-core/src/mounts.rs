@@ -1,9 +1,10 @@
 //! `host:local.mounts`: filesystems by label or UUID at paths under
-//! `/mnt` and `/home`. util-linux does the work: `findfs` says whether a
-//! source is plugged in, `mount` and `umount` act. PID 1 converges at boot
-//! and again when a disk appears, and never unmounts until shutdown;
-//! `oath apply` also remounts changed options and unmounts what left the
-//! map.
+//! `/mnt` and `/home`, and at `/home` itself. util-linux does the work:
+//! `findfs` says whether a source is plugged in, `mount` and `umount` act.
+//! PID 1 converges at boot and again when a disk appears, and never
+//! unmounts until shutdown; `oath apply` also remounts changed options and
+//! unmounts what left the map. `/home` itself is mounted only at boot (see
+//! [`HOME`]).
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -17,6 +18,13 @@ const UMOUNT: &str = "/bin/umount";
 
 const SOURCES: &[&str] = &["LABEL=", "UUID=", "PARTLABEL=", "PARTUUID="];
 
+/// Home on another volume (R45). PID 1 mounts it only at boot, before
+/// anything reads /home (sshd's keys, the seat's session), in place of
+/// `@home` (R43); an apply or a disk appearing leaves /home as it is, and a
+/// change waits for the next boot. If its source is not there at boot, PID 1
+/// mounts `@home` (or leaves /home in `@`) and writes sshd's keys there.
+pub const HOME: &str = crate::seat::HOME;
+
 /// Options that change what a mount is, not how it behaves: converge
 /// decides those.
 const REFUSED_OPTIONS: &[&str] = &["bind", "rbind", "move", "remount"];
@@ -24,8 +32,8 @@ const REFUSED_OPTIONS: &[&str] = &["bind", "rbind", "move", "remount"];
 /// Why `path` cannot be a mount point, if it cannot.
 pub fn check_path(path: &str) -> Option<String> {
     let under = ["/mnt/", "/home/"].iter().any(|r| path.len() > r.len() && path.starts_with(r));
-    if !under {
-        return Some(format!("`{path}` is not under /mnt or /home"));
+    if !under && path != HOME {
+        return Some(format!("`{path}` is not under /mnt or /home, nor /home itself"));
     }
     let plain = path.len() <= 255
         && !path.ends_with('/')
@@ -77,20 +85,29 @@ pub struct Converged {
     pub waiting: Vec<String>,
     /// What failed, one line each.
     pub errors: Vec<String>,
+    /// `/home`, when the map's entry is not what is mounted there now: it
+    /// takes effect at the next boot (not at boot itself).
+    pub next_boot: Vec<String>,
 }
 
 /// Mount what `desired` names and is plugged in. Against `previous` (the
 /// last applied map): unmount a path that left the map or changed its
 /// source, and remount one whose options changed (an option taken out
 /// stays until the filesystem is mounted again). PID 1 passes `previous`
-/// equal to `desired`, so it only mounts.
+/// equal to `desired`, so it only mounts. `/home` is mounted only when
+/// `boot` (PID 1's boot), and otherwise never mounted, remounted or
+/// unmounted.
 pub fn converge(
     desired: &BTreeMap<String, Mount>,
     previous: &BTreeMap<String, Mount>,
+    boot: bool,
 ) -> Converged {
     let mut out = Converged::default();
     // Deepest first.
     for (path, was) in previous.iter().rev() {
+        if path == HOME && !boot {
+            continue;
+        }
         let gone = desired.get(path).is_none_or(|m| m.source != was.source);
         if gone && is_mounted(path) {
             if let Err(e) = run(UMOUNT, &[path]) {
@@ -100,6 +117,16 @@ pub fn converge(
     }
     // A parent before what is under it: `/mnt/a` sorts before `/mnt/a/b`.
     for (path, m) in desired {
+        if path == HOME && !boot {
+            let now = mounted_from(path, m);
+            if now {
+                out.mounted.insert(path.clone(), m.clone());
+            }
+            if !now || previous.get(path).is_some_and(|p| p.options != m.options) {
+                out.next_boot.push(path.clone());
+            }
+            continue;
+        }
         if is_mounted(path) {
             let changed =
                 previous.get(path).is_some_and(|p| p.source == m.source && p.options != m.options);
@@ -144,6 +171,31 @@ pub fn is_mounted(path: &str) -> bool {
     mount_points(&fs::read_to_string("/proc/self/mountinfo").unwrap_or_default()).any(|p| p == path)
 }
 
+/// Is the topmost mount at `path` the filesystem `m` names, and its
+/// `subvol=` if the options name one?
+pub fn mounted_from(path: &str, m: &Mount) -> bool {
+    let Some(dev) = find(&m.source) else { return false };
+    let subvol = m
+        .options
+        .split(',')
+        .find_map(|o| o.strip_prefix("subvol="))
+        .map(|s| format!("/{}", s.trim_start_matches('/')));
+    top_mount(&fs::read_to_string("/proc/self/mountinfo").unwrap_or_default(), path)
+        .is_some_and(|(root, source)| source == dev && subvol.is_none_or(|s| s == root))
+}
+
+/// The root (field 4) and source of the last mountinfo line at `path`.
+fn top_mount<'a>(mountinfo: &'a str, path: &str) -> Option<(&'a str, &'a str)> {
+    mountinfo.lines().rev().find_map(|l| {
+        let f: Vec<&str> = l.split_whitespace().collect();
+        let dash = f.iter().position(|x| *x == "-")?;
+        if f.get(4) != Some(&path) {
+            return None;
+        }
+        Some((*f.get(3)?, *f.get(dash + 2)?))
+    })
+}
+
 /// Field 5 of each mountinfo line. Paths here have no spaces, so the
 /// kernel's `\040` escapes never matter.
 fn mount_points(mountinfo: &str) -> impl Iterator<Item = &str> {
@@ -177,7 +229,8 @@ mod tests {
     fn paths_under_mnt_and_home_only() {
         assert_eq!(check_path("/mnt/warehouse"), None);
         assert_eq!(check_path("/home/games/steam"), None);
-        for bad in ["/mnt", "/mnt/", "/home", "/etc/x", "/oath/x", "mnt/x", "/mntx/y", "/"] {
+        assert_eq!(check_path("/home"), None);
+        for bad in ["/mnt", "/mnt/", "/home/", "/etc/x", "/oath/x", "mnt/x", "/mntx/y", "/"] {
             assert!(check_path(bad).unwrap().contains("not under"), "{bad}");
         }
         for bad in ["/mnt/a/", "/mnt//a", "/mnt/../etc", "/mnt/./a", "/mnt/a b"] {
@@ -203,6 +256,15 @@ mod tests {
         for bad in ["noatime,", "a b", "x;y", "bind", "ro,remount", "rbind"] {
             assert!(check_options(bad).is_some(), "{bad}");
         }
+    }
+
+    #[test]
+    fn top_mount_is_the_last_at_the_path() {
+        let info = "32 2 0:29 /@ / rw - btrfs /dev/sda2 rw\n\
+                    41 32 0:29 /@home /home rw - btrfs /dev/sda2 rw\n\
+                    42 41 8:34 /@oath-home /home rw,noatime - btrfs /dev/sdc2 rw\n";
+        assert_eq!(top_mount(info, "/home"), Some(("/@oath-home", "/dev/sdc2")));
+        assert_eq!(top_mount(info, "/mnt/x"), None);
     }
 
     #[test]

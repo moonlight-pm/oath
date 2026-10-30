@@ -981,8 +981,17 @@ fn mount_toplevel() {
 /// An install's home (R43): `@home` beside `@`, so no generation or boot
 /// snapshot holds it and an older boot runs on today's files, mounted at
 /// /home before anything reads it. A machine installed before 2026-10-30
-/// keeps /home in `@`.
+/// keeps /home in `@`. When `host:local.mounts` names /home (R45),
+/// mount_host mounts that instead, once the disks are found, and this
+/// only stands in if its source is missing.
 fn mount_home() {
+    if host_mounts().iter().any(|p| p == oath_core::mounts::HOME) {
+        return;
+    }
+    mount_home_subvol();
+}
+
+fn mount_home_subvol() {
     let home = oath_core::seat::HOME;
     if !Path::new(BTRFS_TOP).join("@home").is_dir() || mounted(home) {
         return;
@@ -1062,7 +1071,7 @@ pub(crate) fn mount_host(boot: bool) {
     if host.mounts.is_empty() {
         return;
     }
-    let m = oath_core::mounts::converge(&host.mounts, &host.mounts);
+    let m = oath_core::mounts::converge(&host.mounts, &host.mounts, boot);
     let mut actual = serde_json::from_value::<Host>(obj.actual)
         .unwrap_or_else(|_| Host { mounts: Default::default(), ..host.clone() });
     for (path, mount) in &m.mounted {
@@ -1074,6 +1083,14 @@ pub(crate) fn mount_host(boot: bool) {
     if boot {
         for path in &m.waiting {
             log(&format!("mount: {path} waits for {}", host.mounts[path].source));
+        }
+        // Home on another volume (R45) that did not mount: the boot goes on
+        // with @home or @'s /home, and sshd's keys are written there.
+        let home = oath_core::mounts::HOME;
+        if let Some(want) = host.mounts.get(home).filter(|_| !m.mounted.contains_key(home)) {
+            mount_home_subvol();
+            log(&format!("mount: {home} is not {} this boot; it is @home or @'s", want.source));
+            tel("init", "home", json!({ "path": home, "ok": false, "source": want.source }));
         }
     }
     for e in &m.errors {

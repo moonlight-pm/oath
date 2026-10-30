@@ -118,7 +118,8 @@ after i915) was never taken.
 
 ## Mounts (built)
 
-`host:local.mounts` maps a path under `/mnt` or `/home` to a `source`
+`host:local.mounts` maps a path under `/mnt` or `/home`, or `/home`
+itself (R45), to a `source`
 (`LABEL=`, `UUID=`, `PARTLABEL=` or `PARTUUID=`; never `/dev/sdX`,
 which moves between ports and boots) and mount(8) `options`. util-linux
 does the work: `findfs` says whether the source is plugged in, `mount`
@@ -137,6 +138,16 @@ is on it.
   error. An absent disk is not: apply prints `<path> waits for
   <source>`. `oath undo` converges the same way.
 - Status (`oath get host:local --actual`) lists only what is mounted.
+- `/home` itself (R45, built 2026-10-30) is home on another volume.
+  PID 1 mounts it only at boot, at the same point, before `ensure_home`,
+  sshd's keys (`ssh:local`) and the first service, and does not mount
+  `@home` (R43) then. Apply and later discoveries leave `/home` alone:
+  apply prints `/home is <source> from the next boot` while the entry is
+  not what is mounted there (the topmost mount's device and `subvol=`).
+  A source missing or failing at boot: PID 1 mounts `@home` (or leaves
+  `@`'s /home), logs `mount: /home is not <source> this boot`, and
+  writes the keys there. Shutdown unmounts it after what is under it.
+  Check case `home-mount`.
 
 ## Unix floor (built)
 

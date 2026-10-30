@@ -80,10 +80,14 @@ pub struct Host {
     /// person adds one; an agent does not.
     #[serde(default)]
     pub publishers: Vec<String>,
-    /// Filesystems to mount: a path under /mnt or /home to its source.
-    /// PID 1 mounts each at boot and when its disk appears; apply mounts,
-    /// remounts and unmounts. A source that is not plugged in waits, and
-    /// is not an error. Status lists only what is mounted now.
+    /// Filesystems to mount: a path under /mnt or /home, or /home itself
+    /// (home on another volume, R45), to its source. PID 1 mounts each at
+    /// boot and when its disk appears; apply mounts, remounts and unmounts.
+    /// /home itself only at boot, before sshd and the desk, in place of
+    /// `@home`: an apply says it waits for the next boot, and a missing
+    /// source leaves `@home` (or `@`'s /home) with sshd's keys written. A
+    /// source that is not plugged in waits, and is not an error. Status
+    /// lists only what is mounted now.
     #[serde(default)]
     pub mounts: BTreeMap<String, Mount>,
     /// Kernel module parameters for this machine, by module name

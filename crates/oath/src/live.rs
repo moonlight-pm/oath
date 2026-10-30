@@ -121,9 +121,16 @@ impl ApplyHooks for Live {
         let mut mounts = Default::default();
         if self.catalog_root == Path::new("/oath") {
             let was = previous.map(|p| p.mounts.clone()).unwrap_or_default();
-            let m = oath_core::mounts::converge(&desired.mounts, &was);
+            let m = oath_core::mounts::converge(&desired.mounts, &was, false);
             for path in &m.waiting {
                 eprintln!("host:local: {path} waits for {}", desired.mounts[path].source);
+            }
+            for path in &m.next_boot {
+                eprintln!(
+                    "host:local: {path} is {} from the next boot: PID 1 mounts it before sshd \
+                     and the desk, and writes sshd's keys onto it",
+                    desired.mounts[path].source
+                );
             }
             if !(m.waiting.is_empty() && m.errors.is_empty() && was == desired.mounts) {
                 let paths: Vec<_> = m.mounted.keys().collect();

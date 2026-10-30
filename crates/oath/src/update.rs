@@ -4,7 +4,9 @@
 //! 1. Fetch `out/<profile>.json` (or `out/<id>.json` for `--output`) and
 //!    its signature from the first origin whose release a key in
 //!    `host:local.publishers` signed. A release older than the one this
-//!    machine runs (`/oath/output.json`) is refused unless named.
+//!    machine runs (`/oath/output.json`, which an install writes too) is
+//!    refused unless named, and so is one whose order is unknown
+//!    (`oath_core::update::newer`).
 //! 2. Fetch its bundle and check it against the release's hash.
 //! 3. Say what moves. With `--confirm`, as root:
 //!    The packages as the moves leave them must pass the apply's needs
@@ -125,11 +127,24 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     );
     let same = current.as_ref().is_some_and(|c| c.output == release.output);
     if let Some(c) = current.as_ref().filter(|_| !same && opts.output.is_none()) {
-        if c.published > release.published {
+        let when = |r: &Release| match (&r.committed, r.published.as_str()) {
+            (Some(t), _) => format!("built from a commit of {t}"),
+            (None, "") => "never published".to_string(),
+            (None, p) => format!("published {p}"),
+        };
+        let why = match up::newer(c, &release) {
+            Some(false) => None,
+            Some(true) => Some("newer than"),
+            None => Some("of unknown order against"),
+        };
+        if let Some(why) = why {
             return Err(Error::hint(
                 format!(
-                    "this machine runs output {} (published {}), newer than {} ({})",
-                    c.output, c.published, release.output, release.published
+                    "this machine runs output {} ({}), {why} {} ({})",
+                    c.output,
+                    when(c),
+                    release.output,
+                    when(&release)
                 ),
                 format!("`oath update --output {}` takes it anyway", release.output),
             ));

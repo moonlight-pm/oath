@@ -55,6 +55,18 @@ pub(crate) struct Payload {
     initrd_install: PathBuf,
     stage: PathBuf,
     efi: PathBuf,
+    /// `/oath/output.json` for the new machine ([`install_record`]).
+    record: String,
+}
+
+impl Payload {
+    /// The output it installs, as its record names it.
+    pub(crate) fn output_id(&self) -> String {
+        serde_json::from_str::<serde_json::Value>(&self.record)
+            .ok()
+            .and_then(|v| v["output"].as_str().map(String::from))
+            .unwrap_or_default()
+    }
 }
 
 #[derive(Clone)]
@@ -123,6 +135,7 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
         initrd_install: pack::bake_install_keys(&o, &run_dir, &keys)?,
         stage: o.file("stage"),
         efi: o.file("BOOTX64.EFI"),
+        record: install_record(&o)?,
     };
     if opts.usb {
         write_usb_installer(out, &tools, &p, &opts)?;
@@ -555,6 +568,26 @@ pub(crate) fn wait_ssh(r: &Remote, timeout: Duration) -> Result<()> {
 /// Partition, copy the packed root, write the catalog and the ESP. Returns
 /// the installed system's SSH host key (`ssh-ed25519 AAAA…`), made here so
 /// the first login to the new system can be checked against it.
+/// The record of the release a new machine runs (`/oath/output.json`),
+/// as `oath update` writes it, for an output that may never be published
+/// (`published` empty): its commit's time orders it against the releases
+/// `oath update` is offered, so an install from a newer, unpublished
+/// output is not moved back to an older release (novus, 2026-10-30), and
+/// its pins are the output's, so the first update moves them.
+fn install_record(o: &output::Output) -> Result<String> {
+    let manifest: serde_json::Value = serde_json::from_slice(&fs::read(o.file("manifest.json"))?)?;
+    let release = oath_core::update::Release {
+        output: o.id.clone(),
+        profile: manifest["profile"].as_str().context("the manifest names no profile")?.into(),
+        published: String::new(),
+        committed: crate::release::committed(&manifest),
+        bundle: Default::default(),
+        init: oath_core::file_hash(&fs::read(o.file("stage/lib/oath/init"))?),
+        pinned: crate::release::pinned(&manifest),
+    };
+    Ok(serde_json::to_string_pretty(&release)? + "\n")
+}
+
 fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
     let (p1, p2) = parts(&opts.disk);
     let hostname = opts.hostname.clone().unwrap_or_else(|| "oath".into());
@@ -605,6 +638,7 @@ fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
     )?;
 
     write_catalog_overlay(opts, &hostname, r)?;
+    put_text(r, &format!("/mnt/oath/{}", oath_core::update::RECORD), &p.record)?;
     let host_key = make_host_key(r, stage)?;
 
     ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/loader/entries")?;

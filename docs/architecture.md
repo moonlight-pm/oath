@@ -25,13 +25,15 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
-    mount subvol=@home at /home when the root has one (R43)
+    mount subvol=@home at /home when the root has one (R43), unless
+      host:local.mounts names /home (R45: mounted with the disks below)
     tmpfs at /oath/status (status; no snapshot holds it)
     seed only if /oath/objects is missing; regenerate a missing INDEX.md;
       migrate a catalog from before R14 (old actual.json → applied.json)
     under /oath/.lock: apply host, net (one-shot dhcpcd for dhcp), ssh
       from their applied specs (applied.json); discover dev:* from sysfs;
-      mount the host:local.mounts whose disk is there;
+      mount the host:local.mounts whose disk is there (/home itself only
+      here, else @home as the fallback); write sshd's keys into /home;
       observe pkg:*, plan:* and snap:current into status/
     listen on /oath/run/init.sock; start svc:* from applied.json in
       `wants` order (a cycle skips only its members) and the DHCP client;
@@ -76,7 +78,7 @@ btrfs
             loader ld-linux-x86-64.so.2 and every linked package's libraries;
             no /lib64. oath/, modules/ and firmware/ are not links. A pack's
             lib32/ (i386, R29) is never linked: no /lib32 or ld-linux.so.2
-/home       the `home` account (uid 1); SSH logs in here; `@home` when the root has one
+/home       the `home` account (uid 1); SSH logs in here; `@home` when the root has one, or host:local.mounts' /home (R45)
 /var/empty  `void`'s home (uid 65534, R36): empty, root's; sshd's and dhcpcd's chroot
 /run/user/1/oath-steam/<key>/  Steam's sandbox tree (pkg:steam's bin/steam, R29):
             a merged /usr of the root's links, every pack's lib32/ and share/,
@@ -92,7 +94,7 @@ btrfs
   status/<kind>/<name>.json  actual: tmpfs mounted by PID 1, rebuilt each boot
   log/apply.jsonl          one line per apply (ok, error, refused), undo or keep
   probation.json           the apply on probation (lockout class), while open
-  output.json              the release this machine runs, from `oath update` (R38)
+  output.json              the release this machine runs, from `oath update` (R38) or the install (R45)
   log/init.log             PID 1's messages (`oath logs`)
   log/svc/<name>.log       each service's stdout+stderr, UTC-stamped,
                            rotated to .1 past 256 KiB (`oath logs svc:<name>`)

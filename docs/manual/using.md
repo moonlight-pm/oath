@@ -125,6 +125,22 @@ labels and UUIDs). A device name such as `/dev/sdb1` is refused: it
 changes with the port and the boot. A machine's mounts belong in its
 install overlay (`hosts/<name>.json`).
 
+Home itself can live on another volume, a btrfs subvolume of another
+disk, say:
+
+```
+sudo oath set host:local mounts='{"/home": {"source": "UUID=580d861c-4b96-4017-856c-0b55ff4e58ce", "options": "subvol=@oath-home,noatime,compress=zstd:1"}}'
+sudo oath apply host:local
+```
+
+The apply changes nothing yet: it prints `/home is … from the next
+boot`. At the next boot PID 1 mounts it before anything reads /home,
+in place of the install's `@home`, and writes sshd's keys onto it. Copy
+what /home holds into the new place first (`cp -a`): the old home stays
+where it was, not mounted. If the disk is missing at boot, the machine
+comes up on the old home, keys written, and logs it (`oath logs | grep
+'mount: /home'`).
+
 ## Kernel module options
 
 A machine's hardware workarounds are module parameters in

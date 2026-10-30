@@ -14,7 +14,8 @@
 //! 5. Boot again with the same firmware variables: the firmware must start
 //!    the target first (its new host key answers, its root UUID is on the
 //!    command line), with `@home` at /home, generation 0, the catalog in
-//!    sync, `authorized_keys` written, and the stand-in entry gone.
+//!    sync, `authorized_keys` written, the stand-in entry gone, and
+//!    `/oath/output.json` naming the output (R45).
 
 use std::fs;
 use std::io::{Read, Write};
@@ -181,6 +182,11 @@ pub(crate) fn rehearse(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) 
             bail!("the install is not at generation 0: {gen}");
         }
         ssh_out(&live, "test -s /home/.ssh/authorized_keys && test ! -e /oath/log/init.log.1")?;
+        // R45: the install's record, so `oath update` orders against it.
+        let record = ssh_out(&live, "cat /oath/output.json")?;
+        if !record.contains(&format!("\"output\": \"{}\"", p.output_id())) {
+            bail!("the install's /oath/output.json does not name its output: {record}");
+        }
         let svcs = ssh_out(&live, r#"cd /oath/status/svc && grep -o '"state": *"[a-z]*"' *.json"#)?;
         eprintln!("services on the target:\n{svcs}");
         Ok(())
