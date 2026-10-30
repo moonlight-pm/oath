@@ -184,6 +184,7 @@ mod tests {
             bind_low_ports: false,
             keep_children: false,
             rtprio: None,
+            seat: None,
         }
     }
 

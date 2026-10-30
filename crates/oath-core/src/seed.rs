@@ -325,10 +325,15 @@ mod tests {
     }
 
     #[test]
-    fn desk_turns_the_screen_off_and_ships_rivulet() {
+    fn desk_gives_the_screen_to_the_console_and_ships_rivulet() {
         let p = Profile::load("desk").unwrap();
-        assert_eq!(p.objects["svc:screen"]["enabled"], json!(false));
+        // R42: the screen's shell is the console, which has the seat once
+        // the desk ends; rivulet runs while the desk has it.
+        assert_eq!(p.objects["svc:screen"]["enabled"], json!(true));
+        assert_eq!(p.objects["svc:screen"]["seat"], json!("console"));
         assert_eq!(p.objects["svc:screen"]["user"], json!("home"));
+        assert_eq!(p.objects["svc:rivulet"]["seat"], json!("desk"));
+        assert_eq!(p.objects["svc:login"]["exec"], json!(["/lib/oath/login"]));
         assert_eq!(p.objects["svc:rivulet"]["wants"], json!(["svc:seatd"]));
         let pkgs = p.present_pkgs();
         assert!(["rivulet", "seatd", "mesa", "bash"].iter().all(|n| pkgs.contains(&n.to_string())));

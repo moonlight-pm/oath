@@ -34,7 +34,7 @@ r=target/x86_64-unknown-linux-gnu/release
 mkdir -p /out/bin /out/lib/oath /out/boot
 cp $r/oath /out/bin/oath
 cp $r/oath-init /out/lib/oath/init
-cp $r/serial-login $r/screen-login $r/sudo /out/lib/oath/
+cp $r/serial-login $r/screen-login $r/sudo $r/login /out/lib/oath/
 cp target/x86_64-unknown-uefi/release/oath-efi.efi /out/boot/BOOTX64.EFI
 for f in /out/bin/oath /out/lib/oath/*; do
 	if readelf -lW "$f" | grep -q INTERP; then

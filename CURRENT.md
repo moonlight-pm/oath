@@ -6,15 +6,13 @@ append history (git has it).
 
 **As of:** 2026-10-29 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R41 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R42 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **Pull updates (R38, Joshua 2026-10-28).** Machines update
-   themselves: `cargo make publish` puts the newest checked output on
-   the bucket, signed by buccina's key (`base` trusts it), and `sudo
-   oath update --confirm --reboot` takes it (also in `oath mcp`): every
-   pack fetched first, Sola's moved while at the pins its release lists.
+1. **Pull updates (R38, Joshua 2026-10-28).** `cargo make publish` puts
+   the newest checked output on the bucket, signed by buccina's key, and
+   `sudo oath update --confirm --reboot` takes it (also in `oath mcp`).
    buccina runs `c4cd226761d3` (2026-10-29, not rebooted), canto
    `e433824d38d0`. Gap: an output's changed `svc` fields (`rtprio`)
    reach a machine only by `oath set`. Next: expat 2.10.0 (11-02).
@@ -29,7 +27,9 @@ append history (git has it).
    `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`); Sola's
    packs from `83df4558` are built on it and pinned (R37 done
    2026-10-29), in desk output `c4cd226761d3`; canto and buccina run
-   both. Next: the desk's gaps ([docs/capabilities.md](docs/capabilities.md)).
+   both. R42 (2026-10-29): `svc:login`, the seat's turns, `oath
+   password`, `oath desk`, QEMU-checked ([docs/specs/login.md](docs/specs/login.md)).
+   Next: Sola's `sola-lock` and Settings → Login against it.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe

@@ -781,6 +781,32 @@ steps = [
 ]
 
 [[case]]
+name = "login-and-seat"
+about = "svc:login (R42) keeps home's password, hashed and root's: `oath password` sets, changes and removes it; a wrong one is refused after a delay, a right one passes; auto-login is host:local's, set with the password; `oath desk stop` gives the seat to the console (rivulet held, svc:screen running) and `oath desk` gives it back. QEMU only: it stops the desk."
+profile = "desk"
+steps = [
+  { run = '''cat > /tmp/login-call.py <<'EOF'
+import json, socket, sys, time
+s = socket.socket(socket.AF_UNIX)
+s.connect("/oath/run/login.sock")
+t = time.time()
+s.sendall((sys.argv[1] + "\n").encode())
+print(s.makefile().readline().strip(), "after-delay" if time.time() - t >= 0.9 else "at-once")
+EOF
+oath get svc:login | grep '  state:'; oath password --status''', expect = ["state: \"running\"", "password: none", "autologin: on", "seat: desk"] },
+  { run = "printf 'oath-check-1\\n' | oath password && sudo ls -l /oath/login/ && sudo cat /oath/login/password", expect = ["password set", "-rw------- 1 root root", "$argon2id$v=19$m=65536,t=3,p=1$"] },
+  { run = "cat /oath/login/password", fails = true, expect = ["Permission denied"] },
+  { run = '''python3 /tmp/login-call.py '{"call":"check","password":"nope"}'; python3 /tmp/login-call.py '{"call":"check","password":"oath-check-1"}' ''', expect = ["{\"ok\":true,\"right\":false} after-delay", "{\"ok\":true,\"right\":true} at-once"] },
+  { run = "printf 'oath-check-1\\noath-check-2\\n' | oath password && oath password --status", expect = ["password set", "password: set"] },
+  { run = "printf 'oath-check-1\\nother\\n' | oath password", fails = true, expect = ["wrong password"] },
+  { run = '''python3 /tmp/login-call.py '{"call":"autologin","on":false,"password":"oath-check-2"}' && oath get host:local | grep autologin && oath password --status''', expect = ["{\"ok\":true}", "autologin: false", "autologin: off"] },
+  { run = '''python3 /tmp/login-call.py '{"call":"autologin","on":true,"password":"wrong"}'; python3 /tmp/login-call.py '{"call":"autologin","on":true,"password":"oath-check-2"}' && oath password --status''', expect = ["{\"error\":\"wrong password\",\"ok\":false}", "autologin: on"] },
+  { run = "oath desk stop && sleep 3 && cat /oath/run/seat && oath get svc:rivulet | grep -E '  (state|reason):' && oath get svc:screen | grep '  state:' && oath diff | tail -1", expect = ["the console has the seat", "console", "state: \"held\"", "the console has the seat; `oath desk` gives it to the desk", "state: \"running\"", "in-sync"] },
+  { run = "oath desk && sleep 3 && cat /oath/run/seat && oath get svc:rivulet | grep '  state:' && oath get svc:screen | grep '  state:'", expect = ["the desk has the seat", "desk", "state: \"running\"", "state: \"held\""] },
+  { run = "printf 'oath-check-2\\n\\n' | oath password && oath password --status && sudo ls /oath/login/", expect = ["password removed", "password: none"], reject = ["password\n"] },
+]
+
+[[case]]
 name = "desk-vulkan"
 about = "The Vulkan loader finds RADV's manifest and the device-select layer's in Mesa's slot and loads both from /lib, also for a program that looks in CEF's Release first (as one built against it does): pkg:cef carries no loader of its own. QEMU has no AMD GPU, so there RADV lists no device and vulkaninfo fails after loading them."
 metal = true

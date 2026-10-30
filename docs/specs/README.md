@@ -16,6 +16,7 @@ in [../decisions.md](../decisions.md).
 | [devices.md](devices.md) | `dev`, modules, firmware | partly built |
 | [boot-and-install.md](boot-and-install.md) | The one kernel, `oath-efi`, profiles, overlays, install | partly built |
 | [desk.md](desk.md) | The graphical session: rivulet, wlroots, Mesa, Xwayland, the seat, Sola | running on canto |
+| [login.md](login.md) | `home`'s password, auto-login, the seat's turns (desk, console), `svc:login`'s contract with Sola (R42) | built (QEMU) |
 | [steam.md](steam.md) | Steam: the recipe, its sandbox, the i386 packages | partly built (canto) |
 | [agent.md](agent.md) | `oath mcp`: the verbs as MCP tools over SSH; the real-model acceptance check | partly built (phase 7) |
 

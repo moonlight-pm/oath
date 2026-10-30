@@ -138,6 +138,7 @@ impl ApplyHooks for NullHooks {
             publishers: desired.publishers.clone(),
             mounts: desired.mounts.clone(),
             module_options: desired.module_options.clone(),
+            autologin: desired.autologin,
         })
     }
     fn notify_init(&self) -> Result<()> {

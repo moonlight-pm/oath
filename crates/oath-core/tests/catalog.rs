@@ -56,6 +56,7 @@ impl ApplyHooks for MemHooks {
             publishers: desired.publishers.clone(),
             mounts: desired.mounts.clone(),
             module_options: desired.module_options.clone(),
+            autologin: desired.autologin,
         })
     }
     fn notify_init(&self) -> Result<()> {
@@ -128,6 +129,7 @@ fn seed_lists_host() {
         "svc:serial",
         "svc:sshd",
         "svc:time",
+        "svc:login",
         "pkg:bash",
         "pkg:glibc",
         "pkg:dhcpcd",
@@ -157,9 +159,9 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 5 svc and host, 39 packages, three recipes (two packages and a plan
+    // 6 svc and host, 39 packages, three recipes (two packages and a plan
     // each), net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 56, "{ids:?}");
+    assert_eq!(ids.len(), 57, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
@@ -1210,7 +1212,8 @@ fn new_fills_in_what_the_type_defaults() {
                 "env",
                 "bind_low_ports",
                 "keep_children",
-                "rtprio"
+                "rtprio",
+                "seat"
             ]
             .contains(&k.as_str()),
             "{k}"
@@ -1221,6 +1224,8 @@ fn new_fills_in_what_the_type_defaults() {
     for bad in [json!(0), json!(100), json!(-1), json!("95")] {
         assert!(set(&cat, "svc:short", "rtprio", bad.clone()).is_err(), "{bad}");
     }
+    assert!(set(&cat, "svc:short", "seat", json!("console")).is_ok());
+    assert!(set(&cat, "svc:short", "seat", json!("tty2")).is_err());
     assert!(set(&cat, "svc:short", "nonsense", json!(true)).is_err());
 }
 

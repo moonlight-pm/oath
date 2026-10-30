@@ -74,7 +74,12 @@ The `desk` seed profile (R20) extends `base`:
 - `svc:rivulet` runs `rivulet -log-level info -c :` as `home`, wanting
   `svc:seatd`, with `LIBSEAT_BACKEND=seatd`. Its log is
   `oath logs svc:rivulet`.
-- `svc:screen` is off: the compositor owns tty1's display.
+- The seat has two turns (R42, [login.md](login.md)): rivulet and Sola's
+  seat services (`sola-river`, `sola-shell`, `sola-session`,
+  `sola-kvm`) are the desk's, and `svc:screen` the console's, held
+  while the desk has tty1. Exit Sola (or `oath desk stop`) hands tty1 to
+  the console; `oath desk` hands it back. `svc:login` keeps the
+  password Sola's lock screen asks for.
 - rivulet's 35 packages, `pkg:gcc` among them (Mesa's libstdc++).
 
 PID 1 does what udevd would for the seat: render nodes are mode 0666

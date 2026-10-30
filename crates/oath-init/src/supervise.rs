@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 use nix::sys::signal::{kill, Signal};
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::Pid;
+use oath_core::login::Seat;
 use oath_core::{now_rfc3339, tel, Catalog, Host, ObjectId, Svc, SvcRestart, DEFAULT_ROOT};
 use serde_json::{json, Value};
 
@@ -236,6 +237,16 @@ impl Supervisor {
                 wanted.insert(id, k.spec.clone());
             }
         }
+        // The seat (R42): a service of the other owner's turn is held, as
+        // if disabled, until the seat changes hands.
+        let seat = oath_core::login::Seat::current();
+        let mut held = HashSet::new();
+        for (id, spec) in wanted.iter_mut() {
+            if spec.enabled && spec.seat.is_some_and(|s| !s.runs_on(seat)) {
+                spec.enabled = false;
+                held.insert(id.clone());
+            }
+        }
 
         let running: Vec<(String, Svc, Program)> =
             self.kids.values().map(|k| (k.id.clone(), k.spec.clone(), k.program.clone())).collect();
@@ -305,7 +316,16 @@ impl Supervisor {
                 continue;
             }
             self.oneshot_done.remove(id);
-            if !self.running(id) {
+            if self.running(id) {
+                continue;
+            }
+            if held.contains(id) {
+                let why = match seat {
+                    Seat::Desk => "the desk has the seat; this runs while the console has it",
+                    Seat::Console => "the console has the seat; `oath desk` gives it to the desk",
+                };
+                self.write_actual_why(id, "held", None, Some(why));
+            } else {
                 self.write_actual(id, "stopped", None);
             }
         }
@@ -651,6 +671,7 @@ fn dhcp_spec() -> Svc {
         bind_low_ports: false,
         keep_children: false,
         rtprio: None,
+        seat: None,
     }
 }
 

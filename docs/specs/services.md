@@ -49,6 +49,10 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
   -20 itself. Absent: neither. `desk` gives `svc:pipewire` and
   `svc:pipewire-pulse` 95; PipeWire's module-rt then makes its data
   threads `SCHED_FIFO` (88) without RTKit or a system bus.
+- `seat` — `desk` or `console` (R42, [login.md](login.md)): PID 1 runs
+  the service only while that owner has the seat (`/oath/run/seat`, the
+  desk's at boot) and holds it otherwise, actual `state: "held"` with a
+  `reason`; apply counts held as converged. Absent: it runs either way.
 
 Actual: `state` (`running`, `restarting`, `stopped`, `failed`), `pid`,
 `restarts` (restarts this boot), `last_exit` (`{"code": n}` or

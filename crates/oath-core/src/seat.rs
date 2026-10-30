@@ -272,6 +272,7 @@ mod tests {
             publishers: Vec::new(),
             mounts: BTreeMap::new(),
             module_options: BTreeMap::new(),
+            autologin: true,
         };
         host.hosts.insert("novus".into(), "10.0.0.5".into());
         host.hosts.insert("nas".into(), "fd00::12".into());
@@ -297,6 +298,7 @@ mod tests {
             publishers: Vec::new(),
             mounts: BTreeMap::new(),
             module_options: BTreeMap::new(),
+            autologin: true,
         };
         assert_eq!(login_env(&host).get("TZ").map(String::as_str), Some("MST7MDT"));
         host.env.insert("TZ".into(), "UTC".into());

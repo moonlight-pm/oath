@@ -21,6 +21,10 @@ path = "src/bin/screen-login.rs"
 name = "sudo"
 path = "src/bin/sudo.rs"
 
+[[bin]]
+name = "login"
+path = "src/bin/login.rs"
+
 [dependencies]
 oath-core = { path = "../oath-core" }
 nix = { version = "0.30", default-features = false, features = [
@@ -37,6 +41,7 @@ nix = { version = "0.30", default-features = false, features = [
 libc = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+argon2 = { version = "0.5", default-features = false, features = ["alloc", "password-hash"] }
 
 [dev-dependencies]
 tempfile = "3"

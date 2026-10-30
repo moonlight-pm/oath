@@ -45,6 +45,10 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          its hash; `oath set pkg:<name> hash=…` pins it
     oath mcp             these verbs as an MCP server on stdin/stdout
                          (ssh -T home@<host> oath mcp)
+    oath password        set, change or remove home's password
+                         (`--status`: is one set, auto-login, the seat)
+    oath desk [stop]     give the seat (tty1) back to the desk, or end the
+                         desk and give it to the console (a shell as home)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
 {probation}{damage}{recipes}
@@ -66,7 +70,10 @@ apply. Nothing else applies while it is open.
 ## Where you are
 
 Serial is **root** (break-glass). SSH is **home** (`HOME=/home`);
-`sudo` has no password. The catalog lives at `/oath`. `/home` is the
+`sudo` has no password. `home` has none either until `oath password`
+sets one (`svc:login` keeps its hash, root's alone): the console asks
+for it when `host:local.autologin` is false, and so does a desk's lock
+screen; SSH (keys only) and `sudo` never do. The catalog lives at `/oath`. `/home` is the
 `home` account's directory. There is no `/usr`; helpers are
 `/lib/oath`.
 

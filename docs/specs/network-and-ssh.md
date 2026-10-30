@@ -139,6 +139,9 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   machines the network's DNS does not serve. Names follow the
   hostname's characters (at most 253); `localhost`, the machine's own
   hostname and an address that does not parse are refused at `set`.
+- `home` has no password until `oath password` sets one, which only
+  the console and the desk's lock screen ask for (R42,
+  [login.md](login.md)); SSH takes keys only and `sudo` asks nothing.
 - `home` runs `sudo <cmd>` with no password. `/bin/sudo` is a setuid
   helper at `/lib/oath/sudo`, not PAM and not a package. Applying is
   `sudo oath apply`. `sudo [-n] [--] command [args…]` refuses any

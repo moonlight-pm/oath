@@ -11,6 +11,7 @@ use oath_core::{
 use serde_json::{json, Map, Value};
 
 mod live;
+mod login;
 mod mcp;
 mod update;
 
@@ -142,6 +143,22 @@ enum Cmd {
         #[arg(short = 'n', long, default_value_t = 50)]
         lines: usize,
     },
+    /// Set, change or remove the password of the desk's user, `home`
+    /// (`svc:login`, R42): asked for at the console and by the desk's lock
+    /// screen. An empty new password removes it. Off a terminal it reads
+    /// the current password (while one is set) and the new one, a line each.
+    Password {
+        /// Only say whether one is set, with auto-login and the seat.
+        #[arg(long)]
+        status: bool,
+    },
+    /// Give the seat (tty1, its screen and keyboard) back to the desk;
+    /// `oath desk stop` ends the desk on purpose and gives it to the
+    /// console, a shell as home (R42).
+    Desk {
+        #[arg(value_parser = ["stop"])]
+        action: Option<String>,
+    },
     /// The verbs as an MCP server on stdin/stdout, one `oath --json`
     /// command per tool call: `ssh -T home@<host> oath mcp`.
     Mcp {
@@ -217,12 +234,17 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Log { .. }) => "log",
         Some(Cmd::Logs { .. }) => "logs",
         Some(Cmd::Mcp { .. }) => "mcp",
+        Some(Cmd::Password { .. }) => "password",
+        Some(Cmd::Desk { .. }) => "desk",
         Some(Cmd::Seed { .. }) => "seed",
         Some(Cmd::PanicInit) => "panic-init",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
-    if let Some(Cmd::Mcp { read_only }) = cli.cmd {
-        return mcp::serve(&cli.root, read_only);
+    match &cli.cmd {
+        Some(Cmd::Mcp { read_only }) => return mcp::serve(&cli.root, *read_only),
+        Some(Cmd::Password { status }) => return login::password(*status, cli.json),
+        Some(Cmd::Desk { action }) => return login::desk(action.is_some(), cli.json),
+        _ => {}
     }
     let actor = Actor { via: cli.via.clone(), ..Actor::current() };
     let cat = Catalog::open(&cli.root)?;
@@ -243,7 +265,9 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Mcp { .. }) => unreachable!("served above"),
+        Some(Cmd::Mcp { .. } | Cmd::Password { .. } | Cmd::Desk { .. }) => {
+            unreachable!("served above")
+        }
         Some(Cmd::Seed { profile, overlay }) => {
             let fresh = !cli.root.join("INDEX.md").exists();
             if fresh {

@@ -132,6 +132,7 @@ impl ApplyHooks for Live {
             publishers: desired.publishers.clone(),
             mounts,
             module_options: desired.module_options.clone(),
+            autologin: desired.autologin,
         })
     }
 
@@ -161,7 +162,9 @@ impl ApplyHooks for Live {
         let path = oath_core::status_path(&self.catalog_root, id);
         for _ in 0..40 {
             if let Ok(v) = oath_core::read_json::<serde_json::Value>(&path) {
-                if v.get("state").and_then(|s| s.as_str()) == Some(want) {
+                let state = v.get("state").and_then(|s| s.as_str());
+                // A service the other owner of the seat runs (R42) is held.
+                if state == Some(want) || (enabled && state == Some("held")) {
                     return Ok(());
                 }
             }

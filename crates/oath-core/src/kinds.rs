@@ -94,6 +94,12 @@ pub struct Host {
     /// the next boot.
     #[serde(default)]
     pub module_options: BTreeMap<String, String>,
+    /// The seat's console opens a shell as `home` without asking, and the
+    /// desk starts unlocked (R42). Off, with a password set (`oath
+    /// password`), the console asks for it and the desk starts locked.
+    /// `svc:login` sets it, given the password; on when absent.
+    #[serde(default = "default_true")]
+    pub autologin: bool,
 }
 
 /// One filesystem in `host:local.mounts`.
@@ -200,6 +206,30 @@ pub struct Svc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(range(min = 1, max = 99))]
     pub rtprio: Option<u8>,
+    /// Whose turn on the seat (tty1, its screen and keyboard) it runs in
+    /// (R42): `desk` while the desk has it, `console` while the console
+    /// has it (`oath desk stop`, until `oath desk`); PID 1 holds it the
+    /// rest of the time. Absent: it runs either way.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub seat: Option<SvcSeat>,
+}
+
+/// The seat's two owners (`/oath/run/seat`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum SvcSeat {
+    Desk,
+    Console,
+}
+
+impl SvcSeat {
+    /// Whether a service with this seat runs while `now` has the seat.
+    pub fn runs_on(self, now: crate::login::Seat) -> bool {
+        matches!(
+            (self, now),
+            (Self::Desk, crate::login::Seat::Desk) | (Self::Console, crate::login::Seat::Console)
+        )
+    }
 }
 
 fn default_restart() -> SvcRestart {

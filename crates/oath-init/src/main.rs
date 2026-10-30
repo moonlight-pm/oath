@@ -1023,6 +1023,7 @@ fn apply_host() {
         publishers: host.publishers,
         mounts: Default::default(),
         module_options: host.module_options,
+        autologin: host.autologin,
     };
     let _ = oath_core::write_json(&status(&id), &actual);
     let _ = cat.write_index();

@@ -227,7 +227,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     ] {
         fs::create_dir_all(stage.join(d))?;
     }
-    for n in ["init", "serial-login", "screen-login", "sudo"] {
+    for n in ["init", "serial-login", "screen-login", "sudo", "login"] {
         copy_file(&lib.join(n), &stage.join("lib/oath").join(n))?;
     }
     fs::write(stage.join(&oath_core::DHCP_HOOK[1..]), include_str!("dhcpcd.hook"))?;
@@ -236,6 +236,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     chmod_exec(&stage.join("lib/oath/init"))?;
     chmod_exec(&stage.join("lib/oath/serial-login"))?;
     chmod_exec(&stage.join("lib/oath/screen-login"))?;
+    chmod_exec(&stage.join("lib/oath/login"))?;
     chmod_exec(&stage.join(&oath_core::DHCP_HOOK[1..]))?;
     chmod_exec(&stage.join("lib/oath/backup-send"))?;
     chmod_exec(&stage.join("lib/oath/backup-daily"))?;

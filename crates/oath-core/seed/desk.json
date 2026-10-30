@@ -10,7 +10,8 @@
       }
     },
     "svc:screen": {
-      "enabled": false
+      "enabled": true,
+      "seat": "console"
     },
     "svc:seatd": {
       "exec": [
@@ -42,7 +43,8 @@
         "LIBSEAT_BACKEND": "seatd",
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
         "XCURSOR_THEME": "McMojave"
-      }
+      },
+      "seat": "desk"
     },
     "svc:sola-bus": {
       "exec": [
@@ -93,7 +95,8 @@
         "XCURSOR_THEME": "McMojave",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
-      }
+      },
+      "seat": "desk"
     },
     "svc:sola-shell": {
       "exec": [
@@ -112,7 +115,8 @@
         "XCURSOR_THEME": "McMojave",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
-      }
+      },
+      "seat": "desk"
     },
     "svc:sola-tmux": {
       "exec": [
@@ -172,7 +176,8 @@
         "XCURSOR_THEME": "McMojave",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
-      }
+      },
+      "seat": "desk"
     },
     "svc:dbus-system": {
       "exec": [
@@ -227,7 +232,8 @@
         "XCURSOR_THEME": "McMojave",
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
-      }
+      },
+      "seat": "desk"
     },
     "svc:pipewire": {
       "exec": [

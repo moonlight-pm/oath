@@ -156,6 +156,46 @@ sshd's last start. `oath apply` does not write `$HOME/.profile`.
 `void` (uid 65534, home `/var/empty`) is the third account: nobody logs
 in as it; sshd, dhcpcd and chronyd drop to it.
 
+### The password and the seat
+
+`home` has no password until you set one (R42, [login.md](../specs/login.md)):
+
+```
+oath password                 # asks the current one (if set), then the new one twice
+oath password --status        # password: set|none, autologin: on|off, seat: desk|console
+printf 'old\nnew\n' | oath password   # off a terminal: the current one (if set), then the new
+```
+
+An empty new password removes it. `svc:login` keeps it, hashed, in
+`/oath/login/password` (root's alone); a wrong one is answered after a
+delay that doubles each time, up to 30 s. It is asked at the console
+when `host:local.autologin` is false, and by the desk's lock screen
+(Sola's); SSH (keys only) and `sudo` never ask, so it guards the screen
+and keyboard, not the account: [login.md](../specs/login.md) says
+exactly what it does and does not protect. Auto-login is on by default;
+Sola's Settings turn it off with the password, and root can with `sudo
+oath set host:local autologin=false` and `sudo oath apply host:local`.
+
+On a desk, the screen and keyboard (tty1) are the seat, and either the
+desk or the console has it. Exit Sola ends the desk on purpose
+(`oath desk stop` does the same): its services are held (`state:
+"held"`) and the console, a shell as `home` (or the password prompt), takes
+tty1. `oath desk`, from that shell or over SSH, gives the seat back and
+the desk's services start again. Every boot starts with the desk.
+
+A machine installed before R42 gets the programs with `oath update` but
+not the objects. Reboot into the update first: an older PID 1 knows no
+`seat` and would start the console on tty1 under the running desk. Then
+make them once:
+
+```
+sudo oath new svc:login --from-json '{"exec":["/lib/oath/login"],"wants":[],"restart":"always","enabled":true}'
+sudo oath set svc:screen enabled=true seat=console
+for s in rivulet sola-river sola-shell sola-session sola-kvm; do sudo oath set svc:$s seat=desk; done
+sudo oath apply
+```
+
+
 ### The shell
 
 `home`'s login shell is zsh (`pkg:zsh`, not removable); `/bin/sh` is

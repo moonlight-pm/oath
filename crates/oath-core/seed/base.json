@@ -39,6 +39,14 @@
       "enabled": true,
       "user": "home"
     },
+    "svc:login": {
+      "exec": [
+        "/lib/oath/login"
+      ],
+      "wants": [],
+      "restart": "always",
+      "enabled": true
+    },
     "svc:sshd": {
       "exec": [
         "/bin/sshd",

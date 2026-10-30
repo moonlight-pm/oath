@@ -63,7 +63,7 @@ btrfs
 
 ```
 /sbin/init → /lib/oath/init        same ELF as the initrd's /init
-/lib/oath/  serial-login, screen-login, sudo (setuid), dhcpcd.hook, backup-send, backup-daily;
+/lib/oath/  serial-login, screen-login, sudo (setuid), login, dhcpcd.hook, backup-send, backup-daily;
             modprobe and net-lease are links to init (the kernel's module
             helper, and the DHCP script's lease recorder)
 /bin/       symlink farm → /oath/store/pkg/<name>/<hash>/bin/<x>; modprobe, reboot,
@@ -102,7 +102,9 @@ btrfs
   store/adv/<name>/<hash>.json   advisories
   ssh/ssh_host_ed25519_key sshd's host key (+ .pub); host_ed25519 is
                            dropbear's, on machines from before R36
-  run/                     init.sock, fs/ (btrfs top level); update/ and
+  login/password           home's password, Argon2id; 0600, root's (R42)
+  run/                     init.sock, login.sock (svc:login), seat (desk or
+                           console), fs/ (btrfs top level); update/ and
                            update-esp/ while `oath update` runs
 ```
 
@@ -113,12 +115,13 @@ btrfs
 | `oath-init` | initrd `/init` | PID 1, root |
 | `svc:sshd` | `/bin/sshd -D -e` (OpenSSH), `/etc/ssh/sshd_config` | root; before a login, `void` in `/var/empty`; logins are `home` (root refused); `keep_children` |
 | `svc:serial` | `/lib/oath/serial-login` on ttyS0 (idles with no UART) | root (break-glass) |
-| `svc:screen` | `/lib/oath/screen-login` on tty1, then `zsh -l` | `home` |
+| `svc:screen` | `/lib/oath/screen-login` on tty1, then `zsh -l`; asks for the password first when `host:local.autologin` is off and one is set | `home` |
+| `svc:login` | `/lib/oath/login`: `home`'s password and the seat, on `/oath/run/login.sock` for `home` and root (R42, [login.md](specs/login.md)) | root |
 | `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | root, then `void` with `CAP_SYS_TIME` |
 | DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root (address, hook); its network processes `void` in `/var/empty`; renews the lease |
 | `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |
 
-The `desk` profile adds (R20–R22; `svc:screen` is off):
+The `desk` profile adds (R20–R22; `svc:screen` is the console, held while the desk has the seat, R42):
 
 | Process | From | Runs as |
 |---------|------|---------|
@@ -182,7 +185,7 @@ cargo make build [--profile base]
   pkg:oath: this tree + every crates.io crate in Cargo.lock → pkg:oath-src;
     `cargo build` with pkg:rust in the sandbox, static against glibc,
     linked by pkg:gcc → bin/oath,
-    lib/oath/{init,serial-login,screen-login,sudo}, boot/BOOTX64.EFI (oath-efi)
+    lib/oath/{init,serial-login,screen-login,sudo,login}, boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (glibc, bash, coreutils, btrfs, openssh, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix, or pkg:qemu on an Oath host
