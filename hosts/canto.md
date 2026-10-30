@@ -41,15 +41,30 @@ Overwrite this file when facts change; do not append a diary.
   The pull of `0c6eebe617d2` hit the pre-download bug (its `oath`
   pinned `pkg:oath` as it fetched it, so the apply left it unlinked);
   set back and forward by hand (383–384), and `e433824d38d0`'s `oath`
-  (`sha256-4eec034d2bb9…`) was taken by hand first (386). `pkg:cef` is
+  (`sha256-4eec034d2bb9…`) was taken by hand first (386). The pull of
+  `fdecb1ec3d68` (R41, R42) on 2026-10-29: `pkg:oath` `92735e24…` first
+  (408); its update refused at the apply, since `pkg:steam` still
+  needed the old `mesa-i386`, leaving 19 specs as drift; the Sola tab
+  built `plan:steam` (`sha256-1dfe7cf2…`, the output's pin), set its
+  needs and applied them (409), and the update ran again with
+  `--reboot` (410). That apply restarted rivulet under the desk at
+  20:31 (canto's clock), so every Wayland client exited and Sola's
+  session forgot them. Both are fixed in `oath` since 2026-10-30.
+  `pkg:cef` is
   Oath's CEF 156 with H.264 and AAC (R40, `sha256-2a2cc750`) since
   generation 398, fetched from the bucket, under Sola's own applies of
   its packs from `next` `83df4558` (2026-10-29). Its Oath checkout (`~/Projects/Oath`, a clean
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** output `e433824d38d0` (pulled 2026-10-28 22:35Z),
-  booted 22:48Z with its PID 1 `b922d6d8b855`; every service runs.
+- **Running now:** output `fdecb1ec3d68`, booted 2026-10-29 20:33
+  (canto's clock). Then R42's objects by hand as
+  [using.md](../docs/manual/using.md) says (411): `svc:login`,
+  `svc:screen` `enabled=true seat=console`, and `seat=desk` on rivulet,
+  `sola-river`, `sola-shell`, `sola-session` and `sola-kvm`. No password
+  is set, auto-login is on, and the seat is the desk's. Before it:
+  `e433824d38d0` (pulled 2026-10-28 22:35Z), booted 22:48Z with its PID 1
+  `b922d6d8b855`.
   `svc:pipewire` and `svc:pipewire-pulse` have `rtprio` 95 (generation
   385, by hand): PipeWire's data thread is `SCHED_FIFO` and module-rt
   no longer warns. `3b2d49886ff7` (the 2026-10-27 security sweep, Linux

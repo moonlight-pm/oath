@@ -63,6 +63,9 @@ struct Kid {
     spec: Svc,
     /// What `exec[0]` resolved to when it started.
     program: Program,
+    /// The program its package moved to while an update left it running
+    /// (it has a `seat`): it takes that one when it next starts.
+    deferred: Program,
     started: Instant,
     /// Read end of the child's stdout+stderr pipe (non-blocking).
     out: Option<fs::File>,
@@ -128,6 +131,8 @@ struct KidState {
     spec: Svc,
     #[serde(default)]
     program: Program,
+    #[serde(default)]
+    deferred: Program,
     /// Milliseconds it had run.
     ran_ms: u64,
     out: Option<i32>,
@@ -153,6 +158,7 @@ impl Supervisor {
                     id: k.id,
                     spec: k.spec,
                     program: k.program,
+                    deferred: k.deferred,
                     ran_ms: k.started.elapsed().as_millis() as u64,
                     out,
                     partial: k.partial,
@@ -193,6 +199,7 @@ impl Supervisor {
                     id: k.id,
                     spec: k.spec,
                     program: k.program,
+                    deferred: k.deferred,
                     started,
                     out,
                     partial: k.partial,
@@ -230,6 +237,14 @@ impl Supervisor {
 
     /// Make the running set match what is applied.
     pub fn converge(&mut self) {
+        self.converge_keeping(false)
+    }
+
+    /// [`Self::converge`]; with `keep_seat` (an update's apply, `converge
+    /// keep-seat` on `init.sock`) a running service with a `seat` keeps its
+    /// program when its package moves, and takes the new one when it next
+    /// starts: restarting the desk ends a person's session.
+    pub fn converge_keeping(&mut self, keep_seat: bool) {
         let (mut wanted, unreadable) = wanted();
         // A spec PID 1 cannot read leaves that service as it is.
         for id in unreadable {
@@ -259,8 +274,25 @@ impl Supervisor {
             };
             // A service follows its package: an apply that moved the
             // realization its program resolves to restarts it.
-            if let (Some((name, hash)), true) = (program(want), id.starts_with("svc:")) {
+            let now = program(want);
+            if let (Some((name, hash)), true) = (now.clone(), id.starts_with("svc:")) {
                 if was.as_ref().is_some_and(|w| *w != (name.clone(), hash.clone())) {
+                    let Some(kid) = self.kids.values_mut().find(|k| k.id == id) else { continue };
+                    if kid.deferred == now {
+                        continue;
+                    }
+                    if keep_seat && want.seat.is_some() {
+                        kid.deferred = now;
+                        let why = format!(
+                            "pkg:{name} moved to {hash} in an update; this keeps its program \
+                             until it next starts (a reboot, or the seat changing hands)"
+                        );
+                        log(&format!("{id}: {why}"));
+                        tel("init", "svc_defer", json!({ "id": id, "pkg": name, "hash": hash }));
+                        let pid = self.kids.iter().find(|(_, k)| k.id == id).map(|(p, _)| *p);
+                        self.write_actual_why(&id, "running", pid, Some(&why));
+                        continue;
+                    }
                     log(&format!("{id}: {} is now pkg:{name} {hash}; restarting", want.exec[0]));
                     tel("init", "svc_follow", json!({ "id": id, "pkg": name, "hash": hash }));
                     self.stop(&id);
@@ -513,6 +545,7 @@ impl Supervisor {
                         id: id.to_string(),
                         spec: spec.clone(),
                         program,
+                        deferred: None,
                         started: Instant::now(),
                         out: Some(kid.1),
                         partial: Vec::new(),

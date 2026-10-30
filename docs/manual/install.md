@@ -134,11 +134,15 @@ It takes the newest release for `host:local.profile` from the first of
 signed (the `base` profile trusts buccina's), and refuses one older
 than the release the machine runs (`/oath/output.json`) unless
 `--output <id>` names it. It also refuses pending changes and an apply
-on probation. With `--confirm`, it:
+on probation, and a set of moves that would leave a package needing
+another at a hash it will not have (the check `oath apply` makes, made
+first, so the preview says it too). With `--confirm`, it:
 
-1. fetches every pack it will pin that the store lacks, before it
-   changes anything: a fetch that fails (a network error is tried
-   twice more) leaves the machine as it was, and running it again
+1. fetches every pack it will pin that the store lacks, and builds each
+   recipe the owner built (Steam, NVIDIA's driver) from the output's
+   plan, before it changes anything: a fetch or build that fails (a
+   network error is tried twice more), or a build that is not the
+   output's pin, leaves the machine as it was, and running it again
    fetches the rest;
 2. snapshots `@` as `@boot-<n>`;
 3. writes the output's accounts (`/etc/passwd`, `group`, `shadow`) and
@@ -161,11 +165,16 @@ on probation. With `--confirm`, it:
    package the machine keeps stays at the machine's pin). A machine
    whose release lists none (`36de66963ac1` and older) keeps them
    all, as does a package the output does not carry (`pkg:dropbear`
-   after R36, one its owner added). A recipe the owner built is listed with the
-   commands that build it here. Each service whose program moved
-   restarts; when sshd's did, the apply is on probation, and the
-   update waits until you open a **new** SSH session and run `sudo oath
-   keep` there;
+   after R36, one its owner added). A recipe the owner built moves to
+   the pin step 1 built. Each running service whose program moved
+   restarts on it, except one with a `seat` (the desk's and the
+   console's, R42), which keeps its program until it next starts: the
+   desk takes its new programs at a reboot, or at Exit Sola and `oath
+   desk`. With `--reboot` no service restarts, and the boot starts each
+   on its new program. When sshd's program moved, the apply is on
+   probation: the services restart then (the seat's still keep theirs),
+   and the update waits until you open a **new** SSH session and run
+   `sudo oath keep` there;
 5. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
    and `/bin/sudo`;
 6. archives the ESP's kernel and initrd as boot `<n>` (with the
@@ -196,11 +205,16 @@ An `oath` from before R42 (`pkg:oath` `sha256-618db152642b…` and older)
 does not make the new packages the others need, nor hand `/lib`'s names
 from one package to another, so its apply refuses:
 nothing converges, but the specs it set stay as drift, and the next
-update sets them again. Take the newer `oath` first, then update:
+update sets them again. An `oath` from before 2026-10-30 (`pkg:oath`
+`sha256-92735e24e583…` and older) does not build a recipe the owner
+built, so a Steam pinned to the old 32-bit Mesa makes its apply refuse
+the same way (canto, 2026-10-29), and it restarts the desk under the
+person at it, `--reboot` or not. Take the newer `oath` (desk output
+`fed6fb141a5e`'s) first, then update:
 
 ```sh
-sudo oath set pkg:oath hash=sha256-92735e24e5832267facb9be877e8c98867713d5ac4e16d68639ee61be20b28ae && sudo oath apply pkg:oath
-oath update && sudo oath update --confirm
+sudo oath set pkg:oath hash=sha256-a937565c5f8a5a210f233f9ec58c56ec1ed844e93fc5847fb2edddedbdf890a5 && sudo oath apply pkg:oath
+oath update && sudo oath update --confirm --reboot
 ```
 
 A machine from before R38 has no `oath update` yet. Give it the newer

@@ -102,9 +102,10 @@ pub enum Move {
     /// The output fixes it and the machine lacks it: made, since the
     /// image's own files need it (`/etc/passwd` names `pkg:zsh`'s shell).
     New { name: String, doc: Value },
-    /// A recipe (R23) the owner built: the output carries no tree, so it
-    /// is built on the machine.
-    Rebuild { name: String, to: String },
+    /// A recipe (R23) the owner built: the output carries no tree, so the
+    /// update builds the output's plan on the machine before anything
+    /// changes, then moves it like a pin (`set`).
+    Rebuild { name: String, from: String, to: String, set: Value },
 }
 
 impl Move {
@@ -120,10 +121,11 @@ impl Move {
     /// The fields `oath set` writes (or `oath new` makes), if any.
     pub fn fields(&self) -> Option<&Value> {
         match self {
-            Self::Pin { set, .. } | Self::Stay { set, .. } => Some(set),
+            Self::Pin { set, .. } | Self::Stay { set, .. } | Self::Rebuild { set, .. } => {
+                Some(set)
+            }
             Self::Keep { set, .. } => set.as_ref(),
             Self::New { doc, .. } => Some(doc),
-            Self::Rebuild { .. } => None,
         }
     }
 
@@ -148,9 +150,10 @@ impl Move {
                 "{id} {} is made (the output fixes it)",
                 short(doc["hash"].as_str().unwrap_or(""))
             ),
-            Self::Rebuild { name, to } => format!(
-                "{id}: the output's recipe builds {to}; run `sudo oath build plan:{name}`, \
-                 `sudo oath set {id} hash={to}` and `sudo oath apply {id}`"
+            Self::Rebuild { name, from, to, .. } => format!(
+                "{id} {} -> {} (a recipe: plan:{name} builds it here first)",
+                short(from),
+                short(to)
             ),
         }
     }
@@ -316,7 +319,7 @@ pub fn plan(
             continue;
         }
         if !have(name, to) && cur["present"] == json!(true) {
-            moves.push(Move::Rebuild { name: name.clone(), to: to.clone() });
+            moves.push(Move::Rebuild { name: name.clone(), from: mine, to: to.clone(), set });
             continue;
         }
         moves.push(Move::Pin { name: name.clone(), from: mine, to: to.clone(), set });
@@ -485,8 +488,10 @@ mod tests {
         assert_eq!(moves.len(), 6, "{ids:#?}");
         assert!(matches!(&moves[0], Move::Pin { name, to, .. } if name == "bash" && to == B));
         assert!(matches!(&moves[1], Move::Pin { name, .. } if name == "cef"));
-        // A recipe the owner built: the output carries no tree.
-        assert!(matches!(&moves[2], Move::Rebuild { name, .. } if name == "claude-code"));
+        // A recipe the owner built: the output carries no tree, and the
+        // update builds it to the output's pin.
+        let Move::Rebuild { name, set, .. } = &moves[2] else { panic!("{ids:#?}") };
+        assert_eq!((name.as_str(), &set["hash"]), ("claude-code", &json!(C)));
         // Sola's own pack keeps its pin; its need on cef moves.
         let Move::Keep { set: Some(set), pin, .. } = &moves[3] else { panic!("{ids:#?}") };
         assert_eq!(pin, A);

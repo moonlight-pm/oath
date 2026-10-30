@@ -82,6 +82,25 @@ pub fn file_plan(catalog_root: &Path, bytes: &[u8]) -> Result<String> {
     Ok(hash)
 }
 
+/// Record a build of a plan file as `plan:<name>`'s last build, when the
+/// plan's pin is that file: an update builds the output's plan before it
+/// files it, and `oath build plan:<name>` then finds the product built.
+pub fn record_build(catalog_root: &Path, r: &BuildReport) -> Result<()> {
+    let id = ObjectId::new(KIND_PLAN, &r.name);
+    let pin = Catalog::open(catalog_root)?.get(&id)?.desired;
+    if pin.get("hash").and_then(|h| h.as_str()) != Some(r.plan_hash.as_str()) {
+        return Ok(());
+    }
+    write_json(
+        &crate::status_path(catalog_root, &id),
+        &PlanActual {
+            hash: r.plan_hash.clone(),
+            product: r.product.clone(),
+            inputs: r.inputs.clone(),
+        },
+    )
+}
+
 pub fn build_file(catalog_root: &Path, path: &Path) -> Result<BuildReport> {
     let _lock = Catalog::open(catalog_root)?.lock()?;
     let (plan, bytes) = lint_path(path)?;

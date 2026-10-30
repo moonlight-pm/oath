@@ -14,9 +14,29 @@ use serde_json::json;
 
 pub struct Live {
     pub catalog_root: PathBuf,
+    pub follow: Follow,
+}
+
+/// What an apply asks of PID 1 once its packages have moved.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Follow {
+    /// Converge: each running service whose package moved restarts on it.
+    #[default]
+    Now,
+    /// An update's: converge, but a service with a `seat` keeps the
+    /// program it runs until it next starts (`converge keep-seat`; a PID 1
+    /// from before restarts it).
+    KeepSeat,
+    /// An update that reboots next: nothing; the boot starts every service
+    /// on its new program.
+    AtReboot,
 }
 
 impl Live {
+    pub fn new(catalog_root: &Path) -> Self {
+        Self { catalog_root: catalog_root.to_path_buf(), follow: Follow::Now }
+    }
+
     fn sibling_live() -> PathBuf {
         Path::new(BTRFS_TOP).join(LIVE_SUBVOL)
     }
@@ -138,12 +158,17 @@ impl ApplyHooks for Live {
 
     fn notify_init(&self) -> Result<()> {
         let sock = Path::new("/oath/run/init.sock");
+        let ask: &[u8] = match self.follow {
+            Follow::Now => b"converge\n",
+            Follow::KeepSeat => b"converge keep-seat\n",
+            Follow::AtReboot => return Ok(()),
+        };
         if !sock.exists() {
             return Ok(());
         }
         let mut s =
             UnixStream::connect(sock).map_err(|e| Error::Msg(format!("init socket: {e}")))?;
-        s.write_all(b"converge\n").ok();
+        s.write_all(ask).ok();
         // PID 1 answers once it has converged, so apply returns after the
         // change has happened (sshd restarted, a service stopped).
         let _ = s.set_read_timeout(Some(std::time::Duration::from_secs(60)));

@@ -163,9 +163,16 @@ publishes each output it checked, and each machine moves itself:
   [--output <id>] [--esp <node>]`:
   1. Refuses a release older than `/oath/output.json` (the release the
      machine runs) unless `--output` names it, a bundle whose hash is
-     not the release's, pending changes, and an apply on probation.
-  2. Fetches every pack the moves pin that the store lacks, so a fetch
-     that fails leaves the machine as it was. Mounts the ESP (partition
+     not the release's, pending changes, an apply on probation, and
+     moves that would fail apply's needs check (`check_pkg_needs` on
+     the packages as the moves leave them; the preview runs it too).
+  2. Fetches every pack the moves pin that the store lacks, and builds
+     each recipe the owner built from the output's plan, its build
+     needs at the output's pins, requiring the output's pin (R23 builds
+     are deterministic: canto's Steam built `sha256-1dfe7cf2…`, the
+     pin), so a fetch or build that fails leaves the machine as it was.
+     The build is recorded as the plan's last once the plan is filed.
+     Mounts the ESP (partition
      1 of the disk in `oath.root=`, through `findfs` for a `UUID=`),
      plans the rotation as `esp` does, and snapshots `@` as `@boot-<n>`,
      so the archived boot pairs the old kernel with the old userspace.
@@ -179,11 +186,19 @@ publishes each output it checked, and each machine moves itself:
      keeps the machine's pin, and only its needs move; so does one the
      output does not carry. A package the output fixes that the machine
      lacks is made in the same apply, since the image's own files need
-     it (`/etc/passwd` names `pkg:zsh`'s shell, R27). A recipe the owner
-     built is reported, to build on the machine. An apply that moves
-     sshd's program goes on probation, and the update waits for `sudo
-     oath keep` from a new SSH session; if PID 1 undoes it, the update
-     stops there.
+     it (`/etc/passwd` names `pkg:zsh`'s shell, R27), and so is one a
+     present package needs, down its needs (R41's `pkg:libglvnd`). A
+     recipe the owner built moves to the pin step 2 built (canto's
+     `oath` before 2026-10-30 left its Steam needing the old 32-bit
+     Mesa, and apply refused). The apply asks PID 1 to `converge
+     keep-seat`: a running service with a `seat` keeps its program until
+     it next starts ([services.md](services.md)); with `--reboot` it asks
+     nothing, and the boot starts every service on its new program
+     (canto, 2026-10-29: rivulet restarted under the desk a minute
+     before the reboot, and every Wayland client exited). An apply that
+     moves sshd's program goes on probation: PID 1 converges then, even
+     with `--reboot`, and the update waits for `sudo oath keep` from a
+     new SSH session; if PID 1 undoes it, the update stops there.
   4. Replaces the image's files outside the catalog (`/lib/oath`,
      `/etc/passwd`, `group`, `shadow`, `shells`, `nsswitch.conf`,
      `ssh/ssh_config`, `/sbin/init`, `/bin/sudo`), each written beside
@@ -208,12 +223,22 @@ publishes each output it checked, and each machine moves itself:
 host (`http://10.0.2.2:<port>` from QEMU) serving the newer output's
 release signed with the host's key and the packs the older one lacks;
 the machine is pointed at it as a person would (origins, `pkg:oath` if
-it predates `oath update`, profile, publishers), then `oath update
---confirm`, a reboot, and checks: the output's PID 1, the catalog in
-sync, the old boot archived. On 2026-10-28 on buccina it moved
+it predates `oath update` or with `--oath-first`, profile, publishers;
+`--build plan:<name>` builds a recipe there and makes it present, as
+canto's Steam is), then `sudo oath update --confirm --reboot`, and
+checks: it rebooted, no service restarted on its new program before
+the reboot (when the output's `oath` ran the update), the output's PID
+1, the catalog in sync, each recipe at the output's pin, every service
+that ran before running again, the old boot archived. On 2026-10-28 on buccina it moved
 `a14d1acd3c2a` (before the security sweep, Linux 7.3-rc1) to
 `3b2d49886ff7`: `pkg:oath` first, then five plans and 46 packages in
-one generation, a reboot into Linux 7.3 and the output's PID 1. Before
+one generation, a reboot into Linux 7.3 and the output's PID 1. On
+2026-10-30 it moved `e433824d38d0` with Steam built there (`a25d01f1…`,
+canto's case) to `fed6fb141a5e`: Steam built to the output's
+`1dfe7cf2…` before anything changed, 23 packages in one generation, no
+service restarted before the reboot, all 17 running after it; and
+`fdecb1ec3d68` (what canto and buccina run) to it with `fdecb`'s own
+`oath`: only `pkg:oath` moves. Before
 R38, `cargo make update --target` pushed the same steps over SSH
 (built 2026-10-16); it is gone.
 

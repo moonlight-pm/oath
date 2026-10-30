@@ -71,7 +71,8 @@ pub fn known_hosts(out: &Path) -> PathBuf {
     out.join("known_hosts")
 }
 
-pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
+/// Returns the run's directory under `build/out/runs`.
+pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
     if !opts.confirm {
         bail!("refusing to wipe a disk without --confirm");
     }
@@ -101,8 +102,19 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
     }
     let keys =
         qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
-    let run_dir = out.join("runs").join(format!("{}-install", utc_stamp()));
-    fs::create_dir_all(&run_dir)?;
+    // Two installs in the same second (parallel rehearsals) get a
+    // directory each.
+    let stamp = utc_stamp();
+    fs::create_dir_all(out.join("runs"))?;
+    let mut run_dir = out.join("runs").join(format!("{stamp}-install"));
+    let mut n = 1;
+    while let Err(e) = fs::create_dir(&run_dir) {
+        if e.kind() != std::io::ErrorKind::AlreadyExists {
+            return Err(e.into());
+        }
+        n += 1;
+        run_dir = out.join("runs").join(format!("{stamp}-{n}-install"));
+    }
     let p = Payload {
         kernel: o.file("bzImage"),
         initrd_install: pack::bake_install_keys(&o, &run_dir, &keys)?,
@@ -110,17 +122,17 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<()> {
         efi: o.file("BOOTX64.EFI"),
     };
     if opts.usb {
-        return write_usb_installer(out, &tools, &p, &opts);
+        write_usb_installer(out, &tools, &p, &opts)?;
+    } else if opts.qemu {
+        install_qemu(&run_dir, &tools, &p, &opts)?;
+    } else if opts.local {
+        install_local(&run_dir, &tools, &p, &opts)?;
+    } else {
+        let target = opts.target.as_deref().context("--target user@host (or --qemu or --usb)")?;
+        let remote = parse_target(target)?;
+        install_remote(out, &tools, &p, &opts, &remote)?;
     }
-    if opts.qemu {
-        return install_qemu(&run_dir, &tools, &p, &opts);
-    }
-    if opts.local {
-        return install_local(&run_dir, &tools, &p, &opts);
-    }
-    let target = opts.target.as_deref().context("--target user@host (or --qemu or --usb)")?;
-    let remote = parse_target(target)?;
-    install_remote(out, &tools, &p, &opts, &remote)
+    Ok(run_dir)
 }
 
 pub fn parse_target(s: &str) -> Result<Remote> {

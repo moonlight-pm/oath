@@ -475,6 +475,18 @@ steps = [
 ]
 
 [[case]]
+name = "keep-seat"
+about = "`oath apply --keep-seat` (what `oath update` asks of PID 1) moves a package and leaves a running service with a `seat` on the program it started with, saying so in its status, while one without a seat restarts on the new tree; a later converge leaves it too, and it takes the new program when it next starts."
+metal = true
+steps = [
+  { run = "rm -rf /tmp/ks && mkdir -p /tmp/ks/bin && printf '#!/bin/sh\\necho seated-one\\nexec /bin/sleep 86400011\\n' >/tmp/ks/bin/ks-seated && printf '#!/bin/sh\\necho plain-one\\nexec /bin/sleep 86400012\\n' >/tmp/ks/bin/ks-plain && chmod 755 /tmp/ks/bin/* && sudo oath store pkg:ks /tmp/ks | tee /tmp/ks.out && sudo oath new pkg:ks hash=$(cut -d' ' -f2 /tmp/ks.out) && sudo oath new svc:ks-seated --from-json '{\"exec\":[\"/bin/ks-seated\"],\"seat\":\"desk\"}' && sudo oath new svc:ks-plain --from-json '{\"exec\":[\"/bin/ks-plain\"]}' && sudo oath apply pkg:ks svc:ks-seated svc:ks-plain && sleep 1 && pgrep -fx '/bin/sleep 86400011' >/tmp/ks-seated.pid && pgrep -fx '/bin/sleep 86400012' >/tmp/ks-plain.pid && echo BOTH_UP", expect = ["pkg:ks sha256-", "BOTH_UP"] },
+  { run = "sed -i s/-one/-two/ /tmp/ks/bin/* && sudo oath store pkg:ks /tmp/ks | tee /tmp/ks.out && sudo oath set pkg:ks hash=$(cut -d' ' -f2 /tmp/ks.out) && sudo oath apply --keep-seat pkg:ks && sleep 1 && pgrep -fx '/bin/sleep 86400011' | diff /tmp/ks-seated.pid - && echo SEATED_KEPT && p=$(pgrep -fx '/bin/sleep 86400012') && test \"$p\" != \"$(cat /tmp/ks-plain.pid)\" && echo PLAIN_FOLLOWED && oath get svc:ks-seated --actual && oath logs -n 400 | grep -o 'svc:ks-seated: pkg:ks moved to sha256-'", expect = ["SEATED_KEPT", "PLAIN_FOLLOWED", "\"state\": \"running\"", "in an update; this keeps its program until it next starts", "svc:ks-seated: pkg:ks moved to sha256-"] },
+  { run = "sudo oath set svc:ks-plain env='{\"KS\":\"1\"}' && sudo oath apply svc:ks-plain && sleep 1 && pgrep -fx '/bin/sleep 86400011' | diff /tmp/ks-seated.pid - && echo STILL_KEPT", expect = ["STILL_KEPT"] },
+  { run = "sudo kill $(cat /tmp/ks-seated.pid); for i in $(seq 40); do p=$(pgrep -fx '/bin/sleep 86400011') && test \"$p\" != \"$(cat /tmp/ks-seated.pid)\" && break; sleep 1; done; sleep 1; oath logs svc:ks-seated; oath get svc:ks-seated --actual", expect = ["seated-one", "seated-two", "\"state\": \"running\""], reject = ["keeps its program until"] },
+  { run = "sudo oath rm svc:ks-seated && sudo oath rm svc:ks-plain && sudo oath apply && sudo oath rm pkg:ks && sudo oath apply && oath diff", expect = ["in-sync"] },
+]
+
+[[case]]
 name = "sshd-follows-openssh-on-probation"
 about = "Moving the package sshd runs from restarts sshd, so it needs --confirm and goes on probation, like any change that can cut off SSH; a new login keeps it."
 steps = [

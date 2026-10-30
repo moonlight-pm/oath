@@ -12,8 +12,10 @@ against the contract below.
 the console's prompt was tried by hand there (a wrong password refused,
 the right one opening the shell, `oath desk` back to the desk in 0.2 s).
 Published in desk output `fdecb1ec3d68` (2026-10-30). buccina runs
-its programs without the objects (it acts as before); no machine has
-`svc:login` yet. Sola's side is not built.
+its programs without the objects (it acts as before). canto has had
+`svc:login` and the `seat` fields since 2026-10-29 (generation 411),
+with no password set. Sola's side is built on its `next` branch
+(`sola-lock`, Settings → Login, Exit Sola) and not yet tried on a desk.
 Every part is optional, and the default is the desk as it was: no
 password, the desk starts signed in, nothing locks.
 
@@ -72,7 +74,8 @@ and the console starts on tty1 (text mode, in front). `oath desk` writes
 `desk`: the console's shell ends (with whatever ran in it: `screen-login`
 is its parent, so stopping it hangs up the terminal), and the desk's
 services start again, those that had exited or given up included. A boot
-always starts with the desk.
+always starts with the desk. An update does not restart the seat's services: each keeps
+its program until it next starts ([services.md](services.md)).
 
 ## The console and auto-login (built)
 

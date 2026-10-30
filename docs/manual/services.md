@@ -159,6 +159,14 @@ keeps running; one that was `failed` tries again with the new program.
 Moving `pkg:openssh` restarts `svc:sshd`, so it needs `--confirm` and
 goes on probation.
 
+An update does not restart a service with a `seat` (the desk's, the
+console's): `oath update`, and `oath apply --keep-seat`, leave it on
+the program it started with, its actual `reason` says so, and it takes
+the new one when it next starts (a reboot, Exit Sola and `oath desk`,
+or its own exit). With `--reboot`, `oath update` restarts no service
+before the reboot. A PID 1 from desk output `fdecb1ec3d68` or older
+restarts the seat's services anyway, unless the update reboots.
+
 ## Reboot and power off
 
 `sudo reboot`, `sudo poweroff` and `sudo halt` ask PID 1 to shut down,

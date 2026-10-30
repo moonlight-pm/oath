@@ -11,10 +11,14 @@
 //!    published, else one made here). One older than `oath
 //!    update` first takes the newer `pkg:oath` from the origin
 //!    (docs/manual/install.md).
-//! 4. `sudo oath update --confirm`, reboot, and require the output's PID 1
-//!    with the catalog in sync, each pack pinned from elsewhere at the
-//!    newer output's pin, every service that ran before running again, and
-//!    the old boot archived on the ESP.
+//!    `--build plan:<name>` first builds that recipe on the machine and
+//!    makes its package present, as its owner does (canto's Steam).
+//! 4. `sudo oath update --confirm --reboot`, and require that the update
+//!    rebooted, with no service restarted on its new program before (when
+//!    the output's `oath` ran it), and then the output's PID 1 with the
+//!    catalog in sync, each pack pinned from elsewhere at the newer
+//!    output's pin, each recipe built at the output's pin, every service
+//!    that ran before running again, and the old boot archived on the ESP.
 //! 5. A machine from before R36 then moves `svc:sshd` to OpenSSH with a
 //!    second `oath update --confirm`, kept from a new SSH session.
 //!
@@ -46,6 +50,8 @@ pub struct Opts {
     pub unchecked: bool,
     /// Move `pkg:oath` first, so the output's own `oath` plans the update.
     pub oath_first: bool,
+    /// Recipes (`plan:<name>`) to build on the older machine first.
+    pub build: Vec<String>,
 }
 
 pub fn run_update(root: &Path, out: &Path, opts: Opts) -> Result<()> {
@@ -55,7 +61,7 @@ pub fn run_update(root: &Path, out: &Path, opts: Opts) -> Result<()> {
         crate::check::require_checked(&o.dir).context("pass --unchecked to rehearse it anyway")?;
     }
     eprintln!("output {}", o.dir.display());
-    rehearse(root, out, &o, &opts.qemu, opts.oath_first)
+    rehearse(root, out, &o, &opts)
 }
 
 /// A QEMU machine booted from an installed disk through OVMF.
@@ -116,13 +122,13 @@ impl Drop for Vm {
     }
 }
 
-fn rehearse(root: &Path, out: &Path, o: &Output, from: &str, oath_first: bool) -> Result<()> {
+fn rehearse(root: &Path, out: &Path, o: &Output, opts: &Opts) -> Result<()> {
+    let (from, oath_first) = (opts.qemu.as_str(), opts.oath_first);
     let old = output::open(out, from)?;
     if old.id == o.id {
         bail!("--qemu {from} is the output being rehearsed; name an older one");
     }
-    let before: Vec<PathBuf> = runs(out);
-    install::run_install(
+    let dir = install::run_install(
         root,
         out,
         install::Opts {
@@ -138,10 +144,6 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str, oath_first: bool) -
             output: Some(old.id.clone()),
         },
     )?;
-    let dir = runs(out)
-        .into_iter()
-        .find(|d| !before.contains(d))
-        .context("install --qemu left no run directory")?;
 
     // 2. The local origin. The older output's release first, so the newer
     // one is not older than the release the machine records.
@@ -226,17 +228,56 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str, oath_first: bool) -
         &r,
         &format!("printf '%s' {} > /oath/{}\n", install::sh_quote(&record), up::RECORD),
     )?;
-
-    // 4. The update.
-    let ran_before = steady_services(&r)?;
-    eprintln!("{}", install::ssh_out(&r, "oath update 2>&1")?);
-    let moved = install::ssh_out(&r, "oath update --confirm 2>&1; echo \"update-exit=$?\"")?;
-    eprintln!("{moved}");
-    if !moved.trim_end().ends_with("update-exit=0") {
-        bail!("oath update --confirm failed (above)");
+    let mut recipes = Vec::new();
+    for plan in &opts.build {
+        let name = plan.strip_prefix("plan:").unwrap_or(plan);
+        eprintln!(">> build plan:{name} on the older machine, as its owner does");
+        let built = install::ssh_out(
+            &r,
+            &format!(
+                "set -e\noath --json build plan:{name}\n\
+                 oath set pkg:{name} present=true >&2\noath apply pkg:{name} >&2\n"
+            ),
+        )?;
+        let v: Value = serde_json::from_str(&built).context("oath --json build")?;
+        eprintln!("pkg:{name} {} present", v["product"].as_str().unwrap_or("?"));
+        recipes.push(name.to_string());
     }
-    reboot_and_verify(&r, o, &mut vm)?;
+
+    // 4. The update, as the manual has it: --reboot.
+    let ran_before = steady_services(&r)?;
+    let followed = follows(&r)?;
+    eprintln!("{}", install::ssh_out(&r, "oath update 2>&1")?);
+    let boot = install::ssh_out(&r, "cat /proc/sys/kernel/random/boot_id")?;
+    let mut moving = Command::new("ssh");
+    moving.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=3"]);
+    moving.args(install::ssh_base(&r).get_args());
+    moving.arg("sudo -n oath update --confirm --reboot 2>&1");
+    let moved = moving.output().context("ssh oath update")?;
+    let moved = String::from_utf8_lossy(&moved.stdout).into_owned();
+    eprintln!("{moved}");
+    if !moved.contains("; rebooting") {
+        bail!("oath update --confirm --reboot did not reboot (above)");
+    }
+    come_back_and_verify(&r, o, &mut vm, &boot)?;
+    let after = follows(&r)?;
+    if no_update || oath_first {
+        if after != followed {
+            bail!("services restarted on their new programs before the reboot (oath logs)");
+        }
+        eprintln!("no service restarted before the reboot");
+    }
     pinned_moved(&r, &old, o, &ran)?;
+    for name in &recipes {
+        let doc = o.file(&format!("stage/oath/objects/pkg/{name}/desired.json"));
+        let want: Value = oath_core::read_json(&doc).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let got = install::ssh_out(&r, &format!("oath --json get pkg:{name} --actual"))?;
+        let got: Value = serde_json::from_str(&got).unwrap_or(Value::Null);
+        if got["hash"] != want["hash"] {
+            bail!("pkg:{name} is {}, the output pins {}", got["hash"], want["hash"]);
+        }
+        eprintln!("pkg:{name} was built at the output's pin {}", want["hash"]);
+    }
     services_back(&r, &ran_before)?;
 
     // 5. dropbear to OpenSSH, kept from a new session.
@@ -358,13 +399,21 @@ fn pinned_moved(r: &Remote, old: &Output, o: &Output, ran: &up::Release) -> Resu
     Ok(())
 }
 
-/// Reboot through PID 1, wait for another boot, and require the output's
-/// PID 1 and nothing pending.
-fn reboot_and_verify(r: &Remote, o: &Output, vm: &mut Vm) -> Result<()> {
-    let before = install::ssh_out(r, "cat /proc/sys/kernel/random/boot_id")?;
-    eprintln!(">> reboot");
-    install::ssh_fire(r, "reboot");
-    vm.wait_exit(Duration::from_secs(120))?;
+/// How many times PID 1 has restarted a service on its package's new
+/// program, by its logs.
+fn follows(r: &Remote) -> Result<usize> {
+    let n = install::ssh_out(
+        r,
+        "cat /oath/log/init.log.1 /oath/log/init.log 2>/dev/null \
+         | grep -c 'is now pkg:.*; restarting'; true",
+    )?;
+    Ok(n.lines().next().unwrap_or("0").trim().parse().unwrap_or(0))
+}
+
+/// After a reboot from boot `before` (its boot id), wait for another boot,
+/// and require the output's PID 1 and nothing pending.
+fn come_back_and_verify(r: &Remote, o: &Output, vm: &mut Vm, before: &str) -> Result<()> {
+    vm.wait_exit(Duration::from_secs(180))?;
     vm.boot()?;
     let deadline = Instant::now() + Duration::from_secs(300);
     loop {
@@ -473,15 +522,4 @@ fn answer(mut conn: TcpStream, dir: &Path) -> std::io::Result<()> {
         )?,
     }
     conn.flush()
-}
-
-fn runs(out: &Path) -> Vec<PathBuf> {
-    fs::read_dir(out.join("runs"))
-        .map(|rd| {
-            rd.flatten()
-                .map(|e| e.path())
-                .filter(|p| p.to_string_lossy().ends_with("-install"))
-                .collect()
-        })
-        .unwrap_or_default()
 }

@@ -7,16 +7,24 @@
 //!    machine runs (`/oath/output.json`) is refused unless named.
 //! 2. Fetch its bundle and check it against the release's hash.
 //! 3. Say what moves. With `--confirm`, as root:
+//!    The packages as the moves leave them must pass the apply's needs
+//!    check, or the update stops before anything changes.
 //! 4. Refuse unless in sync with nothing on probation. Fetch every pack the
-//!    moves pin that the store lacks, before anything changes, so a fetch
-//!    that fails leaves the machine as it was. Mount the ESP, plan
-//!    the boot rotation, and snapshot `@` as `@boot-<n>` first: the
-//!    archived boot is the old kernel with the old userspace.
+//!    moves pin that the store lacks, and build each recipe the owner
+//!    built (R23: the output carries no tree) from the output's plan to
+//!    the output's pin, before anything changes, so a fetch or build that
+//!    fails leaves the machine as it was. Mount the ESP, plan the boot
+//!    rotation, and snapshot `@` as `@boot-<n>` first: the archived boot
+//!    is the old kernel with the old userspace.
 //! 5. Write the accounts, file the output's plans, set every package to
 //!    the output's pin and needs, and apply them in one generation (apply
-//!    fetches each pack from the origins and hashes it). An apply that
-//!    moves sshd's program goes on probation, and the update waits here
-//!    until `sudo oath keep` runs in a new SSH session.
+//!    fetches each pack from the origins and hashes it). PID 1 then
+//!    restarts each running service whose package moved, except one with
+//!    a `seat` (R42), which keeps its program until it next starts; with
+//!    `--reboot` it restarts none, and the boot starts each on its new
+//!    program. An apply that moves sshd's program goes on probation: sshd
+//!    restarts, and the update waits here until `sudo oath keep` runs in a
+//!    new SSH session.
 //! 6. Replace the image's own files outside the catalog, archive the ESP's
 //!    boot as `<n>`, write the new kernel, initrd and oath-efi, keep five,
 //!    and record the release.
@@ -35,10 +43,10 @@ use std::time::{Duration, Instant};
 
 use oath_core::esp;
 use oath_core::update::{self as up, Move, Release};
-use oath_core::{find_bin, Actor, Catalog, Error, ObjectId, Result};
+use oath_core::{find_bin, Actor, ApplyHooks, Catalog, Error, ObjectId, Result};
 use serde_json::{json, Map, Value};
 
-use crate::live::Live;
+use crate::live::{Follow, Live};
 
 pub struct Opts {
     pub confirm: bool,
@@ -184,6 +192,7 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     for m in &moves {
         eprintln!("  {}", m.describe());
     }
+    check_moved_needs(cat, &moves)?;
     for (name, from, to, _) in &plans {
         eprintln!("  plan:{name} {} -> {}", up::short(from), up::short(to));
     }
@@ -208,8 +217,9 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         return Ok(0);
     }
 
-    // 4–6, every pack first.
+    // 4–6, every pack and recipe first.
     prefetch(root, cat, &moves)?;
+    let built = build_recipes(root, cat, &bundle, &output, &moves)?;
     move_sshd(root, cat, actor, &bundle)?;
     let root_dev =
         cmdline_val(&fs::read_to_string("/proc/cmdline")?, "oath.root").ok_or_else(|| {
@@ -236,7 +246,8 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     if !is_mounted(&mnt) {
         sh(Command::new(find_bin("mount")).args(["-t", "vfat", &esp_dev]).arg(&mnt))?;
     }
-    let result = update(root, cat, actor, &bundle, &mnt, &root_dev, &moves, &plans);
+    let steps = Steps { moves: &moves, plans: &plans, built: &built, reboot: opts.reboot };
+    let result = update(root, cat, actor, &bundle, &mnt, &root_dev, &steps);
     let _ = Command::new("sync").status();
     let _ = Command::new(find_bin("umount")).arg(&mnt).status();
     let generation = result?;
@@ -267,8 +278,16 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     Ok(0)
 }
 
+/// What steps 4–6 move: the packages, the plans, the recipes built for
+/// them, and whether a reboot follows.
+struct Steps<'a> {
+    moves: &'a [Move],
+    plans: &'a [(String, String, String, PathBuf)],
+    built: &'a [oath_core::BuildReport],
+    reboot: bool,
+}
+
 /// Steps 4–6 with the ESP mounted at `mnt`. Returns the generation.
-#[allow(clippy::too_many_arguments)]
 fn update(
     root: &Path,
     cat: &Catalog,
@@ -276,9 +295,9 @@ fn update(
     bundle: &Path,
     mnt: &Path,
     root_dev: &str,
-    moves: &[Move],
-    plans: &[(String, String, String, PathBuf)],
+    steps: &Steps,
 ) -> Result<u64> {
+    let Steps { moves, plans, built, reboot } = *steps;
     let mut ids = esp::existing_archive_ids(
         &esp::list_archive_confs(&mnt.join("loader/entries")).unwrap_or_default(),
     );
@@ -312,6 +331,9 @@ fn update(
         oath_core::file_plan(root, &bytes)?;
         eprintln!(">> plan:{name} {}", up::short(to));
     }
+    for r in built {
+        oath_core::record_build(root, r)?;
+    }
     let mut changed = Vec::new();
     for m in moves {
         let Some(fields) = m.fields().and_then(Value::as_object) else { continue };
@@ -327,7 +349,10 @@ fn update(
     let mut generation = 0;
     if !changed.is_empty() {
         eprintln!(">> apply {} packages", changed.len());
-        let hooks = Live { catalog_root: root.to_path_buf() };
+        // The seat's services are a person's session: an update restarts
+        // none, and before a reboot no service at all.
+        let follow = if reboot { Follow::AtReboot } else { Follow::KeepSeat };
+        let hooks = Live { catalog_root: root.to_path_buf(), follow };
         let r = cat.apply_with(
             Some(changed.clone()),
             true,
@@ -355,7 +380,19 @@ fn update(
                 "oath get <id>; `sudo oath apply <id>` links it",
             ));
         }
+        if reboot && r.probation.is_none() {
+            eprintln!("PID 1 restarts no service now: the reboot starts each on its new program");
+        }
         if let Some(secs) = r.probation {
+            if reboot {
+                // A new session can keep only an sshd that runs its new program.
+                eprintln!(
+                    "sshd's program moved: PID 1 restarts the services whose programs moved \
+                     now, but the seat's, so a new session reaches the new sshd"
+                );
+                Live { catalog_root: root.to_path_buf(), follow: Follow::KeepSeat }
+                    .notify_init()?;
+            }
             wait_kept(root, r.generation, secs)?;
             // PID 1's undo puts the old pins back.
             let undone =
@@ -527,6 +564,10 @@ fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
     let mut want = Vec::new();
     for m in moves {
         let Some(set) = m.fields().and_then(Value::as_object) else { continue };
+        // No origin serves a recipe's tree: `build_recipes` makes it.
+        if matches!(m, Move::Rebuild { .. }) {
+            continue;
+        }
         let id: ObjectId = m.id().parse()?;
         let mut d = cat.get(&id).map(|o| o.desired).unwrap_or_else(|_| json!({}));
         for (k, v) in set {
@@ -553,6 +594,113 @@ fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
         })?;
     }
     Ok(())
+}
+
+/// The packages as the moves leave them, checked as `oath apply` will check
+/// them, before anything changes: a recipe the update did not move once
+/// still needed the old 32-bit Mesa (canto's Steam, 2026-10-29), and the
+/// apply refused with the specs already set.
+fn check_moved_needs(cat: &Catalog, moves: &[Move]) -> Result<()> {
+    let mut docs = BTreeMap::new();
+    for id in cat.ls(Some("pkg"))? {
+        let o = cat.get(&id)?;
+        let mut d = o.desired;
+        if d["hash"].as_str().unwrap_or("").is_empty() {
+            d["hash"] = o.actual.get("hash").cloned().unwrap_or_else(|| json!(""));
+        }
+        docs.insert(id.to_string(), d);
+    }
+    for m in moves {
+        let Some(fields) = m.fields().and_then(Value::as_object) else { continue };
+        let d = docs.entry(m.id()).or_insert_with(|| json!({}));
+        for (k, v) in fields {
+            d[k] = v.clone();
+        }
+    }
+    let mut pkgs = Vec::new();
+    for (id, d) in docs {
+        if let Ok(p) = serde_json::from_value::<oath_core::Pkg>(d) {
+            pkgs.push((id, p));
+        }
+    }
+    oath_core::check_pkg_needs(&pkgs).map_err(|e| {
+        let (message, hint) = match e {
+            Error::Hint { message, hint } => (message, hint),
+            other => (other.to_string(), String::new()),
+        };
+        Error::hint(
+            format!("after these moves the apply would refuse: {message}"),
+            format!("nothing on this machine changed; {hint}"),
+        )
+    })
+}
+
+/// Each recipe the moves rebuild, built from the output's plan with its
+/// build needs at the output's pins, and required to be the output's pin,
+/// before anything changes.
+fn build_recipes(
+    root: &Path,
+    cat: &Catalog,
+    bundle: &Path,
+    output: &up::Output,
+    moves: &[Move],
+) -> Result<Vec<oath_core::BuildReport>> {
+    let stage = bundle.join("stage/oath");
+    let unchanged = |e: Error| {
+        Error::hint(
+            e.to_string(),
+            "nothing on this machine changed; `sudo oath update --confirm` again",
+        )
+    };
+    let mut built = Vec::new();
+    for m in moves {
+        let Move::Rebuild { name, to, .. } = m else { continue };
+        let doc = stage.join("objects/plan").join(name).join("desired.json");
+        let pin: Value = oath_core::read_json(&doc).map_err(|_| {
+            Error::hint(
+                format!("the output has no plan:{name} to build pkg:{name} {}", up::short(to)),
+                "nothing on this machine changed",
+            )
+        })?;
+        let path = stage
+            .join("store/plan")
+            .join(name)
+            .join(pin["hash"].as_str().unwrap_or(""))
+            .join(oath_core::PLAN_NAME);
+        let (plan, _) = oath_core::lint_path(&path)?;
+        for n in &plan.build_needs {
+            let need = n.id.trim_start_matches("pkg:");
+            if oath_core::store_present(root, need, &n.hash) {
+                continue;
+            }
+            // A source's url is the output's, not the one this machine had.
+            let doc = output
+                .pins
+                .iter()
+                .find(|(p, _, _)| p == need)
+                .map(|(_, _, d)| d.clone())
+                .or_else(|| cat.get(&ObjectId::new("pkg", need)).ok().map(|o| o.desired))
+                .unwrap_or_else(|| json!({}));
+            let s = |k: &str| doc[k].as_str().unwrap_or("").to_string();
+            oath_core::prefetch_pkg_any(root, need, &s("url"), &s("file"), &n.hash)
+                .map_err(unchanged)?;
+        }
+        eprintln!(">> build plan:{name}, for pkg:{name} {}", up::short(to));
+        let r = oath_core::build_file(root, &path).map_err(unchanged)?;
+        if r.product != *to {
+            return Err(Error::hint(
+                format!(
+                    "plan:{name} built {}, the output pins {}",
+                    up::short(&r.product),
+                    up::short(to)
+                ),
+                format!("nothing on this machine changed; oath logs plan:{name}"),
+            ));
+        }
+        eprintln!("built pkg:{name} {}", up::short(&r.product));
+        built.push(r);
+    }
+    Ok(built)
 }
 
 fn sshd_is_dropbear(cat: &Catalog) -> Result<bool> {
@@ -584,7 +732,7 @@ fn move_sshd(root: &Path, cat: &Catalog, actor: &Actor, bundle: &Path) -> Result
     map.insert("exec".into(), want["exec"].clone());
     eprintln!(">> svc:sshd: dropbear to OpenSSH");
     cat.set_fields(&id, map)?;
-    let hooks = Live { catalog_root: root.to_path_buf() };
+    let hooks = Live::new(root);
     let r =
         cat.apply_with(Some(vec![id]), true, oath_core::probation::DEFAULT_SECS, actor, &hooks)?;
     if let Some(secs) = r.probation {

@@ -217,6 +217,10 @@ enum Cmd {
         /// makes the new packages the others need).
         #[arg(long)]
         oath_first: bool,
+        /// Build this recipe (`plan:<name>`) on the older machine first and
+        /// make its package present, as its owner does; repeatable.
+        #[arg(long, value_name = "PLAN")]
+        build: Vec<String>,
     },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
@@ -343,8 +347,9 @@ fn real() -> Result<()> {
             pack::publish_store(&root, &out, dest.as_deref(), output.as_deref())?
         }
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
-        Cmd::Update { qemu, output, unchecked, oath_first } => {
-            update::run_update(&root, &out, update::Opts { qemu, output, unchecked, oath_first })?;
+        Cmd::Update { qemu, output, unchecked, oath_first, build } => {
+            let opts = update::Opts { qemu, output, unchecked, oath_first, build };
+            update::run_update(&root, &out, opts)?;
         }
         Cmd::Esp { esp, confirm, root: root_dev, output, unchecked } => {
             install::update_esp(

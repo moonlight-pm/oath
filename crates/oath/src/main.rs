@@ -98,6 +98,12 @@ enum Cmd {
         /// PID 1 undoes it (unless `oath keep`).
         #[arg(long, default_value_t = oath_core::probation::DEFAULT_SECS)]
         probation: u64,
+        /// A running service with a `seat` (the desk's, the console's) keeps
+        /// its program when its package moves, and takes the new one when
+        /// it next starts, as in `oath update`: no restart under the person
+        /// at the keyboard.
+        #[arg(long)]
+        keep_seat: bool,
     },
     /// Keep the apply on probation. Run it from an SSH session opened
     /// after that apply: the new login is the proof.
@@ -514,13 +520,16 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Apply { ids, probation }) => {
+        Some(Cmd::Apply { ids, probation, keep_seat }) => {
             let ids = if ids.is_empty() {
                 None
             } else {
                 Some(ids.into_iter().map(|s| s.parse()).collect::<oath_core::Result<Vec<_>>>()?)
             };
-            let hooks = live::Live { catalog_root: cli.root.clone() };
+            let mut hooks = live::Live::new(&cli.root);
+            if keep_seat {
+                hooks.follow = live::Follow::KeepSeat;
+            }
             let r = cat.apply_with(ids, cli.confirm, probation, &actor, &hooks)?;
             if cli.json {
                 println!(
@@ -588,7 +597,7 @@ fn run() -> oath_core::Result<i32> {
             Ok(if damaged > 0 { 1 } else { 0 })
         }
         Some(Cmd::Undo { expired }) => {
-            let hooks = live::Live { catalog_root: cli.root.clone() };
+            let hooks = live::Live::new(&cli.root);
             let r = if expired {
                 let actor = Actor::probation();
                 match cat.undo_expired(&actor, &hooks)? {

@@ -71,6 +71,20 @@ client does not follow `pkg:dhcpcd`. Because `svc:sshd` follows
 `pkg:openssh`, moving that package's `hash` needs `--confirm` and goes
 on probation, as any change that can cut off SSH does.
 
+An update leaves the seat's services running (is, 2026-10-30). `oath
+update`'s apply, and `oath apply --keep-seat`, ask PID 1 to `converge
+keep-seat` on `init.sock`: a running service with a `seat` whose
+program moved keeps the one it runs, its actual `reason` says so, and a
+later converge leaves it too unless its package moves again; it takes
+the new program when it next starts (a reboot, the seat changing hands,
+its own exit). Restarting the desk ends a person's session: on canto on
+2026-10-29 an update restarted rivulet under the desk, and every
+Wayland client exited. `oath update --reboot` asks PID 1 for nothing,
+since the boot starts every service on its new program, unless sshd's
+program moved, when a new session must reach the new sshd to keep the
+apply. A PID 1 from desk output `fdecb1ec3d68` or older takes `converge
+keep-seat` as a plain converge.
+
 `applied.json` is the spec PID 1 runs: `oath apply` writes it after the
 document passes its checks, and `oath undo` puts back the previous one.
 Desired is what the owner is staging; PID 1 never reads it while an
@@ -125,9 +139,10 @@ execs.
 
 The main loop handles shutdown requests, reaps children, moves their
 output into logs, starts restarts whose backoff is over, and answers
-`/oath/run/init.sock`. `oath apply` writes `converge` there and waits
-for the reply, which PID 1 sends after converging, so apply returns
-after the change has happened.
+`/oath/run/init.sock`. `oath apply` writes `converge` there (an
+update's apply, or `--keep-seat`, `converge keep-seat`) and waits for
+the reply, which PID 1 sends after converging, so apply returns after
+the change has happened.
 
 On converge, PID 1 reads each `applied.json` (falling back to desired
 only when there is none). A running service whose applied spec changed,

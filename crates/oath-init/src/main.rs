@@ -256,7 +256,8 @@ fn step(
             panic!("asked to over init.sock");
         }
         tel("init", "converge", json!({ "bytes": n }));
-        sup.converge();
+        // An update's apply leaves the seat's services running (R42).
+        sup.converge_keeping(buf[..n].starts_with(b"converge keep-seat"));
         let _ = s.write_all(b"ok\n");
     }
 }

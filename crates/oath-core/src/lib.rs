@@ -65,7 +65,8 @@ pub use plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, parse_plan, PlanFile, PLAN_NAME,
 };
 pub use plan_build::{
-    build_file, build_file_concurrent, build_log, build_pinned, file_plan, BuildReport,
+    build_file, build_file_concurrent, build_log, build_pinned, file_plan, record_build,
+    BuildReport,
 };
 pub use probation::Probation;
 pub use seed::{

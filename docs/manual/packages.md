@@ -117,7 +117,8 @@ device in the tree is refused, as a fetch refuses it.
 
 A service follows its package: when an apply moves the pin of the
 package a service's program comes from (`exec[0]`, through `/bin`),
-PID 1 restarts that service, and no other. So a change to a program is
+PID 1 restarts that service, and no other (an update leaves the
+desk's running: [Services](services.md)). So a change to a program is
 build, `oath store`, `oath set … hash=`, `oath apply`.
 
 Upstream identity is `components.json` at the pack root (`name`,
@@ -277,10 +278,15 @@ Steam updates itself; Oath pins only the launcher. Its logs are
 `~/.local/share/Steam/logs/console-linux.txt`; the sandbox's tree is
 `$XDG_RUNTIME_DIR/oath-steam/`.
 
+`oath update` builds a recipe the owner built again, from the output's
+plan, before it changes anything, and moves it in the same apply: Steam
+when its plan or its needs move (the 32-bit Mesa), NVIDIA's driver when
+`pkg:linux` moves.
+
 NVIDIA's driver is a third, in `desk` (R34), for a machine with an
 NVIDIA card. Its build compiles the kernel modules against
-`pkg:linux-build`, so it is made again after a kernel update moves
-`pkg:linux`:
+`pkg:linux-build`, so an update that moves `pkg:linux` builds it
+again, to the new kernel:
 
 ```
 sudo oath build plan:nvidia              # fetches NVIDIA's 420 MB .run from download.nvidia.com
