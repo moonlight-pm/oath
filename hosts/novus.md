@@ -52,22 +52,19 @@ Overwrite this file when facts change; do not append a diary.
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
   GPU settings, the fan curve. No mounts yet: the trial leaves NixOS's
   disks alone.
-- **Oath on it:** the trial stick, Joshua's Samsung Type-C 128 GB
-  (`090c:1000`, serial `0354422110003481`; a Bazzite installer before),
-  rewritten 2026-10-29 on buccina by `cargo make install --local` from
-  desk output `67d5d5c1160c` (R41; its packs published, its release not): ESP
-  `OATHESP`, btrfs `oath`, root `UUID=e9cd5765-f83c-4d4d-a451-be9029ccdaa3`.
-  In QEMU it built `plan:nvidia` (`pkg:nvidia` `48b78914`, as buccina's
-  build; `nvidia.ko` loads and finds no GPU; `pkg:linux-build`
-  `b80fd3da` copied in from buccina's store before the bucket had it),
-  and `pkg:nvidia` and `svc:gpu-power` are on (generation 1); libglvnd
-  loads NVIDIA's EGL vendor and Mesa's, and the Vulkan loader finds
-  `nvidia_icd.json`. Its `ssh:local` has buccina's,
-  canto's and `root@hub`'s keys; while novus runs the stick, buccina or
-  canto drive it:
-  `ssh -o UserKnownHostsFile=~/.ssh/novus-oath.known_hosts home@novus` on
-  canto, `build/novus-oath.known_hosts` on buccina (the stick's host key,
-  not NixOS's). Boot it from the
+- **Oath on it:** the stick, Joshua's Samsung Type-C 128 GB
+  (`090c:1000`, serial `0354422110003481`; a Bazzite installer before).
+  Desk output `67d5d5c1160c` on it booted novus to the desk, on the card,
+  on 2026-10-30. Rewritten that day on buccina by `cargo make install
+  --local` from desk output `cf238ebe3360` (R43's `oath install`; its
+  release not published): ESP `OATHESP`, btrfs `oath`, root
+  `UUID=fcffae46-5f62-4304-97f4-d130910e66e5`. In QEMU it built
+  `plan:nvidia` (`pkg:nvidia` `48b78914`, as before), and `pkg:nvidia`
+  and `svc:gpu-power` are on (generation 1). Its `ssh:local` has
+  buccina's, canto's and `root@hub`'s keys; while novus runs the stick,
+  buccina drives it with `build/novus-oath.known_hosts` (the stick's
+  host key, rewritten 2026-10-30; canto's
+  `~/.ssh/novus-oath.known_hosts` still has the old stick's). Boot it from the
   firmware's boot menu (F8); NixOS stays the default. It enumerates only
   on a back-panel port: behind the keyboard's USB 2.0 hub it resets four
   times and never becomes a disk.

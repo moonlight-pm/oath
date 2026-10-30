@@ -36,9 +36,9 @@ append history (git has it).
    novus to the desk on 2026-10-30. R43: `oath install` on the machine
    copies the system the stick runs onto a disk (`@`, `@home`) and puts
    Oath first in the firmware's boot list; desk output `cf238ebe3360`
-   passes 63/63 and its rehearsal. Next: rewrite the stick (on buccina,
-   `sda`) with it and novus's overlay, and Joshua runs `oath install
-   21385X801116 --confirm` (the 500 GB) on novus.
+   passes 63/63 and its rehearsal, and is on the stick with `pkg:nvidia`
+   built (2026-10-30). Next: Joshua boots it on novus and runs `sudo oath
+   install 21385X801116 --confirm` (the 500 GB), then reboots.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
