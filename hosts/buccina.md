@@ -28,13 +28,18 @@ Overwrite this file when facts change; do not append a diary.
   (generation 101) beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `fdecb1ec3d68` (R41's libglvnd, BlueZ and
-  kernel, R42's `svc:login` programs), pulled on 2026-10-30 after
-  `pkg:oath` was moved first by hand (generation 104; its own `oath`
-  predated R42's planner) with `oath update --confirm` (generation 105),
-  not rebooted: PID 1, the kernel and initrd are still `e433824d38d0`'s,
-  and the next boot runs `fdecb1ec3d68`'s, as its QEMU rehearsal from
-  `c4cd226761d3` did. The update made `pkg:libglvnd`, `pkg:bluez`,
+- **Running now:** output `fed6fb141a5e` (an `oath` that builds the
+  owner's recipes and spares the seat's services), pulled on 2026-10-30
+  at 14:00Z with `oath update --confirm` (generation 106; only
+  `pkg:oath` moved, `92735e24…` to `a937565c…`, and no service
+  restarted), not rebooted: PID 1 (`b922d6d8…`), the kernel and initrd
+  are still `e433824d38d0`'s, from the boot of 2026-10-28, and the next
+  boot runs `fed6fb141a5e`'s (PID 1 `23f5f3ee…`), as its QEMU rehearsal
+  from `fdecb1ec3d68` did. Before that, `fdecb1ec3d68` (R41's libglvnd,
+  BlueZ and kernel, R42's `svc:login` programs), pulled on 2026-10-30
+  after `pkg:oath` was moved first by hand (generation 104; its own
+  `oath` predated R42's planner) with `oath update --confirm`
+  (generation 105). That update made `pkg:libglvnd`, `pkg:bluez`,
   `pkg:sbc` and `pkg:readline` and no service: `svc:login`,
   `svc:dbus-system` and `svc:bluetooth` are not here, `svc:screen` has
   no `seat`, so it acts as before (`sola-shell` failed before and
@@ -84,6 +89,7 @@ Overwrite this file when facts change; do not append a diary.
   `0c6eebe617d2` and `e433824d38d0` (22:33Z); on 2026-10-29
   `36de66963ac1` and `c4cd226761d3` (18:14Z, the first whose release
   lists Sola's pins); on 2026-10-30 `fdecb1ec3d68` (01:21Z; R41 and
-  R42); each after the QEMU cases (61, then 62) and a `cargo make
+  R42) and `fed6fb141a5e` (13:58Z; the update builds recipes and
+  spares the seat, 63 cases); each after the QEMU cases (61, then 62) and a `cargo make
   update --qemu` from the one machines ran (`--oath-first` for
   `fdecb1ec3d68`, from `c4cd226761d3` and `e433824d38d0`).
