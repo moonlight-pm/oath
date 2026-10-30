@@ -13,6 +13,7 @@ static void handle_new_virtual_keyboard(struct wl_listener *listener, void *data
 static void handle_new_constraint(struct wl_listener *listener, void *data);
 static void handle_new_input_method(struct wl_listener *listener, void *data);
 static void handle_new_text_input(struct wl_listener *listener, void *data);
+static void handle_new_shortcuts_inhibitor(struct wl_listener *listener, void *data);
 
 bool rv_input_manager_init(struct rv_input_manager *input_manager) {
 	struct rv_input_manager im = {0};
@@ -58,6 +59,10 @@ bool rv_input_manager_init(struct rv_input_manager *input_manager) {
 	if (im.tablet_manager == NULL) {
 		return false;
 	}
+	im.shortcuts_inhibit_manager = wlr_keyboard_shortcuts_inhibit_v1_create(server.wl_server);
+	if (im.shortcuts_inhibit_manager == NULL) {
+		return false;
+	}
 
 	*input_manager = im;
 	input_manager->new_input.notify = handle_new_input;
@@ -66,6 +71,7 @@ bool rv_input_manager_init(struct rv_input_manager *input_manager) {
 	input_manager->new_constraint.notify = handle_new_constraint;
 	input_manager->new_input_method.notify = handle_new_input_method;
 	input_manager->new_text_input.notify = handle_new_text_input;
+	input_manager->new_shortcuts_inhibitor.notify = handle_new_shortcuts_inhibitor;
 
 	wl_list_init(&input_manager->objects);
 	wl_list_init(&input_manager->devices);
@@ -90,6 +96,8 @@ bool rv_input_manager_init(struct rv_input_manager *input_manager) {
 	wl_signal_add(&input_manager->input_method_manager->events.new_input_method,
 		&input_manager->new_input_method);
 	wl_signal_add(&input_manager->text_input_manager->events.new_text_input, &input_manager->new_text_input);
+	wl_signal_add(&input_manager->shortcuts_inhibit_manager->events.new_inhibitor,
+		&input_manager->new_shortcuts_inhibitor);
 	return true;
 }
 
@@ -105,6 +113,7 @@ void rv_input_manager_deinit(struct rv_input_manager *input_manager) {
 	wl_list_remove(&input_manager->new_constraint.link);
 	wl_list_remove(&input_manager->new_input_method.link);
 	wl_list_remove(&input_manager->new_text_input.link);
+	wl_list_remove(&input_manager->new_shortcuts_inhibitor.link);
 
 	while (!wl_list_empty(&input_manager->seats)) {
 		struct rv_seat *seat = wl_container_of(input_manager->seats.next, seat, link);
@@ -318,4 +327,13 @@ static void handle_new_text_input(struct wl_listener *listener, void *data) {
 		wl_resource_post_no_memory(wlr_text_input->resource);
 		return;
 	}
+}
+
+// Oath: wlroots keeps the inhibitors and frees them with their surface or
+// seat; rivulet only decides which is active.
+static void handle_new_shortcuts_inhibitor(struct wl_listener *listener, void *data) {
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor = data;
+	struct rv_seat *seat = inhibitor->seat->data;
+	rv_debug(RV_SCOPE_INPUT, "new keyboard shortcuts inhibitor on seat %s", seat->wlr_seat->name);
+	rv_seat_update_shortcuts_inhibitors(seat);
 }

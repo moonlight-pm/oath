@@ -354,6 +354,7 @@ static bool blocklist(struct rv_server *server, const struct wl_global *global) 
 		global == server->input_manager.virtual_pointer_manager->global ||
 		global == server->input_manager.virtual_keyboard_manager->global ||
 		global == server->input_manager.input_method_manager->global ||
+		global == server->input_manager.shortcuts_inhibit_manager->global ||
 		global == server->lock_manager.wlr_manager->global;
 }
 

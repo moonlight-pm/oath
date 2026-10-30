@@ -14,11 +14,12 @@ versions, so `sola-river` drives it unchanged. GPL-3.0-only
 | `src/<file>.c` | one per Zig file: `Window.zig` → `window.c`, `XdgToplevel.zig` → `xdg_toplevel.c` |
 | `src/rivulet.h` | the one header every `.c` includes: libraries, protocol headers, forward declarations, then the area headers |
 | `src/{util,config,output,core,window,cursor,seat,server}.h` | types and prototypes by area, in include order |
-| `protocol/` | River's six protocols and the three wlr ones its headers need |
+| `protocol/` | River's six protocols, the three wlr ones its headers need, and wlr's virtual pointer for `test/inhibit.c` |
 | `Makefile` | `make` → `build/rivulet`; `BUILD=<dir>` builds elsewhere; `make install DESTDIR= PREFIX=` |
 | `dev.nix` | build host only: the shell to build and test on novus (Sola's nixpkgs pin) |
 | `test/headless.sh` | a headless run driven by `sola-river`, and a comparison of two runs |
 | `test/sandbox.sh` | the built `pkg:rivulet` in the build sandbox: headless, with an X client through Xwayland |
+| `test/inhibit.sh`, `test/inhibit.c` | keyboard-shortcuts-inhibit end to end on an Oath build host: a window manager's chords against a client that captures input |
 
 Names follow the Zig: type `Foo` is `struct rv_foo`, method `Foo.bar` is
 `rv_foo_bar()`, fields keep their Zig names, a nested type takes its
@@ -75,6 +76,13 @@ build sandbox: rivulet headless on pixman, and as its init an X client
 - The render-order hash is FNV-1a 64, not Blake3; only equality is used.
 - With xkbcommon older than 1.12, keymaps compare through
   `xkb_keymap_get_as_string` instead of `…_string2`.
+- It serves keyboard-shortcuts-inhibit-unstable-v1 (R44): while the
+  surface with keyboard focus holds an inhibitor, keys skip the window
+  manager's bindings (the builtin VT switch still runs), and when that
+  surface also has the pointer locked or confined, buttons skip the
+  pointer bindings. An inhibitor is active only while its surface has
+  focus; sandboxed clients (security-context) do not see the global.
+  `test/inhibit.sh` checks it against a window manager's chords.
 - Log lines go to stderr through stdio. Zig's River writes stderr at its
   own offset, so in a file shared with Xwayland it overwrote lines.
 

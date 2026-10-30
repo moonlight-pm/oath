@@ -230,10 +230,22 @@ HFP of its own), and WirePlumber, which wants the system bus, makes a
 node for each device; a Bluetooth LE controller or keyboard is an input
 device through `uhid`. No OBEX, mesh, MIDI or LE Audio codecs.
 
-`svc:sola-kvm` runs `sola-kvm listen --bind 0.0.0.0:4242` (UDP). novus
-runs `sola-kvm server --input evdev` with canto (10.0.0.3) to its right;
-when novus's cursor crosses that edge, its pointer and keys drive
-canto's desk.
+The KVM (R44). Is: `svc:sola-kvm` runs `sola-kvm listen --bind
+0.0.0.0:4242` (UDP), and the `desk` profile has it off since 2026-10-30;
+canto's catalog still has it on. The listener types through the
+compositor (virtual pointer and keyboard), so it needs no device. On
+NixOS, novus ran `sola-kvm server --input evdev` with canto (10.0.0.3)
+to its right; on Oath that cannot read the keyboard (R20, R30). The link
+is plain UDP with no key. Will be: the server captures through the
+compositor, as any client may: a layer surface at the edge takes
+keyboard focus, locks the pointer, reads relative motion
+(relative-pointer) and holds a keyboard-shortcuts inhibitor, so
+rivulet hands it every key and button but its builtin VT switch (built
+2026-10-30, `apps/rivulet/test/inhibit.sh`; sandboxed clients cannot
+inhibit). The two machines pair once by public key, every packet is
+encrypted and authenticated, and a machine listens only when paired.
+Both halves are Sola's `sola-kvm`; Oath's are the compositor and the
+profile.
 
 ## Signatures to watch
 

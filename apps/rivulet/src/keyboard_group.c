@@ -242,7 +242,11 @@ static void handle_key(struct wl_listener *listener, void *data) {
 				goto consumer_found;
 			}
 		}
-		struct rv_xkb_binding *binding = rv_seat_match_xkb_binding(group->seat, xkb_keycode, modifiers, xkb_state);
+		// Oath: a focused client with an active keyboard-shortcuts inhibitor gets
+		// every key but the builtin ones above, which stay the way out.
+		const bool inhibited = rv_seat_shortcuts_inhibited(group->seat);
+		struct rv_xkb_binding *binding =
+			inhibited ? NULL : rv_seat_match_xkb_binding(group->seat, xkb_keycode, modifiers, xkb_state);
 		if (binding != NULL) {
 			rv_debug(RV_SCOPE_INPUT, "matched xkb binding");
 			group->seat->xkb_bindings_seat.ensure_next_key_eaten = false;
@@ -252,7 +256,7 @@ static void handle_key(struct wl_listener *listener, void *data) {
 			};
 			goto consumer_found;
 		}
-		if (group->seat->xkb_bindings_seat.ensure_next_key_eaten) {
+		if (!inhibited && group->seat->xkb_bindings_seat.ensure_next_key_eaten) {
 			// This approach for filtering out modifiers feels like a hack.
 			// Open questions:
 			// - Are there keycodes that should be considered a modifier which

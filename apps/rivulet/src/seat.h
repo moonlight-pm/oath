@@ -629,6 +629,15 @@ void rv_seat_focus(struct rv_seat *seat, struct rv_seat_focus new_focus);
 // target_surface may be NULL.
 void rv_seat_keyboard_enter_or_leave(struct rv_seat *seat, struct wlr_surface *target_surface);
 void rv_seat_handle_activity(struct rv_seat *seat);
+// Oath: keyboard-shortcuts-inhibit. An inhibitor is active while its surface
+// has the seat's keyboard focus; update makes that so after focus changes.
+void rv_seat_update_shortcuts_inhibitors(struct rv_seat *seat);
+// The keyboard focus holds an active inhibitor: keys skip the window
+// manager's bindings (the builtin VT switch still runs).
+bool rv_seat_shortcuts_inhibited(struct rv_seat *seat);
+// It also has the pointer locked or confined: buttons skip the pointer
+// bindings too, so a client capturing input (a KVM, a VM viewer) gets it all.
+bool rv_seat_input_captured(struct rv_seat *seat);
 // Handle any user-defined mapping for passed keycode, modifiers and keyboard state
 // Returns the matched binding, if any. modifiers is a wlr.Keyboard.ModifierMask.
 struct rv_xkb_binding *rv_seat_match_xkb_binding(struct rv_seat *seat, xkb_keycode_t keycode, uint32_t modifiers,
@@ -660,6 +669,8 @@ struct rv_input_manager {
 	struct wlr_input_method_manager_v2 *input_method_manager;
 	struct wlr_text_input_manager_v3 *text_input_manager;
 	struct wlr_tablet_manager_v2 *tablet_manager;
+	// Oath: keyboard-shortcuts-inhibit-unstable-v1, which River 0.4.5 lacks.
+	struct wlr_keyboard_shortcuts_inhibit_manager_v1 *shortcuts_inhibit_manager;
 
 	struct wl_list devices; // struct rv_input_device.link
 	struct wl_list seats; // struct rv_seat.link
@@ -669,6 +680,7 @@ struct rv_input_manager {
 	struct wl_listener new_constraint; // default: .init(handleNewConstraint)
 	struct wl_listener new_input_method; // default: .init(handleNewInputMethod)
 	struct wl_listener new_text_input; // default: .init(handleNewTextInput)
+	struct wl_listener new_shortcuts_inhibitor; // Oath
 };
 
 // Zig !void: returns false if a global/wlroots object or the default seat could not be created.

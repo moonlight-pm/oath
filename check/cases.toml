@@ -769,17 +769,17 @@ steps = [
 
 [[case]]
 name = "desk-sound"
-about = "The desk's sound, fonts, tools and KVM: PipeWire sees the sound cards and answers as PulseAudio, fontconfig picks Noto, git fetches over https, and sola-kvm listens."
+about = "The desk's sound, fonts, tools and KVM: PipeWire sees the sound cards and answers as PulseAudio, fontconfig picks Noto, git fetches over https, and sola-kvm stays off until the machine is paired (R44)."
 metal = true
 qemu = false
 profile = "desk"
 steps = [
-  { run = "for s in dbus-session pipewire wireplumber pipewire-pulse sola-kvm; do printf '%s ' $s; oath get svc:$s | grep '  state:'; done", expect = ["pipewire-pulse   state: \"running\"", "wireplumber   state: \"running\"", "sola-kvm   state: \"running\""], reject = ["failed", "restarting"] },
+  { run = "for s in dbus-session pipewire wireplumber pipewire-pulse; do printf '%s ' $s; oath get svc:$s | grep '  state:'; done", expect = ["pipewire-pulse   state: \"running\"", "wireplumber   state: \"running\""], reject = ["failed", "restarting"] },
   { run = "stat -c '%u:%g %a %n' /dev/snd/controlC0", expect = ["0:1 660 /dev/snd/controlC0"] },
   { run = "export XDG_RUNTIME_DIR=/run/user/1; sleep 3; pactl info; pactl list short sinks", expect = ["on PipeWire", "alsa_output."] },
   { run = "fc-match sans-serif; fc-match monospace; fc-match 'sans-serif:lang=ja'; fc-match emoji", expect = ["Noto Sans", "Iosevka Term Slab", "Noto Sans CJK JP", "Noto Color Emoji"] },
   { run = "git ls-remote https://github.com/git/git HEAD", expect = ["HEAD"], timeout = 60 },
-  { run = "grep -i ':1092 ' /proc/net/udp", expect = ["00000000:1092"] },
+  { run = "oath get svc:sola-kvm | grep -E '  (enabled|state):'; grep -qi ':1092 ' /proc/net/udp && echo 'udp 4242 open' || echo 'udp 4242 closed'", expect = ["enabled: false", "udp 4242 closed"] },
 ]
 
 [[case]]

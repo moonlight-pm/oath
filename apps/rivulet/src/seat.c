@@ -955,6 +955,45 @@ void rv_seat_keyboard_enter_or_leave(struct rv_seat *seat, struct wlr_surface *t
 	} else {
 		wlr_seat_keyboard_notify_clear_focus(seat->wlr_seat);
 	}
+	rv_seat_update_shortcuts_inhibitors(seat);
+}
+
+void rv_seat_update_shortcuts_inhibitors(struct rv_seat *seat) {
+	struct wlr_surface *focused = seat->wlr_seat->keyboard_state.focused_surface;
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor;
+	wl_list_for_each(inhibitor, &server.input_manager.shortcuts_inhibit_manager->inhibitors, link) {
+		if (inhibitor->seat != seat->wlr_seat) {
+			continue;
+		}
+		if (inhibitor->surface == focused && !inhibitor->active) {
+			rv_info(RV_SCOPE_INPUT, "keyboard shortcuts inhibited for the focused surface");
+			wlr_keyboard_shortcuts_inhibitor_v1_activate(inhibitor);
+		} else if (inhibitor->surface != focused && inhibitor->active) {
+			rv_info(RV_SCOPE_INPUT, "keyboard shortcuts restored, inhibiting surface lost focus");
+			wlr_keyboard_shortcuts_inhibitor_v1_deactivate(inhibitor);
+		}
+	}
+}
+
+bool rv_seat_shortcuts_inhibited(struct rv_seat *seat) {
+	struct wlr_surface *focused = seat->wlr_seat->keyboard_state.focused_surface;
+	if (focused == NULL) {
+		return false;
+	}
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor;
+	wl_list_for_each(inhibitor, &server.input_manager.shortcuts_inhibit_manager->inhibitors, link) {
+		if (inhibitor->seat == seat->wlr_seat && inhibitor->surface == focused && inhibitor->active) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool rv_seat_input_captured(struct rv_seat *seat) {
+	struct rv_pointer_constraint *constraint = seat->cursor.constraint;
+	return rv_seat_shortcuts_inhibited(seat) && constraint != NULL &&
+		constraint->state.tag == RV_POINTER_CONSTRAINT_STATE_ACTIVE &&
+		constraint->wlr_constraint->surface == seat->wlr_seat->keyboard_state.focused_surface;
 }
 
 static void keyboard_notify_enter(struct rv_seat *seat, struct wlr_surface *wlr_surface) {

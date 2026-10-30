@@ -24,13 +24,13 @@ append history (git has it).
    pads' nodes (R30). Next: a 32-bit game and a pad.
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28).
-   `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`); Sola's
-   packs from `83df4558` are built on it and pinned (R37 done
-   2026-10-29). R42: `svc:login`, the seat's turns, `oath password`,
-   `oath desk` ([docs/specs/login.md](docs/specs/login.md)), published
-   in `fdecb1ec3d68`; canto has its objects (generation 411). Next:
-   Sola's `sola-lock`, Settings → Login and Exit Sola tried on canto.
+   Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28, R37);
+   `pkg:cef` is CEF 156 with H.264 and AAC (R40). R42's login is in
+   `fdecb1ec3d68`. R44 (2026-10-30): the KVM will capture through
+   rivulet, which serves keyboard-shortcuts-inhibit (`pkg:rivulet`
+   `be2a874d`), and pair by key; `svc:sola-kvm` is off in the profile.
+   Next (Sola's session): `sola-kvm`'s capture and pairing; `sola-lock`,
+   Settings → Login and Exit Sola tried on canto.
 4. **novus on Oath (R32–R35, R41, R43, [hosts/novus.md](hosts/novus.md)).**
    `oath install` from the stick put desk output `cf238ebe3360` on the
    500 GB on 2026-10-30; novus boots it to the desk on the card. Its AMI

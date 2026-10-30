@@ -225,7 +225,7 @@
         "svc:sola-river"
       ],
       "restart": "always",
-      "enabled": true,
+      "enabled": false,
       "user": "home",
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",

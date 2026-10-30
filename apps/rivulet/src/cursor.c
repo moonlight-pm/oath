@@ -620,7 +620,9 @@ void rv_cursor_process_button(struct rv_cursor *cursor, const struct rv_seat_eve
 		}
 		index = cursor->pressed.len - 1;
 
-		struct rv_pointer_binding *binding = rv_seat_match_pointer_binding(cursor->seat, event->button);
+		// Oath: not while a client has captured input (rv_seat_input_captured).
+		struct rv_pointer_binding *binding =
+			rv_seat_input_captured(cursor->seat) ? NULL : rv_seat_match_pointer_binding(cursor->seat, event->button);
 		if (binding != NULL) {
 			cursor->pressed.items[index].binding = binding;
 			rv_pointer_binding_pressed(binding);
