@@ -216,9 +216,11 @@ overlay and its recipes built (novus's NVIDIA driver).
   the release it was offered against the one installed: novus, installed
   from the unpublished `cf238ebe3360`, was moved back to `fed6fb141a5e`
   and lost `@home`'s mount. The `oath install` rehearsal requires it.
-  Desk output `d5a031ace04e` (R44's rivulet, R45) passes 64/64, the
+  Desk output `d5a031ace04e` (R44's rivulet, R45) passed 64/64, the
   `oath install` rehearsal, and updates from `fed6fb141a5e` (novus,
-  buccina) and `fdecb1ec3d68` with Steam (canto, rebuilt bit for bit).
+  buccina) and `fdecb1ec3d68` with Steam (canto, rebuilt bit for bit);
+  `86dd0d999ce4`, the same packs built from commit `162234b`, is the
+  one to publish.
 - On metal (novus, an ASUS ProArt X570-Creator with AMI firmware,
   2026-10-30): `oath install 21385X801116 --confirm` from the stick put
   `cf238ebe3360` on the 500 GB, which boots to the desk. Two gaps, not

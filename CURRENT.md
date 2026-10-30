@@ -37,7 +37,7 @@ append history (git has it).
    1 has no `@home` (R45: installs now record their release, and releases
    order by commit). R45 lets `/home` itself be a `host:local.mounts` key,
    mounted at boot; canto's session copied /home to `@oath-home` on the
-   2 TB. Next: publish `d5a031ace04e` (Joshua's word), then canto's
+   2 TB. Next: publish `86dd0d999ce4` (Joshua's word), then canto's
    session updates novus, re-syncs /home, sets the mount and reboots.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
