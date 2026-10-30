@@ -33,13 +33,15 @@ Overwrite this file when facts change; do not append a diary.
   OS` to remove, yet it was there after the reset, and Oath was not
   first: Joshua moved it up in the firmware's setup. Removing the 2 TB's
   ESP (or its `\EFI\BOOT\BOOTX64.EFI`) should end the `UEFI OS` entry.
-- **Home:** at install Oath's `@home` on the 500 GB. Since the update to
-  `fed6fb141a5e` (whose PID 1 predates `@home`), /home is `@`'s
-  directory; `@home` still holds the home from before it. canto's session
-  made `@oath-home` on the 2 TB's btrfs `home` (`UUID=580d861c-…`, beside
-  NixOS's `@home` and `@snapshots`, untouched) and copied /home into it.
-  Next (R45): from an output that has it, `host:local.mounts` `/home` on
-  `@oath-home`, from the next boot; then restore from the 4 TB by hand.
+- **Home (R45):** `/home` is `@oath-home` on the 2 TB's btrfs `home`
+  (`UUID=580d861c-4b96-4017-856c-0b55ff4e58ce`, beside NixOS's `@home`
+  and `@snapshots`, untouched), set in `host:local.mounts` with
+  `subvol=@oath-home,noatime,compress=zstd:1` and mounted by PID 1 at
+  boot since 2026-10-30 23:55Z. canto's session made it and copied /home
+  in; buccina's re-synced it before the boot. Leftovers, not mounted: the
+  500 GB's `@home` (the install's home, until the downgrade below) and
+  `@`'s /home directory (137 MB, under the mount). Next: Joshua restores
+  what he picks from the 4 TB.
 - **GPU (R34):** NVIDIA 595.104.02 (`pkg:nvidia` `48b78914`, a recipe in
   the `desk` profile) with GSP off (`NVreg_EnableGpuFirmware=0`, in
   `host:local.module_options`), capped by `svc:gpu-power` at 250 W with
@@ -67,8 +69,10 @@ Overwrite this file when facts change; do not append a diary.
   --confirm` from the stick: desk output `cf238ebe3360` (never published)
   at generation 0, with no `/oath/output.json` (R45 makes installs write
   one). Joshua's `sudo oath update --confirm` then moved it to the older
-  published `fed6fb141a5e` (generation 1, 22:39Z) and he rebooted. It
-  boots from the 500 GB to the desk on the card. Its `ssh:local`
+  published `fed6fb141a5e` (generation 1, 22:39Z), whose PID 1 has no
+  `@home`. At 23:54Z buccina updated it to `86dd0d999ce4` (generation 2:
+  `pkg:oath`, `pkg:rivulet`), set /home (generation 3) and rebooted it:
+  PID 1 is the output's, in sync, 21 services, the desk on the card. Its `ssh:local`
   has buccina's, canto's and `root@hub`'s keys; buccina reaches it with
   `ssh -o UserKnownHostsFile=build/novus-oath.known_hosts home@10.0.0.5`
   (the host key the install printed, ending `Suecii`). canto's
