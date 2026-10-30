@@ -13,13 +13,15 @@
 //!    (docs/manual/install.md).
 //! 4. `sudo oath update --confirm`, reboot, and require the output's PID 1
 //!    with the catalog in sync, each pack pinned from elsewhere at the
-//!    newer output's pin, and the old boot archived on the ESP.
+//!    newer output's pin, every service that ran before running again, and
+//!    the old boot archived on the ESP.
 //! 5. A machine from before R36 then moves `svc:sshd` to OpenSSH with a
 //!    second `oath update --confirm`, kept from a new SSH session.
 //!
 //! Real machines are never written from here: each runs `sudo oath
 //! update` itself.
 
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
@@ -42,6 +44,8 @@ pub struct Opts {
     pub qemu: String,
     pub output: Option<String>,
     pub unchecked: bool,
+    /// Move `pkg:oath` first, so the output's own `oath` plans the update.
+    pub oath_first: bool,
 }
 
 pub fn run_update(root: &Path, out: &Path, opts: Opts) -> Result<()> {
@@ -51,7 +55,7 @@ pub fn run_update(root: &Path, out: &Path, opts: Opts) -> Result<()> {
         crate::check::require_checked(&o.dir).context("pass --unchecked to rehearse it anyway")?;
     }
     eprintln!("output {}", o.dir.display());
-    rehearse(root, out, &o, &opts.qemu)
+    rehearse(root, out, &o, &opts.qemu, opts.oath_first)
 }
 
 /// A QEMU machine booted from an installed disk through OVMF.
@@ -112,7 +116,7 @@ impl Drop for Vm {
     }
 }
 
-fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
+fn rehearse(root: &Path, out: &Path, o: &Output, from: &str, oath_first: bool) -> Result<()> {
     let old = output::open(out, from)?;
     if old.id == o.id {
         bail!("--qemu {from} is the output being rehearsed; name an older one");
@@ -206,10 +210,13 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
         install::ssh_run(&r, &format!("set -e\noath set {id} --from-json {q}\noath apply {id}\n"))
     };
     set("host:local", json!({ "origins": [format!("http://10.0.2.2:{port}")] }))?;
-    if install::ssh_out(&r, "oath update --help >/dev/null 2>&1 && echo yes; true")? != "yes" {
+    let no_update = install::ssh_out(&r, "oath update --help >/dev/null 2>&1 && echo yes; true")?
+        != "yes";
+    if no_update || oath_first {
         let doc: Value = oath_core::read_json(&o.file("stage/oath/objects/pkg/oath/desired.json"))
             .map_err(|e| anyhow::anyhow!("{e}"))?;
-        eprintln!(">> pkg:oath first: this machine's oath has no update");
+        let why = if no_update { "this machine's oath has no update" } else { "--oath-first" };
+        eprintln!(">> pkg:oath first: {why}");
         let needs = doc.get("needs").cloned().unwrap_or_else(|| json!([]));
         set("pkg:oath", json!({ "hash": doc["hash"], "needs": needs }))?;
     }
@@ -221,10 +228,16 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
     )?;
 
     // 4. The update.
+    let ran_before = steady_services(&r)?;
     eprintln!("{}", install::ssh_out(&r, "oath update 2>&1")?);
-    eprintln!("{}", install::ssh_out(&r, "oath update --confirm 2>&1")?);
+    let moved = install::ssh_out(&r, "oath update --confirm 2>&1; echo \"update-exit=$?\"")?;
+    eprintln!("{moved}");
+    if !moved.trim_end().ends_with("update-exit=0") {
+        bail!("oath update --confirm failed (above)");
+    }
     reboot_and_verify(&r, o, &mut vm)?;
     pinned_moved(&r, &old, o, &ran)?;
+    services_back(&r, &ran_before)?;
 
     // 5. dropbear to OpenSSH, kept from a new session.
     let sshd = install::ssh_out(&r, "oath --json get svc:sshd --desired")?;
@@ -272,6 +285,44 @@ fn rehearse(root: &Path, out: &Path, o: &Output, from: &str) -> Result<()> {
     eprintln!("{}", install::ssh_out(&r, "oath update 2>&1")?);
     eprintln!("QEMU update rehearsal ok: {} -> {}  {}", old.id, o.id, dir.display());
     copy_file(&dir.join("known_hosts"), &dir.join("known_hosts.kept")).ok();
+    Ok(())
+}
+
+/// The services running now and ten seconds from now: not one that comes
+/// and goes (in QEMU, a desk program with no GPU).
+fn steady_services(r: &Remote) -> Result<BTreeSet<String>> {
+    let now = running_services(r)?;
+    thread::sleep(Duration::from_secs(10));
+    let later = running_services(r)?;
+    Ok(now.intersection(&later).cloned().collect())
+}
+
+fn running_services(r: &Remote) -> Result<BTreeSet<String>> {
+    let names = install::ssh_out(
+        r,
+        "for f in /oath/status/svc/*.json; do n=${f##*/}; \
+         grep -q '\"state\": *\"running\"' \"$f\" && echo \"svc:${n%.json}\"; done; true",
+    )?;
+    Ok(names.lines().map(str::to_string).collect())
+}
+
+/// Every service that ran steadily before the update runs after it (each
+/// seen running within two minutes of the boot).
+fn services_back(r: &Remote, before: &BTreeSet<String>) -> Result<()> {
+    let mut missing = before.clone();
+    let deadline = Instant::now() + Duration::from_secs(120);
+    while !missing.is_empty() && Instant::now() < deadline {
+        let now = running_services(r)?;
+        missing.retain(|s| !now.contains(s));
+        if !missing.is_empty() {
+            thread::sleep(Duration::from_secs(3));
+        }
+    }
+    if !missing.is_empty() {
+        let list: Vec<&str> = missing.iter().map(String::as_str).collect();
+        bail!("services that ran before the update do not run after it: {}", list.join(" "));
+    }
+    eprintln!("every service that ran before the update runs again ({})", before.len());
     Ok(())
 }
 

@@ -145,8 +145,12 @@ on probation. With `--confirm`, it:
    `/var/empty`, since services that restart next drop to `void` (R36);
 4. sets each package the machine has to the output's pin and needs,
    makes each package the output fixes that the machine lacks (the
-   image's files need it: `/etc/passwd` names `pkg:zsh`'s shell), and
-   runs `oath apply` once
+   image's files need it: `/etc/passwd` names `pkg:zsh`'s shell) and
+   each one a package it has present needs, down their needs (R41's
+   `pkg:libglvnd`, which wlroots needs once Mesa leaves libEGL to it), and
+   runs `oath apply` once (a name in `/bin` or `/lib` that moves from one
+   package to another, `libEGL.so.1` there, moves in it whichever
+   converges first)
    (`oath undo` takes it back but keeps a fixed package; other objects
    the output's seed has and the machine does not, a new base service
    say, are listed, not created: add them with `oath new`). A package
@@ -187,6 +191,17 @@ the archived boot should keep the old userspace. Two builds of step 1
 pinned each pack as they fetched it, so the apply skipped a package
 that had been applied before and left it unlinked: on a machine with
 either, take the newer `oath` by hand first, as above, then update.
+
+An `oath` from before R42 (`pkg:oath` `sha256-618db152642b…` and older)
+does not make the new packages the others need, nor hand `/lib`'s names
+from one package to another, so its apply refuses:
+nothing converges, but the specs it set stay as drift, and the next
+update sets them again. Take the newer `oath` first, then update:
+
+```sh
+sudo oath set pkg:oath hash=sha256-92735e24e5832267facb9be877e8c98867713d5ac4e16d68639ee61be20b28ae && sudo oath apply pkg:oath
+oath update && sudo oath update --confirm
+```
 
 A machine from before R38 has no `oath update` yet. Give it the newer
 `oath` first (the pin is `pkg:oath`'s `hash` in the output's seed,

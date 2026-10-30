@@ -92,6 +92,8 @@ pub fn converge_with_link_root(
                         continue;
                     }
                     fs::remove_file(&dest)?;
+                } else if handed_over(store_root, &dest, "bin", n) {
+                    fs::remove_file(&dest)?;
                 } else {
                     return Err(Error::hint(
                         format!("/bin/{n} exists and is not pkg:{name}"),
@@ -312,7 +314,8 @@ fn lib_names(lib: &Path) -> Result<Vec<String>> {
 }
 
 /// Link `<dir_path>/<n>` to the pack's `<dir>/<n>`, or leave it if it is
-/// already ours; another package's or a real file is an error.
+/// already ours; another package's or a real file is an error, unless
+/// that package hands the name over (`handed_over`).
 fn link_one(
     dir_path: &Path,
     dir: &str,
@@ -325,6 +328,9 @@ fn link_one(
     fs::create_dir_all(dir_path)?;
     let target = store_target(link_root, name, dir, n, tree, store_root);
     let dest = dir_path.join(n);
+    if dest.symlink_metadata().is_ok() && handed_over(store_root, &dest, dir, n) {
+        fs::remove_file(&dest)?;
+    }
     if dest.symlink_metadata().is_ok() {
         if !is_our_link(&dest, &target, &tree.join(dir).join(n), &slot_dir(store_root, name)) {
             return Err(Error::hint(
@@ -363,6 +369,27 @@ fn unlink_ours(
 
 /// Remove the links in `dir_path` into pkg:`name`'s slot whose names are
 /// not in `keep`: what an earlier realization had and this one dropped.
+/// Whether `dest` links into another package's store, and that package's
+/// desired tree (in the store already) has no `<dir>/<n>`, or it is to be
+/// absent: it drops the name in this apply, and another package may take
+/// it whichever converges first (R41: `libEGL.so.1` from Mesa to
+/// libglvnd, in one update).
+fn handed_over(store_root: &Path, dest: &Path, dir: &str, n: &str) -> bool {
+    let Ok(cur) = fs::read_link(dest) else { return false };
+    let cur = cur.to_string_lossy();
+    let Some(other) = cur.split("/store/pkg/").nth(1).and_then(|r| r.split('/').next()) else {
+        return false;
+    };
+    let desired = store_root.join("objects/pkg").join(other).join("desired.json");
+    let Ok(doc) = crate::read_json::<serde_json::Value>(&desired) else { return false };
+    if doc.get("present") == Some(&serde_json::json!(false)) {
+        return true;
+    }
+    let Some(hash) = doc.get("hash").and_then(|h| h.as_str()) else { return false };
+    let tree = realization_dir(store_root, other, hash);
+    tree.is_dir() && tree.join(dir).join(n).symlink_metadata().is_err()
+}
+
 fn unlink_dropped(dir_path: &Path, name: &str, keep: &[String]) -> Result<()> {
     let Ok(entries) = fs::read_dir(dir_path) else { return Ok(()) };
     let ours = format!("/store/pkg/{name}/");
@@ -1730,6 +1757,46 @@ mod needs_tests {
         symlink(realization_dir(&cat, "app", &old).join("bin/gone"), bin.join("gone")).unwrap();
         converge_with_link_root(&cat, &bin, &cat, "app", false, &new).unwrap();
         assert_eq!(names(&bin), ["other", "reboot"]);
+    }
+
+    #[test]
+    fn a_name_one_package_drops_another_may_take() {
+        let d = tempfile::tempdir().unwrap();
+        let cat = d.path().join("cat");
+        let (bin, lib) = (d.path().join("bin"), d.path().join("lib"));
+        let tree = |files: &[&str]| {
+            let t = tempfile::tempdir_in(d.path()).unwrap();
+            for f in files {
+                fs::create_dir_all(t.path().join(f).parent().unwrap()).unwrap();
+                fs::write(t.path().join(f), f.as_bytes()).unwrap();
+            }
+            t
+        };
+        let install = |name: &str, files: &[&str]| {
+            install_tree(&cat, name, tree(files).path(), None, "").unwrap()
+        };
+        let pin = |name: &str, hash: &str| {
+            let dir = cat.join("objects/pkg").join(name);
+            fs::create_dir_all(&dir).unwrap();
+            let doc = serde_json::json!({ "present": true, "hash": hash });
+            fs::write(dir.join("desired.json"), doc.to_string()).unwrap();
+        };
+        let old = install("mesa", &["bin/mesa", "lib/libEGL.so.1", "lib/libgbm.so.1"]);
+        let new = install("mesa", &["bin/mesa", "lib/libEGL_mesa.so.0", "lib/libgbm.so.1"]);
+        let glvnd = install("libglvnd", &["bin/glvnd", "lib/libEGL.so.1"]);
+        converge_with_link_root(&cat, &bin, &cat, "mesa", true, &old).unwrap();
+        // While Mesa's desired tree still has it, the name stays Mesa's.
+        pin("mesa", &old);
+        let e = converge_with_link_root(&cat, &bin, &cat, "libglvnd", true, &glvnd).unwrap_err();
+        assert!(e.to_string().contains("/lib/libEGL.so.1 exists and is not pkg:libglvnd"), "{e}");
+        // An update moves Mesa off it: libglvnd takes it before Mesa converges.
+        pin("mesa", &new);
+        converge_with_link_root(&cat, &bin, &cat, "libglvnd", true, &glvnd).unwrap();
+        converge_with_link_root(&cat, &bin, &cat, "mesa", true, &new).unwrap();
+        let egl = fs::read_link(lib.join("libEGL.so.1")).unwrap();
+        assert!(egl.starts_with(realization_dir(&cat, "libglvnd", &glvnd)), "{egl:?}");
+        assert!(lib.join("libEGL_mesa.so.0").symlink_metadata().is_ok());
+        assert!(lib.join("libgbm.so.1").symlink_metadata().is_ok());
     }
 
     #[test]

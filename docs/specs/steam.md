@@ -36,7 +36,7 @@ lists it. Against a machine's root:
 
 | Package | What |
 |---------|------|
-| `steam` | Recipe (R23) of `steam_1.0.0.87.tar.gz` from repo.steampowered.com, sha256-pinned, its `.dsc` clearsigned by Valve (`pkgs/keys/valve.asc`, `DB23C56B…879D59CB`). `libexec/steam/` holds Valve's `bin_steam.sh` and bootstrap tarball; `bin/steam` is the sandbox; `libexec/steam/bin/ldd` knows both loaders (steam.sh's library check). `libexec/steam/true` is a 129-byte static ELF (exit 0), written by `printf`. Runs with `bubblewrap`, `glibc-i386`, `libxcrypt`, `libxcrypt-i386` and `mesa-i386`. |
+| `steam` | Recipe (R23) of `steam_1.0.0.87.tar.gz` from repo.steampowered.com, sha256-pinned, its `.dsc` clearsigned by Valve (`pkgs/keys/valve.asc`, `DB23C56B…879D59CB`). `libexec/steam/` holds Valve's `bin_steam.sh` and bootstrap tarball; `bin/steam` is the sandbox; `libexec/steam/bin/ldd` knows both loaders (steam.sh's library check). `libexec/steam/true` is a 129-byte static ELF (exit 0), written by `printf`. Runs with `bubblewrap`, `glibc-i386`, `libxcrypt`, `libxcrypt-i386`, `mesa-i386` and `libglvnd-i386`. |
 | `glibc-i386` | Built. glibc 2.44, i386: `lib32/` with `ld-linux.so.2`, slibdir `/lib32` (`${LIB}` is `lib32`, Arch's pair), locales from `/lib/locale`. Built by a C compiler made in the same plan from `pkg:gcc`'s tarball for its 32-bit libgcc. Headers are `pkg:glibc`'s but `gnu/stubs-32.h` and `gnu/lib-names-32.h`. |
 | `libxcrypt` | Built. `libcrypt.so.1`, glibc's crypt ABI. |
 | `bubblewrap` | Built. `bwrap` 0.13.1, unprivileged (not setuid). |

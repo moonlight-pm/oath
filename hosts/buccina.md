@@ -28,13 +28,19 @@ Overwrite this file when facts change; do not append a diary.
   (generation 101) beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `c4cd226761d3` (the `desk` profile: CEF 156
-  with codecs, Sola from `83df4558`), pulled with `oath update
-  --confirm` on 2026-10-29 (generation 102), not rebooted, so PID 1,
-  the kernel and initrd are still `e433824d38d0`'s. Its `oath` then
-  predated moving Sola's pins, so they were set by hand (generation
-  103) and `/oath/output.json` was replaced with the signed release,
-  which lists them. Before that, `e433824d38d0`, pulled with `oath
+- **Running now:** output `fdecb1ec3d68` (R41's libglvnd, BlueZ and
+  kernel, R42's `svc:login` programs), pulled on 2026-10-30 after
+  `pkg:oath` was moved first by hand (generation 104; its own `oath`
+  predated R42's planner) with `oath update --confirm` (generation 105),
+  not rebooted: PID 1, the kernel and initrd are still `e433824d38d0`'s,
+  and the next boot runs `fdecb1ec3d68`'s, as its QEMU rehearsal from
+  `c4cd226761d3` did. The update made `pkg:libglvnd`, `pkg:bluez`,
+  `pkg:sbc` and `pkg:readline` and no service: `svc:login`,
+  `svc:dbus-system` and `svc:bluetooth` are not here, `svc:screen` has
+  no `seat`, so it acts as before (`sola-shell` failed before and
+  after: Mesa has no driver for its Intel GPU). Before that,
+  `c4cd226761d3` (generation 102), its Sola pins set by hand
+  (generation 103). Before that, `e433824d38d0`, pulled with `oath
   update --confirm --reboot` on 2026-10-28 after `pkg:oath`,
   `host:local.profile` and `publishers` were set by hand (generation
   96–97). `svc:pipewire` and `svc:pipewire-pulse` got `rtprio`
@@ -77,5 +83,7 @@ Overwrite this file when facts change; do not append a diary.
   2026-10-28: `3b2d49886ff7` (20:51Z, the first), `1fa3b09a85ca`,
   `0c6eebe617d2` and `e433824d38d0` (22:33Z); on 2026-10-29
   `36de66963ac1` and `c4cd226761d3` (18:14Z, the first whose release
-  lists Sola's pins); each after 61/61 QEMU cases and a `cargo make
-  update --qemu` from the one before.
+  lists Sola's pins); on 2026-10-30 `fdecb1ec3d68` (01:21Z; R41 and
+  R42); each after the QEMU cases (61, then 62) and a `cargo make
+  update --qemu` from the one machines ran (`--oath-first` for
+  `fdecb1ec3d68`, from `c4cd226761d3` and `e433824d38d0`).

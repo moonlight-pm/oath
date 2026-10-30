@@ -11,7 +11,9 @@ against the contract below.
 `svc:login`, the hash, the delay, auto-login and both turns of the seat;
 the console's prompt was tried by hand there (a wrong password refused,
 the right one opening the shell, `oath desk` back to the desk in 0.2 s).
-Not yet run on a machine; Sola's side is not built.
+Published in desk output `fdecb1ec3d68` (2026-10-30). buccina runs
+its programs without the objects (it acts as before); no machine has
+`svc:login` yet. Sola's side is not built.
 Every part is optional, and the default is the desk as it was: no
 password, the desk starts signed in, nothing locks.
 

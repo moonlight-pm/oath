@@ -13,9 +13,10 @@ append history (git has it).
 1. **Pull updates (R38, Joshua 2026-10-28).** `cargo make publish` puts
    the newest checked output on the bucket, signed by buccina's key, and
    `sudo oath update --confirm --reboot` takes it (also in `oath mcp`).
-   buccina runs `c4cd226761d3` (2026-10-29, not rebooted), canto
-   `e433824d38d0`. Gap: an output's changed `svc` fields (`rtprio`)
-   reach a machine only by `oath set`. Next: expat 2.10.0 (11-02).
+   Newest: `fdecb1ec3d68` (2026-10-30, R41 and R42); buccina runs it
+   (not rebooted), canto `e433824d38d0`, which moves `pkg:oath` first
+   ([manual](docs/manual/install.md)). Gap: new and changed `svc` specs
+   reach a machine only by hand. Next: expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher 1.0.0.87, a recipe, in a bubblewrap sandbox; canto
    runs the 64-bit client, signed in, with the i386 stack (`glibc-i386`,
@@ -26,20 +27,19 @@ append history (git has it).
    Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28).
    `pkg:cef` is CEF 156 with H.264 and AAC (R40, `2a2cc750`); Sola's
    packs from `83df4558` are built on it and pinned (R37 done
-   2026-10-29), in desk output `c4cd226761d3`; canto and buccina run
-   both. R42 (2026-10-29): `svc:login`, the seat's turns, `oath
-   password`, `oath desk`, QEMU-checked ([docs/specs/login.md](docs/specs/login.md)).
-   Next: Sola's `sola-lock` and Settings → Login against it.
+   2026-10-29). R42: `svc:login`, the seat's turns, `oath password`,
+   `oath desk` ([docs/specs/login.md](docs/specs/login.md)), published
+   in `fdecb1ec3d68`. Next: canto takes it (update, reboot, then R42's
+   objects by hand); Sola's `sola-lock` and Settings → Login.
 4. **novus to Oath (R32–R35, [hosts/novus.md](hosts/novus.md)).** NixOS
    goes; novus gets its own Oath install. Built: bootstrap on an Oath
    host, `pkg:qemu`, KVM, novus's drivers, NVIDIA 595.104.02 as a recipe
    in `desk`, a root by btrfs UUID, `install --local`. buccina did a
    build host's whole job (2026-10-27). R41 (2026-10-29): libglvnd and
    NVIDIA's lookups for the desk, BlueZ on a system bus, the fan curve;
-   the trial stick is desk output `67d5d5c1160c` (61/61; its packs on the
-   bucket, its release not) with `pkg:nvidia` built and on. Next:
-   Joshua boots novus from it (F8); from buccina, the desk on the card,
-   sound, pairing, fans, `nvidia-smi`; then publish its release.
+   the trial stick is desk output `67d5d5c1160c` with `pkg:nvidia` built
+   and on. Next: Joshua boots novus from it (F8); from buccina, the
+   desk on the card, sound, pairing, fans, `nvidia-smi`.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from

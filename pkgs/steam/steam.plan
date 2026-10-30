@@ -50,6 +50,10 @@
       "hash": "sha256-ab5d0da78c6ddf71ce2f3190dcf373244b2c53e2e4e0cc097843d8248cd13fc8"
     },
     {
+      "id": "pkg:libglvnd-i386",
+      "hash": "sha256-1d71324122bf70dff6793e4c588b7142b7c01a95b5b1490a0d4f12b33fc9b66a"
+    },
+    {
       "id": "pkg:libxcrypt",
       "hash": "sha256-25b0443398d100a4a94228a4dae7ad049598eecc20753fb8ae273a3f90625b5d"
     },

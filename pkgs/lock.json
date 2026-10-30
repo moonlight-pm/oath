@@ -1377,14 +1377,15 @@
     "version": "1.0.0.87",
     "license": "LicenseRef-Steam-Subscriber-Agreement AND MIT",
     "by": "plan",
-    "plan": "sha256-c4f7294c7491f54ca1aee933a1f9bed7cf523d8f18e8afe218f7a02d2e4bae70",
+    "plan": "sha256-e51b70b462d09bd0d77870fb7368f65ffb099a1a06000ca56c60ff7590cb8b2a",
     "product": "sha256-1dfe7cf2a2c5859eabd8f838d0b26bcd368ef3a7546eb4f326bd07f3affcdced",
     "run": [
       "bubblewrap",
       "glibc-i386",
       "libxcrypt",
       "libxcrypt-i386",
-      "mesa-i386"
+      "mesa-i386",
+      "libglvnd-i386"
     ]
   },
   "tar": {

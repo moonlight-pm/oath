@@ -246,7 +246,12 @@ pub fn seed_ids(bundle: &Path) -> Result<Vec<String>> {
 /// when what it runs with was rebuilt. A pack packed elsewhere moves too
 /// while the machine's pin is the one the release it runs set (`ran`, its
 /// `pinned`); one its owner moved keeps the machine's pin, and a need on
-/// another such pack the machine keeps stays at that pin.
+/// another such pack the machine keeps stays at that pin. A package the
+/// machine lacks is made when the output fixes it, or when a package the
+/// machine has present needs it in the output (and so on down its needs),
+/// so the needs graph holds: R41's Mesa left libEGL to `pkg:libglvnd`,
+/// which wlroots and Xwayland then need. Any other new object stays the
+/// owner's to make.
 pub fn plan(
     machine: &BTreeMap<String, Value>,
     output: &Output,
@@ -324,6 +329,40 @@ pub fn plan(
             moves.push(Move::Stay { name: name.clone(), set, moved });
         }
     }
+    let doc_of = |n: &str| output.pins.iter().find(|(p, _, _)| p == n).map(|(_, _, d)| d);
+    let needs_of = |doc: &Value| -> Vec<String> {
+        doc.get("needs")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(|n| n.get("id").or(Some(n)).and_then(Value::as_str))
+            .map(|id| id.trim_start_matches("pkg:").to_string())
+            .collect()
+    };
+    let made: BTreeSet<String> = moves
+        .iter()
+        .filter_map(|m| match m {
+            Move::New { name, .. } => Some(name.clone()),
+            _ => None,
+        })
+        .collect();
+    let mut todo: Vec<String> = output
+        .pins
+        .iter()
+        .filter(|(n, _, _)| {
+            machine.get(n).is_some_and(|c| c["present"] != json!(false)) || made.contains(n)
+        })
+        .flat_map(|(_, _, doc)| needs_of(doc))
+        .collect();
+    let mut seen = made;
+    while let Some(need) = todo.pop() {
+        if machine.contains_key(&need) || !seen.insert(need.clone()) {
+            continue;
+        }
+        let Some(doc) = doc_of(&need) else { continue };
+        todo.extend(needs_of(doc));
+        moves.push(Move::New { name: need, doc: doc.clone() });
+    }
     moves
 }
 
@@ -384,6 +423,44 @@ mod tests {
             pinned: BTreeSet::from(["sola".into()]),
             packs: BTreeMap::from([("bash".into(), B.into()), ("cef".into(), C.into())]),
         }
+    }
+
+    #[test]
+    fn a_new_package_a_present_one_needs_is_made() {
+        let need = |id: &str| json!({ "id": format!("pkg:{id}"), "hash": B });
+        let pin = |name: &str, present: bool, needs: &[&str]| -> (String, String, Value) {
+            let needs: Vec<Value> = needs.iter().map(|n| need(n)).collect();
+            (name.into(), B.into(), json!({ "present": present, "hash": B, "needs": needs }))
+        };
+        let pins = vec![
+            pin("bluez", true, &["readline"]),
+            pin("cuda-x", true, &[]),
+            pin("libglvnd", true, &[]),
+            pin("nvidia", false, &["cuda-x"]),
+            pin("pipewire", true, &["bluez"]),
+            pin("readline", true, &[]),
+            pin("unneeded", true, &[]),
+            pin("wlroots", true, &["libglvnd"]),
+        ];
+        let (fixed, pinned, packs) = (BTreeSet::new(), BTreeSet::new(), BTreeMap::new());
+        let out = Output { pins, fixed, pinned, packs };
+        let machine = BTreeMap::from([
+            ("nvidia".to_string(), json!({ "present": false, "hash": A })),
+            ("pipewire".to_string(), json!({ "present": true, "hash": A })),
+            ("wlroots".to_string(), json!({ "present": true, "hash": A })),
+        ]);
+        let moves = plan(&machine, &out, &BTreeMap::new(), |_, _| true);
+        let mut made: Vec<&str> = moves
+            .iter()
+            .filter_map(|m| match m {
+                Move::New { name, .. } => Some(name.as_str()),
+                _ => None,
+            })
+            .collect();
+        made.sort();
+        // pipewire's bluez and its readline, wlroots' libglvnd; not what an
+        // absent package needs, nor what nothing needs.
+        assert_eq!(made, ["bluez", "libglvnd", "readline"]);
     }
 
     #[test]

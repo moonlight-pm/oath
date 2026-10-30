@@ -183,8 +183,8 @@ desk or the console has it. Exit Sola ends the desk on purpose
 tty1. `oath desk`, from that shell or over SSH, gives the seat back and
 the desk's services start again. Every boot starts with the desk.
 
-A machine installed before R42 gets the programs with `oath update` but
-not the objects. Reboot into the update first: an older PID 1 knows no
+A machine installed before R42 gets the programs with `oath update`
+(its `pkg:oath` moved first, [install.md](install.md)) but not the objects. Reboot into the update first: an older PID 1 knows no
 `seat` and would start the console on tty1 under the running desk. Then
 make them once:
 

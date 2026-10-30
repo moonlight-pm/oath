@@ -212,6 +212,11 @@ enum Cmd {
         /// Update to an output that `cargo make check` has not passed.
         #[arg(long)]
         unchecked: bool,
+        /// Move `pkg:oath` to the output's first, as a person does when the
+        /// output's update planner is newer than the machine's (R42's: it
+        /// makes the new packages the others need).
+        #[arg(long)]
+        oath_first: bool,
     },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
@@ -338,8 +343,8 @@ fn real() -> Result<()> {
             pack::publish_store(&root, &out, dest.as_deref(), output.as_deref())?
         }
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
-        Cmd::Update { qemu, output, unchecked } => {
-            update::run_update(&root, &out, update::Opts { qemu, output, unchecked })?;
+        Cmd::Update { qemu, output, unchecked, oath_first } => {
+            update::run_update(&root, &out, update::Opts { qemu, output, unchecked, oath_first })?;
         }
         Cmd::Esp { esp, confirm, root: root_dev, output, unchecked } => {
             install::update_esp(
