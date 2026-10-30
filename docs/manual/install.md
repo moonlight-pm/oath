@@ -116,7 +116,7 @@ Boot an Oath stick (the one above) on the machine, open a terminal:
 oath install                          # the disks: node, size, port, model, serial
 sudo oath install /dev/sdb            # what it would erase and write; writes nothing
 sudo oath install /dev/sdb --confirm  # wipe it and install
-reboot                                # remove the stick first
+sudo poweroff                         # then remove the stick and start the machine
 ```
 
 The disk is a node (`/dev/sdb`, `sdb`) or a serial; `sudo oath install`
@@ -134,6 +134,13 @@ end), and none of the stick's history, password or pairings. It writes
 the ESP, adds `Oath` to the firmware's boot list first and removes the
 other systems' entries; the firmware's own (USB, network, setup) stay,
 and nothing else in the firmware's variables is touched.
+
+Remove the stick only once the machine is off: the system runs from it
+until then, and `reboot` with the stick gone finds no programs. Some
+firmware keeps its own order or makes entries again: AMI's (an ASUS
+board) kept `UEFI OS`, its entry for another disk's fallback loader,
+and did not start Oath first. If the machine starts something else,
+move `Oath` first in the firmware's setup.
 
 It checks no backups and reads no other disk: knowing what is on them
 is yours. It refuses only the disk the stick runs from and a disk with

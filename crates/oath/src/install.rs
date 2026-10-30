@@ -181,8 +181,10 @@ pub fn run(root: &Path, cat: &Catalog, opts: Opts) -> Result<i32> {
         println!("  {}", done.host_key);
         match fw {
             Some(_) => println!(
-                "The firmware boots it first. Remove this system's disk if it is \
-                 removable, and reboot."
+                "Oath is first in the firmware's boot list. `sudo poweroff`, then remove \
+                 this system's disk if it is removable (it runs from it until then) and \
+                 start the machine; if the firmware starts something else, move Oath \
+                 first in its setup."
             ),
             None => println!(
                 "The firmware's boot list is unchanged: choose the disk in its boot menu."

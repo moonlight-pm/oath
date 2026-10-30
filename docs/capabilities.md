@@ -26,10 +26,10 @@ gaps · `target` designed, not built.
 | Login and seat | partial | `svc:login` (R42): `home`'s password, Argon2id; `oath password`; `host:local.autologin`; the seat's turns (`oath desk`), the console's prompt; on canto | No password on metal yet; `sudo` asks none |
 | Devices | partial | modules by modalias (boot, request, hotplug); `dev:*` from sysfs; `host:local.mounts` by label or UUID (boot, hotplug, apply); `host:local.module_options`; sound, pads and `/dev/kvm` `home`'s (R22, R30, R33) | Node ownership is not a field |
 | Seed and overlays | shipped | profile `base`; profiles extend each other; `oath seed --overlay`; `install --overlay` | — |
-| Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | NVIDIA's module loads in QEMU (no GPU), not yet on a card |
+| Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's on novus's card, R34) | — |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `oath update` pulls the newest signed output (R38) and builds recipes | — |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, the locked packages and packs a profile pins from elsewhere (R28) into an immutable `build/out/<id>/` with a manifest | — |
-| Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` on the machine (R43), `@home` apart | — |
+| Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` on the machine (R43), `@home` apart; novus | AMI: `UEFI OS` returns; Oath not first |
 | Test harness | shipped | `cargo make check`: a QEMU per case, real reboots, known gaps per phase, `check-pass` per output; `--target`: `metal` cases on a machine; `--agent`: real-model tasks | — |
 
 ## Payload (outside core)

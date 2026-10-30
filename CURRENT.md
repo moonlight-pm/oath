@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-29 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-10-30 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R42 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R43 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -31,14 +31,13 @@ append history (git has it).
    `oath desk` ([docs/specs/login.md](docs/specs/login.md)), published
    in `fdecb1ec3d68`; canto has its objects (generation 411). Next:
    Sola's `sola-lock`, Settings → Login and Exit Sola tried on canto.
-4. **novus to Oath (R32–R35, R41, R43, [hosts/novus.md](hosts/novus.md)).**
-   The trial stick (desk output `67d5d5c1160c`, `pkg:nvidia` built) booted
-   novus to the desk on 2026-10-30. R43: `oath install` on the machine
-   copies the system the stick runs onto a disk (`@`, `@home`) and puts
-   Oath first in the firmware's boot list; desk output `cf238ebe3360`
-   passes 63/63 and its rehearsal, and is on the stick with `pkg:nvidia`
-   built (2026-10-30). Next: Joshua boots it on novus and runs `sudo oath
-   install 21385X801116 --confirm` (the 500 GB), then reboots.
+4. **novus on Oath (R32–R35, R41, R43, [hosts/novus.md](hosts/novus.md)).**
+   `oath install` from the stick put desk output `cf238ebe3360` on the
+   500 GB on 2026-10-30; novus boots it to the desk on the card. Its AMI
+   firmware kept `UEFI OS` (its own entry for the 2 TB's old ESP), which
+   the preview said it would remove, and did not start Oath first until
+   Joshua set the order in setup. Next: home to the 2 TB, restored by
+   hand from the 4 TB; then the installer on AMI firmware.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from
@@ -57,9 +56,10 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `fdecb1ec3d68` (booted 2026-10-29), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; output `cf238ebe3360` (installed 2026-10-30 by `oath install`), `desk` with `pkg:nvidia`; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `fed6fb141a5e` (not rebooted since 2026-10-28), `desk`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
-Oath work happens on **buccina** (R39). **novus** (NixOS) is Joshua's desk, to become Oath ([hosts/novus.md](hosts/novus.md)).
+Oath work happens on **buccina** (R39). **novus**, Joshua's desk, runs Oath since 2026-10-30.
 
 ## Do not
 
@@ -69,7 +69,7 @@ Oath work happens on **buccina** (R39). **novus** (NixOS) is Joshua's desk, to b
 - `sudo oath update --confirm` (writes a machine's ESP and store) on
   anything else unless Joshua asks; `--qemu` rehearsals are fine.
 - Write a USB stick or real disk Joshua did not ask for.
-- Change novus's OS, or write its disks, before Joshua says so (R32).
+- Change novus, update it or write its disks without Joshua's word (R32).
 - Invent answers to open decisions in [docs/decisions.md](docs/decisions.md).
 
 ## Pointers

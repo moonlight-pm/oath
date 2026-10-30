@@ -208,6 +208,19 @@ overlay and its recipes built (novus's NVIDIA driver).
   removed the stand-in, kept OVMF's nine entries; the other disk's
   sha256 held; the firmware then started the target, whose 21 services
   ran (`svc:screen` held for the desk).
+- On metal (novus, an ASUS ProArt X570-Creator with AMI firmware,
+  2026-10-30): `oath install 21385X801116 --confirm` from the stick put
+  `cf238ebe3360` on the 500 GB, which boots to the desk. Two gaps, not
+  yet handled. (1) The preview listed `UEFI OS` to remove; after the
+  reset it was there (`Boot0001`), with AMI's `BO` tag in its optional
+  data: the firmware's own entry for a disk's fallback loader (here the
+  2 TB's old NixOS ESP), which it makes again while that file exists.
+  Whether the delete failed or the firmware remade it is not known.
+  (2) Oath (`Boot0000`) was not started first; Joshua moved it up in the
+  firmware's setup, after which `BootOrder` is `0000,0001`. Will be: the
+  preview names entries with the `BO` tag as the firmware's (kept, not
+  promised), and the install reads `BootOrder` back and says to check
+  the setup when the firmware may reorder.
 
 ## Known defects (from the 2026-10-13 review)
 
