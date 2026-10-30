@@ -32,7 +32,8 @@ Overwrite this file when facts change; do not append a diary.
   owner's recipes and spares the seat's services), pulled on 2026-10-30
   at 14:00Z with `oath update --confirm` (generation 106; only
   `pkg:oath` moved, `92735e24…` to `a937565c…`, and no service
-  restarted), not rebooted: PID 1 (`b922d6d8…`), the kernel and initrd
+  restarted); generation 107 turned `svc:sola-kvm` off (R44: no
+  unpaired listener, UDP 4242 closed). Not rebooted: PID 1 (`b922d6d8…`), the kernel and initrd
   are still `e433824d38d0`'s, from the boot of 2026-10-28, and the next
   boot runs `fed6fb141a5e`'s (PID 1 `23f5f3ee…`), as its QEMU rehearsal
   from `fdecb1ec3d68` did. Before that, `fdecb1ec3d68` (R41's libglvnd,
