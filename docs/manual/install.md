@@ -227,7 +227,12 @@ its needs move. With `--confirm`, it:
    `oath-efi`, keeping five archives (`--esp`, default partition 1 of
    the root disk);
 7. with `--reboot`, reboots. `oath update` afterwards says whether
-   PID 1 is the output's.
+   PID 1 is the output's. An `oath` from before R47 that made the
+   update wrote the record without the release's commit, pins and seed;
+   `oath update` says so, and `sudo oath update --confirm` (the same
+   release) writes the record as signed. Objects that release's seed
+   has and the machine lacks are, from then on, the owner's to add
+   (`oath new`).
 
 A machine that still runs dropbear as `svc:sshd` (from before R36)
 moves to OpenSSH after it has booted the new PID 1, which writes

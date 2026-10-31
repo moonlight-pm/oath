@@ -172,6 +172,20 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
                 );
             }
         }
+        // An older `oath` that made this update wrote the record as it
+        // knew a release, without its commit, pins and seed (R47): the
+        // signed release says them.
+        if current.as_ref() != Some(&release) {
+            if opts.confirm {
+                oath_core::write_json(&root.join(up::RECORD), &release)?;
+                eprintln!("recorded the release as signed (its commit, pins and seed)");
+            } else {
+                eprintln!(
+                    "this machine's record of the release lacks what it says (its commit, pins \
+                     and seed): `sudo oath update --confirm` writes it"
+                );
+            }
+        }
         finish(
             &opts,
             json!({ "output": release.output, "runs": true }),

@@ -29,32 +29,20 @@ Overwrite this file when facts change; do not append a diary.
   beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** (its PID 1 is still `e433824d38d0`'s, older than
-  keep-seat, so its next update takes `--reboot`; see boot-and-install's
-  known defects) output `fed6fb141a5e` (an `oath` that builds the
-  owner's recipes and spares the seat's services), pulled on 2026-10-30
-  at 14:00Z with `oath update --confirm` (generation 106; only
-  `pkg:oath` moved, `92735e24…` to `a937565c…`, and no service
-  restarted); generation 107 turned `svc:sola-kvm` off (R44: no
-  unpaired listener, UDP 4242 closed). Not rebooted: PID 1 (`b922d6d8…`), the kernel and initrd
-  are still `e433824d38d0`'s, from the boot of 2026-10-28, and the next
-  boot runs `fed6fb141a5e`'s (PID 1 `23f5f3ee…`), as its QEMU rehearsal
-  from `fdecb1ec3d68` did. Before that, `fdecb1ec3d68` (R41's libglvnd,
-  BlueZ and kernel, R42's `svc:login` programs), pulled on 2026-10-30
-  after `pkg:oath` was moved first by hand (generation 104; its own
-  `oath` predated R42's planner) with `oath update --confirm`
-  (generation 105). That update made `pkg:libglvnd`, `pkg:bluez`,
-  `pkg:sbc` and `pkg:readline` and no service: `svc:login`,
-  `svc:dbus-system` and `svc:bluetooth` are not here, `svc:screen` has
-  no `seat`, so it acts as before (`sola-shell` failed before and
-  after: Mesa has no driver for its Intel GPU). Before that,
-  `c4cd226761d3` (generation 102), its Sola pins set by hand
-  (generation 103). Before that, `e433824d38d0`, pulled with `oath
-  update --confirm --reboot` on 2026-10-28 after `pkg:oath`,
-  `host:local.profile` and `publishers` were set by hand (generation
-  96–97). `svc:pipewire` and `svc:pipewire-pulse` got `rtprio`
-  95 by hand (generation 98): the data thread is `SCHED_FIFO`. Before
-  that, `f443df24beec` by the push update of 2026-10-27. Since R36 its
+- **Running now:** output `940c5d970175` (Release A, R47), pulled on
+  2026-10-31 at 14:08Z with `oath update --confirm --reboot` (generation
+  109: `pkg:oath`, `rivulet`, `mesa-i386`, `nvidia` (absent), `sola`,
+  `sola-browser`, `sola-design` to the release's pins, `steam`'s needs,
+  plans `nvidia` and `steam`) and booted: PID 1, kernel and initrd are
+  the output's. The `oath` that ran it predated R47 and wrote the record
+  without its commit, pins and seed; `sudo oath update --confirm` from
+  the tree (the same release) wrote it as signed. Not here, listed by
+  every update and now counted as the owner's to add: `svc:login`,
+  `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
+  `pkg:libglvnd-i386`; `svc:screen` has no `seat`, so it acts as
+  before. `sola-shell` fails: headless, and Mesa has no driver for its
+  Intel GPU. `svc:sola-kvm` is off (generation 107, R44); `svc:pipewire`
+  and `svc:pipewire-pulse` have `rtprio` 95 by hand (generation 98). Since R36 its
   sshd is OpenSSH (generation 3 moved it from dropbear, keeping the
   host key); `pkg:dropbear` was removed (generation 35); `pkg:qemu` and
   `pkg:libslirp` were added for the build-host run (generations 33 and
