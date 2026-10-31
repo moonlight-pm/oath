@@ -2,19 +2,19 @@
 # linux.fragment over defconfig, built by pkg:gcc. Booted from the ESP
 # and the initrd, not installed as a package. Bump the version and the
 # pin together (pkgs/glibc takes its UAPI headers from the same tarball).
-version = "7.3"
+version = "7.3.1"
 license = "GPL-2.0-only WITH Linux-syscall-note"
 description = "The Linux kernel: boot/vmlinuz and lib/modules/<release>/."
 home = "https://www.kernel.org/"
-purl = "pkg:generic/linux@7.3"
+purl = "pkg:generic/linux@7.3.1"
 build = ["m4", "flex", "bison", "perl", "pkgconf", "zlib", "elfutils", "bc"]
 
 # kernel.org's release tarball (an rc is only Linus's git.kernel.org
 # snapshot, unsigned).
 [[source]]
-url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.tar.xz"
-sha256 = "87363c24f10e06321eb362765521094e94471f6bff8bce2d6b3e40f39f004953"
+url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.1.tar.xz"
+sha256 = "fa595aad93734f829c963c2a90ef7c3673224fd7fdae7b49406e397cde2de231"
 # kernel.org signs the uncompressed tar.
-sig = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.tar.sign"
+sig = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.1.tar.sign"
 key = "linux"
 decompress = "xz"
