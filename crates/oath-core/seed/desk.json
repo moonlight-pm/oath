@@ -180,6 +180,25 @@
       },
       "seat": "desk"
     },
+    "svc:sola-sessions": {
+      "exec": [
+        "/bin/sh",
+        "-c",
+        "i=0; until /bin/tmux -L sola-ws show -gv exit-empty >/dev/null 2>&1; do i=$((i+1)); if [ $i -ge 300 ]; then echo 'no sola-ws tmux server after 30 s; nothing restored'; exit 1; fi; sleep 0.1; done; exec /bin/sola-projects --restore"
+      ],
+      "wants": [
+        "svc:sola-tmux-ws"
+      ],
+      "restart": "never",
+      "enabled": false,
+      "user": "home",
+      "env": {
+        "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
+        "XCURSOR_THEME": "McMojave",
+        "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
+        "SHELL": "/bin/zsh"
+      }
+    },
     "svc:dbus-system": {
       "exec": [
         "/bin/sh",

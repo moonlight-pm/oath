@@ -30,8 +30,11 @@ append history (git has it).
    `pkg:cef` is CEF 156 with H.264 and AAC (R40). R42's login is in
    `fdecb1ec3d68`. R44: novus's `sola-kvm server` (Sola `25f2be60`,
    capturing through rivulet's inhibitor) drives canto, paired by key,
-   since 2026-10-31; `svc:sola-kvm` is off in the profile. Next: Joshua
-   tries the edge; `sola-lock`, Settings → Login and Exit Sola on canto.
+   since 2026-10-31; `svc:sola-kvm` is off in the profile, as is
+   `svc:sola-sessions` (`sola-projects --restore` at boot) until the
+   `pkg:sola` pin has `--restore`. Next: turn it on with that pin (novus
+   and canto add it with `oath new`); `sola-lock`, Settings → Login and
+   Exit Sola on canto.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
    `c40249fd9724` (since generation 7, 2026-10-31) with `/home` on the 2 TB

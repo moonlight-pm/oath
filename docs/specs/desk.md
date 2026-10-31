@@ -196,6 +196,26 @@ project's panes in their paths. Panes take `WAYLAND_DISPLAY` and
 `tmux.conf`, `update-environment`), since the servers start before the
 compositor names its socket.
 
+**Projects' sessions come back after a reboot (will be).** Sola keeps a
+record of each Projects session on the machine it runs on
+(`/home/.config/sola/projects/sessions/<id>.json`), and `sola-projects
+--restore`, headless, recreates each recorded session whose tmux is gone
+in its folder, resuming its agent (`claude --resume`, `grok -r`) when the
+transcript is still there, logs and exits. The profile has
+`svc:sola-sessions` (2026-10-31): a oneshot as `home`, no `seat`, wanting
+`svc:sola-tmux-ws`, `enabled: false` until `pkg:sola` pins a build with
+`--restore` (27a8b909 has none and would open the app instead). Its
+`/bin/sh -c` waits up to 30 s for the `sola-ws` server to answer (`tmux
+-L sola-ws show -gv exit-empty`, which never starts one) before it execs
+`--restore`: `wants` orders starts and does not wait, and a server that
+`--restore` started itself would sit in the oneshot's cgroup, which PID
+1 kills when it exits, sessions and all. Its log is `oath logs
+svc:sola-sessions`. The panes it makes start without `WAYLAND_DISPLAY`,
+`XDG_SESSION_TYPE`, `COLORTERM` and `TERM_PROGRAM` unless `--restore`
+sets them: tmux copies those from the client that makes a session, and
+the oneshot has none. An app attaching later gives them to new panes;
+the resumed agent keeps the environment it started with.
+
 The `desk-sola` case (metal only: `qemu = false`) checks the services
 and that the tmux servers and shells are outside `svc:sola-session`'s
 cgroup, opens the terminal, Projects and Design (their call planes
