@@ -165,6 +165,15 @@ linked by `pkg:gcc`. That product follows the tree and is not in the
 lock. `kexec` is static too: the installer runs it on the machine being
 replaced, whatever its libc.
 
+`node/` is the vendor's Node.js release, pointed at `/lib`'s loader the
+same way. A program from npm (`cf/`) is a pack with its own tree (R46):
+each tarball npm resolves it to is a `[[source]]` (`file =
+"npm/<scope>/<name>-<version>.tgz"`), `build.sh` unpacks them flat into
+`libexec/<name>/node_modules` with no npm and no install scripts and
+names every one in `components.json`, and `bin/<name>` runs it with
+`pkg:node`. A new version is a new set of pins, each checked against
+npm's registry signature when it is pinned.
+
 `cargo make pkgs --list` shows every package, its licence and its pins.
 `cargo make build` packs the image from the products in `lock.json`:
 the profile's packages, and the kernel and its modules from

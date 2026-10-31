@@ -139,6 +139,16 @@
       "libpulse"
     ]
   },
+  "cf": {
+    "version": "1.0.0-beta.26",
+    "license": "(MIT OR Apache-2.0) AND MIT AND Apache-2.0 AND ISC AND CC0-1.0 AND LGPL-3.0-or-later AND BSD-2-Clause AND BSD-3-Clause AND MPL-1.1 AND Zlib AND IJG AND libpng-2.0 AND libtiff AND FTL",
+    "by": "plan",
+    "plan": "sha256-a6ed9dc4cda92ff71e48664462fc062229053bd2cc721e9382c5f2cb5a283e91",
+    "product": "sha256-5f6bb6f0b4bfdf6dc11ea2a9f5cf1a304e40875a778956006a57061b4629644f",
+    "run": [
+      "node"
+    ]
+  },
   "chrony": {
     "version": "4.9",
     "license": "GPL-2.0-only",
@@ -384,6 +394,16 @@
       "gmp",
       "mpfr",
       "mpc"
+    ]
+  },
+  "gh": {
+    "version": "2.103.3",
+    "license": "MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND MPL-2.0",
+    "by": "plan",
+    "plan": "sha256-3dacd918d480b3e86bee981380fe6751b48f3acf41c505bbabcfc39a80a97bef",
+    "product": "sha256-01166718ec713251206e49ca48c8fb4423b6ba4692d334985d38c02ff55c0b23",
+    "run": [
+      "curl"
     ]
   },
   "git": {
@@ -1090,6 +1110,16 @@
     "by": "plan",
     "plan": "sha256-cf2cb54aeccaf4e1385a6a3b868b56c6c5e7c26513a43801f4856af43027f952",
     "product": "sha256-96e5d8c682a37a969fec42b691487a24e56773fd49e84ad79b1f583ecde9819a",
+    "run": [
+      "gcc"
+    ]
+  },
+  "node": {
+    "version": "26.13.0",
+    "license": "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Artistic-2.0 AND Unicode-3.0 AND Zlib",
+    "by": "plan",
+    "plan": "sha256-567bbdd674fa4e3d3cb03dcbe52b2f5fab2637e860cc2f11570fa6c484d688a8",
+    "product": "sha256-c282b356282cd537f12da50fdb0550e6d1621774cfe2c6eafd33edff7f3bf383",
     "run": [
       "gcc"
     ]

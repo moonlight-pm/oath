@@ -1,0 +1,23 @@
+# Node.js, the JavaScript runtime: the vendor's Linux build (R7) of the
+# current LTS line (26, "Lithium"), pinned by sha256 and checked against
+# the SHASUMS256.txt its releaser signs (pkgs/keys/node.asc, a release key
+# nodejs/node's README lists). Its node names /lib64/ld-linux-x86-64.so.2;
+# Oath's loader is /lib's (R17), so the plan points it there. It loads
+# libstdc++, libgcc_s and libatomic (pkg:gcc). The release's full notice,
+# every bundled project's licence, is share/doc/node/LICENSE. It runs the
+# programs Oath packs from npm, each with its own tree (pkg:cf), so no
+# machine keeps a global node_modules.
+version = "26.13.0"
+license = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Artistic-2.0 AND Unicode-3.0 AND Zlib"
+description = "Node.js: the JavaScript runtime, with npm and npx."
+home = "https://nodejs.org/"
+purl = "pkg:generic/node@26.13.0"
+build = ["patchelf"]
+run = ["gcc"]
+
+[[source]]
+url = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.xz"
+sha256 = "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997"
+sig = "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt.sig"
+sums = "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt"
+key = "node"

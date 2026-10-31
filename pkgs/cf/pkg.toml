@@ -1,0 +1,177 @@
+# cf, Cloudflare's CLI for its whole API (open beta), from npm, with the
+# packages npm resolves it to for glibc x86-64 (miniflare and workerd, for
+# `cf dev`; sharp and its libvips, for images). It needs Node.js, not Bun
+# (Cloudflare: commands that load cloudflare.config.ts fail on Bun), so it
+# runs on pkg:node, its tree in its own pack: no global node_modules.
+# Each tarball is pinned by sha256. npm signs each one's sha512 integrity
+# with its registry key (ECDSA P-256); every one here was checked against
+# that and npm's published keys when it was pinned (2026-10-30), but a
+# fetch checks only the sha256. A new cf is a new set of pins.
+version = "1.0.0-beta.26"
+license = "(MIT OR Apache-2.0) AND MIT AND Apache-2.0 AND ISC AND CC0-1.0 AND LGPL-3.0-or-later AND BSD-2-Clause AND BSD-3-Clause AND MPL-1.1 AND Zlib AND IJG AND libpng-2.0 AND libtiff AND FTL"
+description = "cf: Cloudflare's CLI for the whole Cloudflare API, with Workers' local runtime."
+home = "https://github.com/cloudflare/cf"
+purl = "pkg:npm/cf@1.0.0-beta.26"
+build = ["node", "patchelf"]
+run = ["node"]
+unsigned = "npm signs the tarballs' integrity with its registry key, which oath-make does not check yet; each was checked by hand when pinned"
+
+[[source]]
+url = "https://registry.npmjs.org/@cloudflare/build-output-utils/-/build-output-utils-0.9.6.tgz"
+sha256 = "095670982c6dd12dac631c62daa0dfe3fb46f85b6d98d5da2a553eb2dccc11ae"
+file = "npm/@cloudflare/build-output-utils-0.9.6.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@cloudflare/config/-/config-0.29.0.tgz"
+sha256 = "f43bd0bd742bfe0b60b5b28b2ca8413dba1a93931cad9250eb97200ec91ffe75"
+file = "npm/@cloudflare/config-0.29.0.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@cloudflare/runtime-types/-/runtime-types-0.1.19.tgz"
+sha256 = "e408291c9e5174881eb1c2bf25e345dc789ca8bd6ab5f47734620af47f3e4541"
+file = "npm/@cloudflare/runtime-types-0.1.19.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@cloudflare/workerd-linux-64/-/workerd-linux-64-1.20261023.1.tgz"
+sha256 = "0ac6f0befa29b450e0f95f2e971c66048435e65c0aa95de536716bd01c96f956"
+file = "npm/@cloudflare/workerd-linux-64-1.20261023.1.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz"
+sha256 = "9d143b2941a86f3ca20fbb1d6613c39fb743b7e45ce1008f22f75749ca18a4f0"
+file = "npm/@cspotcode/source-map-support-0.8.1.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@img/colour/-/colour-1.1.0.tgz"
+sha256 = "6c2df3ac33d4b8647191ad8942a579e6004be00c25846677eab85f04702d85b1"
+file = "npm/@img/colour-1.1.0.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@img/sharp-libvips-linux-x64/-/sharp-libvips-linux-x64-1.3.4.tgz"
+sha256 = "e371cb713fc8822c96a0d3fb60a3d092799d0aefab6d7f1fb3b72d8d75f1d109"
+file = "npm/@img/sharp-libvips-linux-x64-1.3.4.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@img/sharp-linux-x64/-/sharp-linux-x64-0.35.5.tgz"
+sha256 = "556787285d3244c07686a355de5b5a4c4d0019a12785bf24764e756a96ea3334"
+file = "npm/@img/sharp-linux-x64-0.35.5.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz"
+sha256 = "db52f9f62558baab13353dd39e3200750fc33e6a129a575b46226f493776e230"
+file = "npm/@jridgewell/resolve-uri-3.1.2.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz"
+sha256 = "f30a35f6af8c347d01b8ff2f8662272f7d986cf21b916704d86c249a90b97e25"
+file = "npm/@jridgewell/sourcemap-codec-1.6.0.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.9.tgz"
+sha256 = "1fe8547469c55cca28bfd1aed79b69a673cf53233321f9145d51d6e96237f500"
+file = "npm/@jridgewell/trace-mapping-0.3.9.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@poppinss/colors/-/colors-4.1.6.tgz"
+sha256 = "33490e002f84d17d0fa5cfae7a29a0bb1e72c0c4a841574cc54ec7a893c979db"
+file = "npm/@poppinss/colors-4.1.6.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@poppinss/dumper/-/dumper-0.6.5.tgz"
+sha256 = "b874403e3c76bb41ba5111a16d258d246c1f449c35a17c8e761747acbcf8f95b"
+file = "npm/@poppinss/dumper-0.6.5.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@poppinss/exception/-/exception-1.2.3.tgz"
+sha256 = "0d2c90ecea254a9fc904b1b7b9736560496845ce8cc2683eb6d4b391b22a4abe"
+file = "npm/@poppinss/exception-1.2.3.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@sindresorhus/is/-/is-7.2.0.tgz"
+sha256 = "3ca2ea89e15cbc667af8c4cb23ce958c5c70ce9f1f35a73e8983b5e1efdeae54"
+file = "npm/@sindresorhus/is-7.2.0.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/@speed-highlight/core/-/core-1.2.24.tgz"
+sha256 = "36641bb1a0e89c0e10769a814920414ba3d83e2d9e1071d5aea4d4a364537007"
+file = "npm/@speed-highlight/core-1.2.24.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/blake3-wasm/-/blake3-wasm-2.1.5.tgz"
+sha256 = "aea789d6afd5cbf677396869978d4de2a5e549a1a758569bae3e964f70e756d2"
+file = "npm/blake3-wasm-2.1.5.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/cf/-/cf-1.0.0-beta.26.tgz"
+sha256 = "44524614277869bd9a97d1723821c8b39a7bcc85f466571505b23c64a5a213b8"
+file = "npm/cf-1.0.0-beta.26.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz"
+sha256 = "0e9342b066986722098d9b108b238033862eae90b3d53ff90581538264d91b60"
+file = "npm/cookie-1.1.1.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz"
+sha256 = "270dec0fc06cff86481da8af2dd8f18dee6b602790b14ef0e1c2c18d7da39427"
+file = "npm/detect-libc-2.1.2.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/error-stack-parser-es/-/error-stack-parser-es-1.0.5.tgz"
+sha256 = "58d741850b84684e8e28ad8f140ddee9f66e3dd3c5ced980c6296a19c07dfded"
+file = "npm/error-stack-parser-es-1.0.5.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/kleur/-/kleur-4.1.5.tgz"
+sha256 = "0d99562acf82fca4afce2a57b687289a524ac6755dcaf1fdf82a147473091469"
+file = "npm/kleur-4.1.5.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/miniflare/-/miniflare-5.20261023.3-beta.tgz"
+sha256 = "db5f85740732b4d6fb7556c6850959486a6a46aef74a764fcb6dd0c224b5e7fe"
+file = "npm/miniflare-5.20261023.3-beta.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
+sha256 = "d85045d4300d7d57c891336b95df532e73f34c22ffcd222452b6d08b9d127d5d"
+file = "npm/semver-7.8.5.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/sharp/-/sharp-0.35.5.tgz"
+sha256 = "3b6bbbe6b308f5c383938ca4a31926cd5d79c4651ed8c5fda16a97da2014a9ac"
+file = "npm/sharp-0.35.5.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/supports-color/-/supports-color-10.2.2.tgz"
+sha256 = "adf493660d1efc7c69540b579f6c317070ba8e9f5d73d2b9067127ad3fe346b7"
+file = "npm/supports-color-10.2.2.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/undici/-/undici-7.30.1.tgz"
+sha256 = "c98bd3881137c11341e8be8d2ec509ebf973b6f8b36d0a4c6d2afcda15e0d712"
+file = "npm/undici-7.30.1.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/workerd/-/workerd-1.20261023.1.tgz"
+sha256 = "5766328bb67d7f294647e346950b17370717816ac61f014e97305865a1ca8fe4"
+file = "npm/workerd-1.20261023.1.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/ws/-/ws-8.21.0.tgz"
+sha256 = "d08b726b3aae3a0fed5218a0d9a4b2ac8d75d4ad453a9271db55fe38e94eb4cf"
+file = "npm/ws-8.21.0.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/youch/-/youch-4.1.0-beta.10.tgz"
+sha256 = "dd9136c55a7de9dbca7e21bd8b307b30d5a2ca00d63bbd4917fc5d831b63b213"
+file = "npm/youch-4.1.0-beta.10.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/youch-core/-/youch-core-0.3.3.tgz"
+sha256 = "8df38492b5a113b6966f73defdd50787c19eeb334a0983937bfb437e1574a17a"
+file = "npm/youch-core-0.3.3.tgz"
+
+[[source]]
+url = "https://registry.npmjs.org/zod/-/zod-4.6.6.tgz"
+sha256 = "312553620ac82cbb25d505100fbb41c1e219b3cd6979cf93c3a1b4dd5b79e039"
+file = "npm/zod-4.6.6.tgz"

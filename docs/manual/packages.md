@@ -148,6 +148,34 @@ sudo oath apply pkg:m4
 sudo grep '"fetched"' /oath/log/oath.jsonl | tail -1  # where it came from
 ```
 
+Some packs are on the origin and in no profile, and a machine adds them
+this way: Node.js (`pkg:node`, which needs `pkg:gcc`), the GitHub CLI
+(`pkg:gh`, which needs `pkg:curl` for its CA bundle) and Cloudflare's
+CLI (`pkg:cf`, which needs `pkg:node`). Each need is pinned at the hash
+the pack's plan names (`run_needs` in `{origin}/plan/<name>/<plan>.plan`),
+which must be the one the machine runs:
+
+```
+sudo oath new pkg:node --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:gcc","hash":"sha256-…"}]}'
+sudo oath apply pkg:node
+sudo oath new pkg:gh --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:curl","hash":"sha256-…"}]}'
+sudo oath apply pkg:gh
+sudo oath new pkg:cf --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:node","hash":"sha256-…"}]}'
+sudo oath apply pkg:cf
+node --version                           # v26.13.0
+gh --version                             # gh version 2.103.3 (2026-10-26)
+cf --version                             # 1.0.0-beta.26
+```
+
+`cf` (also `cloudflare`) carries the npm packages it was pinned with in
+its own tree and runs on `pkg:node` (R46); nothing goes in a global
+`node_modules`, and `npm install -g` has nowhere to write, since the
+store is read-only. `cf` still prints a notice when npm has a newer cf;
+that is a new pin in `pkgs/cf`. `gh` runs with its update notice off and
+`gh auth login` keeps its settings under `~/.config/gh`. Both send
+telemetry unless `DO_NOT_TRACK=1` (or `GH_TELEMETRY=false`,
+`CF_SEND_TELEMETRY=false`).
+
 Put a LAN mirror first to prefer it (any directory `cargo make publish
 --dest` wrote, served over HTTP):
 

@@ -82,7 +82,12 @@ Overwrite this file when facts change; do not append a diary.
   On 2026-10-31 at 01:45Z it took `c40249fd9724` (generation 6: Sola
   `25f2be60`), its `svc:sola-kvm` became the server (generation 7), and
   it rebooted: PID 1 the output's, in sync, 21 services, the desk on the
-  card.
+  card. The same night (2026-10-31, from buccina, at Joshua's word) it
+  built the recipes `pkg:claude-code` 2.1.292 (generation 8) and
+  `pkg:grok-build` 1.0.70 (9), and took `pkg:node` 26.13.0 (10),
+  `pkg:gh` 2.103.3 (11) and `pkg:cf` 1.0.0-beta.26 (12) from the origin
+  by hash (R46); none restarted the desk. `gh` and `cf` are not signed
+  in.
 - **KVM (R44):** `svc:sola-kvm` runs `sola-kvm server`, capturing through
   rivulet (no `/dev/input`), with NixOS's `~/.config/sola-kvm/config.toml`
   (canto 10.0.0.3:4242 to the right, bottom-aligned, 1920×1080 beside
