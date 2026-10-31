@@ -36,8 +36,7 @@ append history (git has it).
    runs `86dd0d999ce4` (generation 3) with `/home` on the 2 TB
    (`@oath-home`, `host:local.mounts`, R45), the desk on the card and
    21 services. Its AMI firmware keeps `UEFI OS` and needed Oath set first
-   by hand. Next: Joshua restores what he picks from the 4 TB into /home;
-   the leftover homes in `@home` and `@`'s /home go once he says.
+   by hand. Next: Joshua restores what he picks from the 4 TB into /home.
 5. **Recipes and origins (R23, R25, R31).** Every catalog carries the
    coding agents' plans (`claude-code` 2.1.292, `codex` 0.164.0,
    `grok-build` 1.0.70) and `plan:steam`; machines fetch packs from

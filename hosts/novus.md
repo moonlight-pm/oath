@@ -38,10 +38,11 @@ Overwrite this file when facts change; do not append a diary.
   and `@snapshots`, untouched), set in `host:local.mounts` with
   `subvol=@oath-home,noatime,compress=zstd:1` and mounted by PID 1 at
   boot since 2026-10-30 23:55Z. canto's session made it and copied /home
-  in; buccina's re-synced it before the boot. Leftovers, not mounted: the
-  500 GB's `@home` (the install's home, until the downgrade below) and
-  `@`'s /home directory (137 MB, under the mount). Next: Joshua restores
-  what he picks from the 4 TB.
+  in; buccina's re-synced it before the boot. The 500 GB's `@home` and
+  the files in `@`'s /home (the mount point) were deleted at Joshua's
+  word the same day; the generation and boot snapshots of `@` from before
+  (`@gen-1`–`3`, `@boot-1`–`2`) still hold that /home until they rotate
+  out. Next: Joshua restores what he picks from the 4 TB.
 - **GPU (R34):** NVIDIA 595.104.02 (`pkg:nvidia` `48b78914`, a recipe in
   the `desk` profile) with GSP off (`NVreg_EnableGpuFirmware=0`, in
   `host:local.module_options`), capped by `svc:gpu-power` at 250 W with
