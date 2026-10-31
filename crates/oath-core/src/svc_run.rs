@@ -201,6 +201,7 @@ mod tests {
             keep_children: false,
             rtprio: None,
             seat: None,
+            schedule: None,
         }
     }
 

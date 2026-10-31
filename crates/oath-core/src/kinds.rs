@@ -216,6 +216,14 @@ pub struct Svc {
     /// rest of the time. Absent: it runs either way.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub seat: Option<SvcSeat>,
+    /// When PID 1 starts it (R48): a cron pattern (`0 4 * * *`; five
+    /// fields, or six with seconds; `@daily`; `L`, `W`, `#`) in the
+    /// machine's time zone (`host:local.timezone`). A scheduled service is
+    /// a oneshot (`restart: never`): it starts at each match, not when
+    /// applied; once at boot when a match passed while the machine was
+    /// down; never twice at once (a match while it runs is skipped).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schedule: Option<String>,
 }
 
 /// The seat's two owners (`/oath/run/seat`).

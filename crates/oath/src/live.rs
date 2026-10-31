@@ -201,9 +201,10 @@ impl ApplyHooks for Live {
             if let Ok(v) = oath_core::read_json::<serde_json::Value>(&path) {
                 let state = v.get("state").and_then(|s| s.as_str());
                 // A service the other owner of the seat runs (R42) is held;
-                // a oneshot may have run and exited already.
+                // a scheduled one (R48) waits for its time; a oneshot may
+                // have run and exited already.
                 if state == Some(want)
-                    || (enabled && state == Some("held"))
+                    || (enabled && matches!(state, Some("held" | "scheduled")))
                     || (enabled && oneshot && state == Some("stopped") && !v["last_exit"].is_null())
                 {
                     return Ok(());

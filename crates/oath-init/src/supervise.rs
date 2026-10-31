@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
+use chrono::{DateTime, Local};
 use nix::sys::signal::{kill, Signal};
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::Pid;
@@ -87,11 +88,21 @@ struct Pending {
     due: Instant,
 }
 
+/// A scheduled service (R48): its spec and its next start.
+#[derive(Clone)]
+struct Sched {
+    spec: Svc,
+    next: Option<DateTime<Local>>,
+}
+
 #[derive(Default)]
 pub struct Supervisor {
     kids: HashMap<i32, Kid>,
     oneshot_done: HashSet<String>,
     pending: Vec<Pending>,
+    /// Scheduled services (`schedule`), by id: PID 1 starts each at its
+    /// next match.
+    schedules: HashMap<String, Sched>,
     /// Gave up on this spec and program; a different applied spec, or the
     /// program moving to another realization, tries again.
     failed: HashMap<String, (Svc, Program)>,
@@ -115,6 +126,9 @@ pub struct State {
     failed: Vec<(String, Svc, Program)>,
     history: Vec<(String, u32, u32, Option<Exit>, Option<String>)>,
     tasks: Vec<(i32, String)>,
+    /// Scheduled services and their next start (RFC 3339).
+    #[serde(default)]
+    schedules: Vec<(String, Svc, Option<String>)>,
 }
 
 impl State {
@@ -180,6 +194,11 @@ impl Supervisor {
                 .map(|(id, h)| (id, h.restarts, h.quick, h.last_exit, h.why))
                 .collect(),
             tasks: self.tasks.drain().collect(),
+            schedules: self
+                .schedules
+                .drain()
+                .map(|(id, s)| (id, s.spec, s.next.map(|t| t.to_rfc3339())))
+                .collect(),
         }
     }
 
@@ -221,6 +240,16 @@ impl Supervisor {
             })
             .collect();
         s.tasks = state.tasks.into_iter().collect();
+        s.schedules = state
+            .schedules
+            .into_iter()
+            .map(|(id, spec, next)| {
+                let next = next
+                    .and_then(|t| DateTime::parse_from_rfc3339(&t).ok())
+                    .map(|t| t.with_timezone(&Local));
+                (id, Sched { spec, next })
+            })
+            .collect();
         s
     }
 
@@ -317,6 +346,12 @@ impl Supervisor {
             }
         }
 
+        // Scheduled services (R48): only those still applied, enabled and
+        // scheduled keep a schedule.
+        self.schedules
+            .retain(|id, _| wanted.get(id).is_some_and(|s| s.enabled && s.schedule.is_some()));
+        set_tz();
+
         let items: Vec<(String, Svc)> =
             wanted.iter().map(|(id, s)| (id.clone(), s.clone())).collect();
         let (order, stuck) = oath_core::svc_start_order_lenient(&items);
@@ -329,6 +364,11 @@ impl Supervisor {
         }
         for id in &order {
             let Some(spec) = wanted.get(id) else { continue };
+            // It starts at its times, not now.
+            if spec.schedule.is_some() {
+                self.plan(id, spec);
+                continue;
+            }
             if spec.exec.is_empty() || self.running(id) || self.pending.iter().any(|p| &p.id == id)
             {
                 continue;
@@ -469,8 +509,64 @@ impl Supervisor {
         self.task_exits.remove(name)
     }
 
-    /// Start restarts whose backoff is over.
+    /// When a scheduled service next starts: its next match, or now when a
+    /// match passed since its last run (the machine was down at 04:00).
+    fn plan(&mut self, id: &str, spec: &Svc) {
+        let Some(pattern) = spec.schedule.clone() else { return };
+        let same = self.schedules.get(id).is_some_and(|s| s.spec.schedule == spec.schedule);
+        if same {
+            if let Some(s) = self.schedules.get_mut(id) {
+                s.spec = spec.clone();
+            }
+        } else {
+            let now = Local::now();
+            let next = if oath_core::schedule::owed(&pattern, last_run(id), &now) {
+                log(&format!("{id}: a scheduled run passed while PID 1 was not watching: now"));
+                Some(now)
+            } else {
+                oath_core::schedule::next_after(&pattern, &now)
+            };
+            if next.is_none() {
+                log(&format!("{id}: schedule {pattern:?} has no next time"));
+            }
+            self.schedules.insert(id.to_string(), Sched { spec: spec.clone(), next });
+        }
+        if !self.running(id) {
+            self.write_actual(id, "scheduled", None);
+        }
+    }
+
+    /// Start scheduled services whose time has come; one still running
+    /// from its last time is skipped, and says so.
+    fn start_scheduled(&mut self) {
+        let now = Local::now();
+        let due: Vec<String> = self
+            .schedules
+            .iter()
+            .filter(|(_, s)| s.next.is_some_and(|n| n <= now))
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in due {
+            let Some(s) = self.schedules.get(&id).cloned() else { continue };
+            if self.running(&id) {
+                let at = now.to_rfc3339();
+                log(&format!("{id}: its run at {at} is skipped: the last one is still running"));
+            } else {
+                record_run(&id, &now);
+                self.start(&id, &s.spec);
+            }
+            let pattern = s.spec.schedule.clone().unwrap_or_default();
+            let next = oath_core::schedule::next_after(&pattern, &now);
+            if let Some(e) = self.schedules.get_mut(&id) {
+                e.next = next;
+            }
+        }
+    }
+
+    /// Start restarts whose backoff is over, and scheduled services whose
+    /// time has come.
     pub fn start_due(&mut self) {
+        self.start_scheduled();
         let now = Instant::now();
         let due: Vec<Pending> = {
             let (due, wait): (Vec<_>, Vec<_>) = self.pending.drain(..).partition(|p| p.due <= now);
@@ -625,6 +721,9 @@ impl Supervisor {
             return;
         }
         let h = self.history.get(id);
+        // A scheduled service between its runs waits for its next time.
+        let sched = self.schedules.get(id);
+        let state = if sched.is_some() && state == "stopped" { "scheduled" } else { state };
         let mut v = json!({
             "state": state,
             "pid": pid,
@@ -634,6 +733,10 @@ impl Supervisor {
         });
         if let Some(why) = why {
             v["reason"] = json!(why);
+        }
+        if let Some(s) = sched {
+            v["next"] = json!(s.next.map(|t| t.to_rfc3339()));
+            v["last_run"] = json!(last_run(id).map(|t| t.to_rfc3339()));
         }
         let running = pid.and_then(|p| self.kids.get(&p));
         if let Some((name, hash)) = running.and_then(|k| k.program.as_ref()) {
@@ -662,6 +765,37 @@ fn program(spec: &Svc) -> Program {
 
 /// Applied service specs, plus the DHCP client when `net:net0` is dhcp,
 /// and the ids whose spec could not be read.
+/// Where a scheduled service's last run is kept, beside its log: it
+/// outlives the status tmpfs, so a run owed across a reboot is known.
+fn schedule_file(id: &str) -> Option<PathBuf> {
+    let oid: ObjectId = id.parse().ok()?;
+    Some(Path::new(LOG_ROOT).join("svc").join(format!("{}.schedule.json", oid.name)))
+}
+
+fn last_run(id: &str) -> Option<DateTime<Local>> {
+    let v: Value = oath_core::read_json(&schedule_file(id)?).ok()?;
+    let t = DateTime::parse_from_rfc3339(v["last_run"].as_str()?).ok()?;
+    Some(t.with_timezone(&Local))
+}
+
+fn record_run(id: &str, at: &DateTime<Local>) {
+    if let Some(f) = schedule_file(id) {
+        let _ = fs::create_dir_all(f.parent().unwrap_or(Path::new(LOG_ROOT)));
+        let _ = oath_core::write_json(&f, &json!({ "last_run": at.to_rfc3339() }));
+    }
+}
+
+/// PID 1's own `TZ`, so a schedule is the machine's local time: the
+/// applied `host:local.timezone`, unless `host:local.env` sets `TZ`.
+fn set_tz() {
+    let p = Path::new(DEFAULT_ROOT).join("objects/host/local/applied.json");
+    let Ok(host) = oath_core::read_json::<Host>(&p) else { return };
+    let tz = host.env.get("TZ").cloned().unwrap_or(host.timezone);
+    if !tz.is_empty() && std::env::var("TZ").ok().as_deref() != Some(tz.as_str()) {
+        std::env::set_var("TZ", tz);
+    }
+}
+
 fn wanted() -> (HashMap<String, Svc>, Vec<String>) {
     let mut out = HashMap::new();
     let mut unreadable = Vec::new();
@@ -705,6 +839,7 @@ fn dhcp_spec() -> Svc {
         keep_children: false,
         rtprio: None,
         seat: None,
+        schedule: None,
     }
 }
 

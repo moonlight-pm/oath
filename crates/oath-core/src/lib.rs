@@ -18,6 +18,7 @@ mod pkg;
 mod plan;
 mod plan_build;
 pub mod probation;
+pub mod schedule;
 pub mod schema;
 pub mod seat;
 mod seed;

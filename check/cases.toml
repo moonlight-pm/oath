@@ -129,6 +129,17 @@ steps = [
 ]
 
 [[case]]
+name = "svc-schedule"
+about = "A scheduled service (R48) starts at its times, not when applied, says its next and last run, and skips a time while its last run still goes; a schedule needs restart never and a cron pattern."
+metal = true
+steps = [
+  { run = "sudo oath new svc:bad --from-json '{\"exec\":[\"/bin/true\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true,\"schedule\":\"0 4 * * *\"}' 2>&1; sudo oath new svc:bad --from-json '{\"exec\":[\"/bin/true\"],\"wants\":[],\"restart\":\"never\",\"enabled\":true,\"schedule\":\"at four\"}' 2>&1; true", expect = ["a scheduled service is a oneshot: restart never", "is not a cron pattern"] },
+  { run = "rm -f /tmp/ticks; sudo oath new svc:tick --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"date +%s >> /tmp/ticks\"],\"wants\":[],\"restart\":\"never\",\"enabled\":true,\"schedule\":\"*/5 * * * * *\"}' && sudo oath new svc:slow --from-json '{\"exec\":[\"/bin/sleep\",\"7\"],\"wants\":[],\"restart\":\"never\",\"enabled\":true,\"schedule\":\"*/2 * * * * *\"}' && sudo oath apply svc:tick svc:slow && oath get svc:tick | grep -E '  (state|next):'", expect = ["state: \"scheduled\"", "next: \"20"] },
+  { run = "sleep 16; [ $(wc -l < /tmp/ticks) -ge 2 ] && echo TICKED; oath get svc:tick | grep '  last_run:'; grep 'svc:slow: its run at' /oath/log/init.log | tail -1", expect = ["TICKED", "last_run: \"20", "skipped: the last one is still running"] },
+  { run = "sudo oath rm svc:tick && sudo oath rm svc:slow && sudo oath apply && oath diff", expect = ["in-sync"] },
+]
+
+[[case]]
 name = "svc-status-after-undo"
 about = "After undo re-enables a service, svc actual names the process that is running."
 metal = true

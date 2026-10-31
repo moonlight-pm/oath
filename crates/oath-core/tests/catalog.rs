@@ -1300,7 +1300,8 @@ fn new_fills_in_what_the_type_defaults() {
                 "bind_low_ports",
                 "keep_children",
                 "rtprio",
-                "seat"
+                "seat",
+                "schedule"
             ]
             .contains(&k.as_str()),
             "{k}"

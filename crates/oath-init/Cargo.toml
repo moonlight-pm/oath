@@ -26,6 +26,7 @@ name = "login"
 path = "src/bin/login.rs"
 
 [dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 oath-core = { path = "../oath-core" }
 nix = { version = "0.30", default-features = false, features = [
     "fs",

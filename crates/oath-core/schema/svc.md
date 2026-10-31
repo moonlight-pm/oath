@@ -37,14 +37,22 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
 - `rtprio` — 1 to 99, absent by default. The process may give its
   threads realtime priority up to this (`RLIMIT_RTPRIO`) and renice
   itself to -20 (`RLIMIT_NICE`); `desk` gives PipeWire 95.
+- `schedule` — absent by default (R48): a cron pattern PID 1 starts it
+  by, in the machine's time zone (`host:local.timezone`): `0 4 * * *`
+  (04:00 daily), five fields or six with seconds, `@daily`, croner's
+  `L`, `W` and `#`. A scheduled service is a oneshot (`restart: never`):
+  apply does not start it; it starts at each match, at boot when a match
+  passed while the machine was down (its last run is kept in
+  `/oath/log/svc/<name>.schedule.json`), and never twice at once. Actual
+  says `state: "scheduled"` between runs, with `next` and `last_run`.
 
 Changing `exec`, `user`, `env`, `bind_low_ports` or `rtprio` restarts
 the process on the next converge. So does an apply that moves the package
 its program comes from (`exec[0]` through `/bin` into
 `/oath/store/pkg/<name>/<hash>/`): a service follows its package.
 
-Actual is runtime: `state` (`running`, `restarting`, `stopped`, or
-`failed`), `pid`, `restarts` (how many times PID 1 restarted it this
+Actual is runtime: `state` (`running`, `restarting`, `stopped`,
+`scheduled`, or `failed`), `pid`, `restarts` (how many times PID 1 restarted it this
 boot), `last_exit` (`{"code": n}` or `{"signal": n}`), `since`, `pkg`
 (`{id, hash}`: the package realization its program runs from), and
 for `failed` the `reason`.

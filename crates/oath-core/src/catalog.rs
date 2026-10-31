@@ -9,7 +9,9 @@ use serde_json::{json, Map, Value};
 use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
-use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, PkgActual, Plan, Snap, Ssh, Svc};
+use crate::kinds::{
+    Dev, Host, HostPower, Meta, Net, Pkg, PkgActual, Plan, Snap, Ssh, Svc, SvcRestart,
+};
 use crate::probation;
 use crate::{
     now_rfc3339, parse_gen_subvol, read_json, write_atomic, write_json, BTRFS_TOP, KIND_DEV,
@@ -971,6 +973,16 @@ impl Catalog {
                 }
                 if s.rtprio.is_some_and(|p| !(1..=99).contains(&p)) {
                     return Err(Error::hint(format!("{id}: rtprio is 1 to 99"), hint()));
+                }
+                if let Some(pattern) = &s.schedule {
+                    crate::schedule::parse(pattern)
+                        .map_err(|e| Error::hint(format!("{id}: {e}"), hint()))?;
+                    if s.restart != SvcRestart::Never {
+                        return Err(Error::hint(
+                            format!("{id}: a scheduled service is a oneshot: restart never"),
+                            hint(),
+                        ));
+                    }
                 }
             }
             KIND_PKG => {
