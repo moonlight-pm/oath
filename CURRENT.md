@@ -29,8 +29,8 @@ append history (git has it).
    novus's `sola-kvm server` (Sola `25f2be60`) drives canto since
    2026-10-31. Off in the profile: `svc:sola-kvm`, and `svc:sola-sessions`
    (`sola-projects --restore` at boot) until `pkg:sola` pins `--restore`.
-   Next: on with that pin (novus, canto: `oath new`); `sola-lock`,
-   Settings → Login and Exit Sola on canto.
+   Next: on with that pin, exec plain once it waits itself (novus, canto:
+   `oath new`); `sola-lock`, Settings → Login and Exit Sola on canto.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
    `c40249fd9724` (since generation 7, 2026-10-31) with `/home` on the 2 TB

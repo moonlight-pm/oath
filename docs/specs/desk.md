@@ -210,11 +210,18 @@ transcript is still there, logs and exits. The profile has
 `--restore`: `wants` orders starts and does not wait, and a server that
 `--restore` started itself would sit in the oneshot's cgroup, which PID
 1 kills when it exits, sessions and all. Its log is `oath logs
-svc:sola-sessions`. The panes it makes start without `WAYLAND_DISPLAY`,
-`XDG_SESSION_TYPE`, `COLORTERM` and `TERM_PROGRAM` unless `--restore`
-sets them: tmux copies those from the client that makes a session, and
-the oneshot has none. An app attaching later gives them to new panes;
-the resumed agent keeps the environment it started with.
+svc:sola-sessions`. tmux copies `WAYLAND_DISPLAY` and
+`XDG_SESSION_TYPE` (Sola's `update-environment`) from the client that
+makes a session, and the oneshot has neither; `COLORTERM=truecolor` and
+`TERM_PROGRAM=tmux` every pane gets from tmux itself (3.8). Sola's
+branch `sessions-anywhere` (2026-10-31, in no pinned `pkg:sola` yet)
+waits up to 15 s for the desk's Wayland name
+(`/run/user/1/sola-wayland`, which `sola-river` writes) and passes
+`WAYLAND_DISPLAY`, `XDG_SESSION_TYPE` and `DISPLAY` with
+`new-session -e`, or restores without them when the console has the
+seat. It also waits for `sola-ws` itself and makes sessions with `tmux
+-N`; once the pin has that build, the wrapper goes and `exec` is
+`["/bin/sola-projects", "--restore"]`.
 
 The `desk-sola` case (metal only: `qemu = false`) checks the services
 and that the tmux servers and shells are outside `svc:sola-session`'s
