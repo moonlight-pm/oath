@@ -222,7 +222,9 @@ parts; libdbus itself is a library CEF links.
 
 Bluetooth is BlueZ 5.87 on the system bus. `svc:dbus-system`
 (`dbus-daemon --system` on `/run/dbus/system_bus_socket`, as `void`,
-R36) reads its own policy and BlueZ's, from `pkg:bluez`'s slot;
+R36; the desk's `host:local.env` names it in `DBUS_SYSTEM_BUS_ADDRESS`,
+since 2026-10-30, for clients that otherwise look under `/var/run`, as
+zbus does) reads its own policy and BlueZ's, from `pkg:bluez`'s slot;
 `svc:bluetooth` runs `bluetoothd` as root (its state in
 `/var/lib/bluetooth`). `bluetoothctl` pairs and connects. PipeWire's
 Bluetooth plugin plays and records through it (A2DP with SBC; HSP and

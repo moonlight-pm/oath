@@ -46,7 +46,8 @@ Overwrite this file when facts change; do not append a diary.
   mounted read-only at `/mnt/nixos-home` for now (generation 4), with
   `X-mount.idmap=b:1000:1:1`: NixOS's uid 1000 reads as `home`, other
   owners as `void`, nothing on disk changes. Next: Joshua copies what he
-  picks from it (or the 4 TB's backups) into /home.
+  picks from it (or the 4 TB's backups) into /home. Generation 5 added
+  `DBUS_SYSTEM_BUS_ADDRESS` to `host:local.env`, as the desk profile now has.
 - **GPU (R34):** NVIDIA 595.104.02 (`pkg:nvidia` `48b78914`, a recipe in
   the `desk` profile) with GSP off (`NVreg_EnableGpuFirmware=0`, in
   `host:local.module_options`), capped by `svc:gpu-power` at 250 W with
