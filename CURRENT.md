@@ -42,9 +42,10 @@ append history (git has it).
    (`pkgs/audit.toml`) against CVE List V5, OSV, NVD, KEV and EPSS: 20 with
    hits on 2026-10-31 (expat 2.9.0, libsndfile, the kernel 7.3, …).
    `svc.schedule` (PID 1, croner) and `check/audit/` (runner, skill
-   `oath-audit`, permissions, Resend mail to Joshua) are built, unreleased.
-   Next: the first run by hand (it publishes a release with the schedule);
-   then `oath new svc:audit` on buccina (`0 4 * * *`).
+   `oath-audit`, permissions, Resend mail to Joshua) are built; output
+   `4456dda47a6d` (`4907549`, 65/65 with `svc-schedule`), unpublished.
+   Next: Joshua starts the first run by hand; buccina on a release with
+   `schedule`, then `oath new svc:audit` (`0 4 * * *`).
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
