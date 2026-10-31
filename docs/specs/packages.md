@@ -211,6 +211,61 @@ writes each pack's `needs` from the lock's run packs (the libraries it
 loads), so apply refuses removing `pkg:ncurses` while `pkg:less` is
 present.
 
+## Notes, lineage and vendors (will be, not built)
+
+Joshua (2026-10-31), for when Oath's packages reach people beyond us;
+recorded, not designed or built. It is Open in
+[decisions.md](../decisions.md).
+
+**The problem.** A person choosing a package has a name and a hash. The
+hash says exactly which bits; the name is a slot. Neither says what
+changed, whose package it is, or how it relates to another one:
+
+1. **Notes per version.** A person reads what a version is before
+   choosing it, as a `CHANGES.md` per release, and two versions of one
+   package (two hashes offered for one name) must read apart.
+2. **A chain.** A package's heritage: what it was built from, the line
+   of versions before it, and whose line it is.
+3. **Vendors.** Oath is decentralized (R25: a pack records no location,
+   any origin may serve it). Different vendors can offer packages of the
+   same name, so `pkg:sola` from two origins may be two unrelated lines,
+   and nothing today tells them apart or says which one a machine
+   follows.
+
+**What there is today, and how it relates.**
+
+- *The content hash* is the identity of the bits and stays so. Notes and
+  chain are about a hash, not in its tree: in the tree, every note would
+  move the hash (the same reason R47 keeps `source` out of it).
+- *`components.json`* (in the tree, hashed) names the upstreams and
+  their versions: which upstream release, not which vendor's build or
+  what changed.
+- *The plan and source pack* (on the origin, by hash, R13) say how a
+  tree was built, reproducibly: the "built from" half of a chain,
+  already content-addressed, with no "what came before".
+- *`pkg.source`* (R47) is the machine's record of the commit, branch
+  and builder of the tree it pinned. It is local, written by whoever
+  pinned it, unsigned, and does not travel with the pack: it answers
+  "what is live here, from where", not "what changed" or "whose line".
+  A chain entry would carry the same facts, signed by the vendor, with
+  `source` its copy on the machine.
+- *Advisories* (`adv/<name>/<hash>.json`) are the model for metadata
+  that comes after the bits: a sidecar keyed by name and hash, served
+  beside the pack. Notes and a chain entry could be one too (say
+  `meta/<name>/<hash>.json`: version, notes, the previous hash in its
+  line, the vendor), signed by the vendor's key.
+- *Releases* are signed by a build host's key that machines trust by
+  hand (`host:local.publishers`, R38); packs are not (below). A
+  vendor's identity would be a key too, not a name: a line is a key and
+  a name, and each entry names its predecessor's hash under the same
+  key, so a chain cannot be spliced.
+
+**Open in it.** The notes' format; who signs and how a machine trusts a
+vendor's key; whether names carry the vendor (a naming decision, as
+kinds are); where a machine records the line it follows; how `oath
+update` moves within a line and never across one silently; and how it
+meets the unsigned packs below.
+
 ## Target
 
 - Out of scope for now: signatures on Oath's own packs and indexes

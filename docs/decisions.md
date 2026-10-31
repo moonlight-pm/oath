@@ -12,6 +12,14 @@ acting on anything under **Open**. Replaces `open-questions.md`
   desk's password guards the seat, not the account. Should a set
   password make `sudo` ask at the console or the desk (and SSH and
   `oath mcp`, which run `sudo -n`, stay as they are)?
+- **Package notes, lineage and vendors** (Joshua, 2026-10-31; not to
+  build yet). Once packages reach people beyond us: notes per version a
+  person reads before choosing (two versions of one name must read
+  apart), a chain (what a package was built from, the versions before
+  it, whose line it is), and vendors (several can offer one name, and a
+  name alone does not say whose). The problem and how content hashes,
+  `components.json`, plans and `pkg.source` (R47) relate to it are in
+  [specs/packages.md](specs/packages.md#notes-lineage-and-vendors-will-be-not-built).
 - **Permissive alternatives.** Joshua (2026-10-16) would like
   permissive replacements for the GPL packages (btrfs-progs,
   util-linux, dosfstools) some day; not now. R17 and R18 (GCC, glibc,
