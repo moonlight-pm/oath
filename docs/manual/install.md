@@ -207,7 +207,9 @@ its needs move. With `--confirm`, it:
    package to another, `libEGL.so.1` there, moves in it whichever
    converges first). `oath undo` takes it back but keeps a fixed
    package. An object the release the machine runs had and the machine
-   lacks was its owner's to remove and is not made again; any other the
+   lacks was its owner's to remove and is not made again; one new to the
+   profile that the machine has absent (`oath build` leaves a product it
+   made so) is made present, never the other way; any other the
    output's seed has is listed, for `oath new`. A package the output
    does not carry (`pkg:dropbear` after R36, one its owner added) keeps
    its pin. A recipe the owner built moves to

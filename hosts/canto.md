@@ -57,21 +57,15 @@ Overwrite this file when facts change; do not append a diary.
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** output `c40249fd9724`, booted 2026-10-31 01:58Z:
-  `DBUS_SYSTEM_BUS_ADDRESS` in `host:local.env` (424), `oath update
-  --confirm` (425: `pkg:oath`, `pkg:rivulet`; it kept the Sola tab's
-  local Sola `74c54feb` as the owner's pin), the published Sola
-  `25f2be60` packs set by hand with `apply --keep-seat` (426: `pkg:sola`
-  `27a8b909`, `sola-browser` `d9257ce9`, `sola-design` `3ad0865b`), then
-  a reboot. PID 1 is the output's, in sync, 21 services, WirePlumber
-  started after the system bus (Bluetooth audio), the KVM listener paired
-  with novus. The update ran without `--reboot` (to fold the Sola move
-  into one reboot, against Joshua's "with reboot"), and the running PID 1
-  (`fdecb1ec3d68`'s) predates keep-seat: it restarted rivulet at 01:56:49Z,
-  every Wayland client exited, and Sola's session saved an empty app list,
-  so the reboot reopened nothing. The list (seven apps) is still in
-  `@gen-425`'s `/home/.config/sola/state.yaml`; Joshua left it. Rehearsed first from `fdecb1ec3d68` with Steam (only the
-  unpaired rehearsal machine's `sola-kvm` stayed down, as R44 means).
+- **Running now:** Release B, output `dd0f847aa9c9` (R47), from Sola's
+  session on 2026-10-31: `oath update --confirm` (generation 432: the 13
+  packages of Sola master `92815a65` replaced its overlay of the split),
+  `oath new svc:sola-sessions` (433), then a reboot: PID 1 the output's,
+  in sync, the desk on the new packages, `svc:sola-sessions` ran at boot
+  (exit 0). Before that, `c40249fd9724` (booted 2026-10-31 01:58Z,
+  generations 424–426), whose update without `--reboot` under
+  `fdecb1ec3d68`'s PID 1 restarted rivulet and emptied Sola's app list
+  (the seven apps are in `@gen-425`'s `/home/.config/sola/state.yaml`).
   Before it: `fdecb1ec3d68`, booted 2026-10-29 20:33
   (canto's clock), then R42's objects by hand as
   [using.md](../docs/manual/using.md) says (411): `svc:login`,

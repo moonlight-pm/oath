@@ -15,11 +15,10 @@ append history (git has it).
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. Published 2026-10-31: Release A, `940c5d970175` (`ddcebae`,
    64/64): `pkg.source`, overlays replaced unless `--keep`, objects new to
-   the profile made, a `/bin`/`/lib` name check. novus and canto run
-   `c40249fd9724`, buccina A (2026-10-31). Gap: a changed `svc` spec goes
-   by hand. Next: novus and canto take A (Sola's session; plain
-   `--confirm`; their record lacks `seed` until B); `oath` checks PID 1;
-   expat 2.10.0 (11-02).
+   the profile made, a `/bin`/`/lib` name check. Release B (`dd0f847aa9c9`,
+   the Sola split) since 2026-10-31: canto and novus; buccina is on A. Gap: a changed `svc` spec goes
+   by hand. Next: an absent package new to the profile is made present
+   (built, unreleased); buccina to B; `oath` checks PID 1; expat 2.10.0.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
@@ -30,9 +29,8 @@ append history (git has it).
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `92815a65` split: core
    `pkg:sola` (`share/`) and twelve `pkg:sola-<app>`, with `source`;
-   `svc:sola-sessions` on (`--restore`). Release B is `dd0f847aa9c9`
-   (`c8bb350`, 64/64, update rehearsed from A), not published. Next:
-   Joshua publishes it; machines update, then `oath new svc:sola-sessions`.
+   `svc:sola-sessions` on (`--restore`): Release B, on canto (booted) and
+   novus (reboot next), each with `svc:sola-sessions` made by hand.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
@@ -58,8 +56,8 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `c40249fd9724` (booted 2026-10-31), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
-| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `c40249fd9724` (generation 13: Steam), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `dd0f847aa9c9` (Release B, booted 2026-10-31), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `dd0f847aa9c9` (Release B, generation 26; reboot next), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `940c5d970175` (Release A, booted 2026-10-31), `desk`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 ## Do not

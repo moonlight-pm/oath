@@ -228,12 +228,18 @@ impl Move {
             ),
             Self::Pin { from, to, set, .. } if from == to => {
                 let what = match (set.get("needs").is_some(), set.get("source").is_some()) {
+                    _ if set["present"] == json!(true) => "made present: new to the profile",
                     (true, true) => "its needs and source move",
                     (false, true) => "its source moves",
                     _ => "its needs move",
                 };
                 format!("{id} {} ({what})", short(to))
             }
+            Self::Pin { from, to, set, .. } if set["present"] == json!(true) => format!(
+                "{id} {} -> {} (made present: new to the profile)",
+                short(from),
+                short(to)
+            ),
             Self::Pin { from, to, .. } => format!("{id} {} -> {}", short(from), short(to)),
             Self::Keep { pin, output, moved, .. } => format!(
                 "{id} keeps this machine's pin {} (--keep; the output has {}){}",
@@ -411,6 +417,18 @@ pub fn plan(
             if let Some(v) = doc.get(k) {
                 set[k] = v.clone();
             }
+        }
+        // New to the profile, yet here: absent, as `oath build` leaves a
+        // product it made (novus's Sola apps, 2026-10-31). It is present
+        // as the profile has it; after that release, `present` is the
+        // owner's again.
+        // Never the other way: one the owner linked before the profile
+        // had it (a recipe it ships absent) stays linked.
+        if ran.is_new(&format!("pkg:{name}"), output.pinned.contains(name))
+            && doc["present"] != json!(false)
+            && cur["present"] == json!(false)
+        {
+            set["present"] = json!(true);
         }
         // The release records no source: neither does the machine after.
         if set.get("source").is_none() && cur.get("source").is_some_and(|v| !v.is_null()) {
@@ -817,6 +835,43 @@ mod tests {
         assert_eq!(made(&Ran::of(Some(&r))), ["sola-terminal: new to the profile"]);
         // No record: nothing is new.
         assert!(made(&Ran::default()).is_empty());
+    }
+
+    /// novus, 2026-10-31: `oath build` of a new Sola app left its object
+    /// absent at the release's pin; the update makes it present, as new to
+    /// the profile. A package the release it runs had stays as its owner
+    /// left it.
+    #[test]
+    fn an_absent_package_new_to_the_profile_is_made_present() {
+        let mut out = output();
+        let app = json!({ "present": true, "hash": C, "needs": [{ "id": "pkg:cef", "hash": C }] });
+        out.pins.push(("sola-terminal".into(), C.into(), app));
+        out.pinned.insert("sola-terminal".into());
+        let built = json!({ "present": false, "hash": C });
+        let machine = BTreeMap::from([
+            ("sola-terminal".to_string(), built),
+            ("bash".to_string(), json!({ "present": false, "hash": B })),
+        ]);
+        let mut r = release("2026-10-31T00:00:00Z", None);
+        r.pinned = BTreeMap::from([("sola".into(), B.into())]);
+        let moves = plan(&machine, &out, &Ran::of(Some(&r)), &BTreeSet::new(), |_, _| true);
+        let m = of(&moves, "sola-terminal");
+        assert_eq!(m.fields().unwrap()["present"], json!(true), "{moves:#?}");
+        assert_eq!(
+            m.describe(),
+            format!("pkg:sola-terminal {} (made present: new to the profile)", short(C))
+        );
+        // bash was the release's: absent here is the owner's choice.
+        assert!(moves.iter().all(|m| m.id() != "pkg:bash"), "{moves:#?}");
+        // A recipe new to the profile, shipped absent, that the owner linked
+        // already: it stays linked.
+        let mut out = output();
+        out.pins.retain(|(n, _, _)| n == "claude-code");
+        out.pinned.insert("claude-code".into());
+        let mine = json!({ "present": true, "hash": C });
+        let machine = BTreeMap::from([("claude-code".to_string(), mine)]);
+        let moves = plan(&machine, &out, &Ran::of(Some(&r)), &BTreeSet::new(), |_, _| true);
+        assert!(moves.iter().all(|m| m.fields().is_none_or(|f| f.get("present").is_none())));
     }
 
     #[test]

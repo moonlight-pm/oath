@@ -318,7 +318,10 @@ publishes each output it checked, and each machine moves itself:
      and plan new to the profile since the release the machine runs
      (its record's `seed`, or for a record from before R47 its `pinned`,
      which tells for packages pinned from elsewhere); one that release
-     had and the machine lacks stays removed. Before the snapshot, no
+     had and the machine lacks stays removed. A package new to the
+     profile that the machine has absent, as `oath build` leaves a product
+     it made (novus's Sola apps, 2026-10-31), is made present with its
+     pin; one the owner linked stays linked. Before the snapshot, no
      two packages as the moves leave them may ship one `/bin` or `/lib`
      name (`link_clashes`): linking refused the second half-way. A
      recipe the owner built moves to the pin step 2 built (canto's

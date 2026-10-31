@@ -88,7 +88,13 @@ Overwrite this file when facts change; do not append a diary.
   `pkg:gh` 2.103.3 (11) and `pkg:cf` 1.0.0-beta.26 (12) from the origin
   by hash (R46); none restarted the desk. `gh` and `cf` are not signed
   in. Its Sola session built `plan:steam` (`e51b70b4…`, to the pin
-  `1dfe7cf2…`) and made `pkg:steam` present (generation 13).
+  `1dfe7cf2…`) and made `pkg:steam` present (generation 13). Later on
+  2026-10-31 it took Release A (`940c5d970175`, keeping its Sola pins),
+  then Release B (`dd0f847aa9c9`, generation 25: Sola master `92815a65`
+  split) and `svc:sola-sessions` (26); only `sola-bus` and `sola-call`
+  restarted. `oath build plan:sola-<app>` had left the ten app objects
+  absent, so Sola's session removed them before the update (now the update
+  makes such a package present, R47). A reboot is next.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the
