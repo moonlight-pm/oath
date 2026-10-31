@@ -59,11 +59,25 @@ parts of T24 and T35.
 ## Object (built)
 
 Desired: `present`, `hash` (the pin), `url` (an origin), `needs`,
-`description`, `home`.
+`description`, `home`, `source`.
 
 Actual: `present`, `links`, `removable`, live `hash`, other
 `realizations` on disk, `components`, `advisories`, plus copies of the
-descriptive fields.
+descriptive fields and `source`.
+
+- **Source (is, 2026-10-31, R47).** `source` says where the pinned tree
+  was built from: `{repo, commit, branch, dirty, built_by, built_at}`
+  (schema `pkg`). The tool that pins a tree records it beside the hash
+  (Sola's `cargo make oath apply`); it is on the object, never in the
+  tree, so it changes no hash. It is applied like `description`: in a
+  generation, put back by undo, and an apply that changes only those
+  records fetches, hashes and links nothing. It is not a fetch location
+  (R25): it names a commit, not where a pack is hosted.
+- **Overlay (is, 2026-10-31, R47).** A present package whose live hash
+  is not the pin of the release the machine runs (`/oath/output.json`,
+  whose `pins` list every package's) is an overlay: `oath get` and
+  `oath diff` name it, with its `source` when it has one, and `oath
+  update` replaces it with the release's pin (`--keep` keeps it).
 
 - **Pin.** `desired.hash` is what apply links, and apply verifies the
   tree matches it. There is no global "right" hash for a name; the

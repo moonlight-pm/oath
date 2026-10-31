@@ -584,6 +584,9 @@ fn install_record(o: &output::Output) -> Result<String> {
         bundle: Default::default(),
         init: oath_core::file_hash(&fs::read(o.file("stage/lib/oath/init"))?),
         pinned: crate::release::pinned(&manifest),
+        commit: crate::release::commit(&manifest),
+        pins: crate::release::pins(o)?,
+        seed: oath_core::update::seed_ids(&o.dir).map_err(|e| anyhow::anyhow!("{e}"))?,
     };
     Ok(serde_json::to_string_pretty(&release)? + "\n")
 }

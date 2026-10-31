@@ -95,6 +95,11 @@ package is refused (not `--confirm`).
   wrong hash, a cycle, or removing a need while a present pack still
   lists it. Apply does not change the other objects for you.
 - `description` and `home` are prose and a project URL.
+- `source` records where the pinned tree was built from: `{repo,
+  commit, branch, dirty, built_by, built_at}` (`oath schema pkg`). Set
+  it with the hash it describes, in one apply. It is in no hash, and an
+  apply that changes only it (or the prose) touches no store, link or
+  service.
 
 ## A tree built here
 
@@ -108,6 +113,18 @@ sudo oath --json store pkg:hello out.tar   # {"hash":"sha256-…","id":"pkg:hell
 sudo oath set pkg:hello hash=sha256-… needs='[{"id":"pkg:glibc","hash":"sha256-…"}]'
 sudo oath apply pkg:hello
 ```
+
+A tool that pins a tree it built records where from, with the hash:
+
+```
+sudo oath set pkg:hello --from-json '{"hash":"sha256-…","source":{"repo":"https://github.com/me/hello","commit":"<40 hex>","branch":"next","dirty":false,"built_by":"home@canto","built_at":"2026-11-01T12:00:00Z"}}'
+```
+
+A pin that is not the release's is an overlay: `oath get pkg:hello`
+ends with `overlay: pkg:hello is next@1a2b3c4d, not the release's
+sha256-… (output …); oath update replaces it`, and `oath diff` lists
+every overlay above its `in-sync`. `sudo oath update --confirm`
+replaces each with the release's pin; `--keep pkg:hello` keeps one.
 
 A new name is `oath new pkg:hello hash=…` instead of `set`; a source
 pack a plan builds with is `oath new pkg:hello-src hash=… present=false`
@@ -342,6 +359,11 @@ cargo make advisories            # OSV lookup from components.json
 cargo make publish               # upload to the default origin what it lacks
 cargo make publish --dest <dir>  # or write the same tree into a directory
 ```
+
+To the origin, `publish` goes only from a clean `master` that is
+`origin/master` (it fetches first), and only with an output built from
+a clean tree at a commit master has (R47): commit, push and `cargo make
+build` again otherwise; nothing overrides it. `--dest` is not checked.
 
 `publish` carries every pack `pkgs/lock.json` records, build packs
 included (`gcc`, `rust`, `python`, …), and every package a seed profile

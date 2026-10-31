@@ -37,7 +37,7 @@
 //! over, `oath update --confirm` moves `svc:sshd` to OpenSSH, on
 //! probation: a new login keeps it, or PID 1 puts dropbear back.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -53,6 +53,8 @@ use crate::live::{Follow, Live};
 pub struct Opts {
     pub confirm: bool,
     pub output: Option<String>,
+    /// Packages that keep this machine's pin (`--keep`), by name.
+    pub keep: Vec<String>,
     pub reboot: bool,
     pub esp: Option<String>,
     pub json: bool,
@@ -195,21 +197,32 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     let have = |n: &str, h: &str| {
         output.packs.get(n).map(String::as_str) == Some(h) || oath_core::store_present(root, n, h)
     };
-    let ran = current.as_ref().map(|c| c.pinned.clone()).unwrap_or_default();
-    let moves = up::plan(&machine, &output, &ran, have);
-    let plans = plan_moves(cat, &bundle)?;
+    let ran = up::Ran::of(current.as_ref());
+    let keep = keep_names(&machine, &opts.keep)?;
+    let moves = up::plan(&machine, &output, &ran, &keep, have);
+    let plans = plan_moves(cat, &bundle, &ran)?;
     let have_ids: Vec<String> = cat.ls(None)?.iter().map(|i| i.to_string()).collect();
-    let missing: Vec<String> = up::seed_ids(&bundle)?
+    // What the profile gained since the release this machine runs is made
+    // (R47); what that release had and the machine lacks was its owner's
+    // to remove, and anything else is the owner's to make.
+    let (svcs, missing): (Vec<String>, Vec<String>) = up::seed_ids(&bundle)?
         .into_iter()
         .filter(|id| !have_ids.contains(id))
         .filter(|id| !moves.iter().any(|m| m.id() == *id))
-        .collect();
+        .filter(|id| !plans.iter().any(|(n, ..)| *id == format!("plan:{n}")))
+        .partition(|id| id.starts_with("svc:") && ran.is_new(id, false));
     for m in &moves {
         eprintln!("  {}", m.describe());
     }
-    check_moved_needs(cat, &moves)?;
+    for id in &svcs {
+        eprintln!("  {id} is made (new to the profile)");
+    }
+    let docs = moved_docs(cat, &moves)?;
+    check_moved_needs(&docs)?;
+    check_links(root, &docs)?;
     for (name, from, to, _) in &plans {
-        eprintln!("  plan:{name} {} -> {}", up::short(from), up::short(to));
+        let from = if from.is_empty() { "is made (new to the profile):" } else { up::short(from) };
+        eprintln!("  plan:{name} {from} -> {}", up::short(to));
     }
     if !missing.is_empty() {
         eprintln!(
@@ -221,7 +234,13 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     if !opts.confirm {
         finish(
             &opts,
-            json!({ "output": release.output, "from": from, "moves": moves.iter().map(Move::describe).collect::<Vec<_>>() }),
+            json!({
+                "output": release.output,
+                "from": from,
+                "moves": moves.iter().map(Move::describe).collect::<Vec<_>>(),
+                "made": svcs,
+                "left": missing,
+            }),
             &format!(
                 "{} packages move from {from} to output {}; `sudo oath update --confirm` \
                  moves this machine (add --reboot to boot it)",
@@ -235,6 +254,8 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     // 4–6, every pack and recipe first.
     prefetch(root, cat, &moves)?;
     let built = build_recipes(root, cat, &bundle, &output, &moves)?;
+    // Every tree is here now: no two packages may ship one name.
+    check_links(root, &docs)?;
     move_sshd(root, cat, actor, &bundle)?;
     let root_dev =
         cmdline_val(&fs::read_to_string("/proc/cmdline")?, "oath.root").ok_or_else(|| {
@@ -261,7 +282,8 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     if !is_mounted(&mnt) {
         sh(Command::new(find_bin("mount")).args(["-t", "vfat", &esp_dev]).arg(&mnt))?;
     }
-    let steps = Steps { moves: &moves, plans: &plans, built: &built, reboot: opts.reboot };
+    let steps =
+        Steps { moves: &moves, svcs: &svcs, plans: &plans, built: &built, reboot: opts.reboot };
     let result = update(root, cat, actor, &bundle, &mnt, &root_dev, &steps);
     let _ = Command::new("sync").status();
     let _ = Command::new(find_bin("umount")).arg(&mnt).status();
@@ -297,6 +319,8 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
 /// them, and whether a reboot follows.
 struct Steps<'a> {
     moves: &'a [Move],
+    /// Services new to the profile, made from the output's seed.
+    svcs: &'a [String],
     plans: &'a [(String, String, String, PathBuf)],
     built: &'a [oath_core::BuildReport],
     reboot: bool,
@@ -312,7 +336,7 @@ fn update(
     root_dev: &str,
     steps: &Steps,
 ) -> Result<u64> {
-    let Steps { moves, plans, built, reboot } = *steps;
+    let Steps { moves, svcs, plans, built, reboot } = *steps;
     let mut ids = esp::existing_archive_ids(
         &esp::list_archive_confs(&mnt.join("loader/entries")).unwrap_or_default(),
     );
@@ -361,9 +385,18 @@ fn update(
         }
         changed.push(id);
     }
+    for id in svcs {
+        let id: ObjectId = id.parse()?;
+        let doc: Value = oath_core::read_json(
+            &stage.join("oath/objects/svc").join(&id.name).join("desired.json"),
+        )?;
+        let Value::Object(map) = doc else { continue };
+        cat.new_object(&id, map)?;
+        changed.push(id);
+    }
     let mut generation = 0;
     if !changed.is_empty() {
-        eprintln!(">> apply {} packages", changed.len());
+        eprintln!(">> apply {} objects", changed.len());
         // The seat's services are a person's session: an update restarts
         // none, and before a reboot no service at all.
         let follow = if reboot { Follow::AtReboot } else { Follow::KeepSeat };
@@ -457,19 +490,28 @@ fn update(
 }
 
 /// `(name, machine pin, output pin, plan file)` of each plan the machine
-/// has whose pin the output moves (R23).
-fn plan_moves(cat: &Catalog, bundle: &Path) -> Result<Vec<(String, String, String, PathBuf)>> {
+/// has whose pin the output moves (R23), and of each new to the profile
+/// since the release it runs (`ran`, R47), with no machine pin.
+fn plan_moves(
+    cat: &Catalog,
+    bundle: &Path,
+    ran: &up::Ran,
+) -> Result<Vec<(String, String, String, PathBuf)>> {
     let mut out = Vec::new();
     let Ok(dir) = fs::read_dir(bundle.join("stage/oath/objects/plan")) else { return Ok(out) };
     for e in dir {
         let name = e?.file_name().to_string_lossy().into_owned();
         let id = ObjectId::new("plan", &name);
-        let Ok(mine) = cat.get(&id) else { continue };
+        let mine = match cat.get(&id) {
+            Ok(o) => o.desired,
+            Err(_) if ran.is_new(&id.to_string(), false) => json!({}),
+            Err(_) => continue,
+        };
         let doc: Value = oath_core::read_json(
             &bundle.join("stage/oath/objects/plan").join(&name).join("desired.json"),
         )?;
         let Some(pin) = doc["hash"].as_str().filter(|h| !h.is_empty()) else { continue };
-        let cur = mine.desired["hash"].as_str().unwrap_or("");
+        let cur = mine["hash"].as_str().unwrap_or("");
         if cur == pin {
             continue;
         }
@@ -611,11 +653,26 @@ fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
     Ok(())
 }
 
-/// The packages as the moves leave them, checked as `oath apply` will check
-/// them, before anything changes: a recipe the update did not move once
-/// still needed the old 32-bit Mesa (canto's Steam, 2026-10-29), and the
-/// apply refused with the specs already set.
-fn check_moved_needs(cat: &Catalog, moves: &[Move]) -> Result<()> {
+/// The names `--keep` gives (`pkg:<name>` or `<name>`), each a package
+/// this machine has.
+fn keep_names(machine: &BTreeMap<String, Value>, keep: &[String]) -> Result<BTreeSet<String>> {
+    let mut out = BTreeSet::new();
+    for k in keep {
+        let name = k.strip_prefix("pkg:").unwrap_or(k);
+        if !machine.contains_key(name) {
+            return Err(Error::hint(
+                format!("--keep {k}: this machine has no pkg:{name}"),
+                "oath ls --kind pkg",
+            ));
+        }
+        out.insert(name.to_string());
+    }
+    Ok(out)
+}
+
+/// The packages as the moves leave them, by id, a discovered pin filled in
+/// from actual.
+fn moved_docs(cat: &Catalog, moves: &[Move]) -> Result<BTreeMap<String, Value>> {
     let mut docs = BTreeMap::new();
     for id in cat.ls(Some("pkg"))? {
         let o = cat.get(&id)?;
@@ -632,8 +689,16 @@ fn check_moved_needs(cat: &Catalog, moves: &[Move]) -> Result<()> {
             d[k] = v.clone();
         }
     }
+    Ok(docs)
+}
+
+/// The packages as the moves leave them (`docs`), checked as `oath apply`
+/// will check them, before anything changes: a recipe the update did not
+/// move once still needed the old 32-bit Mesa (canto's Steam, 2026-10-29),
+/// and the apply refused with the specs already set.
+fn check_moved_needs(docs: &BTreeMap<String, Value>) -> Result<()> {
     let mut pkgs = Vec::new();
-    for (id, d) in docs {
+    for (id, d) in docs.clone() {
         if let Ok(p) = serde_json::from_value::<oath_core::Pkg>(d) {
             pkgs.push((id, p));
         }
@@ -648,6 +713,33 @@ fn check_moved_needs(cat: &Catalog, moves: &[Move]) -> Result<()> {
             format!("nothing on this machine changed; {hint}"),
         )
     })
+}
+
+/// No two of the packages as the moves leave them (`docs`) ship one name
+/// in `/bin` or `/lib`, of the trees in the store: linking would refuse the
+/// second half-way through the apply, with the first already moved. A
+/// package split in two (R47) is the case: the old one kept (`--keep`)
+/// still ships what the new one does.
+fn check_links(root: &Path, docs: &BTreeMap<String, Value>) -> Result<()> {
+    let pkgs: Vec<(String, String)> = docs
+        .iter()
+        .filter(|(_, d)| d["present"] != json!(false))
+        .filter_map(|(id, d)| {
+            let name = id.strip_prefix("pkg:")?;
+            Some((name.to_string(), d["hash"].as_str()?.to_string()))
+        })
+        .collect();
+    let clashes = oath_core::link_clashes(root, &pkgs);
+    if clashes.is_empty() {
+        return Ok(());
+    }
+    let list: Vec<String> =
+        clashes.iter().map(|(n, a, b)| format!("{n} (pkg:{a} and pkg:{b})")).collect();
+    Err(Error::hint(
+        format!("after these moves two packages would ship one name: {}", list.join(", ")),
+        "nothing on this machine changed; a package kept with --keep may still ship what the \
+         output moved to another: update without that --keep",
+    ))
 }
 
 /// Each recipe the moves rebuild, built from the output's plan with its
@@ -899,6 +991,7 @@ mod tests {
             from: String::new(),
             to: to.into(),
             set: json!({ "hash": to }),
+            overlay: None,
         };
         let gone = "sha256-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
         // One the origin lacks: an error that says nothing changed, and the
@@ -915,6 +1008,7 @@ mod tests {
             from: String::new(),
             to: gone.into(),
             set: json!({ "hash": gone, "present": false }),
+            overlay: None,
         };
         prefetch(&root, &cat, &[pin_to("hello", &pin), off]).unwrap();
     }

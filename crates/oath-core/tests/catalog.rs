@@ -17,6 +17,8 @@ struct MemHooks {
     /// Services do not come up: PID 1 records them failed, and apply's
     /// wait for them is an error.
     no_start: Mutex<bool>,
+    /// How many times apply converged a package (fetch, hash, link).
+    pkg_converges: Mutex<u32>,
 }
 
 impl MemHooks {
@@ -27,6 +29,7 @@ impl MemHooks {
             snaps: tempfile::tempdir().unwrap(),
             reboots: Mutex::new(0),
             no_start: Mutex::new(false),
+            pkg_converges: Mutex::new(0),
         }
     }
 }
@@ -78,6 +81,7 @@ impl ApplyHooks for MemHooks {
         Err(Error::hint(format!("{id} did not become running"), format!("oath get {id}")))
     }
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
+        *self.pkg_converges.lock().unwrap() += 1;
         let store = self.root.join("store/pkg").join(&id.name).join("bin");
         if !store.is_dir() {
             return Ok(PkgActual {
@@ -90,6 +94,7 @@ impl ApplyHooks for MemHooks {
                 needs: desired.needs.clone(),
                 description: desired.description.clone(),
                 home: desired.home.clone(),
+                source: desired.source.clone(),
                 components: Vec::new(),
                 advisories: None,
                 verified: None,
@@ -588,6 +593,38 @@ fn pack_hash_in_path_and_pin() {
     assert_eq!(obj.actual["present"], json!(true));
 }
 
+/// A package split in two (R47): the old tree and a new package both
+/// ship a name, which linking would refuse half-way; the slim tree does
+/// not.
+#[test]
+fn link_clashes_names_a_name_two_trees_ship() {
+    let (d, _cat) = tmp();
+    let tree = |dir: &str, bins: &[&str]| {
+        let t = d.path().join(dir);
+        std::fs::create_dir_all(t.join("bin")).unwrap();
+        for b in bins {
+            std::fs::write(t.join("bin").join(b), format!("{dir} {b}\n")).unwrap();
+        }
+        t
+    };
+    let fat = tree("fat", &["sola-river", "sola-terminal"]);
+    let fat = install_tree(d.path(), "sola", &fat, None, "").unwrap();
+    let slim = install_tree(d.path(), "sola", &tree("slim", &["sola-river"]), None, "").unwrap();
+    let app = install_tree(d.path(), "sola-terminal", &tree("app", &["sola-terminal"]), None, "")
+        .unwrap();
+    let pkgs = |sola: &str| {
+        vec![("sola".to_string(), sola.to_string()), ("sola-terminal".to_string(), app.clone())]
+    };
+    assert_eq!(
+        oath_core::link_clashes(d.path(), &pkgs(&fat)),
+        [("/bin/sola-terminal".to_string(), "sola".to_string(), "sola-terminal".to_string())]
+    );
+    assert!(oath_core::link_clashes(d.path(), &pkgs(&slim)).is_empty());
+    // A tree not in the store yet is not checked.
+    let missing = format!("sha256-{}", "0".repeat(64));
+    assert!(oath_core::link_clashes(d.path(), &pkgs(&missing)).is_empty());
+}
+
 #[test]
 fn pack_second_tree_stays_unlinked() {
     let (d, cat) = tmp();
@@ -936,6 +973,56 @@ fn pkg_undo_puts_url_and_prose_back() {
     cat.undo(&Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().desired, before);
     assert!(cat.diff(None).unwrap().is_empty());
+}
+
+fn source(commit: char) -> serde_json::Value {
+    json!({
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": commit.to_string().repeat(40),
+        "branch": "next",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T12:00:00Z"
+    })
+}
+
+/// R47: a package's `source` is applied like its prose: in a generation,
+/// put back by undo, mirrored in actual, and with nothing to fetch, hash
+/// or link when it is all that changed.
+#[test]
+fn pkg_source_is_recorded_without_a_converge() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    set(&cat, "pkg:hello", "present", json!(true)).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(*hooks.pkg_converges.lock().unwrap(), 1);
+
+    set(&cat, "pkg:hello", "source", source('a')).unwrap();
+    let r = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(*hooks.pkg_converges.lock().unwrap(), 1, "only the record changed");
+    assert!(r.generation > 0);
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["source"], source('a'));
+    assert_eq!(obj.actual["links"], json!(["hello"]));
+    assert!(cat.diff(None).unwrap().is_empty());
+
+    // null is none recorded.
+    set(&cat, "pkg:hello", "source", json!(null)).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert!(cat.get(&id).unwrap().actual.get("source").is_none());
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().desired["source"], source('a'));
+
+    // Not a commit, an unknown key: refused before anything is written.
+    let mut bad = source('b');
+    bad["commit"] = json!("0d99e340");
+    assert!(set(&cat, "pkg:hello", "source", bad).is_err());
+    let mut bad = source('b');
+    bad["host"] = json!("novus");
+    assert!(set(&cat, "pkg:hello", "source", bad).is_err());
+    assert_eq!(cat.get(&id).unwrap().desired["source"], source('a'));
 }
 
 #[test]

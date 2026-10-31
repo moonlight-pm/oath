@@ -214,6 +214,8 @@ cargo make build [--profile base]
                           copy)
     check-pass            a clean `cargo make check` of this output
 cargo make publish [--dest <dir>] [--output <id>]
+  to the origin only from a clean master equal to origin/master after a
+  fetch, with an output built clean at a commit master has (R47); then
   every locked pack and every profile-named one, with its plan, source
   pack and advisories, then INDEX.md (R25): without --dest, curl
   --aws-sigv4 lists the R2 bucket oath-store and puts what it lacks,

@@ -14,6 +14,7 @@ mod install;
 mod live;
 mod login;
 mod mcp;
+mod overlay;
 mod update;
 
 #[derive(Parser)]
@@ -136,6 +137,10 @@ enum Cmd {
         /// The ESP's node (default: partition 1 of the root disk).
         #[arg(long)]
         esp: Option<String>,
+        /// Keep this machine's pin of a package (an overlay the update
+        /// would replace); repeat for more.
+        #[arg(long, value_name = "pkg:NAME")]
+        keep: Vec<String>,
     },
     /// Put the system this machine runs on a disk (R43). Without a disk it
     /// lists the disks; with one it says what it would erase and write;
@@ -376,6 +381,9 @@ fn run() -> oath_core::Result<i32> {
                     "desired": obj.desired,
                     "actual": obj.actual,
                 });
+                if let Some(ov) = overlay::of(&cli.root, &obj) {
+                    o["overlay"] = ov;
+                }
                 if actual {
                     o = obj.actual;
                 } else if desired {
@@ -392,6 +400,9 @@ fn run() -> oath_core::Result<i32> {
                 print_val_indent(&obj.desired);
                 println!("actual:");
                 print_val_indent(&obj.actual);
+                if let Some(ov) = overlay::of(&cli.root, &obj) {
+                    println!("{}", overlay::line(&obj.id, &ov));
+                }
             }
             Ok(0)
         }
@@ -519,9 +530,14 @@ fn run() -> oath_core::Result<i32> {
                     })
                     .collect();
                 println!("{}", serde_json::to_string_pretty(&v)?);
-            } else if drift.is_empty() {
-                println!("in-sync");
             } else {
+                // Overlays first (R47): `in-sync` stays the last line.
+                for (oid, ov) in overlay::all(&cli.root, &cat, id.as_ref())? {
+                    println!("{}", overlay::line(&oid, &ov));
+                }
+                if drift.is_empty() {
+                    println!("in-sync");
+                }
                 for d in &drift {
                     println!("{}", d.id);
                     for (k, n, o) in &d.fields {
@@ -628,11 +644,11 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Update { output, reboot, esp }) => update::run(
+        Some(Cmd::Update { output, reboot, esp, keep }) => update::run(
             &cli.root,
             &cat,
             &actor,
-            update::Opts { confirm: cli.confirm, output, reboot, esp, json: cli.json },
+            update::Opts { confirm: cli.confirm, output, keep, reboot, esp, json: cli.json },
         ),
         Some(Cmd::Install { disk }) => install::run(
             &cli.root,

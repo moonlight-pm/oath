@@ -187,16 +187,25 @@ impl ApplyHooks for Live {
     }
 
     fn wait_converge(&self, id: &ObjectId, enabled: bool) -> Result<()> {
-        if id.kind != "svc" {
+        // Before a reboot PID 1 is told nothing: the boot starts it (an
+        // update that makes a service new to the profile, R47).
+        if id.kind != "svc" || self.follow == Follow::AtReboot {
             return Ok(());
         }
         let want = if enabled { "running" } else { "stopped" };
         let path = oath_core::status_path(&self.catalog_root, id);
+        let applied = self.catalog_root.join("objects/svc").join(&id.name).join("applied.json");
+        let oneshot = oath_core::read_json::<serde_json::Value>(&applied)
+            .is_ok_and(|s| s["restart"] == json!("never"));
         for _ in 0..40 {
             if let Ok(v) = oath_core::read_json::<serde_json::Value>(&path) {
                 let state = v.get("state").and_then(|s| s.as_str());
-                // A service the other owner of the seat runs (R42) is held.
-                if state == Some(want) || (enabled && state == Some("held")) {
+                // A service the other owner of the seat runs (R42) is held;
+                // a oneshot may have run and exited already.
+                if state == Some(want)
+                    || (enabled && state == Some("held"))
+                    || (enabled && oneshot && state == Some("stopped") && !v["last_exit"].is_null())
+                {
                     return Ok(());
                 }
             }

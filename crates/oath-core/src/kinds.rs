@@ -320,6 +320,62 @@ pub struct Pkg {
     /// url.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub home: String,
+    /// Where the pinned tree was built from (R47), set beside `hash` by
+    /// the tool that pinned it. Not part of any hash, and never a reason
+    /// to move or restart anything; `oath update` writes the release's.
+    /// Absent or null: none recorded (a release's own build, or an older
+    /// tool).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<PkgSource>,
+}
+
+/// The commit a package's tree was built from, and who built it (R47).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[schemars(deny_unknown_fields)]
+pub struct PkgSource {
+    /// The repository as https://<host>/<owner>/<name>, no `.git`: tools
+    /// compare it to tell whether a live pin came from their own tree.
+    #[schemars(regex(pattern = r"^https://\S+[^/]$"))]
+    pub repo: String,
+    /// The full commit id (40 hex) the tree was built from.
+    #[schemars(regex(pattern = r"^[0-9a-f]{40}$"))]
+    pub commit: String,
+    /// The branch checked out; empty when detached.
+    pub branch: String,
+    /// The tree had changes not committed: `commit` does not have them.
+    pub dirty: bool,
+    /// user@host that built it.
+    pub built_by: String,
+    /// When it was built, RFC 3339 UTC.
+    pub built_at: String,
+}
+
+impl PkgSource {
+    /// `branch@commit` (8 digits), `dirty` noted: what a person reads.
+    pub fn label(&self) -> String {
+        let branch = if self.branch.is_empty() { "detached" } else { &self.branch };
+        let dirty = if self.dirty { " (dirty)" } else { "" };
+        format!("{branch}@{}{dirty}", &self.commit[..self.commit.len().min(8)])
+    }
+
+    /// What is wrong with it, if anything the schema's patterns forbid.
+    pub fn check(&self) -> std::result::Result<(), String> {
+        let hex = |s: &str| {
+            s.len() == 40 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        };
+        let repo = &self.repo;
+        if !repo.starts_with("https://") || repo.ends_with(".git") || repo.ends_with('/') {
+            return Err(format!("source.repo is https://<host>/<owner>/<name>, not {repo:?}"));
+        }
+        if !hex(&self.commit) {
+            return Err(format!("source.commit is 40 hex digits, not {:?}", self.commit));
+        }
+        if self.built_by.is_empty() || self.built_at.is_empty() {
+            return Err("source.built_by and built_at are user@host and an RFC 3339 time".into());
+        }
+        Ok(())
+    }
 }
 
 /// One upstream component in a pack tree (`components.json`).
@@ -507,6 +563,9 @@ pub struct PkgActual {
     pub description: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub home: String,
+    /// The applied `source`: where the live tree was built from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<PkgSource>,
     /// Live pack `components.json`. Empty if the file is missing.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub components: Vec<PkgComponent>,

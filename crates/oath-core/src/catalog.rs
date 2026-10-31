@@ -9,7 +9,7 @@ use serde_json::{json, Map, Value};
 use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
-use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, Plan, Snap, Ssh, Svc};
+use crate::kinds::{Dev, Host, HostPower, Meta, Net, Pkg, PkgActual, Plan, Snap, Ssh, Svc};
 use crate::probation;
 use crate::{
     now_rfc3339, parse_gen_subvol, read_json, write_atomic, write_json, BTRFS_TOP, KIND_DEV,
@@ -281,6 +281,7 @@ impl Catalog {
             actual.needs = spec.needs;
             actual.description = spec.description;
             actual.home = spec.home;
+            actual.source = spec.source;
             self.write_actual(&id, &actual)?;
         }
         for id in self.ls(Some(KIND_PLAN))? {
@@ -980,6 +981,9 @@ impl Catalog {
                         hint(),
                     ));
                 }
+                if let Some(Err(why)) = p.source.as_ref().map(crate::PkgSource::check) {
+                    return Err(Error::hint(format!("{id}: {why}"), hint()));
+                }
             }
             KIND_NET => {
                 let n: Net = serde_json::from_value(doc.clone()).map_err(bad)?;
@@ -1342,7 +1346,7 @@ impl Catalog {
                 }
                 // What was applied, which actual mirrors. Actual leaves out
                 // empty fields, so undo invents no `url: ""` either.
-                for k in ["url", "needs", "description", "home"] {
+                for k in ["url", "needs", "description", "home", "source"] {
                     if let Some(v) = obj.actual.get(k) {
                         last[k] = v.clone();
                     }
@@ -1383,12 +1387,16 @@ impl Catalog {
         if !pkg.present && !removable {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema pkg"));
         }
-        let mut actual = hooks.converge_pkg(id, &pkg)?;
+        let mut actual = match self.records_only(&obj)? {
+            Some(live) => live,
+            None => hooks.converge_pkg(id, &pkg)?,
+        };
         actual.removable = removable;
         actual.url = pkg.url.clone();
         actual.needs = pkg.needs.clone();
         actual.description = pkg.description.clone();
         actual.home = pkg.home.clone();
+        actual.source = pkg.source.clone();
         if actual.hash.is_empty() && !pkg.hash.is_empty() {
             actual.hash = pkg.hash.clone();
         }
@@ -1398,6 +1406,25 @@ impl Catalog {
             applied["hash"] = json!(actual.hash);
         }
         Ok(applied)
+    }
+
+    /// The live actual of a package whose apply changes only what it
+    /// records (`description`, `home`, `source`): nothing to fetch, hash or
+    /// link, so a new `source` on a large pack costs nothing. None when the
+    /// apply must converge it.
+    fn records_only(&self, obj: &Object) -> Result<Option<PkgActual>> {
+        let Some(applied) = self.applied(&obj.id)? else { return Ok(None) };
+        let drift = diff_values(&obj.desired, &applied);
+        let record = |k: &str| matches!(k, "description" | "home" | "source");
+        if drift.is_empty() || drift.iter().any(|(k, _, _)| !record(k)) {
+            return Ok(None);
+        }
+        let Ok(live) = serde_json::from_value::<PkgActual>(obj.actual.clone()) else {
+            return Ok(None);
+        };
+        let pin = applied["hash"].as_str().unwrap_or("");
+        let present = obj.desired["present"] != json!(false);
+        Ok((!pin.is_empty() && live.hash == pin && live.present == present).then_some(live))
     }
 
     fn check_svc_wants(&self) -> Result<()> {

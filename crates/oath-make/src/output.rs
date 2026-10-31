@@ -44,9 +44,13 @@ fn root(out: &Path) -> PathBuf {
 }
 
 /// The id of a manifest: what the output is made of, not the commit
-/// (pkg:oath's, and a first-party tree's in a pack's `sources`).
+/// (the tree's, pkg:oath's, and a first-party tree's in a pack's
+/// `sources`).
 pub fn id(manifest: &Value) -> String {
     let mut m = manifest.clone();
+    if let Some(top) = m.as_object_mut() {
+        top.remove("commit");
+    }
     if let Some(oath) = m.pointer_mut("/packs/oath").and_then(Value::as_object_mut) {
         oath.remove("commit");
     }
@@ -113,9 +117,15 @@ pub fn pick(out: &Path, id: Option<&str>, checked: bool) -> Result<Output> {
     }
 }
 
-/// An existing output of this id, made the latest again.
-pub fn reuse(out: &Path, id: &str) -> Result<Option<Output>> {
+/// An existing output of this id, made the latest again. With `manifest`
+/// (this build's, the same but for its commits), the output records the
+/// commits it was built again from: a tree built dirty and then committed
+/// is clean now, and may be published (R47).
+pub fn reuse(out: &Path, id: &str, manifest: Option<&Value>) -> Result<Option<Output>> {
     let Ok(o) = open(out, id) else { return Ok(None) };
+    if let Some(m) = manifest {
+        crate::util::write_pretty(&o.file("manifest.json"), m)?;
+    }
     fs::File::options()
         .write(true)
         .open(o.file("manifest.json"))?
@@ -209,7 +219,7 @@ mod tests {
         assert!(open(out, "b0").is_err(), "pruned");
         assert!(open(out, "b1").is_ok());
         // A reused output becomes the latest.
-        reuse(out, "b2").unwrap();
+        reuse(out, "b2", None).unwrap();
         assert_eq!(latest(out).unwrap().id, "b2");
         assert!(open(out, "../x").is_err() && open(out, "latest").is_err());
     }

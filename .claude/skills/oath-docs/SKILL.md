@@ -24,7 +24,9 @@ description: Oath session start and the end-of-slice doc update. Use at the star
 4. `docs/specs/<domain>.md`: if the design changed. Label "is" vs
    "will be".
 5. `docs/architecture.md`: if a process, path or tree changed.
-6. `hosts/<name>.md`: overwrite facts about a machine you touched.
+6. `hosts/<name>.md`: overwrite facts about a machine you touched; a
+   package applied by hand is written with its source (`pkg:sola
+   sha256-1a2b… from next@ce6408de`), an overlay until a release pins it.
 7. `docs/decisions.md`: record any decision Joshua made, and close or
    add Open items.
 8. `docs/roadmap.md`: only when a whole phase changes status.

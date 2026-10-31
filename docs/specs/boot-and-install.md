@@ -261,13 +261,20 @@ publishes each output it checked, and each machine moves itself:
   the origin after its packs: `out/<id>/update.tar` (the manifest, the
   seed's objects and plans, the image's own files, kernel, initrd and
   oath-efi, as a tar with no times or owners), `out/<id>.json` (id,
-  profile, publish time, the bundle's hash and size, PID 1's hash) and
-  `out/<profile>.json`, the newest for that profile. Each `.json` has
+  profile, publish time, the bundle's hash and size, PID 1's hash, and
+  since R47 the commit, every package pin, `pins`, and every object of
+  its seed, `seed`) and `out/<profile>.json`, the newest for that
+  profile. Each `.json` has
   a `.sig` beside it, made by `ssh-keygen -Y sign -n oath-output` with
   the build host's own key (`~/.config/oath/sign_ed25519`). It refuses
   an output whose root-filesystem packs the origin lacks, and leaves an
   output already there as it is, so the profile's newest never moves
-  back.
+  back. Since R47 (2026-10-31) it publishes only from a clean `master`
+  that is `origin/master` after a fetch, and only an output built from
+  a clean tree at a commit master has (the manifest's `commit`, the
+  whole tree's, `-dirty` for any change), checked before anything is
+  uploaded; there is no override. `--dest` (a directory) is not
+  checked.
 - **Trust.** A machine follows `host:local.profile` (the image sets it)
   and trusts the keys in `host:local.publishers`: the `base` profile
   lists buccina's, and a person adds any other. `oath` checks the
@@ -299,12 +306,21 @@ publishes each output it checked, and each machine moves itself:
      pack step 2 put in the store. `needs` moves too: a package
      whose own tree is unchanged still pins what it runs with (on
      2026-10-19 a rebuilt `pkg:sola` left `pkg:sola-browser` pinning
-     the old one, and apply refused). A package packed elsewhere (R28)
-     keeps the machine's pin, and only its needs move; so does one the
-     output does not carry. A package the output fixes that the machine
-     lacks is made in the same apply, since the image's own files need
-     it (`/etc/passwd` names `pkg:zsh`'s shell, R27), and so is one a
-     present package needs, down its needs (R41's `pkg:libglvnd`). A
+     the old one, and apply refused). Each package takes the output's
+     `source` too, or none. An overlay (a pin the release the machine
+     runs did not set, R47) is replaced, named in the preview; `--keep
+     pkg:<name>` keeps the machine's pin and moves only its needs, as a
+     package the output does not carry keeps its pin. A package the
+     output fixes that the machine lacks is made in the same apply,
+     since the image's own files need it (`/etc/passwd` names
+     `pkg:zsh`'s shell, R27), and so is one a present package needs,
+     down its needs (R41's `pkg:libglvnd`), and every package, service
+     and plan new to the profile since the release the machine runs
+     (its record's `seed`, or for a record from before R47 its `pinned`,
+     which tells for packages pinned from elsewhere); one that release
+     had and the machine lacks stays removed. Before the snapshot, no
+     two packages as the moves leave them may ship one `/bin` or `/lib`
+     name (`link_clashes`): linking refused the second half-way. A
      recipe the owner built moves to the pin step 2 built (canto's
      `oath` before 2026-10-30 left its Steam needing the old 32-bit
      Mesa, and apply refused). The apply asks PID 1 to `converge

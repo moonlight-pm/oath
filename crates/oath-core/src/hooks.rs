@@ -85,6 +85,7 @@ pub trait ApplyHooks {
             needs: desired.needs.clone(),
             description: desired.description.clone(),
             home: desired.home.clone(),
+            source: desired.source.clone(),
             components: Vec::new(),
             advisories: None,
             verified: None,

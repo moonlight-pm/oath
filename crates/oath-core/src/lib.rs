@@ -38,7 +38,8 @@ pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
     Dev, DevActual, DhcpLease, Host, HostPower, Meta, Mount, Net, Pkg, PkgActual, PkgAdvisory,
-    PkgComponent, PkgNeed, PkgRealization, PkgVerified, Plan, PlanActual, Snap, Ssh, SshActual,
+    PkgComponent, PkgNeed, PkgRealization, PkgSource, PkgVerified, Plan, PlanActual, Snap, Ssh,
+    SshActual,
     Svc, SvcActual, SvcRestart, SvcSeat, SvcUser,
 };
 pub use layout::{
@@ -55,7 +56,7 @@ pub use packhash::{
 };
 pub use pkg::{
     check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root, fetch_adv,
-    fetch_pkg, fetch_pkg_any, find_bin, host_origins, ingest_file, install_tree,
+    fetch_pkg, fetch_pkg_any, find_bin, host_origins, ingest_file, install_tree, link_clashes,
     list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
     pin_desired_hash, prefetch_pkg_any, program_realization, promote_slot, promote_store, put_tree,
     read_advisories, read_advisories_store, read_components, resolve_tree, store_pkg,

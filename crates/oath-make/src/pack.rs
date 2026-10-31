@@ -179,7 +179,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     let manifest = crate::manifest::make(root, tools, profile, &pins)?;
     crate::pinned::warn_stale(&manifest);
     let id = output::id(&manifest);
-    if let Some(o) = output::reuse(out, &id)? {
+    if let Some(o) = output::reuse(out, &id, Some(&manifest))? {
         eprintln!("output {} (unchanged tree)", o.dir.display());
         return Ok(o);
     }
@@ -801,6 +801,13 @@ pub fn publish_store(
     dest: Option<&Path>,
     output: Option<&str>,
 ) -> Result<()> {
+    // R38: the newest checked output goes out after its packs; R47: to
+    // the origin only from a clean master that is origin's, before any
+    // upload.
+    let picked = crate::output::pick(out, output, true);
+    if dest.is_none() {
+        crate::release::require_master(repo, picked.as_ref().ok())?;
+    }
     let origin = match dest {
         Some(_) => None,
         None => Some(crate::origin::Origin::from_env()?),
@@ -818,8 +825,7 @@ pub fn publish_store(
     if !p.skipped.is_empty() {
         println!("not locked or named by a seed profile, not published: {}", p.skipped.join(" "));
     }
-    // R38: the newest checked output goes out after its packs.
-    match crate::output::pick(out, output, true) {
+    match picked {
         Ok(o) => crate::release::publish(&o, dest, &out.join("release").join(&o.id)),
         Err(e) if output.is_none() => {
             println!("no output published: {e:#}");

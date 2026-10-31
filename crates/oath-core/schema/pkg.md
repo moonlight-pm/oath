@@ -47,6 +47,16 @@ object, and an install overlay can add others.
   not rewrite other objects.
 - `description` — short prose. Empty means none.
 - `home` — HTTPS URL of the source or project page. Not `url`.
+- `source` — optional: where the pinned tree was built from (R47),
+  `{repo, commit, branch, dirty, built_by, built_at}`: `repo` as
+  `https://<host>/<owner>/<name>` (no `.git`), the full 40-hex
+  `commit`, `branch` (empty when detached), `dirty` (the tree had
+  changes not committed), `built_by` (`user@host`), `built_at` (RFC
+  3339 UTC). The tool that pins a tree sets it with the hash, in one
+  apply. Not part of any hash and never a reason to move or restart
+  anything: an apply that changes only `source`, `description` or
+  `home` records them and touches no store, link or service. `null` is
+  none. `oath update` writes the release's (or none).
 
 Pack tree (not desired; part of the hash): `components.json` lists
 upstream `{name, version, purl}` (optional `cpe`). Missing means
@@ -66,8 +76,15 @@ The slot has `live` → `<hash>` and compatibility links (`bin` →
 
 Actual also has `links` (basenames in `/bin`), `removable`, live
 `hash`, `components`, optional `advisories`, `realizations` (other
-trees for this name), and `verified` (`ok`, `at`; `got` when the tree
-no longer hashes to `hash`). If `removable` is false, `present=false`
+trees for this name), `verified` (`ok`, `at`; `got` when the tree
+no longer hashes to `hash`), and the applied `url`, `needs`,
+`description`, `home` and `source`.
+
+An **overlay** is a present package whose live hash is not the pin of
+the release this machine runs (`/oath/output.json`): `oath get`
+prints an `overlay:` line (`--json`: `overlay`, with the release's pin
+and the `source`), `oath diff` lists every one, and `oath update`
+replaces each with the release's pin unless `--keep pkg:<name>`. If `removable` is false, `present=false`
 is refused (not `--confirm`).
 
 A tree built on the machine reaches the store with `sudo oath store

@@ -177,36 +177,40 @@ install too), or one it cannot order against it, unless `--output <id>`
 names it. It also refuses pending changes and an apply
 on probation, and a set of moves that would leave a package needing
 another at a hash it will not have (the check `oath apply` makes, made
-first, so the preview says it too). With `--confirm`, it:
+first, so the preview says it too). The preview names each **overlay**,
+a package the machine runs at a pin other than the release it runs set
+(R47): `pkg:sola is sessions-anywhere@0d99e340, not the release's: the
+update replaces it with sha256-… (master@…)`. The update replaces it;
+`--keep pkg:sola` (repeat for more) keeps the machine's pin, and only
+its needs move. With `--confirm`, it:
 
 1. fetches every pack it will pin that the store lacks, and builds each
    recipe the owner built (Steam, NVIDIA's driver) from the output's
    plan, before it changes anything: a fetch or build that fails (a
    network error is tried twice more), or a build that is not the
    output's pin, leaves the machine as it was, and running it again
-   fetches the rest;
+   fetches the rest. Then no two packages as the moves leave them may
+   ship one name in `/bin` or `/lib` (a package kept with `--keep` that
+   the output split in two), or it stops there;
 2. snapshots `@` as `@boot-<n>`;
 3. writes the output's accounts (`/etc/passwd`, `group`, `shadow`) and
    `/var/empty`, since services that restart next drop to `void` (R36);
-4. sets each package the machine has to the output's pin and needs,
-   makes each package the output fixes that the machine lacks (the
-   image's files need it: `/etc/passwd` names `pkg:zsh`'s shell) and
-   each one a package it has present needs, down their needs (R41's
-   `pkg:libglvnd`, which wlroots needs once Mesa leaves libEGL to it), and
-   runs `oath apply` once (a name in `/bin` or `/lib` that moves from one
+4. sets each package the machine has to the output's pin, needs and
+   `source`; makes each package and service new to the profile since
+   the release the machine runs (its record lists that release's
+   objects, `seed`; a record from before R47 tells only for the
+   packages pinned from elsewhere, `pinned`), each package the output
+   fixes (the image's files need it: `/etc/passwd` names `pkg:zsh`'s
+   shell) and each one a package it has present needs, down their needs
+   (R41's `pkg:libglvnd`); files each plan new to the profile; and runs
+   `oath apply` once (a name in `/bin` or `/lib` that moves from one
    package to another, `libEGL.so.1` there, moves in it whichever
-   converges first)
-   (`oath undo` takes it back but keeps a fixed package; other objects
-   the output's seed has and the machine does not, a new base service
-   say, are listed, not created: add them with `oath new`). A package
-   the profile pins from elsewhere (R28) moves too while the machine's
-   pin is the one the release it runs set (each release lists those
-   pins, `pinned`); one its owner moved keeps the machine's own pin, and
-   only its needs move to the output's hashes (a need on another such
-   package the machine keeps stays at the machine's pin). A machine
-   whose release lists none (`36de66963ac1` and older) keeps them
-   all, as does a package the output does not carry (`pkg:dropbear`
-   after R36, one its owner added). A recipe the owner built moves to
+   converges first). `oath undo` takes it back but keeps a fixed
+   package. An object the release the machine runs had and the machine
+   lacks was its owner's to remove and is not made again; any other the
+   output's seed has is listed, for `oath new`. A package the output
+   does not carry (`pkg:dropbear` after R36, one its owner added) keeps
+   its pin. A recipe the owner built moves to
    the pin step 1 built. Each running service whose program moved
    restarts on it, except one with a `seat` (the desk's and the
    console's, R42), which keeps its program until it next starts: the

@@ -115,7 +115,14 @@ pub fn make(
         packs.insert(name, entry);
     }
     let kernel = crate::kernel::check(&tools.kernel, &tools.modules)?;
-    let mut m = json!({ "profile": profile, "kernel": kernel, "packs": packs });
+    // The whole tree's commit, `-dirty` for any change not committed: a
+    // release is published only from a clean master (R47). Not in the id.
+    let mut m = json!({
+        "profile": profile,
+        "kernel": kernel,
+        "packs": packs,
+        "commit": commit(root, &["."]),
+    });
     if !pins.is_empty() {
         m["pinned"] = json!(pins.keys().collect::<Vec<_>>());
     }

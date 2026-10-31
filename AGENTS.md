@@ -65,8 +65,8 @@ its disk.
 **Ask first:** force-push or hard reset of published history; writing
 to any other real disk or USB stick Joshua did not ask for (`cargo make
 install --confirm`, `--usb`, `sudo oath update --confirm` elsewhere);
-changing novus (Joshua's NixOS desk); committing secrets; answering an
-Open decision.
+changing novus (Joshua's desk, on Oath since 2026-10-30); committing
+secrets; answering an Open decision; publishing a release.
 
 ## Tree
 
@@ -95,7 +95,17 @@ without a decision in `docs/decisions.md`.
 
 ## Workflow
 
-- Work on `master`. Small commits; product and docs together.
+- Work on `master`, and push it. Small commits; product and docs together.
+  An integration branch `next` only while several sessions overlay
+  Oath's own packages (R47).
+- **Packages and releases (R47; the user-level `oath-packages` skill).**
+  A release goes out only from a clean `master` equal to `origin/master`
+  (`cargo make publish` fetches and refuses otherwise; publishing is
+  Joshua's word). Packs from elsewhere (Sola's) are pinned in a profile
+  by `hash`, `needs` and `source`. A pin no release set is an overlay:
+  `oath get` and `oath diff` name it, and `oath update` replaces it
+  unless `--keep pkg:<name>`. Record an applied package with its source
+  (`pkg:sola … from next@ce6408de`), not a bare hash.
 - Never commit secrets.
 - Do not assume Debian/Arch/NixOS conventions apply to the product.
 - **Driver patches first.** A generation-gap GPU bug (SI DPM, modeset)

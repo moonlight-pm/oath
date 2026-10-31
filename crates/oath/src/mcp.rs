@@ -600,6 +600,7 @@ impl Server {
                 if confirm && a.get("reboot") == Some(&json!(true)) {
                     v.push("--reboot".into());
                 }
+                v.extend(ids("keep").into_iter().map(|k| format!("--keep={k}")));
             }
             "build" => {
                 v.push("build".into());
@@ -952,6 +953,14 @@ fn tools() -> Vec<Tool> {
             p("confirm", Ty::Bool, false, "Only when the owner asked for this update."),
             p("reboot", Ty::Bool, false, "With `confirm`: reboot when done."),
             p("output", Ty::Name, false, "A named output (12 hex) instead of the newest."),
+            p(
+                "keep",
+                Ty::Ids,
+                false,
+                "Packages (pkg:NAME) that keep this machine's pin: an overlay, which the update \
+                 otherwise replaces with the release's (the preview names each). Only when the \
+                 owner asked to keep it.",
+            ),
         ],
         true,
         false,
@@ -1388,6 +1397,12 @@ mod tests {
                 json!({ "confirm": true, "reboot": true, "output": "3b2d49886ff7" }),
                 true,
                 vec!["--confirm", "update", "--output=3b2d49886ff7", "--reboot"],
+            ),
+            (
+                "update",
+                json!({ "keep": ["pkg:sola"] }),
+                true,
+                vec!["update", "--keep=pkg:sola"],
             ),
             ("build", json!({ "plan": "hello" }), true, vec!["build", "--", "plan:hello"]),
             (

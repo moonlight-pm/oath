@@ -4,6 +4,7 @@
 //! symlink per top-level pack entry (`bin` → `live/bin`, …) so RPATH
 //! and env that still name `/oath/store/pkg/<name>/lib` keep working.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Read;
 use std::os::unix::fs::symlink;
@@ -516,6 +517,7 @@ fn pkg_actual(
         needs: Vec::new(),
         description: String::new(),
         home: String::new(),
+        source: None,
         components,
         advisories,
         verified: None,
@@ -1062,6 +1064,39 @@ pub fn copy_tree(src: &Path, dst: &Path) -> Result<()> {
 }
 
 /// True when the slot already has the pin (or any tree, if unpinned).
+/// The names two of `pkgs` (present packages, `(name, hash)`) would both
+/// link: `(/bin/<n> or /lib/<n>, one, the other)`. Linking refuses the
+/// second, so an update checks the packages as it will leave them before
+/// it changes anything. A package whose tree is not in the store yet is
+/// not checked.
+pub fn link_clashes(
+    catalog_root: &Path,
+    pkgs: &[(String, String)],
+) -> Vec<(String, String, String)> {
+    let mut owner: BTreeMap<String, String> = BTreeMap::new();
+    let mut clashes = Vec::new();
+    for (name, hash) in pkgs {
+        let tree = realization_dir(catalog_root, name, hash);
+        if hash.is_empty() || !tree.is_dir() {
+            continue;
+        }
+        let bins = bin_names(&tree.join("bin")).unwrap_or_default();
+        let libs = lib_names(&tree.join("lib")).unwrap_or_default();
+        let bins = bins.iter().map(|n| format!("/bin/{n}"));
+        for path in bins.chain(libs.iter().map(|n| format!("/lib/{n}"))) {
+            match owner.get(&path) {
+                Some(other) if other != name => {
+                    clashes.push((path, other.clone(), name.clone()));
+                }
+                _ => {
+                    owner.insert(path, name.clone());
+                }
+            }
+        }
+    }
+    clashes
+}
+
 pub fn store_present(catalog_root: &Path, name: &str, hash: &str) -> bool {
     if !hash.is_empty() {
         return realization_dir(catalog_root, name, hash).is_dir()
@@ -1528,6 +1563,7 @@ mod needs_tests {
                 .collect(),
             description: String::new(),
             home: String::new(),
+            source: None,
         }
     }
 
