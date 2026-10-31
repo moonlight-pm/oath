@@ -1,0 +1,577 @@
+# What the daily security audit (R48, `cargo make audit`) matches each
+# package by. No plan or build reads it: an edit here moves no hash.
+#
+# cpe       NVD's vendor and product (`cpe:2.3:a:<vendor>:<product>`), for
+#           NVD's matches and the CPEs in CVE records
+# names     other product names CVE records use for it
+# repo, tag the upstream git repository and its release tag (`{version}`,
+#           `{version_}` with dots as `_`): OSV's commit query
+# osv       `<ecosystem>:<name>` OSV knows it by (PyPI, Go, Linux)
+# version_after  the upstream version is what follows this in the
+#           package's version (CEF's Chromium)
+# skip      why it has nothing to match (data, a sibling's tree)
+# not_affected   CVE id = why it does not apply, after triage; the audit
+#           drops it until the version moves
+#
+# An `-i386` package is its sibling's: the same sources.
+
+[alsa-lib]
+cpe = "cpe:2.3:a:alsa-project:alsa-lib"
+
+[at-spi2-core]
+cpe = "cpe:2.3:a:gnome:at-spi2-core"
+
+[bash]
+cpe = "cpe:2.3:a:gnu:bash"
+
+[bc]
+cpe = "cpe:2.3:a:gnu:bc"
+
+[bind]
+cpe = "cpe:2.3:a:isc:bind"
+
+[bison]
+cpe = "cpe:2.3:a:gnu:bison"
+
+[bluez]
+cpe = "cpe:2.3:a:bluez:bluez"
+
+[btrfs]
+cpe = "cpe:2.3:a:btrfs-progs_project:btrfs-progs"
+names = ["btrfs-progs"]
+
+[bubblewrap]
+cpe = "cpe:2.3:a:projectatomic:bubblewrap"
+repo = "https://github.com/containers/bubblewrap"
+tag = "v{version}"
+
+[bzip2]
+cpe = "cpe:2.3:a:bzip:bzip2"
+
+[cairo]
+cpe = "cpe:2.3:a:cairographics:cairo"
+repo = "https://gitlab.freedesktop.org/cairo/cairo"
+tag = "{version}"
+
+[cef]
+cpe = "cpe:2.3:a:google:chrome"
+names = ["chromium"]
+version_after = "chromium-"
+
+[cf]
+skip = "npm packages: its components.json's npm purls go to OSV"
+
+[chrony]
+cpe = "cpe:2.3:a:tuxfamily:chrony"
+
+[claude-code]
+cpe = "cpe:2.3:a:anthropic:claude_code"
+names = ["claude-code"]
+
+[cmake]
+cpe = "cpe:2.3:a:cmake_project:cmake"
+repo = "https://github.com/Kitware/CMake"
+tag = "v{version}"
+
+[codex]
+cpe = "cpe:2.3:a:openai:codex"
+
+[coreutils]
+cpe = "cpe:2.3:a:gnu:coreutils"
+
+[cups]
+cpe = "cpe:2.3:a:openprinting:cups"
+repo = "https://github.com/OpenPrinting/cups"
+tag = "v{version}"
+
+[curl]
+cpe = "cpe:2.3:a:haxx:curl"
+names = ["libcurl"]
+repo = "https://github.com/curl/curl"
+tag = "curl-{version_}"
+
+[dbus]
+cpe = "cpe:2.3:a:freedesktop:dbus"
+
+[dhcpcd]
+cpe = "cpe:2.3:a:dhcpcd_project:dhcpcd"
+repo = "https://github.com/NetworkConfiguration/dhcpcd"
+tag = "v{version}"
+
+[diffutils]
+cpe = "cpe:2.3:a:gnu:diffutils"
+
+[dosfstools]
+cpe = "cpe:2.3:a:dosfstools_project:dosfstools"
+repo = "https://github.com/dosfstools/dosfstools"
+tag = "v{version}"
+
+[elfutils]
+cpe = "cpe:2.3:a:elfutils_project:elfutils"
+
+[expat]
+cpe = "cpe:2.3:a:libexpat_project:libexpat"
+names = ["expat"]
+repo = "https://github.com/libexpat/libexpat"
+tag = "R_{version_}"
+
+[findutils]
+cpe = "cpe:2.3:a:gnu:findutils"
+
+[firmware]
+skip = "linux-firmware: vendors' device firmware; its advisories name chips, not releases"
+
+[flex]
+cpe = "cpe:2.3:a:flex_project:flex"
+repo = "https://github.com/westes/flex"
+tag = "v{version}"
+
+[font-iosevka-term-slab]
+skip = "a font"
+
+[font-noto]
+skip = "fonts"
+
+[font-noto-cjk]
+skip = "fonts"
+
+[font-noto-emoji]
+skip = "a font"
+
+[fontconfig]
+cpe = "cpe:2.3:a:fontconfig_project:fontconfig"
+
+[freetype]
+cpe = "cpe:2.3:a:freetype:freetype"
+
+[fribidi]
+cpe = "cpe:2.3:a:gnu:fribidi"
+repo = "https://github.com/fribidi/fribidi"
+tag = "v{version}"
+
+[gawk]
+cpe = "cpe:2.3:a:fossies:gawk"
+
+[gcc]
+cpe = "cpe:2.3:a:gnu:gcc"
+names = ["libstdc++", "libgcc"]
+
+[gh]
+cpe = "cpe:2.3:a:github:cli"
+repo = "https://github.com/cli/cli"
+tag = "v{version}"
+osv = "Go:github.com/cli/cli/v2"
+
+[git]
+cpe = "cpe:2.3:a:git-scm:git"
+repo = "https://github.com/git/git"
+tag = "v{version}"
+
+[glib]
+cpe = "cpe:2.3:a:gnome:glib"
+
+[glibc]
+cpe = "cpe:2.3:a:gnu:glibc"
+names = ["gnu c library"]
+
+[glibc-i386]
+cpe = "cpe:2.3:a:gnu:glibc"
+names = ["gnu c library", "glibc"]
+
+[glslang]
+cpe = "cpe:2.3:a:khronos:glslang"
+repo = "https://github.com/KhronosGroup/glslang"
+tag = "{version}"
+
+[gmp]
+cpe = "cpe:2.3:a:gmplib:gmp"
+
+[gperf]
+cpe = "cpe:2.3:a:gnu:gperf"
+
+[grep]
+cpe = "cpe:2.3:a:gnu:grep"
+
+[grok-build]
+names = ["grok cli"]
+skip = "xAI's own binary: no CPE yet; its CVEs come from xAI's notes"
+
+[gzip]
+cpe = "cpe:2.3:a:gnu:gzip"
+
+[harfbuzz]
+cpe = "cpe:2.3:a:harfbuzz_project:harfbuzz"
+repo = "https://github.com/harfbuzz/harfbuzz"
+tag = "{version}"
+
+[hwdata]
+skip = "hardware ID lists, data"
+
+[iproute2]
+cpe = "cpe:2.3:a:iproute2_project:iproute2"
+
+[iputils]
+cpe = "cpe:2.3:a:iputils_project:iputils"
+repo = "https://github.com/iputils/iputils"
+tag = "{version}"
+
+[kexec]
+cpe = "cpe:2.3:a:kexec-tools_project:kexec-tools"
+names = ["kexec-tools"]
+
+[less]
+cpe = "cpe:2.3:a:gnu:less"
+
+[libcap]
+cpe = "cpe:2.3:a:libcap_project:libcap"
+
+[libdisplay-info]
+names = ["libdisplay-info"]
+
+[libdrm]
+cpe = "cpe:2.3:a:freedesktop:libdrm"
+
+[libepoxy]
+cpe = "cpe:2.3:a:libepoxy_project:libepoxy"
+
+[libevdev]
+cpe = "cpe:2.3:a:freedesktop:libevdev"
+
+[libevent]
+cpe = "cpe:2.3:a:libevent_project:libevent"
+repo = "https://github.com/libevent/libevent"
+tag = "release-{version}-stable"
+
+[libffi]
+cpe = "cpe:2.3:a:libffi_project:libffi"
+repo = "https://github.com/libffi/libffi"
+tag = "v{version}"
+
+[libfontenc]
+cpe = "cpe:2.3:a:x.org:libfontenc"
+
+[libglvnd]
+cpe = "cpe:2.3:a:nvidia:libglvnd"
+
+[libinput]
+cpe = "cpe:2.3:a:freedesktop:libinput"
+
+[libpulse]
+cpe = "cpe:2.3:a:pulseaudio:pulseaudio"
+
+[libslirp]
+cpe = "cpe:2.3:a:libslirp_project:libslirp"
+
+[libsndfile]
+cpe = "cpe:2.3:a:libsndfile_project:libsndfile"
+repo = "https://github.com/libsndfile/libsndfile"
+tag = "{version}"
+
+[libudev-zero]
+names = ["libudev-zero"]
+
+[liburcu]
+names = ["userspace-rcu", "liburcu"]
+
+[libuv]
+cpe = "cpe:2.3:a:libuv:libuv"
+repo = "https://github.com/libuv/libuv"
+tag = "v{version}"
+
+[libx11]
+cpe = "cpe:2.3:a:x.org:libx11"
+
+[libxau]
+cpe = "cpe:2.3:a:x.org:libxau"
+
+[libxcb]
+cpe = "cpe:2.3:a:x:libxcb"
+
+[libxcomposite]
+cpe = "cpe:2.3:a:x.org:libxcomposite"
+
+[libxcrypt]
+cpe = "cpe:2.3:a:libxcrypt_project:libxcrypt"
+repo = "https://github.com/besser82/libxcrypt"
+tag = "v{version}"
+
+[libxcvt]
+cpe = "cpe:2.3:a:x.org:libxcvt"
+
+[libxdamage]
+cpe = "cpe:2.3:a:x.org:libxdamage"
+
+[libxext]
+cpe = "cpe:2.3:a:x:libxext"
+
+[libxfixes]
+cpe = "cpe:2.3:a:x.org:libxfixes"
+
+[libxfont2]
+cpe = "cpe:2.3:a:x:libxfont"
+
+[libxkbcommon]
+cpe = "cpe:2.3:a:xkbcommon:libxkbcommon"
+repo = "https://github.com/xkbcommon/libxkbcommon"
+tag = "xkbcommon-{version}"
+
+[libxkbfile]
+cpe = "cpe:2.3:a:x.org:libxkbfile"
+
+[libxrandr]
+cpe = "cpe:2.3:a:x.org:libxrandr"
+
+[libxrender]
+cpe = "cpe:2.3:a:x.org:libxrender"
+
+[libxshmfence]
+cpe = "cpe:2.3:a:x.org:libxshmfence"
+
+[libxxf86vm]
+cpe = "cpe:2.3:a:x:libxxf86vm"
+
+[linux]
+cpe = "cpe:2.3:a:linux:linux_kernel"
+osv = "Linux:Kernel"
+
+[linux-build]
+skip = "pkg:linux's own tree, for outside modules: its CVEs are pkg:linux's"
+
+[locales]
+skip = "glibc's locale data: its CVEs are pkg:glibc's"
+
+[lzo]
+cpe = "cpe:2.3:a:lzo_project:lzo"
+
+[m4]
+cpe = "cpe:2.3:a:gnu:m4"
+
+[make]
+cpe = "cpe:2.3:a:gnu:make"
+
+[mbedtls]
+cpe = "cpe:2.3:a:arm:mbed_tls"
+names = ["mbedtls", "mbed tls"]
+repo = "https://github.com/Mbed-TLS/mbedtls"
+tag = "mbedtls-{version}"
+
+[mesa]
+cpe = "cpe:2.3:a:mesa3d:mesa"
+repo = "https://gitlab.freedesktop.org/mesa/mesa"
+tag = "mesa-{version}"
+
+[meson]
+cpe = "cpe:2.3:a:mesonbuild:meson"
+repo = "https://github.com/mesonbuild/meson"
+tag = "{version}"
+
+[mpc]
+cpe = "cpe:2.3:a:gnu:mpc"
+
+[mpfr]
+cpe = "cpe:2.3:a:mpfr:gnu_mpfr"
+
+[ncurses]
+cpe = "cpe:2.3:a:gnu:ncurses"
+
+[nettle]
+cpe = "cpe:2.3:a:nettle_project:nettle"
+
+[ninja]
+cpe = "cpe:2.3:a:ninja-build:ninja"
+repo = "https://github.com/ninja-build/ninja"
+tag = "v{version}"
+
+[node]
+cpe = "cpe:2.3:a:nodejs:node.js"
+names = ["node"]
+repo = "https://github.com/nodejs/node"
+tag = "v{version}"
+
+[nspr]
+cpe = "cpe:2.3:a:mozilla:netscape_portable_runtime"
+names = ["nspr"]
+
+[nss]
+cpe = "cpe:2.3:a:mozilla:nss"
+names = ["network security services"]
+
+[nvidia]
+cpe = "cpe:2.3:a:nvidia:gpu_display_driver"
+names = ["gpu display driver"]
+
+[openssh]
+cpe = "cpe:2.3:a:openbsd:openssh"
+
+[openssl]
+cpe = "cpe:2.3:a:openssl:openssl"
+repo = "https://github.com/openssl/openssl"
+tag = "openssl-{version}"
+
+[pango]
+cpe = "cpe:2.3:a:gnome:pango"
+
+[patch]
+cpe = "cpe:2.3:a:gnu:patch"
+
+[patchelf]
+cpe = "cpe:2.3:a:nixos:patchelf"
+repo = "https://github.com/NixOS/patchelf"
+tag = "{version}"
+
+[pcre2]
+cpe = "cpe:2.3:a:pcre:pcre2"
+repo = "https://github.com/PCRE2Project/pcre2"
+tag = "pcre2-{version}"
+
+[perl]
+cpe = "cpe:2.3:a:perl:perl"
+repo = "https://github.com/Perl/perl5"
+tag = "v{version}"
+
+[pipewire]
+cpe = "cpe:2.3:a:pipewire:pipewire"
+repo = "https://gitlab.freedesktop.org/pipewire/pipewire"
+tag = "{version}"
+
+[pixman]
+cpe = "cpe:2.3:a:pixman:pixman"
+repo = "https://gitlab.freedesktop.org/pixman/pixman"
+tag = "pixman-{version}"
+
+[pkgconf]
+cpe = "cpe:2.3:a:pkgconf:pkgconf"
+
+[procps]
+cpe = "cpe:2.3:a:procps-ng_project:procps-ng"
+names = ["procps-ng", "procps"]
+
+[python]
+cpe = "cpe:2.3:a:python:python"
+names = ["cpython"]
+repo = "https://github.com/python/cpython"
+tag = "v{version}"
+
+[python-mako]
+cpe = "cpe:2.3:a:sqlalchemy:mako"
+osv = "PyPI:Mako"
+
+[python-markupsafe]
+osv = "PyPI:MarkupSafe"
+
+[python-packaging]
+osv = "PyPI:packaging"
+
+[python-pyyaml]
+cpe = "cpe:2.3:a:pyyaml:pyyaml"
+osv = "PyPI:PyYAML"
+
+[qemu]
+cpe = "cpe:2.3:a:qemu:qemu"
+
+[readline]
+cpe = "cpe:2.3:a:gnu:readline"
+
+[rivulet]
+skip = "Oath's own compositor (apps/rivulet): its Rust crates are checked through OSV"
+
+[rust]
+cpe = "cpe:2.3:a:rust-lang:rust"
+names = ["rustc", "cargo"]
+
+[sbc]
+names = ["sbc"]
+
+[seatd]
+names = ["seatd", "libseat"]
+
+[sed]
+cpe = "cpe:2.3:a:gnu:sed"
+
+[steam]
+cpe = "cpe:2.3:a:valvesoftware:steam_client"
+
+[tar]
+cpe = "cpe:2.3:a:gnu:tar"
+
+[tmux]
+cpe = "cpe:2.3:a:tmux_project:tmux"
+repo = "https://github.com/tmux/tmux"
+tag = "{version}"
+
+[util-linux]
+cpe = "cpe:2.3:a:kernel:util-linux"
+
+[vim]
+cpe = "cpe:2.3:a:vim:vim"
+repo = "https://github.com/vim/vim"
+tag = "v{version}"
+
+[vulkan-headers]
+skip = "headers"
+
+[vulkan-loader]
+cpe = "cpe:2.3:a:khronos:vulkan-loader"
+repo = "https://github.com/KhronosGroup/Vulkan-Loader"
+tag = "v{version}"
+
+[vulkan-tools]
+names = ["vulkan-tools"]
+
+[wayland]
+cpe = "cpe:2.3:a:wayland:wayland"
+
+[wayland-protocols]
+skip = "protocol XML, data"
+
+[wireplumber]
+names = ["wireplumber"]
+
+[wl-clipboard]
+names = ["wl-clipboard"]
+
+[wlroots]
+names = ["wlroots"]
+
+[xcb-proto]
+skip = "protocol XML, data"
+
+[xcb-util-errors]
+names = ["xcb-util-errors"]
+
+[xcb-util-wm]
+names = ["xcb-util-wm"]
+
+[xkbcomp]
+cpe = "cpe:2.3:a:x.org:xkbcomp"
+
+[xkeyboard-config]
+skip = "keyboard layouts, data"
+
+[xorgproto]
+skip = "protocol headers"
+
+[xtrans]
+skip = "headers and inline code built into the X libraries"
+
+[xwayland]
+cpe = "cpe:2.3:a:x.org:xwayland"
+
+[xz]
+cpe = "cpe:2.3:a:tukaani:xz"
+repo = "https://github.com/tukaani-project/xz"
+tag = "v{version}"
+
+[zlib]
+cpe = "cpe:2.3:a:zlib:zlib"
+repo = "https://github.com/madler/zlib"
+tag = "v{version}"
+
+[zsh]
+cpe = "cpe:2.3:a:zsh:zsh"
+
+[zstd]
+cpe = "cpe:2.3:a:facebook:zstandard"
+names = ["zstd"]
+repo = "https://github.com/facebook/zstd"
+tag = "v{version}"

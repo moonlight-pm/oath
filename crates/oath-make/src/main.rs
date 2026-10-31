@@ -1,5 +1,6 @@
 mod advisories;
 mod agent;
+mod audit;
 mod boot;
 mod check;
 mod cpio;
@@ -202,6 +203,17 @@ enum Cmd {
         #[arg(long)]
         name: Option<String>,
     },
+    /// The security audit's scan (R48): every package against CVE List V5,
+    /// OSV, NVD and CISA KEV, with EPSS, by `pkgs/audit.toml`; writes
+    /// `build/audit/latest.json`. Changes nothing it scans.
+    Audit {
+        /// Only this package (`curl` or `pkg:curl`).
+        #[arg(long)]
+        name: Option<String>,
+        /// The CVE List mirror as it is, and no NVD.
+        #[arg(long)]
+        offline: bool,
+    },
     /// Rehearse a machine's own update (`oath update`, R38) in QEMU:
     /// install this older output, serve the newer one's signed release and
     /// packs from a local origin, update, reboot, check.
@@ -352,6 +364,7 @@ fn real() -> Result<()> {
             pack::publish_store(&root, &out, dest.as_deref(), output.as_deref())?
         }
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
+        Cmd::Audit { name, offline } => audit::run(&root, &audit::Opts { name, offline })?,
         Cmd::Update { qemu, output, unchecked, oath_first, build } => {
             let opts = update::Opts { qemu, output, unchecked, oath_first, build };
             update::run_update(&root, &out, opts)?;
