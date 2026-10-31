@@ -5,6 +5,12 @@
       "timezone": "MST7MDT,M3.2.0,M11.1.0",
       "module_options": {
         "nvidia": "NVreg_EnableGpuFirmware=0"
+      },
+      "mounts": {
+        "/home": {
+          "source": "UUID=580d861c-4b96-4017-856c-0b55ff4e58ce",
+          "options": "subvol=@oath-home,noatime,compress=zstd:1"
+        }
       }
     },
     "svc:gpu-power": {

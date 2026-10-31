@@ -42,7 +42,11 @@ Overwrite this file when facts change; do not append a diary.
   the files in `@`'s /home (the mount point) were deleted at Joshua's
   word the same day; the generation and boot snapshots of `@` from before
   (`@gen-1`–`3`, `@boot-1`–`2`) still hold that /home until they rotate
-  out. Next: Joshua restores what he picks from the 4 TB.
+  out. NixOS's home (`@home` on the same 2 TB, with `joshua/`) is
+  mounted read-only at `/mnt/nixos-home` for now (generation 4), with
+  `X-mount.idmap=b:1000:1:1`: NixOS's uid 1000 reads as `home`, other
+  owners as `void`, nothing on disk changes. Next: Joshua copies what he
+  picks from it (or the 4 TB's backups) into /home.
 - **GPU (R34):** NVIDIA 595.104.02 (`pkg:nvidia` `48b78914`, a recipe in
   the `desk` profile) with GSP off (`NVreg_EnableGpuFirmware=0`, in
   `host:local.module_options`), capped by `svc:gpu-power` at 250 W with
@@ -65,7 +69,8 @@ Overwrite this file when facts change; do not append a diary.
   pairings, so each pairs again; NixOS's are in
   `nixos-root/var/lib/bluetooth`.
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
-  GPU settings, the fan curve. No mounts yet.
+  GPU settings, the fan curve, `/home` on the 2 TB's `@oath-home`
+  (`/mnt/nixos-home` is temporary, not in it).
 - **Oath on it:** installed 2026-10-30 by `oath install 21385X801116
   --confirm` from the stick: desk output `cf238ebe3360` (never published)
   at generation 0, with no `/oath/output.json` (R45 makes installs write
