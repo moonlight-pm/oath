@@ -18,8 +18,9 @@ append history (git has it).
    unreleased: `pkg.source`, overlays named and replaced (`--keep`),
    objects new to the profile made, a `/bin`/`/lib` name check. Gaps: a
    changed `svc` spec reaches a machine by hand; a PID 1 older than
-   keep-seat restarts the desk without `--reboot`. Next: Release A (this
-   tree, checked) on Joshua's word; `oath` checks PID 1; expat 2.10.0 (11-02).
+   keep-seat restarts the desk without `--reboot`. Next: Release A,
+   `940c5d970175` (`ddcebae`, 64/64, update rehearsed from `c40249fd9724`),
+   on Joshua's word; `oath` checks PID 1; expat 2.10.0 (11-02).
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
