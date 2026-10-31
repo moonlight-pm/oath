@@ -18,6 +18,9 @@
 [alsa-lib]
 cpe = "cpe:2.3:a:alsa-project:alsa-lib"
 
+[alsa-lib.not_affected]
+"CVE-2026-96674" = "in src/topology/ctl.c (the record's lines): build.sh configures --disable-topology, so libasound has no topology code"
+
 [at-spi2-core]
 cpe = "cpe:2.3:a:gnome:at-spi2-core"
 
@@ -35,6 +38,9 @@ cpe = "cpe:2.3:a:gnu:bison"
 
 [bluez]
 cpe = "cpe:2.3:a:bluez:bluez"
+
+[bluez.not_affected]
+"CVE-2026-19774" = "fixed by 4ec0b2a (PR #2251, ZDI-26-589), which 5.87's profiles/audio/a2dp.c carries (value[9 + 512], caps[513]); 5.86's does not"
 
 [btrfs]
 cpe = "cpe:2.3:a:btrfs-progs_project:btrfs-progs"
@@ -57,6 +63,10 @@ tag = "{version}"
 cpe = "cpe:2.3:a:google:chrome"
 names = ["chromium"]
 version_after = "chromium-"
+
+[cef.not_affected]
+"CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
+"CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
 
 [cf]
 skip = "npm packages: its components.json's npm purls go to OSV"
@@ -83,6 +93,10 @@ cpe = "cpe:2.3:a:gnu:coreutils"
 cpe = "cpe:2.3:a:openprinting:cups"
 repo = "https://github.com/OpenPrinting/cups"
 tag = "v{version}"
+
+[cups.not_affected]
+"CVE-2024-47850" = "cups-browsed (the record; cups-filters' GHSA-rq86-c7g6-r2h8), not CUPS: build.sh builds libcups alone (--with-components=libcups)"
+"CVE-2026-107885" = "cupsd's cupsdCheckJobs() (GHSA-hhw5-qqmc-p6rg): build.sh builds libcups alone (--with-components=libcups), no scheduler"
 
 [curl]
 cpe = "cpe:2.3:a:haxx:curl"
@@ -156,6 +170,9 @@ cpe = "cpe:2.3:a:fossies:gawk"
 cpe = "cpe:2.3:a:gnu:gcc"
 names = ["libstdc++", "libgcc"]
 
+[gcc.not_affected]
+"CVE-2023-4039" = "-fstack-protector on AArch64 targets only (the record); Oath's GCC targets x86_64"
+
 [gh]
 cpe = "cpe:2.3:a:github:cli"
 repo = "https://github.com/cli/cli"
@@ -174,9 +191,19 @@ cpe = "cpe:2.3:a:gnome:glib"
 cpe = "cpe:2.3:a:gnu:glibc"
 names = ["gnu c library"]
 
+[glibc.not_affected]
+"CVE-2013-4412" = "SLiM's NULL dereference on a failed crypt() (the record names slim), not glibc's"
+"CVE-2026-5435" = "fixed by ca44a660 (2026-06-19), before 2.44: 2.44's resolv/ns_print.c is identical to a7b60d23, that series' last commit (sourceware gitweb); the record's range has no end"
+"CVE-2026-6238" = "fixed by a7b60d23 (2026-06-19); 2.44's resolv/ns_print.c is identical to it (sourceware gitweb); GLIBC-SA-2026-0012 names 2.0.1 to 2.43"
+
 [glibc-i386]
 cpe = "cpe:2.3:a:gnu:glibc"
 names = ["gnu c library", "glibc"]
+
+[glibc-i386.not_affected]
+"CVE-2013-4412" = "SLiM's NULL dereference on a failed crypt() (the record names slim), not glibc's"
+"CVE-2026-5435" = "fixed by ca44a660 (2026-06-19), before 2.44: 2.44's resolv/ns_print.c is identical to a7b60d23, that series' last commit (sourceware gitweb); the record's range has no end"
+"CVE-2026-6238" = "fixed by a7b60d23 (2026-06-19); 2.44's resolv/ns_print.c is identical to it (sourceware gitweb); GLIBC-SA-2026-0012 names 2.0.1 to 2.43"
 
 [glslang]
 cpe = "cpe:2.3:a:khronos:glslang"
@@ -242,6 +269,9 @@ cpe = "cpe:2.3:a:libevent_project:libevent"
 repo = "https://github.com/libevent/libevent"
 tag = "release-{version}-stable"
 
+[libevent.not_affected]
+"CVE-2026-63380" = "in ws.c (evws, GHSA-3rpf-frgx-xq34), which libevent added in 2.2.1-alpha: release-2.1.13-stable has no ws.c"
+
 [libffi]
 cpe = "cpe:2.3:a:libffi_project:libffi"
 repo = "https://github.com/libffi/libffi"
@@ -266,6 +296,11 @@ cpe = "cpe:2.3:a:libslirp_project:libslirp"
 cpe = "cpe:2.3:a:libsndfile_project:libsndfile"
 repo = "https://github.com/libsndfile/libsndfile"
 tag = "{version}"
+
+[libsndfile.not_affected]
+"CVE-2024-50612" = "in ogg_vorbis.c (the record): build.sh configures --disable-external-libs, so no Ogg or Vorbis"
+"CVE-2024-50613" = "in mpeg_l3_encode.c (the record): build.sh configures --disable-mpeg"
+"CVE-2025-56226" = "in mpeg_l3_encode.c (the record): build.sh configures --disable-mpeg"
 
 [libudev-zero]
 names = ["libudev-zero"]
@@ -334,6 +369,32 @@ cpe = "cpe:2.3:a:x:libxxf86vm"
 cpe = "cpe:2.3:a:linux:linux_kernel"
 osv = "Linux:Kernel"
 
+[linux.not_affected]
+"CVE-2021-47645" = "the zoran staging driver, fixed in mainline by 20811bbe685c (v5.18); the record lists only the stable branches"
+"CVE-2026-98938" = "Rust kernel code (rust: irq): Oath's kernel has no Rust (boot/config CONFIG_RUSTC_VERSION=0; pkgs/linux builds without rust)"
+"CVE-2026-68086" = "a stable-only fix: mainline removed the code (044925f9b565) by 7.2 (the kernel CNA's record: no upstream commit, 7.1.4 fixes 7.1.y)"
+"CVE-2026-98941" = "v6.19 to v7.2 only; v7.3 refactored the code (the kernel CNA's record)"
+"CVE-2022-2327" = "5.10.y's io_uring work_flags (fix df3f3bb5 is on linux-5.10.y); mainline's io-wq rework in 5.12 removed them"
+"CVE-2022-2503" = "fixed in mainline by 4caae58406f8 (dm verity DM_TARGET_IMMUTABLE, v5.19)"
+"CVE-2021-4440" = "Xen PV (x86/xen USERGS_SYSRET64): boot/config has CONFIG_XEN unset"
+"CVE-2021-28711" = "Xen (XSA-391): boot/config has CONFIG_XEN unset"
+"CVE-2021-28712" = "Xen (XSA-391): boot/config has CONFIG_XEN unset"
+"CVE-2021-28713" = "Xen (XSA-391): boot/config has CONFIG_XEN unset"
+"CVE-2021-28714" = "Xen netback (XSA-392): boot/config has CONFIG_XEN unset"
+"CVE-2021-28715" = "Xen netback (XSA-392): boot/config has CONFIG_XEN unset"
+"CVE-2022-26365" = "Xen blk/net frontends (XSA-403): boot/config has CONFIG_XEN unset"
+"CVE-2022-33740" = "Xen blk/net frontends (XSA-403): boot/config has CONFIG_XEN unset"
+"CVE-2022-33741" = "Xen blk/net frontends (XSA-403): boot/config has CONFIG_XEN unset"
+"CVE-2022-33742" = "Xen blk/net frontends (XSA-403): boot/config has CONFIG_XEN unset"
+"CVE-2022-33743" = "Xen netfront: boot/config has CONFIG_XEN unset"
+"CVE-2022-33744" = "Xen on Arm dom0: boot/config has CONFIG_XEN unset (and Oath is x86_64)"
+"CVE-2022-3643" = "Xen netback: boot/config has CONFIG_XEN unset"
+"CVE-2022-42328" = "Xen netback: boot/config has CONFIG_XEN unset"
+"CVE-2022-42329" = "Xen netback: boot/config has CONFIG_XEN unset"
+"CVE-2023-34319" = "Xen netback: boot/config has CONFIG_XEN unset"
+"CVE-2023-34324" = "Xen event channels: boot/config has CONFIG_XEN unset"
+"CVE-2023-46838" = "Xen netback: boot/config has CONFIG_XEN unset"
+
 [linux-build]
 skip = "pkg:linux's own tree, for outside modules: its CVEs are pkg:linux's"
 
@@ -354,6 +415,9 @@ cpe = "cpe:2.3:a:arm:mbed_tls"
 names = ["mbedtls", "mbed tls"]
 repo = "https://github.com/Mbed-TLS/mbedtls"
 tag = "mbedtls-{version}"
+
+[mbedtls.not_affected]
+"CVE-2025-66442" = "a timing channel that only LLVM's select-optimize introduces (the record); build.sh compiles Mbed TLS with GCC"
 
 [mesa]
 cpe = "cpe:2.3:a:mesa3d:mesa"
@@ -377,6 +441,9 @@ cpe = "cpe:2.3:a:gnu:ncurses"
 [nettle]
 cpe = "cpe:2.3:a:nettle_project:nettle"
 
+[nettle.not_affected]
+"CVE-2018-16869" = "fixed in Nettle 3.4.1 (2018-12, its NEWS); Oath builds 4.0"
+
 [ninja]
 cpe = "cpe:2.3:a:ninja-build:ninja"
 repo = "https://github.com/ninja-build/ninja"
@@ -387,6 +454,10 @@ cpe = "cpe:2.3:a:nodejs:node.js"
 names = ["node"]
 repo = "https://github.com/nodejs/node"
 tag = "v{version}"
+
+[node.not_affected]
+"CVE-2021-43803" = "Next.js, not Node.js (the record; NVD names Node.js only as its platform)"
+"CVE-2022-36046" = "Next.js, not Node.js (the record; NVD names Node.js only as its platform)"
 
 [nspr]
 cpe = "cpe:2.3:a:mozilla:netscape_portable_runtime"
@@ -408,6 +479,9 @@ cpe = "cpe:2.3:a:openssl:openssl"
 repo = "https://github.com/openssl/openssl"
 tag = "openssl-{version}"
 
+[openssl.not_affected]
+"CVE-2019-0190" = "Apache httpd's mod_ssl renegotiation loop with OpenSSL 1.1.1 (the record): an httpd bug; Oath builds OpenSSL 4 and no httpd"
+
 [pango]
 cpe = "cpe:2.3:a:gnome:pango"
 
@@ -423,6 +497,9 @@ tag = "{version}"
 cpe = "cpe:2.3:a:pcre:pcre2"
 repo = "https://github.com/PCRE2Project/pcre2"
 tag = "pcre2-{version}"
+
+[pcre2.not_affected]
+"OSV-2026-343" = "in pcre2_fuzzsupport.c's 32-bit fuzz target (OSV; fixed upstream by e19e76ad): build.sh builds libpcre2-8 alone, without fuzz support"
 
 [perl]
 cpe = "cpe:2.3:a:perl:perl"
@@ -452,6 +529,10 @@ names = ["cpython"]
 repo = "https://github.com/python/cpython"
 tag = "v{version}"
 
+[python.not_affected]
+"CVE-2021-32052" = "Django's URLValidator (the record), not CPython"
+"CVE-2020-29396" = "Odoo's sandbox (the record), not CPython"
+
 [python-mako]
 cpe = "cpe:2.3:a:sqlalchemy:mako"
 osv = "PyPI:Mako"
@@ -468,6 +549,13 @@ osv = "PyPI:PyYAML"
 
 [qemu]
 cpe = "cpe:2.3:a:qemu:qemu"
+
+[qemu.not_affected]
+"CVE-2023-3354" = "the VNC server's TLS handshake: build.sh configures --disable-vnc, and 11.1.2's io/channel-tls.c has the fix (hs_ioc_tag)"
+"CVE-2018-16872" = "usb-mtp following symlinks: 11.1.2's hw/usb/dev-mtp.c opens with O_NOFOLLOW (fixed for 3.1.0)"
+"CVE-2018-16847" = "fixed by 87ad860c (2018-11-22, 'This is CVE-2018-16847'), before QEMU 3.1.0"
+"CVE-2023-2680" = "Red Hat's qemu-kvm for RHEL 9.1, an incomplete backport of CVE-2021-3750's fix (the record), not upstream QEMU"
+"CVE-2023-3180" = "virtio-crypto lengths: 11.1.2's hw/virtio/virtio-crypto.c rejects src len != dst len (fixed for 8.1.0)"
 
 [readline]
 cpe = "cpe:2.3:a:gnu:readline"
@@ -491,6 +579,14 @@ cpe = "cpe:2.3:a:gnu:sed"
 [steam]
 cpe = "cpe:2.3:a:valvesoftware:steam_client"
 
+[steam.not_affected]
+"CVE-2015-4016" = "the Steam client of 2015 (NVD): pkg:steam pins only Valve's launcher, which installs and updates the current client itself"
+"CVE-2019-14743" = "the Windows client's registry permissions (the record)"
+"CVE-2019-15315" = "the Windows client's SteamService (the record)"
+"CVE-2019-15316" = "the Windows client's folder permissions (the record)"
+"CVE-2019-17180" = "the Windows client's file writes as NT AUTHORITY\\SYSTEM (the record)"
+"CVE-2021-30481" = "Steam clients before 2021-04-17 (NVD): pkg:steam pins only Valve's launcher, which installs and updates the current client itself"
+
 [tar]
 cpe = "cpe:2.3:a:gnu:tar"
 
@@ -506,6 +602,9 @@ cpe = "cpe:2.3:a:kernel:util-linux"
 cpe = "cpe:2.3:a:vim:vim"
 repo = "https://github.com/vim/vim"
 tag = "v{version}"
+
+[vim.not_affected]
+"CVE-2022-3705" = "fixed in 9.0.0805 (the record); Oath builds 9.2.1250"
 
 [vulkan-headers]
 skip = "headers"
@@ -557,6 +656,9 @@ skip = "headers and inline code built into the X libraries"
 [xwayland]
 cpe = "cpe:2.3:a:x.org:xwayland"
 
+[xwayland.not_affected]
+"CVE-2024-21886" = "fixed in Xwayland 23.2.4 (X.Org's advisory of 2024-01-16); Oath builds 24.1.14"
+
 [xz]
 cpe = "cpe:2.3:a:tukaani:xz"
 repo = "https://github.com/tukaani-project/xz"
@@ -566,6 +668,9 @@ tag = "v{version}"
 cpe = "cpe:2.3:a:zlib:zlib"
 repo = "https://github.com/madler/zlib"
 tag = "v{version}"
+
+[zlib.not_affected]
+"CVE-2026-76844" = "fixed by df84af25, the commit patches/CVE-2026-85091-gzwrite.patch applies (the record names it)"
 
 [zsh]
 cpe = "cpe:2.3:a:zsh:zsh"
