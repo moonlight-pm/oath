@@ -14,10 +14,9 @@ append history (git has it).
    the newest checked output on the bucket, signed by buccina's key, and
    `sudo oath update --confirm --reboot` takes it (also in `oath mcp`).
    Published 2026-10-31: `c40249fd9724` (Sola `25f2be60`, R44's
-   rivulet, R45); novus runs it, buccina `fed6fb141a5e`, canto
-   `fdecb1ec3d68` (rehearsed to `86dd0d999ce4`, its predecessor). Releases order by commit, and installs record theirs (R45). Gap:
-   `svc` specs reach a machine only by hand. Next: canto's and
-   buccina's updates, when free; expat 2.10.0 (11-02).
+   rivulet, R45); novus and canto run it, buccina `fed6fb141a5e`. Releases order by commit, and installs record theirs (R45). Gap:
+   `svc` specs reach a machine only by hand. Next: buccina's update;
+   expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto runs the
    64-bit client, signed in, with the i386 stack; PID 1 gives `home` the
@@ -53,7 +52,7 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `fdecb1ec3d68` (booted 2026-10-29), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `c40249fd9724` (booted 2026-10-31), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
 | novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `c40249fd9724` (generation 7), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `fed6fb141a5e` (not rebooted since 2026-10-28), `desk`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 

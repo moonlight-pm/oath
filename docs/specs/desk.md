@@ -253,7 +253,10 @@ clipboard connection; neither side starts unpaired, and the old shared
 2026-10-31 novus runs `sola-kvm server` (its `svc:sola-kvm` exec, by
 hand: the profile's is the listener) with canto (10.0.0.3) to its right,
 paired by hand (`pair --public` on one, `pair --accept` on the other,
-each way), and canto listens; the link and the clipboard came up.
+each way), and canto listens; the link and the clipboard came up. A
+machine that updates with `svc:sola-kvm` on and unpaired sees it fail
+after the update, by design (the rehearsal from `fdecb1ec3d68` did):
+pair it, or turn it off.
 
 ## Signatures to watch
 

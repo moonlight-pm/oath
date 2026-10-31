@@ -57,8 +57,18 @@ Overwrite this file when facts change; do not append a diary.
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** output `fdecb1ec3d68`, booted 2026-10-29 20:33
-  (canto's clock). Then R42's objects by hand as
+- **Running now:** output `c40249fd9724`, booted 2026-10-31 01:58Z:
+  `DBUS_SYSTEM_BUS_ADDRESS` in `host:local.env` (424), `oath update
+  --confirm` (425: `pkg:oath`, `pkg:rivulet`; it kept the Sola tab's
+  local Sola `74c54feb` as the owner's pin), the published Sola
+  `25f2be60` packs set by hand with `apply --keep-seat` (426: `pkg:sola`
+  `27a8b909`, `sola-browser` `d9257ce9`, `sola-design` `3ad0865b`), then
+  a reboot. PID 1 is the output's, in sync, 21 services, WirePlumber
+  started after the system bus (Bluetooth audio), the KVM listener paired
+  with novus. Rehearsed first from `fdecb1ec3d68` with Steam (only the
+  unpaired rehearsal machine's `sola-kvm` stayed down, as R44 means).
+  Before it: `fdecb1ec3d68`, booted 2026-10-29 20:33
+  (canto's clock), then R42's objects by hand as
   [using.md](../docs/manual/using.md) says (411): `svc:login`,
   `svc:screen` `enabled=true seat=console`, and `seat=desk` on rivulet,
   `sola-river`, `sola-shell`, `sola-session` and `sola-kvm`. No password
