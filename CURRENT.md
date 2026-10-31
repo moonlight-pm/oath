@@ -10,16 +10,16 @@ append history (git has it).
 
 ## Now
 
-1. **Pull updates (R38, R47).** `cargo make publish` (now only from a
-   clean master equal to origin/master) puts the newest checked output on
-   the bucket, signed by buccina's key; `sudo oath update --confirm
-   --reboot` takes it. Published 2026-10-31: `bafa2d030a0a`; novus and
-   canto run `c40249fd9724`, buccina `fed6fb141a5e`. Built 2026-10-31,
-   unreleased: `pkg.source`, overlays named and replaced (`--keep`),
-   objects new to the profile made, a `/bin`/`/lib` name check. Gaps: a
-   changed `svc` spec goes by hand; an old PID 1 restarts the desk without
-   `--reboot`. Next: Release A, `940c5d970175` (`ddcebae`, 64/64, update
-   rehearsed), on Joshua's word; `oath` checks PID 1; expat 2.10.0 (11-02).
+1. **Pull updates (R38, R47).** `cargo make publish` (only from a clean
+   master equal to origin/master) puts the newest checked output on the
+   bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
+   takes it. Published 2026-10-31: Release A, `940c5d970175` (`ddcebae`,
+   64/64): `pkg.source`, overlays replaced unless `--keep`, objects new to
+   the profile made, a `/bin`/`/lib` name check. novus and canto run
+   `c40249fd9724`, buccina `fed6fb141a5e`. Gap: a changed `svc` spec goes
+   by hand. Next: novus and canto take A (Sola's session; plain
+   `--confirm`, their old `oath` keeps Sola's pins); buccina with
+   `--reboot`; `oath` checks PID 1; expat 2.10.0 (11-02).
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
