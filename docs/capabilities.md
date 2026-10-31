@@ -38,4 +38,4 @@ gaps · `target` designed, not built.
 |---|---|---|
 | Desk (rivulet, Sola) | partial | Sola's apps; shells survive restarts; PipeWire, realtime, BlueZ; Noto; `wl-clipboard`; libglvnd, RADV or NVIDIA (R34); H.264, AAC (R40); shortcut inhibiting (R44). Gaps: other apps; Intel GPUs; the KVM's capture, pairing (R44) |
 | Wicket host | target | Left core (R1). |
-| Steam + Minecraft desk | partial | Steam (R29): Valve's launcher, a recipe, sandboxed; the 64-bit client on canto. Gaps: no 32-bit game or pad tried; Minecraft |
+| Steam + Minecraft desk | partial | Steam (R29): Valve's launcher, a recipe, sandboxed; the 64-bit client on canto and novus. Gaps: no game run yet, no pad; Minecraft |

@@ -11,8 +11,12 @@ packages (`pkg:gcc` with `-m32`, glibc, Mesa and 15 libraries). Valve's
 64-bit client installs and updates itself in the sandbox and is signed
 in; its webhelper renders on the GPU (ANGLE on radeonsi, Mesa 26.2.5);
 its container imports both Mesas, and its 32-bit GL and Vulkan probes
-find radeonsi and RADV. Will be: a 32-bit game tested, controllers (a
-reboot for the kernel's pad drivers, and node rules), a launcher entry.
+find radeonsi and RADV. No game has run yet: canto's one try, Noita
+(32-bit Windows) on Proton Experimental on 2026-10-24, left a prefix
+that never finished ([canto](../../hosts/canto.md)). novus, the first
+NVIDIA machine, runs the same recipe since 2026-10-31 (its webhelper on
+NVIDIA's GL through ANGLE). Will be: a native Vulkan game, a 32-bit
+game and a Proton game run, controllers, a launcher entry.
 
 ## What Steam assumes
 
@@ -82,6 +86,41 @@ Valve's `bin_steam.sh` in `bwrap` with a merged-`/usr` root:
   namespaces.
 
 Old trees stay under `$XDG_RUNTIME_DIR` (a tmpfs) until the next boot.
+
+## On NVIDIA
+
+`pkg:nvidia` (R34, R41) serves Steam as Mesa does on AMD:
+
+- **Is:** 32-bit GL through `pkg:libglvnd-i386` to NVIDIA's `lib32/`;
+  32-bit Vulkan through NVIDIA's ICD, which names `libGLX_nvidia.so.0`,
+  found in `/lib32` by the sandbox's ld.so cache (untested).
+- **Is (built 2026-10-31, on no machine yet):** NVIDIA's NGX DLLs
+  (`nvngx.dll`, `_nvngx.dll`, `nvngx_dlssg.dll`) in `lib/nvidia/wine/`,
+  beside `libGLX_nvidia`, where NVIDIA's installer puts them and Proton
+  looks for DLSS (a game also needs `PROTON_ENABLE_NVAPI=1` unless
+  Proton turns NVAPI on for it). The 32-bit GBM backend,
+  `lib32/nvidia/gbm/nvidia-drm_gbm.so`, where `pkg:mesa-i386`'s libgbm
+  now looks; without it 32-bit GBM on the card fell to Mesa's software
+  path (`kmsro: driver missing`, then `DRM_IOCTL_MODE_CREATE_DUMB`
+  refused).
+- **Will be checked:** EGL inside Steam's containers. NVIDIA's external
+  platforms (Wayland, GBM, X11) are in `/lib/nvidia/egl_external_platform.d`,
+  not `/usr/share/egl/egl_external_platform.d`, where pressure-vessel
+  imports them from.
+- **Gap:** NVIDIA's application profiles (per-program driver settings)
+  are not shipped.
+
+## Log lines that are not faults
+
+In `~/.local/share/Steam/logs/console-linux.txt`, on canto and novus:
+`Failed to execute child process "lspci"` (no pciutils; Steam's system
+information lacks its PCI lines); `Fontconfig error: …48-guessfamily.conf
+… invalid attribute 'xsi:nil'` (the desk's `FONTCONFIG_FILE` read by the
+runtime's older fontconfig, which skips those rules); pressure-vessel's
+`"oath/store/…" is unlikely to appear in "/run/host"` (the store is not
+one of its known host paths; the containers get it through
+`PRESSURE_VESSEL_FILESYSTEMS_RO`); and, with a system bus, UPower's
+absence.
 
 On a first run (no `~/.local/share/Steam`) it opts into Valve's 64-bit
 client: `package/beta` is `publicbeta` and `.steam-enable-steamrt64-client`

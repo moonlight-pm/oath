@@ -322,7 +322,7 @@ OATH_EOF
 # device-select layer, which puts the compositor's GPU first: their
 # manifests (share/vulkan) name each library by its name, found in /lib.
 # libgbm loads a GPU's own backend (<driver>_gbm.so) from its lib/gbm
-# or, on x86_64, NVIDIA's slot, and else its DRI one.
+# or NVIDIA's slot ($LIBDIR/nvidia/gbm), and else its DRI one.
 tar -xf "$SRC/$SOURCES"
 cd "mesa-$VERSION"
 PYTHONPATH=
@@ -330,8 +330,7 @@ for m in mako markupsafe pyyaml packaging; do
 	PYTHONPATH="$PYTHONPATH${PYTHONPATH:+:}/oath/store/pkg/python-$m/live/lib/python"
 done
 export PYTHONPATH
-gbm=$LIVE/$LIBDIR/gbm
-[ "$LIBDIR" != lib ] || gbm=$gbm:/oath/store/pkg/nvidia/live/lib/nvidia/gbm
+gbm=$LIVE/$LIBDIR/gbm:/oath/store/pkg/nvidia/live/$LIBDIR/nvidia/gbm
 meson setup build --prefix="$LIVE" --libdir="$LIBDIR" --buildtype=release --wrap-mode=nofallback \
 	-Dplatforms=wayland,x11 -Dgallium-drivers=radeonsi,softpipe \
 	-Dvulkan-drivers=amd -Dvulkan-layers=device-select -Dvulkan-manifest-per-architecture=false \

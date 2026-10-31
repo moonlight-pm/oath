@@ -114,7 +114,14 @@ Overwrite this file when facts change; do not append a diary.
   (and again by itself after the reboot; restarted on `pkg:steam`
   `a25d01f1…` on 2026-10-24 08:49);
   its webhelper is on radeonsi through ANGLE, and its container imports
-  `mesa-i386` (no 32-bit GL or Vulkan errors). No game installed yet.
+  `mesa-i386` (no 32-bit GL or Vulkan errors). One game was tried:
+  Noita (881100, 32-bit Windows) on Proton Experimental (11.0-100) in
+  SteamLinuxRuntime_4, launched 2026-10-24 09:07 (UTC−6). Its
+  containers started, fsync came up and Fossilize ran, but the prefix
+  never finished (`compatdata/881100/pfx` holds only `dosdevices` and
+  `creation_sync_guard`), Proton logged `unable to use parent for game
+  drive, path ` with an empty path, and nothing shows the game ran.
+  Floating Point (302380) was asked for at 08:42 and is not installed.
   Since the boot of 2026-10-25 22:19Z `/dev/uinput` is root:home 0660
   (R30); no pad tried yet.
   Steam's data and its one library are `/home/.local/share/Steam`;

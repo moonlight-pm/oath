@@ -182,6 +182,9 @@ OATH_EOF
 #   libEGL_nvidia names as /usr/share/egl/egl_external_platform.d and is
 #   rewritten in place to /lib/nvidia's, and GBM's backend
 #   (nvidia-drm_gbm.so), which libgbm finds there. Mesa has lib/gbm.
+#   The 32-bit backend is lib32/nvidia/gbm, where pkg:mesa-i386 looks.
+# - DLSS for Proton: NVIDIA's NGX DLLs in lib/nvidia/wine/, beside
+#   libGLX_nvidia, where NVIDIA's installer puts them and Proton looks.
 # - bin/nvidia-smi, its loader name rewritten to /lib's (R17).
 # - GSP firmware in lib/firmware/nvidia/<version>/.
 run=$SRC/NVIDIA-Linux-x86_64-$VERSION.run
@@ -233,6 +236,8 @@ done
 ln -s libcuda.so.1 /out/lib/libcuda.so
 ln -s ../../libnvidia-allocator.so.1 /out/lib/nvidia/gbm/nvidia-drm_gbm.so
 cp [0-9][0-9]_nvidia_*.json /out/lib/nvidia/egl_external_platform.d/
+mkdir -p /out/lib/nvidia/wine
+cp nvngx.dll _nvngx.dll nvngx_dlssg.dll /out/lib/nvidia/wine/
 mkdir -p /out/lib32
 for f in 32/lib*.so.*; do
 	b=${f#32/}
@@ -244,6 +249,9 @@ for f in 32/lib*.so.*; do
 	so=$(readelf -d "$f" | sed -n 's/.*(SONAME).*\[\(.*\)\]/\1/p')
 	[ -z "$so" ] || [ "$so" = "$b" ] || ln -sf "$b" "/out/lib32/$so"
 done
+mkdir -p /out/lib32/nvidia/gbm
+[ -e /out/lib32/libnvidia-allocator.so.1 ]
+ln -s ../../libnvidia-allocator.so.1 /out/lib32/nvidia/gbm/nvidia-drm_gbm.so
 # The new list is shorter; NUL pads it, and nothing in the file moves.
 old=/etc/egl/egl_external_platform.d:/usr/share/egl/egl_external_platform.d
 new=/etc/egl/egl_external_platform.d:/lib/nvidia/egl_external_platform.d

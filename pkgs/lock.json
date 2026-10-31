@@ -1019,7 +1019,7 @@
     "version": "26.2.5",
     "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-ab259ebe01aeaac84c4e50a450d61b0875ff386978e8b7b912c84ca6dd33be86",
+    "plan": "sha256-d03abd6d9770f9efc4bdf1753e607999208251a182fc07449a6c39c5df45c120",
     "product": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
     "run": [
       "gcc",
@@ -1041,8 +1041,8 @@
     "version": "26.2.5",
     "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-956a15ebc2688780f5d7e7c1b1d5ac44ab16e80350392527649f5d7293f5cfe0",
-    "product": "sha256-f60320e669373d4945cc2710e92d54f8b9547c4a2a050bed0531029e9bbc24bf",
+    "plan": "sha256-29ed0dc023ac46971712a630f0531f4b4f0a250b60092bd212474a8e646c70f9",
+    "product": "sha256-bff1d8ecf721ec7724746d1e44990cc41178e5b4345fd7a803de4245bf5edee1",
     "run": [
       "gcc",
       "libdrm-i386",
@@ -1147,8 +1147,8 @@
     "version": "595.104.02",
     "license": "LicenseRef-NVIDIA-Driver",
     "by": "plan",
-    "plan": "sha256-fd1f4d5af68400d503ea3cdc8790bb69f6289d25a37ddaafd11c7d7fbadcd064",
-    "product": "sha256-48b7891430181aa9e7ef0546e3e382db204a2b72d0558bea5d608694c324eff8",
+    "plan": "sha256-102237c66a59c6ccfe1ddc510f40a9516a367fcfec3813214b194f0a8865c1c6",
+    "product": "sha256-b9d52386592b9d10ba83c5b9750aa9a29bbd46fdae3e4a1f25addf1e749eece0",
     "run": [
       "gcc",
       "libdrm",
@@ -1407,7 +1407,7 @@
     "version": "1.0.0.87",
     "license": "LicenseRef-Steam-Subscriber-Agreement AND MIT",
     "by": "plan",
-    "plan": "sha256-e51b70b462d09bd0d77870fb7368f65ffb099a1a06000ca56c60ff7590cb8b2a",
+    "plan": "sha256-4fe09e8790a159d7da7902ef313bdfdc8f0bc5daa49420059be73ef0e150651f",
     "product": "sha256-1dfe7cf2a2c5859eabd8f838d0b26bcd368ef3a7546eb4f326bd07f3affcdced",
     "run": [
       "bubblewrap",
