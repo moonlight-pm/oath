@@ -201,6 +201,26 @@ A present package may ship
 `oath-backup-thaw`; `backup-send` runs them around the snapshot.
 Without them the copy is crash-consistent (`sync` plus btrfs CoW).
 
+## Scheduled services
+
+A `schedule` (R48) makes a oneshot start at times, as cron would: a
+pattern (five fields, or six with seconds; `@daily`; croner's `L`, `W`
+and `#`) in the machine's time zone, `host:local.timezone`, so 04:00 stays
+04:00 across daylight saving.
+
+```sh
+sudo oath new svc:backup --from-json '{"exec":["/lib/oath/backup-send","nas:/export/backup/canto"],"wants":[],"restart":"never","enabled":true,"schedule":"0 4 * * *"}'
+sudo oath apply svc:backup
+oath get svc:backup     # state: "scheduled", next: "…04:00:00-06:00", last_run
+```
+
+Apply does not start it, and refuses a schedule without `restart:
+"never"` or one croner cannot read. PID 1 starts it at each match; at
+boot, once, when a match passed while the machine was down (the last run
+is in `/oath/log/svc/<name>.schedule.json`); and never twice at once: a
+match while the last run still goes is skipped, and `init.log` says so.
+Its output goes to `oath logs svc:<name>` as any service's.
+
 ## If PID 1 panics
 
 A panic in PID 1's main loop is logged and survived: PID 1 hands its

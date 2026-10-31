@@ -53,6 +53,18 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
   the service only while that owner has the seat (`/oath/run/seat`, the
   desk's at boot) and holds it otherwise, actual `state: "held"` with a
   `reason`; apply counts held as converged. Absent: it runs either way.
+- `schedule` (is, 2026-10-31, R48) — a cron pattern (croner's: five
+  fields or six with seconds, `@daily`, `L`, `W`, `#`) in the machine's
+  time zone: PID 1 sets its own `TZ` from the applied
+  `host:local.timezone` (or `host:local.env`'s `TZ`). Only with
+  `restart: never`. Converge plans it instead of starting it: the next
+  match, or now when a match passed since its last run
+  (`/oath/log/svc/<name>.schedule.json`, so a run owed across a reboot
+  runs at boot; a new schedule waits for its first match). The main loop
+  starts it at that time, records the run and plans the next; a match
+  while it still runs is skipped and logged. Actual between runs is
+  `state: "scheduled"` with `next` and `last_run`; apply counts it as
+  converged. A resumed PID 1 keeps each next time.
 
 Actual: `state` (`running`, `restarting`, `stopped`, `failed`), `pid`,
 `restarts` (restarts this boot), `last_exit` (`{"code": n}` or

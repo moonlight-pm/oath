@@ -157,6 +157,20 @@ origin, then the newest checked output's signed release; `--dest
   from the origin that just served the pack. Offline apply still
   works.
 
+- **The audit (is, 2026-10-31, R48).** `cargo make audit` matches
+  every package by `pkgs/audit.toml` (CPE, product names, repo and tag,
+  OSV name; outside every plan, so no hash moves) against CVE List V5,
+  OSV (ecosystem purls, PyPI/Go/Linux names, release-tag commits), NVD
+  by CPE, KEV and EPSS. NVD alone sees little since 2026-04-15 (it
+  enriches 15–20% of new CVEs), and OSV's purl lookup none of the
+  `pkg:generic` upstreams, so CVE List V5's own records carry most of
+  it. Their ranges are read as their issuers mean them: the CNA's entry
+  outranks CISA's added ones where it holds a range for the version;
+  ranges that list only affected versions make the rest unaffected;
+  commit ids in "custom" ranges and products with no versions decide
+  nothing. The `oath-audit` skill triages and fixes on buccina daily
+  (`svc:audit`, `check/audit/`).
+
 ## Native packages (policy, D7)
 
 - Every package is either built from source by an Oath plan, or is the

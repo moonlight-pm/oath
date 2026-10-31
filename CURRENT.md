@@ -38,13 +38,13 @@ append history (git has it).
    (`@oath-home`, `host:local.mounts`, R45), the desk on the card and
    21 services. Its AMI firmware keeps `UEFI OS` and needed Oath set first
    by hand. Next: Joshua restores what he picks from the 4 TB into /home.
-5. **Recipes, origins and npm (R23, R25, R31, R46).** Every catalog
-   carries the coding agents' plans (`claude-code` 2.1.292, `codex`
-   0.164.0, `grok-build` 1.0.70) and `plan:steam`; `pkg:node` 26.13.0,
-   `pkg:gh` 2.103.3 and `pkg:cf` (npm, in its own tree) are on the origin
-   in no profile; novus has those and claude and grok (2026-10-31).
-   Next: Joshua's security audit (pins, advisories, the npm and GitHub
-   signatures oath-make does not check); publish after every pack build.
+5. **Security audit (R48).** `cargo make audit` matches every package
+   (`pkgs/audit.toml`) against CVE List V5, OSV, NVD, KEV and EPSS: 20 with
+   hits on 2026-10-31 (expat 2.9.0, libsndfile, the kernel 7.3, …).
+   `svc.schedule` (PID 1, croner) and `check/audit/` (runner, skill
+   `oath-audit`, permissions, Resend mail to Joshua) are built, unreleased.
+   Next: the first run by hand (it publishes a release with the schedule);
+   then `oath new svc:audit` on buccina (`0 4 * * *`).
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9

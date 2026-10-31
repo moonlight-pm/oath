@@ -60,7 +60,9 @@ images this repo built. **Anything on canto**, the test machine
 reboots, `sudo`, wiping its disk. **Anything on buccina**, where Oath
 work happens (R39, Joshua 2026-10-28; canto is for Sola R&D, so keep
 long Oath builds off it): installs, updates, reboots, `sudo`, wiping
-its disk.
+its disk. **The daily security audit** (R48, Joshua 2026-10-31):
+`svc:audit` may fix, check, publish and move buccina to its release on
+its own; it never touches novus or canto.
 
 **Ask first:** force-push or hard reset of published history; writing
 to any other real disk or USB stick Joshua did not ask for (`cargo make
@@ -82,7 +84,8 @@ crates/oath-make  host build tool (`cargo make bootstrap|pkgs|build|check|run|up
 pkgs/             every package that ships: pkg.toml + build.sh per package, lock.json, the toolchain bootstrap;
                   pkgs/linux is the kernel (linux.fragment, patches/); pkgs/keys the upstream signing keys
 image/            host.nix (QEMU + OVMF, build host only)
-check/            cases.toml for `cargo make check` (the QEMU harness), agent.toml for `--agent`
+check/            cases.toml for `cargo make check` (the QEMU harness), agent.toml for `--agent`,
+                  audit/ the daily security audit's runner, prompt and permissions (R48)
 apps/             first-party package sources and example plans
 site/             oath.moonlight.pm: home page and docs/manual as one page, its own Cargo workspace, Wicket workload
 brand/            the seal: oath.svg (vector), oath.png, logo-white.png

@@ -3,6 +3,17 @@
     "host:local": {
       "hostname": "buccina",
       "timezone": "MST7MDT,M3.2.0,M11.1.0"
+    },
+    "svc:audit": {
+      "exec": [
+        "/bin/sh",
+        "/home/Projects/Oath/check/audit/run"
+      ],
+      "wants": [],
+      "restart": "never",
+      "enabled": true,
+      "user": "home",
+      "schedule": "0 4 * * *"
     }
   }
 }

@@ -348,6 +348,26 @@ NVAPI on for it. A card's own settings (GSP off,
 power caps) belong in the machine's overlay ([Kernel module
 options](using.md#kernel-module-options)).
 
+## Security audit
+
+`cargo make audit` (R48) matches every package `pkgs/` builds, and the
+Rust crates in `pkg:oath`, against cve.org's CVE List V5 (a local mirror
+in `~/.local/share/oath/cvelist`, fetched each run), OSV, NVD, CISA's
+Known Exploited Vulnerabilities and EPSS, and writes
+`build/audit/latest.json`. `--offline` keeps the mirror as it is and
+skips NVD; `--name <pkg>` scans one. What it matches each package by is
+`pkgs/audit.toml`: its NVD CPE, the names CVE records use, its upstream
+repo and release tag (OSV's commit query), an OSV ecosystem name, or why
+there is nothing to match; no plan reads that file, so an edit there
+moves no hash. A CVE listed under `[<name>.not_affected]`, or one a
+`pkgs/<name>/patches/*CVE-….patch` fixes, is listed apart.
+
+On buccina, `svc:audit` runs it daily at 04:00 through `check/audit/run`:
+a headless Claude Code run of the `oath-audit` skill triages the hits,
+upgrades to upstream's fixed release (or applies upstream's patch, or a
+backport marked `oath-backport-CVE-…`), checks, commits, pushes and
+publishes, then mails Joshua its report and moves buccina to the release.
+
 ## Host store cache and publishing
 
 The build host keeps the same layout under `~/.local/share/oath/store` (or

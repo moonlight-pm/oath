@@ -1,0 +1,74 @@
+#!/bin/sh
+# The daily security audit (R48). `svc:audit` on buccina runs this at 04:00
+# (host:local.timezone) as `home`: one headless Claude Code run with the
+# `oath-audit` skill scans, fixes, checks and publishes; this then mails its
+# report to Joshua and, when it published a release, moves buccina to it
+# with a reboot. Never novus or canto.
+set -u
+repo=${OATH_REPO:-/home/Projects/Oath}
+cd "$repo" || exit 1
+dir=$repo/build/audit
+mkdir -p "$dir"
+day=$(date +%F)
+log=$dir/run-$day.log
+report=$dir/report-$day.md
+published=$dir/published
+
+# One at a time (PID 1 skips a time while the last run goes; this covers a
+# run by hand).
+exec 9>"$dir/lock"
+flock -n 9 || { echo "an audit is already running"; exit 0; }
+
+# A run owed across a reboot starts with the services, before the lease.
+i=0
+until curl -fsS -o /dev/null --max-time 10 https://api.osv.dev/ 2>/dev/null; do
+    i=$((i + 1))
+    [ "$i" -ge 60 ] && break
+    sleep 10
+done
+
+rm -f "$published" "$report"
+prompt=$(sed -e "s|@DAY@|$day|g" -e "s|@REPORT@|$report|g" -e "s|@PUBLISHED@|$published|g" \
+    check/audit/prompt.md)
+claude -p "$prompt" --settings check/audit/settings.json --permission-mode dontAsk \
+    --output-format text >"$log" 2>&1
+rc=$?
+
+if [ ! -s "$report" ]; then
+    {
+        echo "# Oath audit $day: the run wrote no report (exit $rc)"
+        echo
+        echo "The last lines of $log:"
+        echo
+        tail -n 60 "$log" | sed 's/^/    /'
+    } >"$report"
+fi
+if [ -s "$published" ]; then
+    printf '\nbuccina takes output %s now: sudo oath update --confirm --reboot\n' \
+        "$(cat "$published")" >>"$report"
+fi
+
+# The report by mail (Resend; the key in ~/.config/oath/mail.env).
+set -a
+. "$HOME/.config/oath/mail.env"
+set +a
+python3 -I - "$report" <<'EOF' >"$dir/mail.json"
+import json, sys
+text = open(sys.argv[1]).read()
+subject = text.splitlines()[0].lstrip("# ").strip() if text else "Oath audit"
+print(json.dumps({
+    "from": "Oath on buccina <oath@moonlight.pm>",
+    "to": ["joshua@moonlight.pm"],
+    "subject": subject,
+    "text": text,
+}))
+EOF
+printf 'header = "Authorization: Bearer %s"\n' "$RESEND_API_KEY" |
+    curl -sS -K - -H 'Content-Type: application/json' --data @"$dir/mail.json" \
+        https://api.resend.com/emails >>"$log" 2>&1
+echo >>"$log"
+
+if [ -s "$published" ]; then
+    sudo -n oath update --confirm --reboot >>"$log" 2>&1
+fi
+exit "$rc"

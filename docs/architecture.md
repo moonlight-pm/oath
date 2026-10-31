@@ -225,6 +225,14 @@ cargo make publish [--dest <dir>] [--output <id>]
   and out/<profile>.json, each .json with a .sig from
   ~/.config/oath/sign_ed25519 (ssh-keygen -Y sign -n oath-output),
   made in build/release/<id>/
+cargo make audit [--offline] [--name <pkg>]
+  every package by pkgs/audit.toml against CVE List V5 (mirror in
+  ~/.local/share/oath/cvelist), OSV, NVD, CISA KEV and EPSS; writes
+  build/audit/latest.json (R48). svc:audit (buccina, schedule 0 4 * * *)
+  runs check/audit/run: claude -p with the oath-audit skill and
+  check/audit/settings.json, the report mailed through Resend
+  (~/.config/oath/mail.env), then oath update --confirm --reboot when it
+  published
 cargo make check
   one QEMU per case in check/cases.toml (4 at a time), SSH as home with
   build/check/key; serves the fetch canary and a one-pack origin
