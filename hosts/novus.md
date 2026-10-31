@@ -78,8 +78,17 @@ Overwrite this file when facts change; do not append a diary.
   one). Joshua's `sudo oath update --confirm` then moved it to the older
   published `fed6fb141a5e` (generation 1, 22:39Z), whose PID 1 has no
   `@home`. At 23:54Z buccina updated it to `86dd0d999ce4` (generation 2:
-  `pkg:oath`, `pkg:rivulet`), set /home (generation 3) and rebooted it:
-  PID 1 is the output's, in sync, 21 services, the desk on the card. Its `ssh:local`
+  `pkg:oath`, `pkg:rivulet`), set /home (generation 3) and rebooted it.
+  On 2026-10-31 at 01:45Z it took `c40249fd9724` (generation 6: Sola
+  `25f2be60`), its `svc:sola-kvm` became the server (generation 7), and
+  it rebooted: PID 1 the output's, in sync, 21 services, the desk on the
+  card.
+- **KVM (R44):** `svc:sola-kvm` runs `sola-kvm server`, capturing through
+  rivulet (no `/dev/input`), with NixOS's `~/.config/sola-kvm/config.toml`
+  (canto 10.0.0.3:4242 to the right, bottom-aligned, 1920×1080 beside
+  5120×2160). Paired with canto by hand through buccina on 2026-10-31:
+  novus's key `0050bb7e…`, canto's `eeeb2d40…`; the link and the
+  clipboard channel came up. Ctrl+Alt+Esc brings the cursor home. Its `ssh:local`
   has buccina's, canto's and `root@hub`'s keys; buccina reaches it with
   `ssh -o UserKnownHostsFile=build/novus-oath.known_hosts home@10.0.0.5`
   (the host key the install printed, ending `Suecii`). canto's

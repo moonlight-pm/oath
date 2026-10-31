@@ -197,12 +197,12 @@ Overwrite this file when facts change; do not append a diary.
   sysfs path because libudev-zero has no `ID_PATH`) and the monitor's
   HDMI/DP audio on the GPU at `06:00.1`; the other GPU's HDMI, with
   nothing attached, has none. The shell's volume menu switches them.
-- **KVM:** `svc:sola-kvm` listens here (UDP and the clipboard's TCP on
-  4242, unpaired), on in canto's catalog though the profile has it off
-  (R44). novus drove it from NixOS (`sola-kvm server --input evdev`,
-  canto to its right); on Oath novus runs no server until `sola-kvm`
-  captures through rivulet and pairs (R44). Joshua leaves it as is until
-  then.
+- **KVM (R44):** `svc:sola-kvm` listens here (UDP and the clipboard's
+  TCP on 4242) on its locally applied Sola (`74c54feb`, `25f2be60`),
+  paired with novus's server since 2026-10-31 01:46Z: the old shared
+  `pair.key` removed, novus's key accepted (`0050bb7e…`, canto's own
+  `eeeb2d40…`), and the service turned off and on (generations 422–423)
+  to start it again after it had failed on the old key.
 - **Building Sola here:** a login shell has `PKG_CONFIG_PATH`; `cargo
   build` of Sola's session crates from a fresh clone took 5 min 45 s
   (debug, 8 threads) on 2026-10-18.

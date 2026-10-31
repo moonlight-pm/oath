@@ -249,9 +249,11 @@ Noise_IK_25519_ChaChaPoly_BLAKE2s between static X25519 keys in
 `~/.config/sola-kvm` (`sola-kvm pair home@<peer>` swaps them over SSH),
 with replay protection, a rekey every two minutes, a handshake per
 clipboard connection; neither side starts unpaired, and the old shared
-`pair.key` is refused. On NixOS novus ran `sola-kvm server --input
-evdev` with canto (10.0.0.3) to its right; on Oath it will run `sola-kvm
-server` once its Sola is `25f2be60` or later and the two are paired.
+`pair.key` is refused. Desk output `c40249fd9724` pins that Sola. Since
+2026-10-31 novus runs `sola-kvm server` (its `svc:sola-kvm` exec, by
+hand: the profile's is the listener) with canto (10.0.0.3) to its right,
+paired by hand (`pair --public` on one, `pair --accept` on the other,
+each way), and canto listens; the link and the clipboard came up.
 
 ## Signatures to watch
 

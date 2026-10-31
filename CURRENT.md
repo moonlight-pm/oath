@@ -13,9 +13,9 @@ append history (git has it).
 1. **Pull updates (R38, Joshua 2026-10-28).** `cargo make publish` puts
    the newest checked output on the bucket, signed by buccina's key, and
    `sudo oath update --confirm --reboot` takes it (also in `oath mcp`).
-   Published 2026-10-30: `86dd0d999ce4` (R44's rivulet, R45); novus runs
-   it, buccina `fed6fb141a5e`, canto `fdecb1ec3d68` (both rehearsed to
-   it). Releases order by commit, and installs record theirs (R45). Gap:
+   Published 2026-10-31: `c40249fd9724` (Sola `25f2be60`, R44's
+   rivulet, R45); novus runs it, buccina `fed6fb141a5e`, canto
+   `fdecb1ec3d68` (rehearsed to `86dd0d999ce4`, its predecessor). Releases order by commit, and installs record theirs (R45). Gap:
    `svc` specs reach a machine only by hand. Next: canto's and
    buccina's updates, when free; expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
@@ -26,14 +26,13 @@ append history (git has it).
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28, R37);
    `pkg:cef` is CEF 156 with H.264 and AAC (R40). R42's login is in
-   `fdecb1ec3d68`. R44: rivulet serves keyboard-shortcuts-inhibit
-   (`86dd0d999ce4`), Sola `25f2be60` captures through it and pairs by
-   key (not yet published); `svc:sola-kvm` is off in the profile. Next:
-   a desk output pinning that Sola, then novus's server paired with
-   canto; `sola-lock`, Settings → Login and Exit Sola on canto.
+   `fdecb1ec3d68`. R44: novus's `sola-kvm server` (Sola `25f2be60`,
+   capturing through rivulet's inhibitor) drives canto, paired by key,
+   since 2026-10-31; `svc:sola-kvm` is off in the profile. Next: Joshua
+   tries the edge; `sola-lock`, Settings → Login and Exit Sola on canto.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
-   `oath install` put Oath on the 500 GB (2026-10-30); since 23:55Z it
-   runs `86dd0d999ce4` (generation 3) with `/home` on the 2 TB
+   `oath install` put Oath on the 500 GB (2026-10-30); it runs
+   `c40249fd9724` (generation 7, 2026-10-31) with `/home` on the 2 TB
    (`@oath-home`, `host:local.mounts`, R45), the desk on the card and
    21 services. Its AMI firmware keeps `UEFI OS` and needed Oath set first
    by hand. Next: Joshua restores what he picks from the 4 TB into /home.
@@ -55,7 +54,7 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `fdecb1ec3d68` (booted 2026-10-29), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
-| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `86dd0d999ce4` (generation 3), `/home` on its 2 TB, `desk` with `pkg:nvidia`; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `c40249fd9724` (generation 7), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `fed6fb141a5e` (not rebooted since 2026-10-28), `desk`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 Oath work happens on **buccina** (R39). **novus**, Joshua's desk, runs Oath since 2026-10-30.
