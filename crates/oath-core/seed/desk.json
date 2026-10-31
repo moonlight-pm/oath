@@ -709,7 +709,7 @@
     },
     "pkg:sola": {
       "present": true,
-      "hash": "sha256-2458e92ba6a415466e86d472e1c54c99dbe9b27d8a3fd2cc673d7b4437a6078d",
+      "hash": "sha256-27a8b909e1b987ba2ee3d316190f4a4b067b9bcbc628effe4ce036bf85705718",
       "needs": [
         {
           "id": "pkg:gcc",
@@ -725,7 +725,7 @@
         },
         {
           "id": "pkg:mesa",
-          "hash": "sha256-ff8d0975430de4111e47ad4ac5f0d46e8156b010ef465f2ce0acb0ed9ef2ac6e"
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f"
         },
         {
           "id": "pkg:tmux",
@@ -737,11 +737,11 @@
         },
         {
           "id": "pkg:pipewire",
-          "hash": "sha256-cd23a26bb28b9336cbdad793392bd79424335c9746538ef271c0fb8bb1192391"
+          "hash": "sha256-f361aada2db35207c17653bc58d460f5fcd1b45b45675a52d95f61c1c284ed6a"
         },
         {
           "id": "pkg:wireplumber",
-          "hash": "sha256-3861ca5c3d44217add73b0377f881411d4db751cf3ef5dd0f6cc914fab3cf610"
+          "hash": "sha256-43434cb0815fc79886c4897c86c98221e9b2c881483ab587ee65feb875b554cf"
         },
         {
           "id": "pkg:fontconfig",
@@ -769,11 +769,11 @@
     },
     "pkg:sola-browser": {
       "present": true,
-      "hash": "sha256-9a7a283e381ee33a70c2563704d24449873c4e784a0e128d793e46635a7c8953",
+      "hash": "sha256-d9257ce97bbcd49ef7e44c32041b6ea9352f9a083284b90cb0c0365b3aec374d",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-2458e92ba6a415466e86d472e1c54c99dbe9b27d8a3fd2cc673d7b4437a6078d"
+          "hash": "sha256-27a8b909e1b987ba2ee3d316190f4a4b067b9bcbc628effe4ce036bf85705718"
         },
         {
           "id": "pkg:cef",
@@ -789,11 +789,11 @@
     },
     "pkg:sola-design": {
       "present": true,
-      "hash": "sha256-c697e4a4817c2cc1dbe7145ad88b188389af39be9580cab03124757d0860fbd4",
+      "hash": "sha256-3ad0865b02230b1b8891e3d45b9c6c0ae331369cdfcdb5a7687085c86621ce11",
       "needs": [
         {
           "id": "pkg:sola",
-          "hash": "sha256-2458e92ba6a415466e86d472e1c54c99dbe9b27d8a3fd2cc673d7b4437a6078d"
+          "hash": "sha256-27a8b909e1b987ba2ee3d316190f4a4b067b9bcbc628effe4ce036bf85705718"
         },
         {
           "id": "pkg:cef",
