@@ -24,17 +24,13 @@ append history (git has it).
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
    `pkg:nvidia` with DLSS's DLLs and its 32-bit GBM backend is in `bafa2d030a0a`.
    Next: Joshua moves novus; its smoke (native Vulkan, Floating Point, Proton, a pad).
-3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
-   (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
-   Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28, R37);
-   `pkg:cef` is CEF 156 with H.264 and AAC (R40). R42's login is in
-   `fdecb1ec3d68`. R44: novus's `sola-kvm server` (Sola `25f2be60`,
-   capturing through rivulet's inhibitor) drives canto, paired by key,
-   since 2026-10-31; `svc:sola-kvm` is off in the profile, as is
-   `svc:sola-sessions` (`sola-projects --restore` at boot) until the
-   `pkg:sola` pin has `--restore`. Next: turn it on with that pin (novus
-   and canto add it with `oath new`); `sola-lock`, Settings → Login and
-   Exit Sola on canto.
+3. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
+   [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
+   novus's `sola-kvm server` (Sola `25f2be60`) drives canto since
+   2026-10-31. Off in the profile: `svc:sola-kvm`, and `svc:sola-sessions`
+   (`sola-projects --restore` at boot) until `pkg:sola` pins `--restore`.
+   Next: on with that pin (novus, canto: `oath new`); `sola-lock`,
+   Settings → Login and Exit Sola on canto.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
    `c40249fd9724` (since generation 7, 2026-10-31) with `/home` on the 2 TB
