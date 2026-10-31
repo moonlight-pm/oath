@@ -94,7 +94,7 @@ Old trees stay under `$XDG_RUNTIME_DIR` (a tmpfs) until the next boot.
 - **Is:** 32-bit GL through `pkg:libglvnd-i386` to NVIDIA's `lib32/`;
   32-bit Vulkan through NVIDIA's ICD, which names `libGLX_nvidia.so.0`,
   found in `/lib32` by the sandbox's ld.so cache (untested).
-- **Is (built 2026-10-31, on no machine yet):** NVIDIA's NGX DLLs
+- **Is (published in `bafa2d030a0a` on 2026-10-31, on no machine yet):** NVIDIA's NGX DLLs
   (`nvngx.dll`, `_nvngx.dll`, `nvngx_dlssg.dll`) in `lib/nvidia/wine/`,
   beside `libGLX_nvidia`, where NVIDIA's installer puts them and Proton
   looks for DLSS (a game also needs `PROTON_ENABLE_NVAPI=1` unless

@@ -13,8 +13,8 @@ append history (git has it).
 1. **Pull updates (R38, Joshua 2026-10-28).** `cargo make publish` puts
    the newest checked output on the bucket, signed by buccina's key, and
    `sudo oath update --confirm --reboot` takes it (also in `oath mcp`).
-   Published 2026-10-31: `c40249fd9724` (Sola `25f2be60`, R44's
-   rivulet, R45); novus and canto run it, buccina `fed6fb141a5e`. Releases order by commit, and installs record theirs (R45). Gap:
+   Published 2026-10-31: `bafa2d030a0a` (`c40249fd9724`, Sola `25f2be60`,
+   with Steam's NVIDIA packs); novus and canto run `c40249fd9724`, buccina `fed6fb141a5e`. Releases order by commit, and installs record theirs (R45). Gap:
    `svc` specs reach a machine only by hand; without `--reboot` a PID 1
    older than keep-seat restarts the desk (canto's windows, 2026-10-31).
    Next: `oath` checks the running PID 1 first; buccina's update with
@@ -22,8 +22,8 @@ append history (git has it).
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
-   `pkg:nvidia` with DLSS's DLLs and its 32-bit GBM backend is built, not
-   published. Next: novus's smoke (native Vulkan, Floating Point, Proton, a pad).
+   `pkg:nvidia` with DLSS's DLLs and its 32-bit GBM backend is in `bafa2d030a0a`.
+   Next: Joshua moves novus; its smoke (native Vulkan, Floating Point, Proton, a pad).
 3. **Phase 8 slice 2: the desk.** canto runs the `desk` profile
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28, R37);

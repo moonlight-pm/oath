@@ -92,8 +92,8 @@ Overwrite this file when facts change; do not append a diary.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the
-  32-bit GBM backend) and `pkg:mesa-i386` `bff1d8ec…` are built on
-  buccina, not published, and not here.
+  32-bit GBM backend) and `pkg:mesa-i386` `bff1d8ec…` are in the
+  published `bafa2d030a0a`, not here yet.
 - **KVM (R44):** `svc:sola-kvm` runs `sola-kvm server`, capturing through
   rivulet (no `/dev/input`), with NixOS's `~/.config/sola-kvm/config.toml`
   (canto 10.0.0.3:4242 to the right, bottom-aligned, 1920×1080 beside
