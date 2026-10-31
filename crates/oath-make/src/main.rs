@@ -202,10 +202,6 @@ enum Cmd {
         #[arg(long)]
         name: Option<String>,
     },
-    /// Move an installed machine to a build output without wiping it:
-    /// ship missing packs, apply the output's pins (one generation), replace
-    /// /lib/oath, archive the old boot and write the new one to its ESP.
-    /// Requires `--confirm`.
     /// Rehearse a machine's own update (`oath update`, R38) in QEMU:
     /// install this older output, serve the newer one's signed release and
     /// packs from a local origin, update, reboot, check.
