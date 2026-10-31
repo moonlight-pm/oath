@@ -34,7 +34,7 @@ append history (git has it).
    tries the edge; `sola-lock`, Settings → Login and Exit Sola on canto.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
-   `c40249fd9724` (generation 7, 2026-10-31) with `/home` on the 2 TB
+   `c40249fd9724` (since generation 7, 2026-10-31) with `/home` on the 2 TB
    (`@oath-home`, `host:local.mounts`, R45), the desk on the card and
    21 services. Its AMI firmware keeps `UEFI OS` and needed Oath set first
    by hand. Next: Joshua restores what he picks from the 4 TB into /home.
