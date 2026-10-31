@@ -27,13 +27,12 @@ append history (git has it).
    Next: Joshua moves novus; its smoke (native Vulkan, Floating Point, Proton, a pad).
 3. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
-   novus's `sola-kvm server` (Sola `25f2be60`) drives canto since
-   2026-10-31. Off in the profile: `svc:sola-kvm`, and `svc:sola-sessions`
-   until `pkg:sola` pins `--restore`. R47: Sola splits `pkg:sola` (core,
-   `share/`) from `pkg:sola-<app>`. Next: after Release A, one commit pins
-   the split with `source`, turns `svc:sola-sessions` on (exec plain once
-   `--restore` waits itself): Release B. Canto: `sola-lock`, Settings →
-   Login, Exit Sola.
+   novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
+   profile). R47: the profile pins Sola master `92815a65` split: core
+   `pkg:sola` (`share/`) and twelve `pkg:sola-<app>`, with `source`;
+   `svc:sola-sessions` on (`--restore`). Next: Release B's output, checked,
+   published on Joshua's word; machines `oath new svc:sola-sessions`.
+   Canto: `sola-lock`, Settings → Login, Exit Sola.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
    `c40249fd9724` (since generation 7, 2026-10-31) with `/home` on the 2 TB

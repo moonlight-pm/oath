@@ -182,15 +182,14 @@
     },
     "svc:sola-sessions": {
       "exec": [
-        "/bin/sh",
-        "-c",
-        "i=0; until /bin/tmux -L sola-ws show -gv exit-empty >/dev/null 2>&1; do i=$((i+1)); if [ $i -ge 300 ]; then echo no sola-ws tmux server after 30 s, nothing restored; exit 1; fi; sleep 0.1; done; exec /bin/sola-projects --restore"
+        "/bin/sola-projects",
+        "--restore"
       ],
       "wants": [
         "svc:sola-tmux-ws"
       ],
       "restart": "never",
-      "enabled": false,
+      "enabled": true,
       "user": "home",
       "env": {
         "XCURSOR_PATH": "/oath/store/pkg/sola/share/cursors",
@@ -728,102 +727,726 @@
     },
     "pkg:sola": {
       "present": true,
-      "hash": "sha256-27a8b909e1b987ba2ee3d316190f4a4b067b9bcbc628effe4ce036bf85705718",
+      "hash": "sha256-7a03048c5a39128fd3a11e6b2176bda81343d5e14ecdc57edf7a48b363dd9270",
       "needs": [
         {
-          "id": "pkg:gcc",
-          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
         },
         {
-          "id": "pkg:wayland",
-          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac"
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
         },
         {
-          "id": "pkg:libxkbcommon",
-          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f"
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
         },
         {
-          "id": "pkg:mesa",
-          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f"
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
         },
         {
-          "id": "pkg:tmux",
-          "hash": "sha256-555791eae4aa3ac05bc70962bb93e5a275d0cc97a054f8696b58dcc04aeeec55"
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
         },
         {
-          "id": "pkg:wl-clipboard",
-          "hash": "sha256-41f03fdfe098cbf5c83355ba45503116ccb58df38ee9154fc03cf40d88c70662"
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
         },
         {
-          "id": "pkg:pipewire",
-          "hash": "sha256-f361aada2db35207c17653bc58d460f5fcd1b45b45675a52d95f61c1c284ed6a"
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
         },
         {
-          "id": "pkg:wireplumber",
-          "hash": "sha256-43434cb0815fc79886c4897c86c98221e9b2c881483ab587ee65feb875b554cf"
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
         },
         {
-          "id": "pkg:fontconfig",
-          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b"
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
         },
         {
-          "id": "pkg:font-noto",
-          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982"
+          "hash": "sha256-555791eae4aa3ac05bc70962bb93e5a275d0cc97a054f8696b58dcc04aeeec55",
+          "id": "pkg:tmux"
         },
         {
-          "id": "pkg:font-noto-cjk",
-          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51"
+          "hash": "sha256-41f03fdfe098cbf5c83355ba45503116ccb58df38ee9154fc03cf40d88c70662",
+          "id": "pkg:wl-clipboard"
         },
         {
-          "id": "pkg:font-noto-emoji",
-          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b"
+          "hash": "sha256-f361aada2db35207c17653bc58d460f5fcd1b45b45675a52d95f61c1c284ed6a",
+          "id": "pkg:pipewire"
         },
         {
-          "id": "pkg:font-iosevka-term-slab",
-          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad"
+          "hash": "sha256-43434cb0815fc79886c4897c86c98221e9b2c881483ab587ee65feb875b554cf",
+          "id": "pkg:wireplumber"
         }
       ],
-      "description": "Sola: the desktop session on rivulet, its terminal and Projects.",
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola's desk: its bus, call plane, window manager (sola-river), shell, session, KVM, lock screen, solactl and catalog app, with its icons and cursors (share/).",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-bots": {
+      "present": true,
+      "hash": "sha256-4fb4d8a0e59ad394359bf9cc56705e50c0a8712f4cc5928913a6ae8546030533",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Bots: named informational LLM sessions (sola-botsd and its dialog).",
       "home": "https://github.com/moonlight-pm/Sola"
     },
     "pkg:sola-browser": {
       "present": true,
-      "hash": "sha256-d9257ce97bbcd49ef7e44c32041b6ea9352f9a083284b90cb0c0365b3aec374d",
+      "hash": "sha256-f76da7d625c2f84c224ff1c2fc75616c90b5e65ac8508d2b232e014276c7dea6",
       "needs": [
         {
-          "id": "pkg:sola",
-          "hash": "sha256-27a8b909e1b987ba2ee3d316190f4a4b067b9bcbc628effe4ce036bf85705718"
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
         },
         {
-          "id": "pkg:cef",
-          "hash": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49"
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
         },
         {
-          "id": "pkg:libpulse",
-          "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63"
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        },
+        {
+          "hash": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49",
+          "id": "pkg:cef"
+        },
+        {
+          "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63",
+          "id": "pkg:libpulse"
         }
       ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
       "description": "Sola's browser: iced chrome on CEF.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-calendar": {
+      "present": true,
+      "hash": "sha256-241c371c54cdb4682c6cbfe13f216a6d74539aba29b158c7f0c24b68e48222e6",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Calendar: local, Google Calendar and iCloud CalDAV calendars.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
     "pkg:sola-design": {
       "present": true,
-      "hash": "sha256-3ad0865b02230b1b8891e3d45b9c6c0ae331369cdfcdb5a7687085c86621ce11",
+      "hash": "sha256-8f4aa5f94ac97cefef96b7a349e3a9ce1c55486206f0694facb96e7221383816",
       "needs": [
         {
-          "id": "pkg:sola",
-          "hash": "sha256-27a8b909e1b987ba2ee3d316190f4a4b067b9bcbc628effe4ce036bf85705718"
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
         },
         {
-          "id": "pkg:cef",
-          "hash": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49"
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
         },
         {
-          "id": "pkg:libpulse",
-          "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63"
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        },
+        {
+          "hash": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49",
+          "id": "pkg:cef"
+        },
+        {
+          "hash": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63",
+          "id": "pkg:libpulse"
         }
       ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
       "description": "Sola Design: HTML artboards on a canvas, edited by agents.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-mail": {
+      "present": true,
+      "hash": "sha256-ba08edf6d62b8c0dea83304cd055fba7d98e5e27cdbe12a0e2c9150df54cf749",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Mail: an IMAP and SMTP mail client.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-monitor": {
+      "present": true,
+      "hash": "sha256-1fc43f9203faa57d875ba2eaac9f7370af3b61c3be75bf761256df8b3b7cbbdb",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Monitor, an app of Sola's desk.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-paint": {
+      "present": true,
+      "hash": "sha256-dc50d2a7fdd63112862069344993aff3b69a4a1343def929bb9e6213ee2afc85",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Paint: the image viewer and editor Sola opens images in.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-preview": {
+      "present": true,
+      "hash": "sha256-836a352cb647f84791dc002a2ec15794cd6785d89251c8218afcca1ea22b09d7",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Preview, an app of Sola's desk.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-projects": {
+      "present": true,
+      "hash": "sha256-f82e3263b3eb969515303377682808a249c805a7981223bfc3cbd171119b95a3",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        },
+        {
+          "hash": "sha256-555791eae4aa3ac05bc70962bb93e5a275d0cc97a054f8696b58dcc04aeeec55",
+          "id": "pkg:tmux"
+        },
+        {
+          "hash": "sha256-41f03fdfe098cbf5c83355ba45503116ccb58df38ee9154fc03cf40d88c70662",
+          "id": "pkg:wl-clipboard"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Projects: each folder's agent sessions in tmux, brought back after a reboot (--restore).",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-scope": {
+      "present": true,
+      "hash": "sha256-081d0681e3687cb0ac116de59b0cad85c7b8ce4bc363319f6fa628abff954380",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Scope: a pixel loupe, a magnified grid under the pointer.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-settings": {
+      "present": true,
+      "hash": "sha256-60a6cb143818d366ee4c01f86e7ccab719f878957462f0d760ec9350f750bf95",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola Settings: the desk's settings.",
+      "home": "https://github.com/moonlight-pm/Sola"
+    },
+    "pkg:sola-terminal": {
+      "present": true,
+      "hash": "sha256-d27f55aa514056c33f19dfe7b5ede00b89699efebac61d81b8d8d36c1c765837",
+      "needs": [
+        {
+          "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
+          "id": "pkg:gcc"
+        },
+        {
+          "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
+          "id": "pkg:wayland"
+        },
+        {
+          "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f",
+          "id": "pkg:libxkbcommon"
+        },
+        {
+          "hash": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
+          "id": "pkg:mesa"
+        },
+        {
+          "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
+          "id": "pkg:fontconfig"
+        },
+        {
+          "hash": "sha256-3b4c9a3437d9f10c8295a940d4bb7c283f50b8b4f7f9f75a1ba1dc26fa6dd982",
+          "id": "pkg:font-noto"
+        },
+        {
+          "hash": "sha256-5d3352c5d9a0832cf57f81afec92ffc612c957b98e0a1f84c2d175db7acf8a51",
+          "id": "pkg:font-noto-cjk"
+        },
+        {
+          "hash": "sha256-15459aeccac0d926bad638bc03549a84049d0e0051979ae74d4231520d05527b",
+          "id": "pkg:font-noto-emoji"
+        },
+        {
+          "hash": "sha256-3e1851914694d6de7cd9ea938017b932bbfdfbbb1e1044e04e40ca5e3bee23ad",
+          "id": "pkg:font-iosevka-term-slab"
+        },
+        {
+          "hash": "sha256-555791eae4aa3ac05bc70962bb93e5a275d0cc97a054f8696b58dcc04aeeec55",
+          "id": "pkg:tmux"
+        },
+        {
+          "hash": "sha256-41f03fdfe098cbf5c83355ba45503116ccb58df38ee9154fc03cf40d88c70662",
+          "id": "pkg:wl-clipboard"
+        }
+      ],
+      "source": {
+        "repo": "https://github.com/moonlight-pm/Sola",
+        "commit": "92815a651e523b28162f60b4daadd57ed00cb441",
+        "branch": "master",
+        "dirty": false,
+        "built_by": "home@novus",
+        "built_at": "2026-10-31T14:43:07Z"
+      },
+      "description": "Sola's terminal: every shell in tmux.",
       "home": "https://github.com/moonlight-pm/Sola"
     },
     "pkg:steam": {

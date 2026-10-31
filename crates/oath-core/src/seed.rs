@@ -362,7 +362,21 @@ mod tests {
         assert_eq!(p.pinned_pkgs().keys().collect::<Vec<_>>(), vec!["elsewhere"]);
         assert_eq!(
             Profile::load("desk").unwrap().pinned_pkgs().keys().collect::<Vec<_>>(),
-            vec!["sola", "sola-browser", "sola-design"]
+            vec![
+                "sola",
+                "sola-bots",
+                "sola-browser",
+                "sola-calendar",
+                "sola-design",
+                "sola-mail",
+                "sola-monitor",
+                "sola-paint",
+                "sola-preview",
+                "sola-projects",
+                "sola-scope",
+                "sola-settings",
+                "sola-terminal"
+            ]
         );
         assert!(Profile::load_from("looped", &profiles).is_err());
         assert!(Profile::load_from("nope", &profiles).is_err());

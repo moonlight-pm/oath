@@ -196,32 +196,41 @@ project's panes in their paths. Panes take `WAYLAND_DISPLAY` and
 `tmux.conf`, `update-environment`), since the servers start before the
 compositor names its socket.
 
-**Projects' sessions come back after a reboot (will be).** Sola keeps a
-record of each Projects session on the machine it runs on
+**Projects' sessions come back after a reboot (is, in the profile since
+2026-10-31; on no machine yet).** Sola keeps a record of each Projects
+session on the machine it runs on
 (`/home/.config/sola/projects/sessions/<id>.json`), and `sola-projects
 --restore`, headless, recreates each recorded session whose tmux is gone
 in its folder, resuming its agent (`claude --resume`, `grok -r`) when the
-transcript is still there, logs and exits. The profile has
-`svc:sola-sessions` (2026-10-31): a oneshot as `home`, no `seat`, wanting
-`svc:sola-tmux-ws`, `enabled: false` until `pkg:sola` pins a build with
-`--restore` (27a8b909 has none and would open the app instead). Its
-`/bin/sh -c` waits up to 30 s for the `sola-ws` server to answer (`tmux
--L sola-ws show -gv exit-empty`, which never starts one) before it execs
-`--restore`: `wants` orders starts and does not wait, and a server that
-`--restore` started itself would sit in the oneshot's cgroup, which PID
-1 kills when it exits, sessions and all. Its log is `oath logs
-svc:sola-sessions`. tmux copies `WAYLAND_DISPLAY` and
-`XDG_SESSION_TYPE` (Sola's `update-environment`) from the client that
-makes a session, and the oneshot has neither; `COLORTERM=truecolor` and
-`TERM_PROGRAM=tmux` every pane gets from tmux itself (3.8). Sola's
-branch `sessions-anywhere` (2026-10-31, in no pinned `pkg:sola` yet)
-waits up to 15 s for the desk's Wayland name
+transcript is still there, logs and exits. `svc:sola-sessions` runs it
+once a boot: a oneshot as `home`, no `seat`, wanting `svc:sola-tmux-ws`,
+`exec` `["/bin/sola-projects", "--restore"]` (from `pkg:sola-projects`,
+Sola `92815a65`). `wants` orders starts and does not wait, so
+`--restore` waits up to 30 s for the `sola-ws` server itself and makes
+sessions with `tmux -N`, never starting a server: one it started would
+sit in the oneshot's cgroup, which PID 1 kills when it exits, sessions
+and all. It waits up to 15 s for the desk's Wayland name
 (`/run/user/1/sola-wayland`, which `sola-river` writes) and passes
-`WAYLAND_DISPLAY`, `XDG_SESSION_TYPE` and `DISPLAY` with
-`new-session -e`, or restores without them when the console has the
-seat. It also waits for `sola-ws` itself and makes sessions with `tmux
--N`; once the pin has that build, the wrapper goes and `exec` is
-`["/bin/sola-projects", "--restore"]`.
+`WAYLAND_DISPLAY`, `XDG_SESSION_TYPE` and `DISPLAY` with `new-session
+-e` (tmux copies those from the client that makes a session, and the
+oneshot has none), or restores without them when the console has the
+seat; `COLORTERM=truecolor` and `TERM_PROGRAM=tmux` every pane gets from
+tmux itself (3.8). Its log is `oath logs svc:sola-sessions`. A machine
+whose release already listed it (Release A, `940c5d970175`) and lacks
+it adds it once with `oath new` (an update counts it the owner's).
+
+**Sola's packages (R47, Release B).** `pkg:sola` is the desk's core:
+the programs whose restart ends the session (`sola-bus`, `sola-call`,
+`sola-river`, `sola-shell`, `sola-session`, `sola-kvm`, `sola-lock`),
+`solactl`, `sola-oath`, and `share/` (icons, cursors:
+`XCURSOR_PATH` and `SOLA_SHARE_DIR` name `/oath/store/pkg/sola/share`).
+Each app is its own `pkg:sola-<app>` (terminal, projects, paint,
+preview, scope, monitor, calendar, mail, settings, bots, browser,
+design), needing what it loads and not the core, so an app's overlay
+or release moves that app and restarts nothing. The profile pins all
+thirteen with their `source` (Sola master `92815a65`). An update from
+the single `pkg:sola` moves its `/bin` names to the app packages in one
+apply.
 
 The `desk-sola` case (metal only: `qemu = false`) checks the services
 and that the tmux servers and shells are outside `svc:sola-session`'s

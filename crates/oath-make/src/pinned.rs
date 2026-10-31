@@ -2,7 +2,8 @@
 //! with a `hash`, its `needs` and optionally a `url`, and no `pkgs/<name>/`.
 //! Its owner builds and publishes it. The image build fetches it from its
 //! `url` or the profile's origins into the host store, `oath update`
-//! keeps the pin a machine has, and `cargo make publish` leaves it out.
+//! moves a machine to it (an overlay too, unless `--keep`, R47), and
+//! `cargo make publish` leaves it out.
 //! When a pack it needs was rebuilt, the image moves the need to the new
 //! hash and says so: the owner has to build it again against this desk.
 
