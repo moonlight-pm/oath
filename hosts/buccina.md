@@ -29,14 +29,14 @@ Overwrite this file when facts change; do not append a diary.
   beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `940c5d970175` (Release A, R47), pulled on
-  2026-10-31 at 14:08Z with `oath update --confirm --reboot` (generation
-  109: `pkg:oath`, `rivulet`, `mesa-i386`, `nvidia` (absent), `sola`,
-  `sola-browser`, `sola-design` to the release's pins, `steam`'s needs,
-  plans `nvidia` and `steam`) and booted: PID 1, kernel and initrd are
-  the output's. The `oath` that ran it predated R47 and wrote the record
-  without its commit, pins and seed; `sudo oath update --confirm` from
-  the tree (the same release) wrote it as signed. Not here, listed by
+- **Running now:** Release B, output `dd0f847aa9c9` (R47), pulled on
+  2026-10-31 at 15:24Z with `oath update --confirm --reboot` (generation
+  110: `pkg:oath`, the slimmed `pkg:sola`, `sola-browser` and
+  `sola-design` moved, the ten `pkg:sola-<app>` made new to the profile,
+  every `/bin` name handed over) and booted: PID 1 the output's, in sync,
+  its record complete (164 pins, 194 seed). Before it, Release A
+  (`940c5d970175`, generation 109; the record its pre-R47 `oath` wrote
+  was rewritten as signed). Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
   `pkg:libglvnd-i386`; `svc:screen` has no `seat`, so it acts as

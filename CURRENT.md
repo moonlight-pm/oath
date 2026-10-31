@@ -16,9 +16,9 @@ append history (git has it).
    takes it. Published 2026-10-31: Release A, `940c5d970175` (`ddcebae`,
    64/64): `pkg.source`, overlays replaced unless `--keep`, objects new to
    the profile made, a `/bin`/`/lib` name check. Release B (`dd0f847aa9c9`,
-   the Sola split) since 2026-10-31: canto and novus; buccina is on A. Gap: a changed `svc` spec goes
+   the Sola split) since 2026-10-31 on canto, novus and buccina. Gap: a changed `svc` spec goes
    by hand. Next: an absent package new to the profile is made present
-   (built, unreleased); buccina to B; `oath` checks PID 1; expat 2.10.0.
+   (built, unreleased); `oath` checks PID 1; expat 2.10.0.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
@@ -58,7 +58,7 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `dd0f847aa9c9` (Release B, booted 2026-10-31), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
 | novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `dd0f847aa9c9` (Release B, generation 26; reboot next), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
-| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `940c5d970175` (Release A, booted 2026-10-31), `desk`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `dd0f847aa9c9` (Release B, booted 2026-10-31), `desk`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 ## Do not
 
