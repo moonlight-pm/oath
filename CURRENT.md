@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-30 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-10-31 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R43 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R45 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -15,8 +15,10 @@ append history (git has it).
    `sudo oath update --confirm --reboot` takes it (also in `oath mcp`).
    Published 2026-10-31: `c40249fd9724` (Sola `25f2be60`, R44's
    rivulet, R45); novus and canto run it, buccina `fed6fb141a5e`. Releases order by commit, and installs record theirs (R45). Gap:
-   `svc` specs reach a machine only by hand. Next: buccina's update;
-   expat 2.10.0 (11-02).
+   `svc` specs reach a machine only by hand; without `--reboot` a PID 1
+   older than keep-seat restarts the desk (canto's windows, 2026-10-31).
+   Next: `oath` checks the running PID 1 first; buccina's update with
+   `--reboot`; expat 2.10.0 (11-02).
 2. **Steam on canto (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto runs the
    64-bit client, signed in, with the i386 stack; PID 1 gives `home` the

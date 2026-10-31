@@ -28,7 +28,9 @@ Overwrite this file when facts change; do not append a diary.
   (generation 101) beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `fed6fb141a5e` (an `oath` that builds the
+- **Running now:** (its PID 1 is still `e433824d38d0`'s, older than
+  keep-seat, so its next update takes `--reboot`; see boot-and-install's
+  known defects) output `fed6fb141a5e` (an `oath` that builds the
   owner's recipes and spares the seat's services), pulled on 2026-10-30
   at 14:00Z with `oath update --confirm` (generation 106; only
   `pkg:oath` moved, `92735e24…` to `a937565c…`, and no service

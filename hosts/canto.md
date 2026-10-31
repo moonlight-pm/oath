@@ -65,7 +65,12 @@ Overwrite this file when facts change; do not append a diary.
   `27a8b909`, `sola-browser` `d9257ce9`, `sola-design` `3ad0865b`), then
   a reboot. PID 1 is the output's, in sync, 21 services, WirePlumber
   started after the system bus (Bluetooth audio), the KVM listener paired
-  with novus. Rehearsed first from `fdecb1ec3d68` with Steam (only the
+  with novus. The update ran without `--reboot` (to fold the Sola move
+  into one reboot, against Joshua's "with reboot"), and the running PID 1
+  (`fdecb1ec3d68`'s) predates keep-seat: it restarted rivulet at 01:56:49Z,
+  every Wayland client exited, and Sola's session saved an empty app list,
+  so the reboot reopened nothing. The list (seven apps) is still in
+  `@gen-425`'s `/home/.config/sola/state.yaml`; Joshua left it. Rehearsed first from `fdecb1ec3d68` with Steam (only the
   unpaired rehearsal machine's `sola-kvm` stayed down, as R44 means).
   Before it: `fdecb1ec3d68`, booted 2026-10-29 20:33
   (canto's clock), then R42's objects by hand as

@@ -235,7 +235,18 @@ overlay and its recipes built (novus's NVIDIA driver).
   promised), and the install reads `BootOrder` back and says to check
   the setup when the firmware may reorder.
 
-## Known defects (from the 2026-10-13 review)
+## Known defects
+
+- `oath update` without `--reboot`, and `oath apply --keep-seat`, ask PID
+  1 to `converge keep-seat`; a running PID 1 older than keep-seat
+  (`80f8595`, desk outputs before `fed6fb141a5e`) ignores the word and
+  restarts the seat's services: canto's rivulet, and with it every window,
+  on 2026-10-31. Will be: `oath` asks the running PID 1 whether it keeps
+  the seat and, if not, restarts nothing and says to reboot. Until then a
+  machine whose PID 1 is older takes `--reboot` (buccina's is
+  `e433824d38d0`'s).
+
+From the 2026-10-13 review:
 
 - Stage 0 of the toolchain is compiled with a floating nixpkgs
   (`pkgs/bootstrap.nix`). Everything that ships, the kernel and the
