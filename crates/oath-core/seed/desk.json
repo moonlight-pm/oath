@@ -184,7 +184,7 @@
       "exec": [
         "/bin/sh",
         "-c",
-        "i=0; until /bin/tmux -L sola-ws show -gv exit-empty >/dev/null 2>&1; do i=$((i+1)); if [ $i -ge 300 ]; then echo 'no sola-ws tmux server after 30 s; nothing restored'; exit 1; fi; sleep 0.1; done; exec /bin/sola-projects --restore"
+        "i=0; until /bin/tmux -L sola-ws show -gv exit-empty >/dev/null 2>&1; do i=$((i+1)); if [ $i -ge 300 ]; then echo no sola-ws tmux server after 30 s, nothing restored; exit 1; fi; sleep 0.1; done; exec /bin/sola-projects --restore"
       ],
       "wants": [
         "svc:sola-tmux-ws"
