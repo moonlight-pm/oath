@@ -230,22 +230,26 @@ HFP of its own), and WirePlumber, which wants the system bus, makes a
 node for each device; a Bluetooth LE controller or keyboard is an input
 device through `uhid`. No OBEX, mesh, MIDI or LE Audio codecs.
 
-The KVM (R44). Is: `svc:sola-kvm` runs `sola-kvm listen --bind
-0.0.0.0:4242` (UDP), and the `desk` profile has it off since 2026-10-30;
-canto's catalog still has it on. The listener types through the
-compositor (virtual pointer and keyboard), so it needs no device. On
-NixOS, novus ran `sola-kvm server --input evdev` with canto (10.0.0.3)
-to its right; on Oath that cannot read the keyboard (R20, R30). The link
-is plain UDP with no key. Will be: the server captures through the
-compositor, as any client may: a layer surface at the edge takes
-keyboard focus, locks the pointer, reads relative motion
-(relative-pointer) and holds a keyboard-shortcuts inhibitor, so
-rivulet hands it every key and button but its builtin VT switch (built
-2026-10-30, `apps/rivulet/test/inhibit.sh`; sandboxed clients cannot
-inhibit). The two machines pair once by public key, every packet is
-encrypted and authenticated, and a machine listens only when paired.
-Both halves are Sola's `sola-kvm`; Oath's are the compositor and the
-profile.
+The KVM (R44). `svc:sola-kvm` runs `sola-kvm listen --bind
+0.0.0.0:4242` (UDP, and TCP for the clipboard); the `desk` profile has it
+off since 2026-10-30. The listener types through the compositor
+(virtual pointer and keyboard), so it needs no device. Oath's half is
+built: rivulet serves keyboard-shortcuts-inhibit (`be2a874d`, in desk
+output `86dd0d999ce4`; `apps/rivulet/test/inhibit.sh`; sandboxed clients
+cannot inhibit), so a client holding focus, a pointer lock and an
+inhibitor gets every key and button but the builtin VT switch. Sola's
+half is in Sola `25f2be60` (on Sola's `next`, not yet in a desk output;
+tried on canto against itself on 2026-10-30): `sola-kvm server` captures
+through a 2 px layer-shell strip on the shared edge (exclusive keyboard,
+a one-shot pointer lock with a commit, relative motion, the inhibitor;
+Ctrl+Alt+Esc or crossing back leaves), with no evdev; the link is
+Noise_IK_25519_ChaChaPoly_BLAKE2s between static X25519 keys in
+`~/.config/sola-kvm` (`sola-kvm pair home@<peer>` swaps them over SSH),
+with replay protection, a rekey every two minutes, a handshake per
+clipboard connection; neither side starts unpaired, and the old shared
+`pair.key` is refused. On NixOS novus ran `sola-kvm server --input
+evdev` with canto (10.0.0.3) to its right; on Oath it will run `sola-kvm
+server` once its Sola is `25f2be60` or later and the two are paired.
 
 ## Signatures to watch
 

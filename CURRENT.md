@@ -26,11 +26,11 @@ append history (git has it).
    (R19–R22, [docs/specs/desk.md](docs/specs/desk.md)): rivulet, seatd,
    Xwayland, PipeWire, Noto, Vulkan and Sola's pinned packs (R28, R37);
    `pkg:cef` is CEF 156 with H.264 and AAC (R40). R42's login is in
-   `fdecb1ec3d68`. R44 (2026-10-30): the KVM will capture through
-   rivulet, which serves keyboard-shortcuts-inhibit (`pkg:rivulet`
-   `be2a874d`), and pair by key; `svc:sola-kvm` is off in the profile.
-   Next (Sola's session): `sola-kvm`'s capture and pairing; `sola-lock`,
-   Settings → Login and Exit Sola tried on canto.
+   `fdecb1ec3d68`. R44: rivulet serves keyboard-shortcuts-inhibit
+   (`86dd0d999ce4`), Sola `25f2be60` captures through it and pairs by
+   key (not yet published); `svc:sola-kvm` is off in the profile. Next:
+   a desk output pinning that Sola, then novus's server paired with
+   canto; `sola-lock`, Settings → Login and Exit Sola on canto.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); since 23:55Z it
    runs `86dd0d999ce4` (generation 3) with `/home` on the 2 TB
