@@ -29,11 +29,11 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
+      "hash": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1"
     },
     {
       "id": "pkg:expat-i386",
-      "hash": "sha256-0f40befa6ecd881df86146be15e62c8231e84312fde732b77eff6c5a17a527b3"
+      "hash": "sha256-2e1dbcc6dc5386268a05093540516e54fcd829b06c0e7d003983dc58ddd6cf7b"
     },
     {
       "id": "pkg:findutils",
@@ -231,7 +231,7 @@
     },
     {
       "id": "pkg:expat-i386",
-      "hash": "sha256-0f40befa6ecd881df86146be15e62c8231e84312fde732b77eff6c5a17a527b3"
+      "hash": "sha256-2e1dbcc6dc5386268a05093540516e54fcd829b06c0e7d003983dc58ddd6cf7b"
     },
     {
       "id": "pkg:gcc",

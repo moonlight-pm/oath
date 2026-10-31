@@ -33,7 +33,7 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-8821d931bf233c6f168aa72ea42e2483265b4a48b74f6faa314ef2bccda65af3"
+      "hash": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1"
     },
     {
       "id": "pkg:findutils",
