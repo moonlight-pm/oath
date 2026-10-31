@@ -30,8 +30,9 @@ append history (git has it).
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `92815a65` split: core
    `pkg:sola` (`share/`) and twelve `pkg:sola-<app>`, with `source`;
-   `svc:sola-sessions` on (`--restore`). Next: Release B's output, checked,
-   published on Joshua's word; machines `oath new svc:sola-sessions`.
+   `svc:sola-sessions` on (`--restore`). Release B is `dd0f847aa9c9`
+   (`c8bb350`, 64/64, update rehearsed from A), not published. Next:
+   Joshua publishes it; machines update, then `oath new svc:sola-sessions`.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
