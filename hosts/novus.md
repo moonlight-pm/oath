@@ -93,8 +93,13 @@ Overwrite this file when facts change; do not append a diary.
   (canto 10.0.0.3:4242 to the right, bottom-aligned, 1920×1080 beside
   5120×2160). Paired with canto by hand through buccina on 2026-10-31:
   novus's key `0050bb7e…`, canto's `eeeb2d40…`; the link and the
-  clipboard channel came up. Ctrl+Alt+Esc brings the cursor home. Its `ssh:local`
-  has buccina's, canto's and `root@hub`'s keys; buccina reaches it with
+  clipboard channel came up. Ctrl+Alt+Esc brings the cursor home.
+- **SSH:** `ssh:local` has buccina's, canto's and `root@hub`'s keys.
+  `home` has an ed25519 key (`/home/.ssh/id_ed25519`, `home@novus`, made
+  2026-10-30) that buccina's `ssh:local` lists (2026-10-31, Joshua), so
+  `ssh buccina` logs in (the local DNS names it; its host key is pinned
+  in `~/.ssh/known_hosts` by name and address); `~/.ssh/config` names
+  10.0.0.3 for `canto`. Both live in `/home`, outside the catalog. buccina reaches it with
   `ssh -o UserKnownHostsFile=build/novus-oath.known_hosts home@10.0.0.5`
   (the host key the install printed, ending `Suecii`). canto's
   `~/.ssh/novus-oath.known_hosts` still has the old stick's key.

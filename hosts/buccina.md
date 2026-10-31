@@ -25,7 +25,8 @@ Overwrite this file when facts change; do not append a diary.
   `home@buccina` (`/home/.ssh/id_ed25519`, which canto's `ssh:local`
   lists; `~/.ssh/config` names 10.0.0.3, and canto's host key is pinned
   in `~/.ssh/known_hosts`). `ssh:local` here lists `home@canto`
-  (generation 101) beside Joshua's `root@hub` and the Wicket deploy key.
+  (generation 101) and `home@novus` (generation 108, 2026-10-31, Joshua)
+  beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
 - **Running now:** (its PID 1 is still `e433824d38d0`'s, older than
