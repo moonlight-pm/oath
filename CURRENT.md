@@ -27,10 +27,10 @@ append history (git has it).
 3. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
-   profile). R47: the profile pins Sola master `c1bde1c4` (on CEF 156.0.15):
+   profile). R47: the profile pins Sola master `8022d965` (on CEF 156.0.15):
    core `pkg:sola`, thirteen `pkg:sola-<app>`, `svc:sola-vault`: release
-   `1caabcfb0b8c` (65/65, 2026-11-01), on buccina. `keep_children` on
-   `svc:sola-session`: `239bb4150559` (66/66), unpublished; set by hand.
+   `c7585272f176` (66/66, 2026-11-01), with PID 1's `keep_children` fixes. Each
+   machine reboots into it, then sets it on `svc:sola-session` by hand.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
@@ -58,7 +58,7 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `dd0f847aa9c9` (Release B, booted 2026-10-31), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `1caabcfb0b8c` (booted kernel 7.3.0, reboot next), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
 | novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `3c4a23053b7a` (generation 37, Sola overlay from master@9e448fbd, rebooted 2026-11-01), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `1caabcfb0b8c` (Sola c1bde1c4 and the Vault, 2026-11-01), `desk`, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 

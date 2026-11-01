@@ -99,7 +99,12 @@ Overwrite this file when facts change; do not append a diary.
   expat's CVE patches) with `--keep` on its 13 Sola packages, took a Sola
   overlay from master@9e448fbd (`pkg:sola` `70f8c566f1f3`, `sola-browser`
   `19f362d85958`, `sola-design` `6849b21745f1`, every app; the code of
-  c1bde1c4, built locally) and rebooted at Joshua's word.
+  c1bde1c4, built locally) and rebooted at Joshua's word. Since then a Sola
+  overlay from its light-mode commits, now on master (the code of 8022d965,
+  built locally: `pkg:sola` `5e077a2a695b`), and `keep_children` on
+  `svc:sola-session` by hand (generation 40). An update swaps the overlay for
+  the release's pins; `--keep` must take all 14 or none (the bus's Tab
+  payload changed).
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the
