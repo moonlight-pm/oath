@@ -41,8 +41,10 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
 - `bind_low_ports` — a `home` or `void` process keeps
   `CAP_NET_BIND_SERVICE`. Ignored for root.
 - `keep_children` — stop and restart signal only the main process; its
-  children keep running. Default false: the whole process tree stops.
-  `svc:sshd` sets it so login sessions survive an sshd restart.
+  children keep running, and PID 1 keeps reading the log pipe they hold.
+  Default false: the whole process tree stops. `svc:sshd` sets it so login
+  sessions survive an sshd restart, `svc:sola-session` so apps survive a
+  shell restart. It reaches a running service when applied, with no restart.
 - `rtprio` — 1 to 99: PID 1 sets the process's `RLIMIT_RTPRIO` to it
   and `RLIMIT_NICE` to 40 before it drops to the account, so the
   process may give its threads that realtime priority and renice to

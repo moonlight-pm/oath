@@ -88,6 +88,15 @@ struct Pending {
     due: Instant,
 }
 
+/// The log pipe a `keep_children` service's children still hold after the
+/// main process they came from has gone. PID 1 goes on reading it: with no
+/// reader, their next write would kill them with SIGPIPE. It ends with them.
+struct Survivors {
+    id: String,
+    out: Option<fs::File>,
+    partial: Vec<u8>,
+}
+
 /// A scheduled service (R48): its spec and its next start.
 #[derive(Clone)]
 struct Sched {
@@ -100,6 +109,7 @@ pub struct Supervisor {
     kids: HashMap<i32, Kid>,
     oneshot_done: HashSet<String>,
     pending: Vec<Pending>,
+    survivors: Vec<Survivors>,
     /// Scheduled services (`schedule`), by id: PID 1 starts each at its
     /// next match.
     schedules: HashMap<String, Sched>,
@@ -129,6 +139,9 @@ pub struct State {
     /// Scheduled services and their next start (RFC 3339).
     #[serde(default)]
     schedules: Vec<(String, Svc, Option<String>)>,
+    /// `Survivors`: the id, the pipe's fd and what it has not logged yet.
+    #[serde(default)]
+    survivors: Vec<(String, i32, Vec<u8>)>,
 }
 
 impl State {
@@ -199,6 +212,15 @@ impl Supervisor {
                 .drain()
                 .map(|(id, s)| (id, s.spec, s.next.map(|t| t.to_rfc3339())))
                 .collect(),
+            survivors: self
+                .survivors
+                .drain(..)
+                .filter_map(|s| {
+                    let fd = std::os::fd::IntoRawFd::into_raw_fd(s.out?);
+                    unsafe { libc::fcntl(fd, libc::F_SETFD, 0) };
+                    Some((s.id, fd, s.partial))
+                })
+                .collect(),
         }
     }
 
@@ -250,6 +272,14 @@ impl Supervisor {
                 (id, Sched { spec, next })
             })
             .collect();
+        s.survivors = state
+            .survivors
+            .into_iter()
+            .map(|(id, fd, partial)| {
+                unsafe { libc::fcntl(fd, libc::F_SETFD, libc::FD_CLOEXEC) };
+                Survivors { id, out: Some(unsafe { fs::File::from_raw_fd(fd) }), partial }
+            })
+            .collect();
         s
     }
 
@@ -298,9 +328,21 @@ impl Supervisor {
             let Some(want) =
                 wanted.get(&id).filter(|s| s.enabled && !s.exec.is_empty() && s.same_spawn(&spec))
             else {
+                // It stops by the catalog's word on its children, not the
+                // word it started with.
+                if let Some(want) = wanted.get(&id) {
+                    if let Some(kid) = self.kids.values_mut().find(|k| k.id == id) {
+                        kid.spec.keep_children = want.keep_children;
+                    }
+                }
                 self.stop(&id);
                 continue;
             };
+            // What takes no new process (`keep_children`, `restart`, `wants`)
+            // reaches the running one at once.
+            if let Some(kid) = self.kids.values_mut().find(|k| k.id == id) {
+                kid.spec.clone_from(want);
+            }
             // A service follows its package: an apply that moved the
             // realization its program resolves to restarts it.
             let now = program(want);
@@ -330,6 +372,11 @@ impl Supervisor {
         }
         self.pending
             .retain(|p| wanted.get(&p.id).is_some_and(|s| s.enabled && s.same_spawn(&p.spec)));
+        for p in &mut self.pending {
+            if let Some(want) = wanted.get(&p.id) {
+                p.spec.clone_from(want);
+            }
+        }
         // A new spec, or a new program, gets a fresh run of quick failures.
         let retry: Vec<String> = self
             .failed
@@ -419,6 +466,7 @@ impl Supervisor {
             }
             let Some(mut kid) = self.kids.remove(&pid.as_raw()) else { continue };
             pump(&mut kid);
+            self.keep_pipe(&mut kid);
             let ran = kid.started.elapsed();
             let h = self.history.entry(kid.id.clone()).or_default();
             h.last_exit = Some(exit);
@@ -586,6 +634,24 @@ impl Supervisor {
         for kid in self.kids.values_mut() {
             pump(kid);
         }
+        for s in &mut self.survivors {
+            pump_pipe(&s.id, &mut s.out, &mut s.partial);
+        }
+        self.survivors.retain(|s| s.out.is_some());
+    }
+
+    /// A main process is gone: if its children stay, so does their log.
+    fn keep_pipe(&mut self, kid: &mut Kid) {
+        if !kid.spec.keep_children {
+            return;
+        }
+        if let Some(out) = kid.out.take() {
+            self.survivors.push(Survivors {
+                id: kid.id.clone(),
+                out: Some(out),
+                partial: std::mem::take(&mut kid.partial),
+            });
+        }
     }
 
     /// Stop everything for shutdown, in reverse `wants` order: a service
@@ -698,6 +764,7 @@ impl Supervisor {
         for p in &pids {
             if let Some(mut k) = self.kids.remove(p) {
                 pump(&mut k);
+                self.keep_pipe(&mut k);
             }
             let _ = waitpid(Pid::from_raw(*p), Some(WaitPidFlag::WNOHANG));
         }
@@ -924,32 +991,36 @@ fn pipe() -> std::io::Result<(fs::File, OwnedFd)> {
 
 /// Read what the child wrote; whole lines go to its log with a UTC stamp.
 fn pump(kid: &mut Kid) {
-    let Some(out) = kid.out.as_mut() else { return };
+    pump_pipe(&kid.id, &mut kid.out, &mut kid.partial);
+}
+
+fn pump_pipe(id: &str, pipe: &mut Option<fs::File>, partial: &mut Vec<u8>) {
+    let Some(out) = pipe.as_mut() else { return };
     let mut buf = [0u8; 8192];
     loop {
         match out.read(&mut buf) {
             Ok(0) => {
-                kid.out = None;
+                *pipe = None;
                 break;
             }
-            Ok(n) => kid.partial.extend_from_slice(&buf[..n]),
+            Ok(n) => partial.extend_from_slice(&buf[..n]),
             Err(e) if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::Interrupted => {
                 break
             }
             Err(_) => {
-                kid.out = None;
+                *pipe = None;
                 break;
             }
         }
     }
-    let ends = kid.partial.iter().rposition(|b| *b == b'\n');
-    let flush_all = kid.out.is_none() && !kid.partial.is_empty();
+    let ends = partial.iter().rposition(|b| *b == b'\n');
+    let flush_all = pipe.is_none() && !partial.is_empty();
     let take = match (ends, flush_all) {
         (Some(i), _) => i + 1,
-        (None, true) => kid.partial.len(),
+        (None, true) => partial.len(),
         (None, false) => return,
     };
-    let chunk: Vec<u8> = kid.partial.drain(..take).collect();
+    let chunk: Vec<u8> = partial.drain(..take).collect();
     let stamp = now_rfc3339();
     let mut out = Vec::with_capacity(chunk.len() + 32);
     for line in chunk.split_inclusive(|b| *b == b'\n') {
@@ -960,7 +1031,7 @@ fn pump(kid: &mut Kid) {
             out.push(b'\n');
         }
     }
-    append_log(&kid.id, &out);
+    append_log(id, &out);
 }
 
 /// `/oath/log/<kind>/<name>.log` for an id, `/oath/log/init.log` for PID 1.
@@ -1056,6 +1127,8 @@ mod tests {
         );
         sup.oneshot_done.insert("svc:c".into());
         sup.tasks.insert(42, "verify".into());
+        let (read, write) = pipe().unwrap();
+        sup.survivors.push(Survivors { id: "svc:d".into(), out: Some(read), partial: vec![b'x'] });
         let text = serde_json::to_string(&sup.export()).unwrap();
         assert!(sup.pending.is_empty() && sup.failed.is_empty(), "export hands everything over");
         let back = Supervisor::import(serde_json::from_str(&text).unwrap());
@@ -1067,6 +1140,44 @@ mod tests {
         assert!(matches!(h.last_exit, Some(Exit::Code(3))));
         assert!(back.oneshot_done.contains("svc:c"));
         assert!(back.task_running("verify"));
+        // The pipe a kept child holds is still the same pipe.
+        let mut back = back;
+        assert_eq!(back.survivors[0].partial, vec![b'x']);
+        let mut w = fs::File::from(write);
+        std::io::Write::write_all(&mut w, b"y").unwrap();
+        let mut got = [0u8; 1];
+        back.survivors[0].out.as_mut().unwrap().read_exact(&mut got).unwrap();
+        assert_eq!(&got, b"y");
+    }
+
+    #[test]
+    fn a_kept_childs_pipe_stays_read_until_it_ends() {
+        let kid = |keep: bool, out| Kid {
+            id: "svc:a".into(),
+            spec: serde_json::from_value(
+                json!({"exec": ["/bin/sleep", "9"], "keep_children": keep}),
+            )
+            .unwrap(),
+            program: None,
+            deferred: None,
+            started: Instant::now(),
+            out: Some(out),
+            partial: Vec::new(),
+        };
+        let mut sup = Supervisor::default();
+        let (read, _write) = pipe().unwrap();
+        let mut plain = kid(false, read);
+        sup.keep_pipe(&mut plain);
+        assert!(sup.survivors.is_empty() && plain.out.is_some(), "no kept children, no kept pipe");
+        let (read, write) = pipe().unwrap();
+        let mut kept = kid(true, read);
+        sup.keep_pipe(&mut kept);
+        assert!(kept.out.is_none());
+        sup.pump_logs();
+        assert_eq!(sup.survivors.len(), 1, "open while a child holds it");
+        drop(write);
+        sup.pump_logs();
+        assert!(sup.survivors.is_empty(), "gone with the last child");
     }
 
     #[test]

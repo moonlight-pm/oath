@@ -47,7 +47,10 @@ PID 1 reaps children and restarts them per `restart`
 disabled or whose applied spec changed. Each service runs in its own
 cgroup (`/sys/fs/cgroup/oath/svc-<name>`): stopping it sends SIGTERM to
 every process in it, waits up to 5 s, then kills what is left. With
-`keep_children` (as on `svc:sshd`) only the main process is signalled.
+`keep_children` (as on `svc:sshd`, and `svc:sola-session` on a desk) only
+the main process is signalled, its exit leaves the rest running, and what
+they write still reaches the service's log. Applying `keep_children` or
+`restart` reaches a running service at once, without restarting it.
 
 `oath apply` on a `svc` writes `applied.json`, notifies PID 1 on
 `/oath/run/init.sock`, waits for PID 1 to answer that it has

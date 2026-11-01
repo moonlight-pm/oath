@@ -140,6 +140,18 @@ steps = [
 ]
 
 [[case]]
+name = "svc-keep-children"
+about = "keep_children set on a running service takes effect when applied, with no restart: a child in the main process's group outlives the main's exit and its stop, and what it writes still reaches the log (with no reader, its next write would kill it)."
+metal = true
+steps = [
+  { run = "printf 'echo $$ > /tmp/kc-child\\nwhile :; do echo \"kc-tick $$\"; sleep 1; done\\n' > /tmp/kc.sh; sudo oath new svc:kc --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"sh /tmp/kc.sh & exec sleep 86400\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true,\"user\":\"home\"}' && sudo oath apply svc:kc && sleep 3 && [ -s /tmp/kc-child ] && echo STARTED", expect = ["STARTED"] },
+  { run = "cp /tmp/kc-child /tmp/kc-old; old=$(cat /tmp/kc-old); main=$(oath get svc:kc | awk '/^  pid:/ {print $2; exit}'); sudo oath set svc:kc keep_children=true && sudo oath apply svc:kc && sleep 1; [ \"$(oath get svc:kc | awk '/^  pid:/ {print $2; exit}')\" = \"$main\" ] && echo NOT-RESTARTED; sudo kill $main; sleep 6; [ -d /proc/$old ] && echo OLD-CHILD-ALIVE", expect = ["NOT-RESTARTED", "OLD-CHILD-ALIVE"] },
+  { run = "old=$(cat /tmp/kc-old); a=$(sudo grep -c \"kc-tick $old\" /oath/log/svc/kc.log); sleep 4; b=$(sudo grep -c \"kc-tick $old\" /oath/log/svc/kc.log); [ \"$b\" -gt \"$a\" ] && echo OLD-CHILD-LOGGED; [ -d /proc/$old ] && echo STILL-ALIVE", expect = ["OLD-CHILD-LOGGED", "STILL-ALIVE"] },
+  { run = "old=$(cat /tmp/kc-old); sudo oath set svc:kc enabled=false && sudo oath apply svc:kc; sleep 2; [ -d /proc/$old ] && echo KEPT-THROUGH-STOP", expect = ["KEPT-THROUGH-STOP"] },
+  { run = "sudo oath rm svc:kc && sudo oath apply; sudo pkill -f '[s]h /tmp/kc.sh'; sudo pkill -f '^[s]leep 86400$'; rm -f /tmp/kc.sh /tmp/kc-child /tmp/kc-old; oath diff", expect = ["in-sync"] },
+]
+
+[[case]]
 name = "svc-status-after-undo"
 about = "After undo re-enables a service, svc actual names the process that is running."
 metal = true

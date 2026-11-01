@@ -33,7 +33,10 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
 - `keep_children` — boolean, false when absent. Each service runs in
   its own cgroup, and stopping it stops the whole process tree. When
   true, stop and restart signal only the main process and its children
-  keep running (`svc:sshd` sets this so login sessions survive).
+  keep running (`svc:sshd` sets this so login sessions survive, and
+  `desk`'s `svc:sola-session` so apps survive a shell restart). What they
+  write keeps going to the service's log. It takes effect when applied,
+  with no restart.
 - `rtprio` — 1 to 99, absent by default. The process may give its
   threads realtime priority up to this (`RLIMIT_RTPRIO`) and renice
   itself to -20 (`RLIMIT_NICE`); `desk` gives PipeWire 95.
