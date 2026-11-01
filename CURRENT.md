@@ -29,9 +29,8 @@ append history (git has it).
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `c1bde1c4` (on CEF 156.0.15):
    core `pkg:sola`, thirteen `pkg:sola-<app>`, `svc:sola-vault`: release
-   `1caabcfb0b8c` (65/65,
-   2026-11-01), on buccina. `keep_children` on `svc:sola-session` is in
-   `239bb4150559` (66/66), unpublished; machines set it by hand.
+   `1caabcfb0b8c` (65/65, 2026-11-01), on buccina. `keep_children` on
+   `svc:sola-session`: `239bb4150559` (66/66), unpublished; set by hand.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
    `oath install` put Oath on the 500 GB (2026-10-30); it runs
