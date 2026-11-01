@@ -44,9 +44,9 @@ append history (git has it).
    libglvnd) and expat's four upstream CVE patches (`3c4a23053b7a`, 65/65,
    2026-11-01). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF
-   (commands stop at 2 h). `svc:audit` scheduled on buccina (`0 4 * * *`).
-   Next: the first scheduled run's mail; Sola rebuilds sola-browser and
-   sola-design against pkg:cef `69513f32`.
+   (commands stop at 2 h). `svc:audit` runs on buccina (`0 4 * * *`); its first
+   run committed QEMU 11.1.3 (`9e60f4f`, 9 CVEs), no profile has it. Next:
+   Joshua on buccina's pkg:qemu, and a pin-vs-newest-tag check in the scan.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
