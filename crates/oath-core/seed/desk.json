@@ -178,7 +178,8 @@
         "FONTCONFIG_FILE": "/oath/store/pkg/fontconfig/live/etc/fonts/fonts.conf",
         "SHELL": "/bin/zsh"
       },
-      "seat": "desk"
+      "seat": "desk",
+      "keep_children": true
     },
     "svc:sola-sessions": {
       "exec": [
