@@ -94,7 +94,12 @@ Overwrite this file when facts change; do not append a diary.
   split) and `svc:sola-sessions` (26); only `sola-bus` and `sola-call`
   restarted. `oath build plan:sola-<app>` had left the ten app objects
   absent, so Sola's session removed them before the update (now the update
-  makes such a package present, R47). A reboot is next.
+  makes such a package present, R47). On 2026-11-01 (Sola's session) it
+  updated to `3c4a23053b7a` (generation 37: Linux 7.3.1, CEF 156.0.15,
+  expat's CVE patches) with `--keep` on its 13 Sola packages, took a Sola
+  overlay from master@9e448fbd (`pkg:sola` `70f8c566f1f3`, `sola-browser`
+  `19f362d85958`, `sola-design` `6849b21745f1`, every app; the code of
+  c1bde1c4, built locally) and rebooted at Joshua's word.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the

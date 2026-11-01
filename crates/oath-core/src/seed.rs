@@ -375,7 +375,8 @@ mod tests {
                 "sola-projects",
                 "sola-scope",
                 "sola-settings",
-                "sola-terminal"
+                "sola-terminal",
+                "sola-vault"
             ]
         );
         assert!(Profile::load_from("looped", &profiles).is_err());
