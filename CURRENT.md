@@ -27,9 +27,9 @@ append history (git has it).
 3. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
-   profile). R47: the profile pins Sola master `8022d965` (on CEF 156.0.15):
+   profile). R47: the profile pins Sola master `a632f932` (on CEF 156.0.15):
    core `pkg:sola`, thirteen `pkg:sola-<app>`, `svc:sola-vault`: release
-   `c7585272f176` (66/66, 2026-11-01), with PID 1's `keep_children` fixes. Each
+   `3e42879d38e5` (66/66, 2026-11-01), with PID 1's `keep_children` fixes. Each
    machine reboots into it, then sets it on `svc:sola-session` by hand.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
 4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
