@@ -21,6 +21,10 @@ cargo make audit
 It reads `pkgs/audit.toml` and matches every package against cve.org's
 CVE List V5 (its local mirror updates first), OSV, NVD (unkeyed, about
 20 minutes), CISA KEV and EPSS, and writes `build/audit/latest.json`.
+It also reads each pin against upstream's newest stable release, from its
+`repo` and `tag` or the directory its source comes from: a package gets
+`newer`, or `upstream_unread` and why (`cargo make audit --upstream` is that
+check alone). A record can come days after the release that fixes it.
 A source that failed says so in `sources`: the report says it too, and
 the run goes on with the others. A package with no entry in
 `pkgs/audit.toml` stops the scan: add its entry (its NVD CPE, the names
@@ -50,6 +54,14 @@ references, the project's security page or release notes (WebFetch), and
   Otherwise report it and leave it.
 - **`unknown`** (a record names the product with no versions): decide
   from upstream if you can; else it goes under "Waiting on Joshua".
+
+Every run, for each package with `newer`: read upstream's release notes
+back to the pin (WebFetch). A release that names a security fix is a fixed
+upstream release: upgrade it under step 3's rules, signing keys and rebuilds
+included. One that names none is no reason to move: list it under "Seen".
+`upstream_unread` goes under "Seen" too, unless it hides a package you have
+another reason to doubt. A false `newer` (a beta, a stale tag, a dev line)
+is fixed in `pkgs/audit.toml`: `tag`, `series`, `dev_odd` or `dev_micro`.
 
 Every run, for each `oath-backport-*.patch` in `pkgs/*/patches/`: has
 upstream fixed that CVE since (a release, or a commit)? Then replace the
@@ -115,7 +127,8 @@ Then, each section only if it has something:
 - **Waiting on Joshua**: new signing keys, big rebuilds, unknowns that
   need judgment, a failed check, a source that was down.
 - **Not affected**: what you added to `pkgs/audit.toml` and why.
-- **Seen**: the counts the scan reported, by package.
+- **Seen**: the counts the scan reported, by package; each `newer` you did
+  not act on, and why; each `upstream_unread`.
 
 ## Never
 

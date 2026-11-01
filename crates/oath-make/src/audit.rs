@@ -2,8 +2,9 @@
 //! matched by `pkgs/audit.toml` against cve.org's CVE List V5 (a local
 //! mirror of `CVEProject/cvelistV5`), OSV (ecosystem packages, and the
 //! commit of an upstream's release tag), NVD (by CPE) and CISA's Known
-//! Exploited Vulnerabilities, with FIRST's EPSS beside each. It writes
-//! `build/audit/<day>.json` and `build/audit/latest.json` for the
+//! Exploited Vulnerabilities, with FIRST's EPSS beside each, and each pin
+//! against upstream's newest stable release, for fixes no record names yet.
+//! It writes `build/audit/<day>.json` and `build/audit/latest.json` for the
 //! `oath-audit` skill to triage and changes nothing it scans. A source
 //! that cannot be reached is recorded as such, and the rest still run.
 
@@ -34,6 +35,8 @@ pub struct Opts {
     /// Use the CVE List mirror as it is, and skip NVD (no network but OSV,
     /// KEV and EPSS, which are quick).
     pub offline: bool,
+    /// Only each pin against upstream's newest stable release; writes nothing.
+    pub upstream: bool,
 }
 
 /// One package's entry in `pkgs/audit.toml`.
@@ -48,6 +51,15 @@ pub struct Entry {
     pub osv: Option<String>,
     pub version_after: Option<String>,
     pub skip: Option<String>,
+    /// The release line this package stays on: a newer line is no upgrade.
+    pub series: Option<String>,
+    /// An odd second number is a development line.
+    #[serde(default)]
+    pub dev_odd: bool,
+    /// A third number from this on is a pre-release (Wayland's 1.26.90).
+    pub dev_micro: Option<u64>,
+    /// Why upstream's releases cannot be read here.
+    pub unchecked: Option<String>,
     #[serde(default)]
     pub not_affected: BTreeMap<String, String>,
 }
@@ -63,6 +75,9 @@ struct Target {
     purls: Vec<String>,
     /// CVEs a patch in `pkgs/<name>/patches/` fixes, by file.
     patched: BTreeMap<String, String>,
+    /// The directory its source comes from, and the source's name in it
+    /// with `{version}`.
+    listing: Option<(String, String)>,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -98,6 +113,12 @@ pub struct PkgReport {
     pub suppressed: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub skip: Option<String>,
+    /// Upstream's newest stable release, when it is past this pin.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub newer: Option<String>,
+    /// Why upstream's releases could not be read.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub upstream_unread: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -111,6 +132,16 @@ pub struct Report {
 
 pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
     let targets = targets(repo, opts.name.as_deref())?;
+    if opts.upstream {
+        let found = upstream(&targets);
+        for t in &targets {
+            let u = found.get(&t.name).cloned().unwrap_or_default();
+            let (newer, unread) = (u.newer, u.unread);
+            print_upstream(&t.name, &t.version, newer.as_deref(), unread.as_deref());
+        }
+        println!("upstream releases: {}", upstream_status(found.values()));
+        return Ok(());
+    }
     let mut report = Report {
         generated: oath_core::now_rfc3339(),
         commit: crate::util::run_out(
@@ -186,6 +217,8 @@ pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
             BTreeMap::new()
         }
     };
+    let releases = upstream(&targets);
+    report.sources.insert("Upstream releases".into(), upstream_status(releases.values()));
 
     for t in &targets {
         let mut p = PkgReport {
@@ -195,6 +228,10 @@ pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
             skip: t.entry.skip.clone(),
             ..Default::default()
         };
+        if let Some(u) = releases.get(&t.name) {
+            p.newer.clone_from(&u.newer);
+            p.upstream_unread.clone_from(&u.unread);
+        }
         for (_, mut h) in hits.remove(&t.name).unwrap_or_default() {
             let names: Vec<String> =
                 std::iter::once(h.id.clone()).chain(h.aliases.clone()).collect();
@@ -252,6 +289,18 @@ fn print_summary(r: &Report) {
     }
     if !any {
         println!("no package has a hit");
+    }
+    for p in &r.packages {
+        print_upstream(&p.name, &p.version, p.newer.as_deref(), p.upstream_unread.as_deref());
+    }
+}
+
+fn print_upstream(name: &str, version: &str, newer: Option<&str>, unread: Option<&str>) {
+    if let Some(n) = newer {
+        println!("pkg:{name} {version}: upstream has {n}");
+    }
+    if let Some(w) = unread {
+        println!("pkg:{name} {version}: upstream unread: {w}");
     }
 }
 
@@ -331,6 +380,7 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
             entry,
             purls,
             patched: patched(&crate::pkgs::pkgs_dir(repo).join(name).join("patches")),
+            listing: p.source.first().and_then(|s| listing_of(&s.url, &p.version)),
         });
     }
     // pkg:oath, which cargo builds from this tree: its crates.
@@ -349,6 +399,7 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
             },
             purls: ecosystem_purls(&cache.join("pkg/oath").join(product)),
             patched: BTreeMap::new(),
+            listing: None,
         });
     }
     Ok(out)
@@ -653,9 +704,11 @@ impl Matcher {
             return false;
         }
         let vendor = norm(a["vendor"].as_str().unwrap_or(""));
+        // With no CPE there is no vendor to hold a record to: its name decides.
+        let unheld = NO_VENDOR.contains(&vendor.as_str()) || self.vendors.is_empty();
         self.vendors.contains(&vendor)
             || self.products.contains(&vendor)
-            || NO_VENDOR.contains(&vendor.as_str()) && !GENERIC.contains(&product.as_str())
+            || unheld && !GENERIC.contains(&product.as_str())
     }
 }
 
@@ -896,6 +949,141 @@ fn tag_commit(repo: &str, tag: &str) -> Option<String> {
     best
 }
 
+// ---------- upstream's releases ----------
+
+/// A package against its upstream's newest stable release.
+#[derive(Clone, Debug, Default)]
+struct Upstream {
+    newer: Option<String>,
+    unread: Option<String>,
+}
+
+/// Each package's upstream: a record can come days after the release that
+/// fixes it (QEMU 11.1.3 named nine CVEs, eight with no public record), so
+/// the audit also asks what upstream has released. A package with `skip` or
+/// `unchecked` is left out.
+fn upstream(targets: &[Target]) -> BTreeMap<String, Upstream> {
+    let mut out = BTreeMap::new();
+    for t in targets {
+        if t.entry.skip.is_some() || t.entry.unchecked.is_some() {
+            continue;
+        }
+        let u = match upstream_versions(t) {
+            Ok(v) => {
+                let newer = newer_than(&t.version, &v, &t.entry);
+                // Nothing newer, and no sign of the pin: not a read to trust.
+                let unread = (newer.is_none() && !v.contains(&t.version))
+                    .then(|| format!("upstream's releases do not name {}", t.version));
+                Upstream { newer, unread }
+            }
+            Err(e) => Upstream { newer: None, unread: Some(format!("{e:#}")) },
+        };
+        out.insert(t.name.clone(), u);
+    }
+    out
+}
+
+fn upstream_status<'a>(all: impl Iterator<Item = &'a Upstream>) -> String {
+    let (mut read, mut behind, mut unread) = (0, 0, 0);
+    for u in all {
+        if u.unread.is_some() {
+            unread += 1;
+        } else {
+            read += 1;
+        }
+        behind += u.newer.is_some() as usize;
+    }
+    format!("ok, {read} read, {behind} behind, {unread} unread")
+}
+
+fn upstream_versions(t: &Target) -> Result<Vec<String>> {
+    let versions = match (&t.entry.repo, &t.entry.tag, &t.listing) {
+        (Some(repo), Some(tag), _) => tag_versions(tag, &ls_tags(repo)?),
+        (_, _, Some((dir, file))) => listing_versions(file, &http(dir, None, None)?),
+        _ => bail!("no repo and tag, and its source's directory names the version"),
+    };
+    if versions.is_empty() {
+        bail!("no release matches");
+    }
+    Ok(versions)
+}
+
+/// The directory a source comes from and its name there with `{version}`,
+/// unless the directory itself names the version.
+fn listing_of(url: &str, version: &str) -> Option<(String, String)> {
+    let (dir, file) = url.rsplit_once('/')?;
+    if dir.contains(version) || !file.contains(version) {
+        return None;
+    }
+    Some((format!("{dir}/"), file.replace(version, "{version}")))
+}
+
+fn ls_tags(repo: &str) -> Result<Vec<String>> {
+    let out = crate::util::run_out(
+        Command::new("git")
+            .env("GIT_TERMINAL_PROMPT", "0")
+            .args(["-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=30"])
+            .args(["ls-remote", "--tags", "--refs", repo]),
+    )?;
+    Ok(out
+        .lines()
+        .filter_map(|l| l.split_once("refs/tags/").map(|(_, t)| t.to_string()))
+        .collect())
+}
+
+/// `pattern` as a regex source around a captured version, and whether the
+/// version writes its dots as `_`.
+fn version_regex(pattern: &str) -> (String, bool) {
+    let underscored = pattern.contains("{version_}");
+    let one = pattern.replace("{version_}", "{version}");
+    let (before, after) = one.split_once("{version}").unwrap_or((&one, ""));
+    let v = r"([0-9][0-9A-Za-z.+~_-]*?)";
+    (format!("{}{v}{}", regex::escape(before), regex::escape(after)), underscored)
+}
+
+fn tag_versions(pattern: &str, tags: &[String]) -> Vec<String> {
+    let (src, under) = version_regex(pattern);
+    let re = regex::Regex::new(&format!("^{src}$")).expect("regex");
+    tags.iter()
+        .filter_map(|t| re.captures(t))
+        .map(|c| if under { c[1].replace('_', ".") } else { c[1].to_string() })
+        .collect()
+}
+
+/// The versions of `pattern`'s files a directory page names.
+fn listing_versions(pattern: &str, page: &str) -> Vec<String> {
+    let (src, _) = version_regex(pattern);
+    let edge = r"[^A-Za-z0-9._-]";
+    let re = regex::Regex::new(&format!("(?m)(?:^|{edge}){src}(?:$|{edge})")).expect("regex");
+    re.captures_iter(page).map(|c| c[1].to_string()).collect()
+}
+
+/// A release, by its version alone: no `rc`, `beta` or other word but a
+/// `p1` after it.
+fn is_stable(v: &str, e: &Entry) -> bool {
+    let toks = toks(v);
+    let mut nums = toks.iter().filter_map(|t| match t {
+        Tok::Num(n) => Some(*n),
+        _ => None,
+    });
+    let (minor, micro) = (nums.nth(1), nums.next());
+    matches!(toks.first(), Some(Tok::Num(_)))
+        && toks.iter().all(|t| !matches!(t, Tok::Word(w) if !post(w)))
+        && !(e.dev_odd && minor.is_some_and(|m| m % 2 == 1))
+        && !e.dev_micro.is_some_and(|d| micro.is_some_and(|m| m >= u128::from(d)))
+        && e.series.as_ref().is_none_or(|s| v == s || v.starts_with(&format!("{s}.")))
+}
+
+/// The newest stable version in `versions`, when it is past `pin`.
+fn newer_than(pin: &str, versions: &[String], e: &Entry) -> Option<String> {
+    versions
+        .iter()
+        .filter(|v| is_stable(v, e))
+        .max_by(|a, b| cmp_versions(a, b))
+        .filter(|v| cmp_versions(v, pin) == Ordering::Greater)
+        .cloned()
+}
+
 // ---------- NVD ----------
 
 fn nvd(targets: &[Target]) -> Result<(usize, Vec<(String, Hit)>)> {
@@ -1111,6 +1299,12 @@ mod tests {
         let patch = Matcher::of(&t("patch", "cpe:2.3:a:gnu:patch", &[]));
         assert!(!patch.matches(&json!({ "vendor": "n/a", "product": "patch" })));
         assert!(patch.matches(&json!({ "vendor": "GNU", "product": "patch" })));
+        // With no CPE there is no vendor to hold it to: a specific name is enough.
+        let named = Matcher::of(&Target { name: "libdisplay-info".into(), ..Default::default() });
+        assert!(named.matches(&json!({ "vendor": "emersion", "product": "libdisplay-info" })));
+        assert!(!named.matches(&json!({ "vendor": "emersion", "product": "other" })));
+        let git = Matcher::of(&Target { name: "git".into(), ..Default::default() });
+        assert!(!git.matches(&json!({ "vendor": "someone", "product": "git" })));
     }
 
     #[test]
@@ -1125,6 +1319,37 @@ mod tests {
         let p = patched(d.path());
         assert_eq!(p["CVE-2026-12345"], "oath-backport-CVE-2026-12345.patch");
         assert!(p.contains_key("CVE-2026-99999"));
+    }
+
+    #[test]
+    fn upstream_releases_past_the_pin() {
+        let e = Entry::default();
+        let vs = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert_eq!(newer_than("11.1.2", &vs(&["11.1.2", "11.1.3", "11.2.0-rc1"]), &e).as_deref(), Some("11.1.3"));
+        assert_eq!(newer_than("1.3.2", &vs(&["1.3.1", "1.3.2"]), &e), None);
+        assert_eq!(newer_than("2.6.4", &vs(&["2.6.4", "2.6.5-rc1"]), &e), None);
+        assert_eq!(newer_than("10.6p1", &vs(&["10.6p1", "10.6p2"]), &e).as_deref(), Some("10.6p2"));
+        let series = Entry { series: Some("7.3".into()), ..Default::default() };
+        assert_eq!(newer_than("7.3.1", &vs(&["7.3.1", "7.3.2", "7.4", "7.30.1"]), &series).as_deref(), Some("7.3.2"));
+        let odd = Entry { dev_odd: true, ..Default::default() };
+        assert_eq!(newer_than("5.44.0", &vs(&["5.44.0", "5.45.4"]), &odd), None);
+        let micro = Entry { dev_micro: Some(90), ..Default::default() };
+        assert_eq!(newer_than("1.26.0", &vs(&["1.26.0", "1.26.92", "1.26.1"]), &micro).as_deref(), Some("1.26.1"));
+
+        let tags = vs(&["curl-8_23_0", "curl-8_24_0", "curl-8_24_0-rc1", "tiny-curl-8_4_0", "rel"]);
+        assert_eq!(tag_versions("curl-{version_}", &tags), vs(&["8.23.0", "8.24.0", "8.24.0-rc1"]));
+        assert_eq!(tag_versions("release-{version}-stable", &vs(&["release-2.1.13-stable", "release-2.2.1-alpha"])), vs(&["2.1.13"]));
+
+        assert_eq!(
+            listing_of("https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz", "1.35"),
+            Some(("https://ftp.gnu.org/gnu/tar/".into(), "tar-{version}.tar.xz".into()))
+        );
+        assert_eq!(listing_of("https://x.org/glib/2.90/glib-2.90.1.tar.xz", "2.90"), None);
+        let page = r#"<a href="tar-1.35.tar.xz">tar-1.35.tar.xz</a> <a href="tar-1.35.tar.xz.sig">s</a>
+            <a href="tar-1.36.tar.xz">x</a> <a href="star-9.tar.xz">y</a> <a href="tar-latest.tar.xz">z</a>"#;
+        let mut got = listing_versions("tar-{version}.tar.xz", page);
+        got.dedup();
+        assert_eq!(got, vs(&["1.35", "1.36"]));
     }
 
     #[test]
@@ -1148,6 +1373,13 @@ mod tests {
         for (n, p) in &pkgs {
             if p.i386.is_none() {
                 assert!(e.contains_key(n), "pkgs/{n} has no entry in pkgs/audit.toml");
+                let u = &e[n];
+                let tags = u.repo.is_some() && u.tag.is_some();
+                let dir = p.source.first().is_some_and(|s| listing_of(&s.url, &p.version).is_some());
+                assert!(
+                    tags || dir || u.skip.is_some() || u.unchecked.is_some(),
+                    "pkgs/{n}: audit.toml needs repo and tag, or unchecked and why"
+                );
             }
         }
     }

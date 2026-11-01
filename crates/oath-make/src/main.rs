@@ -213,6 +213,10 @@ enum Cmd {
         /// The CVE List mirror as it is, and no NVD.
         #[arg(long)]
         offline: bool,
+        /// Only each pin against upstream's newest stable release: prints
+        /// what is behind and writes nothing.
+        #[arg(long)]
+        upstream: bool,
     },
     /// Rehearse a machine's own update (`oath update`, R38) in QEMU:
     /// install this older output, serve the newer one's signed release and
@@ -364,7 +368,9 @@ fn real() -> Result<()> {
             pack::publish_store(&root, &out, dest.as_deref(), output.as_deref())?
         }
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
-        Cmd::Audit { name, offline } => audit::run(&root, &audit::Opts { name, offline })?,
+        Cmd::Audit { name, offline, upstream } => {
+            audit::run(&root, &audit::Opts { name, offline, upstream })?
+        }
         Cmd::Update { qemu, output, unchecked, oath_first, build } => {
             let opts = update::Opts { qemu, output, unchecked, oath_first, build };
             update::run_update(&root, &out, opts)?;

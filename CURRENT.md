@@ -44,9 +44,9 @@ append history (git has it).
    libglvnd) and expat's four upstream CVE patches (`3c4a23053b7a`, 65/65,
    2026-11-01). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF
-   (commands stop at 2 h). `svc:audit` runs on buccina (`0 4 * * *`); its first
-   run committed QEMU 11.1.3 (`9e60f4f`, 9 CVEs), no profile has it. Next:
-   Joshua on buccina's pkg:qemu, and a pin-vs-newest-tag check in the scan.
+   (commands stop at 2 h). `svc:audit` runs on buccina (`0 4 * * *`) and now
+   reads each pin against upstream's newest release; buccina's QEMU is 11.1.3
+   (65/65). Next: the 04:00 run triages 14 behind and libdisplay-info's 2 CVEs.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9

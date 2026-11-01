@@ -362,6 +362,16 @@ there is nothing to match; no plan reads that file, so an edit there
 moves no hash. A CVE listed under `[<name>.not_affected]`, or one a
 `pkgs/<name>/patches/*CVE-….patch` fixes, is listed apart.
 
+A CVE record can come days after the release that fixes it, so the scan
+also reads each pin against upstream's newest stable release: from its
+`repo` and `tag` by `git ls-remote`, else from the directory its source
+comes from. Each package gets `newer`, or `upstream_unread` and why;
+`cargo make audit --upstream` is that check alone (under a minute, and it
+writes nothing). `series` holds a package to a release line, `dev_odd` and
+`dev_micro` mark development releases, and `unchecked` says why a package
+cannot be read. A newer release is a prompt to read its notes, not a
+finding: only one that names a security fix moves the pin.
+
 On buccina, `svc:audit` runs it daily at 04:00 through `check/audit/run`:
 a headless Claude Code run of the `oath-audit` skill triages the hits,
 upgrades to upstream's fixed release (or applies upstream's patch, or a

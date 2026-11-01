@@ -36,7 +36,9 @@ Overwrite this file when facts change; do not append a diary.
   `178ac39ce817` (Linux 7.3.1, generation 111) and Release B
   (`dd0f847aa9c9`, generation 110).
   `svc:audit` (R48, this file's overlay: `check/audit/run` as `home`,
-  schedule `0 4 * * *`) since generations 113-114. Not here, listed by
+  schedule `0 4 * * *`) since generations 113-114. `pkg:qemu` 11.1.3
+  (`0b1ad2cc`, from master@9e60f4f, an overlay no release sets) since
+  generation 116; `cargo make check` passed 65/65 on it. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
   `pkg:libglvnd-i386`; `svc:screen` has no `seat`, so it acts as

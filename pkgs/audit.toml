@@ -10,6 +10,11 @@
 # version_after  the upstream version is what follows this in the
 #           package's version (CEF's Chromium)
 # skip      why it has nothing to match (data, a sibling's tree)
+# series    the release line it stays on (a newer line is no upgrade)
+# dev_odd   an odd second number is a development line
+# dev_micro a third number from this on is a pre-release (Wayland's 1.26.90)
+# unchecked why its newest release cannot be read: else the scan reads it
+#           from repo and tag, or the directory its source comes from
 # not_affected   CVE id = why it does not apply, after triage; the audit
 #           drops it until the version moves
 #
@@ -23,6 +28,9 @@ cpe = "cpe:2.3:a:alsa-project:alsa-lib"
 
 [at-spi2-core]
 cpe = "cpe:2.3:a:gnome:at-spi2-core"
+repo = "https://gitlab.gnome.org/GNOME/at-spi2-core"
+tag = "{version}"
+dev_odd = true
 
 [bash]
 cpe = "cpe:2.3:a:gnu:bash"
@@ -32,6 +40,9 @@ cpe = "cpe:2.3:a:gnu:bc"
 
 [bind]
 cpe = "cpe:2.3:a:isc:bind"
+repo = "https://gitlab.isc.org/isc-projects/bind9"
+tag = "v{version}"
+series = "9.20"
 
 [bison]
 cpe = "cpe:2.3:a:gnu:bison"
@@ -58,11 +69,13 @@ cpe = "cpe:2.3:a:bzip:bzip2"
 cpe = "cpe:2.3:a:cairographics:cairo"
 repo = "https://gitlab.freedesktop.org/cairo/cairo"
 tag = "{version}"
+dev_odd = true
 
 [cef]
 cpe = "cpe:2.3:a:google:chrome"
 names = ["chromium"]
 version_after = "chromium-"
+unchecked = "CEF's releases are on its build index, not in tags; Chrome's CVE records name each fixed version the day it ships"
 
 [cef.not_affected]
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
@@ -77,6 +90,7 @@ cpe = "cpe:2.3:a:tuxfamily:chrony"
 [claude-code]
 cpe = "cpe:2.3:a:anthropic:claude_code"
 names = ["claude-code"]
+unchecked = "the vendor's binary, from its own channel: read its release notes"
 
 [cmake]
 cpe = "cpe:2.3:a:cmake_project:cmake"
@@ -85,6 +99,8 @@ tag = "v{version}"
 
 [codex]
 cpe = "cpe:2.3:a:openai:codex"
+repo = "https://github.com/openai/codex"
+tag = "rust-v{version}"
 
 [coreutils]
 cpe = "cpe:2.3:a:gnu:coreutils"
@@ -106,6 +122,7 @@ tag = "curl-{version_}"
 
 [dbus]
 cpe = "cpe:2.3:a:freedesktop:dbus"
+dev_odd = true
 
 [dhcpcd]
 cpe = "cpe:2.3:a:dhcpcd_project:dhcpcd"
@@ -122,6 +139,8 @@ tag = "v{version}"
 
 [elfutils]
 cpe = "cpe:2.3:a:elfutils_project:elfutils"
+repo = "https://sourceware.org/git/elfutils.git"
+tag = "elfutils-{version}"
 
 [expat]
 cpe = "cpe:2.3:a:libexpat_project:libexpat"
@@ -154,6 +173,9 @@ skip = "a font"
 
 [fontconfig]
 cpe = "cpe:2.3:a:fontconfig_project:fontconfig"
+repo = "https://gitlab.freedesktop.org/fontconfig/fontconfig"
+tag = "{version}"
+dev_micro = 90
 
 [freetype]
 cpe = "cpe:2.3:a:freetype:freetype"
@@ -169,6 +191,8 @@ cpe = "cpe:2.3:a:fossies:gawk"
 [gcc]
 cpe = "cpe:2.3:a:gnu:gcc"
 names = ["libstdc++", "libgcc"]
+repo = "https://gcc.gnu.org/git/gcc.git"
+tag = "releases/gcc-{version}"
 
 [gcc.not_affected]
 "CVE-2023-4039" = "-fstack-protector on AArch64 targets only (the record); Oath's GCC targets x86_64"
@@ -186,6 +210,9 @@ tag = "v{version}"
 
 [glib]
 cpe = "cpe:2.3:a:gnome:glib"
+repo = "https://gitlab.gnome.org/GNOME/glib"
+tag = "{version}"
+dev_odd = true
 
 [glibc]
 cpe = "cpe:2.3:a:gnu:glibc"
@@ -248,18 +275,24 @@ names = ["kexec-tools"]
 
 [less]
 cpe = "cpe:2.3:a:gnu:less"
+repo = "https://github.com/gwsw/less"
+tag = "v{version}-rel"
 
 [libcap]
 cpe = "cpe:2.3:a:libcap_project:libcap"
 
 [libdisplay-info]
 names = ["libdisplay-info"]
+repo = "https://gitlab.freedesktop.org/emersion/libdisplay-info"
+tag = "{version}"
 
 [libdrm]
 cpe = "cpe:2.3:a:freedesktop:libdrm"
 
 [libepoxy]
 cpe = "cpe:2.3:a:libepoxy_project:libepoxy"
+repo = "https://github.com/anholt/libepoxy"
+tag = "{version}"
 
 [libevdev]
 cpe = "cpe:2.3:a:freedesktop:libevdev"
@@ -282,15 +315,22 @@ cpe = "cpe:2.3:a:x.org:libfontenc"
 
 [libglvnd]
 cpe = "cpe:2.3:a:nvidia:libglvnd"
+repo = "https://gitlab.freedesktop.org/glvnd/libglvnd"
+tag = "v{version}"
 
 [libinput]
 cpe = "cpe:2.3:a:freedesktop:libinput"
+repo = "https://gitlab.freedesktop.org/libinput/libinput"
+tag = "{version}"
+dev_micro = 900
 
 [libpulse]
 cpe = "cpe:2.3:a:pulseaudio:pulseaudio"
 
 [libslirp]
 cpe = "cpe:2.3:a:libslirp_project:libslirp"
+repo = "https://gitlab.freedesktop.org/slirp/libslirp"
+tag = "v{version}"
 
 [libsndfile]
 cpe = "cpe:2.3:a:libsndfile_project:libsndfile"
@@ -304,6 +344,8 @@ tag = "{version}"
 
 [libudev-zero]
 names = ["libudev-zero"]
+repo = "https://github.com/illiliti/libudev-zero"
+tag = "{version}"
 
 [liburcu]
 names = ["userspace-rcu", "liburcu"]
@@ -368,6 +410,7 @@ cpe = "cpe:2.3:a:x:libxxf86vm"
 [linux]
 cpe = "cpe:2.3:a:linux:linux_kernel"
 osv = "Linux:Kernel"
+series = "7.3"
 
 [linux.not_affected]
 "CVE-2021-47645" = "the zoran staging driver, fixed in mainline by 20811bbe685c (v5.18); the record lists only the stable branches"
@@ -415,6 +458,7 @@ cpe = "cpe:2.3:a:arm:mbed_tls"
 names = ["mbedtls", "mbed tls"]
 repo = "https://github.com/Mbed-TLS/mbedtls"
 tag = "mbedtls-{version}"
+series = "3.6"
 
 [mbedtls.not_affected]
 "CVE-2025-66442" = "a timing channel that only LLVM's select-optimize introduces (the record); build.sh compiles Mbed TLS with GCC"
@@ -454,6 +498,7 @@ cpe = "cpe:2.3:a:nodejs:node.js"
 names = ["node"]
 repo = "https://github.com/nodejs/node"
 tag = "v{version}"
+series = "26"
 
 [node.not_affected]
 "CVE-2021-43803" = "Next.js, not Node.js (the record; NVD names Node.js only as its platform)"
@@ -462,14 +507,18 @@ tag = "v{version}"
 [nspr]
 cpe = "cpe:2.3:a:mozilla:netscape_portable_runtime"
 names = ["nspr"]
+unchecked = "Mercurial only, and each release in a directory of its own: NSS's release notes name the NSPR it needs"
 
 [nss]
 cpe = "cpe:2.3:a:mozilla:nss"
 names = ["network security services"]
+repo = "https://github.com/nss-dev/nss"
+tag = "NSS_{version_}_RTM"
 
 [nvidia]
 cpe = "cpe:2.3:a:nvidia:gpu_display_driver"
 names = ["gpu display driver"]
+unchecked = "the driver branch is a choice (R34): NVIDIA's bulletins name fixed versions, its CPE their CVEs"
 
 [openssh]
 cpe = "cpe:2.3:a:openbsd:openssh"
@@ -484,6 +533,9 @@ tag = "openssl-{version}"
 
 [pango]
 cpe = "cpe:2.3:a:gnome:pango"
+repo = "https://gitlab.gnome.org/GNOME/pango"
+tag = "{version}"
+series = "1.58"
 
 [patch]
 cpe = "cpe:2.3:a:gnu:patch"
@@ -505,11 +557,13 @@ tag = "pcre2-{version}"
 cpe = "cpe:2.3:a:perl:perl"
 repo = "https://github.com/Perl/perl5"
 tag = "v{version}"
+dev_odd = true
 
 [pipewire]
 cpe = "cpe:2.3:a:pipewire:pipewire"
 repo = "https://gitlab.freedesktop.org/pipewire/pipewire"
 tag = "{version}"
+dev_odd = true
 
 [pixman]
 cpe = "cpe:2.3:a:pixman:pixman"
@@ -522,6 +576,8 @@ cpe = "cpe:2.3:a:pkgconf:pkgconf"
 [procps]
 cpe = "cpe:2.3:a:procps-ng_project:procps-ng"
 names = ["procps-ng", "procps"]
+repo = "https://gitlab.com/procps-ng/procps"
+tag = "v{version}"
 
 [python]
 cpe = "cpe:2.3:a:python:python"
@@ -536,16 +592,24 @@ tag = "v{version}"
 [python-mako]
 cpe = "cpe:2.3:a:sqlalchemy:mako"
 osv = "PyPI:Mako"
+repo = "https://github.com/sqlalchemy/mako"
+tag = "rel_{version_}"
 
 [python-markupsafe]
 osv = "PyPI:MarkupSafe"
+repo = "https://github.com/pallets/markupsafe"
+tag = "{version}"
 
 [python-packaging]
 osv = "PyPI:packaging"
+repo = "https://github.com/pypa/packaging"
+tag = "{version}"
 
 [python-pyyaml]
 cpe = "cpe:2.3:a:pyyaml:pyyaml"
 osv = "PyPI:PyYAML"
+repo = "https://github.com/yaml/pyyaml"
+tag = "{version}"
 
 [qemu]
 cpe = "cpe:2.3:a:qemu:qemu"
@@ -566,12 +630,16 @@ skip = "Oath's own compositor (apps/rivulet): its Rust crates are checked throug
 [rust]
 cpe = "cpe:2.3:a:rust-lang:rust"
 names = ["rustc", "cargo"]
+repo = "https://github.com/rust-lang/rust"
+tag = "{version}"
 
 [sbc]
 names = ["sbc"]
 
 [seatd]
 names = ["seatd", "libseat"]
+repo = "https://git.sr.ht/~kennylevinsen/seatd"
+tag = "{version}"
 
 [sed]
 cpe = "cpe:2.3:a:gnu:sed"
@@ -597,11 +665,14 @@ tag = "{version}"
 
 [util-linux]
 cpe = "cpe:2.3:a:kernel:util-linux"
+repo = "https://github.com/util-linux/util-linux"
+tag = "v{version}"
 
 [vim]
 cpe = "cpe:2.3:a:vim:vim"
 repo = "https://github.com/vim/vim"
 tag = "v{version}"
+unchecked = "a tag for every patch, so it is always behind; Vim's advisories reach CVE records with the fixed patch"
 
 [vim.not_affected]
 "CVE-2022-3705" = "fixed in 9.0.0805 (the record); Oath builds 9.2.1250"
@@ -616,21 +687,32 @@ tag = "v{version}"
 
 [vulkan-tools]
 names = ["vulkan-tools"]
+repo = "https://github.com/KhronosGroup/Vulkan-Tools"
+tag = "v{version}"
 
 [wayland]
 cpe = "cpe:2.3:a:wayland:wayland"
+repo = "https://gitlab.freedesktop.org/wayland/wayland"
+tag = "{version}"
+dev_micro = 90
 
 [wayland-protocols]
 skip = "protocol XML, data"
 
 [wireplumber]
 names = ["wireplumber"]
+repo = "https://gitlab.freedesktop.org/pipewire/wireplumber"
+tag = "{version}"
 
 [wl-clipboard]
 names = ["wl-clipboard"]
+repo = "https://github.com/bugaevc/wl-clipboard"
+tag = "v{version}"
 
 [wlroots]
 names = ["wlroots"]
+repo = "https://gitlab.freedesktop.org/wlroots/wlroots"
+tag = "{version}"
 
 [xcb-proto]
 skip = "protocol XML, data"
@@ -655,6 +737,7 @@ skip = "headers and inline code built into the X libraries"
 
 [xwayland]
 cpe = "cpe:2.3:a:x.org:xwayland"
+dev_micro = 90
 
 [xwayland.not_affected]
 "CVE-2024-21886" = "fixed in Xwayland 23.2.4 (X.Org's advisory of 2024-01-16); Oath builds 24.1.14"
