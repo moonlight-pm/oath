@@ -81,6 +81,9 @@ unchecked = "CEF's releases are on its build index, not in tags; Chrome's CVE re
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
 "CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
 
+[certs]
+page = "https://curl.se/docs/caextract.html"
+
 [cf]
 skip = "npm packages: its components.json's npm purls go to OSV"
 
@@ -242,6 +245,12 @@ cpe = "cpe:2.3:a:gmplib:gmp"
 
 [gperf]
 cpe = "cpe:2.3:a:gnu:gperf"
+
+[go]
+cpe = "cpe:2.3:a:golang:go"
+repo = "https://github.com/golang/go"
+tag = "go{version}"
+osv = "Go:stdlib"
 
 [grep]
 cpe = "cpe:2.3:a:gnu:grep"

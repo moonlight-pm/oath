@@ -60,6 +60,9 @@ pub struct Entry {
     pub dev_micro: Option<u64>,
     /// Why upstream's releases cannot be read here.
     pub unchecked: Option<String>,
+    /// The page that lists upstream's releases, when the source's
+    /// directory has no index of its own.
+    pub page: Option<String>,
     #[serde(default)]
     pub not_affected: BTreeMap<String, String>,
 }
@@ -380,7 +383,9 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
             entry,
             purls,
             patched: patched(&crate::pkgs::pkgs_dir(repo).join(name).join("patches")),
-            listing: p.source.first().and_then(|s| listing_of(&s.url, &p.version)),
+            listing: p.source.first().and_then(|s| listing_of(&s.url, &p.version)).map(
+                |(dir, file)| (entries[name].page.clone().unwrap_or(dir), file),
+            ),
         });
     }
     // pkg:oath, which cargo builds from this tree: its crates.

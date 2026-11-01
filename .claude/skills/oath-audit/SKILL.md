@@ -25,6 +25,15 @@ It also reads each pin against upstream's newest stable release, from its
 `repo` and `tag` or the directory its source comes from: a package gets
 `newer`, or `upstream_unread` and why (`cargo make audit --upstream` is that
 check alone). A record can come days after the release that fixes it.
+
+CA roots (R50) have no CVEs, so read them too: `pkg:certs` shows `newer` when
+curl.se has a newer list. Read Mozilla's
+[report](https://ccadb.my.salesforce-sites.com/mozilla/IncludedCACertificateReportPEMCSV):
+a root in the pin with a `Distrust for TLS After Date` goes in
+`pkgs/certs/distrust.txt`, and so does one the
+[Chrome Root Store](https://chromium.googlesource.com/chromium/src/+/main/net/data/ssl/chrome_root_store/root_store.md)
+or a browser vendor has distrusted over an incident. A root that Chrome merely
+never listed is not an incident: 23 of Mozilla's are like that today.
 A source that failed says so in `sources`: the report says it too, and
 the run goes on with the others. A package with no entry in
 `pkgs/audit.toml` stops the scan: add its entry (its NVD CPE, the names

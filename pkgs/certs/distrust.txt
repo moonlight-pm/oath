@@ -1,0 +1,4 @@
+# Roots Oath does not trust, whatever Mozilla's list says (R50), one per line:
+# the SHA-256 of the certificate, its name, and the date and why.
+# An entry stays after upstream drops the root, so the root cannot come back.
+2530cc8e98321502bad96f9b1fba1b099e2d299e0f4548bb914f363bc0d4531f Izenpe.com: 2026-11-01. Mozilla distrusts what it issued after 2026-04-15 (certdata's CKA_NSS_SERVER_DISTRUST_AFTER); a PEM cannot carry the date, so its readers would trust all of it.

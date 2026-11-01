@@ -140,6 +140,14 @@
       "libpulse"
     ]
   },
+  "certs": {
+    "version": "2026-10-20",
+    "license": "MPL-2.0",
+    "by": "plan",
+    "plan": "sha256-56f1b22551b50f9b4e9bd0d5033a78e51f99b0b15dbeac519de75b0d77434224",
+    "product": "sha256-bcb05110224c5a0675f38d1d98e30566d078cd172ed1f765c846a11dcfea5883",
+    "run": []
+  },
   "cf": {
     "version": "1.0.0-beta.26",
     "license": "(MIT OR Apache-2.0) AND MIT AND Apache-2.0 AND ISC AND CC0-1.0 AND LGPL-3.0-or-later AND BSD-2-Clause AND BSD-3-Clause AND MPL-1.1 AND Zlib AND IJG AND libpng-2.0 AND libtiff AND FTL",
@@ -464,6 +472,14 @@
     "by": "plan",
     "plan": "sha256-6ce292726e19f6987d578b73131cbeaa51896c026a3bf7e1618057740bdc8e39",
     "product": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2",
+    "run": []
+  },
+  "go": {
+    "version": "1.27.3",
+    "license": "BSD-3-Clause",
+    "by": "plan",
+    "plan": "sha256-eae14c918f33f9e878f180e7aa7f7e48a6651dbe4a331cf15c6f49883c985e6f",
+    "product": "sha256-cdc76b7e916484945c5d98461be0b92c711c202531f5657f046d4d716be14f31",
     "run": []
   },
   "gperf": {

@@ -1,0 +1,21 @@
+# The vendor's Go release (R7), pinned by sha256 and checked against the
+# signature Google publishes with it. A build tool, not in the base image:
+# a Go program links the standard library into itself, so a fix in Go moves
+# this pin and every Go package's plan with it. The plan changes two things.
+# Go looks for CA roots only under /etc, so crypto/x509 also reads
+# pkg:certs' list; and GOTOOLCHAIN=local, so go never downloads a toolchain
+# of its own: a newer one is a new pin here. The audit reads the Go
+# ecosystem's advisories for the standard library as stdlib.
+version = "1.27.3"
+license = "BSD-3-Clause"
+description = "Go: the compiler, the go command and the standard library."
+home = "https://go.dev/"
+purl = "pkg:golang/stdlib@1.27.3"
+build = []
+run = []
+
+[[source]]
+url = "https://dl.google.com/go/go1.27.3.linux-amd64.tar.gz"
+sha256 = "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40"
+sig = "https://dl.google.com/go/go1.27.3.linux-amd64.tar.gz.asc"
+key = "go"

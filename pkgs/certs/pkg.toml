@@ -1,0 +1,18 @@
+# The CA roots Oath trusts (R50): Mozilla's list, as curl's project publishes
+# it from Firefox's certdata.txt, less the roots distrust.txt names by
+# fingerprint. That file is ours, so a breach needs one line and a new pack,
+# not an upstream release, and it holds what a PEM file cannot say: Mozilla
+# may trust a root only for certificates issued before a date, and a PEM's
+# readers would trust it for all of them. A newer list is a new pin here.
+version = "2026-10-20"
+license = "MPL-2.0"
+description = "Oath's CA roots: Mozilla's list, less what pkgs/certs/distrust.txt names."
+home = "https://curl.se/docs/caextract.html"
+purl = "pkg:generic/certs@2026-10-20"
+build = []
+run = []
+
+[[source]]
+url = "https://curl.se/ca/cacert-2026-10-20.pem"
+sha256 = "796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe"
+unsigned = "curl.se publishes the CA bundle with a sha256, not a signature"
