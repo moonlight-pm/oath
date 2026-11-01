@@ -26,6 +26,11 @@ It also reads each pin against upstream's newest stable release, from its
 `newer`, or `upstream_unread` and why (`cargo make audit --upstream` is that
 check alone). A record can come days after the release that fixes it.
 
+A hit in a Go program is usually a module it links: its `components.json`
+names each one. Newest fixed version in the package's `go-updates.txt`, then
+`pkgs/go-modules.sh` (`pkgs/README.md`). A hit in Go's `stdlib` moves `pkg:go`,
+and the plans of every Go program move with it.
+
 CA roots (R50) have no CVEs, so read them too: `pkg:certs` shows `newer` when
 curl.se has a newer list. Read Mozilla's
 [report](https://ccadb.my.salesforce-sites.com/mozilla/IncludedCACertificateReportPEMCSV):

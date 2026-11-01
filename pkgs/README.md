@@ -16,6 +16,18 @@ publishes it, and it has no directory here (Sola's, in `desk`).
 | `keys/sigstore.json` | Sigstore's trusted root (Fulcio CAs, Rekor keys), verbatim from `sigstore/root-signing` (`targets/trusted_root.json`) |
 | `bootstrap.sh`, `bootstrap.nix` | stage 0 and stage 1 on the build host |
 
+## Go programs (R49)
+
+`build = ["go"]`, and `run = ["certs"]` for the CA roots. `pkgs/go-modules.sh
+<name> <go package>...` pins the go.mod and zip files the go command reads, from
+proxy.golang.org, after the line `# Modules, from pkgs/go-modules.sh:` in
+`pkg.toml`; run it again after a new release's pin. The build reads them through
+`GOPROXY=file://$SRC/gomod`, and `go-components` writes `components.json` from
+the binary, so advisories cover each linked module. A module pinned behind its
+fix goes in `<name>/go-updates.txt`, with the CVE beside it; the script takes
+it with `go get` and writes `<name>/go.mod` and `go.sum`, which the build copies
+over the release's. Drop a line once the release has caught up.
+
 ## Signatures
 
 Every `[[source]]` either names its upstream's signature or says why it

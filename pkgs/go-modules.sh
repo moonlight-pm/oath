@@ -1,0 +1,64 @@
+#!/bin/sh
+# Pins the modules of a Go package (R49): the go.mod and zip files the go
+# command reads to build it, as proxy.golang.org serves them. They replace
+# what follows the marker line in the package's pkg.toml, and its build reads
+# them through GOPROXY=file://$SRC/gomod. The go command checks each one
+# against go.sum and Go's checksum database here, and against go.sum again in
+# the build's sandbox.
+#
+# A module a release pins behind its fix goes in pkgs/<name>/go-updates.txt,
+# one `module version` a line, with `#` comments. `go get` takes them here,
+# and the resulting go.mod and go.sum go in pkgs/<name>/, which the build
+# copies over the release's.
+#
+# Usage, with pkg:go on PATH and the release in build/fetch:
+#   [TAGS='build tags'] pkgs/go-modules.sh <name> <go package>...
+#   pkgs/go-modules.sh restic ./cmd/restic
+set -eu
+name=$1
+shift
+repo=$(cd "$(dirname "$0")/.." && pwd)
+toml=$repo/pkgs/$name/pkg.toml
+marker='# Modules, from pkgs/go-modules.sh:'
+grep -qx "$marker" "$toml"
+# The release is the one source before the marker.
+head=$(awk -v m="$marker" '{ print } $0 == m { exit }' "$toml")
+file=$(printf '%s\n' "$head" | sed -n 's/^file = "\(.*\)"$/\1/p')
+[ -n "$file" ] || file=$(printf '%s\n' "$head" | sed -n 's/^url = ".*\/\([^/"]*\)"$/\1/p')
+
+tmp=$(mktemp -d)
+trap 'chmod -R u+w "$tmp"; rm -rf "$tmp"' EXIT
+mkdir "$tmp/src"
+tar -xf "$repo/build/fetch/$file" -C "$tmp/src"
+cd "$tmp/src/$(cd "$tmp/src" && dirname "$(find . -maxdepth 2 -name go.mod | sort | head -n 1)")"
+if grep -q '^replace' go.mod; then
+	echo "$name: go.mod has a replace directive, which this does not follow" >&2
+	exit 1
+fi
+
+export GOTOOLCHAIN=local GOFLAGS=-mod=readonly CGO_ENABLED="${CGO_ENABLED:-0}" GOOS=linux GOARCH=amd64 \
+	GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOMODCACHE="$tmp/mod"
+tags=${TAGS:-}
+updates=$repo/pkgs/$name/go-updates.txt
+if [ -f "$updates" ]; then
+	sed -e 's/#.*//' -e '/^ *$/d' "$updates" | while read -r m v; do
+		GOFLAGS=-mod=mod go get "$m@$v"
+	done
+	GOFLAGS=-mod=mod go list -deps -tags "$tags" "$@" >/dev/null
+	cp go.mod go.sum "$repo/pkgs/$name/"
+	chmod -R u+w "$GOMODCACHE"
+	rm -rf "$GOMODCACHE"
+fi
+
+# From an empty cache, what the go command fetches is what the build reads.
+go list -deps -tags "$tags" "$@" >/dev/null
+cache=$GOMODCACHE/cache/download
+printf '%s\n' "$head" >"$tmp/toml"
+(cd "$cache" && find . -path ./sumdb -prune -o -type f \( -name '*.mod' -o -name '*.zip' \) -print) |
+	LC_ALL=C sort | while read -r f; do
+	f=${f#./}
+	printf '\n[[source]]\nurl = "https://proxy.golang.org/%s"\nsha256 = "%s"\nfile = "gomod/%s"\n' \
+		"$f" "$(sha256sum "$cache/$f" | cut -d' ' -f1)" "$f"
+done >>"$tmp/toml"
+cp "$tmp/toml" "$toml"
+echo "$name: $(grep -c '^file = "gomod/' "$toml") modules' files pinned"

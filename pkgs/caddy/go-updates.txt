@@ -1,0 +1,5 @@
+# Modules Caddy 2.11.7 pins behind their fixes (2026-11-01). go-jose v3 has
+# no fix: see [caddy.not_affected] in pkgs/audit.toml.
+github.com/go-chi/chi/v5 v5.5.0      # CVE-2026-114437
+github.com/go-jose/go-jose/v4 v4.1.7 # CVE-2026-116587
+golang.org/x/net v0.62.0             # CVE-2026-78659 and six more, HTTP/2 and HTML

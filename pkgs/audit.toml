@@ -47,6 +47,15 @@ series = "9.20"
 [bison]
 cpe = "cpe:2.3:a:gnu:bison"
 
+[blocky]
+cpe = "cpe:2.3:a:blocky_project:blocky"
+repo = "https://github.com/0xERR0R/blocky"
+tag = "v{version}"
+osv = "Go:github.com/0xERR0R/blocky"
+
+[blocky.not_affected]
+"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
+
 [bluez]
 cpe = "cpe:2.3:a:bluez:bluez"
 
@@ -64,6 +73,18 @@ tag = "v{version}"
 
 [bzip2]
 cpe = "cpe:2.3:a:bzip:bzip2"
+
+[caddy]
+cpe = "cpe:2.3:a:caddyserver:caddy"
+repo = "https://github.com/caddyserver/caddy"
+tag = "v{version}"
+osv = "Go:github.com/caddyserver/caddy/v2"
+
+[caddy.not_affected]
+"CVE-2026-116585" = "fixed in go-jose v4 (go-updates.txt); go-jose v3 has no fix and is linked through go.step.sm/crypto/jose for Caddy's acme_server and pki; aulos's Caddyfile uses neither (2026-11-01). A crafted JWK panics the request."
+"CVE-2026-116586" = "as CVE-2026-116585"
+"CVE-2026-116587" = "as CVE-2026-116585"
+"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
 
 [cairo]
 cpe = "cpe:2.3:a:cairographics:cairo"
@@ -632,6 +653,15 @@ cpe = "cpe:2.3:a:qemu:qemu"
 
 [readline]
 cpe = "cpe:2.3:a:gnu:readline"
+
+[restic]
+cpe = "cpe:2.3:a:restic:restic"
+repo = "https://github.com/restic/restic"
+tag = "v{version}"
+osv = "Go:github.com/restic/restic"
+
+[restic.not_affected]
+"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
 
 [rivulet]
 skip = "Oath's own compositor (apps/rivulet): its Rust crates are checked through OSV"
