@@ -29,11 +29,12 @@ Overwrite this file when facts change; do not append a diary.
   beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `3c4a23053b7a` (the first audit's second
-  release: CEF 156.0.15, expat's CVE patches, Linux 7.3.1), pulled
-  2026-11-01 at 03:18Z with `oath update --confirm --reboot` (generation
-  112) and booted. Before it, `178ac39ce817` (the audit's Linux 7.3.1,
-  generation 111) and Release B (`dd0f847aa9c9`, generation 110).
+- **Running now:** output `1caabcfb0b8c` (Sola master@c1bde1c4 on CEF
+  156.0.15, `pkg:sola-vault` and `svc:sola-vault`), pulled 2026-11-01
+  with `oath update --confirm --reboot`. Before it, `3c4a23053b7a` (the
+  first audit's CEF 156.0.15 and expat release, generation 112),
+  `178ac39ce817` (Linux 7.3.1, generation 111) and Release B
+  (`dd0f847aa9c9`, generation 110).
   `svc:audit` (R48, this file's overlay: `check/audit/run` as `home`,
   schedule `0 4 * * *`) since generations 113-114. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
