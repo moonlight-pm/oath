@@ -29,14 +29,13 @@ Overwrite this file when facts change; do not append a diary.
   beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** Release B, output `dd0f847aa9c9` (R47), pulled on
-  2026-10-31 at 15:24Z with `oath update --confirm --reboot` (generation
-  110: `pkg:oath`, the slimmed `pkg:sola`, `sola-browser` and
-  `sola-design` moved, the ten `pkg:sola-<app>` made new to the profile,
-  every `/bin` name handed over) and booted: PID 1 the output's, in sync,
-  its record complete (164 pins, 194 seed). Before it, Release A
-  (`940c5d970175`, generation 109; the record its pre-R47 `oath` wrote
-  was rewritten as signed). Not here, listed by
+- **Running now:** output `3c4a23053b7a` (the first audit's second
+  release: CEF 156.0.15, expat's CVE patches, Linux 7.3.1), pulled
+  2026-11-01 at 03:18Z with `oath update --confirm --reboot` (generation
+  112) and booted. Before it, `178ac39ce817` (the audit's Linux 7.3.1,
+  generation 111) and Release B (`dd0f847aa9c9`, generation 110).
+  `svc:audit` (R48, this file's overlay: `check/audit/run` as `home`,
+  schedule `0 4 * * *`) since generations 113-114. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
   `pkg:libglvnd-i386`; `svc:screen` has no `seat`, so it acts as
