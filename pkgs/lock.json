@@ -114,11 +114,11 @@
     ]
   },
   "cef": {
-    "version": "156.0.14+g4fa4ab5+chromium-156.0.8078.48",
+    "version": "156.0.15+gcf671c0+chromium-156.0.8078.80",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-71dd21c923e288fb487fe899039821e75260c83ceae84eaa1e3b6f25a50daa6b",
-    "product": "sha256-2a2cc7500639fc912822ab0a5f537be4895f9d44eb40b7984f8d8cc9d506bd49",
+    "plan": "sha256-d41af4e2bd9741d3e547092ce58a663acf47f572c62e0bd05b6224a07d9da60a",
+    "product": "sha256-69513f329f066fba9e8bf9dbc38d34428a71e6c3303a8ade310214176fc81b37",
     "run": [
       "glib",
       "nspr",
@@ -130,6 +130,7 @@
       "libxcb",
       "libxkbcommon",
       "mesa",
+      "libglvnd",
       "expat",
       "libffi",
       "libudev-zero",

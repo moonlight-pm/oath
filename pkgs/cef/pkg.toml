@@ -1,41 +1,42 @@
 # CEF, the Chromium Embedded Framework that Sola's browser is built
 # against, built from Chromium's and CEF's source with Chrome's codecs
 # (H.264 and AAC in MP4; Joshua, 2026-10-28), which the vendor's binary
-# leaves out. The same commit as the vendor's 156.0.14, so a program
+# leaves out. The same commit as the vendor's 156.0.15, so a program
 # built against its headers loads this libcef.so. Chromium builds only
 # with its own Clang and Rust (R40): the toolchain packages its DEPS
 # pins, build inputs here and never on a machine.
-version = "156.0.14+g4fa4ab5+chromium-156.0.8078.48"
+version = "156.0.15+gcf671c0+chromium-156.0.8078.80"
 license = "BSD-3-Clause AND LicenseRef-Chromium-Credits"
 description = "CEF, the Chromium Embedded Framework, with H.264 and AAC, for sola-browser."
 home = "https://github.com/chromiumembedded/cef"
-purl = "pkg:generic/cef@156.0.14+g4fa4ab5+chromium-156.0.8078.48"
+purl = "pkg:generic/cef@156.0.15+gcf671c0+chromium-156.0.8078.80"
 build = [
 	"python", "ninja", "pkgconf", "patchelf", "libdrm", "libpulse", "harfbuzz", "fribidi",
 	"freetype", "fontconfig", "pixman", "xorgproto", "gperf",
 	"glib", "nspr", "nss", "at-spi2-core", "dbus", "cups", "libx11", "libxcomposite",
-	"libxdamage", "libxext", "libxfixes", "libxrandr", "mesa", "expat", "libxcb",
+	"libxdamage", "libxext", "libxfixes", "libxrandr", "mesa", "libglvnd", "expat", "libxcb",
 	"libxkbcommon", "cairo", "pango", "libudev-zero", "alsa-lib", "vulkan-loader",
 ]
-# What libcef.so links (DT_NEEDED) and what it opens: Mesa's EGL and GL, the
-# Vulkan loader, libpulse for sound.
+# What libcef.so links (DT_NEEDED) and what it opens: libglvnd's EGL and GL
+# (and their headers, which Mesa no longer ships), with Mesa as their vendor,
+# the Vulkan loader, libpulse for sound.
 run = [
 	"glib", "nspr", "nss", "at-spi2-core", "dbus", "cups", "libx11", "libxcb",
-	"libxkbcommon", "mesa", "expat", "libffi", "libudev-zero", "alsa-lib", "gcc",
+	"libxkbcommon", "mesa", "libglvnd", "expat", "libffi", "libudev-zero", "alsa-lib", "gcc",
 	"vulkan-loader", "libpulse",
 ]
 
 # Google's release tarball, with every DEPS source a build reads.
 [[source]]
-url = "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-156.0.8078.48.tar.xz"
-sha256 = "534ae40171f394650b89e33716be4a450c78d93a862e2b0e4fae03113e10f90b"
+url = "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-156.0.8078.80.tar.xz"
+sha256 = "5b1a1f3bfdf4fc559db4eddfb4492b72ffcec7ae1a52b30f8b172230788f5740"
 unsigned = "Google publishes Chromium's release tarballs with an unsigned .hashes file only"
 
-# CEF's tree at the commit of its 156.0.14 (branch 8078).
+# CEF's tree at the commit of its 156.0.15 (branch 8078).
 [[source]]
-url = "https://github.com/chromiumembedded/cef/archive/4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f.tar.gz"
-sha256 = "d1696db8f0a5470474eef22121a4aeae985dc63d31897e92f54ace5e24e73bc4"
-file = "cef-4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f.tar.gz"
+url = "https://github.com/chromiumembedded/cef/archive/cf671c072925b27823a61181152f4f288e8e4306.tar.gz"
+sha256 = "6c7512e17d08d9f04776565675b8a17ca03630a73e0e8ebcad891055e4b327e2"
+file = "cef-cf671c072925b27823a61181152f4f288e8e4306.tar.gz"
 unsigned = "a GitHub commit archive; CEF signs neither its commits nor its tags"
 
 # What Chromium's DEPS fetches from Google's storage for a Linux build,

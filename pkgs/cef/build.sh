@@ -9,7 +9,7 @@
 # and libgcc, and /lib's loader for what the build runs; libraries come from
 # pkg-config and /lib. libcef.so carries Chromium's libc++, as the vendor's does.
 # patches/: CEF reads its version from git, which a tarball lacks, so git_util
-# answers from CEF_TARBALL_COMMIT (the hash and commit number of CEF's 156.0.14);
+# answers from CEF_TARBALL_COMMIT (the hash and commit number of CEF's 156.0.15);
 # Oath's Python has no POSIX semaphores (its configure found no /dev/shm), so
 # the mojom parser and Blink's bindings generator run in one process; fontconfig
 # and ANGLE link libuuid and libXi, which they never call and Oath does not ship.
@@ -23,8 +23,8 @@
 # hold no manifests here, and a program with Release in its RUNPATH would load
 # it instead of /lib's (pkg:vulkan-loader), which finds Mesa's; SwiftShader's
 # manifest stays and works through that.
-CEF_COMMIT=4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f
-CEF_NUMBER=3659
+CEF_COMMIT=cf671c072925b27823a61181152f4f288e8e4306
+CEF_NUMBER=3660
 CHROMIUM=${VERSION##*chromium-}
 CEF_PATCH=${VERSION%%+*}
 CEF_PATCH=${CEF_PATCH##*.}
