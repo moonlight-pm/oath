@@ -2,3 +2,5 @@
 # the SHA-256 of the certificate, its name, and the date and why. An entry stays
 # after upstream drops the root, so the root cannot come back. A root Mozilla
 # gives a distrust-after date needs no line here: the build leaves it out.
+6c61dac3a2def031506be036d2a6fe401994fbd13df9c8d466599274c446ec98 NetLock Arany (Class Gold) Főtanúsítvány, 2026-11-02: Chrome distrusted it from 2025-08-01 over compliance failures and incident reports (Google's security blog, 2025-05), and its root store no longer lists it; Mozilla still trusts it
+f015ce3cc239bfef064be9f1d2c417e1a0264a0a94be1f0c8d121864eb6949cc HiPKI Root CA - G1 (Chunghwa Telecom), 2026-11-02: Chrome distrusted it from 2025-08-01 over compliance failures and incident reports (Google's security blog, 2025-05), and its root store no longer lists it; Mozilla still trusts it
