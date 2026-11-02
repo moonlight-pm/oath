@@ -8,6 +8,9 @@ export HOME=/tmp/home GOCACHE=/tmp/gocache GOPATH=/tmp/gopath GOMODCACHE=/tmp/go
 mkdir -p "$HOME" /tmp/podman /out/bin /out/libexec/podman /out/share/containers /out/share/doc/podman
 cd /tmp/podman
 tar -xzf "$SRC/podman-$VERSION.tar.gz" --no-same-owner --strip-components=1
+for p in "$FILES"/patches/*.patch; do
+	patch -p1 -i "$p"
+done
 rm -rf vendor
 cp "$FILES/go.mod" "$FILES/go.sum" .
 
@@ -22,7 +25,7 @@ go build -tags "$tags" -ldflags "$ld" -o /out/bin/podman ./cmd/podman
 go build -tags "$tags" -ldflags "$ld" -o /out/libexec/podman/rootlessport ./cmd/rootlessport
 go build -tags "$tags" -ldflags "$ld" -o /out/libexec/podman/quadlet ./cmd/quadlet
 
-cp "$FILES/policy.json" "$FILES/containers.conf" /out/share/containers/
+cp "$FILES/policy.json" "$FILES/containers.conf" "$FILES/storage.conf" /out/share/containers/
 cp LICENSE /out/share/doc/podman/
 (cd "$GOMODCACHE" && find . \( -path ./cache -o -name testdata \) -prune -o -type f \( -iname 'LICEN[CS]E*' -o -iname 'NOTICE*' \) \
 	-exec cp --parents {} /out/share/doc/podman/ \;)

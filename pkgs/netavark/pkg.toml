@@ -2,7 +2,7 @@
 # when containers use pasta or the host's network. Its crates come from the
 # release's vendor tarball. A bridge network needs nft, which Oath does not
 # ship yet, and aardvark-dns for names in it: not here, as a rootless container
-# on pasta needs neither. Neither tarball is signed.
+# on pasta needs neither.
 version = "2.1.0"
 license = "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND Unlicense AND Zlib"
 description = "netavark: the network backend for Podman."
@@ -10,7 +10,7 @@ home = "https://github.com/containers/netavark"
 purl = "pkg:github/containers/netavark@v2.1.0"
 build = ["rust", "protobuf", "pkgconf"]
 run = ["gcc"]
-unsigned = "netavark publishes its release and vendor tarball with an unsigned sha256 list"
+unsigned = "its tag is signed by Paul Holzinger, which GitHub verified and oath-make does not check, and the archive matched the tag when pinned; the vendor tarball has only an unsigned sha256 list"
 
 [[source]]
 url = "https://github.com/containers/netavark/archive/refs/tags/v2.1.0.tar.gz"

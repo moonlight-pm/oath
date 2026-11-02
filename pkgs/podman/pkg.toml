@@ -3,8 +3,8 @@
 # SQLite from pkg:sqlite, not the copy go-sqlite3 carries. Its modules are
 # below in place of its vendor/, since a module's fix may not wait for a
 # release (R49). Paths under /etc that it reads by default are in its pack.
-# Oath ships no newuidmap, so rootless it maps one uid: see Open in
-# docs/decisions.md. Re-pin with:
+# Rootless, a container holds one uid, the account that runs it (R53): patches/
+# stops Podman calling that an error, and storage.conf loads any image. Re-pin with:
 #   pkgs/go-modules.sh --cgo \
 #     --tags 'grpcnotrace seccomp libsqlite3 containers_image_openpgp exclude_graphdriver_btrfs' \
 #     podman ./cmd/podman ./cmd/rootlessport ./cmd/quadlet
@@ -15,7 +15,7 @@ home = "https://podman.io/"
 purl = "pkg:golang/github.com/containers/podman/v6@6.1.4"
 build = ["go", "pkgconf", "libseccomp", "sqlite"]
 run = ["certs", "libseccomp", "conmon", "crun", "netavark", "passt"]
-unsigned = "Podman signs neither its tags nor its source archives; its modules come from proxy.golang.org, and the go command checks each against go.sum in the build"
+unsigned = "the archive has no signature of its own. Its tag is signed by Matt Heon, which GitHub verified and oath-make does not check, and the archive matched the tag when pinned. Its modules come from proxy.golang.org, and the go command checks each against go.sum in the build"
 
 [[source]]
 url = "https://github.com/containers/podman/archive/refs/tags/v6.1.4.tar.gz"

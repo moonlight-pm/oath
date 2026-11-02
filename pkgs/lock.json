@@ -1392,10 +1392,10 @@
   },
   "podman": {
     "version": "6.1.4",
-    "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC AND Unlicense",
+    "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC",
     "by": "plan",
-    "plan": "sha256-7dafad741514e31f371d46e2ec1eac975cca52ef99d344744d70bedfc320c247",
-    "product": "sha256-9af5fa89f2053d2653442cc4cb1f0e2c2bbafb880f02ee6c134f8795a73bd334",
+    "plan": "sha256-ee3943b9ddbd0630cba1dce4e48d346c2f10170821187b2417355e78318d22f7",
+    "product": "sha256-0fda65fe201f15d32dfd786322cef92ab075a59d1af6bb4359278d6fbdca8cfa",
     "run": [
       "certs",
       "libseccomp",

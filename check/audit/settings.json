@@ -11,6 +11,7 @@
       "Bash(cargo make audit:*)",
       "Bash(cargo make advisories:*)",
       "Bash(cargo make pkgs:*)",
+      "Bash(pkgs/go-modules.sh:*)",
       "Bash(cargo make build:*)",
       "Bash(cargo make check:*)",
       "Bash(cargo make publish:*)",
@@ -53,6 +54,7 @@
       "Bash(git push -f:*)",
       "Bash(git reset:*)",
       "Edit(pkgs/keys/**)",
+      "Edit(pkgs/go-modules.sh)",
       "Edit(check/**)",
       "Edit(.claude/**)",
       "Edit(crates/**)"
