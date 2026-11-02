@@ -60,6 +60,7 @@ pub fn svc_spawn(_id: &str, spec: &Svc) -> SvcSpawn {
         home: match user {
             SvcUser::Root => "/root",
             SvcUser::Home => seat::HOME,
+            SvcUser::Work => seat::WORK_HOME,
             SvcUser::Void => seat::VOID_HOME,
         },
         user_name: user.as_str(),
@@ -82,7 +83,7 @@ pub fn svc_env_pairs(spec: &Svc) -> Vec<(String, String)> {
 
 /// Drop to the service account. Root returns immediately.
 ///
-/// A home or void process gets `CAP_NET_BIND_SERVICE` only when `bind_low_ports`
+/// A process of any account but root gets `CAP_NET_BIND_SERVICE` only when `bind_low_ports`
 /// is set. The kernel clears the ambient set on the uid change even if
 /// permitted is kept, so the ambient bit is raised after `setuid`. Exec
 /// of an ordinary binary then keeps the capability.

@@ -124,11 +124,12 @@ undoes the change after 180 s.
 
 ## Account, environment, low ports
 
-Oath has three Unix accounts: `root`, `home` (uid 1, gid 1) and
-`void` (uid and gid 65534, home `/var/empty`), the unprivileged one
-that owns nothing and cannot log in. `user` is `root`, `home` or
-`void`; absent means `root`. A service that needs no files of its own
-and no privilege runs as `void`.
+Oath has four Unix accounts: `root`, `home` (uid 1, gid 1), `work` (uid and
+gid 2, home `/work`), for servers and workloads, which `sudo` refuses and which
+cannot log in, and `void` (uid and gid 65534, home `/var/empty`), the unprivileged
+one that owns nothing and cannot log in. `user` is `root`, `home`, `work` or
+`void`; absent means `root`. A service that keeps data and needs no `sudo` runs
+as `work`; one that needs no files of its own and no privilege runs as `void`.
 
 Every service gets `PATH=/bin`, `HOME`, `USER`, `LOGNAME`,
 `SHELL=/bin/sh` and `XDG_RUNTIME_DIR` for its account (the `desk`
@@ -138,7 +139,7 @@ login shell), then
 already sets `TZ`), then its own `env`. The service's `env` wins on
 the same name.
 
-`bind_low_ports` lets a `home` or `void` service bind ports below 1024
+`bind_low_ports` lets a service of any account but root bind ports below 1024
 (`CAP_NET_BIND_SERVICE`). Root can bind them either way. On a
 service an overlay added (here `svc:web`):
 

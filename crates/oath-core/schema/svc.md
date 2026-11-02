@@ -21,9 +21,11 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
   PID 1 starts it when enabled and does not start it again after it
   exits, until `enabled` goes false then true (or the next boot).
 - `enabled` — if false, the process is not running.
-- `user` — `root`, `home` or `void`. Oath has those three Unix
-  accounts and no others (`home` is uid 1, gid 1; `void` is 65534, home
-  `/var/empty`, for a service that needs nothing). Absent means `root`.
+- `user` — `root`, `home`, `work` or `void`. Oath has those four Unix
+  accounts and no others (`home` is uid 1, gid 1; `work` is uid 2, home
+  `/work`, with no `sudo`, for a server or workload that holds data; `void`
+  is 65534, home `/var/empty`, for a service that needs nothing). Absent
+  means `root`.
 - `env` — string map, empty when absent. PID 1 puts these in the
   process environment after `host:local.env` and `TZ`. The same name
   on this object wins.

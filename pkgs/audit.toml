@@ -372,7 +372,7 @@ tag = "release-{version}-stable"
 cpe = "cpe:2.3:a:libffi_project:libffi"
 repo = "https://github.com/libffi/libffi"
 tag = "v{version}"
-differs_because = "README.md's heading, and config.guess and config.sub from an older automake than the tree's (read 2026-11-01)"
+differs_because = "README.md drops a heading; config.guess and config.sub are GNU config's own of January 2022, by blob id in its history, where the tree has 2024's (read 2026-11-01)"
 
 [libfontenc]
 cpe = "cpe:2.3:a:x.org:libfontenc"
@@ -395,7 +395,7 @@ cpe = "cpe:2.3:a:pulseaudio:pulseaudio"
 cpe = "cpe:2.3:a:libseccomp_project:libseccomp"
 repo = "https://github.com/seccomp/libseccomp"
 tag = "v{version}"
-differs_because = "tools/check-syntax, a developer's script the build does not run, names the maintainer's own astyle path (read 2026-11-01)"
+differs_because = "tools/check-syntax names the maintainer's own astyle path; only `make check-syntax` runs it, not the build (read 2026-11-01)"
 
 [libslirp]
 cpe = "cpe:2.3:a:libslirp_project:libslirp"
@@ -552,7 +552,7 @@ tag = "mesa-{version}"
 cpe = "cpe:2.3:a:mesonbuild:meson"
 repo = "https://github.com/mesonbuild/meson"
 tag = "{version}"
-differs_because = "setup.cfg: setuptools rewrites it when it makes the sdist, the same settings reindented (read 2026-11-01)"
+differs_because = "setup.cfg: setuptools rewrites it for the sdist, reindented with an egg_info section and no comment (read 2026-11-01)"
 
 [mpc]
 cpe = "cpe:2.3:a:gnu:mpc"
@@ -727,7 +727,7 @@ cpe = "cpe:2.3:a:sqlalchemy:mako"
 osv = "PyPI:Mako"
 repo = "https://github.com/sqlalchemy/mako"
 tag = "rel_{version_}"
-differs_because = "pyproject.toml and setup.cfg: sdist drops the dev tag and project metadata (read 2026-11-01)"
+differs_because = "sdist drops the dev tag from pyproject.toml and rewrites setup.cfg with an egg_info section (read 2026-11-01)"
 
 [python-markupsafe]
 osv = "PyPI:MarkupSafe"
@@ -825,7 +825,7 @@ tag = "{version}"
 cpe = "cpe:2.3:a:kernel:util-linux"
 repo = "https://github.com/util-linux/util-linux"
 tag = "v{version}"
-differs_because = "ChangeLog's link, and every po file's POT-Creation-Date, regenerated at release (read 2026-11-01)"
+differs_because = "ChangeLog's link, every po file's POT-Creation-Date and the pot's version, regenerated at release; all 34 read (2026-11-01)"
 
 [vim]
 cpe = "cpe:2.3:a:vim:vim"
@@ -905,7 +905,7 @@ dev_micro = 90
 cpe = "cpe:2.3:a:tukaani:xz"
 repo = "https://github.com/tukaani-project/xz"
 tag = "v{version}"
-differs_because = "ChangeLog: the release writes it from the git log, where the tree has a pointer (read 2026-11-01)"
+differs_because = "ChangeLog: the release writes the git log into it, where the tree has a pointer; its 20,940 lines were not read one by one (2026-11-01)"
 
 [zlib]
 cpe = "cpe:2.3:a:zlib:zlib"

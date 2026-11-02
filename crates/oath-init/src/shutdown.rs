@@ -105,15 +105,14 @@ pub fn finish(sup: &mut Supervisor, mode: Mode) -> ! {
             let _ = umount2(path.as_str(), MntFlags::MNT_DETACH);
         }
     }
-    // @home (R43), after what host:local.mounts put under it.
-    let home = oath_core::seat::HOME;
-    if std::fs::read_to_string("/proc/self/mountinfo")
-        .unwrap_or_default()
-        .lines()
-        .any(|l| l.split_whitespace().nth(4) == Some(home))
-        && umount2(home, MntFlags::empty()).is_err()
-    {
-        let _ = umount2(home, MntFlags::MNT_DETACH);
+    // @home (R43), after what host:local.mounts put under it, and @work (R55).
+    let info = std::fs::read_to_string("/proc/self/mountinfo").unwrap_or_default();
+    for path in [oath_core::seat::HOME, oath_core::seat::WORK_HOME] {
+        if info.lines().any(|l| l.split_whitespace().nth(4) == Some(path))
+            && umount2(path, MntFlags::empty()).is_err()
+        {
+            let _ = umount2(path, MntFlags::MNT_DETACH);
+        }
     }
     let _ = umount2(oath_core::BTRFS_TOP, MntFlags::MNT_DETACH);
     if let Err(e) = mount(

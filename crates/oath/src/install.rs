@@ -687,7 +687,7 @@ fn fresh_state(at: &Path, home: &Path) -> Result<()> {
     fs::set_permissions(at.join("root"), fs::Permissions::from_mode(0o700))?;
     fs::set_permissions(at.join("root/.ssh"), fs::Permissions::from_mode(0o700))?;
     fs::create_dir_all(at.join("home"))?;
-    for (dir, mode) in [(home.to_path_buf(), 0o755), (home.join(".ssh"), 0o700)] {
+    for (dir, mode) in [(home.to_path_buf(), 0o700), (home.join(".ssh"), 0o700)] {
         fs::create_dir_all(&dir)?;
         chown(&dir, Some(seat::UID), Some(seat::GID))?;
         fs::set_permissions(&dir, fs::Permissions::from_mode(mode))?;

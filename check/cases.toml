@@ -519,6 +519,18 @@ steps = [
 ]
 
 [[case]]
+name = "work-holds-data-and-has-no-sudo"
+about = "work (R55) is uid 2 with no login, no sudo and its own subvolume at /work; home reaches it with sudo -u work and cannot be reached from it; /home is closed to it; a service may run as it."
+metal = true
+steps = [
+  { run = "grep -x 'work:x:2:2:work:/work:/bin/false' /etc/passwd && stat -c 'owner=%U mode=%a' /work && grep -q ' /work ' /proc/self/mountinfo && echo mounted && sudo btrfs subvolume show /work | head -n 1", expect = ["work:x:2:2:work:/work:/bin/false", "owner=work mode=700", "mounted", "@work"] },
+  { run = "sudo -u work id -u; sudo -u work sh -c 'echo $HOME $USER $PWD; touch /work/.probe && rm /work/.probe && echo wrote'", expect = ["2", "/work work /work", "wrote"] },
+  { run = "stat -c 'home=%a' /home; sudo -u work ls /home 2>&1; echo \"ls=$?\"; sudo -u work sudo id 2>&1; echo \"sudo=$?\"", expect = ["home=700", "Permission denied", "ls=2", "sudo: not allowed", "sudo=1"] },
+  { run = "sudo oath new svc:work-probe --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo \\\"probe $(id -u) $HOME\\\" > /work/probe; exec sleep 600\"],\"wants\":[],\"restart\":\"never\",\"enabled\":true,\"user\":\"work\"}' && sudo oath apply svc:work-probe; sleep 1; sudo cat /work/probe", expect = ["probe 2 /work"] },
+  { run = "sudo oath set svc:work-probe enabled=false && sudo oath apply svc:work-probe; sudo oath rm svc:work-probe && sudo oath apply; sudo rm -f /work/probe; echo clean", expect = ["clean"] },
+]
+
+[[case]]
 name = "void-runs-what-reads-the-network"
 about = "void (R36) is uid 65534 with an empty, root-owned home and no login; chronyd runs as void, dhcpcd's network processes do, and sshd is OpenSSH's, with root logins off."
 metal = true

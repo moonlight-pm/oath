@@ -163,13 +163,18 @@ with the same driver gets none of them.
 
 Serial login is **root** (break-glass) when `svc:serial` is enabled.
 The screen and keyboard are **home** when `svc:screen` is enabled. SSH is **home** (uid 1, `HOME=/home`, login shell zsh). `sudo` (no
-password) becomes root. The groups are `root`, `home` and `void`. The
+password) becomes root. The groups are `root`, `home`, `work` and `void`. The
 apply log records uid and tty. `host:local.env` and `TZ` (from
 `host:local.timezone`) are injected by PID 1 into services and written
 to root-owned `/etc/profile` for logins, and to sshd's `SetEnv` in
 `/etc/ssh/sshd_config`, so `ssh host 'command'` has them too, as of
 sshd's last start. `oath apply` does not write `$HOME/.profile`.
-`void` (uid 65534, home `/var/empty`) is the third account: nobody logs
+`work` (uid 2, home `/work`, R55) is for servers and workloads: nobody logs in
+as it, `sudo` refuses it, and `/home` is closed to it. `sudo -u work <command>`
+runs a command as it from `home`; a service names it in `user`. `/work` is its
+own subvolume, `@work`, which PID 1 makes on the first boot that lacks it, so no
+generation or boot snapshot holds its data.
+`void` (uid 65534, home `/var/empty`) is the fourth account: nobody logs
 in as it; sshd, dhcpcd and chronyd drop to it.
 
 ### The password and the seat

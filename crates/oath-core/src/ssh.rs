@@ -38,7 +38,8 @@ pub fn converge(desired: &Ssh) -> Result<SshActual> {
     // under /home is not home's to re-own.
     let own = format!("{}:{}", crate::seat::UID, crate::seat::GID);
     let _ = Command::new("/bin/chown").args([&own, home, &ssh_dir, authorized]).status();
-    let _ = Command::new("/bin/chmod").args(["755", home]).status();
+    // Closed: `work` (R55) has no business here.
+    let _ = Command::new("/bin/chmod").args(["700", home]).status();
     let _ = Command::new("/bin/chmod").args(["700", &ssh_dir]).status();
     let _ = Command::new("/bin/chmod").args(["600", authorized]).status();
     Ok(SshActual {

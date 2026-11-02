@@ -6,11 +6,6 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 ## Open — ask the human
 
-- **A fourth account (2026-11-01).** Joshua: one more id, with no `sudo`, for
-  whatever does not need it. `void` has no `sudo` either, but it is the kernel's
-  overflow id and may own no files (R36), so it cannot hold a workload's data.
-  What is it called? It only protects `home` once `/home` is not world-readable
-  (it is 0755 today).
 - **Minecraft.** Which JVM (OpenJDK from source or a vendor's pinned
   release) and launcher, and when. Steam is R29.
 - **`sudo` and the password (R42).** `sudo` asks no password, so the
@@ -88,6 +83,7 @@ acting on anything under **Open**. Replaces `open-questions.md`
 | R52 | Oath is for anyone: no profile, package or doc is shaped around one person's deployment (Joshua, 2026-11-01: "putting my personal deployments in it seems off"; R1 already took Wicket out of the core). `hosts/` holds machines' facts, and a package says what it does in general. Wicket's rewrite happens in its own session, first on an existing Oath box, and asks for what it needs from Oath. |
 | R53 | A rootless container holds one uid: the account that runs Podman is its root, and files of other owners in an image become that uid's. No uid ranges, no `/etc/subuid`, no setuid `newuidmap` (Joshua, 2026-11-01: "If we need to build our own containers, thats completely fine"). An image that sets `USER` or changes uid is built or configured to stay at its root. Podman's pack sets `ignore_chown_errors` and does not warn about the single mapping. |
 | R54 | A new pin is compared with upstream's git tag (Joshua, 2026-11-01: "yes -- go ahead and fix up oath-make to check tags too"). A signature says who published a tarball, not that it holds what the project's history holds: xz's backdoor came signed, in a file its tarball had and its git tree did not. `cargo make pkgs --fetch` sets the tarball against the tag named by `repo` and `tag` in `pkgs/audit.toml`, by git's blob ids, from a clone with no file contents, and writes `pkgs/tags/<name>.txt`, so a new pin's diff shows what its tarball adds. A test fails when a pin has no record, or when files in both differ and `differs_because` does not say why, once someone has read them; `no_compare` says why a pin has no tree to compare (a vendor's build). A source may rest on a signed tag instead: `git`, `tag` and `key` check the signature, and the tarball must be the tag's tree exactly. Podman (Matt Heon, `B7DB DCA4 56F7 335E 91F1 C25C D362 4C55 1D05 15C4`, since 2013), netavark (Paul Holzinger, `DE8B 74AD 67CA 2C1D 2F56 C4EE EB14 5DD9 38A3 CAF2`, since 2021) and libxml2 (Daniel Garcia Moreno, `BB3F D16B 22C3 4193 BCFC 66EA 60B3 3F85 ECD8 D532`, its tagger since 2.15.3) do, each key from the signer's GitHub account and judged by the agent as in R51. Packages with no `repo` in `pkgs/audit.toml` are not compared yet. |
+| R55 | A fourth account, `work`: uid and gid 2, home `/work` (Joshua, 2026-11-01: "i do see room for one more id -- a sudo-disabled id"; he picked the name). Servers and workloads run as it, so a process that escapes one stops there: `home` has `sudo` with no password, and `void` is the kernel's overflow id and may own no files (R36). No login (the agent's recommendation; Joshua asked): no password, no SSH keys, shell `/bin/false`; `home` reaches it with `sudo -u work`, and `sudo` refuses it, so it cannot come back. `/work` is its own subvolume, `@work`, which PID 1 makes on the first boot that lacks it, outside every generation and boot snapshot. `/home` is now 0700, or `work` could read it. The desk stays on `home`, since Sola and PipeWire are the person's session and its terminals use `sudo`. It takes a reboot. |
 
 ## Standing
 

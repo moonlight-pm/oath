@@ -126,7 +126,8 @@ system's, so check the model and serial the preview repeats.
 
 `--confirm` wipes that disk: a GPT with a 512 MiB ESP and btrfs for the
 rest, with `@` (the system) and `@home` (mounted at `/home`, outside
-every generation and boot snapshot). It copies the system the stick
+every generation and boot snapshot; the first boot adds `@work`, at `/work`,
+likewise). It copies the system the stick
 runs: its packages (NVIDIA's driver too, if the stick built it), its
 settings (hostname, overlay, SSH keys it trusts) and its release, at
 generation 0, with an empty home, a new SSH host key (printed at the

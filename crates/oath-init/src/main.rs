@@ -134,6 +134,7 @@ fn real_main() -> Result<(), String> {
     let _ = fs::create_dir_all("/root");
     mount_toplevel();
     mount_home();
+    mount_work();
     mount_status();
 
     // Seed only a machine with no catalog at all. A missing INDEX.md is
@@ -184,6 +185,9 @@ fn real_main() -> Result<(), String> {
     ensure_home();
     if let Err(e) = oath_core::seat::ensure_void_home() {
         log(&format!("{}: {e}", oath_core::seat::VOID_HOME));
+    }
+    if let Err(e) = oath_core::seat::ensure_work_home() {
+        log(&format!("{}: {e}", oath_core::seat::WORK_HOME));
     }
     inject_ssh_from_host();
     apply_ssh();
@@ -1006,6 +1010,38 @@ fn mount_home_subvol() {
     }
 }
 
+/// `work`'s home (R55): `@work` beside `@`, so no generation or boot snapshot
+/// holds a workload's data and an older boot runs on today's. The first boot
+/// that lacks it makes it, on any machine with `@`; otherwise /work is a
+/// directory.
+fn mount_work() {
+    let work = oath_core::seat::WORK_HOME;
+    let top = Path::new(BTRFS_TOP);
+    let sub = top.join("@work");
+    let _ = fs::create_dir_all(work);
+    if !top.join("@").is_dir() || mounted(work) {
+        return;
+    }
+    if !sub.is_dir() {
+        let made = Command::new("/bin/btrfs")
+            .args(["subvolume", "create"])
+            .arg(&sub)
+            .stdout(std::process::Stdio::null())
+            .status();
+        if !made.is_ok_and(|s| s.success()) {
+            log("btrfs subvolume create @work failed; /work is @'s this boot");
+            return;
+        }
+    }
+    let dev = root_dev();
+    let r = mount(Some(dev.as_str()), work, Some("btrfs"), MsFlags::empty(), Some("subvol=@work"));
+    let err = r.err().map(|e| e.to_string());
+    tel("init", "work", json!({ "path": work, "ok": err.is_none(), "err": err }));
+    if let Some(e) = err {
+        log(&format!("mount @work at {work}: {e}; /work is @'s this boot"));
+    }
+}
+
 /// What was last applied (`applied.json`). A catalog from before
 /// applied.json kept it in `actual`; one that has never been applied
 /// starts from `desired`. Pending `oath set` edits do not take effect
@@ -1203,7 +1239,8 @@ fn ensure_home() {
     let _ = fs::create_dir_all(&ssh);
     let own = format!("{}:{}", seat::UID, seat::GID);
     let _ = Command::new("/bin/chown").args([&own, seat::HOME, &ssh.to_string_lossy()]).status();
-    let _ = Command::new("/bin/chmod").args(["755", seat::HOME]).status();
+    // Closed: `work` (R55) has no business here.
+    let _ = Command::new("/bin/chmod").args(["700", seat::HOME]).status();
     let _ = Command::new("/bin/chmod").args(["700", &ssh.to_string_lossy()]).status();
 }
 

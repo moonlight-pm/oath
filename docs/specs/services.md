@@ -33,12 +33,13 @@ Replaces: the `svc` parts of T1 and T7, and the account parts of T31.
   `refused`).
 - `restart` — `never`, `always` or `on-failure`.
 - `enabled` — when false, the process is not running.
-- `user` — `root` (the default when absent), `home`, or `void` (R36:
-  uid 65534, home `/var/empty`, for a service that needs nothing). Oath
-  has these three accounts and no others.
+- `user` — `root` (the default when absent), `home`, `work` (R55: uid 2,
+  home `/work`, no `sudo`, for what keeps data), or `void` (R36: uid 65534,
+  home `/var/empty`, for a service that needs nothing). Oath has these four
+  accounts and no others.
 - `env` — extra environment for this process. It wins over
   `host:local.env`.
-- `bind_low_ports` — a `home` or `void` process keeps
+- `bind_low_ports` — a process of any account but root keeps
   `CAP_NET_BIND_SERVICE`. Ignored for root.
 - `keep_children` — stop and restart signal only the main process; its
   children keep running, and PID 1 keeps reading the log pipe they hold.

@@ -1,5 +1,6 @@
 //! Single seat: Unix name `home`, HOME=/home. Root is privilege, not login.
-//! `void` (R36) is the unprivileged account daemons drop to.
+//! `void` (R36) is the unprivileged account daemons drop to. `work` (R55) is
+//! the one for what holds data and needs no `sudo`: servers and workloads.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -26,24 +27,37 @@ pub const VOID_ID: u32 = 65534;
 /// Its home: empty, root's, and the chroot sshd and dhcpcd use.
 pub const VOID_HOME: &str = "/var/empty";
 
+/// The account for servers and workloads (R55): uid and gid 2. It owns its
+/// home and nothing else, `sudo` refuses it, and it cannot log in (no key, no
+/// password, no listed shell); `home` reaches it with `sudo -u work`.
+pub const WORK: &str = "work";
+pub const WORK_ID: u32 = 2;
+/// Its home: `@work` beside `@`, so no generation or boot snapshot holds it.
+pub const WORK_HOME: &str = "/work";
+
 pub fn passwd_file() -> String {
     format!(
         "root:x:0:0:root:/root:/bin/sh\n{NAME}:x:{UID}:{GID}:{NAME}:{HOME}:{SHELL}\n\
+         {WORK}:x:{WORK_ID}:{WORK_ID}:{WORK}:{WORK_HOME}:/bin/false\n\
          {VOID}:x:{VOID_ID}:{VOID_ID}:{VOID}:{VOID_HOME}:/bin/false\n"
     )
 }
 
-/// The login shells (getusershell); `void`'s `/bin/false` is not one.
+/// The login shells (getusershell); `/bin/false`, `void`'s and `work`'s, is
+/// not one.
 pub fn shells_file() -> String {
     format!("/bin/sh\n/bin/bash\n{SHELL}\n")
 }
 
 pub fn group_file() -> String {
-    format!("root:x:0:\n{NAME}:x:{GID}:\n{VOID}:x:{VOID_ID}:\n")
+    format!("root:x:0:\n{NAME}:x:{GID}:\n{WORK}:x:{WORK_ID}:\n{VOID}:x:{VOID_ID}:\n")
 }
 
 pub fn shadow_file() -> String {
-    format!("root:*:1:0:99999:7:::\n{NAME}:*:1:0:99999:7:::\n{VOID}:*:1:0:99999:7:::\n")
+    format!(
+        "root:*:1:0:99999:7:::\n{NAME}:*:1:0:99999:7:::\n{WORK}:*:1:0:99999:7:::\n\
+         {VOID}:*:1:0:99999:7:::\n"
+    )
 }
 
 pub fn write_side_effects(desired: &Host) -> Result<()> {
@@ -65,6 +79,13 @@ pub fn ensure_void_home() -> std::io::Result<()> {
     fs::create_dir_all(VOID_HOME)?;
     std::os::unix::fs::chown(VOID_HOME, Some(0), Some(0))?;
     fs::set_permissions(VOID_HOME, fs::Permissions::from_mode(0o755))
+}
+
+/// `work`'s home: its own, closed to other accounts.
+pub fn ensure_work_home() -> std::io::Result<()> {
+    fs::create_dir_all(WORK_HOME)?;
+    std::os::unix::fs::chown(WORK_HOME, Some(WORK_ID), Some(WORK_ID))?;
+    fs::set_permissions(WORK_HOME, fs::Permissions::from_mode(0o700))
 }
 
 /// A login zsh reads `host:local` env as a login bash does.
@@ -222,6 +243,13 @@ mod tests {
         assert!(group_file().contains("void:x:65534:"));
         assert!(shadow_file().contains("void:*:"));
         assert!(!shells_file().contains("/bin/false"));
+    }
+
+    #[test]
+    fn work_is_uid_2_with_no_login() {
+        assert!(passwd_file().contains("work:x:2:2:work:/work:/bin/false"));
+        assert!(group_file().contains("work:x:2:"));
+        assert!(shadow_file().contains("work:*:"));
     }
 
     #[test]

@@ -79,6 +79,7 @@ btrfs
             no /lib64. oath/, modules/ and firmware/ are not links. A pack's
             lib32/ (i386, R29) is never linked: no /lib32 or ld-linux.so.2
 /home       the `home` account (uid 1); SSH logs in here; `@home` when the root has one, or host:local.mounts' /home (R45)
+/work       the `work` account (uid 2, R55): `@work` when the root has `@`, made at first boot; 0700, and /home is 0700 too
 /var/empty  `void`'s home (uid 65534, R36): empty, root's; sshd's and dhcpcd's chroot
 /run/user/1/oath-steam/<key>/  Steam's sandbox tree (pkg:steam's bin/steam, R29):
             a merged /usr of the root's links, every pack's lib32/ and share/,
