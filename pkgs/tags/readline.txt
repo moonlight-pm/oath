@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source readline-8.3.tar.gz fe5383204467828cd495ee8d1d3c037a7eba1389c22bc6a041f627976f9061cc
+tag readline-8.3 commit 447b8290b3e2e2d117dc8e9cdb83b0dc6448a638 tree 788da7e6c6747fced7cc3baa9f9e490ef93892d5
+signed no
+same 165
+only-in-tag 2

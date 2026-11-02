@@ -1,0 +1,29 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libxcb-1.17.0.tar.xz 599ebf9996710fea71622e6e184f3a8ad5b43d0e5fa8c4e407123c88a59a6d55
+tag libxcb-1.17.0 commit 622152ee42a310876f10602601206954b8d0613e tree c2639ede47674a0ae3ba8ef7beb20a04ae09618f
+signed pgp 5EAF21049A86B8A54CCB1BFAACEB29740C9A4E97
+same 68
+only-in-tag 8
+adds ChangeLog
+adds INSTALL
+adds Makefile.in
+adds aclocal.m4
+adds build-aux/compile
+adds build-aux/config.guess
+adds build-aux/config.sub
+adds build-aux/depcomp
+adds build-aux/install-sh
+adds build-aux/ltmain.sh
+adds build-aux/missing
+adds build-aux/test-driver
+adds configure
+adds doc/Makefile.in
+adds m4/libtool.m4
+adds m4/ltoptions.m4
+adds m4/ltsugar.m4
+adds m4/ltversion.m4
+adds m4/lt~obsolete.m4
+adds man/Makefile.in
+adds src/Makefile.in
+adds src/config.h.in
+adds tests/Makefile.in

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source xwayland-24.1.14.tar.xz 4eb6b98d678299a4b96138d886345b294130695760345ef84596225a8224078a
+tag xwayland-24.1.14 commit d958b4e84c903e8d5851b5ea587b998e4834ce62 tree 3eb27285b02859a371d584f6c9afe9435c94880d
+signed pgp 3C2C43D9447D5938EF4551EBE23B7E70B467F0BF
+same 757
+only-in-tag 0

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source iproute2-7.2.0.tar.xz 4c2fa124c2cf0afd7ca34d1eeacba6ba048a56f6374e2aab93dafbdbd4eea9c0
+tag v7.2.0 commit 880505966c17d90243c39e446d79da6236fb06ba tree 04571875601dc4e5a8e50b6a46b58e4bf14e16cd
+signed no
+same 710
+only-in-tag 0

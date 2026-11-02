@@ -1,0 +1,37 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source btrfs-progs-v7.1.tar.xz d1f55cc2971398c9142eaa79d203e63d586a3b4b867f956664a1d68322cd4e34
+tag v7.1 commit 4ab0e80be9e3bb1db2e6038e6d4316d35fb7ba8b tree ca54c8d7b57d588aabbc6cbc9dfbf4beaf52db3a
+signed pgp F2B41200C54EFB30380C1756C565D5F9D76D583B
+same 961
+only-in-tag 0
+adds Documentation/btrfs-balance.8
+adds Documentation/btrfs-check.8
+adds Documentation/btrfs-convert.8
+adds Documentation/btrfs-device.8
+adds Documentation/btrfs-filesystem.8
+adds Documentation/btrfs-find-root.8
+adds Documentation/btrfs-image.8
+adds Documentation/btrfs-inspect-internal.8
+adds Documentation/btrfs-ioctl.2
+adds Documentation/btrfs-map-logical.8
+adds Documentation/btrfs-property.8
+adds Documentation/btrfs-qgroup.8
+adds Documentation/btrfs-quota.8
+adds Documentation/btrfs-receive.8
+adds Documentation/btrfs-replace.8
+adds Documentation/btrfs-rescue.8
+adds Documentation/btrfs-restore.8
+adds Documentation/btrfs-scrub.8
+adds Documentation/btrfs-select-super.8
+adds Documentation/btrfs-send.8
+adds Documentation/btrfs-subvolume.8
+adds Documentation/btrfs.5
+adds Documentation/btrfs.8
+adds Documentation/btrfstune.8
+adds Documentation/fsck.btrfs.8
+adds Documentation/mkfs.btrfs.8
+adds config/config.guess
+adds config/config.sub
+adds config/install-sh
+adds configure
+adds include/config.h.in

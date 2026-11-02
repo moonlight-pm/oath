@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libdrm-2.4.134.tar.xz ac5e74d157830eb8bee44c6a6bf3ad49774ef0dd2a72bdad74a8f20308b52a95
+tag libdrm-2.4.134 commit e984d448b8b17aab853369e6c203e53719f46de1 tree 0baa2035715253d5dd38584266ae40b572f31fe4
+signed pgp 34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+same 320
+only-in-tag 0

@@ -1,0 +1,13 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source chrony-4.9.tar.gz 4924c6f530105bcd5b9e9e33c48a2ae1bfd889222c8480bc41601110efc864d0
+tag 4.9 commit 8df4f1263e206585e6c4e61352d042c2dd12916a tree 99b655bcd322b47e26dc319a7c3178a8cfbd3260
+signed pgp 8F375C7E8D0EE125A3D3BD51537E2B76F7680DAC
+same 313
+only-in-tag 2
+adds FAQ
+adds INSTALL
+adds doc/chrony.conf.man.in
+adds doc/chronyc.man.in
+adds doc/chronyd.man.in
+adds getdate.c
+adds version.txt

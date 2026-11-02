@@ -4,14 +4,14 @@ tag openssl-4.0.3 commit af1775b60dfa141a4ad762585052cabeb9f37e9e tree fd1a7c243
 signed pgp C46ED3F2CBEFDA1FDAADA44264ED7B1DCCE71CB2
 same 6047
 only-in-tag 62
-submodule cloudflare-quiche
-submodule fuzz/corpora
-submodule gost-engine
-submodule krb5
-submodule oqs-provider
-submodule pkcs11-provider
-submodule pyca-cryptography
-submodule python-ecdsa
-submodule tlsfuzzer
-submodule tlslite-ng
-submodule wycheproof
+submodule cloudflare-quiche 0
+submodule fuzz/corpora 0
+submodule gost-engine 0
+submodule krb5 0
+submodule oqs-provider 0
+submodule pkcs11-provider 0
+submodule pyca-cryptography 0
+submodule python-ecdsa 0
+submodule tlsfuzzer 0
+submodule tlslite-ng 0
+submodule wycheproof 0

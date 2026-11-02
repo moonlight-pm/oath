@@ -1,0 +1,12 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source bash-5.3.tar.gz 0d5cd86965f869a26cf64f4b71be7b96f90a3ba8b3d74e27e8e9d9d5550f31ba
+tag bash-5.3 commit b8c60bc9ca365f8261fa97900b6fa939f6ebc303 tree 59d0a7005c9404d039ed23440ddd1cf8ff546f47
+signed no
+same 1563
+only-in-tag 39
+differs po/ka.gmo
+adds autom4te.cache/output.0
+adds autom4te.cache/requests
+adds autom4te.cache/traces.0
+adds configure~
+adds po/stamp-po

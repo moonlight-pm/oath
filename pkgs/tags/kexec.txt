@@ -1,0 +1,10 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source kexec-tools-2.0.32.tar.xz 8f81422a5fd2362cf6cb001b511e535565ed0f32c2f4451fb5eb68fed6710a5d
+tag v2.0.32 commit 15d78e5799eea7ec5ea9c5897ae95aaa0ce8970c tree efb4027c5cff03365661e465d427e97a58c0962f
+signed pgp E27CD9A1F5ACC2FF4BFE7285D7CF64696A374FBE
+same 335
+only-in-tag 6
+adds configure
+adds include/config.h
+adds include/config.h.in
+adds kexec-tools.spec

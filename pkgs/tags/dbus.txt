@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source dbus-1.16.2.tar.xz 0ba2a1a4b16afe7bceb2c07e9ce99a8c2c3508e5dec290dbb643384bd6beb7e2
+tag dbus-1.16.2 commit 958bf9db2100553bcd2fe2a854e1ebb42e886054 tree 99b1d4c46226b4fa68cba8ffd7c61e8621147ae1
+signed pgp 7A073AD1AE694FA25BFF62E5235C099D3EB33076
+same 628
+only-in-tag 0

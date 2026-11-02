@@ -1,0 +1,14 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source xcb-proto-1.17.0.tar.xz 2c1bacd2110f4799f74de6ebb714b94cf6f80fb112316b1219480fd22562148c
+tag xcb-proto-1.17.0 commit 77d7fc04da729ddc5ed4aacf30253726fac24dca tree 26da96b71bc2753427bc54ca05f1706715d84b0c
+signed pgp 5EAF21049A86B8A54CCB1BFAACEB29740C9A4E97
+same 52
+only-in-tag 4
+adds Makefile.in
+adds aclocal.m4
+adds configure
+adds install-sh
+adds missing
+adds py-compile
+adds src/Makefile.in
+adds xcbgen/Makefile.in

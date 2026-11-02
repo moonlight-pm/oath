@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source ncurses-6.6.tar.gz 355b4cbbed880b0381a04c46617b7656e362585d52e9cf84a67e2009b749ff11
+tag v6_6 commit 0096bd402c4a9c8f39bd7ed266e1b8920327e4d8 tree a6ad7350d1b1100356ca59616d22c51dd29743eb
+signed pgp 19882D92DDA4C400C22C0D56CC2AF4472167BE03
+same 1251
+only-in-tag 0

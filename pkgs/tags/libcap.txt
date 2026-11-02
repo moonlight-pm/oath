@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libcap-2.78.tar.xz 0d621e562fd932ccf67b9660fb018e468a683d7b827541df27813228c996bb11
+tag libcap-2.78 commit a1fef85d27d0ee12729a64d1c9b2183c6007e56a tree 8381e14567e597bf932c7775ffdb8e9b9a58cbe2
+signed pgp AF7402BC38CC10E6885C1FCA421784ABD41A6DF2
+same 312
+only-in-tag 1

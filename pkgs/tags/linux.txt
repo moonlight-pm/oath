@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source linux-7.3.1.tar.xz fa595aad93734f829c963c2a90ef7c3673224fd7fdae7b49406e397cde2de231
+tag v7.3.1 commit 79a907609d53d5cd645b42c11550d295d43abf99 tree 6e743e2dfa683bea7b127053560949b1a6ddd160
+signed pgp 647F28654894E3BD457199BE38DBBDC86092693E
+same 96081
+only-in-tag 0

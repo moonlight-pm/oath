@@ -71,6 +71,9 @@ pub struct Comparison {
     pub adds: Vec<String>,
     /// In the tag alone (a release may leave tests out).
     pub only_in_tag: usize,
+    /// Files the release bundles from a submodule, by its path: the tree names
+    /// its commit, not its files, so they are counted and not compared.
+    pub in_submodules: BTreeMap<String, usize>,
 }
 
 impl Tag {
@@ -78,9 +81,8 @@ impl Tag {
     pub fn fetch(root: &Path, url: &str, name: &str) -> Result<Tag> {
         let dir = clone_dir(root, url, name)?;
         if !dir.is_dir() {
-            let part = dir.with_extension("part");
+            let part = dir.with_extension(format!("part{}", std::process::id()));
             fs::create_dir_all(dir.parent().context("parent")?)?;
-            let _ = fs::remove_dir_all(&part);
             git(
                 None,
                 &[
@@ -98,7 +100,9 @@ impl Tag {
                 ],
             )
             .with_context(|| format!("clone {url} at {name}"))?;
-            fs::rename(&part, &dir)?;
+            if fs::rename(&part, &dir).is_err() && dir.is_dir() {
+                let _ = fs::remove_dir_all(&part);
+            }
         }
         let at = |what: &str| -> Result<String> {
             let spec = format!("refs/tags/{name}^{{{what}}}");
@@ -161,18 +165,23 @@ impl Tag {
 }
 
 impl Tag {
-    /// The blob a symlink in the tree finally leads to.
+    /// The path a symlink in the tree finally leads to.
     fn follow(&self, path: &str) -> Option<String> {
         let mut at = path.to_string();
         for _ in 0..8 {
             if !self.symlinks.contains(&at) {
-                return self.files.get(&at).cloned();
+                return Some(at);
             }
             let id = self.files.get(&at)?;
             let to = git(Some(&self.dir), &["cat-file", "blob", id]).ok()?;
             at = link_target(&at, &String::from_utf8_lossy(&to))?;
         }
         None
+    }
+
+    /// The submodule a path of the tree is in.
+    fn submodule_of(&self, path: &str) -> Option<&String> {
+        self.links.iter().find(|l| under(path, Some(l.as_str())).is_some())
     }
 }
 
@@ -280,17 +289,23 @@ pub fn compare(
     let mut unpacked = BTreeMap::new();
     walk(&top, "", &mut unpacked)?;
     let mut c = set_against(&unpacked, tag, tar_dir, tag_dir);
-    // A file the tree keeps as a symlink and the release copies in full is
-    // the same file, if it holds what the link leads to.
+    // A file the tree keeps as a symlink and the release copies in full is the
+    // same file if it holds what the link leads to; a link into a submodule
+    // counts with the submodule's files.
     let mut differs = Vec::new();
     for path in std::mem::take(&mut c.differs) {
         let at = under(&path, tar_dir).map(|p| match tag_dir {
             Some(d) => format!("{d}/{p}"),
             None => p.to_string(),
         });
-        let followed = at.and_then(|p| tag.follow(&p));
+        let end = at.filter(|p| tag.symlinks.contains(p)).and_then(|p| tag.follow(&p));
         let u = &unpacked[&path];
-        if followed.is_some_and(|id| id == u.id || u.lf.as_ref() == Some(&id)) {
+        if let Some(link) = end.as_deref().and_then(|e| tag.submodule_of(e)) {
+            *c.in_submodules.entry(link.clone()).or_default() += 1;
+        } else if end
+            .and_then(|e| tag.files.get(&e))
+            .is_some_and(|id| *id == u.id || u.lf.as_ref() == Some(id))
+        {
             c.same += 1;
         } else {
             differs.push(path);
@@ -358,7 +373,17 @@ fn set_against(
                     c.differs.push(path.clone());
                 }
             }
-            None => c.adds.push(path.clone()),
+            None => {
+                let at = under(path, tar_dir).unwrap_or(path);
+                let full = match tag_dir {
+                    Some(d) => format!("{d}/{at}"),
+                    None => at.to_string(),
+                };
+                match tag.submodule_of(&full) {
+                    Some(l) => *c.in_submodules.entry(l.clone()).or_default() += 1,
+                    None => c.adds.push(path.clone()),
+                }
+            }
         }
     }
     c.only_in_tag = files.len() - seen;
@@ -377,14 +402,15 @@ pub fn check_signed_tag(
     let tag = Tag::fetch(root, url, name)?;
     let who = tag.verify(keys)?;
     let c = compare(root, tarball, &tag, None, None)?;
-    if !c.differs.is_empty() || !c.adds.is_empty() {
+    if !c.differs.is_empty() || !c.adds.is_empty() || !c.in_submodules.is_empty() {
         bail!(
-            "{} is not tag {name}'s tree: {} differ ({}), {} added ({})",
+            "{} is not tag {name}'s tree: {} differ ({}), {} added ({}), {} submodules",
             tarball.display(),
             c.differs.len(),
             first(&c.differs),
             c.adds.len(),
-            first(&c.adds)
+            first(&c.adds),
+            c.in_submodules.len()
         );
     }
     Ok((who, c))
@@ -403,11 +429,15 @@ pub fn tag_of(entry: &Entry, version: &str) -> Option<Pin> {
     if entry.no_compare.is_some() {
         return None;
     }
-    let (repo, pattern) = (entry.repo.as_ref()?, entry.tag.as_ref()?);
+    let repo = entry.compare_repo.as_ref().or(entry.repo.as_ref())?;
+    let pattern = entry.compare_tag.as_ref().or(entry.tag.as_ref())?;
     let v = crate::audit::pin_version(entry, version);
     Some(Pin {
         url: repo.clone(),
-        tag: pattern.replace("{version_}", &v.replace('.', "_")).replace("{version}", &v),
+        tag: pattern
+            .replace("{version_}", &v.replace('.', "_"))
+            .replace("{version-}", &v.replace('.', "-"))
+            .replace("{version}", &v),
         tag_dir: entry.tag_dir.clone(),
         tar_dir: entry.tar_dir.clone(),
     })
@@ -442,13 +472,14 @@ pub fn ensure(root: &Path, name: &str, pkg: &PkgToml, entry: &Entry) -> Result<(
     fs::create_dir_all(path.parent().context("parent")?)?;
     fs::write(&path, render(&source.file(), &sha256(&tarball)?, &tag, &c))?;
     eprintln!(
-        ">> tag {} ({}): {} files the same, {} differ, {} only in the tarball, {} only in the tag",
+        ">> tag {} ({}): {} files the same, {} differ, {} only in the tarball, {} only in the tag, {} from submodules",
         pin.tag,
         tag.signed(),
         c.same,
         c.differs.len(),
         c.adds.len(),
-        c.only_in_tag
+        c.only_in_tag,
+        c.in_submodules.values().sum::<usize>()
     );
     for d in &c.differs {
         eprintln!(">>   differs: {d}");
@@ -474,7 +505,7 @@ fn render(file: &str, sha: &str, tag: &Tag, c: &Comparison) -> String {
     let _ = writeln!(s, "same {}", c.same);
     let _ = writeln!(s, "only-in-tag {}", c.only_in_tag);
     for l in &tag.links {
-        let _ = writeln!(s, "submodule {l}");
+        let _ = writeln!(s, "submodule {l} {}", c.in_submodules.get(l).copied().unwrap_or(0));
     }
     for d in &c.differs {
         let _ = writeln!(s, "differs {d}");
@@ -549,6 +580,14 @@ mod tests {
         let u = files(&[("nss/a", "1"), ("nspr/b", "2")]);
         let c = set_against(&u, &tag(&[("a", "1")]), Some("nss"), None);
         assert_eq!((c.same, c.adds.as_slice()), (1, ["nspr/b".to_string()].as_slice()));
+
+        // A release that bundles a submodule's files: counted, not listed.
+        let u = files(&[("a", "1"), ("roms/x/f", "2"), ("roms/x/g", "3"), ("roms/xy", "4")]);
+        let mut t = tag(&[("a", "1")]);
+        t.links.push("roms/x".to_string());
+        let c = set_against(&u, &t, None, None);
+        assert_eq!(c.adds, ["roms/xy"]);
+        assert_eq!(c.in_submodules["roms/x"], 2);
     }
 
     #[test]

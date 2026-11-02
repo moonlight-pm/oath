@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source xkeyboard-config-2.48.tar.xz b77041324f0109f77161ee43743fe04baa485866af8460d31e476ad3f7648fd5
+tag xkeyboard-config-2.48 commit cf8d1151bb4c9ef5b895828d0e6dd7860c0833e0 tree d1ae38a5371773c3dd7ff27288f063358e264a1f
+signed pgp FFB4CCD275AAA422F5F9808E0661D98FC933A145
+same 407
+only-in-tag 15

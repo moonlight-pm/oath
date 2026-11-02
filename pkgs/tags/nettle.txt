@@ -1,0 +1,15 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source nettle-4.0.tar.gz 3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094
+tag nettle_4.0_release_20260205 commit bf13ee9e5024014cfa6d2fc097923afe087e63ba tree 4153d61c91faada5febd88e1b39ce0b639cce335
+signed pgp 343C2FF0FBEE5EC2EDBEF399F3599FF828C67298
+same 941
+only-in-tag 60
+adds config.h.in
+adds configure
+adds desdata.stamp
+adds keymap.h
+adds nettle.html
+adds nettle.info
+adds nettle.pdf
+adds rotors.h
+adds stamp-h.in

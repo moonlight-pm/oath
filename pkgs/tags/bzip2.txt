@@ -1,0 +1,9 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source bzip2-1.0.8.tar.gz ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269
+tag bzip2-1.0.8 commit 6a8690fc8d26c815e798c588f796eabe9d684cf0 tree 5c486de7f86667d0f58f2a945c5c13d71235e98e
+signed pgp 12768A96795990107A0D2FDFFC57E3CCACD99A78
+same 53
+only-in-tag 4
+adds manual.html
+adds manual.pdf
+adds manual.ps

@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source pulseaudio-17.0.tar.xz 053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5
+tag v17.0 commit 1f020889c9aa44ea0f63d7222e8c2b62c3f45f68 tree 2775e1cbca1d9b512fdd4b6ef29d07e06cea56d1
+signed pgp 52DFA7B8BAC74687C8A88EF48165E3D1987E2132
+same 871
+only-in-tag 0
+adds .tarball-version

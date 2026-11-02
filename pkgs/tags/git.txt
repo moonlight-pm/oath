@@ -4,7 +4,7 @@ tag v2.56.0 commit a018953688f1b10bddf91bff8747068f5f4746a4 tree 96aa7b9f343426c
 signed pgp E1F036B1FEE7221FC778ECEFB0B5E88696AFE6CB
 same 4853
 only-in-tag 0
-submodule sha1collisiondetection
+submodule sha1collisiondetection 0
 adds configure
 adds git-gui/version
 adds version

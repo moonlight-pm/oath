@@ -69,6 +69,12 @@ pub struct Entry {
     /// Why files in both the tarball and the tag differ, once someone has
     /// read them.
     pub differs_because: Option<String>,
+    /// The repository to compare a pin with, where `repo` and `tag` are not
+    /// set because upstream's listing is the better read of its releases.
+    pub compare_repo: Option<String>,
+    /// The tag there: `{version}`, `{version_}` (2_15_0), `{version-}`
+    /// (2-15-0), or a tag's whole name where it holds a date or case.
+    pub compare_tag: Option<String>,
     /// The tag's directory the tarball is made from (`expat`).
     pub tag_dir: Option<String>,
     /// The tarball's directory the tag's tree is in (`nss`).
@@ -1385,8 +1391,8 @@ mod tests {
         assert!(h.aliases.contains(&"GHSA-x".to_string()));
     }
 
-    /// Every pin with a tag was compared with it (R54), and nothing in both
-    /// differs unless its entry says why.
+    /// Every pin was compared with its tag (R54), or its entry says why it
+    /// has none, and nothing in both differs unless its entry says why.
     #[test]
     fn every_pin_with_a_tag_was_compared() {
         let repo = crate::util::repo_root();
@@ -1394,9 +1400,13 @@ mod tests {
         let e = entries(&repo).unwrap();
         for (n, p) in &pkgs {
             let (Some(s), Some(u)) = (p.source.first(), e.get(n)) else { continue };
-            if p.i386.is_some() || crate::tags::tag_of(u, &p.version).is_none() {
+            if p.i386.is_some() || u.no_compare.is_some() {
                 continue;
             }
+            assert!(
+                crate::tags::tag_of(u, &p.version).is_some(),
+                "pkgs/{n}: audit.toml needs compare_repo and compare_tag, or no_compare and why"
+            );
             let record = crate::tags::read_record(&repo, n);
             let Some((sha, lines)) = record else {
                 panic!("pkgs/{n}: no pkgs/tags/{n}.txt: run cargo make pkgs --fetch {n}");

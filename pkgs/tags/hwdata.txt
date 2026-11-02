@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source hwdata-0.412.tar.gz f0c64cd7e31d70a5fb3a52e53ab50a61e74c0421a6381eaa45114eec3bde5fe7
+tag v0.412 commit 816a9490ffcdad1929e0e53f79c500e1aeadd492 tree 5df730de73597c1bdcb5253fdd32b0d306bf91df
+signed pgp 3C40194FB79138CE0F78FD4919C2F062574F5403
+same 40
+only-in-tag 0

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source glibc-2.44.tar.xz 37f600f2bef3c5e8300147059568b2a2e40a7ad6ccc65ce942556d49429cc667
+tag glibc-2.44 commit c3a3a9808ad3ab4a3336836833f83288b672ccbf tree 5ae96ca41776a9fc839b10f60a42f83a62d3d97a
+signed pgp FD19E6D31B192EE4DC63EAD3DC2B16215ED5412A
+same 20949
+only-in-tag 0

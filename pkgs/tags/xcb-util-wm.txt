@@ -1,0 +1,22 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source xcb-util-wm-0.4.2.tar.xz 62c34e21d06264687faea7edbf63632c9f04d55e72114aa4a57bb95e4f888a0b
+tag xcb-util-wm-0.4.2 commit 0c6681e465c9cc7b1fbb60778ba1eaa61ab01a14 tree 33e6fc3ba82f72170e3929dc278a25ffeb4055a4
+signed pgp CFDF148828C642A7
+same 15
+only-in-tag 3
+submodule m4 8
+adds ChangeLog
+adds INSTALL
+adds Makefile.in
+adds aclocal.m4
+adds compile
+adds config.guess
+adds config.h.in
+adds config.sub
+adds configure
+adds depcomp
+adds ewmh/Makefile.in
+adds icccm/Makefile.in
+adds install-sh
+adds ltmain.sh
+adds missing

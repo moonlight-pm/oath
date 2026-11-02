@@ -1,0 +1,38 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source mpc-1.4.1.tar.xz 91204cd32f164bd3b7c992d4a6a8ce6519511aadab30f78b6982d0bf8d73e931
+tag 1.4.1 commit 532a18ae8222f928c58f7ffd1b4f0122062172bd tree d75158c5b04c28423a237579e635d25a72739ff1
+signed no
+same 326
+only-in-tag 16
+adds INSTALL
+adds Makefile.in
+adds aclocal.m4
+adds build-aux/ar-lib
+adds build-aux/compile
+adds build-aux/config.guess
+adds build-aux/config.sub
+adds build-aux/depcomp
+adds build-aux/install-sh
+adds build-aux/ltmain.sh
+adds build-aux/mdate-sh
+adds build-aux/missing
+adds build-aux/test-driver
+adds build-aux/texinfo.tex
+adds config.h.in
+adds configure
+adds doc/Makefile.in
+adds doc/mdate-sh
+adds doc/mpc.info
+adds doc/stamp-vti
+adds m4/libtool.m4
+adds m4/ltoptions.m4
+adds m4/ltsugar.m4
+adds m4/ltversion.m4
+adds m4/lt~obsolete.m4
+adds src/Makefile.in
+adds src/mpc-impl.h
+adds src/mpc.h
+adds tests/Makefile.in
+adds tools/Makefile.in
+adds tools/bench/Makefile.in
+adds tools/mpcheck/Makefile.in

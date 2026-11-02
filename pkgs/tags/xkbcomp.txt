@@ -1,0 +1,21 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source xkbcomp-1.5.0.tar.xz 2ac31f26600776db6d9cd79b3fcd272263faebac7eb85fb2f33c7141b8486060
+tag xkbcomp-1.5.0 commit 2c7789785981ad1fce3858c726615b49293f7de0 tree 19d18ecccc306a621d865573e51022fc91149125
+signed pgp 3C2C43D9447D5938EF4551EBE23B7E70B467F0BF
+same 42
+only-in-tag 3
+adds ChangeLog
+adds INSTALL
+adds Makefile.in
+adds aclocal.m4
+adds compile
+adds config.guess
+adds config.h.in
+adds config.sub
+adds configure
+adds depcomp
+adds install-sh
+adds man/Makefile.in
+adds missing
+adds xkbparse.c
+adds ylwrap

@@ -35,8 +35,10 @@ against the git tag that `repo` and `tag` in `audit.toml` name, and writes
 `tags/<name>.txt`. Commit it with the pin, and read its diff: a new `adds` line is
 a file in the tarball that no one's git history vouches for, which is where xz's
 backdoor was. Files in both that differ must be read, and `differs_because` in
-`audit.toml` says why; a test fails until it does. `no_compare` says why a pin has
-no tree to compare; `tag_dir` and `tar_dir` name a tree in a subdirectory.
+`audit.toml` says why; a test fails until it does. `compare_repo` and `compare_tag`
+name the tree where `repo` and `tag` are not set; a new package needs them, or
+`no_compare` and why. `tag_dir` and `tar_dir` name a tree in a subdirectory. Files
+a release bundles from a submodule are counted, not compared (`submodule <path> <n>`).
 
 ## Signatures
 

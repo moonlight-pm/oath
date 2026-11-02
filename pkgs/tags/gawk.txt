@@ -1,0 +1,11 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source gawk-5.4.1.tar.xz 07f6f7342b7febe4313fc2c2542ad93d64fe20ad8717200109f105a826f5fd37
+tag gawk-5.4.1 commit 52af7f12758da12db0ddbdb117a84e0685cd2f72 tree 20f01745162fd060c684a68c032e13d991ee5452
+signed no
+same 2248
+only-in-tag 72
+adds doc/gawk.info
+adds doc/gawkinet.info
+adds doc/gawknotes.info
+adds doc/gawkworkflow.info
+adds doc/pm-gawk.info

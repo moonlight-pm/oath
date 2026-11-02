@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libxkbfile-1.2.0.tar.xz 7f71884e5faf56fb0e823f3848599cf9b5a9afce51c90982baeb64f635233ebf
+tag libxkbfile-1.2.0 commit 42e5dedd7fd3c7c73f3870a8751893c03c1afc69 tree 8bc77739975c72ea36edc81014642a51c315f222
+signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
+same 28
+only-in-tag 0

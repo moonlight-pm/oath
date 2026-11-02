@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source openssh-10.6p1.tar.gz a9dc9565dffe8640f64d863cd29a32bc4a3dbdec0566a7fc44c5d6ee767d5f39
+tag V_10_6_P1 commit a8c72b842423f0774f542d3c2197247c3dd28d74 tree 737f0e3b51d20a708aab7799f6042cc3051e96ac
+signed ssh
+same 893
+only-in-tag 0

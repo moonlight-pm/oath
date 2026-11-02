@@ -1,0 +1,20 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source xcb-util-errors-1.0.1.tar.xz 5628c87b984259ad927bacd8a42958319c36bdf4b065887803c9d820fb80f357
+tag xcb-util-errors-1.0.1 commit 517dd82c079de762a7426f20166a44f11e8d38c5 tree 2159dc682831c1b11f3b950b83378dbb50224d8c
+signed pgp CFDF148828C642A7
+same 11
+only-in-tag 4
+submodule m4 8
+adds ChangeLog
+adds INSTALL
+adds Makefile.in
+adds aclocal.m4
+adds compile
+adds config.guess
+adds config.sub
+adds configure
+adds depcomp
+adds install-sh
+adds ltmain.sh
+adds missing
+adds test-driver

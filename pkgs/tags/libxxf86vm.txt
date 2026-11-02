@@ -1,0 +1,26 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libXxf86vm-1.1.7.tar.xz ae50c0f669e0af5a67cc4cd0f54f21d64a64d2660af883e80e95d3fe51b945d8
+tag libXxf86vm-1.1.7 commit 7f200bf00e3e288e47265c01decc401616c57f10 tree ee3b2f60a7f7d1e59296c9aecc4cde05b4461998
+signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
+same 34
+only-in-tag 3
+adds ChangeLog
+adds INSTALL
+adds Makefile.in
+adds aclocal.m4
+adds compile
+adds config.guess
+adds config.sub
+adds configure
+adds depcomp
+adds install-sh
+adds ltmain.sh
+adds m4/libtool.m4
+adds m4/ltoptions.m4
+adds m4/ltsugar.m4
+adds m4/ltversion.m4
+adds m4/lt~obsolete.m4
+adds man/Makefile.in
+adds missing
+adds src/Makefile.in
+adds src/config.h.in

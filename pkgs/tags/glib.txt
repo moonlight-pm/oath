@@ -4,18 +4,4 @@ tag 2.90.1 commit e05063ccc6c8f222465a1080927f4c14349f3de6 tree 716a7af43251bf17
 signed pgp 6DFB50D0F26AE9F509B012CDC5C42CFB268637CA
 same 2381
 only-in-tag 0
-submodule subprojects/gvdb
-adds subprojects/gvdb/.gitignore
-adds subprojects/gvdb/COPYING
-adds subprojects/gvdb/LICENSES/LGPL-2.1-or-later.txt
-adds subprojects/gvdb/README.md
-adds subprojects/gvdb/gvdb.doap
-adds subprojects/gvdb/gvdb/gvdb-builder.c
-adds subprojects/gvdb/gvdb/gvdb-builder.h
-adds subprojects/gvdb/gvdb/gvdb-format.h
-adds subprojects/gvdb/gvdb/gvdb-reader.c
-adds subprojects/gvdb/gvdb/gvdb-reader.h
-adds subprojects/gvdb/gvdb/tests/gvdb.c
-adds subprojects/gvdb/gvdb/tests/meson.build
-adds subprojects/gvdb/meson.build
-adds subprojects/gvdb/meson.options
+submodule subprojects/gvdb 14

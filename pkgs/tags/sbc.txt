@@ -1,0 +1,22 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source sbc-2.2.tar.xz a1ada76ef35e5af9c2fbd063754dc9e37a8d989417c6eb1ecebb089b1383ae9e
+tag 2.2 commit b3deb8a5dcfb42d8c10ba1f2f1ac9bd7bf7271cc tree c8c9e393f727fe8518894be2f357d4e0f25d5cf0
+signed no
+same 34
+only-in-tag 3
+adds Makefile.in
+adds aclocal.m4
+adds build-aux/compile
+adds build-aux/config.guess
+adds build-aux/config.sub
+adds build-aux/depcomp
+adds build-aux/install-sh
+adds build-aux/libtool.m4
+adds build-aux/ltmain.sh
+adds build-aux/ltoptions.m4
+adds build-aux/ltsugar.m4
+adds build-aux/ltversion.m4
+adds build-aux/lt~obsolete.m4
+adds build-aux/missing
+adds config.h.in
+adds configure

@@ -1,0 +1,17 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source xtrans-1.6.0.tar.xz faafea166bf2451a173d9d593352940ec6404145c5d1da5c213423ce4d359e92
+tag xtrans-1.6.0 commit cf05ba4a10c90da2c63805a5375e983b174e28b0 tree fe465e940ad6d9591ac7a18bab6911c0b5be4285
+signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
+same 17
+only-in-tag 4
+adds ChangeLog
+adds INSTALL
+adds Makefile.in
+adds aclocal.m4
+adds compile
+adds config.guess
+adds config.sub
+adds configure
+adds doc/Makefile.in
+adds install-sh
+adds missing
