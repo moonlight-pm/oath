@@ -214,6 +214,17 @@
     "product": "sha256-37194dc8e580d7015ff0a7f795504a24ca13ecbb15073df5d504647c7f4c169a",
     "run": []
   },
+  "conmon": {
+    "version": "2.2.1",
+    "license": "Apache-2.0",
+    "by": "plan",
+    "plan": "sha256-40483446c944a3cabfee523ad6f2061f4a9a923274e36a3ba1061f6e166460c4",
+    "product": "sha256-7969e52b35a7fd043641f2c4a0a726e5b6f4600b8c586add5f8072175ff054b5",
+    "run": [
+      "glib",
+      "libseccomp"
+    ]
+  },
   "coreutils": {
     "version": "9.12",
     "license": "GPL-3.0-or-later",
@@ -222,6 +233,18 @@
     "product": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da",
     "run": [
       "gmp"
+    ]
+  },
+  "crun": {
+    "version": "1.30.1",
+    "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+    "by": "plan",
+    "plan": "sha256-2dc9c2979ee10afe69f8596ae9e6ff0649ecff9495af41b8a4596327485051cf",
+    "product": "sha256-d4526eed1a4d3441327ee5a9d645afa336ceb90f187246c9ddf5edef7bd6276e",
+    "run": [
+      "libcap",
+      "libseccomp",
+      "json-c"
     ]
   },
   "cups": {
@@ -572,6 +595,14 @@
     "product": "sha256-febcc26b9d6e4d51d096ad3ffc365014711cfbe10d511e8bf0e151afd19cc807",
     "run": []
   },
+  "json-c": {
+    "version": "0.19-20260627",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-43cb5df0a8fbec4122a3604de0a0ead39d265eb50e05d3febfae71934cbb573c",
+    "product": "sha256-a00cf87ff58a0c60cbb7db052bd0b361ddf023bf10d17d2a3fff774c6a74a32d",
+    "run": []
+  },
   "kexec": {
     "version": "2.0.32",
     "license": "GPL-2.0-only",
@@ -717,6 +748,14 @@
       "glib",
       "libsndfile"
     ]
+  },
+  "libseccomp": {
+    "version": "2.6.1",
+    "license": "LGPL-2.1-only",
+    "by": "plan",
+    "plan": "sha256-6bd73dec38560c77588f303e94c19041296e540b3bbb8b0d80cc3fb219d8d9c8",
+    "product": "sha256-42d48b05cada38d44f8190adb53a8411015930d259b91c7ff4688caefefe8aea",
+    "run": []
   },
   "libslirp": {
     "version": "4.9.6",
@@ -1133,6 +1172,16 @@
     "product": "sha256-57d92009aaabace2bc64854cb9f66f500f955eaf685fa78fb847aa2c6a5865c6",
     "run": []
   },
+  "netavark": {
+    "version": "2.1.0",
+    "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND ISC AND MPL-2.0 AND Unicode-3.0 AND Zlib",
+    "by": "plan",
+    "plan": "sha256-1970c6200a86220b3b0b2edb49de7507521e7d618d3344f0a811f58b4b9dc00f",
+    "product": "sha256-d3fd7d4804c30d69a0e0d90b090d95bd0d8b9c3bb5ccc0235a3a92136134a314",
+    "run": [
+      "gcc"
+    ]
+  },
   "nettle": {
     "version": "4.0",
     "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
@@ -1236,6 +1285,14 @@
       "gcc"
     ]
   },
+  "passt": {
+    "version": "2026_10_02.cba3570",
+    "license": "GPL-2.0-or-later AND BSD-3-Clause",
+    "by": "plan",
+    "plan": "sha256-264d87882579afc27421ecc51670aa82bfddc74b4e78eb305f6f8e68f4510bc6",
+    "product": "sha256-c484daf1539f6d48848f909c27e4583719eb4f5a70ee9db13c4fdb03f1848e58",
+    "run": []
+  },
   "patch": {
     "version": "2.8.1",
     "license": "GPL-3.0-or-later",
@@ -1303,6 +1360,21 @@
     "product": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f",
     "run": []
   },
+  "podman": {
+    "version": "6.1.4",
+    "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC AND Unlicense",
+    "by": "plan",
+    "plan": "sha256-7dafad741514e31f371d46e2ec1eac975cca52ef99d344744d70bedfc320c247",
+    "product": "sha256-9af5fa89f2053d2653442cc4cb1f0e2c2bbafb880f02ee6c134f8795a73bd334",
+    "run": [
+      "certs",
+      "libseccomp",
+      "conmon",
+      "crun",
+      "netavark",
+      "passt"
+    ]
+  },
   "procps": {
     "version": "4.0.7",
     "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
@@ -1311,6 +1383,16 @@
     "product": "sha256-a7c573459dc17a6908aa66abfbc61fc3bd72ede1b386819dc72868a1438acbb1",
     "run": [
       "ncurses"
+    ]
+  },
+  "protobuf": {
+    "version": "36.2",
+    "license": "BSD-3-Clause AND Apache-2.0",
+    "by": "plan",
+    "plan": "sha256-7629bb804b28ddcc22230b8315e0a792140f122211276d4321bcaaf72248d6b4",
+    "product": "sha256-b1d3b47f1f9ba82bf5aee970b5f315b2ab9296fdf8d76a83fe9af2154c7407c4",
+    "run": [
+      "gcc"
     ]
   },
   "python": {
@@ -1449,6 +1531,16 @@
     "plan": "sha256-da88e44f5fd3564470fe813ee357748197548eeb230bc879c0363657f1313f16",
     "product": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819",
     "run": []
+  },
+  "sqlite": {
+    "version": "3.54.1",
+    "license": "blessing",
+    "by": "plan",
+    "plan": "sha256-e5aed01f8988ce1590640dacb23d3d51dc502973619d9cea0c5d23e15d0f8231",
+    "product": "sha256-7ee4b7b0b6835125fddc7e4d054c9d980fead33052aa3c6aaff196153c1f6aad",
+    "run": [
+      "zlib"
+    ]
   },
   "steam": {
     "version": "1.0.0.87",

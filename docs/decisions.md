@@ -6,6 +6,13 @@ acting on anything under **Open**. Replaces `open-questions.md`
 
 ## Open — ask the human
 
+- **Rootless containers' uid ranges (2026-11-01).** A rootless Podman maps
+  ranges of uids through setuid `newuidmap` and `newgidmap` and `/etc/subuid`,
+  as Wicket's host does; Oath ships none of them, and its store cannot hold a
+  setuid file. With one uid mapped, images with files of other owners only load
+  with `ignore_chown_errors`. Ship shadow's two tools the way `sudo` is shipped,
+  or have PID 1 write the maps for a `svc` that asks for a range? The second has
+  no setuid file, and needs a new `svc` field.
 - **Minecraft.** Which JVM (OpenJDK from source or a vendor's pinned
   release) and launcher, and when. Steam is R29.
 - **`sudo` and the password (R42).** `sudo` asks no password, so the

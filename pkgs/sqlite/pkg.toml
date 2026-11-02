@@ -1,0 +1,16 @@
+# SQLite, static: libsqlite3.a and the sqlite3 shell. Podman's database and
+# PROJ's links it, and PROJ's build runs the shell. Not shared, because
+# pkg:nss ships its own libsqlite3.so and /lib holds one of each name. A fix
+# here moves their plans. sqlite.org publishes hashes, no signature.
+version = "3.54.1"
+license = "blessing"
+description = "SQLite, static: the library for programs that embed it, and the shell."
+home = "https://sqlite.org/"
+purl = "pkg:generic/sqlite@3.54.1"
+build = ["zlib"]
+run = ["zlib"]
+
+[[source]]
+url = "https://sqlite.org/2026/sqlite-autoconf-3540100.tar.gz"
+sha256 = "926ef8d3eab93fbf6e06011901273eec076b25594a4e1cdadd50c987f4f6d64e"
+unsigned = "sqlite.org publishes hashes, not signatures"

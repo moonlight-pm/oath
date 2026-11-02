@@ -1,0 +1,15 @@
+# conmon: the monitor Podman leaves beside each container, which holds its
+# terminal and logs. No journald. A tag's archive: the project signs nothing.
+version = "2.2.1"
+license = "Apache-2.0"
+description = "conmon: the OCI container monitor."
+home = "https://github.com/containers/conmon"
+purl = "pkg:github/containers/conmon@v2.2.1"
+build = ["pkgconf", "glib", "pcre2", "libffi", "zlib", "libseccomp"]
+run = ["glib", "libseccomp"]
+
+[[source]]
+url = "https://github.com/containers/conmon/archive/refs/tags/v2.2.1.tar.gz"
+sha256 = "814fb5979a3a4b8576b1f901e606b482bebb41cb7e57926e6d5765ee786b96d3"
+file = "conmon-2.2.1.tar.gz"
+unsigned = "conmon signs neither its tags nor its releases"

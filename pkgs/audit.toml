@@ -126,8 +126,18 @@ cpe = "cpe:2.3:a:openai:codex"
 repo = "https://github.com/openai/codex"
 tag = "rust-v{version}"
 
+[conmon]
+cpe = "cpe:2.3:a:conmon_project:conmon"
+repo = "https://github.com/containers/conmon"
+tag = "v{version}"
+
 [coreutils]
 cpe = "cpe:2.3:a:gnu:coreutils"
+
+[crun]
+cpe = "cpe:2.3:a:crun_project:crun"
+repo = "https://github.com/containers/crun"
+tag = "{version}"
 
 [cups]
 cpe = "cpe:2.3:a:openprinting:cups"
@@ -299,6 +309,11 @@ cpe = "cpe:2.3:a:iputils_project:iputils"
 repo = "https://github.com/iputils/iputils"
 tag = "{version}"
 
+[json-c]
+cpe = "cpe:2.3:a:json-c:json-c"
+repo = "https://github.com/json-c/json-c"
+tag = "json-c-{version}"
+
 [kexec]
 cpe = "cpe:2.3:a:kexec-tools_project:kexec-tools"
 names = ["kexec-tools"]
@@ -356,6 +371,11 @@ dev_micro = 900
 
 [libpulse]
 cpe = "cpe:2.3:a:pulseaudio:pulseaudio"
+
+[libseccomp]
+cpe = "cpe:2.3:a:libseccomp_project:libseccomp"
+repo = "https://github.com/seccomp/libseccomp"
+tag = "v{version}"
 
 [libslirp]
 cpe = "cpe:2.3:a:libslirp_project:libslirp"
@@ -512,6 +532,20 @@ cpe = "cpe:2.3:a:mpfr:gnu_mpfr"
 [ncurses]
 cpe = "cpe:2.3:a:gnu:ncurses"
 
+[netavark]
+cpe = "cpe:2.3:a:netavark_project:netavark"
+repo = "https://github.com/containers/netavark"
+tag = "v{version}"
+
+[netavark.not_affected]
+"GHSA-q83h-524g-xf6h" = "h2 0.4.15, unbounded empty DATA frames: gRPC to netavark's DHCP proxy, over a Unix socket only root reaches"
+"RUSTSEC-2026-0386" = "tokio 1.53.1, AsyncFd::new's I/O safety: an API soundness note with no remote input here"
+"RUSTSEC-2026-0414" = "pulldown-cmark, ENABLE_WIKILINKS: a build dependency for documentation, not linked into netavark"
+"RUSTSEC-2024-0436" = "paste is unmaintained: a compile-time macro crate, no known flaw"
+"RUSTSEC-2026-0370" = "zvariant is unmaintained: renamed upstream, no known flaw"
+"RUSTSEC-2026-0371" = "zbus_names is unmaintained: renamed upstream, no known flaw"
+"RUSTSEC-2026-0372" = "zvariant_derive is unmaintained: renamed upstream, no known flaw"
+
 [nettle]
 cpe = "cpe:2.3:a:nettle_project:nettle"
 
@@ -567,6 +601,10 @@ repo = "https://gitlab.gnome.org/GNOME/pango"
 tag = "{version}"
 series = "1.58"
 
+[passt]
+names = ["passt", "pasta"]
+unchecked = "its tags end in a commit hash (2026_10_02.cba3570), which the version check reads as a pre-release"
+
 [patch]
 cpe = "cpe:2.3:a:gnu:patch"
 
@@ -603,10 +641,25 @@ tag = "pixman-{version}"
 [pkgconf]
 cpe = "cpe:2.3:a:pkgconf:pkgconf"
 
+[podman]
+cpe = "cpe:2.3:a:podman_project:podman"
+repo = "https://github.com/containers/podman"
+tag = "v{version}"
+osv = "Go:github.com/containers/podman/v6"
+
+[podman.not_affected]
+"CVE-2026-85747" = "docker/distribution's registry client, whose manifests.Get does not verify what it returns; Podman links only its registry/api packages (go list -deps), and no release of that module has a fix"
+"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
+
 [procps]
 cpe = "cpe:2.3:a:procps-ng_project:procps-ng"
 names = ["procps-ng", "procps"]
 repo = "https://gitlab.com/procps-ng/procps"
+tag = "v{version}"
+
+[protobuf]
+cpe = "cpe:2.3:a:google:protobuf"
+repo = "https://github.com/protocolbuffers/protobuf"
 tag = "v{version}"
 
 [python]
@@ -682,6 +735,14 @@ tag = "{version}"
 
 [sed]
 cpe = "cpe:2.3:a:gnu:sed"
+
+[sqlite]
+cpe = "cpe:2.3:a:sqlite:sqlite"
+repo = "https://github.com/sqlite/sqlite"
+tag = "version-{version}"
+
+[sqlite.not_affected]
+"CVE-2026-119586" = "the sqlite3 shell's .recover echoes dot-commands planted in a hostile database, when its output is piped back into the shell; no fix yet. Programs here link the library, which has no .recover; PROJ's build runs the shell on its own SQL."
 
 [steam]
 cpe = "cpe:2.3:a:valvesoftware:steam_client"

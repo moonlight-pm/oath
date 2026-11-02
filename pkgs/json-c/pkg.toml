@@ -1,0 +1,14 @@
+# json-c: JSON for crun's OCI configuration and for PostGIS's GeoJSON. A
+# tag's archive: the project signs nothing. The tag names a date as well.
+version = "0.19-20260627"
+license = "MIT"
+description = "json-c: a JSON library for C."
+home = "https://github.com/json-c/json-c"
+purl = "pkg:github/json-c/json-c@json-c-0.19-20260627"
+build = ["cmake", "ninja", "pkgconf"]
+run = []
+
+[[source]]
+url = "https://github.com/json-c/json-c/archive/refs/tags/json-c-0.19-20260627.tar.gz"
+sha256 = "f17a6d7d265cf840dfd8f0f46a606d98c6b5b26dc7cfe27275d1546a213086c8"
+unsigned = "json-c signs neither its tags nor its releases"

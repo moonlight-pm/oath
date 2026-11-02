@@ -1,0 +1,14 @@
+# passt and pasta: rootless containers' network, without a virtual bridge or
+# root. Released as dated snapshots of its git tree, unsigned.
+version = "2026_10_02.cba3570"
+license = "GPL-2.0-or-later AND BSD-3-Clause"
+description = "passt and pasta: user-mode networking for virtual machines and namespaces."
+home = "https://passt.top/"
+purl = "pkg:generic/passt@2026_10_02.cba3570"
+build = []
+run = []
+
+[[source]]
+url = "https://passt.top/passt/snapshot/passt-2026_10_02.cba3570.tar.xz"
+sha256 = "aa75616cc43925f0bd6c05bcfbbaecd77397c03d7bd23591b34ef535be5dfcdc"
+unsigned = "passt publishes git snapshots, with no signature"
