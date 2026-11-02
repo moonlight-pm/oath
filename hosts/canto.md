@@ -57,7 +57,9 @@ Overwrite this file when facts change; do not append a diary.
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** Release B, output `dd0f847aa9c9` (R47), from Sola's
+- **Running now:** output `3e42879d38e5` (seen 2026-11-02), booted 2026-11-01
+  21:57Z on Linux 7.3.1, with a `pkg:sola` overlay from master@ac660375 that
+  `oath update` replaces. Earlier: Release B, output `dd0f847aa9c9` (R47), from Sola's
   session on 2026-10-31: `oath update --confirm` (generation 432: the 13
   packages of Sola master `92815a65` replaced its overlay of the split),
   `oath new svc:sola-sessions` (433), then a reboot: PID 1 the output's,

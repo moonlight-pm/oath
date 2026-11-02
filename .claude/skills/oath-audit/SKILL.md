@@ -57,7 +57,7 @@ a root in the pin with a `Distrust for TLS After Date` goes in
 `pkgs/certs/distrust.txt`, and so does one the
 [Chrome Root Store](https://chromium.googlesource.com/chromium/src/+/main/net/data/ssl/chrome_root_store/root_store.md)
 or a browser vendor has distrusted over an incident. A root that Chrome merely
-never listed is not an incident: 23 of Mozilla's are like that today.
+never listed is not an incident: 21 of Mozilla's are like that today.
 A source that failed says so in `sources`: the report says it too, and
 the run goes on with the others. A package with no entry in
 `pkgs/audit.toml` stops the scan: add its entry (its NVD CPE, the names

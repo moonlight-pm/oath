@@ -13,12 +13,11 @@ append history (git has it).
 1. **Pull updates (R38, R47).** `cargo make publish` (only from a clean
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
-   takes it. Published 2026-10-31: Release A, `940c5d970175` (`ddcebae`,
-   64/64): `pkg.source`, overlays replaced unless `--keep`, objects new to
-   the profile made, a `/bin`/`/lib` name check. Release B (`dd0f847aa9c9`,
-   the Sola split) since 2026-10-31 on canto, novus and buccina. Gap: a changed `svc` spec goes
-   by hand. Next: an absent package new to the profile is made present
-   (built, unreleased); `oath` checks PID 1; expat 2.10.0.
+   takes it. An update replaces overlays unless `--keep`, makes objects new to
+   the profile, and checks `/bin` and `/lib` names. Newest release:
+   `3e42879d38e5` (2026-11-01), on canto and novus. Gap: a changed `svc` spec
+   goes by hand. Next: an absent package new to the profile is made present
+   (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
@@ -38,15 +37,15 @@ append history (git has it).
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). Next:
    `cell` as `work` under a `svc`; a sandbox for project installs. Image builds if asked.
-5. **Security audit (R48).** First run 2026-10-31, by hand: 153 hits in
-   27 packages, 63 not affected (`pkgs/audit.toml`). Published Linux 7.3.1
-   (`178ac39ce817`), then CEF 156.0.15 (Chromium .80, 72 CVEs, now with
-   libglvnd) and expat's four upstream CVE patches (`3c4a23053b7a`, 65/65,
-   2026-11-01). Left by Joshua's word: libsndfile, the
-   toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF
-   (commands stop at 2 h). `svc:audit` runs on buccina (`0 4 * * *`) and now
-   reads each pin against upstream's newest release; buccina's QEMU is 11.1.3
-   (65/65). Next: the 04:00 run triages 14 behind and libdisplay-info's 2 CVEs.
+5. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans,
+   reads each pin against upstream's newest release, may publish. Published so
+   far: Linux 7.3.1 (`178ac39ce817`), then CEF 156.0.15 and expat's four CVE patches
+   (`3c4a23053b7a`, 2026-11-01). Left by Joshua's word: libsndfile, the toolchain
+   rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
+   2 h). 2026-11-02: nothing published, `pkg:certs` 3.132 on master. Next: the
+   2026-11-04 run publishes Codex 0.165.0, with R54-R59 from master, and moves
+   buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi and
+   expat 2.10.0, from 2026-11-10, is Joshua's call.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
@@ -58,8 +57,8 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `1caabcfb0b8c` (booted kernel 7.3.0, reboot next), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
-| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `3c4a23053b7a` (generation 37, Sola overlay from master@9e448fbd, rebooted 2026-11-01), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `3e42879d38e5` (booted 2026-11-01, `pkg:sola` overlay from master@ac660375), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `3e42879d38e5` (no overlay, not rebooted since that release), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `1caabcfb0b8c` (Sola c1bde1c4 and the Vault, 2026-11-01), `desk`, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 ## Do not
