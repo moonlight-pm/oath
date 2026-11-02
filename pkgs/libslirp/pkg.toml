@@ -9,4 +9,6 @@ run = ["glib"]
 [[source]]
 url = "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v4.9.6/libslirp-v4.9.6.tar.gz"
 sha256 = "5bb4d30fd74042c23b4a0475f44d974a8e41dfdcf005476f03754bebc756b760"
-unsigned = "libslirp publishes no tarball or signature, only GitLab's archive of the v4.9.6 tag"
+git = "https://gitlab.freedesktop.org/slirp/libslirp"
+tag = "v4.9.6"
+key = "thibault"

@@ -4,23 +4,14 @@ tag libXfixes-6.0.2 commit 70d5b0e37f8a759f3dbc218f22954347ceed094a tree 6299f72
 signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
 same 18
 only-in-tag 3
+from automake 1
+from gettext 2
+from gnulib 6
+from libtool 4
 adds ChangeLog
-adds INSTALL
 adds Makefile.in
 adds aclocal.m4
-adds compile
-adds config.guess
 adds config.h.in
-adds config.sub
 adds configure
-adds depcomp
-adds install-sh
-adds ltmain.sh
-adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
 adds man/Makefile.in
-adds missing
 adds src/Makefile.in

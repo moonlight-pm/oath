@@ -4,6 +4,7 @@ tag v7.1 commit 4ab0e80be9e3bb1db2e6038e6d4316d35fb7ba8b tree ca54c8d7b57d588aab
 signed pgp F2B41200C54EFB30380C1756C565D5F9D76D583B
 same 961
 only-in-tag 0
+from gnulib 2
 adds Documentation/btrfs-balance.8
 adds Documentation/btrfs-check.8
 adds Documentation/btrfs-convert.8
@@ -31,7 +32,5 @@ adds Documentation/btrfstune.8
 adds Documentation/fsck.btrfs.8
 adds Documentation/mkfs.btrfs.8
 adds config/config.guess
-adds config/config.sub
-adds config/install-sh
 adds configure
 adds include/config.h.in

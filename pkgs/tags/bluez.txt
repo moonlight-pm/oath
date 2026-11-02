@@ -4,14 +4,12 @@ tag 5.87 commit 65d11edee469c24dcc8d075b8be9c040cebaaf98 tree e87954670fd82e2ec4
 signed no
 same 862
 only-in-tag 135
+from automake 2
+from gnulib 6
 adds Makefile.in
 adds aclocal.m4
-adds compile
-adds config.guess
 adds config.h.in
-adds config.sub
 adds configure
-adds depcomp
 adds doc/bdaddr.1
 adds doc/bluetoothctl-admin.1
 adds doc/bluetoothctl-advertise.1
@@ -135,7 +133,6 @@ adds ell/hashmap.c
 adds ell/hashmap.h
 adds ell/idle.c
 adds ell/idle.h
-adds ell/internal
 adds ell/io.c
 adds ell/io.h
 adds ell/key.c
@@ -184,7 +181,4 @@ adds ell/util.c
 adds ell/util.h
 adds ell/uuid.c
 adds ell/uuid.h
-adds install-sh
 adds ltmain.sh
-adds missing
-adds test-driver

@@ -4,9 +4,12 @@ tag v9.20.30 commit 769c3fb93a0a06b2f1f44b5156c4f7e52f57ef78 tree 7c8652a79b5027
 signed pgp FFE973BF138D8C214DD334D6AC8CB67D23BB7510
 same 5195
 only-in-tag 217
+from automake 2
+from gettext 1
+from gnulib 6
+from libtool 3
 adds Makefile.in
 adds aclocal.m4
-adds ar-lib
 adds bin/Makefile.in
 adds bin/check/Makefile.in
 adds bin/confgen/Makefile.in
@@ -58,12 +61,8 @@ adds bin/tests/system/dyndb/driver/Makefile.in
 adds bin/tests/system/hooks/driver/Makefile.in
 adds bin/tests/system/rpz/testlib/Makefile.in
 adds bin/tools/Makefile.in
-adds compile
-adds config.guess
 adds config.h.in
-adds config.sub
 adds configure
-adds depcomp
 adds doc/Makefile.in
 adds doc/arm/Makefile.in
 adds doc/man/Makefile.in
@@ -103,7 +102,6 @@ adds doc/man/rndc.conf.5in
 adds doc/man/tsig-keygen.8in
 adds doc/misc/Makefile.in
 adds fuzz/Makefile.in
-adds install-sh
 adds lib/Makefile.in
 adds lib/dns/Makefile.in
 adds lib/isc/Makefile.in
@@ -112,13 +110,7 @@ adds lib/isccfg/Makefile.in
 adds lib/ns/Makefile.in
 adds ltmain.sh
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
-adds missing
 adds srcid
-adds test-driver
 adds tests/Makefile.in
 adds tests/bench/Makefile.in
 adds tests/dns/Makefile.in

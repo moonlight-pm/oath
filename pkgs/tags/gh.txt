@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source gh-2.103.3.tar.gz bb148138a3a2fe023e57c78042fe3b42fc09171c0e8fff4cf983b227b7a2eade
+tag v2.103.3 commit 63837fb778d6a39f02be0ce76ff89f2bc8d74bdc tree bda6d94df1932516804907a320cb70e1524339b6
+signed no
+same 1539
+only-in-tag 0

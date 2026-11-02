@@ -4,25 +4,17 @@ tag libxcb-1.17.0 commit 622152ee42a310876f10602601206954b8d0613e tree c2639ede4
 signed pgp 5EAF21049A86B8A54CCB1BFAACEB29740C9A4E97
 same 68
 only-in-tag 8
+from automake 2
+from gettext 1
+from gnulib 6
+from libtool 3
 adds ChangeLog
-adds INSTALL
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/compile
-adds build-aux/config.guess
-adds build-aux/config.sub
-adds build-aux/depcomp
-adds build-aux/install-sh
 adds build-aux/ltmain.sh
-adds build-aux/missing
-adds build-aux/test-driver
 adds configure
 adds doc/Makefile.in
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
 adds man/Makefile.in
 adds src/Makefile.in
 adds src/config.h.in

@@ -1,4 +1,5 @@
-# Modules Podman 6.1.4 pins behind their fixes (2026-11-01).
-github.com/go-jose/go-jose/v4 v4.1.7 # CVE-2026-116585, -116586, -116587
+# Modules Podman 6.1.4 pins behind their fixes: the lowest version with the fix
+# that is a week old (R57).
+github.com/go-jose/go-jose/v4 v4.1.6 # CVE-2026-116585, -116586, -116587
 golang.org/x/net v0.62.0             # CVE-2026-78659 and six more, HTTP/2 and HTML
-google.golang.org/grpc v1.85.0       # CVE-2026-84303, -84304, -84445
+google.golang.org/grpc v1.83.2       # CVE-2026-84303, -84304, -84445

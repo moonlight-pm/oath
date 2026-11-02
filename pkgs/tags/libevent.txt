@@ -4,22 +4,17 @@ tag release-2.1.13-stable commit 79ddfb460847999b807cba76d04e73891f29c6ee tree b
 signed pgp 7A02B3521DC75C542BA015456AFEE6D49E92B601
 same 202
 only-in-tag 25
+from automake 2
+from gettext 1
+from gnulib 3
+from libtool 3
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/compile
 adds build-aux/config.guess
 adds build-aux/config.sub
-adds build-aux/depcomp
-adds build-aux/install-sh
 adds build-aux/ltmain.sh
-adds build-aux/missing
-adds build-aux/test-driver
 adds config.h.in
 adds configure
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
 adds test/regress.gen.c
 adds test/regress.gen.h

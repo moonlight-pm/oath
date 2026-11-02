@@ -1,6 +1,0 @@
-# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source netavark-2.1.0.tar.gz 96677048168ddd1abe313e4c2e17f1cace72b60ee1bac8ca12a4bd7dfcadfbbb
-tag v2.1.0 commit 8e91ad1d947ed325327b638f0cb906bea1f7d0ab tree aa9f72fd9adc7750fd8a11e875101607a18fbd4c
-signed pgp DE8B74AD67CA2C1D2F56C4EEEB145DD938A3CAF2
-same 232
-only-in-tag 0

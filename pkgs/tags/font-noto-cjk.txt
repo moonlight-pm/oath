@@ -1,0 +1,8 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source NotoSansCJK-Regular.ttc 7a0be44ff3812154b24ebc5bd54afbe1ce33d09212c129546500372d51b90d18
+tag Sans2.004 commit 523d033d6cb47f4a80c58a35753646f5c3608a78 tree db31a8a18f14eabf1985617cf5527bfa0f50eec0
+signed no
+tag Serif2.003 commit 9b0f1436e455d902de067a2501422e5dc71ad16b tree 49ad2330fb2fa755051570239379c6bde14f1cb4
+signed no
+same 5
+only-in-tag 0

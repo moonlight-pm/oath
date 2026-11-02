@@ -75,6 +75,17 @@ pub struct Entry {
     /// The tag there: `{version}`, `{version_}` (2_15_0), `{version-}`
     /// (2-15-0), or a tag's whole name where it holds a date or case.
     pub compare_tag: Option<String>,
+    /// The sources are single files, each to be found in the tag's tree
+    /// (firmware, fonts), not a tarball. `compare_tag` may name several tags.
+    #[serde(default)]
+    pub compare_files: bool,
+    /// The key the tag must be signed by (`pkgs/keys/<key>`), for a pin that
+    /// is not a tree of its own, so `git`, `tag` and `key` do not fit.
+    pub compare_key: Option<String>,
+    /// Why a package at a version, or the release (`source`), comes in under a
+    /// week old (R57): the advisory it fixes.
+    #[serde(default)]
+    pub age_because: BTreeMap<String, String>,
     /// The tag's directory the tarball is made from (`expat`).
     pub tag_dir: Option<String>,
     /// The tarball's directory the tag's tree is in (`nss`).
@@ -275,6 +286,17 @@ pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
     crate::util::write_pretty(&dir.join("latest.json"), &serde_json::to_value(&report)?)?;
     print_summary(&report);
     println!("report: {}", dir.join(format!("{day}.json")).display());
+    // A malicious-package record is not a thing to triage (R57).
+    let bad: Vec<String> = report
+        .packages
+        .iter()
+        .flat_map(|p| p.hits.iter().map(move |h| (p, h)))
+        .filter(|(_, h)| h.id.starts_with("MAL-") || h.aliases.iter().any(|a| a.starts_with("MAL-")))
+        .map(|(p, h)| format!("pkg:{} {}: {}", p.name, p.version, h.id))
+        .collect();
+    if !bad.is_empty() {
+        bail!("MALICIOUS packages, by OSV's records:\n  {}", bad.join("\n  "));
+    }
     Ok(())
 }
 
@@ -1206,7 +1228,7 @@ fn epss(ids: &BTreeSet<String>) -> Result<BTreeMap<String, f64>> {
 
 /// GET, or POST `body` as JSON; `header` goes to curl on stdin (an API
 /// key never reaches argv).
-fn http(url: &str, body: Option<&str>, header: Option<&str>) -> Result<String> {
+pub(crate) fn http(url: &str, body: Option<&str>, header: Option<&str>) -> Result<String> {
     let mut cmd = Command::new("curl");
     cmd.args(["-sS", "-f", "-L", "--retry", "2", "--max-time", "180", "-K", "-"]);
     let mut config = format!("url = \"{url}\"\nuser-agent = \"oath-audit\"\n");
@@ -1411,13 +1433,49 @@ mod tests {
             let Some((sha, lines)) = record else {
                 panic!("pkgs/{n}: no pkgs/tags/{n}.txt: run cargo make pkgs --fetch {n}");
             };
-            assert_eq!(sha, s.sha256, "pkgs/tags/{n}.txt is for another pin: cargo make pkgs --fetch {n}");
+            assert_eq!(
+                sha,
+                crate::tags::pin_sha(p, u),
+                "pkgs/tags/{n}.txt is for another pin: cargo make pkgs --fetch {n}"
+            );
+            let _ = s;
             let differs = lines.iter().filter(|l| l.starts_with("differs ")).count();
             assert!(
                 differs == 0 || u.differs_because.is_some(),
                 "pkgs/{n}: {differs} files differ from the tag: read pkgs/tags/{n}.txt"
             );
         }
+    }
+
+    /// Every pin passed intake (R57): recorded, a week old or excused, new
+    /// names approved, and whatever moved reviewed.
+    #[test]
+    fn every_pin_passed_intake() {
+        let repo = crate::util::repo_root();
+        let pkgs = crate::pkgs::load(&repo).unwrap();
+        let e = entries(&repo).unwrap();
+        let mut bad = Vec::new();
+        for (n, p) in &pkgs {
+            let Some(u) = e.get(n).filter(|_| p.i386.is_none() && !p.source.is_empty()) else {
+                continue;
+            };
+            let Some(r) = crate::intake::read(&repo, n) else {
+                bad.push(format!("{n}: no pkgs/intake/{n}.txt: cargo make pkgs --fetch {n}"));
+                continue;
+            };
+            if r.pin != crate::intake::all_sha(p) {
+                bad.push(format!("{n}: its record is for another pin: cargo make pkgs --fetch {n}"));
+            }
+            bad.extend(crate::intake::problems(&repo, n, &r, u));
+        }
+        let lock = fs::read_to_string(repo.join("Cargo.lock")).unwrap();
+        match crate::intake::read(&repo, "oath") {
+            Some(r) if r.pin == crate::intake::cargo_lock_pin(&lock) => {
+                bad.extend(crate::intake::problems(&repo, "oath", &r, &Entry::default()));
+            }
+            _ => bad.push("Cargo.lock moved: cargo make pkgs --fetch oath".to_string()),
+        }
+        assert!(bad.is_empty(), "{}", bad.join("\n"));
     }
 
     #[test]

@@ -4,6 +4,7 @@ tag nettle_4.0_release_20260205 commit bf13ee9e5024014cfa6d2fc097923afe087e63ba 
 signed pgp 343C2FF0FBEE5EC2EDBEF399F3599FF828C67298
 same 941
 only-in-tag 60
+from automake 1
 adds config.h.in
 adds configure
 adds desdata.stamp
@@ -12,4 +13,3 @@ adds nettle.html
 adds nettle.info
 adds nettle.pdf
 adds rotors.h
-adds stamp-h.in

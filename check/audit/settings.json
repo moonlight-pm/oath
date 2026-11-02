@@ -55,6 +55,7 @@
       "Bash(git reset:*)",
       "Edit(pkgs/keys/**)",
       "Edit(pkgs/go-modules.sh)",
+      "Edit(pkgs/intake/approved.txt)",
       "Edit(check/**)",
       "Edit(.claude/**)",
       "Edit(crates/**)"

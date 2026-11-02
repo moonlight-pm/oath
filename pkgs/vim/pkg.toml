@@ -9,4 +9,6 @@ run = ["ncurses"]
 [[source]]
 url = "https://github.com/vim/vim/archive/refs/tags/v9.2.1250.tar.gz"
 sha256 = "2862e02dca705c440e10579fa10c81ede0cb6a35ba5aa05a4b22c2ce8f4c78a4"
-unsigned = "Vim publishes no signed release tarballs; this is the GitHub archive of the release tag"
+git = "https://github.com/vim/vim"
+tag = "v9.2.1250"
+key = "brabandt"

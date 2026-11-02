@@ -11,4 +11,6 @@ build = []
 url = "https://github.com/vcrhonek/hwdata/archive/refs/tags/v0.412.tar.gz"
 sha256 = "f0c64cd7e31d70a5fb3a52e53ab50a61e74c0421a6381eaa45114eec3bde5fe7"
 file = "hwdata-0.412.tar.gz"
-unsigned = "a GitHub tag archive; upstream publishes no tarball signature (only a signed git tag)"
+git = "https://github.com/vcrhonek/hwdata"
+tag = "v0.412"
+key = "crhonek"

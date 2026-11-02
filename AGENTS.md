@@ -16,7 +16,11 @@ We write PID 1. Unix is the substrate, not the admin interface.
   static.
 - **Packages:** native only — built from source by an Oath `plan`, or
   the vendor's own release pinned by sha256. Never another distro's
-  packages (R7 in [docs/decisions.md](docs/decisions.md)).
+  packages (R7 in [docs/decisions.md](docs/decisions.md)). **Bias against
+  them (R57):** what Oath ships, then our own small code in `apps/`, then a
+  compiled signed project with few dependencies; a large tree is last. Say what
+  the cheaper route was. Whatever comes in passes
+  [docs/specs/intake.md](docs/specs/intake.md).
 - **License:** MIT, copyright Joshua Kifer. Upstream files keep theirs.
 
 ## Session start

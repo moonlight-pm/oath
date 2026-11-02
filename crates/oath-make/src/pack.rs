@@ -807,6 +807,11 @@ pub fn publish_store(
     let picked = crate::output::pick(out, output, true);
     if dest.is_none() {
         crate::release::require_master(repo, picked.as_ref().ok())?;
+        // A malicious-package record stops a release, with no way to wave it through (R57).
+        let bad = crate::intake::malicious(repo)?;
+        if !bad.is_empty() {
+            bail!("MALICIOUS packages, by OSV's records:\n  {}", bad.join("\n  "));
+        }
     }
     let origin = match dest {
         Some(_) => None,

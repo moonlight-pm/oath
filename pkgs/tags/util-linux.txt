@@ -4,6 +4,10 @@ tag v2.42.4 commit d76cbf8f13e65ff657344f7f6a90042cf755ba59 tree 2b1bca56bae9035
 signed pgp B0C64D14301CC6EFAEDF60E4E4B71D5EEC39C284
 same 3634
 only-in-tag 40
+from automake 4
+from gettext 9
+from gnulib 18
+from libtool 3
 differs ChangeLog
 differs po/ar.po
 differs po/ca.po
@@ -41,22 +45,12 @@ differs po/zh_CN.po
 differs po/zh_TW.po
 adds .tarball-version
 adds .version
-adds ABOUT-NLS
-adds Documentation/.deps/test_boilerplate-boilerplate.Po
 adds Makefile.in
 adds aclocal.m4
 adds config.h.in
-adds config/ar-lib
-adds config/compile
 adds config/config.guess
-adds config/config.rpath
 adds config/config.sub
-adds config/depcomp
-adds config/install-sh
 adds config/ltmain.sh
-adds config/missing
-adds config/py-compile
-adds config/ylwrap
 adds configure
 adds disk-utils/addpart.8
 adds disk-utils/blockdev.8
@@ -102,10 +96,8 @@ adds libsmartcols/docs/version.xml
 adds libsmartcols/scols-filter.5
 adds libsmartcols/src/filter-parser.c
 adds libsmartcols/src/filter-parser.h
-adds libsmartcols/src/filter-parser.stamp
 adds libsmartcols/src/filter-scanner.c
 adds libsmartcols/src/filter-scanner.h
-adds libsmartcols/src/filter-scanner.stamp
 adds libuuid/man/uuid.3
 adds libuuid/man/uuid_clear.3
 adds libuuid/man/uuid_compare.3
@@ -133,20 +125,7 @@ adds login-utils/utmpdump.1
 adds login-utils/vigr.8
 adds login-utils/vipw.8
 adds lsfd-cmd/lsfd.1
-adds m4/gettext.m4
-adds m4/iconv.m4
-adds m4/intlmacosx.m4
-adds m4/lib-ld.m4
-adds m4/lib-link.m4
-adds m4/lib-prefix.m4
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
-adds m4/nls.m4
-adds m4/po.m4
-adds m4/progtest.m4
 adds misc-utils/blkid.8
 adds misc-utils/cal.1
 adds misc-utils/copyfilerange.1
@@ -177,17 +156,12 @@ adds misc-utils/waitpid.1
 adds misc-utils/whereis.1
 adds misc-utils/wipefs.8
 adds pam_lastlog2/man/pam_lastlog2.8
-adds po/Makefile.in.in
 adds po/POTFILES.in
-adds po/Rules-quot
 adds po/ar.gmo
-adds po/boldquot.sed
 adds po/ca.gmo
 adds po/cs.gmo
 adds po/da.gmo
 adds po/de.gmo
-adds po/en@boldquot.header
-adds po/en@quot.header
 adds po/es.gmo
 adds po/et.gmo
 adds po/eu.gmo
@@ -197,7 +171,6 @@ adds po/gl.gmo
 adds po/hr.gmo
 adds po/hu.gmo
 adds po/id.gmo
-adds po/insert-header.sin
 adds po/it.gmo
 adds po/ja.gmo
 adds po/ka.gmo
@@ -206,14 +179,11 @@ adds po/nl.gmo
 adds po/pl.gmo
 adds po/pt.gmo
 adds po/pt_BR.gmo
-adds po/quot.sed
-adds po/remove-potcdate.sin
 adds po/ro.gmo
 adds po/ru.gmo
 adds po/sk.gmo
 adds po/sl.gmo
 adds po/sr.gmo
-adds po/stamp-po
 adds po/sv.gmo
 adds po/tr.gmo
 adds po/uk.gmo

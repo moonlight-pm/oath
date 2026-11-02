@@ -1,0 +1,5 @@
+# Written by `cargo make pkgs --fetch` (R57): when each package was published.
+pin 358e0dd57a684806071a6299b17bec1d2c03b504aa7f339e36a78fe7fce3e8bb
+checked 2026-11-02
+source 2026-09-22T16:53:48-04:00
+module pypi mako 1.4.3 2026-09-22T20:54:33.128860Z baseline

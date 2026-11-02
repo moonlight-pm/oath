@@ -4,22 +4,13 @@ tag libfontenc-1.1.9 commit 780d1f6f192a331de7b298a96e23ebc44d2a884b tree cc5ccb
 signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
 same 14
 only-in-tag 3
+from automake 1
+from gettext 2
+from gnulib 6
+from libtool 4
 adds ChangeLog
-adds INSTALL
 adds Makefile.in
 adds aclocal.m4
-adds compile
-adds config.guess
 adds config.h.in
-adds config.sub
 adds configure
-adds depcomp
-adds install-sh
-adds ltmain.sh
-adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
-adds missing
 adds src/Makefile.in

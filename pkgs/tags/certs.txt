@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source nss-3.132.tar.gz ee9cf4837ba801141a804321c4462ad8f452ff4314275c6d5108a6b05af227ff
+tag NSS_3_132_RTM commit 34716626284b2a8ed64f8055734ae7730e902686 tree fae8e3bd8527b410b2c57042d565cfa6732aaa12
+signed no
+same 4918
+only-in-tag 1
+adds nss/.hg_archival.txt

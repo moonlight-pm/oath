@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source NotoNaskhArabic[wght].ttf 8d41c9047c55d0735af85a7ec69bd9332cfa703344d52d1a499bea6a03091ab8
+tag noto-monthly-release-2026.10.01 commit 025970232f4f8ff349310d9785431e87d20ed27c tree 3063bd5ee804e7c05e3389419ef587540f3fbc7f
+signed no
+same 31
+only-in-tag 0

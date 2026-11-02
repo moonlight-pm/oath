@@ -105,7 +105,7 @@
     },
     {
       "id": "pkg:proj",
-      "hash": "sha256-e195695539000cdff25869a1d4ea46b38b04222d954fbc30070ae056baa24335"
+      "hash": "sha256-b9fba6bc01ba83c19e82822343358bfc12db638d37fa28f26a3af654bc204344"
     },
     {
       "id": "pkg:readline",
@@ -159,7 +159,7 @@
     },
     {
       "id": "pkg:proj",
-      "hash": "sha256-e195695539000cdff25869a1d4ea46b38b04222d954fbc30070ae056baa24335"
+      "hash": "sha256-b9fba6bc01ba83c19e82822343358bfc12db638d37fa28f26a3af654bc204344"
     }
   ]
 }

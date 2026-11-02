@@ -1,0 +1,4 @@
+# Written by `cargo make pkgs --fetch` (R57): when each package was published.
+pin e2436bf23a669e8a98bc380fde7c5425cad1cb8f130b6ebd04eb8c5de9c4a431
+checked 2026-11-02
+source 2026-01-25T17:13:28-08:00

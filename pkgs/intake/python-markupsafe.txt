@@ -1,0 +1,5 @@
+# Written by `cargo make pkgs --fetch` (R57): when each package was published.
+pin a7ca02bea529d2bff04108768e4728a7633fa75ea6afc895fe7f860161e4ca06
+checked 2026-11-02
+source 2026-10-02T15:42:29-07:00
+module pypi markupsafe 3.0.4 2026-10-02T23:04:20.141728Z baseline

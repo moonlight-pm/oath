@@ -28,17 +28,30 @@ fix goes in `<name>/go-updates.txt`, with the CVE beside it; the script takes
 it with `go get` and writes `<name>/go.mod` and `go.sum`, which the build copies
 over the release's. Drop a line once the release has caught up.
 
+## Before adding a package (R57)
+
+In order: what Oath ships; our own small code in `apps/`; a compiled, signed project
+with few dependencies; a large tree last. Say what the cheaper route was and why it
+lost. Whatever comes in passes [specs/intake.md](../docs/specs/intake.md):
+`--fetch` records it in `intake/<name>.txt` and stops a version under a week old
+(`age_because` in `audit.toml` names the advisory for a fix), and a new name or npm
+publisher, until `intake/approved.txt`, a person's file, says so. Everything that
+moved needs a line in `reviews.txt`; `--review <name>` writes what to read.
+
 ## Tarballs against tags (R54)
 
 `cargo make pkgs --fetch <name>`, the step for any new pin, sets the tarball
 against the git tag that `repo` and `tag` in `audit.toml` name, and writes
-`tags/<name>.txt`. Commit it with the pin, and read its diff: a new `adds` line is
-a file in the tarball that no one's git history vouches for, which is where xz's
-backdoor was. Files in both that differ must be read, and `differs_because` in
+`tags/<name>.txt`. Commit it with the pin, and read its diff. A file in the tarball
+alone is looked up in the histories of gnulib, GNU config, automake, autoconf,
+libtool and gettext, and counted under `from` if it is there, byte for byte; a new
+`adds` line is one no repository vouches for, which is where xz's backdoor was. Files in both that differ must be read, and `differs_because` in
 `audit.toml` says why; a test fails until it does. `compare_repo` and `compare_tag`
 name the tree where `repo` and `tag` are not set; a new package needs them, or
 `no_compare` and why. `tag_dir` and `tar_dir` name a tree in a subdirectory. Files
 a release bundles from a submodule are counted, not compared (`submodule <path> <n>`).
+`compare_files` is for sources that are single files, each to be found in the tag's
+tree, and `compare_key` checks that tag's signature (firmware).
 
 ## Signatures
 
@@ -69,6 +82,7 @@ key = "m4"                 # pkgs/keys/m4.asc
 - `git = "<repository>"`, `tag = "<name>"`, `key = "<key>"`: an upstream that
   signs its git tag and not its tarball (Podman). The tag's signature must check
   out and name this tag, and the tarball must be the tag's tree, file for file.
+  `keys/<key>.pub` holds SSH keys, for a tag signed with one.
 - `unsigned = "<why>"`: no signature to check. A package-level
   `unsigned` covers all of its sources that have no `sig` (firmware).
 - `tree = "apps/<dir>"` (package level): first-party source from this

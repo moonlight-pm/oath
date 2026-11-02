@@ -1,0 +1,11 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source nspr-4.40.tar.gz c0c1884c627f3db7a783f7c7314c695226b2043696791d15519e7e0578c19bdc
+tag FIREFOX_159_0_RELEASE commit 9a2dc53c369c7ae5172018b35988e1d2ffeff402 tree 7a8dd864f3e99cc350dbb47dcaf123fe60218c51
+signed no
+same 505
+only-in-tag 2
+differs nspr/config/prdepend.h
+adds nspr/.git-blame-ignore-revs
+adds nspr/.github/workflows/ci.yml
+adds nspr/.github/workflows/nss.yml
+adds nspr/.gitignore

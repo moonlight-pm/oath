@@ -42,7 +42,7 @@ differs_because = "po/ka.gmo, a compiled translation, newer in the release than 
 
 [bc]
 cpe = "cpe:2.3:a:gnu:bc"
-no_compare = "GNU bc has no repository at Savannah"
+no_compare = "GNU bc has no public repository. It is signed, and only computes the kernel's timeconst.h at build time. The other bc, Gavin Howard's, has a repository, but its author marks its latest release untested"
 
 [bind]
 cpe = "cpe:2.3:a:isc:bind"
@@ -89,19 +89,6 @@ cpe = "cpe:2.3:a:bzip:bzip2"
 compare_repo = "https://gitlab.com/bzip2/bzip2"
 compare_tag = "bzip2-{version}"
 
-[caddy]
-cpe = "cpe:2.3:a:caddyserver:caddy"
-repo = "https://github.com/caddyserver/caddy"
-tag = "v{version}"
-osv = "Go:github.com/caddyserver/caddy/v2"
-no_compare = "the buildable artifact is a main package and vendor/, not the tree; the build replaces vendor/, and go.sum and Go's checksum database check the Caddy module"
-
-[caddy.not_affected]
-"CVE-2026-116585" = "fixed in go-jose v4 (go-updates.txt); go-jose v3 has no fix and is linked through go.step.sm/crypto/jose, reached only by Caddy's acme_server and pki, which a machine must configure. A crafted JWK panics the request."
-"CVE-2026-116586" = "as CVE-2026-116585"
-"CVE-2026-116587" = "as CVE-2026-116585"
-"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
-
 [cairo]
 cpe = "cpe:2.3:a:cairographics:cairo"
 repo = "https://gitlab.freedesktop.org/cairo/cairo"
@@ -113,15 +100,18 @@ cpe = "cpe:2.3:a:google:chrome"
 names = ["chromium"]
 version_after = "chromium-"
 unchecked = "CEF's releases are on its build index, not in tags; Chrome's CVE records name each fixed version the day it ships"
-no_compare = "Chromium's release tarball gathers hundreds of repositories at the revisions its DEPS names; no one tag holds it"
+compare_repo = "https://chromium.googlesource.com/chromium/src.git"
+compare_tag = "{version}"
+differs_because = "tools/gn/README.md: the release replaces the tree's pointer with GN's own README (read 2026-11-01)"
 
 [cef.not_affected]
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
 "CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
 
 [certs]
-page = "https://curl.se/docs/caextract.html"
-no_compare = "a list curl.se generates from Mozilla's, not a source tree; the audit reads Mozilla's report and Chrome's store"
+repo = "https://github.com/nss-dev/nss"
+tag = "NSS_{version_}_RTM"
+tar_dir = "nss"
 
 [cf]
 skip = "npm packages: its components.json's npm purls go to OSV"
@@ -221,7 +211,10 @@ compare_tag = "v{version}"
 
 [firmware]
 skip = "linux-firmware: vendors' device firmware; its advisories name chips, not releases"
-no_compare = "single files, each fetched by path from linux-firmware's tree at its tag, not a tarball"
+compare_repo = "https://gitlab.com/kernel-firmware/linux-firmware"
+compare_tag = "{version}"
+compare_files = true
+compare_key = "boyer"
 
 [flex]
 cpe = "cpe:2.3:a:flex_project:flex"
@@ -234,15 +227,21 @@ no_compare = "built font files, not a source tree"
 
 [font-noto]
 skip = "fonts"
-no_compare = "built font files, not a source tree"
+compare_repo = "https://github.com/notofonts/notofonts.github.io"
+compare_tag = "noto-monthly-release-{version}"
+compare_files = true
 
 [font-noto-cjk]
 skip = "fonts"
-no_compare = "built font files, not a source tree"
+compare_repo = "https://github.com/notofonts/noto-cjk"
+compare_tag = "Sans2.004 Serif2.003"
+compare_files = true
 
 [font-noto-emoji]
 skip = "a font"
-no_compare = "built font files, not a source tree"
+compare_repo = "https://github.com/googlefonts/noto-emoji"
+compare_tag = "v2026-09-24-unicode18_0"
+compare_files = true
 
 [fontconfig]
 cpe = "cpe:2.3:a:fontconfig_project:fontconfig"
@@ -284,7 +283,9 @@ cpe = "cpe:2.3:a:github:cli"
 repo = "https://github.com/cli/cli"
 tag = "v{version}"
 osv = "Go:github.com/cli/cli/v2"
-no_compare = "the vendor's build, not its source: there is no tree to set it against"
+
+[gh.not_affected]
+"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
 
 [git]
 cpe = "cpe:2.3:a:git-scm:git"
@@ -326,7 +327,7 @@ tag = "{version}"
 
 [gmp]
 cpe = "cpe:2.3:a:gmplib:gmp"
-no_compare = "GMP keeps its history in Mercurial, not git"
+no_compare = "GMP keeps its history in Mercurial, whose archives refuse automated fetches. Its releases are signed"
 
 [gperf]
 cpe = "cpe:2.3:a:gnu:gperf"
@@ -624,10 +625,6 @@ compare_tag = "v{version}"
 [locales]
 skip = "glibc's locale data: its CVEs are pkg:glibc's"
 
-[lzo]
-cpe = "cpe:2.3:a:lzo_project:lzo"
-no_compare = "LZO has no public repository"
-
 [m4]
 cpe = "cpe:2.3:a:gnu:m4"
 compare_repo = "https://git.savannah.gnu.org/git/m4.git"
@@ -674,20 +671,6 @@ cpe = "cpe:2.3:a:gnu:ncurses"
 compare_repo = "https://github.com/ThomasDickey/ncurses-snapshots"
 compare_tag = "v{version_}"
 
-[netavark]
-cpe = "cpe:2.3:a:netavark_project:netavark"
-repo = "https://github.com/containers/netavark"
-tag = "v{version}"
-
-[netavark.not_affected]
-"GHSA-q83h-524g-xf6h" = "h2 0.4.15, unbounded empty DATA frames: gRPC to netavark's DHCP proxy, over a Unix socket only root reaches"
-"RUSTSEC-2026-0386" = "tokio 1.53.1, AsyncFd::new's I/O safety: an API soundness note with no remote input here"
-"RUSTSEC-2026-0414" = "pulldown-cmark, ENABLE_WIKILINKS: a build dependency for documentation, not linked into netavark"
-"RUSTSEC-2024-0436" = "paste is unmaintained: a compile-time macro crate, no known flaw"
-"RUSTSEC-2026-0370" = "zvariant is unmaintained: renamed upstream, no known flaw"
-"RUSTSEC-2026-0371" = "zbus_names is unmaintained: renamed upstream, no known flaw"
-"RUSTSEC-2026-0372" = "zvariant_derive is unmaintained: renamed upstream, no known flaw"
-
 [nettle]
 cpe = "cpe:2.3:a:nettle_project:nettle"
 compare_repo = "https://git.lysator.liu.se/nettle/nettle"
@@ -707,7 +690,7 @@ names = ["node"]
 repo = "https://github.com/nodejs/node"
 tag = "v{version}"
 series = "26"
-no_compare = "the vendor's build, not its source: there is no tree to set it against"
+differs_because = "tools/nix/v8.nix: the release drops a fileset.gitTracked filter, which only works in a git checkout; only Nix reads the file (read 2026-11-01)"
 
 [node.not_affected]
 "CVE-2021-43803" = "Next.js, not Node.js (the record; NVD names Node.js only as its platform)"
@@ -717,7 +700,11 @@ no_compare = "the vendor's build, not its source: there is no tree to set it aga
 cpe = "cpe:2.3:a:mozilla:netscape_portable_runtime"
 names = ["nspr"]
 unchecked = "Mercurial only, and each release in a directory of its own: NSS's release notes name the NSPR it needs"
-no_compare = "NSPR keeps its history in Mercurial, not git"
+compare_repo = "https://github.com/mozilla-firefox/firefox"
+compare_tag = "FIREFOX_159_0_RELEASE"
+tag_dir = "nsprpub"
+tar_dir = "nspr"
+differs_because = "config/prdepend.h: Firefox's copy has one more comment line naming the release (read 2026-11-01)"
 
 [nss]
 cpe = "cpe:2.3:a:mozilla:nss"
@@ -828,11 +815,6 @@ cpe = "cpe:2.3:a:osgeo:proj"
 repo = "https://github.com/OSGeo/PROJ"
 tag = "{version}"
 
-[protobuf]
-cpe = "cpe:2.3:a:google:protobuf"
-repo = "https://github.com/protocolbuffers/protobuf"
-tag = "v{version}"
-
 [python]
 cpe = "cpe:2.3:a:python:python"
 names = ["cpython"]
@@ -926,7 +908,6 @@ compare_tag = "v{version}"
 cpe = "cpe:2.3:a:sqlite:sqlite"
 repo = "https://github.com/sqlite/sqlite"
 tag = "version-{version}"
-no_compare = "the autoconf bundle is generated from the tree (the amalgamation); there is no tree to set it against"
 
 [sqlite.not_affected]
 "CVE-2026-119586" = "the sqlite3 shell's .recover echoes dot-commands planted in a hostile database, when its output is piped back into the shell; no fix yet. Programs here link the library, which has no .recover; PROJ's build runs the shell on its own SQL."

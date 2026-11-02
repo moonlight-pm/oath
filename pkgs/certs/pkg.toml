@@ -1,18 +1,18 @@
-# The CA roots Oath trusts (R50): Mozilla's list, as curl's project publishes
-# it from Firefox's certdata.txt, less the roots distrust.txt names by
-# fingerprint. That file is ours, so a breach needs one line and a new pack,
-# not an upstream release, and it holds what a PEM file cannot say: Mozilla
-# may trust a root only for certificates issued before a date, and a PEM's
-# readers would trust it for all of them. A newer list is a new pin here.
-version = "2026-10-20"
+# The CA roots Oath trusts (R50): Mozilla's own data, certdata.txt, from NSS's
+# release, whose tree is compared with its tag (R54). A root Mozilla trusts for
+# servers goes in, less two kinds. One with a distrust-after date, which no PEM
+# can hold: its readers would trust everything it ever issues. And what
+# distrust.txt names by fingerprint, which is ours, so a breach needs one line
+# and a new pack, not an upstream release. A newer list is a new NSS pin here.
+version = "3.132"
 license = "MPL-2.0"
-description = "Oath's CA roots: Mozilla's list, less what pkgs/certs/distrust.txt names."
-home = "https://curl.se/docs/caextract.html"
-purl = "pkg:generic/certs@2026-10-20"
-build = []
+description = "Oath's CA roots: Mozilla's, from NSS, less what it dates and pkgs/certs/distrust.txt names."
+home = "https://wiki.mozilla.org/CA"
+purl = "pkg:generic/certs@3.132"
+build = ["python"]
 run = []
 
 [[source]]
-url = "https://curl.se/ca/cacert-2026-10-20.pem"
-sha256 = "796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe"
-unsigned = "curl.se publishes the CA bundle with a sha256, not a signature"
+url = "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_132_RTM/src/nss-3.132.tar.gz"
+sha256 = "ee9cf4837ba801141a804321c4462ad8f452ff4314275c6d5108a6b05af227ff"
+unsigned = "Mozilla publishes NSS with SHA256SUMS files only, no signature"

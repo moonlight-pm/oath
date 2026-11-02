@@ -192,14 +192,14 @@ sha256 = "a9484a369604d735f51a19c03b441cf2f2095dc55eff2f43cf3799f15c4fcd9a"
 file = "gomod/github.com/glebarez/sqlite/@v/v1.11.0.zip"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/go-chi/chi/v5/@v/v5.5.0.mod"
+url = "https://proxy.golang.org/github.com/go-chi/chi/v5/@v/v5.4.0.mod"
 sha256 = "7eb620f0fce870d93eaba87bf6f8c36284db786108030ca229a5016461797090"
-file = "gomod/github.com/go-chi/chi/v5/@v/v5.5.0.mod"
+file = "gomod/github.com/go-chi/chi/v5/@v/v5.4.0.mod"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/go-chi/chi/v5/@v/v5.5.0.zip"
-sha256 = "39f8416f36d5b177b0ce5d48cf21b3f460df9260feafab1fb8c1410fde0901dc"
-file = "gomod/github.com/go-chi/chi/v5/@v/v5.5.0.zip"
+url = "https://proxy.golang.org/github.com/go-chi/chi/v5/@v/v5.4.0.zip"
+sha256 = "9ad4c02fc179b71081c86a7166bc871e0a816d5a803da5053ea9ed4cfd97422f"
+file = "gomod/github.com/go-chi/chi/v5/@v/v5.4.0.zip"
 
 [[source]]
 url = "https://proxy.golang.org/github.com/go-logr/logr/@v/v1.4.3.mod"
@@ -642,14 +642,14 @@ sha256 = "b0a45594cda20ddb4264d84aeff9b588b8570bf6a2833c51a0b821734a298d95"
 file = "gomod/golang.org/x/crypto/@v/v0.58.0.zip"
 
 [[source]]
-url = "https://proxy.golang.org/golang.org/x/mod/@v/v0.42.0.mod"
-sha256 = "92defdc3237bf4f850e9e5c7d7ad6d06b9ef6a10caa12c2c8e54150a4c370270"
-file = "gomod/golang.org/x/mod/@v/v0.42.0.mod"
+url = "https://proxy.golang.org/golang.org/x/mod/@v/v0.41.0.mod"
+sha256 = "fc5b64ef51fd92f4b8763ebbd6fa95a70069d299c7de0f7c66661ef24283eb0c"
+file = "gomod/golang.org/x/mod/@v/v0.41.0.mod"
 
 [[source]]
-url = "https://proxy.golang.org/golang.org/x/mod/@v/v0.42.0.zip"
-sha256 = "2770e372e42c30dd498d63bb094fe257edfad6882c611f8e0d82925feac159f3"
-file = "gomod/golang.org/x/mod/@v/v0.42.0.zip"
+url = "https://proxy.golang.org/golang.org/x/mod/@v/v0.41.0.zip"
+sha256 = "201e678d0a35b18b246abe58d80017b75d60be21cbaf4cbb9e963b48872565a9"
+file = "gomod/golang.org/x/mod/@v/v0.41.0.zip"
 
 [[source]]
 url = "https://proxy.golang.org/golang.org/x/net/@v/v0.62.0.mod"

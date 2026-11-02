@@ -203,12 +203,12 @@ client, scp, sftp, ssh-keygen, sftp-server; with OpenSSL), dosfstools, curl (wit
 `/oath/store/pkg/curl/live/ssl/cert.pem`), BIND 9's dig, host and
 nslookup (`pkg:bind`, 2026-10-19), OpenSSL (its `ssl/cert.pem` links
 to curl's bundle) and the libraries they load
-(zlib, zstd, lzo, mbedTLS, libuv, liburcu, libcap); the kernel (`pkg:linux`) and firmware
+(zlib, zstd, mbedTLS, libuv, liburcu, libcap); the kernel (`pkg:linux`) and firmware
 (individual linux-firmware blobs); kexec-tools (`pkg:kexec`, static)
 for the installer; and the build tools (`pkg:rust`, `pkg:go`, python, meson,
 ninja, perl, m4, flex, bison, bc, elfutils, pkgconf, patchelf, protobuf).
 In no profile: `pkg:certs`, Oath's CA roots (R50), and servers built from
-source (R49): Caddy, Blocky, restic, rsync, Podman with its family, PostgreSQL
+source (R49): Blocky, restic, rsync, Podman with its family, PostgreSQL
 and PostGIS with theirs.
 `pkg:oath` follows this tree and is not locked. Nothing in the image
 comes from nixpkgs.

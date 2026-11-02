@@ -9,4 +9,6 @@ run = ["freetype", "glib", "gcc"]
 [[source]]
 url = "https://github.com/harfbuzz/harfbuzz/releases/download/15.0.0/harfbuzz-15.0.0.tar.xz"
 sha256 = "968536e9abd782f07f7954044c0c4020199fcdd39b41d221ec42d2a3be4a44df"
-unsigned = "a GitHub release asset; HarfBuzz signs only its git tags"
+git = "https://github.com/harfbuzz/harfbuzz"
+tag = "15.0.0"
+key = "hosny"

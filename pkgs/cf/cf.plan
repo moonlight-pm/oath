@@ -65,7 +65,7 @@
     },
     {
       "id": "pkg:node",
-      "hash": "sha256-c282b356282cd537f12da50fdb0550e6d1621774cfe2c6eafd33edff7f3bf383"
+      "hash": "sha256-9cff513e5c9f9573dce5b3d41aa9268a27985a996046c6dfb55b2d9d0d7ce1d7"
     },
     {
       "id": "pkg:patch",
@@ -91,7 +91,7 @@
   "run_needs": [
     {
       "id": "pkg:node",
-      "hash": "sha256-c282b356282cd537f12da50fdb0550e6d1621774cfe2c6eafd33edff7f3bf383"
+      "hash": "sha256-9cff513e5c9f9573dce5b3d41aa9268a27985a996046c6dfb55b2d9d0d7ce1d7"
     }
   ]
 }

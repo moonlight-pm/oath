@@ -4,14 +4,9 @@ tag 3.8 commit 7f2a35ad3321f9ba57a1062ca73b1f3ff26aca53 tree e3bb8bc6c43ca60fa92
 signed no
 same 217
 only-in-tag 375
+from automake 3
+from gnulib 4
 adds Makefile.in
 adds aclocal.m4
 adds cmd-parse.c
 adds configure
-adds etc/compile
-adds etc/config.guess
-adds etc/config.sub
-adds etc/depcomp
-adds etc/install-sh
-adds etc/missing
-adds etc/ylwrap

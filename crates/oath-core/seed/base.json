@@ -197,11 +197,6 @@
       "description": "libzstd, shared, and zstd.",
       "home": "https://facebook.github.io/zstd/"
     },
-    "pkg:lzo": {
-      "present": true,
-      "description": "LZO, shared (btrfs compression).",
-      "home": "https://www.oberhumer.com/opensource/lzo/"
-    },
     "pkg:mbedtls": {
       "present": true,
       "description": "Mbed TLS, shared (curl's TLS).",

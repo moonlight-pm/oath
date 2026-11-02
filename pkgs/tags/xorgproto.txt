@@ -4,14 +4,11 @@ tag xorgproto-2026.1 commit 6d3907b6d5dc4aa7d7ee6ee5d7d8714e7466630b tree 9ac35f
 signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
 same 340
 only-in-tag 36
+from automake 2
+from gnulib 4
 adds Makefile.in
 adds aclocal.m4
-adds compile
-adds config.guess
-adds config.sub
 adds configure
-adds install-sh
-adds missing
 adds specs/Makefile.in
 adds specs/bigreqsproto/Makefile.in
 adds specs/fontsproto/Makefile.in
@@ -21,4 +18,3 @@ adds specs/scrnsaverproto/Makefile.in
 adds specs/xcmiscproto/Makefile.in
 adds specs/xextproto/Makefile.in
 adds specs/xproto/Makefile.in
-adds test-driver

@@ -42,7 +42,7 @@ Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
 (Mbed TLS, CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`),
 `bind` (`dig`, `host`, `nslookup`; no `named`), `openssl` (`openssl`;
 its default `ssl/cert.pem` links to curl's bundle), and the libraries they load:
-`ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`, `lzo`, `mbedtls`, `libuv`,
+`ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`, `mbedtls`, `libuv`,
 `liburcu`, `libcap`, `libxcrypt`. A pack's `needs` lists the libraries it loads, so
 apply refuses removing `pkg:ncurses` while `pkg:less` is present.
 
@@ -167,7 +167,7 @@ sudo grep '"fetched"' /oath/log/oath.jsonl | tail -1  # where it came from
 
 Some packs are on the origin and in no profile, and a machine adds them
 this way: Node.js (`pkg:node`, which needs `pkg:gcc`), the GitHub CLI
-(`pkg:gh`, which needs `pkg:curl` for its CA bundle) and Cloudflare's
+(`pkg:gh`, which needs `pkg:certs` for its CA roots) and Cloudflare's
 CLI (`pkg:cf`, which needs `pkg:node`). Each need is pinned at the hash
 the pack's plan names (`run_needs` in `{origin}/plan/<name>/<plan>.plan`),
 which must be the one the machine runs:
@@ -184,11 +184,11 @@ gh --version                             # gh version 2.103.3 (2026-10-26)
 cf --version                             # 1.0.0-beta.26
 ```
 
-### Servers: Caddy, Blocky, restic, Podman, PostgreSQL (R49)
+### Servers: Blocky, restic, Podman, PostgreSQL (R49)
 
-These are built from source here and are in no profile: `pkg:caddy`,
+These are built from source here and are in no profile:
 `pkg:blocky`, `pkg:restic`, `pkg:rsync`, `pkg:podman` (with `pkg:conmon`,
-`pkg:crun`, `pkg:passt`, `pkg:netavark`), `pkg:postgresql` and `pkg:postgis`
+`pkg:crun`, `pkg:passt`), `pkg:postgresql` and `pkg:postgis`
 (with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
 takes them from the origin as above, with each need the plan names, once a
 release has published them. `pkg:go` is what builds the Go ones; a machine needs
@@ -196,8 +196,9 @@ it only to build.
 
 Go programs read their CA roots from `pkg:certs` (R50), through Go's own
 `crypto/x509`, unless `SSL_CERT_FILE` names others:
-`/oath/store/pkg/certs/live/ssl/cert.pem`. It is Mozilla's list less
-`pkgs/certs/distrust.txt`. curl and OpenSSL still read `pkg:curl`'s copy.
+`/oath/store/pkg/certs/live/ssl/cert.pem`. It is Mozilla's roots for servers, from
+NSS's `certdata.txt`, less any with a distrust-after date and what
+`pkgs/certs/distrust.txt` names. curl and OpenSSL still read `pkg:curl`'s copy.
 
 PostgreSQL finds PostGIS, a separate pack, through one line in
 `postgresql.conf`:
@@ -218,7 +219,8 @@ changes uid (stock nginx, unless told `user root;`) fails, so build or configure
 it to stay at its root. Two things are by hand for now: `/dev/net/tun` must be
 loaded (`modprobe tun`) and opened (`chmod 666`) until the next boot, and `/` is
 not a shared mount, which Podman warns of. Run as root it does not start a
-container: crun needs the kernel's BPF syscall, and a bridge network needs `nft`.
+container: crun needs the kernel's BPF syscall. There are no bridge networks: Podman's
+netavark is a stand-in that says so (R57).
 Memory and CPU limits need `CONFIG_MEMCG` and `CONFIG_CFS_BANDWIDTH`, which Oath's
 kernel leaves off.
 

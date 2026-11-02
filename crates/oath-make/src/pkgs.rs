@@ -360,8 +360,14 @@ fn check_signed(repo: &Path, pkg: &PkgToml, s: &Source) -> Result<()> {
     Ok(())
 }
 
-fn key_file(repo: &Path, key: &str) -> PathBuf {
-    pkgs_dir(repo).join("keys").join(format!("{key}.asc"))
+/// `pkgs/keys/<key>.asc`, or `.pub` for an SSH key (a signed tag's).
+pub(crate) fn key_file(repo: &Path, key: &str) -> PathBuf {
+    let keys = pkgs_dir(repo).join("keys");
+    let ssh = keys.join(format!("{key}.pub"));
+    if ssh.is_file() {
+        return ssh;
+    }
+    keys.join(format!("{key}.asc"))
 }
 
 /// Sigstore's trusted root (Fulcio CAs, Rekor keys), as Sigstore publishes it.
@@ -449,6 +455,7 @@ pub(crate) fn locked_run(
 pub fn fetch_all(repo: &Path, names: &[String]) -> Result<()> {
     let all = load(repo)?;
     let entries = crate::audit::entries(repo)?;
+    let mut stops = Vec::new();
     for (name, p) in &all {
         if names.is_empty() || names.contains(name) {
             fetch(repo, p).with_context(|| format!("pkgs/{name}"))?;
@@ -458,8 +465,14 @@ pub fn fetch_all(repo: &Path, names: &[String]) -> Result<()> {
                 if let Err(err) = crate::tags::ensure(repo, name, p, e) {
                     eprintln!(">> tag: pkgs/{name}: {err:#}");
                 }
+                if let Err(err) = crate::intake::ensure(repo, name, p, e) {
+                    stops.push(format!("{err:#}"));
+                }
             }
         }
+    }
+    if !stops.is_empty() {
+        bail!("{}", stops.join("\n"));
     }
     Ok(())
 }

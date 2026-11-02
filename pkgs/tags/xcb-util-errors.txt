@@ -5,16 +5,10 @@ signed pgp CFDF148828C642A7
 same 11
 only-in-tag 4
 submodule m4 8
+from automake 2
+from gettext 1
+from gnulib 6
 adds ChangeLog
-adds INSTALL
 adds Makefile.in
 adds aclocal.m4
-adds compile
-adds config.guess
-adds config.sub
 adds configure
-adds depcomp
-adds install-sh
-adds ltmain.sh
-adds missing
-adds test-driver

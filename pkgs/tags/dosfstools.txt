@@ -4,17 +4,11 @@ tag v4.2 commit 697f7692c951173c1b732901e13f72bd3182d575 tree b1f974f7970c6a5bf6
 signed no
 same 137
 only-in-tag 14
+from automake 2
+from gnulib 6
 adds Makefile.in
 adds aclocal.m4
-adds compile
-adds config.guess
-adds config.rpath
-adds config.sub
 adds configure
-adds depcomp
-adds install-sh
 adds manpages/Makefile.in
-adds missing
 adds src/Makefile.in
-adds test-driver
 adds tests/Makefile.in

@@ -1,5 +1,6 @@
-# Podman, daemonless containers. With conmon, crun, passt and netavark in
-# `run`, which it finds in /bin; no systemd, no btrfs driver, no gpgme (openpgp in Go), and
+# Podman, daemonless containers. With conmon, crun and passt in `run`, which it
+# finds in /bin, and a stand-in for netavark, since a rootless container's network
+# is pasta (R53, R57); no systemd, no btrfs driver, no gpgme (openpgp in Go), and
 # SQLite from pkg:sqlite, not the copy go-sqlite3 carries. Its modules are
 # below in place of its vendor/, since a module's fix may not wait for a
 # release (R49). Paths under /etc that it reads by default are in its pack.
@@ -14,7 +15,7 @@ description = "Podman: run OCI containers, without a daemon."
 home = "https://podman.io/"
 purl = "pkg:golang/github.com/containers/podman/v6@6.1.4"
 build = ["go", "pkgconf", "libseccomp", "sqlite"]
-run = ["certs", "libseccomp", "conmon", "crun", "netavark", "passt"]
+run = ["certs", "libseccomp", "conmon", "crun", "passt"]
 unsigned = "Go modules from proxy.golang.org: the go command checks each against go.sum in the build, and Go's checksum database checked them when pinned"
 
 [[source]]
@@ -468,24 +469,24 @@ sha256 = "b4cf89c50468296049c4a5b85b0df5a50aafbc2378e80cb299bc97dfde0b9168"
 file = "gomod/github.com/fsouza/go-dockerclient/@v/v1.13.2.zip"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/go-jose/go-jose/v4/@v/v4.1.7.mod"
+url = "https://proxy.golang.org/github.com/go-jose/go-jose/v4/@v/v4.1.6.mod"
 sha256 = "e069e6002d29495b8c2dc6cf0d3b56a075ec5be7abb6c2eb1a1c0845cb66b8b3"
-file = "gomod/github.com/go-jose/go-jose/v4/@v/v4.1.7.mod"
+file = "gomod/github.com/go-jose/go-jose/v4/@v/v4.1.6.mod"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/go-jose/go-jose/v4/@v/v4.1.7.zip"
-sha256 = "c16f20276aed16aef3e6c9cb2c87b3de5843e971f52807384e8ac22d480a5455"
-file = "gomod/github.com/go-jose/go-jose/v4/@v/v4.1.7.zip"
+url = "https://proxy.golang.org/github.com/go-jose/go-jose/v4/@v/v4.1.6.zip"
+sha256 = "62506f3369fc124682356bbe8eb442f982422401dda99ace200694efc962da76"
+file = "gomod/github.com/go-jose/go-jose/v4/@v/v4.1.6.zip"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/go-logr/logr/@v/v1.4.4.mod"
+url = "https://proxy.golang.org/github.com/go-logr/logr/@v/v1.4.3.mod"
 sha256 = "c496f30d700f02b49a1b50bc2486a27c2f74df3dce75d9db6d2d43975b381727"
-file = "gomod/github.com/go-logr/logr/@v/v1.4.4.mod"
+file = "gomod/github.com/go-logr/logr/@v/v1.4.3.mod"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/go-logr/logr/@v/v1.4.4.zip"
-sha256 = "3ab107c1d280ce798eaa744efd595982fa709d4023f3f38d24189827483c1710"
-file = "gomod/github.com/go-logr/logr/@v/v1.4.4.zip"
+url = "https://proxy.golang.org/github.com/go-logr/logr/@v/v1.4.3.zip"
+sha256 = "523d7a3587fe73f61ef41c8bc627f7d7f38de8104d46278154b307e60770ad70"
+file = "gomod/github.com/go-logr/logr/@v/v1.4.3.zip"
 
 [[source]]
 url = "https://proxy.golang.org/github.com/go-logr/stdr/@v/v1.2.2.mod"
@@ -1328,34 +1329,34 @@ sha256 = "6f2e1d300fe09d55ef13886efa33b06e9bcbd4d5f04f0014b0a2871402a28a28"
 file = "gomod/go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/@v/v0.69.0.zip"
 
 [[source]]
-url = "https://proxy.golang.org/go.opentelemetry.io/otel/@v/v1.45.0.mod"
-sha256 = "5fbed2c6d71624dd869501048d52436832e3d8b2da7bea539d44b982b62d6fe0"
-file = "gomod/go.opentelemetry.io/otel/@v/v1.45.0.mod"
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/@v/v1.44.0.mod"
+sha256 = "f466441934839f12a009415b4c16a77d221e1aa5d767f878e2af5888f1ad839f"
+file = "gomod/go.opentelemetry.io/otel/@v/v1.44.0.mod"
 
 [[source]]
-url = "https://proxy.golang.org/go.opentelemetry.io/otel/@v/v1.45.0.zip"
-sha256 = "65b5fc93c93f4eaef740b4bba81fd2543f248d5df85cf4d1ddf9ab459b30f7a2"
-file = "gomod/go.opentelemetry.io/otel/@v/v1.45.0.zip"
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/@v/v1.44.0.zip"
+sha256 = "4b7ef50caaf3dc6fc1a058f9ce2ccda6aad2ab3e8657acc4c8bb3102f79c53bc"
+file = "gomod/go.opentelemetry.io/otel/@v/v1.44.0.zip"
 
 [[source]]
-url = "https://proxy.golang.org/go.opentelemetry.io/otel/metric/@v/v1.45.0.mod"
-sha256 = "d5abe3973aa7d3f6c4302641b1f95a13fa9976a46d79717020f7583748842998"
-file = "gomod/go.opentelemetry.io/otel/metric/@v/v1.45.0.mod"
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/metric/@v/v1.44.0.mod"
+sha256 = "328a1fe2bc702b8c26765f18a9a26fc08748283bdbba26d538d4037b0fcb6afb"
+file = "gomod/go.opentelemetry.io/otel/metric/@v/v1.44.0.mod"
 
 [[source]]
-url = "https://proxy.golang.org/go.opentelemetry.io/otel/metric/@v/v1.45.0.zip"
-sha256 = "8f30ef0039306bf3a4421b8c08e3fc8922d13503dce53b3438e860b3628faecd"
-file = "gomod/go.opentelemetry.io/otel/metric/@v/v1.45.0.zip"
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/metric/@v/v1.44.0.zip"
+sha256 = "4442ba5f269f81251f549acb14ac16176f23967f4a0706163440b0df91592f96"
+file = "gomod/go.opentelemetry.io/otel/metric/@v/v1.44.0.zip"
 
 [[source]]
-url = "https://proxy.golang.org/go.opentelemetry.io/otel/trace/@v/v1.45.0.mod"
-sha256 = "8deb258105daad00ccd15be702c3afd78517327191cb0c4903dec33ff466c92d"
-file = "gomod/go.opentelemetry.io/otel/trace/@v/v1.45.0.mod"
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/trace/@v/v1.44.0.mod"
+sha256 = "24b803fb358fb3456f788a98a7c18fb391685bc5a708a118f02116b8969a03c4"
+file = "gomod/go.opentelemetry.io/otel/trace/@v/v1.44.0.mod"
 
 [[source]]
-url = "https://proxy.golang.org/go.opentelemetry.io/otel/trace/@v/v1.45.0.zip"
-sha256 = "32d7d64ea5991378184b03a9ed7b7822b17691a239508a6905fdd73819cb6c6f"
-file = "gomod/go.opentelemetry.io/otel/trace/@v/v1.45.0.zip"
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/trace/@v/v1.44.0.zip"
+sha256 = "cd1abf8dcec62fe9788fae9105760db1711e6e994d2e31cdda57ccb467e7ceec"
+file = "gomod/go.opentelemetry.io/otel/trace/@v/v1.44.0.zip"
 
 [[source]]
 url = "https://proxy.golang.org/go.podman.io/buildah/@v/v1.45.2.mod"
@@ -1498,44 +1499,44 @@ sha256 = "b75131f628f6e2e4892fd638d33127e952a5027775e0162b94ba069cb4e13863"
 file = "gomod/golang.org/x/text/@v/v0.43.0.zip"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260817212433-ac3dfec99bb1.mod"
-sha256 = "08892ac0667f165bc8bc0fd134be3287c8e261bf6fd236740af35a3c7c619ffb"
-file = "gomod/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260817212433-ac3dfec99bb1.mod"
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260526163538-3dc84a4a5aaa.mod"
+sha256 = "38b62d3d945082dc65f684d35c9ae3f2670a8b62ec920f6de0d09d16d4260deb"
+file = "gomod/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260526163538-3dc84a4a5aaa.mod"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260817212433-ac3dfec99bb1.zip"
-sha256 = "88da11db859222fdd0d2c8242c876c65f52e506254372bd6a437ff8ea8e1ab64"
-file = "gomod/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260817212433-ac3dfec99bb1.zip"
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260526163538-3dc84a4a5aaa.zip"
+sha256 = "358fa722934401c762695c29893bb0f35e5e90545f6a1d6208df3207d63c11fd"
+file = "gomod/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260526163538-3dc84a4a5aaa.zip"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260817212433-ac3dfec99bb1.mod"
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260526163538-3dc84a4a5aaa.mod"
 sha256 = "67711b6f9adde7cd2d23ba3512bf371ddc628709a4b7ff598794e638607e9987"
-file = "gomod/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260817212433-ac3dfec99bb1.mod"
+file = "gomod/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260526163538-3dc84a4a5aaa.mod"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260817212433-ac3dfec99bb1.zip"
-sha256 = "ea86b19385ad8a93819621cd90ed75db1e8ec364b6b3ada2061a601d785b7c11"
-file = "gomod/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260817212433-ac3dfec99bb1.zip"
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260526163538-3dc84a4a5aaa.zip"
+sha256 = "55f932b106d6f4f8cb76ae869e44f5d6d8400965fa441ee3532d09c96d64aac1"
+file = "gomod/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260526163538-3dc84a4a5aaa.zip"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/grpc/@v/v1.85.0.mod"
-sha256 = "cefeec472544b4affa46dcf08a02af961f421f57d4514373713a2d7fd54dcaed"
-file = "gomod/google.golang.org/grpc/@v/v1.85.0.mod"
+url = "https://proxy.golang.org/google.golang.org/grpc/@v/v1.83.2.mod"
+sha256 = "60f5c004181e7c03fe84131876418d157be7eb4ebea3c598fc5e37b816436780"
+file = "gomod/google.golang.org/grpc/@v/v1.83.2.mod"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/grpc/@v/v1.85.0.zip"
-sha256 = "bd1ce651075f55e5bad492f9e1ee7cc013f1b96770981556d2a9cb5ee2c31e1e"
-file = "gomod/google.golang.org/grpc/@v/v1.85.0.zip"
+url = "https://proxy.golang.org/google.golang.org/grpc/@v/v1.83.2.zip"
+sha256 = "84292905a694e17862d15abc123a6f7f7efa9e1e3a77e80120982ff95b2605ea"
+file = "gomod/google.golang.org/grpc/@v/v1.83.2.zip"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.mod"
+url = "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.11.mod"
 sha256 = "a75c105a852fbd8da8d8cfac09c2eab9a206cfd27ed37c973737e23f632ca96e"
-file = "gomod/google.golang.org/protobuf/@v/v1.36.12.mod"
+file = "gomod/google.golang.org/protobuf/@v/v1.36.11.mod"
 
 [[source]]
-url = "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.zip"
-sha256 = "68f8a3174aff42950fd9bd02c11b45c6986eb8060508d124d1c3dd6bf86b9be6"
-file = "gomod/google.golang.org/protobuf/@v/v1.36.12.zip"
+url = "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.11.zip"
+sha256 = "14983d36c56a814ed91b6d652f2b8f895baba1b84eb43b28a0b132c8637cd274"
+file = "gomod/google.golang.org/protobuf/@v/v1.36.11.zip"
 
 [[source]]
 url = "https://proxy.golang.org/gopkg.in/inf.v0/@v/v0.9.1.mod"

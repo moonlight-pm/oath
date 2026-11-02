@@ -1,14 +1,15 @@
 # Firmware blobs the base kernel loads: tg3 (tigon) for canto's Broadcom
 # NIC, SI Pitcairn (amdgpu, radeon) for canto's GPUs and the Intel AX210's
 # Bluetooth (btintel) for novus. Vendor files from
-# linux-firmware tag 20260916, pinned one by one. Add a blob here when a
-# machine needs it.
+# linux-firmware tag 20260916, pinned one by one, each checked at pin time to be
+# in that tag's tree, whose signature is checked too (R54). Add a blob here when
+# a machine needs it.
 version = "20260916"
 license = "LicenseRef-linux-firmware"
 description = "Firmware blobs from linux-firmware for the machines Oath runs on."
 home = "https://gitlab.com/kernel-firmware/linux-firmware"
 build = []
-unsigned = "cgit serves single blobs; linux-firmware signs only its git tags"
+unsigned = "cgit serves single blobs; linux-firmware signs only its git tags, which `cargo make pkgs --fetch` checks"
 
 [[source]]
 url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/amdgpu/pitcairn_ce.bin?h=20260916"

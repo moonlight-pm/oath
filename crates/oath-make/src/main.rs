@@ -6,6 +6,7 @@ mod check;
 mod cpio;
 mod elf;
 mod install;
+mod intake;
 mod kernel;
 mod manifest;
 mod oath_install;
@@ -164,9 +165,15 @@ enum Cmd {
         list: bool,
         /// Fetch and check the sources (sha256 and signature) of the named
         /// packages, or all, without building, and compare a new pin with
-        /// upstream's git tag (pkgs/tags/<name>.txt).
+        /// upstream's git tag (pkgs/tags/<name>.txt). A pin that moves a Go, npm,
+        /// Python or Rust package stops if that package is under a week old, or
+        /// a new name or publisher (pkgs/intake/<name>.txt, R57).
         #[arg(long)]
         fetch: bool,
+        /// Write what to read for each package that moved and has no verdict in
+        /// pkgs/reviews.txt: its diff, and what looks like new reach (build/review/).
+        #[arg(long)]
+        review: bool,
         /// Packages built at a time, each when what it builds with is
         /// built (the base rounds build one at a time).
         #[arg(short, long, default_value_t = 1)]
@@ -348,14 +355,21 @@ fn real() -> Result<()> {
             let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2);
             pkgs::bootstrap(&root, jobs.unwrap_or(n / 2).max(1))?
         }
-        Cmd::Pkgs { names, list, fetch, jobs } => {
+        Cmd::Pkgs { names, list, fetch, review, jobs } => {
             // `oath` is this tree (pkg:oath), not a pkgs/ package.
             let (oath, rest): (Vec<String>, Vec<String>) =
                 names.into_iter().partition(|n| n == "oath");
             if list {
                 pkgs::list(&root)?
+            } else if review {
+                intake::review(&root, &oath.iter().chain(&rest).cloned().collect::<Vec<_>>())?
             } else if fetch {
-                pkgs::fetch_all(&root, &rest)?
+                if oath.is_empty() || !rest.is_empty() {
+                    pkgs::fetch_all(&root, &rest)?
+                }
+                if !oath.is_empty() || rest.is_empty() {
+                    intake::ensure_cargo(&root)?
+                }
             } else {
                 if oath.is_empty() || !rest.is_empty() {
                     pkgs::build(&root, &rest, jobs)?

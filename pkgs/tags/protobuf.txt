@@ -1,6 +1,0 @@
-# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source protobuf-36.2.tar.gz 3d9642a662d10e68ebae5e53f14dcce5105684212d5078f8e0d47d1ab3ae6b64
-tag v36.2 commit 2c74169b34066ceb8ddb6b882fcb3fb32d737a55 tree 55de9e122524ec957159275e6e475f92c42a7a4b
-signed no
-same 3515
-only-in-tag 33

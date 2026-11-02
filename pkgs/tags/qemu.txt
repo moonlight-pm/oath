@@ -19,6 +19,7 @@ submodule roms/u-boot 17983
 submodule roms/u-boot-sam460ex 1847
 submodule roms/vbootrom 60
 submodule tests/lcitool/libvirt-ci 324
+from gnulib 2
 adds subprojects/berkeley-softfloat-3/.gitignore
 adds subprojects/berkeley-softfloat-3/.meson-subproject-wrap-hash.txt
 adds subprojects/berkeley-softfloat-3/COPYING.txt
@@ -712,7 +713,6 @@ adds subprojects/berkeley-testfloat-3/source/writeHex.h
 adds subprojects/keycodemapdb/.gitattributes
 adds subprojects/keycodemapdb/.meson-subproject-wrap-hash.txt
 adds subprojects/keycodemapdb/LICENSE.BSD
-adds subprojects/keycodemapdb/LICENSE.GPL2
 adds subprojects/keycodemapdb/README
 adds subprojects/keycodemapdb/data/README
 adds subprojects/keycodemapdb/data/keymaps.csv
@@ -734,7 +734,6 @@ adds subprojects/libvfio-user/.github/settings.yml
 adds subprojects/libvfio-user/.github/workflows/coverity.yml
 adds subprojects/libvfio-user/.github/workflows/pull_request.yml
 adds subprojects/libvfio-user/.gitignore
-adds subprojects/libvfio-user/.gitmodules
 adds subprojects/libvfio-user/.meson-subproject-wrap-hash.txt
 adds subprojects/libvfio-user/LICENSE
 adds subprojects/libvfio-user/Makefile

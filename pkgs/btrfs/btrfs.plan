@@ -52,10 +52,6 @@
       "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
     },
     {
-      "id": "pkg:lzo",
-      "hash": "sha256-fdd63c594aa44f5d0e1e199eb685ad806c20c7165b3abc42197922a48fe05700"
-    },
-    {
       "id": "pkg:make",
       "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
     },
@@ -101,10 +97,6 @@
     }
   ],
   "run_needs": [
-    {
-      "id": "pkg:lzo",
-      "hash": "sha256-fdd63c594aa44f5d0e1e199eb685ad806c20c7165b3abc42197922a48fe05700"
-    },
     {
       "id": "pkg:util-linux",
       "hash": "sha256-8a449ea08b06d511148ba3bfe2791a2936f1d7773c1a489aeae52f2a10978d04"
@@ -152,12 +144,13 @@ cat > /out/components.json <<'OATH_EOF'
   }
 ]
 OATH_EOF
-# btrfs and mkfs.btrfs, against the shared zlib, zstd, LZO and
-# util-linux's libblkid and libuuid.
+# btrfs and mkfs.btrfs, against the shared zlib, zstd and util-linux's libblkid
+# and libuuid. No LZO, whose project has no public history to check: `btrfs
+# restore` cannot read LZO extents, and the kernel still can.
 tar -xf "$SRC/$SOURCES"
 cd "btrfs-progs-v$VERSION"
 ./configure --prefix=/ --disable-documentation --disable-python --disable-convert \
-	--disable-libudev --disable-shared --disable-zoned --disable-backtrace
+	--disable-lzo --disable-libudev --disable-shared --disable-zoned --disable-backtrace
 make -j"$JOBS" btrfs mkfs.btrfs
 mkdir -p /out/bin
 cp btrfs mkfs.btrfs /out/bin/

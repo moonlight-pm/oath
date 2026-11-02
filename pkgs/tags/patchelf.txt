@@ -4,13 +4,10 @@ tag 0.19.2 commit 382d8bc12db9e720515da49d9c272ef4a622c3c0 tree 6d4bc5e37a114ff4
 signed no
 same 112
 only-in-tag 32
+from automake 2
+from gnulib 3
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/compile
-adds build-aux/depcomp
-adds build-aux/install-sh
-adds build-aux/missing
-adds build-aux/test-driver
 adds configure
 adds patchelf.spec
 adds src/Makefile.in

@@ -1,0 +1,185 @@
+# Written by `cargo make pkgs --fetch` (R57): when each package was published.
+pin 7afc14142a25e6e991f33d3c2001ec19cad031a4d320659b1bcfd7ed1c84fbf7
+checked 2026-11-02
+module crate adler2 2.0.1 2025-06-09T22:31:53.608434Z baseline by=oyvindln
+module crate aho-corasick 1.1.5 2026-08-03T11:44:11.111398Z baseline by=BurntSushi
+module crate android_system_properties 0.1.6 2026-08-05T13:44:27.717073Z baseline by=nical
+module crate anstream 1.0.0 2026-02-11T13:23:11.167553Z baseline by=epage
+module crate anstyle 1.0.14 2026-03-13T18:59:28.450723Z baseline by=epage
+module crate anstyle-parse 1.0.0 2026-02-11T13:23:08.814303Z baseline by=epage
+module crate anstyle-query 1.1.5 2025-11-13T17:30:22.615151Z baseline by=epage
+module crate anstyle-wincon 3.0.11 2025-11-13T17:30:26.488661Z baseline by=epage
+module crate anyhow 1.0.104 2026-07-18T20:59:37.656167Z baseline by=dtolnay
+module crate argon2 0.5.3 2024-01-20T19:21:51.661198Z baseline by=tarcieri
+module crate autocfg 1.5.1 2026-05-22T11:03:04.576867Z baseline by=cuviper
+module crate base16ct 0.2.0 2023-02-26T17:06:02.943914Z baseline by=tarcieri
+module crate base64ct 1.8.3 2026-01-12T04:41:30.672776Z baseline by=tarcieri
+module crate bit_field 0.10.3 2025-08-26T14:49:40.629519Z baseline by=phil-opp
+module crate bitflags 1.3.2 2021-08-16T04:16:02.683020Z baseline by=KodrAus
+module crate bitflags 2.13.1 2026-07-15T20:36:19.695060Z baseline by=KodrAus
+module crate blake2 0.10.6 2022-12-16T20:38:42.298223Z baseline by=newpavlov
+module crate block-buffer 0.10.4 2023-03-09T02:08:25.969182Z baseline by=newpavlov
+module crate bumpalo 3.20.3 2026-05-22T14:59:11.132139Z baseline by=fitzgen
+module crate cc 1.4.4 2026-08-21T08:20:10.205770Z baseline
+module crate cfg-if 1.0.4 2025-10-15T08:12:46.455816Z baseline by=rust-lang-owner
+module crate cfg_aliases 0.2.2 2026-07-16T14:57:16.699789Z baseline by=zicklag
+module crate chrono 0.4.45 2026-06-04T12:16:42.063037Z baseline by=djc
+module crate clap 4.6.6 2026-08-06T14:03:25.998957Z baseline by=epage
+module crate clap_builder 4.6.6 2026-08-06T14:03:23.670959Z baseline by=epage
+module crate clap_derive 4.6.4 2026-07-21T21:59:21.295220Z baseline by=epage
+module crate clap_lex 1.1.0 2026-03-12T19:10:37.648756Z baseline by=epage
+module crate colorchoice 1.0.5 2026-03-13T18:59:29.020348Z baseline by=epage
+module crate const-oid 0.9.6 2023-12-15T00:13:20.730670Z baseline by=baloo
+module crate core-foundation-sys 0.8.7 2024-08-11T00:48:27.870880Z baseline by=wusyong
+module crate cpufeatures 0.2.17 2025-01-25T01:35:46.131569Z baseline by=tarcieri
+module crate crc32fast 1.5.1 2026-08-22T18:49:22.203015Z baseline by=srijs
+module crate croner 4.0.2 2026-10-21T20:55:53.658699Z baseline by=Hexagon
+module crate crypto-bigint 0.5.5 2023-11-18T22:56:54.639626Z baseline by=tarcieri
+module crate crypto-common 0.1.7 2025-11-12T14:20:00.210277Z baseline by=newpavlov
+module crate curve25519-dalek 4.1.3 2024-06-18T19:20:35.007627Z baseline by=rozbb
+module crate curve25519-dalek-derive 0.1.1 2023-10-31T17:58:09.620431Z baseline by=rozbb
+module crate darling 0.20.11 2025-03-28T20:05:16.077464Z baseline by=TedDriggs
+module crate darling_core 0.20.11 2025-03-28T20:05:00.260571Z baseline by=TedDriggs
+module crate darling_macro 0.20.11 2025-03-28T20:05:07.944299Z baseline by=TedDriggs
+module crate der 0.7.10 2025-04-18T14:53:09.810695Z baseline by=baloo
+module crate der_derive 0.7.3 2024-07-09T20:34:52.277671Z baseline by=baloo
+module crate derive_builder 0.20.2 2024-10-08T16:55:17.031148Z baseline by=TedDriggs
+module crate derive_builder_core 0.20.2 2024-10-08T16:54:04.753323Z baseline by=TedDriggs
+module crate derive_builder_macro 0.20.2 2024-10-08T16:54:13.062233Z baseline by=TedDriggs
+module crate digest 0.10.7 2023-05-19T17:11:30.893794Z baseline by=tarcieri
+module crate dsa 0.6.3 2024-01-28T16:31:27.570545Z baseline by=tarcieri
+module crate dyn-clone 1.0.20 2025-07-27T19:29:46.625527Z baseline by=dtolnay
+module crate ecdsa 0.16.9 2023-11-16T15:55:48.150910Z baseline by=tarcieri
+module crate ed25519 2.2.3 2023-10-15T19:12:57.917968Z baseline by=tarcieri
+module crate ed25519-dalek 2.2.0 2025-07-09T16:24:38.881019Z baseline by=rozbb
+module crate elliptic-curve 0.13.8 2023-11-19T18:33:33.012946Z baseline by=tarcieri
+module crate equivalent 1.0.2 2025-02-14T22:14:18.212755Z baseline by=cuviper
+module crate errno 0.3.14 2025-09-09T04:35:15.362504Z baseline by=sunfishcode
+module crate fastrand 2.5.0 2026-07-19T12:40:53.683020Z baseline by=taiki-e
+module crate fdeflate 0.3.7 2024-12-06T03:16:12.038530Z baseline by=fintelia
+module crate ff 0.13.1 2025-03-09T22:16:54.081723Z baseline by=str4d
+module crate fiat-crypto 0.2.9 2024-05-12T22:29:28.840311Z baseline by=JasonGross
+module crate find-msvc-tools 0.1.11 2026-08-14T13:13:50.653084Z baseline
+module crate flagset 0.4.7 2025-04-04T00:44:54.941020Z baseline by=rjzak
+module crate flate2 1.1.9 2026-02-03T06:50:17.589Z baseline by=Byron
+module crate fnv 1.0.7 2020-05-14T16:06:29.223002Z baseline by=Manishearth
+module crate futures-core 0.3.34 2026-08-11T12:13:01.547638Z baseline by=taiki-e
+module crate futures-task 0.3.34 2026-08-11T12:13:07.886026Z baseline by=taiki-e
+module crate futures-util 0.3.34 2026-08-11T12:13:19.272525Z baseline by=taiki-e
+module crate generic-array 0.14.7 2023-03-28T00:01:29.542246Z baseline by=novacrazy
+module crate getrandom 0.2.17 2026-01-11T21:09:53.669788Z baseline by=newpavlov
+module crate getrandom 0.4.3 2026-06-17T18:01:59.979552Z baseline
+module crate group 0.13.0 2022-12-06T02:02:57.906653Z baseline by=str4d
+module crate hashbrown 0.17.1 2026-05-09T04:35:04.251Z baseline by=rust-lang-owner
+module crate heck 0.5.0 2024-03-12T22:42:23.303234Z baseline by=jplatte
+module crate hmac 0.12.1 2022-02-17T10:50:37.938406Z baseline by=newpavlov
+module crate iana-time-zone 0.1.65 2026-01-28T08:40:52.528531Z baseline
+module crate iana-time-zone-haiku 0.1.2 2023-05-12T08:43:45.406909Z baseline by=astraw
+module crate ident_case 1.0.1 2019-03-18T20:07:20.426691Z baseline by=TedDriggs
+module crate indexmap 2.14.2 2026-09-05T01:53:48.019655Z baseline by=cuviper
+module crate is_terminal_polyfill 1.70.2 2025-10-21T17:00:14.577881Z baseline by=epage
+module crate itoa 1.0.18 2026-03-20T00:12:37.043881Z baseline by=dtolnay
+module crate js-sys 0.3.104 2026-08-08T00:57:01.489848Z baseline
+module crate lazy_static 1.5.1 2026-10-01T07:18:53.602470Z baseline by=rust-lang-owner
+module crate libc 0.2.189 2026-07-21T21:33:28.018110Z baseline by=rust-lang-owner
+module crate libm 0.2.16 2026-01-24T03:14:21.229132Z baseline by=rust-lang-owner
+module crate linux-raw-sys 0.12.1 2025-12-23T00:00:07.059646Z baseline by=sunfishcode
+module crate log 0.4.34 2026-08-22T11:44:27.941626Z baseline by=KodrAus
+module crate memchr 2.8.3 2026-07-08T00:49:54.408285Z baseline by=BurntSushi
+module crate miniz_oxide 0.8.9 2025-06-09T22:26:12.218895Z baseline by=oyvindln
+module crate nix 0.30.1 2025-05-04T04:20:05.085648Z baseline by=SteveLauC
+module crate num-bigint-dig 0.8.6 2025-11-12T14:16:01.001387Z baseline by=dignifiedquire
+module crate num-integer 0.1.47 2026-08-12T00:11:57.840357Z baseline by=cuviper
+module crate num-iter 0.1.46 2026-07-07T19:51:46.163752Z baseline by=cuviper
+module crate num-traits 0.2.19 2024-05-03T21:27:39.856244Z baseline by=cuviper
+module crate once_cell 1.21.4 2026-03-12T10:59:52.512992Z baseline by=matklad
+module crate once_cell_polyfill 1.70.2 2025-10-21T16:41:12.320992Z baseline by=epage
+module crate p256 0.13.2 2023-04-15T20:53:22.070799Z baseline by=tarcieri
+module crate p384 0.13.1 2025-02-07T01:25:30.110736Z baseline by=tarcieri
+module crate password-hash 0.5.0 2023-03-04T23:21:39.806293Z baseline by=tarcieri
+module crate pin-project-lite 0.2.17 2026-02-27T15:19:08.132543Z baseline
+module crate pkcs1 0.7.5 2023-04-24T19:00:40.063744Z baseline by=tarcieri
+module crate pkcs8 0.10.2 2023-04-05T00:01:55.909808Z baseline by=tarcieri
+module crate png 0.17.16 2024-12-20T07:54:34.188924Z baseline by=fintelia
+module crate ppv-lite86 0.2.21 2025-03-09T20:01:40.419162Z baseline by=kazcw
+module crate primeorder 0.13.6 2023-11-16T02:38:26.379230Z baseline by=tarcieri
+module crate proc-macro2 1.0.107 2026-07-19T00:18:25.189787Z baseline by=dtolnay
+module crate ptr_meta 0.3.2 2026-08-05T11:57:40.251295Z baseline by=djkoloski
+module crate ptr_meta_derive 0.3.2 2026-08-05T11:57:38.483983Z baseline by=djkoloski
+module crate quote 1.0.47 2026-07-19T00:16:57.083778Z baseline by=dtolnay
+module crate r-efi 6.0.0 2026-02-03T09:53:46.251122Z baseline by=dvdhrm
+module crate rand 0.8.8 2026-08-25T07:45:50.786344Z baseline
+module crate rand_chacha 0.3.1 2021-06-09T19:46:38.636012Z baseline by=dhardy
+module crate rand_core 0.6.4 2022-09-15T13:23:44.548230Z baseline by=dhardy
+module crate ref-cast 1.0.27 2026-08-19T04:27:28.040119Z baseline by=dtolnay
+module crate ref-cast-impl 1.0.27 2026-08-19T04:27:24.118760Z baseline by=dtolnay
+module crate regex 1.13.1 2026-07-15T20:19:35.162139Z baseline by=BurntSushi
+module crate regex-automata 0.4.18 2026-08-04T13:10:37.385020Z baseline by=BurntSushi
+module crate regex-syntax 0.8.11 2026-06-09T15:00:25.566550Z baseline by=BurntSushi
+module crate rfc6979 0.4.0 2023-02-28T20:35:07.181292Z baseline by=tarcieri
+module crate rsa 0.9.10 2026-01-06T15:00:37.002313Z baseline by=dignifiedquire
+module crate rustc_version 0.4.1 2024-08-28T09:21:22.033328Z baseline by=djc
+module crate rustix 1.1.4 2026-02-22T16:22:51.655697Z baseline by=sunfishcode
+module crate rustversion 1.0.23 2026-07-07T02:10:26.015429Z baseline by=dtolnay
+module crate schemars 1.2.3 2026-10-12T20:30:07.644403Z baseline by=GREsau
+module crate schemars_derive 1.2.3 2026-10-12T20:30:04.560309Z baseline by=GREsau
+module crate sec1 0.7.3 2023-07-16T23:37:20.031224Z baseline by=tarcieri
+module crate semver 1.0.28 2026-04-04T00:25:14.379075Z baseline by=dtolnay
+module crate serde 1.0.229 2026-07-18T23:05:13.266456Z baseline by=dtolnay
+module crate serde_core 1.0.229 2026-07-18T23:05:10.896830Z baseline by=dtolnay
+module crate serde_derive 1.0.229 2026-07-18T23:05:07.504375Z baseline by=dtolnay
+module crate serde_derive_internals 0.30.0 2026-07-25T14:58:00.367023Z baseline by=dtolnay
+module crate serde_json 1.0.151 2026-07-20T05:54:44.078083Z baseline by=dtolnay
+module crate serde_spanned 0.6.9 2025-06-06T15:03:03.118150Z baseline by=epage
+module crate sha1 0.10.7 2026-07-10T14:30:11.575923Z baseline
+module crate sha2 0.10.9 2025-04-30T14:38:09.894118Z baseline by=newpavlov
+module crate shlex 2.0.1 2026-05-17T18:56:12.775983Z baseline by=fenhl
+module crate signature 2.2.0 2023-11-12T20:49:39.435224Z baseline by=tarcieri
+module crate simd-adler32 0.3.10 2026-07-14T17:42:45.047242Z baseline by=mcountryman
+module crate slab 0.4.12 2026-01-31T12:59:22.609198Z baseline by=Darksonn
+module crate smallvec 1.16.3 2026-10-10T02:25:27.052021Z baseline by=jdm
+module crate spin 0.9.9 2026-07-13T19:44:05.786736Z baseline by=zesterer
+module crate spki 0.7.3 2023-11-28T19:35:46.555229Z baseline by=baloo
+module crate strsim 0.11.1 2024-04-02T22:18:09.406790Z baseline by=maxbachmann
+module crate strum 0.27.2 2025-07-19T23:06:37.716908Z baseline by=Peternator7
+module crate strum_macros 0.27.2 2025-07-19T23:06:13.192018Z baseline by=Peternator7
+module crate subtle 2.6.1 2024-06-24T17:25:24.458503Z baseline by=isislovecruft
+module crate syn 2.0.119 2026-07-15T00:23:48.828241Z baseline by=dtolnay
+module crate syn 3.0.4 2026-08-24T00:39:54.110906Z baseline by=dtolnay
+module crate tempfile 3.27.0 2026-03-11T00:20:04.812840Z baseline by=Stebalien
+module crate thiserror 2.0.20 2026-08-08T06:22:23.795550Z baseline by=dtolnay
+module crate thiserror-impl 2.0.20 2026-08-08T06:22:19.469295Z baseline by=dtolnay
+module crate tls_codec 0.4.2 2025-02-10T07:26:17.047590Z baseline by=franziskuskiefer
+module crate tls_codec_derive 0.4.2 2025-02-10T07:25:58.254205Z baseline by=franziskuskiefer
+module crate toml 0.8.23 2025-06-06T15:03:09.398690Z baseline by=epage
+module crate toml_datetime 0.6.11 2025-06-06T14:48:37.162628Z baseline by=epage
+module crate toml_edit 0.22.27 2025-06-06T15:03:06.510450Z baseline by=epage
+module crate toml_write 0.1.2 2025-06-06T15:03:03.571556Z baseline by=epage
+module crate typenum 1.20.1 2026-05-29T16:00:41.793255Z baseline by=paholg
+module crate ucs2 0.3.3 2024-04-06T19:59:48.679201Z baseline by=nicholasbishop
+module crate uefi 0.35.0 2025-05-04T20:14:34.133724Z baseline by=nicholasbishop
+module crate uefi-macros 0.18.1 2025-05-04T20:14:24.051135Z baseline by=nicholasbishop
+module crate uefi-raw 0.11.0 2025-05-04T20:14:17.520737Z baseline by=nicholasbishop
+module crate uguid 2.2.0 2023-11-28T01:11:54.762688Z baseline by=nicholasbishop
+module crate unicode-ident 1.0.24 2026-02-16T02:46:44.304053Z baseline by=dtolnay
+module crate utf8parse 0.2.2 2024-06-08T07:07:41.813419Z baseline by=chrisduerr
+module crate version_check 0.9.5 2024-07-25T23:38:14.142737Z baseline by=SergioBenitez
+module crate wasi 0.11.1+wasi-snapshot-preview1 2025-06-10T14:23:45.376914Z baseline by=alexcrichton
+module crate wasm-bindgen 0.2.127 2026-08-08T00:56:59.500214Z baseline
+module crate wasm-bindgen-macro 0.2.127 2026-08-08T00:56:57.526148Z baseline
+module crate wasm-bindgen-macro-support 0.2.127 2026-08-08T00:56:55.670334Z baseline
+module crate wasm-bindgen-shared 0.2.127 2026-08-08T00:56:52.445936Z baseline
+module crate windows-core 0.62.2 2025-10-06T19:15:14.207850Z baseline by=kennykerr
+module crate windows-implement 0.60.2 2025-10-06T19:13:31.467507Z baseline by=kennykerr
+module crate windows-interface 0.59.3 2025-10-06T19:14:18.053188Z baseline by=kennykerr
+module crate windows-link 0.2.1 2025-10-06T17:35:08.351469Z baseline by=kennykerr
+module crate windows-result 0.4.1 2025-10-06T19:14:39.441465Z baseline by=kennykerr
+module crate windows-strings 0.5.1 2025-10-06T19:15:01.410695Z baseline by=kennykerr
+module crate windows-sys 0.61.2 2025-10-06T19:18:30.163595Z baseline by=kennykerr
+module crate winnow 0.7.15 2026-03-05T19:00:42.033522Z baseline by=epage
+module crate x509-cert 0.2.5 2023-12-24T00:56:13.305498Z baseline by=tarcieri
+module crate zerocopy 0.8.63 2026-10-13T20:03:04.207234Z baseline
+module crate zerocopy-derive 0.8.63 2026-10-13T20:01:58.185985Z baseline
+module crate zeroize 1.9.1 2026-10-06T17:49:21.148259Z baseline
+module crate zeroize_derive 1.5.0 2026-06-12T18:21:55.086967Z baseline
+module crate zmij 1.0.23 2026-07-13T12:58:53.705886Z baseline by=dtolnay

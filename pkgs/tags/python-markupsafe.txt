@@ -4,9 +4,9 @@ tag 3.0.4 commit ece26078ec168ebac69f02877238e68d4b376c91 tree 94a76fed7f79d5e3b
 signed ssh
 same 31
 only-in-tag 16
+from gettext 1
 adds PKG-INFO
 adds setup.cfg
 adds src/MarkupSafe.egg-info/PKG-INFO
 adds src/MarkupSafe.egg-info/SOURCES.txt
-adds src/MarkupSafe.egg-info/dependency_links.txt
 adds src/MarkupSafe.egg-info/top_level.txt

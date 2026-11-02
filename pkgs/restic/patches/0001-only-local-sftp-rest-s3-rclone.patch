@@ -1,0 +1,35 @@
+Oath's restic has no Azure, Backblaze, Google Cloud or Swift backend: each pulls in a
+cloud SDK, and together they are 48 of its 85 modules, gRPC and OpenTelemetry among
+them (R57). Local, SFTP, REST, S3 and rclone stay.
+
+--- a/internal/backend/all/all.go	2026-07-05 01:52:50.000000000 -0600
++++ b/internal/backend/all/all.go	2026-11-02 00:02:05.008890519 -0700
+@@ -1,28 +1,20 @@
+ package all
+ 
+ import (
+-	"github.com/restic/restic/internal/backend/azure"
+-	"github.com/restic/restic/internal/backend/b2"
+-	"github.com/restic/restic/internal/backend/gs"
+ 	"github.com/restic/restic/internal/backend/local"
+ 	"github.com/restic/restic/internal/backend/location"
+ 	"github.com/restic/restic/internal/backend/rclone"
+ 	"github.com/restic/restic/internal/backend/rest"
+ 	"github.com/restic/restic/internal/backend/s3"
+ 	"github.com/restic/restic/internal/backend/sftp"
+-	"github.com/restic/restic/internal/backend/swift"
+ )
+ 
+ func Backends() *location.Registry {
+ 	backends := location.NewRegistry()
+-	backends.Register(azure.NewFactory())
+-	backends.Register(b2.NewFactory())
+-	backends.Register(gs.NewFactory())
+ 	backends.Register(local.NewFactory())
+ 	backends.Register(rclone.NewFactory())
+ 	backends.Register(rest.NewFactory())
+ 	backends.Register(s3.NewFactory())
+ 	backends.Register(sftp.NewFactory())
+-	backends.Register(swift.NewFactory())
+ 	return backends
+ }

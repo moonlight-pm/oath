@@ -81,7 +81,7 @@
     },
     {
       "id": "pkg:sqlite",
-      "hash": "sha256-7ee4b7b0b6835125fddc7e4d054c9d980fead33052aa3c6aaff196153c1f6aad"
+      "hash": "sha256-43d602687c0c34dff3b9130d5da9e0e5b2f54657fdc5a96ac2eb21c713a9573a"
     },
     {
       "id": "pkg:tar",

@@ -4,19 +4,13 @@ tag 2.2 commit b3deb8a5dcfb42d8c10ba1f2f1ac9bd7bf7271cc tree c8c9e393f727fe85188
 signed no
 same 34
 only-in-tag 3
+from automake 1
+from gettext 1
+from gnulib 5
+from libtool 3
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/compile
-adds build-aux/config.guess
-adds build-aux/config.sub
-adds build-aux/depcomp
-adds build-aux/install-sh
 adds build-aux/libtool.m4
 adds build-aux/ltmain.sh
-adds build-aux/ltoptions.m4
-adds build-aux/ltsugar.m4
-adds build-aux/ltversion.m4
-adds build-aux/lt~obsolete.m4
-adds build-aux/missing
 adds config.h.in
 adds configure

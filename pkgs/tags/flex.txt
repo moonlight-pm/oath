@@ -4,22 +4,16 @@ tag v2.6.4 commit ab49343b08c933e32de8de78132649f9560a3727 tree 24ec67287f3745be
 signed pgp E4B29C8D64885307
 same 238
 only-in-tag 10
-adds ABOUT-NLS
+from automake 5
+from gettext 8
+from gnulib 16
+from libtool 3
 adds ChangeLog
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/compile
-adds build-aux/config.guess
-adds build-aux/config.rpath
-adds build-aux/config.sub
-adds build-aux/depcomp
 adds build-aux/install-sh
 adds build-aux/ltmain.sh
 adds build-aux/mdate-sh
-adds build-aux/missing
-adds build-aux/test-driver
-adds build-aux/texinfo.tex
-adds build-aux/ylwrap
 adds configure
 adds doc/Makefile.in
 adds doc/flex.1
@@ -31,31 +25,13 @@ adds doc/version.texi
 adds examples/Makefile.in
 adds examples/fastwc/Makefile.in
 adds examples/manual/Makefile.in
-adds m4/gettext.m4
-adds m4/iconv.m4
-adds m4/intlmacosx.m4
-adds m4/lib-ld.m4
-adds m4/lib-link.m4
-adds m4/lib-prefix.m4
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
-adds m4/nls.m4
-adds m4/po.m4
-adds m4/progtest.m4
-adds po/Makefile.in.in
-adds po/Rules-quot
-adds po/boldquot.sed
 adds po/ca.gmo
 adds po/da.gmo
 adds po/de.gmo
 adds po/en@boldquot.gmo
-adds po/en@boldquot.header
 adds po/en@boldquot.po
 adds po/en@quot.gmo
-adds po/en@quot.header
 adds po/en@quot.po
 adds po/eo.gmo
 adds po/es.gmo
@@ -64,17 +40,13 @@ adds po/flex.pot
 adds po/fr.gmo
 adds po/ga.gmo
 adds po/hr.gmo
-adds po/insert-header.sin
 adds po/ko.gmo
 adds po/nl.gmo
 adds po/pl.gmo
 adds po/pt_BR.gmo
-adds po/quot.sed
-adds po/remove-potcdate.sin
 adds po/ro.gmo
 adds po/ru.gmo
 adds po/sr.gmo
-adds po/stamp-po
 adds po/sv.gmo
 adds po/tr.gmo
 adds po/vi.gmo

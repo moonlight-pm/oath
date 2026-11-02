@@ -4,6 +4,7 @@ tag zsh-5.9.2 commit ddee3e7a751a4f03d5a1041fd44bb7af7bc0cebb tree 8f6e0f1aaec02
 signed pgp 7CA7ECAAF06216B90F894146ACF8146CAE8CBBC4
 same 1728
 only-in-tag 1
+from gettext 1
 adds Doc/Zsh/manmodmenu.yo
 adds Doc/Zsh/modlist.yo
 adds Doc/Zsh/modmenu.yo
@@ -122,4 +123,3 @@ adds META-FAQ
 adds Src/patchlevel.h.release
 adds config.h.in
 adds configure
-adds stamp-h.in

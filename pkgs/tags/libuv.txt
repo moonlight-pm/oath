@@ -4,15 +4,14 @@ tag v1.53.0 commit 840404ce8ba7cc0204be52389a6cfff9f2c90fb6 tree 1dd7e91f65aca0b
 signed pgp 612F0EAD9401622379DF4402F28C3C8DA33C03BE
 same 427
 only-in-tag 55
+from automake 1
+from gettext 1
+from gnulib 7
+from libtool 3
 differs ChangeLog
 adds Makefile.in
 adds aclocal.m4
-adds ar-lib
-adds compile
-adds config.guess
-adds config.sub
 adds configure
-adds depcomp
 adds docs/build/doctrees/api.doctree
 adds docs/build/doctrees/async.doctree
 adds docs/build/doctrees/check.doctree
@@ -125,7 +124,6 @@ adds docs/build/html/_static/loop_iteration.png
 adds docs/build/html/_static/minus.png
 adds docs/build/html/_static/plus.png
 adds docs/build/html/_static/pygments.css
-adds docs/build/html/_static/scripts/furo-extensions.js
 adds docs/build/html/_static/scripts/furo.js
 adds docs/build/html/_static/scripts/furo.js.LICENSE.txt
 adds docs/build/html/_static/scripts/furo.js.map
@@ -186,12 +184,6 @@ adds docs/build/html/version.html
 adds docs/build/linkcheck/output.json
 adds docs/build/linkcheck/output.txt
 adds docs/src/sphinx-plugins/__pycache__/manpage.cpython-312.pyc
-adds install-sh
 adds ltmain.sh
 adds m4/libtool.m4
 adds m4/libuv-extra-automake-flags.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
-adds missing

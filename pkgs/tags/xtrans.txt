@@ -4,14 +4,10 @@ tag xtrans-1.6.0 commit cf05ba4a10c90da2c63805a5375e983b174e28b0 tree fe465e940a
 signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
 same 17
 only-in-tag 4
+from automake 1
+from gnulib 5
 adds ChangeLog
-adds INSTALL
 adds Makefile.in
 adds aclocal.m4
-adds compile
-adds config.guess
-adds config.sub
 adds configure
 adds doc/Makefile.in
-adds install-sh
-adds missing

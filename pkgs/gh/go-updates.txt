@@ -1,0 +1,2 @@
+# Modules gh 2.103.3 pins behind their fixes (2026-11-02).
+golang.org/x/net v0.62.0 # CVE-2026-78661, CVE-2026-97045, HTML

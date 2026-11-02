@@ -4,11 +4,11 @@ tag xcb-proto-1.17.0 commit 77d7fc04da729ddc5ed4aacf30253726fac24dca tree 26da96
 signed pgp 5EAF21049A86B8A54CCB1BFAACEB29740C9A4E97
 same 52
 only-in-tag 4
+from automake 1
+from gnulib 1
 adds Makefile.in
 adds aclocal.m4
 adds configure
-adds install-sh
-adds missing
 adds py-compile
 adds src/Makefile.in
 adds xcbgen/Makefile.in

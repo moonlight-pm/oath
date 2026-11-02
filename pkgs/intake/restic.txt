@@ -1,0 +1,41 @@
+# Written by `cargo make pkgs --fetch` (R57): when each package was published.
+pin f8d83acf3502687324cbb014dea3bc6115889ccb7e49b75cfc55158cc3727e75
+checked 2026-11-02
+source 2026-07-05T09:52:50+02:00
+module go github.com/anacrolix/fuse v0.3.1 2024-06-11T06:18:49Z baseline
+module go github.com/cenkalti/backoff/v4 v4.3.0 2024-01-02T22:56:19Z baseline
+module go github.com/cespare/xxhash/v2 v2.3.0 2024-04-04T20:00:10Z baseline
+module go github.com/cpuguy83/go-md2man/v2 v2.0.6 2024-12-16T17:50:50Z baseline
+module go github.com/dustin/go-humanize v1.0.1 2023-01-10T06:44:38Z baseline
+module go github.com/elithrar/simple-scrypt v1.4.1 2026-02-10T16:09:25Z baseline
+module go github.com/go-ini/ini v1.67.0 2022-08-08T11:35:30Z baseline
+module go github.com/google/uuid v1.6.0 2024-01-23T18:54:04Z baseline
+module go github.com/hashicorp/golang-lru/v2 v2.0.7 2023-09-21T18:26:40Z baseline
+module go github.com/klauspost/compress v1.18.7 2026-06-30T09:38:05Z baseline
+module go github.com/klauspost/cpuid/v2 v2.2.11 2025-06-25T09:40:59Z baseline
+module go github.com/klauspost/crc32 v1.3.0 2025-07-22T09:52:00Z baseline
+module go github.com/kr/fs v0.1.0 2018-05-06T03:17:01Z baseline
+module go github.com/minio/crc64nvme v1.1.1 2025-08-12T08:24:13Z baseline
+module go github.com/minio/md5-simd v1.1.2 2021-01-07T19:48:44Z baseline
+module go github.com/minio/minio-go/v7 v7.1.0 2026-04-26T06:48:55Z baseline
+module go github.com/peterbourgon/unixtransport v0.0.7 2025-09-19T15:37:51Z baseline
+module go github.com/philhofer/fwd v1.2.0 2024-09-16T14:44:58Z baseline
+module go github.com/pkg/errors v0.9.1 2020-01-14T19:47:44Z baseline
+module go github.com/pkg/sftp v1.13.10 2025-10-22T22:24:47Z baseline
+module go github.com/pkg/xattr v0.4.12 2025-06-30T19:49:16Z baseline
+module go github.com/restic/chunker v0.4.0 2020-07-20T19:11:28Z baseline
+module go github.com/rs/xid v1.6.0 2024-08-23T12:21:22Z baseline
+module go github.com/russross/blackfriday/v2 v2.1.0 2020-10-27T03:47:54Z baseline
+module go github.com/spf13/cobra v1.10.2 2025-12-03T23:51:15Z baseline
+module go github.com/spf13/pflag v1.0.10 2025-09-02T06:08:29Z baseline
+module go github.com/tinylib/msgp v1.6.1 2025-12-04T16:43:24Z baseline
+module go github.com/zeebo/xxh3 v1.1.0 2026-01-23T19:18:08Z baseline
+module go go.uber.org/automaxprocs v1.6.0 2024-09-23T17:47:22Z baseline
+module go go.yaml.in/yaml/v3 v3.0.4 2025-06-29T14:09:51Z baseline
+module go golang.org/x/crypto v0.58.0 2026-10-09T16:24:17Z baseline
+module go golang.org/x/net v0.62.0 2026-10-27T19:00:16Z baseline
+module go golang.org/x/sync v0.24.0 2026-09-23T16:28:17Z baseline
+module go golang.org/x/sys v0.49.0 2026-10-06T18:35:47Z baseline
+module go golang.org/x/term v0.47.0 2026-10-09T15:22:17Z baseline
+module go golang.org/x/text v0.43.0 2026-10-09T15:18:32Z baseline
+module go golang.org/x/time v0.15.0 2026-02-11T19:14:29Z baseline

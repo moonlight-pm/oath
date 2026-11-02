@@ -1,18 +1,1619 @@
-# GitHub CLI: the vendor's Linux build (R7), a static Go executable, from
-# the repository's GitHub releases, pinned by sha256. GitHub publishes an
-# unsigned checksums list and, through its API, Sigstore attestations
-# (DSSE, SLSA provenance) that oath-make does not check yet. The licence
-# is gh's and the Go modules it links (go.mod). gh reads curl's CA bundle
-# (pkg:curl), since Go looks for one only under /etc.
+# GitHub CLI, built from its tag's tree with the modules below (R49), so Go's
+# fixes and pkg:certs' roots reach it. GitHub's tags are unsigned, and its
+# attestations cover only its own binaries. Re-pin with:
+#   pkgs/go-modules.sh gh ./cmd/gh
 version = "2.103.3"
-license = "MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND MPL-2.0"
+license = "MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND MPL-2.0 AND ISC"
 description = "GitHub CLI: GitHub's pull requests, issues, releases and API from the terminal."
 home = "https://cli.github.com/"
 purl = "pkg:golang/github.com/cli/cli/v2@2.103.3"
-build = []
-run = ["curl"]
+build = ["go"]
+run = ["certs"]
+unsigned = "GitHub's tags are unsigned; its modules come from proxy.golang.org, and the go command checks each against go.sum in the build"
 
 [[source]]
-url = "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz"
-sha256 = "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d"
-unsigned = "gh's checksums list is unsigned, and its release attestations (Sigstore DSSE through GitHub's API) are a format oath-make does not check yet"
+url = "https://github.com/cli/cli/archive/refs/tags/v2.103.3.tar.gz"
+sha256 = "bb148138a3a2fe023e57c78042fe3b42fc09171c0e8fff4cf983b227b7a2eade"
+file = "gh-2.103.3.tar.gz"
+
+# Modules, from pkgs/go-modules.sh:
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/bubbles/v2/@v/v2.2.1.mod"
+sha256 = "ab366ed6271dcbae86b9e95e7836f0e8608fb609b016c27a6c14f9c34038aa2d"
+file = "gomod/charm.land/bubbles/v2/@v/v2.2.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/bubbles/v2/@v/v2.2.1.zip"
+sha256 = "64292cdc965e4cdd81fae7b9b26f77ced179321ab014f49a442b4789078b0024"
+file = "gomod/charm.land/bubbles/v2/@v/v2.2.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/bubbletea/v2/@v/v2.1.0.mod"
+sha256 = "76c36de322aca6480246c8488eeb49f43de569076ff936f668d592bbae2254f4"
+file = "gomod/charm.land/bubbletea/v2/@v/v2.1.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/bubbletea/v2/@v/v2.1.0.zip"
+sha256 = "d9d17cf9b480bc63a3b4c5fc463569d4874e8ab1f8d40db55dda3efa3033fed4"
+file = "gomod/charm.land/bubbletea/v2/@v/v2.1.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/glamour/v2/@v/v2.0.2-0.20261015065741-010543cac1a0.mod"
+sha256 = "69ca601a31a62b0576b718cb5c309516ba559180d47d359665fbfb3e2f22bfb2"
+file = "gomod/charm.land/glamour/v2/@v/v2.0.2-0.20261015065741-010543cac1a0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/glamour/v2/@v/v2.0.2-0.20261015065741-010543cac1a0.zip"
+sha256 = "fb9532ebdd6c6a3c4e20a354410ecd895c74cd398919a0f67d27bad532fb5a5d"
+file = "gomod/charm.land/glamour/v2/@v/v2.0.2-0.20261015065741-010543cac1a0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/huh/v2/@v/v2.0.3.mod"
+sha256 = "c59aee4b4111ada084eec98842411d9f10abd6e01ca4082f460ef71cc8814f43"
+file = "gomod/charm.land/huh/v2/@v/v2.0.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/huh/v2/@v/v2.0.3.zip"
+sha256 = "36b678812fc02d48ecd1d9eac232eef07abce4425b9fdd13eca1b5f4feabec83"
+file = "gomod/charm.land/huh/v2/@v/v2.0.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/lipgloss/v2/@v/v2.0.6.mod"
+sha256 = "a53ac4e91e3cad3a953594f11035a9379573ebbf72d3d4c52a73c45ee48599dc"
+file = "gomod/charm.land/lipgloss/v2/@v/v2.0.6.mod"
+
+[[source]]
+url = "https://proxy.golang.org/charm.land/lipgloss/v2/@v/v2.0.6.zip"
+sha256 = "26b77e3a8159d4d084d04a32c63db22cf9a48553d3eee1b488e478b1bb592c23"
+file = "gomod/charm.land/lipgloss/v2/@v/v2.0.6.zip"
+
+[[source]]
+url = "https://proxy.golang.org/dario.cat/mergo/@v/v1.0.2.mod"
+sha256 = "d4c65d7a5f68051187d1385f0de39cc4a7f47a88dc37f45d2dfe494403e25ee2"
+file = "gomod/dario.cat/mergo/@v/v1.0.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/dario.cat/mergo/@v/v1.0.2.zip"
+sha256 = "67d2e9d83ca57d3a8ce1a0e0e626a7c03753b3966b58b41b95e97ca4e7b2c640"
+file = "gomod/dario.cat/mergo/@v/v1.0.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!alec!aivazis/survey/v2/@v/v2.3.7.mod"
+sha256 = "0aaa95b0de99a52cf5fcbb45900647c3e557c42569042cbed9ab240c1cc1df41"
+file = "gomod/github.com/!alec!aivazis/survey/v2/@v/v2.3.7.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!alec!aivazis/survey/v2/@v/v2.3.7.zip"
+sha256 = "613a49c86cab69b67fbc8fb0f0b183c23bfdc2700122330c6b53020e01ebad60"
+file = "gomod/github.com/!alec!aivazis/survey/v2/@v/v2.3.7.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!make!now!just/heredoc/@v/v1.0.0.mod"
+sha256 = "dc1d84bb336e71e8696b999eeca5c0bd5cd6b40870a4cdc71ad118873e01014a"
+file = "gomod/github.com/!make!now!just/heredoc/@v/v1.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!make!now!just/heredoc/@v/v1.0.0.zip"
+sha256 = "062afe6e11aa3c3ac0035d08907b80d5e5b7563905603391ee774bda440abf16"
+file = "gomod/github.com/!make!now!just/heredoc/@v/v1.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!masterminds/goutils/@v/v1.1.1.mod"
+sha256 = "4efa82512d1b88c438c122671324c4b968b5a55af04388c7bcf100a6c4b1974d"
+file = "gomod/github.com/!masterminds/goutils/@v/v1.1.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!masterminds/goutils/@v/v1.1.1.zip"
+sha256 = "ef8778a20c37e98a92e3b1db5ab027cc201743a2f5bfb26ba228bf0515e20b48"
+file = "gomod/github.com/!masterminds/goutils/@v/v1.1.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!masterminds/semver/v3/@v/v3.4.0.mod"
+sha256 = "7462a48cd90958d6fc79f674abb7ec89fa477a1cf4f292994ecb72a043c57d03"
+file = "gomod/github.com/!masterminds/semver/v3/@v/v3.4.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!masterminds/semver/v3/@v/v3.4.0.zip"
+sha256 = "20cf1a0cf1820860c47cb87a0daa1422824e39ca15f47bb59a52b33bce31a239"
+file = "gomod/github.com/!masterminds/semver/v3/@v/v3.4.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!masterminds/sprig/v3/@v/v3.3.0.mod"
+sha256 = "e05abb962d0f1db4f2b9f0fb28851b7fa8823339d5872d7793f718725ce3f83c"
+file = "gomod/github.com/!masterminds/sprig/v3/@v/v3.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/!masterminds/sprig/v3/@v/v3.3.0.zip"
+sha256 = "c731370f7601711d1df9b4b0c9bb8488fc381b32fd3e7de97a03673e8287b719"
+file = "gomod/github.com/!masterminds/sprig/v3/@v/v3.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/alecthomas/chroma/v2/@v/v2.27.0.mod"
+sha256 = "eeaef52bd74315d588d6799990ba08cc209a70e748473c3a4333349944871a10"
+file = "gomod/github.com/alecthomas/chroma/v2/@v/v2.27.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/alecthomas/chroma/v2/@v/v2.27.0.zip"
+sha256 = "8eb074aaf4a7b4cf406e81062cf5d6b54c32797be53f5287d88ef570fa73625f"
+file = "gomod/github.com/alecthomas/chroma/v2/@v/v2.27.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/asaskevich/govalidator/@v/v0.0.0-20230301143203-a9d515a09cc2.mod"
+sha256 = "0da541b84b29a09818d3806ff85c782caca88f0d814e7ee79c7c63f35c4c43b8"
+file = "gomod/github.com/asaskevich/govalidator/@v/v0.0.0-20230301143203-a9d515a09cc2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/asaskevich/govalidator/@v/v0.0.0-20230301143203-a9d515a09cc2.zip"
+sha256 = "0f8ec67bbc585d29ec115c0885cef6f2431a422cc1cc10008e466ebe8be5dc37"
+file = "gomod/github.com/asaskevich/govalidator/@v/v0.0.0-20230301143203-a9d515a09cc2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/atotto/clipboard/@v/v0.1.4.mod"
+sha256 = "871822cbc7df3792f78a100886b7f499f73555938e336b918682119688ea8ad0"
+file = "gomod/github.com/atotto/clipboard/@v/v0.1.4.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/atotto/clipboard/@v/v0.1.4.zip"
+sha256 = "d67b2c36c662751309fd2ec351df3651584bea840bd27be9a90702c3a238b43f"
+file = "gomod/github.com/atotto/clipboard/@v/v0.1.4.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aymanbagabas/go-osc52/v2/@v/v2.0.1.mod"
+sha256 = "4646f9f19a822aebf4296bce24d5f2b7b2700ea1c44f5cc978300263cb7b5611"
+file = "gomod/github.com/aymanbagabas/go-osc52/v2/@v/v2.0.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aymanbagabas/go-osc52/v2/@v/v2.0.1.zip"
+sha256 = "939ebf2a5481f2172e1a5e0c318d05aef5b6d950a960556216c3da7879a927f8"
+file = "gomod/github.com/aymanbagabas/go-osc52/v2/@v/v2.0.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aymerick/douceur/@v/v0.2.0.mod"
+sha256 = "5e0454241c257b4c4f9dbddc84e78e99e29c5275b3cfaee8afd2bb476e724897"
+file = "gomod/github.com/aymerick/douceur/@v/v0.2.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aymerick/douceur/@v/v0.2.0.zip"
+sha256 = "dcbf69760cc1a8b32384495438e1086e4c3d669b2ebc0debd92e1865ffd6be60"
+file = "gomod/github.com/aymerick/douceur/@v/v0.2.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/blang/semver/@v/v3.5.1+incompatible.mod"
+sha256 = "63bdcb88b2383e6591a1dcf521494c732b28c7abe8d9b18c21671efe23d7ba78"
+file = "gomod/github.com/blang/semver/@v/v3.5.1+incompatible.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/blang/semver/@v/v3.5.1+incompatible.zip"
+sha256 = "8d032399cf835b93f7cf641b5477a31a002059eed7888a775f97bd3e9677ad3c"
+file = "gomod/github.com/blang/semver/@v/v3.5.1+incompatible.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/briandowns/spinner/@v/v1.23.2.mod"
+sha256 = "e6497e34858f7c78903ce241155cddda00c6825db9934ed03399c33313e20d99"
+file = "gomod/github.com/briandowns/spinner/@v/v1.23.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/briandowns/spinner/@v/v1.23.2.zip"
+sha256 = "d4e47d6807f7fc3584afe8e62e0bbd4e9e0bcb923715baa7b6beab5c8271fcb1"
+file = "gomod/github.com/briandowns/spinner/@v/v1.23.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/catppuccin/go/@v/v0.3.0.mod"
+sha256 = "22924927bcfd4c8bb0301e83b78fd392ebc2c64ae56f3874b8046f63d855cd02"
+file = "gomod/github.com/catppuccin/go/@v/v0.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/catppuccin/go/@v/v0.3.0.zip"
+sha256 = "e3be1459f9d1e63d003c19bcd310ec35027f5596ce87a1836ac4f72e4133dcf4"
+file = "gomod/github.com/catppuccin/go/@v/v0.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cenkalti/backoff/v4/@v/v4.3.0.mod"
+sha256 = "83d4122d49127f13cda95fb79397cfe516c23cdd7fc07a2886ad764dd1422be3"
+file = "gomod/github.com/cenkalti/backoff/v4/@v/v4.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cenkalti/backoff/v4/@v/v4.3.0.zip"
+sha256 = "ef220b1ebf3bff4c46bbad5b2e123030e812b722b9e9dc88bc35956f9c622c2a"
+file = "gomod/github.com/cenkalti/backoff/v4/@v/v4.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cenkalti/backoff/v5/@v/v5.0.3.mod"
+sha256 = "43ecf1255f004bf9e5e18749c275507326aa1f26b2b504185dd6db07efbbffc7"
+file = "gomod/github.com/cenkalti/backoff/v5/@v/v5.0.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cenkalti/backoff/v5/@v/v5.0.3.zip"
+sha256 = "58e4d9014277bc1c5c7ab64539137923964cc3920303a4f771d02a532939bedb"
+file = "gomod/github.com/cenkalti/backoff/v5/@v/v5.0.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cespare/xxhash/v2/@v/v2.3.0.mod"
+sha256 = "a090f8eaaf59cc2adf163299ebefe797e1dca3f6add2c8e88a6a3b90ba538b02"
+file = "gomod/github.com/cespare/xxhash/v2/@v/v2.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cespare/xxhash/v2/@v/v2.3.0.zip"
+sha256 = "145a26cdc7c49db566017b807c4989ee7f7ddeb569423e9cb99f995fac3621d3"
+file = "gomod/github.com/cespare/xxhash/v2/@v/v2.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/colorprofile/@v/v0.4.3.mod"
+sha256 = "4da50dc5179ea48dc7c55db78f05b4911047341ef749027b3969130edf1fd43b"
+file = "gomod/github.com/charmbracelet/colorprofile/@v/v0.4.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/colorprofile/@v/v0.4.3.zip"
+sha256 = "656472ff48f01a098418a31667f3253cf34e04d4e1cb6c1a0a80f76ad370b689"
+file = "gomod/github.com/charmbracelet/colorprofile/@v/v0.4.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/ultraviolet/@v/v0.0.0-20261008173134-6b8d4baf91b4.mod"
+sha256 = "f39901fef32095ad80e23340af267dc36c0af06e7f0dc24a834898ef280d923a"
+file = "gomod/github.com/charmbracelet/ultraviolet/@v/v0.0.0-20261008173134-6b8d4baf91b4.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/ultraviolet/@v/v0.0.0-20261008173134-6b8d4baf91b4.zip"
+sha256 = "87eb57acb5fec6e392f7b3d0a1b2766161637d426c72288b2912752bdaa55796"
+file = "gomod/github.com/charmbracelet/ultraviolet/@v/v0.0.0-20261008173134-6b8d4baf91b4.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/ansi/@v/v0.11.9.mod"
+sha256 = "37eb859ba45ddd27690bfa8d617e8744c37b090e121c03a3b8c8d72b1a3437f5"
+file = "gomod/github.com/charmbracelet/x/ansi/@v/v0.11.9.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/ansi/@v/v0.11.9.zip"
+sha256 = "9815535699efc21636755cc84dbc92250182246e876e4ea83e87464d871cbf82"
+file = "gomod/github.com/charmbracelet/x/ansi/@v/v0.11.9.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/exp/ordered/@v/v0.1.0.mod"
+sha256 = "7740b5f56ecd6af5fdb9fe8ca245a01bdfde4ceda00d206ae96149c410b84b85"
+file = "gomod/github.com/charmbracelet/x/exp/ordered/@v/v0.1.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/exp/ordered/@v/v0.1.0.zip"
+sha256 = "80554ac3bf96f3a1c4782708c820c757b9092652c5c1d6b421f397821d27689a"
+file = "gomod/github.com/charmbracelet/x/exp/ordered/@v/v0.1.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/exp/slice/@v/v0.0.0-20250630141444-821143405392.mod"
+sha256 = "974a4956b28ee2510ce9e4c5b1da7f01b8c44ab0b7bc18a4777da552d5a608b9"
+file = "gomod/github.com/charmbracelet/x/exp/slice/@v/v0.0.0-20250630141444-821143405392.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/exp/slice/@v/v0.0.0-20250630141444-821143405392.zip"
+sha256 = "9276e4aa526d77efe0bfe3ffc34d903581d2cf49d48f86b95fde88d6fdbfe17c"
+file = "gomod/github.com/charmbracelet/x/exp/slice/@v/v0.0.0-20250630141444-821143405392.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/exp/strings/@v/v0.0.0-20250630141444-821143405392.mod"
+sha256 = "2028e71e73bc0ff81c268ff84968d1de132a4cb71da0eb8ff1d2c39a6e42bba6"
+file = "gomod/github.com/charmbracelet/x/exp/strings/@v/v0.0.0-20250630141444-821143405392.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/exp/strings/@v/v0.0.0-20250630141444-821143405392.zip"
+sha256 = "61eb1b88a207afb7129ba657b9f366c2afe1079d81cb93b1a958c593b5e36507"
+file = "gomod/github.com/charmbracelet/x/exp/strings/@v/v0.0.0-20250630141444-821143405392.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/term/@v/v0.2.2.mod"
+sha256 = "6df18166815b45f523a79580acfa95f12990a1568e6325f9d60b5825df952962"
+file = "gomod/github.com/charmbracelet/x/term/@v/v0.2.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/term/@v/v0.2.2.zip"
+sha256 = "0452a430f7e6882393f81ba19a70a63709960acb9743e1199a7b04d908e6b506"
+file = "gomod/github.com/charmbracelet/x/term/@v/v0.2.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/termios/@v/v0.1.1.mod"
+sha256 = "4094a8d0a57055f0bfb8a1191e69ee282e2de40d3ab7724cc134ca26fc02b9d1"
+file = "gomod/github.com/charmbracelet/x/termios/@v/v0.1.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/termios/@v/v0.1.1.zip"
+sha256 = "3dd9823ed5db08d398c276e216e4150560d3a6894814c4404251b4210b22abed"
+file = "gomod/github.com/charmbracelet/x/termios/@v/v0.1.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/windows/@v/v0.2.2.mod"
+sha256 = "2256def13bee56024d8300ad8474563bb2b0d5f769ac9ca9f89868cab014b6e3"
+file = "gomod/github.com/charmbracelet/x/windows/@v/v0.2.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/charmbracelet/x/windows/@v/v0.2.2.zip"
+sha256 = "fb3f82357ad9a8a25a42dfa1880434149dd6fcc43e0b32a03664f72082ce5c2f"
+file = "gomod/github.com/charmbracelet/x/windows/@v/v0.2.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/browser/@v/v1.3.0.mod"
+sha256 = "242b6a7ed16d019444add79b8a750a0661acfffd31f1e21aa826e1f458310905"
+file = "gomod/github.com/cli/browser/@v/v1.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/browser/@v/v1.3.0.zip"
+sha256 = "5d743729fcb6d5467f206328e476b0bdc124426a77e2d8e13320ad929afd0127"
+file = "gomod/github.com/cli/browser/@v/v1.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/go-gh/v2/@v/v2.17.0.mod"
+sha256 = "e3c4e1a7156b403f4db4eb38ef3d302da523e2d73082e3637825b2b1f9e4be88"
+file = "gomod/github.com/cli/go-gh/v2/@v/v2.17.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/go-gh/v2/@v/v2.17.0.zip"
+sha256 = "24f6e773c1ad635cc56bb36d9e929774c469f5323072f648a0d7b4e51f8d28ed"
+file = "gomod/github.com/cli/go-gh/v2/@v/v2.17.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/oauth/@v/v1.3.0.mod"
+sha256 = "fa58d8ea9fefc0fa4fb05f3b5460b062b38231dbd85a65d6627762a0e9a25693"
+file = "gomod/github.com/cli/oauth/@v/v1.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/oauth/@v/v1.3.0.zip"
+sha256 = "4ea3377ed8c7c5b60db99714613b66c94d9587b9788b80119dc30fe5cc922fd4"
+file = "gomod/github.com/cli/oauth/@v/v1.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/safeexec/@v/v1.0.1.mod"
+sha256 = "f0c7a1bd509d267d05f9498d8b990de0e3fd579954ae2801d2806bd330ac1833"
+file = "gomod/github.com/cli/safeexec/@v/v1.0.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/safeexec/@v/v1.0.1.zip"
+sha256 = "c867d2a3ad61200cc84e2604372e9bd5815cb283b2ff2b183e57fe29d00e01ba"
+file = "gomod/github.com/cli/safeexec/@v/v1.0.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/shurcoo!l-graphql/@v/v0.0.4.mod"
+sha256 = "7cb8cb8b9a4d6d50aef8f5c2a18d3a0a6a8d548a7610d791141237dbc3b24f77"
+file = "gomod/github.com/cli/shurcoo!l-graphql/@v/v0.0.4.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cli/shurcoo!l-graphql/@v/v0.0.4.zip"
+sha256 = "cbafac3fc126aa86fa6acf4ffed78ca6879473e09e3454608899b847a4a1b302"
+file = "gomod/github.com/cli/shurcoo!l-graphql/@v/v0.0.4.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/clipperhouse/displaywidth/@v/v0.11.0.mod"
+sha256 = "643bf909351d7bc8ff29a8a7bb44cca11efe181ed66e5efe57d695bb023effb3"
+file = "gomod/github.com/clipperhouse/displaywidth/@v/v0.11.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/clipperhouse/displaywidth/@v/v0.11.0.zip"
+sha256 = "27830c91cdfb2a648748db21f7a2734dcb50d21c620edde51d488ba4e7967e3d"
+file = "gomod/github.com/clipperhouse/displaywidth/@v/v0.11.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/clipperhouse/uax29/v2/@v/v2.7.0.mod"
+sha256 = "f3c5f4e4f9e7fb16aea5fd9dc5f24c3ff9c157b1a67576c0f2140117589507a0"
+file = "gomod/github.com/clipperhouse/uax29/v2/@v/v2.7.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/clipperhouse/uax29/v2/@v/v2.7.0.zip"
+sha256 = "67b1278f1ffb4e4d783a390e48fe7396864650138e785d4b4bfca5914333f761"
+file = "gomod/github.com/clipperhouse/uax29/v2/@v/v2.7.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cyberphone/json-canonicalization/@v/v0.0.0-20241213102144-19d51d7fe467.mod"
+sha256 = "55f88f79a57c1fbdbc11ad2f170fc5435288fb889a5b19cea79f3bd566518534"
+file = "gomod/github.com/cyberphone/json-canonicalization/@v/v0.0.0-20241213102144-19d51d7fe467.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cyberphone/json-canonicalization/@v/v0.0.0-20241213102144-19d51d7fe467.zip"
+sha256 = "9492fa89d9f2543890346672d239c494ccba4073be51f338b50e8f749792e25a"
+file = "gomod/github.com/cyberphone/json-canonicalization/@v/v0.0.0-20241213102144-19d51d7fe467.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/digitorus/pkcs7/@v/v0.0.0-20260914070511-d678ea5ea03f.mod"
+sha256 = "809d588560956c93c24571087248b86351aa2740f66c7e1cb101b24b555b7826"
+file = "gomod/github.com/digitorus/pkcs7/@v/v0.0.0-20260914070511-d678ea5ea03f.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/digitorus/pkcs7/@v/v0.0.0-20260914070511-d678ea5ea03f.zip"
+sha256 = "0c1d1372341a2746d63e5dd5a837f0dbd3872282eb0539acd7de5807c1123c78"
+file = "gomod/github.com/digitorus/pkcs7/@v/v0.0.0-20260914070511-d678ea5ea03f.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/digitorus/timestamp/@v/v0.0.0-20250524132541-c45532741eea.mod"
+sha256 = "e3757f9764a2a8cef24777cd2bbc1be95d98260364551b91843d9c59cfdeb08f"
+file = "gomod/github.com/digitorus/timestamp/@v/v0.0.0-20250524132541-c45532741eea.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/digitorus/timestamp/@v/v0.0.0-20250524132541-c45532741eea.zip"
+sha256 = "06fe173581b0896eb9e249cb55f3d55a04d1dfa18e2db70dbb4494c51e992527"
+file = "gomod/github.com/digitorus/timestamp/@v/v0.0.0-20250524132541-c45532741eea.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/distribution/reference/@v/v0.6.0.mod"
+sha256 = "f58a3047216ff2a4dd996e6579a8444bc4de2de08b6cdec7429b9e3e649b9a75"
+file = "gomod/github.com/distribution/reference/@v/v0.6.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/distribution/reference/@v/v0.6.0.zip"
+sha256 = "08232852a7a908263599777daab50e4306bd877e2467df036206367496122bcc"
+file = "gomod/github.com/distribution/reference/@v/v0.6.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/dlclark/regexp2/v2/@v/v2.2.1.mod"
+sha256 = "369b6fa60dfc57254cc1baee2becffe594ec1b4ec4f63f46a3c714fb1e2eb107"
+file = "gomod/github.com/dlclark/regexp2/v2/@v/v2.2.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/dlclark/regexp2/v2/@v/v2.2.1.zip"
+sha256 = "b105eabacfc1b6e0dd48b2220ee985a8047392610ab35dd27956a49dc44dd9cd"
+file = "gomod/github.com/dlclark/regexp2/v2/@v/v2.2.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/docker/cli/@v/v29.7.2+incompatible.mod"
+sha256 = "c43f3501c5704f110a12749dbcfb94f7c7a5b0d5fd5facb978626d31ce0cb821"
+file = "gomod/github.com/docker/cli/@v/v29.7.2+incompatible.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/docker/cli/@v/v29.7.2+incompatible.zip"
+sha256 = "d532f44e62ee4d1f43ef4bdd27ccaf2a22a22044151df61908169c7baa4abdd5"
+file = "gomod/github.com/docker/cli/@v/v29.7.2+incompatible.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/docker/docker-credential-helpers/@v/v0.9.3.mod"
+sha256 = "fa52c94e6d351a9c30a16358af50f2381de1eb386069d76eddc536c4552d713b"
+file = "gomod/github.com/docker/docker-credential-helpers/@v/v0.9.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/docker/docker-credential-helpers/@v/v0.9.3.zip"
+sha256 = "d1d7e8680253fa217273bf0df542ae9183b07716a7e52582b7d51347db4db661"
+file = "gomod/github.com/docker/docker-credential-helpers/@v/v0.9.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/dustin/go-humanize/@v/v1.0.1.mod"
+sha256 = "4325999d0a6841031258a2561c22879d9fbdf77abc6b32a17b1cb6edf0810fb2"
+file = "gomod/github.com/dustin/go-humanize/@v/v1.0.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/dustin/go-humanize/@v/v1.0.1.zip"
+sha256 = "319404ea84c8a4e2d3d83f30988b006e7dd04976de3e1a1a90484ad94679fa46"
+file = "gomod/github.com/dustin/go-humanize/@v/v1.0.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/fatih/color/@v/v1.18.0.mod"
+sha256 = "8732da74f45ec4c0ea5a7a3072c4d458aafb6102af75155d459dcb70afce6ae6"
+file = "gomod/github.com/fatih/color/@v/v1.18.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/fatih/color/@v/v1.18.0.zip"
+sha256 = "4dc6907b7f6807b37c21ad527d966437d398f03472115f471eaa8fe5875363d3"
+file = "gomod/github.com/fatih/color/@v/v1.18.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gabriel-vasile/mimetype/@v/v1.4.16.mod"
+sha256 = "e7a39d89ad1e968d858a5b5179ab8a406a9c9fe918d99cbc77a4029657081fd6"
+file = "gomod/github.com/gabriel-vasile/mimetype/@v/v1.4.16.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gabriel-vasile/mimetype/@v/v1.4.16.zip"
+sha256 = "8b5a6b5e60c462072f9214676dc9a773f8c38844fa16eebeb37a2901abf26d3e"
+file = "gomod/github.com/gabriel-vasile/mimetype/@v/v1.4.16.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-logr/logr/@v/v1.4.4.mod"
+sha256 = "c496f30d700f02b49a1b50bc2486a27c2f74df3dce75d9db6d2d43975b381727"
+file = "gomod/github.com/go-logr/logr/@v/v1.4.4.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-logr/logr/@v/v1.4.4.zip"
+sha256 = "3ab107c1d280ce798eaa744efd595982fa709d4023f3f38d24189827483c1710"
+file = "gomod/github.com/go-logr/logr/@v/v1.4.4.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-logr/stdr/@v/v1.2.2.mod"
+sha256 = "0812160f77474d8dbf692b7caaee7fd5508448c705d9b54b5a3496ac44468c2c"
+file = "gomod/github.com/go-logr/stdr/@v/v1.2.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-logr/stdr/@v/v1.2.2.zip"
+sha256 = "9dd6893bf700198485ae699640b49bc1efbc6c73b37cb5792a0476e1fd8f7fef"
+file = "gomod/github.com/go-logr/stdr/@v/v1.2.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/analysis/@v/v0.25.5.mod"
+sha256 = "3531fdef6c688b09726da2e2fc0510539080d034585cef72195a7e101994f42e"
+file = "gomod/github.com/go-openapi/analysis/@v/v0.25.5.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/analysis/@v/v0.25.5.zip"
+sha256 = "78ed5b158531cce2705f3759e3d2551278324962c266b1781ad787ec590124be"
+file = "gomod/github.com/go-openapi/analysis/@v/v0.25.5.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/errors/@v/v0.22.8.mod"
+sha256 = "ff7a4c44413cdbe61a3ffd16a7d62489eb7f593f399538400d5db97bd3a86c77"
+file = "gomod/github.com/go-openapi/errors/@v/v0.22.8.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/errors/@v/v0.22.8.zip"
+sha256 = "29105371e583abec5440063d20b77c67f67bf6b017c959c88934a5da6e65ae92"
+file = "gomod/github.com/go-openapi/errors/@v/v0.22.8.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/jsonpointer/@v/v1.0.0.mod"
+sha256 = "99718351aaec019f59f73768dc790f08175880594df60df508d8ffc2c42fca38"
+file = "gomod/github.com/go-openapi/jsonpointer/@v/v1.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/jsonpointer/@v/v1.0.0.zip"
+sha256 = "403cc887595921a24880a173862ea95b7c46f0747725d7b75c31165e0647e157"
+file = "gomod/github.com/go-openapi/jsonpointer/@v/v1.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/jsonreference/@v/v1.0.0.mod"
+sha256 = "5b1fe7285e7a218123374db46a7cc2d2ece0940f0671fee7dc58a11aa503f890"
+file = "gomod/github.com/go-openapi/jsonreference/@v/v1.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/jsonreference/@v/v1.0.0.zip"
+sha256 = "381714f9c672c76e573155e6e6fb38ab1ccceafba6163d672a52d4460a999f5b"
+file = "gomod/github.com/go-openapi/jsonreference/@v/v1.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/loads/@v/v0.25.0.mod"
+sha256 = "a0747ef92424354fee41569e8fbc8c6bd43c9e55317f01af3d73ad36e48c5863"
+file = "gomod/github.com/go-openapi/loads/@v/v0.25.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/loads/@v/v0.25.0.zip"
+sha256 = "309d12a74ca10eacfe6d73a3b1f91a7fd4c5d30609bddb48afb05e101c3ac361"
+file = "gomod/github.com/go-openapi/loads/@v/v0.25.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/runtime/@v/v0.33.0.mod"
+sha256 = "da922632e139e9955b21dde7b11f62d92d2a1febfab20c3e7a854602b3f9ceca"
+file = "gomod/github.com/go-openapi/runtime/@v/v0.33.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/runtime/@v/v0.33.0.zip"
+sha256 = "2dd8da0f7ef92b99af6d02a682214373252b862120dbbb5692699a2f29e44bcf"
+file = "gomod/github.com/go-openapi/runtime/@v/v0.33.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/runtime/server-middleware/@v/v0.30.0.mod"
+sha256 = "7cd4d50bb168dc902784212c4d5eac2d996238a79ff34e60a9e1453e6868c70f"
+file = "gomod/github.com/go-openapi/runtime/server-middleware/@v/v0.30.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/runtime/server-middleware/@v/v0.30.0.zip"
+sha256 = "afc8dcdb7add7673b1a89215cd419d15d84bfeb1f62da9162c55b5a3fe736e58"
+file = "gomod/github.com/go-openapi/runtime/server-middleware/@v/v0.30.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/spec/@v/v0.22.9.mod"
+sha256 = "3e247faf81ba46dd7f98840e18d55506d2137122b64bf392d3732f2c96f327dc"
+file = "gomod/github.com/go-openapi/spec/@v/v0.22.9.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/spec/@v/v0.22.9.zip"
+sha256 = "e99c84955b8268d1552d5a77ccaec6a9c92c5c397aeaa52ee693636b6be5cafd"
+file = "gomod/github.com/go-openapi/spec/@v/v0.22.9.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/strfmt/@v/v0.27.0.mod"
+sha256 = "017d2cdcb0ba5a18f95f0ade76d13313877594734d71cb739230f6d53bc6d094"
+file = "gomod/github.com/go-openapi/strfmt/@v/v0.27.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/strfmt/@v/v0.27.0.zip"
+sha256 = "6e830c668d22047156cd9d1e991e9e2603a55fd2fbd7331ee2e4691e9646797e"
+file = "gomod/github.com/go-openapi/strfmt/@v/v0.27.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/@v/v0.26.1.mod"
+sha256 = "6ceb34628748c75259296ba3000e36f3953554b4902cac686e4da35269851632"
+file = "gomod/github.com/go-openapi/swag/@v/v0.26.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/@v/v0.26.1.zip"
+sha256 = "dbb1f35052a5ded3c3f931b5d45f445536d44fa731cccc4dd109a91767be3d72"
+file = "gomod/github.com/go-openapi/swag/@v/v0.26.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/cmdutils/@v/v0.27.0.mod"
+sha256 = "5d7f7850b93cda7e6677fd07091f0925eeb6cfe15de595079182c5d2ba7f5ba4"
+file = "gomod/github.com/go-openapi/swag/cmdutils/@v/v0.27.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/cmdutils/@v/v0.27.0.zip"
+sha256 = "13df2831629f6ff3e0f712d7d5ebceefe5164d762f5bfc997044dc178d061a2e"
+file = "gomod/github.com/go-openapi/swag/cmdutils/@v/v0.27.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/conv/@v/v0.27.3.mod"
+sha256 = "e744b89c3204883738af68524eb37ce5dd728431fad6424ea39f2e9061a0eb39"
+file = "gomod/github.com/go-openapi/swag/conv/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/conv/@v/v0.27.3.zip"
+sha256 = "349d114bfe9ed6ed57d481eaaa00324c4a370803bbcaf74e26cd424a9cfded3d"
+file = "gomod/github.com/go-openapi/swag/conv/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/fileutils/@v/v0.27.3.mod"
+sha256 = "99b8aeceb39266188bcd3e78692e07a0bde3af694bf7472e2f01d87b296fca51"
+file = "gomod/github.com/go-openapi/swag/fileutils/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/fileutils/@v/v0.27.3.zip"
+sha256 = "c6dc133ced262aa0c5d95884d66c7b55ecbcd6d208a1f41a2b60cb4f89831458"
+file = "gomod/github.com/go-openapi/swag/fileutils/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/jsonname/@v/v0.26.1.mod"
+sha256 = "cb89e4dc739f742774df6f54331aefc6e0c781a2ffc0581af3360e9b31bf5973"
+file = "gomod/github.com/go-openapi/swag/jsonname/@v/v0.26.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/jsonname/@v/v0.26.1.zip"
+sha256 = "e6c28ba471827e89fd0b17bbb88f8fea0aaae842ede7f9810e73b5055d942de9"
+file = "gomod/github.com/go-openapi/swag/jsonname/@v/v0.26.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/jsonutils/@v/v0.27.3.mod"
+sha256 = "25cab8385388d7c1a305349f1f50fb5a96195a4cd4b5edbd47cedf7160db1afa"
+file = "gomod/github.com/go-openapi/swag/jsonutils/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/jsonutils/@v/v0.27.3.zip"
+sha256 = "defd16d14cee2b5bbd020f5aa5e9f8d5fc386c0285180b0de3b892bbfa1bba85"
+file = "gomod/github.com/go-openapi/swag/jsonutils/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/loading/@v/v0.27.3.mod"
+sha256 = "ad6c1f69b52d8d25506fd2294c23f0f0c86886e063f7b4fc4e09e6f3a81149d7"
+file = "gomod/github.com/go-openapi/swag/loading/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/loading/@v/v0.27.3.zip"
+sha256 = "41fe157bb4919cb4c2cf1d744041a8ab2109087579e4a085736437b7485a1798"
+file = "gomod/github.com/go-openapi/swag/loading/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/mangling/@v/v0.27.3.mod"
+sha256 = "26566798d5fde5067aa46b8df8ac4316a486ca45c712f0e4d5df44c44b1d2164"
+file = "gomod/github.com/go-openapi/swag/mangling/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/mangling/@v/v0.27.3.zip"
+sha256 = "4f185e766981187c353a321f54e560773961052e5991c587ca60bef4151fbc96"
+file = "gomod/github.com/go-openapi/swag/mangling/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/netutils/@v/v0.27.0.mod"
+sha256 = "06ec2dd38c56224e4c28f83cf5a19f644cc9e337648cabecd2ec11cb8bf90ef8"
+file = "gomod/github.com/go-openapi/swag/netutils/@v/v0.27.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/netutils/@v/v0.27.0.zip"
+sha256 = "6c2939712697d5889627af5af5a595d4d4d46806b740ff201989491189858424"
+file = "gomod/github.com/go-openapi/swag/netutils/@v/v0.27.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/pools/@v/v0.27.3.mod"
+sha256 = "a87f0b8df04b856635e539184142e3fcfdf2822053b7e8ef7a1f052adfec9f67"
+file = "gomod/github.com/go-openapi/swag/pools/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/pools/@v/v0.27.3.zip"
+sha256 = "2603ba4d04b97dfca8607bb5d1710bd97eaa1feaacfbc66977a69fdf3514ca32"
+file = "gomod/github.com/go-openapi/swag/pools/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/stringutils/@v/v0.27.3.mod"
+sha256 = "9185eaef13046d583adbf6c5b032ce36652845a1a76d35922dd48d37c1a0cb7b"
+file = "gomod/github.com/go-openapi/swag/stringutils/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/stringutils/@v/v0.27.3.zip"
+sha256 = "a11d200b500f814448e3944445815864562b774c679c28e2e6bcde55b2b0c63a"
+file = "gomod/github.com/go-openapi/swag/stringutils/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/typeutils/@v/v0.27.3.mod"
+sha256 = "95bf7bf393f25816f6ee9c0a6abab246fef35ac0b07395ed91e49c6ccdcc1101"
+file = "gomod/github.com/go-openapi/swag/typeutils/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/typeutils/@v/v0.27.3.zip"
+sha256 = "f1359ef3f84449403dc022e71c170234efc0227bfd5067a034ac833b48073cc0"
+file = "gomod/github.com/go-openapi/swag/typeutils/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/yamlutils/@v/v0.27.3.mod"
+sha256 = "53cb52488f3529eb9d71a223cb7feab2a983140bc86a266ef5ff2ca4857dff1e"
+file = "gomod/github.com/go-openapi/swag/yamlutils/@v/v0.27.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/swag/yamlutils/@v/v0.27.3.zip"
+sha256 = "883acb8774b22735cacebe87b711896095ae685ece3937dc8eb06b3992eae311"
+file = "gomod/github.com/go-openapi/swag/yamlutils/@v/v0.27.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/validate/@v/v0.26.1.mod"
+sha256 = "8387dbde13973a9c1f3118b27b4330a180ee0051fa2fcf62b72e5e194d25d652"
+file = "gomod/github.com/go-openapi/validate/@v/v0.26.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-openapi/validate/@v/v0.26.1.zip"
+sha256 = "c9a7e3f8cd420729d9d89d4785dcadbb46a3a1918815119bfbf3d07208983d38"
+file = "gomod/github.com/go-openapi/validate/@v/v0.26.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-viper/mapstructure/v2/@v/v2.5.0.mod"
+sha256 = "5393fe364f1a200c6a84ee2c7bf727f02c9e0b1f844ca13b188ca925f4718b08"
+file = "gomod/github.com/go-viper/mapstructure/v2/@v/v2.5.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/go-viper/mapstructure/v2/@v/v2.5.0.zip"
+sha256 = "326f8e00f648af4ae8e6e18c606325e4206a92d6ed42f486dc2f4da8e1897547"
+file = "gomod/github.com/go-viper/mapstructure/v2/@v/v2.5.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/godbus/dbus/v5/@v/v5.2.2.mod"
+sha256 = "d008ac84f404c6fbc7a1f378099dd21794843d10d6cdc129cfc403d39656f5a6"
+file = "gomod/github.com/godbus/dbus/v5/@v/v5.2.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/godbus/dbus/v5/@v/v5.2.2.zip"
+sha256 = "5c6f37c725a481fb0f1e7866ae273429525d8cc6a6cace87da28e53370f5596a"
+file = "gomod/github.com/godbus/dbus/v5/@v/v5.2.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/certificate-transparency-go/@v/v1.3.3.mod"
+sha256 = "d4ddb23f858ffd931b680519844a3db4860f5d6177580073a31ace1c6a91fcee"
+file = "gomod/github.com/google/certificate-transparency-go/@v/v1.3.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/certificate-transparency-go/@v/v1.3.3.zip"
+sha256 = "2728bdcc12bd62dfa29cbc5211dd4e25ca471a806dd0ab2400177a9a45733641"
+file = "gomod/github.com/google/certificate-transparency-go/@v/v1.3.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/go-containerregistry/@v/v0.22.1.mod"
+sha256 = "d1e80d9033113b5877b0b48d02db0fcee02f15d13d7ad61eff1c0cda93eea367"
+file = "gomod/github.com/google/go-containerregistry/@v/v0.22.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/go-containerregistry/@v/v0.22.1.zip"
+sha256 = "74b381e8f3ea910c74bc20ec2524978fbb2cf5b4115bc58b12767eea55dec73b"
+file = "gomod/github.com/google/go-containerregistry/@v/v0.22.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/shlex/@v/v0.0.0-20191202100458-e7afc7fbc510.mod"
+sha256 = "84c69808d21bc6848e1ad78d6b64965433b5baaba665548338b7daa39faa70be"
+file = "gomod/github.com/google/shlex/@v/v0.0.0-20191202100458-e7afc7fbc510.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/shlex/@v/v0.0.0-20191202100458-e7afc7fbc510.zip"
+sha256 = "1bf70bdb4c889b47b1976370832da79060c36cad282f278f279603200623775c"
+file = "gomod/github.com/google/shlex/@v/v0.0.0-20191202100458-e7afc7fbc510.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/uuid/@v/v1.6.0.mod"
+sha256 = "73da47b6338b00a082fd451aa35a3273d3adc09b8e9bba98dab01091e402af6e"
+file = "gomod/github.com/google/uuid/@v/v1.6.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/google/uuid/@v/v1.6.0.zip"
+sha256 = "d0f02f377217f42702e259684e06441edbf5140dddcc34ba9bea56038b38a6ed"
+file = "gomod/github.com/google/uuid/@v/v1.6.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gorilla/css/@v/v1.0.1.mod"
+sha256 = "c8ebcaf74e2ef78530fbe2f63aeedd6bd6ba8845f4b3537f77ea55c0fda0f55c"
+file = "gomod/github.com/gorilla/css/@v/v1.0.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gorilla/css/@v/v1.0.1.zip"
+sha256 = "870531962ce9787f8dfa2d7a5476be66e08a133c6c75155b20c551e7ac5bc25c"
+file = "gomod/github.com/gorilla/css/@v/v1.0.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gorilla/websocket/@v/v1.5.3.mod"
+sha256 = "09dc8a9227a54c1069ea065d610a5f2ca195f1f5fba6e7dbb2d7eb0fd6e01df6"
+file = "gomod/github.com/gorilla/websocket/@v/v1.5.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gorilla/websocket/@v/v1.5.3.zip"
+sha256 = "dbbd31dd0f08548c5dc43e4c2f12bbba66abff5252b224b1cd06afbb72783a76"
+file = "gomod/github.com/gorilla/websocket/@v/v1.5.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/grpc-ecosystem/grpc-gateway/v2/@v/v2.29.0.mod"
+sha256 = "0d759d4a6c23af4bd39f85fd0c9f4de3931ce0d480432683e806c5bd116ffa45"
+file = "gomod/github.com/grpc-ecosystem/grpc-gateway/v2/@v/v2.29.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/grpc-ecosystem/grpc-gateway/v2/@v/v2.29.0.zip"
+sha256 = "92aa0dbc15037aeddca97ff7f8e4c61bdc3841a34a0df9bc27af30265e598f2d"
+file = "gomod/github.com/grpc-ecosystem/grpc-gateway/v2/@v/v2.29.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/hashicorp/go-version/@v/v1.9.0.mod"
+sha256 = "eaae97e899a62e9c8e02ac5d173c3ab6834385fc18ef89b6dcbdf6986bab3ed1"
+file = "gomod/github.com/hashicorp/go-version/@v/v1.9.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/hashicorp/go-version/@v/v1.9.0.zip"
+sha256 = "b6c05489bf11a28c81cf38119782284c859d6c2d193b811d3f0117592eb31fcb"
+file = "gomod/github.com/hashicorp/go-version/@v/v1.9.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/henvic/httpretty/@v/v0.2.0.mod"
+sha256 = "60441607989fd1cbc18afd623924034d6bca3d872ac254d76de35beb444c94ab"
+file = "gomod/github.com/henvic/httpretty/@v/v0.2.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/henvic/httpretty/@v/v0.2.0.zip"
+sha256 = "c151ab54be1405cde9d2481ad9dfd180ba0ad3ff3f1866b867ed0d0baa32b7ff"
+file = "gomod/github.com/henvic/httpretty/@v/v0.2.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/huandu/xstrings/@v/v1.5.0.mod"
+sha256 = "33c7a6cfa483a6d2c3da52bf870469c716fe5948bbc3177868c726e7d73bba00"
+file = "gomod/github.com/huandu/xstrings/@v/v1.5.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/huandu/xstrings/@v/v1.5.0.zip"
+sha256 = "74bd0e897e5c35b1fd0e598cb8d9dfcebcb820b6edf3abf850d5404bfaaca6a2"
+file = "gomod/github.com/huandu/xstrings/@v/v1.5.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/in-toto/attestation/@v/v1.2.0.mod"
+sha256 = "f8bf99c7a6382e48e384c2b62ffc0495080744b51427cad94d5b768a559fbef1"
+file = "gomod/github.com/in-toto/attestation/@v/v1.2.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/in-toto/attestation/@v/v1.2.0.zip"
+sha256 = "755f95c2361aed959041c47cb145c3e98130c7b038506c2c9206a72f6f0a1f6a"
+file = "gomod/github.com/in-toto/attestation/@v/v1.2.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/in-toto/in-toto-golang/@v/v0.11.0.mod"
+sha256 = "edd4381968c99e594857146ef464c723159170023024740c09642189d3cde076"
+file = "gomod/github.com/in-toto/in-toto-golang/@v/v0.11.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/in-toto/in-toto-golang/@v/v0.11.0.zip"
+sha256 = "eb4aa5358ed3ffc9ce44e82bb04fe03d1d8af6ae8e441b82c2b8bf64be78b2aa"
+file = "gomod/github.com/in-toto/in-toto-golang/@v/v0.11.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/itchyny/gojq/@v/v0.12.19.mod"
+sha256 = "6194832bbe8898a24ff616b6943a87f7ce73caa7be27619b04547821ffd6bd57"
+file = "gomod/github.com/itchyny/gojq/@v/v0.12.19.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/itchyny/gojq/@v/v0.12.19.zip"
+sha256 = "e60af51ce35c663f9fdc78a2e1139c4897602f63c1deb28fca11ae2ad70e1cf9"
+file = "gomod/github.com/itchyny/gojq/@v/v0.12.19.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/itchyny/timefmt-go/@v/v0.1.8.mod"
+sha256 = "b8087605b92c03c9ccf3e73e7d21fa9b039c46beb4b866b41fee784055e31c96"
+file = "gomod/github.com/itchyny/timefmt-go/@v/v0.1.8.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/itchyny/timefmt-go/@v/v0.1.8.zip"
+sha256 = "d3c06a79ebe97f6940f419893873d27c6e139e6882682e710b21da17a12adece"
+file = "gomod/github.com/itchyny/timefmt-go/@v/v0.1.8.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/joho/godotenv/@v/v1.5.1.mod"
+sha256 = "17bf16ae5dcbf139150e383764b63c8a60434f3b0c07400ef31d24b2cfabaab5"
+file = "gomod/github.com/joho/godotenv/@v/v1.5.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/joho/godotenv/@v/v1.5.1.zip"
+sha256 = "f42307794eb323a7f173a75dec68fb91078c23f69882c1c6b642ffd9797c034c"
+file = "gomod/github.com/joho/godotenv/@v/v1.5.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/kballard/go-shellquote/@v/v0.0.0-20180428030007-95032a82bc51.mod"
+sha256 = "49a2d6c73f667dc0f46322a0d6acfcba14209bfb76ef7e622d61e1091962ff34"
+file = "gomod/github.com/kballard/go-shellquote/@v/v0.0.0-20180428030007-95032a82bc51.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/kballard/go-shellquote/@v/v0.0.0-20180428030007-95032a82bc51.zip"
+sha256 = "ae4cb7b097dc4eb0c248dff00ed3bbf0f36984c4162ad1d615266084e58bd6cc"
+file = "gomod/github.com/kballard/go-shellquote/@v/v0.0.0-20180428030007-95032a82bc51.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/klauspost/compress/@v/v1.20.3.mod"
+sha256 = "0d4e90d99acbc19eea5706e7390f8c925b26b1f5861385bb4f1321d454a1d48c"
+file = "gomod/github.com/klauspost/compress/@v/v1.20.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/klauspost/compress/@v/v1.20.3.zip"
+sha256 = "1eb710a814c44bf21332a512a19f496fb5c489ca8eb72244bb9c49f80900848f"
+file = "gomod/github.com/klauspost/compress/@v/v1.20.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/lucasb-eyer/go-colorful/@v/v1.4.1.mod"
+sha256 = "84f9c38e9884ab013c837cb16aee139500d3d5c6ccab02439881db2ecf28f660"
+file = "gomod/github.com/lucasb-eyer/go-colorful/@v/v1.4.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/lucasb-eyer/go-colorful/@v/v1.4.1.zip"
+sha256 = "399a71ecf3e3aaa0af96a779f1c106688b095dbfd0a85455a7c706d3d7ff9ebd"
+file = "gomod/github.com/lucasb-eyer/go-colorful/@v/v1.4.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mattn/go-colorable/@v/v0.1.16.mod"
+sha256 = "c199aee551968c8290b917524e0b232a862790a4831b0ed4cb43687e8c08aa18"
+file = "gomod/github.com/mattn/go-colorable/@v/v0.1.16.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mattn/go-colorable/@v/v0.1.16.zip"
+sha256 = "1b43236db9dc34e69edf02373e3ba86c058cc34c672f3e3610425cadcf6efd57"
+file = "gomod/github.com/mattn/go-colorable/@v/v0.1.16.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mattn/go-isatty/@v/v0.0.24.mod"
+sha256 = "41b885f68c2fa4dfb26a8ffa30d095a931b27699b6b2b1974af3949400dc060f"
+file = "gomod/github.com/mattn/go-isatty/@v/v0.0.24.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mattn/go-isatty/@v/v0.0.24.zip"
+sha256 = "4fcffec0bae0ad4af7bf96e2497a817d85de64af19ffe31d82bda362148234b8"
+file = "gomod/github.com/mattn/go-isatty/@v/v0.0.24.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mattn/go-runewidth/@v/v0.0.30.mod"
+sha256 = "9091c793e255036ba8ced617fa3225972a745eaee5cad4cf264c1576e5c1347e"
+file = "gomod/github.com/mattn/go-runewidth/@v/v0.0.30.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mattn/go-runewidth/@v/v0.0.30.zip"
+sha256 = "97c50f943241d593c40c447773cce738edf0b9db36d68aeadc32773a2103af1e"
+file = "gomod/github.com/mattn/go-runewidth/@v/v0.0.30.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mgutz/ansi/@v/v0.0.0-20200706080929-d51e80ef957d.mod"
+sha256 = "12e14b97ea604f1fcb9f7fcc85ee93d9ba7f858a03469ee29e929a07d55d0a4d"
+file = "gomod/github.com/mgutz/ansi/@v/v0.0.0-20200706080929-d51e80ef957d.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mgutz/ansi/@v/v0.0.0-20200706080929-d51e80ef957d.zip"
+sha256 = "2e0c063f9597cb225904292981732f10298e95aa22a1b815297e318ba103dc1d"
+file = "gomod/github.com/mgutz/ansi/@v/v0.0.0-20200706080929-d51e80ef957d.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/microcosm-cc/bluemonday/@v/v1.0.27.mod"
+sha256 = "4e042dd3e15e847f65e8fabbd3601cfc063a58e840605f82fff22e908307c8e0"
+file = "gomod/github.com/microcosm-cc/bluemonday/@v/v1.0.27.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/microcosm-cc/bluemonday/@v/v1.0.27.zip"
+sha256 = "dbbc62b06600331e29a4d453b8b3e95b1ba48e50baddfd981a3825f8d0043011"
+file = "gomod/github.com/microcosm-cc/bluemonday/@v/v1.0.27.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/microsoft/dev-tunnels/@v/v0.2.0.mod"
+sha256 = "2092e79d2b7118f8b777d727b9bd332bb97f293378abc070283598b0cb132f7c"
+file = "gomod/github.com/microsoft/dev-tunnels/@v/v0.2.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/microsoft/dev-tunnels/@v/v0.2.0.zip"
+sha256 = "cff7c24f721768e1257e5adb46f2943b6db44727f628b89bd39f9280b65ef82c"
+file = "gomod/github.com/microsoft/dev-tunnels/@v/v0.2.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mitchellh/copystructure/@v/v1.2.0.mod"
+sha256 = "046f6180ae4fb25811c47c3b49f1f839d7ca83839641b6407e9f39b05e0c8bc3"
+file = "gomod/github.com/mitchellh/copystructure/@v/v1.2.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mitchellh/copystructure/@v/v1.2.0.zip"
+sha256 = "4a1ce1f3c66bf99883e55da50fe1b3122299b79ad1d11c5407abbd74ace12550"
+file = "gomod/github.com/mitchellh/copystructure/@v/v1.2.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mitchellh/hashstructure/v2/@v/v2.0.2.mod"
+sha256 = "b591c83f298313dee036157f8e6345e8db5b531d242c7298f95a9959fbc02350"
+file = "gomod/github.com/mitchellh/hashstructure/v2/@v/v2.0.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mitchellh/hashstructure/v2/@v/v2.0.2.zip"
+sha256 = "ef2ff4040e1877ba620c0c3f6d64b21f9b1fbcee551d211701c43f694bfd20ab"
+file = "gomod/github.com/mitchellh/hashstructure/v2/@v/v2.0.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mitchellh/reflectwalk/@v/v1.0.2.mod"
+sha256 = "7a5fefd3afb6a309c9c38b51a5448e01cdc9cff07be066e29d53609f3290f2bb"
+file = "gomod/github.com/mitchellh/reflectwalk/@v/v1.0.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/mitchellh/reflectwalk/@v/v1.0.2.zip"
+sha256 = "c96eed6b50f00b1acdc79224e8e55f66ef3e98e3f7c6373afa3e3b8c6ef440d1"
+file = "gomod/github.com/mitchellh/reflectwalk/@v/v1.0.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muesli/cancelreader/@v/v0.2.2.mod"
+sha256 = "4343f36dcc06d4ce4e170190062b5d224ff5be831f742531ec27a3d709378fe1"
+file = "gomod/github.com/muesli/cancelreader/@v/v0.2.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muesli/cancelreader/@v/v0.2.2.zip"
+sha256 = "f0654e7f8f8a49b02ff10a75ccaa0eb08a65aaacbc45f5ba93305276e2ac7f61"
+file = "gomod/github.com/muesli/cancelreader/@v/v0.2.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muesli/reflow/@v/v0.3.0.mod"
+sha256 = "f193cfd78694efff82f6226c1252ca9d1826dd6dd2c2662422be4c4de2cdb739"
+file = "gomod/github.com/muesli/reflow/@v/v0.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muesli/reflow/@v/v0.3.0.zip"
+sha256 = "78e2cebf5a46a9b7c7c52d55d4ac4650cabd9135f180092e3f476293bb86696e"
+file = "gomod/github.com/muesli/reflow/@v/v0.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muesli/termenv/@v/v0.16.0.mod"
+sha256 = "07581751f5b61fdae253960c3992898b64b6ad5573a69ba22ad249d7f0a889c1"
+file = "gomod/github.com/muesli/termenv/@v/v0.16.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muesli/termenv/@v/v0.16.0.zip"
+sha256 = "ba02d3ebd9c1d87e2c2133b1f2bb61a7001b3765196e8016029ce9fe54c5c0fc"
+file = "gomod/github.com/muesli/termenv/@v/v0.16.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muhammadmuzzammil1998/jsonc/@v/v1.0.0.mod"
+sha256 = "0b0a47ee6afe96f1f7ada46bebb60dd9f45f0db42f3c0f09eafcbd35c8b5aa26"
+file = "gomod/github.com/muhammadmuzzammil1998/jsonc/@v/v1.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/muhammadmuzzammil1998/jsonc/@v/v1.0.0.zip"
+sha256 = "29e262a198b105ae84bbeafe0d2a8a66e30b357ea5e309d1754792cd9e896e3f"
+file = "gomod/github.com/muhammadmuzzammil1998/jsonc/@v/v1.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/oklog/ulid/v2/@v/v2.1.1.mod"
+sha256 = "a176a95d55cd290fe90d0e69f23a91851fd305b7fd115a51999ce74a62125786"
+file = "gomod/github.com/oklog/ulid/v2/@v/v2.1.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/oklog/ulid/v2/@v/v2.1.1.zip"
+sha256 = "312b5fea3f68df920adaffc327440efbaba43ad6a8df2f7e0c9e365743f6ff89"
+file = "gomod/github.com/oklog/ulid/v2/@v/v2.1.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/opencontainers/go-digest/@v/v1.0.0.mod"
+sha256 = "8de0250a4ba6811f7703fbb499ed889672597699f335b12f47d788d1df087b4a"
+file = "gomod/github.com/opencontainers/go-digest/@v/v1.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/opencontainers/go-digest/@v/v1.0.0.zip"
+sha256 = "615efb31ff6cd71035b8aa38c3659d8b4da46f3cd92ac807cb50449adfe37c86"
+file = "gomod/github.com/opencontainers/go-digest/@v/v1.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/opencontainers/image-spec/@v/v1.1.1.mod"
+sha256 = "1905f5f90061e422d1a23a8b3becf2b8847c4ae00704d44de2bb7f585fa0fed6"
+file = "gomod/github.com/opencontainers/image-spec/@v/v1.1.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/opencontainers/image-spec/@v/v1.1.1.zip"
+sha256 = "3a32eeb459719172947c20be78b5b7293c6ea84f4039184e846f6b676bc19574"
+file = "gomod/github.com/opencontainers/image-spec/@v/v1.1.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/opentracing/opentracing-go/@v/v1.2.0.mod"
+sha256 = "b4f734164fad79079776b063d5f8f5244962647d938ccf8913a8d8633b381385"
+file = "gomod/github.com/opentracing/opentracing-go/@v/v1.2.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/opentracing/opentracing-go/@v/v1.2.0.zip"
+sha256 = "9b1a75e9a454a0cf01a26c18e48cd321e3b300943ac5adb9098ba033dbd40db5"
+file = "gomod/github.com/opentracing/opentracing-go/@v/v1.2.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/pkg/errors/@v/v0.9.1.mod"
+sha256 = "df28c6a823f181d76179697177c0c5943c6ffb38f3c10b2dc53be360ee7d4589"
+file = "gomod/github.com/pkg/errors/@v/v0.9.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/pkg/errors/@v/v0.9.1.zip"
+sha256 = "d4c36b8bcd0616290a3913215e0f53b931bd6e00670596f2960df1b44af2bd07"
+file = "gomod/github.com/pkg/errors/@v/v0.9.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/rivo/uniseg/@v/v0.4.7.mod"
+sha256 = "a1e174890fc9f252450211fadeb53756f9cf5ab7b19697765f9fb255f81ea898"
+file = "gomod/github.com/rivo/uniseg/@v/v0.4.7.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/rivo/uniseg/@v/v0.4.7.zip"
+sha256 = "b995e4aa0cc1e5779cc61138ac925cb8c1e963e40c80e4b93ee8553812ebb792"
+file = "gomod/github.com/rivo/uniseg/@v/v0.4.7.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/rodaine/table/@v/v1.3.0.mod"
+sha256 = "bbce69a56a8c271215488db96e9abf78ddf87a6f53dd5afdb13c64e9961f4b76"
+file = "gomod/github.com/rodaine/table/@v/v1.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/rodaine/table/@v/v1.3.0.zip"
+sha256 = "613d897bf8cc2b5b91f8bac1c60d44a602c526430dae8c2f2e6e37c012902509"
+file = "gomod/github.com/rodaine/table/@v/v1.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/secure-systems-lab/go-securesystemslib/@v/v0.11.0.mod"
+sha256 = "6d0051d1cbe554e87be8e2bae521eb03bb90fbe64b50336a5b5bf4dc06fe8afc"
+file = "gomod/github.com/secure-systems-lab/go-securesystemslib/@v/v0.11.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/secure-systems-lab/go-securesystemslib/@v/v0.11.0.zip"
+sha256 = "bcc6c768b802666b5ad3aea122e15b34049655e5e8934c1e2a3e65b1fb59e692"
+file = "gomod/github.com/secure-systems-lab/go-securesystemslib/@v/v0.11.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shibumi/go-pathspec/@v/v1.3.0.mod"
+sha256 = "a25850578697d51ce99c35f846dd62d62c8395097932dd142efada52ef7aef95"
+file = "gomod/github.com/shibumi/go-pathspec/@v/v1.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shibumi/go-pathspec/@v/v1.3.0.zip"
+sha256 = "1ac9091ebe9ff4154ddc39b2b3436c5b6b268d5cdc1e8462c9790485cd76a58f"
+file = "gomod/github.com/shibumi/go-pathspec/@v/v1.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shopspring/decimal/@v/v1.4.0.mod"
+sha256 = "fc8a8e1fa14e49884ec9f962563a4ef51fa0a9bbfb7dbcb2ec8958e1f00988c9"
+file = "gomod/github.com/shopspring/decimal/@v/v1.4.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shopspring/decimal/@v/v1.4.0.zip"
+sha256 = "751d4cd3460984afc72973d2a0df56ed9b10499c5cd0508d7f2207245d9e3315"
+file = "gomod/github.com/shopspring/decimal/@v/v1.4.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shurcoo!l/githubv4/@v/v0.0.0-20240727222349-48295856cce7.mod"
+sha256 = "6fb4c16a2abdcd32551fdf28fcb8bdc1d6ea772bcf80ac19fb601186388fc645"
+file = "gomod/github.com/shurcoo!l/githubv4/@v/v0.0.0-20240727222349-48295856cce7.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shurcoo!l/githubv4/@v/v0.0.0-20240727222349-48295856cce7.zip"
+sha256 = "72bd088c5f0343373690848673deba90c8d620d019596c5ecd076242d5986602"
+file = "gomod/github.com/shurcoo!l/githubv4/@v/v0.0.0-20240727222349-48295856cce7.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shurcoo!l/graphql/@v/v0.0.0-20230722043721-ed46e5a46466.mod"
+sha256 = "9b898b6f60c2b50cca2aedbc88f24585d559704e8899735150ca364e1006072d"
+file = "gomod/github.com/shurcoo!l/graphql/@v/v0.0.0-20230722043721-ed46e5a46466.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/shurcoo!l/graphql/@v/v0.0.0-20230722043721-ed46e5a46466.zip"
+sha256 = "0c35abdcd642f48e80e001963c412d668486b142a521ea81ecb91e7ebd717221"
+file = "gomod/github.com/shurcoo!l/graphql/@v/v0.0.0-20230722043721-ed46e5a46466.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/protobuf-specs/@v/v0.5.2.mod"
+sha256 = "d2301d8d482d3a35eeaf499a56a0b16dde711caffc3c0bbb02c664e9720c1e2a"
+file = "gomod/github.com/sigstore/protobuf-specs/@v/v0.5.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/protobuf-specs/@v/v0.5.2.zip"
+sha256 = "5596deaa95e6cac342e4fb88c74f6ee110c508e1d46ef46d7b4337f8aa101fc5"
+file = "gomod/github.com/sigstore/protobuf-specs/@v/v0.5.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/rekor-tiles/v2/@v/v2.3.0.mod"
+sha256 = "e7bc544f72aef5ed2288b9e909c40f23f43611a61c8f6f548a12cb4066e00bd4"
+file = "gomod/github.com/sigstore/rekor-tiles/v2/@v/v2.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/rekor-tiles/v2/@v/v2.3.0.zip"
+sha256 = "5b8f617e17ceb7684643daf95facbb020cfd302d4178e0a0d9d9a8239e59bd48"
+file = "gomod/github.com/sigstore/rekor-tiles/v2/@v/v2.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/rekor/@v/v1.5.3.mod"
+sha256 = "2d2c82edd7e828e2dd3806af153e2495c9ba1311a3295595d8e9f9508fb4d235"
+file = "gomod/github.com/sigstore/rekor/@v/v1.5.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/rekor/@v/v1.5.3.zip"
+sha256 = "f78e5fb078e3b38097395cc940bc524616c6ba597ad5d00fde022869a9985a16"
+file = "gomod/github.com/sigstore/rekor/@v/v1.5.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/sigstore-go/@v/v1.3.0.mod"
+sha256 = "3d9d44920dd7e31996289ba337463d8b7f9314bbbc6fa92655914df0d74e4db7"
+file = "gomod/github.com/sigstore/sigstore-go/@v/v1.3.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/sigstore-go/@v/v1.3.0.zip"
+sha256 = "ff4d5a7900448808a23aeb5e79817621449a2a4c6fd5605a841ab1957fc0204a"
+file = "gomod/github.com/sigstore/sigstore-go/@v/v1.3.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/sigstore/@v/v1.10.8.mod"
+sha256 = "70feac6b9b76b7ac5c4f48166f42b0500f409ac7950e12373c8ea67bd12195e4"
+file = "gomod/github.com/sigstore/sigstore/@v/v1.10.8.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/sigstore/@v/v1.10.8.zip"
+sha256 = "0e7c054133f3eeafdccec2c059457bf4a9e10721c8e8f076a41f5b45f63fc5f2"
+file = "gomod/github.com/sigstore/sigstore/@v/v1.10.8.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/timestamp-authority/v2/@v/v2.1.3.mod"
+sha256 = "4c5d8847921bfba61e8bd98bd4c6098d8a222dca4731cbdfe894eccc3bb04fb4"
+file = "gomod/github.com/sigstore/timestamp-authority/v2/@v/v2.1.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sigstore/timestamp-authority/v2/@v/v2.1.3.zip"
+sha256 = "d6c9339e8777290eadb910bf66a3a291bb8284a345cb8134945c5c2064a12849"
+file = "gomod/github.com/sigstore/timestamp-authority/v2/@v/v2.1.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sirupsen/logrus/@v/v1.9.4.mod"
+sha256 = "65bd5913b818d483bd0c92041e39a4ec17766f8907318aea02df8658f46324e8"
+file = "gomod/github.com/sirupsen/logrus/@v/v1.9.4.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/sirupsen/logrus/@v/v1.9.4.zip"
+sha256 = "3847d00c5ee6948f1ff0d0120bc343c55ce852becb7720f8f08f53eecfe9e437"
+file = "gomod/github.com/sirupsen/logrus/@v/v1.9.4.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/spf13/cast/@v/v1.10.0.mod"
+sha256 = "fef5e4baa2ea6235860469e13b663f5fb26a7047983e05fdb3bf60ea843530f1"
+file = "gomod/github.com/spf13/cast/@v/v1.10.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/spf13/cast/@v/v1.10.0.zip"
+sha256 = "7c7ba27f9979ada980c2a69f6b2fdf7b4ce1f2b766e245c0a4716f546ad7ddce"
+file = "gomod/github.com/spf13/cast/@v/v1.10.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/spf13/cobra/@v/v1.10.2.mod"
+sha256 = "cc6098fd1118fb3bb349c72bcd6e9c665d3a1b2a516ea9807ee24521ad2ddf8c"
+file = "gomod/github.com/spf13/cobra/@v/v1.10.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/spf13/cobra/@v/v1.10.2.zip"
+sha256 = "a00aae6fcd631e0fde52c98604452ff70e1b73c3b8a560d68db15aff5e26872d"
+file = "gomod/github.com/spf13/cobra/@v/v1.10.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/spf13/pflag/@v/v1.0.10.mod"
+sha256 = "16c6dfc0eb58eb3c9113ce197d460c6725c647e4688ac26d31c8ed69f1ebbc68"
+file = "gomod/github.com/spf13/pflag/@v/v1.0.10.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/spf13/pflag/@v/v1.0.10.zip"
+sha256 = "a246b8c9d3daa87d6c634cdfee1bdf7fa53d5817eeef4fa0c6da43edd12de4ca"
+file = "gomod/github.com/spf13/pflag/@v/v1.0.10.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/stretchr/objx/@v/v0.5.3.mod"
+sha256 = "6791b5edf7bd0ad12f53a046718d24b3a395191419167aa0bda604e866892cc5"
+file = "gomod/github.com/stretchr/objx/@v/v0.5.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/stretchr/objx/@v/v0.5.3.zip"
+sha256 = "cdc804051b06efceea75ee9b0b6349d2f92f17cd46c6193c4a8dfb0f51465a44"
+file = "gomod/github.com/stretchr/objx/@v/v0.5.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/stretchr/testify/@v/v1.12.1.mod"
+sha256 = "a6aa921ea6dedc1cbb384d3c1b79c58b6e5d6ce26d13b786ec60a99809ae1daa"
+file = "gomod/github.com/stretchr/testify/@v/v1.12.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/stretchr/testify/@v/v1.12.1.zip"
+sha256 = "6874ed1c4b0b7e9feb27989b16c179b36590020633436ae260cefc5f5565589f"
+file = "gomod/github.com/stretchr/testify/@v/v1.12.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/theupdateframework/go-tuf/v2/@v/v2.4.2.mod"
+sha256 = "d0e895542701e1bb30a3a4bbcbaddc889777968ee8d4b49bd971152d04c9e947"
+file = "gomod/github.com/theupdateframework/go-tuf/v2/@v/v2.4.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/theupdateframework/go-tuf/v2/@v/v2.4.2.zip"
+sha256 = "2dbb43998311a484bac172503b6c62df8bb7c7e5a6333c7b63356ca3aadf0a8d"
+file = "gomod/github.com/theupdateframework/go-tuf/v2/@v/v2.4.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/thlib/go-timezone-local/@v/v0.0.9.mod"
+sha256 = "28d0b99d1a84611b39920bea2c254e000361e015e58890532d75af1a692c4a08"
+file = "gomod/github.com/thlib/go-timezone-local/@v/v0.0.9.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/thlib/go-timezone-local/@v/v0.0.9.zip"
+sha256 = "0057ab75deba6882d9eb24ec9f10ae3a8facda0bf213e4ddcdacddfac62392ae"
+file = "gomod/github.com/thlib/go-timezone-local/@v/v0.0.9.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/transparency-dev/formats/@v/v0.1.1.mod"
+sha256 = "f14cea8c39a9ccc9a305a30ef0f289106133786da014812972029eaad79ac2ec"
+file = "gomod/github.com/transparency-dev/formats/@v/v0.1.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/transparency-dev/formats/@v/v0.1.1.zip"
+sha256 = "badaeecbae532b3e8f23bc07b4b4e40b1a80951b62f69e0ac0523aab0da4a5ec"
+file = "gomod/github.com/transparency-dev/formats/@v/v0.1.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/transparency-dev/merkle/@v/v0.0.2.mod"
+sha256 = "632f77736d1cae2ff57f820a3f3b60d8bf91d83fcddd2dca3f00b7e7515a1fef"
+file = "gomod/github.com/transparency-dev/merkle/@v/v0.0.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/transparency-dev/merkle/@v/v0.0.2.zip"
+sha256 = "bff8072eb052d166df4f8f3d144451ca83b98f1c0382995167008c44abc383fd"
+file = "gomod/github.com/transparency-dev/merkle/@v/v0.0.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/twitchtv/twirp/@v/v8.1.3+incompatible.mod"
+sha256 = "161ccd222b5e7a234c50fd76db1ecbb0310135ee14a65321cd91de569d3f3da3"
+file = "gomod/github.com/twitchtv/twirp/@v/v8.1.3+incompatible.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/twitchtv/twirp/@v/v8.1.3+incompatible.zip"
+sha256 = "66ab7ec3ff7d8f8958e7fc3e9e03eca73488d5fb717213520c1452f3a70f197f"
+file = "gomod/github.com/twitchtv/twirp/@v/v8.1.3+incompatible.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/vmihailenco/msgpack/v5/@v/v5.4.1.mod"
+sha256 = "78123be71349515b283280cac807dff2b8e84798a86501341a1b2cae6e3663dc"
+file = "gomod/github.com/vmihailenco/msgpack/v5/@v/v5.4.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/vmihailenco/msgpack/v5/@v/v5.4.1.zip"
+sha256 = "f966b8091c59efce1b44e265097f239be5d4174a827be0a5debebae09517d2b8"
+file = "gomod/github.com/vmihailenco/msgpack/v5/@v/v5.4.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/vmihailenco/tagparser/v2/@v/v2.0.0.mod"
+sha256 = "421006040b7c0c6e4e4257ec9f69a85fb0d6120f5a526b5ef174d6cd34ce4f34"
+file = "gomod/github.com/vmihailenco/tagparser/v2/@v/v2.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/vmihailenco/tagparser/v2/@v/v2.0.0.zip"
+sha256 = "70096ead331b4ac4efc0bf740674cbe55772beee6eace39507a610c5652aa8b5"
+file = "gomod/github.com/vmihailenco/tagparser/v2/@v/v2.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/xo/terminfo/@v/v1.0.0.mod"
+sha256 = "719d53397f5ee7a2a8a47b06acd9ddae063cbe3d6caf38edeca477c2d1fe2cce"
+file = "gomod/github.com/xo/terminfo/@v/v1.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/xo/terminfo/@v/v1.0.0.zip"
+sha256 = "64619407a02afce2f1fb1ba6889c134c73f1be573678d7db75045487e7833a8d"
+file = "gomod/github.com/xo/terminfo/@v/v1.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/youmark/pkcs8/@v/v0.0.0-20240726163527-a2c0da244d78.mod"
+sha256 = "ac53991d6663f30fd358884c3bfa4fd0651f042a56ac3632c56b3f9824205abc"
+file = "gomod/github.com/youmark/pkcs8/@v/v0.0.0-20240726163527-a2c0da244d78.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/youmark/pkcs8/@v/v0.0.0-20240726163527-a2c0da244d78.zip"
+sha256 = "cdcf5e96850f9f60bc96ab512e4bd06ee19dd2dbe855260c3589c6c79a1bcfb5"
+file = "gomod/github.com/youmark/pkcs8/@v/v0.0.0-20240726163527-a2c0da244d78.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/yuin/goldmark-emoji/@v/v1.0.6.mod"
+sha256 = "1932f18ec83e8073b275a4d41ce10f856b44a5063235dabcb07b5b34cfff02b8"
+file = "gomod/github.com/yuin/goldmark-emoji/@v/v1.0.6.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/yuin/goldmark-emoji/@v/v1.0.6.zip"
+sha256 = "a993ef47fd534db3246a5676611906bf9636dae575c6526410db4c60f38cdb2a"
+file = "gomod/github.com/yuin/goldmark-emoji/@v/v1.0.6.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/yuin/goldmark/@v/v1.8.6.mod"
+sha256 = "b78e60b0c300e7d48dcc234a7e0103eeb8d6cf40ca9cde9d01e6a3a7f1086045"
+file = "gomod/github.com/yuin/goldmark/@v/v1.8.6.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/yuin/goldmark/@v/v1.8.6.zip"
+sha256 = "6cb11723302ba0dd45f8d7a26f7fa3c48be23523622c18293783ce82a3c5de46"
+file = "gomod/github.com/yuin/goldmark/@v/v1.8.6.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/zalando/go-keyring/@v/v0.2.8.mod"
+sha256 = "582f27ac41f2bd0c05436116ff91436aa36d4687c1dad243d4d74e780f3feb87"
+file = "gomod/github.com/zalando/go-keyring/@v/v0.2.8.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/zalando/go-keyring/@v/v0.2.8.zip"
+sha256 = "af9d1310d6e1eaadb6c975f2f9b1c22c8a2d1ea2497645f5ee62eac26472c97a"
+file = "gomod/github.com/zalando/go-keyring/@v/v0.2.8.zip"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/auto/sdk/@v/v1.2.1.mod"
+sha256 = "6c4d2df014d59fd6555897fd4e5bbc0316e8df4c737fbfdde5cd119fdefeeea9"
+file = "gomod/go.opentelemetry.io/auto/sdk/@v/v1.2.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/auto/sdk/@v/v1.2.1.zip"
+sha256 = "a08a16fc0a7041cdb875f47a260a56000632212c85f65a302a043c76380c8335"
+file = "gomod/go.opentelemetry.io/auto/sdk/@v/v1.2.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/@v/v1.44.0.mod"
+sha256 = "f466441934839f12a009415b4c16a77d221e1aa5d767f878e2af5888f1ad839f"
+file = "gomod/go.opentelemetry.io/otel/@v/v1.44.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/@v/v1.44.0.zip"
+sha256 = "4b7ef50caaf3dc6fc1a058f9ce2ccda6aad2ab3e8657acc4c8bb3102f79c53bc"
+file = "gomod/go.opentelemetry.io/otel/@v/v1.44.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/metric/@v/v1.44.0.mod"
+sha256 = "328a1fe2bc702b8c26765f18a9a26fc08748283bdbba26d538d4037b0fcb6afb"
+file = "gomod/go.opentelemetry.io/otel/metric/@v/v1.44.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/metric/@v/v1.44.0.zip"
+sha256 = "4442ba5f269f81251f549acb14ac16176f23967f4a0706163440b0df91592f96"
+file = "gomod/go.opentelemetry.io/otel/metric/@v/v1.44.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/trace/@v/v1.44.0.mod"
+sha256 = "24b803fb358fb3456f788a98a7c18fb391685bc5a708a118f02116b8969a03c4"
+file = "gomod/go.opentelemetry.io/otel/trace/@v/v1.44.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/go.opentelemetry.io/otel/trace/@v/v1.44.0.zip"
+sha256 = "cd1abf8dcec62fe9788fae9105760db1711e6e994d2e31cdda57ccb467e7ceec"
+file = "gomod/go.opentelemetry.io/otel/trace/@v/v1.44.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/go.yaml.in/yaml/v3/@v/v3.0.5.mod"
+sha256 = "4bf9de8891d4d71507d92568022f8241fb828d8d0a6c9204c130bf030f3e3b2f"
+file = "gomod/go.yaml.in/yaml/v3/@v/v3.0.5.mod"
+
+[[source]]
+url = "https://proxy.golang.org/go.yaml.in/yaml/v3/@v/v3.0.5.zip"
+sha256 = "f2d70caa35f66283aec58b889af8c5f07c374c5934be27a738c1215263e19205"
+file = "gomod/go.yaml.in/yaml/v3/@v/v3.0.5.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/crypto/@v/v0.58.0.mod"
+sha256 = "938883ec4a74e7fc05c46269e924dda334c2b7ca7ca219e4d27ca56d1891ccd3"
+file = "gomod/golang.org/x/crypto/@v/v0.58.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/crypto/@v/v0.58.0.zip"
+sha256 = "b0a45594cda20ddb4264d84aeff9b588b8570bf6a2833c51a0b821734a298d95"
+file = "gomod/golang.org/x/crypto/@v/v0.58.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/mod/@v/v0.41.0.mod"
+sha256 = "fc5b64ef51fd92f4b8763ebbd6fa95a70069d299c7de0f7c66661ef24283eb0c"
+file = "gomod/golang.org/x/mod/@v/v0.41.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/mod/@v/v0.41.0.zip"
+sha256 = "201e678d0a35b18b246abe58d80017b75d60be21cbaf4cbb9e963b48872565a9"
+file = "gomod/golang.org/x/mod/@v/v0.41.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/net/@v/v0.62.0.mod"
+sha256 = "7bbcec6b6af859939ec01bbe5234e556c867bf80e171abc23ad16c2c8e3951fe"
+file = "gomod/golang.org/x/net/@v/v0.62.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/net/@v/v0.62.0.zip"
+sha256 = "50e869800f4921e910eb6550369f937c7187d130a7f7f78a26ef9b589a7071a6"
+file = "gomod/golang.org/x/net/@v/v0.62.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sync/@v/v0.24.0.mod"
+sha256 = "febf4fed5dc12c0de24528f7065bf071cc74a2424070194aaf24617b91066cda"
+file = "gomod/golang.org/x/sync/@v/v0.24.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sync/@v/v0.24.0.zip"
+sha256 = "ca3fcf3ea8259e75891f7947e1a816a5b89402c542d45d8bbbd9e061b0c58019"
+file = "gomod/golang.org/x/sync/@v/v0.24.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sys/@v/v0.49.0.mod"
+sha256 = "9522f4c9806d1c26586ea80fa56292929bd295865e71981927f52996c6b1c831"
+file = "gomod/golang.org/x/sys/@v/v0.49.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sys/@v/v0.49.0.zip"
+sha256 = "e73a06591ca0d7016ce3ccb45c36a8ed7128468aecc1a357f94d815c760c6b31"
+file = "gomod/golang.org/x/sys/@v/v0.49.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/term/@v/v0.47.0.mod"
+sha256 = "cfc437810b8822bf57ca3ea4e39ebd418dd5671d72f2b110ce5a3164fa541b0b"
+file = "gomod/golang.org/x/term/@v/v0.47.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/term/@v/v0.47.0.zip"
+sha256 = "d990d5ab94dfa41ba980645b721bba7490064337a01bb03e6cacace70e8df0bf"
+file = "gomod/golang.org/x/term/@v/v0.47.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/text/@v/v0.43.0.mod"
+sha256 = "63270b8ca6290a720212e1d6e58b8d12a8aa315a1cb960411d7ec2998c0aab59"
+file = "gomod/golang.org/x/text/@v/v0.43.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/text/@v/v0.43.0.zip"
+sha256 = "b75131f628f6e2e4892fd638d33127e952a5027775e0162b94ba069cb4e13863"
+file = "gomod/golang.org/x/text/@v/v0.43.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260706201446-f0a921348800.mod"
+sha256 = "7e012a5e7d5bc69a2fa84a197bc1829a7685827040f72ad6d9ec927c3bc6126f"
+file = "gomod/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260706201446-f0a921348800.mod"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260706201446-f0a921348800.zip"
+sha256 = "2a15e6eff7b8ce4f5780f5e324334f238c27fab9db4c51b92b72312ed147a5b0"
+file = "gomod/google.golang.org/genproto/googleapis/api/@v/v0.0.0-20260706201446-f0a921348800.zip"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260706201446-f0a921348800.mod"
+sha256 = "67711b6f9adde7cd2d23ba3512bf371ddc628709a4b7ff598794e638607e9987"
+file = "gomod/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260706201446-f0a921348800.mod"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260706201446-f0a921348800.zip"
+sha256 = "42a0902eda416f038ae29a247e12a8932a566d8b18682ca8cd2d333a40c0f407"
+file = "gomod/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20260706201446-f0a921348800.zip"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/grpc/@v/v1.84.0.mod"
+sha256 = "69aa2c57344f551512cc2e3d0d9eac8ca364334963f952ca4fb152e07239b1c4"
+file = "gomod/google.golang.org/grpc/@v/v1.84.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/grpc/@v/v1.84.0.zip"
+sha256 = "a14bebefbac1ec115d9e1f8042006c185d65adf43a91644f3e58df0688831b95"
+file = "gomod/google.golang.org/grpc/@v/v1.84.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.mod"
+sha256 = "a75c105a852fbd8da8d8cfac09c2eab9a206cfd27ed37c973737e23f632ca96e"
+file = "gomod/google.golang.org/protobuf/@v/v1.36.12.mod"
+
+[[source]]
+url = "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.12.zip"
+sha256 = "68f8a3174aff42950fd9bd02c11b45c6986eb8060508d124d1c3dd6bf86b9be6"
+file = "gomod/google.golang.org/protobuf/@v/v1.36.12.zip"
+
+[[source]]
+url = "https://proxy.golang.org/gopkg.in/yaml.v3/@v/v3.0.1.mod"
+sha256 = "21579860a20306fcf43b1bd234d1fba319499c77611b71c05f9bf3ba90dab939"
+file = "gomod/gopkg.in/yaml.v3/@v/v3.0.1.mod"
+
+[[source]]
+url = "https://proxy.golang.org/gopkg.in/yaml.v3/@v/v3.0.1.zip"
+sha256 = "aab8fbc4e6300ea08e6afe1caea18a21c90c79f489f52c53e2f20431f1a9a015"
+file = "gomod/gopkg.in/yaml.v3/@v/v3.0.1.zip"
+
+[[source]]
+url = "https://proxy.golang.org/k8s.io/klog/v2/@v/v2.140.0.mod"
+sha256 = "382f54dfc864c3225b05d4bbb07e804e43f8d055cda2aa179944a1506257faa0"
+file = "gomod/k8s.io/klog/v2/@v/v2.140.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/k8s.io/klog/v2/@v/v2.140.0.zip"
+sha256 = "46fab8686139b04c42f1b44e84c5a162667fbf22628216d5061d95206625a886"
+file = "gomod/k8s.io/klog/v2/@v/v2.140.0.zip"

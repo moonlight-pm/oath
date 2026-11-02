@@ -4,14 +4,16 @@ tag v1.2.16.1 commit a7babcb8e6361719bf18fa96f11354d125447500 tree c970b7f6741a2
 signed no
 same 376
 only-in-tag 11
+from automake 2
+from gettext 1
+from gnulib 4
+from libtool 3
 adds Makefile.in
 adds aclocal.m4
 adds aserver/Makefile.in
-adds compile
 adds config.guess
 adds config.sub
 adds configure
-adds depcomp
 adds doc/Makefile.in
 adds doc/doxygen.cfg
 adds doc/pictures/Makefile.in
@@ -22,16 +24,9 @@ adds include/config.h.in
 adds include/sound/Makefile.in
 adds include/sound/uapi/Makefile.in
 adds include/version.h
-adds install-sh
 adds libtool
-adds ltconfig
 adds ltmain.sh
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
-adds missing
 adds modules/Makefile.in
 adds modules/mixer/Makefile.in
 adds modules/mixer/simple/Makefile.in
@@ -50,7 +45,6 @@ adds src/seq/Makefile.in
 adds src/timer/Makefile.in
 adds src/topology/Makefile.in
 adds src/ucm/Makefile.in
-adds test-driver
 adds test/Makefile.in
 adds test/lsb/Makefile.in
 adds utils/Makefile.in

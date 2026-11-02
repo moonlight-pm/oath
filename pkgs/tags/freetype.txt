@@ -5,14 +5,12 @@ signed pgp 58E0C111E39F5408C5D3EC76C1A60EACE707FDA5
 same 764
 only-in-tag 11
 submodule subprojects/dlg 0
+from gettext 1
+from gnulib 3
 adds ChangeLog
 adds builds/unix/aclocal.m4
-adds builds/unix/config.guess
-adds builds/unix/config.sub
 adds builds/unix/configure
 adds builds/unix/configure.ac
-adds builds/unix/install-sh
-adds builds/unix/ltmain.sh
 adds docs/reference/404.html
 adds docs/reference/assets/images/favicon.png
 adds docs/reference/assets/javascripts/bundle.79ae519e.min.js

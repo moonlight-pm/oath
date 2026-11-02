@@ -4,21 +4,15 @@ tag v4.5.2 commit db70b42bd7b2a5b00a8580c8dec0aa66791c950a tree 76acb5e924630153
 signed no
 same 152
 only-in-tag 24
-adds INSTALL
+from automake 2
+from gettext 1
+from gnulib 4
+from libtool 3
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/m4-autogen/compile
 adds build-aux/m4-autogen/config.guess
 adds build-aux/m4-autogen/config.sub
-adds build-aux/m4-autogen/depcomp
-adds build-aux/m4-autogen/install-sh
 adds build-aux/m4-autogen/ltmain.sh
-adds build-aux/m4-autogen/missing
-adds build-aux/m4-autogen/test-driver
 adds build-aux/m4/libtool.m4
-adds build-aux/m4/ltoptions.m4
-adds build-aux/m4/ltsugar.m4
-adds build-aux/m4/ltversion.m4
-adds build-aux/m4/lt~obsolete.m4
 adds config.h.in
 adds configure

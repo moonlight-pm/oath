@@ -4,12 +4,11 @@ tag 3.7.0 commit 1fdbb1cbb0e076816be06c401c5a5a2cf2c487f9 tree 216caedd1855d3b7d
 signed no
 same 2114
 only-in-tag 164
+from gettext 1
+from gnulib 4
+from libtool 3
 adds ChangeLog
 adds aclocal.m4
-adds build-aux/config.guess
-adds build-aux/config.rpath
-adds build-aux/config.sub
-adds build-aux/install-sh
 adds build-aux/ltmain.sh
 adds configure
 adds doc/postgis_comments.sql
@@ -17,8 +16,4 @@ adds doc/raster_comments.sql
 adds doc/sfcgal_comments.sql
 adds doc/topology_comments.sql
 adds macros/libtool.m4
-adds macros/ltoptions.m4
-adds macros/ltsugar.m4
-adds macros/ltversion.m4
-adds macros/lt~obsolete.m4
 adds postgis_revision.h

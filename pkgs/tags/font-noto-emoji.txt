@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source NotoColorEmoji.ttf 0c2e398ce731651306d94021371597b82e92070494f9c1bf4a43a82164fbfd67
+tag v2026-09-24-unicode18_0 commit e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e tree bffd3c9a184215699577064573a22881864d05e5
+signed no
+same 2
+only-in-tag 0

@@ -47,6 +47,10 @@ trap 'chmod -R u+w "$tmp"; rm -rf "$tmp"' EXIT
 mkdir "$tmp/src"
 tar -xf "$repo/build/fetch/$file" -C "$tmp/src"
 cd "$tmp/src/$(cd "$tmp/src" && dirname "$(find . -maxdepth 2 -name go.mod | sort | head -n 1)")"
+# The package's patches can change what the build reads.
+for p in "$repo/pkgs/$name"/patches/*.patch; do
+	[ ! -f "$p" ] || git apply -p1 "$p"
+done
 if grep -q '^replace' go.mod; then
 	echo "$name: go.mod has a replace directive, which this does not follow" >&2
 	exit 1
@@ -56,9 +60,10 @@ export GOTOOLCHAIN=local GOFLAGS=-mod=readonly CGO_ENABLED=$cgo GOOS=linux GOARC
 	GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOMODCACHE="$tmp/mod"
 updates=$repo/pkgs/$name/go-updates.txt
 if [ -f "$updates" ]; then
-	sed -e 's/#.*//' -e '/^ *$/d' "$updates" | while read -r m v; do
-		GOFLAGS=-mod=mod go get "$m@$v"
-	done
+	# All at once: asked for one by one, a lower version of one module would
+	# silently downgrade another that needs it higher. Together, it is an error.
+	# shellcheck disable=SC2046
+	GOFLAGS=-mod=mod go get $(sed -e 's/#.*//' -e '/^ *$/d' "$updates" | awk '{print $1 "@" $2}')
 	GOFLAGS=-mod=mod go list -deps -tags "$tags" "$@" >/dev/null
 	cp go.mod go.sum "$repo/pkgs/$name/"
 	chmod -R u+w "$GOMODCACHE"

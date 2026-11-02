@@ -4,18 +4,15 @@ tag R_2_9_0 commit a76b1174c1ea52abb639a4c69d52b630a8a106a2 tree 8fd271f17a188db
 signed pgp CB8DE70A90CFBF6C3BF5CC5696262ACFFBD3AEC6
 same 152
 only-in-tag 24
+from automake 2
+from gettext 1
+from gnulib 5
+from libtool 3
 adds Makefile.in
 adds aclocal.m4
 adds configure
-adds conftools/ar-lib
-adds conftools/compile
-adds conftools/config.guess
 adds conftools/config.sub
-adds conftools/depcomp
-adds conftools/install-sh
 adds conftools/ltmain.sh
-adds conftools/missing
-adds conftools/test-driver
 adds doc/Makefile.in
 adds doc/xmlwf.1
 adds examples/Makefile.in
@@ -23,10 +20,6 @@ adds expat_config.h
 adds expat_config.h.in
 adds lib/Makefile.in
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
 adds tests/Makefile.in
 adds tests/benchmark/Makefile.in
 adds xmlwf/Makefile.in

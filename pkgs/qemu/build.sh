@@ -7,6 +7,8 @@
 # architectures' firmware is dropped.
 tar -xf "$SRC/$SOURCES"
 cd "qemu-$VERSION"
+# The firmware's sources, 66,000 files from submodules, none of it built here.
+rm -rf roms
 for p in "$FILES"/patches/*.patch; do
 	echo "patch ${p##*/}"
 	patch -p1 -i "$p"

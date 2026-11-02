@@ -4,11 +4,11 @@ tag 1.12.1 commit 70598bb7825f0f804fb31ec2795de5e79e7692a0 tree 12297c9f42b7b923
 signed pgp 19E2D6D9B46D8DAA6288F877C24E631BABB1FE70
 same 5070
 only-in-tag 388
+from gettext 1
 differs setup.cfg
 adds PKG-INFO
 adds meson.egg-info/PKG-INFO
 adds meson.egg-info/SOURCES.txt
-adds meson.egg-info/dependency_links.txt
 adds meson.egg-info/entry_points.txt
 adds meson.egg-info/requires.txt
 adds meson.egg-info/top_level.txt

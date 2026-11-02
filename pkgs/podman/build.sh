@@ -26,6 +26,8 @@ go build -tags "$tags" -ldflags "$ld" -o /out/libexec/podman/rootlessport ./cmd/
 go build -tags "$tags" -ldflags "$ld" -o /out/libexec/podman/quadlet ./cmd/quadlet
 
 cp "$FILES/policy.json" "$FILES/containers.conf" "$FILES/storage.conf" /out/share/containers/
+cp "$FILES/netavark" /out/libexec/podman/netavark
+chmod 755 /out/libexec/podman/netavark
 cp LICENSE /out/share/doc/podman/
 (cd "$GOMODCACHE" && find . \( -path ./cache -o -name testdata \) -prune -o -type f \( -iname 'LICEN[CS]E*' -o -iname 'NOTICE*' \) \
 	-exec cp --parents {} /out/share/doc/podman/ \;)

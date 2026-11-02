@@ -7,25 +7,50 @@
 //! the tag's trees (build/fetch/git/). The result stays in
 //! pkgs/tags/<name>.txt, so a new pin's diff shows what its tarball adds.
 //!
+//! A file in the tarball alone is also looked up in the histories of the
+//! projects releases copy files from (gnulib, autotools): one that is there,
+//! byte for byte, was published by them, whatever its age. xz's altered
+//! m4/build-to-host.m4 was in no such history. What stays in `adds` is what no
+//! repository vouches for: `configure`, translations, built manuals.
+//!
 //! A source can also rest on the tag itself: `git`, `tag` and `key` in
 //! pkg.toml check the tag's signature, which covers the tree by hash, and the
 //! tarball must then be that tree exactly.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::Write as _;
 use std::fs;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
+use std::time::{Duration, SystemTime};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use sha1::{Digest, Sha1};
 
 use crate::audit::Entry;
-use crate::pkgs::{sha256, PkgToml};
+use crate::pkgs::PkgToml;
 
 const PGP_BEGIN: &[u8] = b"-----BEGIN PGP SIGNATURE-----";
 const SSH_BEGIN: &[u8] = b"-----BEGIN SSH SIGNATURE-----";
+
+/// The projects whose files releases copy in.
+const HISTORIES: &[(&str, &str)] = &[
+    ("gnulib", "https://git.savannah.gnu.org/git/gnulib.git"),
+    ("config", "https://git.savannah.gnu.org/git/config.git"),
+    ("automake", "https://git.savannah.gnu.org/git/automake.git"),
+    ("autoconf", "https://git.savannah.gnu.org/git/autoconf.git"),
+    ("libtool", "https://git.savannah.gnu.org/git/libtool.git"),
+    ("gettext", "https://git.savannah.gnu.org/git/gettext.git"),
+];
+
+/// How long a history is used before it is fetched again.
+const HISTORY_AGE: Duration = Duration::from_secs(7 * 24 * 3600);
+
+/// More added files than this are recorded by directory: CEF's tarball adds
+/// half a million, from what Chromium's DEPS gathers.
+const ADDS_LISTED: usize = 2000;
 
 /// A tag as upstream's repository has it.
 pub struct Tag {
@@ -71,6 +96,10 @@ pub struct Comparison {
     pub adds: Vec<String>,
     /// In the tag alone (a release may leave tests out).
     pub only_in_tag: usize,
+    /// Each added file's blob id.
+    add_ids: BTreeMap<String, String>,
+    /// Added files that are in a project's history, counted by project.
+    pub from: BTreeMap<String, usize>,
     /// Files the release bundles from a submodule, by its path: the tree names
     /// its commit, not its files, so they are counted and not compared.
     pub in_submodules: BTreeMap<String, usize>,
@@ -137,14 +166,26 @@ impl Tag {
         "no".to_string()
     }
 
-    /// Checks the tag's signature against `keys`, and that what it signs
-    /// names this tag and this commit. Returns the signing key's fingerprint.
+    /// Checks the tag's signature against `keys` (an OpenPGP key, or an SSH
+    /// public key's line), and that what it signs names this tag and this
+    /// commit. Returns who signed it.
     pub fn verify(&self, keys: &[u8]) -> Result<String> {
         let Some(object) = &self.object else { bail!("tag {} is not annotated", self.name) };
-        let Some((payload, sig)) = split_signature(object, PGP_BEGIN) else {
-            bail!("tag {} has no OpenPGP signature", self.name);
+        let (payload, who) = if let Some((payload, sig)) = split_signature(object, PGP_BEGIN) {
+            (payload, crate::openpgp::verify(keys, sig, payload)?)
+        } else if let Some((payload, sig)) = split_signature(object, SSH_BEGIN) {
+            let lines: Vec<String> = String::from_utf8_lossy(keys)
+                .lines()
+                .filter(|l| !l.is_empty() && !l.starts_with('#'))
+                .map(str::to_string)
+                .collect();
+            let sig = String::from_utf8_lossy(sig);
+            let who = oath_core::sshsig::verify(payload, &sig, "git", &lines)
+                .map_err(|e| anyhow!("{e}"))?;
+            (payload, who)
+        } else {
+            bail!("tag {} is not signed", self.name);
         };
-        let who = crate::openpgp::verify(keys, sig, payload)?;
         let (mut commit, mut tag) = (None, None);
         for line in payload.split(|b| *b == b'\n').take_while(|l| !l.is_empty()) {
             let line = String::from_utf8_lossy(line);
@@ -183,6 +224,18 @@ impl Tag {
     fn submodule_of(&self, path: &str) -> Option<&String> {
         self.links.iter().find(|l| under(path, Some(l.as_str())).is_some())
     }
+}
+
+/// When the tag's commit was made, by its own account.
+pub fn commit_date(root: &Path, url: &str, name: &str) -> Option<String> {
+    let dir = clone_dir(root, url, name).ok()?;
+    if !dir.is_dir() {
+        Tag::fetch(root, url, name).ok()?;
+    }
+    let spec = format!("refs/tags/{name}^{{commit}}");
+    let out = git(Some(&dir), &["log", "-1", "--format=%cI", &spec]).ok()?;
+    let date = String::from_utf8_lossy(&out).trim().to_string();
+    (!date.is_empty()).then_some(date)
 }
 
 fn clone_dir(root: &Path, url: &str, name: &str) -> Result<PathBuf> {
@@ -381,13 +434,108 @@ fn set_against(
                 };
                 match tag.submodule_of(&full) {
                     Some(l) => *c.in_submodules.entry(l.clone()).or_default() += 1,
-                    None => c.adds.push(path.clone()),
+                    None => {
+                        c.adds.push(path.clone());
+                        c.add_ids.insert(path.clone(), u.id.clone());
+                    }
                 }
             }
         }
     }
     c.only_in_tag = files.len() - seen;
     c
+}
+
+/// One project's history: every blob id git has for it.
+struct History {
+    name: &'static str,
+    ids: HashSet<[u8; 20]>,
+}
+
+fn hex20(s: &str) -> Option<[u8; 20]> {
+    let mut out = [0u8; 20];
+    if s.len() != 40 {
+        return None;
+    }
+    for (i, b) in out.iter_mut().enumerate() {
+        *b = u8::from_str_radix(s.get(i * 2..i * 2 + 2)?, 16).ok()?;
+    }
+    Some(out)
+}
+
+/// Clones the project once, with no file contents, fetches it again when its
+/// list is old, and reads the list.
+fn load_history(root: &Path, name: &'static str, url: &str) -> Result<History> {
+    let top = root.join("build/fetch/git/histories");
+    fs::create_dir_all(&top)?;
+    let dir = top.join(format!("{name}.git"));
+    let list = top.join(format!("{name}.ids"));
+    let old = fs::metadata(&list)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| SystemTime::now().duration_since(t).ok())
+        .is_none_or(|age| age > HISTORY_AGE);
+    if !dir.is_dir() {
+        let part = top.join(format!("{name}.part{}", std::process::id()));
+        git(
+            None,
+            &["clone", "--quiet", "--bare", "--filter=blob:none", url, part.to_str().context("path")?],
+        )?;
+        if fs::rename(&part, &dir).is_err() && dir.is_dir() {
+            let _ = fs::remove_dir_all(&part);
+        }
+    } else if old {
+        // A stale list still vouches for what it holds.
+        let refs = ["fetch", "--quiet", "origin", "+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"];
+        if let Err(e) = git(Some(&dir), &refs) {
+            eprintln!(">> {name}'s history was not fetched: {e:#}");
+        }
+    }
+    if old || !list.is_file() {
+        let out = git(Some(&dir), &["rev-list", "--objects", "--all", "--missing=print"])?;
+        let text = String::from_utf8_lossy(&out);
+        let ids: String = text
+            .lines()
+            .filter_map(|l| l.trim_start_matches('?').get(..40))
+            .fold(String::new(), |mut s, id| {
+                s.push_str(id);
+                s.push('\n');
+                s
+            });
+        fs::write(&list, ids)?;
+    }
+    let text = fs::read_to_string(&list)?;
+    Ok(History { name, ids: text.lines().filter_map(hex20).collect() })
+}
+
+/// The histories, read once a run. One that cannot be had is left out: its
+/// files stay in `adds`, which only asks for more reading.
+fn histories(root: &Path) -> &'static [History] {
+    static ALL: OnceLock<Vec<History>> = OnceLock::new();
+    ALL.get_or_init(|| {
+        HISTORIES
+            .iter()
+            .filter_map(|(name, url)| match load_history(root, name, url) {
+                Ok(h) => Some(h),
+                Err(e) => {
+                    eprintln!(">> {name}'s history: {e:#}");
+                    None
+                }
+            })
+            .collect()
+    })
+}
+
+/// Moves the added files a project's history holds out of `adds`.
+fn vouch(c: &mut Comparison, histories: &[History]) {
+    let (add_ids, adds) = (std::mem::take(&mut c.add_ids), std::mem::take(&mut c.adds));
+    for path in adds {
+        let id = add_ids.get(&path).and_then(|i| hex20(i));
+        match id.and_then(|i| histories.iter().find(|h| h.ids.contains(&i))) {
+            Some(h) => *c.from.entry(h.name.to_string()).or_default() += 1,
+            None => c.adds.push(path),
+        }
+    }
 }
 
 /// A source that rests on its tag: the signature checks out, and the tarball
@@ -451,18 +599,71 @@ pub fn read_record(root: &Path, name: &str) -> Option<(String, Vec<String>)> {
     Some((sha, lines))
 }
 
+/// What a record is for: the source's sha256, or for single files, one over
+/// all of theirs.
+pub fn pin_sha(pkg: &PkgToml, entry: &Entry) -> String {
+    if !entry.compare_files {
+        return pkg.source.first().map(|s| s.sha256.clone()).unwrap_or_default();
+    }
+    let mut h = sha2::Sha256::new();
+    for s in &pkg.source {
+        sha2::Digest::update(&mut h, s.sha256.as_bytes());
+    }
+    sha2::Digest::finalize(h).iter().fold(String::new(), |mut s, b| {
+        let _ = write!(s, "{b:02x}");
+        s
+    })
+}
+
+/// Each single-file source against the trees of its tags, by contents.
+fn compare_files(root: &Path, pkg: &PkgToml, tags: &[Tag]) -> Result<Comparison> {
+    let ids: HashSet<&str> =
+        tags.iter().flat_map(|t| t.files.values()).map(String::as_str).collect();
+    let mut c = Comparison::default();
+    for s in &pkg.source {
+        let path = root.join("build/fetch").join(s.file());
+        let id = blob_id(&fs::read(&path).with_context(|| path.display().to_string())?);
+        if ids.contains(id.as_str()) {
+            c.same += 1;
+        } else {
+            c.adds.push(s.file());
+            c.add_ids.insert(s.file(), id);
+        }
+    }
+    Ok(c)
+}
+
 /// Compares a package's pin with its tag unless its record already has this
 /// pin, writes the record, and says what the pin adds that the last did not.
 pub fn ensure(root: &Path, name: &str, pkg: &PkgToml, entry: &Entry) -> Result<()> {
     let Some(source) = pkg.source.first() else { return Ok(()) };
     let Some(pin) = tag_of(entry, &pkg.version) else { return Ok(()) };
+    let want = pin_sha(pkg, entry);
     let before = read_record(root, name);
-    if before.as_ref().is_some_and(|(sha, _)| *sha == source.sha256) {
+    if before.as_ref().is_some_and(|(sha, _)| *sha == want) {
         return Ok(());
     }
-    let tarball = root.join("build/fetch").join(source.file());
-    let tag = Tag::fetch(root, &pin.url, &pin.tag)?;
-    let c = compare(root, &tarball, &tag, pin.tar_dir.as_deref(), pin.tag_dir.as_deref())?;
+    let tags: Vec<Tag> = pin
+        .tag
+        .split_whitespace()
+        .map(|t| Tag::fetch(root, &pin.url, t))
+        .collect::<Result<_>>()?;
+    if let Some(key) = &entry.compare_key {
+        let keys = fs::read(crate::pkgs::key_file(root, key))?;
+        for t in &tags {
+            let who = t.verify(&keys).with_context(|| format!("tag {} against {key}", t.name))?;
+            eprintln!(">> tag {} signed by {who} ({key})", t.name);
+        }
+    }
+    let mut c = if entry.compare_files {
+        compare_files(root, pkg, &tags)?
+    } else {
+        let tarball = root.join("build/fetch").join(source.file());
+        compare(root, &tarball, &tags[0], pin.tar_dir.as_deref(), pin.tag_dir.as_deref())?
+    };
+    if !c.adds.is_empty() && !entry.compare_files {
+        vouch(&mut c, histories(root));
+    }
     let old: Vec<&str> = before
         .as_ref()
         .map(|(_, l)| l.iter().filter_map(|l| l.strip_prefix("adds ")).collect())
@@ -470,13 +671,15 @@ pub fn ensure(root: &Path, name: &str, pkg: &PkgToml, entry: &Entry) -> Result<(
     let new: Vec<&String> = c.adds.iter().filter(|a| !old.contains(&a.as_str())).collect();
     let path = record_path(root, name);
     fs::create_dir_all(path.parent().context("parent")?)?;
-    fs::write(&path, render(&source.file(), &sha256(&tarball)?, &tag, &c))?;
+    fs::write(&path, render(&source.file(), &want, &tags, &c))?;
     eprintln!(
-        ">> tag {} ({}): {} files the same, {} differ, {} only in the tarball, {} only in the tag, {} from submodules",
+        ">> tag {} ({}): {} files the same, {} differ, {} only in the tarball, {} of them unknown \
+         to any history, {} only in the tag, {} from submodules",
         pin.tag,
-        tag.signed(),
+        tags[0].signed(),
         c.same,
         c.differs.len(),
+        c.adds.len() + c.from.values().sum::<usize>(),
         c.adds.len(),
         c.only_in_tag,
         c.in_submodules.values().sum::<usize>()
@@ -495,23 +698,41 @@ pub fn ensure(root: &Path, name: &str, pkg: &PkgToml, entry: &Entry) -> Result<(
     Ok(())
 }
 
-fn render(file: &str, sha: &str, tag: &Tag, c: &Comparison) -> String {
+fn render(file: &str, sha: &str, tags: &[Tag], c: &Comparison) -> String {
     let mut s = String::from(
         "# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.\n",
     );
     let _ = writeln!(s, "source {file} {sha}");
-    let _ = writeln!(s, "tag {} commit {} tree {}", tag.name, tag.commit, tag.tree);
-    let _ = writeln!(s, "signed {}", tag.signed());
+    for tag in tags {
+        let _ = writeln!(s, "tag {} commit {} tree {}", tag.name, tag.commit, tag.tree);
+        let _ = writeln!(s, "signed {}", tag.signed());
+    }
     let _ = writeln!(s, "same {}", c.same);
     let _ = writeln!(s, "only-in-tag {}", c.only_in_tag);
-    for l in &tag.links {
-        let _ = writeln!(s, "submodule {l} {}", c.in_submodules.get(l).copied().unwrap_or(0));
+    for tag in tags {
+        for l in &tag.links {
+            let _ = writeln!(s, "submodule {l} {}", c.in_submodules.get(l).copied().unwrap_or(0));
+        }
+    }
+    for (name, n) in &c.from {
+        let _ = writeln!(s, "from {name} {n}");
     }
     for d in &c.differs {
         let _ = writeln!(s, "differs {d}");
     }
-    for a in &c.adds {
-        let _ = writeln!(s, "adds {a}");
+    if c.adds.len() > ADDS_LISTED {
+        let mut dirs: BTreeMap<String, usize> = BTreeMap::new();
+        for a in &c.adds {
+            let dir: Vec<&str> = a.split('/').take(3).collect();
+            *dirs.entry(dir.join("/")).or_default() += 1;
+        }
+        for (dir, n) in dirs {
+            let _ = writeln!(s, "adds-under {dir} {n}");
+        }
+    } else {
+        for a in &c.adds {
+            let _ = writeln!(s, "adds {a}");
+        }
     }
     s
 }
@@ -596,6 +817,21 @@ mod tests {
             [("run.bat".to_string(), unpacked(b"echo\r\nhi\r\n"))].into();
         let c = set_against(&u, &tag(&[("run.bat", &blob_id(b"echo\nhi\n"))]), None, None);
         assert_eq!(c.same, 1);
+    }
+
+    #[test]
+    fn a_file_in_a_projects_history_is_vouched_for() {
+        let known = blob_id(b"from gnulib\n");
+        let mut c = Comparison {
+            adds: vec!["lib/a.c".to_string(), "m4/build-to-host.m4".to_string()],
+            ..Default::default()
+        };
+        c.add_ids.insert("lib/a.c".to_string(), known.clone());
+        c.add_ids.insert("m4/build-to-host.m4".to_string(), blob_id(b"altered\n"));
+        let gnulib = History { name: "gnulib", ids: [hex20(&known).unwrap()].into() };
+        vouch(&mut c, &[gnulib]);
+        assert_eq!(c.adds, ["m4/build-to-host.m4"]);
+        assert_eq!(c.from["gnulib"], 1);
     }
 
     #[test]

@@ -4,19 +4,14 @@ tag v5.8.4 commit d3e650e63c110e830fd5391e7f8b45df0b91d3da tree c61bcc5e09ba6a6a
 signed pgp 3690C240CE51B4670D30AD1C38EE757D69184620
 same 507
 only-in-tag 19
+from automake 3
+from gettext 10
+from gnulib 17
+from libtool 4
 differs ChangeLog
-adds ABOUT-NLS
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/compile
-adds build-aux/config.guess
-adds build-aux/config.rpath
-adds build-aux/config.sub
-adds build-aux/depcomp
-adds build-aux/install-sh
 adds build-aux/ltmain.sh
-adds build-aux/missing
-adds build-aux/test-driver
 adds config.h.in
 adds configure
 adds debug/Makefile.in
@@ -28,38 +23,16 @@ adds doc/man/txt/xzgrep.txt
 adds doc/man/txt/xzless.txt
 adds doc/man/txt/xzmore.txt
 adds lib/Makefile.in
-adds m4/build-to-host.m4
-adds m4/gettext.m4
-adds m4/host-cpu-c-abi.m4
-adds m4/iconv.m4
-adds m4/intlmacosx.m4
-adds m4/lib-ld.m4
-adds m4/lib-link.m4
-adds m4/lib-prefix.m4
-adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
-adds m4/nls.m4
-adds m4/po.m4
-adds m4/progtest.m4
-adds po/Makefile.in.in
-adds po/Rules-quot
-adds po/boldquot.sed
 adds po/ca.gmo
 adds po/cs.gmo
 adds po/da.gmo
 adds po/de.gmo
-adds po/en@boldquot.header
-adds po/en@quot.header
 adds po/eo.gmo
 adds po/es.gmo
 adds po/fi.gmo
 adds po/fr.gmo
 adds po/hr.gmo
 adds po/hu.gmo
-adds po/insert-header.sed
 adds po/it.gmo
 adds po/ka.gmo
 adds po/ko.gmo
@@ -67,11 +40,8 @@ adds po/nl.gmo
 adds po/pl.gmo
 adds po/pt.gmo
 adds po/pt_BR.gmo
-adds po/quot.sed
-adds po/remove-potcdate.sed
 adds po/ro.gmo
 adds po/sr.gmo
-adds po/stamp-po
 adds po/sv.gmo
 adds po/tr.gmo
 adds po/uk.gmo

@@ -10,4 +10,6 @@ run = ["glib", "dbus"]
 [[source]]
 url = "https://download.gnome.org/sources/at-spi2-core/2.62/at-spi2-core-2.62.1.tar.xz"
 sha256 = "cca6b6a86e4389d89b370288761ce2385ddeceb10c4412da78689bc30c88af2d"
-unsigned = "GNOME publishes its tarballs with a sha256sum file over HTTPS, not a signature"
+git = "https://gitlab.gnome.org/GNOME/at-spi2-core"
+tag = "2.62.1"
+key = "gorse"

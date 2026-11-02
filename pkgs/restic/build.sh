@@ -5,6 +5,9 @@ export HOME=/tmp/home GOCACHE=/tmp/gocache GOPATH=/tmp/gopath GOMODCACHE=/tmp/go
 mkdir -p "$HOME" /tmp/restic /out/bin /out/share/doc/restic
 cd /tmp/restic
 tar -xzf "$SRC/restic-$VERSION.tar.gz" --no-same-owner --strip-components=1
+for p in "$FILES"/patches/*.patch; do
+	patch -p1 -i "$p"
+done
 cp "$FILES/go.mod" "$FILES/go.sum" .
 go build -ldflags "-s -w -X main.version=$VERSION" -o /out/bin/restic ./cmd/restic
 cp LICENSE /out/share/doc/restic/

@@ -5,22 +5,15 @@ signed pgp AF60FCA3CDAA6DEAD157EA3A67E38F7A8BA21772
 same 192
 only-in-tag 93
 submodule libocispec 291
+from automake 2
+from gettext 1
+from gnulib 5
+from libtool 3
 adds .tarball-git-version.h
 adds .tarball-version
 adds Makefile.in
 adds aclocal.m4
-adds build-aux/compile
-adds build-aux/config.guess
-adds build-aux/config.sub
-adds build-aux/depcomp
-adds build-aux/install-sh
 adds build-aux/ltmain.sh
-adds build-aux/missing
-adds build-aux/tap-driver.sh
 adds config.h.in
 adds configure
 adds m4/libtool.m4
-adds m4/ltoptions.m4
-adds m4/ltsugar.m4
-adds m4/ltversion.m4
-adds m4/lt~obsolete.m4
