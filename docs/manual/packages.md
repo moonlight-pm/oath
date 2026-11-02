@@ -184,6 +184,44 @@ gh --version                             # gh version 2.103.3 (2026-10-26)
 cf --version                             # 1.0.0-beta.26
 ```
 
+### Servers: Caddy, Blocky, restic, Podman, PostgreSQL (R49)
+
+These are built from source here and are in no profile: `pkg:caddy`,
+`pkg:blocky`, `pkg:restic`, `pkg:rsync`, `pkg:podman` (with `pkg:conmon`,
+`pkg:crun`, `pkg:passt`, `pkg:netavark`), `pkg:postgresql` and `pkg:postgis`
+(with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
+takes them from the origin as above, with each need the plan names, once a
+release has published them. `pkg:go` is what builds the Go ones; a machine needs
+it only to build.
+
+Go programs read their CA roots from `pkg:certs` (R50), through Go's own
+`crypto/x509`, unless `SSL_CERT_FILE` names others:
+`/oath/store/pkg/certs/live/ssl/cert.pem`. It is Mozilla's list less
+`pkgs/certs/distrust.txt`. curl and OpenSSL still read `pkg:curl`'s copy.
+
+PostgreSQL finds PostGIS, a separate pack, through one line in
+`postgresql.conf`:
+
+```
+extension_control_path = '$system:/oath/store/pkg/postgis/live/share'
+```
+
+The server refuses to run as root, so its `svc` names a `user`. A new major
+version changes the data directory's format, so moving across one is
+`pg_upgrade`, not a new pin alone.
+
+Podman reads its defaults from its pack (`share/containers`) and a machine's
+own from `/etc/containers`. It pulls through `/tmp`, which is memory: a machine
+pulling large images sets `image_copy_tmp_dir` to a directory on disk. Run
+rootless, with pasta for its network, it works today with limits: with one uid
+mapped, an image with files of other owners needs
+`ignore_chown_errors = "true"`, since Oath has no `newuidmap` (Open in
+[decisions](../decisions.md)); `/dev/net/tun` must be loaded (`modprobe tun`) and
+opened (`chmod 666`), by hand until the next boot; `/` is not a shared mount,
+which Podman warns of. Run as root it does not start a container: crun needs the
+kernel's BPF syscall, and a bridge network needs `nft`. Memory and CPU limits
+need `CONFIG_MEMCG` and `CONFIG_CFS_BANDWIDTH`, which Oath's kernel leaves off.
+
 `cf` (also `cloudflare`) carries the npm packages it was pinned with in
 its own tree and runs on `pkg:node` (R46); nothing goes in a global
 `node_modules`, and `npm install -g` has nowhere to write, since the

@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-10-31 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-11-01 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R46 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R50 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -32,12 +32,11 @@ append history (git has it).
    `3e42879d38e5` (66/66, 2026-11-01), with PID 1's `keep_children` fixes. Each
    machine reboots into it, then sets it on `svc:sola-session` by hand.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
-4. **novus on Oath (R32–R35, R41, R43, R45, [hosts/novus.md](hosts/novus.md)).**
-   `oath install` put Oath on the 500 GB (2026-10-30); it runs
-   `c40249fd9724` (since generation 7, 2026-10-31) with `/home` on the 2 TB
-   (`@oath-home`, `host:local.mounts`, R45), the desk on the card and
-   21 services. Its AMI firmware keeps `UEFI OS` and needed Oath set first
-   by hand. Next: Joshua restores what he picks from the 4 TB into /home.
+4. **Wicket on Oath (R49, R50).** Its services are built from source, in no
+   profile yet: Caddy, Blocky, restic, rsync, Podman (rootless over pasta),
+   PostgreSQL with PostGIS, on `pkg:go`, with `pkg:certs` for roots. Unpublished.
+   Next: Joshua answers Open (rootless uid ranges); then PID 1 loads `tun`, a
+   `wicket` profile, and the host's reboot gap (`restart=no`) and kernel pin.
 5. **Security audit (R48).** First run 2026-10-31, by hand: 153 hits in
    27 packages, 63 not affected (`pkgs/audit.toml`). Published Linux 7.3.1
    (`178ac39ce817`), then CEF 156.0.15 (Chromium .80, 72 CVEs, now with

@@ -1,13 +1,13 @@
 # Capabilities
 
-What exists today and what is missing, per capability. Target design is
-in [specs/](specs/); priority is in [CURRENT.md](../CURRENT.md). Keep
-this file under 800 words. Update a row with the code.
+What exists and what is missing, per capability. Target design is in
+[specs/](specs/); priority in [CURRENT.md](../CURRENT.md). Keep this under
+800 words. Update a row with the code.
 
 **Status:** `shipped` works and is tested · `partial` works with listed
 gaps · `target` designed, not built.
 
-**As of:** 2026-10-30
+**As of:** 2026-11-01
 
 ## Core
 
@@ -20,7 +20,7 @@ gaps · `target` designed, not built.
 | Services (PID 1) | shipped | runs applied specs; per-service logs; backoff, `failed` with a `reason`; a cgroup each; reverse-order shutdown; survives its own panic; restarts a service its package moves (an update spares the seat's); cron `schedule` (R48) | — |
 | Packages | shipped | hash-in-path store, `/bin` and `/lib` farms (R17, R29), pins, `needs`, advisories; fetch from `host:local.origins` (R25); recipes (R23, R35); npm programs self-contained (R46); publish with licence, plan, source; `oath verify` each boot; `source`, overlays (R47); daily CVE audit (R48) | Oath's packs unsigned; npm, GitHub signatures unchecked |
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; netless sandbox, own PID namespace; cache keyed on plan and inputs; logs in `/oath/log/plan/`; every image package is a plan product | — |
-| Toolchain and native packages | partial | `cargo make bootstrap` (R32): GCC 16.2, binutils 2.47, glibc 2.44 (R17); `cargo make pkgs`: 170 plan products (signed sources, SPDX), i386 too (R29); GNU userland (R18); bit-identical; CEF by Chromium's Clang (R40) | Perl unsigned; Python's multiprocessing has no semaphores |
+| Toolchain and native packages | partial | `cargo make bootstrap` (R32): GCC 16.2, binutils 2.47, glibc 2.44 (R17); `cargo make pkgs`: 191 plan products (signed sources, SPDX), i386 too (R29); GNU userland (R18); bit-identical; CEF by Chromium's Clang (R40); Go, Wicket's services (R49); our CA roots (R50) | Perl unsigned; Python's multiprocessing has no semaphores; Podman's uid ranges (Open) |
 | Network | partial | `net:net0` dhcp or static; NIC renamed `net0`; supervised dhcpcd; LAN names in `host:local.hosts`; `dig`; chrony | One NIC, chosen at boot |
 | SSH | shipped | OpenSSH's sshd (R36) as `home` (zsh, R27), keys from `ssh:local`, root denied, `host:local` env; `sftp-server`; daemons drop to `void`; `sudo` | — |
 | Login and seat | partial | `svc:login` (R42): `home`'s password, Argon2id; `oath password`; `host:local.autologin`; the seat's turns (`oath desk`), the console's prompt; on canto | No password on metal yet; `sudo` asks none |
@@ -28,7 +28,7 @@ gaps · `target` designed, not built.
 | Seed and overlays | shipped | profile `base`, extended; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's on novus's card, R34) | — |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `oath update` pulls the newest signed output (R38), builds recipes, replaces overlays (`--keep`), makes what the profile gained (R47) | No `--reboot`: an older PID 1 restarts the desk |
-| Image build | shipped | `cargo make build` packs `pkg:oath`, the locked packages and packs a profile pins from elsewhere (R28) into `build/out/<id>/` with a manifest; published only from a clean master (R47) | — |
+| Image build | shipped | `cargo make build` packs `pkg:oath`, locked packages and packs a profile pins elsewhere (R28) into `build/out/<id>/`; published only from a clean master (R47) | — |
 | Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` (R43), `@home` apart; records its release (R45); novus | AMI: `UEFI OS` returns; Oath not first |
 | Test harness | shipped | `cargo make check`: a QEMU per case, known gaps per phase, `check-pass` per output; `--target`: `metal` cases on a machine | — |
 

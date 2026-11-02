@@ -20,8 +20,13 @@ name=$1
 shift
 repo=$(cd "$(dirname "$0")/.." && pwd)
 toml=$repo/pkgs/$name/pkg.toml
-go=$(awk '/^  "go": \{/ { f = 1 } f && /"product"/ { gsub(/[",]/, "", $2); print $2; exit }' "$repo/pkgs/lock.json")
-export PATH="$HOME/.local/share/oath/store/pkg/go/$go/bin:$PATH"
+product() {
+	awk -v n="  \"$1\": {" 'index($0, n) == 1 { f = 1 } f && /"product"/ { gsub(/[",]/, "", $2); print $2; exit }' "$repo/pkgs/lock.json"
+}
+store=$HOME/.local/share/oath/store/pkg
+export PATH="$store/go/$(product go)/bin:$PATH"
+# The roots of the build store's pkg:certs, which need not be live here.
+export SSL_CERT_FILE="${SSL_CERT_FILE:-$store/certs/$(product certs)/ssl/cert.pem}"
 marker='# Modules, from pkgs/go-modules.sh:'
 grep -qx "$marker" "$toml"
 # The release is the one source before the marker.
