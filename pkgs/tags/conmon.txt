@@ -1,6 +1,0 @@
-# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source conmon-2.2.1.tar.gz 814fb5979a3a4b8576b1f901e606b482bebb41cb7e57926e6d5765ee786b96d3
-tag v2.2.1 commit c8cc2c4db27531bd4e084ce7857f73cd21ee639d tree a0c20496e248d661cab2d9d9a194732b1334be7e
-signed no
-same 83
-only-in-tag 0

@@ -315,6 +315,7 @@ fn open_dev_nodes() {
         "/dev/ptmx",
         "/dev/random",
         "/dev/urandom",
+        "/dev/net/tun",
     ] {
         let _ = fs::set_permissions(n, fs::Permissions::from_mode(0o666));
     }

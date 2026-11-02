@@ -12,9 +12,9 @@ Update a row when its status moves, and move it to "Done" when it lands.
 
 | What | Count |
 |------|-------|
-| Packages with sources | 168 |
-| Compared with an upstream tag or its own files (R54) | 158; the other 10 say why not |
-| Pinned Go modules, distinct | 347 in Podman, `gh`, Blocky and restic; 235 once Podman goes |
+| Packages with sources | 166 |
+| Compared with an upstream tag or its own files (R54) | 156; the other 10 say why not |
+| Pinned Go modules, distinct | 235, in `gh`, Blocky and restic |
 | Pinned npm packages | 32, all `cf`'s |
 | Crates in `Cargo.lock` | 174; `oath` links 64 on Linux, `oath-init` 58, `oath-make` 123 |
 | Tarball-only files that no repository vouches for | 5,036, plus 525,587 in CEF's |
@@ -23,7 +23,6 @@ Update a row when its status moves, and move it to "Done" when it lands.
 
 | Package | Tree | What could replace it | Would remove | Cost | Status |
 |---------|------|-----------------------|--------------|------|--------|
-| `pkg:podman` | 157 Go modules; 51 MB; with conmon, glib | `crun`, `pasta` and our own glue, one uid (R53) | All 157, and conmon | Small program; image builds are not covered | **Decided, building** (R59) |
 | `pkg:gh` | 160 Go modules; 39 MB | `curl` on GitHub's API, or nothing | All 160 | Agents lose its conveniences | Open: who needs it? |
 | `pkg:cf` | 32 npm packages; 203 MB, on `pkg:node` (205 MB, an hour to build) | `curl` on Cloudflare's API | All 32, and Node with them: nothing else runs on it | `cf dev` and Workers' local runtime go | Open: who needs it? |
 | `pkg:blocky` | 80 Go modules; AGPL (parcour); unsigned | Unbound (signed C, needs OpenSSL and expat) with a generated blocklist | All 80 | Packaging, and a small list generator | Open: ask Wicket's session |
@@ -73,8 +72,9 @@ Building from the tree instead removes it.
 | What | Before | After | How |
 |------|--------|-------|-----|
 | HTTP routing | `pkg:caddy`, 148 modules, 49 MB | `pkg:route`: 0 modules, 6 MB, 370 lines | Our own, in `apps/route` (R59) |
+| Containers | `pkg:podman`, 157 modules, 51 MB, and `pkg:conmon` with GLib | `pkg:cell`: 0 modules, 7 MB, 1,800 lines, over `crun` and `pasta` | Our own, in `apps/cell` (R59). Building images is not covered |
 | `pkg:caddy` | 148 modules, 49 MB | gone | Behind a tunnel, TLS ends at Cloudflare (R58) |
-| `pkg:netavark`, `pkg:protobuf`, Abseil | 257 crates and a C++ build | a 12-line script | Rootless containers use pasta |
+| `pkg:netavark`, `pkg:protobuf`, Abseil | 257 crates and a C++ build | gone | Rootless containers use pasta |
 | `pkg:lzo` | no public history | gone | `btrfs restore` loses LZO extents; the kernel keeps them |
 | `pkg:restic` | 86 modules, gRPC, OpenTelemetry | 37 | Patched out Azure, Backblaze, Google Cloud, Swift |
 | `pkg:libxml2` | autotools' output | none | Built from the signed tree with meson |

@@ -149,6 +149,19 @@
       "libpulse"
     ]
   },
+  "cell": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-4fa24dae04c9ae1b859435a872850876084cf89ed71c108cdc2c8042bb4304eb",
+    "product": "sha256-2a04d06e54b2ef022589b8e99fb775e6e3d90d29a0733c04127e72d5fcfecb29",
+    "run": [
+      "crun",
+      "passt",
+      "certs",
+      "zstd"
+    ]
+  },
   "certs": {
     "version": "3.132",
     "license": "MPL-2.0",
@@ -202,17 +215,6 @@
     "plan": "sha256-8ca87a496a4943a557d9621bfab398894a66f670a7e52577d5010e6f14d19701",
     "product": "sha256-37194dc8e580d7015ff0a7f795504a24ca13ecbb15073df5d504647c7f4c169a",
     "run": []
-  },
-  "conmon": {
-    "version": "2.2.1",
-    "license": "Apache-2.0",
-    "by": "plan",
-    "plan": "sha256-40483446c944a3cabfee523ad6f2061f4a9a923274e36a3ba1061f6e166460c4",
-    "product": "sha256-7969e52b35a7fd043641f2c4a0a726e5b6f4600b8c586add5f8072175ff054b5",
-    "run": [
-      "glib",
-      "libseccomp"
-    ]
   },
   "coreutils": {
     "version": "9.12",
@@ -1360,20 +1362,6 @@
     "plan": "sha256-5f3aa363b8770bb8d2a9975441c26528b5a5a3ce4a267d56273c247020474e1e",
     "product": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f",
     "run": []
-  },
-  "podman": {
-    "version": "6.1.4",
-    "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC",
-    "by": "plan",
-    "plan": "sha256-26d9502e48531084c823e21872fb09ac23fdd38582d4d6b1bdef1ba60e727b2c",
-    "product": "sha256-3e0498ac90efa48f3307c49637b977e6a919e4e0fed52d3dec1f64068395acf6",
-    "run": [
-      "certs",
-      "libseccomp",
-      "conmon",
-      "crun",
-      "passt"
-    ]
   },
   "postgis": {
     "version": "3.7.0",

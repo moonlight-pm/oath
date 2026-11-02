@@ -15,8 +15,8 @@ Before a package, in this order:
 Whoever adds one says what the cheaper route was and why it lost, and names its
 dependency count. A tree nobody can read is a cost, and it counts against a package
 as its bugs would. Dropping one is worth doing whenever a small replacement exists:
-Podman's netavark became a 12-line script, which took 257 crates, protobuf and
-Abseil with it.
+Podman and its netavark became 1,800 lines of our own Go, which took 157 modules,
+257 crates, conmon, protobuf and Abseil with them.
 
 ## The gates (is)
 

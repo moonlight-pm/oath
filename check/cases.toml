@@ -421,7 +421,7 @@ metal = true
 profile = "base"
 steps = [
   { run = "oath get svc:screen", expect = ["state: \"running\""] },
-  { run = "p=$(oath get svc:screen | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; readlink /proc/$p/fd/0; tr '\\0' ' ' < /proc/$p/cmdline; echo; stat -c 'owner=%u mode=%a' /dev/tty1", expect = ["Uid:\t1\t1\t1\t1", "/dev/tty1", "/bin/zsh -l", "owner=1 mode=600"] },
+  { run = "p=$(oath get svc:screen | sed -n 's/^  pid: //p'); grep '^Uid:' /proc/$p/status; readlink /proc/$p/fd/0; ps -o args= --ppid $p; stat -c 'owner=%u mode=%a' /dev/tty1", expect = ["Uid:\t1\t1\t1\t1", "/dev/tty1", "/bin/zsh -l", "owner=1 mode=600"] },
 ]
 
 # ---- Phase 5: native packages ----------------------------------------
@@ -528,6 +528,15 @@ steps = [
   { run = "stat -c 'home=%a' /home; sudo -u work ls /home 2>&1; echo \"ls=$?\"; sudo -u work sudo id 2>&1; echo \"sudo=$?\"", expect = ["home=700", "Permission denied", "ls=2", "sudo: not allowed", "sudo=1"] },
   { run = "sudo oath new svc:work-probe --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo \\\"probe $(id -u) $HOME\\\" > /work/probe; exec sleep 600\"],\"wants\":[],\"restart\":\"never\",\"enabled\":true,\"user\":\"work\"}' && sudo oath apply svc:work-probe; sleep 1; sudo cat /work/probe", expect = ["probe 2 /work"] },
   { run = "sudo oath set svc:work-probe enabled=false && sudo oath apply svc:work-probe; sudo oath rm svc:work-probe && sudo oath apply; sudo rm -f /work/probe; echo clean", expect = ["clean"] },
+]
+
+[[case]]
+name = "tun-is-open-for-container-networks"
+about = "PID 1 loads tun and opens /dev/net/tun to all (R59), which a rootless container's network needs; a process with no user namespace of its own can do nothing with it"
+metal = true
+steps = [
+  { run = "stat -c '%a %t:%T' /dev/net/tun", expect = ["666 a:c8"] },
+  { run = "sudo -u work sh -c 'exec 3<>/dev/net/tun && echo opened'", expect = ["opened"] },
 ]
 
 [[case]]

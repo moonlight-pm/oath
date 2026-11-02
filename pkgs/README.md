@@ -80,7 +80,7 @@ key = "m4"                 # pkgs/keys/m4.asc
   the log entry (made while the certificate was valid) and the
   checkpoint its inclusion proof leads to.
 - `git = "<repository>"`, `tag = "<name>"`, `key = "<key>"`: an upstream that
-  signs its git tag and not its tarball (Podman). The tag's signature must check
+  signs its git tag and not its tarball (bubblewrap). The tag's signature must check
   out and name this tag, and the tarball must be the tag's tree, file for file.
   `keys/<key>.pub` holds SSH keys, for a tag signed with one.
 - `unsigned = "<why>"`: no signature to check. A package-level

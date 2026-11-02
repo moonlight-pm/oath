@@ -113,6 +113,9 @@ repo = "https://github.com/nss-dev/nss"
 tag = "NSS_{version_}_RTM"
 tar_dir = "nss"
 
+[cell]
+skip = "Oath's own container runner (apps/cell): nothing but Go's standard library, which pkg:go's entry checks"
+
 [cf]
 skip = "npm packages: its components.json's npm purls go to OSV"
 no_compare = "npm tarballs, whose registry signature was checked when pinned; no one tag holds them"
@@ -139,11 +142,6 @@ cpe = "cpe:2.3:a:openai:codex"
 repo = "https://github.com/openai/codex"
 tag = "rust-v{version}"
 no_compare = "the vendor's build, not its source: there is no tree to set it against"
-
-[conmon]
-cpe = "cpe:2.3:a:conmon_project:conmon"
-repo = "https://github.com/containers/conmon"
-tag = "v{version}"
 
 [coreutils]
 cpe = "cpe:2.3:a:gnu:coreutils"
@@ -783,16 +781,6 @@ tag = "pixman-{version}"
 cpe = "cpe:2.3:a:pkgconf:pkgconf"
 compare_repo = "https://github.com/pkgconf/pkgconf"
 compare_tag = "pkgconf-{version}"
-
-[podman]
-cpe = "cpe:2.3:a:podman_project:podman"
-repo = "https://github.com/containers/podman"
-tag = "v{version}"
-osv = "Go:github.com/containers/podman/v6"
-
-[podman.not_affected]
-"CVE-2026-85747" = "docker/distribution's registry client, whose manifests.Get does not verify what it returns; Podman links only its registry/api packages (go list -deps), and no release of that module has a fix"
-"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
 
 [postgis]
 cpe = "cpe:2.3:a:postgis:postgis"

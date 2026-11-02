@@ -103,6 +103,11 @@ fn norm(name: &str) -> String {
     name.replace('-', "_")
 }
 
+/// Modules no device asks for. `tun` is how a rootless container gets its
+/// network (R59), and a process that is not in a user namespace of its own
+/// can do nothing with it.
+const WANTED: &[&str] = &["tun"];
+
 impl Index {
     pub fn open(base: &Path) -> Option<Self> {
         let read = |f: &str| fs::read_to_string(base.join(f)).unwrap_or_default();
@@ -283,6 +288,13 @@ impl Index {
     pub fn coldplug(&self, defer: bool) -> (Vec<String>, Vec<String>) {
         let mut tried = HashSet::new();
         let (mut loaded, mut failed) = (Vec::new(), Vec::new());
+        for m in WANTED.iter().filter(|m| self.paths.contains_key(**m)) {
+            match self.load(m, &mut HashSet::new()) {
+                Ok(true) => loaded.push(m.to_string()),
+                Ok(false) => {}
+                Err(e) => failed.push(e),
+            }
+        }
         for _ in 0..PASSES {
             let mut seen = HashSet::new();
             let mut new = false;

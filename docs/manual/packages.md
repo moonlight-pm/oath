@@ -184,11 +184,11 @@ gh --version                             # gh version 2.103.3 (2026-10-26)
 cf --version                             # 1.0.0-beta.26
 ```
 
-### Servers: Blocky, restic, Podman, PostgreSQL (R49)
+### Servers: Blocky, restic, route, cell, PostgreSQL (R49)
 
 These are built from source here and are in no profile:
-`pkg:blocky`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:podman` (with `pkg:conmon`,
-`pkg:crun`, `pkg:passt`), `pkg:postgresql` and `pkg:postgis`
+`pkg:blocky`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell` (with `pkg:crun`,
+`pkg:passt`), `pkg:postgresql` and `pkg:postgis`
 (with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
 takes them from the origin as above, with each need the plan names, once a
 release has published them. `pkg:go` is what builds the Go ones; a machine needs
@@ -211,18 +211,53 @@ The server refuses to run as root, so its `svc` names a `user`. A new major
 version changes the data directory's format, so moving across one is
 `pg_upgrade`, not a new pin alone.
 
-Podman reads its defaults from its pack (`share/containers`) and a machine's
-own from `/etc/containers`. It pulls through `/tmp`, which is memory: a machine
-pulling large images sets `image_copy_tmp_dir` to a directory on disk. Rootless, with pasta for its network, a container holds one uid (R53): its root
-is the account that ran Podman, and any image loads. An image that sets `USER` or
-changes uid (stock nginx, unless told `user root;`) fails, so build or configure
-it to stay at its root. Two things are by hand for now: `/dev/net/tun` must be
-loaded (`modprobe tun`) and opened (`chmod 666`) until the next boot, and `/` is
-not a shared mount, which Podman warns of. Run as root it does not start a
-container: crun needs the kernel's BPF syscall. There are no bridge networks: Podman's
-netavark is a stand-in that says so (R57).
-Memory and CPU limits need `CONFIG_MEMCG` and `CONFIG_CFS_BANDWIDTH`, which Oath's
-kernel leaves off.
+`pkg:cell` runs a container image (R59), in `apps/cell`, with nothing but Go's standard
+library over `crun` and `pasta`. There is no daemon: `cell run` stays in the foreground,
+so a `svc` supervises it like any program, and its output is the service's log.
+
+```sh
+sudo -u work cell run --name web -p 8080:80 -v /work/web:/data --env-file /work/web.env nginxinc/nginx-unprivileged:alpine
+```
+
+| Command | Does |
+|---------|------|
+| `cell pull <image>` | fetch an image, or move its tag; prints the digest for linux/amd64 |
+| `cell run [flags] <image> [args...]` | pull it if it is not on disk, and run it |
+| `cell exec [-t] [-w dir] <name> <cmd...>` | run a command in a running cell, under the same limits |
+| `cell stop <name>` | stop it: the image's `STOPSIGNAL`, then SIGKILL after `--stop-after` (10 s) |
+| `cell ls`, `cell images` | what is running, what is on disk |
+| `cell rmi <image>`, `cell prune` | forget a name; delete images no name holds, and what a killed cell left |
+| `cell login <registry> <user>` | keep a password, read from stdin, in `auth.json` |
+
+`run` takes `-p [addr:]host:port[/udp]`, `--reach port[:hostport]`, `-v /host:/path[:ro]`,
+`--tmpfs /path`, `-e NAME=value`, `--env-file file`, `-w dir`, `--entrypoint cmd`,
+`--user uid[:gid]`, `--read-only`, `--no-net`, `-t`, `--name`.
+
+Each run starts from a fresh copy of the image, a reflink on btrfs, and leaves nothing
+behind: what is kept goes on a volume. Images live under `~/.local/share/cell`. A name
+with `@sha256:...` holds one image for good; a tag only moves on `cell pull`. Every
+manifest, blob and layer is checked against its digest, and a layer's own `urls` are
+never fetched.
+
+A cell holds one uid (R53): the account that ran it, not root, which `cell` refuses.
+It owns every file, and is root inside, or the number the image's `USER` or `--user`
+names, so software that refuses to run as root is given `--user`. It cannot change to
+another uid, so an image whose start script drops privileges (`su-exec`, `gosu`, stock
+nginx's `user nginx;`) fails unless told to stay where it is. Setuid bits, devices and
+xattrs in an image do not land.
+
+A published port is on 127.0.0.1 unless it names an address. Nothing else comes in.
+Going out, a cell reaches what its account reaches, the network and other machines
+included, except this machine's loopback: `--reach 5432` opens one of its ports at the
+cell's own `127.0.0.1:5432`, which is also how one cell talks to another. `--no-net`
+leaves it only `-p` and `--reach`. New namespaces, `mount`, `bpf`, `ptrace` and
+`io_uring`, among others, are refused by seccomp.
+
+There is no way to build an image here, no bridge between cells, and no memory or CPU
+limit: those need `CONFIG_MEMCG` and `CONFIG_CFS_BANDWIDTH`, which Oath's kernel leaves
+off. PID 1 loads `tun` and opens `/dev/net/tun` at boot, from the release after
+`3e42879d38e5`; on a machine that has not rebooted into it, do so by hand (`modprobe
+tun`, `chmod 666`).
 
 `pkg:route` is Oath's own HTTP router (R59), in `apps/route`, with nothing but Go's
 standard library: by host and path, to a local service, a redirect or a fixed answer.
