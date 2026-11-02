@@ -1,0 +1,17 @@
+# ICU: PostgreSQL's collations. CEF carries its own copy. Signed by ICU's
+# release robot, whose key is not in ICU's KEYS file (that stops at its people's
+# older keys): its only source is the keyserver, and the signature beside the
+# release.
+version = "79.1"
+license = "Unicode-3.0"
+description = "ICU: Unicode collation, conversion and locale data."
+home = "https://icu.unicode.org/"
+purl = "pkg:github/unicode-org/icu@release-79.1"
+build = []
+run = ["gcc"]
+
+[[source]]
+url = "https://github.com/unicode-org/icu/releases/download/release-79.1/icu4c-79.1-sources.tgz"
+sha256 = "06fa63ecb521048f8082f12ad988f6b678d90cbd88aafce24cbc94902b191d99"
+sig = "https://github.com/unicode-org/icu/releases/download/release-79.1/icu4c-79.1-sources.tgz.asc"
+key = "icu"

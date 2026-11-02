@@ -231,6 +231,11 @@ tag = "releases/gcc-{version}"
 [gcc.not_affected]
 "CVE-2023-4039" = "-fstack-protector on AArch64 targets only (the record); Oath's GCC targets x86_64"
 
+[geos]
+cpe = "cpe:2.3:a:osgeo:geos"
+repo = "https://github.com/libgeos/geos"
+tag = "{version}"
+
 [gh]
 cpe = "cpe:2.3:a:github:cli"
 repo = "https://github.com/cli/cli"
@@ -300,6 +305,12 @@ tag = "{version}"
 
 [hwdata]
 skip = "hardware ID lists, data"
+
+[icu]
+cpe = "cpe:2.3:a:unicode:international_components_for_unicode"
+names = ["icu", "international components for unicode", "icu4c"]
+repo = "https://github.com/unicode-org/icu"
+tag = "release-{version}"
 
 [iproute2]
 cpe = "cpe:2.3:a:iproute2_project:iproute2"
@@ -444,6 +455,15 @@ tag = "xkbcommon-{version}"
 
 [libxkbfile]
 cpe = "cpe:2.3:a:x.org:libxkbfile"
+
+[libxml2]
+cpe = "cpe:2.3:a:xmlsoft:libxml2"
+repo = "https://gitlab.gnome.org/GNOME/libxml2"
+tag = "v{version}"
+
+[libxml2.not_affected]
+"OSV-2021-777" = "an open OSS-Fuzz record in xmlXIncludeCopyRange, code 2.15.4 no longer has"
+"OSV-2024-698" = "an open OSS-Fuzz record in htmlSaveFileFormat, through xmllint's HTML output; PostgreSQL and PostGIS parse XML and never save HTML"
 
 [libxrandr]
 cpe = "cpe:2.3:a:x.org:libxrandr"
@@ -651,11 +671,26 @@ osv = "Go:github.com/containers/podman/v6"
 "CVE-2026-85747" = "docker/distribution's registry client, whose manifests.Get does not verify what it returns; Podman links only its registry/api packages (go list -deps), and no release of that module has a fix"
 "GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
 
+[postgis]
+cpe = "cpe:2.3:a:postgis:postgis"
+repo = "https://github.com/postgis/postgis"
+tag = "{version}"
+
+[postgresql]
+cpe = "cpe:2.3:a:postgresql:postgresql"
+repo = "https://github.com/postgres/postgres"
+tag = "REL_{version_}"
+
 [procps]
 cpe = "cpe:2.3:a:procps-ng_project:procps-ng"
 names = ["procps-ng", "procps"]
 repo = "https://gitlab.com/procps-ng/procps"
 tag = "v{version}"
+
+[proj]
+cpe = "cpe:2.3:a:osgeo:proj"
+repo = "https://github.com/OSGeo/PROJ"
+tag = "{version}"
 
 [protobuf]
 cpe = "cpe:2.3:a:google:protobuf"

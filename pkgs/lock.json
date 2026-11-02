@@ -448,6 +448,16 @@
       "mpc"
     ]
   },
+  "geos": {
+    "version": "3.15.0",
+    "license": "LGPL-2.1-or-later",
+    "by": "plan",
+    "plan": "sha256-69274299252c8c3b8ee48fc4e6063a138a4c76cb0817c2ec36488eb67be64aa3",
+    "product": "sha256-0cc6197c303386851574196e3182e6f03470843664c1a2b533ec3a8cc9e2369e",
+    "run": [
+      "gcc"
+    ]
+  },
   "gh": {
     "version": "2.103.3",
     "license": "MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND MPL-2.0",
@@ -578,6 +588,16 @@
     "plan": "sha256-cf329bb9ed9e64140348852e0cd16a50742eb4d752574d635bb5428f009f8b83",
     "product": "sha256-95867516fcd24e190be31134534fac570ba03820a10c60999d35e13728ee42fa",
     "run": []
+  },
+  "icu": {
+    "version": "79.1",
+    "license": "Unicode-3.0",
+    "by": "plan",
+    "plan": "sha256-f79c2fa78a98ea67ec57b7aa6ae5bb5402891d35b5db58aa11fa148c2ed7f817",
+    "product": "sha256-626c8f56b2c5ba2e280b66950cb7a3f850e4c042217cefada065ec43bfd8e740",
+    "run": [
+      "gcc"
+    ]
   },
   "iproute2": {
     "version": "7.2.0",
@@ -971,6 +991,16 @@
     "product": "sha256-126a6a61f04b353bdccb4e49311a88bbf2fb0bf771f6d3a781c69c2471070a14",
     "run": [
       "libx11"
+    ]
+  },
+  "libxml2": {
+    "version": "2.15.4",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-881fae17a8fc06c791e4eab28fa2f5939b187b69359e4ab848a784f0d935a50e",
+    "product": "sha256-918cc93a6109b712e739ecdef14acddb987ea6ae2e30503236e18926f8f7e727",
+    "run": [
+      "zlib"
     ]
   },
   "libxrandr": {
@@ -1375,6 +1405,39 @@
       "passt"
     ]
   },
+  "postgis": {
+    "version": "3.7.0",
+    "license": "GPL-2.0-or-later",
+    "by": "plan",
+    "plan": "sha256-c63a41a6046b220994440e0e869b39d0d5a5df0653fbfd67d313db469c59c9c3",
+    "product": "sha256-5656f4fc088d80aad3bb6538bc6959fb5c189444cd7ff2f76df9a263f8eaaf94",
+    "run": [
+      "postgresql",
+      "gcc",
+      "geos",
+      "proj",
+      "libxml2",
+      "json-c"
+    ]
+  },
+  "postgresql": {
+    "version": "18.6",
+    "license": "PostgreSQL",
+    "by": "plan",
+    "plan": "sha256-5d5df3f46126f4d2dd6822c87baf2a73f00aee2b37120870b386509a90f686b3",
+    "product": "sha256-007ecab6694de25eb1f9565c753416edb2fb6b12acab22ce658f437aa36d690d",
+    "run": [
+      "gcc",
+      "icu",
+      "libxml2",
+      "openssl",
+      "readline",
+      "ncurses",
+      "util-linux",
+      "zlib",
+      "zstd"
+    ]
+  },
   "procps": {
     "version": "4.0.7",
     "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
@@ -1383,6 +1446,16 @@
     "product": "sha256-a7c573459dc17a6908aa66abfbc61fc3bd72ede1b386819dc72868a1438acbb1",
     "run": [
       "ncurses"
+    ]
+  },
+  "proj": {
+    "version": "9.9.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-82657b993dc44a993dd716288a2c89e087a14d9ff15148c1443933f16ee73ed5",
+    "product": "sha256-e195695539000cdff25869a1d4ea46b38b04222d954fbc30070ae056baa24335",
+    "run": [
+      "gcc"
     ]
   },
   "protobuf": {

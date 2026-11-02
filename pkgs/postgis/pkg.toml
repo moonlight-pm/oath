@@ -1,0 +1,18 @@
+# PostGIS on pkg:postgresql: geometry, geography and topology, with GEOS, PROJ,
+# libxml2 and json-c; no raster (GDAL), protobuf output (MVT) or address
+# standardizer. A pack of its own, so PostgreSQL finds it through a setting:
+#   extension_control_path = '$system:/oath/store/pkg/postgis/live/share'
+# Its functions name their library by its live path, not $libdir. OSGeo
+# publishes md5 sums, no signature.
+version = "3.7.0"
+license = "GPL-2.0-or-later"
+description = "PostGIS: spatial types and functions for PostgreSQL."
+home = "https://postgis.net/"
+purl = "pkg:generic/postgis@3.7.0"
+build = ["postgresql", "geos", "proj", "libxml2", "json-c", "perl", "pkgconf", "icu", "openssl", "readline", "ncurses", "util-linux", "zlib", "zstd"]
+run = ["postgresql", "gcc", "geos", "proj", "libxml2", "json-c"]
+
+[[source]]
+url = "https://download.osgeo.org/postgis/source/postgis-3.7.0.tar.gz"
+sha256 = "832bbf50f2b6f57fab053bc9676b3bfe641e5bf966cdcb28c7926f8d4b3c5e04"
+unsigned = "OSGeo publishes PostGIS with an md5 sum, not a signature"

@@ -1,0 +1,15 @@
+# PROJ: PostGIS's coordinate transformations, with its database of reference
+# systems in share/proj. SQLite is linked in, from pkg:sqlite. No TIFF or curl,
+# so no grid files from the network. OSGeo publishes md5 sums, no signature.
+version = "9.9.0"
+license = "MIT"
+description = "PROJ: cartographic projections and coordinate transformations, for PostGIS."
+home = "https://proj.org/"
+purl = "pkg:generic/proj@9.9.0"
+build = ["cmake", "ninja", "sqlite"]
+run = ["gcc"]
+
+[[source]]
+url = "https://download.osgeo.org/proj/proj-9.9.0.tar.gz"
+sha256 = "791a0610547eeabb17006cfd49cdbd2034f3240f47ed5e88a1031811f4e2bcf3"
+unsigned = "OSGeo publishes PROJ with an md5 sum, not a signature"

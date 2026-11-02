@@ -1,6 +1,7 @@
 # restic, the backup program. The release's tarball is signed, and its go.sum
 # names every module below, so its signature covers them too (R49). Built
-# without cgo, as its own releases are. The roots are pkg:certs'.
+# without cgo, as its own releases are. The roots are pkg:certs'. Re-pin with:
+#   pkgs/go-modules.sh restic ./cmd/restic
 version = "0.19.1"
 license = "BSD-2-Clause AND MIT AND BSD-3-Clause AND Apache-2.0 AND MPL-2.0"
 description = "restic: fast, encrypted, deduplicating backups."

@@ -11,7 +11,8 @@
 # and the resulting go.mod and go.sum go in pkgs/<name>/, which the build
 # copies over the release's.
 #
-# Usage, with pkg:go on PATH and the release in build/fetch:
+# Usage, with the release in build/fetch (cargo make pkgs --fetch <name>) and
+# the locked pkg:go built:
 #   [TAGS='build tags'] pkgs/go-modules.sh <name> <go package>...
 #   pkgs/go-modules.sh restic ./cmd/restic
 set -eu
@@ -19,6 +20,8 @@ name=$1
 shift
 repo=$(cd "$(dirname "$0")/.." && pwd)
 toml=$repo/pkgs/$name/pkg.toml
+go=$(awk '/^  "go": \{/ { f = 1 } f && /"product"/ { gsub(/[",]/, "", $2); print $2; exit }' "$repo/pkgs/lock.json")
+export PATH="$HOME/.local/share/oath/store/pkg/go/$go/bin:$PATH"
 marker='# Modules, from pkgs/go-modules.sh:'
 grep -qx "$marker" "$toml"
 # The release is the one source before the marker.

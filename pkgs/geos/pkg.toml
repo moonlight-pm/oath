@@ -1,0 +1,13 @@
+# GEOS: PostGIS's geometry engine. OSGeo publishes md5 sums, no signature.
+version = "3.15.0"
+license = "LGPL-2.1-or-later"
+description = "GEOS: computational geometry, for PostGIS."
+home = "https://libgeos.org/"
+purl = "pkg:generic/geos@3.15.0"
+build = ["cmake", "ninja"]
+run = ["gcc"]
+
+[[source]]
+url = "https://download.osgeo.org/geos/geos-3.15.0.tar.bz2"
+sha256 = "d5e5192a686d065eaed082de14dd26244c5c8e02bff16b2c6cce3265f648e00e"
+unsigned = "OSGeo publishes GEOS with an md5 sum, not a signature"
