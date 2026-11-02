@@ -15,7 +15,8 @@ append history (git has it).
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
    the profile, and checks `/bin` and `/lib` names. Newest release:
-   `3e42879d38e5` (2026-11-01), on canto and novus. Gap: a changed `svc` spec
+   `c9735fc14e50` (2026-11-02), on no machine yet; canto and novus run
+   `3e42879d38e5`. Gap: a changed `svc` spec
    goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
@@ -26,14 +27,14 @@ append history (git has it).
 3. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
-   profile). R47: the profile pins Sola master `a632f932` (on CEF 156.0.15):
-   core `pkg:sola`, thirteen `pkg:sola-<app>`, `svc:sola-vault`: release
-   `3e42879d38e5` (66/66, 2026-11-01), with PID 1's `keep_children` fixes. Each
-   machine reboots into it, then sets it on `svc:sola-session` by hand.
-   Canto: `sola-lock`, Settings → Login, Exit Sola.
+   profile). R47: the profile pins Sola master `7ccee214` (on CEF 156.0.15):
+   core `pkg:sola`, fourteen `pkg:sola-<app>` (Sola Editor is new), `svc:sola-vault`:
+   release `c9735fc14e50` (68/68, 2026-11-02). Each machine reboots into it,
+   then sets it on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
+   Login, Exit Sola. Next: Sola's session pulls it on novus; Joshua decides each reboot.
 4. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
-   profile (R52), unpublished. They run as `work`, which has no `sudo`. Bias against
+   profile (R52), on the origin since `c9735fc14e50`. They run as `work`, which has no `sudo`. Bias against
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
@@ -43,9 +44,9 @@ append history (git has it).
    far: Linux 7.3.1 (`178ac39ce817`), then CEF 156.0.15 and expat's four CVE patches
    (`3c4a23053b7a`, 2026-11-01). Left by Joshua's word: libsndfile, the toolchain
    rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
-   2 h). 2026-11-02: nothing published, `pkg:certs` 3.132 on master. Next: the
-   2026-11-04 run publishes Codex 0.165.0, with R54-R59 from master, and moves
-   buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi and
+   2 h). 2026-11-02: the audit published nothing; R49-R59 and `pkg:certs` 3.132 went
+   out in `c9735fc14e50` by Joshua's word, ahead of it. Next: the 2026-11-04 run
+   publishes Codex 0.165.0 and moves buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi and
    expat 2.10.0, from 2026-11-10, is Joshua's call.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
