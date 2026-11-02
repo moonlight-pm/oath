@@ -901,6 +901,7 @@ repo = "https://github.com/sqlite/sqlite"
 tag = "version-{version}"
 
 [sqlite.not_affected]
+"CVE-2022-31631" = "PHP's PDO::quote(), not SQLite (the record; NVD names PHP, with SQLite only as what it runs against): Oath builds no PHP"
 "CVE-2026-119586" = "the sqlite3 shell's .recover echoes dot-commands planted in a hostile database, when its output is piped back into the shell; no fix yet. Programs here link the library, which has no .recover; PROJ's build runs the shell on its own SQL."
 
 [steam]
