@@ -1497,6 +1497,18 @@
       "xcb-util-wm"
     ]
   },
+  "rsync": {
+    "version": "3.5.1",
+    "license": "GPL-3.0-or-later",
+    "by": "plan",
+    "plan": "sha256-270ec5e347e035a974280d3d721a1f6a410f4b311f39df37b3fed231557fcd22",
+    "product": "sha256-ab417e802184fba7d3e5ba51035f71543422cd9600199eb75243af114d20ae28",
+    "run": [
+      "openssl",
+      "zlib",
+      "zstd"
+    ]
+  },
   "rust": {
     "version": "1.99.1",
     "license": "(MIT OR Apache-2.0) AND Apache-2.0 WITH LLVM-exception AND MIT",

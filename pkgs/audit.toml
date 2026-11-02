@@ -719,6 +719,9 @@ osv = "Go:github.com/restic/restic"
 [rivulet]
 skip = "Oath's own compositor (apps/rivulet): its Rust crates are checked through OSV"
 
+[rsync]
+cpe = "cpe:2.3:a:samba:rsync"
+
 [rust]
 cpe = "cpe:2.3:a:rust-lang:rust"
 names = ["rustc", "cargo"]

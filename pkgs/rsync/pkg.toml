@@ -1,0 +1,15 @@
+# rsync, with SHA checksums through OpenSSL and zstd compression; no ACLs, lz4
+# or xxhash. Signed by Zen Dodd, whom 3.5.1's NEWS gives release authority.
+version = "3.5.1"
+license = "GPL-3.0-or-later"
+description = "rsync: fast incremental file transfer."
+home = "https://rsync.samba.org/"
+purl = "pkg:generic/rsync@3.5.1"
+build = ["openssl", "zlib", "zstd"]
+run = ["openssl", "zlib", "zstd"]
+
+[[source]]
+url = "https://download.samba.org/pub/rsync/src/rsync-3.5.1.tar.gz"
+sha256 = "c55f9c9dc10fb8bec397b399a0fdded53cc9a2d8e30891bb0d63724d25c37bef"
+sig = "https://download.samba.org/pub/rsync/src/rsync-3.5.1.tar.gz.asc"
+key = "rsync"
