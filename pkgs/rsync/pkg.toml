@@ -1,5 +1,8 @@
 # rsync, with SHA checksums through OpenSSL and zstd compression; no ACLs, lz4
-# or xxhash. Signed by Zen Dodd, whom 3.5.1's NEWS gives release authority.
+# or xxhash. Checked against Andrew Tridgell's key (R51). 3.5.1 carries two
+# signatures: Zen Dodd's, a maintainer since 2026, and his, added after rsync
+# issue 1097 asked for provenance. A release only Zen Dodd signs stops the fetch
+# until someone has looked.
 version = "3.5.1"
 license = "GPL-3.0-or-later"
 description = "rsync: fast incremental file transfer."

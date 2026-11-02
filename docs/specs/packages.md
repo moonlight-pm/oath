@@ -207,9 +207,9 @@ to curl's bundle) and the libraries they load
 (individual linux-firmware blobs); kexec-tools (`pkg:kexec`, static)
 for the installer; and the build tools (`pkg:rust`, `pkg:go`, python, meson,
 ninja, perl, m4, flex, bison, bc, elfutils, pkgconf, patchelf, protobuf).
-In no profile: `pkg:certs`, Oath's CA roots (R50), and Wicket's services,
-built from source (R49): Caddy, Blocky, restic, rsync, Podman with its family,
-PostgreSQL and PostGIS with theirs.
+In no profile: `pkg:certs`, Oath's CA roots (R50), and servers built from
+source (R49): Caddy, Blocky, restic, rsync, Podman with its family, PostgreSQL
+and PostGIS with theirs.
 `pkg:oath` follows this tree and is not locked. Nothing in the image
 comes from nixpkgs.
 

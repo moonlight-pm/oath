@@ -3,10 +3,11 @@
 # SQLite from pkg:sqlite, not the copy go-sqlite3 carries. Its modules are
 # below in place of its vendor/, since a module's fix may not wait for a
 # release (R49). Paths under /etc that it reads by default are in its pack.
-# Rootless use needs setuid newuidmap and newgidmap, which Oath does not ship:
-# see Open in docs/decisions.md. Re-pin with:
-#   TAGS='grpcnotrace seccomp libsqlite3 containers_image_openpgp exclude_graphdriver_btrfs' \
-#     CGO_ENABLED=1 pkgs/go-modules.sh podman ./cmd/podman ./cmd/rootlessport ./cmd/quadlet
+# Oath ships no newuidmap, so rootless it maps one uid: see Open in
+# docs/decisions.md. Re-pin with:
+#   pkgs/go-modules.sh --cgo \
+#     --tags 'grpcnotrace seccomp libsqlite3 containers_image_openpgp exclude_graphdriver_btrfs' \
+#     podman ./cmd/podman ./cmd/rootlessport ./cmd/quadlet
 version = "6.1.4"
 license = "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC"
 description = "Podman: run OCI containers, without a daemon."

@@ -19,7 +19,7 @@ publishes it, and it has no directory here (Sola's, in `desk`).
 ## Go programs (R49)
 
 `build = ["go"]`, and `run = ["certs"]` for the CA roots. `pkgs/go-modules.sh
-<name> <go package>...` pins the go.mod and zip files the go command reads, from
+[--cgo] [--tags '…'] <name> <go package>...` pins the go.mod and zip files the go command reads, from
 proxy.golang.org, after the line `# Modules, from pkgs/go-modules.sh:` in
 `pkg.toml`; run it again after a new release's pin. The build reads them through
 `GOPROXY=file://$SRC/gomod`, and `go-components` writes `components.json` from

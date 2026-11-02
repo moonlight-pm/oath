@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-01 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R50 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R52 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -32,11 +32,11 @@ append history (git has it).
    `3e42879d38e5` (66/66, 2026-11-01), with PID 1's `keep_children` fixes. Each
    machine reboots into it, then sets it on `svc:sola-session` by hand.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
-4. **Wicket on Oath (R49, R50).** Its services are built from source, in no
-   profile yet: Caddy, Blocky, restic, rsync, Podman (rootless over pasta),
-   PostgreSQL with PostGIS, on `pkg:go`, with `pkg:certs` for roots. Unpublished.
-   Next: Joshua answers Open (rootless uid ranges); then PID 1 loads `tun`, a
-   `wicket` profile, and the host's reboot gap (`restart=no`) and kernel pin.
+4. **Servers from source (R49, R50, R51).** Caddy, Blocky, restic, rsync, Podman
+   (rootless over pasta), PostgreSQL with PostGIS, on `pkg:go`, with `pkg:certs`
+   for roots; in no profile (R52), unpublished. PostgreSQL's real test is
+   elsewhere, later, not on buccina. Next: Joshua answers Open (uid ranges), and
+   posts here what Wicket's session asks of Oath.
 5. **Security audit (R48).** First run 2026-10-31, by hand: 153 hits in
    27 packages, 63 not affected (`pkgs/audit.toml`). Published Linux 7.3.1
    (`178ac39ce817`), then CEF 156.0.15 (Chromium .80, 72 CVEs, now with

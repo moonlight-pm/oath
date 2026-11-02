@@ -1,7 +1,8 @@
 # ICU: PostgreSQL's collations. CEF carries its own copy. Signed by ICU's
-# release robot, whose key is not in ICU's KEYS file (that stops at its people's
-# older keys): its only source is the keyserver, and the signature beside the
-# release.
+# release robot (R51), a key ICU's release workflow holds as a GitHub secret, so
+# it proves the workflow, not a person. It is not in ICU's KEYS file, which stops
+# at its people's older keys, but the same key signs ICU since 76.1 and icu4j on
+# Maven Central.
 version = "79.1"
 license = "Unicode-3.0"
 description = "ICU: Unicode collation, conversion and locale data."

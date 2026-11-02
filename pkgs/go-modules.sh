@@ -13,9 +13,17 @@
 #
 # Usage, with the release in build/fetch (cargo make pkgs --fetch <name>) and
 # the locked pkg:go built:
-#   [TAGS='build tags'] pkgs/go-modules.sh <name> <go package>...
+#   pkgs/go-modules.sh [--cgo] [--tags 'build tags'] <name> <go package>...
 #   pkgs/go-modules.sh restic ./cmd/restic
 set -eu
+cgo=0 tags=
+while :; do
+	case ${1:-} in
+	--cgo) cgo=1 && shift ;;
+	--tags) tags=$2 && shift 2 ;;
+	*) break ;;
+	esac
+done
 name=$1
 shift
 repo=$(cd "$(dirname "$0")/.." && pwd)
@@ -44,9 +52,8 @@ if grep -q '^replace' go.mod; then
 	exit 1
 fi
 
-export GOTOOLCHAIN=local GOFLAGS=-mod=readonly CGO_ENABLED="${CGO_ENABLED:-0}" GOOS=linux GOARCH=amd64 \
+export GOTOOLCHAIN=local GOFLAGS=-mod=readonly CGO_ENABLED=$cgo GOOS=linux GOARCH=amd64 \
 	GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOMODCACHE="$tmp/mod"
-tags=${TAGS:-}
 updates=$repo/pkgs/$name/go-updates.txt
 if [ -f "$updates" ]; then
 	sed -e 's/#.*//' -e '/^ *$/d' "$updates" | while read -r m v; do

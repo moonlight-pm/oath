@@ -213,10 +213,11 @@ version changes the data directory's format, so moving across one is
 Podman reads its defaults from its pack (`share/containers`) and a machine's
 own from `/etc/containers`. It pulls through `/tmp`, which is memory: a machine
 pulling large images sets `image_copy_tmp_dir` to a directory on disk. Run
-rootless, with pasta for its network, it works today with limits: with one uid
-mapped, an image with files of other owners needs
-`ignore_chown_errors = "true"`, since Oath has no `newuidmap` (Open in
-[decisions](../decisions.md)); `/dev/net/tun` must be loaded (`modprobe tun`) and
+rootless, with pasta for its network, it works today with limits. Oath has no
+`newuidmap` (Open in [decisions](../decisions.md)), so a container holds one uid:
+its root is the user who ran Podman. An image that sets `USER` or changes uid
+(stock nginx, unless told `user root;`) fails, and one with files of other owners
+needs `ignore_chown_errors = "true"`. `/dev/net/tun` must be loaded (`modprobe tun`) and
 opened (`chmod 666`), by hand until the next boot; `/` is not a shared mount,
 which Podman warns of. Run as root it does not start a container: crun needs the
 kernel's BPF syscall, and a bridge network needs `nft`. Memory and CPU limits

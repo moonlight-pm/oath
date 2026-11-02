@@ -7,7 +7,7 @@
 # against its checksums list. Built with the tags its own releases use. The
 # roots are pkg:certs'; ACME's state goes under the service's $HOME or XDG
 # directories. Re-pin with:
-#   TAGS='nobadger nomysql nopgx' pkgs/go-modules.sh caddy .
+#   pkgs/go-modules.sh --tags 'nobadger nomysql nopgx' caddy .
 version = "2.11.7"
 license = "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND CC0-1.0"
 description = "Caddy: the web server and reverse proxy with automatic HTTPS."

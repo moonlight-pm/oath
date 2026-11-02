@@ -81,7 +81,7 @@ tag = "v{version}"
 osv = "Go:github.com/caddyserver/caddy/v2"
 
 [caddy.not_affected]
-"CVE-2026-116585" = "fixed in go-jose v4 (go-updates.txt); go-jose v3 has no fix and is linked through go.step.sm/crypto/jose for Caddy's acme_server and pki; aulos's Caddyfile uses neither (2026-11-01). A crafted JWK panics the request."
+"CVE-2026-116585" = "fixed in go-jose v4 (go-updates.txt); go-jose v3 has no fix and is linked through go.step.sm/crypto/jose, reached only by Caddy's acme_server and pki, which a machine must configure. A crafted JWK panics the request."
 "CVE-2026-116586" = "as CVE-2026-116585"
 "CVE-2026-116587" = "as CVE-2026-116585"
 "GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
