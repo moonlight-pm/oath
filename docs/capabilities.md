@@ -4,7 +4,7 @@ What exists and what is missing, per capability. Target design is in
 [specs/](specs/); priority in [CURRENT.md](../CURRENT.md). Keep this under
 800 words. Update a row with the code.
 
-**Status:** `shipped` works and is tested · `partial` works with listed
+**Status:** `shipped` works and is tested · `partial` works with
 gaps · `target` designed, not built.
 
 **As of:** 2026-11-01
@@ -28,7 +28,7 @@ gaps · `target` designed, not built.
 | Seed and overlays | shipped | profile `base`, extended; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's on novus's card, R34) | — |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `oath update` pulls the newest signed output (R38), builds recipes, replaces overlays (`--keep`), makes what the profile gained (R47) | No `--reboot`: an older PID 1 restarts the desk |
-| Image build | shipped | `cargo make build` packs `pkg:oath`, locked packages and packs a profile pins elsewhere (R28) into `build/out/<id>/`; published only from a clean master (R47) | — |
+| Image build | shipped | `cargo make build` packs `pkg:oath`, locked and pinned packs (R28) into `build/out/<id>/`; published only from a clean master (R47) | — |
 | Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` (R43), `@home` apart; records its release (R45); novus | AMI: `UEFI OS` returns; Oath not first |
 | Test harness | shipped | `cargo make check`: a QEMU per case, known gaps per phase, `check-pass` per output; `--target`: `metal` cases on a machine | — |
 
