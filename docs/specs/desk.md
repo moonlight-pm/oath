@@ -224,11 +224,11 @@ the programs whose restart ends the session (`sola-bus`, `sola-call`,
 `sola-river`, `sola-shell`, `sola-session`, `sola-kvm`, `sola-lock`),
 `solactl`, `sola-oath`, and `share/` (icons, cursors:
 `XCURSOR_PATH` and `SOLA_SHARE_DIR` name `/oath/store/pkg/sola/share`).
-Each app is its own `pkg:sola-<app>` (terminal, projects, paint,
-preview, scope, monitor, calendar, mail, settings, bots, browser,
+Each app is its own `pkg:sola-<app>` (terminal, projects, paint, editor,
+preview, scope, monitor, calendar, mail, settings, bots, vault, browser,
 design), needing what it loads and not the core, so an app's overlay
 or release moves that app and restarts nothing. The profile pins all
-thirteen with their `source` (Sola master `92815a65`). An update from
+fifteen with their `source` (Sola master `7ccee214`). An update from
 the single `pkg:sola` moves its `/bin` names to the app packages in one
 apply.
 

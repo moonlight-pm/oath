@@ -368,6 +368,7 @@ mod tests {
                 "sola-browser",
                 "sola-calendar",
                 "sola-design",
+                "sola-editor",
                 "sola-mail",
                 "sola-monitor",
                 "sola-paint",
