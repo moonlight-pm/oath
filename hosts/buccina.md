@@ -48,7 +48,9 @@ Overwrite this file when facts change; do not append a diary.
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
   `pkg:libglvnd-i386`; `svc:screen` has no `seat`, so it acts as
   before. `sola-shell` fails: headless, and Mesa has no driver for its
-  Intel GPU. `svc:sola-kvm` is off (generation 107, R44); `svc:pipewire`
+  Intel GPU. `dmesg`'s one error is that GPU's too: i915 asks for
+  `i915/tgl_guc_70.bin`, and `/lib/firmware/i915` is empty (seen 2026-11-02).
+  `svc:sola-kvm` is off (generation 107, R44); `svc:pipewire`
   and `svc:pipewire-pulse` have `rtprio` 95 by hand (generation 98). Since R36 its
   sshd is OpenSSH (generation 3 moved it from dropbear, keeping the
   host key); `pkg:dropbear` was removed (generation 35); `pkg:qemu` and
