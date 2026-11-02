@@ -37,7 +37,7 @@ append history (git has it).
    profile (R52), unpublished. They run as `work`, which has no `sudo`. Bias against
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). Next:
-   Joshua names `cell`; `cell` as `work` under a `svc`; a sandbox for project installs.
+   `cell` as `work` under a `svc`; a sandbox for project installs. Image builds if asked.
 5. **Security audit (R48).** First run 2026-10-31, by hand: 153 hits in
    27 packages, 63 not affected (`pkgs/audit.toml`). Published Linux 7.3.1
    (`178ac39ce817`), then CEF 156.0.15 (Chromium .80, 72 CVEs, now with
