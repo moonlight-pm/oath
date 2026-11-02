@@ -14,10 +14,9 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release:
-   `c9735fc14e50` (2026-11-02), on no machine yet; canto and novus run
-   `3e42879d38e5`. Gap: a changed `svc` spec
-   goes by hand. Next: an absent package new to the profile is made present
+   the profile, and checks `/bin` and `/lib` names. Newest release: `c9735fc14e50`
+   (2026-11-02), on no machine yet; canto and novus run `3e42879d38e5`. Gap: a
+   changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
