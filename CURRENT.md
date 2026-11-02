@@ -35,8 +35,9 @@ append history (git has it).
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
    profile (R52), unpublished. They run as `work`, which has no `sudo`. Bias against
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
-   What could still go: [specs/dependencies.md](docs/specs/dependencies.md). Next:
-   `cell` as `work` under a `svc`; a sandbox for project installs. Image builds if asked.
+   What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
+   as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
+   image builds if asked.
 5. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans,
    reads each pin against upstream's newest release, may publish. Published so
    far: Linux 7.3.1 (`178ac39ce817`), then CEF 156.0.15 and expat's four CVE patches
@@ -59,7 +60,7 @@ OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `3e42879d38e5` (booted 2026-11-01, `pkg:sola` overlay from master@ac660375), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
 | novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `3e42879d38e5` (no overlay, not rebooted since that release), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
-| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `1caabcfb0b8c` (Sola c1bde1c4 and the Vault, 2026-11-01), `desk`, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `1c09695ec24e` (master `6d20da0`, unpublished, 2026-11-02), `desk`, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 ## Do not
 

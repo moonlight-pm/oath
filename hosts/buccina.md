@@ -29,9 +29,14 @@ Overwrite this file when facts change; do not append a diary.
   beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `1caabcfb0b8c` (Sola master@c1bde1c4 on CEF
+- **Running now:** output `1c09695ec24e` (master `6d20da0`, generation 133,
+  2026-11-02), at Joshua's word and not published: `cargo make publish --dest`
+  into a directory, served on loopback as a second origin for `oath update
+  --output`, after a rehearsal from `1caabcfb0b8c`. `host:local.origins` is the
+  store alone again, and the audit's next release moves it. Before it,
+  `1caabcfb0b8c` (Sola master@c1bde1c4 on CEF
   156.0.15, `pkg:sola-vault` and `svc:sola-vault`), pulled 2026-11-01
-  with `oath update --confirm --reboot` (generation 115). Before it, `3c4a23053b7a` (the
+  with `oath update --confirm --reboot` (generation 115), `3c4a23053b7a` (the
   first audit's CEF 156.0.15 and expat release, generation 112),
   `178ac39ce817` (Linux 7.3.1, generation 111) and Release B
   (`dd0f847aa9c9`, generation 110).

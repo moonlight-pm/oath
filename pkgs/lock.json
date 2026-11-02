@@ -153,8 +153,8 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-4fa24dae04c9ae1b859435a872850876084cf89ed71c108cdc2c8042bb4304eb",
-    "product": "sha256-2a04d06e54b2ef022589b8e99fb775e6e3d90d29a0733c04127e72d5fcfecb29",
+    "plan": "sha256-7b200d2af36df044bd9420af9c81638ea6b4c1dda4c3605a55139a1677aae599",
+    "product": "sha256-bc9b74c2f1af7efbfbc8480537fd28bb34e53d9609aecb3b8482f565510e8476",
     "run": [
       "crun",
       "passt",

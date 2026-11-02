@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -325,6 +327,37 @@ func TestStopSignal(t *testing.T) {
 		if got := stopSignal(name).String(); got != want {
 			t.Errorf("%q: %s", name, got)
 		}
+	}
+}
+
+func TestOutputGoesThroughPipesMadeHere(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "log")
+	f, err := os.Create(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	stdout, stderr := os.Stdout, os.Stderr
+	os.Stdout, os.Stderr = f, f
+	defer func() { os.Stdout, os.Stderr = stdout, stderr }()
+
+	cmd := exec.Command("sh", "-c", "echo one; echo two >&2; echo three; exit 3")
+	wire(cmd, false)
+	if _, isFile := cmd.Stderr.(*os.File); isFile {
+		t.Error("a service's stderr would reach the program as root's pipe")
+	}
+	var exit *exec.ExitError
+	if err := cmd.Run(); !errors.As(err, &exit) || exit.ExitCode() != 3 {
+		t.Errorf("run: %v", err)
+	}
+	if got, _ := os.ReadFile(file); string(got) != "one\ntwo\nthree\n" {
+		t.Errorf("out of order or missing: %q", got)
+	}
+
+	terminal := exec.Command("true")
+	wire(terminal, true)
+	if terminal.Stderr != any(f) {
+		t.Error("a terminal must stay the program's own")
 	}
 }
 

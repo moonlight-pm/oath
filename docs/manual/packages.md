@@ -213,10 +213,13 @@ version changes the data directory's format, so moving across one is
 
 `pkg:cell` runs a container image (R59), in `apps/cell`, with nothing but Go's standard
 library over `crun` and `pasta`. There is no daemon: `cell run` stays in the foreground,
-so a `svc` supervises it like any program, and its output is the service's log.
+so a `svc` supervises it like any program, and its output is the service's log. Without
+`-t` that output goes through pipes `cell` makes, so a program can open `/dev/stderr`.
 
 ```sh
-sudo -u work cell run --name web -p 8080:80 -v /work/web:/data --env-file /work/web.env nginxinc/nginx-unprivileged:alpine
+sudo -u work cell run --name web -p 8080:8080 -v /work/web:/data --env-file /work/web.env nginxinc/nginx-unprivileged:alpine
+sudo oath new svc:web --from-json '{"exec":["/bin/cell","run","--name","web","-p","8080:8080","nginxinc/nginx-unprivileged:alpine"],"wants":[],"restart":"always","enabled":true,"user":"work"}'
+sudo oath apply svc:web
 ```
 
 | Command | Does |

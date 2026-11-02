@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -166,11 +167,35 @@ func (s *store) run(o *options) (int, error) {
 		"crun", "--root", filepath.Join(dir, "state"), "--cgroup-manager=disabled",
 		"run", "--bundle", dir, o.name)
 	cmd := exec.Command("pasta", pasta...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	wire(cmd, o.tty)
 	// If this process is killed, its lock goes, and so must what the lock stood for.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
 	return supervise(cmd, filepath.Join(dir, "pasta.pid"), stopSignal(image.Config.StopSignal), o.stopAfter)
 }
+
+// wire gives cmd this process's standard files. Without a terminal its output goes through
+// pipes made here: a program often logs by opening /dev/stderr, which opens the pipe anew
+// under its owner's permissions, and the pipe PID 1 gives a service is root's.
+func wire(cmd *exec.Cmd, tty bool) {
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if tty {
+		return
+	}
+	out, errs := passOn{os.Stdout}, passOn{os.Stderr}
+	// One pipe for one file, so that the two stay in order.
+	a, aerr := os.Stdout.Stat()
+	b, berr := os.Stderr.Stat()
+	if aerr == nil && berr == nil && os.SameFile(a, b) {
+		errs = out
+	}
+	cmd.Stdout, cmd.Stderr = out, errs
+	cmd.WaitDelay = time.Second
+	// A reader that goes away ends the copying, not this process and its cleanup.
+	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
+}
+
+// passOn is a writer and not an *os.File, which is what makes exec.Cmd make a pipe.
+type passOn struct{ io.Writer }
 
 // tied becomes a command that dies with its parent, which is what pasta's child needs:
 // killed, pasta would leave it running with no network. Both calls need one thread.
@@ -209,6 +234,10 @@ func supervise(cmd *exec.Cmd, pidFile string, stop syscall.Signal, after time.Du
 	for {
 		select {
 		case err := <-done:
+			// The program ended well, and something it left holds the pipes.
+			if errors.Is(err, exec.ErrWaitDelay) {
+				return 0, nil
+			}
 			var exit *exec.ExitError
 			if errors.As(err, &exit) {
 				if status, ok := exit.Sys().(syscall.WaitStatus); ok && status.Signaled() {
@@ -755,8 +784,8 @@ func (s *store) exec(name string, command []string, tty bool, workdir string) (i
 	args = append(args, name)
 	args = append(args, command...)
 	cmd := exec.Command("nsenter", args...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
+	wire(cmd, tty)
+	if err := cmd.Run(); err != nil && !errors.Is(err, exec.ErrWaitDelay) {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
 			return exit.ExitCode(), nil
