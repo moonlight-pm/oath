@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-02 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R58 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R59 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -32,13 +32,12 @@ append history (git has it).
    `3e42879d38e5` (66/66, 2026-11-01), with PID 1's `keep_children` fixes. Each
    machine reboots into it, then sets it on `svc:sola-session` by hand.
    Canto: `sola-lock`, Settings → Login, Exit Sola.
-4. **Servers from source (R49–R58).** Blocky, restic, rsync, Podman
-   (rootless over pasta, one uid), PostgreSQL with PostGIS, on `pkg:go`, with
-   `pkg:certs` for roots; in no profile (R52), unpublished. They run as `work`,
-   which has no `sudo`. Bias against packages, and intake gates (R57). PostgreSQL's
-   real test is elsewhere, later, not on buccina. What could still go:
-   [specs/dependencies.md](docs/specs/dependencies.md). Next: a sandbox for project
-   installs; Joshua posts here what Wicket's session asks of Oath.
+4. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
+   PostGIS, our own `route`, on `pkg:go`, with `pkg:certs` for roots; in no profile
+   (R52), unpublished. They run as `work`, which has no `sudo`. Bias against packages,
+   intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina. What could
+   still go: [specs/dependencies.md](docs/specs/dependencies.md). Next: the glue over
+   `crun` and `pasta` replaces Podman (R59); then a sandbox for project installs.
 5. **Security audit (R48).** First run 2026-10-31, by hand: 153 hits in
    27 packages, 63 not affected (`pkgs/audit.toml`). Published Linux 7.3.1
    (`178ac39ce817`), then CEF 156.0.15 (Chromium .80, 72 CVEs, now with

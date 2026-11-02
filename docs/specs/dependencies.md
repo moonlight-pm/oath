@@ -72,6 +72,7 @@ Building from the tree instead removes it.
 
 | What | Before | After | How |
 |------|--------|-------|-----|
+| HTTP routing | `pkg:caddy`, 148 modules, 49 MB | `pkg:route`: 0 modules, 6 MB, 370 lines | Our own, in `apps/route` (R59) |
 | `pkg:caddy` | 148 modules, 49 MB | gone | Behind a tunnel, TLS ends at Cloudflare (R58) |
 | `pkg:netavark`, `pkg:protobuf`, Abseil | 257 crates and a C++ build | a 12-line script | Rootless containers use pasta |
 | `pkg:lzo` | no public history | gone | `btrfs restore` loses LZO extents; the kernel keeps them |

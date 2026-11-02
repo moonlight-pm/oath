@@ -41,6 +41,7 @@ around its snapshot. No hook is the default (crash-consistent).
 | `reloc-src/` | `pkg:reloc-src` | upstream prefix tree for the relocate plan |
 | `reloc.plan` | `plan:reloc` | relocate `hello-1.0/hello` into `/out/bin/reloc` |
 | `rivulet/` | `pkg:rivulet` (`pkgs/rivulet`) | the compositor: River 0.4.5 ported to C (R19); see [rivulet/README.md](rivulet/README.md) |
+| `route/` | `pkg:route` | an HTTP router by host and path, Go's standard library only (R59); source, built by `pkgs/route` |
 | `fetchme/` | `pkg:fetchme` | single-file payload the harness serves; fetch cases make `pkg:fetchme` with `url` `http://10.0.2.2:18765/fetchme` |
 
 The pins in `hello.plan` and `reloc.plan` name products in

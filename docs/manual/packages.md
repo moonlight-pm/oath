@@ -187,7 +187,7 @@ cf --version                             # 1.0.0-beta.26
 ### Servers: Blocky, restic, Podman, PostgreSQL (R49)
 
 These are built from source here and are in no profile:
-`pkg:blocky`, `pkg:restic`, `pkg:rsync`, `pkg:podman` (with `pkg:conmon`,
+`pkg:blocky`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:podman` (with `pkg:conmon`,
 `pkg:crun`, `pkg:passt`), `pkg:postgresql` and `pkg:postgis`
 (with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
 takes them from the origin as above, with each need the plan names, once a
@@ -223,6 +223,33 @@ container: crun needs the kernel's BPF syscall. There are no bridge networks: Po
 netavark is a stand-in that says so (R57).
 Memory and CPU limits need `CONFIG_MEMCG` and `CONFIG_CFS_BANDWIDTH`, which Oath's
 kernel leaves off.
+
+`pkg:route` is Oath's own HTTP router (R59), in `apps/route`, with nothing but Go's
+standard library: by host and path, to a local service, a redirect or a fixed answer.
+It holds no TLS and belongs on a loopback address, behind a tunnel or other proxy:
+
+```json
+{
+  "listen": "127.0.0.1:8080",
+  "routes": [
+    {"host": "a.example", "to": "127.0.0.1:9000"},
+    {"host": "a.example", "path": "/admin", "to": "127.0.0.1:9001", "strip": "/admin",
+     "request": {"X-Forwarded-Prefix": "/admin", "Cookie": ""},
+     "response": {"X-Frame-Options": "DENY", "Set-Cookie": ""}},
+    {"host": "a.example", "path": "/gone", "status": 404, "body": "not found\n"},
+    {"host": "old.example", "redirect": "https://new.example", "status": 301},
+    {"host": "*", "status": 404}
+  ]
+}
+```
+
+The longest path wins, at a segment's edge, and `*` stands in for a host no route
+names. `strip` takes a prefix off, then `prefix` puts one on. An empty header value
+removes that header. A service gets the path that matched: repeated slashes collapse,
+and a path with a `.` or `..` segment gets a 400. `route <file>` runs it, `route -check
+<file>` tries a file, SIGHUP reads it again and keeps the old routes if the new file
+is bad, SIGTERM drains. Websockets and streams pass through. A forwarded `X-Forwarded-*`
+is kept, so it trusts whatever reaches its address.
 
 `cf` (also `cloudflare`) carries the npm packages it was pinned with in
 its own tree and runs on `pkg:node` (R46); nothing goes in a global

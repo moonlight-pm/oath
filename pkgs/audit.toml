@@ -877,6 +877,9 @@ osv = "Go:github.com/restic/restic"
 [rivulet]
 skip = "Oath's own compositor (apps/rivulet): its Rust crates are checked through OSV"
 
+[route]
+skip = "Oath's own HTTP router (apps/route): nothing but Go's standard library, which pkg:go's entry checks"
+
 [rsync]
 cpe = "cpe:2.3:a:samba:rsync"
 repo = "https://github.com/RsyncProject/rsync"

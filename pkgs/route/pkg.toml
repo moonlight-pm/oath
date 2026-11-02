@@ -1,0 +1,10 @@
+# route, Oath's own HTTP router, from apps/route: by host and path, to a local
+# service, a redirect or a fixed answer, for what sits behind a tunnel (R59). Go's
+# standard library only, so nothing to pin but pkg:go.
+version = "0.1.0"
+license = "MIT"
+description = "route: a small HTTP router by host and path, with nothing but Go's standard library."
+home = "https://github.com/moonlight-pm/oath"
+tree = "apps/route"
+build = ["go"]
+run = []

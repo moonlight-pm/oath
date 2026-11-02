@@ -1530,6 +1530,14 @@
       "xcb-util-wm"
     ]
   },
+  "route": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-1a7e2089072caad6ebaf4c81deffdcca516a9a32bab7b694975a177dfec85015",
+    "product": "sha256-bf29928dfb9bc58489f0c5300534724a66af076c6964a06af6b61899e387d850",
+    "run": []
+  },
   "rsync": {
     "version": "3.5.1",
     "license": "GPL-3.0-or-later",
