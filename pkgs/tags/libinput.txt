@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libinput-1.32.0.tar.gz 7dd6c1ca964c86eb6810ccd6639cda634e68bdca43bf3afec39e94e942fac8d4
+tag 1.32.0 commit 5cf833b572f5a33663888da321dce0ba1abd82a2 tree 43b027c997068e990f016c49a4c802c1f8b5de13
+signed pgp 3C2C43D9447D5938EF4551EBE23B7E70B467F0BF
+same 525
+only-in-tag 0

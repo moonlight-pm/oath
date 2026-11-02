@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source pipewire-1.6.9.tar.gz dbc3624cf71215c26a22fc98f6f71f7b8599f5f6b415eab4a5c90ca96c170c7c
+tag 1.6.9 commit 8fa27cabdc6c0c1350c69c026af5850ef0af1e26 tree 7ea9d349dc12c889970bc5c17209a5174eedac53
+signed no
+same 1348
+only-in-tag 0

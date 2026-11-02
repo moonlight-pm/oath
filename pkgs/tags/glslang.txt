@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source glslang-16.6.0.tar.gz 9c09b901149c729df745057dafa815278aaa101b84d2b6e14f16a42de52f97f2
+tag 16.6.0 commit e1b562a8bed273a02f30b59b66a5d499793cede5 tree 1f46b1824e3b6c8c6ff6feb27a5022ea73756f76
+signed no
+same 3630
+only-in-tag 0

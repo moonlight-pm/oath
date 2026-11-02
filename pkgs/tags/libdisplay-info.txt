@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libdisplay-info-0.4.0.tar.xz 43b180baa143e2035654759d84e2b2f5ee77d5fe817c423838c7fe59c0d68459
+tag 0.4.0 commit c67a3e9bedb05ab61c7443704a1a107e76254595 tree 533294c13c5c254acebc4837a395d1f5556808f7
+signed pgp 34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+same 192
+only-in-tag 0

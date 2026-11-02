@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source Python-3.15.2.tar.xz 8b5536d280142ecf6cdfe15d12a21ba1c65e300bbf7b28a8d0cdb849575797de
+tag v3.15.2 commit 5e58eaad7c58df58dfa8ea549c87996e01dd1077 tree dd16465b91a6d7da5fb5ea3bc5be7558585b9b34
+signed no
+same 5454
+only-in-tag 184
+adds Misc/NEWS

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libxkbcommon-xkbcommon-1.13.2.tar.gz acc4d5f7c3cbba5f9f8d08d8bdbeede84ecede46792f47929aa9321873385528
+tag xkbcommon-1.13.2 commit d1442aaa6b635551182e83c3b55037f4c118c962 tree 6cbe8d06db25a712c1a556f45078593f141c7fbb
+signed no
+same 483
+only-in-tag 0

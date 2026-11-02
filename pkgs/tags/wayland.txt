@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source wayland-1.26.0.tar.xz 64176eaa46e4969903e286f8e5ef8331affc17fdf03ac9b58381d2b23162b7a3
+tag 1.26.0 commit 87cc8a8728a923fc57938faa81ba0e74f34ecdc7 tree a2fad3737670213aea19322e7166da34555ac653
+signed pgp 34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+same 200
+only-in-tag 0

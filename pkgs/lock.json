@@ -997,8 +997,8 @@
     "version": "2.15.4",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-881fae17a8fc06c791e4eab28fa2f5939b187b69359e4ab848a784f0d935a50e",
-    "product": "sha256-918cc93a6109b712e739ecdef14acddb987ea6ae2e30503236e18926f8f7e727",
+    "plan": "sha256-4c76c74327c24cfb59225bc06489f722ccf25e5ac0647adfeb6dc449a40232c4",
+    "product": "sha256-bd2861809821dd1c7ec466f7f86befb4bac6b72ab4891e93fdd91864aa9443b2",
     "run": [
       "zlib"
     ]
@@ -1409,8 +1409,8 @@
     "version": "3.7.0",
     "license": "GPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-c63a41a6046b220994440e0e869b39d0d5a5df0653fbfd67d313db469c59c9c3",
-    "product": "sha256-5656f4fc088d80aad3bb6538bc6959fb5c189444cd7ff2f76df9a263f8eaaf94",
+    "plan": "sha256-ac1061cfcb374126e9dc0613cf42137f4c5043c002b1dea684d4e429f1fdd3f0",
+    "product": "sha256-8f66e57f496b489eca38db16f9fd04e77c76c5a7366e3168dce07395b9e1eaf5",
     "run": [
       "postgresql",
       "gcc",
@@ -1424,8 +1424,8 @@
     "version": "18.6",
     "license": "PostgreSQL",
     "by": "plan",
-    "plan": "sha256-5d5df3f46126f4d2dd6822c87baf2a73f00aee2b37120870b386509a90f686b3",
-    "product": "sha256-007ecab6694de25eb1f9565c753416edb2fb6b12acab22ce658f437aa36d690d",
+    "plan": "sha256-97ff2461677910e6f6f1c706693c2ff8924c7863b5aeccb4af3e9cc53eeb02b4",
+    "product": "sha256-1025492e6e7ec7c45faed13fb595bc7d6e9d43fd14e2c2a15726e8e82a59c697",
     "run": [
       "gcc",
       "icu",

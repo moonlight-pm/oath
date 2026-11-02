@@ -1,0 +1,17 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source less-710.tar.gz d1008fb78dcae1323ddab664bcb352a61f022b1b131bd8018548e021d975ec7a
+tag v710-rel commit 050dff7ed495bd8e1d6ef09d37feb1ce0d351534 tree 96795f7072ecf2a67de3f31647216ebf471cd0a6
+signed no
+same 126
+only-in-tag 15
+adds configure
+adds defines.h.in
+adds funcs.h
+adds help.c
+adds less.man
+adds less.nro
+adds lessecho.man
+adds lessecho.nro
+adds lesskey.man
+adds lesskey.nro
+adds lessmsg.inc

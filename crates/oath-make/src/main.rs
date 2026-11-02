@@ -19,6 +19,7 @@ mod pkgs;
 mod qemu;
 mod release;
 mod sigstore;
+mod tags;
 mod tools;
 mod update;
 mod util;
@@ -162,7 +163,8 @@ enum Cmd {
         #[arg(long)]
         list: bool,
         /// Fetch and check the sources (sha256 and signature) of the named
-        /// packages, or all, without building.
+        /// packages, or all, without building, and compare a new pin with
+        /// upstream's git tag (pkgs/tags/<name>.txt).
         #[arg(long)]
         fetch: bool,
         /// Packages built at a time, each when what it builds with is

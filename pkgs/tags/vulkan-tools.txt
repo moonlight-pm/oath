@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source Vulkan-Tools-1.4.365.tar.gz c55db29b4b2a4d222053ddcc7f925b8cad7f16f5640a05d4ee16d44a9dc02aac
+tag v1.4.365 commit f13d435dd50dc616db0c10e7bac87cd3aa7c82e3 tree 8999f1ba4f6c262cf694bb634b5742c8d153ee20
+signed no
+same 133
+only-in-tag 0

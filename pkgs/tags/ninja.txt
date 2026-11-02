@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source ninja-1.13.2.tar.gz 974d6b2f4eeefa25625d34da3cb36bdcebe7fbce40f4c16ac0835fd1c0cbae17
+tag v1.13.2 commit 3441b633c2fe2c494e958780ba0f4227b1327634 tree 70dd1324a3997a3ce38bfe70a8291b2ef4a0bf65
+signed no
+same 185
+only-in-tag 0

@@ -1,0 +1,14 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source iputils-20250605.tar.xz 6f213700dbf96b5cc4499ca70cb15ecd69c09f405b06785bb4a1a10b572b6276
+tag 20250605 commit 6e1cb146547eb6fbb127ffc8397a9241be0d33c2 tree cd75b6ad4c024c142bedf5a0e094207cf3c2cfb1
+signed pgp 2016FEA4858B1C36B32E833AC0DEC2EE72F33A5F
+same 84
+only-in-tag 0
+adds doc/arping.8
+adds doc/arping.html
+adds doc/clockdiff.8
+adds doc/clockdiff.html
+adds doc/ping.8
+adds doc/ping.html
+adds doc/tracepath.8
+adds doc/tracepath.html

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source dhcpcd-10.5.2.tar.xz 3e476657fdb6eeb38b277da3a48d0ac0113ecce5858ebdcddff2b629faed52b4
+tag v10.5.2 commit 7c50b51a142ca5e8cbbf8f65cd8111d6f200608a tree fe7d730224b0ac284b87e3438875d08900a65e65
+signed pgp A785ED2755955D9E93EA59F6597F97EA9AD45549
+same 167
+only-in-tag 0

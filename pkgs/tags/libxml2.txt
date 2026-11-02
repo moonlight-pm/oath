@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libxml2-2.15.4-tag.tar.gz bb01bd9ac9a7403f9706816fd6d3e7888041d32b0211075feb20e755d2a9f29d
+tag v2.15.4 commit 96498992efa48d52b0e8b83058bd88dbdaf153c1 tree 015caab0d02c2033cbf9e800efc2263e00acd1fd
+signed pgp BB3FD16B22C34193BCFC66EA60B33F85ECD8D532
+same 3890
+only-in-tag 0

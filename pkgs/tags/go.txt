@@ -1,0 +1,27 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source go1.27.3.linux-amd64.tar.gz 65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40
+tag go1.27.3 commit 2aae1000ea1d4b28923b96db28acf4e3b99d6aff tree 09275a3482ffe831661a72c202c6261e0eb6ae7f
+signed no
+same 15636
+only-in-tag 14
+adds bin/go
+adds bin/gofmt
+adds pkg/include/asm_amd64.h
+adds pkg/include/asm_ppc64x.h
+adds pkg/include/asm_riscv64.h
+adds pkg/include/funcdata.h
+adds pkg/include/textflag.h
+adds pkg/tool/linux_amd64/asm
+adds pkg/tool/linux_amd64/cgo
+adds pkg/tool/linux_amd64/compile
+adds pkg/tool/linux_amd64/cover
+adds pkg/tool/linux_amd64/fix
+adds pkg/tool/linux_amd64/link
+adds pkg/tool/linux_amd64/preprofile
+adds pkg/tool/linux_amd64/vet
+adds src/cmd/cgo/zdefaultcc.go
+adds src/cmd/go/internal/cfg/zdefaultcc.go
+adds src/cmd/internal/objabi/zbootstrap.go
+adds src/internal/buildcfg/zbootstrap.go
+adds src/internal/runtime/sys/zversion.go
+adds src/time/tzdata/zzipdata.go

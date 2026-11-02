@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source packaging-26.3.tar.gz 94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79
+tag 26.3 commit 929fd4b1410ac7ef61ef3f45b2f5d7e87711a9b5 tree 8f42c06d439e9dad27445e8004695930eb99cca7
+signed pgp 2FDEC9863E5E14C7BC429F27B9D0E45146A241E8
+same 104
+only-in-tag 35
+adds PKG-INFO

@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source cmake-4.4.4.tar.gz bd24c30d80a7744ae84b845ff080cc8453b06c622ef01066564108e9cefc44cf
+tag v4.4.4 commit 2e0b3aec14fe2e3e555faac4698e281749aae4b5 tree af54d9ea55f8125649d67b2fe39b2a5e3eea98ff
+signed pgp C6C265324BBEBDC350B513D02D2CEF1034921684
+same 30262
+only-in-tag 523
+differs Source/CMakeVersion.cmake

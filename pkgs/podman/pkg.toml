@@ -15,12 +15,15 @@ home = "https://podman.io/"
 purl = "pkg:golang/github.com/containers/podman/v6@6.1.4"
 build = ["go", "pkgconf", "libseccomp", "sqlite"]
 run = ["certs", "libseccomp", "conmon", "crun", "netavark", "passt"]
-unsigned = "the archive has no signature of its own. Its tag is signed by Matt Heon, which GitHub verified and oath-make does not check, and the archive matched the tag when pinned. Its modules come from proxy.golang.org, and the go command checks each against go.sum in the build"
+unsigned = "Go modules from proxy.golang.org: the go command checks each against go.sum in the build, and Go's checksum database checked them when pinned"
 
 [[source]]
 url = "https://github.com/containers/podman/archive/refs/tags/v6.1.4.tar.gz"
 sha256 = "200fd9b4b6d820cae24fc99d8e290ec945512365cf3cda8283b3905c0c284ea8"
 file = "podman-6.1.4.tar.gz"
+git = "https://github.com/containers/podman"
+tag = "v6.1.4"
+key = "heon"
 
 # Modules, from pkgs/go-modules.sh:
 

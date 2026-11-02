@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source postgresql-18.6.tar.bz2 555610c24d53e4316da5b7d3fc25c279d96856d5e0e23ee308c328c5fa881d9f
+tag REL_18_6 commit 724edf9bde9d356724ad384a2e196edc3c9f80f7 tree 69f81c582d01133710c1eeb9c12fadf7f47633e4
+signed no
+same 7284
+only-in-tag 0

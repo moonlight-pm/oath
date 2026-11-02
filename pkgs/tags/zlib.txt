@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source zlib-1.3.2.tar.xz d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3
+tag v1.3.2 commit da607da739fa6047df13e66a2af6b8bec7c2a498 tree 79b5a06f88838dd54f90f821e8650254abfedb7e
+signed pgp 5ED46A6721D365587791E2AA783FCD8E58BCAFBA
+same 254
+only-in-tag 8

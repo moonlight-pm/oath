@@ -1,0 +1,17 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source tmux-3.8.tar.gz e79c699c7e949dccd0a4a125e17b8d1261e311b16979dbc8eb34542f3966d82e
+tag 3.8 commit 7f2a35ad3321f9ba57a1062ca73b1f3ff26aca53 tree e3bb8bc6c43ca60fa9268d5fc3fb3d7aa4abd869
+signed no
+same 217
+only-in-tag 375
+adds Makefile.in
+adds aclocal.m4
+adds cmd-parse.c
+adds configure
+adds etc/compile
+adds etc/config.guess
+adds etc/config.sub
+adds etc/depcomp
+adds etc/install-sh
+adds etc/missing
+adds etc/ylwrap

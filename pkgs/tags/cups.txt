@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source cups-2.4.20-source.tar.gz ab4d9cd7f3e58060091d2b24972223d6401675f11c49b65abf4f6ef31dea22ff
+tag v2.4.20 commit ef80eeaea51430a055948240eea3f28ef5354edf tree 8721f83d41b90dc4eea2e50a6d5dc38f3f564d1a
+signed no
+same 1300
+only-in-tag 16
+adds packaging/cups.spec

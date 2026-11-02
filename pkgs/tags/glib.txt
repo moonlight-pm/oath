@@ -1,0 +1,21 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source glib-2.90.1.tar.xz 93c941aa17d5eb1d53fe838365f29a8b4e539c222a256d974ec8f30fc413e396
+tag 2.90.1 commit e05063ccc6c8f222465a1080927f4c14349f3de6 tree 716a7af43251bf173bbf8803bc6cc93a69f0d7b8
+signed pgp 6DFB50D0F26AE9F509B012CDC5C42CFB268637CA
+same 2381
+only-in-tag 0
+submodule subprojects/gvdb
+adds subprojects/gvdb/.gitignore
+adds subprojects/gvdb/COPYING
+adds subprojects/gvdb/LICENSES/LGPL-2.1-or-later.txt
+adds subprojects/gvdb/README.md
+adds subprojects/gvdb/gvdb.doap
+adds subprojects/gvdb/gvdb/gvdb-builder.c
+adds subprojects/gvdb/gvdb/gvdb-builder.h
+adds subprojects/gvdb/gvdb/gvdb-format.h
+adds subprojects/gvdb/gvdb/gvdb-reader.c
+adds subprojects/gvdb/gvdb/gvdb-reader.h
+adds subprojects/gvdb/gvdb/tests/gvdb.c
+adds subprojects/gvdb/gvdb/tests/meson.build
+adds subprojects/gvdb/meson.build
+adds subprojects/gvdb/meson.options

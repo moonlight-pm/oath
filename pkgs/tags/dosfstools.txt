@@ -1,0 +1,20 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source dosfstools-4.2.tar.gz 64926eebf90092dca21b14259a5301b7b98e7b1943e8a201c7d726084809b527
+tag v4.2 commit 697f7692c951173c1b732901e13f72bd3182d575 tree b1f974f7970c6a5bf690cbc25822cfb11cedfa39
+signed no
+same 137
+only-in-tag 14
+adds Makefile.in
+adds aclocal.m4
+adds compile
+adds config.guess
+adds config.rpath
+adds config.sub
+adds configure
+adds depcomp
+adds install-sh
+adds manpages/Makefile.in
+adds missing
+adds src/Makefile.in
+adds test-driver
+adds tests/Makefile.in

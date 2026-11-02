@@ -1,0 +1,19 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source patchelf-0.19.2.tar.gz 78cb26bda2b89fababfe189c2f6507240340f1aa45dec2eb49a39473a50ceea1
+tag 0.19.2 commit 382d8bc12db9e720515da49d9c272ef4a622c3c0 tree 6d4bc5e37a114ff4e06a28dbfa22e25be7232cbf
+signed no
+same 112
+only-in-tag 32
+adds Makefile.in
+adds aclocal.m4
+adds build-aux/compile
+adds build-aux/depcomp
+adds build-aux/install-sh
+adds build-aux/missing
+adds build-aux/test-driver
+adds configure
+adds patchelf.spec
+adds src/Makefile.in
+adds tests/Makefile.in
+adds tests/many-syms-main.c
+adds tests/many-syms.c

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libglvnd-v1.7.0.tar.gz 2b6e15b06aafb4c0b6e2348124808cbd9b291c647299eaaba2e3202f51ff2f3d
+tag v1.7.0 commit faa23f21fc677af5792825dc30cb1ccef4bf33a6 tree df07cd3edae472f5036bd6c96144b16b461bd56e
+signed no
+same 259
+only-in-tag 0

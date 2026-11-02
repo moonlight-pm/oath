@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source seatd-0.9.3.tar.gz 302564d54d8e28191fadfd734f2675ecb0c9e0615a58011b89ef15dfa4dbaa96
+tag 0.9.3 commit daa8196e10b180b8b0caeafa8e5f860eb1bd6706 tree 887faf1a01a454425008a1c77aabb524a511b7d3
+signed no
+same 52
+only-in-tag 0

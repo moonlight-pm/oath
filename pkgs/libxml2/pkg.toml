@@ -1,14 +1,19 @@
 # libxml2: PostgreSQL's xml type and PostGIS's GML and KML. CEF carries its own
-# copy. GNOME publishes a sha256 for the tarball; the git tag is signed.
+# copy. GNOME's tarball adds autotools' output, so this is the signed tag's tree,
+# from GNOME's GitHub mirror, whose archive must match the tag from GNOME's own
+# GitLab (R54), and it builds with meson.
 version = "2.15.4"
 license = "MIT"
 description = "libxml2: an XML parser and toolkit."
 home = "https://gitlab.gnome.org/GNOME/libxml2"
 purl = "pkg:generic/libxml2@2.15.4"
-build = ["pkgconf", "zlib"]
+build = ["meson", "ninja", "python", "pkgconf", "zlib"]
 run = ["zlib"]
 
 [[source]]
-url = "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.4.tar.xz"
-sha256 = "98087fd181d9070724f3fbc65c7377db03038eb92bd882374daff44940138821"
-unsigned = "GNOME publishes the tarball with a sha256 list. The git tag is signed, which oath-make does not check; the tarball matched the tag when pinned, but for autotools' generated files"
+url = "https://github.com/GNOME/libxml2/archive/refs/tags/v2.15.4.tar.gz"
+sha256 = "bb01bd9ac9a7403f9706816fd6d3e7888041d32b0211075feb20e755d2a9f29d"
+file = "libxml2-2.15.4-tag.tar.gz"
+git = "https://gitlab.gnome.org/GNOME/libxml2"
+tag = "v2.15.4"
+key = "garcia-moreno"

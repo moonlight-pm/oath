@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source perl-5.44.0.tar.xz 505cf43912e9480495c344c70260452e32aa2a73c546a026b3f100053b23ce91
+tag v5.44.0 commit e634cc838fb1785dfafb5d13b52807ea16b5c52c tree 859e2bb49066e8dc2cbb31c84bcc49eb363f6403
+signed no
+same 6858
+only-in-tag 91

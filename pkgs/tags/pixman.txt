@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source pixman-0.46.4.tar.xz a098c33924754ad43f981b740f6d576c70f9ed1006e12221b1845431ebce1239
+tag pixman-0.46.4 commit 9cc163c9da0fb4da430641715313d95a6ec466d9 tree 8b8f70a2168447b445f51469426bf929514b7212
+signed pgp 5EAF21049A86B8A54CCB1BFAACEB29740C9A4E97
+same 224
+only-in-tag 0

@@ -1,0 +1,8 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source icu4c-79.1-sources.tgz 06fa63ecb521048f8082f12ad988f6b678d90cbd88aafce24cbc94902b191d99
+tag release-79.1 commit ddc6b66926bfac6036144ca9902992a0d6d50af9 tree ada109f81ea53e574d52b3a57a3fe85132f4056e
+signed no
+same 2485
+only-in-tag 4708
+adds as_is/bomlist.txt
+adds source/data/in/icudt79l.dat

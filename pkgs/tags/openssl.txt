@@ -1,0 +1,17 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source openssl-4.0.3.tar.gz 325b5c806167c13b40b1ffeadfe0248197c00eccc4cf123ec1e28d2d2fd216d9
+tag openssl-4.0.3 commit af1775b60dfa141a4ad762585052cabeb9f37e9e tree fd1a7c24351a584f6549233371c0a158b769f7d8
+signed pgp C46ED3F2CBEFDA1FDAADA44264ED7B1DCCE71CB2
+same 6047
+only-in-tag 62
+submodule cloudflare-quiche
+submodule fuzz/corpora
+submodule gost-engine
+submodule krb5
+submodule oqs-provider
+submodule pkcs11-provider
+submodule pyca-cryptography
+submodule python-ecdsa
+submodule tlsfuzzer
+submodule tlslite-ng
+submodule wycheproof

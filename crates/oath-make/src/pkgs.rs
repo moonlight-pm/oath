@@ -112,6 +112,13 @@ pub struct Source {
     /// Why there is no signature to check.
     #[serde(default)]
     pub unsigned: Option<String>,
+    /// With `tag` and `key`: upstream's repository, for an upstream that signs
+    /// its git tag and not its tarball. The tarball must be the tag's tree.
+    #[serde(default)]
+    pub git: Option<String>,
+    /// The signed tag's name.
+    #[serde(default)]
+    pub tag: Option<String>,
 }
 
 impl Source {
@@ -299,6 +306,9 @@ pub fn is_recipe(all: &BTreeMap<String, PkgToml>, name: &str) -> bool {
 fn check_signed(repo: &Path, pkg: &PkgToml, s: &Source) -> Result<()> {
     let pgp = s.key.is_some() || s.sums.is_some() || s.decompress.is_some();
     let store = s.identity.is_some() || s.issuer.is_some();
+    if (s.sig.is_some() || s.sigstore.is_some()) && (s.git.is_some() || s.tag.is_some()) {
+        bail!("git and tag are for a signed tag, in place of sig or sigstore");
+    }
     match (&s.sig, &s.sigstore) {
         (Some(_), Some(_)) => bail!("has both sig and sigstore"),
         (Some(_), None) => {
@@ -321,6 +331,18 @@ fn check_signed(repo: &Path, pkg: &PkgToml, s: &Source) -> Result<()> {
             let root = sigstore_root(repo);
             if !root.is_file() {
                 bail!("{} is missing", root.display());
+            }
+        }
+        (None, None) if s.git.is_some() || s.tag.is_some() => {
+            let (Some(_), Some(_), Some(key)) = (&s.git, &s.tag, &s.key) else {
+                bail!("a signed tag takes git, tag and key");
+            };
+            if s.sums.is_some() || s.decompress.is_some() || store || s.unsigned.is_some() {
+                bail!("a signed tag takes git, tag and key, and nothing else that signs");
+            }
+            let k = key_file(repo, key);
+            if !k.is_file() {
+                bail!("{} is missing", k.display());
             }
         }
         (None, None) => {
@@ -426,10 +448,17 @@ pub(crate) fn locked_run(
 /// pinned and signature-checked, and nothing built.
 pub fn fetch_all(repo: &Path, names: &[String]) -> Result<()> {
     let all = load(repo)?;
+    let entries = crate::audit::entries(repo)?;
     for (name, p) in &all {
         if names.is_empty() || names.contains(name) {
             fetch(repo, p).with_context(|| format!("pkgs/{name}"))?;
             eprintln!("== {name}: {} sources checked", p.source.len());
+            // A tag that cannot be read leaves no record, and a test says so.
+            if let Some(e) = entries.get(name).filter(|_| p.i386.is_none()) {
+                if let Err(err) = crate::tags::ensure(repo, name, p, e) {
+                    eprintln!(">> tag: pkgs/{name}: {err:#}");
+                }
+            }
         }
     }
     Ok(())
@@ -473,6 +502,13 @@ pub fn fetch(repo: &Path, pkg: &PkgToml) -> Result<Vec<(String, PathBuf)>> {
             .with_context(|| format!("Sigstore bundle of {} ({url})", s.url))?;
             if fresh {
                 eprintln!(">> signed by {who} via {via} (Sigstore, Rekor entry {entry})");
+            }
+        } else if let (Some(git), Some(tag), Some(key)) = (&s.git, &s.tag, &s.key) {
+            let keys = fs::read(key_file(repo, key))?;
+            let (who, c) = crate::tags::check_signed_tag(repo, git, tag, &keys, &dest)
+                .with_context(|| format!("signed tag {tag} of {git} (checked against {key})"))?;
+            if fresh {
+                eprintln!(">> tag {tag} signed by {who} ({key}), {} files the same", c.same);
             }
         } else if fresh {
             let why = s.unsigned.as_ref().or(pkg.unsigned.as_ref()).map_or("", |w| w.as_str());
@@ -583,7 +619,7 @@ fn manifest_lists(manifest: &str, name: &str, sha256: &str) -> bool {
     })
 }
 
-fn sha256(p: &Path) -> Result<String> {
+pub(crate) fn sha256(p: &Path) -> Result<String> {
     crate::util::sha256_file(p)
 }
 

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libepoxy-1.5.10.tar.xz 072cda4b59dd098bba8c2363a6247299db1fa89411dc221c8b81b8ee8192e623
+tag 1.5.10 commit c84bc9459357a40e46e2fec0408d04fbdde2c973 tree 53b90a9e450198734d88acaefd131456cb8458d2
+signed no
+same 66
+only-in-tag 0

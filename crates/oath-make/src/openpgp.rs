@@ -54,6 +54,12 @@ pub fn verify(keys: &[u8], sig: &[u8], data: impl Read) -> Result<String> {
     verify_class(keys, sig, BINARY, data)
 }
 
+/// The key a detached signature names, unchecked.
+pub fn issuer(sig: &[u8]) -> Option<String> {
+    let sigs = parse_signatures(&dearmor(sig).ok()?, BINARY).ok()?;
+    sigs.first().map(|s| s.issuer.clone()).filter(|i| !i.is_empty())
+}
+
 /// Whether `data` is a cleartext-signed message (`-----BEGIN PGP SIGNED
 /// MESSAGE-----`), which `verify_cleartext` checks.
 pub fn is_cleartext(data: &[u8]) -> bool {

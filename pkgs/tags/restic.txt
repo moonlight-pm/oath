@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source restic-0.19.1.tar.gz bb9b1a19040744d26d8a79be029d4e6b189c45ccc9d8831d7fe367d3c33df725
+tag v0.19.1 commit 6aa3a516ce654808a1f28f9fa21e9b7c8e6e90bf tree 3a22ceb3dc96c4a013380df633cf70bb444123d0
+signed pgp CF8F18F2844575973F79D4E191A6868BD3F7A907
+same 1360
+only-in-tag 0

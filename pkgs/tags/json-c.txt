@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source json-c-0.19-20260627.tar.gz f17a6d7d265cf840dfd8f0f46a606d98c6b5b26dc7cfe27275d1546a213086c8
+tag json-c-0.19-20260627 commit aa716cd8d663c976b99b0f30f102ee1d8ef63146 tree 00e916a56cc3170c16771cc1f97d6eaef92fc578
+signed no
+same 298
+only-in-tag 0

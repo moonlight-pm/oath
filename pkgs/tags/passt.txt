@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source passt-2026_10_02.cba3570.tar.xz aa75616cc43925f0bd6c05bcfbbaecd77397c03d7bd23591b34ef535be5dfcdc
+tag 2026_10_02.cba3570 commit cba357068dc586e7540971eb40bb56c5e62c4de1 tree 0664923eb945f7c31bf78a79cdbeda0b8c69450e
+signed no
+same 234
+only-in-tag 0

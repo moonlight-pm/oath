@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source wlroots-0.20.2.tar.gz 80c567d2ed4efb2cfa6b077f22c7a710d9c78ba4e185a75e8694001114af0733
+tag 0.20.2 commit d783533489e1f75d6886c2ab5c5960090ef268f8 tree cb61e490a24d9c167229d9a3448b354fa634fd46
+signed pgp 34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48
+same 472
+only-in-tag 0

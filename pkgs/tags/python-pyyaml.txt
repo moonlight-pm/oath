@@ -1,0 +1,13 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source pyyaml-6.0.3.tar.gz d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f
+tag 6.0.3 commit 49790e73684bebad1df05ef8d828fa12f685bffb tree cc3c38cf19e65d75cecde7f40e0144813e480ce1
+signed no
+same 634
+only-in-tag 7
+adds PKG-INFO
+adds lib/PyYAML.egg-info/PKG-INFO
+adds lib/PyYAML.egg-info/SOURCES.txt
+adds lib/PyYAML.egg-info/dependency_links.txt
+adds lib/PyYAML.egg-info/top_level.txt
+adds packaging/__pycache__/_pyyaml_pep517.cpython-313.pyc
+adds setup.cfg

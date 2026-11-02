@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source mesa-26.2.5.tar.xz 794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5
+tag mesa-26.2.5 commit ddaf85e353442d9d7f192fdcf1823e652e3f2ee3 tree 530997e99b40566a33cc61d22b921c08873dd65e
+signed pgp 57551DE15B968F6341C248F68D8E31AFC32428A6
+same 12818
+only-in-tag 0

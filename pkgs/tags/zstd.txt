@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source zstd-1.5.7.tar.gz eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
+tag v1.5.7 commit f8745da6ff1ad1e7bab384bd1f9d742439278e99 tree 1a3cb277e9b9b37b01811a3c65f6c25d46a8f241
+signed pgp 4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD
+same 639
+only-in-tag 0

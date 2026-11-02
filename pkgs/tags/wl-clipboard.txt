@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source wl-clipboard-2.3.0.tar.gz b4dc560973f0cd74e02f817ffa2fd44ba645a4f1ea94b7b9614dacc9f895f402
+tag v2.3.0 commit 67a7b937895bceec1ae5ccebb10216f63f70ca1b tree 6ff03876ca454faa15debf9e83a86f5fb812b4df
+signed no
+same 62
+only-in-tag 0

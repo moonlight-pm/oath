@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source wireplumber-0.5.18.tar.gz 8c8a326a5b2a570681c1503c83f1fce0cc54ba862019815604b2bc92a7d483a1
+tag 0.5.18 commit 81606cbb32d29df20147d1b68b662c1082654d81 tree 289e2372149a5bf3610fc151e9c77019fe0411f1
+signed no
+same 538
+only-in-tag 0

@@ -63,6 +63,16 @@ pub struct Entry {
     /// The page that lists upstream's releases, when the source's
     /// directory has no index of its own.
     pub page: Option<String>,
+    /// Why the pin has no git tag to compare with (R54): a vendor's binaries,
+    /// or files generated from the tree.
+    pub no_compare: Option<String>,
+    /// Why files in both the tarball and the tag differ, once someone has
+    /// read them.
+    pub differs_because: Option<String>,
+    /// The tag's directory the tarball is made from (`expat`).
+    pub tag_dir: Option<String>,
+    /// The tarball's directory the tag's tree is in (`nss`).
+    pub tar_dir: Option<String>,
     #[serde(default)]
     pub not_affected: BTreeMap<String, String>,
 }
@@ -351,6 +361,14 @@ fn merge(m: &mut BTreeMap<String, Hit>, h: Hit) {
 }
 
 /// `pkgs/audit.toml`.
+/// The upstream's version for a pin (`version_after` applied).
+pub fn pin_version(entry: &Entry, version: &str) -> String {
+    match &entry.version_after {
+        Some(m) => version.split(m.as_str()).nth(1).unwrap_or(version).to_string(),
+        None => version.to_string(),
+    }
+}
+
 pub fn entries(repo: &Path) -> Result<BTreeMap<String, Entry>> {
     let p = crate::pkgs::pkgs_dir(repo).join("audit.toml");
     let text = fs::read_to_string(&p).with_context(|| p.display().to_string())?;
@@ -371,10 +389,7 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
         let Some(entry) = entries.get(name).cloned() else {
             bail!("pkgs/{name} has no entry in pkgs/audit.toml: add one (cpe, or skip and why)");
         };
-        let version = match &entry.version_after {
-            Some(m) => p.version.split(m.as_str()).nth(1).unwrap_or(&p.version).to_string(),
-            None => p.version.clone(),
-        };
+        let version = pin_version(&entry, &p.version);
         let product = lock.get(name).map(|e| e.product.clone()).unwrap_or_default();
         let purls = ecosystem_purls(&cache.join("pkg").join(name).join(&product));
         out.push(Target {
@@ -1368,6 +1383,31 @@ mod tests {
         assert_eq!(h.status, "affected");
         assert_eq!(h.sources.len(), 2);
         assert!(h.aliases.contains(&"GHSA-x".to_string()));
+    }
+
+    /// Every pin with a tag was compared with it (R54), and nothing in both
+    /// differs unless its entry says why.
+    #[test]
+    fn every_pin_with_a_tag_was_compared() {
+        let repo = crate::util::repo_root();
+        let pkgs = crate::pkgs::load(&repo).unwrap();
+        let e = entries(&repo).unwrap();
+        for (n, p) in &pkgs {
+            let (Some(s), Some(u)) = (p.source.first(), e.get(n)) else { continue };
+            if p.i386.is_some() || crate::tags::tag_of(u, &p.version).is_none() {
+                continue;
+            }
+            let record = crate::tags::read_record(&repo, n);
+            let Some((sha, lines)) = record else {
+                panic!("pkgs/{n}: no pkgs/tags/{n}.txt: run cargo make pkgs --fetch {n}");
+            };
+            assert_eq!(sha, s.sha256, "pkgs/tags/{n}.txt is for another pin: cargo make pkgs --fetch {n}");
+            let differs = lines.iter().filter(|l| l.starts_with("differs ")).count();
+            assert!(
+                differs == 0 || u.differs_because.is_some(),
+                "pkgs/{n}: {differs} files differ from the tag: read pkgs/tags/{n}.txt"
+            );
+        }
     }
 
     #[test]

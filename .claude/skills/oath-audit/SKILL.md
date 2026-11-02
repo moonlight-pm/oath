@@ -26,6 +26,12 @@ It also reads each pin against upstream's newest stable release, from its
 `newer`, or `upstream_unread` and why (`cargo make audit --upstream` is that
 check alone). A record can come days after the release that fixes it.
 
+A new pin goes through `cargo make pkgs --fetch <name>`, which compares it with
+upstream's git tag and writes `pkgs/tags/<name>.txt` (R54). Commit that with the
+pin, and read what it says: a new file in the tarball alone that is not build
+output, or a file that differs, stops the pin until you know why, and the report
+says so. `differs_because` in `pkgs/audit.toml` records why, once read.
+
 A hit in a Go program is usually a module it links: its `components.json`
 names each one. The fix is the newest fixed version in the package's
 `go-updates.txt`, then `pkgs/go-modules.sh`, with the arguments its `pkg.toml`

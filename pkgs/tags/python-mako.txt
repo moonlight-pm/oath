@@ -1,0 +1,47 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source mako-1.4.3.tar.gz cd6537fe88d5fec315c55c2f8529bc4ce7a9a352ad7db3eeaa6a66e2dd4ec37a
+tag rel_1_4_3 commit 6b833ae06fc8866b89ea7939e5d36dd71699cf05 tree 31dc104bf0b0a4525f42b7c41ee6f4da03f42d61
+signed no
+same 121
+only-in-tag 11
+differs pyproject.toml
+differs setup.cfg
+adds Mako.egg-info/PKG-INFO
+adds Mako.egg-info/SOURCES.txt
+adds Mako.egg-info/dependency_links.txt
+adds Mako.egg-info/entry_points.txt
+adds Mako.egg-info/not-zip-safe
+adds Mako.egg-info/requires.txt
+adds Mako.egg-info/top_level.txt
+adds PKG-INFO
+adds doc/_static/_sphinx_javascript_frameworks_compat.js
+adds doc/_static/base-stemmer.js
+adds doc/_static/basic.css
+adds doc/_static/changelog.css
+adds doc/_static/docs.css
+adds doc/_static/doctools.js
+adds doc/_static/documentation_options.js
+adds doc/_static/english-stemmer.js
+adds doc/_static/file.png
+adds doc/_static/jquery.js
+adds doc/_static/language_data.js
+adds doc/_static/minus.png
+adds doc/_static/plus.png
+adds doc/_static/pygments.css
+adds doc/_static/searchtools.js
+adds doc/_static/sphinx_highlight.js
+adds doc/_static/sphinx_paramlinks.css
+adds doc/caching.html
+adds doc/changelog.html
+adds doc/defs.html
+adds doc/filtering.html
+adds doc/genindex.html
+adds doc/index.html
+adds doc/inheritance.html
+adds doc/namespaces.html
+adds doc/runtime.html
+adds doc/search.html
+adds doc/searchindex.js
+adds doc/syntax.html
+adds doc/unicode.html
+adds doc/usage.html

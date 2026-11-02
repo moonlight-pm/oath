@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source at-spi2-core-2.62.1.tar.xz cca6b6a86e4389d89b370288761ce2385ddeceb10c4412da78689bc30c88af2d
+tag 2.62.1 commit 3a214cddffbf345b8c0d0b17e458abbc5ed851b1 tree 8004e410e9dadc2c91363c6ab0f8846297d10afb
+signed pgp 276BFDAFB36212F8DB095E2140823A056FD6D4B3
+same 500
+only-in-tag 0

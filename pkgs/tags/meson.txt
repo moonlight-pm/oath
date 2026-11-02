@@ -1,0 +1,14 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source meson-1.12.1.tar.gz ab0a6ca09f8ef70c564c8241fb5a23957886a0b53fb58412b5e07eaf07dba743
+tag 1.12.1 commit 70598bb7825f0f804fb31ec2795de5e79e7692a0 tree 12297c9f42b7b9232616c432b1fed98948d8a7f0
+signed pgp 19E2D6D9B46D8DAA6288F877C24E631BABB1FE70
+same 5070
+only-in-tag 388
+differs setup.cfg
+adds PKG-INFO
+adds meson.egg-info/PKG-INFO
+adds meson.egg-info/SOURCES.txt
+adds meson.egg-info/dependency_links.txt
+adds meson.egg-info/entry_points.txt
+adds meson.egg-info/requires.txt
+adds meson.egg-info/top_level.txt

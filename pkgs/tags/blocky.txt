@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source blocky-0.35.0.tar.gz c5874e2790aa21def45dd0ed9bd932ef2666ad412839f307c93c6a1bd94c20f5
+tag v0.35.0 commit 45a242ffce62c3e203f9a2c8a87fbb8ba106c7ab tree d0b4629b9bed235676ca2410f8b5c4e30562ffe3
+signed no
+same 424
+only-in-tag 0

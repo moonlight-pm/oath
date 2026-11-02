@@ -79,6 +79,7 @@ cpe = "cpe:2.3:a:caddyserver:caddy"
 repo = "https://github.com/caddyserver/caddy"
 tag = "v{version}"
 osv = "Go:github.com/caddyserver/caddy/v2"
+no_compare = "the buildable artifact is a main package and vendor/, not the tree; the build replaces vendor/, and go.sum and Go's checksum database check the Caddy module"
 
 [caddy.not_affected]
 "CVE-2026-116585" = "fixed in go-jose v4 (go-updates.txt); go-jose v3 has no fix and is linked through go.step.sm/crypto/jose, reached only by Caddy's acme_server and pki, which a machine must configure. A crafted JWK panics the request."
@@ -120,11 +121,13 @@ unchecked = "the vendor's binary, from its own channel: read its release notes"
 cpe = "cpe:2.3:a:cmake_project:cmake"
 repo = "https://github.com/Kitware/CMake"
 tag = "v{version}"
+differs_because = "Source/CMakeVersion.cmake: git export-subst fills in the commit (read 2026-11-01)"
 
 [codex]
 cpe = "cpe:2.3:a:openai:codex"
 repo = "https://github.com/openai/codex"
 tag = "rust-v{version}"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
 
 [conmon]
 cpe = "cpe:2.3:a:conmon_project:conmon"
@@ -153,6 +156,7 @@ cpe = "cpe:2.3:a:haxx:curl"
 names = ["libcurl"]
 repo = "https://github.com/curl/curl"
 tag = "curl-{version_}"
+differs_because = "curlver.h and tool_version.h: the release script stamps the version and date (read 2026-11-01)"
 
 [dbus]
 cpe = "cpe:2.3:a:freedesktop:dbus"
@@ -181,6 +185,7 @@ cpe = "cpe:2.3:a:libexpat_project:libexpat"
 names = ["expat"]
 repo = "https://github.com/libexpat/libexpat"
 tag = "R_{version_}"
+tag_dir = "expat"
 
 [findutils]
 cpe = "cpe:2.3:a:gnu:findutils"
@@ -241,6 +246,7 @@ cpe = "cpe:2.3:a:github:cli"
 repo = "https://github.com/cli/cli"
 tag = "v{version}"
 osv = "Go:github.com/cli/cli/v2"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
 
 [git]
 cpe = "cpe:2.3:a:git-scm:git"
@@ -311,6 +317,7 @@ cpe = "cpe:2.3:a:unicode:international_components_for_unicode"
 names = ["icu", "international components for unicode", "icu4c"]
 repo = "https://github.com/unicode-org/icu"
 tag = "release-{version}"
+tag_dir = "icu4c"
 
 [iproute2]
 cpe = "cpe:2.3:a:iproute2_project:iproute2"
@@ -365,6 +372,7 @@ tag = "release-{version}-stable"
 cpe = "cpe:2.3:a:libffi_project:libffi"
 repo = "https://github.com/libffi/libffi"
 tag = "v{version}"
+differs_because = "README.md's heading, and config.guess and config.sub from an older automake than the tree's (read 2026-11-01)"
 
 [libfontenc]
 cpe = "cpe:2.3:a:x.org:libfontenc"
@@ -387,6 +395,7 @@ cpe = "cpe:2.3:a:pulseaudio:pulseaudio"
 cpe = "cpe:2.3:a:libseccomp_project:libseccomp"
 repo = "https://github.com/seccomp/libseccomp"
 tag = "v{version}"
+differs_because = "tools/check-syntax, a developer's script the build does not run, names the maintainer's own astyle path (read 2026-11-01)"
 
 [libslirp]
 cpe = "cpe:2.3:a:libslirp_project:libslirp"
@@ -415,6 +424,7 @@ names = ["userspace-rcu", "liburcu"]
 cpe = "cpe:2.3:a:libuv:libuv"
 repo = "https://github.com/libuv/libuv"
 tag = "v{version}"
+differs_because = "ChangeLog: the release adds its commit to the top line (read 2026-11-01)"
 
 [libx11]
 cpe = "cpe:2.3:a:x.org:libx11"
@@ -542,6 +552,7 @@ tag = "mesa-{version}"
 cpe = "cpe:2.3:a:mesonbuild:meson"
 repo = "https://github.com/mesonbuild/meson"
 tag = "{version}"
+differs_because = "setup.cfg: setuptools rewrites it when it makes the sdist, the same settings reindented (read 2026-11-01)"
 
 [mpc]
 cpe = "cpe:2.3:a:gnu:mpc"
@@ -583,6 +594,7 @@ names = ["node"]
 repo = "https://github.com/nodejs/node"
 tag = "v{version}"
 series = "26"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
 
 [node.not_affected]
 "CVE-2021-43803" = "Next.js, not Node.js (the record; NVD names Node.js only as its platform)"
@@ -598,6 +610,7 @@ cpe = "cpe:2.3:a:mozilla:nss"
 names = ["network security services"]
 repo = "https://github.com/nss-dev/nss"
 tag = "NSS_{version_}_RTM"
+tar_dir = "nss"
 
 [nvidia]
 cpe = "cpe:2.3:a:nvidia:gpu_display_driver"
@@ -624,6 +637,8 @@ series = "1.58"
 [passt]
 names = ["passt", "pasta"]
 unchecked = "its tags end in a commit hash (2026_10_02.cba3570), which the version check reads as a pre-release"
+repo = "https://passt.top/passt"
+tag = "{version}"
 
 [patch]
 cpe = "cpe:2.3:a:gnu:patch"
@@ -712,6 +727,7 @@ cpe = "cpe:2.3:a:sqlalchemy:mako"
 osv = "PyPI:Mako"
 repo = "https://github.com/sqlalchemy/mako"
 tag = "rel_{version_}"
+differs_because = "pyproject.toml and setup.cfg: sdist drops the dev tag and project metadata (read 2026-11-01)"
 
 [python-markupsafe]
 osv = "PyPI:MarkupSafe"
@@ -756,12 +772,15 @@ skip = "Oath's own compositor (apps/rivulet): its Rust crates are checked throug
 
 [rsync]
 cpe = "cpe:2.3:a:samba:rsync"
+repo = "https://github.com/RsyncProject/rsync"
+tag = "v{version}"
 
 [rust]
 cpe = "cpe:2.3:a:rust-lang:rust"
 names = ["rustc", "cargo"]
 repo = "https://github.com/rust-lang/rust"
 tag = "{version}"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
 
 [sbc]
 names = ["sbc"]
@@ -778,6 +797,7 @@ cpe = "cpe:2.3:a:gnu:sed"
 cpe = "cpe:2.3:a:sqlite:sqlite"
 repo = "https://github.com/sqlite/sqlite"
 tag = "version-{version}"
+no_compare = "the autoconf bundle is generated from the tree (the amalgamation); there is no tree to set it against"
 
 [sqlite.not_affected]
 "CVE-2026-119586" = "the sqlite3 shell's .recover echoes dot-commands planted in a hostile database, when its output is piped back into the shell; no fix yet. Programs here link the library, which has no .recover; PROJ's build runs the shell on its own SQL."
@@ -805,6 +825,7 @@ tag = "{version}"
 cpe = "cpe:2.3:a:kernel:util-linux"
 repo = "https://github.com/util-linux/util-linux"
 tag = "v{version}"
+differs_because = "ChangeLog's link, and every po file's POT-Creation-Date, regenerated at release (read 2026-11-01)"
 
 [vim]
 cpe = "cpe:2.3:a:vim:vim"
@@ -884,6 +905,7 @@ dev_micro = 90
 cpe = "cpe:2.3:a:tukaani:xz"
 repo = "https://github.com/tukaani-project/xz"
 tag = "v{version}"
+differs_because = "ChangeLog: the release writes it from the git log, where the tree has a pointer (read 2026-11-01)"
 
 [zlib]
 cpe = "cpe:2.3:a:zlib:zlib"

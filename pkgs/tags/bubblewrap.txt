@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source bubblewrap-0.13.1.tar.xz 0e85c8702248b8dd64144f594147553650cdd0e4c951690345faace79c217c4d
+tag v0.13.1 commit 362936aea0d5c6e70f7af75d2d44b5a914cb4ba2 tree 1f8ca393ab603ad2b03dc04ab6c1b2c64594f4fe
+signed pgp 252C6FEA78A69D3BC0AD458A616C5BDC0C29AB04
+same 58
+only-in-tag 0

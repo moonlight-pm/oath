@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source podman-6.1.4.tar.gz 200fd9b4b6d820cae24fc99d8e290ec945512365cf3cda8283b3905c0c284ea8
+tag v6.1.4 commit 464c15fec06f0074c916f9eff87c4806869c2833 tree 10ea72aae90dc0b1d5fffbf110d4cbf49ac489c7
+signed pgp E71A13BD902044E197037DDB5A0F5FA1CEF5C874
+same 10226
+only-in-tag 0

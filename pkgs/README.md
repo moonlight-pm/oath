@@ -28,6 +28,16 @@ fix goes in `<name>/go-updates.txt`, with the CVE beside it; the script takes
 it with `go get` and writes `<name>/go.mod` and `go.sum`, which the build copies
 over the release's. Drop a line once the release has caught up.
 
+## Tarballs against tags (R54)
+
+`cargo make pkgs --fetch <name>`, the step for any new pin, sets the tarball
+against the git tag that `repo` and `tag` in `audit.toml` name, and writes
+`tags/<name>.txt`. Commit it with the pin, and read its diff: a new `adds` line is
+a file in the tarball that no one's git history vouches for, which is where xz's
+backdoor was. Files in both that differ must be read, and `differs_because` in
+`audit.toml` says why; a test fails until it does. `no_compare` says why a pin has
+no tree to compare; `tag_dir` and `tar_dir` name a tree in a subdirectory.
+
 ## Signatures
 
 Every `[[source]]` either names its upstream's signature or says why it
@@ -54,6 +64,9 @@ key = "m4"                 # pkgs/keys/m4.asc
   must have signed the pinned sha256, and Rekor's key must have signed
   the log entry (made while the certificate was valid) and the
   checkpoint its inclusion proof leads to.
+- `git = "<repository>"`, `tag = "<name>"`, `key = "<key>"`: an upstream that
+  signs its git tag and not its tarball (Podman). The tag's signature must check
+  out and name this tag, and the tarball must be the tag's tree, file for file.
 - `unsigned = "<why>"`: no signature to check. A package-level
   `unsigned` covers all of its sources that have no `sig` (firmware).
 - `tree = "apps/<dir>"` (package level): first-party source from this

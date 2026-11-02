@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source pango-1.58.2.tar.xz 342385b6ca3b7c73455d7c80a13b7dbe4489e00bc3bd4c5bd6ed4dce421e374a
+tag 1.58.2 commit d360f14004e4a4824f2352f6e2722016f9a51dd6 tree 2716872fa54870dd30c519a26d39397daf2dd628
+signed no
+same 584
+only-in-tag 0

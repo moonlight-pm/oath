@@ -61,7 +61,7 @@
     },
     {
       "id": "pkg:libxml2",
-      "hash": "sha256-918cc93a6109b712e739ecdef14acddb987ea6ae2e30503236e18926f8f7e727"
+      "hash": "sha256-bd2861809821dd1c7ec466f7f86befb4bac6b72ab4891e93fdd91864aa9443b2"
     },
     {
       "id": "pkg:m4",
@@ -143,7 +143,7 @@
     },
     {
       "id": "pkg:libxml2",
-      "hash": "sha256-918cc93a6109b712e739ecdef14acddb987ea6ae2e30503236e18926f8f7e727"
+      "hash": "sha256-bd2861809821dd1c7ec466f7f86befb4bac6b72ab4891e93fdd91864aa9443b2"
     },
     {
       "id": "pkg:ncurses",

@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source proj-9.9.0.tar.gz 791a0610547eeabb17006cfd49cdbd2034f3240f47ed5e88a1031811f4e2bcf3
+tag 9.9.0 commit 1df2be61c0e4732aa1326126113776b291ae7657 tree 83f3a98e79bae85f13864feb93a13aa43ebf9ae0
+signed no
+same 661
+only-in-tag 639

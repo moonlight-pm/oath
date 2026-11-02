@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libudev-zero-1.0.5.tar.gz bf4372f79ddbe6b0e266a3d2994ffac7018a7edf4f87632aecb5176565d96138
+tag 1.0.5 commit 7a6eee2db11f2eb0f7fd065ae9597fcd270e6734 tree b9e0372f5bbaddd6839c0633a4ed5976d15e6be1
+signed no
+same 20
+only-in-tag 0

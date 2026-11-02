@@ -10,12 +10,15 @@ home = "https://github.com/containers/netavark"
 purl = "pkg:github/containers/netavark@v2.1.0"
 build = ["rust", "protobuf", "pkgconf"]
 run = ["gcc"]
-unsigned = "its tag is signed by Paul Holzinger, which GitHub verified and oath-make does not check, and the archive matched the tag when pinned; the vendor tarball has only an unsigned sha256 list"
+unsigned = "the vendor tarball has an unsigned sha256 list; Cargo checks each crate in it against Cargo.lock, in the signed tree"
 
 [[source]]
 url = "https://github.com/containers/netavark/archive/refs/tags/v2.1.0.tar.gz"
 sha256 = "96677048168ddd1abe313e4c2e17f1cace72b60ee1bac8ca12a4bd7dfcadfbbb"
 file = "netavark-2.1.0.tar.gz"
+git = "https://github.com/containers/netavark"
+tag = "v2.1.0"
+key = "holzinger"
 
 [[source]]
 url = "https://github.com/containers/netavark/releases/download/v2.1.0/netavark-v2.1.0-vendor.tar.gz"

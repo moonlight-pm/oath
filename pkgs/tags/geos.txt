@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source geos-3.15.0.tar.bz2 d5e5192a686d065eaed082de14dd26244c5c8e02bff16b2c6cce3265f648e00e
+tag 3.15.0 commit d0228513abb0c29c185443cf2bfb06c9281024b5 tree e8d986a145acb271779ae314a5555e440cf3fd0e
+signed no
+same 1738
+only-in-tag 351
+adds release.md
