@@ -541,9 +541,9 @@ pid, fd = pty.fork()
 if pid == 0:
     try:
         fcntl.ioctl(0, termios.TIOCSTI, b"x")
-        print("typed")
+        print("typed", flush=True)
     except OSError as e:
-        print("refused", e.errno)
+        print("refused", e.errno, flush=True)
     os._exit(0)
 print(os.read(fd, 99).decode())
 EOF
