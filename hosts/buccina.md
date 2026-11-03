@@ -63,10 +63,10 @@ Overwrite this file when facts change; do not append a diary.
   sshd is OpenSSH (generation 3 moved it from dropbear, keeping the
   host key); `pkg:dropbear` was removed (generation 35); `pkg:qemu` and
   `pkg:libslirp` were added for the build-host run (generations 33 and
-  36). It passes every metal case that applies to it (44 on 2026-10-27;
+  36). It passed every metal case that applied to it (44 on 2026-10-27;
   the display and AMD-GPU cases skip: it is headless, and Mesa has no
-  Intel driver), sound included: PipeWire takes its HDA card, which
-  registers after i915, at boot and on hot-plug. Installed on 2026-10-26 as `55c20bf6a86c` by `cargo make
+  Intel driver), sound included while PipeWire ran. With audio off since 2026-11-03, expect
+  the metal case `desk-sound` to fail here: nothing skips it. Installed on 2026-10-26 as `55c20bf6a86c` by `cargo make
   install --target root@10.0.0.149 --disk /dev/nvme0n1` over the Wicket
   trial image; that install's reboot landed on an old USB stick, the
   boot order was fixed, and a reboot came up from the NVMe. Root by UUID

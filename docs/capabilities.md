@@ -25,7 +25,7 @@ gaps · `target` designed, not built.
 | Login and seat | partial | `svc:login` (R42): `home`'s password, Argon2id; `oath password`; `host:local.autologin`; the seat's turns (`oath desk`), the console's prompt; on canto | No password on metal yet; `sudo` asks none |
 | Devices | partial | modules by modalias (boot, request, hotplug); `dev:*` from sysfs; `host:local.mounts` by label or UUID (boot, hotplug, apply), `/home` at boot (R45); sound, pads and `/dev/kvm` `home`'s (R22, R30, R33) | Node ownership is not a field |
 | Seed and overlays | shipped | profile `base`, extended; `oath seed --overlay`; `install --overlay` | — |
-| Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's on novus's card, R34) | — |
+| Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables; TIOCSTI off, R60); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's on novus's card, R34) | — |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `oath update` pulls the newest signed output (R38), builds recipes, replaces overlays (`--keep`), makes what the profile gained (R47) | No `--reboot`: an older PID 1 restarts the desk |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, locked and pinned packs (R28) into `build/out/<id>/`; published only from a clean master (R47) | — |
 | Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` (R43), `@home` apart; records its release (R45); novus | AMI: `UEFI OS` returns; Oath not first |

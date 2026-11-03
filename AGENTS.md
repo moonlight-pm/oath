@@ -80,7 +80,7 @@ secrets; answering an Open decision; publishing a release.
 ```
 AGENTS.md  CURRENT.md  README.md  LICENSE
 hosts/            one file pair per machine: facts (.md) + install overlay (.json)
-docs/             decisions, capabilities, roadmap, architecture, specs/, manual/
+docs/             decisions, capabilities, roadmap, architecture, ideas, specs/, manual/
 crates/oath-core  catalog, kinds, apply/undo, seed profiles (seed/*.json)
 crates/oath       the `oath` CLI
 crates/oath-init  PID 1, serial-login, screen-login, sudo
