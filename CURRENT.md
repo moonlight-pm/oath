@@ -14,7 +14,7 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `c9735fc14e50`
+   the profile, and checks `/bin` and `/lib` names. Newest release: `61044cca8975`
    (2026-11-02), on no machine yet; canto and novus run `3e42879d38e5`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
@@ -26,11 +26,11 @@ append history (git has it).
 3. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
-   profile). R47: the profile pins Sola master `7ccee214` (on CEF 156.0.15):
-   core `pkg:sola`, fourteen `pkg:sola-<app>` (Sola Editor is new), `svc:sola-vault`:
-   release `c9735fc14e50` (68/68, 2026-11-02). Each machine reboots into it,
+   profile). R47: the profile pins Sola master `d6343e8b` (on CEF 156.0.15):
+   core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
+   release `61044cca8975` (68/68, 2026-11-02). Each machine reboots into it,
    then sets it on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
-   Login, Exit Sola. Next: Sola's session pulls it on novus; Joshua decides each reboot.
+   Login, Exit Sola. Next: Joshua asks for a pull on novus and decides each reboot.
 4. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
    profile (R52), on the origin since `c9735fc14e50`. They run as `work`, which has no `sudo`. Bias against
