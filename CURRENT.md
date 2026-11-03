@@ -45,8 +45,8 @@ append history (git has it).
    by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.
    CVE-2026-99255 and 99262 wait for that 7.3.y. Next: the 2026-11-04 run publishes Codex
    0.165.0 and moves buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi
-   and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is on master,
-   its own release next.
+   and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is on master, built
+   and checked as `ca0f80bd441a` (69/69), not published; the next release carries it either way.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
