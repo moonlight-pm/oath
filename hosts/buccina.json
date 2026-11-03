@@ -14,6 +14,48 @@
       "enabled": true,
       "user": "home",
       "schedule": "0 4 * * *"
+    },
+    "svc:dbus-session": {
+      "enabled": false
+    },
+    "svc:pipewire": {
+      "enabled": false
+    },
+    "svc:pipewire-pulse": {
+      "enabled": false
+    },
+    "svc:rivulet": {
+      "enabled": false
+    },
+    "svc:screen": {
+      "enabled": false
+    },
+    "svc:seatd": {
+      "enabled": false
+    },
+    "svc:sola-bus": {
+      "enabled": false
+    },
+    "svc:sola-call": {
+      "enabled": false
+    },
+    "svc:sola-kvm": {
+      "enabled": false
+    },
+    "svc:sola-river": {
+      "enabled": false
+    },
+    "svc:sola-session": {
+      "enabled": false
+    },
+    "svc:sola-shell": {
+      "enabled": false
+    },
+    "svc:sola-vault": {
+      "enabled": false
+    },
+    "svc:wireplumber": {
+      "enabled": false
     }
   }
 }

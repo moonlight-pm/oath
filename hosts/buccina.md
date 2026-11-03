@@ -32,8 +32,8 @@ Overwrite this file when facts change; do not append a diary.
   2026-10-26).
 - **Running now:** output `debfd75332ea` (master `dcb3216`, generation 159), from
   `oath update --confirm --reboot` on 2026-11-03 at Joshua's word: Linux 7.3.1 with the
-  audit's 12 io_uring patches, in sync, 159 packages verified. `keep_children` on
-  `svc:sola-session` set by hand after it (generation 160; the session kept its pid).
+  audit's 12 io_uring patches, in sync, 159 packages verified. The desk went off after it
+  (generation 161, below).
   Before it, `1c09695ec24e` (master `6d20da0`, generation 133, 2026-11-02), at Joshua's
   word and not published: `cargo make publish --dest` into a directory, served on loopback
   as a second origin for `oath update --output`, after a rehearsal from `1caabcfb0b8c`.
@@ -50,12 +50,14 @@ Overwrite this file when facts change; do not append a diary.
   generation 116; `cargo make check` passed 65/65 on it. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
-  `pkg:libglvnd-i386`; `svc:screen` has no `seat`, so it acts as
-  before. `sola-shell` fails: headless, and Mesa has no driver for its
-  Intel GPU. `dmesg`'s one error is that GPU's too: i915 asks for
-  `i915/tgl_guc_70.bin`, and `/lib/firmware/i915` is empty (seen 2026-11-02).
-  `svc:sola-kvm` is off (generation 107, R44); `svc:pipewire`
-  and `svc:pipewire-pulse` have `rtprio` 95 by hand (generation 98). Since R36 its
+  `pkg:libglvnd-i386`. It is headless and runs no desk (Joshua, 2026-11-03; generation 161,
+  and in its overlay): `svc:rivulet`, `svc:seatd`, `svc:sola-river`, `svc:sola-shell`,
+  `svc:sola-session`, `svc:sola-bus`, `svc:sola-call`, `svc:sola-vault`, `svc:pipewire`,
+  `svc:pipewire-pulse`, `svc:wireplumber`, `svc:dbus-session`, `svc:screen` and `svc:sola-kvm`
+  are off. An update leaves them off, and still brings Sola's packs, since it follows `desk`.
+  `svc:sola-tmux` and `svc:sola-tmux-ws` stay: Projects on canto and novus reach this machine
+  over ssh, in `tmux -L sola-ws`. `dmesg`'s one error is its Intel GPU's: i915 asks for
+  `i915/tgl_guc_70.bin`, and `/lib/firmware/i915` is empty (seen 2026-11-02). Since R36 its
   sshd is OpenSSH (generation 3 moved it from dropbear, keeping the
   host key); `pkg:dropbear` was removed (generation 35); `pkg:qemu` and
   `pkg:libslirp` were added for the build-host run (generations 33 and
