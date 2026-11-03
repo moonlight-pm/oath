@@ -228,7 +228,7 @@ Each app is its own `pkg:sola-<app>` (terminal, projects, paint, editor,
 preview, scope, monitor, calendar, mail, settings, bots, vault, browser,
 design), needing what it loads and not the core, so an app's overlay
 or release moves that app and restarts nothing. The profile pins all
-fifteen with their `source` (Sola master `7ccee214`). An update from
+fifteen with their `source` (Sola master `d6343e8b`). An update from
 the single `pkg:sola` moves its `/bin` names to the app packages in one
 apply.
 
