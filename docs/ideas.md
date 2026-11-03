@@ -73,7 +73,7 @@ What was tried is a bubblewrap wrapper around Codex, nested over Codex's own san
 - **Separate:** `CODEX_HOME` and `HOME` in the state directory, so it cannot see `~/.codex`.
 - **The key:** read from one named line of a key file, passed over a pipe on FD 3, so it is
   in no environment but Codex's.
-- **`--new-session`:** blocks TIOCSTI (below).
+- **`--new-session`:** blocks TIOCSTI, which was then still on in Oath's kernel (off since R60).
 
 Tested on a toy project with real Codex:
 
@@ -107,11 +107,3 @@ generic and takes options, and one person's model or account lives in a script o
   and in-memory prompt caching.
 - **Management keys** cannot call models but can mint keys, so one in a file `home` can read is
   readable by every agent running as `home`.
-
-### Found on the way: TIOCSTI
-
-`dev.tty.legacy_tiocsti=1` on this kernel, and `pkgs/linux/linux.fragment` does not mention it.
-A control test on a throwaway pty injected input with no sandbox, and so did
-`sudo -n -u work` running `TIOCSTI`. So a process started interactively with `sudo -u work`
-can type into `home`'s shell, which undercuts R55. Candidates: `CONFIG_LEGACY_TIOCSTI` off, or
-the sysctl at boot. Not decided or fixed.

@@ -82,7 +82,8 @@ of T24, and D3 (seed as data).
 - PID 1 sets the kernel's knobs before anything else runs: itself as
   the modprobe helper, ICMP echo sockets for every group, and the link
   protections every other distribution turns on (`fs.protected_symlinks`,
-  `_hardlinks`, `_fifos` and `_regular`, built 2026-10-27).
+  `_hardlinks`, `_fifos` and `_regular`, built 2026-10-27). `TIOCSTI` is off in the kernel's
+  own config (R60), so PID 1 sets nothing for it.
 - The initrd's `/init` is PID 1. It mounts the root subvolume and
   switch_roots into it (moves `/dev`, `/proc`, `/sys`, `/run` across,
   moves the root over `/`, chroots): no `/newroot` is left behind. The

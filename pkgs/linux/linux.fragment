@@ -20,6 +20,9 @@ CONFIG_PRINTK=y
 CONFIG_EARLY_PRINTK=y
 CONFIG_EARLY_PRINTK_EFI=y
 CONFIG_X86_VERBOSE_BOOTUP=y
+# TIOCSTI puts bytes in a terminal's input as if typed. Off, it takes CAP_SYS_ADMIN, so
+# what runs as work on home's terminal (sudo -u work, R55) cannot type into home's shell (R60).
+CONFIG_LEGACY_TIOCSTI=n
 
 # EFI LoadImage / oath-efi
 CONFIG_EFI=y

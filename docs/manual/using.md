@@ -171,7 +171,8 @@ to root-owned `/etc/profile` for logins, and to sshd's `SetEnv` in
 sshd's last start. `oath apply` does not write `$HOME/.profile`.
 `work` (uid 2, home `/work`, R55) is for servers and workloads: nobody logs in
 as it, `sudo` refuses it, and `/home` is closed to it. `sudo -u work <command>`
-runs a command as it from `home`; a service names it in `user`. `/work` is its
+runs a command as it from `home`, and it cannot type into `home`'s terminal, since
+the kernel's `TIOCSTI` needs root (R60); a service names it in `user`. `/work` is its
 own subvolume, `@work`, which PID 1 makes on the first boot that lacks it, so no
 generation or boot snapshot holds its data.
 `void` (uid 65534, home `/var/empty`) is the fourth account: nobody logs

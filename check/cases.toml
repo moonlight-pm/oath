@@ -531,6 +531,28 @@ steps = [
 ]
 
 [[case]]
+name = "no-typing-into-a-terminal"
+about = "TIOCSTI is off (R60): a process on a terminal cannot put bytes in its input unless it is root, so what runs as work on home's terminal (R55) cannot type into home's shell"
+metal = true
+steps = [
+  { run = '''cat >/tmp/tiocsti.py <<'EOF'
+import fcntl, os, pty, termios
+pid, fd = pty.fork()
+if pid == 0:
+    try:
+        fcntl.ioctl(0, termios.TIOCSTI, b"x")
+        print("typed")
+    except OSError as e:
+        print("refused", e.errno)
+    os._exit(0)
+print(os.read(fd, 99).decode())
+EOF
+echo tiocsti=$(cat /proc/sys/dev/tty/legacy_tiocsti)''', expect = ["tiocsti=0"] },
+  { run = "echo home: $(python3 -I /tmp/tiocsti.py); echo work: $(sudo -u work python3 -I /tmp/tiocsti.py)", expect = ["home: refused 5", "work: refused 5"] },
+  { run = "sudo python3 -I /tmp/tiocsti.py; rm -f /tmp/tiocsti.py", expect = ["typed"] },
+]
+
+[[case]]
 name = "tun-is-open-for-container-networks"
 about = "PID 1 loads tun and opens /dev/net/tun to all (R59), which a rootless container's network needs; a process with no user namespace of its own can do nothing with it"
 metal = true
