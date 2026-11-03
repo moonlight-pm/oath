@@ -15,7 +15,7 @@ append history (git has it).
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
    the profile, and checks `/bin` and `/lib` names. Newest release: `debfd75332ea`
-   (2026-11-03), on canto; buccina runs `1c09695ec24e` and takes it next; novus `c9735fc14e50`. Gap: a
+   (2026-11-03), on canto and buccina; novus runs `c9735fc14e50` with Sola overlays. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
