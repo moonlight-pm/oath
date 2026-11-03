@@ -14,8 +14,8 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `61044cca8975`
-   (2026-11-02), on no machine yet; canto and novus run `3e42879d38e5`. Gap: a
+   the profile, and checks `/bin` and `/lib` names. Newest release: `debfd75332ea`
+   (2026-11-03), on no machine yet; buccina runs `1c09695ec24e`, canto and novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
@@ -28,7 +28,7 @@ append history (git has it).
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `d6343e8b` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `61044cca8975` (68/68, 2026-11-02). Each machine reboots into it,
+   release `debfd75332ea` (68/68, 2026-11-03). Each machine reboots into it,
    then sets it on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Next: Joshua asks for a pull on novus and decides each reboot.
 4. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
@@ -38,15 +38,15 @@ append history (git has it).
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
-5. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans,
-   reads each pin against upstream's newest release, may publish. Left by Joshua's
-   word: libsndfile, the toolchain rebuilds, flex, QEMU's 9p. An unattended run
-   cannot build CEF (commands stop at 2 h). 2026-11-03: 14 CVE fixes (12 io_uring
-   patches in Linux, libslirp 4.9.7) reached master, unpublished: a dirty tree stopped
-   the release. Next: the 2026-11-04 run publishes them, with Codex 0.165.0 (Joshua: "let
-   the audit publish it"), and moves buccina, unless he publishes sooner; the patches come out
-   at the first 7.3.y with the series; a CEF rebuild for fribidi and expat 2.10.0, from
-   2026-11-10, is his call. Open: `dev.tty.legacy_tiocsti=1` undercuts R55 ([docs/ideas.md](docs/ideas.md)).
+5. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
+   against upstream's newest release, may publish. Left by Joshua's word: libsndfile, the
+   toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
+   2 h). `debfd75332ea` carries 12 io_uring patches on Linux 7.3.1 and libslirp 4.9.7 (14 CVEs,
+   by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.
+   CVE-2026-99255 and 99262 wait for that 7.3.y. Next: the 2026-11-04 run publishes Codex
+   0.165.0 and moves buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi
+   and expat 2.10.0, from 2026-11-10, is his call; then TIOCSTI off in the kernel, its own
+   release: `dev.tty.legacy_tiocsti=1` undercuts R55 ([docs/ideas.md](docs/ideas.md)).
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9

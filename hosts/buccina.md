@@ -19,7 +19,8 @@ Overwrite this file when facts change; do not append a diary.
   and publishing, so canto stays free for Sola R&D and novus is
   Joshua's desk. Claude Code 2.1.292 was built here on 2026-10-28
   (`oath build plan:claude-code`, generation 100: novus's pack); not
-  signed in by Joshua on 2026-10-28. Reach: `ssh home@10.0.0.149`
+  signed in by Joshua on 2026-10-28. Codex 0.164.0 was built here on 2026-11-02
+  (`oath build plan:codex`, generation 158), as it ships. Reach: `ssh home@10.0.0.149`
   (DHCP; Joshua adds it to the local DNS).
 - **SSH to and from canto** (Joshua, 2026-10-28): `ssh canto` uses
   `home@buccina` (`/home/.ssh/id_ed25519`, which canto's `ssh:local`
