@@ -4,6 +4,7 @@ version = "3.132"
 license = "MPL-2.0 AND MIT AND Apache-2.0 AND BSD-3-Clause AND blessing"
 description = "NSS, shared: CEF's certificates and crypto."
 home = "https://firefox-source-docs.mozilla.org/security/nss/"
+category = "browser"
 purl = "pkg:generic/nss@3.132"
 build = ["perl", "nspr", "zlib"]
 run = ["nspr", "zlib"]

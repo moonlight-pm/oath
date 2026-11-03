@@ -8,6 +8,7 @@ version = "3.132"
 license = "MPL-2.0"
 description = "Oath's CA roots: Mozilla's, from NSS, less what it dates and pkgs/certs/distrust.txt names."
 home = "https://wiki.mozilla.org/CA"
+category = "security"
 purl = "pkg:generic/certs@3.132"
 build = ["python"]
 run = []

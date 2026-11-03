@@ -2,6 +2,7 @@ version = "2.56.0"
 license = "GPL-2.0-only AND LGPL-2.1-or-later AND BSD-3-Clause AND MIT"
 description = "git, with https through libcurl; no Perl, Python, Tcl/Tk, gettext or Rust parts."
 home = "https://git-scm.com/"
+category = "toolchain"
 purl = "pkg:generic/git@2.56.0"
 build = ["pkgconf", "curl", "zlib", "expat", "pcre2"]
 run = ["curl", "zlib", "expat", "pcre2"]

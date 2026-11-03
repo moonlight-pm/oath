@@ -7,6 +7,8 @@
 //! It writes `build/audit/<day>.json` and `build/audit/latest.json` for the
 //! `oath-audit` skill to triage and changes nothing it scans. A source
 //! that cannot be reached is recorded as such, and the rest still run.
+//! `--publish` signs `latest.json` and puts it on the default origin, where
+//! any machine reads it (`oath audit`, R61).
 
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
@@ -37,6 +39,8 @@ pub struct Opts {
     pub offline: bool,
     /// Only each pin against upstream's newest stable release; writes nothing.
     pub upstream: bool,
+    /// Only put `latest.json` on the default origin, signed.
+    pub publish: bool,
 }
 
 /// One package's entry in `pkgs/audit.toml`.
@@ -100,6 +104,10 @@ struct Target {
     name: String,
     /// The upstream's version (`version_after` applied).
     version: String,
+    /// The version the catalog shows for this pin.
+    pin: String,
+    /// The pin's tree, when it was built.
+    hash: String,
     entry: Entry,
     /// Ecosystem purls in its pack's `components.json`.
     purls: Vec<String>,
@@ -134,7 +142,16 @@ pub struct Hit {
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct PkgReport {
     pub name: String,
+    /// The version the catalog shows for this build.
     pub version: String,
+    /// The build this read: another build of the version may lack the
+    /// patches `suppressed` names.
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub hash: String,
+    /// The version records were matched against, when `version` is not it
+    /// (CEF's Chromium).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub upstream: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cpe: Option<String>,
     pub hits: Vec<Hit>,
@@ -161,6 +178,9 @@ pub struct Report {
 }
 
 pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
+    if opts.publish {
+        return publish(repo);
+    }
     let targets = targets(repo, opts.name.as_deref())?;
     if opts.upstream {
         let found = upstream(&targets);
@@ -253,7 +273,9 @@ pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
     for t in &targets {
         let mut p = PkgReport {
             name: t.name.clone(),
-            version: t.version.clone(),
+            version: t.pin.clone(),
+            hash: t.hash.clone(),
+            upstream: (t.version != t.pin).then(|| t.version.clone()),
             cpe: t.entry.cpe.clone(),
             skip: t.entry.skip.clone(),
             ..Default::default()
@@ -279,13 +301,17 @@ pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
         p.hits.sort_by(|a, b| rank(b).partial_cmp(&rank(a)).unwrap_or(Ordering::Equal));
         report.packages.push(p);
     }
-    let dir = repo.join("build/audit");
-    fs::create_dir_all(&dir)?;
-    let day = report.generated.get(..10).unwrap_or("today").to_string();
-    crate::util::write_pretty(&dir.join(format!("{day}.json")), &serde_json::to_value(&report)?)?;
-    crate::util::write_pretty(&dir.join("latest.json"), &serde_json::to_value(&report)?)?;
     print_summary(&report);
-    println!("report: {}", dir.join(format!("{day}.json")).display());
+    // One package's run answers a question: it is not the day's report.
+    if opts.name.is_none() {
+        let dir = repo.join("build/audit");
+        fs::create_dir_all(&dir)?;
+        let day = report.generated.get(..10).unwrap_or("today").to_string();
+        let v = serde_json::to_value(&report)?;
+        crate::util::write_pretty(&dir.join(format!("{day}.json")), &v)?;
+        crate::util::write_pretty(&dir.join("latest.json"), &v)?;
+        println!("report: {}", dir.join(format!("{day}.json")).display());
+    }
     // A malicious-package record is not a thing to triage (R57).
     let bad: Vec<String> = report
         .packages
@@ -297,6 +323,45 @@ pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
     if !bad.is_empty() {
         bail!("MALICIOUS packages, by OSV's records:\n  {}", bad.join("\n  "));
     }
+    Ok(())
+}
+
+/// `latest.json` to the default origin (R61), signed by this build host's
+/// key as a release is, so a machine can check it. Its own key, not part of
+/// a release: findings move daily and a release does not.
+fn publish(repo: &Path) -> Result<()> {
+    let file = repo.join("build/audit/latest.json");
+    let bytes = fs::read(&file)
+        .with_context(|| format!("{}: run `cargo make audit` first", file.display()))?;
+    let report: Value = serde_json::from_slice(&bytes)?;
+    if report["packages"].as_array().is_none_or(|p| p.is_empty()) {
+        bail!("{} lists no packages", file.display());
+    }
+    let sig = PathBuf::from(format!("{}.sig", file.display()));
+    let _ = fs::remove_file(&sig);
+    crate::util::run_out(
+        Command::new("ssh-keygen")
+            .args(["-Y", "sign", "-q", "-n", oath_core::update::AUDIT_NAMESPACE, "-f"])
+            .arg(crate::release::sign_key())
+            .arg(&file),
+    )
+    .context("ssh-keygen -Y sign")?;
+    let who = oath_core::sshsig::verify(
+        &bytes,
+        &fs::read_to_string(&sig)?,
+        oath_core::update::AUDIT_NAMESPACE,
+        &[crate::release::public_key()?],
+    )
+    .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let origin = crate::origin::Origin::from_env()?;
+    let key = oath_core::update::AUDIT_KEY;
+    origin.put(&format!("{key}.sig"), &sig)?;
+    origin.put(key, &file)?;
+    println!(
+        "{key} is on the origin: {} packages, generated {}, signed by {who}",
+        report["packages"].as_array().map_or(0, Vec::len),
+        report["generated"].as_str().unwrap_or("?")
+    );
     Ok(())
 }
 
@@ -332,7 +397,8 @@ fn print_summary(r: &Report) {
         println!("no package has a hit");
     }
     for p in &r.packages {
-        print_upstream(&p.name, &p.version, p.newer.as_deref(), p.upstream_unread.as_deref());
+        let version = p.upstream.as_deref().unwrap_or(&p.version);
+        print_upstream(&p.name, version, p.newer.as_deref(), p.upstream_unread.as_deref());
     }
 }
 
@@ -423,6 +489,8 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
         out.push(Target {
             name: name.clone(),
             version,
+            pin: p.version.clone(),
+            hash: product,
             entry,
             purls,
             patched: patched(&crate::pkgs::pkgs_dir(repo).join(name).join("patches")),
@@ -438,19 +506,56 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
             .and_then(|t| serde_json::from_str::<Value>(&t).ok())
             .and_then(|v| v["product"].as_str().map(str::to_string))
             .unwrap_or_default();
+        let tree = cache.join("pkg/oath").join(&product);
+        let version = own_version(&tree, "oath").unwrap_or_else(|| "this tree".into());
         out.push(Target {
             name: "oath".into(),
-            version: "this tree".into(),
+            pin: version.clone(),
+            version,
+            hash: product,
             entry: Entry {
                 skip: Some("Oath's own: its crates go to OSV".into()),
                 ..Default::default()
             },
-            purls: ecosystem_purls(&cache.join("pkg/oath").join(product)),
+            purls: ecosystem_purls(&tree),
             patched: BTreeMap::new(),
             listing: None,
         });
     }
+    // A pack a profile pins from elsewhere (R28): its owner builds it, so
+    // only what its `components.json` names can be matched.
+    for (profile, _) in oath_core::PROFILES {
+        for (name, p) in crate::pinned::of_profile(repo, profile)? {
+            if only.as_ref().is_some_and(|o| *o != name) || out.iter().any(|t| t.name == name) {
+                continue;
+            }
+            let tree = cache.join("pkg").join(&name).join(&p.hash);
+            let version = own_version(&tree, &name).unwrap_or_default();
+            out.push(Target {
+                name,
+                pin: version.clone(),
+                version,
+                hash: p.hash,
+                entry: Entry {
+                    skip: Some(
+                        "built by its owner: only the ecosystem packages its components.json \
+                         names go to OSV"
+                            .into(),
+                    ),
+                    ..Default::default()
+                },
+                purls: ecosystem_purls(&tree),
+                patched: BTreeMap::new(),
+                listing: None,
+            });
+        }
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(out)
+}
+
+fn own_version(tree: &Path, name: &str) -> Option<String> {
+    oath_core::own_version(&oath_core::read_components(tree)?, name)
 }
 
 fn ecosystem_purls(tree: &Path) -> Vec<String> {

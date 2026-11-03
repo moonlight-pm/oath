@@ -2,6 +2,7 @@ version = "4.11.0"
 license = "GPL-3.0-or-later"
 description = "GNU findutils: find and xargs."
 home = "https://www.gnu.org/software/findutils/"
+category = "base"
 purl = "pkg:generic/findutils@4.11.0"
 build = []
 

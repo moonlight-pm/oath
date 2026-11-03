@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{bail, Context, Result};
-use oath_core::update::{self as up, Bundle, Release};
+use oath_core::update::{self as up, Bundle, Release, ReleasePack};
 use serde_json::Value;
 
 use crate::output::Output;
@@ -86,6 +86,9 @@ pub fn make(o: &Output, dir: &Path) -> Result<Made> {
         commit: commit(&manifest),
         pins: pins(o)?,
         seed: up::seed_ids(&o.dir).map_err(|e| anyhow::anyhow!("{e}"))?,
+        kernel: kernel(&manifest),
+        repo: repo(),
+        packs: packs(o, &manifest)?,
     };
     let path = dir.join("release.json");
     let mut text = serde_json::to_string_pretty(&release)?;
@@ -191,6 +194,77 @@ pub(crate) fn commit(manifest: &Value) -> Option<String> {
 pub(crate) fn pins(o: &Output) -> Result<BTreeMap<String, String>> {
     let out = up::Output::read(&o.dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(out.pins.into_iter().map(|(n, h, _)| (n, h)).collect())
+}
+
+/// The tree of the kernel `manifest`'s output boots.
+pub(crate) fn kernel(manifest: &Value) -> Option<String> {
+    manifest["packs"]["linux"]["hash"].as_str().map(String::from)
+}
+
+/// What a release says of each package beside its pin: its version and
+/// size, and where it came from: the plan that built it here, or the
+/// `source` of a pack built elsewhere.
+pub(crate) fn packs(o: &Output, manifest: &Value) -> Result<BTreeMap<String, ReleasePack>> {
+    let root = crate::util::repo_root();
+    let lock = crate::pkgs::read_lock(&root)?;
+    let cache = crate::pack::host_store_cache(&root);
+    let out = up::Output::read(&o.dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let mut packs = BTreeMap::new();
+    for (name, hash, doc) in out.pins {
+        let tree = [o.file("stage/oath/store/pkg"), cache.join("pkg")]
+            .into_iter()
+            .map(|d| d.join(&name).join(&hash))
+            .find(|t| t.is_dir());
+        let made = &manifest["packs"][&name];
+        let locked = lock.get(&name).filter(|e| e.product == hash);
+        let field = |k: &str, of_lock: Option<&String>| {
+            made[k].as_str().map(String::from).or(of_lock.cloned()).unwrap_or_default()
+        };
+        let mut version = field("version", locked.map(|e| &e.version));
+        if version.is_empty() {
+            version = tree
+                .as_deref()
+                .and_then(oath_core::read_components)
+                .and_then(|c| oath_core::own_version(&c, &name))
+                .unwrap_or_default();
+        }
+        let pack = ReleasePack {
+            version,
+            size: tree
+                .as_deref()
+                .map(oath_core::tree_size)
+                .transpose()
+                .map_err(|e| anyhow::anyhow!("pkg:{name}: {e}"))?,
+            plan: field("plan", locked.map(|e| &e.plan)),
+            source: doc.get("source").filter(|s| !s.is_null()).cloned(),
+        };
+        packs.insert(name, pack);
+    }
+    Ok(packs)
+}
+
+/// This checkout's `origin` as `https://<host>/<owner>/<name>`, the shape
+/// `pkg.source.repo` has.
+pub(crate) fn repo() -> Option<String> {
+    let url = run_out(
+        Command::new("git")
+            .arg("-C")
+            .arg(crate::util::repo_root())
+            .args(["remote", "get-url", "origin"]),
+    )
+    .ok()?;
+    repo_url(&url)
+}
+
+fn repo_url(url: &str) -> Option<String> {
+    let u = url.trim().trim_end_matches('/').trim_end_matches(".git");
+    if let Some((host, path)) = u.strip_prefix("git@").and_then(|r| r.split_once(':')) {
+        return Some(format!("https://{host}/{path}"));
+    }
+    if let Some(rest) = u.strip_prefix("ssh://git@") {
+        return Some(format!("https://{rest}"));
+    }
+    u.starts_with("https://").then(|| u.to_string())
 }
 
 /// The output's pins of the packs it pins from elsewhere (R28).

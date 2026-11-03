@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-11-02 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-11-03 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R59 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R63 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -17,7 +17,10 @@ append history (git has it).
    the profile, and checks `/bin` and `/lib` names. Newest release: `ca0f80bd441a`
    (2026-11-03), on buccina; canto runs `debfd75332ea`, novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
-   (built, unreleased); `oath` checks PID 1.
+   (built, unreleased); `oath` checks PID 1. R62, built and in no release yet: a machine holds what
+   its packages prescribe. An update takes what its release dropped, and each boot runs `oath reap`.
+   The first boot into it frees about 33 GB on novus, 59 GB on canto (previewed 2026-11-03). `pkg:lzo`
+   and `pkg:dropbear` predate the rule and go by hand: `oath rm`, `oath apply`.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
    Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
    (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
@@ -39,7 +42,8 @@ append history (git has it).
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
 5. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
-   against upstream's newest release, may publish. Left by Joshua's word: libsndfile, the
+   against upstream's newest release, may publish, and puts its findings on the origin (R61,
+   `audit/latest.json`; `oath audit` reads it, from the next release). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
    2 h). `debfd75332ea` carries 12 io_uring patches on Linux 7.3.1 and libslirp 4.9.7 (14 CVEs,
    by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.

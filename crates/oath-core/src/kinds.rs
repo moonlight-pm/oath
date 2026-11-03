@@ -333,6 +333,11 @@ pub struct Pkg {
     /// url.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub home: String,
+    /// One word for what this package mostly is (`sound`, `toolchain`), to
+    /// find one's way around the packages. Not part of any hash. Empty
+    /// means none.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub category: String,
     /// Where the pinned tree was built from (R47), set beside `hash` by
     /// the tool that pinned it. Not part of any hash, and never a reason
     /// to move or restart anything; `oath update` writes the release's.
@@ -576,6 +581,8 @@ pub struct PkgActual {
     pub description: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub home: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub category: String,
     /// The applied `source`: where the live tree was built from.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<PkgSource>,

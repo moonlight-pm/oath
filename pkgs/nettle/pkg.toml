@@ -2,6 +2,7 @@ version = "4.0"
 license = "LGPL-3.0-or-later OR GPL-2.0-or-later"
 description = "Nettle, shared, without public-key code: Xwayland's SHA-1."
 home = "https://www.lysator.liu.se/~nisse/nettle/"
+category = "security"
 purl = "pkg:generic/nettle@4.0"
 build = ["m4"]
 

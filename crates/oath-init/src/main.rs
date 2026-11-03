@@ -214,6 +214,9 @@ fn real_main() -> Result<(), String> {
     // The store's integrity, once a boot, off the boot path: every linked
     // package tree is hashed again against its pin.
     sup.run_task("verify", &["/bin/oath", "verify", "--quiet"]);
+    // What no package prescribes goes, once a boot (R62): nothing an older
+    // pin ran is still running now.
+    sup.run_task("reap", &["/bin/oath", "--confirm", "reap", "--boot"]);
     run(sup, listener, hot, Vec::new())
 }
 

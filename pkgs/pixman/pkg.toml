@@ -2,6 +2,7 @@ version = "0.46.4"
 license = "MIT"
 description = "pixman, shared: wlroots' software renderer and buffer maths."
 home = "https://pixman.org/"
+category = "graphics"
 purl = "pkg:generic/pixman@0.46.4"
 build = ["meson", "ninja", "python", "pkgconf"]
 

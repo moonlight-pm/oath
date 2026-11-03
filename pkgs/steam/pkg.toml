@@ -10,6 +10,7 @@ version = "1.0.0.87"
 license = "LicenseRef-Steam-Subscriber-Agreement AND MIT"
 description = "Steam's launcher, in a sandbox with the paths Steam assumes; it installs the client in ~/.local/share/Steam."
 home = "https://store.steampowered.com/about/"
+category = "games"
 purl = "pkg:generic/steam@1.0.0.87"
 recipe = "the Steam Subscriber Agreement grants no right to redistribute; each machine fetches the launcher itself"
 build = ["bash", "coreutils", "sed", "grep", "tar", "gzip", "glibc"]

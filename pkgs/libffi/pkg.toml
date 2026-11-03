@@ -2,6 +2,7 @@ version = "3.8.0"
 license = "MIT"
 description = "libffi, shared: the Wayland libraries' calls into handlers."
 home = "https://sourceware.org/libffi/"
+category = "base"
 purl = "pkg:github/libffi/libffi@v3.8.0"
 build = []
 

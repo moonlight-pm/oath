@@ -8,6 +8,7 @@ version = "2026.10.01"
 license = "OFL-1.1"
 description = "Noto: the desk's UI, serif, symbol and script faces."
 home = "https://notofonts.github.io/"
+category = "text"
 purl = "pkg:github/notofonts/notofonts.github.io@noto-monthly-release-2026.10.01"
 build = []
 unsigned = "a file of the noto-monthly-release-2026.10.01 tag of notofonts/notofonts.github.io; upstream publishes no signature or checksum"

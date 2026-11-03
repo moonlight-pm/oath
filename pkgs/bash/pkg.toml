@@ -3,6 +3,7 @@ version = "5.3"
 license = "GPL-3.0-or-later"
 description = "GNU bash: the shell, and /bin/sh."
 home = "https://www.gnu.org/software/bash/"
+category = "base"
 purl = "pkg:generic/bash@5.3"
 build = []
 

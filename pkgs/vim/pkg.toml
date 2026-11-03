@@ -2,6 +2,7 @@ version = "9.2.1250"
 license = "Vim"
 description = "Vim, the editor."
 home = "https://www.vim.org/"
+category = "base"
 purl = "pkg:github/vim/vim@v9.2.1250"
 build = ["ncurses"]
 run = ["ncurses"]

@@ -2,6 +2,7 @@ version = "9.20.30"
 license = "MPL-2.0 AND ISC AND MIT AND BSD-3-Clause AND BSD-2-Clause"
 description = "dig, host and nslookup from BIND 9, with the libraries they load; no named."
 home = "https://www.isc.org/bind/"
+category = "network"
 build = ["pkgconf", "openssl", "libuv", "liburcu", "libcap"]
 run = ["openssl", "libuv", "liburcu", "libcap"]
 

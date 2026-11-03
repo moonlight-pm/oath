@@ -2,6 +2,7 @@ version = "5.8.4"
 license = "0BSD AND GPL-2.0-or-later"
 description = "XZ Utils: xz and liblzma."
 home = "https://tukaani.org/xz/"
+category = "base"
 purl = "pkg:github/tukaani-project/xz@v5.8.4"
 build = []
 

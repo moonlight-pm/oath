@@ -6,6 +6,7 @@ version = "2.15.4"
 license = "MIT"
 description = "libxml2: an XML parser and toolkit."
 home = "https://gitlab.gnome.org/GNOME/libxml2"
+category = "base"
 purl = "pkg:generic/libxml2@2.15.4"
 build = ["meson", "ninja", "python", "pkgconf", "zlib"]
 run = ["zlib"]

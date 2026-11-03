@@ -9,6 +9,7 @@ version = "1.4.365"
 license = "Apache-2.0 AND MIT"
 description = "The Vulkan loader, libvulkan.so.1: it finds Mesa's RADV and device-select layer, and NVIDIA's driver."
 home = "https://github.com/KhronosGroup/Vulkan-Loader"
+category = "graphics"
 purl = "pkg:github/KhronosGroup/Vulkan-Loader@v1.4.365"
 build = ["cmake", "pkgconf", "vulkan-headers", "xorgproto", "libx11", "libxcb", "libxrandr"]
 run = []

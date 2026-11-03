@@ -517,6 +517,7 @@ fn pkg_actual(
         needs: Vec::new(),
         description: String::new(),
         home: String::new(),
+        category: String::new(),
         source: None,
         components,
         advisories,
@@ -568,6 +569,12 @@ pub fn list_realization_ids(catalog_root: &Path, name: &str) -> Result<Vec<Strin
     }
     out.sort();
     Ok(out)
+}
+
+/// The version a tree's components give its own name, or their only one.
+pub fn own_version(components: &[PkgComponent], name: &str) -> Option<String> {
+    let own = components.iter().find(|c| c.name == name);
+    own.or(components.first().filter(|_| components.len() == 1)).map(|c| c.version.clone())
 }
 
 pub fn list_realizations(catalog_root: &Path, name: &str) -> Result<Vec<PkgRealization>> {
@@ -1563,6 +1570,7 @@ mod needs_tests {
                 .collect(),
             description: String::new(),
             home: String::new(),
+            category: String::new(),
             source: None,
         }
     }

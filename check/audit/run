@@ -48,6 +48,13 @@ if [ -s "$published" ]; then
         "$(cat "$published")" >>"$report"
 fi
 
+# The findings on the origin, signed, for every machine to read (R61). Only
+# the scan's JSON: the mail below stays private.
+if ! cargo make audit --publish >>"$log" 2>&1; then
+    printf '\nThe findings did not reach the origin (cargo make audit --publish): see %s\n' \
+        "$log" >>"$report"
+fi
+
 # The report by mail (Resend; the key in ~/.config/oath/mail.env).
 set -a
 . "$HOME/.config/oath/mail.env"

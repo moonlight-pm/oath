@@ -2,6 +2,7 @@ version = "4.4.4"
 license = "BSD-3-Clause AND curl AND MIT AND BSD-2-Clause AND Zlib AND 0BSD AND Apache-2.0"
 description = "CMake, with its bundled libraries and no OpenSSL. A build tool (crates' build scripts on the desk)."
 home = "https://cmake.org/"
+category = "toolchain"
 purl = "pkg:github/Kitware/CMake@v4.4.4"
 build = []
 run = ["gcc"]

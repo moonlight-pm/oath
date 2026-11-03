@@ -7,6 +7,7 @@ version = "3.5.1"
 license = "GPL-3.0-or-later"
 description = "rsync: fast incremental file transfer."
 home = "https://rsync.samba.org/"
+category = "network"
 purl = "pkg:generic/rsync@3.5.1"
 build = ["openssl", "zlib", "zstd"]
 run = ["openssl", "zlib", "zstd"]

@@ -8,6 +8,7 @@ version = "1.0.70"
 license = "Apache-2.0"
 description = "Grok Build: xAI's coding agent for the terminal."
 home = "https://x.ai/cli"
+category = "agents"
 purl = "pkg:generic/grok-build@1.0.70"
 recipe = "xAI's own build, which each machine fetches, as it does Claude Code's (R31)"
 build = ["bash", "coreutils", "grep", "sed", "zstd", "glibc"]

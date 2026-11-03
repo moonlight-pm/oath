@@ -26,6 +26,21 @@ const KIND_DIR: u8 = 1;
 const KIND_FILE: u8 = 2;
 const KIND_SYMLINK: u8 = 3;
 
+/// Bytes of the regular files under `dir`.
+pub fn tree_size(dir: &Path) -> Result<u64> {
+    let mut total = 0;
+    for e in fs::read_dir(dir)? {
+        let e = e?;
+        let t = e.file_type()?;
+        if t.is_dir() {
+            total += tree_size(&e.path())?;
+        } else if t.is_file() {
+            total += e.metadata()?.len();
+        }
+    }
+    Ok(total)
+}
+
 pub fn is_realization_id(s: &str) -> bool {
     let Some(hex) = s.strip_prefix(HASH_PREFIX) else {
         return false;

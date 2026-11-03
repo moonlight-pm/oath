@@ -587,6 +587,9 @@ fn install_record(o: &output::Output) -> Result<String> {
         commit: crate::release::commit(&manifest),
         pins: crate::release::pins(o)?,
         seed: oath_core::update::seed_ids(&o.dir).map_err(|e| anyhow::anyhow!("{e}"))?,
+        kernel: crate::release::kernel(&manifest),
+        repo: crate::release::repo(),
+        packs: crate::release::packs(o, &manifest)?,
     };
     Ok(serde_json::to_string_pretty(&release)? + "\n")
 }

@@ -35,11 +35,10 @@ parts of T24 and T35.
   second PATH. Two packages that ship the same `/bin` name refuse. A
   re-pin removes the links of names the new tree no longer has, so a
   program a package drops leaves `/bin`.
-- One live realization per name. Other hashes of the same name may stay
-  on disk. Two programs runnable at once are two names
-  (`pkg:foo`, `pkg:foo-wip`).
-- The store is never rolled back: undo restores a package's spec and
-  relinks, and the trees stay as they are.
+- One live realization per name. Two programs runnable at once are two
+  names (`pkg:foo`, `pkg:foo-wip`).
+- Undo does not roll the store back: it restores a package's spec and
+  relinks, and the trees a kept generation pins are still there.
 
 ## Integrity (built)
 
@@ -56,10 +55,42 @@ parts of T24 and T35.
   task: the hashing never delays boot, and its report (damaged packages
   and the count) goes to `init.log`.
 
+## What stays (is, R62)
+
+An Oath machine holds what its packages prescribe, and nothing else. A
+version stays while something names it: a pin in the catalog (desired,
+applied or live), another package's need, the release the machine runs, a
+current plan's build or run pack, or a generation kept for undo. A tree no
+one names yet stays for a day, since `oath store` and `oath build` put it
+there and its pin comes next. A filed plan stays while a plan object or a
+kept generation pins it.
+
+- **Generations.** The newest five stay, as the ESP keeps five boots, and
+  so does every one taken since this boot: what was pinned since boot may
+  still be running (a seat's service across an update, the kernel's
+  modules). So `oath reap --confirm` is safe at any time, and a boot leaves
+  exactly what is prescribed. Undo stops at the last one kept, and says so.
+- **PID 1** runs `oath --confirm reap --boot` once a boot, as a task beside
+  `oath verify`, which also clears an update's or a build's working
+  directories that the boot cut off. Under the catalog's lock a tree is
+  renamed aside and its status updated, and the space is freed after the
+  lock, so an apply never waits on a large delete.
+- **`oath reap`** without `--confirm` deletes nothing and takes no lock: per
+  version its `size`, `arrived` and `held` (`pin`, `live`, `release`,
+  `arrived`, `needs:pkg:<name>`, `plan:<name>`, `generation:<n>`; empty
+  means it goes). `--json` is the document a program reads.
+- **An update takes what its release dropped.** A package or service the
+  release a machine runs had, and the new one lacks, is removed in the
+  update's generation, unless `--keep` names it or a package that stays
+  needs it. One the owner made was in no release and stays. A machine that
+  left a package behind before this rule is cleaned by hand, with `oath rm`.
+- Space comes back as snapshots go: `@gen-N` and `@boot-N` are snapshots of
+  `@`, so a tree removed from `@` is freed when no snapshot holds it.
+
 ## Object (built)
 
 Desired: `present`, `hash` (the pin), `url` (an origin), `needs`,
-`description`, `home`, `source`.
+`description`, `home`, `category`, `source`.
 
 Actual: `present`, `links`, `removable`, live `hash`, other
 `realizations` on disk, `components`, `advisories`, plus copies of the
@@ -96,8 +127,12 @@ descriptive fields and `source`.
   while a need is absent or at another hash, and refuses
   `present=false` while a present package still needs it. Apply never
   rewrites other objects to satisfy the graph.
-- **Description and home.** One paragraph and a project URL. Catalog
-  facts, not fetch sources.
+- **Description, home and category.** One paragraph, a project URL, and
+  one word for what the package mostly is (R63; `pkgs/<name>/pkg.toml`, or
+  the profile for a pack pinned from elsewhere). Catalog facts, not fetch
+  sources; `oath update` writes the release's. Oath's own use `agents`,
+  `base`, `browser`, `desk`, `games`, `graphics`, `kernel`, `machines`,
+  `network`, `security`, `server`, `sound`, `text`, `toolchain` and `x11`.
 
 ## Filling the store (built)
 
@@ -124,7 +159,10 @@ static bucket, a LAN mirror, or another Oath box. It is not a
 repository kind and not canonical. Packs come from anywhere (R25): a
 pack is its hash and records no location (its tree, its plan and its
 source pack hold no URL), so any origin may serve any pack and the
-hash decides. Only the consumer says where it looks:
+hash decides. `INDEX.md` lists every pack Oath publishes, and `index.json`
+is the same rows with version, category and size for a program to read
+(a pack pinned from elsewhere is its owner's, so neither has it). Only
+the consumer says where it looks:
 `host:local.origins`, in order, or one pkg's own `url`. The machine's
 log (`/oath/log/oath.jsonl`, a `pkg` event's `fetched`) records the URL
 a tree came from; the pkg object does not.
@@ -170,6 +208,19 @@ origin, then the newest checked output's signed release; `--dest
   commit ids in "custom" ranges and products with no versions decide
   nothing. The `oath-audit` skill triages and fixes on buccina daily
   (`svc:audit`, `check/audit/`).
+- **The report (is, R61).** After each run the runner puts the scan's JSON
+  on the origin: `audit/latest.json`, public, with `.sig` beside it, signed
+  by the build host's key under the namespace `oath-audit`. `oath audit [pkg:x]`
+  reads it from the first origin a key in `host:local.publishers` signed
+  and says what it found for the packages here; `--json` is the document:
+  `{generated, commit, sources, packages[], origin, signer}`, each package
+  `{name, version, hash, upstream?, cpe?, hits[], suppressed, skip?, newer?,
+  upstream_unread?}`. Only the JSON goes out; the mailed report stays
+  private. A package at another version than the report's was not
+  assessed, which is not the same as clean; another build of the same
+  version (`hash`) may lack the patches `suppressed` names; a source that
+  failed says so in `sources`, and the report then has fewer hits. A pack
+  pinned from elsewhere is in it by what its `components.json` names.
 
 ## Native packages (policy, D7)
 
@@ -287,7 +338,7 @@ meets the unsigned packs below.
 
 - Out of scope for now: signatures on Oath's own packs and indexes
   (upstream sources are signature-checked at build time, see
-  builds.md), reaping unused realizations, peer discovery.
+  builds.md), peer discovery.
 
 ## Publish allowlist (built)
 

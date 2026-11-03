@@ -2,6 +2,7 @@ version = "5.4.1"
 license = "GPL-3.0-or-later"
 description = "GNU awk."
 home = "https://www.gnu.org/software/gawk/"
+category = "base"
 purl = "pkg:generic/gawk@5.4.1"
 build = ["gmp", "mpfr"]
 run = ["gmp", "mpfr"]

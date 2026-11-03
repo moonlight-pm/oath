@@ -5,6 +5,7 @@ version = "0.1.0"
 license = "MIT"
 description = "cell: run a container image over crun and pasta, with one uid and no daemon."
 home = "https://github.com/moonlight-pm/oath"
+category = "machines"
 tree = "apps/cell"
 build = ["go", "zstd"]
 run = ["crun", "passt", "certs", "zstd"]

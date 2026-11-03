@@ -2,6 +2,7 @@ version = "4.0.7"
 license = "GPL-2.0-or-later AND LGPL-2.1-or-later"
 description = "procps-ng: ps, pidof, free, top, kill, uptime, watch."
 home = "https://gitlab.com/procps-ng/procps"
+category = "base"
 purl = "pkg:generic/procps-ng@4.0.7"
 build = ["ncurses", "pkgconf"]
 run = ["ncurses"]

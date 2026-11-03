@@ -1,5 +1,6 @@
 # pkgs/libxcrypt for i386 (R29).
 i386 = "libxcrypt"
 description = "libcrypt.so.1 for i386 programs (lib32/): glibc's crypt(3) ABI (Steam)."
+category = "games"
 build = ["perl"]
 run = []

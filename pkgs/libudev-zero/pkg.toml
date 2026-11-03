@@ -2,6 +2,7 @@ version = "1.0.5"
 license = "ISC"
 description = "libudev-zero: libudev's API over sysfs and netlink, with no udev daemon (libinput, wlroots)."
 home = "https://github.com/illiliti/libudev-zero"
+category = "desk"
 purl = "pkg:github/illiliti/libudev-zero@1.0.5"
 build = []
 

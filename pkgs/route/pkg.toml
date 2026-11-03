@@ -5,6 +5,7 @@ version = "0.1.0"
 license = "MIT"
 description = "route: a small HTTP router by host and path, with nothing but Go's standard library."
 home = "https://github.com/moonlight-pm/oath"
+category = "server"
 tree = "apps/route"
 build = ["go"]
 run = []

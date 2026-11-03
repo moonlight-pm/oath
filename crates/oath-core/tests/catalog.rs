@@ -94,6 +94,7 @@ impl ApplyHooks for MemHooks {
                 needs: desired.needs.clone(),
                 description: desired.description.clone(),
                 home: desired.home.clone(),
+                category: desired.category.clone(),
                 source: desired.source.clone(),
                 components: Vec::new(),
                 advisories: None,

@@ -9,6 +9,7 @@ version = "26.13.0"
 license = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Artistic-2.0 AND Unicode-3.0 AND Zlib"
 description = "Node.js: the JavaScript runtime, with npm and npx."
 home = "https://nodejs.org/"
+category = "toolchain"
 purl = "pkg:generic/node@26.13.0"
 build = ["python"]
 run = ["gcc"]

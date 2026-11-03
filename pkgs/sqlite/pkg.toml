@@ -8,6 +8,7 @@ version = "3.54.1"
 license = "blessing"
 description = "SQLite, static: the library for programs that embed it, and the shell."
 home = "https://sqlite.org/"
+category = "base"
 purl = "pkg:generic/sqlite@3.54.1"
 build = ["zlib"]
 run = ["zlib"]

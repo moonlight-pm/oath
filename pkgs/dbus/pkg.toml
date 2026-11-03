@@ -2,6 +2,7 @@ version = "1.16.2"
 license = "(AFL-2.1 OR GPL-2.0-or-later) AND GPL-2.0-or-later AND MIT"
 description = "D-Bus: libdbus, shared, and the message bus: the desk's session bus and the system bus (BlueZ)."
 home = "https://www.freedesktop.org/wiki/Software/dbus/"
+category = "desk"
 purl = "pkg:generic/dbus@1.16.2"
 build = ["meson", "ninja", "python", "pkgconf", "expat"]
 run = ["expat"]

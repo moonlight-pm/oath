@@ -2,6 +2,7 @@ version = "10.5.2"
 license = "BSD-2-Clause"
 description = "dhcpcd, the DHCP client net:net0 runs."
 home = "https://github.com/NetworkConfiguration/dhcpcd"
+category = "network"
 purl = "pkg:github/NetworkConfiguration/dhcpcd@v10.5.2"
 build = []
 

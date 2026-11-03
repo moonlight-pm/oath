@@ -2,6 +2,7 @@ version = "1.3.3"
 license = "HPND-sell-variant"
 description = "libxshmfence, shared: the DRI3 fences Xwayland and GLX share."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libxshmfence@1.3.3"
 build = ["pkgconf", "xorgproto"]
 

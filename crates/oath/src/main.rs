@@ -14,7 +14,9 @@ mod install;
 mod live;
 mod login;
 mod mcp;
+mod audit;
 mod overlay;
+mod reap;
 mod update;
 
 #[derive(Parser)]
@@ -142,6 +144,25 @@ enum Cmd {
         #[arg(long, value_name = "pkg:NAME")]
         keep: Vec<String>,
     },
+    /// What this machine holds beyond what its packages prescribe (R62):
+    /// old versions in the store, filed plans, generations past the newest
+    /// five and those since boot. Without --confirm it says what holds each
+    /// version and what would go; PID 1 runs it once a boot.
+    Reap {
+        /// Seconds a tree no pin names yet may wait for one.
+        #[arg(long, default_value_t = oath_core::reap::ARRIVING_SECS)]
+        arriving: i64,
+        /// PID 1's run: a build it finds under `run/` was cut off by the
+        /// boot, so its leavings go too.
+        #[arg(long, hide = true)]
+        boot: bool,
+    },
+    /// The daily security audit's report, when a key in
+    /// `host:local.publishers` signed it (R48, R61): what it found for the
+    /// packages here (an id: one package). `--json` is the report itself.
+    Audit {
+        id: Option<String>,
+    },
     /// Put the system this machine runs on a disk (R43). Without a disk it
     /// lists the disks; with one it says what it would erase and write;
     /// with --confirm it wipes that disk, writes an ESP and a btrfs root
@@ -252,6 +273,8 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Verify { .. }) => "verify",
         Some(Cmd::Undo { .. }) => "undo",
         Some(Cmd::Update { .. }) => "update",
+        Some(Cmd::Audit { .. }) => "audit",
+        Some(Cmd::Reap { .. }) => "reap",
         Some(Cmd::Install { .. }) => "install",
         Some(Cmd::Log { .. }) => "log",
         Some(Cmd::Logs { .. }) => "logs",
@@ -650,6 +673,15 @@ fn run() -> oath_core::Result<i32> {
             &actor,
             update::Opts { confirm: cli.confirm, output, keep, reboot, esp, json: cli.json },
         ),
+        Some(Cmd::Reap { arriving, boot }) => reap::run(
+            &cli.root,
+            &cat,
+            reap::Opts { confirm: cli.confirm, arriving, boot, json: cli.json },
+        ),
+        Some(Cmd::Audit { id }) => {
+            let id = id.map(|i| i.parse()).transpose()?;
+            audit::run(&cat, id.as_ref(), cli.json)
+        }
         Some(Cmd::Install { disk }) => install::run(
             &cli.root,
             &cat,

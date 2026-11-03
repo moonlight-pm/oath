@@ -5,6 +5,7 @@ version = "0.20.2"
 license = "MIT"
 description = "wlroots, shared: the compositor library under rivulet (DRM, libinput, GLES2, Xwayland)."
 home = "https://gitlab.freedesktop.org/wlroots/wlroots"
+category = "desk"
 purl = "pkg:generic/wlroots@0.20.2"
 build = [
 	"meson", "ninja", "python", "pkgconf", "wayland", "wayland-protocols", "hwdata",

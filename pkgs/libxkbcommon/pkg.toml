@@ -3,6 +3,7 @@ version = "1.13.2"
 license = "MIT AND MIT-open-group AND HPND AND HPND-sell-variant AND X11 AND ISC"
 description = "libxkbcommon, shared: keymaps and key state, reading xkeyboard-config's data."
 home = "https://xkbcommon.org/"
+category = "desk"
 purl = "pkg:github/xkbcommon/libxkbcommon@xkbcommon-1.13.2"
 build = ["meson", "ninja", "python", "pkgconf", "bison", "xkeyboard-config"]
 run = ["xkeyboard-config", "libx11"]

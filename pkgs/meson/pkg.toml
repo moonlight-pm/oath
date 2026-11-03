@@ -2,6 +2,7 @@ version = "1.12.1"
 license = "Apache-2.0"
 description = "Meson. A build tool; not in the base image."
 home = "https://mesonbuild.com/"
+category = "toolchain"
 purl = "pkg:github/mesonbuild/meson@1.12.1"
 build = ["python"]
 

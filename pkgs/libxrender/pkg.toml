@@ -2,6 +2,7 @@ version = "0.9.13"
 license = "HPND-sell-variant"
 description = "libXrender, shared: the RENDER extension (libXrandr)."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libXrender@0.9.13"
 build = ["pkgconf", "xorgproto", "libx11"]
 run = ["libx11"]

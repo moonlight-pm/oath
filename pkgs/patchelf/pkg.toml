@@ -2,6 +2,7 @@ version = "0.19.2"
 license = "GPL-3.0-or-later"
 description = "patchelf. A build tool (pkg:rust points the vendor's binaries at /lib's loader); not in the base image."
 home = "https://github.com/NixOS/patchelf"
+category = "toolchain"
 build = []
 run = ["gcc"]
 

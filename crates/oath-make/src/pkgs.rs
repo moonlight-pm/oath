@@ -40,6 +40,10 @@ pub struct PkgToml {
     pub description: String,
     #[serde(default)]
     pub home: String,
+    /// What the package mostly is: one of [`CATEGORIES`], the most salient
+    /// one (`pkg.category`). No plan reads it, so it moves no hash.
+    #[serde(default)]
+    pub category: String,
     /// Package URL for components.json (`pkg:generic/bash@5.3`).
     #[serde(default)]
     pub purl: String,
@@ -149,6 +153,13 @@ pub struct LockEntry {
 }
 
 pub type Lock = BTreeMap<String, LockEntry>;
+
+/// The categories a package here may have (R63). `pkg.category` is any
+/// word; this list keeps Oath's own packages to a map a person can hold.
+pub const CATEGORIES: &[&str] = &[
+    "agents", "base", "browser", "desk", "games", "graphics", "kernel", "machines", "network",
+    "security", "server", "sound", "text", "toolchain", "x11",
+];
 
 pub fn pkgs_dir(repo: &Path) -> PathBuf {
     repo.join("pkgs")
@@ -1467,5 +1478,20 @@ mod tests {
             assert_eq!(p.build[..BASE.len()], *BASE, "pkgs/{name}");
         }
         assert_eq!(all["claude-code"].build, ["bash", "coreutils", "grep", "glibc"]);
+    }
+
+    #[test]
+    fn every_package_has_a_category() {
+        let all = load(&crate::util::repo_root()).unwrap();
+        for (name, p) in &all {
+            assert!(
+                CATEGORIES.contains(&p.category.as_str()),
+                "pkgs/{name}/pkg.toml: category {:?} is not one of {CATEGORIES:?}",
+                p.category
+            );
+        }
+        for (_, p) in oath_core::Profile::load("desk").unwrap().pinned_pkgs() {
+            assert!(p["category"].is_string(), "the desk profile pins a pack with no category: {p}");
+        }
     }
 }

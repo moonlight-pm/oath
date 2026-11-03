@@ -2,6 +2,7 @@ version = "1.2.2"
 license = "LGPL-2.1-or-later"
 description = "libsndfile, shared, PCM formats only (no external codecs): pw-cat's and libpulse's sound files."
 home = "https://libsndfile.github.io/libsndfile/"
+category = "sound"
 purl = "pkg:github/libsndfile/libsndfile@1.2.2"
 build = ["python"]
 

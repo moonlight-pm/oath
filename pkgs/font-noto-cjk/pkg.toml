@@ -5,6 +5,7 @@ version = "20240730"
 license = "OFL-1.1"
 description = "Noto Sans and Serif CJK: Chinese, Japanese and Korean."
 home = "https://github.com/notofonts/noto-cjk"
+category = "text"
 purl = "pkg:github/notofonts/noto-cjk@Serif2.003"
 build = []
 unsigned = "files of the Sans2.004 and Serif2.003 tags, which are lightweight and unsigned; upstream publishes no signature or checksum"

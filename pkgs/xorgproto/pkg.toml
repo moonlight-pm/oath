@@ -2,6 +2,7 @@ version = "2026.1"
 license = "MIT AND X11 AND HPND-sell-variant"
 description = "xorgproto: the X11 protocol headers."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/xorgproto@2026.1"
 build = ["pkgconf"]
 

@@ -10,8 +10,8 @@ realization (`hash`).
 **When not:** do not `ln` or `rm` in `/bin`. Do not exec from the
 store. Do not set `present=false` on the base's fixed packages
 (`pkg:glibc`, `pkg:bash`, `pkg:coreutils`, `pkg:util-linux`,
-`pkg:iproute2`, `pkg:dhcpcd`, `pkg:btrfs`, `pkg:oath`,
-`pkg:dropbear`); they cannot be removed either. Create a
+`pkg:iproute2`, `pkg:dhcpcd`, `pkg:btrfs`, `pkg:oath`, `pkg:openssh`,
+`pkg:zsh`); they cannot be removed either. Create a
 `pkg` object with `oath new pkg:<name>` (`present` defaults to true)
 and remove one with `oath rm`
 (both take effect at `oath apply`); `oath build` creates the product's
@@ -47,6 +47,10 @@ object, and an install overlay can add others.
   not rewrite other objects.
 - `description` — short prose. Empty means none.
 - `home` — HTTPS URL of the source or project page. Not `url`.
+- `category` — one word for what the package mostly is. Oath's own use
+  `agents`, `base`, `browser`, `desk`, `games`, `graphics`, `kernel`,
+  `machines`, `network`, `security`, `server`, `sound`, `text`,
+  `toolchain` and `x11`.
 - `source` — optional: where the pinned tree was built from (R47),
   `{repo, commit, branch, dirty, built_by, built_at}`: `repo` as
   `https://<host>/<owner>/<name>` (no `.git`), the full 40-hex
@@ -54,9 +58,10 @@ object, and an install overlay can add others.
   changes not committed), `built_by` (`user@host`), `built_at` (RFC
   3339 UTC). The tool that pins a tree sets it with the hash, in one
   apply. Not part of any hash and never a reason to move or restart
-  anything: an apply that changes only `source`, `description` or
-  `home` records them and touches no store, link or service. `null` is
-  none. `oath update` writes the release's (or none).
+  anything: an apply that changes only `source`, `description`, `home`
+  or `category` records them and touches no store, link or service.
+  `null` is none. `oath update` writes the release's (or none), and
+  its `description`, `home` and `category`.
 
 Pack tree (not desired; part of the hash): `components.json` lists
 upstream `{name, version, purl}` (optional `cpe`). Missing means
@@ -75,10 +80,11 @@ The slot has `live` → `<hash>` and compatibility links (`bin` →
 `live/bin`, …) that are not part of the hash.
 
 Actual also has `links` (basenames in `/bin`), `removable`, live
-`hash`, `components`, optional `advisories`, `realizations` (other
-trees for this name), `verified` (`ok`, `at`; `got` when the tree
-no longer hashes to `hash`), and the applied `url`, `needs`,
-`description`, `home` and `source`.
+`hash`, `components`, optional `advisories`, `realizations` (the trees
+for this name; `oath reap` says what holds each, and removes one nothing
+holds), `verified` (`ok`, `at`; `got` when the tree no longer hashes to
+`hash`), and the applied `url`, `needs`, `description`, `home`, `category`
+and `source`.
 
 An **overlay** is a present package whose live hash is not the pin of
 the release this machine runs (`/oath/output.json`): `oath get`

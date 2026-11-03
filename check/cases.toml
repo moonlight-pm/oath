@@ -478,6 +478,21 @@ steps = [
 ]
 
 [[case]]
+name = "reap-what-no-package-prescribes"
+about = "An Oath machine holds what its packages prescribe (R62): PID 1 reaps once a boot; a tree no pin names waits a day for one and then goes, while a version a generation still pins stays for undo. A boot leaves the newest five generations, and undo says so when it reaches past them."
+steps = [
+  { run = "for i in $(seq 1 60); do oath logs -n 1000 | grep -q 'reap: exit' && break; sleep 1; done; oath logs -n 1000 | grep 'reap: exit'", expect = ["reap: exit Code(0)"] },
+  { run = "rm -rf /tmp/r && mkdir -p /tmp/r/bin && printf '#!/bin/sh\\necho one\\n' >/tmp/r/bin/reapme && chmod 755 /tmp/r/bin/reapme && sudo oath store pkg:reapme /tmp/r >/tmp/r.one && oath --json reap | grep -A8 'pkg:reapme'", expect = ["arrived"] },
+  { run = "sudo oath --confirm reap --arriving 0 && test ! -e /oath/store/pkg/reapme && echo GONE", expect = ["reaped 1 versions", "GONE"] },
+  { run = "sudo oath store pkg:reapme /tmp/r >/tmp/r.one && sudo oath new pkg:reapme hash=$(cut -d' ' -f2 /tmp/r.one) && sudo oath apply pkg:reapme && sed -i s/one/two/ /tmp/r/bin/reapme && sudo oath store pkg:reapme /tmp/r >/tmp/r.two && sudo oath set pkg:reapme hash=$(cut -d' ' -f2 /tmp/r.two) && sudo oath apply pkg:reapme && sudo oath --confirm reap --arriving 0 && reapme && oath --json reap | grep -c 'generation:'", expect = ["two"] },
+  { run = "test -d /oath/store/pkg/reapme/$(cut -d' ' -f2 /tmp/r.one) && sudo oath undo && reapme", expect = ["undid to generation", "one"] },
+  { run = "for i in 1 2 3 4 5 6; do sudo oath set host:local hostname=reap$i && sudo oath apply host:local >/dev/null; done; ls /oath/run/fs | grep -c '@gen-'", expect = [] },
+  { reboot = "catalog" },
+  { run = "for i in $(seq 1 60); do oath logs -n 1000 | grep -q 'reap: exit' && break; sleep 1; done; echo GENS=$(ls /oath/run/fs | grep -c '@gen-')", expect = ["GENS=5"] },
+  { run = "for i in 1 2 3 4 5 6 7 8; do sudo oath undo || break; done 2>&1", expect = ["past what undo can reach"] },
+]
+
+[[case]]
 name = "store-damage-is-caught"
 about = "A package tree changed behind the catalog's back is reported damaged, shown in INDEX, and not linked again."
 steps = [

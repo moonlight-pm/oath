@@ -2,6 +2,7 @@ version = "1.0.1"
 license = "X11"
 description = "xcb-util-errors, shared: X11 error names in wlroots' logs."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/xcb-util-errors@1.0.1"
 build = ["pkgconf", "m4", "python", "xcb-proto", "xorgproto", "libxcb"]
 run = ["libxcb"]

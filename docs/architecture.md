@@ -104,7 +104,8 @@ btrfs
                            before (`oath logs plan:<name>`)
   .lock                    exclusive flock held by catalog writers
   .gens/<n>/objects/       copy snapshots (off btrfs or under --root only)
-  store/pkg/<name>/<hash>/ package trees; `live` → the linked hash
+  store/pkg/<name>/<hash>/ package trees; `live` → the linked hash; only
+                           what something names stays (`oath reap`, R62)
   store/plan/<name>/<hash>/plan.plan   plans; the image files each recipe's (R23)
   store/adv/<name>/<hash>.json   advisories
   ssh/ssh_host_ed25519_key sshd's host key (+ .pub); host_ed25519 is
@@ -218,7 +219,7 @@ cargo make publish [--dest <dir>] [--output <id>]
   to the origin only from a clean master equal to origin/master after a
   fetch, with an output built clean at a commit master has (R47); then
   every locked pack and every profile-named one, with its plan, source
-  pack and advisories, then INDEX.md (R25): without --dest, curl
+  pack and advisories, then index.json and INDEX.md (R25): without --dest, curl
   --aws-sigv4 lists the R2 bucket oath-store and puts what it lacks,
   key from ~/.config/oath/origin.env; machines read it at
   https://store.oath.moonlight.pm (host:local.origins). Then the newest

@@ -2,6 +2,7 @@ version = "1.18.6"
 license = "LGPL-2.1-only OR MPL-1.1"
 description = "cairo, shared: image surfaces with FreeType and fontconfig (pango, CEF)."
 home = "https://www.cairographics.org/"
+category = "graphics"
 purl = "pkg:generic/cairo@1.18.6"
 build = ["meson", "ninja", "python", "pkgconf", "pixman", "freetype", "fontconfig"]
 run = ["pixman", "freetype", "fontconfig"]

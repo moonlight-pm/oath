@@ -2,6 +2,7 @@ version = "1.17.0"
 license = "X11"
 description = "libxcb, shared, with every extension library (composite, glx, dri3, present, render, res, xfixes, ...)."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libxcb@1.17.0"
 build = ["pkgconf", "python", "xcb-proto", "libxau", "xorgproto"]
 run = ["libxau"]

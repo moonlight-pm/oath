@@ -10,6 +10,7 @@ version = "1.99.1"
 license = "(MIT OR Apache-2.0) AND Apache-2.0 WITH LLVM-exception AND MIT"
 description = "Rust: rustc, cargo and the glibc and UEFI standard libraries."
 home = "https://www.rust-lang.org/"
+category = "toolchain"
 purl = "pkg:generic/rust@1.99.1"
 build = ["patchelf", "zlib"]
 run = ["gcc", "zlib"]

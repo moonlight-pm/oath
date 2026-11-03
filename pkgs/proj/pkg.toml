@@ -5,6 +5,7 @@ version = "9.9.0"
 license = "MIT"
 description = "PROJ: cartographic projections and coordinate transformations, for PostGIS."
 home = "https://proj.org/"
+category = "server"
 purl = "pkg:generic/proj@9.9.0"
 build = ["cmake", "ninja", "sqlite"]
 run = ["gcc"]

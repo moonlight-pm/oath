@@ -2,6 +2,7 @@ version = "2.8.1"
 license = "GPL-3.0-or-later"
 description = "GNU patch."
 home = "https://www.gnu.org/software/patch/"
+category = "base"
 purl = "pkg:generic/patch@2.8.1"
 build = []
 

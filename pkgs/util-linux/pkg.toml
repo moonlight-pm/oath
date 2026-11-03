@@ -2,6 +2,7 @@ version = "2.42.4"
 license = "GPL-2.0-or-later AND LGPL-2.1-or-later AND BSD-3-Clause"
 description = "Disk tools (sfdisk, wipefs, blkid, lsblk) and libuuid, libblkid, libfdisk, libmount."
 home = "https://github.com/util-linux/util-linux"
+category = "base"
 build = ["pkgconf"]
 
 [[source]]

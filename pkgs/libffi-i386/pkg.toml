@@ -1,5 +1,6 @@
 # pkgs/libffi for i386 (R29).
 i386 = "libffi"
 description = "libffi, shared, for i386 programs (lib32/): the Wayland libraries' calls."
+category = "games"
 build = []
 run = []

@@ -2,6 +2,7 @@ version = "7.2.0"
 license = "GPL-2.0-or-later"
 description = "iproute2: ip, ss, tc and bridge."
 home = "https://wiki.linuxfoundation.org/networking/iproute2"
+category = "network"
 purl = "pkg:generic/iproute2@7.2.0"
 build = ["bison", "flex", "pkgconf"]
 

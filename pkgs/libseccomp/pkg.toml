@@ -4,6 +4,7 @@ version = "2.6.1"
 license = "LGPL-2.1-only"
 description = "libseccomp: the library behind seccomp syscall filters."
 home = "https://github.com/seccomp/libseccomp"
+category = "machines"
 purl = "pkg:github/seccomp/libseccomp@v2.6.1"
 build = ["gperf", "pkgconf"]
 run = []

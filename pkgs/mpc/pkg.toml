@@ -2,6 +2,7 @@ version = "1.4.1"
 license = "LGPL-3.0-or-later"
 description = "MPC, multiple-precision complex arithmetic (GCC)."
 home = "https://www.multiprecision.org/mpc/"
+category = "toolchain"
 purl = "pkg:generic/mpc@1.4.1"
 build = ["gmp", "mpfr"]
 run = ["gmp", "mpfr"]

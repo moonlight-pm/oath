@@ -2,6 +2,7 @@ version = "0.15.7"
 license = "LGPL-2.1-or-later AND MIT AND LicenseRef-Boehm-GC"
 description = "Userspace RCU, shared: BIND's read-copy-update."
 home = "https://liburcu.org/"
+category = "network"
 purl = "pkg:generic/userspace-rcu@0.15.7"
 build = []
 

@@ -2,6 +2,7 @@ version = "2.1.13"
 license = "BSD-3-Clause AND ISC AND MIT"
 description = "libevent, shared, without OpenSSL: tmux's event loop."
 home = "https://libevent.org/"
+category = "base"
 purl = "pkg:github/libevent/libevent@release-2.1.13-stable"
 build = []
 

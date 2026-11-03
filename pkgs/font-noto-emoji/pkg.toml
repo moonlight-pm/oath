@@ -4,6 +4,7 @@ version = "2.057"
 license = "OFL-1.1"
 description = "Noto Color Emoji."
 home = "https://github.com/googlefonts/noto-emoji"
+category = "text"
 purl = "pkg:github/googlefonts/noto-emoji@v2026-09-24-unicode18_0"
 build = []
 unsigned = "a file of the v2026-09-24-unicode18_0 tag, which is lightweight and unsigned; the font is not a release asset and has no signature"

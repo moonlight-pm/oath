@@ -9,6 +9,7 @@ version = "0.35.0"
 license = "Apache-2.0 AND AGPL-3.0-only AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC AND CC0-1.0"
 description = "Blocky: a DNS proxy and ad blocker for the local network."
 home = "https://0xerr0r.github.io/blocky/"
+category = "server"
 purl = "pkg:golang/github.com/0xERR0R/blocky@0.35.0"
 build = ["go"]
 run = ["certs"]

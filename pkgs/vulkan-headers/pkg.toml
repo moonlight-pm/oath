@@ -4,6 +4,7 @@ version = "1.4.365"
 license = "Apache-2.0 OR MIT"
 description = "Vulkan-Headers: the Vulkan API headers and their CMake package. A build pack; not in an image."
 home = "https://github.com/KhronosGroup/Vulkan-Headers"
+category = "graphics"
 purl = "pkg:github/KhronosGroup/Vulkan-Headers@v1.4.365"
 build = ["cmake"]
 

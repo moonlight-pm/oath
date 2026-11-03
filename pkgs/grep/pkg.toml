@@ -2,6 +2,7 @@ version = "3.12"
 license = "GPL-3.0-or-later"
 description = "GNU grep."
 home = "https://www.gnu.org/software/grep/"
+category = "base"
 purl = "pkg:generic/grep@3.12"
 build = []
 

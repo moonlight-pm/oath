@@ -226,6 +226,9 @@ enum Cmd {
         /// what is behind and writes nothing.
         #[arg(long)]
         upstream: bool,
+        /// Only put `build/audit/latest.json` on the default origin, signed.
+        #[arg(long)]
+        publish: bool,
     },
     /// Rehearse a machine's own update (`oath update`, R38) in QEMU:
     /// install this older output, serve the newer one's signed release and
@@ -384,8 +387,8 @@ fn real() -> Result<()> {
             pack::publish_store(&root, &out, dest.as_deref(), output.as_deref())?
         }
         Cmd::Advisories { name } => advisories::fill_advisories(&root, name.as_deref())?,
-        Cmd::Audit { name, offline, upstream } => {
-            audit::run(&root, &audit::Opts { name, offline, upstream })?
+        Cmd::Audit { name, offline, upstream, publish } => {
+            audit::run(&root, &audit::Opts { name, offline, upstream, publish })?
         }
         Cmd::Update { qemu, output, unchecked, oath_first, build } => {
             let opts = update::Opts { qemu, output, unchecked, oath_first, build };

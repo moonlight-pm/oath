@@ -2,6 +2,7 @@ version = "2.15.0"
 license = "FTL OR GPL-2.0-or-later"
 description = "FreeType, shared: font rasterizing for fontconfig, cairo, pango and CEF."
 home = "https://freetype.org/"
+category = "text"
 purl = "pkg:generic/freetype@2.15.0"
 build = ["meson", "ninja", "python", "pkgconf", "zlib"]
 run = ["zlib"]

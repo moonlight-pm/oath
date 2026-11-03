@@ -4,4 +4,5 @@ version = "2.44"
 license = "LGPL-2.1-or-later"
 description = "Compiled locales C.UTF-8 and en_US.UTF-8, from glibc's sources."
 home = "https://www.gnu.org/software/libc/"
+category = "base"
 build = []

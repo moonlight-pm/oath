@@ -31,6 +31,8 @@ for build and install tooling on the build host.
 | `oath keep` | Keep an apply that is on probation. Run it from a new SSH session |
 | `oath undo` | Put back what the last apply changed (repeat to go further back) |
 | `oath verify [pkg:…]` | Hash linked package trees again against their pins; exit 1 if one changed on disk (`-q`: only damaged ones and the count) |
+| `oath audit [pkg:…]` | The daily security audit's findings for what is here, when a key this machine trusts signed them; `--json` is the report |
+| `oath reap` | What holds each version in the store and what would go; `sudo oath reap --confirm` removes it, and each boot does |
 | `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N`, `keep:N`. `-n N` for the last N |
 | `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50; `--json` gives `{id, path, lines}` |
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |

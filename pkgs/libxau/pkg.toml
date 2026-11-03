@@ -2,6 +2,7 @@ version = "1.0.12"
 license = "MIT-open-group"
 description = "libXau, shared: X authorization records."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libXau@1.0.12"
 build = ["pkgconf", "xorgproto"]
 

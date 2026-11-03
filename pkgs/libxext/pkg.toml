@@ -2,6 +2,7 @@ version = "1.3.7"
 license = "MIT AND MIT-open-group AND HPND AND X11"
 description = "libXext, shared: X extension calls (Mesa's GLX)."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libXext@1.3.7"
 build = ["pkgconf", "xorgproto", "libx11"]
 run = ["libx11"]

@@ -2,6 +2,7 @@ version = "1.17.0"
 license = "X11"
 description = "xcb-proto: the X protocol in XML and the xcbgen module that generates libxcb. A build tool; not in the base image."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/xcb-proto@1.17.0"
 build = ["pkgconf", "python"]
 

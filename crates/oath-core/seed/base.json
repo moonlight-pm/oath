@@ -209,6 +209,7 @@
     },
     "pkg:oath": {
       "present": true,
+      "category": "base",
       "description": "Catalog CLI \u2014 the only admin surface.",
       "home": "https://github.com/moonlight-pm/oath"
     },

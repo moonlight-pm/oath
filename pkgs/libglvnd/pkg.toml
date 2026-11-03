@@ -8,6 +8,7 @@ version = "1.7.0"
 license = "MIT AND Apache-2.0"
 description = "libglvnd: libEGL, libGL, libGLX, libOpenGL and libGLESv2, dispatching to Mesa or NVIDIA."
 home = "https://gitlab.freedesktop.org/glvnd/libglvnd"
+category = "graphics"
 purl = "pkg:generic/libglvnd@1.7.0"
 build = ["meson", "ninja", "python", "pkgconf", "xorgproto", "libx11", "libxext"]
 run = ["libx11", "libxext"]

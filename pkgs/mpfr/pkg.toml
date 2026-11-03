@@ -2,6 +2,7 @@ version = "4.2.2"
 license = "LGPL-3.0-or-later"
 description = "MPFR, multiple-precision floating point (GCC, MPC, gawk)."
 home = "https://www.mpfr.org/"
+category = "toolchain"
 purl = "pkg:generic/mpfr@4.2.2"
 build = ["gmp"]
 run = ["gmp"]

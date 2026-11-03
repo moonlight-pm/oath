@@ -4,6 +4,7 @@ version = "1.4.365"
 license = "Apache-2.0"
 description = "vulkaninfo: the Vulkan devices, drivers, layers and surfaces this machine has."
 home = "https://github.com/KhronosGroup/Vulkan-Tools"
+category = "graphics"
 purl = "pkg:github/KhronosGroup/Vulkan-Tools@v1.4.365"
 build = ["cmake", "pkgconf", "vulkan-headers", "xorgproto", "libx11", "libxcb", "wayland"]
 run = ["vulkan-loader", "libx11", "libxcb", "wayland", "gcc"]

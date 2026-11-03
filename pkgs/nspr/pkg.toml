@@ -2,6 +2,7 @@ version = "4.40"
 license = "MPL-2.0"
 description = "NSPR, shared: the portable runtime under NSS (CEF)."
 home = "https://firefox-source-docs.mozilla.org/nspr/"
+category = "browser"
 purl = "pkg:generic/nspr@4.40"
 build = ["perl"]
 

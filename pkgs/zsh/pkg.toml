@@ -2,6 +2,7 @@ version = "5.9.2"
 license = "MIT-Modern-Variant"
 description = "zsh, home's login shell."
 home = "https://www.zsh.org/"
+category = "base"
 purl = "pkg:generic/zsh@5.9.2"
 build = ["ncurses"]
 run = ["ncurses"]

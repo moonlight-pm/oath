@@ -2,6 +2,7 @@ version = "4.0.3"
 license = "Apache-2.0"
 description = "OpenSSL, shared: libcrypto and libssl (BIND's), and the openssl tool."
 home = "https://openssl-library.org/"
+category = "security"
 purl = "pkg:github/openssl/openssl@openssl-4.0.3"
 build = ["perl"]
 

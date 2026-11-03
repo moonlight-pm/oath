@@ -2,6 +2,7 @@ version = "2.0.9"
 license = "MIT AND X11 AND HPND-sell-variant AND BSD-2-Clause"
 description = "libXfont2, shared, without FreeType: Xwayland's built-in fonts."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libXfont2@2.0.9"
 build = ["pkgconf", "xorgproto", "xtrans", "libfontenc", "zlib"]
 run = ["libfontenc", "zlib"]

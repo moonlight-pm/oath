@@ -62,15 +62,6 @@ pub struct Opts {
 
 pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32> {
     let host = cat.get(&ObjectId::new("host", "local"))?.desired;
-    let list = |k: &str| -> Vec<String> {
-        host[k]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(|v| v.as_str().map(String::from))
-            .collect()
-    };
-    let (origins, trusted) = (list("origins"), list("publishers"));
     let profile = host["profile"].as_str().unwrap_or("").to_string();
     if profile.is_empty() {
         return Err(Error::hint(
@@ -78,16 +69,7 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
             "oath set host:local profile=<the profile it was installed from> (oath schema host)",
         ));
     }
-    if trusted.is_empty() {
-        return Err(Error::hint(
-            "host:local.publishers is empty: this machine trusts no build host's outputs",
-            "a person adds a build host's key: oath set host:local publishers='[\"ssh-ed25519 \
-             AAAA… oath@buccina\"]' (R38)",
-        ));
-    }
-    if origins.is_empty() {
-        return Err(Error::hint("host:local names no origins", "oath schema host"));
-    }
+    let (origins, trusted) = trust(cat)?;
     let is_root = unsafe { libc::geteuid() } == 0;
     if opts.confirm && !is_root {
         return Err(Error::hint("an update writes the boot files", "sudo oath update --confirm"));
@@ -103,6 +85,7 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         std::env::temp_dir().join(format!("oath-update-{}", unsafe { libc::getuid() }))
     };
     fs::create_dir_all(&work)?;
+    let _work = Scratch(work.clone());
 
     // 1. The release.
     let name = opts.output.clone().unwrap_or_else(|| profile.clone());
@@ -194,7 +177,6 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
                 release.output
             ),
         );
-        let _ = fs::remove_dir_all(&work);
         return Ok(0);
     }
 
@@ -225,11 +207,23 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         .filter(|id| !moves.iter().any(|m| m.id() == *id))
         .filter(|id| !plans.iter().any(|(n, ..)| *id == format!("plan:{n}")))
         .partition(|id| id.starts_with("svc:") && ran.is_new(id, false));
+    // What the profile dropped since the release this machine runs leaves
+    // with it (R62).
+    let seeded = up::seed_ids(&bundle)?;
+    let gone: Vec<String> = ran
+        .seed()
+        .filter(|id| id.starts_with("svc:") && !seeded.contains(id) && have_ids.contains(id))
+        .filter(|id| !opts.keep.contains(id))
+        .cloned()
+        .collect();
     for m in &moves {
         eprintln!("  {}", m.describe());
     }
     for id in &svcs {
         eprintln!("  {id} is made (new to the profile)");
+    }
+    for id in &gone {
+        eprintln!("  {id} leaves: this release no longer has it; `--keep {id}` keeps it");
     }
     let docs = moved_docs(cat, &moves)?;
     check_moved_needs(&docs)?;
@@ -248,17 +242,12 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     if !opts.confirm {
         finish(
             &opts,
-            json!({
-                "output": release.output,
-                "from": from,
-                "moves": moves.iter().map(Move::describe).collect::<Vec<_>>(),
-                "made": svcs,
-                "left": missing,
-            }),
+            preview(root, cat, &moves, &machine, &output, current.as_ref(), &release, from)?
+                .merge(json!({ "made": svcs, "gone": gone, "left": missing })),
             &format!(
                 "{} packages move from {from} to output {}; `sudo oath update --confirm` \
                  moves this machine (add --reboot to boot it)",
-                moves.iter().filter(|m| m.fields().is_some()).count(),
+                moves.iter().filter(|m| m.kind() == "drop" || m.fields().is_some()).count(),
                 release.output
             ),
         );
@@ -296,14 +285,21 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     if !is_mounted(&mnt) {
         sh(Command::new(find_bin("mount")).args(["-t", "vfat", &esp_dev]).arg(&mnt))?;
     }
-    let steps =
-        Steps { moves: &moves, svcs: &svcs, plans: &plans, built: &built, reboot: opts.reboot };
+    let steps = Steps {
+        moves: &moves,
+        svcs: &svcs,
+        gone: &gone,
+        plans: &plans,
+        built: &built,
+        reboot: opts.reboot,
+    };
     let result = update(root, cat, actor, &bundle, &mnt, &root_dev, &steps);
     let _ = Command::new("sync").status();
-    let _ = Command::new(find_bin("umount")).arg(&mnt).status();
+    if Command::new(find_bin("umount")).arg(&mnt).status().is_ok_and(|s| s.success()) {
+        let _ = fs::remove_dir(&mnt);
+    }
     let generation = result?;
     oath_core::write_json(&root.join(up::RECORD), &release)?;
-    let _ = fs::remove_dir_all(&work);
     let packages = match generation {
         0 => "no package moved".to_string(),
         g => format!("its packages are generation {g}"),
@@ -329,12 +325,163 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     Ok(0)
 }
 
+/// A directory removed when the run ends, however it ends: nothing of an
+/// update stays behind.
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+/// What `oath --json update` says without `--confirm`: each move as fields,
+/// with the sentence a person reads as `text`; whether it takes a reboot to
+/// run (its kernel or PID 1 moved) and whether sshd's program moves, which
+/// puts the apply on probation; and the signed release.
+#[allow(clippy::too_many_arguments)]
+fn preview(
+    root: &Path,
+    cat: &Catalog,
+    moves: &[Move],
+    machine: &BTreeMap<String, Value>,
+    output: &up::Output,
+    current: Option<&Release>,
+    release: &Release,
+    from: &str,
+) -> Result<Preview> {
+    let services = services_of(cat)?;
+    let pin = |name: &str| {
+        machine.get(name).and_then(|d| d["hash"].as_str()).filter(|h| !h.is_empty())
+    };
+    let moved = |m: &Move| m.to().is_some_and(|to| pin(m.name()) != Some(to));
+    let reboot = up::takes_reboot(current, release);
+    let probation = moves.iter().any(|m| {
+        let runs_sshd = services
+            .get(m.name())
+            .is_some_and(|s| s.iter().any(|v| v["id"] == json!("svc:sshd")));
+        runs_sshd && moved(m)
+    });
+    let list: Vec<Value> = moves
+        .iter()
+        .map(|m| {
+            let name = m.name();
+            let doc = machine.get(name);
+            let side = |hash: Option<&str>, version: Option<String>, source: Option<&Value>| {
+                hash.map(|h| {
+                    let mut v = json!({ "hash": h });
+                    if let Some(ver) = version {
+                        v["version"] = json!(ver);
+                    }
+                    if let Some(s) = source.filter(|s| !s.is_null()) {
+                        v["source"] = s.clone();
+                    }
+                    v
+                })
+            };
+            let to = m.to().or(pin(name));
+            let doc_to = output.pins.iter().find(|(n, _, _)| n == name).map(|(_, _, d)| d);
+            let version_to = release
+                .packs
+                .get(name)
+                .map(|p| p.version.clone())
+                .filter(|v| !v.is_empty())
+                .or_else(|| output.versions.get(name).cloned())
+                .or_else(|| to.and_then(|h| version_in_store(root, name, h)));
+            json!({
+                "id": m.id(),
+                "move": m.kind(),
+                "from": side(
+                    pin(name),
+                    pin(name).and_then(|h| version_in_store(root, name, h)),
+                    doc.and_then(|d| d.get("source")),
+                ),
+                "to": side(to, version_to, doc_to.and_then(|d| d.get("source"))),
+                "overlay": m.replaces_overlay(),
+                "services": services.get(name).cloned().unwrap_or_default(),
+                "text": m.describe(),
+            })
+        })
+        .collect();
+    Ok(Preview(json!({
+        "output": release.output,
+        "from": from,
+        "moves": list,
+        "reboot": reboot,
+        "probation": probation,
+        "release": release,
+    })))
+}
+
+/// The preview's document, to which the caller adds what it found.
+struct Preview(Value);
+
+impl Preview {
+    fn merge(self, more: Value) -> Value {
+        let mut v = self.0;
+        if let (Some(a), Value::Object(b)) = (v.as_object_mut(), more) {
+            a.extend(b);
+        }
+        v
+    }
+}
+
+fn version_in_store(root: &Path, name: &str, hash: &str) -> Option<String> {
+    let comps = oath_core::read_components(&oath_core::realization_dir(root, name, hash))?;
+    oath_core::own_version(&comps, name)
+}
+
+/// The running services, by the package each runs from: `{id, seat}`. One
+/// with a seat keeps its program when its package moves, until it next
+/// starts (R42).
+fn services_of(cat: &Catalog) -> Result<BTreeMap<String, Vec<Value>>> {
+    let mut out: BTreeMap<String, Vec<Value>> = BTreeMap::new();
+    for id in cat.ls(Some("svc"))? {
+        let o = cat.get(&id)?;
+        if let Some(pkg) = o.actual["pkg"]["id"].as_str().and_then(|p| p.strip_prefix("pkg:")) {
+            let seat = o.desired.get("seat").is_some_and(|s| !s.is_null());
+            out.entry(pkg.to_string())
+                .or_default()
+                .push(json!({ "id": id.to_string(), "seat": seat }));
+        }
+    }
+    Ok(out)
+}
+
+/// `host:local`'s origins, and the keys it trusts to have signed what they
+/// serve (R38).
+pub(crate) fn trust(cat: &Catalog) -> Result<(Vec<String>, Vec<String>)> {
+    let host = cat.get(&ObjectId::new("host", "local"))?.desired;
+    let list = |k: &str| -> Vec<String> {
+        host[k]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|v| v.as_str().map(String::from))
+            .collect()
+    };
+    let (origins, trusted) = (list("origins"), list("publishers"));
+    if trusted.is_empty() {
+        return Err(Error::hint(
+            "host:local.publishers is empty: this machine trusts no build host's outputs",
+            "a person adds a build host's key: oath set host:local publishers='[\"ssh-ed25519 \
+             AAAA… oath@buccina\"]' (R38)",
+        ));
+    }
+    if origins.is_empty() {
+        return Err(Error::hint("host:local names no origins", "oath schema host"));
+    }
+    Ok((origins, trusted))
+}
+
 /// What steps 4–6 move: the packages, the plans, the recipes built for
 /// them, and whether a reboot follows.
 struct Steps<'a> {
     moves: &'a [Move],
     /// Services new to the profile, made from the output's seed.
     svcs: &'a [String],
+    /// Services the profile dropped.
+    gone: &'a [String],
     plans: &'a [(String, String, String, PathBuf)],
     built: &'a [oath_core::BuildReport],
     reboot: bool,
@@ -350,7 +497,7 @@ fn update(
     root_dev: &str,
     steps: &Steps,
 ) -> Result<u64> {
-    let Steps { moves, svcs, plans, built, reboot } = *steps;
+    let Steps { moves, svcs, gone, plans, built, reboot } = *steps;
     let mut ids = esp::existing_archive_ids(
         &esp::list_archive_confs(&mnt.join("loader/entries")).unwrap_or_default(),
     );
@@ -388,6 +535,14 @@ fn update(
         oath_core::record_build(root, r)?;
     }
     let mut changed = Vec::new();
+    for id in moves.iter().filter(|m| m.kind() == "drop").map(Move::id).chain(gone.iter().cloned()) {
+        let id: ObjectId = id.parse()?;
+        // One a newer base fixes, or that a person's overlay made fixed.
+        match cat.remove_object(&id) {
+            Ok(()) => changed.push(id),
+            Err(e) => eprintln!("{id} stays: {e}"),
+        }
+    }
     for m in moves {
         let Some(fields) = m.fields().and_then(Value::as_object) else { continue };
         let id: ObjectId = m.id().parse()?;
@@ -578,28 +733,52 @@ fn fetch_release(
 
 /// The bundle, checked against the release and unpacked into `work/bundle`.
 fn fetch_bundle(origin: &str, r: &Release, work: &Path) -> Result<PathBuf> {
-    let tar = work.join("update.tar");
-    fetch(&format!("{origin}/{}", up::bundle_key(&r.output)), &tar)?;
-    let size = fs::metadata(&tar)?.len();
-    let hash = oath_core::file_hash(&fs::read(&tar)?);
-    if size != r.bundle.size || hash != r.bundle.hash {
-        return Err(Error::security(
-            format!(
-                "{} is not the bundle the release signed ({hash}, {size} bytes)",
-                up::bundle_key(&r.output)
-            ),
-            "the origin serves another file; try again, or another origin",
-        ));
+    let tar = bundle_cache().unwrap_or_else(|| work.join("update.tar"));
+    let is_it = |bytes: &[u8]| {
+        bytes.len() as u64 == r.bundle.size && oath_core::file_hash(bytes) == r.bundle.hash
+    };
+    if !fs::read(&tar).is_ok_and(|b| is_it(&b)) {
+        let part = tar.with_extension("part");
+        fetch(&format!("{origin}/{}", up::bundle_key(&r.output)), &part)?;
+        let bytes = fs::read(&part)?;
+        if !is_it(&bytes) {
+            let _ = fs::remove_file(&part);
+            return Err(Error::security(
+                format!(
+                    "{} is not the bundle the release signed ({}, {} bytes)",
+                    up::bundle_key(&r.output),
+                    oath_core::file_hash(&bytes),
+                    bytes.len()
+                ),
+                "the origin serves another file; try again, or another origin",
+            ));
+        }
+        fs::rename(&part, &tar)?;
     }
     let dir = work.join("bundle");
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir)?;
     sh(Command::new(find_bin("tar")).arg("-xf").arg(&tar).arg("-C").arg(&dir))?;
-    let _ = fs::remove_file(&tar);
     Ok(dir)
 }
 
-fn fetch(url: &str, dest: &Path) -> Result<()> {
+/// Where a person's previews keep the last bundle, checked against the
+/// release each time: a preview runs again and the file is tens of MB. Root
+/// keeps none under `/oath`, which holds only what a package prescribes.
+fn bundle_cache() -> Option<PathBuf> {
+    if unsafe { libc::geteuid() } == 0 {
+        return None;
+    }
+    let dir = std::env::var_os("XDG_CACHE_HOME")
+        .filter(|d| !d.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))?
+        .join("oath");
+    fs::create_dir_all(&dir).ok()?;
+    Some(dir.join("update.tar"))
+}
+
+pub(crate) fn fetch(url: &str, dest: &Path) -> Result<()> {
     let out = Command::new(find_bin("curl"))
         .args(["-fsSL", "--retry", "2", "-o"])
         .arg(dest)
@@ -671,7 +850,7 @@ fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
 /// this machine has.
 fn keep_names(machine: &BTreeMap<String, Value>, keep: &[String]) -> Result<BTreeSet<String>> {
     let mut out = BTreeSet::new();
-    for k in keep {
+    for k in keep.iter().filter(|k| !k.starts_with("svc:")) {
         let name = k.strip_prefix("pkg:").unwrap_or(k);
         if !machine.contains_key(name) {
             return Err(Error::hint(
@@ -697,6 +876,10 @@ fn moved_docs(cat: &Catalog, moves: &[Move]) -> Result<BTreeMap<String, Value>> 
         docs.insert(id.to_string(), d);
     }
     for m in moves {
+        if m.kind() == "drop" {
+            docs.remove(&m.id());
+            continue;
+        }
         let Some(fields) = m.fields().and_then(Value::as_object) else { continue };
         let d = docs.entry(m.id()).or_insert_with(|| json!({}));
         for (k, v) in fields {

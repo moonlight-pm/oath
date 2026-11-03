@@ -22,8 +22,12 @@ PID 1 mounts the btrfs top level (subvolid=0) at `/oath/run/fs`:
 
 Generations are siblings of `@`, not nested under `/`.
 
-A generation is all of `@`, `/home` included, so every apply pins
-whatever is there until that `@gen-N` is gone. Keep fast-changing
+A machine keeps the newest five generations and every one taken since it
+booted; PID 1 removes the rest once a boot (`oath reap`, R62), and undo
+stops at the last one kept.
+
+A generation is all of `@`, so every apply pins whatever is there until
+that `@gen-N` is gone. Keep fast-changing
 bulk, such as a cargo `target/`, on another disk or in a nested
 subvolume, which a snapshot leaves out.
 

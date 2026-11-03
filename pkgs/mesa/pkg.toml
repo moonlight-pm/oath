@@ -7,6 +7,7 @@ version = "26.2.5"
 license = "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0"
 description = "Mesa: radeonsi, RADV (Vulkan) and softpipe, GBM, and EGL, GLES and GL through libglvnd, on Wayland and X11 (GLX)."
 home = "https://mesa3d.org/"
+category = "graphics"
 purl = "pkg:generic/mesa@26.2.5"
 build = [
 	"meson", "ninja", "python", "pkgconf", "bison", "flex", "glslang",

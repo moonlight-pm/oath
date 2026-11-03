@@ -2,6 +2,7 @@ version = "710"
 license = "GPL-3.0-or-later OR BSD-2-Clause"
 description = "less, the pager."
 home = "https://www.greenwoodsoftware.com/less/"
+category = "base"
 purl = "pkg:generic/less@710"
 build = ["ncurses"]
 run = ["ncurses"]

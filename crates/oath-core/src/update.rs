@@ -21,6 +21,11 @@ use crate::{Error, Result};
 pub const NAMESPACE: &str = "oath-output";
 /// Under the catalog root: the release this machine runs.
 pub const RECORD: &str = "output.json";
+/// The security audit's report on an origin, signed beside itself (`.sig`)
+/// by a build host's key under its own namespace: a report cannot pass for
+/// a release (R61).
+pub const AUDIT_KEY: &str = "audit/latest.json";
+pub const AUDIT_NAMESPACE: &str = "oath-audit";
 /// The accounts, written before the packages move: `/etc/passwd` names
 /// `pkg:zsh`'s shell (R27), and the services an update restarts drop to
 /// `void` (R36).
@@ -81,6 +86,35 @@ pub struct Release {
     /// not what the owner removed (R47).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub seed: Vec<String>,
+    /// The kernel it boots (`pkg:linux`'s tree, which ships on the ESP and in
+    /// the initrd, so `pins` does not name it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kernel: Option<String>,
+    /// The repository `commit` is in, as `https://<host>/<owner>/<name>`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub repo: Option<String>,
+    /// What it says of each package in `pins`, beside the hash.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub packs: BTreeMap<String, ReleasePack>,
+}
+
+/// One package in a release, so a reader needs no bundle to know it.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReleasePack {
+    /// The version its components name.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub version: String,
+    /// Bytes of its files, unpacked. None when the build host has no tree
+    /// (a recipe, which each machine builds).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
+    /// The plan that built it, at the release's `commit`, when this tree
+    /// built it.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub plan: String,
+    /// Where a pack built elsewhere came from (R47): the seed's `source`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<Value>,
 }
 
 /// What a machine knows of the release it runs (`/oath/output.json`).
@@ -98,6 +132,16 @@ impl Ran {
         pins.extend(r.pins.clone());
         let seed = (!r.seed.is_empty()).then(|| r.seed.iter().cloned().collect());
         Self { pins, seed, pinned: !r.pinned.is_empty() }
+    }
+
+    /// Whether that release had `id` in its seed, when its record says.
+    pub fn had(&self, id: &str) -> bool {
+        self.seed.as_ref().is_some_and(|s| s.contains(id))
+    }
+
+    /// What that release's seed had, when its record says.
+    pub fn seed(&self) -> impl Iterator<Item = &String> {
+        self.seed.iter().flatten()
     }
 
     /// The pin that release set for `name`, when its record says.
@@ -134,6 +178,14 @@ impl Ran {
 pub fn source_label(doc: &Value) -> Option<String> {
     let s: crate::PkgSource = serde_json::from_value(doc.get("source")?.clone()).ok()?;
     Some(s.label())
+}
+
+/// Whether moving from `ran` to `next` takes a reboot to run: its PID 1 or
+/// kernel differs, or the record of the one it runs does not say which
+/// kernel that is.
+pub fn takes_reboot(ran: Option<&Release>, next: &Release) -> bool {
+    let Some(ran) = ran else { return true };
+    ran.init != next.init || ran.kernel.is_none() || ran.kernel != next.kernel
 }
 
 /// Whether `ran`, the release this machine runs, is newer than `next`: by
@@ -194,16 +246,51 @@ pub enum Move {
     /// update builds the output's plan on the machine before anything
     /// changes, then moves it like a pin (`set`).
     Rebuild { name: String, from: String, to: String, set: Value },
+    /// The release the machine runs had it, this one does not, and nothing
+    /// that stays needs it: it leaves with the update (R62).
+    Drop { name: String },
 }
 
 impl Move {
-    pub fn id(&self) -> String {
+    pub fn name(&self) -> &str {
         let (Self::Pin { name, .. }
         | Self::Keep { name, .. }
         | Self::Stay { name, .. }
         | Self::New { name, .. }
-        | Self::Rebuild { name, .. }) = self;
-        format!("pkg:{name}")
+        | Self::Rebuild { name, .. }
+        | Self::Drop { name }) = self;
+        name
+    }
+
+    pub fn id(&self) -> String {
+        format!("pkg:{}", self.name())
+    }
+
+    /// `pin`, `keep`, `stay`, `new`, `rebuild` or `drop`.
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::Pin { .. } => "pin",
+            Self::Keep { .. } => "keep",
+            Self::Stay { .. } => "stay",
+            Self::New { .. } => "new",
+            Self::Rebuild { .. } => "rebuild",
+            Self::Drop { .. } => "drop",
+        }
+    }
+
+    /// The pin it ends on, when the move says.
+    pub fn to(&self) -> Option<&str> {
+        match self {
+            Self::Pin { to, .. } | Self::Rebuild { to, .. } => Some(to),
+            Self::Keep { pin, .. } => Some(pin),
+            Self::Stay { .. } | Self::Drop { .. } => None,
+            Self::New { doc, .. } => doc["hash"].as_str(),
+        }
+    }
+
+    /// It replaces a pin that was not the release's (R47).
+    pub fn replaces_overlay(&self) -> bool {
+        matches!(self, Self::Pin { overlay: Some(_), .. })
     }
 
     /// The fields `oath set` writes (or `oath new` makes), if any.
@@ -214,6 +301,7 @@ impl Move {
             }
             Self::Keep { set, .. } => set.as_ref(),
             Self::New { doc, .. } => Some(doc),
+            Self::Drop { .. } => None,
         }
     }
 
@@ -227,11 +315,10 @@ impl Move {
                 source_label(set).map(|l| format!(" ({l})")).unwrap_or_default()
             ),
             Self::Pin { from, to, set, .. } if from == to => {
-                let what = match (set.get("needs").is_some(), set.get("source").is_some()) {
-                    _ if set["present"] == json!(true) => "made present: new to the profile",
-                    (true, true) => "its needs and source move",
-                    (false, true) => "its source moves",
-                    _ => "its needs move",
+                let what = if set["present"] == json!(true) {
+                    "made present: new to the profile".to_string()
+                } else {
+                    records_moved(set)
                 };
                 format!("{id} {} ({what})", short(to))
             }
@@ -258,7 +345,21 @@ impl Move {
                 short(from),
                 short(to)
             ),
+            Self::Drop { .. } => {
+                format!("{id} leaves: this release no longer has it; `--keep {id}` keeps it")
+            }
         }
+    }
+}
+
+/// What moves of a package whose pin stays: `its needs and source move`.
+fn records_moved(set: &Value) -> String {
+    let keys = ["needs", "source", "description", "home", "category", "url", "file"];
+    let moved: Vec<&str> = keys.into_iter().filter(|k| set.get(*k).is_some()).collect();
+    match moved.as_slice() {
+        ["needs"] | [] => "its needs move".to_string(),
+        [one] => format!("its {one} moves"),
+        [rest @ .., last] => format!("its {} and {last} move", rest.join(", ")),
     }
 }
 
@@ -283,6 +384,8 @@ pub struct Output {
     pub fixed: BTreeSet<String>,
     pub pinned: BTreeSet<String>,
     pub packs: BTreeMap<String, String>,
+    /// The version the manifest gives each pack it built.
+    pub versions: BTreeMap<String, String>,
 }
 
 impl Output {
@@ -301,6 +404,12 @@ impl Output {
             .flatten()
             .filter_map(|(n, p)| Some((n.clone(), p["hash"].as_str()?.to_string())))
             .collect();
+        let versions = manifest["packs"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .filter_map(|(n, p)| Some((n.clone(), p["version"].as_str()?.to_string())))
+            .collect();
         let dir = bundle.join("stage/oath/objects/pkg");
         let mut pins = Vec::new();
         let mut fixed = BTreeSet::new();
@@ -317,7 +426,7 @@ impl Output {
             }
         }
         pins.sort_by(|a, b| a.0.cmp(&b.0));
-        Ok(Self { pins, fixed, pinned, packs })
+        Ok(Self { pins, fixed, pinned, packs, versions })
     }
 
     fn pin(&self, name: &str) -> Option<&str> {
@@ -413,7 +522,7 @@ pub fn plan(
             }
         }
         let mut set = json!({ "hash": to, "needs": needs });
-        for k in ["url", "file", "source"] {
+        for k in ["url", "file", "source", "description", "home", "category"] {
             if let Some(v) = doc.get(k) {
                 set[k] = v.clone();
             }
@@ -465,11 +574,14 @@ pub fn plan(
             .map(|_| source_label(cur).unwrap_or_else(|| short(&mine).to_string()));
         moves.push(Move::Pin { name: name.clone(), from: mine, to: to.clone(), set, overlay });
     }
+    let dropped = dropped(machine, output, ran, keep);
     for (name, cur) in machine {
         if output.pin(name).is_some() {
             continue;
         }
-        if let Some((set, moved)) = keep_machine_pin(cur, &ships) {
+        if dropped.contains(name) {
+            moves.push(Move::Drop { name: name.clone() });
+        } else if let Some((set, moved)) = keep_machine_pin(cur, &ships) {
             moves.push(Move::Stay { name: name.clone(), set, moved });
         }
     }
@@ -508,6 +620,55 @@ pub fn plan(
         moves.push(Move::New { name: need, doc: doc.clone(), why: "a package here needs it" });
     }
     moves
+}
+
+/// The packages an update takes off the machine (R62): the release it runs
+/// had them, this one does not, the owner did not `--keep` them, and nothing
+/// that stays needs them. One the owner made themselves was in no release,
+/// so it stays.
+fn dropped(
+    machine: &BTreeMap<String, Value>,
+    output: &Output,
+    ran: &Ran,
+    keep: &BTreeSet<String>,
+) -> BTreeSet<String> {
+    let mut gone: BTreeSet<String> = machine
+        .keys()
+        .filter(|n| output.pin(n).is_none() && !keep.contains(*n))
+        .filter(|n| ran.had(&format!("pkg:{n}")))
+        .cloned()
+        .collect();
+    let need_names = |doc: &Value| -> Vec<String> {
+        doc["needs"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|n| n["id"].as_str())
+            .map(|id| id.trim_start_matches("pkg:").to_string())
+            .collect()
+    };
+    let mut wanted: BTreeSet<String> = output
+        .pins
+        .iter()
+        .filter(|(n, _, _)| machine.get(n).is_some_and(|c| c["present"] != json!(false)))
+        .flat_map(|(_, _, doc)| need_names(doc))
+        .collect();
+    // What stays out of the output keeps what it needs, and so on down.
+    loop {
+        let more: BTreeSet<String> = machine
+            .iter()
+            .filter(|(n, c)| {
+                output.pin(n).is_none() && !gone.contains(*n) && c["present"] != json!(false)
+            })
+            .flat_map(|(_, c)| need_names(c))
+            .collect();
+        wanted.extend(more);
+        let before = gone.len();
+        gone.retain(|n| !wanted.contains(n));
+        if gone.len() == before {
+            return gone;
+        }
+    }
 }
 
 /// What a machine's packs pinned from elsewhere need of `need` after an
@@ -561,6 +722,9 @@ mod tests {
             commit: None,
             pins: BTreeMap::new(),
             seed: Vec::new(),
+            kernel: None,
+            repo: None,
+            packs: BTreeMap::new(),
         }
     }
 
@@ -609,6 +773,7 @@ mod tests {
                 ("cef".into(), C.into()),
                 ("sola".into(), B.into()),
             ]),
+            versions: BTreeMap::new(),
         }
     }
 
@@ -630,7 +795,7 @@ mod tests {
             pin("wlroots", true, &["libglvnd"]),
         ];
         let (fixed, pinned, packs) = (BTreeSet::new(), BTreeSet::new(), BTreeMap::new());
-        let out = Output { pins, fixed, pinned, packs };
+        let out = Output { pins, fixed, pinned, packs, versions: BTreeMap::new() };
         let machine = BTreeMap::from([
             ("nvidia".to_string(), json!({ "present": false, "hash": A })),
             ("pipewire".to_string(), json!({ "present": true, "hash": A })),
@@ -928,5 +1093,81 @@ mod tests {
         }))
         .unwrap();
         assert_eq!(r.bundle.size, 1);
+    }
+
+    #[test]
+    fn what_a_release_dropped_leaves_and_what_the_owner_made_stays() {
+        let doc = |needs: Value| json!({ "present": true, "hash": A, "needs": needs });
+        let need = |n: &str| json!([{ "id": format!("pkg:{n}"), "hash": A }]);
+        let machine: BTreeMap<String, Value> = [
+            ("kept", doc(json!([]))),
+            ("gone", doc(json!([]))),
+            ("gone-too", doc(need("gone-low"))),
+            ("gone-low", doc(json!([]))),
+            ("needed", doc(json!([]))),
+            ("mine", doc(need("needed-by-mine"))),
+            ("needed-by-mine", doc(json!([]))),
+            ("held", doc(json!([]))),
+        ]
+        .into_iter()
+        .map(|(n, d)| (n.to_string(), d))
+        .collect();
+        let output = Output {
+            pins: vec![("kept".to_string(), A.to_string(), doc(need("needed")))],
+            fixed: BTreeSet::new(),
+            pinned: BTreeSet::new(),
+            packs: BTreeMap::new(),
+            versions: BTreeMap::new(),
+        };
+        let mut was = release("2026-11-01T00:00:00Z", None);
+        was.seed = ["kept", "gone", "gone-too", "gone-low", "needed", "needed-by-mine", "held"]
+            .iter()
+            .map(|n| format!("pkg:{n}"))
+            .collect();
+        let keep = BTreeSet::from(["held".to_string()]);
+        let moves = plan(&machine, &output, &Ran::of(Some(&was)), &keep, |_, _| true);
+        let drops: Vec<&str> = moves
+            .iter()
+            .filter(|m| matches!(m, Move::Drop { .. }))
+            .map(Move::name)
+            .collect();
+        assert_eq!(drops, ["gone", "gone-low", "gone-too"]);
+        // A record with no seed says nothing was the release's.
+        let moves = plan(&machine, &output, &Ran::of(None), &keep, |_, _| true);
+        assert!(!moves.iter().any(|m| matches!(m, Move::Drop { .. })));
+    }
+
+    #[test]
+    fn a_record_only_move_says_what_moved() {
+        let m = |set: Value| Move::Pin {
+            name: "x".into(),
+            from: A.into(),
+            to: A.into(),
+            set,
+            overlay: None,
+        };
+        let text = |set: Value| m(set).describe();
+        assert!(text(json!({ "needs": [] })).contains("(its needs move)"));
+        assert!(text(json!({ "source": null })).contains("(its source moves)"));
+        assert!(text(json!({ "needs": [], "source": null })).contains("(its needs and source move)"));
+        assert!(text(json!({ "description": "d", "category": "c", "home": "h" }))
+            .contains("(its description, home and category move)"));
+    }
+
+    #[test]
+    fn a_new_kernel_or_pid_1_takes_a_reboot() {
+        let mut a = release("2026-11-01T00:00:00Z", None);
+        a.kernel = Some(A.into());
+        let mut b = a.clone();
+        assert!(!takes_reboot(Some(&a), &b));
+        b.kernel = Some(B.into());
+        assert!(takes_reboot(Some(&a), &b), "another kernel");
+        b.kernel = a.kernel.clone();
+        b.init = B.into();
+        assert!(takes_reboot(Some(&a), &b), "another PID 1");
+        b.init = a.init.clone();
+        a.kernel = None;
+        assert!(takes_reboot(Some(&a), &b), "a record that does not say");
+        assert!(takes_reboot(None, &b), "no record");
     }
 }

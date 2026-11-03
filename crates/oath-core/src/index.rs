@@ -33,6 +33,9 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath keep            keep an apply on probation (from a new SSH session)
     oath undo            put back the spec the last apply changed, and converge
     oath verify          hash linked package trees again against their pins
+    oath audit [pkg:x]   the daily security audit's findings for what is here
+    oath reap            what is on disk that no package prescribes;
+                         `sudo oath reap --confirm` removes it (each boot does)
     oath update          what the newest output for this machine would change;
                          `sudo oath update --confirm [--reboot]` moves to it
     oath log             apply log

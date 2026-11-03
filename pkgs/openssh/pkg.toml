@@ -2,6 +2,7 @@ version = "10.6p1"
 license = "BSD-2-Clause AND BSD-3-Clause AND ISC AND MIT"
 description = "OpenSSH: sshd (svc:sshd, R36), ssh, scp, sftp, ssh-keygen and sftp-server, with OpenSSL (RSA, ECDSA and ed25519 keys)."
 home = "https://www.openssh.com/portable.html"
+category = "network"
 build = ["zlib", "libxcrypt", "openssl"]
 run = ["zlib", "libxcrypt", "openssl"]
 

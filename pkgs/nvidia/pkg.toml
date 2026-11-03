@@ -8,6 +8,7 @@ version = "595.104.02"
 license = "LicenseRef-NVIDIA-Driver"
 description = "NVIDIA's driver: closed kernel modules for pkg:linux, its GL, EGL, Vulkan, GBM and CUDA libraries (and their 32-bit ones), nvidia-smi and GSP firmware."
 home = "https://www.nvidia.com/en-us/drivers/unix/"
+category = "graphics"
 purl = "pkg:generic/nvidia@595.104.02"
 recipe = "NVIDIA's own build, which each machine fetches and builds against its own kernel (R34)"
 build = [

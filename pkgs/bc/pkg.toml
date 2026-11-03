@@ -2,6 +2,7 @@ version = "1.08.2"
 license = "GPL-3.0-or-later"
 description = "GNU bc and dc. A build tool (the kernel's timeconst.h); not in the base image."
 home = "https://www.gnu.org/software/bc/"
+category = "toolchain"
 purl = "pkg:generic/bc@1.08.2"
 build = []
 

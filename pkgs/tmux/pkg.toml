@@ -2,6 +2,7 @@ version = "3.8"
 license = "ISC AND BSD-2-Clause AND BSD-3-Clause"
 description = "tmux, which sola-terminal runs every shell in."
 home = "https://github.com/tmux/tmux/wiki"
+category = "base"
 purl = "pkg:github/tmux/tmux@3.8"
 build = ["pkgconf", "bison", "libevent", "ncurses"]
 run = ["libevent", "ncurses"]

@@ -10,6 +10,7 @@ version = "2.1.292"
 license = "LicenseRef-Anthropic-Commercial-Terms"
 description = "Claude Code: Anthropic's agentic coding tool for the terminal."
 home = "https://code.claude.com/docs"
+category = "agents"
 purl = "pkg:generic/claude-code@2.1.292"
 recipe = "Anthropic's terms allow no redistribution; each machine fetches the binary itself"
 build = ["bash", "coreutils", "grep", "glibc"]

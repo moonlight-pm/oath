@@ -2,6 +2,7 @@ version = "1.49"
 license = "MIT"
 description = "wayland-protocols: the protocol XML that compositors and clients build against."
 home = "https://gitlab.freedesktop.org/wayland/wayland-protocols"
+category = "desk"
 purl = "pkg:generic/wayland-protocols@1.49"
 build = ["meson", "ninja", "python", "pkgconf", "wayland"]
 

@@ -3,6 +3,7 @@ version = "3.15.0"
 license = "LGPL-2.1-or-later"
 description = "GEOS: computational geometry, for PostGIS."
 home = "https://libgeos.org/"
+category = "server"
 purl = "pkg:generic/geos@3.15.0"
 build = ["cmake", "ninja"]
 run = ["gcc"]

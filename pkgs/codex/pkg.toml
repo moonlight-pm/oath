@@ -9,6 +9,7 @@ version = "0.164.0"
 license = "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib"
 description = "Codex: OpenAI's coding agent for the terminal."
 home = "https://developers.openai.com/codex/cli"
+category = "agents"
 purl = "pkg:github/openai/codex@rust-v0.164.0"
 recipe = "OpenAI's own build, which each machine fetches, as it does Claude Code's (R31)"
 build = ["bash", "coreutils", "grep", "tar", "zstd", "glibc"]

@@ -4,6 +4,7 @@ version = "4.5.2"
 license = "LGPL-2.1-or-later AND BSD-3-Clause AND 0BSD AND CC0-1.0"
 description = "libxcrypt, shared: libcrypt.so.1, glibc's crypt(3) ABI (sshd, Steam)."
 home = "https://github.com/besser82/libxcrypt"
+category = "security"
 purl = "pkg:github/besser82/libxcrypt@v4.5.2"
 build = ["perl"]
 

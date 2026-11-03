@@ -4,6 +4,7 @@ version = "34.9.0"
 license = "OFL-1.1"
 description = "Iosevka Term Slab, the desk's monospace typeface (terminal, code)."
 home = "https://typeof.net/Iosevka/"
+category = "text"
 purl = "pkg:github/be5invis/Iosevka@v34.9.0"
 build = ["python"]
 

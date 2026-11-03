@@ -4,6 +4,7 @@ version = "2.4.20"
 license = "Apache-2.0 WITH LLVM-exception AND Zlib"
 description = "libcups.so.2, the CUPS client library CEF prints through."
 home = "https://openprinting.github.io/cups/"
+category = "browser"
 purl = "pkg:github/OpenPrinting/cups@v2.4.20"
 build = ["pkgconf", "zlib"]
 run = ["zlib"]

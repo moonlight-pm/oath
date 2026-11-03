@@ -5,6 +5,7 @@ version = "7.3.1"
 license = "GPL-2.0-only WITH Linux-syscall-note"
 description = "pkg:linux's build tree under build/: its config, exported symbols, prepared headers, scripts and objtool, for modules built outside the kernel."
 home = "https://www.kernel.org/"
+category = "kernel"
 purl = "pkg:generic/linux@7.3.1"
 build = ["linux", "m4", "flex", "bison", "perl", "pkgconf", "zlib", "elfutils", "bc"]
 run = ["elfutils"]

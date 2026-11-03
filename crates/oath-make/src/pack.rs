@@ -314,6 +314,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     oath_core::sync_need_hashes(&oath_root).map_err(|e| anyhow::anyhow!("{e}"))?;
     let named = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.pkgs();
     file_recipes(root, &oath_root, &all, &lock, &named)?;
+    write_categories(&oath_root, &all)?;
     settle_pkg_applied(&oath_root)?;
 
     eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
@@ -716,6 +717,30 @@ fn patch_pkg(oath_root: &Path, name: &str, fields: serde_json::Value) -> Result<
     write_json(&p, &v).map_err(|err| anyhow::anyhow!("{err}"))
 }
 
+/// Each seeded package's category, from its `pkg.toml`; a recipe's source
+/// pack has its product's. One the profile sets itself (a pack pinned from
+/// elsewhere) keeps it.
+fn write_categories(
+    oath_root: &Path,
+    all: &BTreeMap<String, crate::pkgs::PkgToml>,
+) -> Result<()> {
+    for e in fs::read_dir(oath_root.join("objects/pkg"))?.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        let toml = all.get(&name).or_else(|| all.get(name.strip_suffix("-src")?));
+        let Some(category) = toml.map(|t| t.category.as_str()).filter(|c| !c.is_empty()) else {
+            continue;
+        };
+        let p = e.path().join("desired.json");
+        let mut v: serde_json::Value =
+            oath_core::read_json(&p).map_err(|e| anyhow::anyhow!("{}: {e}", p.display()))?;
+        if v.get("category").is_none() {
+            v["category"] = json!(category);
+            write_json(&p, &v).map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
+    }
+    Ok(())
+}
+
 /// Keep every `pkg`'s desired doc (with its pin) as applied, the way apply
 /// would: the image links what its seed pins, so it starts in sync.
 fn settle_pkg_applied(oath_root: &Path) -> Result<()> {
@@ -1005,6 +1030,41 @@ fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publ
             index.push_str(&format!("| `{name}` | `{product}` | {license} | `{plan}` |\n"));
         }
     }
+    // The same rows for a program to read, with what the table leaves out.
+    let row = |r: &Published| {
+        let tree = cache.join("pkg").join(&r.name).join(&r.hash);
+        let toml = all.get(&r.name);
+        let version = toml.map(|t| t.version.clone()).filter(|v| !v.is_empty()).or_else(|| {
+            oath_core::own_version(&oath_core::read_components(&tree)?, &r.name)
+        });
+        json!({
+            "name": r.name,
+            "hash": r.hash,
+            "version": version,
+            "category": toml.map(|t| t.category.as_str()).filter(|c| !c.is_empty()),
+            "license": r.license,
+            "plan": r.plan_hash,
+            "source": r.src,
+            "size": oath_core::tree_size(&tree).ok(),
+        })
+    };
+    let recipe = |(name, product, license, plan): &(String, String, String, String)| {
+        json!({
+            "name": name,
+            "builds": product,
+            "version": all.get(name).map(|t| t.version.as_str()),
+            "category": all.get(name).map(|t| t.category.as_str()).filter(|c| !c.is_empty()),
+            "license": license,
+            "plan": plan,
+        })
+    };
+    let listing = json!({
+        "packages": rows.iter().map(row).collect::<Vec<_>>(),
+        "recipes": plans.iter().map(recipe).collect::<Vec<_>>(),
+    });
+    let mut listing = serde_json::to_vec_pretty(&listing)?;
+    listing.push(b'\n');
+    files.push(("index.json".into(), Body::Bytes(listing)));
     files.push(("INDEX.md".into(), Body::Bytes(index.into_bytes())));
     Ok(Publication { files, packs: rows.len(), skipped })
 }

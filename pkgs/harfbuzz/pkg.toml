@@ -2,6 +2,7 @@ version = "15.0.0"
 license = "MIT-Modern-Variant AND MIT"
 description = "HarfBuzz, shared, with FreeType and GLib: text shaping for pango."
 home = "https://harfbuzz.github.io/"
+category = "text"
 purl = "pkg:github/harfbuzz/harfbuzz@15.0.0"
 build = ["meson", "ninja", "python", "pkgconf", "freetype", "glib"]
 run = ["freetype", "glib", "gcc"]

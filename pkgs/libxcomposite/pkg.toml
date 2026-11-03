@@ -2,6 +2,7 @@ version = "0.4.7"
 license = "HPND-sell-variant AND MIT"
 description = "libXcomposite, shared: the Composite extension (CEF)."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libXcomposite@0.4.7"
 build = ["pkgconf", "xorgproto", "libx11", "libxfixes"]
 run = ["libx11", "libxfixes"]

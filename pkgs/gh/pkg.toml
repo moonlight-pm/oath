@@ -6,6 +6,7 @@ version = "2.103.3"
 license = "MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND MPL-2.0 AND ISC"
 description = "GitHub CLI: GitHub's pull requests, issues, releases and API from the terminal."
 home = "https://cli.github.com/"
+category = "toolchain"
 purl = "pkg:golang/github.com/cli/cli/v2@2.103.3"
 build = ["go"]
 run = ["certs"]

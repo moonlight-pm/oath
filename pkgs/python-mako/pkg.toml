@@ -2,6 +2,7 @@ version = "1.4.3"
 license = "MIT"
 description = "Mako templates for Python. A build tool (Mesa's build); not in the base image."
 home = "https://www.makotemplates.org/"
+category = "toolchain"
 purl = "pkg:pypi/mako@1.4.3"
 build = []
 run = ["python-markupsafe"]

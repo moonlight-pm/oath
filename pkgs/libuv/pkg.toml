@@ -2,6 +2,7 @@ version = "1.53.0"
 license = "MIT AND BSD-2-Clause AND ISC"
 description = "libuv, shared: BIND's event loop."
 home = "https://libuv.org/"
+category = "network"
 purl = "pkg:github/libuv/libuv@v1.53.0"
 build = []
 

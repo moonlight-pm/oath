@@ -18,6 +18,7 @@ mod pkg;
 mod plan;
 mod plan_build;
 pub mod probation;
+pub mod reap;
 pub mod schedule;
 pub mod schema;
 pub mod seat;
@@ -53,14 +54,14 @@ pub use net::{
 };
 pub use packhash::{
     fetch_adv_url, fetch_url, hash_tree, is_origin, is_realization_id, realization_dir, slot_dir,
-    HASH_PREFIX, LIVE_NAME,
+    tree_size, HASH_PREFIX, LIVE_NAME,
 };
 pub use pkg::{
     check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root, fetch_adv,
     fetch_pkg, fetch_pkg_any, find_bin, host_origins, ingest_file, install_tree, link_clashes,
     list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
     pin_desired_hash, prefetch_pkg_any, program_realization, promote_slot, promote_store, put_tree,
-    read_advisories, read_advisories_store, read_components, resolve_tree, store_pkg,
+    own_version, read_advisories, read_advisories_store, read_components, resolve_tree, store_pkg,
     store_present, sync_need_hashes, verify_tree, write_advisories, write_advisories_store,
     write_slot_links, COMPONENTS_NAME,
 };

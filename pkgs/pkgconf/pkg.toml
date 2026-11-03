@@ -2,6 +2,7 @@ version = "3.0.8"
 license = "ISC"
 description = "pkg-config. A build tool; not in the base image."
 home = "https://github.com/pkgconf/pkgconf"
+category = "toolchain"
 build = []
 
 [[source]]

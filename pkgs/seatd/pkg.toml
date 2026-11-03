@@ -2,6 +2,7 @@ version = "0.9.3"
 license = "MIT"
 description = "seatd and libseat: who may open the GPU and input devices (wlroots' session)."
 home = "https://sr.ht/~kennylevinsen/seatd/"
+category = "desk"
 purl = "pkg:generic/seatd@0.9.3"
 build = ["meson", "ninja", "python", "pkgconf"]
 

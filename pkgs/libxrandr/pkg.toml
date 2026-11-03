@@ -2,6 +2,7 @@ version = "1.5.5"
 license = "HPND-sell-variant"
 description = "libXrandr, shared: the RandR extension (CEF)."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libXrandr@1.5.5"
 build = ["pkgconf", "xorgproto", "libx11", "libxext", "libxrender"]
 run = ["libx11", "libxext", "libxrender"]

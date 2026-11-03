@@ -2,6 +2,7 @@ version = "0.4.0"
 license = "MIT"
 description = "libdisplay-info, shared, and di-edid-decode: EDID and DisplayID parsing for wlroots."
 home = "https://gitlab.freedesktop.org/emersion/libdisplay-info"
+category = "graphics"
 purl = "pkg:generic/libdisplay-info@0.4.0"
 build = ["meson", "ninja", "python", "pkgconf", "hwdata"]
 

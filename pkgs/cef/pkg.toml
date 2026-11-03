@@ -9,6 +9,7 @@ version = "156.0.15+gcf671c0+chromium-156.0.8078.80"
 license = "BSD-3-Clause AND LicenseRef-Chromium-Credits"
 description = "CEF, the Chromium Embedded Framework, with H.264 and AAC, for sola-browser."
 home = "https://github.com/chromiumembedded/cef"
+category = "browser"
 purl = "pkg:generic/cef@156.0.15+gcf671c0+chromium-156.0.8078.80"
 build = [
 	"python", "ninja", "pkgconf", "patchelf", "libdrm", "libpulse", "harfbuzz", "fribidi",

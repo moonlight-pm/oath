@@ -4,6 +4,7 @@ version = "0.19-20260627"
 license = "MIT"
 description = "json-c: a JSON library for C."
 home = "https://github.com/json-c/json-c"
+category = "server"
 purl = "pkg:github/json-c/json-c@json-c-0.19-20260627"
 build = ["cmake", "ninja", "pkgconf"]
 run = []

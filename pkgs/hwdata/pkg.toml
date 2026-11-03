@@ -4,6 +4,7 @@ version = "0.412"
 license = "GPL-2.0-or-later"
 description = "hwdata's pnp.ids (EDID vendor names), with hwdata.pc."
 home = "https://github.com/vcrhonek/hwdata"
+category = "kernel"
 purl = "pkg:github/vcrhonek/hwdata@v0.412"
 build = []
 

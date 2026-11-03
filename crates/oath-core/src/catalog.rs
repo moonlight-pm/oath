@@ -283,6 +283,7 @@ impl Catalog {
             actual.needs = spec.needs;
             actual.description = spec.description;
             actual.home = spec.home;
+            actual.category = spec.category;
             actual.source = spec.source;
             self.write_actual(&id, &actual)?;
         }
@@ -864,6 +865,15 @@ impl Catalog {
         Ok(out)
     }
 
+    /// Say in `id`'s status which versions the store holds now (R62).
+    pub fn refresh_realizations(&self, _lock: &CatalogLock, id: &ObjectId) -> Result<()> {
+        let p = status_path(&self.root, id);
+        let Ok(mut actual) = read_json::<Value>(&p) else { return Ok(()) };
+        let list = crate::list_realizations(&self.root, &id.name)?;
+        actual["realizations"] = serde_json::to_value(list)?;
+        write_json(&p, &actual)
+    }
+
     pub fn log_lines(&self) -> Result<Vec<Value>> {
         let p = self.root.join("log/apply.jsonl");
         if !p.is_file() {
@@ -1358,7 +1368,7 @@ impl Catalog {
                 }
                 // What was applied, which actual mirrors. Actual leaves out
                 // empty fields, so undo invents no `url: ""` either.
-                for k in ["url", "needs", "description", "home", "source"] {
+                for k in ["url", "needs", "description", "home", "category", "source"] {
                     if let Some(v) = obj.actual.get(k) {
                         last[k] = v.clone();
                     }
@@ -1408,6 +1418,7 @@ impl Catalog {
         actual.needs = pkg.needs.clone();
         actual.description = pkg.description.clone();
         actual.home = pkg.home.clone();
+        actual.category = pkg.category.clone();
         actual.source = pkg.source.clone();
         if actual.hash.is_empty() && !pkg.hash.is_empty() {
             actual.hash = pkg.hash.clone();
@@ -1427,7 +1438,7 @@ impl Catalog {
     fn records_only(&self, obj: &Object) -> Result<Option<PkgActual>> {
         let Some(applied) = self.applied(&obj.id)? else { return Ok(None) };
         let drift = diff_values(&obj.desired, &applied);
-        let record = |k: &str| matches!(k, "description" | "home" | "source");
+        let record = |k: &str| matches!(k, "description" | "home" | "category" | "source");
         if drift.is_empty() || drift.iter().any(|(k, _, _)| !record(k)) {
             return Ok(None);
         }

@@ -7,6 +7,7 @@ version = "2.44"
 license = "LGPL-2.1-or-later AND GPL-2.0-or-later AND GPL-2.0-only WITH Linux-syscall-note"
 description = "The GNU C library with the Linux UAPI headers. Every program loads it from /lib."
 home = "https://www.gnu.org/software/libc/"
+category = "base"
 purl = "pkg:generic/glibc@2.44"
 build = ["python", "bison"]
 

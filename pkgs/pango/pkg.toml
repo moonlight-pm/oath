@@ -2,6 +2,7 @@ version = "1.58.2"
 license = "LGPL-2.0-or-later"
 description = "Pango, shared: text layout (CEF)."
 home = "https://gitlab.gnome.org/GNOME/pango"
+category = "text"
 purl = "pkg:generic/pango@1.58.2"
 build = [
 	"meson", "ninja", "python", "pkgconf", "glib", "harfbuzz", "fribidi", "fontconfig",

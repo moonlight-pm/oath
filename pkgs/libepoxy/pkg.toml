@@ -2,6 +2,7 @@ version = "1.5.10"
 license = "MIT"
 description = "libepoxy, shared: GL function loading for Xwayland's glamor, through EGL."
 home = "https://github.com/anholt/libepoxy"
+category = "graphics"
 purl = "pkg:github/anholt/libepoxy@1.5.10"
 build = ["meson", "ninja", "python", "pkgconf", "xorgproto", "libglvnd"]
 run = ["libglvnd"]

@@ -5,6 +5,7 @@ version = "8.3"
 license = "GPL-3.0-or-later"
 description = "GNU readline: line editing and history, shared (bluetoothctl)."
 home = "https://tiswww.case.edu/php/chet/readline/rltop.html"
+category = "base"
 purl = "pkg:generic/readline@8.3"
 build = ["pkgconf", "ncurses"]
 run = ["ncurses"]

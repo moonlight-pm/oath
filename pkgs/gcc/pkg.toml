@@ -10,6 +10,7 @@ version = "16.2.0"
 license = "GPL-3.0-or-later WITH GCC-exception-3.1 AND GPL-3.0-or-later AND LGPL-3.0-or-later"
 description = "GCC 16 (C, C++) and binutils 2.47, x86_64 and i386 (-m32). cc / c++ link dynamically against glibc through /lib."
 home = "https://gcc.gnu.org/"
+category = "toolchain"
 purl = "pkg:generic/gcc@16.2.0"
 build = ["gmp", "mpfr", "mpc", "glibc-i386"]
 run = ["gmp", "mpfr", "mpc"]

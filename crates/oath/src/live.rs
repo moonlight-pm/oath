@@ -1,13 +1,14 @@
+use std::fs;
 use std::io::Write;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
     converge_dev, converge_net, converge_pkg, converge_ssh, fetch_adv, fetch_pkg_any,
-    gen_subvol_name, tel, ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg,
+    gen_subvol_name, parse_gen_subvol, tel, ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg,
     PkgActual, Result, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
@@ -49,6 +50,50 @@ impl Live {
     /// `objects/` under `<root>/.gens/<n>`.
     fn copy_fallback_dir(&self, generation: u64) -> PathBuf {
         self.catalog_root.join(".gens").join(generation.to_string())
+    }
+
+    /// Every generation kept for undo: its number, and the catalog root in
+    /// its snapshot.
+    pub fn generations(&self) -> Vec<(u64, PathBuf)> {
+        let mut out = Vec::new();
+        if self.catalog_root == Path::new("/oath") {
+            for e in fs::read_dir(BTRFS_TOP).into_iter().flatten().flatten() {
+                if let Some(n) = parse_gen_subvol(&e.file_name().to_string_lossy()) {
+                    out.push((n, e.path().join("oath")));
+                }
+            }
+        }
+        for e in fs::read_dir(self.catalog_root.join(".gens")).into_iter().flatten().flatten() {
+            if let Ok(n) = e.file_name().to_string_lossy().parse() {
+                out.push((n, e.path()));
+            }
+        }
+        out.sort_by_key(|(n, _)| *n);
+        out
+    }
+
+    /// Take a generation off the disk: `oath undo` cannot go back to it.
+    pub fn remove_generation(&self, generation: u64) -> Result<()> {
+        let copy = self.copy_fallback_dir(generation);
+        if copy.is_dir() {
+            fs::remove_dir_all(&copy)?;
+            return Ok(());
+        }
+        let sub = Self::sibling_gen(generation);
+        let out = Command::new("btrfs")
+            .args(["subvolume", "delete"])
+            .arg(&sub)
+            .stdout(Stdio::null())
+            .output()
+            .map_err(|e| Error::Msg(format!("btrfs: {e}")))?;
+        if !out.status.success() {
+            return Err(Error::Msg(format!(
+                "btrfs subvolume delete {}: {}",
+                sub.display(),
+                String::from_utf8_lossy(&out.stderr).trim()
+            )));
+        }
+        Ok(())
     }
 }
 
@@ -109,7 +154,13 @@ impl ApplyHooks for Live {
         if copy.join("objects").is_dir() {
             return Ok(copy);
         }
-        Err(Error::Msg(format!("no snapshot of generation {generation}")))
+        Err(Error::hint(
+            format!("no snapshot of generation {generation}: it is past what undo can reach"),
+            format!(
+                "a machine keeps its newest {} generations and those since it booted (R62)",
+                oath_core::reap::GENERATIONS_KEPT
+            ),
+        ))
     }
 
     fn converge_host(&self, desired: &Host, previous: Option<&Host>) -> Result<Host> {

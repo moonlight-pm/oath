@@ -4,6 +4,7 @@ version = "0.13.1"
 license = "LGPL-2.0-or-later"
 description = "bubblewrap: bwrap, unprivileged sandboxes in user namespaces (Steam's)."
 home = "https://github.com/containers/bubblewrap"
+category = "machines"
 purl = "pkg:github/containers/bubblewrap@v0.13.1"
 build = ["meson", "ninja", "python", "pkgconf", "libcap"]
 run = ["libcap"]

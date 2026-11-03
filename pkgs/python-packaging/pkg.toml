@@ -2,6 +2,7 @@ version = "26.3"
 license = "Apache-2.0 OR BSD-2-Clause"
 description = "packaging, which Mesa's build needs. A build tool; not in the base image."
 home = "https://packaging.pypa.io/"
+category = "toolchain"
 purl = "pkg:pypi/packaging@26.3"
 build = []
 

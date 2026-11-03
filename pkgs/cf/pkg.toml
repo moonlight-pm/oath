@@ -11,6 +11,7 @@ version = "1.0.0-beta.26"
 license = "(MIT OR Apache-2.0) AND MIT AND Apache-2.0 AND ISC AND CC0-1.0 AND LGPL-3.0-or-later AND BSD-2-Clause AND BSD-3-Clause AND MPL-1.1 AND Zlib AND IJG AND libpng-2.0 AND libtiff AND FTL"
 description = "cf: Cloudflare's CLI for the whole Cloudflare API, with Workers' local runtime."
 home = "https://github.com/cloudflare/cf"
+category = "toolchain"
 purl = "pkg:npm/cf@1.0.0-beta.26"
 build = ["node", "patchelf"]
 run = ["node"]

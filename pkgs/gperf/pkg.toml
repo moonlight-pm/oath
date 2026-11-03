@@ -2,6 +2,7 @@ version = "3.3"
 license = "GPL-3.0-or-later"
 description = "gperf, the perfect hash generator fontconfig's build needs. A build tool; not in an image."
 home = "https://www.gnu.org/software/gperf/"
+category = "toolchain"
 purl = "pkg:generic/gperf@3.3"
 build = []
 run = ["gcc"]

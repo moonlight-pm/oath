@@ -4,6 +4,7 @@ version = "2.2"
 license = "LGPL-2.1-or-later"
 description = "SBC: the Bluetooth audio codec library (PipeWire's A2DP)."
 home = "https://www.kernel.org/pub/linux/bluetooth/"
+category = "sound"
 purl = "pkg:generic/sbc@2.2"
 build = ["pkgconf"]
 run = []

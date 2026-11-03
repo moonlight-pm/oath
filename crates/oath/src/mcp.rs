@@ -573,6 +573,10 @@ impl Server {
                 v.push("verify".into());
                 rest = ids("ids");
             }
+            "audit" => {
+                v.push("audit".into());
+                rest.extend(s("id"));
+            }
             "rm" => {
                 v.push("rm".into());
                 rest.extend(s("id"));
@@ -588,6 +592,12 @@ impl Server {
                 rest = ids("ids");
             }
             "undo" | "keep" => v.push(tool.into()),
+            "reap" => {
+                if a.get("confirm") == Some(&json!(true)) {
+                    v.push("--confirm".into());
+                }
+                v.push("reap".into());
+            }
             "update" => {
                 let confirm = a.get("confirm") == Some(&json!(true));
                 if confirm {
@@ -841,6 +851,17 @@ fn tools() -> Vec<Tool> {
              status; a damaged tree is an error and shows in the INDEX.",
             vec![p("ids", Ty::Ids, false, "`pkg:<name>` ids; all packages when left out.")],
         ),
+        read(
+            "audit",
+            &format!(
+                "The daily security audit's report, signed by a key this machine trusts: per \
+                 package its version, the build it read, open findings (`hits`), findings left \
+                 out and why (`suppressed`), and upstream's newer release (`newer`). A source \
+                 that failed says so in `sources`, and a package at another version here was \
+                 not assessed. {DATA}"
+            ),
+            vec![p("id", Ty::Str, false, "`pkg:<name>`; every package when left out.")],
+        ),
     ];
     for (kind, name_about) in [
         ("host", "Always `local`: the one host object is `host:local`."),
@@ -965,6 +986,19 @@ fn tools() -> Vec<Tool> {
         true,
         false,
         true,
+    ));
+    t.push(write(
+        "reap",
+        "Without `confirm`: every version of every package in the store with what holds it \
+         (`held`; empty means it goes), and which generations and filed plans would go. With \
+         `confirm: true`: remove them. PID 1 does this once a boot, so a `confirm` is rarely \
+         needed; `undo` cannot reach a generation that went. Do not pass `confirm` unless the \
+         owner asked."
+            .into(),
+        vec![p("confirm", Ty::Bool, false, "Only when the owner asked.")],
+        true,
+        false,
+        false,
     ));
     t.push(write(
         "file_plan",
@@ -1246,6 +1280,7 @@ mod tests {
                 "log",
                 "logs",
                 "verify",
+                "audit",
                 "set_host",
                 "set_svc",
                 "set_pkg",
@@ -1258,6 +1293,7 @@ mod tests {
                 "undo",
                 "keep",
                 "update",
+                "reap",
                 "file_plan",
                 "build"
             ]
@@ -1282,7 +1318,7 @@ mod tests {
         assert_eq!(m.last()[4], "mcp:claudecode", "the label keeps A-Za-z0-9._/-");
 
         let r = modern(&mut s, &m, "tools/list", json!({}));
-        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 22);
+        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 24);
         assert_eq!(r["result"]["ttlMs"], TTL_MS);
         let r = modern(&mut s, &m, "tools/call", json!({ "name": "ls", "arguments": {} }));
         assert_eq!(r["result"]["resultType"], "complete");
@@ -1367,6 +1403,7 @@ mod tests {
                 vec!["logs", "-n", "5", "--", "svc:time"],
             ),
             ("verify", json!({ "ids": ["pkg:curl"] }), true, vec!["verify", "--", "pkg:curl"]),
+            ("audit", json!({ "id": "pkg:curl" }), false, vec!["audit", "--", "pkg:curl"]),
             (
                 "set_host",
                 json!({ "name": "local", "fields": { "hostname": "atlas" } }),
@@ -1579,7 +1616,7 @@ mod tests {
         assert!(r["result"]["instructions"].as_str().unwrap().contains("read-only"));
         let r = send(&mut s, &m, json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }));
         let tools = r["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 8);
+        assert_eq!(tools.len(), 9);
         assert!(!tools.iter().any(|t| t["name"] == "file_plan"));
         assert!(tools.iter().all(|t| t["annotations"]["readOnlyHint"] == true));
         for (tool, args) in

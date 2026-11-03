@@ -25,6 +25,10 @@ It also reads each pin against upstream's newest stable release, from its
 `repo` and `tag` or the directory its source comes from: a package gets
 `newer`, or `upstream_unread` and why (`cargo make audit --upstream` is that
 check alone). A record can come days after the release that fixes it.
+`cargo make audit --name <pkg>` answers for one package and writes no report.
+After your run the runner puts `latest.json` on the origin (R61), so leave it
+from a whole scan; it is public, so no machine, person or deployment goes in a
+`not_affected` reason.
 
 A new pin takes the lowest version that has the fix and is a week old, not the
 newest ([docs/specs/intake.md](../../../docs/specs/intake.md), R57). `cargo make pkgs

@@ -2,6 +2,7 @@ version = "0.4.2"
 license = "X11"
 description = "xcb-util-wm, shared: libxcb-icccm and libxcb-ewmh (wlroots' Xwayland window manager)."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/xcb-util-wm@0.4.2"
 build = ["pkgconf", "m4", "xorgproto", "libxcb"]
 run = ["libxcb"]

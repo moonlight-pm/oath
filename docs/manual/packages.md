@@ -491,6 +491,7 @@ The build host keeps the same layout under `~/.local/share/oath/store` (or
 ```
 cargo make store --name hello --from apps/hello --tar
 cargo make advisories            # OSV lookup from components.json
+cargo make audit --publish       # the audit's latest.json, signed, on the origin (R61)
 cargo make publish               # upload to the default origin what it lacks
 cargo make publish --dest <dir>  # or write the same tree into a directory
 ```

@@ -2,6 +2,7 @@ version = "1.1.7"
 license = "X11"
 description = "libXxf86vm, shared: XF86VidMode, which Mesa's direct GLX calls."
 home = "https://www.x.org/"
+category = "x11"
 purl = "pkg:generic/libXxf86vm@1.1.7"
 build = ["pkgconf", "xorgproto", "libx11", "libxext"]
 run = ["libx11", "libxext"]

@@ -7,6 +7,7 @@ version = "5.87"
 license = "GPL-2.0-or-later AND LGPL-2.1-or-later"
 description = "BlueZ: bluetoothd, bluetoothctl, btmgmt, btmon and libbluetooth."
 home = "https://www.bluez.org/"
+category = "network"
 purl = "pkg:generic/bluez@5.87"
 build = ["pkgconf", "glib", "dbus", "readline", "ncurses"]
 run = ["glib", "dbus", "readline", "ncurses"]

@@ -2,6 +2,7 @@ version = "20250605"
 license = "GPL-2.0-or-later AND BSD-3-Clause"
 description = "iputils: ping, tracepath and arping."
 home = "https://github.com/iputils/iputils"
+category = "network"
 purl = "pkg:github/iputils/iputils@20250605"
 build = ["meson", "ninja", "python", "pkgconf"]
 

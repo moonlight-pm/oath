@@ -8,6 +8,7 @@ version = "0.19.1"
 license = "BSD-2-Clause AND MIT AND BSD-3-Clause AND Apache-2.0 AND MPL-2.0"
 description = "restic: fast, encrypted, deduplicating backups."
 home = "https://restic.net/"
+category = "server"
 purl = "pkg:golang/github.com/restic/restic@0.19.1"
 build = ["go"]
 run = ["certs"]

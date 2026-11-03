@@ -8,6 +8,7 @@ version = "3.7.0"
 license = "GPL-2.0-or-later"
 description = "PostGIS: spatial types and functions for PostgreSQL."
 home = "https://postgis.net/"
+category = "server"
 purl = "pkg:generic/postgis@3.7.0"
 build = ["postgresql", "geos", "proj", "libxml2", "json-c", "perl", "pkgconf", "icu", "openssl", "readline", "ncurses", "util-linux", "zlib", "zstd"]
 run = ["postgresql", "gcc", "geos", "proj", "libxml2", "json-c"]

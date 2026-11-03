@@ -2,6 +2,7 @@ version = "1.32.0"
 license = "MIT"
 description = "libinput, shared, and the libinput tool: input devices for wlroots."
 home = "https://gitlab.freedesktop.org/libinput/libinput"
+category = "desk"
 purl = "pkg:generic/libinput@1.32.0"
 build = ["meson", "ninja", "python", "pkgconf", "libevdev", "libudev-zero"]
 run = ["libevdev", "libudev-zero"]

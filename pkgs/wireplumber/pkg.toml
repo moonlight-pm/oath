@@ -5,6 +5,7 @@ version = "0.5.18"
 license = "MIT"
 description = "WirePlumber: PipeWire's session manager, and wpctl."
 home = "https://pipewire.pages.freedesktop.org/wireplumber/"
+category = "sound"
 purl = "pkg:generic/wireplumber@0.5.18"
 build = ["meson", "ninja", "python", "pkgconf", "glib", "pipewire"]
 run = ["glib", "pipewire"]

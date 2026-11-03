@@ -10,6 +10,7 @@ version = "1.27.3"
 license = "BSD-3-Clause"
 description = "Go: the compiler, the go command and the standard library."
 home = "https://go.dev/"
+category = "toolchain"
 purl = "pkg:golang/stdlib@1.27.3"
 build = []
 run = []

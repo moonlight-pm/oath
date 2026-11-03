@@ -2,6 +2,7 @@ version = "3.0.4"
 license = "BSD-3-Clause"
 description = "MarkupSafe, which Mako needs. A build tool; not in the base image."
 home = "https://palletsprojects.com/p/markupsafe/"
+category = "toolchain"
 purl = "pkg:pypi/markupsafe@3.0.4"
 build = []
 

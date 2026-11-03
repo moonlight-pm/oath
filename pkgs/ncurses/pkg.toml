@@ -2,6 +2,7 @@ version = "6.6"
 license = "X11-distribute-modifications-variant"
 description = "ncurses: the terminal library and the terminfo database."
 home = "https://invisible-island.net/ncurses/"
+category = "base"
 purl = "pkg:generic/ncurses@6.6"
 build = []
 
