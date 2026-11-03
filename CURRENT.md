@@ -15,7 +15,7 @@ append history (git has it).
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
    the profile, and checks `/bin` and `/lib` names. Newest release: `debfd75332ea`
-   (2026-11-03), on no machine yet; buccina runs `1c09695ec24e`, canto and novus `c9735fc14e50`. Gap: a
+   (2026-11-03), on canto; buccina runs `1c09695ec24e` and takes it next; novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
@@ -29,7 +29,7 @@ append history (git has it).
    profile). R47: the profile pins Sola master `d6343e8b` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
    release `debfd75332ea` (68/68, 2026-11-03). Each machine reboots into it,
-   then sets it on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
+   then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Next: Joshua asks for a pull on novus and decides each reboot.
 4. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no

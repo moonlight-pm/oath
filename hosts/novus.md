@@ -104,9 +104,9 @@ Overwrite this file when facts change; do not append a diary.
   built locally: `pkg:sola` `5e077a2a695b`), and `keep_children` on
   `svc:sola-session` by hand (generation 40). An update swaps the overlay for
   the release's pins; `--keep` must take all 14 or none (the bus's Tab
-  payload changed). Seen 2026-11-02: output `3e42879d38e5`, `oath diff` in sync
-  with no overlay; last boot 2026-11-01 05:28Z, before that release was published
-  (21:42Z), so it has not rebooted into it.
+  payload changed). Seen 2026-11-03: output `c9735fc14e50`, booted 2026-11-02 19:10Z,
+  with 15 `pkg:sola*` overlays from master@822bb2dd that `oath update` replaces
+  unless `--keep`. buccina's `ssh novus` fails on a stale `known_hosts` line; use the route below.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the
