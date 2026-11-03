@@ -14,8 +14,8 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `debfd75332ea`
-   (2026-11-03), on canto and buccina; novus runs `c9735fc14e50` with Sola overlays. Gap: a
+   the profile, and checks `/bin` and `/lib` names. Newest release: `ca0f80bd441a`
+   (2026-11-03), on no machine yet; canto and buccina run `debfd75332ea`, novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
@@ -28,7 +28,7 @@ append history (git has it).
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `d6343e8b` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `debfd75332ea` (68/68, 2026-11-03). Each machine reboots into it,
+   release `ca0f80bd441a` (69/69, 2026-11-03). Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Next: Joshua asks for a pull on novus and decides each reboot.
 4. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
@@ -45,8 +45,8 @@ append history (git has it).
    by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.
    CVE-2026-99255 and 99262 wait for that 7.3.y. Next: the 2026-11-04 run publishes Codex
    0.165.0 and moves buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi
-   and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is on master, built
-   and checked as `ca0f80bd441a` (69/69), not published; the next release carries it either way.
+   and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is in `ca0f80bd441a`;
+   a machine has it from the reboot into it, and Joshua left canto on `debfd75332ea` for now.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9

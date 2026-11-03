@@ -56,8 +56,11 @@ if grep -q '^replace' go.mod; then
 	exit 1
 fi
 
+# GOPATH holds only what the go command remembers of the checksum database, kept
+# between runs so it can notice a log rolled back; its default is ~/go.
 export GOTOOLCHAIN=local GOFLAGS=-mod=readonly CGO_ENABLED=$cgo GOOS=linux GOARCH=amd64 \
-	GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOMODCACHE="$tmp/mod"
+	GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org GOMODCACHE="$tmp/mod" \
+	GOPATH="$HOME/.local/share/go"
 updates=$repo/pkgs/$name/go-updates.txt
 if [ -f "$updates" ]; then
 	# All at once: asked for one by one, a lower version of one module would
