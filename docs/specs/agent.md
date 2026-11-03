@@ -41,7 +41,8 @@ Replaces: roadmap phase 7's one line ("MCP and agent tooling over
 - **The agent is not a third user** (decisions, Principal). It runs as
   `home`, and writes go through `sudo`, as they do for the owner.
 - **Not a chatbot in PID 1** (scope.md). Oath ships no model, no API
-  key and no agent process.
+  key and no resident agent process; `writ` (R64) is an optional package a
+  person runs.
 
 ## Transport (built)
 

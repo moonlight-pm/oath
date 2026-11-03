@@ -268,3 +268,13 @@ cargo make update --qemu <older output>
   (http://10.0.2.2:<port> in QEMU), points the machine at it, updates,
   reboots, checks PID 1 and the ESP
 ```
+
+## writ (optional package, R64)
+
+```
+apps/writ                            source; pkg:writ, /bin/writ where it is installed
+~/.local/share/writ/sessions/<id>/   upper/, work/, empty: what a box wrote, outside the box
+~/.cache/writ/check-*/               writ check's project and canary, removed when it ends
+writ → /bin/bwrap → /writ inner → the command
+                                     user, mount, PID, net, IPC and UTS namespaces, Landlock, seccomp
+```

@@ -1,0 +1,10 @@
+# writ, Oath's coding agent, from apps/writ (R64). Rust's standard library only, so nothing
+# to pin but pkg:rust. Its box is pkg:bubblewrap and a stage of its own.
+version = "0.1.0"
+license = "MIT"
+description = "writ: a coding agent whose tools run in a box with no network, no home and no way to sudo."
+home = "https://github.com/moonlight-pm/oath"
+category = "agents"
+tree = "apps/writ"
+build = ["rust"]
+run = ["bubblewrap"]

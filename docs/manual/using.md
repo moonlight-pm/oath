@@ -180,6 +180,9 @@ generation or boot snapshot holds its data.
 `void` (uid 65534, home `/var/empty`) is the fourth account: nobody logs
 in as it; sshd, dhcpcd and chronyd drop to it.
 
+A program can trace or read the memory of its own descendants only (Yama, R64, from the next
+release), so `strace -p` or `gdb -p` on a program already running takes `sudo`.
+
 ### The password and the seat
 
 `home` has no password until you set one (R42, [login.md](../specs/login.md)):

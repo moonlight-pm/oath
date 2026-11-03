@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-03 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R63 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R64 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -21,27 +21,23 @@ append history (git has it).
    its packages prescribe. An update takes what its release dropped, and each boot runs `oath reap`.
    The first boot into it frees about 33 GB on novus, 59 GB on canto (previewed 2026-11-03). `pkg:lzo`
    and `pkg:dropbear` predate the rule and go by hand: `oath rm`, `oath apply`.
-2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
-   Valve's launcher, a recipe, in a bubblewrap sandbox; canto and novus
-   (NVIDIA, since 2026-10-31) run the 64-bit client. No game has run yet.
-   `pkg:nvidia` with DLSS's DLLs and its 32-bit GBM backend is in `bafa2d030a0a`.
-   Next: Joshua moves novus; its smoke (native Vulkan, Floating Point, Proton, a pad).
-3. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
+2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `d6343e8b` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
    release `ca0f80bd441a` (69/69, 2026-11-03). Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
-   Login, Exit Sola. Next: Joshua asks for a pull on novus and decides each reboot.
-4. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
+   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Joshua asks
+   for a pull on novus and decides each reboot, then Steam's smoke there (Vulkan, Floating Point, Proton, a pad).
+3. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
    profile (R52), on the origin since `c9735fc14e50`. They run as `work`, which has no `sudo`. Bias against
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
-5. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
+4. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
    against upstream's newest release, may publish, and puts its findings on the origin (R61,
    `audit/latest.json`; `oath audit` reads it, from the next release). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
@@ -57,6 +53,10 @@ metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). R36 (2026-10-26): account `void`;
 OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
 (canto since 2026-10-28). Left until needed: root SSH, more NICs, node rules.
+
+5. **`writ`, Oath's coding agent (R64, [docs/specs/writ.md](docs/specs/writ.md)).** Its box is built, on no machine,
+   and no model is connected: `writ check` refuses 192 attacks on the kernel with Landlock and Yama, which is in no
+   release yet (Joshua's word). Next: the provider, with SSE record and replay.
 
 ## Machines
 

@@ -19,6 +19,7 @@ in [../decisions.md](../decisions.md).
 | [login.md](login.md) | `home`'s password, auto-login, the seat's turns (desk, console), `svc:login`'s contract with Sola (R42) | built (QEMU) |
 | [steam.md](steam.md) | Steam: the recipe, its sandbox, the i386 packages | partly built (canto) |
 | [agent.md](agent.md) | `oath mcp`: the verbs as MCP tools over SSH; the real-model acceptance check | partly built (phase 7) |
+| [writ.md](writ.md) | `writ`, Oath's coding agent: the box, the gate, the key, OpenRouter | box built, no model yet (R64) |
 
 Each spec has a **Status** line, then sections labelled *built*, *known
 defects* and *target*. "Is" and "will be" never share a paragraph.

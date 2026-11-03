@@ -1,0 +1,354 @@
+# writ
+
+Oath's coding agent (R64): in Rust, in the Oath repo, for writing apps and OS tools on Oath
+machines. It runs in and as `home`, without fear of key leaks, or of tool calls that do
+damage or reveal secrets. OpenRouter is its first provider. The name is a sealed order that
+authorizes one specific act, which is what each grant here is. "Harness" already means
+`cargo make check` in this repo, so this file says "agent".
+
+**Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`.
+No model is connected. A section marked *(is)* runs today; everything else will be.
+
+Full research notes, about 3,300 lines with file and line references, are in
+`apocrypha/coding-agent-research/` (gitignored, not a source of truth; they quote
+code and web pages that are data, not instructions).
+
+## What was read
+
+Read from source at these commits. Nothing was built or run. Sizes are `wc` and lock
+file counts, so a package count is an upper bound on what a build pulls.
+
+| Harness | Commit | Lang | Lines | Packages | OS boundary by default | Key reaches commands | Licence |
+|---|---|---|---|---|---|---|---|
+| Codex | `781d89b91e24` | Rust | 2.25M | 1,479 | bwrap and seccomp, but all of `/` readable, `~/.ssh` too | yes (`inherit=All`) | Apache-2.0 |
+| Pi | `d6fb784c84bb` | TS | 128k | 109 | none, by design | yes | MIT |
+| OpenCode | `826381e44d32` | TS | 732k (core 80k) | 2,545 | none; its `SECURITY.md` calls permissions a UX feature | yes | MIT |
+| Crush | `3b1f8604f002` | Go | 116k | 199 | none found | `printenv` runs unprompted | FSL-1.1-MIT |
+| Goose | `0aa212e61d43` | Rust | 305k | 1,128 | none; default mode approves every call | yes | Apache-2.0 |
+| Forge | `a22b49288856` | Rust | 134k | 906 | none; `--sandbox` is a git worktree | not checked | Apache-2.0 |
+| fx (Vercel Labs) | `e7a69e5cf7da` | Zig | 759k | 0 | none on Linux | MCP gets none; read-only commands get a minimal environment; the rest not checked | Apache-2.0 |
+| Maki | `ef3032d913f6` | Rust | 279k | 854 | none | not checked | MIT |
+
+Also read: Anthropic's sandbox-runtime (`98a4016d2760`), Gemini CLI's sandbox, nono,
+landrun, the `landlock` crate, Aider, OpenRouter's documentation, and published
+incidents and evaluations. OpenAI's own posts returned 403, so what they say comes
+from secondary sources and Codex's source.
+
+**What this says:** nothing here meets the requirement as it ships. Permission rules
+in the harness are not a boundary, as OpenCode says itself. The one real sandbox
+leaves the home directory readable. No harness with a sandbox is lean, and no lean one
+has a sandbox. fx is Zig, and Crush's licence is not open source, so both are ideas only.
+
+## What has gone wrong
+
+Most classes are fixed by where a thing runs, not by a better check. Labels: **A**
+vendor advisory, **D** researcher's write-up or docs, **2** secondary only. None was
+reproduced here.
+
+| Class | Examples | Root cause | Control |
+|---|---|---|---|
+| Config runs at open | CVE-2025-59536, CVE-2026-21852 (A); CVE-2025-61260 (2) | Repo files carry authority | No project file grants anything |
+| Allowlist bypass | CVE-2025-66032 (D); CVE-2026-29783 (2) | Strings cannot model programs | No allowlist; the kernel decides |
+| Exfiltration through an allowed path | CVE-2025-55284, CVE-2026-54316 (A) | An allowed host is a channel | No network or DNS in the box |
+| Host half follows a path | CVE-2026-39861, CVE-2026-88968 (A) | Validate a name, then use it | File tools run in the box |
+| Model widens policy | CVE-2025-59532 (A) | Policy taken from model input | Fixed at start, outside the box |
+| Delayed execution | CVE-2026-25725, CVE-2026-55607 (A) | Box output is host input | Overlay and a hand-off gate |
+| Git on a hostile tree | CVE-2026-26268 (D); GitSpawn (2) | Git is an exec engine | Git only in the box |
+| Model routes around controls | `dangerouslyDisableSandbox` (D) | An exit the model can request | No such parameter |
+| Hidden text | Rules File Backdoor (2) | Human and model read differently | Show it; assume it works on the model |
+| Terminal escapes | CVE-2026-35651 (D) | Untrusted bytes at the decision | Pipes, one sanitizer |
+| Local server | OpenCode CVE-2026-22812 (2), CVE-2025-52882 (A) | Localhost as a boundary | No server |
+| MCP | MCPoison, CVE-2025-6514 (2) | Metadata is prompt, servers unconfined | Only `oath mcp`, or none |
+| Poisoned release | CVE-2025-8217 (D); Clinejection (A) | Third-party code, user's rights | Oath plan, no self-update |
+| Unattended agents | Comment and Control, PromptPwnd (2) | Attacker text, secrets and a channel together | Rule of Two |
+| No attacker at all | `rm -rf ~/` (2) | Ambient authority, no undo | Home not mounted; undo |
+| Shared kernel | Copy Fail (D) | One kernel | Narrow surface; only a VM closes it |
+
+Classifiers and "ignore instructions" prompts are not boundaries: "The Attacker Moves
+Second" broke 12 published defenses, most above 90% (D). Assume the model is compromised.
+
+## The design
+
+1. **Everything the model drives runs in the box.** Read, edit, grep and shell all run
+   there, so the host never opens a path the model named. The commands are not parsed:
+   the kernel decides what they can do. Codex itself removed its known-safe command
+   list; OpenCode's 2,565-line shell scanner sits beside a document saying permissions
+   are no boundary.
+2. **The key is never in the box.** The box has no route to OpenRouter and no file,
+   environment or process that holds the key.
+3. **Work is a transaction.** The box writes to an overlay, and the real tree does not
+   change until the owner applies it, with the same verbs as `oath`: `diff`, `apply`,
+   `undo`. One review at the end replaces approving every tool call, which people stop
+   reading (93% approved, D).
+
+```
+ terminal
+    │  one sanitizer at the write boundary
+┌───▼──────────── host, as home, trusted ─────────────┐
+│ core: loop, policy, session log, gate               │
+│ non-dumpable, holds the key, poll(2), no async      │
+│   ├── curl child ──► openrouter.ai, nowhere else    │
+│   │     key on stdin, own small box, no home        │
+│   └── one pipe pair, framed JSON, size-limited      │
+└───────┼─────────────────────────────────────────────┘
+┌───────▼──────────── box, uid 1 in a user namespace ─┐
+│ tool server: read edit write grep glob shell oath   │
+│ no network, no home, no TTY, no sudo, no KVM        │
+│ project = overlay (lower: real tree, read-only)     │
+└─────────────────────────────────────────────────────┘
+```
+
+## The box (is)
+
+`apps/writ/src/sandbox.rs` plans it, `pkg:bubblewrap` (0.13.1) builds it, and `inner.rs` closes
+it; any failure stops the box before a command runs. Own namespace code would be 700–1,000
+lines and no safer; the policy is ours either way. `plan_build.rs` is not a starting point: it uses `chroot` with an inner
+uid 0 and capabilities, so it is not a boundary.
+
+- **Root is an allowlist, not `/` minus a list:** read-only `/bin`, `/sbin`, `/lib`,
+  `/oath/store`, `/oath/INDEX.md`, what `oath` reads, and named parts of `/etc`. Oath's
+  root is small enough for this; srt, Codex and Gemini all start from `--ro-bind / /`.
+- **Home** is a 4 GiB tmpfs, and so is `/tmp`. `~/.cargo/registry` (not credentials) and the
+  Go module cache come in as overlays whose writes vanish with the box.
+- **Project:** refused if it holds home, or sits in a tool's directory at the top of home, or
+  is outside home, `/tmp` and `/work`.
+- **Project** is an overlay. Named secret paths (`.env*`, `*.pem`, `id_*`, `.netrc`) are
+  masked. That list is a convenience, not a boundary.
+- **Absent:** network (empty namespace), `/run/user`, `/dev/kvm`, `/dev/uinput`, tmux
+  sockets, `/oath/run/init.sock`. Pipes only, so no TTY and no terminal ioctls.
+- **Environment:** built from empty, twice. `Command::env_clear` is the one that counts:
+  bwrap's `--clearenv` only covers its child, and its own environment shows at `/proc/1/environ`.
+- **Inner stage:** stop if a terminal or a capability reached it; `no_new_privs` (which stops
+  the setuid `sudo`); close descriptors; limits; Landlock when the kernel has it, then seccomp.
+- **Seccomp** is default-allow with a hard deny: `io_uring_*`, `ptrace`, `process_vm_*`,
+  `keyctl` and friends, `unshare`, `setns`, `clone` with `CLONE_NEW*`, the mount family,
+  module loading, `perf_event_open`, terminal ioctls. `clone3` answers ENOSYS, since a
+  filter cannot read its flags. Wrong architecture is killed. Socket families are an
+  allowlist, which srt lacks. `apps/cell/run.go` already has most of this list.
+
+Killing bwrap ends the box: it is the PID namespace. `RLIMIT_NPROC` is 4096, which since Linux
+5.14 counts the box's own user namespace. `CONFIG_MEMCG` is off, so a box has no memory limit
+yet, and its writes can fill the disk.
+
+## `writ check` (is)
+
+It builds a small project and a canary under `~/.cache/writ`, runs the attacks in a box from
+`probe.rs`, then looks at the host. It reads no real secret: for the paths it names it asks only
+whether they exist. Attacks call the kernel directly, so a missing tool cannot pass for a
+refusal, and it also proves ordinary work still runs. It exits 1 if an attack got through or
+work broke; `--json` gives the same facts.
+
+A clean run proves little unless the suite can fail, so on 2026-11-03 the box was broken thirteen
+ways, one at a time (filter allowing everything, network or PID namespace shared, `~/.ssh`, the
+PID 1 socket and KVM mounted, no overlay, environment kept, no process limit, secrets unmasked,
+root writable, any directory a project, a capability kept). `writ check` failed on every one.
+
+## The gate (will be)
+
+Is: writes land in the session and the real tree stays byte for byte. Will be: the rest.
+
+- Writes land in `~/.local/share/writ/sessions/<id>/upper`. Sessions do not see each other.
+- `diff` walks the upper directory as plain data, with no symlink followed and no
+  program run. A whiteout is a delete. The host never runs git on it.
+- `.git/` in the upper directory and gitignored paths are dropped. The model can commit
+  in the box; that history does not leave it.
+- Flagged for the owner: symlinks, mode changes, and paths that run later: `build.rs`,
+  `Cargo.toml`, `.cargo/`, `Makefile*`, `configure`, `*.sh`, `package.json`, `go.mod`,
+  `.envrc`, `.github/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.mcp.json`, editor config.
+  No harness blocks these, because agents must edit them. So it is a review, not a list.
+- `apply` writes accepted files atomically, setuid bits stripped, and refuses when the
+  base moved. The owner commits.
+
+## The key (will be)
+
+- A file under `~/.config/writ/`, 0600, opened `O_NOFOLLOW`. The core sets
+  `PR_SET_DUMPABLE(0)`, which blocks `/proc/*/environ` and `/proc/*/mem` from same-uid
+  processes. Every child's environment is built from empty.
+- HTTP is `/bin/curl` (Mbed TLS) as a child: header through `--config -` on stdin, never
+  argv or environment; `--proto =https`; `--max-redirs 0`; one host compiled in. No TLS
+  crate and no async runtime, which is what `oath update` does already.
+- **What this does not do:** any *unconfined* process as `home`, such as another agent
+  beside it, can read that file, and with passwordless `sudo` moving it to root would not
+  help. So: a dedicated key, a low spend limit on it, a ZDR guardrail bound to it, and
+  never a management key on a machine that runs agents. Redaction is not a control: it
+  fails open on encoding and chunking.
+
+## Tools and approvals (will be)
+
+Tools: `read`, `edit`, `write`, `grep`, `glob`, `shell`, `oath`. `rg` is not on Oath, so grep and
+glob run `git grep`, `git ls-files` and `/bin/grep` in the box, capped.
+
+A human is asked only for what leaves the box, from structured data, once:
+
+| Grant | Shown | Scope |
+|---|---|---|
+| `oath` write verb | exact argv and `oath diff` | that call; `--confirm` never from the model |
+| Network | exact host and port | one box |
+| `apply` | the gate | the owner runs it |
+
+No "always allow", no escape parameter, no retry unsandboxed. Read verbs run in the box
+as `oath --json`; `reads` in `crates/oath/src/mcp.rs` is the one table of which is which.
+A write verb runs outside as `sudo -n oath …` from exact argv, no shell, clean
+environment, and `oath log` names the agent in `actor.via`.
+
+## The loop and context: what the evidence supports
+
+Public benchmarks are weak evidence. Terminal-Bench's own integrity update rescored
+ForgeCode's trials to 0 for putting the solution in its `AGENTS.md`, and its authors
+find the model usually matters more than the scaffold. **P** paper, **V** vendor with
+data, **C** source, **I** judgement.
+
+| Topic | Pick | Evidence |
+|---|---|---|
+| Edit | Exact replace, must be unique, then a deterministic ladder (Unicode one-to-one, trailing whitespace, indent). Loud refusal, no LLM fixer. Read first, staleness hash, atomic rename, line endings kept | Hashline gains only +3.4 over replace, and DeepSeek V3.2 *loses* 8.3 with 20% more tokens (V). Aider: 9x errors without flexible matching (V, old models) |
+| Search | Capped grep and glob, windowed read. No repo map, embeddings or LSP in v1 | Search with a 100-line window beat alternatives (P, GPT-4 era). LSP costs +6 to +118% tokens (P). Embeddings +0.3% (V) |
+| Context | Append-only, byte-stable prefix. At the lower of 60% of the window or about 150k tokens, mask old outputs in batches to restorable stubs, then hand off to a fresh session | Masking halved cost and matched summaries on 500 tasks with cheap models (P, best here). Thresholds are I |
+| Truncation | 8 KiB head and 8 KiB tail, the rest spilled to a file in the box, notice names the next offset | Convention only; no controlled comparison found |
+| Subagents | None in v1 | 15x tokens, coding less parallelizable (V) |
+| Verification | Project's check command in the instructions, one nudge at "done", at most 3 reflections | Lint gate 18% vs 15% (P, old). Half of test-passing PRs would not merge (METR) |
+| Guards | Turn and spend budgets, server-side key limit, identical call warn at 3, stop at 5, cycle detection | Gemini, Cline and Hermes converge there (C); no threshold study |
+| Bad calls | Repair name, JSON, schema, returned as tool errors. Never run calls from a `length`, `content_filter`, errored or aborted message. Refuse models without native tools; no text-parsed calls | Goose's shim runs any inline JSON (C) |
+| Prompt | About 800 tokens plus `/oath/INDEX.md` (5.3 KB). One prompt, model knobs as data | Small is unproven for results, good for audit. Context files add 20% cost, no success gain (P) |
+| Evals | SSE record and replay first (no spend), then 20–50 real-failure tasks, 3 trials; `check/agent.toml` is a ready start | Anthropic guidance (V); Cline's pass@k (C) |
+
+Instruction files (`AGENTS.md`) are read through the box and given to the model labelled
+as project text. They can steer it; they cannot widen anything.
+
+## OpenRouter (will be)
+
+Read from its documentation; nothing was called, and the wire shapes are composed, not
+captured. Estimated 600–800 lines plus 300 of tests.
+
+- **Endpoint:** Chat Completions. `/responses` is stateless too and has no per-block
+  `cache_control`.
+- **SSE:** skip `:` lines. Status applies only before commit; after that a failure is an
+  SSE `error` with `finish_reason:"error"`, even at zero tokens. Accumulate
+  `delta.tool_calls` by `index`. Send `tools` every request.
+- **Routing:** `provider:{zdr:true,data_collection:"deny",require_parameters:true}` on
+  each request, and a key-bound guardrail that a request cannot relax (tested,
+  [ideas.md](../ideas.md)). `max_price` is a hard filter. ZDR remains a policy promise.
+- **Cache:** byte-identical prefix, same slug, `session_id`. Auto Exacto can move
+  providers and lose it. **Open:** whether ZDR hosts for DeepSeek V4.x cache at all. It
+  is the main cost question and needs a real call.
+- **Replay:** `reasoning_details` verbatim, every tools request. DeepSeek also needs
+  `reasoning_content` on each assistant message, or 400.
+- **Model quirks as data:** Kimi (`$ref` alone, `enum` needs `type`, strip `index` on
+  replay), GLM (`tool_stream`), Qwen on DashScope (`enable_thinking`), DeepSeek (strip
+  leaked DSML from history, or replay teaches it).
+- **Errors:** branch on `limit_source` and `error.metadata.error_type`. `Retry-After` on
+  429 and 503, backoff on 408 and 502, stop on 403. `usage.cost` drives the budget.
+
+## Oath-first
+
+- A machine teaches the model: the prompt carries `/oath/INDEX.md`, and `oath schema` is
+  one call away.
+- The verbs are Oath's: `diff`, `apply`, `undo`; text by default, `--json` the same facts,
+  for a client or an unattended run.
+- `cargo test`, `cargo build --offline` and `go test` run in the box against read-only
+  caches. Fetching dependencies is a step the model does not drive.
+- `cargo make build`, `oath build` and `cargo make check` need nested user namespaces and
+  `/dev/kvm`, so they stay with the owner at first. A `build` box needs Landlock first,
+  since a nested namespace can detach read-only binds; that Landlock holds there is
+  inference, not tested.
+- It ships as an optional package, `apps/writ` and `pkg:writ`, not in `base`. Model, account
+  and key are the owner's and stay out of the package.
+- Tests that need `sudo` fail in the box, as they should. In `oath-core`, 119 of 120 pass there;
+  `svc_run`'s live test calls `sudo -n`, and that one stays with the owner.
+
+## Left out on purpose
+
+Generic MCP, plugins, hooks, project config, skills that run code, web fetch, subagents,
+LSP, repo map, embeddings, classifiers, shell parsing, command allowlists, self-update,
+telemetry, a catalog fetch at start, a local HTTP server, text-parsed tool calls. Each
+one is on the incident table or lost on evidence. Any of them can come back by decision.
+
+## What this does not stop
+
+- A kernel bug. The box shares the kernel; only a VM closes that.
+- What the agent reads reaches the provider. A secret in the project under a name nobody
+  listed goes with it.
+- A subtle backdoor you accept. `cargo build` on the host then runs it. The gate shows
+  it; it cannot judge it.
+- Exfiltration through network you grant.
+- A tired reviewer.
+- Other processes as `home`, outside the box.
+- Passwordless `sudo` turns any box failure into root at once. Whether a set password
+  makes `sudo` ask is Open in decisions.md (R42).
+
+## Borrowing
+
+Default: re-implement from reading, which carries no notice duty. No Codex crate is
+reusable anyway: even `codex-apply-patch` reaches 757 crates. Ported files keep their
+licence (Apache-2.0 needs its text, change notices and `NOTICE`). Pi's compaction prompts
+are MIT and worth taking, with credit. Crush, fx and bubblewrap's source are ideas only.
+
+| Take | From | Rough lines |
+|---|---|---|
+| Two-stage exec, mount plan, symlink-in-protected-path is fatal | Codex `linux-sandbox/src/linux_run_main.rs`, `bwrap.rs` | 550 |
+| Env from empty, read key without copies | Codex `protocol/src/shell_environment.rs`, `responses-api-proxy/src/read_api_key.rs` | 180 |
+| Edit matching | Pi `core/tools/edit-diff.ts`, OpenCode `tool/plugin/edit.ts`, Crush's read-first | 350 |
+| Bounded output, process control | Pi `core/tools/truncate.ts`, `bash.ts` | 550 |
+| Loop, history repair | Pi `packages/agent/src/agent-loop.ts`, `transform-messages.ts` | 600 |
+| OpenRouter quirks | Pi `openai-completions.ts`, OpenCode `ai/src/protocols/openai-chat.ts` | 700 |
+| Session tree, compaction | Pi `core/session-manager.ts`, `core/compaction/` | 650 |
+| Approval bound to exact command | fx `permissions/command_admission.zig` (idea) | 80 |
+| Differential renderer | Pi `packages/tui/src/tui-main-screen.ts` | 350 |
+| Loop detection | Crush `loop_detection.go` (idea) | 60 |
+
+## Size
+
+No crates at all: Rust's standard library, as `cell` and `route` have Go's. The kernel's interface
+is declared by hand in `sys.rs`, and JSON will be ours, about 300 lines. That goes further than
+the design first asked for, which allowed the crates already in `Cargo.lock`.
+
+| Part | Lines |
+|---|---|
+| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with unit tests) | 1,167 |
+| Attack suite: probe, check (is) | 1,000 |
+| Terminal sanitizer (is, with tests) | 149 |
+| Tool server (estimate) | 1,200 |
+| Provider, with JSON (estimate) | 1,100 |
+| Loop, repair, guards (estimate) | 900 |
+| Sessions, masking, hand-off (estimate) | 600 |
+| Renderer, line editor (estimate) | 650 |
+| Gate (estimate) | 500 |
+| `oath` tool, grants (estimate) | 300 |
+| **Total** | **about 7,500** |
+
+`docs/ideas.md` guessed the size of `cell` (2,900); that was low.
+
+## Tested (is)
+
+On buccina, 2026-11-03, as `home`, on kernel 7.3.1 without Landlock: 191 attacks refused, 9 writes
+held, 13 kinds of ordinary work fine, nothing through. On the real Oath tree (btrfs, 626,000 files,
+273 GB, a box in under a second) `cargo test` ran inside, 672 paths landed in the session, and
+`git status` and `.git/hooks` on the host did not change.
+
+In QEMU on the new kernel (output `57d674dc01f9`, Landlock ABI 11, `ptrace_scope` 1): 192 refused,
+9 held, 13 fine, nothing skipped, including the write only Landlock stops (EACCES). Under Landlock,
+a real `git` commit and `cargo test` and `cargo build --release` ran in the box, with renames, a
+FIFO and a symlink, and the project on the host gained no `.git` and no `target`.
+
+`writ check` is not in `cargo make check`: `base` has no bubblewrap, so it runs by hand until a
+machine has `pkg:writ`. The case `landlock-and-yama` covers the kernel.
+
+**Not tested:** the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
+Steam; `cargo` under heavy concurrent builds, `curl --config -` with a real key and a body
+on another fd. Overlayfs calls changes to the lower layer undefined, so editing the real tree during
+a session needs a test; a btrfs snapshot as the lower layer is the likely answer.
+
+## Open
+
+- **Model and route:** whether ZDR hosts for DeepSeek V4.x cache reads, and what that costs. It
+  takes a real call, and it comes with the provider.
+
+## Order of work
+
+1. Box and an attack suite, with no model at all. **Done 2026-11-03.**
+2. Provider with SSE record and replay. Done when replayed streams from OpenRouter parse,
+   error mid-stream and never run a truncated call.
+3. Tools and loop, on one model.
+4. The gate. Done when an attack suite through a real model leaves the real tree untouched
+   until `apply`.
+5. Terminal.
+6. `oath` tool, then `check/agent.toml` run through it.

@@ -985,6 +985,9 @@ names = ["wlroots"]
 repo = "https://gitlab.freedesktop.org/wlroots/wlroots"
 tag = "{version}"
 
+[writ]
+skip = "Oath's own coding agent (apps/writ): nothing but Rust's standard library, which pkg:rust's entry checks"
+
 [xcb-proto]
 skip = "protocol XML, data"
 compare_repo = "https://gitlab.freedesktop.org/xorg/proto/xcbproto"

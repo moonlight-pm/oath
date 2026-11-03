@@ -23,6 +23,11 @@ CONFIG_X86_VERBOSE_BOOTUP=y
 # TIOCSTI puts bytes in a terminal's input as if typed. Off, it takes CAP_SYS_ADMIN, so
 # what runs as work on home's terminal (sudo -u work, R55) cannot type into home's shell (R60).
 CONFIG_LEGACY_TIOCSTI=n
+# Landlock lets an unprivileged process give up paths for good, and it holds inside nested
+# namespaces: writ's box (R64). Yama, at its default ptrace_scope 1, lets a process trace or read
+# the memory of its own descendants only, so one program as home cannot read another's.
+CONFIG_SECURITY_LANDLOCK=y
+CONFIG_SECURITY_YAMA=y
 
 # EFI LoadImage / oath-efi
 CONFIG_EFI=y

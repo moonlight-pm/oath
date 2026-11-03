@@ -546,9 +546,17 @@ steps = [
 ]
 
 [[case]]
+name = "landlock-and-yama"
+about = "Landlock and Yama are in the kernel and running (R64): writ's box gives up paths with Landlock, and a process can ptrace only its descendants. `writ check` tests what they do."
+steps = [
+  { run = "zcat /proc/config.gz | grep -E '^CONFIG_SECURITY_(LANDLOCK|YAMA)='; echo ptrace_scope=$(cat /proc/sys/kernel/yama/ptrace_scope); sudo dmesg | grep -E 'landlock: Up|Yama: becoming'", expect = ["CONFIG_SECURITY_LANDLOCK=y", "CONFIG_SECURITY_YAMA=y", "ptrace_scope=1", "landlock: Up and running", "Yama: becoming mindful"] },
+]
+
+[[case]]
 name = "no-typing-into-a-terminal"
 about = "TIOCSTI is off (R60): a process on a terminal cannot put bytes in its input unless it is root, so what runs as work on home's terminal (R55) cannot type into home's shell"
 metal = true
+profile = "desk"
 steps = [
   { run = '''cat >/tmp/tiocsti.py <<'EOF'
 import fcntl, os, pty, termios

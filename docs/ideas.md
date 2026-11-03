@@ -5,6 +5,8 @@ built; what is decided goes in [decisions.md](decisions.md).
 
 ## A coding agent on a cheap model, through OpenRouter (parked 2026-11-03)
 
+R64 took this up as [`writ`](specs/writ.md); what follows is the research behind it.
+
 The goal was an agent that runs DeepSeek V4.1 Flash through OpenRouter, with
 nothing downloaded or sent home behind the owner's back. Joshua parked it to
 rethink it. `pkg:opencode` and a `codex-openrouter` wrapper were tried and left
