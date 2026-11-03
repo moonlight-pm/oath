@@ -545,7 +545,13 @@ if pid == 0:
     except OSError as e:
         print("refused", e.errno, flush=True)
     os._exit(0)
-print(os.read(fd, 99).decode())
+out = b""
+try:
+    while chunk := os.read(fd, 99):
+        out += chunk
+except OSError:
+    pass
+print(out.decode())
 EOF
 echo tiocsti=$(cat /proc/sys/dev/tty/legacy_tiocsti)''', expect = ["tiocsti=0"] },
   { run = "echo home: $(python3 -I /tmp/tiocsti.py); echo work: $(sudo -u work python3 -I /tmp/tiocsti.py)", expect = ["home: refused 5", "work: refused 5"] },
