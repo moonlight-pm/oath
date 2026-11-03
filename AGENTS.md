@@ -46,6 +46,7 @@ item 1. Do not re-plan from scratch.
 | `docs/manual/` | how to use what ships today | shipped behavior only |
 | `docs/roadmap.md` | phase status | flip only at phase level |
 | `docs/architecture.md` | as-built map: processes, trees, paths | |
+| `docs/ideas.md` | parked research | nothing decided or built; a decision moves to `decisions.md` |
 | `hosts/<name>.md` + `.json` | one machine's facts and install overlay | overwrite, no diary |
 | `site/pages/home.html` | oath.moonlight.pm: goals, the kinds, status | Status and counts dated; follow capabilities |
 

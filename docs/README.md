@@ -8,6 +8,7 @@
 | [architecture.md](architecture.md) | As-built map: processes, trees, paths |
 | [specs/](specs/README.md) | Target design, one file per domain |
 | [manual/](manual/README.md) | How to use what ships today |
+| [ideas.md](ideas.md) | Parked research: nothing decided or built |
 
 Priority and next steps live only in [../CURRENT.md](../CURRENT.md).
 Machine facts live in [../hosts/](../hosts/). How to keep these files
