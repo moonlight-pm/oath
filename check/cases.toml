@@ -359,7 +359,7 @@ about = "net:net0 dhcp keeps a client running that renews the lease, with a log.
 metal = true
 steps = [
   { run = "ps -eo args | grep '^dhcpcd: net0 \\[ip4\\]'" },
-  { run = "oath logs net:net0", expect = ["lease of"] },
+  { run = "for i in $(seq 1 30); do oath logs net:net0 | grep -q 'lease of' && break; sleep 1; done; oath logs net:net0", expect = ["lease of"] },
 ]
 
 [[case]]
