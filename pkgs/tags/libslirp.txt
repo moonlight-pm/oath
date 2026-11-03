@@ -1,6 +1,6 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source libslirp-v4.9.6.tar.gz 5bb4d30fd74042c23b4a0475f44d974a8e41dfdcf005476f03754bebc756b760
-tag v4.9.6 commit 392af90207fc51dd9f9044ee9b1f963f3c851c2c tree 5a2ba9aec5f4e1019b6b4297f38279615f804fd6
+source libslirp-v4.9.7.tar.gz d2567fa06a6357c7755d61c67293b2c0bf069b3f2173bde6b76cf768529a1938
+tag v4.9.7 commit ce12dcddf710a71dc0de6450ec95edbadf8e9f66 tree 76bf767416b730627a112dedbcb4da6fb0c27f20
 signed pgp 42D6C4F3218E2014A0B0ABB0A640E7710238F161
 same 154
 only-in-tag 0

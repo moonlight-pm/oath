@@ -467,6 +467,9 @@ cpe = "cpe:2.3:a:libslirp_project:libslirp"
 repo = "https://gitlab.freedesktop.org/slirp/libslirp"
 tag = "v{version}"
 
+[libslirp.age_because]
+source = "4.9.7, published 2026-10-30, is the only release with the fixes for CVE-2026-120830 (high) and CVE-2026-120831 (medium), both Red Hat's, 2026-11-03"
+
 [libsndfile]
 cpe = "cpe:2.3:a:libsndfile_project:libsndfile"
 repo = "https://github.com/libsndfile/libsndfile"

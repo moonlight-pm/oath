@@ -769,11 +769,11 @@
     "run": []
   },
   "libslirp": {
-    "version": "4.9.6",
+    "version": "4.9.7",
     "license": "BSD-3-Clause AND MIT",
     "by": "plan",
-    "plan": "sha256-72b48cef684fc844748dd05e80aa35e84b1656a189e77077d80fa0ef9bc24e95",
-    "product": "sha256-8d6d882ce1f570cec270a4be9042cd92648841b5ab5447b94f283ff76deeb78a",
+    "plan": "sha256-a18a98fa269ad7a32e9ca79297e5119877657d51f2d7dcec5a7c576014213b3f",
+    "product": "sha256-5ee68949f579ed0ce008954a657c788a0de12a0608fbbfd30c0049bfe7ac203e",
     "run": [
       "glib"
     ]
@@ -1469,7 +1469,7 @@
     "version": "11.1.3",
     "license": "GPL-2.0-only AND GPL-2.0-or-later AND LGPL-3.0-only AND BSD-2-Clause-Patent AND MIT AND OpenSSL",
     "by": "plan",
-    "plan": "sha256-f14d408db4c090b65c030c13fa508fc45dcd2c61de3a293db287fd0697bf386f",
+    "plan": "sha256-f82830d2112af95dce3903a3971b40940b50ae691256b2cf2c78e195c4a3de82",
     "product": "sha256-0b1ad2cc7f75ed3407971646878f2102c3be5697b528ddf66198b49bed2525ee",
     "run": [
       "glib",
