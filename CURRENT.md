@@ -39,14 +39,14 @@ append history (git has it).
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
 5. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans,
-   reads each pin against upstream's newest release, may publish. Published so
-   far: Linux 7.3.1 (`178ac39ce817`), then CEF 156.0.15 and expat's four CVE patches
-   (`3c4a23053b7a`, 2026-11-01). Left by Joshua's word: libsndfile, the toolchain
-   rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
-   2 h). 2026-11-02: the audit published nothing; R49-R59 and `pkg:certs` 3.132 went
-   out in `c9735fc14e50` by Joshua's word, ahead of it. Next: the 2026-11-04 run
-   publishes Codex 0.165.0 and moves buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi and
-   expat 2.10.0, from 2026-11-10, is Joshua's call.
+   reads each pin against upstream's newest release, may publish. Left by Joshua's
+   word: libsndfile, the toolchain rebuilds, flex, QEMU's 9p. An unattended run
+   cannot build CEF (commands stop at 2 h). 2026-11-03: 14 CVE fixes (12 io_uring
+   patches in Linux, libslirp 4.9.7) reached master, unpublished: a dirty tree stopped
+   the release. Next: the 2026-11-04 run publishes them, with Codex 0.165.0 (Joshua: "let
+   the audit publish it"), and moves buccina, unless he publishes sooner; the patches come out
+   at the first 7.3.y with the series; a CEF rebuild for fribidi and expat 2.10.0, from
+   2026-11-10, is his call. Open: `dev.tty.legacy_tiocsti=1` undercuts R55 ([docs/ideas.md](docs/ideas.md)).
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
