@@ -31,10 +31,11 @@ Overwrite this file when facts change; do not append a diary.
   beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `debfd75332ea` (master `dcb3216`, generation 159), from
+- **Running now:** output `ca0f80bd441a` (master `75def41`, generation 162), from
   `oath update --confirm --reboot` on 2026-11-03 at Joshua's word: Linux 7.3.1 with the
-  audit's 12 io_uring patches, in sync, 159 packages verified. The desk went off after it
-  (generation 161, below).
+  audit's 12 io_uring patches and TIOCSTI off (R60; `home` and `work` refused here), in sync,
+  159 packages verified, the desk still off after the reboot (below). Before it,
+  `debfd75332ea` (master `dcb3216`, generation 159, the same day).
   Before it, `1c09695ec24e` (master `6d20da0`, generation 133, 2026-11-02), at Joshua's
   word and not published: `cargo make publish --dest` into a directory, served on loopback
   as a second origin for `oath update --output`, after a rehearsal from `1caabcfb0b8c`.

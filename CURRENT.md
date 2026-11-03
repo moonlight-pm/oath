@@ -15,7 +15,7 @@ append history (git has it).
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
    the profile, and checks `/bin` and `/lib` names. Newest release: `ca0f80bd441a`
-   (2026-11-03), on no machine yet; canto and buccina run `debfd75332ea`, novus `c9735fc14e50`. Gap: a
+   (2026-11-03), on buccina; canto runs `debfd75332ea`, novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1.
 2. **Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)).**
@@ -45,8 +45,8 @@ append history (git has it).
    by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.
    CVE-2026-99255 and 99262 wait for that 7.3.y. Next: the 2026-11-04 run publishes Codex
    0.165.0 and moves buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi
-   and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is in `ca0f80bd441a`;
-   a machine has it from the reboot into it, and Joshua left canto on `debfd75332ea` for now.
+   and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is in `ca0f80bd441a`, on
+   buccina; a machine has it from the reboot into it, and Joshua left canto on `debfd75332ea` for now.
 
 **State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
 metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
