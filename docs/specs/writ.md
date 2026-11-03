@@ -261,9 +261,8 @@ own and arguments that parse to an object with no duplicate key. All of them or 
 tool call is cut at every byte in a test, and nothing comes out runnable until the last byte. The
 OpenRouter section below still applies to the same code: its shapes have not been seen for real.
 
-**Speed on buccina**, CPU only, 8 threads: Qwen3 1.7B at Q4 gives 24 to 27 tokens a second, and a
-175-token prompt with one tool takes about 1.7 seconds. That is enough to test with and too small a
-model for real coding. Real work wants novus's RTX 3090 Ti, which needs the Vulkan backend (a build
+**Speed on buccina**, CPU only, 8 threads, otherwise idle: Qwen3 1.7B at Q4 gives about 35 tokens a
+second. That is enough to test with and too small a model for real coding. Real work wants novus's RTX 3090 Ti, which needs the Vulkan backend (a build
 package for `glslc`, not built) and its device nodes in the box (not built).
 
 ## OpenRouter (will be)
