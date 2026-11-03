@@ -34,16 +34,16 @@ fn emit(name: &str, state: &str, detail: &str) {
     println!("{}\t{state}\t{}", clean(name), clean(detail));
 }
 
-fn refused(name: &str, detail: &str) {
+pub fn refused(name: &str, detail: &str) {
     emit(name, "refused", detail);
 }
-fn leak(name: &str, detail: &str) {
+pub fn leak(name: &str, detail: &str) {
     emit(name, "LEAK", detail);
 }
-fn works(name: &str) {
+pub fn works(name: &str) {
     emit(name, "works", "");
 }
-fn broken(name: &str, detail: &str) {
+pub fn broken(name: &str, detail: &str) {
     emit(name, "BROKEN", detail);
 }
 fn skip(name: &str, detail: &str) {
@@ -191,7 +191,7 @@ fn no_socket(name: &str, nr: c_long, args: [usize; 6]) {
     }
 }
 
-fn filter_refuses() {
+pub fn filter_refuses() {
     // Zero arguments are harmless if a call gets through, but for ptrace, where request 0 is
     // PTRACE_TRACEME. Only the filter says EPERM to all of them, so anything else means the
     // call reached the kernel.

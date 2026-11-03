@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
 
-const BWRAP: &str = "/bin/bwrap";
+pub const BWRAP: &str = "/bin/bwrap";
 /// Where writ's own binary is in a box.
 pub const INNER: &str = "/writ";
 /// A tmpfs is memory, so a box cannot fill the machine's with /tmp or its home.
@@ -217,7 +217,7 @@ fn open_up(dir: &Path) {
 
 /// bwrap comes from the store, read-only and root's. Not from the project or a directory the
 /// box could write.
-fn trusted_bwrap() -> Result<(), String> {
+pub fn trusted_bwrap() -> Result<(), String> {
     let real = fs::canonicalize(BWRAP).map_err(|e| format!("{BWRAP}: {e}"))?;
     let m = fs::metadata(&real).map_err(|e| format!("{}: {e}", real.display()))?;
     if m.uid() != 0 || m.mode() & 0o022 != 0 {

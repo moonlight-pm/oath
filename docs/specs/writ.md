@@ -2,12 +2,13 @@
 
 Oath's coding agent (R64): in Rust, in the Oath repo, for writing apps and OS tools on Oath
 machines. It runs in and as `home`, without fear of key leaks, or of tool calls that do
-damage or reveal secrets. OpenRouter is its first provider. The name is a sealed order that
+damage or reveal secrets. A local model is its first provider (R65), then OpenRouter. The name is a sealed order that
 authorizes one specific act, which is what each grant here is. "Harness" already means
 `cargo make check` in this repo, so this file says "agent".
 
-**Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`.
-No model is connected. A section marked *(is)* runs today; everything else will be.
+**Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`. A
+local model runs in a box of its own, and `writ` can ask it one thing: `writ serve`, `writ ask`, R65.
+The model can run nothing yet. A section marked *(is)* runs today; everything else will be.
 
 Full research notes, about 3,300 lines with file and line references, are in
 `apocrypha/coding-agent-research/` (gitignored, not a source of truth; they quote
@@ -57,7 +58,7 @@ reproduced here.
 | Model routes around controls | `dangerouslyDisableSandbox` (D) | An exit the model can request | No such parameter |
 | Hidden text | Rules File Backdoor (2) | Human and model read differently | Show it; assume it works on the model |
 | Terminal escapes | CVE-2026-35651 (D) | Untrusted bytes at the decision | Pipes, one sanitizer |
-| Local server | OpenCode CVE-2026-22812 (2), CVE-2025-52882 (A) | Localhost as a boundary | No server |
+| Local server | OpenCode CVE-2026-22812 (2), CVE-2025-52882 (A) | Localhost as a boundary | No server of writ's own; a model's is on a socket, not a port |
 | MCP | MCPoison, CVE-2025-6514 (2) | Metadata is prompt, servers unconfined | Only `oath mcp`, or none |
 | Poisoned release | CVE-2025-8217 (D); Clinejection (A) | Third-party code, user's rights | Oath plan, no self-update |
 | Unattended agents | Comment and Control, PromptPwnd (2) | Attacker text, secrets and a channel together | Rule of Two |
@@ -143,6 +144,11 @@ ways, one at a time (filter allowing everything, network or PID namespace shared
 PID 1 socket and KVM mounted, no overlay, environment kept, no process limit, secrets unmasked,
 root writable, any directory a project, a capability kept). `writ check` failed on every one.
 
+It attacks the box `writ serve` uses too (R65), which is smaller and has no project, and that was
+broken eleven ways the same day (network or PID namespace shared; home, `/etc` or all of `/dev`
+mounted; root or the model writable; the socket's directory read-only; environment kept by one layer
+or both; no second stage). It failed on every one.
+
 ## The gate (will be)
 
 Is: writes land in the session and the real tree stays byte for byte. Will be: the rest.
@@ -214,6 +220,52 @@ data, **C** source, **I** judgement.
 Instruction files (`AGENTS.md`) are read through the box and given to the model labelled
 as project text. They can steer it; they cannot widen anything.
 
+## Local models (is)
+
+R65. `pkg:llama-cpp` is llama.cpp's `llama-server` from its tag (b11935, the lowest with the last fix
+that is a week old): 16 MB, one program, nothing it needs but libstdc++. Ollama lost on R57. It runs
+this same program under 55 Go modules, 28 of them new names, and adds endpoints that pull, create and
+push models, where its worst CVEs were; it publishes no advisories, and llama.cpp does. Its Linux
+tarball is 2.4 GB and unsigned. What this route gives up: `ollama pull`, so a model is a file you
+fetch and check by the sha256 Hugging Face publishes; and CUDA, which takes NVIDIA's compiler.
+
+The build leaves out plugins, the HTTPS client, subprocesses (router mode and its shell tool), RPC
+and the web UI, and turns on what catches a bad index or copy (`_GLIBCXX_ASSERTIONS`,
+`_FORTIFY_SOURCE=3`). A static build of ggml still looks for plugins to `dlopen` in the current
+directory and at `GGML_BACKEND_PATH`, so a small patch stops that; `build.sh` plants one and checks,
+and the check does fail without the patch. Its file tools remain, behind `--tools`, which nothing
+here passes.
+
+`writ serve --model FILE`: a box like the project's, with less in it. The model is read-only at
+`/model.gguf`; `/bin`, `/lib` and the store are there, and `/etc`, home and `/work` are not; the
+only places it can write are a small `/tmp` and the socket's directory. It has no network link at all.
+It listens on `~/.local/share/writ/llama/llama.sock`, in a directory only `home` can enter, so `work`,
+a project's box and a web page cannot reach it, and no port is open. It runs as `home`, which R55 would
+make `work`: neither account can reach the other's directory, so `work` cannot make a socket only `home`
+reaches. A CPU without AVX2 gets a sentence, not an illegal instruction.
+
+As a service, on a machine that wants one always loaded:
+
+```
+sudo oath new svc:llama --from-json '{"exec":["/bin/writ","serve","--model","/home/.local/share/writ/models/M.gguf"],"wants":[],"restart":"on-failure","enabled":true,"user":"home"}'
+sudo oath apply svc:llama
+```
+
+`writ ask PROMPT` sends one request through a `curl` child and shows the turn, cleaned. It runs nothing:
+with `--tool` it offers `read_file` and reports the call. `--record` keeps the stream's bytes, and
+`--replay` reads them back, which is where `testdata/` comes from.
+
+`chat.rs` turns a stream into a turn, and a call runs only if the stream reached `[DONE]` after
+`tool_calls` or `stop`, curl exited clean, and every call in the turn has a good name, an id of its
+own and arguments that parse to an object with no duplicate key. All of them or none. A real captured
+tool call is cut at every byte in a test, and nothing comes out runnable until the last byte. The
+OpenRouter section below still applies to the same code: its shapes have not been seen for real.
+
+**Speed on buccina**, CPU only, 8 threads: Qwen3 1.7B at Q4 gives 24 to 27 tokens a second, and a
+175-token prompt with one tool takes about 1.7 seconds. That is enough to test with and too small a
+model for real coding. Real work wants novus's RTX 3090 Ti, which needs the Vulkan backend (a build
+package for `glslc`, not built) and its device nodes in the box (not built).
+
 ## OpenRouter (will be)
 
 Read from its documentation; nothing was called, and the wire shapes are composed, not
@@ -259,7 +311,7 @@ captured. Estimated 600–800 lines plus 300 of tests.
 
 Generic MCP, plugins, hooks, project config, skills that run code, web fetch, subagents,
 LSP, repo map, embeddings, classifiers, shell parsing, command allowlists, self-update,
-telemetry, a catalog fetch at start, a local HTTP server, text-parsed tool calls. Each
+telemetry, a catalog fetch at start, a local HTTP server of its own, text-parsed tool calls. Each
 one is on the incident table or lost on evidence. Any of them can come back by decision.
 
 ## What this does not stop
@@ -298,22 +350,24 @@ are MIT and worth taking, with credit. Crush, fx and bubblewrap's source are ide
 ## Size
 
 No crates at all: Rust's standard library, as `cell` and `route` have Go's. The kernel's interface
-is declared by hand in `sys.rs`, and JSON will be ours, about 300 lines. That goes further than
+is declared by hand in `sys.rs`, and JSON is ours, 405 lines with tests. That goes further than
 the design first asked for, which allowed the crates already in `Cargo.lock`.
 
 | Part | Lines |
 |---|---|
-| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with unit tests) | 1,167 |
-| Attack suite: probe, check (is) | 1,000 |
+| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with unit tests) | 1,169 |
+| Attack suite: probe, check (is) | 1,025 |
 | Terminal sanitizer (is, with tests) | 149 |
 | Tool server (estimate) | 1,200 |
-| Provider, with JSON (estimate) | 1,100 |
+| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,354 |
+| `writ serve` and its attacks (is, with tests) | 339 |
+| OpenRouter's part of the provider (estimate) | 300 |
 | Loop, repair, guards (estimate) | 900 |
 | Sessions, masking, hand-off (estimate) | 600 |
 | Renderer, line editor (estimate) | 650 |
 | Gate (estimate) | 500 |
 | `oath` tool, grants (estimate) | 300 |
-| **Total** | **about 7,500** |
+| **Total** | **about 8,500** |
 
 `docs/ideas.md` guessed the size of `cell` (2,900); that was low.
 
@@ -329,10 +383,19 @@ In QEMU on the new kernel (output `57d674dc01f9`, Landlock ABI 11, `ptrace_scope
 a real `git` commit and `cargo test` and `cargo build --release` ran in the box, with renames, a
 FIFO and a symlink, and the project on the host gained no `.git` and no `target`.
 
+With a model: on buccina the server ran in its box as above, with its own network namespace, no
+listening port, capabilities empty, `no_new_privs`, seccomp in force and three variables in its
+environment. `work` and a project's box could not reach its socket; killing the server mid-answer ended
+the turn as an error; a second server was refused; a dead one's socket was reclaimed; a junk file, a
+truncated model and a header claiming 2^63 tensors each failed cleanly. On the new kernel, in QEMU with
+the host's CPU: `writ check` refused 295 attacks with nothing through, and a real server loaded a small
+model and answered under Landlock ABI 11 and `ptrace_scope` 1.
+
 `writ check` is not in `cargo make check`: `base` has no bubblewrap, so it runs by hand until a
 machine has `pkg:writ`. The case `landlock-and-yama` covers the kernel.
 
-**Not tested:** the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
+**Not tested:** a GPU in a server's box; a model larger than 1.7B; a crafted model file that reaches
+past the parser's checks; the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
 Steam; `cargo` under heavy concurrent builds, `curl --config -` with a real key and a body
 on another fd. Overlayfs calls changes to the lower layer undefined, so editing the real tree during
 a session needs a test; a btrfs snapshot as the lower layer is the likely answer.
@@ -345,10 +408,11 @@ a session needs a test; a btrfs snapshot as the lower layer is the likely answer
 ## Order of work
 
 1. Box and an attack suite, with no model at all. **Done 2026-11-03.**
-2. Provider with SSE record and replay. Done when replayed streams from OpenRouter parse,
-   error mid-stream and never run a truncated call.
-3. Tools and loop, on one model.
+2. Provider with SSE record and replay, on a local model first (R65). **Done 2026-11-03** for
+   `llama-server`: its streams replay, an error ends a turn, and a truncated call never runs.
+3. Tools and loop, on a local model. Vulkan and the GPU in the box, so one good enough to judge runs.
 4. The gate. Done when an attack suite through a real model leaves the real tree untouched
    until `apply`.
 5. Terminal.
 6. `oath` tool, then `check/agent.toml` run through it.
+7. OpenRouter: the key, its stream's shapes from real captures, routing and budget.

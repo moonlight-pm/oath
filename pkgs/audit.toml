@@ -623,6 +623,16 @@ skip = "pkg:linux's own tree, for outside modules: its CVEs are pkg:linux's"
 compare_repo = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
 compare_tag = "v{version}"
 
+[llama-cpp]
+cpe = "cpe:2.3:a:ggml:llama.cpp"
+names = ["llama.cpp"]
+repo = "https://github.com/ggml-org/llama.cpp"
+tag = "{version}"
+unchecked = "a tag for every merge, many a day, and no line to follow: its CVEs are matched by commit, and a fix is the lowest tag with it that is a week old"
+
+[llama-cpp.not_affected]
+"CVE-2024-21802" = "the record names only commit 18c2e17 (2024-01), 10,139 commits behind this pin; gguf.cpp now checks each tensor dimension and their product against INT64_MAX before using them"
+
 [locales]
 skip = "glibc's locale data: its CVEs are pkg:glibc's"
 

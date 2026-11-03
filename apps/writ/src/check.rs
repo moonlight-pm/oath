@@ -4,7 +4,7 @@
 //! asks only whether they exist.
 
 use crate::sandbox::{self, Plan, Session};
-use crate::{landlock, sys, term};
+use crate::{landlock, serve, sys, term};
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs;
@@ -384,8 +384,17 @@ fn attack(home: &Path, base: &Path, project: &Path, tag: &str) -> Result<Vec<Lin
         ));
     }
 
-    let mut lines: Vec<Line> = out
-        .lines()
+    let mut lines = lines_of(&out);
+
+    judge_host(&mut lines, &before, project, &session.upper, &marker);
+    judge_refused_projects(&mut lines, home, &project.join("link-home"));
+    session.remove()?;
+    attack_serve_box(&mut lines, home, base, &env_text)?;
+    Ok(lines)
+}
+
+fn lines_of(out: &str) -> Vec<Line> {
+    out.lines()
         .filter_map(|l| {
             let mut f = l.splitn(3, '\t');
             Some(Line {
@@ -394,10 +403,20 @@ fn attack(home: &Path, base: &Path, project: &Path, tag: &str) -> Result<Vec<Lin
                 detail: f.next().unwrap_or("").to_string(),
             })
         })
-        .collect();
+        .collect()
+}
 
-    judge_host(&mut lines, &before, project, &session.upper, &marker);
-    judge_refused_projects(&mut lines, home, &project.join("link-home"));
-    session.remove()?;
-    Ok(lines)
+/// The box `writ serve` runs a model in. It has no model here: the attacks run in its place.
+fn attack_serve_box(lines: &mut Vec<Line>, home: &Path, base: &Path, env_text: &str) -> Result<(), String> {
+    let (model, dir) = (base.join("model.gguf"), base.join("sock"));
+    fs::write(&model, "not a model").map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let out = serve::probe_command(home, &model, &dir, env_text)?.output().map_err(|e| format!("bwrap: {e}"))?;
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    if !text.lines().any(|l| l == "done") {
+        let err = String::from_utf8_lossy(&out.stderr).into_owned();
+        return Err(format!("the attacks on a server's box did not finish: {}", term::scrub(&err)));
+    }
+    lines.extend(lines_of(&text));
+    Ok(())
 }

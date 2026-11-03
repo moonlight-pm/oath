@@ -1072,6 +1072,16 @@
       "elfutils"
     ]
   },
+  "llama-cpp": {
+    "version": "b11935",
+    "license": "MIT AND BSD-2-Clause AND (MIT OR Unlicense) AND (Unlicense OR MIT-0)",
+    "by": "plan",
+    "plan": "sha256-817d9e56adcbddcf0eadfd1454779be76cb83549a066379947b4d7dfe1834153",
+    "product": "sha256-0190091a0275893b3f31248c66d53085959c800c42c7f1efaca9ea92288d1fc9",
+    "run": [
+      "gcc"
+    ]
+  },
   "locales": {
     "version": "2.44",
     "license": "LGPL-2.1-or-later",
@@ -1743,10 +1753,11 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-2460050363a2f94706431a5e0090138263df2e6800f635b751d875176d31a472",
-    "product": "sha256-c72b9e85b868b18b09099ec6280ceedb111abc03b71f63073b63c9649d6c5345",
+    "plan": "sha256-e6e0b7cff53e87c306db3ba58a046b9e4eb792344c22fd3a298f6bc14b8b20c1",
+    "product": "sha256-696fd1a7c4ac917e63379140091556749f04d564a655d356654c8e3593e364bd",
     "run": [
-      "bubblewrap"
+      "bubblewrap",
+      "curl"
     ]
   },
   "xcb-proto": {

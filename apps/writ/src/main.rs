@@ -1,16 +1,23 @@
-//! writ, Oath's coding agent (R64). What exists so far is its box: everything a model will
-//! drive runs in one, with no network, no home, no terminal and no way to `sudo`, and the
-//! real tree does not change until the owner says so. `docs/specs/writ.md` has the design.
+//! writ, Oath's coding agent (R64). What exists so far is its box, where everything a model
+//! will drive runs, with no network, no home, no terminal and no way to `sudo`; a local model
+//! served from a box of its own (R65); and the first half of talking to it. The real tree does
+//! not change until the owner says so. `docs/specs/writ.md` has the design.
 
+mod chat;
 mod check;
 mod inner;
+mod json;
 mod landlock;
+mod model;
 mod probe;
 mod sandbox;
 mod seccomp;
+mod serve;
+mod sse;
 mod sys;
 mod term;
 
+use chat::{Delta, Finish};
 use sandbox::{Plan, Session};
 use std::ffi::OsString;
 use std::io::Write;
@@ -25,11 +32,25 @@ writ: run things in a box that cannot reach your keys, your home or the network.
 Usage:
   writ check [--json] [-v]     Attack the box on this machine and report what got through.
   writ run [OPTIONS] -- CMD    Run one command in a box over the project.
+  writ serve --model FILE      Serve a local model from a box, on a socket only you can reach.
+  writ ask [OPTIONS] PROMPT    Ask the local model one thing. It can run nothing.
 
 Options for run:
   --project DIR    The project, mounted as an overlay. Default: this directory.
   --session NAME   Keep writes in ~/.local/share/writ/sessions/NAME. Default: drop them.
   --timeout SECS   Kill the box after this long.
+
+Options for serve:
+  --threads N      CPU threads. Default: the server's choice.
+  --context N      Context size in tokens. Default: 16384.
+  -- ARGS          Passed on to llama-server, in the box.
+
+Options for ask:
+  --tool           Offer one tool, read_file, and report the call the model makes.
+  --max-tokens N   Default: 1024.
+  --timeout SECS   Default: 600.
+  --record FILE    Keep the stream's bytes.
+  --replay FILE    Read a recorded stream instead of asking.
 
 Writes in a box never reach the real tree. Applying them is not built yet.
 ";
@@ -129,6 +150,88 @@ fn run(args: &[OsString]) -> Result<i32, String> {
     Ok(status.code().unwrap_or_else(|| 128 + status.signal().unwrap_or(0)))
 }
 
+/// One question to the local model. What it says is cleaned before it reaches the terminal, and
+/// nothing it asks for runs: a call is reported, with whether it could have run.
+fn ask(args: &[OsString]) -> Result<i32, String> {
+    let mut prompt: Option<String> = None;
+    let mut tool = false;
+    let mut max_tokens: u64 = 1024;
+    let mut limit = Duration::from_secs(600);
+    let mut record: Option<PathBuf> = None;
+    let mut replay: Option<PathBuf> = None;
+    let mut it = args.iter();
+    let number = |v: Option<&OsString>, what: &str| -> Result<u64, String> {
+        v.and_then(|s| s.to_str()).and_then(|s| s.parse().ok()).ok_or(format!("{what} takes a number"))
+    };
+    while let Some(a) = it.next() {
+        match a.to_str() {
+            Some("--tool") => tool = true,
+            Some("--max-tokens") => max_tokens = number(it.next(), "--max-tokens")?,
+            Some("--timeout") => limit = Duration::from_secs(number(it.next(), "--timeout")?),
+            Some("--record") => record = it.next().map(PathBuf::from),
+            Some("--replay") => replay = it.next().map(PathBuf::from),
+            Some(s) if !s.starts_with("--") && prompt.is_none() => prompt = Some(s.to_string()),
+            _ => return Err(format!("unknown argument {}", a.to_string_lossy())),
+        }
+    }
+
+    let mut clean = term::Clean::default();
+    let mut thinking = false;
+    let show = |d: Delta| {
+        let mut out = std::io::stdout();
+        let text = match d {
+            Delta::Reasoning(t) => {
+                if !thinking {
+                    thinking = true;
+                    let _ = out.write_all(b"[thinking] ");
+                }
+                t
+            }
+            Delta::Content(t) => {
+                if thinking {
+                    thinking = false;
+                    let _ = out.write_all(b"\n[answer] ");
+                }
+                t
+            }
+        };
+        let _ = out.write_all(clean.push(text.as_bytes()).as_bytes());
+        let _ = out.flush();
+    };
+    let turn = match &replay {
+        Some(path) => model::replay(path, show)?,
+        None => {
+            let prompt = prompt.ok_or("writ ask needs a prompt")?;
+            let socket = serve::socket(&sandbox::home()?);
+            let tools = if tool { vec![model::READ_FILE] } else { vec![] };
+            let body = chat::request("local", &[chat::message("user", &prompt)], &tools, max_tokens)?;
+            model::send(&model::Endpoint::Local(socket), &body, limit, record.as_deref(), show)?
+        }
+    };
+    println!();
+
+    for c in &turn.calls {
+        println!("[call] {}({})", term::scrub(&c.name), term::scrub(&c.arguments));
+    }
+    if !turn.calls.is_empty() {
+        match turn.runnable() {
+            Ok(_) => println!("[call] well formed; writ ask runs nothing"),
+            Err(e) => println!("[call] would not run: {}", term::scrub(&e)),
+        }
+    }
+    if let Some(u) = &turn.usage {
+        let speed = u.tokens_per_second.map(|s| format!(", {s:.1} tokens/s")).unwrap_or_default();
+        eprintln!("[usage] {} in, {} out, {} cached{speed}", u.prompt_tokens, u.completion_tokens, u.cached_tokens);
+    }
+    match &turn.finish {
+        Finish::Stop | Finish::ToolCalls => Ok(0),
+        other => {
+            eprintln!("writ: the turn ended badly: {}", term::scrub(&format!("{other:?}")));
+            Ok(1)
+        }
+    }
+}
+
 fn main() {
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
     let rest = args.get(1..).unwrap_or(&[]);
@@ -137,6 +240,7 @@ fn main() {
         Some("inner") => inner::main(rest),
         Some("probe") => probe::main(rest),
         Some("probe-one") => probe::one(rest.first().and_then(|a| a.to_str())),
+        Some("probe-serve") => serve::probe(rest),
         Some("check") => {
             harden();
             check::main(rest)
@@ -148,6 +252,26 @@ fn main() {
                 Err(e) => {
                     eprintln!("writ: {e}");
                     inner::REFUSED_TO_START
+                }
+            }
+        }
+        Some("serve") => {
+            harden();
+            match serve::main(rest) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("writ: {e}");
+                    inner::REFUSED_TO_START
+                }
+            }
+        }
+        Some("ask") => {
+            harden();
+            match ask(rest) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("writ: {e}");
+                    2
                 }
             }
         }

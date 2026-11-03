@@ -1,0 +1,15 @@
+--- a/ggml/src/ggml-backend-reg.cpp
++++ b/ggml/src/ggml-backend-reg.cpp
+@@ -569,6 +569,12 @@
+ }
+ 
+ void ggml_backend_load_all_from_path(const char * dir_path) {
++#ifndef GGML_BACKEND_DL
++    // Oath: every backend is linked in. A static build would still look for plugins to
++    // dlopen beside the program, in the current directory and at GGML_BACKEND_PATH.
++    (void) dir_path;
++    return;
++#endif
+ #ifdef NDEBUG
+     bool silent = true;
+ #else

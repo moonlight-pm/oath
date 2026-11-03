@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source llama.cpp-b11935.tar.gz 0bfc7af823a4c25fb2d21dfdce40eb878aa76dbbcc16648e679cc56796f6692c
+tag b11935 commit 7ecb57f7adbea2928aa468ad2aecf05b10725ad4 tree da7488c5b5b9968d23d28f39b8fac77bfbbdf890
+signed no
+same 3930
+only-in-tag 0
