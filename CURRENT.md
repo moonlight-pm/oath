@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-03 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R64 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R65 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -17,10 +17,9 @@ append history (git has it).
    the profile, and checks `/bin` and `/lib` names. Newest release: `ca0f80bd441a`
    (2026-11-03), on buccina; canto runs `debfd75332ea`, novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
-   (built, unreleased); `oath` checks PID 1. R62, built and in no release yet: a machine holds what
-   its packages prescribe. An update takes what its release dropped, and each boot runs `oath reap`.
-   The first boot into it frees about 33 GB on novus, 59 GB on canto (previewed 2026-11-03). `pkg:lzo`
-   and `pkg:dropbear` predate the rule and go by hand: `oath rm`, `oath apply`.
+   (built, unreleased); `oath` checks PID 1. R62 (no release yet): a machine holds what its packages
+   prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. On canto and novus,
+   `pkg:lzo` (and canto's `pkg:dropbear`) predate it and go by hand, Joshua's call.
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
@@ -38,8 +37,7 @@ append history (git has it).
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
 4. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
-   against upstream's newest release, may publish, and puts its findings on the origin (R61,
-   `audit/latest.json`; `oath audit` reads it, from the next release). Left by Joshua's word: libsndfile, the
+   against upstream's newest release, may publish, and puts findings on the origin (R61). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
    2 h). `debfd75332ea` carries 12 io_uring patches on Linux 7.3.1 and libslirp 4.9.7 (14 CVEs,
    by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.
@@ -48,15 +46,13 @@ append history (git has it).
    and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is in `ca0f80bd441a`, on
    buccina; a machine has it from the reboot into it, and Joshua left canto on `debfd75332ea` for now.
 
-**State:** phases 1–7 are done (6 on 2026-10-27: buccina passes every
-metal case that applies, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
-are active ([docs/roadmap.md](docs/roadmap.md)). R36 (2026-10-26): account `void`;
-OpenSSH's sshd replaces dropbear; dhcpcd and chronyd drop to `void`
-(canto since 2026-10-28). Left until needed: root SSH, more NICs, node rules.
+**State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
+are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
 
-5. **`writ`, Oath's coding agent (R64, [docs/specs/writ.md](docs/specs/writ.md)).** Its box is built, on no machine,
-   and no model is connected: `writ check` refuses 192 attacks on the kernel with Landlock and Yama, which is in no
-   release yet (Joshua's word). Next: the provider, with SSE record and replay.
+5. **`writ`, Oath's coding agent (R64, R65, [docs/specs/writ.md](docs/specs/writ.md)).** Its box is built, and a local
+   model runs in one: `pkg:llama-cpp` under `writ serve`, on a socket only `home` reaches, overlays on buccina. `writ ask`
+   reads its stream; a stream cut anywhere runs nothing. Landlock and Yama are in no release yet (Joshua's word). Next:
+   tools and the loop on a local model, Vulkan for novus's GPU, then OpenRouter.
 
 ## Machines
 

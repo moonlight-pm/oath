@@ -61,7 +61,7 @@ Overwrite this file when facts change; do not append a diary.
   over ssh, in `tmux -L sola-ws`. `dmesg`'s one error is its Intel GPU's: i915 asks for
   `i915/tgl_guc_70.bin`, and `/lib/firmware/i915` is empty (seen 2026-11-02). Since R36 its
   sshd is OpenSSH (generation 3 moved it from dropbear, keeping the
-  host key); `pkg:dropbear` was removed (generation 35); `pkg:qemu` and
+  host key); `pkg:dropbear` and `pkg:lzo` are gone (generation 163); `pkg:qemu` and
   `pkg:libslirp` were added for the build-host run (generations 33 and
   36). It passed every metal case that applied to it (44 on 2026-10-27;
   the display and AMD-GPU cases skip: it is headless, and Mesa has no
