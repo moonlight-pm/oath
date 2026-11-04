@@ -37,12 +37,11 @@ append history (git has it).
    image builds if asked.
 4. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
    against upstream's newest release, may publish, and puts findings on the origin (R61). Left by Joshua's word: libsndfile, the
-   toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
-   2 h). Linux 7.3.1 carries 12 io_uring patches, out at the first 7.3.y with the series;
+   toolchain rebuilds, flex, QEMU's 9p. Linux 7.3.1 carries 12 io_uring patches, out at the first 7.3.y with the series;
    CVE-2026-99255 and 99262 wait for that 7.3.y. rsync 3.5.2 (R67) is on the origin; its fix bounds only unbroken collision runs.
-   Next: a session moves fribidi 1.0.18, expat 2.10.0, vulkan-loader and vulkan-tools 1.4.367 and rebuilds CEF from 2026-11-10, when all are a
-   week old (Joshua's go, 2026-11-04); no run can start it. He asked that the audit ask him less: `build/audit/r67-policy/` holds that change
-   (keys upstream names, CEF through a long phase), refused as self-modification, for his hand. R60 is on buccina; Joshua left canto on `debfd75332ea` for now.
+   R67: the audit pins a key upstream names and rebuilds CEF itself, the runner carrying what outlasts a 2 h command; neither has run for real.
+   Next: the 2026-11-10 run moves fribidi 1.0.18, expat 2.10.0, vulkan-loader and vulkan-tools 1.4.367 and rebuilds CEF, when all are a week old
+   (Joshua, 2026-11-04); buccina takes it at the next run. R60 is on buccina; Joshua left canto on `debfd75332ea` for now.
 
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.

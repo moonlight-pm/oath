@@ -45,6 +45,8 @@ old, and deleting a record does not change that. The one exception is
 - The unattended audit may approve a bump of an existing dependency, once its
   review is written and passes. It may name an advisory for a young fix.
 - A new name or publisher waits for Joshua. The audit may not write `approved.txt`.
+- The audit may pin a new signing key that upstream's own site or repository names (R67).
+  A signer upstream does not name stops the pin.
 
 ### Reviewing
 

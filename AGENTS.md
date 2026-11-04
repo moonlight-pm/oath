@@ -67,7 +67,8 @@ work happens (R39, Joshua 2026-10-28; canto is for Sola R&D, so keep
 long Oath builds off it): installs, updates, reboots, `sudo`, wiping
 its disk. **The daily security audit** (R48, Joshua 2026-10-31):
 `svc:audit` may fix, check, publish and move buccina to its release on
-its own; it never touches novus or canto.
+its own, pin a signing key its upstream names, and rebuild CEF (R67); it
+never touches novus or canto.
 
 **Ask first:** force-push or hard reset of published history; writing
 to any other real disk or USB stick Joshua did not ask for (`cargo make

@@ -106,9 +106,10 @@ Every fetch checks the sha256 pin, then the signature (cached under
 pinned release, exported minimal from the upstream's own published
 key where there is one, else from keyserver.ubuntu.com. To bump a
 version, change `url`, `sha256` and `sig` together. If the new release
-is signed by a different key, the fetch fails and names that key. A
-person adds the key to `keys/<key>.asc` from the upstream's published
-list; that is the trust decision, and an agent does not make it alone.
+is signed by a different key, the fetch fails and names that key. The key
+goes in `keys/<key>.asc` when the upstream's own site or repository names
+its fingerprint, and an agent may do that (R67); a signer the upstream does
+not name stops the pin until a person has looked.
 A Sigstore identity is pinned the same way: a release signed by
 someone else fails and names who signed it. `cargo make pkgs --list`
 shows each package's keys or Sigstore identities and its unsigned

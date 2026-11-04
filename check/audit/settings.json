@@ -53,7 +53,6 @@
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Bash(git reset:*)",
-      "Edit(pkgs/keys/**)",
       "Edit(pkgs/go-modules.sh)",
       "Edit(pkgs/intake/approved.txt)",
       "Edit(check/**)",

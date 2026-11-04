@@ -3,7 +3,8 @@
 # (host:local.timezone) as `home`: one headless Claude Code run with the
 # `oath-audit` skill scans, fixes, checks and publishes; this then mails its
 # report to Joshua and, when it published a release, moves buccina to it
-# with a reboot. Never novus or canto.
+# with a reboot. Never novus or canto. A rebuild longer than a command may last
+# (CEF, about 4.5 h; R67) happens here, between two runs of the skill.
 set -u
 repo=${OATH_REPO:-/home/Projects/Oath}
 cd "$repo" || exit 1
@@ -13,6 +14,8 @@ day=$(date +%F)
 log=$dir/run-$day.log
 report=$dir/report-$day.md
 published=$dir/published
+long=$dir/long
+later=$dir/take-later
 
 # One at a time (PID 1 skips a time while the last run goes; this covers a
 # run by hand).
@@ -27,12 +30,27 @@ until curl -fsS -o /dev/null --max-time 10 https://api.osv.dev/ 2>/dev/null; do
     sleep 10
 done
 
-rm -f "$published" "$report"
+rm -f "$published" "$report" "$long"
 prompt=$(sed -e "s|@DAY@|$day|g" -e "s|@REPORT@|$report|g" -e "s|@PUBLISHED@|$published|g" \
     check/audit/prompt.md)
 claude -p "$prompt" --settings check/audit/settings.json --permission-mode dontAsk \
     --output-format text >"$log" 2>&1
 rc=$?
+
+# A command stops at 2 h. A run whose rebuild takes longer leaves its pins in the
+# tree and a draft report, and writes `long`; this builds them, and a second run
+# checks, commits and publishes.
+built=
+if [ -s "$long" ]; then
+    cargo make pkgs -j 8 >>"$log" 2>&1
+    built=$?
+    rm -f "$long"
+    prompt=$(sed -e "s|@DAY@|$day|g" -e "s|@REPORT@|$report|g" -e "s|@PUBLISHED@|$published|g" \
+        -e "s|@LOG@|$log|g" -e "s|@BUILT@|$built|g" check/audit/prompt-long.md)
+    claude -p "$prompt" --settings check/audit/settings.json --permission-mode dontAsk \
+        --output-format text >>"$log" 2>&1
+    rc=$?
+fi
 
 if [ ! -s "$report" ]; then
     {
@@ -43,9 +61,17 @@ if [ ! -s "$report" ]; then
         tail -n 60 "$log" | sed 's/^/    /'
     } >"$report"
 fi
-if [ -s "$published" ]; then
-    printf '\nbuccina takes output %s now: sudo oath update --confirm --reboot\n' \
-        "$(cat "$published")" >>"$report"
+# A long rebuild ends by day, when someone may be at work here: buccina takes
+# that release at the end of the next run that had none.
+[ -s "$published" ] && cp "$published" "$later"
+if [ -s "$later" ]; then
+    if [ -n "$built" ]; then
+        printf '\nbuccina takes output %s at the next run, not now: a long rebuild ends by day.\n' \
+            "$(cat "$later")" >>"$report"
+    else
+        printf '\nbuccina takes output %s now: sudo oath update --confirm --reboot\n' \
+            "$(cat "$later")" >>"$report"
+    fi
 fi
 
 # The findings on the origin, signed, for every machine to read (R61). Only
@@ -75,7 +101,8 @@ printf 'header = "Authorization: Bearer %s"\n' "$RESEND_API_KEY" |
         https://api.resend.com/emails >>"$log" 2>&1
 echo >>"$log"
 
-if [ -s "$published" ]; then
+if [ -s "$later" ] && [ -z "$built" ]; then
+    rm -f "$later"
     sudo -n oath update --confirm --reboot >>"$log" 2>&1
 fi
 exit "$rc"

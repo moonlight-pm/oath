@@ -10,7 +10,9 @@ description: The daily security audit of every Oath package (R48) — scan, tria
 `check/audit/settings.json` (anything not listed is refused; nobody is
 there to ask). Joshua's standing word (2026-10-31): fix what is found,
 publish the fix, and buccina takes it; the runner mails him your report
-and then updates and reboots buccina. novus and canto are never yours.
+and then updates and reboots buccina. novus and canto are never yours. His word
+of 2026-11-04 (R67): lessen the need for his approval. So what this skill lets
+you do, do, and say so in the report; "Waiting on Joshua" is for what it does not.
 
 ## 1. Scan
 
@@ -109,9 +111,14 @@ backport with the release or upstream's patch, and say so.
 - **Upgrade**: in `pkgs/<name>/pkg.toml`, the newest stable upstream
   release that fixes it (no release candidates): `version`, and each
   `[[source]]`'s `url`, `sha256` (of the file you fetched) and `sig`.
-  The signature must verify with the key `key` names in `pkgs/keys/`;
-  a release signed by a key not there is Joshua's to trust (R37): leave
-  that package as it is and report it. The kernel moves to the newest
+  The signature must verify with the key `key` names in `pkgs/keys/`. A release
+  signed by a key not there: pin the new key yourself (R67) when upstream's own
+  site or repository names its fingerprint, or its primary's when a subkey signed.
+  Take it from there or from keys.openpgp.org by that fingerprint, write
+  `pkgs/keys/<key>.asc` with a `Comment:` saying whose it is and where it came
+  from, and name it in the report. Upstream names no such key: leave that package
+  as it is and report it, since a changed signer nobody vouches for is how a
+  takeover looks. The kernel moves to the newest
   stable `7.3.y` (kernel.org's tarballs, signed by Greg Kroah-Hartman,
   `pkgs/keys/linux.asc`).
 - **Patches** go in `pkgs/<name>/patches/`; check `build.sh` applies them
@@ -123,10 +130,18 @@ backport with the release or upstream's patch, and say so.
   report them; never edit their pins in `crates/oath-core/seed/`.
 - Then `cargo make pkgs -j 8`: it rebuilds each package whose plan
   moved, the ones that build with it included, and updates
-  `pkgs/lock.json`. A fix that would rebuild the toolchain (gcc, glibc,
-  binutils, rust) or CEF (about 4.5 hours) is still a fix: do it if it is
-  known exploited or critical; otherwise report it under "Waiting on
-  Joshua" with what it would rebuild.
+  `pkgs/lock.json`.
+- **A fix that rebuilds CEF** (about 4.5 hours, longer than the 2 hours a command
+  may last) goes ahead (R67). One rebuild carries them: unless one is known
+  exploited or critical, wait until the newest CEF-bound fix that is due within a
+  week has passed its age. Move the pins and run `cargo make pkgs --fetch <names>`,
+  commit nothing, write a draft report, write the names to `build/audit/long`, and
+  stop. The runner then builds them and starts a second run, which finishes from
+  step 4. Do the day's other fixes in that same batch. It publishes by day, so
+  buccina takes that release at the next run's end.
+- **A fix that rebuilds the toolchain** (gcc, glibc, binutils, rust) is still a
+  fix: do it the same way if it is known exploited or critical; otherwise report it
+  under "Waiting on Joshua" with what it would rebuild.
 - `cargo test -p oath-make audit` if you edited `pkgs/audit.toml`.
 
 ## 4. Check and release
@@ -170,6 +185,6 @@ Then, each section only if it has something:
 ## Never
 
 `sudo`, `ssh`, `oath` on any machine, `cargo make install` or `update`,
-a force push or a reset; an edit to `pkgs/keys/`, `crates/`, `check/` or
+a force push or a reset; an edit to `crates/`, `check/` or
 `.claude/`; a publish of anything `cargo make check` did not pass; a
 backport not marked as one.
