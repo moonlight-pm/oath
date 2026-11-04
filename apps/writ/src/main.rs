@@ -43,6 +43,8 @@ Options for run:
 Options for serve:
   --threads N      CPU threads. Default: the server's choice.
   --context N      Context size in tokens. Default: 16384.
+  --gpu            Give the box the GPU (NVIDIA's), and put the whole model on it.
+  --gpu-share P    Hold the server to P percent of the GPU's time, by stopping it for the rest.
   -- ARGS          Passed on to llama-server, in the box.
 
 Options for ask:

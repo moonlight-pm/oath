@@ -19,7 +19,7 @@ gaps · `target` designed, not built.
 | Services (PID 1) | shipped | runs applied specs; logs; backoff, `failed` with a `reason`; a cgroup each; survives its own panic; restarts a service its package moves; cron `schedule` (R48) | — |
 | Packages | shipped | hash-in-path store, `/bin` and `/lib` farms (R17, R29), pins, `needs`; fetch from `host:local.origins` (R25); recipes (R23, R35); npm programs (R46); publish with licence, plan, source; `oath verify` each boot; `source`, overlays (R47); daily CVE audit (R48), public, `oath audit` (R61); holds what is prescribed, `oath reap` each boot (R62); `category` (R63) | Oath's packs unsigned; npm, GitHub signatures unchecked |
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; netless sandbox, own PID namespace; cache keyed on plan and inputs; logs in `/oath/log/plan/` | — |
-| Toolchain and native packages | partial | `cargo make bootstrap` (R32): GCC 16.2, binutils 2.47, glibc 2.44 (R17); `cargo make pkgs`: 190 plan products, i386 (R29); GNU userland (R18); bit-identical; CEF (R40); Go, servers (R49), `route`, `cell` (R59); CA roots (R50); tags (R54); intake (R57) | Perl unsigned; Python's multiprocessing has no semaphores |
+| Toolchain and native packages | partial | `cargo make bootstrap` (R32): GCC 16.2, binutils 2.47, glibc 2.44 (R17); `cargo make pkgs`: 191 plan products, i386 (R29); GNU userland (R18); bit-identical; CEF (R40); Go, servers (R49), `route`, `cell` (R59); CA roots (R50); tags (R54); intake (R57) | Perl unsigned; Python's multiprocessing has no semaphores |
 | Network | partial | `net:net0` dhcp or static; supervised dhcpcd; LAN names in `host:local.hosts`; `dig`; chrony | One NIC, chosen at boot |
 | SSH | shipped | OpenSSH's sshd (R36) as `home` (zsh, R27), keys from `ssh:local`, root denied, `host:local` env; `sftp-server`; daemons drop to `void`; `sudo` | — |
 | Login and seat | partial | `svc:login` (R42): `home`'s password, Argon2id; `oath password`; `host:local.autologin`; the seat's turns (`oath desk`); on canto | No password on metal yet; `sudo` asks none |
@@ -37,5 +37,5 @@ gaps · `target` designed, not built.
 |---|---|---|
 | Desk (rivulet, Sola) | partial | Sola's apps; PipeWire, realtime, BlueZ; Noto; libglvnd, RADV or NVIDIA (R34); H.264, AAC (R40); shortcut inhibiting (R44). Gaps: other apps; Intel GPUs; the KVM's capture, pairing (R44) |
 | Wicket host | target | Left core (R1). |
-| `writ`, coding agent | partial | R64, R65: `writ check`'s box; boxed local model (`writ serve`, `writ ask`); on buccina. Gaps: tools, `apply`, OpenRouter, GPU |
+| `writ`, coding agent | partial | R64–R66: `writ check`'s box; boxed local model, CPU or GPU (`writ serve`, `writ ask`); buccina, novus. Gaps: tools, `apply`, OpenRouter |
 | Steam + Minecraft desk | partial | Steam (R29): Valve's launcher, sandboxed; on canto and novus. Gaps: no game run yet, no pad; Minecraft |

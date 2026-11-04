@@ -1083,13 +1083,14 @@
     ]
   },
   "llama-cpp": {
-    "version": "b11935",
+    "version": "b11960",
     "license": "MIT AND BSD-2-Clause AND (MIT OR Unlicense) AND (Unlicense OR MIT-0)",
     "by": "plan",
-    "plan": "sha256-817d9e56adcbddcf0eadfd1454779be76cb83549a066379947b4d7dfe1834153",
-    "product": "sha256-0190091a0275893b3f31248c66d53085959c800c42c7f1efaca9ea92288d1fc9",
+    "plan": "sha256-b1c668f02cb549f5851d8338ecbba5dd17e10c5a5d9390b76fc55352d15618a5",
+    "product": "sha256-0908155920628b60077d64a2e01d2ba5c29a28c238382906b89b93010b1eb946",
     "run": [
-      "gcc"
+      "gcc",
+      "vulkan-loader"
     ]
   },
   "locales": {
@@ -1593,6 +1594,14 @@
     "product": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819",
     "run": []
   },
+  "spirv-headers": {
+    "version": "1.4.363.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-d4a76477f6c8301be28a8af6e048b19efd4162c913e860809213c01b12f7398b",
+    "product": "sha256-cc982a0da2fb61385a984befe27d7b3ba29889b0408e28838b6e8a61e3fa1b11",
+    "run": []
+  },
   "sqlite": {
     "version": "3.54.1",
     "license": "blessing",
@@ -1763,8 +1772,8 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-e6e0b7cff53e87c306db3ba58a046b9e4eb792344c22fd3a298f6bc14b8b20c1",
-    "product": "sha256-696fd1a7c4ac917e63379140091556749f04d564a655d356654c8e3593e364bd",
+    "plan": "sha256-f9c9d17c9222419cdbf00967d15b4cd866bc24357950b9424be2bc665632841d",
+    "product": "sha256-ad3165aa57c7da5abe1bd501248728892733abc7ebab625918ce5bce7ce124a1",
     "run": [
       "bubblewrap",
       "curl"

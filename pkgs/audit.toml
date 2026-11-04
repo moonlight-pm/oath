@@ -917,6 +917,11 @@ cpe = "cpe:2.3:a:gnu:sed"
 compare_repo = "https://git.savannah.gnu.org/git/sed.git"
 compare_tag = "v{version}"
 
+[spirv-headers]
+skip = "headers"
+compare_repo = "https://github.com/KhronosGroup/SPIRV-Headers"
+compare_tag = "vulkan-sdk-{version}"
+
 [sqlite]
 cpe = "cpe:2.3:a:sqlite:sqlite"
 repo = "https://github.com/sqlite/sqlite"

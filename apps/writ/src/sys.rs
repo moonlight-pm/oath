@@ -34,6 +34,8 @@ pub const SYS_CLONE: c_long = 56;
 pub const SYS_PERSONALITY: c_long = 135;
 pub const SYS_CLONE3: c_long = 435;
 pub const SYS_CLOSE_RANGE: c_long = 436;
+pub const SYS_PIDFD_SEND_SIGNAL: c_long = 424;
+pub const SYS_PIDFD_OPEN: c_long = 434;
 pub const SYS_LANDLOCK_CREATE_RULESET: c_long = 444;
 pub const SYS_LANDLOCK_ADD_RULE: c_long = 445;
 pub const SYS_LANDLOCK_RESTRICT_SELF: c_long = 446;
@@ -52,6 +54,8 @@ pub const RLIMIT_NPROC: c_int = 6;
 pub const RLIMIT_CORE: c_int = 4;
 
 pub const SIGKILL: c_int = 9;
+pub const SIGCONT: c_int = 18;
+pub const SIGSTOP: c_int = 19;
 pub const CLOSE_RANGE_CLOEXEC: c_long = 4;
 
 pub const EPERM: c_int = 1;

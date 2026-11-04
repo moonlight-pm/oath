@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-03 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R65 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R66 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -49,10 +49,9 @@ append history (git has it).
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
 
-5. **`writ`, Oath's coding agent (R64, R65, [docs/specs/writ.md](docs/specs/writ.md)).** Its box is built, and a local
-   model runs in one: `pkg:llama-cpp` under `writ serve`, on a socket only `home` reaches, overlays on buccina. `writ ask`
-   reads its stream; a stream cut anywhere runs nothing. Landlock and Yama are in no release yet (Joshua's word). Next:
-   tools and the loop on a local model, Vulkan for novus's GPU, then OpenRouter.
+5. **`writ`, Oath's coding agent (R64–R66, [docs/specs/writ.md](docs/specs/writ.md)).** Its box is built, and a local
+   model runs in one, on the CPU or novus's GPU through Vulkan: `writ serve --gpu --gpu-share 40`, overlays on buccina and novus. Joshua: tests on novus may
+   use up to half its GPU. `writ ask` reads its stream; a stream cut anywhere runs nothing. Next: tools and the loop on Gemma 4 12B, then the gate, then OpenRouter.
 
 ## Machines
 

@@ -3,18 +3,20 @@
 # names, and endpoints that pull, create and push models, around this same program. No
 # dependency of its own (its vendored C++ is in the tag); the options and one patch in
 # build.sh leave out what it does not need. Needs AVX2: there is no plugin to load a
-# lesser CPU's build from, and a model on such a machine is too slow to use.
-version = "b11935"
+# lesser CPU's build from, and a model on such a machine is too slow to use. Vulkan, not
+# CUDA: CUDA takes NVIDIA's compiler, and Vulkan takes the driver a machine already has.
+# This tag is release v0.8.0's commit; the b numbers are what CVE records name.
+version = "b11960"
 license = "MIT AND BSD-2-Clause AND (MIT OR Unlicense) AND (Unlicense OR MIT-0)"
-description = "llama.cpp: llama-server, local models over Chat Completions. Needs AVX2. `writ serve` runs it in a box (R65)."
+description = "llama.cpp: llama-server, local models over Chat Completions, on the CPU or a GPU through Vulkan. Needs AVX2. `writ serve` runs it in a box (R65)."
 home = "https://github.com/ggml-org/llama.cpp"
 category = "agents"
-purl = "pkg:github/ggml-org/llama.cpp@b11935"
-build = ["cmake"]
-run = ["gcc"]
+purl = "pkg:github/ggml-org/llama.cpp@b11960"
+build = ["cmake", "glslang", "spirv-headers", "vulkan-headers", "vulkan-loader"]
+run = ["gcc", "vulkan-loader"]
 
 [[source]]
-url = "https://github.com/ggml-org/llama.cpp/archive/refs/tags/b11935.tar.gz"
-sha256 = "0bfc7af823a4c25fb2d21dfdce40eb878aa76dbbcc16648e679cc56796f6692c"
-file = "llama.cpp-b11935.tar.gz"
+url = "https://github.com/ggml-org/llama.cpp/archive/refs/tags/b11960.tar.gz"
+sha256 = "2b37ffa871595f90b94164f6c510ad9a34bd7f94da21557cc9878587e163af37"
+file = "llama.cpp-b11960.tar.gz"
 unsigned = "a GitHub tag archive; its tags are made unsigned by upstream's CI, and it publishes no source tarball"

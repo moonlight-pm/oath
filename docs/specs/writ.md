@@ -7,8 +7,8 @@ authorizes one specific act, which is what each grant here is. "Harness" already
 `cargo make check` in this repo, so this file says "agent".
 
 **Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`. A
-local model runs in a box of its own, and `writ` can ask it one thing: `writ serve`, `writ ask`, R65.
-The model can run nothing yet. A section marked *(is)* runs today; everything else will be.
+local model runs in a box of its own, on the CPU or novus's GPU, and `writ` can ask it one thing: `writ serve`,
+`writ ask`, R65, R66. The model can run nothing yet. A section marked *(is)* runs today; everything else will be.
 
 Full research notes, about 3,300 lines with file and line references, are in
 `apocrypha/coding-agent-research/` (gitignored, not a source of truth; they quote
@@ -222,12 +222,15 @@ as project text. They can steer it; they cannot widen anything.
 
 ## Local models (is)
 
-R65. `pkg:llama-cpp` is llama.cpp's `llama-server` from its tag (b11935, the lowest with the last fix
-that is a week old): 16 MB, one program, nothing it needs but libstdc++. Ollama lost on R57. It runs
+R65, R66. `pkg:llama-cpp` is llama.cpp's `llama-server` from its tag (b11960, release v0.8.0's commit, a
+week old on 2026-11-04): 60 MB, most of it shaders, one program, needing libstdc++ and the Vulkan loader. Ollama lost on R57. It runs
 this same program under 55 Go modules, 28 of them new names, and adds endpoints that pull, create and
 push models, where its worst CVEs were; it publishes no advisories, and llama.cpp does. Its Linux
 tarball is 2.4 GB and unsigned. What this route gives up: `ollama pull`, so a model is a file you
-fetch and check by the sha256 Hugging Face publishes; and CUDA, which takes NVIDIA's compiler.
+fetch and check by the sha256 Hugging Face publishes; and CUDA, which takes NVIDIA's compiler. Its shaders
+compile with `pkg:glslang` through a small shim, not `glslc`, which would add shaderc and SPIRV-Tools for one
+thing, `spirv-opt`. Upstream already leaves that off the matrix shaders NVIDIA's driver runs; on the rest, the
+speed without it has not been compared.
 
 The build leaves out plugins, the HTTPS client, subprocesses (router mode and its shell tool), RPC
 and the web UI, and turns on what catches a bad index or copy (`_GLIBCXX_ASSERTIONS`,
@@ -261,9 +264,22 @@ own and arguments that parse to an object with no duplicate key. All of them or 
 tool call is cut at every byte in a test, and nothing comes out runnable until the last byte. The
 OpenRouter section below still applies to the same code: its shapes have not been seen for real.
 
-**Speed on buccina**, CPU only, 8 threads, otherwise idle: Qwen3 1.7B at Q4 gives about 35 tokens a
-second. That is enough to test with and too small a model for real coding. Real work wants novus's RTX 3090 Ti, which needs the Vulkan backend (a build
-package for `glslc`, not built) and its device nodes in the box (not built).
+**The GPU.** `writ serve --gpu` puts the whole model on the GPU and gives the box NVIDIA's `nvidiactl` and
+`nvidia<N>`. That is all Vulkan compute needed on novus: no `nvidia-uvm`, `/sys` or `/etc`. The display's
+nodes, `nvidia-caps` and `/dev/input` stay out, and `writ check` attacks that box too on a machine with a GPU. What this
+costs is real: a process in that box can call the closed driver's ioctls, a large surface in the kernel, and
+neither seccomp nor Landlock narrows them. So a model's parser bug that became code could go on to attack the
+driver, which it could not without `--gpu`. Vulkan's implicit layers are turned off, and shaders the driver
+compiles live only in the box's `/tmp`, so the first answer after a start is slow.
+
+`--gpu-share P` holds a server to P percent of the GPU's time: writ stops it for the rest of each 100 ms, since
+a GPU has no share to set short of virtualizing it. It is a limit on average time, not a promise about any one
+second. Memory is not limited: it is the model's and the context's, and the owner's to size. Only NVIDIA's nodes are known; AMD has not been tried in a box.
+
+**Measured on novus,** RTX 3090 Ti at its 250 W cap and 1500 MHz, 2026-11-04, the desk and a game running: Gemma 4 12B (Google's QAT Q4,
+6.5 GiB, Apache-2.0) with a 32,768-token context takes 7.7 GiB of the card. At `--gpu-share 50` it gives 37 tokens
+a second, and the server's share measures 46% on average, over 50% in 11 of 20 one-second samples. At `--gpu-share 40` it gives 21 tokens a second, measuring 34%,
+over 50% in 2 of 30. On buccina, CPU only, 8 threads, otherwise idle, Qwen3 1.7B at Q4 gives about 35 tokens a second, too small a model for real coding.
 
 ## OpenRouter (will be)
 
@@ -315,7 +331,7 @@ one is on the incident table or lost on evidence. Any of them can come back by d
 
 ## What this does not stop
 
-- A kernel bug. The box shares the kernel; only a VM closes that.
+- A kernel bug. The box shares the kernel; only a VM closes that. With `--gpu`, that kernel includes NVIDIA's closed driver.
 - What the agent reads reaches the provider. A secret in the project under a name nobody
   listed goes with it.
 - A subtle backdoor you accept. `cargo build` on the host then runs it. The gate shows
@@ -390,10 +406,16 @@ truncated model and a header claiming 2^63 tensors each failed cleanly. On the n
 the host's CPU: `writ check` refused 295 attacks with nothing through, and a real server loaded a small
 model and answered under Landlock ABI 11 and `ptrace_scope` 1.
 
+With the GPU, on novus, 2026-11-04, kernel 7.3.1 without Landlock: `writ check` refused 409 attacks with nothing through. The
+server's capabilities were empty, with `no_new_privs` and seccomp in force, and its only device
+descriptors were `nvidia0` and `nvidiactl`. With no `--gpu` no GPU reached it. Killing `writ` while the server was stopped by
+`--gpu-share` took the box with it, and no Xid appeared in the kernel's log. The GPU box was broken eight ways (the display's node, `/dev/dri`, `nvidia-caps`,
+`nvidia-uvm-tools`, `/dev/input` or all of `/dev` added; a GPU in the default box; a node read-only), and `writ check` failed on every one.
+
 `writ check` is not in `cargo make check`: `base` has no bubblewrap, so it runs by hand until a
 machine has `pkg:writ`. The case `landlock-and-yama` covers the kernel.
 
-**Not tested:** a GPU in a server's box; a model larger than 1.7B; a crafted model file that reaches
+**Not tested:** a GPU in a box under Landlock (novus's kernel has none yet; its `/dev` rule allows these nodes' ioctls); AMD's GPUs; a crafted model file that reaches
 past the parser's checks; the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
 Steam; `cargo` under heavy concurrent builds, `curl --config -` with a real key and a body
 on another fd. Overlayfs calls changes to the lower layer undefined, so editing the real tree during
@@ -409,7 +431,7 @@ a session needs a test; a btrfs snapshot as the lower layer is the likely answer
 1. Box and an attack suite, with no model at all. **Done 2026-11-03.**
 2. Provider with SSE record and replay, on a local model first (R65). **Done 2026-11-03** for
    `llama-server`: its streams replay, an error ends a turn, and a truncated call never runs.
-3. Tools and loop, on a local model. Vulkan and the GPU in the box, so one good enough to judge runs.
+3. Tools and loop, on a local model. Vulkan and the GPU in the box, so one good enough to judge runs: **done 2026-11-04.**
 4. The gate. Done when an attack suite through a real model leaves the real tree untouched
    until `apply`.
 5. Terminal.

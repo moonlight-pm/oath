@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source SPIRV-Headers-1.4.363.0.tar.gz 5b3a0d099f5c7649e29c0938476c462e71d66ad89a0bde42fa1ba3eb476956c9
+tag vulkan-sdk-1.4.363.0 commit 496543121ce6419f23d6fa5d7194ba66c36212d2 tree edf8b7ffce761b7d1d17330d81bc5bbc2b7f6ddb
+signed no
+same 121
+only-in-tag 0

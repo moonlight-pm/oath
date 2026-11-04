@@ -269,7 +269,7 @@ cargo make update --qemu <older output>
   reboots, checks PID 1 and the ESP
 ```
 
-## writ (optional package, R64, R65)
+## writ (optional package, R64–R66)
 
 ```
 apps/writ                            source; pkg:writ, /bin/writ where it is installed
@@ -280,7 +280,8 @@ writ → /bin/bwrap → /writ inner → the command
 ~/.local/share/writ/llama/llama.sock writ serve's socket, in a 0700 directory; no port (R65)
 ~/.local/share/writ/models/          where a person keeps models; writ reads the file it is given
 writ serve → /bin/bwrap → /writ inner → /bin/llama-server
-                                     the same layers; the model read-only, no project, no home
+                                     the same layers; the model read-only, no project, no home;
+                                     with --gpu, /dev/nvidiactl and /dev/nvidia<N> (R66)
 writ ask → /bin/curl --config - → the socket
                                      one request, read back through chat.rs; it runs nothing
 ```

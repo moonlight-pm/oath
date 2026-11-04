@@ -411,12 +411,16 @@ fn attack_serve_box(lines: &mut Vec<Line>, home: &Path, base: &Path, env_text: &
     let (model, dir) = (base.join("model.gguf"), base.join("sock"));
     fs::write(&model, "not a model").map_err(|e| e.to_string())?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let out = serve::probe_command(home, &model, &dir, env_text)?.output().map_err(|e| format!("bwrap: {e}"))?;
-    let text = String::from_utf8_lossy(&out.stdout).into_owned();
-    if !text.lines().any(|l| l == "done") {
-        let err = String::from_utf8_lossy(&out.stderr).into_owned();
-        return Err(format!("the attacks on a server's box did not finish: {}", term::scrub(&err)));
+    // Once as it is by default, and once with this machine's GPU, if it has one.
+    let gpu = serve::this_machines_gpu();
+    for nodes in [&[][..], &gpu[..]].iter().take(if gpu.is_empty() { 1 } else { 2 }) {
+        let out = serve::probe_command(home, &model, &dir, env_text, nodes)?.output().map_err(|e| format!("bwrap: {e}"))?;
+        let text = String::from_utf8_lossy(&out.stdout).into_owned();
+        if !text.lines().any(|l| l == "done") {
+            let err = String::from_utf8_lossy(&out.stderr).into_owned();
+            return Err(format!("the attacks on a server's box did not finish: {}", term::scrub(&err)));
+        }
+        lines.extend(lines_of(&text));
     }
-    lines.extend(lines_of(&text));
     Ok(())
 }
