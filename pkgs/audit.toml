@@ -895,6 +895,9 @@ cpe = "cpe:2.3:a:samba:rsync"
 repo = "https://github.com/RsyncProject/rsync"
 tag = "v{version}"
 
+[rsync.age_because]
+source = "3.5.2, published 2026-11-03, is the only release with the fix for CVE-2026-119741 (high, VulnCheck)"
+
 [rust]
 cpe = "cpe:2.3:a:rust-lang:rust"
 names = ["rustc", "cargo"]

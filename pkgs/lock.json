@@ -1548,11 +1548,11 @@
     "run": []
   },
   "rsync": {
-    "version": "3.5.1",
+    "version": "3.5.2",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-270ec5e347e035a974280d3d721a1f6a410f4b311f39df37b3fed231557fcd22",
-    "product": "sha256-ab417e802184fba7d3e5ba51035f71543422cd9600199eb75243af114d20ae28",
+    "plan": "sha256-94d8b2249421fce4a4dec31354ea731f0170da98baf00b4cbd8a3d55f4766637",
+    "product": "sha256-5078b77c689c905ad6318058051de2e698c2c2b8ed801553a6c7a66926eed287",
     "run": [
       "openssl",
       "zlib",

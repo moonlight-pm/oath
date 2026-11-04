@@ -1,8 +1,8 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source rsync-3.5.1.tar.gz c55f9c9dc10fb8bec397b399a0fdded53cc9a2d8e30891bb0d63724d25c37bef
-tag v3.5.1 commit 04355d27b7386d7de0e6bd5e79c556223210f700 tree a879164ac3785694e28f191dcfbf921ec498cc6f
+source rsync-3.5.2.tar.gz a10d591825251e070f74c98df3daad195def4ed81b4a2de16169026aea33f6c8
+tag v3.5.2 commit 41bbd895668767e155b2eb6da64f37afa9cb8724 tree f835963cd8e34a6eb8d8375ff9effb885b825dcb
 signed pgp 8EDF88F4731A1E8B45D67FBE6909546B2C52EC2D
-same 607
+same 624
 only-in-tag 98
 adds aclocal.m4
 adds config.h.in
