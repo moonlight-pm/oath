@@ -49,21 +49,25 @@ pub struct Change {
 }
 
 /// A name that runs later: a build, a hook, an instruction to the next agent. No list can decide
-/// these are safe, and agents must edit them, so they wait until the owner names them.
+/// these are safe, and agents must edit them, so they wait until the owner names them. Tools find
+/// their configuration in any parent directory, so these count at any depth.
 fn runs_later(path: &Path) -> bool {
-    let first = path.components().next().map(|c| c.as_os_str().to_string_lossy().into_owned()).unwrap_or_default();
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    if matches!(first.as_str(), ".cargo" | ".github" | ".gitlab" | ".claude" | ".vscode" | ".idea" | ".husky" | ".devcontainer") {
-        return true;
-    }
-    matches!(
-        name.as_str(),
-        "build.rs" | "Cargo.toml" | "Cargo.lock" | "configure" | "package.json" | "package-lock.json" | "go.mod" | "go.sum" | ".envrc"
-            | "AGENTS.md" | "CLAUDE.md" | ".mcp.json" | ".gitignore" | ".gitmodules" | ".gitattributes" | ".editorconfig" | "pkg.toml" | "flake.nix"
-            | "Dockerfile" | "Justfile" | "justfile"
-    ) || name.starts_with("Makefile")
+    let in_tool_dir = path.components().any(|c| {
+        matches!(c.as_os_str().to_str(), Some(".cargo" | ".github" | ".gitlab" | ".claude" | ".vscode" | ".idea" | ".husky" | ".devcontainer"))
+    });
+    in_tool_dir
+        || matches!(
+            name.as_str(),
+            "build.rs" | "Cargo.toml" | "Cargo.lock" | "configure" | "package.json" | "package-lock.json" | "go.mod" | "go.sum" | ".envrc"
+                | "AGENTS.md" | "CLAUDE.md" | ".mcp.json" | ".gitignore" | ".gitmodules" | ".gitattributes" | ".editorconfig" | "pkg.toml"
+                | "flake.nix" | "Dockerfile" | "Justfile" | "justfile" | "CMakeLists.txt" | "meson.build" | "Rakefile" | "Gemfile" | "setup.py"
+                | "conftest.py" | "pyproject.toml" | ".npmrc" | ".pre-commit-config.yaml"
+        )
+        || name.starts_with("Makefile")
         || name.ends_with(".sh")
         || name.ends_with(".plan")
+        || name.ends_with(".pth")
 }
 
 fn flags_for(path: &Path, kind: &Kind, mode_changed: bool) -> Vec<&'static str> {
@@ -137,8 +141,9 @@ fn walk(upper: &Path, real: &Path, rel: &Path, out: &mut Vec<Change>) -> Result<
     entries.sort_by(|a, b| a.0.cmp(&b.0));
     for (name, m) in &entries {
         let path = rel.join(name);
-        // The model can commit in the box. That history does not leave it.
-        if path.components().next().is_some_and(|c| c.as_os_str() == ".git") {
+        // The model can commit in the box. That history does not leave it, at any depth: a
+        // repository's config names programs git runs, in `sub/` as much as at the top.
+        if name.as_os_str() == ".git" {
             continue;
         }
         let at_real = real.join(&path);
@@ -189,7 +194,12 @@ fn walk(upper: &Path, real: &Path, rel: &Path, out: &mut Vec<Change>) -> Result<
                 }
             }
             let mode_changed = !same_mode || (real_m.is_none() && exec(m.mode()));
-            out.push(Change { path: path.clone(), kind: Kind::File, flags: flags_for(&path, &Kind::File, mode_changed) });
+            let mut flags = flags_for(&path, &Kind::File, mode_changed);
+            // What cannot be read cannot be reviewed, and may be code: a `.pyc`, an `.so`, a binary.
+            if !read_plain(&at_upper).is_ok_and(|b| is_text(&b)) {
+                flags.push("binary");
+            }
+            out.push(Change { path: path.clone(), kind: Kind::File, flags });
         } else {
             let what = if t.is_fifo() { "a FIFO" } else if t.is_socket() { "a socket" } else { "a device" };
             let kind = Kind::Unusual(what);
@@ -895,6 +905,30 @@ mod tests {
     }
 
     #[test]
+    fn a_repository_in_a_subdirectory_stays_in_the_box_too() {
+        let t = T::new("nested");
+        t.upper("sub/.git/config", "[core]\nfsmonitor = /tmp/evil");
+        t.upper("sub/a.rs", "x");
+        let names: Vec<String> = t.list().into_iter().map(|c| c.0).collect();
+        assert_eq!(names, ["sub", "sub/a.rs"]);
+        t.apply(true, &[]).unwrap();
+        assert!(!t.real.join("sub/.git").exists());
+    }
+
+    #[test]
+    fn what_cannot_be_read_waits_compiled_python_for_one() {
+        let t = T::new("binary");
+        t.upper("src/__pycache__/m.cpython-315.pyc", "\u{0}\u{0}code");
+        t.upper("src/m.py", "print(1)\n");
+        let list = changes(&t.upper, &t.real).unwrap();
+        let pyc = list.iter().find(|c| c.path.ends_with("m.cpython-315.pyc")).unwrap();
+        assert!(pyc.flags.contains(&"binary"));
+        t.apply(false, &[]).unwrap();
+        assert_eq!(t.text("src/m.py"), "print(1)\n");
+        assert!(!t.real.join("src/__pycache__/m.cpython-315.pyc").exists());
+    }
+
+    #[test]
     fn with_no_repository_build_output_is_left_out() {
         let t = T::new("target");
         t.upper("target/debug/x", "bin");
@@ -1093,7 +1127,7 @@ mod tests {
 
     #[test]
     fn what_runs_later_is_named() {
-        for p in ["build.rs", "a/b/build.rs", "Cargo.toml", "x/Makefile.am", "configure", "a.sh", ".cargo/config.toml", ".github/workflows/x.yml", "AGENTS.md", ".claude/settings.json", "package.json", "go.mod", ".envrc", "pkgs/x/pkg.toml"] {
+        for p in ["build.rs", "a/b/build.rs", "Cargo.toml", "x/Makefile.am", "configure", "a.sh", ".cargo/config.toml", ".github/workflows/x.yml", "AGENTS.md", ".claude/settings.json", "package.json", "go.mod", ".envrc", "pkgs/x/pkg.toml", "crates/foo/.cargo/config.toml", "sub/.vscode/tasks.json", "tests/conftest.py", "x.pth"] {
             assert!(runs_later(Path::new(p)), "{p}");
         }
         for p in ["src/main.rs", "README.md", "src/lib.go"] {

@@ -494,7 +494,7 @@ fn attack_tools(lines: &mut Vec<Line>, home: &Path, project: &Path, canary: &Pat
     judged("grep works", ok && t.contains("writ-new.txt:1:"), "BROKEN", "works", &t);
     let (ok, t) = tools.call("glob", &args(&[("pattern", "writ-*.txt")]), limit)?;
     judged("glob works", ok && t.contains("writ-new.txt"), "BROKEN", "works", &t);
-    shell!("rm -f kept.txt; mkdir -p .git/hooks; echo evil >.git/hooks/pre-commit; echo evil >build.rs");
+    shell!("rm -f kept.txt; mkdir -p .git/hooks sub/.git; echo evil >.git/hooks/pre-commit; echo evil >sub/.git/config; echo evil >build.rs; head -c 64 /dev/zero >compiled.pyc");
     let t = shell!(&format!("ln -s '{}' writ-leak; cat writ-leak", canary.display()));
     judged("a link made in the box does not reach what it names", !t.contains(canary_text), "LEAK", "refused", &t);
 
@@ -511,7 +511,8 @@ fn attack_tools(lines: &mut Vec<Line>, home: &Path, project: &Path, canary: &Pat
     let has = |path: &str| list.iter().find(|c| c.path == Path::new(path));
     judged("the new file is held in the session", has("writ-new.txt").is_some_and(|c| c.kind == gate::Kind::File && c.flags.is_empty()), "BROKEN", "works", "");
     judged("the delete is held in the session", has("kept.txt").is_some_and(|c| c.kind == gate::Kind::Delete), "BROKEN", "works", "");
-    judged("the box's git history is not a change", !list.iter().any(|c| c.path.starts_with(".git")), "LEAK", "refused", "");
+    judged("the box's git history is not a change", !list.iter().any(|c| c.path.components().any(|p| p.as_os_str() == ".git")), "LEAK", "refused", "");
+    judged("a binary is flagged", has("compiled.pyc").is_some_and(|c| c.flags.contains(&"binary")), "LEAK", "refused", "");
     judged("a build script is flagged", has("build.rs").is_some_and(|c| c.flags.contains(&"runs later")), "LEAK", "refused", "");
     judged("the link is flagged", has("writ-leak").is_some_and(|c| c.flags.contains(&"a symlink")), "LEAK", "refused", "");
     judged("the FIFO cannot be applied", has("writ-fifo").is_some_and(|c| matches!(c.kind, gate::Kind::Unusual(_))), "LEAK", "refused", "");

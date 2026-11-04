@@ -161,9 +161,9 @@ that as plain data; `writ apply` is the only thing that takes it to the real tre
 
 - `writ diff` walks the upper directory with no symlink followed and no program run on it. A whiteout is a delete,
   and an opaque directory deletes what it does not hold. Names and contents are cleaned for the terminal.
-- `.git/` in the upper directory is dropped: the model can commit in the box, and that history does not leave it. So is
+- `.git/` in the upper directory is dropped, at any depth: the model can commit in the box, and that history does not leave it. So is
   what the *real* tree's git ignores, asked of the real tree with names on stdin, so a `.gitignore` from the box hides nothing.
-- Flagged, and waiting until the owner names them or says `--all`: symlinks, mode changes, and paths that run later: `build.rs`,
+- Flagged, and waiting until the owner names them or says `--all`: symlinks, mode changes, binaries, which cannot be reviewed and may be code (a `.pyc` is), and paths that run later: `build.rs`,
   `Cargo.toml`, `Cargo.lock`, `.cargo/`, `Makefile*`, `configure`, `*.sh`, `*.plan`, `pkg.toml`, `package.json`, `go.mod`, `go.sum`,
   `.envrc`, `.github/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.mcp.json`, `.gitignore`, `.gitattributes`, `.gitmodules`, editor config.
   No harness blocks these, because agents must edit them. So it is a review, not a list.
