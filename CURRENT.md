@@ -18,8 +18,8 @@ append history (git has it).
    (2026-11-03), on buccina; canto runs `debfd75332ea`, novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1. R62 (no release yet): a machine holds what its packages
-   prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. On canto and novus,
-   `pkg:lzo` (and canto's `pkg:dropbear`) predate it and go by hand, Joshua's call.
+   prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. R61–R63's verbs and fields
+   reach machines with the next release; Sola's package app (its `sola-oath` session on novus) reads them then.
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
@@ -37,12 +37,12 @@ append history (git has it).
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
 4. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
-   against upstream's newest release, may publish, and puts findings on the origin (R61). Left by Joshua's word: libsndfile, the
+   against upstream's newest release, may publish, and puts findings on the origin (R61, since 2026-11-03). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
    2 h). `debfd75332ea` carries 12 io_uring patches on Linux 7.3.1 and libslirp 4.9.7 (14 CVEs,
    by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.
    CVE-2026-99255 and 99262 wait for that 7.3.y. Next: the 2026-11-04 run publishes Codex
-   0.165.0 and moves buccina (Joshua: "let the audit publish it"); a CEF rebuild for fribidi
+   0.165.0 and moves buccina (Joshua: "let the audit publish it"), and that release carries all of master (R61–R65, Landlock and Yama); a CEF rebuild for fribidi
    and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is in `ca0f80bd441a`, on
    buccina; a machine has it from the reboot into it, and Joshua left canto on `debfd75332ea` for now.
 

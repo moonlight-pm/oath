@@ -23,7 +23,7 @@ PID 1 mounts the btrfs top level (subvolid=0) at `/oath/run/fs`:
 Generations are siblings of `@`, not nested under `/`.
 
 A machine keeps the newest five generations and every one taken since it
-booted; PID 1 removes the rest once a boot (`oath reap`, R62), and undo
+booted; PID 1 removes the rest once a boot (`oath reap`, R62, from the next release), and undo
 stops at the last one kept.
 
 A generation is all of `@`, so every apply pins whatever is there until

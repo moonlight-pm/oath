@@ -106,7 +106,7 @@ Overwrite this file when facts change; do not append a diary.
   the release's pins; `--keep` must take all 14 or none (the bus's Tab
   payload changed). Seen 2026-11-03: output `c9735fc14e50`, booted 2026-11-02 19:10Z,
   with 15 `pkg:sola*` overlays from master@822bb2dd that `oath update` replaces
-  unless `--keep`. buccina's `ssh novus` fails on a stale `known_hosts` line; use the route below.
+  unless `--keep`. `pkg:lzo` removed by hand at Joshua's word (generation 67). buccina's `ssh novus` fails on a stale `known_hosts` line; use the route below.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the

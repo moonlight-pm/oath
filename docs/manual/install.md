@@ -211,9 +211,10 @@ its needs move. With `--confirm`, it:
    lacks was its owner's to remove and is not made again; one new to the
    profile that the machine has absent (`oath build` leaves a product it
    made so) is made present, never the other way; any other the
-   output's seed has is listed, for `oath new`. A package the output
-   does not carry (`pkg:dropbear` after R36, one its owner added) keeps
-   its pin. A recipe the owner built moves to
+   output's seed has is listed, for `oath new`. A package the machine's
+   output had and this one does not is removed, unless `--keep` names it or
+   something that stays needs it (R62, from the next release); one its owner
+   added keeps its pin. A recipe the owner built moves to
    the pin step 1 built. Each running service whose program moved
    restarts on it, except one with a `seat` (the desk's and the
    console's, R42), which keeps its program until it next starts: the

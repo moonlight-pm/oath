@@ -61,6 +61,7 @@ Overwrite this file when facts change; do not append a diary.
   `oath update --confirm --reboot` on 2026-11-03: Linux 7.3.1 with the audit's 12 io_uring
   patches, in sync, 161 packages verified, the desk and its panes back. `keep_children` on
   `svc:sola-session` set by hand after it (generation 445; the session kept its pid).
+  `pkg:lzo` and `pkg:dropbear` removed by hand at Joshua's word (generation 446).
   Earlier: Release B, output `dd0f847aa9c9` (R47), from Sola's
   session on 2026-10-31: `oath update --confirm` (generation 432: the 13
   packages of Sola master `92815a65` replaced its overlay of the split),
