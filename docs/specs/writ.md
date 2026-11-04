@@ -8,7 +8,8 @@ authorizes one specific act, which is what each grant here is. "Harness" already
 
 **Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`. A
 local model runs in a box of its own, on the CPU or novus's GPU, and `writ` can ask it one thing: `writ serve`,
-`writ ask`, R65, R66. The model can run nothing yet. A section marked *(is)* runs today; everything else will be.
+`writ ask`, R65, R66. And it can work: `writ do` runs the loop and the tools in a box, its writes are held, and `writ diff`,
+`apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. Still to come: OpenRouter, the `oath` tool, a real terminal.
 
 Full research notes, about 3,300 lines with file and line references, are in
 `apocrypha/coding-agent-research/` (gitignored, not a source of truth; they quote
@@ -144,26 +145,32 @@ ways, one at a time (filter allowing everything, network or PID namespace shared
 PID 1 socket and KVM mounted, no overlay, environment kept, no process limit, secrets unmasked,
 root writable, any directory a project, a capability kept). `writ check` failed on every one.
 
+It attacks the tools too, through the real server in a real box, as a compromised model would: reaching a canary, a key or the
+network; forging an answer through `/proc`; flooding the channel; a FIFO; killing the server. Then the gate: what is held, flagged and applied, and that `undo`
+puts the tree back. Broken nine ways on 2026-11-04 (server dumpable, box history counted, nothing flagged, symlinks unflagged, output unbounded, a FIFO read, home or network given, a dead server ignored), it failed on every one. What got through is never shown, and it asks only whether a real key exists, so even a broken box reads no real secret.
+
 It attacks the box `writ serve` uses too (R65), which is smaller and has no project, and that was
 broken eleven ways the same day (network or PID namespace shared; home, `/etc` or all of `/dev`
 mounted; root or the model writable; the socket's directory read-only; environment kept by one layer
 or both; no second stage). It failed on every one.
 
-## The gate (will be)
+## The gate (is)
 
-Is: writes land in the session and the real tree stays byte for byte. Will be: the rest.
+Writes land in `~/.local/share/writ/sessions/<id>/upper`, and sessions do not see each other. `gate.rs` reads
+that as plain data; `writ apply` is the only thing that takes it to the real tree.
 
-- Writes land in `~/.local/share/writ/sessions/<id>/upper`. Sessions do not see each other.
-- `diff` walks the upper directory as plain data, with no symlink followed and no
-  program run. A whiteout is a delete. The host never runs git on it.
-- `.git/` in the upper directory and gitignored paths are dropped. The model can commit
-  in the box; that history does not leave it.
-- Flagged for the owner: symlinks, mode changes, and paths that run later: `build.rs`,
-  `Cargo.toml`, `.cargo/`, `Makefile*`, `configure`, `*.sh`, `package.json`, `go.mod`,
-  `.envrc`, `.github/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.mcp.json`, editor config.
+- `writ diff` walks the upper directory with no symlink followed and no program run on it. A whiteout is a delete,
+  and an opaque directory deletes what it does not hold. Names and contents are cleaned for the terminal.
+- `.git/` in the upper directory is dropped: the model can commit in the box, and that history does not leave it. So is
+  what the *real* tree's git ignores, asked of the real tree with names on stdin, so a `.gitignore` from the box hides nothing.
+- Flagged, and waiting until the owner names them or says `--all`: symlinks, mode changes, and paths that run later: `build.rs`,
+  `Cargo.toml`, `Cargo.lock`, `.cargo/`, `Makefile*`, `configure`, `*.sh`, `*.plan`, `pkg.toml`, `package.json`, `go.mod`, `go.sum`,
+  `.envrc`, `.github/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.mcp.json`, `.gitignore`, `.gitattributes`, `.gitmodules`, editor config.
   No harness blocks these, because agents must edit them. So it is a review, not a list.
-- `apply` writes accepted files atomically, setuid bits stripped, and refuses when the
-  base moved. The owner commits.
+- `apply` writes each file atomically with setuid, setgid and sticky stripped. It applies nothing if anything asked for
+  cannot go: a FIFO, socket or device; a path that goes through a real symlink; a real file changed since the session began. The owner commits.
+- `undo` puts back what `apply` changed, from copies kept in the session, and leaves any file changed since, by name.
+- A lock on the session keeps a box and `apply` from running on it at once.
 
 ## The key (will be)
 
@@ -179,10 +186,12 @@ Is: writes land in the session and the real tree stays byte for byte. Will be: t
   never a management key on a machine that runs agents. Redaction is not a control: it
   fails open on encoding and chunking.
 
-## Tools and approvals (will be)
+## Tools (is) and approvals (will be)
 
-Tools: `read`, `edit`, `write`, `grep`, `glob`, `shell`, `oath`. `rg` is not on Oath, so grep and
-glob run `git grep`, `git ls-files` and `/bin/grep` in the box, capped.
+`read`, `edit`, `write`, `grep`, `glob` and `shell` run in the box, in `tools.rs`, as one server behind one pipe pair, a line of
+JSON each way, size-limited, and every answer has a time limit. No path is checked: the box decides. `grep` runs `/bin/grep`,
+capped; `glob` is our own walk. The server sets itself non-dumpable, so a command it runs cannot open its pipes through `/proc`
+and answer in its name. A call to an unknown tool never reaches the box. `oath` will be the seventh.
 
 A human is asked only for what leaves the box, from structured data, once:
 
@@ -219,6 +228,11 @@ data, **C** source, **I** judgement.
 
 Instruction files (`AGENTS.md`) are read through the box and given to the model labelled
 as project text. They can steer it; they cannot widen anything.
+
+**Built (is), `agent.rs`:** exact replace then the ladder; read-first and a staleness hash; 2,000-line windows; 8 KiB head and tail
+with the rest in the box's `/tmp`; masking at 60% of the context, stopping at 90% with nothing left to mask; a repeated call
+warned at 3 and stopped at 5; 3 repairs of a turn that ran out of tokens or held a bad call, and none of a stream that failed; a turn limit;
+a transcript in the session, so `writ do --session` goes on. **Not yet:** hand-off to a fresh session, spend budgets, cycle detection, a project's check command as a nudge.
 
 ## Local models (is)
 
@@ -370,19 +384,20 @@ the design first asked for, which allowed the crates already in `Cargo.lock`.
 
 | Part | Lines |
 |---|---|
-| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with unit tests) | 1,169 |
-| Attack suite: probe, check (is) | 1,025 |
+| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,182 |
+| Attack suite: probe, check (is) | 1,132 |
 | Terminal sanitizer (is, with tests) | 149 |
-| Tool server (estimate) | 1,200 |
-| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,354 |
-| `writ serve` and its attacks (is, with tests) | 339 |
+| Tools (is, with tests) | 831 |
+| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,379 |
+| `writ serve` and its attacks (is, with tests) | 547 |
+| Loop, guards, masking, sessions (is, with tests) | 736 |
+| Gate (is, with tests) | 1,097 |
+| Command line (is) | 319 |
 | OpenRouter's part of the provider (estimate) | 300 |
-| Loop, repair, guards (estimate) | 900 |
-| Sessions, masking, hand-off (estimate) | 600 |
+| Hand-off, budgets (estimate) | 300 |
 | Renderer, line editor (estimate) | 650 |
-| Gate (estimate) | 500 |
 | `oath` tool, grants (estimate) | 300 |
-| **Total** | **about 8,500** |
+| **Total** | **about 8,800** |
 
 `docs/ideas.md` guessed the size of `cell` (2,900); that was low.
 
@@ -415,6 +430,9 @@ descriptors were `nvidia0` and `nvidiactl`. With no `--gpu` no GPU reached it. K
 `writ check` is not in `cargo make check`: `base` has no bubblewrap, so it runs by hand until a
 machine has `pkg:writ`. The case `landlock-and-yama` covers the kernel.
 
+With a model, on novus, 2026-11-04, at `--gpu-share 40`: Gemma 4 12B was asked to find why `cargo test` failed in a small crate with a real bug. In 8 turns and 6 minutes it ran
+the tests, read the code, made two edits, saw them pass and said so accurately. The real tree stayed byte for byte until `writ apply`, the same tests then passed on it, and `writ undo` put it back byte for byte.
+
 **Not tested:** a GPU in a box under Landlock (novus's kernel has none yet; its `/dev` rule allows these nodes' ioctls); AMD's GPUs; a crafted model file that reaches
 past the parser's checks; the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
 Steam; `cargo` under heavy concurrent builds, `curl --config -` with a real key and a body
@@ -431,8 +449,8 @@ a session needs a test; a btrfs snapshot as the lower layer is the likely answer
 1. Box and an attack suite, with no model at all. **Done 2026-11-03.**
 2. Provider with SSE record and replay, on a local model first (R65). **Done 2026-11-03** for
    `llama-server`: its streams replay, an error ends a turn, and a truncated call never runs.
-3. Tools and loop, on a local model. Vulkan and the GPU in the box, so one good enough to judge runs: **done 2026-11-04.**
-4. The gate. Done when an attack suite through a real model leaves the real tree untouched
+3. Tools and loop, on a local model. Vulkan and the GPU in the box, so one good enough to judge runs. **Done 2026-11-04.**
+4. The gate. Built 2026-11-04. Done when an attack suite through a real model leaves the real tree untouched
    until `apply`.
 5. Terminal.
 6. `oath` tool, then `check/agent.toml` run through it.

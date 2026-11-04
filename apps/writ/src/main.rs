@@ -3,8 +3,10 @@
 //! served from a box of its own (R65); and the first half of talking to it. The real tree does
 //! not change until the owner says so. `docs/specs/writ.md` has the design.
 
+mod agent;
 mod chat;
 mod check;
+mod gate;
 mod inner;
 mod json;
 mod landlock;
@@ -16,6 +18,7 @@ mod serve;
 mod sse;
 mod sys;
 mod term;
+mod tools;
 
 use chat::{Delta, Finish};
 use sandbox::{Plan, Session};
@@ -34,6 +37,11 @@ Usage:
   writ run [OPTIONS] -- CMD    Run one command in a box over the project.
   writ serve --model FILE      Serve a local model from a box, on a socket only you can reach.
   writ ask [OPTIONS] PROMPT    Ask the local model one thing. It can run nothing.
+  writ do [OPTIONS] PROMPT     The local model works on the project, in a box, until it stops.
+  writ diff SESSION [--names]  What a session would change in your tree.
+  writ apply SESSION [PATH..]  Take its changes. What runs later waits for its name, or --all.
+  writ undo SESSION            Take back what apply did.
+  writ sessions                Every session, and what each holds.
 
 Options for run:
   --project DIR    The project, mounted as an overlay. Default: this directory.
@@ -54,7 +62,14 @@ Options for ask:
   --record FILE    Keep the stream's bytes.
   --replay FILE    Read a recorded stream instead of asking.
 
-Writes in a box never reach the real tree. Applying them is not built yet.
+Options for do:
+  --project DIR    The project. Default: this directory, or the session's.
+  --session NAME   Name the session, or go on with one. Default: a new one.
+  --max-turns N    Default: 100.
+  --timeout SECS   For one turn of the model. Default: 1800.
+  --thinking       Show the model's thinking too.
+
+Writes in a box never reach the real tree until you apply them.
 ";
 
 /// A secret in this process must stay out of `/proc/<pid>/mem`, `environ` and core files,
@@ -234,6 +249,14 @@ fn ask(args: &[OsString]) -> Result<i32, String> {
     }
 }
 
+fn session_verb<F: FnOnce() -> Result<i32, String>>(verb: F) -> i32 {
+    harden();
+    verb().unwrap_or_else(|e| {
+        eprintln!("writ: {}", term::scrub(&e));
+        2
+    })
+}
+
 fn main() {
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
     let rest = args.get(1..).unwrap_or(&[]);
@@ -243,6 +266,7 @@ fn main() {
         Some("probe") => probe::main(rest),
         Some("probe-one") => probe::one(rest.first().and_then(|a| a.to_str())),
         Some("probe-serve") => serve::probe(rest),
+        Some("tools") => tools::main(),
         Some("check") => {
             harden();
             check::main(rest)
@@ -267,6 +291,11 @@ fn main() {
                 }
             }
         }
+        Some("do") => session_verb(|| agent::main(rest)),
+        Some("diff") => session_verb(|| gate::diff_main(rest)),
+        Some("apply") => session_verb(|| gate::apply_main(rest)),
+        Some("undo") => session_verb(|| gate::undo_main(rest)),
+        Some("sessions") => session_verb(gate::sessions_main),
         Some("ask") => {
             harden();
             match ask(rest) {

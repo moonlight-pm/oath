@@ -180,6 +180,15 @@ impl Session {
         Ok(Session { dir, upper, work, empty })
     }
 
+    /// Held while a box or `apply` is at work on the session, so a command in a box cannot change
+    /// the session while `apply` reads it. Dropping it lets go.
+    pub fn lock(&self) -> Result<fs::File, String> {
+        let path = self.dir.join("lock");
+        let f = fs::File::create(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        f.try_lock().map_err(|_| format!("session {} is in use", self.dir.display()))?;
+        Ok(f)
+    }
+
     /// Paths the session changed, whiteouts included. Reads names only.
     pub fn changed(&self) -> usize {
         count(&self.upper)

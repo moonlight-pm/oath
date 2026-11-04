@@ -49,9 +49,9 @@ append history (git has it).
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
 
-5. **`writ`, Oath's coding agent (R64–R66, [docs/specs/writ.md](docs/specs/writ.md)).** Its box is built, and a local
-   model runs in one, on the CPU or novus's GPU through Vulkan: `writ serve --gpu --gpu-share 40`, overlays on buccina and novus. Joshua: tests on novus may
-   use up to half its GPU. `writ ask` reads its stream; a stream cut anywhere runs nothing. Next: tools and the loop on Gemma 4 12B, then the gate, then OpenRouter.
+5. **`writ`, Oath's coding agent (R64–R66, [docs/specs/writ.md](docs/specs/writ.md)).** A model works on a project in a box: `writ serve --gpu --gpu-share 40`, then
+   `writ do`; its writes are held for `writ diff`, `apply`, `undo`. Gemma 4 12B fixed a real bug that way on novus's GPU (Joshua: tests may use up to half of it).
+   Overlays on buccina and novus. Next: attacks through the real model, real work on a real tree, then a terminal and OpenRouter.
 
 ## Machines
 

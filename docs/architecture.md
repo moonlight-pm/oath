@@ -284,4 +284,9 @@ writ serve → /bin/bwrap → /writ inner → /bin/llama-server
                                      with --gpu, /dev/nvidiactl and /dev/nvidia<N> (R66)
 writ ask → /bin/curl --config - → the socket
                                      one request, read back through chat.rs; it runs nothing
+writ do → /bin/bwrap → /writ inner → /writ tools
+                                     the loop on the host, the tools in the box, one pipe pair;
+                                     also transcript.jsonl and meta.json in the session
+writ diff, apply, undo               read the session's upper/ as data; apply writes the real tree,
+                                     keeping undo.jsonl and undo/ in the session
 ```

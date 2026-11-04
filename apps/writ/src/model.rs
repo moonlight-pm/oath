@@ -3,6 +3,7 @@
 //! or the environment. A local server and OpenRouter differ by one line of curl's config.
 
 use crate::chat::{self, Assembler, Delta, Turn};
+use crate::json;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -115,6 +116,30 @@ pub fn send<F: FnMut(Delta)>(
         None => "curl was killed".to_string(),
     });
     Ok(assembler.finish(transport))
+}
+
+/// What the server says about itself: its context's size, for one.
+pub fn props(endpoint: &Endpoint) -> Result<json::Value, String> {
+    let Endpoint::Local(socket) = endpoint;
+    let path = socket.to_str().ok_or("the socket's path is not UTF-8")?;
+    let c = format!("unix-socket = {}\nurl = \"http://localhost/props\"\nproto = \"=http\"\nmax-redirs = 0\nmax-time = 10\n", quote(path));
+    let mut child = Command::new(CURL)
+        .env_clear()
+        .args(["-q", "--silent", "--show-error", "--fail", "--config", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("{CURL}: {e}"))?;
+    let mut stdin = child.stdin.take().ok_or("no stdin")?;
+    stdin.write_all(c.as_bytes()).map_err(|e| format!("curl's stdin: {e}"))?;
+    drop(stdin);
+    let mut out = Vec::new();
+    child.stdout.take().ok_or("no stdout")?.take(4 << 20).read_to_end(&mut out).map_err(|e| e.to_string())?;
+    if !child.wait().map_err(|e| e.to_string())?.success() {
+        return Err("the server gave no properties".into());
+    }
+    json::parse(&String::from_utf8_lossy(&out))
 }
 
 /// A recorded stream, read as if it were arriving.
