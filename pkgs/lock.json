@@ -219,11 +219,11 @@
     ]
   },
   "codex": {
-    "version": "0.164.0",
+    "version": "0.165.0",
     "license": "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib",
     "by": "plan",
-    "plan": "sha256-8ca87a496a4943a557d9621bfab398894a66f670a7e52577d5010e6f14d19701",
-    "product": "sha256-37194dc8e580d7015ff0a7f795504a24ca13ecbb15073df5d504647c7f4c169a",
+    "plan": "sha256-05f408a58abb0e4e85ce03014fc33868f9317871f6f2d7ef216ac44c4de576e6",
+    "product": "sha256-ba4496ad39c783f94bf8f64daef0f7c87035ca92a88ca99487dfe41bf1e19d3c",
     "run": []
   },
   "coreutils": {
