@@ -106,7 +106,7 @@ Overwrite this file when facts change; do not append a diary.
   the release's pins; `--keep` must take all 14 or none (the bus's Tab
   payload changed). Seen 2026-11-03: output `c9735fc14e50`, booted 2026-11-02 19:10Z,
   with 15 `pkg:sola*` overlays from master@822bb2dd that `oath update` replaces
-  unless `--keep`. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile. `pkg:llama-cpp` b11960 and `pkg:writ` 0.1.0, built on buccina, added by hand at Joshua's word (generation 69, 2026-11-04), overlays in no profile; testing may use up to half the GPU (R66). No `svc:llama`: `writ serve` by hand, with Gemma 4 12B in `~/.local/share/writ/models`.
+  unless `--keep`. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile. `pkg:llama-cpp` b11960 (`sha256-0908155920628b60`, from master@cf2448e) and `pkg:writ` 0.1.0 (`sha256-f4e47eb9157a`, from master@d3a4d4b), built on buccina, added by hand at Joshua's word (generations 69 and 70, 2026-11-04), overlays in no profile; testing may use up to half the GPU (R66). No `svc:llama` and no server left running: `writ serve` by hand, with Qwen3.5 9B Q6_K in `~/.local/share/writ/models`.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the
