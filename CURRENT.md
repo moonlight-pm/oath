@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-11-03 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-11-04 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R66 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R67 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -14,18 +14,18 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `ca0f80bd441a`
-   (2026-11-03), on buccina; canto runs `debfd75332ea`, novus `c9735fc14e50`. Gap: a
+   the profile, and checks `/bin` and `/lib` names. Newest release: `e73aa522ec58`
+   (2026-11-04), on buccina; canto runs `debfd75332ea`, novus `c9735fc14e50`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
-   (built, unreleased); `oath` checks PID 1. R62 (no release yet): a machine holds what its packages
+   (built, unreleased); `oath` checks PID 1. R62 (in that release): a machine holds what its packages
    prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. R61–R63's verbs and fields
-   reach machines with the next release; Sola's package app (its `sola-oath` session on novus) reads them then.
+   reach canto and novus with their next update; Sola's package app (its `sola-oath` session on novus) reads them then.
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `d6343e8b` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `ca0f80bd441a` (69/69, 2026-11-03). Each machine reboots into it,
+   release `e73aa522ec58` (71/71, 2026-11-04). Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Joshua asks
    for a pull on novus and decides each reboot, then Steam's smoke there (Vulkan, Floating Point, Proton, a pad).
@@ -37,14 +37,13 @@ append history (git has it).
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
 4. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
-   against upstream's newest release, may publish, and puts findings on the origin (R61, since 2026-11-03). Left by Joshua's word: libsndfile, the
+   against upstream's newest release, may publish, and puts findings on the origin (R61). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. An unattended run cannot build CEF (commands stop at
-   2 h). `debfd75332ea` carries 12 io_uring patches on Linux 7.3.1 and libslirp 4.9.7 (14 CVEs,
-   by Joshua's word, 2026-11-03); the patches come out at the first 7.3.y with the series.
-   CVE-2026-99255 and 99262 wait for that 7.3.y. Next: the 2026-11-04 run publishes Codex
-   0.165.0 and moves buccina (Joshua: "let the audit publish it"), and that release carries all of master (R61–R65, Landlock and Yama); a CEF rebuild for fribidi
-   and expat 2.10.0, from 2026-11-10, is his call. R60 (TIOCSTI off in the kernel) is in `ca0f80bd441a`, on
-   buccina; a machine has it from the reboot into it, and Joshua left canto on `debfd75332ea` for now.
+   2 h). Linux 7.3.1 carries 12 io_uring patches, out at the first 7.3.y with the series;
+   CVE-2026-99255 and 99262 wait for that 7.3.y. rsync 3.5.2 (R67) is on the origin; its fix bounds only unbroken collision runs.
+   Next: a session moves fribidi 1.0.18, expat 2.10.0, vulkan-loader and vulkan-tools 1.4.367 and rebuilds CEF from 2026-11-10, when all are a
+   week old (Joshua's go, 2026-11-04); no run can start it. He asked that the audit ask him less: `build/audit/r67-policy/` holds that change
+   (keys upstream names, CEF through a long phase), refused as self-modification, for his hand. R60 is on buccina; Joshua left canto on `debfd75332ea` for now.
 
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
@@ -59,7 +58,7 @@ are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, mo
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `debfd75332ea` (2026-11-03, no overlay), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
 | novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `c9735fc14e50` (booted 2026-11-02, 15 `pkg:sola*` overlays from master@822bb2dd), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
-| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `ca0f80bd441a` (master `75def41`, 2026-11-03), headless: `desk`'s packages with its services off, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
+| buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `e73aa522ec58` (master `1678f60`, 2026-11-04), headless: `desk`'s packages with its services off, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 ## Do not
 
