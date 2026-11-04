@@ -25,20 +25,20 @@ are recorded in `pkgs/intake/<name>.txt`, `pkg:oath`'s from `Cargo.lock`.
 
 | Gate | Where | What it does |
 |------|-------|--------------|
-| Age | `cargo make pkgs --fetch` | A version that moved must be 7 days old. A release too, by its tag's commit or its server's date. |
+| Age | `cargo make pkgs --fetch` | A version that moved or is new must be 7 days old. A release too, by its tag's commit or its server's date. |
 | Lowest fixed | by rule | A fix takes the lowest version that has it and is a week old, not the newest. |
 | Exception | `age_because` in `pkgs/audit.toml` | A fix younger than that names its advisory, for that one version. |
 | New names | `pkgs/intake/approved.txt` | A new dependency, or an npm package whose publisher changed, stops until a person writes it here. |
-| Review | `pkgs/reviews.txt`, and a test | Every version that moved has a verdict. `cargo make pkgs --review <name>` writes the diff, and what in it looks like new reach. |
+| Review | `pkgs/reviews.txt`, and a test | Every version that moved or is new has a verdict. `cargo make pkgs --review <name>` writes the diff, and what in it looks like new reach. |
 | Stop the line | `cargo make audit`, `cargo make publish` | An OSV `MAL-` record fails the audit and refuses a release. Nothing waves it through. |
 | Tag | `pkgs/tags/<name>.txt` (R54) | The tarball against upstream's git tree. |
 | Defaults | `pkg:node`'s npm | `min-release-age=7`, `ignore-scripts=true`. Python ships no `pip`. |
 
 What was already here on 2026-11-01 is the baseline: recorded, not reviewed. Nobody
-reads 537 packages at once. Gates apply to what moves after that. A package's first
-pin with its modules gets the same record, so a new tree passes unread unless someone
-stops it: Joshua accepted `pkg:cloudflared`'s 67 modules on those terms (2026-11-03).
-A record made before the modules were pinned stops each as a new name.
+reads 537 packages at once. Gates apply to what moves after that, and nothing else
+becomes baseline: a new package's modules are new names and its release must be a week
+old, and deleting a record does not change that. The one exception is
+`pkg:cloudflared`'s 67 modules, which Joshua accepted as a baseline (2026-11-03).
 
 ### Who decides
 

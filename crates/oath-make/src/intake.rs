@@ -14,6 +14,9 @@
 //! and what in it looks like new reach (a process, the network, an install hook, a
 //! blob). None of this can tell good code from bad. It makes a fresh or quietly
 //! changed package wait, and makes someone look.
+//!
+//! A package's first pin passes the same gates, so a record never starts as a
+//! baseline, and deleting one does not make its modules one.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
@@ -285,22 +288,13 @@ fn next(
 ) -> std::result::Result<Vec<Line>, Vec<String>> {
     let mut stops = Vec::new();
     let mut lines = Vec::new();
+    let had = before.map_or(&[][..], |r| r.lines.as_slice());
     for (m, date, who) in found {
-        let Some(before) = before else {
-            lines.push(Line {
-                module: m,
-                published: date,
-                status: "baseline".to_string(),
-                from: None,
-                publisher: who,
-            });
-            continue;
-        };
-        if let Some(l) = before.lines.iter().find(|l| l.module == m) {
+        if let Some(l) = had.iter().find(|l| l.module == m) {
             lines.push(l.clone());
             continue;
         }
-        let was = before.lines.iter().find(|l| l.module.eco == m.eco && l.module.name == m.name);
+        let was = had.iter().find(|l| l.module.eco == m.eco && l.module.name == m.name);
         let ok = approved.contains(&(m.eco.clone(), m.name.clone()));
         match was {
             None if !ok => stops.push(format!(
@@ -371,8 +365,8 @@ pub fn ensure(root: &Path, name: &str, pkg: &PkgToml, entry: &Entry) -> Result<(
     let date = source_date(root, pkg, entry);
     let mut stops = Vec::new();
     // A source moved, and is too young. A package of modules has the modules' dates.
-    if let (Some(_), Some(d)) = (&before, &date) {
-        let moved = before.as_ref().is_some_and(|r| r.source_date.as_deref() != Some(d));
+    if let Some(d) = &date {
+        let moved = release_moved(before.as_ref(), d);
         if let Some(age) = age_days(d, now).filter(|a| moved && *a < MIN_AGE_DAYS) {
             if !entry.age_because.contains_key("source") {
                 stops.push(format!(
@@ -388,8 +382,13 @@ pub fn ensure(root: &Path, name: &str, pkg: &PkgToml, entry: &Entry) -> Result<(
     }
     let checked = now.format("%Y-%m-%d").to_string();
     write(root, name, &Record { pin: want, checked, source_date: date, lines })?;
-    say_moved(name, before.is_some(), &read(root, name).unwrap_or_default());
+    say_moved(name, &read(root, name).unwrap_or_default());
     Ok(())
+}
+
+/// Whether this release is not the record's. A package with no record has moved.
+fn release_moved(before: Option<&Record>, date: &str) -> bool {
+    before.is_none_or(|r| r.source_date.as_deref() != Some(date))
 }
 
 /// The next lines for these modules: dates are fetched only for what the record
@@ -423,11 +422,7 @@ fn gate(
     }
 }
 
-fn say_moved(name: &str, had: bool, r: &Record) {
-    if !had {
-        eprintln!(">> intake: pkgs/{name}: {} modules recorded as the baseline", r.lines.len());
-        return;
-    }
+fn say_moved(name: &str, r: &Record) {
     for l in r.lines.iter().filter(|l| l.status != "baseline") {
         eprintln!(
             ">> intake: pkgs/{name}: {} {} {}: read it (cargo make pkgs --review {name})",
@@ -455,7 +450,7 @@ pub fn ensure_cargo(root: &Path) -> Result<()> {
     }
     let checked = now.format("%Y-%m-%d").to_string();
     write(root, "oath", &Record { pin: want, checked, source_date: None, lines })?;
-    say_moved("oath", before.is_some(), &read(root, "oath").unwrap_or_default());
+    say_moved("oath", &read(root, "oath").unwrap_or_default());
     Ok(())
 }
 
@@ -722,18 +717,42 @@ mod tests {
     }
 
     #[test]
-    fn what_is_there_first_is_the_baseline_however_young() {
+    fn a_first_pin_passes_the_gates_like_any_other() {
         let m = Module::new("go", "x", "v1");
         let now = at("2026-11-02T00:00:00Z");
-        let lines = next(
-            None,
-            now,
-            vec![found(&m, "2026-11-01T00:00:00Z", None)],
-            &Entry::default(),
-            &BTreeSet::new(),
-        )
-        .unwrap();
+        let (old, young) = ("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z");
+        let e = Entry::default();
+        let none = BTreeSet::new();
+        let stops = next(None, now, vec![found(&m, old, None)], &e, &none).unwrap_err();
+        assert!(stops[0].contains("new dependency"), "{stops:?}");
+        let ok: BTreeSet<_> = [("go".to_string(), "x".to_string())].into();
+        let stops = next(None, now, vec![found(&m, young, None)], &e, &ok).unwrap_err();
+        assert!(stops[0].contains("1 days old"), "{stops:?}");
+        let lines = next(None, now, vec![found(&m, old, None)], &e, &ok).unwrap();
+        assert_eq!((lines[0].status.as_str(), lines[0].from.as_deref()), ("new", None));
+    }
+
+    #[test]
+    fn a_baseline_stays_only_for_what_it_recorded() {
+        let before = record(&[("x", "1.0.0", "alice")]);
+        let now = at("2026-11-02T00:00:00Z");
+        let (x, none) = (Module::new("npm", "x", "1.0.0"), BTreeSet::new());
+        let lines =
+            next(Some(&before), now, vec![found(&x, "", None)], &Entry::default(), &none).unwrap();
         assert_eq!(lines[0].status, "baseline");
+        // The same module with no record: deleting one does not keep it.
+        let stops =
+            next(None, now, vec![found(&x, "2026-01-01T00:00:00Z", None)], &Entry::default(), &none);
+        assert!(stops.unwrap_err()[0].contains("new dependency"));
+    }
+
+    #[test]
+    fn a_new_package_has_a_new_release() {
+        let d = "2026-11-01T00:00:00Z";
+        assert!(release_moved(None, d));
+        let same = Record { source_date: Some(d.to_string()), ..Default::default() };
+        assert!(!release_moved(Some(&same), d));
+        assert!(release_moved(Some(&same), "2026-11-02T00:00:00Z"));
     }
 
     #[test]

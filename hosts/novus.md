@@ -106,7 +106,7 @@ Overwrite this file when facts change; do not append a diary.
   the release's pins; `--keep` must take all 14 or none (the bus's Tab
   payload changed). Seen 2026-11-03: output `c9735fc14e50`, booted 2026-11-02 19:10Z,
   with 15 `pkg:sola*` overlays from master@822bb2dd that `oath update` replaces
-  unless `--keep`. `pkg:lzo` removed by hand at Joshua's word (generation 67). buccina's `ssh novus` fails on a stale `known_hosts` line; use the route below.
+  unless `--keep`. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the
@@ -124,8 +124,8 @@ Overwrite this file when facts change; do not append a diary.
   `ssh buccina` logs in (the local DNS names it; its host key is pinned
   in `~/.ssh/known_hosts` by name and address); `~/.ssh/config` names
   10.0.0.3 for `canto`. Both live in `/home`, outside the catalog. buccina reaches it with
-  `ssh -o UserKnownHostsFile=build/novus-oath.known_hosts home@10.0.0.5`
-  (the host key the install printed, ending `Suecii`). canto's
+  `ssh novus`: its `~/.ssh/known_hosts` and `build/novus-oath.known_hosts` hold the
+  host key the install printed, ending `Suecii`. canto's
   `~/.ssh/novus-oath.known_hosts` still has the old stick's key.
 - **The stick:** Joshua's Samsung Type-C 128 GB (`090c:1000`, serial
   `0354422110003481`), desk output `cf238ebe3360` with novus's overlay

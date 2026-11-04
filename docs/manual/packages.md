@@ -197,7 +197,8 @@ and a newer one is a new pin in `pkgs/cloudflared`.
 
 Go programs read their CA roots from `pkg:certs` (R50), through Go's own
 `crypto/x509`, unless `SSL_CERT_FILE` names others:
-`/oath/store/pkg/certs/live/ssl/cert.pem`. It is Mozilla's roots for servers, from
+`/oath/store/pkg/certs/live/ssl/cert.pem`. A machine without `pkg:certs` makes it
+first, at the hash the plan names. It is Mozilla's roots for servers, from
 NSS's `certdata.txt`, less any with a distrust-after date and what
 `pkgs/certs/distrust.txt` names. curl and OpenSSL still read `pkg:curl`'s copy.
 

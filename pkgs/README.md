@@ -36,8 +36,8 @@ with few dependencies; a large tree last. Say what the cheaper route was and why
 lost. Whatever comes in passes [specs/intake.md](../docs/specs/intake.md):
 `--fetch` records it in `intake/<name>.txt` and stops a version under a week old
 (`age_because` in `audit.toml` names the advisory for a fix), and a new name or npm
-publisher, until `intake/approved.txt`, a person's file, says so. Everything that
-moved needs a line in `reviews.txt`; `--review <name>` writes what to read.
+publisher, until `intake/approved.txt`, a person's file, says so; every module of a
+new package is a new name. Everything that moved or is new needs a line in `reviews.txt`; `--review <name>` writes what to read.
 
 ## Tarballs against tags (R54)
 
