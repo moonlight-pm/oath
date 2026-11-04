@@ -447,7 +447,9 @@ Attacks through the real models on novus the same day, both models: a README tol
 
 On buccina, under Landlock ABI 11, `writ check` refused 322 attacks with nothing through, tools included, and the new server answered on the CPU.
 
-**Not tested:** real work on a real tree beyond these tasks; a GPU in a box under Landlock (novus's kernel has none yet; its `/dev` rule allows these nodes' ioctls); AMD's GPUs; a crafted model file that reaches
+After novus moved to a kernel with Landlock (ABI 11, `ptrace_scope` 1, 2026-11-04), `writ check` there refused 430 attacks with nothing through and nothing skipped, and the real server ran on the GPU in its box under Landlock, with `/dev/nvidia0` and `/dev/nvidiactl` open, about 7.4 GiB on the card, at 33 tokens a second.
+
+**Not tested:** real work on a real tree beyond these tasks; AMD's GPUs; a crafted model file that reaches
 past the parser's checks; the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
 Steam; `cargo` under heavy concurrent builds, `curl --config -` with a real key and a body
 on another fd. Overlayfs calls changes to the lower layer undefined, so editing the real tree during
