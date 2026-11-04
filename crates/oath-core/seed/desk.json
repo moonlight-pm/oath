@@ -743,7 +743,7 @@
     },
     "pkg:sola": {
       "present": true,
-      "hash": "sha256-26598429144593ae2918ecbacd6b59783e5046677e7154a71381b032fc260d7a",
+      "hash": "sha256-505dd9c0d926554d255457308dc856764d7afea5e1f5bdd4ad278a9a77ccd3b3",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -800,11 +800,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola's desk: its bus, call plane, window manager (sola-river), shell, session, KVM, lock screen, solactl and catalog app, with its icons and cursors (share/).",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -812,7 +812,7 @@
     },
     "pkg:sola-bots": {
       "present": true,
-      "hash": "sha256-3a9a95dff250fdc1c17e5b3ba0836839b62f11b13a76a38e92098427d6854bab",
+      "hash": "sha256-e43062479ad1f560e9f00b09b9039d09a83b5f990ac941b14b8fd7d6c64633df",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -853,11 +853,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Bots: named informational LLM sessions (sola-botsd and its dialog).",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -865,7 +865,7 @@
     },
     "pkg:sola-browser": {
       "present": true,
-      "hash": "sha256-87be9a4555dfc074d0bead37a01a7713698f44092b17b07699fabf301722d408",
+      "hash": "sha256-657e7c15e086ca67d351305df745c1dc3fff329a647d20b4a6720ff15f257977",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -914,11 +914,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola's browser: iced chrome on CEF.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -926,7 +926,7 @@
     },
     "pkg:sola-calendar": {
       "present": true,
-      "hash": "sha256-b393d47fa803c38ff5231fe32159ded450b2291b0dbab5ebf9800168f0539d1a",
+      "hash": "sha256-ff70ecb91ff1bc5970eeaf5ca006fbeebdedfb889da0ac1d2635bcabbb9ac944",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -967,11 +967,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Calendar: local, Google Calendar and iCloud CalDAV calendars.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -979,7 +979,7 @@
     },
     "pkg:sola-design": {
       "present": true,
-      "hash": "sha256-44b05a74fbeb2d6f1d339e59b2878409db69bb84841c985c932969f6f3c3ccd6",
+      "hash": "sha256-a554abe8ef571f5a358514f7835d5d75b1f411b692c83f79874888edc66d6013",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1028,11 +1028,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Design: HTML artboards on a canvas, edited by agents.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1040,7 +1040,7 @@
     },
     "pkg:sola-editor": {
       "present": true,
-      "hash": "sha256-4a9c146437afd3e00809ac495a0ec5e6e126c1f17dbd670e90082be434c5405e",
+      "hash": "sha256-a3c2f6a437ff17a171e6629999d329cc5b41856d6dd6e11961ed81742896b682",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1081,11 +1081,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Editor: Sola's text editor.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1093,7 +1093,7 @@
     },
     "pkg:sola-mail": {
       "present": true,
-      "hash": "sha256-0c1e1e103d1912b93e9a992e43f21c5c69e86c31ebf6814d8c89dbd4baf97f94",
+      "hash": "sha256-666881575ee719f73bb6d056a76d00d50af9deba3a9d0e176738328daabcf0be",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1134,11 +1134,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Mail: an IMAP and SMTP mail client.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1146,7 +1146,7 @@
     },
     "pkg:sola-monitor": {
       "present": true,
-      "hash": "sha256-b2f56ac73532c893a2e8a848795ce7d2721018b4e164095c181549cc0583c1be",
+      "hash": "sha256-fc65fb2ce0cec1eba896b024a4c59e005b66baa42ae4a65361c05610329c86ff",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1187,11 +1187,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Monitor, an app of Sola's desk.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1199,7 +1199,7 @@
     },
     "pkg:sola-paint": {
       "present": true,
-      "hash": "sha256-19ca05bce9865a90a00a668c14a5d2d9abe94671d10ad7f65d7f336b96486a38",
+      "hash": "sha256-fee2f01653a65b08cf19835c8cba474c894e4c55c2bc6ccc123bffdfe5a75836",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1240,11 +1240,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Paint: the image viewer and editor Sola opens images in.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1252,7 +1252,7 @@
     },
     "pkg:sola-preview": {
       "present": true,
-      "hash": "sha256-bcce4bd8d3d4e0e3a53cb0315435924ed088fafd7352d1beaa46b6b69ae4d5de",
+      "hash": "sha256-6a36d865acd586a6e3820a58b844ecc385f55984b97e48dbc46f7bfc18255bc2",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1293,11 +1293,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Preview, an app of Sola's desk.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1305,7 +1305,7 @@
     },
     "pkg:sola-projects": {
       "present": true,
-      "hash": "sha256-2ad20b55ab2835f2b694bab51ba58cfe19441557ec78fd8210efcf624992a65b",
+      "hash": "sha256-8dd152ceba3970ccaf6aa5b3f728a8e77c47ff344a697095c400846890634626",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1354,11 +1354,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Projects: each folder's agent sessions in tmux, brought back after a reboot (--restore).",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1366,7 +1366,7 @@
     },
     "pkg:sola-scope": {
       "present": true,
-      "hash": "sha256-c79685f1539de82f74a19f80cc002a43eacf5d5e2195acd10a271b7fc303c3c5",
+      "hash": "sha256-317cf21a852f14395b8eac6575747858c64263138fd8728151afcb470352a26d",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1407,11 +1407,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Scope: a pixel loupe, a magnified grid under the pointer.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1419,7 +1419,7 @@
     },
     "pkg:sola-settings": {
       "present": true,
-      "hash": "sha256-af9115fee758f0d3de558e671f265c0762be3a30c7f9cfc8061f24c47e0533d7",
+      "hash": "sha256-e16a486062d3f42c17b30cb12e4be352516010a4fe8b615f75593a92365425e0",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1460,11 +1460,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Settings: the desk's settings.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1472,7 +1472,7 @@
     },
     "pkg:sola-terminal": {
       "present": true,
-      "hash": "sha256-265933480d5b5193e1ef316219ddd2abd417dbc2381eb55ee2545b84ee22909d",
+      "hash": "sha256-d57ea2db0b38d88db5b89f341f3cea41f52ab928011acb9f904e61362a16e3c3",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1521,11 +1521,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola's terminal: every shell in tmux.",
       "home": "https://github.com/moonlight-pm/Sola",
@@ -1533,7 +1533,7 @@
     },
     "pkg:sola-vault": {
       "present": true,
-      "hash": "sha256-b07edf11d3c2017ea2eb6ec43ac08c7cb967dc178494ea987f1527164e189ffc",
+      "hash": "sha256-ea1d1b241eafb95c6c250ca640f05c81095d160ed19bf22e753138d16512673d",
       "needs": [
         {
           "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1",
@@ -1574,11 +1574,11 @@
       ],
       "source": {
         "repo": "https://github.com/moonlight-pm/Sola",
-        "commit": "d6343e8bddfcc6e3e4260bb9ee7a73bd3afc7afd",
+        "commit": "a95ab5d178117f16dc89998faf670213940ed516",
         "branch": "master",
         "dirty": false,
         "built_by": "home@novus",
-        "built_at": "2026-11-03T00:04:29Z"
+        "built_at": "2026-11-04T18:01:07Z"
       },
       "description": "Sola Vault: sola-vaultd, the desk's Bitwarden client.",
       "home": "https://github.com/moonlight-pm/Sola",
