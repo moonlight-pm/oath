@@ -51,8 +51,10 @@ cd "$tmp/src/$(cd "$tmp/src" && dirname "$(find . -maxdepth 2 -name go.mod | sor
 for p in "$repo/pkgs/$name"/patches/*.patch; do
 	[ ! -f "$p" ] || git apply -p1 "$p"
 done
-if grep -q '^replace' go.mod; then
-	echo "$name: go.mod has a replace directive, which this does not follow" >&2
+# A replace by version comes through the proxy and go.sum like any other module.
+# One by path names a tree no pin holds.
+if grep -Eq '=> *(\.\.?)?/' go.mod; then
+	echo "$name: go.mod replaces a module with a path, which this does not follow" >&2
 	exit 1
 fi
 

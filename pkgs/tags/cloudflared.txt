@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source cloudflared-2026.10.5.tar.gz cca0918e869d6e303ab9d0a31bc1d96ae7dbbbfe6ff2bde9208159ea91f793d6
+tag 2026.10.5 commit 99b2eb2c0152862af2b1abf7c7b4e2170a46b9fe tree 2290f2b122315cd8d31601080a81abac8ff0a1a8
+signed no
+same 483
+only-in-tag 0

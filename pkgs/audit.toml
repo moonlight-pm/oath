@@ -131,6 +131,15 @@ names = ["claude-code"]
 unchecked = "the vendor's binary, from its own channel: read its release notes"
 no_compare = "the vendor's build, not its source: there is no tree to set it against"
 
+[cloudflared]
+cpe = "cpe:2.3:a:cloudflare:cloudflared"
+repo = "https://github.com/cloudflare/cloudflared"
+tag = "{version}"
+osv = "Go:github.com/cloudflare/cloudflared"
+
+[cloudflared.not_affected]
+"GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
+
 [cmake]
 cpe = "cpe:2.3:a:cmake_project:cmake"
 repo = "https://github.com/Kitware/CMake"

@@ -30,10 +30,14 @@ Update a row when its status moves, and move it to "Done" when it lands.
 | `pkg:oath`'s crates | `oath` 64, `oath-init` 58 | See below | Up to half | Our own code | Later |
 | `pkg:oath-make` (host tool) | 123 crates | See below | About 30 | Our own code | Later |
 
-Needed and not yet here: `cloudflared` links 67 Go modules, builds from source, and
-its tag is unsigned. Nothing else speaks Cloudflare's tunnel protocol, so it is not a
-candidate. It needs `go-modules.sh` to follow `replace`, and OSV flags its forked
-`quic-go`, unread. Not packaged until something asks.
+`pkg:cloudflared` (Joshua asked, 2026-11-03) links 67 Go modules, builds from source,
+and its tag is unsigned. Nothing else speaks Cloudflare's tunnel protocol, so it is not
+a candidate. Its forked `quic-go` is v0.59.1 and two Cloudflare commits, read: OSV's
+flags came from the fork's v0.45.1 pseudo-version under upstream's name. OSV knows
+nothing under the fork's own name, so quic-go's advisories are read by hand. The
+other fork, `ipostelnik/cli`, is `urfave/cli` from early 2021 and three Cloudflare
+commits to how flags resolve, read. Joshua accepted the 67 as a first pin's baseline,
+recorded and not reviewed.
 
 ### Our own crates
 

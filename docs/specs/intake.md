@@ -35,7 +35,10 @@ are recorded in `pkgs/intake/<name>.txt`, `pkg:oath`'s from `Cargo.lock`.
 | Defaults | `pkg:node`'s npm | `min-release-age=7`, `ignore-scripts=true`. Python ships no `pip`. |
 
 What was already here on 2026-11-01 is the baseline: recorded, not reviewed. Nobody
-reads 537 packages at once. Gates apply to what moves after that.
+reads 537 packages at once. Gates apply to what moves after that. A package's first
+pin with its modules gets the same record, so a new tree passes unread unless someone
+stops it: Joshua accepted `pkg:cloudflared`'s 67 modules on those terms (2026-11-03).
+A record made before the modules were pinned stops each as a new name.
 
 ### Who decides
 

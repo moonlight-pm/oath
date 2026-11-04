@@ -29,9 +29,9 @@ append history (git has it).
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Joshua asks
    for a pull on novus and decides each reboot, then Steam's smoke there (Vulkan, Floating Point, Proton, a pad).
-3. **Servers from source (R49–R59).** Blocky, restic, rsync, PostgreSQL with
+3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
-   profile (R52), on the origin since `c9735fc14e50`. They run as `work`, which has no `sudo`. Bias against
+   profile (R52), on the origin since `c9735fc14e50` (`cloudflared` since 2026-11-03). They run as `work`, which has no `sudo`. Bias against
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;

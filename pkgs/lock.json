@@ -198,6 +198,16 @@
     "product": "sha256-cb973b8ff285b43e7f96b90640b283b4e975b69d5dec1370596af5584b9b985f",
     "run": []
   },
+  "cloudflared": {
+    "version": "2026.10.5",
+    "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause",
+    "by": "plan",
+    "plan": "sha256-6950079d122abd41f4585bd3d99944bd8f9650939913c8e7e00d80af0fff442b",
+    "product": "sha256-b0e034a2f3475fbf922cddbb0711ca81dd495a5a272f1aa4ec04f7553c1cab6e",
+    "run": [
+      "certs"
+    ]
+  },
   "cmake": {
     "version": "4.4.4",
     "license": "BSD-3-Clause AND curl AND MIT AND BSD-2-Clause AND Zlib AND 0BSD AND Apache-2.0",

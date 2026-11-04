@@ -187,12 +187,13 @@ cf --version                             # 1.0.0-beta.26
 ### Servers: Blocky, restic, route, cell, PostgreSQL (R49)
 
 These are built from source here and are in no profile:
-`pkg:blocky`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell` (with `pkg:crun`,
+`pkg:blocky`, `pkg:cloudflared`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell` (with `pkg:crun`,
 `pkg:passt`), `pkg:postgresql` and `pkg:postgis`
 (with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
 takes them from the origin as above, with each need the plan names, once a
 release has published them. `pkg:go` is what builds the Go ones; a machine needs
-it only to build.
+it only to build. `cloudflared` does not update itself: `cloudflared update` says so,
+and a newer one is a new pin in `pkgs/cloudflared`.
 
 Go programs read their CA roots from `pkg:certs` (R50), through Go's own
 `crypto/x509`, unless `SSL_CERT_FILE` names others:

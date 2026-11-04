@@ -23,7 +23,8 @@ publishes it, and it has no directory here (Sola's, in `desk`).
 proxy.golang.org, after the line `# Modules, from pkgs/go-modules.sh:` in
 `pkg.toml`; run it again after a new release's pin. The build reads them through
 `GOPROXY=file://$SRC/gomod`, and `go-components` writes `components.json` from
-the binary, so advisories cover each linked module. A module pinned behind its
+the binary, so advisories cover each linked module. A `replace` by version is pinned
+like any other module, and one by path stops the script. A module pinned behind its
 fix goes in `<name>/go-updates.txt`, with the CVE beside it; the script takes
 it with `go get` and writes `<name>/go.mod` and `go.sum`, which the build copies
 over the release's. Drop a line once the release has caught up.
