@@ -229,9 +229,11 @@ data, **C** source, **I** judgement.
 Instruction files (`AGENTS.md`) are read through the box and given to the model labelled
 as project text. They can steer it; they cannot widen anything.
 
-**Built (is), `agent.rs`:** exact replace then the ladder; read-first and a staleness hash; 2,000-line windows; 8 KiB head and tail
-with the rest in the box's `/tmp`; masking at 60% of the context, stopping at 90% with nothing left to mask; a repeated call
-warned at 3 and stopped at 5; 3 repairs of a turn that ran out of tokens or held a bad call, and none of a stream that failed; a turn limit;
+**Built (is), `agent.rs`:** exact replace then the ladder, and a refusal that names the line most like what was asked for; read-first and a
+staleness hash; windows of 2,000 lines or 24 KiB, with no line numbers, because a model copied them into `edit` until a guard stopped it; 8 KiB head and tail
+with the rest in the box's `/tmp`; masking at 60% of the context, counted by the server and estimated for what came since, stopping at 90% with nothing left to mask; a repeated call
+warned at 3 and stopped at 5, unless something changed or its answer was masked; 3 repairs of a turn that ran out of tokens or held a bad call, and none of a stream that failed; a turn limit;
+2 nudges to a model that stops silently, on a failing command or an unchecked change;
 a transcript in the session, so `writ do --session` goes on. **Not yet:** hand-off to a fresh session, spend budgets, cycle detection, a project's check command as a nudge.
 
 ## Local models (is)
@@ -285,6 +287,8 @@ costs is real: a process in that box can call the closed driver's ioctls, a larg
 neither seccomp nor Landlock narrows them. So a model's parser bug that became code could go on to attack the
 driver, which it could not without `--gpu`. Vulkan's implicit layers are turned off, and shaders the driver
 compiles live only in the box's `/tmp`, so the first answer after a start is slow.
+
+The server's prompt cache in RAM is off (`--cache-ram 0`): one slot's own memory keeps a conversation's prefix, and its default copies up to 8 GiB.
 
 `--gpu-share P` holds a server to P percent of the GPU's time: writ stops it for the rest of each 100 ms, since
 a GPU has no share to set short of virtualizing it. It is a limit on average time, not a promise about any one

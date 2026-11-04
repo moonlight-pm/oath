@@ -38,9 +38,13 @@ const FULL_AT_PERCENT: u64 = 90;
 const KEEP_RECENT: usize = 2;
 /// Turns repaired before giving up: a model that cannot form a call will not learn to in this session.
 const MAX_REPAIRS: u32 = 3;
+/// Times a model that stopped is asked to look again. A nudge, and not a check: it can say no.
+const MAX_NUDGES: u32 = 2;
 const WARN_REPEATS: u32 = 3;
 const STOP_REPEATS: u32 = 5;
 const DEFAULT_CONTEXT: u64 = 16384;
+/// For an estimate of what has not been counted yet. Code runs a little over this; prose, under.
+const BYTES_PER_TOKEN: u64 = 3;
 const MASKED: &str = "[This answer, ";
 const MAX_TOKENS_PER_TURN: u64 = 8192;
 
@@ -196,11 +200,42 @@ pub struct Limits {
     pub max_turns: u32,
 }
 
+/// Where the work stands, from what the tools said, to tell a model that stops too soon.
+#[derive(Clone, Copy, PartialEq)]
+enum Work {
+    Untouched,
+    Unchecked,
+    Failing,
+    Passing,
+}
+
+impl Work {
+    fn after(self, tool: &str, ok: bool, answer: &str) -> Work {
+        match tool {
+            "edit" | "write" if ok => Work::Unchecked,
+            "shell" if answer.starts_with("exit 0\n") => match self {
+                // A command that passed says nothing about a change unless it ran after it, and
+                // this cannot tell `ls` from a test. It asks once, not for proof.
+                Work::Untouched => Work::Untouched,
+                _ => Work::Passing,
+            },
+            "shell" => Work::Failing,
+            _ => self,
+        }
+    }
+}
+
 /// A call and how many times this session has made it.
 #[derive(Default)]
 struct Repeats(Vec<(String, u32)>);
 
 impl Repeats {
+    /// The same call is not a repeat once something has changed what it would find, or once its
+    /// answer was masked and the model was told to call it again.
+    fn forget(&mut self) {
+        self.0.clear();
+    }
+
     fn count(&mut self, key: String) -> u32 {
         if let Some((_, k)) = self.0.iter_mut().find(|(have, _)| *have == key) {
             *k += 1;
@@ -227,6 +262,10 @@ fn assistant_message(turn: &Turn) -> Value {
 
 fn tool_message(id: &str, content: &str) -> Value {
     obj([("role", s("tool")), ("tool_call_id", s(id)), ("content", s(content))])
+}
+
+fn bytes_of(messages: &[Value]) -> u64 {
+    messages.iter().map(|m| m.get("content").and_then(|c| c.str()).map_or(0, str::len) as u64).sum()
 }
 
 /// Swap the oldest answers for a short note that says how to get them back, until half of what can
@@ -263,25 +302,35 @@ fn mask_old_answers(messages: &mut [Value]) -> usize {
 pub fn run<M: Mind, H: Hands, R: Report>(messages: &mut Vec<Value>, mind: &mut M, hands: &mut H, report: &mut R, limits: &Limits) -> End {
     let mut repeats = Repeats::default();
     let mut repairs = 0;
+    let mut nudges = 0;
+    let mut state = Work::Untouched;
     let context = mind.context();
-    let mut last_prompt = 0u64;
+    // What the server last counted, and how many bytes the conversation held then. What came since
+    // is estimated, which is all there is for a session going on, or before the first answer.
+    let (mut counted, mut counted_at) = (0u64, 0u64);
     for _ in 0..limits.max_turns {
-        if last_prompt * 100 >= context * MASK_AT_PERCENT {
+        let mut used = counted + bytes_of(messages).saturating_sub(counted_at) / BYTES_PER_TOKEN;
+        while used * 100 >= context * MASK_AT_PERCENT {
             let masked = mask_old_answers(messages);
-            if masked > 0 {
-                report.note(&format!("{masked} old tool answers masked: the context was {last_prompt} of {context} tokens"));
-                last_prompt = 0;
-            } else if last_prompt * 100 >= context * FULL_AT_PERCENT {
-                return End::Stopped(format!("the context is full, {last_prompt} of {context} tokens, with nothing left to mask: start a new session"));
+            if masked == 0 {
+                break;
             }
+            repeats.forget();
+            report.note(&format!("{masked} old tool answers masked: the context was about {used} of {context} tokens"));
+            (counted, counted_at) = (0, 0);
+            used = bytes_of(messages) / BYTES_PER_TOKEN;
         }
-        let room = context.saturating_sub(last_prompt).min(MAX_TOKENS_PER_TURN).max(256);
+        if used * 100 >= context * FULL_AT_PERCENT {
+            return End::Stopped(format!("the context is full, about {used} of {context} tokens, with nothing left to mask: start a new session"));
+        }
+        let room = context.saturating_sub(used).min(MAX_TOKENS_PER_TURN).max(256);
         let turn = match mind.turn(messages, room) {
             Ok(t) => t,
             Err(e) => return End::Stopped(e),
         };
         if let Some(u) = &turn.usage {
-            last_prompt = u.prompt_tokens + u.completion_tokens;
+            counted = u.prompt_tokens;
+            counted_at = bytes_of(messages);
             report.usage(u);
         }
         let calls = match turn.runnable() {
@@ -304,7 +353,23 @@ pub fn run<M: Mind, H: Hands, R: Report>(messages: &mut Vec<Value>, mind: &mut M
         report.message(&m);
         messages.push(m);
         if calls.is_empty() {
-            return End::Done;
+            // Gemma, on a real task, broke the build, read the file twice and stopped without a word.
+            let silent = turn.content.trim().is_empty();
+            let why = match (silent, &state) {
+                (true, _) => "You stopped without saying anything.",
+                (false, Work::Failing) => "The last command you ran failed, and nothing has passed since.",
+                (false, Work::Unchecked) => "You changed files, and have run nothing since to check them.",
+                _ => return End::Done,
+            };
+            if nudges >= MAX_NUDGES {
+                return if silent { End::Stopped("the model stopped without saying anything".into()) } else { End::Done };
+            }
+            nudges += 1;
+            report.note(why);
+            let m = chat::message("user", &format!("{why} If the work is not finished, go on with it. If you cannot finish it, say plainly what is broken and what you tried. Do not call it done unless you saw it work."));
+            report.message(&m);
+            messages.push(m);
+            continue;
         }
         for (call, args) in &calls {
             let times = repeats.count(format!("{}\0{}", call.name, args.text()));
@@ -321,6 +386,10 @@ pub fn run<M: Mind, H: Hands, R: Report>(messages: &mut Vec<Value>, mind: &mut M
                 }
             };
             report.tool(&call.name, args, ok, &answer);
+            if ok && matches!(call.name.as_str(), "edit" | "write" | "shell") {
+                repeats.forget();
+            }
+            state = state.after(&call.name, ok, &answer);
             if times >= WARN_REPEATS {
                 answer.push_str(&format!("\n[You have made this exact call {times} times, and the session stops at {STOP_REPEATS}. Try something else.]"));
             }
@@ -666,6 +735,79 @@ mod tests {
         assert_eq!(warned, 2);
     }
 
+    fn answering<'a>(hands: &'a mut Scripted, turns: Vec<Turn>) -> (End, Vec<Value>, Vec<String>, &'a mut Scripted) {
+        let mut script = Script { turns, at: 0, seen: Vec::new(), context: 100_000 };
+        let mut quiet = Quiet::default();
+        let mut messages = vec![chat::message("user", "go")];
+        let end = run(&mut messages, &mut script, hands, &mut quiet, &Limits { max_turns: 20 });
+        (end, messages, quiet.0, hands)
+    }
+
+    /// Answers from a list, for what a shell said.
+    struct Scripted(Vec<&'static str>);
+    impl Hands for Scripted {
+        fn call(&mut self, _: &str, _: &Value) -> Result<(bool, String), String> {
+            Ok((true, self.0.remove(0).to_string()))
+        }
+    }
+
+    #[test]
+    fn a_silent_stop_is_not_done() {
+        let mut h = Scripted(vec![]);
+        let (end, messages, notes, _) = answering(&mut h, vec![turn(Finish::Stop, &[], ""), turn(Finish::Stop, &[], ""), turn(Finish::Stop, &[], "")]);
+        assert!(matches!(end, End::Stopped(ref w) if w.contains("without saying")), "{end:?}");
+        assert_eq!(notes.len(), 2);
+        assert!(messages.last().unwrap().get("role").unwrap().str() == Some("assistant"));
+    }
+
+    #[test]
+    fn stopping_on_a_failure_or_an_unchecked_change_is_questioned_once_answered() {
+        // Failing, then it says so: the second time it stops, it has been told, and it is its word.
+        let shell = ("1", "shell", r#"{"command":"cargo test"}"#);
+        let mut h = Scripted(vec!["exit 101\nerror"]);
+        let (end, _, notes, _) = answering(&mut h, vec![turn(Finish::ToolCalls, &[shell], ""), turn(Finish::Stop, &[], "done"), turn(Finish::Stop, &[], "it is broken"), turn(Finish::Stop, &[], "still broken")]);
+        assert_eq!(end, End::Done);
+        assert_eq!(notes.len(), 2, "{notes:?}");
+        assert!(notes[0].contains("failed"));
+
+        let edit = ("1", "edit", r#"{"path":"a","old":"x","new":"y"}"#);
+        let mut h = Scripted(vec!["edited", "exit 0\nok"]);
+        let t2 = ("2", "shell", r#"{"command":"cargo test"}"#);
+        let (end, _, notes, _) = answering(&mut h, vec![turn(Finish::ToolCalls, &[edit], ""), turn(Finish::Stop, &[], "done"), turn(Finish::ToolCalls, &[t2], ""), turn(Finish::Stop, &[], "done, and it passes")]);
+        assert_eq!(end, End::Done);
+        assert_eq!(notes.len(), 1, "{notes:?}");
+        assert!(notes[0].contains("run nothing since"));
+    }
+
+    #[test]
+    fn a_question_answered_needs_no_nudge() {
+        let read = ("1", "read", r#"{"path":"a"}"#);
+        let mut h = Scripted(vec!["text"]);
+        let (end, _, notes, _) = answering(&mut h, vec![turn(Finish::ToolCalls, &[read], ""), turn(Finish::Stop, &[], "it says text")]);
+        assert_eq!(end, End::Done);
+        assert!(notes.is_empty(), "{notes:?}");
+    }
+
+    /// A model reading a file, changing it and reading it again is working, not stuck.
+    #[test]
+    fn a_call_is_no_repeat_once_something_changed() {
+        let read = ("1", "read", r#"{"path":"a"}"#);
+        let edit = ("2", "edit", r#"{"path":"a","old":"x","new":"y"}"#);
+        let mut turns = Vec::new();
+        for i in 0..8 {
+            turns.push(turn(Finish::ToolCalls, &[read], ""));
+            let args = format!(r#"{{"path":"a","old":"x","new":"{i}"}}"#);
+            turns.push(turn(Finish::ToolCalls, &[(edit.0, edit.1, &args)], ""));
+        }
+        // Told once that nothing checked its last edit, and it answers.
+        turns.push(turn(Finish::Stop, &[], "done"));
+        turns.push(turn(Finish::Stop, &[], "done, unchecked"));
+        turns.push(turn(Finish::Stop, &[], "done, unchecked"));
+        let (end, hands, _, _) = drive(turns);
+        assert_eq!(end, End::Done);
+        assert_eq!(hands.calls.len(), 16);
+    }
+
     #[test]
     fn a_failed_box_ends_the_session() {
         let mut script = Script { turns: vec![turn(Finish::ToolCalls, &[("1", "read", "{}")], "")], at: 0, seen: Vec::new(), context: 100_000 };
@@ -720,6 +862,31 @@ mod tests {
         let end = run(&mut messages, &mut script, &mut hands, &mut quiet, &Limits { max_turns: 30 });
         assert!(matches!(end, End::Stopped(ref w) if w.contains("context is full")), "{end:?}");
         assert!(quiet.0.iter().any(|n| n.contains("masked")) || hands.calls.len() <= 3);
+    }
+
+    /// A session going on, with no count yet: too large to send, so it is masked before it goes.
+    #[test]
+    fn a_long_session_is_masked_before_its_first_turn() {
+        let big = "x".repeat(12_000);
+        let mut messages = vec![chat::message("user", "go")];
+        for i in 0..8 {
+            messages.push(tool_message(&i.to_string(), &big));
+        }
+        let mut script = Script { turns: vec![turn(Finish::Stop, &[], "ok")], at: 0, seen: Vec::new(), context: 32768 };
+        let mut quiet = Quiet::default();
+        let end = run(&mut messages, &mut script, &mut Recorder::default(), &mut quiet, &Limits { max_turns: 5 });
+        assert_eq!(end, End::Done);
+        assert!(quiet.0[0].contains("masked"), "{:?}", quiet.0);
+    }
+
+    /// What cannot be made small enough stops with a reason, rather than sending what must fail.
+    #[test]
+    fn a_session_too_large_to_mask_stops_with_a_reason() {
+        let mut messages = vec![chat::message("user", &"x".repeat(200_000))];
+        let mut script = Script { turns: vec![], at: 0, seen: Vec::new(), context: 32768 };
+        let end = run(&mut messages, &mut script, &mut Recorder::default(), &mut Quiet::default(), &Limits { max_turns: 5 });
+        assert!(matches!(end, End::Stopped(ref w) if w.contains("context is full")), "{end:?}");
+        assert!(script.seen.is_empty(), "nothing was sent");
     }
 
     #[test]

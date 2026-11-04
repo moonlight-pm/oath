@@ -24,7 +24,9 @@ pub const MAX_CALL: usize = 9 << 20;
 pub const MAX_ANSWER: usize = 1 << 20;
 
 const MAX_READ_LINES: u64 = 2000;
-const MAX_READ_BYTES: usize = 64 << 10;
+/// A window of a file, and a list of matches: small beside a local model's context.
+const MAX_READ_BYTES: usize = 24 << 10;
+const MAX_GREP_BYTES: usize = 16 << 10;
 /// Larger than this and a file is not read at all.
 const MAX_FILE: u64 = 64 << 20;
 const OUTPUT_HEAD: usize = 8 << 10;
@@ -42,12 +44,12 @@ const NOT_SEARCHED: &[&str] = &[".git", "target", "node_modules"];
 pub const TOOLS: &[Tool] = &[
     Tool {
         name: "read",
-        description: "Read a text file, with line numbers. Long files come in windows: the answer says the next offset. You must read a file before you edit or overwrite it.",
+        description: "Read a text file. Long files come in windows: the answer says the next offset. You must read a file before you edit or overwrite it.",
         parameters: r#"{"type":"object","properties":{"path":{"type":"string","description":"The file, relative to the project."},"offset":{"type":"integer","description":"The first line to read, from 1."},"limit":{"type":"integer","description":"How many lines. At most 2000."}},"required":["path"]}"#,
     },
     Tool {
         name: "edit",
-        description: "Replace one exact piece of a file. `old` must appear exactly once: copy it from the file without its line numbers, with enough around it to be unique.",
+        description: "Replace one exact piece of a file. `old` must appear exactly once: copy it from the file, with enough around it to be unique, and no more than you need.",
         parameters: r#"{"type":"object","properties":{"path":{"type":"string"},"old":{"type":"string","description":"The text to replace."},"new":{"type":"string","description":"What to put there."}},"required":["path","old","new"]}"#,
     },
     Tool {
@@ -148,31 +150,36 @@ impl State {
         }
         self.seen.insert(Self::key(&path), hash_of(&bytes));
         let text = String::from_utf8_lossy(&bytes);
-        let mut out = String::new();
-        let mut line_no = 0u64;
-        let mut shown = 0u64;
-        let mut more = false;
-        for line in text.split_inclusive('\n') {
-            line_no += 1;
-            if line_no < offset {
-                continue;
-            }
-            if shown >= limit || out.len() + line.len() > MAX_READ_BYTES {
-                more = true;
-                break;
-            }
-            let line = line.strip_suffix('\n').unwrap_or(line);
-            out.push_str(&format!("{line_no}\t{line}\n"));
-            shown += 1;
-        }
         if text.is_empty() {
             return Ok(format!("{} is empty", path.display()));
         }
-        if shown == 0 && !more {
-            return Ok(format!("{} has {line_no} lines, so nothing is at line {offset}", path.display()));
+        // No numbers on the lines: models copied them into `edit`, and they cost a fifth of a file's tokens.
+        let lines: Vec<&str> = text.split_inclusive('\n').collect();
+        let first = offset.min(lines.len() as u64 + 1) as usize - 1;
+        if first >= lines.len() {
+            return Ok(format!("{} has {} lines, so nothing is at line {offset}", path.display(), lines.len()));
         }
-        if more {
-            out.push_str(&format!("[more: read again with offset {}]\n", offset + shown));
+        let mut out = String::new();
+        let mut shown = 0;
+        for line in &lines[first..] {
+            if shown as u64 >= limit || out.len() + line.len() > MAX_READ_BYTES {
+                break;
+            }
+            out.push_str(line);
+            shown += 1;
+        }
+        if shown == 0 {
+            return Err(format!("line {offset} of {} is over {MAX_READ_BYTES} bytes: use shell", path.display()));
+        }
+        if !out.ends_with('\n') {
+            out.push('\n');
+        }
+        if first > 0 || first + shown < lines.len() {
+            out.push_str(&format!("[lines {} to {} of {}", first + 1, first + shown, lines.len()));
+            if first + shown < lines.len() {
+                out.push_str(&format!(": read again with offset {}", first + shown + 1));
+            }
+            out.push_str("]\n");
         }
         Ok(out)
     }
@@ -227,17 +234,24 @@ impl State {
             _ => return Err(format!("grep failed: {}", out.text.trim())),
         }
         let lines: Vec<&str> = out.text.lines().collect();
-        let mut shown: String = lines.iter().take(MAX_GREP_LINES).map(|l| {
-            let mut l = l.to_string();
+        let mut shown = String::new();
+        let mut count = 0;
+        for l in lines.iter().take(MAX_GREP_LINES) {
+            if shown.len() + l.len().min(400) > MAX_GREP_BYTES {
+                break;
+            }
             if l.len() > 400 {
                 let end = (0..=400).rev().find(|i| l.is_char_boundary(*i)).unwrap_or(0);
-                l.truncate(end);
-                l.push_str(" [line cut]");
+                shown.push_str(&l[..end]);
+                shown.push_str(" [line cut]");
+            } else {
+                shown.push_str(l);
             }
-            l + "\n"
-        }).collect();
-        if lines.len() > MAX_GREP_LINES {
-            shown.push_str(&format!("[{} more lines: narrow the pattern or the path]\n", lines.len() - MAX_GREP_LINES));
+            shown.push('\n');
+            count += 1;
+        }
+        if lines.len() > count {
+            shown.push_str(&format!("[{} more lines: narrow the pattern or the path]\n", lines.len() - count));
         }
         Ok(shown)
     }
@@ -428,7 +442,20 @@ fn replace(text: &str, old: &str, new: &str) -> Result<(String, &'static str), S
             k => return Err(format!("old appears {k} times{how}: give more around it")),
         }
     }
-    Err("old is not in the file: read it again and copy the text exactly".into())
+    Err(match closest(&wanted, &lines) {
+        Some((at, line)) => format!("old is not in the file. The line most like its start is line {}: {line}", at + 1),
+        None => "old is not in the file, and no line is like its start".to_string(),
+    })
+}
+
+/// The line most like the first line of what was asked for, as a hint: a refusal that only says
+/// to read again sends a model round the same loop.
+fn closest<'a>(wanted: &[&str], lines: &[&'a str]) -> Option<(usize, &'a str)> {
+    let start = wanted.iter().map(|l| l.trim()).find(|l| !l.is_empty())?;
+    let shared = |l: &str| l.trim().chars().zip(start.chars()).take_while(|(x, y)| plain(*x) == plain(*y)).count();
+    let (at, best) = lines.iter().enumerate().max_by_key(|(i, l)| (shared(l), std::cmp::Reverse(*i)))?;
+    let line = best.trim_end();
+    (shared(best) >= start.chars().count().min(8)).then(|| (at, &line[..line.char_indices().nth(200).map_or(line.len(), |(b, _)| b)]))
 }
 
 /// `*` and `?` within a name, `**/` across directories.
@@ -654,6 +681,23 @@ mod tests {
     }
 
     #[test]
+    fn a_refused_edit_says_where_to_look() {
+        let text = "fn alpha() {}\nfn beta(x: u8) {}\nfn gamma() {}\n";
+        let e = replace(text, "fn beta(x: u16) {}", "x").unwrap_err();
+        assert!(e.contains("line 2: fn beta(x: u8) {}"), "{e}");
+        let e = replace(text, "nothing like it", "x").unwrap_err();
+        assert!(e.contains("no line is like"), "{e}");
+    }
+
+    #[test]
+    fn a_long_line_in_a_window_is_a_refusal_not_a_hang() {
+        let d = Dir::new("longline");
+        let p = d.path("f");
+        fs::write(&p, "x".repeat(MAX_READ_BYTES + 10)).unwrap();
+        assert!(State::default().read(&args([("path", &p)])).unwrap_err().contains("over"));
+    }
+
+    #[test]
     fn the_ladder_never_guesses_between_two_places() {
         let e = replace("a = \u{201c}1\u{201d}\nb\na = \u{201c}1\u{201d}\n", "a = \"1\"", "x").unwrap_err();
         assert!(e.contains("2 times"), "{e}");
@@ -671,9 +715,11 @@ mod tests {
         let p = d.path("f");
         fs::write(&p, (1..=5).map(|i| format!("l{i}\n")).collect::<String>()).unwrap();
         let mut st = State::default();
-        assert_eq!(st.read(&args([("path", &p)])).unwrap(), "1\tl1\n2\tl2\n3\tl3\n4\tl4\n5\tl5\n");
+        assert_eq!(st.read(&args([("path", &p)])).unwrap(), "l1\nl2\nl3\nl4\nl5\n");
         let a = Value::Obj(vec![("path".into(), s(&p)), ("offset".into(), n(2)), ("limit".into(), n(2))]);
-        assert_eq!(st.read(&a).unwrap(), "2\tl2\n3\tl3\n[more: read again with offset 4]\n");
+        assert_eq!(st.read(&a).unwrap(), "l2\nl3\n[lines 2 to 3 of 5: read again with offset 4]\n");
+        let end = Value::Obj(vec![("path".into(), s(&p)), ("offset".into(), n(4))]);
+        assert_eq!(st.read(&end).unwrap(), "l4\nl5\n[lines 4 to 5 of 5]\n");
         let past = Value::Obj(vec![("path".into(), s(&p)), ("offset".into(), n(9))]);
         assert!(st.read(&past).unwrap().contains("nothing is at line 9"));
         fs::write(&p, b"a\0b").unwrap();

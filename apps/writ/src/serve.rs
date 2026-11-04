@@ -100,6 +100,9 @@ fn server_args(threads: Option<u32>, context: u32, gpu: bool, extra: &[OsString]
     a.extend(["--no-webui".into(), "--jinja".into(), "--parallel".into(), "1".into()]);
     // Its default echoes any origin back as allowed. No browser reaches a socket; still.
     a.extend(["--cors-origins".into(), "localhost".into()]);
+    // One person, one slot, whose own memory keeps a conversation's prefix. Its default also
+    // copies each prompt's state to RAM, up to 8 GiB of it.
+    a.extend(["--cache-ram".into(), "0".into()]);
     a.push("--ctx-size".into());
     a.push(context.to_string().into());
     // Exactly this, or a failure: the server's default shrinks a context to fit what is free.
