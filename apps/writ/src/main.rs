@@ -73,6 +73,8 @@ Options for use local and serve:
   --cpu            Do not. Default for use: the GPU if the machine has one.
   --gpu-share P    Hold the server to P percent of the GPU's time, by stopping it for the rest.
                    Default for use: 40.
+  --mtp            Draft with the model's own MTP layer, when its file has one: the same answers,
+                   sooner, for a little more memory. --no-mtp: do not. Default for use: not.
   -- ARGS          For serve: passed on to llama-server, in the box.
 
 `writ do` and `writ ask` load the chosen model if it is not loaded, and it stays loaded until

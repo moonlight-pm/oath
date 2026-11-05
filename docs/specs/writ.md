@@ -316,7 +316,10 @@ would not load does not stay chosen. New settings restart a server that has othe
 `writ do` and `writ ask` load it if it is not, so choosing is all a person has to do, and `writ llama start`, `stop` and
 `status` do it by hand. It stays loaded until stopped, which holds its memory and uses no compute: there is no idle
 timeout. `writ serve --model FILE` is the same server in the foreground, with its log on the terminal. None of this is a
-tool, so a model cannot change or restart what it runs on.
+tool, so a model cannot change or restart what it runs on. `--mtp` (and `--no-mtp`), saved with the rest, has the server
+draft with the model's own multi-token-prediction layer (`--spec-type draft-mtp`): it guesses a few tokens ahead and the
+model checks them in one pass, so the answers are the same and come sooner. A file without the layer does not load, and
+the server says so; Qwen3.8's base has one, ISTA ships a `-mtp` build of each size, and Bonsai 2's files have none.
 
 The server runs as `work` (R68), in a box like the project's with less in it: `/bin`, `/lib` and the store are there,
 and `/etc`, home and `/work` are not; the only places it can write are a small `/tmp` and its socket's directory, and
@@ -391,6 +394,16 @@ On novus's card, through `writ do`, at the default 40% share and a 32,768-token 
 | unsloth `UD-Q4_K_M`, third round | 16.5 GB | 16.8 GiB | 16–19 tokens/s | 5 turns, 3.1 min | 13 turns, 9,484 tokens, 10.7 min, passes |
 
 ISTA's `IQ3_XXS` was the cleanest both times, and the larger files, run once each in a third round on the same still desk, did no better: `IQ3_S` took 9 turns, and `UD-Q4_K_M`, the size Quesma found level with the base, took 13 and 10.7 minutes after a test of its own failed first. With the desk at 4 GiB, Q4 left 3.0 GiB of the card free, too little once Design is open. Bonsai was right both times and thought three to four times as much, which its makers' `reasoning_effort: medium` might cut; writ does not send it. Qwen3.5 did not finish the job either time, and once searched the disk for the project it was in. The slow planted bug of `IQ3_XXS`, `IQ3_S` and `UD-Q4_K_M` is a wait of about 3 minutes once per load, with the GPU nearly idle, that Bonsai and Qwen3.5 did not have. The cause was not found. None of 165 calls in three rounds was malformed. For scale, DeepSeek on OpenRouter took 9 turns and 19 seconds. **What this does not show:** two easy tasks, twice each, cannot test a benchmark claim, and each larger file ran once. Design was closed, the desk had just restarted and may grow, and 40% is all that was measured; the round before the memory fixes, with the apps and Design open, left 1.8 GiB free beside ISTA and 3.9 beside Bonsai. On buccina's CPU Bonsai made 3.7 tokens a second, which is not usable. Models past about 40B do not fit at all, so hard work goes to OpenRouter. Joshua chose ISTA's `IQ3_XXS` for novus the same day, beside the old Qwen3.5 file; its first prompt after a load took 103 s, at 2.3 tokens/s, and the next answered in 6–8 s.
+
+**MTP drafting (2026-11-05, novus, the desk in use).** Each file was served by hand with and without `--spec-type draft-mtp`, and given the same two prompts twice, Rust code and prose, 2,000 tokens each, through `writ ask`:
+
+| File | Without | With | Kept of the drafts | More on the card |
+|---|---|---|---|---|
+| ISTA `IQ3_XXS-mtp`, 10.4 GB | 15.9 tokens/s | 23.8 | 54% of code, 64–71% of prose | 0.7 GiB |
+| ISTA `IQ3_S-mtp`, 12.1 GB | 15.9 | 23.2 | 51%, 67–74% | 1.0 GiB |
+| unsloth `UD-Q4_K_M`, its layer included | 17.7 | 25.2 | 57%, 75–78% | 1.0 GiB, leaving 1.8 free |
+
+A single prompt varied by up to a third with what the desk was doing, so these are means of four. `IQ3_XXS-mtp` with drafting then did the planted bug in 4 turns and the real fix in 8 turns, 5,864 tokens and 5.1 minutes at 25 tokens/s, keeping 65% of the drafts; its 200 tests pass and its message does not repeat the line. The server held 12.5 GiB, and the card never had less than 6.7 GiB free. The wait after a load stayed: its planted bug took 260 s.
 
 ## OpenRouter (is)
 

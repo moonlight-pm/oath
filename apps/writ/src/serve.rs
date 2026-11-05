@@ -128,7 +128,7 @@ fn args(sock_dir: &Path, exe: &Path, gpu: &[PathBuf]) -> Vec<OsString> {
 
 /// The server's arguments. No port: `.sock` makes it a Unix socket. `--jinja` runs the model's
 /// own template, which is how tool calls work.
-fn server_args(model_fd: i32, threads: Option<u32>, context: u32, gpu: bool, extra: &[OsString]) -> Vec<OsString> {
+fn server_args(model_fd: i32, threads: Option<u32>, context: u32, gpu: bool, mtp: bool, extra: &[OsString]) -> Vec<OsString> {
     let mut a: Vec<OsString> = vec![SERVER.into(), "--model".into(), model_in_box(model_fd).into()];
     a.push("--host".into());
     a.push(format!("{SOCKET_DIR_IN_BOX}/{SOCKET_NAME}").into());
@@ -146,6 +146,11 @@ fn server_args(model_fd: i32, threads: Option<u32>, context: u32, gpu: bool, ext
     if let Some(t) = threads {
         a.push("--threads".into());
         a.push(t.to_string().into());
+    }
+    // The model's own MTP layer guesses the next few tokens and the model checks them in one pass:
+    // the same answers, sooner, for about 1 GiB more on a 27B. A file without the layer does not load.
+    if mtp {
+        a.extend(["--spec-type".into(), "draft-mtp".into()]);
     }
     a.extend_from_slice(extra);
     a
@@ -411,13 +416,14 @@ pub struct Load {
     context: u32,
     gpu: bool,
     share: u32,
+    mtp: bool,
 }
 
 impl Load {
     /// What a machine gets when nobody has said otherwise.
     fn for_this_machine(model: PathBuf) -> Load {
         let gpu = !this_machines_gpu().is_empty();
-        Load { model, threads: None, context: if gpu { GPU_CONTEXT } else { CPU_CONTEXT }, gpu, share: if gpu { GPU_SHARE } else { 100 } }
+        Load { model, threads: None, context: if gpu { GPU_CONTEXT } else { CPU_CONTEXT }, gpu, share: if gpu { GPU_SHARE } else { 100 }, mtp: false }
     }
 
     fn json(&self) -> Result<String, String> {
@@ -429,6 +435,7 @@ impl Load {
             ("context", json::n(self.context.into())),
             ("gpu", json::Value::Bool(self.gpu)),
             ("share", json::n(self.share.into())),
+            ("mtp", json::Value::Bool(self.mtp)),
         ])
         .text())
     }
@@ -442,6 +449,8 @@ impl Load {
             context: number("context")?,
             gpu: matches!(v.get("gpu"), Some(json::Value::Bool(true))),
             share: number("share")?,
+            // Settings from before the field are without it.
+            mtp: matches!(v.get("mtp"), Some(json::Value::Bool(true))),
         })
     }
 
@@ -454,6 +463,9 @@ impl Load {
         if self.gpu {
             a.extend(["--gpu-share".into(), self.share.to_string().into()]);
         }
+        if self.mtp {
+            a.push("--mtp".into());
+        }
         a
     }
 
@@ -464,7 +476,8 @@ impl Load {
             (true, 100) => "on the GPU".to_string(),
             (true, p) => format!("on the GPU at a {p}% share"),
         };
-        format!("{name}, a {}-token context, {place}", self.context)
+        let mtp = if self.mtp { ", drafting with its MTP layer" } else { "" };
+        format!("{name}, a {}-token context, {place}{mtp}", self.context)
     }
 }
 
@@ -476,6 +489,7 @@ struct Options {
     context: Option<u32>,
     gpu: Option<bool>,
     share: Option<u32>,
+    mtp: Option<bool>,
     extra: Vec<OsString>,
 }
 
@@ -492,6 +506,8 @@ fn options(args: &[OsString]) -> Result<Options, String> {
             Some("--context") => o.context = Some(number(it.next(), "--context")?),
             Some("--gpu") => o.gpu = Some(true),
             Some("--cpu") => o.gpu = Some(false),
+            Some("--mtp") => o.mtp = Some(true),
+            Some("--no-mtp") => o.mtp = Some(false),
             Some("--gpu-share") => {
                 let share = number(it.next(), "--gpu-share")?;
                 if !(1..=100).contains(&share) {
@@ -520,6 +536,7 @@ impl Options {
         l.context = self.context.unwrap_or(l.context);
         l.gpu = self.gpu.unwrap_or(l.gpu);
         l.share = if l.gpu { self.share.unwrap_or(l.share) } else { 100 };
+        l.mtp = self.mtp.unwrap_or(l.mtp);
         Ok(l)
     }
 }
@@ -643,7 +660,7 @@ pub fn main(args_in: &[OsString]) -> Result<i32, String> {
     let o = options(args_in)?;
     let home = sandbox::home()?;
     let given = o.model.as_ref().ok_or("writ serve needs --model FILE")?;
-    let base = Load { model: given.clone(), threads: None, context: CPU_CONTEXT, gpu: false, share: 100 };
+    let base = Load { model: given.clone(), threads: None, context: CPU_CONTEXT, gpu: false, share: 100, mtp: false };
     let load = o.over(base, &home)?;
     let dir = prepare_dir(&home)?;
     let held = lock(&dir)?;
@@ -852,7 +869,7 @@ pub fn work_main(args: &[OsString]) -> Result<i32, String> {
     }
 
     let mut c = command(model_fd, &dir, &nodes)?;
-    c.args(server_args(model_fd, o.threads, o.context.unwrap_or(CPU_CONTEXT), gpu, &o.extra));
+    c.args(server_args(model_fd, o.threads, o.context.unwrap_or(CPU_CONTEXT), gpu, o.mtp.unwrap_or(false), &o.extra));
     let mut child = c.spawn().map_err(|e| format!("bwrap: {e}"))?;
     if gpu {
         // Not silent: an escape here has the driver's whole surface to try.
@@ -1091,15 +1108,21 @@ mod tests {
 
     #[test]
     fn the_server_is_told_the_descriptor_for_its_model() {
-        let a: Vec<String> = server_args(7, None, 8192, false, &[]).iter().map(|s| s.to_string_lossy().into_owned()).collect();
+        let a: Vec<String> = server_args(7, None, 8192, false, false, &[]).iter().map(|s| s.to_string_lossy().into_owned()).collect();
         assert_eq!(a[1..3], ["--model".to_string(), "/proc/self/fd/7".to_string()]);
+        assert!(!a.iter().any(|x| x == "--spec-type"));
+        let a: Vec<String> = server_args(7, None, 8192, true, true, &[]).iter().map(|s| s.to_string_lossy().into_owned()).collect();
+        let spec = a.iter().position(|x| x == "--spec-type").unwrap();
+        assert_eq!(a[spec + 1], "draft-mtp");
     }
 
     #[test]
     fn work_is_handed_what_it_needs_and_no_path_of_homes() {
-        let load = Load { model: "/home/.local/share/writ/models/m.gguf".into(), threads: Some(4), context: 8192, gpu: true, share: 40 };
+        let load = Load { model: "/home/.local/share/writ/models/m.gguf".into(), threads: Some(4), context: 8192, gpu: true, share: 40, mtp: false };
         let a: Vec<String> = load.stage_args().iter().map(|s| s.to_string_lossy().into_owned()).collect();
         assert_eq!(a, ["--context", "8192", "--threads", "4", "--gpu-share", "40"]);
+        let a: Vec<String> = Load { mtp: true, ..load }.stage_args().iter().map(|s| s.to_string_lossy().into_owned()).collect();
+        assert_eq!(a.last().map(String::as_str), Some("--mtp"));
         let c = as_work(Path::new("/bin/writ"), WORK_STAGE);
         let said: Vec<String> = c.get_args().map(|s| s.to_string_lossy().into_owned()).collect();
         assert_eq!(c.get_program(), SUDO);
@@ -1109,11 +1132,13 @@ mod tests {
     #[test]
     fn settings_come_back_as_they_went_in() {
         for load in [
-            Load { model: "/m/a.gguf".into(), threads: None, context: 32768, gpu: true, share: 40 },
-            Load { model: "/m/b.gguf".into(), threads: Some(8), context: 16384, gpu: false, share: 100 },
+            Load { model: "/m/a.gguf".into(), threads: None, context: 32768, gpu: true, share: 40, mtp: true },
+            Load { model: "/m/b.gguf".into(), threads: Some(8), context: 16384, gpu: false, share: 100, mtp: false },
         ] {
             assert_eq!(Load::parse(&load.json().unwrap()).unwrap(), load);
         }
+        let before = r#"{"model":"/m/a.gguf","threads":null,"context":32768,"gpu":true,"share":40}"#;
+        assert!(!Load::parse(before).unwrap().mtp);
         assert!(Load::parse("{}").is_err());
         assert!(Load::parse("not json").is_err());
     }
@@ -1121,13 +1146,16 @@ mod tests {
     #[test]
     fn options_change_what_they_name_and_leave_the_rest() {
         let home = Path::new("/nowhere");
-        let base = Load { model: "/m/a.gguf".into(), threads: Some(8), context: 32768, gpu: true, share: 40 };
+        let base = Load { model: "/m/a.gguf".into(), threads: Some(8), context: 32768, gpu: true, share: 40, mtp: false };
         let of = |args: &[&str]| options(&args.iter().map(OsString::from).collect::<Vec<_>>());
         assert_eq!(of(&[]).unwrap().over(base.clone(), home).unwrap(), base);
         let l = of(&["--gpu-share", "25"]).unwrap().over(base.clone(), home).unwrap();
         assert_eq!((l.share, l.context, l.gpu), (25, 32768, true));
         let l = of(&["--cpu"]).unwrap().over(base.clone(), home).unwrap();
         assert_eq!((l.gpu, l.share), (false, 100));
+        let l = of(&["--mtp"]).unwrap().over(base.clone(), home).unwrap();
+        assert_eq!((l.mtp, l.share), (true, 40));
+        assert!(!of(&["--no-mtp"]).unwrap().over(l, home).unwrap().mtp);
         for bad in [&["--gpu-share", "0"][..], &["--gpu-share", "101"], &["--context"], &["--nonsense"]] {
             assert!(of(bad).is_err(), "{bad:?}");
         }
@@ -1136,10 +1164,11 @@ mod tests {
 
     #[test]
     fn it_says_what_it_loaded() {
-        let gpu = Load { model: "/m/a.gguf".into(), threads: None, context: 32768, gpu: true, share: 40 };
+        let gpu = Load { model: "/m/a.gguf".into(), threads: None, context: 32768, gpu: true, share: 40, mtp: false };
         assert_eq!(gpu.say(), "a.gguf, a 32768-token context, on the GPU at a 40% share");
         assert_eq!(Load { share: 100, ..gpu.clone() }.say(), "a.gguf, a 32768-token context, on the GPU");
-        assert_eq!(Load { gpu: false, share: 100, ..gpu }.say(), "a.gguf, a 32768-token context, on the CPU");
+        assert_eq!(Load { gpu: false, share: 100, ..gpu.clone() }.say(), "a.gguf, a 32768-token context, on the CPU");
+        assert_eq!(Load { mtp: true, ..gpu }.say(), "a.gguf, a 32768-token context, on the GPU at a 40% share, drafting with its MTP layer");
     }
 
     #[test]
@@ -1213,7 +1242,7 @@ mod tests {
 
     #[test]
     fn the_server_opens_no_port_and_no_web_ui() {
-        let a: Vec<String> = server_args(3, Some(4), 8192, false, &[]).iter().map(|s| s.to_string_lossy().into_owned()).collect();
+        let a: Vec<String> = server_args(3, Some(4), 8192, false, false, &[]).iter().map(|s| s.to_string_lossy().into_owned()).collect();
         let host = a.iter().position(|x| x == "--host").unwrap();
         assert!(a[host + 1].ends_with(".sock"));
         assert!(a.iter().any(|x| x == "--no-webui"));
@@ -1227,7 +1256,7 @@ mod tests {
     #[test]
     fn a_server_takes_a_gpu_only_when_asked_and_all_of_a_model_or_none() {
         let layers = |gpu| {
-            let a: Vec<String> = server_args(3, None, 8192, gpu, &[]).iter().map(|s| s.to_string_lossy().into_owned()).collect();
+            let a: Vec<String> = server_args(3, None, 8192, gpu, false, &[]).iter().map(|s| s.to_string_lossy().into_owned()).collect();
             let i = a.iter().position(|x| x == "--n-gpu-layers").unwrap();
             assert_eq!(a[a.iter().position(|x| x == "--fit").unwrap() + 1], "off");
             a[i + 1].clone()
