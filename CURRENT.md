@@ -14,7 +14,7 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `e42eaf977392`
+   the profile, and checks `/bin` and `/lib` names. Newest release: `05e5ccdcc736`
    (2026-11-04); buccina runs `e73aa522ec58`, canto `debfd75332ea`, novus `e42eaf977392`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1. R62 (in that release): a machine holds what its packages
@@ -23,9 +23,9 @@ append history (git has it).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
-   profile). R47: the profile pins Sola master `a95ab5d1` (on CEF 156.0.15):
+   profile). R47: the profile pins Sola master `e7a051cd` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `e42eaf977392` (71/71, 2026-11-04), on novus since that day. Sola master@e7a051cd is on the origin, not pinned: Joshua's word. Each machine reboots into it,
+   release `05e5ccdcc736` (71/71, 2026-11-04; rehearsed from novus's `e42eaf977392`; its packs on no machine yet; a pin moves PID 1's hash, so it takes a reboot). Novus may take it (Joshua's word, 2026-11-04). Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
