@@ -51,8 +51,8 @@ Overwrite this file when facts change; do not append a diary.
   generation 116; `cargo make check` passed 65/65 on it. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
-  `pkg:libglvnd-i386`. `pkg:llama-cpp` b11960 (`0908155920628b60`, from master@d3a4d4b) and `pkg:writ` 0.1.0 (`a68295810a77`, from
-  master@1c99296), overlays no release sets, since generation 169 (2026-11-04). No `svc:llama`: `writ`
+  `pkg:libglvnd-i386`. `pkg:llama-cpp` b11960 (`0908155920628b60`, from master@d3a4d4b) and `pkg:writ` 0.1.0 (`0508ed29745f`, from
+  master@c51e9af), overlays no release sets, since generation 170 (2026-11-05). No `svc:llama`: `writ`
   loads a test model, Qwen3 1.7B Q4, from `~/.local/share/writ/models`, as `work` (R68). It is headless and runs no desk (Joshua, 2026-11-03; generation 161,
   and in its overlay): `svc:rivulet`, `svc:seatd`, `svc:sola-river`, `svc:sola-shell`,
   `svc:sola-session`, `svc:sola-bus`, `svc:sola-call`, `svc:sola-vault`, `svc:pipewire`,
