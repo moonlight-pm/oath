@@ -15,19 +15,19 @@ append history (git has it).
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
    the profile, and checks `/bin` and `/lib` names. Newest release: `e42eaf977392`
-   (2026-11-04); buccina runs `e73aa522ec58`, canto `debfd75332ea`, novus `c9735fc14e50`. Gap: a
+   (2026-11-04); buccina runs `e73aa522ec58`, canto `debfd75332ea`, novus `e42eaf977392`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1. R62 (in that release): a machine holds what its packages
    prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. R61–R63's verbs and fields
-   reach canto and novus with their next update; Sola's package app (its `sola-oath` session on novus) reads them then.
+   are on novus, and reach canto with its next update; Sola's package app is its `sola-oath` session on novus.
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `a95ab5d1` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `e42eaf977392` (71/71, 2026-11-04; its packs on no machine yet). Each machine reboots into it,
+   release `e42eaf977392` (71/71, 2026-11-04), on novus since that day. Sola master@e7a051cd is on the origin, not pinned: Joshua's word. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
-   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: novus takes `e42eaf977392` (Joshua's word, 2026-11-04; rehearsed from `c9735fc14e50` in QEMU), its first boot of this kernel, Yama and Landlock on NVIDIA, then Steam's smoke there (Vulkan, Floating Point, Proton, a pad).
+   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
    profile (R52), on the origin since `c9735fc14e50` (`cloudflared` since 2026-11-03). They run as `work`, which has no `sudo`. Bias against
@@ -55,7 +55,7 @@ are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, mo
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `debfd75332ea` (2026-11-03, no overlay), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
-| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `c9735fc14e50` (booted 2026-11-02, 15 `pkg:sola*` overlays from master@822bb2dd), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `e42eaf977392` (booted 2026-11-04, four `pkg:sola*` overlays, [hosts/novus.md](hosts/novus.md)), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `e73aa522ec58` (master `1678f60`, 2026-11-04), headless: `desk`'s packages with its services off, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 ## Do not

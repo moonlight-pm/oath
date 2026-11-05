@@ -104,9 +104,9 @@ Overwrite this file when facts change; do not append a diary.
   built locally: `pkg:sola` `5e077a2a695b`), and `keep_children` on
   `svc:sola-session` by hand (generation 40). An update swaps the overlay for
   the release's pins; `--keep` must take all 14 or none (the bus's Tab
-  payload changed). Seen 2026-11-03: output `c9735fc14e50`, booted 2026-11-02 19:10Z,
-  with 15 `pkg:sola*` overlays from master@822bb2dd that `oath update` replaces
-  unless `--keep`. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile. `pkg:llama-cpp` b11960 (`sha256-0908155920628b60`, from master@cf2448e) and `pkg:writ` 0.1.0 (`sha256-0508ed29745f`, from master@c51e9af, generation 81), built on buccina, added by hand at Joshua's word (2026-11-04), overlays in no profile; testing may use up to half the GPU (R66). No `svc:llama` and no server left running: `writ` is the session on a terminal (R69), which loads Qwen3.5 9B Q6_K, from `~/.local/share/writ/models`, as `work` at a 40% share when a prompt needs it (R68; `~/.config/writ/local.json`), and `/llama stop` frees it.
+  payload changed). Seen 2026-11-05: output `e42eaf977392`, booted 2026-11-04 18:50Z,
+  with overlays `pkg:sola` and `pkg:sola-projects` from master@e0cd88d4, `pkg:sola-calendar`
+  and `pkg:sola-settings` from master@6b1e0a60, that `oath update` replaces unless `--keep`. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile. `pkg:llama-cpp` b11960 (`sha256-0908155920628b60`, from master@cf2448e) and `pkg:writ` 0.1.0 (`sha256-0508ed29745f`, from master@c51e9af, generation 81), built on buccina, added by hand at Joshua's word (2026-11-04), overlays in no profile; testing may use up to half the GPU (R66). No `svc:llama` and no server left running: `writ` is the session on a terminal (R69), which loads Qwen3.5 9B Q6_K, from `~/.local/share/writ/models`, as `work` at a 40% share when a prompt needs it (R68; `~/.config/writ/local.json`), and `/llama stop` frees it.
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
   in; no game run yet. `pkg:nvidia` `b9d52386…` (DLSS's DLLs, the
