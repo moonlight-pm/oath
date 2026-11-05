@@ -1772,8 +1772,8 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-6d67fec19e22e39b746b2d868135670977bd46b7d74aa6f26c3f5e594044ac1d",
-    "product": "sha256-0508ed29745f616148a92f9de46ad1b10179d22845ecb306c76c52f9c03307dd",
+    "plan": "sha256-cc56616d637a85677baf69813ba5e9352340fbb2974182df429026b827c7de2a",
+    "product": "sha256-1a32e024c2177e1044e3dddc62e35b1af19aa1fe2b0e40722fc31a35410e490c",
     "run": [
       "bubblewrap",
       "curl"

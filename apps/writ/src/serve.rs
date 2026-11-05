@@ -1276,7 +1276,9 @@ mod tests {
 
     #[test]
     fn a_leftover_is_only_cleared_if_it_is_a_dead_socket() {
-        let d = std::env::temp_dir().join(format!("writ-claim-{}", std::process::id()));
+        // The time too: a run that failed leaves this behind, and a later one can have its PID.
+        let at = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let d = std::env::temp_dir().join(format!("writ-claim-{}-{at}", std::process::id()));
         fs::create_dir_all(&d).unwrap();
         let f = d.join("file");
         fs::write(&f, "x").unwrap();
@@ -1286,7 +1288,16 @@ mod tests {
         let l = UnixListener::bind(&s).unwrap();
         assert!(claim_socket(&s).is_err());
         drop(l);
-        assert!(claim_socket(&s).is_ok());
+        // Another test starting a child holds a copy of every descriptor until the child has exec'd,
+        // so for a moment a closed listener still answers.
+        let claimed = (0..500).any(|_| {
+            let ok = claim_socket(&s).is_ok();
+            if !ok {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            ok
+        });
+        assert!(claimed);
         assert!(!s.exists());
         assert!(claim_socket(&s).is_ok());
         fs::remove_dir_all(&d).unwrap();
