@@ -48,7 +48,7 @@ are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, mo
 
 5. **`writ`, Oath's coding agent (R64–R69, [docs/specs/writ.md](docs/specs/writ.md)).** A model works on a project in a box: `writ` is a session on a terminal, which loads the model as `work`
    (`/llama stop` frees it); its writes wait for `/diff`, `/apply`, `/undo`. Overlays on buccina and novus (Joshua: tests may use up to half
-   its GPU). Qwen3.5 9B did a small real task; review its work. Next: Joshua tries it on real work; then a terminal, then OpenRouter for stronger models.
+   its GPU). Qwen3.5 9B does small real tasks, and has reported work falsely: read its diffs, not its summaries. Next: Joshua tries `writ` on real work; then OpenRouter for stronger models.
 
 ## Machines
 
