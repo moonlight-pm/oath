@@ -51,9 +51,9 @@ Overwrite this file when facts change; do not append a diary.
   generation 116; `cargo make check` passed 65/65 on it. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
-  `pkg:libglvnd-i386`. `pkg:llama-cpp` b11960 (`0908155920628b60`) and `pkg:writ` 0.1.0 (`f4e47eb9157a`), from
-  master@d3a4d4b, overlays no release sets, since generation 167 (2026-11-04). No `svc:llama`: `writ serve`
-  by hand, with a test model, Qwen3 1.7B Q4, in `~/.local/share/writ/models`. It is headless and runs no desk (Joshua, 2026-11-03; generation 161,
+  `pkg:libglvnd-i386`. `pkg:llama-cpp` b11960 (`0908155920628b60`, from master@d3a4d4b) and `pkg:writ` 0.1.0 (`8916401976c9`, from
+  master@22d3d6b), overlays no release sets, since generation 168 (2026-11-04). No `svc:llama`: `writ use local`
+  loads a test model, Qwen3 1.7B Q4, from `~/.local/share/writ/models`, as `work` (R68). It is headless and runs no desk (Joshua, 2026-11-03; generation 161,
   and in its overlay): `svc:rivulet`, `svc:seatd`, `svc:sola-river`, `svc:sola-shell`,
   `svc:sola-session`, `svc:sola-bus`, `svc:sola-call`, `svc:sola-vault`, `svc:pipewire`,
   `svc:pipewire-pulse`, `svc:wireplumber`, `svc:dbus-session`, `svc:screen` and `svc:sola-kvm`
