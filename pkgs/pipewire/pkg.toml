@@ -1,9 +1,9 @@
-version = "1.6.9"
+version = "1.6.11"
 license = "MIT AND LGPL-2.1-or-later"
 description = "PipeWire: the audio server, pipewire-pulse, the ALSA plugin, Bluetooth audio and the pw-* tools."
 home = "https://pipewire.org/"
 category = "sound"
-purl = "pkg:generic/pipewire@1.6.9"
+purl = "pkg:generic/pipewire@1.6.11"
 build = [
 	"meson", "ninja", "python", "pkgconf", "alsa-lib", "libudev-zero", "libsndfile", "dbus", "ncurses",
 	"glib", "bluez", "sbc",
@@ -11,6 +11,6 @@ build = [
 run = ["alsa-lib", "libudev-zero", "libsndfile", "dbus", "ncurses", "glib", "bluez", "sbc"]
 
 [[source]]
-url = "https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/1.6.9/pipewire-1.6.9.tar.gz"
-sha256 = "dbc3624cf71215c26a22fc98f6f71f7b8599f5f6b415eab4a5c90ca96c170c7c"
+url = "https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/1.6.11/pipewire-1.6.11.tar.gz"
+sha256 = "f3f70c4af173cc93d05070a9d412efe3ef5889bdf4ac32298e2c0d9ae1350559"
 unsigned = "a GitLab tag archive; PipeWire publishes no tarball or signature and its tags are lightweight"

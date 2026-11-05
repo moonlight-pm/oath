@@ -117,7 +117,7 @@
     },
     {
       "id": "pkg:pipewire",
-      "hash": "sha256-f361aada2db35207c17653bc58d460f5fcd1b45b45675a52d95f61c1c284ed6a"
+      "hash": "sha256-a038882c27fc8cc58c7c2e45307f44293f78636d4d2011f620e962aa4fda4bbd"
     },
     {
       "id": "pkg:pkgconf",
@@ -167,7 +167,7 @@
     },
     {
       "id": "pkg:pipewire",
-      "hash": "sha256-f361aada2db35207c17653bc58d460f5fcd1b45b45675a52d95f61c1c284ed6a"
+      "hash": "sha256-a038882c27fc8cc58c7c2e45307f44293f78636d4d2011f620e962aa4fda4bbd"
     }
   ]
 }

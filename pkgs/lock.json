@@ -1352,11 +1352,11 @@
     "run": []
   },
   "pipewire": {
-    "version": "1.6.9",
+    "version": "1.6.11",
     "license": "MIT AND LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-f65bc33588275982919348c84dcbfd56f807c55ff3c2a86630e3e4860461a56a",
-    "product": "sha256-f361aada2db35207c17653bc58d460f5fcd1b45b45675a52d95f61c1c284ed6a",
+    "plan": "sha256-0ab0e5f4cdfa0a4507a69be85db69649c7efeb0e9adf2884d12d97cd2c3ede7f",
+    "product": "sha256-a038882c27fc8cc58c7c2e45307f44293f78636d4d2011f620e962aa4fda4bbd",
     "run": [
       "alsa-lib",
       "libudev-zero",
@@ -1728,7 +1728,7 @@
     "version": "0.5.18",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-3cc256583e49d2f43a7e5f741246b879e86a7a20b9874275100cf42a11480955",
+    "plan": "sha256-1ea179ae8db154451e573503e6a4e7e655ac77527f2a2539513dd586c1dfe310",
     "product": "sha256-43434cb0815fc79886c4897c86c98221e9b2c881483ab587ee65feb875b554cf",
     "run": [
       "glib",
