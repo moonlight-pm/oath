@@ -372,6 +372,8 @@ The server's share of the GPU averaged 21–40% across the runs. In the three ru
 
 **Which model.** Both were given the same task, adding `--version` to a copy of writ (7,400 lines), and each could be judged by `writ diff`. Qwen3.5 9B took 10 turns and 2.5 minutes, with no malformed call. Its code was right, reading the version from Cargo, and a build of it prints `writ 0.1.0` with the 114 tests passing. It also left a test file nothing includes, and said that file verifies the output. An earlier try got the flag working with the version hard-coded, then used up its 40 turns on a test of its own making. Gemma 4 12B sent malformed calls, spent all 8,192 tokens of one turn thinking, cut lines out of the file, broke the build and stopped without a word. It did fix a small bug in a small crate. So Qwen3.5 9B is the one to test with, and neither is work to take unreviewed. Larger models do not fit beside the desk within half the card.
 
+**A stronger model (will be).** Researched 2026-11-04, and none of this has been run here. For one 24 GiB card, the candidate is Qwen3.8 27B, `UD-Q4_K_XL` (unsloth, Apache-2.0, August 2026), a file of 16.4 GiB. It is architecture `qwen35`, which the pinned `llama-server` knows, and its template's bugs reach only clients that do not send one system message first. Blogs give it 61.7% on SWE-bench Pro and 90.3 on LiveCodeBench v6, not measured at Q4 here or, as far as found, by anyone independent, and on different benchmarks from its rivals. Devstral Small 2 (13.3 GiB at Q4_K_M, December 2025, SWE-bench Verified 68%) is the one that nearly fits beside the desk. What limits this is the card's memory, not the machine's. The desk held about 10 GiB of novus's 24 on 2026-11-04, Sola's Design and Browser 5.4 of it, leaving about 14 GiB, and Qwen3.8 would take an estimated 17.5–18. System memory does not make up for it: a split between card and RAM runs at the speed of the part in RAM, by an amount not measured, and writ has no option for it yet. A share would have to rise too: scaling from what was measured here gives an estimated 12 tokens a second at 40%, 20 at 70% and 30 at 100%. The plan, at Joshua's word: Qwen3.8 at 70% with those two apps closed, against Qwen3.5 on the same tasks. Models past about 40B do not fit at all, so hard work waits for OpenRouter.
+
 ## OpenRouter (will be)
 
 Read from its documentation; nothing was called, and the wire shapes are composed, not
@@ -464,11 +466,11 @@ the design first asked for, which allowed the crates already in `Cargo.lock`.
 | Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,267 |
 | Attack suite: probe, check (is) | 1,128 |
 | Terminal sanitizer (is, with tests) | 149 |
-| The session on a terminal: renderer, line editor, screen and worker (is, with tests) | 2,172 |
-| Tools (is, with tests) | 877 |
+| The session on a terminal: renderer, line editor, screen and worker (is, with tests) | 2,175 |
+| Tools (is, with tests) | 875 |
 | Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,422 |
 | The local server, as `work`, and its attacks (is, with tests) | 1,306 |
-| Loop, guards, masking, sessions (is, with tests) | 1,191 |
+| Loop, guards, masking, sessions (is, with tests) | 1,192 |
 | Gate (is, with tests) | 1,141 |
 | Command line (is) | 359 |
 | OpenRouter's part of the provider (estimate) | 300 |
@@ -528,7 +530,7 @@ The first real use, on Joshua's Kirk project on 2026-11-05, was "Whats in this f
 
 The wording it reported falsely on, "taken from Cargo.toml, not written by hand", three runs each: the old prompt gave one right, one hard-coded and reported otherwise, and one that gave up silently after 42 calls. The new prompt gave two right and one that used neither `CARGO_PKG_VERSION` nor the literal and said it read Cargo.toml; the script deleted that session before anyone read its code, so it is not known whether that one was true. With fuller wording, the new prompt was right four times out of four on that task and a small bug. These are small numbers, and read diffs, not summaries, still holds.
 
-**Not tested:** a person using the terminal: everything above is a script through tmux, which is also what the Sola terminal's shells run in, and no other terminal has been tried. real work on a real tree beyond these tasks; AMD's GPUs; a crafted model file that reaches
+**Not tested:** long use by a person: Joshua has used the terminal by hand on one project. The scripts above run through tmux, which is also what the Sola terminal's shells run in, and no other terminal has been tried. real work on a real tree beyond these tasks; AMD's GPUs; a crafted model file that reaches
 past the parser's checks; the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
 Steam; `cargo` under heavy concurrent builds, `curl --config -` with a real key and a body
 on another fd. Overlayfs calls changes to the lower layer undefined, so editing the real tree during

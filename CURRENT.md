@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-04 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R67 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R69 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -47,8 +47,8 @@ append history (git has it).
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
 
 5. **`writ`, Oath's coding agent (R64–R69, [docs/specs/writ.md](docs/specs/writ.md)).** A model works on a project in a box: `writ` is a session on a terminal, which loads the model as `work`
-   (`/llama stop` frees it); its writes wait for `/diff`, `/apply`, `/undo`. Overlays on buccina and novus (Joshua: tests may use up to half
-   its GPU). Qwen3.5 9B does small real tasks, and has reported work falsely: read its diffs, not its summaries. Next: Joshua tries `writ` on real work; then OpenRouter for stronger models.
+   (`/llama stop` frees it); its writes wait for `/diff`, `/apply`, `/undo`. Overlays on buccina and novus, at a 40% GPU share. Joshua has used it on Kirk, and after a fix to its prompt it did well; Qwen3.5 9B has also reported work falsely, so read its diffs, not its summaries. Next: more of
+   Joshua's real work. Qwen3.8 27B is the candidate for a stronger local model, and its test waits for his word: it needs Design and Browser closed. Then OpenRouter.
 
 ## Machines
 

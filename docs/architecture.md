@@ -292,7 +292,7 @@ writ                                 on a terminal: a thread for keys, one for t
                                      which alone writes to the terminal; the box below, for each prompt
 writ do → /bin/bwrap → /writ inner → /writ tools
                                      the loop on the host, the tools in the box, one pipe pair;
-                                     also transcript.jsonl and meta.json in the session
+                                     also transcript.jsonl, meta.json and stderr in the session
 writ diff, apply, undo               read the session's upper/ as data; apply writes the real tree,
                                      keeping undo.jsonl and undo/ in the session
 ```
