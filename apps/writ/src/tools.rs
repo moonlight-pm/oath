@@ -336,24 +336,22 @@ impl State {
     }
 }
 
-/// What the machine and the project say about working here, for the host to label and hand to the
-/// model. Read in the box, like everything else the project holds.
+/// What the project says about working here, for the host to label and hand to the model. Read in
+/// the box, like everything else the project holds. Not the machine's guide, `/oath/INDEX.md`: the
+/// prompt says how to get it, since most work never needs it and it costs every session 5 KB.
 fn project_notes() -> String {
-    let mut out = String::new();
-    let mut project_said = false;
-    for (label, path) in [("This machine", "/oath/INDEX.md"), ("This project", "AGENTS.md"), ("This project", "CLAUDE.md")] {
+    for path in ["AGENTS.md", "CLAUDE.md"] {
         let Ok(m) = fs::metadata(path) else { continue };
-        if !m.is_file() || (project_said && label == "This project") {
+        if !m.is_file() {
             continue;
         }
-        project_said = label == "This project";
         let mut bytes = Vec::new();
         if fs::File::open(path).and_then(|f| f.take(16 << 10).read_to_end(&mut bytes)).is_err() {
             continue;
         }
-        out.push_str(&format!("<notes source=\"{path}\" about=\"{label}\">\n{}\n</notes>\n", String::from_utf8_lossy(&bytes)));
+        return format!("<notes source=\"{path}\" about=\"This project\">\n{}\n</notes>\n", String::from_utf8_lossy(&bytes));
     }
-    out
+    String::new()
 }
 
 /// Write a file whole or not at all, keeping its mode. The temporary name sits beside it, so the

@@ -720,13 +720,16 @@ impl Ui {
                     s.push_str(&format!(" · {v:.0}/s"));
                 }
             }
-            None => s.push_str(&format!("{} · {} · {} held · {}", self.id, self.project, self.held, self.model)),
+            None => s.push_str(&format!("{} · {} · {} held", self.id, self.project, self.held)),
         }
         if self.context > 0 && self.used > 0 {
             s.push_str(&format!(" · context {}%", self.used * 100 / self.context));
         }
+        // Last, as the longest: a narrow window loses this first.
         if self.running.is_some() {
             s.push_str(" · Ctrl-C stops");
+        } else {
+            s.push_str(&format!(" · {}", self.model));
         }
         Row::new(Style::Dim, s)
     }
