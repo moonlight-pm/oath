@@ -14,8 +14,8 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `05e5ccdcc736`
-   (2026-11-04); buccina runs `e73aa522ec58`, canto `debfd75332ea`, novus `e42eaf977392`. Gap: a
+   the profile, and checks `/bin` and `/lib` names. Newest release: `f612b200206c`
+   (2026-11-05); buccina and novus run it (novus without a reboot, so `e42eaf977392`'s PID 1 until it boots), canto `debfd75332ea`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1. R62 (in that release): a machine holds what its packages
    prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. R61–R63's verbs and fields
@@ -25,7 +25,7 @@ append history (git has it).
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `e7a051cd` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `05e5ccdcc736` (71/71, 2026-11-04; rehearsed from novus's `e42eaf977392`; its packs on no machine yet; a pin moves PID 1's hash, so it takes a reboot). Novus may take it (Joshua's word, 2026-11-04). Each machine reboots into it,
+   release `f612b200206c` (2026-11-05; a pin moves PID 1's hash, so it takes a reboot). Novus took it with `--keep` on its 15 Sola overlays from Sola's next@be11f623, which are newer. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
@@ -47,14 +47,14 @@ append history (git has it).
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
 
 5. **`writ`, Oath's coding agent (R64–R70, [docs/specs/writ.md](docs/specs/writ.md)).** A model works on a project in a box: `writ` is a session on a terminal, which loads the local model as `work`
-   (`/llama stop` frees it) or reaches one on OpenRouter (`writ key`, `/use openrouter AUTHOR/NAME`, R70); its writes wait for `/diff`, `/apply`, `/undo`. Overlays on buccina (`b4f6043`) and novus (`c51e9af`, before OpenRouter, at a 40% GPU share). Joshua has used it on Kirk, and after a fix to its prompt it did well; Qwen3.5 9B has also reported work falsely, so read its diffs, not its summaries. OpenRouter works: on 2026-11-05 DeepSeek V4.1 Flash did real work for fractions of a cent, 86–98% cached, and six other families did a planted bug. Next: long use, since no real rate limit or failed stream has been met. Qwen3.8 27B now fits beside the desk: on 2026-11-05 Bonsai `Q2_0` (9.2 GiB on the card) and ISTA `IQ3_XXS` (11.5, the cleanest) each did a real fix twice at 17–20 tokens/s, which Qwen3.5 9B did not finish either time; ISTA's larger `IQ3_S` and unsloth's `UD-Q4_K_M` did no better. Their files wait in `~/.local/share/writ/trial-models` on novus; which to use, if either, is Joshua's.
+   (`/llama stop` frees it) or reaches one on OpenRouter (`writ key`, `/use openrouter AUTHOR/NAME`, R70); its writes wait for `/diff`, `/apply`, `/undo`. Overlays on buccina and novus (`b4f6043`, published to the origin 2026-11-05; novus at a 40% GPU share, no key yet). Joshua has used it on Kirk, and after a fix to its prompt it did well; Qwen3.5 9B has also reported work falsely, so read its diffs, not its summaries. OpenRouter works: on 2026-11-05 DeepSeek V4.1 Flash did real work for fractions of a cent, 86–98% cached, and six other families did a planted bug. Next: long use, since no real rate limit or failed stream has been met. Qwen3.8 27B now fits beside the desk: on 2026-11-05 Bonsai `Q2_0` (9.2 GiB on the card) and ISTA `IQ3_XXS` (11.5, the cleanest) each did a real fix twice at 17–20 tokens/s, which Qwen3.5 9B did not finish either time; ISTA's larger `IQ3_S` and unsloth's `UD-Q4_K_M` did no better. Joshua chose `IQ3_XXS`, and it is novus's local model since 2026-11-05; the first prompt after a load waits about 100 s. The other three files wait in `~/.local/share/writ/trial-models` there.
 
 ## Machines
 
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `debfd75332ea` (2026-11-03, no overlay), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
-| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `e42eaf977392` (booted 2026-11-04, four `pkg:sola*` overlays, [hosts/novus.md](hosts/novus.md)), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `f612b200206c` (generation 85, 2026-11-05, not rebooted since 2026-11-04; fifteen `pkg:sola*` overlays from Sola's next), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `e73aa522ec58` (master `1678f60`, 2026-11-04), headless: `desk`'s packages with its services off, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 
 ## Do not
