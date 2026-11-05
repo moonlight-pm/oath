@@ -9,7 +9,7 @@ authorizes one specific act, which is what each grant here is. "Harness" already
 **Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`. A
 local model runs in a box of its own, on the CPU or novus's GPU, and `writ` can ask it one thing: `writ serve`,
 `writ ask`, R65, R66, as `work`, and `writ use local` loads it (R68). And it can work: `writ do` runs the loop and the tools in a box, its writes are held, and `writ diff`,
-`apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. `writ` alone is a session you stay in, on a terminal (R69). A model on OpenRouter goes through the same loop and the same box (`writ key`, `writ use openrouter`, R70), built and attacked, with no real chat call yet. Still to come: the `oath` tool.
+`apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. `writ` alone is a session you stay in, on a terminal (R69). A model on OpenRouter goes through the same loop and the same box (`writ key`, `writ use openrouter`, R70), built, attacked and used for real since 2026-11-05. Still to come: the `oath` tool.
 
 Full research notes, about 3,300 lines with file and line references, are in
 `apocrypha/coding-agent-research/` (gitignored, not a source of truth; they quote
@@ -223,7 +223,7 @@ already in the scrollback does not reflow when the window changes size.
 ## The key (is)
 
 - `~/.config/writ/openrouter.key`, 0600, opened `O_NOFOLLOW`, and refused if it is a link, another account's, readable
-  by anyone else, or anything but one line fit for a header. `writ key` takes it unseen, or from a pipe, and saves nothing
+  by anyone else, or anything but one line fit for a header, and a `NAME=value` line is not a key: OpenRouter would only refuse it, which misleads (2026-11-05, when one was written by hand). `writ key` takes it unseen, or from a pipe, and saves nothing
   OpenRouter refuses. It is read for each request and not kept. The core is non-dumpable, which blocks `/proc/*/environ`
   and `/proc/*/mem` from same-uid processes, and every child's environment is built from empty.
 - HTTP is `/bin/curl` (Mbed TLS) as a child: the header through `--config -` on stdin, never argv or environment, which a
@@ -388,8 +388,8 @@ chooses, and never at a start, and refuses a model with no route that keeps noth
 context among those routes, since any can be chosen, and says what leaves the machine, the range of prices and what is left
 on the key. The status row shows what the session has spent and who ran the last turn.
 
-**Everything but the catalog is from the documentation:** a key is needed for a chat call, and none has been made, so its
-stream's shapes are still composed, and the tests run a real curl against a fake server.
+**Its stream is from real captures** (`testdata/openrouter-*.sse`, 2026-11-05). What has not happened for real is still from the
+documentation: a rate limit, a failed stream and a retry, which the tests run with a real curl against a fake server.
 
 - **Endpoint:** Chat Completions. `/responses` is stateless too and has no per-block `cache_control`.
 - **SSE:** `:` lines are skipped. Status applies only before commit; after that a failure is an SSE `error` with
@@ -404,10 +404,11 @@ stream's shapes are still composed, and the tests run a real curl against a fake
   nothing of its cost, so only the key's own limit covers those.
 - **Context:** old answers are masked at the lower of 60% or 150,000 tokens, and a turn may use up to 32,768 tokens where
   the routes allow, against 8,192 on a local model, because a reasoning model thinks first.
-- **Cache:** byte-identical prefix, same slug, `session_id`. Auto Exacto can move providers and lose it. On 2026-11-04
+- **Cache:** byte-identical prefix, same slug, `session_id`. Auto Exacto can move providers and lose it, though no session here has moved. On 2026-11-04
   OpenRouter's catalog said 41 of the 41 ZDR routes for `deepseek/deepseek-v4.1-flash-1017` cache reads, at $0.0015–$0.0105 a
-  million against $0.006–$0.45 for a miss, which answers what this file left open. **Open:** whether a real session gets
-  those hits. There is no `cache_control`, so Anthropic's and Alibaba's Qwen routes, which need one, do not cache.
+  million against $0.006–$0.45 for a miss, which answers what this file left open. A real session gets those hits, and a host's promise is not the same as its
+  hit rate: 86–98% on DeepSeek, 15% on one GPT-OSS host (Tested). There is no `cache_control`, so Anthropic's routes, and by their
+  documentation Alibaba's for Qwen, do not cache: Claude on Bedrock cached nothing.
 - **Replay:** reasoning goes back unchanged on every later request, to the model that wrote it and no other: a signed block
   means nothing to another model, and a message holds whose it is. `reasoning_details` when a turn has them, merged from the
   stream's pieces, or else `reasoning`. A local model is sent none of it. Beside a call, no words are sent as null, and an
@@ -419,7 +420,8 @@ stream's shapes are still composed, and the tests run a real curl against a fake
 
 **Not built, until a real call shows the need:** DeepSeek's `reasoning_content` on an assistant message with no reasoning
 (400 is the reported failure), Kimi's schema rules and its `index`, GLM's `tool_stream`, Qwen's `enable_thinking`, stripping
-leaked DSML from history, `max_price`. All are from other agents' source, not seen here.
+leaked DSML from history, `max_price`. All are from other agents' source. None came up on the real calls of 2026-11-05, each
+on one or a few hosts, so a host that does need one is still possible. Without `cache_control`, Claude costs more than it would.
 
 ## Oath-first
 
@@ -496,7 +498,7 @@ the design first asked for, which allowed the crates already in `Cargo.lock`.
 | Loop, guards, masking, sessions (is, with tests) | 1,342 |
 | Gate (is, with tests) | 1,141 |
 | Command line (is) | 387 |
-| OpenRouter: the key, the choice, routes, spending, retries, curl's box and its attacks (is, 826 lines and 366 of tests) | 1,192 |
+| OpenRouter: the key, the choice, routes, spending, retries, curl's box and its attacks (is, 830 lines and 377 of tests) | 1,207 |
 | Hand-off (estimate) | 150 |
 | `oath` tool, grants (estimate) | 300 |
 | **Total** | **about 13,200** |
@@ -553,17 +555,27 @@ The first real use, on Joshua's Kirk project on 2026-11-05, was "Whats in this f
 
 The wording it reported falsely on, "taken from Cargo.toml, not written by hand", three runs each: the old prompt gave one right, one hard-coded and reported otherwise, and one that gave up silently after 42 calls. The new prompt gave two right and one that used neither `CARGO_PKG_VERSION` nor the literal and said it read Cargo.toml; the script deleted that session before anyone read its code, so it is not known whether that one was true. With fuller wording, the new prompt was right four times out of four on that task and a small bug. These are small numbers, and read diffs, not summaries, still holds.
 
-OpenRouter (R70), on buccina, 2026-11-04, kernel 7.3.1 under Landlock ABI 11. **No chat call has been made, since that takes a key.** The 199 tests pass, in the package's own sandbox too, with a real curl against a fake server: a rate limit waited out, a refused key not tried again, a stream that fails partway asked again with only the good turn kept, a stop during a wait, a budget that holds across a restart, a turn that does not say its cost, and the key absent from a live curl's arguments and environment. Real calls to OpenRouter's public catalog went through curl's box, DNS and TLS included, in 0.27 seconds. `writ check` refused 485 attacks with nothing through, broken or skipped. Curl's box was broken thirteen ways. It failed on ten: home, the key's directory, `/etc`, `/oath` or `/dev` mounted; the PID namespace shared; the environment kept by both layers; no port rule; no second stage; no Landlock. Two were held by Landlock, the root left writable and the environment kept by bwrap alone, and with Landlock down too it failed on both. One was held by seccomp, user namespaces left on, which only a unit test on the arguments catches. The local model still works: `drive.py` passes 80 of 80, and `real.py` 21 of 21 on the CPU.
+OpenRouter (R70), on buccina, 2026-11-04, kernel 7.3.1 under Landlock ABI 11, before any chat call. The 199 tests pass, in the package's own sandbox too, with a real curl against a fake server: a rate limit waited out, a refused key not tried again, a stream that fails partway asked again with only the good turn kept, a stop during a wait, a budget that holds across a restart, a turn that does not say its cost, and the key absent from a live curl's arguments and environment. Real calls to OpenRouter's public catalog went through curl's box, DNS and TLS included, in 0.27 seconds. `writ check` refused 485 attacks with nothing through, broken or skipped. Curl's box was broken thirteen ways. It failed on ten: home, the key's directory, `/etc`, `/oath` or `/dev` mounted; the PID namespace shared; the environment kept by both layers; no port rule; no second stage; no Landlock. Two were held by Landlock, the root left writable and the environment kept by bwrap alone, and with Landlock down too it failed on both. One was held by seccomp, user namespaces left on, which only a unit test on the arguments catches. The local model still works: `drive.py` passes 80 of 80, and `real.py` 21 of 21 on the CPU.
 
-**Not tested:** a real key, a real chat stream on OpenRouter, a model's replay of its reasoning, a real cache hit, a real rate limit. Long use by a person: Joshua has used the terminal by hand on one project. The scripts above run through tmux, which is also what the Sola terminal's shells run in, and no other terminal has been tried. real work on a real tree beyond these tasks; AMD's GPUs; a crafted model file that reaches
+OpenRouter for real, on buccina, 2026-11-05, with a key limited to $50 and no guardrail; $0.03 in all, by writ's count. Each is one short run, and the first real calls found nothing wrong in the stream, the replay or the box:
+
+- **DeepSeek V4.1 Flash:** a planted bug fixed in 5 turns for $0.0007, the session resumed in a new process and given more work, and a session on the terminal. A real task on writ's own code took 9 turns, 19 seconds and $0.0036, ran `cargo test` in the box, and its diff was read and applied: the `NAME=value` check above.
+- **Cache:** 86–98% of the input after the first turn, across four runs. The one miss was the second turn of the real task, 0 of 8,606, at $0.0010 of its $0.0036. The prefix is shared between sessions on a host, so a new session's first turn can hit too.
+- **Hosts:** Particle AI, ModelRun, Cohere, Wafer, DigitalOcean and Modal for DeepSeek. A session stayed on one host in every run whose turns were logged, and none moved; different sessions got different hosts.
+- **Replay:** ModelRun took DeepSeek's reasoning back, and assistant messages with calls and no reasoning, so the reported 400 did not occur there. One session went DeepSeek, then the local Qwen3 1.7B, then DeepSeek, with 98% cached on its return.
+- **Other families,** the planted bug on one host each, all fixed and the test run clean: Claude Haiku 5.5 on Bedrock, with signed reasoning replayed and nothing cached; GPT-6 Luna on Azure, encrypted blocks replayed, 77% cached; Kimi K3.1 Pro on Together, plain reasoning, 80%, the dearest at $0.012; Qwen3.6 35B on DekaLLM, 92%; GPT-OSS 120B on AkashML, 15%; and Gemma 4 26B on NextBit, 79%, and GLM 5.3 Flash on DeepInfra, 39%, which returned no reasoning, so they say nothing of replay.
+- **The budget:** held at $0.0002, it stopped after the turn that crossed it, at $0.0003, since a turn's cost is known only when it ends, and refused the resumed session before spending.
+- **The key:** none of 770 files under writ's data, config and state, and the runs' scratch, hold it. `writ check` with a real key on disk refused 485 attacks, with nothing through, broken or skipped. 202 tests pass, with both real streams cut at every byte and nothing runnable.
+
+**Not tested:** a real rate limit, a real failed stream or retry, an Auto Exacto move, masking at 150,000 tokens, a session of any length on OpenRouter. Long use by a person: Joshua has used the terminal by hand on one project. The scripts above run through tmux, which is also what the Sola terminal's shells run in, and no other terminal has been tried. real work on a real tree beyond these tasks; AMD's GPUs; a crafted model file that reaches
 past the parser's checks; the `desk` profile on this kernel, where Yama could touch CEF's crash handler or
 Steam; `cargo` under heavy concurrent builds. Overlayfs calls changes to the lower layer undefined, so editing the real tree during
 a session needs a test; a btrfs snapshot as the lower layer is the likely answer.
 
 ## Open
 
-- **Model and route:** whether a real session gets the cache hits the catalog promises (R70), what that costs, and whether
-  Auto Exacto moving hosts loses them. It takes a real call.
+- **Model and route:** which model is worth using for real work, and what a long session costs; whether Auto Exacto moving
+  hosts loses the cache, which no session has yet done (R70). It takes long use.
 
 ## Order of work
 
@@ -574,4 +586,4 @@ a session needs a test; a btrfs snapshot as the lower layer is the likely answer
 4. The gate. **Done 2026-11-04:** attacks through two real models left the real tree untouched until `apply`.
 5. Terminal. **Done 2026-11-04.**
 6. `oath` tool, then `check/agent.toml` run through it.
-7. OpenRouter: the key, routing and budget. **Done 2026-11-04,** but for its stream's shapes from real captures, which take a key.
+7. OpenRouter: the key, routing and budget. **Done 2026-11-04,** and its stream's shapes captured for real on 2026-11-05.

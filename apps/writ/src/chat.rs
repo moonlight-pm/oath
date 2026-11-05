@@ -440,6 +440,8 @@ mod tests {
 
     const TOOL_STREAM: &[u8] = include_bytes!("../testdata/llama-tool-call.sse");
     const TEXT_STREAM: &[u8] = include_bytes!("../testdata/llama-text.sse");
+    const HOSTED_TOOL_STREAM: &[u8] = include_bytes!("../testdata/openrouter-tool-call.sse");
+    const HOSTED_TEXT_STREAM: &[u8] = include_bytes!("../testdata/openrouter-text.sse");
 
     #[test]
     fn a_real_tool_call_parses() {
@@ -460,10 +462,40 @@ mod tests {
         assert_eq!(t.runnable().unwrap(), []);
     }
 
+    #[test]
+    fn a_real_tool_call_through_openrouter_parses() {
+        let t = turn_of(HOSTED_TOOL_STREAM, None);
+        assert_eq!(t.finish, Finish::ToolCalls);
+        let r = t.runnable().unwrap();
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].0.name, "read_file");
+        assert_eq!(r[0].1.get("path").and_then(|p| p.str()), Some("README.md"));
+        let u = t.usage.unwrap();
+        assert_eq!((u.prompt_tokens, u.completion_tokens, u.cached_tokens), (315, 40, 128));
+        assert_eq!(u.provider.as_deref(), Some("Wafer"));
+        assert!(u.cost.is_some_and(|c| c > 0.0));
+    }
+
+    /// The reasoning came a word at a time, and goes back as one block that says the same.
+    #[test]
+    fn real_text_through_openrouter_parses() {
+        let t = turn_of(HOSTED_TEXT_STREAM, None);
+        assert_eq!(t.finish, Finish::Stop);
+        assert_eq!(t.content, "ready");
+        assert_eq!(t.runnable().unwrap(), []);
+        let details = t.reasoning_details.unwrap();
+        let details = details.arr().unwrap();
+        assert_eq!(details.len(), 1);
+        assert_eq!(details[0].get("text").and_then(|d| d.str()), Some(t.reasoning.as_str()));
+        let u = t.usage.unwrap();
+        assert_eq!(u.provider.as_deref(), Some("Particle AI"));
+        assert!(u.cost.is_some_and(|c| (c - 0.00000516375).abs() < 1e-12));
+    }
+
     /// The property that matters: wherever a stream is cut, nothing runs, and no cut panics.
     #[test]
     fn a_stream_cut_anywhere_runs_nothing() {
-        for stream in [TOOL_STREAM, TEXT_STREAM] {
+        for stream in [TOOL_STREAM, TEXT_STREAM, HOSTED_TOOL_STREAM, HOSTED_TEXT_STREAM] {
             assert!(turn_of(stream, None).runnable().is_ok());
             for cut in 0..stream.len() {
                 let t = turn_of(&stream[..cut], None);

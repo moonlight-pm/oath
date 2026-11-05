@@ -120,11 +120,15 @@ fn save_choice(home: &Path, c: &Choice) -> Result<(), String> {
 /// What can go in a header and a line of curl's config, whatever a file holds.
 fn check_key(key: &str) -> Result<(), String> {
     let fit = !key.is_empty() && key.len() <= MAX_KEY as usize && key.bytes().all(|b| b.is_ascii_graphic() && !matches!(b, b'"' | b'\\'));
-    if fit {
-        Ok(())
-    } else {
-        Err("that does not look like a key: it is one line, of letters, digits and punctuation".into())
+    if !fit {
+        return Err("that does not look like a key: it is one line, of letters, digits and punctuation".into());
     }
+    // `OPENROUTER_API_KEY=sk-or-v1-...`, pasted from a file. Sent as it stands, OpenRouter refuses it
+    // and says nothing of why. The line is a secret, so it is never in what comes back.
+    if key.contains('=') {
+        return Err("that is a line like NAME=value, not a key: it wants the key alone".into());
+    }
+    Ok(())
 }
 
 /// The key, from its file: read when it is needed and not kept, and refused if the file is a link, or
@@ -868,6 +872,17 @@ mod tests {
             fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
             assert!(read_key(&home).is_err(), "{bad:?}");
         }
+        fs::remove_dir_all(&home).unwrap();
+    }
+
+    #[test]
+    fn a_key_file_holds_the_key_alone() {
+        let home = temp("key-line");
+        save_key(&home, "OPENROUTER_API_KEY=sk-or-v1-abc").unwrap();
+        let why = read_key(&home).unwrap_err();
+        assert!(why.contains("the key alone"), "{why}");
+        // The file is a secret: what is said of it never has the line in it.
+        assert!(!why.contains("sk-or-v1-abc") && !why.contains("OPENROUTER_API_KEY"), "{why}");
         fs::remove_dir_all(&home).unwrap();
     }
 
