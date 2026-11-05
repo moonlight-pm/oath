@@ -3,15 +3,36 @@
 //! or the environment. A local server and OpenRouter differ by one line of curl's config.
 
 use crate::chat::{self, Assembler, Delta, Turn};
-use crate::json;
+use crate::{json, sys};
 use std::io::{Read, Write};
+use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 const CURL: &str = "/bin/curl";
 /// curl refuses a longer line of config, and the body is one line.
 const MAX_BODY: usize = 8 << 20;
+
+/// Stops what is running for the person who asked for it: a model's turn, a tool in its box.
+#[derive(Clone, Default)]
+pub struct Cancel(Arc<AtomicBool>);
+
+impl Cancel {
+    pub fn fire(&self) {
+        self.0.store(true, Ordering::Relaxed);
+    }
+
+    pub fn fired(&self) -> bool {
+        self.0.load(Ordering::Relaxed)
+    }
+
+    pub fn reset(&self) {
+        self.0.store(false, Ordering::Relaxed);
+    }
+}
 
 pub enum Endpoint {
     /// A server of ours on a Unix socket: `writ serve`.
@@ -69,6 +90,7 @@ pub fn send<F: FnMut(Delta)>(
     body: &str,
     limit: Duration,
     record: Option<&Path>,
+    cancel: &Cancel,
     mut on: F,
 ) -> Result<Turn, String> {
     let config = config(endpoint, body, limit)?;
@@ -98,7 +120,17 @@ pub fn send<F: FnMut(Delta)>(
     let mut stdout = child.stdout.take().ok_or("no stdout")?;
     let mut assembler = Assembler::default();
     let mut buf = [0u8; 16384];
+    let mut stopped = false;
     loop {
+        if cancel.fired() {
+            // Its going is what tells the server to stop working on this.
+            let _ = child.kill();
+            stopped = true;
+            break;
+        }
+        if !sys::wait_readable(stdout.as_raw_fd(), 100) {
+            continue;
+        }
         let n = stdout.read(&mut buf).map_err(|e| format!("curl's stdout: {e}"))?;
         if n == 0 {
             break;
@@ -111,6 +143,7 @@ pub fn send<F: FnMut(Delta)>(
     let status = child.wait().map_err(|e| e.to_string())?;
     let said = errors.join().unwrap_or_default();
     let transport = (!status.success()).then(|| match status.code() {
+        _ if stopped => "interrupted".to_string(),
         Some(c) if !said.is_empty() => format!("curl exited with {c}: {said}"),
         Some(c) => format!("curl exited with {c}"),
         None => "curl was killed".to_string(),
@@ -227,7 +260,7 @@ mod tests {
         });
         let sent = "{\"t\":\"quote \\\" slash \\\\ newline \\n tab \\t unicode é你🙂 at @file\"}";
         let mut seen = String::new();
-        let turn = send(&Endpoint::Local(path), sent, Duration::from_secs(20), None, |d| {
+        let turn = send(&Endpoint::Local(path), sent, Duration::from_secs(20), None, &Cancel::default(), |d| {
             if let Delta::Content(t) = d {
                 seen.push_str(t)
             }
@@ -242,7 +275,7 @@ mod tests {
     #[test]
     fn no_server_is_an_error_with_a_reason() {
         let e = Endpoint::Local(std::env::temp_dir().join("writ-no-such.sock"));
-        let t = send(&e, "{}", Duration::from_secs(5), None, |_| {}).unwrap();
+        let t = send(&e, "{}", Duration::from_secs(5), None, &Cancel::default(), |_| {}).unwrap();
         assert!(matches!(t.finish, chat::Finish::Error(_)));
         assert!(t.runnable().is_err());
     }

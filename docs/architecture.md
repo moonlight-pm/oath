@@ -288,6 +288,8 @@ writ serve-work                      outside the box, as work: relays to /run/us
                                      holds the GPU share, takes a stop
 writ ask → /bin/curl --config - → the socket
                                      one request, read back through chat.rs; it runs nothing
+writ                                 on a terminal: a thread for keys, one for the work, and this one for the screen,
+                                     which alone writes to the terminal; the box below, for each prompt
 writ do → /bin/bwrap → /writ inner → /writ tools
                                      the loop on the host, the tools in the box, one pipe pair;
                                      also transcript.jsonl and meta.json in the session

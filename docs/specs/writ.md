@@ -9,7 +9,7 @@ authorizes one specific act, which is what each grant here is. "Harness" already
 **Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`. A
 local model runs in a box of its own, on the CPU or novus's GPU, and `writ` can ask it one thing: `writ serve`,
 `writ ask`, R65, R66, as `work`, and `writ use local` loads it (R68). And it can work: `writ do` runs the loop and the tools in a box, its writes are held, and `writ diff`,
-`apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. Still to come: OpenRouter, the `oath` tool, a real terminal.
+`apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. `writ` alone is a session you stay in, on a terminal (R69). Still to come: OpenRouter and the `oath` tool.
 
 Full research notes, about 3,300 lines with file and line references, are in
 `apocrypha/coding-agent-research/` (gitignored, not a source of truth; they quote
@@ -181,6 +181,44 @@ that as plain data; `writ apply` is the only thing that takes it to the real tre
   cannot go: a FIFO, socket or device; a path that goes through a real symlink; a real file changed since the session began. The owner commits.
 - `undo` puts back what `apply` changed, from copies kept in the session, and leaves any file changed since, by name.
 - A lock on the session keeps a box and `apply` from running on it at once.
+
+## The terminal (is)
+
+`writ`, with no verb, on a terminal: a session you stay in (R69). You type, watch it work, stop it, read what it held and
+apply it, in one place. `writ do` stays, for scripts. There is one column and no panes, and no alternate screen: it draws
+in the terminal's own scrollback, so history, search and copying stay the terminal's.
+
+Finished lines go up and are never touched again. Only the live rows at the bottom are redrawn, and only those that changed:
+the line the model is halfway through, prompts waiting their turn, a status row, and what is being typed. Pi's renderer was
+the starting point, but Pi clears the scrollback on a full redraw, and this never has to, since nothing above the live rows is
+ever drawn twice. Prose breaks at spaces as it flows. Code is not broken, so it pastes back, and the terminal wraps it. Live
+rows are drawn with wrapping off, so a wrong guess about a character's width clips a row and cannot misplace one.
+
+What holds it together:
+
+- **One way out.** Only `screen.rs` writes to the terminal, every byte of text passes `term::scrub` there, and the only escape
+  sequences that leave are the ones spelled out in it. Its tests run a small terminal that fails on any other.
+- **A model's words have no colour, and all of writ's lines do.** A model can write `✓ tests passed`. It cannot write it in green.
+- **It asks the terminal nothing,** so there is no reply to forge, and it uses no mouse, title, clipboard or image.
+- **Only the keyboard decides.** A command is what a person typed, a line starting with a slash and a plain word. A paste is
+  only ever inserted, so it cannot submit itself, whatever it holds.
+- **The box is down whenever the prompt is yours.** It starts for a prompt and ends with it, so nothing in it is running while
+  you read, and what `/diff` shows is what `/apply` takes. The cost: a server a model started in one prompt is gone in the next,
+  and what it had read must be read again before an edit. It is planned afresh each time, so a secret file made since is masked too.
+- **One job at a time.** One thread does the model, the box and the gate, so `/apply` cannot run beside a model. A session lock
+  covers another terminal, and only one `writ` can have a session open, since two would both write its transcript.
+
+Ctrl-C or Esc stops what is running: curl goes, which tells the server to stop, or the whole box is killed, since only a dead
+box has certainly stopped. Every call in a stopped turn still gets an answer, and what the model had said stays, marked as
+interrupted, so the conversation can go on. A prompt sent while it runs waits its turn, and sending one then stopping is how
+to redirect it. Thinking is hidden until Ctrl-T shows it.
+
+`/diff`, `/apply`, `/undo`, `/use`, `/llama`, `/sessions`, `/new`, `/help`, `/quit`. Ctrl-L clears the screen. `writ --session NAME` goes on with one. On the
+way out it says what is held and whether the model stays loaded. A signal or a panic puts the terminal back first; stderr goes
+to a file in the session while it runs, since a stray line would land in the live rows.
+
+Left out: Markdown beyond code fences, tab completion, the mouse, and the Kitty keyboard protocol, which needs a query. Prose
+already in the scrollback does not reflow when the window changes size.
 
 ## The key (will be)
 
@@ -423,22 +461,22 @@ the design first asked for, which allowed the crates already in `Cargo.lock`.
 
 | Part | Lines |
 |---|---|
-| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,207 |
+| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,267 |
 | Attack suite: probe, check (is) | 1,128 |
 | Terminal sanitizer (is, with tests) | 149 |
+| The session on a terminal: renderer, line editor, screen and worker (is, with tests) | 2,172 |
 | Tools (is, with tests) | 877 |
-| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,389 |
-| The local server, as `work`, and its attacks (is, with tests) | 1,291 |
-| Loop, guards, masking, sessions (is, with tests) | 903 |
-| Gate (is, with tests) | 1,137 |
-| Command line (is) | 343 |
+| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,422 |
+| The local server, as `work`, and its attacks (is, with tests) | 1,306 |
+| Loop, guards, masking, sessions (is, with tests) | 1,191 |
+| Gate (is, with tests) | 1,141 |
+| Command line (is) | 359 |
 | OpenRouter's part of the provider (estimate) | 300 |
 | Hand-off, budgets (estimate) | 300 |
-| Renderer, line editor (estimate) | 650 |
 | `oath` tool, grants (estimate) | 300 |
-| **Total** | **about 10,000** |
+| **Total** | **about 11,900** |
 
-`docs/ideas.md` guessed the size of `cell` (2,900); that was low.
+`docs/ideas.md` guessed the size of `cell` (2,900); that was low. The renderer and line editor were estimated at 650 lines, and are 711 without their tests; the 919 for the session around them were not counted.
 
 ## Tested (is)
 
@@ -500,6 +538,6 @@ a session needs a test; a btrfs snapshot as the lower layer is the likely answer
    `llama-server`: its streams replay, an error ends a turn, and a truncated call never runs.
 3. Tools and loop, on a local model. Vulkan and the GPU in the box, so one good enough to judge runs. **Done 2026-11-04.**
 4. The gate. **Done 2026-11-04:** attacks through two real models left the real tree untouched until `apply`.
-5. Terminal.
+5. Terminal. **Done 2026-11-04.**
 6. `oath` tool, then `check/agent.toml` run through it.
 7. OpenRouter: the key, its stream's shapes from real captures, routing and budget.

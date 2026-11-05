@@ -20,6 +20,16 @@ extern "C" {
     pub fn close(fd: c_int) -> c_int;
     pub fn fcntl(fd: c_int, cmd: c_int, ...) -> c_int;
     pub fn setsid() -> c_int;
+    pub fn tcgetattr(fd: c_int, t: *mut Termios) -> c_int;
+    pub fn tcsetattr(fd: c_int, action: c_int, t: *const Termios) -> c_int;
+    pub fn cfmakeraw(t: *mut Termios);
+    pub fn ioctl(fd: c_int, request: u64, ...) -> c_int;
+    pub fn poll(fds: *mut Pollfd, count: u64, timeout_ms: c_int) -> c_int;
+    pub fn read(fd: c_int, buf: *mut std::ffi::c_void, count: usize) -> isize;
+    pub fn write(fd: c_int, buf: *const std::ffi::c_void, count: usize) -> isize;
+    pub fn dup(fd: c_int) -> c_int;
+    pub fn dup2(from: c_int, to: c_int) -> c_int;
+    pub fn signal(signal: c_int, handler: usize) -> usize;
     pub fn getuid() -> u32;
     pub fn _exit(code: c_int) -> !;
 }
@@ -29,6 +39,48 @@ pub struct Rlimit {
     pub cur: u64,
     pub max: u64,
 }
+
+/// glibc's `struct termios` on x86_64.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct Termios {
+    iflag: u32,
+    oflag: u32,
+    cflag: u32,
+    lflag: u32,
+    line: u8,
+    cc: [u8; 32],
+    ispeed: u32,
+    ospeed: u32,
+}
+
+impl Termios {
+    pub fn zeroed() -> Termios {
+        Termios { iflag: 0, oflag: 0, cflag: 0, lflag: 0, line: 0, cc: [0; 32], ispeed: 0, ospeed: 0 }
+    }
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub struct Winsize {
+    pub rows: u16,
+    pub cols: u16,
+    pub xpixel: u16,
+    pub ypixel: u16,
+}
+
+#[repr(C)]
+pub struct Pollfd {
+    pub fd: c_int,
+    pub events: i16,
+    pub revents: i16,
+}
+
+pub const TCSANOW: c_int = 0;
+pub const TIOCGWINSZ: u64 = 0x5413;
+pub const POLLIN: i16 = 1;
+pub const SIGHUP: c_int = 1;
+pub const SIGTERM: c_int = 15;
 
 pub const SYS_IOCTL: c_long = 16;
 pub const SYS_SOCKET: c_long = 41;
@@ -57,6 +109,7 @@ pub const RLIMIT_NPROC: c_int = 6;
 pub const RLIMIT_CORE: c_int = 4;
 
 pub const F_SETFD: c_int = 2;
+pub const FD_CLOEXEC: c_int = 1;
 
 pub const SIGKILL: c_int = 9;
 pub const SIGCONT: c_int = 18;
@@ -64,6 +117,7 @@ pub const SIGSTOP: c_int = 19;
 pub const CLOSE_RANGE_CLOEXEC: c_long = 4;
 
 pub const EPERM: c_int = 1;
+pub const EINTR: c_int = 4;
 pub const ESRCH: c_int = 3;
 pub const EAGAIN: c_int = 11;
 pub const ENOSYS: c_int = 38;
@@ -86,4 +140,10 @@ pub fn cloexec_above_stderr() {
     unsafe {
         syscall(SYS_CLOSE_RANGE, 3usize, u32::MAX as usize, CLOSE_RANGE_CLOEXEC);
     }
+}
+
+/// Whether `fd` has something to read, or has ended, within this long. A negative time waits for it.
+pub fn wait_readable(fd: c_int, timeout_ms: c_int) -> bool {
+    let mut p = Pollfd { fd, events: POLLIN, revents: 0 };
+    unsafe { poll(&mut p, 1, timeout_ms) > 0 }
 }

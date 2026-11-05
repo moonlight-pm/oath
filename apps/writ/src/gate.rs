@@ -407,13 +407,13 @@ fn is_text(b: &[u8]) -> bool {
 }
 
 /// Print what a session would change. Names and contents come from the box, so all of it is cleaned.
-fn show(upper: &Path, real: &Path, list: &[Change], names_only: bool) {
+pub fn show(upper: &Path, real: &Path, list: &[Change], names_only: bool, out: &mut dyn Write) {
     if list.is_empty() {
-        println!("nothing to apply");
+        let _ = writeln!(out, "nothing to apply");
         return;
     }
     for c in list {
-        println!("{}", line(c, real));
+        let _ = writeln!(out, "{}", line(c, real));
     }
     if names_only {
         return;
@@ -422,32 +422,32 @@ fn show(upper: &Path, real: &Path, list: &[Change], names_only: bool) {
         if c.kind != Kind::File {
             continue;
         }
-        println!("\n--- {}", name(&c.path));
+        let _ = writeln!(out, "\n--- {}", name(&c.path));
         let m = fs::symlink_metadata(upper.join(&c.path));
         if m.is_ok_and(|m| m.len() > MAX_DIFF_BYTES) {
-            println!("[too large to show]");
+            let _ = writeln!(out, "[too large to show]");
             continue;
         }
         let after = match read_plain(&upper.join(&c.path)) {
             Ok(b) => b,
             Err(e) => {
-                println!("[{}]", term::scrub(&e));
+                let _ = writeln!(out, "[{}]", term::scrub(&e));
                 continue;
             }
         };
         let before = match fs::symlink_metadata(real.join(&c.path)) {
             Ok(r) if r.is_file() && r.len() > MAX_DIFF_BYTES => {
-                println!("[too large to show]");
+                let _ = writeln!(out, "[too large to show]");
                 continue;
             }
             Ok(r) if r.is_file() => fs::read(real.join(&c.path)).unwrap_or_default(),
             _ => Vec::new(),
         };
         if !is_text(&after) || !is_text(&before) {
-            println!("[binary: {} bytes to {} bytes]", before.len(), after.len());
+            let _ = writeln!(out, "[binary: {} bytes to {} bytes]", before.len(), after.len());
             continue;
         }
-        print!("{}", unified(&String::from_utf8_lossy(&before), &String::from_utf8_lossy(&after)));
+        let _ = write!(out, "{}", unified(&String::from_utf8_lossy(&before), &String::from_utf8_lossy(&after)));
     }
 }
 
@@ -474,13 +474,16 @@ pub fn diff_main(args: &[OsString]) -> Result<i32, String> {
     let _hold = session.lock()?;
     let meta = Meta::load(&session.dir)?;
     let list = changes(&session.upper, &meta.project)?;
-    show(&session.upper, &meta.project, &list, names_only);
+    show(&session.upper, &meta.project, &list, names_only, &mut std::io::stdout());
     Ok(0)
 }
 
 /// Every session, newest last, and what each holds.
 pub fn sessions_main() -> Result<i32, String> {
-    let home = sandbox::home()?;
+    sessions(&sandbox::home()?, &mut std::io::stdout())
+}
+
+pub fn sessions(home: &Path, out: &mut dyn Write) -> Result<i32, String> {
     let dir = home.join(".local/share/writ/sessions");
     let mut found: Vec<(u64, String)> = Vec::new();
     for e in fs::read_dir(&dir).into_iter().flatten().flatten() {
@@ -492,10 +495,10 @@ pub fn sessions_main() -> Result<i32, String> {
     }
     found.sort();
     for (_, t) in &found {
-        println!("{t}");
+        let _ = writeln!(out, "{t}");
     }
     if found.is_empty() {
-        println!("no sessions");
+        let _ = writeln!(out, "no sessions");
     }
     Ok(0)
 }
@@ -713,11 +716,12 @@ pub fn apply(upper: &Path, dir: &Path, meta: &Meta, all: bool, named: &[PathBuf]
     let mut log = fs::OpenOptions::new().create(true).append(true).open(dir.join("undo.jsonl")).map_err(|e| e.to_string())?;
     for (i, c) in take.iter().enumerate() {
         let seq = undo_so_far.len() + i + (now() as usize % 1000) * 100_000;
+        let said = line(c, real);
         let lines = apply_one(upper, real, &undo_dir, seq, c).map_err(|e| format!("stopped at {}: {e}. What came before it is applied; `writ undo` takes it back", name(&c.path)))?;
         for l in lines {
             writeln!(log, "{l}").map_err(|e| e.to_string())?;
         }
-        let _ = writeln!(out, "{}", line(c, real));
+        let _ = writeln!(out, "{said}");
     }
     if !waiting.is_empty() {
         let _ = writeln!(out, "\nThese wait for your word, by name or with --all:");

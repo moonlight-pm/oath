@@ -6,6 +6,8 @@
 mod agent;
 mod chat;
 mod check;
+mod console;
+mod editor;
 mod gate;
 mod inner;
 mod json;
@@ -13,6 +15,7 @@ mod landlock;
 mod model;
 mod probe;
 mod sandbox;
+mod screen;
 mod seccomp;
 mod serve;
 mod sse;
@@ -33,6 +36,7 @@ const USAGE: &str = "\
 writ: run things in a box that cannot reach your keys, your home or the network.
 
 Usage:
+  writ [OPTIONS]               A session on this terminal: talk to the model, review, apply.
   writ check [--json] [-v]     Attack the box on this machine and report what got through.
   writ run [OPTIONS] -- CMD    Run one command in a box over the project.
   writ use [local] [OPTIONS]   Switch to the local model, and make sure it is loaded. Alone: which.
@@ -44,6 +48,12 @@ Usage:
   writ apply SESSION [PATH..]  Take its changes. What runs later waits for its name, or --all.
   writ undo SESSION            Take back what apply did.
   writ sessions                Every session, and what each holds.
+
+Options for writ, on a terminal:
+  --project DIR    The project. Default: this directory, or the session's.
+  --session NAME   Name the session, or go on with one. Default: a new one.
+  --max-turns N    For one prompt. Default: 100.
+  --timeout SECS   For one turn of the model. Default: 1800.
 
 Options for run:
   --project DIR    The project, mounted as an overlay. Default: this directory.
@@ -229,11 +239,11 @@ fn ask(args: &[OsString]) -> Result<i32, String> {
         None => {
             let prompt = prompt.ok_or("writ ask needs a prompt")?;
             let home = sandbox::home()?;
-            serve::ensure_loaded(&home)?;
+            serve::ensure_loaded(&home, &mut |t| eprintln!("writ: {t}"), &model::Cancel::default())?;
             let socket = serve::socket(&home);
             let tools = if tool { vec![model::READ_FILE] } else { vec![] };
             let body = chat::request("local", &[chat::message("user", &prompt)], &tools, max_tokens)?;
-            model::send(&model::Endpoint::Local(socket), &body, limit, record.as_deref(), show)?
+            model::send(&model::Endpoint::Local(socket), &body, limit, record.as_deref(), &model::Cancel::default(), show)?
         }
     };
     println!();
@@ -330,10 +340,16 @@ fn main() {
                 }
             }
         }
-        Some("-h") | Some("--help") | Some("help") | None => {
+        Some("-h") | Some("--help") | Some("help") => {
             print!("{USAGE}");
             0
         }
+        None if unsafe { sys::isatty(0) != 1 || sys::isatty(1) != 1 } => {
+            print!("{USAGE}");
+            0
+        }
+        None => session_verb(|| console::main(&args)),
+        Some(flag) if flag.starts_with("--") => session_verb(|| console::main(&args)),
         Some(other) => {
             eprintln!("writ: unknown command {other}\n\n{USAGE}");
             2

@@ -662,11 +662,14 @@ fn log_tail(dir: &Path) -> String {
     term::scrub(&lines[lines.len().saturating_sub(8)..].join("\n"))
 }
 
-fn wait_until_ready(dir: &Path, mut child: Option<&mut Child>) -> Result<(), String> {
+fn wait_until_ready(dir: &Path, mut child: Option<&mut Child>, cancel: &model::Cancel) -> Result<(), String> {
     let sock = dir.join(SOCKET_NAME);
     let endpoint = model::Endpoint::Local(sock.clone());
     let start = Instant::now();
     while !model::ready(&endpoint) {
+        if cancel.fired() {
+            return Err("interrupted: the server goes on loading".into());
+        }
         let gone = match &mut child {
             Some(c) => c.try_wait().map_err(|e| e.to_string())?.is_some(),
             None => UnixStream::connect(&sock).is_err(),
@@ -684,16 +687,16 @@ fn wait_until_ready(dir: &Path, mut child: Option<&mut Child>) -> Result<(), Str
 }
 
 /// Have the chosen model loaded, starting a server if none is up, and waiting if one is loading.
-pub fn ensure_loaded(home: &Path) -> Result<(), String> {
-    load(home, None)
+pub fn ensure_loaded(home: &Path, say: &mut dyn FnMut(&str), cancel: &model::Cancel) -> Result<(), String> {
+    load(home, None, say, cancel)
 }
 
-fn load(home: &Path, chosen: Option<&Load>) -> Result<(), String> {
+fn load(home: &Path, chosen: Option<&Load>, say: &mut dyn FnMut(&str), cancel: &model::Cancel) -> Result<(), String> {
     let dir = prepare_dir(home)?;
     let held = lock(&dir)?;
     if UnixStream::connect(dir.join(SOCKET_NAME)).is_ok() {
         drop(held);
-        return wait_until_ready(&dir, None);
+        return wait_until_ready(&dir, None, cancel);
     }
     let load = match (chosen, saved(home)?) {
         (Some(l), _) => l.clone(),
@@ -703,10 +706,15 @@ fn load(home: &Path, chosen: Option<&Load>) -> Result<(), String> {
     let log = fs::File::create(dir.join(LOG_NAME)).map_err(|e| format!("{}: {e}", dir.display()))?;
     let mut child = start_as_work(home, &load, &[], &dir, Some(log))?;
     drop(held);
-    eprintln!("writ: loading {}", load.say());
+    say(&format!("loading {}", load.say()));
     let start = Instant::now();
-    wait_until_ready(&dir, Some(&mut child))?;
-    eprintln!("writ: loaded in {} seconds", start.elapsed().as_secs());
+    let ready = wait_until_ready(&dir, Some(&mut child), cancel);
+    // It is this process's child for as long as this lasts, and a terminal session can outlast it.
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+    ready?;
+    say(&format!("loaded in {} seconds", start.elapsed().as_secs()));
     Ok(())
 }
 
@@ -743,13 +751,11 @@ pub fn status(home: &Path) -> String {
     }
 }
 
-/// `writ use`: which model, and `writ use local`: switch to it, and make sure it is loaded. New
-/// settings restart a server that has others, which ends what it was doing.
-pub fn use_main(args: &[OsString]) -> Result<i32, String> {
-    let home = sandbox::home()?;
+/// Which model, and with `local`, switch to it and make sure it is loaded. New settings restart a
+/// server that has others, which ends what it was doing. What comes back is one line to show.
+pub fn use_local(home: &Path, args: &[OsString], say: &mut dyn FnMut(&str), cancel: &model::Cancel) -> Result<String, String> {
     let Some(which) = args.first() else {
-        println!("local: {}", status(&home));
-        return Ok(0);
+        return Ok(format!("local: {}", status(home)));
     };
     if which != "local" {
         return Err(format!("{} is not a model writ can use: only `local`, so far", which.to_string_lossy()));
@@ -758,40 +764,49 @@ pub fn use_main(args: &[OsString]) -> Result<i32, String> {
     if !o.extra.is_empty() {
         return Err("arguments for the server go to `writ serve`".into());
     }
-    let base = match (saved(&home)?, &o.model) {
+    let base = match (saved(home)?, &o.model) {
         (Some(l), _) => l,
-        (None, Some(m)) => Load::for_this_machine(resolve_model(&home, m)?),
-        (None, None) => Load::for_this_machine(only_model(&models_dir(&home))?),
+        (None, Some(m)) => Load::for_this_machine(resolve_model(home, m)?),
+        (None, None) => Load::for_this_machine(only_model(&models_dir(home))?),
     };
-    let chosen = o.over(base, &home)?;
-    let dir = prepare_dir(&home)?;
+    let chosen = o.over(base, home)?;
+    let dir = prepare_dir(home)?;
     if UnixStream::connect(dir.join(SOCKET_NAME)).is_ok() && running(&dir).as_ref() != Some(&chosen) {
-        eprintln!("writ: restarting the server with these settings");
-        stop(&home)?;
+        say("restarting the server with these settings");
+        stop(home)?;
     }
-    load(&home, Some(&chosen))?;
+    load(home, Some(&chosen), say, cancel)?;
     // Only now: a model that would not load is not what later sessions should try.
-    let path = settings_path(&home);
+    let path = settings_path(home);
     if let Some(d) = path.parent() {
         fs::create_dir_all(d).map_err(|e| format!("{}: {e}", d.display()))?;
     }
     fs::write(&path, chosen.json()?).map_err(|e| format!("{}: {e}", path.display()))?;
-    println!("local: {}", status(&home));
+    Ok(format!("local: {}", status(home)))
+}
+
+/// The local server by hand. What comes back is one line to show.
+pub fn llama(home: &Path, args: &[OsString], say: &mut dyn FnMut(&str), cancel: &model::Cancel) -> Result<String, String> {
+    match args.first().and_then(|a| a.to_str()) {
+        Some("start") => {
+            ensure_loaded(home, say, cancel)?;
+            Ok(status(home))
+        }
+        Some("stop") => Ok(if stop(home)? { "stopped" } else { "not loaded" }.to_string()),
+        Some("status") | None => Ok(status(home)),
+        Some(other) => Err(format!("writ llama takes start, stop or status, not {other}")),
+    }
+}
+
+/// `writ use`.
+pub fn use_main(args: &[OsString]) -> Result<i32, String> {
+    println!("{}", use_local(&sandbox::home()?, args, &mut |t| eprintln!("writ: {t}"), &model::Cancel::default())?);
     Ok(0)
 }
 
-/// `writ llama`: the local server by hand.
+/// `writ llama`.
 pub fn llama_main(args: &[OsString]) -> Result<i32, String> {
-    let home = sandbox::home()?;
-    match args.first().and_then(|a| a.to_str()) {
-        Some("start") => {
-            ensure_loaded(&home)?;
-            println!("{}", status(&home));
-        }
-        Some("stop") => println!("{}", if stop(&home)? { "stopped" } else { "not loaded" }),
-        Some("status") | None => println!("{}", status(&home)),
-        Some(other) => return Err(format!("writ llama takes start, stop or status, not {other}")),
-    }
+    println!("{}", llama(&sandbox::home()?, args, &mut |t| eprintln!("writ: {t}"), &model::Cancel::default())?);
     Ok(0)
 }
 
