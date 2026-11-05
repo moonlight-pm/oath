@@ -5,6 +5,12 @@
 import json, os, re, subprocess, sys, tempfile, time, shutil
 SP = tempfile.mkdtemp(prefix='writ-terminal-')
 W = sys.argv[1]; tag = sys.argv[2]
+# What this tests is the local server, and a model on OpenRouter would be paid for.
+try:
+    if json.load(open(os.path.expanduser('~/.config/writ/use.json'))).get('provider') != 'local':
+        sys.exit('this machine is using a model on OpenRouter: `writ use local` first')
+except FileNotFoundError:
+    pass
 TM = ['tmux','-L',f'writ-real-{os.getpid()}','-f','/dev/null']
 results=[]
 def tm(*a, check=True):
