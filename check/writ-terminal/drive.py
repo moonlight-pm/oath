@@ -10,6 +10,12 @@ sock = f'{HOME}/.local/share/writ/llama/llama.sock'
 probe = socket.socket(socket.AF_UNIX)
 if os.path.exists(sock) and probe.connect_ex(sock) == 0:
     sys.exit('a local server is up: `writ llama stop` first')
+# The fake is a local server, and a model on OpenRouter would be real, and paid for.
+try:
+    if json.load(open(f'{HOME}/.config/writ/use.json')).get('provider') != 'local':
+        sys.exit('this machine is using a model on OpenRouter: `writ use local` first')
+except FileNotFoundError:
+    pass
 TM = ['tmux', '-L', f'writ-test-{os.getpid()}', '-f', '/dev/null']
 results = []
 def tm(*a, check=True):
@@ -179,6 +185,15 @@ try:
     check('Ctrl-T says what it did', 'thinking is shown' in history(), history()[-200:])
     keys('C-t'); time.sleep(0.2)
 
+    typed('/use')
+    check('/use says which model', wait(lambda: 'local: ' in history()), history()[-400:])
+    typed('/use elsewhere')
+    check('/use knows what it can use', wait(lambda: 'elsewhere is not a model writ can use' in history()), history()[-400:])
+    typed('/use openrouter')
+    check('/use openrouter asks which model', wait(lambda: 'which model?' in history()), history()[-400:])
+    typed('/use openrouter ../../etc/passwd')
+    check('a name that is no model goes nowhere', wait(lambda: "is not a model's name" in history()), history()[-400:])
+    check('and the model in use has not changed', not os.path.exists(f'{HOME}/.config/writ/use.json') or json.load(open(f'{HOME}/.config/writ/use.json'))['provider'] == 'local')
     typed('/quit')
     check('/quit goes back to the shell', wait(lambda: screen().rstrip().endswith('SHELL>')), screen())
     s = history()

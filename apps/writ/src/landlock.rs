@@ -23,8 +23,12 @@ const ABI1: u64 = (1 << 13) - 1;
 const SCOPE_ABSTRACT_UNIX: u64 = 1 << 0; // ABI 6
 const SCOPE_SIGNAL: u64 = 1 << 1; // ABI 6
 
+const NET_BIND_TCP: u64 = 1 << 0; // ABI 4
+const NET_CONNECT_TCP: u64 = 1 << 1; // ABI 4
+
 const CREATE_RULESET_VERSION: u32 = 1;
 const RULE_PATH_BENEATH: u32 = 1;
+const RULE_NET_PORT: u32 = 2;
 const O_PATH: i32 = 0o10000000;
 const O_CLOEXEC: i32 = 0o2000000;
 
@@ -39,6 +43,12 @@ struct RulesetAttr {
 struct PathBeneath {
     allowed_access: u64,
     parent_fd: i32,
+}
+
+#[repr(C)]
+struct NetPort {
+    allowed_access: u64,
+    port: u64,
 }
 
 extern "C" {
@@ -101,9 +111,10 @@ fn add_rule(ruleset: i32, path: &Path, allowed: u64) -> Result<(), String> {
 }
 
 /// Read and execute anywhere in the box, change only `writable`. `readable` is for a file handed
-/// in from outside the box's tree, which no rule on its root covers. `no_new_privs` must be set.
-/// Returns the ABI used, or 0 on a kernel without Landlock.
-pub fn restrict(writable: &[&Path], readable: &[&Path]) -> Result<i64, String> {
+/// in from outside the box's tree, which no rule on its root covers. `tcp`, if it says anything, is
+/// the only ports a box with a network may connect to, and it may listen on none. `no_new_privs` must
+/// be set. Returns the ABI used, or 0 on a kernel without Landlock.
+pub fn restrict(writable: &[&Path], readable: &[&Path], tcp: &[u16]) -> Result<i64, String> {
     let abi = abi();
     if abi == 0 {
         return Ok(0);
@@ -111,8 +122,8 @@ pub fn restrict(writable: &[&Path], readable: &[&Path]) -> Result<i64, String> {
     let h = handled(abi);
     let attr = RulesetAttr {
         handled_access_fs: h,
-        // Not handled: the namespace has no network, and loopback is for tests.
-        handled_access_net: 0,
+        // Otherwise not handled: the namespace has no network, and loopback is for tests.
+        handled_access_net: if abi >= 4 && !tcp.is_empty() { NET_BIND_TCP | NET_CONNECT_TCP } else { 0 },
         scoped: if abi >= 6 { SCOPE_ABSTRACT_UNIX | SCOPE_SIGNAL } else { 0 },
     };
     // A kernel takes the size it knows the fields for, and older ones know fewer.
@@ -140,6 +151,15 @@ pub fn restrict(writable: &[&Path], readable: &[&Path]) -> Result<i64, String> {
     }
     for r in readable {
         add_rule(ruleset, r, READ_FILE)?;
+    }
+    if attr.handled_access_net != 0 {
+        for p in tcp {
+            let rule = NetPort { allowed_access: NET_CONNECT_TCP, port: u64::from(*p) };
+            let r = unsafe { sys::syscall(sys::SYS_LANDLOCK_ADD_RULE, ruleset, RULE_NET_PORT, &rule as *const NetPort, 0u32) };
+            if r != 0 {
+                return Err(format!("landlock: rule for port {p}: errno {}", sys::errno()));
+            }
+        }
     }
 
     let r = unsafe { sys::syscall(sys::SYS_LANDLOCK_RESTRICT_SELF, ruleset, 0u32) };

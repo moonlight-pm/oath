@@ -38,6 +38,8 @@ pub struct Usage {
     pub cost: Option<f64>,
     /// Local servers report their speed.
     pub tokens_per_second: Option<f64>,
+    /// Who ran it, where a router says: who was sent what the model read.
+    pub provider: Option<String>,
 }
 
 /// What the model sent in one turn.
@@ -50,6 +52,8 @@ pub struct Turn {
     pub calls: Vec<Call>,
     pub finish: Finish,
     pub usage: Option<Usage>,
+    /// The error as it came, when one did: what to do next is in its fields, not its words.
+    pub error: Option<Value>,
 }
 
 impl Turn {
@@ -96,6 +100,8 @@ fn good_name(name: &str) -> bool {
 pub enum Delta<'a> {
     Content(&'a str),
     Reasoning(&'a str),
+    /// writ's own word on how the turn is going, and no part of what the model said.
+    Note(&'a str),
 }
 
 /// Turns the stream's bytes into a `Turn`.
@@ -108,6 +114,8 @@ pub struct Assembler {
     calls: Vec<Partial>,
     finish: Option<Finish>,
     usage: Option<Usage>,
+    provider: Option<String>,
+    error: Option<Value>,
     failed: Option<String>,
     done: bool,
 }
@@ -144,7 +152,11 @@ impl Assembler {
     fn event<F: FnMut(Delta)>(&mut self, data: &str, on: &mut F) -> Result<(), String> {
         let v = json::parse(data)?;
         if let Some(e) = v.get("error") {
+            self.error = Some(e.clone());
             return Err(error_text(e));
+        }
+        if let Some(p) = v.get("provider").and_then(|p| p.str()) {
+            self.provider = Some(p.to_string());
         }
         if let Some(u) = v.get("usage").filter(|u| !u.is_null()) {
             self.usage = Some(usage(u, v.get("timings")));
@@ -154,6 +166,7 @@ impl Assembler {
         };
         // An error after the stream began: the status was already 200.
         if let Some(e) = choice.get("error") {
+            self.error = Some(e.clone());
             return Err(error_text(e));
         }
         if let Some(delta) = choice.get("delta") {
@@ -173,7 +186,9 @@ impl Assembler {
                 }
             }
             if let Some(details) = delta.get("reasoning_details").and_then(|d| d.arr()) {
-                self.reasoning_details.extend_from_slice(details);
+                for d in details {
+                    add_detail(&mut self.reasoning_details, d);
+                }
             }
             if let Some(calls) = delta.get("tool_calls").and_then(|c| c.arr()) {
                 for c in calls {
@@ -209,12 +224,14 @@ impl Assembler {
             }
         };
         let p = &mut self.calls[at];
-        if let Some(id) = c.get("id").and_then(|i| i.str()) {
-            p.id.push_str(id);
+        // The first of each stands: the format does not say they come once, and some hosts send them
+        // again with every piece.
+        if let Some(id) = c.get("id").and_then(|i| i.str()).filter(|_| p.id.is_empty()) {
+            p.id = id.to_string();
         }
         if let Some(f) = c.get("function") {
-            if let Some(name) = f.get("name").and_then(|n| n.str()) {
-                p.name.push_str(name);
+            if let Some(name) = f.get("name").and_then(|n| n.str()).filter(|_| p.name.is_empty()) {
+                p.name = name.to_string();
             }
             if let Some(args) = f.get("arguments").and_then(|a| a.str()) {
                 if p.arguments.len() + args.len() > MAX_ARGUMENTS {
@@ -232,7 +249,12 @@ impl Assembler {
         let body = String::from_utf8_lossy(&self.sse.body).trim().to_string();
         // What failed before any event: the body is the reason, and may name it better.
         let from_body = (!body.is_empty()).then(|| match json::parse(&body) {
-            Ok(v) => v.get("error").map(error_text).unwrap_or(body.clone()),
+            Ok(v) => {
+                if let Some(e) = v.get("error") {
+                    self.error = Some(e.clone());
+                }
+                v.get("error").map(error_text).unwrap_or(body.clone())
+            }
             Err(_) => body.clone(),
         });
         let finish = if let Some(e) = self.failed {
@@ -260,15 +282,56 @@ impl Assembler {
                 .map(|p| Call { id: p.id, name: p.name, arguments: p.arguments })
                 .collect(),
             finish,
-            usage: self.usage,
+            usage: self.usage.map(|u| Usage { provider: self.provider, ..u }),
+            error: self.error,
+        }
+    }
+}
+
+/// One more piece of a turn's reasoning. A stream sends it a word at a time; what goes back is what
+/// a whole answer would have held, or a long thought would cost its words again in `{"type":...}`.
+/// Pieces of one block have the same type, index and format. Encrypted blocks stand alone.
+fn add_detail(list: &mut Vec<Value>, piece: &Value) {
+    let field = match piece.get("type").and_then(|t| t.str()) {
+        Some("reasoning.text") => "text",
+        Some("reasoning.summary") => "summary",
+        _ => {
+            list.push(piece.clone());
+            return;
+        }
+    };
+    let said = |v: &Value, key: &str| v.get(key).filter(|x| !x.is_null()).cloned();
+    let same = list.last().is_some_and(|last| {
+        ["type", "index", "format"].iter().all(|k| said(last, k) == said(piece, k))
+            && (said(last, "id").is_none() || said(piece, "id").is_none() || said(last, "id") == said(piece, "id"))
+    });
+    let (true, Some(Value::Obj(last)), Value::Obj(pairs)) = (same, list.last_mut(), piece) else {
+        list.push(piece.clone());
+        return;
+    };
+    for (k, v) in pairs {
+        match last.iter_mut().find(|(have, _)| have == k) {
+            Some((_, Value::Str(have))) if k == field => have.push_str(v.str().unwrap_or("")),
+            // A signature and an id arrive with one piece, and are null or absent in the others.
+            Some((_, have)) if have.is_null() => *have = v.clone(),
+            Some(_) => {}
+            None => last.push((k.clone(), v.clone())),
         }
     }
 }
 
 fn error_text(e: &Value) -> String {
-    match e.get("message").and_then(|m| m.str()) {
+    let message = match e.get("message").and_then(|m| m.str()) {
         Some(m) => m.to_string(),
         None => e.str().map(str::to_string).unwrap_or_else(|| e.text()),
+    };
+    // A router's word is often only "Provider returned error", and the provider's own is here.
+    match e.get("metadata").and_then(|m| m.get("raw")).filter(|r| !r.is_null()) {
+        Some(raw) => {
+            let raw = raw.str().map(str::to_string).unwrap_or_else(|| raw.text());
+            format!("{message}: {}", raw.chars().take(300).collect::<String>())
+        }
+        None => message,
     }
 }
 
@@ -284,6 +347,7 @@ fn usage(u: &Value, timings: Option<&Value>) -> Usage {
             .unwrap_or(0),
         cost: u.get("cost").and_then(|v| v.f64()),
         tokens_per_second: timings.and_then(|t| t.get("predicted_per_second")).and_then(|v| v.f64()),
+        provider: None,
     }
 }
 
@@ -294,8 +358,8 @@ pub struct Tool {
     pub parameters: &'static str,
 }
 
-/// One whole request. The tools go in every time: a model has no memory of them.
-pub fn request(model: &str, messages: &[Value], tools: &[Tool], max_tokens: u64) -> Result<String, String> {
+/// The fields of one whole request. The tools go in every time: a model has no memory of them.
+pub fn request_fields(model: &str, messages: &[Value], tools: &[Tool], max_tokens: u64) -> Result<Vec<(String, Value)>, String> {
     let mut pairs = vec![
         ("model", s(model)),
         ("messages", Value::Arr(messages.to_vec())),
@@ -317,11 +381,50 @@ pub fn request(model: &str, messages: &[Value], tools: &[Tool], max_tokens: u64)
         }
         pairs.push(("tools", Value::Arr(list)));
     }
-    Ok(Value::Obj(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect()).text())
+    Ok(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
+}
+
+pub fn request(model: &str, messages: &[Value], tools: &[Tool], max_tokens: u64) -> Result<String, String> {
+    Ok(Value::Obj(request_fields(model, messages, tools, max_tokens)?).text())
 }
 
 pub fn message(role: &str, content: &str) -> Value {
     obj([("role", s(role)), ("content", s(content))])
+}
+
+/// An assistant's message says which model wrote it when it holds reasoning, and that goes no further
+/// than the session.
+pub const WRITTEN_BY: &str = "written_by";
+
+/// A conversation as one model is sent it: `Some` a hosted one by name, `None` a local one. Reasoning
+/// goes back to the model that wrote it, unchanged, as some hosts demand, and to no other, since a
+/// signed block means nothing to it. A hosted API wants null for no words beside a call, and takes no
+/// empty message at all.
+pub fn for_model(messages: &[Value], model: Option<&str>) -> Vec<Value> {
+    let mut out = Vec::with_capacity(messages.len());
+    for m in messages {
+        let Value::Obj(pairs) = m else {
+            out.push(m.clone());
+            continue;
+        };
+        if m.get("role").and_then(|r| r.str()) != Some("assistant") {
+            out.push(m.clone());
+            continue;
+        }
+        let hosted = model.is_some();
+        let empty = hosted && m.get("content").and_then(|c| c.str()).is_some_and(str::is_empty);
+        if empty && m.get("tool_calls").is_none() {
+            continue;
+        }
+        let mine = hosted && m.get(WRITTEN_BY).and_then(|w| w.str()) == model;
+        let kept = pairs.iter().filter(|(k, _)| match k.as_str() {
+            WRITTEN_BY => false,
+            "reasoning" | "reasoning_details" => mine,
+            _ => true,
+        });
+        out.push(Value::Obj(kept.map(|(k, v)| (k.clone(), if empty && k == "content" { Value::Null } else { v.clone() })).collect()));
+    }
+    out
 }
 
 #[cfg(test)]
@@ -525,6 +628,106 @@ mod tests {
         let t = turn_of(&ended(s), None);
         assert_eq!(t.reasoning, "hm");
         assert_eq!(t.reasoning_details.unwrap().text(), r#"[{"type":"x","data":"é"}]"#);
+    }
+
+    fn details_chunk(json: &str) -> Vec<u8> {
+        chunk(&format!(r#"{{"choices":[{{"delta":{{"reasoning_details":[{json}]}}}}]}}"#))
+    }
+
+    #[test]
+    fn reasoning_a_word_at_a_time_goes_back_as_one_block() {
+        let mut s = details_chunk(r#"{"type":"reasoning.text","text":"need ","format":"anthropic-claude-v1","index":0,"signature":null}"#);
+        s.extend(details_chunk(r#"{"type":"reasoning.text","text":"to read","format":"anthropic-claude-v1","index":0,"signature":null}"#));
+        s.extend(details_chunk(r#"{"type":"reasoning.text","text":"","format":"anthropic-claude-v1","index":0,"signature":"sig"}"#));
+        // Another block, and one that is not text at all, stay apart.
+        s.extend(details_chunk(r#"{"type":"reasoning.text","text":"more","format":"anthropic-claude-v1","index":1}"#));
+        s.extend(details_chunk(r#"{"type":"reasoning.encrypted","data":"AAA","index":2}"#));
+        s.extend(details_chunk(r#"{"type":"reasoning.encrypted","data":"BBB","index":2}"#));
+        s.extend(chunk(r#"{"choices":[{"delta":{},"finish_reason":"stop"}]}"#));
+        let t = turn_of(&ended(s), None);
+        assert_eq!(
+            t.reasoning_details.unwrap().text(),
+            concat!(
+                r#"[{"type":"reasoning.text","text":"need to read","format":"anthropic-claude-v1","index":0,"signature":"sig"},"#,
+                r#"{"type":"reasoning.text","text":"more","format":"anthropic-claude-v1","index":1},"#,
+                r#"{"type":"reasoning.encrypted","data":"AAA","index":2},"#,
+                r#"{"type":"reasoning.encrypted","data":"BBB","index":2}]"#
+            )
+        );
+    }
+
+    /// The shapes OpenRouter documents, a comment first and the usage chunk repeating the reason.
+    #[test]
+    fn a_routers_stream_gives_the_turn_who_ran_it_and_what_it_cost() {
+        let stream = concat!(
+            ": OPENROUTER PROCESSING\n\n",
+            r#"data: {"id":"gen-1","provider":"DeepInfra","choices":[{"index":0,"delta":{"role":"assistant","reasoning":"need to read"},"finish_reason":null}]}"#, "\n\n",
+            ": OPENROUTER PROCESSING\n\n",
+            r#"data: {"id":"gen-1","provider":"DeepInfra","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"read","arguments":""}}]},"finish_reason":null}]}"#, "\n\n",
+            r#"data: {"id":"gen-1","provider":"DeepInfra","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"path\":\"a.rs\"}"}}]},"finish_reason":null}]}"#, "\n\n",
+            r#"data: {"id":"gen-1","provider":"DeepInfra","choices":[{"index":0,"delta":{"content":""},"finish_reason":"tool_calls","native_finish_reason":"tool_calls"}]}"#, "\n\n",
+            r#"data: {"id":"gen-1","provider":"DeepInfra","choices":[{"index":0,"delta":{"content":"","role":"assistant"},"finish_reason":"tool_calls","native_finish_reason":"tool_calls"}],"usage":{"prompt_tokens":812,"completion_tokens":31,"prompt_tokens_details":{"cached_tokens":800,"cache_write_tokens":0},"cost":6e-05,"is_byok":false}}"#, "\n\n",
+            "data: [DONE]\n\n"
+        );
+        let t = turn_of(stream.as_bytes(), None);
+        assert_eq!(t.finish, Finish::ToolCalls);
+        let calls = t.runnable().unwrap();
+        assert_eq!(calls[0].0.name, "read");
+        assert_eq!(calls[0].1.get("path").and_then(|p| p.str()), Some("a.rs"));
+        assert_eq!(t.reasoning, "need to read");
+        let u = t.usage.unwrap();
+        assert_eq!((u.prompt_tokens, u.completion_tokens, u.cached_tokens), (812, 31, 800));
+        assert_eq!(u.cost, Some(0.00006));
+        assert_eq!(u.provider.as_deref(), Some("DeepInfra"));
+    }
+
+    #[test]
+    fn an_id_and_a_name_sent_with_every_piece_are_not_doubled() {
+        let mut s = call_chunk(0, "call_1", "read", "{\"path\"", None);
+        s.extend(call_chunk(0, "call_1", "read", ":\"a\"}", Some("tool_calls")));
+        let r = turn_of(&ended(s), None).runnable().unwrap();
+        assert_eq!(r[0].0.id, "call_1");
+        assert_eq!(r[0].0.name, "read");
+        assert_eq!(r[0].1.get("path").and_then(|p| p.str()), Some("a"));
+    }
+
+    #[test]
+    fn an_error_keeps_its_fields_and_the_providers_own_words() {
+        let t = turn_of(&chunk(r#"{"error":{"code":429,"message":"Provider returned error","metadata":{"error_type":"rate_limit_exceeded","raw":"slow down"}},"choices":[{"delta":{"content":""},"finish_reason":"error"}]}"#), None);
+        assert_eq!(t.finish, Finish::Error("Provider returned error: slow down".into()));
+        let e = t.error.unwrap();
+        assert_eq!(e.get("code").and_then(|c| c.u64()), Some(429));
+        assert_eq!(e.get("metadata").unwrap().get("error_type").and_then(|k| k.str()), Some("rate_limit_exceeded"));
+        // Before the stream: a body, with the same fields.
+        let t = turn_of(br#"{"error":{"code":404,"message":"No allowed providers"}}"#, Some("curl exited with 22"));
+        assert_eq!(t.error.unwrap().get("code").and_then(|c| c.u64()), Some(404));
+    }
+
+    fn assistant(pairs: &str) -> Value {
+        json::parse(&format!(r#"{{"role":"assistant",{pairs}}}"#)).unwrap()
+    }
+
+    #[test]
+    fn reasoning_goes_back_only_to_the_model_that_wrote_it() {
+        let m = [assistant(r#""content":"a","reasoning_details":[{"type":"x"}],"written_by":"one""#), assistant(r#""content":"b","reasoning":"hm","written_by":"two""#)];
+        let to_one = for_model(&m, Some("one"));
+        assert_eq!(to_one[0].text(), r#"{"role":"assistant","content":"a","reasoning_details":[{"type":"x"}]}"#);
+        assert_eq!(to_one[1].text(), r#"{"role":"assistant","content":"b"}"#);
+        // A local model gets none, and nothing else about the message changes.
+        for m in for_model(&m, None) {
+            assert!(m.get("reasoning").is_none() && m.get("reasoning_details").is_none() && m.get(WRITTEN_BY).is_none());
+        }
+    }
+
+    #[test]
+    fn a_hosted_model_gets_null_beside_a_call_and_no_empty_message() {
+        let calls = r#""content":"","tool_calls":[{"id":"1"}]"#;
+        let m = [message("user", ""), assistant(calls), assistant(r#""content":"""#), message("tool", "")];
+        let hosted = for_model(&m, Some("x"));
+        assert_eq!(hosted.len(), 3);
+        assert_eq!(hosted[1].get("content"), Some(&Value::Null));
+        assert_eq!(hosted[2], message("tool", ""));
+        assert_eq!(for_model(&m, None), m);
     }
 
     #[test]

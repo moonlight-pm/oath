@@ -13,7 +13,7 @@ use crate::editor::{Decoder, Edit, Editor, Key};
 use crate::json::Value;
 use crate::model::Cancel;
 use crate::screen::{self, Row, Screen, Style};
-use crate::{gate, landlock, serve, sys, term};
+use crate::{gate, landlock, openrouter, sandbox, serve, sys, term};
 use std::collections::VecDeque;
 use std::ffi::OsString;
 use std::fs;
@@ -44,7 +44,9 @@ Ctrl-T shows or hides the model's thinking. Ctrl-L clears the screen. Ctrl-D lea
 /diff [--names]        what this session would change in your tree
 /apply [--all] [PATH]  take its changes; what runs later waits for its name, or --all
 /undo                  take back what apply did
-/use [local] [OPTIONS] which model; switch to it and make sure it is loaded
+/use                   which model
+/use local [OPTIONS]   switch to the local one, and make sure it is loaded
+/use openrouter [MODEL] [--budget DOLLARS]  switch to one on OpenRouter; `writ key` takes the key
 /llama [start|stop]    the local server by hand; stopping it frees what it held
 /sessions              every session, and what each holds
 /new                   a new session; this one stays as it is
@@ -126,10 +128,10 @@ enum Event {
     Thinking(String),
     Line(Style, String),
     Phase(String),
-    Usage(u64, Option<f64>),
+    Usage { used: u64, speed: Option<f64>, cost: Option<f64>, via: Option<String> },
     Context(u64),
     /// What the status row says when nothing is running.
-    State { id: String, held: usize, model: String, said: usize },
+    State { id: String, held: usize, model: String, said: usize, spent: f64 },
     Done,
     Closed,
 }
@@ -183,7 +185,7 @@ impl Report for Reporter {
     }
 
     fn usage(&mut self, u: &Usage) {
-        let _ = self.tx.send(Event::Usage(u.prompt_tokens + u.completion_tokens, u.tokens_per_second));
+        let _ = self.tx.send(Event::Usage { used: u.prompt_tokens + u.completion_tokens, speed: u.tokens_per_second, cost: u.cost, via: u.provider.clone() });
     }
 
     fn message(&mut self, m: &Value) {
@@ -199,6 +201,7 @@ impl Report for Reporter {
         let e = match d {
             Delta::Content(t) => Event::Words(self.clean.push(t.as_bytes())),
             Delta::Reasoning(t) => Event::Thinking(self.clean.push(t.as_bytes())),
+            Delta::Note(t) => return self.note(t),
         };
         let _ = self.tx.send(e);
     }
@@ -313,7 +316,7 @@ fn do_job(c: &mut Conversation, job: Job, tx: &Sender<Event>, cancel: &Cancel) -
             w.finish();
         }
         Job::Use(args) => {
-            let line = serve::use_local(&home, &args, &mut say, cancel)?;
+            let line = openrouter::choose(&home, &args, &mut say, cancel)?;
             let _ = tx.send(Event::Line(Style::Dim, line));
         }
         Job::Llama(args) => {
@@ -350,9 +353,9 @@ fn worker(mut c: Conversation, jobs: Receiver<Job>, tx: Sender<Event>, cancel: C
         if let Err(e) = do_job(&mut c, job, &tx, &cancel) {
             let _ = tx.send(Event::Line(Style::Bad, format!("  {e}")));
         }
-        let model = serve::status(c.home());
+        let model = openrouter::status_line(c.home());
         let held = c.held().map_or(0, |h| h.len());
-        let _ = tx.send(Event::State { id: c.id.clone(), held, model, said: c.messages() });
+        let _ = tx.send(Event::State { id: c.id.clone(), held, model, said: c.messages(), spent: openrouter::spent(c.dir()) });
         if !hello {
             let _ = tx.send(Event::Done);
         }
@@ -502,6 +505,9 @@ struct Ui {
     speed: Option<f64>,
     used: u64,
     context: u64,
+    spent: f64,
+    /// Who the model's host is, where one is named: who is being sent what it reads.
+    via: String,
     queued: VecDeque<String>,
     id: String,
     held: usize,
@@ -685,16 +691,21 @@ impl Ui {
             }
             Event::Line(style, text) => self.say(style, text),
             Event::Phase(p) => self.phase = p,
-            Event::Usage(used, speed) => {
+            Event::Usage { used, speed, cost, via } => {
                 self.used = used;
                 self.speed = speed;
+                self.spent += cost.unwrap_or(0.0);
+                if let Some(via) = via {
+                    self.via = term::scrub(&via).chars().take(40).collect();
+                }
             }
             Event::Context(n) => self.context = n,
-            Event::State { id, held, model, said } => {
+            Event::State { id, held, model, said, spent } => {
                 self.id = id;
                 self.held = held;
                 self.model = model;
                 self.said = said;
+                self.spent = spent;
             }
             Event::Done => {
                 self.running = None;
@@ -724,6 +735,12 @@ impl Ui {
         }
         if self.context > 0 && self.used > 0 {
             s.push_str(&format!(" · context {}%", self.used * 100 / self.context));
+        }
+        if self.spent > 0.0 {
+            s.push_str(&format!(" · ${:.4}", self.spent));
+        }
+        if !self.via.is_empty() {
+            s.push_str(&format!(" · by {}", self.via));
         }
         // Last, as the longest: a narrow window loses this first.
         if self.running.is_some() {
@@ -861,6 +878,8 @@ pub fn main(args: &[OsString]) -> Result<i32, String> {
         speed: None,
         used: 0,
         context: 0,
+        spent: 0.0,
+        via: String::new(),
         queued: VecDeque::new(),
         id: id.clone(),
         held: 0,
@@ -893,7 +912,7 @@ pub fn main(args: &[OsString]) -> Result<i32, String> {
     while !ui.closed && start.elapsed() < Duration::from_secs(3) {
         match rx.recv_timeout(Duration::from_millis(100)) {
             Ok(Event::Closed) => ui.closed = true,
-            Ok(Event::State { id, held, model, said }) => {
+            Ok(Event::State { id, held, model, said, .. }) => {
                 (ui.id, ui.held, ui.model, ui.said) = (id, held, model, said);
             }
             Ok(_) | Err(RecvTimeoutError::Timeout) => {}
@@ -914,8 +933,9 @@ pub fn main(args: &[OsString]) -> Result<i32, String> {
         }
         println!("{line}. `writ --session {id}` goes on.");
     }
-    if ui.model.starts_with("load") {
-        println!("writ: the model stays loaded, holding its memory: `writ llama stop` frees it.");
+    // Whichever model is in use: this one is holding memory either way.
+    if sandbox::home().is_ok_and(|h| serve::status(&h).starts_with("load")) {
+        println!("writ: the local model stays loaded, holding its memory: `writ llama stop` frees it.");
     }
     Ok(0)
 }

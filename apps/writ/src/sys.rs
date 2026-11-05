@@ -58,6 +58,12 @@ impl Termios {
     pub fn zeroed() -> Termios {
         Termios { iflag: 0, oflag: 0, cflag: 0, lflag: 0, line: 0, cc: [0; 32], ispeed: 0, ospeed: 0 }
     }
+
+    /// The same, but what is typed does not show.
+    pub fn without_echo(mut self) -> Termios {
+        self.lflag &= !ECHO;
+        self
+    }
 }
 
 #[repr(C)]
@@ -77,9 +83,11 @@ pub struct Pollfd {
 }
 
 pub const TCSANOW: c_int = 0;
+const ECHO: u32 = 0o10;
 pub const TIOCGWINSZ: u64 = 0x5413;
 pub const POLLIN: i16 = 1;
 pub const SIGHUP: c_int = 1;
+pub const SIGINT: c_int = 2;
 pub const SIGTERM: c_int = 15;
 
 pub const SYS_IOCTL: c_long = 16;

@@ -269,7 +269,7 @@ cargo make update --qemu <older output>
   reboots, checks PID 1 and the ESP
 ```
 
-## writ (optional package, R64–R66)
+## writ (optional package, R64–R70)
 
 ```
 apps/writ                            source; pkg:writ, /bin/writ where it is installed
@@ -280,6 +280,8 @@ writ → /bin/bwrap → /writ inner → the command
 ~/.local/share/writ/llama/           llama.sock, stop.sock and the log, in a 0700 directory of home's; no port (R65, R68)
 ~/.local/share/writ/models/          where a person keeps models; writ opens the file it is given
 ~/.config/writ/local.json            the model and settings `writ use local` settled on
+~/.config/writ/use.json              which model is in use, local unless `writ use` said otherwise
+~/.config/writ/openrouter.key        the key, 0600; `writ key` writes it, and no box can reach it
 writ use, do, ask, llama, serve → /bin/sudo -u work → writ serve-work → /bin/bwrap → /writ inner → /bin/llama-server
                                      as work, handed the model and the sockets' listening ends, open;
                                      the same layers; no project, no home;
@@ -288,6 +290,9 @@ writ serve-work                      outside the box, as work: relays to /run/us
                                      holds the GPU share, takes a stop
 writ ask → /bin/curl --config - → the socket
                                      one request, read back through chat.rs; it runs nothing
+writ on OpenRouter → /bin/bwrap → /writ inner --tcp 443 --tcp 53 → /bin/curl --config - → openrouter.ai
+                                     the key on stdin; the host's network, Landlock's ports, an empty environment,
+                                     /bin, /lib, the store and three files of /etc; what it spent is `spent` in the session
 writ                                 on a terminal: a thread for keys, one for the work, and this one for the screen,
                                      which alone writes to the terminal; the box below, for each prompt
 writ do → /bin/bwrap → /writ inner → /writ tools

@@ -751,16 +751,10 @@ pub fn status(home: &Path) -> String {
     }
 }
 
-/// Which model, and with `local`, switch to it and make sure it is loaded. New settings restart a
-/// server that has others, which ends what it was doing. What comes back is one line to show.
+/// Make sure the local model is loaded, with these settings. New settings restart a server that has
+/// others, which ends what it was doing. What comes back is one line to show.
 pub fn use_local(home: &Path, args: &[OsString], say: &mut dyn FnMut(&str), cancel: &model::Cancel) -> Result<String, String> {
-    let Some(which) = args.first() else {
-        return Ok(format!("local: {}", status(home)));
-    };
-    if which != "local" {
-        return Err(format!("{} is not a model writ can use: only `local`, so far", which.to_string_lossy()));
-    }
-    let o = options(&args[1..])?;
+    let o = options(args)?;
     if !o.extra.is_empty() {
         return Err("arguments for the server go to `writ serve`".into());
     }
@@ -796,12 +790,6 @@ pub fn llama(home: &Path, args: &[OsString], say: &mut dyn FnMut(&str), cancel: 
         Some("status") | None => Ok(status(home)),
         Some(other) => Err(format!("writ llama takes start, stop or status, not {other}")),
     }
-}
-
-/// `writ use`.
-pub fn use_main(args: &[OsString]) -> Result<i32, String> {
-    println!("{}", use_local(&sandbox::home()?, args, &mut |t| eprintln!("writ: {t}"), &model::Cancel::default())?);
-    Ok(0)
 }
 
 /// `writ llama`.

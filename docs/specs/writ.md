@@ -9,7 +9,7 @@ authorizes one specific act, which is what each grant here is. "Harness" already
 **Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`. A
 local model runs in a box of its own, on the CPU or novus's GPU, and `writ` can ask it one thing: `writ serve`,
 `writ ask`, R65, R66, as `work`, and `writ use local` loads it (R68). And it can work: `writ do` runs the loop and the tools in a box, its writes are held, and `writ diff`,
-`apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. `writ` alone is a session you stay in, on a terminal (R69). Still to come: OpenRouter and the `oath` tool.
+`apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. `writ` alone is a session you stay in, on a terminal (R69). A model on OpenRouter goes through the same loop and the same box (`writ key`, `writ use openrouter`, R70), built and attacked, with no real chat call yet. Still to come: the `oath` tool.
 
 Full research notes, about 3,300 lines with file and line references, are in
 `apocrypha/coding-agent-research/` (gitignored, not a source of truth; they quote
@@ -220,19 +220,25 @@ to a file in the session while it runs, since a stray line would land in the liv
 Left out: Markdown beyond code fences, tab completion, the mouse, and the Kitty keyboard protocol, which needs a query. Prose
 already in the scrollback does not reflow when the window changes size.
 
-## The key (will be)
+## The key (is)
 
-- A file under `~/.config/writ/`, 0600, opened `O_NOFOLLOW`. The core sets
-  `PR_SET_DUMPABLE(0)`, which blocks `/proc/*/environ` and `/proc/*/mem` from same-uid
-  processes. Every child's environment is built from empty.
-- HTTP is `/bin/curl` (Mbed TLS) as a child: header through `--config -` on stdin, never
-  argv or environment; `--proto =https`; `--max-redirs 0`; one host compiled in. No TLS
-  crate and no async runtime, which is what `oath update` does already.
-- **What this does not do:** any *unconfined* process as `home`, such as another agent
-  beside it, can read that file, and with passwordless `sudo` moving it to root would not
-  help. So: a dedicated key, a low spend limit on it, a ZDR guardrail bound to it, and
-  never a management key on a machine that runs agents. Redaction is not a control: it
-  fails open on encoding and chunking.
+- `~/.config/writ/openrouter.key`, 0600, opened `O_NOFOLLOW`, and refused if it is a link, another account's, readable
+  by anyone else, or anything but one line fit for a header. `writ key` takes it unseen, or from a pipe, and saves nothing
+  OpenRouter refuses. It is read for each request and not kept. The core is non-dumpable, which blocks `/proc/*/environ`
+  and `/proc/*/mem` from same-uid processes, and every child's environment is built from empty.
+- HTTP is `/bin/curl` (Mbed TLS) as a child: the header through `--config -` on stdin, never argv or environment, which a
+  test checks by reading a real curl's `/proc` while it is connected; `--proto =https`; `--max-redirs 0`; one host compiled
+  in, with only a path after it from writ. No TLS crate and no async runtime, which is what `oath update` does already.
+- **curl's box:** it holds the key while it talks, so it has little else: `/bin`, `/lib`, the store (its certificates are
+  there), and only the three files of `/etc` that resolve a name. No home, no `/oath` but the store, a tmpfs, an empty
+  environment, the same second stage as any box, and through Landlock TCP only to 443 and 53, and no listening. `writ check`
+  attacks it, and since it shares the host's network, Landlock is what keeps it from the machine's SSH, its abstract
+  sockets and the rest of the network.
+- **What this does not do:** an exploit of curl has the key and the network, and can send one over the other. Any
+  *unconfined* process as `home`, such as another agent beside it, can read that file, and with passwordless `sudo` moving
+  it to root would not help. So: a dedicated key, a low spend limit on it, a ZDR guardrail bound to it, and never a
+  management key on a machine that runs agents. `writ key` and `writ use` say when a key has no limit. Redaction is not a
+  control: it fails open on encoding and chunking.
 
 ## Tools (is) and approvals (will be)
 
@@ -279,10 +285,10 @@ as project text. They can steer it; they cannot widen anything.
 
 **Built (is), `agent.rs`:** exact replace then the ladder, and a refusal that names the line most like what was asked for; read-first and a
 staleness hash; windows of 2,000 lines or 24 KiB, with no line numbers, because a model copied them into `edit` until a guard stopped it; 8 KiB head and tail
-with the rest in the box's `/tmp`; masking at 60% of the context, counted by the server and estimated for what came since, stopping at 90% with nothing left to mask; a repeated call
+with the rest in the box's `/tmp`; masking at 60% of the context or 150,000 tokens, counted by the server and estimated for what came since, stopping at 90% with nothing left to mask; a repeated call
 warned at 3 and stopped at 5, unless something changed or its answer was masked; 3 repairs of a turn that ran out of tokens or held a bad call, and none of a stream that failed; a turn limit;
 2 nudges to a model that stops silently, on a failing command or an unchecked change;
-a transcript in the session, so `writ do --session` goes on. **Not yet:** hand-off to a fresh session, spend budgets, cycle detection, a project's check command as a nudge.
+a transcript in the session, so `writ do --session` goes on. A spend budget, on a hosted model. **Not yet:** hand-off to a fresh session, cycle detection, a project's check command as a nudge.
 
 ## Local models (is)
 
@@ -337,15 +343,15 @@ processes, which `writ check` attacks. What it does not: an exploit of the kerne
 driver, has everything whichever account it started from. And any other program running as `work` could reach the
 server's own socket, as it could signal the server.
 
-`writ ask PROMPT` sends one request through a `curl` child and shows the turn, cleaned. It runs nothing:
+`writ ask PROMPT` sends one request to the model in use through a `curl` child and shows the turn, cleaned. It runs nothing:
 with `--tool` it offers `read_file` and reports the call. `--record` keeps the stream's bytes, and
 `--replay` reads them back, which is where `testdata/` comes from.
 
 `chat.rs` turns a stream into a turn, and a call runs only if the stream reached `[DONE]` after
 `tool_calls` or `stop`, curl exited clean, and every call in the turn has a good name, an id of its
 own and arguments that parse to an object with no duplicate key. All of them or none. A real captured
-tool call is cut at every byte in a test, and nothing comes out runnable until the last byte. The
-OpenRouter section below still applies to the same code: its shapes have not been seen for real.
+tool call is cut at every byte in a test, and nothing comes out runnable until the last byte. OpenRouter goes through the
+same code.
 
 **The GPU.** `writ serve --gpu` puts the whole model on the GPU and gives the box NVIDIA's `nvidiactl` and
 `nvidia<N>`. That is all Vulkan compute needed on novus: no `nvidia-uvm`, `/sys` or `/etc`. The display's
@@ -374,29 +380,46 @@ The server's share of the GPU averaged 21–40% across the runs. In the three ru
 
 **A stronger model (will be).** Researched 2026-11-04, and none of this has been run here. For one 24 GiB card, the candidate is Qwen3.8 27B, `UD-Q4_K_XL` (unsloth, Apache-2.0, August 2026), a file of 16.4 GiB. It is architecture `qwen35`, which the pinned `llama-server` knows, and its template's bugs reach only clients that do not send one system message first. Blogs give it 61.7% on SWE-bench Pro and 90.3 on LiveCodeBench v6, not measured at Q4 here or, as far as found, by anyone independent, and on different benchmarks from its rivals. Devstral Small 2 (13.3 GiB at Q4_K_M, December 2025, SWE-bench Verified 68%) is the one that nearly fits beside the desk. What limits this is the card's memory, not the machine's. The desk held about 10 GiB of novus's 24 on 2026-11-04, Sola's Design and Browser 5.4 of it, leaving about 14 GiB, and Qwen3.8 would take an estimated 17.5–18. System memory does not make up for it: a split between card and RAM runs at the speed of the part in RAM, by an amount not measured, and writ has no option for it yet. A share would have to rise too: scaling from what was measured here gives an estimated 12 tokens a second at 40%, 20 at 70% and 30 at 100%. The plan, at Joshua's word: Qwen3.8 at 70% with those two apps closed, against Qwen3.5 on the same tasks. Models past about 40B do not fit at all, so hard work waits for OpenRouter.
 
-## OpenRouter (will be)
+## OpenRouter (is)
 
-Read from its documentation; nothing was called, and the wire shapes are composed, not
-captured. Estimated 600–800 lines plus 300 of tests.
+R70. `writ use openrouter AUTHOR/NAME [--budget DOLLARS]` switches to a model, and `writ use local` back; what it settled on
+is in `~/.config/writ/use.json`. No model is compiled in. It reads OpenRouter's public list of routes then, when a person
+chooses, and never at a start, and refuses a model with no route that keeps nothing and offers tools. It keeps the smallest
+context among those routes, since any can be chosen, and says what leaves the machine, the range of prices and what is left
+on the key. The status row shows what the session has spent and who ran the last turn.
 
-- **Endpoint:** Chat Completions. `/responses` is stateless too and has no per-block
-  `cache_control`.
-- **SSE:** skip `:` lines. Status applies only before commit; after that a failure is an
-  SSE `error` with `finish_reason:"error"`, even at zero tokens. Accumulate
-  `delta.tool_calls` by `index`. Send `tools` every request.
-- **Routing:** `provider:{zdr:true,data_collection:"deny",require_parameters:true}` on
-  each request, and a key-bound guardrail that a request cannot relax (tested,
-  [ideas.md](../ideas.md)). `max_price` is a hard filter. ZDR remains a policy promise.
-- **Cache:** byte-identical prefix, same slug, `session_id`. Auto Exacto can move
-  providers and lose it. **Open:** whether ZDR hosts for DeepSeek V4.x cache at all. It
-  is the main cost question and needs a real call.
-- **Replay:** `reasoning_details` verbatim, every tools request. DeepSeek also needs
-  `reasoning_content` on each assistant message, or 400.
-- **Model quirks as data:** Kimi (`$ref` alone, `enum` needs `type`, strip `index` on
-  replay), GLM (`tool_stream`), Qwen on DashScope (`enable_thinking`), DeepSeek (strip
-  leaked DSML from history, or replay teaches it).
-- **Errors:** branch on `limit_source` and `error.metadata.error_type`. `Retry-After` on
-  429 and 503, backoff on 408 and 502, stop on 403. `usage.cost` drives the budget.
+**Everything but the catalog is from the documentation:** a key is needed for a chat call, and none has been made, so its
+stream's shapes are still composed, and the tests run a real curl against a fake server.
+
+- **Endpoint:** Chat Completions. `/responses` is stateless too and has no per-block `cache_control`.
+- **SSE:** `:` lines are skipped. Status applies only before commit; after that a failure is an SSE `error` with
+  `finish_reason:"error"`, even at zero tokens. `delta.tool_calls` accumulate by `index`, the first `id` and `name` stand,
+  and `tools` go in every request. curl reports the status and `Retry-After` on stderr, apart from the stream.
+- **Routing:** `provider:{zdr:true,data_collection:"deny",require_parameters:true}` on each request, with no way to turn
+  it off. A key-bound guardrail is the part a request cannot relax (tested, [ideas.md](../ideas.md)), and it is the owner's
+  to set. ZDR remains a policy promise.
+- **Spending:** a session stops before a turn once `usage.cost` has reached its budget, $1 unless `--budget` says, and
+  `/use openrouter --budget` lets it go on. What it has spent is in the session, so it holds across a restart. A turn that
+  finishes without saying what it cost stops the session too, since then the budget cannot hold. A stream that fails says
+  nothing of its cost, so only the key's own limit covers those.
+- **Context:** old answers are masked at the lower of 60% or 150,000 tokens, and a turn may use up to 32,768 tokens where
+  the routes allow, against 8,192 on a local model, because a reasoning model thinks first.
+- **Cache:** byte-identical prefix, same slug, `session_id`. Auto Exacto can move providers and lose it. On 2026-11-04
+  OpenRouter's catalog said 41 of the 41 ZDR routes for `deepseek/deepseek-v4.1-flash-1017` cache reads, at $0.0015–$0.0105 a
+  million against $0.006–$0.45 for a miss, which answers what this file left open. **Open:** whether a real session gets
+  those hits. There is no `cache_control`, so Anthropic's and Alibaba's Qwen routes, which need one, do not cache.
+- **Replay:** reasoning goes back unchanged on every later request, to the model that wrote it and no other: a signed block
+  means nothing to another model, and a message holds whose it is. `reasoning_details` when a turn has them, merged from the
+  stream's pieces, or else `reasoning`. A local model is sent none of it. Beside a call, no words are sent as null, and an
+  empty message is not sent.
+- **Errors:** retried only when it is known to help: 408, 429, 5xx, a transient `error_type`, a lost connection or a stream
+  cut off. Three times at most, at `Retry-After` up to 300 seconds, or 2, 5 and 15. Whatever came of a failed try is dropped
+  from the conversation, though a person has seen it, and a note says so. A `limit_source` stops at once, except the
+  in-flight budget, which says when to come back. Every other failure stops, with its reason. Nothing retries a call that ran.
+
+**Not built, until a real call shows the need:** DeepSeek's `reasoning_content` on an assistant message with no reasoning
+(400 is the reported failure), Kimi's schema rules and its `index`, GLM's `tool_stream`, Qwen's `enable_thinking`, stripping
+leaked DSML from history, `max_price`. All are from other agents' source, not seen here.
 
 ## Oath-first
 
@@ -463,20 +486,20 @@ the design first asked for, which allowed the crates already in `Cargo.lock`.
 
 | Part | Lines |
 |---|---|
-| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,267 |
-| Attack suite: probe, check (is) | 1,128 |
+| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,300 |
+| Attack suite: probe, check (is) | 1,133 |
 | Terminal sanitizer (is, with tests) | 149 |
-| The session on a terminal: renderer, line editor, screen and worker (is, with tests) | 2,175 |
+| The session on a terminal: renderer, line editor, screen and worker (is, with tests) | 2,195 |
 | Tools (is, with tests) | 875 |
-| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,422 |
-| The local server, as `work`, and its attacks (is, with tests) | 1,306 |
-| Loop, guards, masking, sessions (is, with tests) | 1,192 |
+| Provider: JSON, SSE, a turn, curl (is, with tests) | 1,778 |
+| The local server, as `work`, and its attacks (is, with tests) | 1,294 |
+| Loop, guards, masking, sessions (is, with tests) | 1,342 |
 | Gate (is, with tests) | 1,141 |
-| Command line (is) | 359 |
-| OpenRouter's part of the provider (estimate) | 300 |
-| Hand-off, budgets (estimate) | 300 |
+| Command line (is) | 387 |
+| OpenRouter: the key, the choice, routes, spending, retries, curl's box and its attacks (is, 826 lines and 366 of tests) | 1,192 |
+| Hand-off (estimate) | 150 |
 | `oath` tool, grants (estimate) | 300 |
-| **Total** | **about 11,900** |
+| **Total** | **about 13,200** |
 
 `docs/ideas.md` guessed the size of `cell` (2,900); that was low. The renderer and line editor were estimated at 650 lines, and are 711 without their tests; the 919 for the session around them were not counted.
 
@@ -538,8 +561,8 @@ a session needs a test; a btrfs snapshot as the lower layer is the likely answer
 
 ## Open
 
-- **Model and route:** whether ZDR hosts for DeepSeek V4.x cache reads, and what that costs. It
-  takes a real call, and it comes with the provider.
+- **Model and route:** whether a real session gets the cache hits the catalog promises (R70), what that costs, and whether
+  Auto Exacto moving hosts loses them. It takes a real call.
 
 ## Order of work
 
@@ -550,4 +573,4 @@ a session needs a test; a btrfs snapshot as the lower layer is the likely answer
 4. The gate. **Done 2026-11-04:** attacks through two real models left the real tree untouched until `apply`.
 5. Terminal. **Done 2026-11-04.**
 6. `oath` tool, then `check/agent.toml` run through it.
-7. OpenRouter: the key, its stream's shapes from real captures, routing and budget.
+7. OpenRouter: the key, routing and budget. **Done 2026-11-04,** but for its stream's shapes from real captures, which take a key.

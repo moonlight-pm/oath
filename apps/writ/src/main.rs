@@ -1,7 +1,7 @@
-//! writ, Oath's coding agent (R64). What exists so far is its box, where everything a model
-//! will drive runs, with no network, no home, no terminal and no way to `sudo`; a local model
-//! served from a box of its own (R65); and the first half of talking to it. The real tree does
-//! not change until the owner says so. `docs/specs/writ.md` has the design.
+//! writ, Oath's coding agent (R64). Everything a model drives runs in a box, with no network, no
+//! home, no terminal and no way to `sudo`. The model is a local one, served from a box of its own
+//! (R65), or one on OpenRouter, reached by a curl in a box of its own. The real tree does not change
+//! until the owner says so. `docs/specs/writ.md` has the design.
 
 mod agent;
 mod chat;
@@ -13,6 +13,7 @@ mod inner;
 mod json;
 mod landlock;
 mod model;
+mod openrouter;
 mod probe;
 mod sandbox;
 mod screen;
@@ -39,11 +40,14 @@ Usage:
   writ [OPTIONS]               A session on this terminal: talk to the model, review, apply.
   writ check [--json] [-v]     Attack the box on this machine and report what got through.
   writ run [OPTIONS] -- CMD    Run one command in a box over the project.
-  writ use [local] [OPTIONS]   Switch to the local model, and make sure it is loaded. Alone: which.
+  writ use                     Which model is in use.
+  writ use local [OPTIONS]     Switch to the local model, and make sure it is loaded.
+  writ use openrouter [MODEL]  Switch to a model on OpenRouter, as openrouter.ai/models names it.
+  writ key                     Take an OpenRouter key, unseen, and keep it for this account only.
   writ llama start|stop|status The local server by hand. Stopping it frees what it held.
   writ serve --model FILE      Run a server here, as `work`, in a box, on a socket only you can reach.
-  writ ask [OPTIONS] PROMPT    Ask the local model one thing. It can run nothing.
-  writ do [OPTIONS] PROMPT     The local model works on the project, in a box, until it stops.
+  writ ask [OPTIONS] PROMPT    Ask the model in use one thing. It can run nothing.
+  writ do [OPTIONS] PROMPT     The model in use works on the project, in a box, until it stops.
   writ diff SESSION [--names]  What a session would change in your tree.
   writ apply SESSION [PATH..]  Take its changes. What runs later waits for its name, or --all.
   writ undo SESSION            Take back what apply did.
@@ -73,6 +77,13 @@ Options for use local and serve:
 
 `writ do` and `writ ask` load the chosen model if it is not loaded, and it stays loaded until
 `writ llama stop`.
+
+Options for use openrouter:
+  --budget DOLLARS What one session may spend before it stops. Default: 1. A key's own limit is
+                   what stops everything, so give it a low one.
+
+With a model on OpenRouter, what it reads leaves this machine. Each request asks for routes that
+promise to keep nothing, which cannot be checked from here.
 
 Options for ask:
   --tool           Offer one tool, read_file, and report the call the model makes.
@@ -230,6 +241,10 @@ fn ask(args: &[OsString]) -> Result<i32, String> {
                 }
                 t
             }
+            Delta::Note(t) => {
+                eprintln!("[writ] {}", term::scrub(t));
+                return;
+            }
         };
         let _ = out.write_all(clean.push(text.as_bytes()).as_bytes());
         let _ = out.flush();
@@ -239,11 +254,20 @@ fn ask(args: &[OsString]) -> Result<i32, String> {
         None => {
             let prompt = prompt.ok_or("writ ask needs a prompt")?;
             let home = sandbox::home()?;
-            serve::ensure_loaded(&home, &mut |t| eprintln!("writ: {t}"), &model::Cancel::default())?;
-            let socket = serve::socket(&home);
-            let tools = if tool { vec![model::READ_FILE] } else { vec![] };
-            let body = chat::request("local", &[chat::message("user", &prompt)], &tools, max_tokens)?;
-            model::send(&model::Endpoint::Local(socket), &body, limit, record.as_deref(), &model::Cancel::default(), show)?
+            let tools: &'static [chat::Tool] = if tool { &[model::READ_FILE] } else { &[] };
+            match openrouter::chosen(&home)? {
+                openrouter::Choice::OpenRouter(o) => {
+                    let mut show = show;
+                    let mut mind = openrouter::Hosted::for_question(o, &home, limit, tools, record.clone());
+                    agent::Mind::turn(&mut mind, &[chat::message("user", &prompt)], max_tokens, &mut show)?
+                }
+                openrouter::Choice::Local => {
+                    serve::ensure_loaded(&home, &mut |t| eprintln!("writ: {t}"), &model::Cancel::default())?;
+                    let socket = serve::socket(&home);
+                    let body = chat::request("local", &[chat::message("user", &prompt)], tools, max_tokens)?;
+                    model::send(&model::Endpoint::Local(socket), &body, limit, record.as_deref(), &model::Cancel::default(), show)?
+                }
+            }
         }
     };
     println!();
@@ -259,7 +283,9 @@ fn ask(args: &[OsString]) -> Result<i32, String> {
     }
     if let Some(u) = &turn.usage {
         let speed = u.tokens_per_second.map(|s| format!(", {s:.1} tokens/s")).unwrap_or_default();
-        eprintln!("[usage] {} in, {} out, {} cached{speed}", u.prompt_tokens, u.completion_tokens, u.cached_tokens);
+        let cost = u.cost.map(|c| format!(", ${c:.4}")).unwrap_or_default();
+        let via = u.provider.as_deref().map(|p| format!(", by {}", term::scrub(p))).unwrap_or_default();
+        eprintln!("[usage] {} in, {} out, {} cached{speed}{cost}{via}", u.prompt_tokens, u.completion_tokens, u.cached_tokens);
     }
     match &turn.finish {
         Finish::Stop | Finish::ToolCalls => Ok(0),
@@ -295,6 +321,7 @@ fn main() {
         Some("probe") => probe::main(rest),
         Some("probe-one") => probe::one(rest.first().and_then(|a| a.to_str())),
         Some("probe-serve") => serve::probe(rest),
+        Some("probe-net") => openrouter::probe(rest),
         Some("tools") => tools::main(),
         // As `work`, through sudo.
         Some("serve-work") => stage(serve::work_main, rest),
@@ -328,7 +355,8 @@ fn main() {
         Some("apply") => session_verb(|| gate::apply_main(rest)),
         Some("undo") => session_verb(|| gate::undo_main(rest)),
         Some("sessions") => session_verb(gate::sessions_main),
-        Some("use") => session_verb(|| serve::use_main(rest)),
+        Some("use") => session_verb(|| openrouter::use_main(rest)),
+        Some("key") => session_verb(|| openrouter::key_main(rest)),
         Some("llama") => session_verb(|| serve::llama_main(rest)),
         Some("ask") => {
             harden();

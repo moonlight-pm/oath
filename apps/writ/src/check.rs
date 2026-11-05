@@ -6,7 +6,7 @@
 use crate::agent::{self, Meta, ToolBox};
 use crate::json::{obj, s, Value};
 use crate::sandbox::{self, Plan, Session};
-use crate::{gate, landlock, serve, sys, term};
+use crate::{gate, landlock, openrouter, serve, sys, term};
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs;
@@ -392,6 +392,11 @@ fn attack(home: &Path, base: &Path, project: &Path, tag: &str) -> Result<Vec<Lin
     judge_refused_projects(&mut lines, home, &project.join("link-home"));
     session.remove()?;
     attack_serve_box(&mut lines, home, base, &env_text)?;
+    // The box a key's curl runs in, which has the network and so must have nothing else.
+    match openrouter::attacks(&env_text, &abstract_name, &sensitive(home)) {
+        Ok(text) => lines.extend(lines_of(&text)),
+        Err(e) => lines.push(Line { name: "curl box: the attacks ran".into(), state: "BROKEN".into(), detail: term::scrub(&e) }),
+    }
     attack_tools(&mut lines, home, project, &canary, &canary_text, &env_text, tag)?;
     Ok(lines)
 }
@@ -453,9 +458,9 @@ fn attack_tools(lines: &mut Vec<Line>, home: &Path, project: &Path, canary: &Pat
     let t = shell!(&format!("cat '{}'", canary.display()));
     judged("shell cannot reach a file outside the project", !t.contains(canary_text), "LEAK", "refused", &t);
     // Whether they are there, and no more: this reads no real secret, even in a broken box.
-    let there = format!("for f in '{}' '{}'; do test -e \"$f\" && echo THERE; done; true", home.join(".ssh/id_ed25519").display(), home.join(".claude/.credentials.json").display());
+    let there = format!("for f in '{}' '{}' '{}'; do test -e \"$f\" && echo THERE; done; true", home.join(".ssh/id_ed25519").display(), home.join(".claude/.credentials.json").display(), home.join(".config/writ/openrouter.key").display());
     let t = shell!(&there);
-    judged("shell cannot reach an SSH key or an agent's credentials", !t.contains("THERE"), "LEAK", "refused", &t);
+    judged("shell cannot reach an SSH key, an agent's credentials or writ's own key", !t.contains("THERE"), "LEAK", "refused", &t);
     let t = shell!("env; cat /proc/self/environ");
     judged("shell cannot see the host's environment", !t.contains(env_text), "LEAK", "refused", "");
     let t = shell!("tail -n +3 /proc/net/dev | cut -d: -f1 | tr -d ' ' | tr '\\n' ' '");

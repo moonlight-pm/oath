@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-04 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R69 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R70 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -46,9 +46,8 @@ append history (git has it).
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
 
-5. **`writ`, Oath's coding agent (R64–R69, [docs/specs/writ.md](docs/specs/writ.md)).** A model works on a project in a box: `writ` is a session on a terminal, which loads the model as `work`
-   (`/llama stop` frees it); its writes wait for `/diff`, `/apply`, `/undo`. Overlays on buccina and novus, at a 40% GPU share. Joshua has used it on Kirk, and after a fix to its prompt it did well; Qwen3.5 9B has also reported work falsely, so read its diffs, not its summaries. Next: more of
-   Joshua's real work. Qwen3.8 27B is the candidate for a stronger local model, and its test waits for his word: it needs Design and Browser closed. Then OpenRouter.
+5. **`writ`, Oath's coding agent (R64–R70, [docs/specs/writ.md](docs/specs/writ.md)).** A model works on a project in a box: `writ` is a session on a terminal, which loads the local model as `work`
+   (`/llama stop` frees it) or reaches one on OpenRouter (`writ key`, `/use openrouter AUTHOR/NAME`, R70); its writes wait for `/diff`, `/apply`, `/undo`. Overlays on buccina and novus, at a 40% GPU share. Joshua has used it on Kirk, and after a fix to its prompt it did well; Qwen3.5 9B has also reported work falsely, so read its diffs, not its summaries. OpenRouter is built and attacked, with no chat call yet. Next: a dedicated key from Joshua, with a low limit, then a real session: capture its stream, see whether DeepSeek takes our replay and whether its routes cache. Qwen3.8 27B is the candidate for a stronger local model, and its test waits for his word: it needs Design and Browser closed.
 
 ## Machines
 

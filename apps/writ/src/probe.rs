@@ -46,7 +46,7 @@ pub fn works(name: &str) {
 pub fn broken(name: &str, detail: &str) {
     emit(name, "BROKEN", detail);
 }
-fn skip(name: &str, detail: &str) {
+pub fn skip(name: &str, detail: &str) {
     emit(name, "skip", detail);
 }
 

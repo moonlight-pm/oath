@@ -37,6 +37,7 @@ pub fn main(args: &[OsString]) -> ! {
     let mut writable: Vec<PathBuf> = Vec::new();
     let mut readable: Vec<PathBuf> = Vec::new();
     let mut keep: Vec<i32> = Vec::new();
+    let mut tcp: Vec<u16> = Vec::new();
     let mut it = args.iter();
     let mut command: Vec<OsString> = Vec::new();
     while let Some(a) = it.next() {
@@ -52,6 +53,10 @@ pub fn main(args: &[OsString]) -> ! {
             Some("--keep-fd") => match it.next().and_then(|n| n.to_str()).and_then(|n| n.parse().ok()) {
                 Some(fd) => keep.push(fd),
                 None => stop("--keep-fd takes a number"),
+            },
+            Some("--tcp") => match it.next().and_then(|n| n.to_str()).and_then(|n| n.parse().ok()) {
+                Some(port) => tcp.push(port),
+                None => stop("--tcp takes a port"),
             },
             Some("--") => {
                 command = it.by_ref().cloned().collect();
@@ -93,7 +98,7 @@ pub fn main(args: &[OsString]) -> ! {
 
     let paths: Vec<&std::path::Path> = writable.iter().map(|p| p.as_path()).collect();
     let read: Vec<&std::path::Path> = readable.iter().map(|p| p.as_path()).collect();
-    if let Err(e) = landlock::restrict(&paths, &read) {
+    if let Err(e) = landlock::restrict(&paths, &read, &tcp) {
         stop(&e);
     }
     // Last: it refuses things the steps above may call.
