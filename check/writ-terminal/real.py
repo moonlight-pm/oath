@@ -44,6 +44,7 @@ typed('PS1="SHELL> "; clear'); time.sleep(0.3)
 try:
     typed(W)
     check('it starts with the model not loaded', wait(lambda: 'not loaded' in screen(),20), screen())
+    check('and says which the first prompt loads', 'the first prompt loads it' in screen(), screen())
     check('nothing runs as work yet', work()=='', work())
     typed('Reply with the single word: ready')
     check('the status row says it is loading', wait(lambda: 'loading the model' in screen() or 'thinking' in screen(),30), screen())

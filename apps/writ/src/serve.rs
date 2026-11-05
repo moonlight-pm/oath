@@ -476,7 +476,7 @@ impl Load {
             (true, 100) => "on the GPU".to_string(),
             (true, p) => format!("on the GPU at a {p}% share"),
         };
-        let mtp = if self.mtp { ", drafting with its MTP layer" } else { "" };
+        let mtp = if self.mtp { ", MTP drafting on" } else { "" };
         format!("{name}, a {}-token context, {place}{mtp}", self.context)
     }
 }
@@ -765,6 +765,18 @@ pub fn status(home: &Path) -> String {
         format!("loaded: {what}")
     } else {
         format!("loading: {what}")
+    }
+}
+
+/// The local model for a session's first lines: what is loaded, or what the first prompt loads.
+pub fn about(home: &Path) -> String {
+    let now = status(home);
+    if now.starts_with("load") {
+        return now;
+    }
+    match saved(home) {
+        Ok(Some(l)) => format!("{}; the first prompt loads it", l.say()),
+        _ => now,
     }
 }
 
@@ -1163,12 +1175,23 @@ mod tests {
     }
 
     #[test]
+    fn a_session_starts_by_saying_what_will_load() {
+        let home = std::env::temp_dir().join(format!("writ-about-{}", std::process::id()));
+        assert_eq!(about(&home), "not loaded");
+        let load = Load { model: "/m/a-mtp.gguf".into(), threads: None, context: 32768, gpu: true, share: 40, mtp: true };
+        fs::create_dir_all(settings_path(&home).parent().unwrap()).unwrap();
+        fs::write(settings_path(&home), load.json().unwrap()).unwrap();
+        assert_eq!(about(&home), "a-mtp.gguf, a 32768-token context, on the GPU at a 40% share, MTP drafting on; the first prompt loads it");
+        fs::remove_dir_all(&home).unwrap();
+    }
+
+    #[test]
     fn it_says_what_it_loaded() {
         let gpu = Load { model: "/m/a.gguf".into(), threads: None, context: 32768, gpu: true, share: 40, mtp: false };
         assert_eq!(gpu.say(), "a.gguf, a 32768-token context, on the GPU at a 40% share");
         assert_eq!(Load { share: 100, ..gpu.clone() }.say(), "a.gguf, a 32768-token context, on the GPU");
         assert_eq!(Load { gpu: false, share: 100, ..gpu.clone() }.say(), "a.gguf, a 32768-token context, on the CPU");
-        assert_eq!(Load { mtp: true, ..gpu }.say(), "a.gguf, a 32768-token context, on the GPU at a 40% share, drafting with its MTP layer");
+        assert_eq!(Load { mtp: true, ..gpu }.say(), "a.gguf, a 32768-token context, on the GPU at a 40% share, MTP drafting on");
     }
 
     #[test]

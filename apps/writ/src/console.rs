@@ -288,7 +288,9 @@ fn do_job(c: &mut Conversation, job: Job, tx: &Sender<Event>, cancel: &Cancel) -
         let _ = tx.send(Event::Line(Style::Note, format!("  {t}")));
     };
     match job {
-        Job::Hello => {}
+        Job::Hello => {
+            let _ = tx.send(Event::Line(Style::Dim, format!("model: {}", openrouter::about(&home))));
+        }
         Job::Prompt(text) => {
             let mut r = Reporter { tx: tx.clone(), transcript: c.transcript()?, clean: term::Clean::default() };
             let before = c.held().map_or(0, |h| h.len());

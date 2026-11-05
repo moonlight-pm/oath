@@ -56,6 +56,7 @@ try:
     typed(W)
     check('it starts, says where it is, and waits', wait(lambda: 'session s' in screen() and '> ' in screen() and 'loaded' in screen()), screen())
     check('the status row knows the model is up', 'a server' in screen() or 'loaded' in screen(), screen())
+    check('its first lines say which model', wait(lambda: 'model: local, loaded' in screen()), screen())
 
     typed('plain')
     check('a whole prompt runs to the end', wait(lambda: 'It says hello' in history()) and idle(), history())

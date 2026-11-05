@@ -432,6 +432,15 @@ pub fn use_main(args: &[OsString]) -> Result<i32, String> {
     Ok(0)
 }
 
+/// The model in use, said once as a session starts, with how it will run.
+pub fn about(home: &Path) -> String {
+    match chosen(home) {
+        Ok(Choice::OpenRouter(o)) => format!("{} on OpenRouter", o.model),
+        Ok(Choice::Local) => format!("local, {}", serve::about(home)),
+        Err(e) => e,
+    }
+}
+
 /// One line on the model in use, for the status row.
 pub fn status_line(home: &Path) -> String {
     match chosen(home) {

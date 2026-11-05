@@ -320,6 +320,8 @@ tool, so a model cannot change or restart what it runs on. `--mtp` (and `--no-mt
 draft with the model's own multi-token-prediction layer (`--spec-type draft-mtp`): it guesses a few tokens ahead and the
 model checks them in one pass, so the answers are the same and come sooner. A file without the layer does not load, and
 the server says so; Qwen3.8's base has one, ISTA ships a `-mtp` build of each size, and Bonsai 2's files have none.
+A session's first lines name the model and how it runs, `MTP drafting on` among it, whether it is loaded yet or the
+first prompt will load it.
 
 The server runs as `work` (R68), in a box like the project's with less in it: `/bin`, `/lib` and the store are there,
 and `/etc`, home and `/work` are not; the only places it can write are a small `/tmp` and its socket's directory, and
