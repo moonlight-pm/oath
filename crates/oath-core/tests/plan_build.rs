@@ -158,6 +158,32 @@ fn pack_shell_old(root: &Path) -> String {
 }
 
 #[test]
+fn only_a_recipe_is_listed_as_one() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    // What `oath build` leaves of the owner's own plan: the plan, and its
+    // product absent, with no `-src` pack of a vendor's file.
+    let p = PlanFile {
+        name: "own-build".into(),
+        produces: "pkg:own-build".into(),
+        build_needs: vec![],
+        run_needs: vec![],
+        script: "printf hi > /out/bin/hello\n".into(),
+    };
+    file_plan(d.path(), fmt_plan(&p).as_bytes()).unwrap();
+    let dir = d.path().join("objects/pkg/own-build");
+    std::fs::create_dir_all(&dir).unwrap();
+    let absent = json!({ "present": false, "hash": format!("sha256-{}", "0".repeat(64)) });
+    write_json(&dir.join("desired.json"), &absent).unwrap();
+    write_json(&dir.join("applied.json"), &absent).unwrap();
+    write_json(&dir.join("meta.json"), &Meta::new("pkg", "own-build", "mutate")).unwrap();
+
+    let idx = oath_core::Catalog::open(d.path()).unwrap().index_text().unwrap();
+    assert!(idx.contains("`sudo oath build plan:claude-code`"), "{idx}");
+    assert!(!idx.contains("own-build"), "{idx}");
+}
+
+#[test]
 fn fmt_lint_file_plan() {
     let d = tmp();
     seed(d.path()).unwrap();

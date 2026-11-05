@@ -102,13 +102,18 @@ initrd and PID 1 for the next boot; the boot before stays in the menu.
 }
 
 /// Packages that are a plan here and not a shipped pack (R23): the owner
-/// builds them on this machine.
+/// builds them on this machine. A recipe pins its vendor's file as
+/// `pkg:<name>-src`; any other absent product is what `oath build` left of
+/// the owner's own plan.
 fn recipe_block(cat: &Catalog) -> String {
     let mut lines = Vec::new();
     for id in cat.ls(Some("plan")).unwrap_or_default() {
         let pkg = crate::ObjectId::new("pkg", &id.name);
         let Ok(obj) = cat.get(&pkg) else { continue };
         if obj.desired.get("present") != Some(&serde_json::json!(false)) {
+            continue;
+        }
+        if cat.get(&crate::ObjectId::new("pkg", &format!("{}-src", id.name))).is_err() {
             continue;
         }
         let what = obj.desired.get("description").and_then(|d| d.as_str()).unwrap_or("");
