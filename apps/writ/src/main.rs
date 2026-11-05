@@ -35,7 +35,9 @@ writ: run things in a box that cannot reach your keys, your home or the network.
 Usage:
   writ check [--json] [-v]     Attack the box on this machine and report what got through.
   writ run [OPTIONS] -- CMD    Run one command in a box over the project.
-  writ serve --model FILE      Serve a local model from a box, on a socket only you can reach.
+  writ use [local] [OPTIONS]   Switch to the local model, and make sure it is loaded. Alone: which.
+  writ llama start|stop|status The local server by hand. Stopping it frees what it held.
+  writ serve --model FILE      Run a server here, as `work`, in a box, on a socket only you can reach.
   writ ask [OPTIONS] PROMPT    Ask the local model one thing. It can run nothing.
   writ do [OPTIONS] PROMPT     The local model works on the project, in a box, until it stops.
   writ diff SESSION [--names]  What a session would change in your tree.
@@ -48,12 +50,19 @@ Options for run:
   --session NAME   Keep writes in ~/.local/share/writ/sessions/NAME. Default: drop them.
   --timeout SECS   Kill the box after this long.
 
-Options for serve:
+Options for use local and serve:
+  --model FILE     A name in ~/.local/share/writ/models, or a path. `use` remembers it all.
+                   Default for use: the only model there.
   --threads N      CPU threads. Default: the server's choice.
-  --context N      Context size in tokens. Default: 16384.
+  --context N      Context size in tokens. Default for use: 32768 with a GPU, or 16384.
   --gpu            Give the box the GPU (NVIDIA's), and put the whole model on it.
+  --cpu            Do not. Default for use: the GPU if the machine has one.
   --gpu-share P    Hold the server to P percent of the GPU's time, by stopping it for the rest.
-  -- ARGS          Passed on to llama-server, in the box.
+                   Default for use: 40.
+  -- ARGS          For serve: passed on to llama-server, in the box.
+
+`writ do` and `writ ask` load the chosen model if it is not loaded, and it stays loaded until
+`writ llama stop`.
 
 Options for ask:
   --tool           Offer one tool, read_file, and report the call the model makes.
@@ -219,7 +228,9 @@ fn ask(args: &[OsString]) -> Result<i32, String> {
         Some(path) => model::replay(path, show)?,
         None => {
             let prompt = prompt.ok_or("writ ask needs a prompt")?;
-            let socket = serve::socket(&sandbox::home()?);
+            let home = sandbox::home()?;
+            serve::ensure_loaded(&home)?;
+            let socket = serve::socket(&home);
             let tools = if tool { vec![model::READ_FILE] } else { vec![] };
             let body = chat::request("local", &[chat::message("user", &prompt)], &tools, max_tokens)?;
             model::send(&model::Endpoint::Local(socket), &body, limit, record.as_deref(), show)?
@@ -249,6 +260,14 @@ fn ask(args: &[OsString]) -> Result<i32, String> {
     }
 }
 
+fn stage(run: fn(&[OsString]) -> Result<i32, String>, rest: &[OsString]) -> i32 {
+    harden();
+    run(rest).unwrap_or_else(|e| {
+        eprintln!("writ: {e}");
+        inner::REFUSED_TO_START
+    })
+}
+
 fn session_verb<F: FnOnce() -> Result<i32, String>>(verb: F) -> i32 {
     harden();
     verb().unwrap_or_else(|e| {
@@ -267,6 +286,9 @@ fn main() {
         Some("probe-one") => probe::one(rest.first().and_then(|a| a.to_str())),
         Some("probe-serve") => serve::probe(rest),
         Some("tools") => tools::main(),
+        // As `work`, through sudo.
+        Some("serve-work") => stage(serve::work_main, rest),
+        Some("serve-check") => stage(serve::check_main, rest),
         Some("check") => {
             harden();
             check::main(rest)
@@ -296,6 +318,8 @@ fn main() {
         Some("apply") => session_verb(|| gate::apply_main(rest)),
         Some("undo") => session_verb(|| gate::undo_main(rest)),
         Some("sessions") => session_verb(gate::sessions_main),
+        Some("use") => session_verb(|| serve::use_main(rest)),
+        Some("llama") => session_verb(|| serve::llama_main(rest)),
         Some("ask") => {
             harden();
             match ask(rest) {

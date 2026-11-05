@@ -547,9 +547,7 @@ pub fn main(args: &[OsString]) -> Result<i32, String> {
         Meta { project: plan.project.clone(), started: now() }.save(&session.dir)?;
     }
     let socket = serve::socket(&home);
-    if std::os::unix::net::UnixStream::connect(&socket).is_err() {
-        return Err(format!("no model is listening on {}: start `writ serve` first", socket.display()));
-    }
+    serve::ensure_loaded(&home)?;
     if landlock::abi() == 0 {
         eprintln!("writ: this kernel has no Landlock; the box rests on namespaces and seccomp");
     }

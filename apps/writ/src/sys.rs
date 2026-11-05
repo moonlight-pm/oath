@@ -18,6 +18,9 @@ extern "C" {
     pub fn getpid() -> c_int;
     pub fn getppid() -> c_int;
     pub fn close(fd: c_int) -> c_int;
+    pub fn fcntl(fd: c_int, cmd: c_int, ...) -> c_int;
+    pub fn setsid() -> c_int;
+    pub fn getuid() -> u32;
     pub fn _exit(code: c_int) -> !;
 }
 
@@ -52,6 +55,8 @@ pub const SECCOMP_MODE_FILTER: c_long = 2;
 
 pub const RLIMIT_NPROC: c_int = 6;
 pub const RLIMIT_CORE: c_int = 4;
+
+pub const F_SETFD: c_int = 2;
 
 pub const SIGKILL: c_int = 9;
 pub const SIGCONT: c_int = 18;

@@ -35,6 +35,8 @@ fn capabilities_are_empty() -> bool {
 
 pub fn main(args: &[OsString]) -> ! {
     let mut writable: Vec<PathBuf> = Vec::new();
+    let mut readable: Vec<PathBuf> = Vec::new();
+    let mut keep: Vec<i32> = Vec::new();
     let mut it = args.iter();
     let mut command: Vec<OsString> = Vec::new();
     while let Some(a) = it.next() {
@@ -42,6 +44,14 @@ pub fn main(args: &[OsString]) -> ! {
             Some("--write") => match it.next() {
                 Some(p) => writable.push(PathBuf::from(p)),
                 None => stop("--write takes a path"),
+            },
+            Some("--read") => match it.next() {
+                Some(p) => readable.push(PathBuf::from(p)),
+                None => stop("--read takes a path"),
+            },
+            Some("--keep-fd") => match it.next().and_then(|n| n.to_str()).and_then(|n| n.parse().ok()) {
+                Some(fd) => keep.push(fd),
+                None => stop("--keep-fd takes a number"),
             },
             Some("--") => {
                 command = it.by_ref().cloned().collect();
@@ -68,6 +78,11 @@ pub fn main(args: &[OsString]) -> ! {
         stop("a capability survived bwrap");
     }
     sys::cloexec_above_stderr();
+    for fd in keep {
+        if unsafe { sys::fcntl(fd, sys::F_SETFD, 0i32) } != 0 {
+            stop("a descriptor it was to keep is not open");
+        }
+    }
     let core = sys::Rlimit { cur: 0, max: 0 };
     let processes = sys::Rlimit { cur: MAX_PROCESSES, max: MAX_PROCESSES };
     if unsafe { sys::setrlimit(sys::RLIMIT_CORE, &core) } != 0
@@ -77,7 +92,8 @@ pub fn main(args: &[OsString]) -> ! {
     }
 
     let paths: Vec<&std::path::Path> = writable.iter().map(|p| p.as_path()).collect();
-    if let Err(e) = landlock::restrict(&paths) {
+    let read: Vec<&std::path::Path> = readable.iter().map(|p| p.as_path()).collect();
+    if let Err(e) = landlock::restrict(&paths, &read) {
         stop(&e);
     }
     // Last: it refuses things the steps above may call.

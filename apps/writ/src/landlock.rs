@@ -100,9 +100,10 @@ fn add_rule(ruleset: i32, path: &Path, allowed: u64) -> Result<(), String> {
     Ok(())
 }
 
-/// Read and execute anywhere in the box, change only `writable`. `no_new_privs` must be set.
+/// Read and execute anywhere in the box, change only `writable`. `readable` is for a file handed
+/// in from outside the box's tree, which no rule on its root covers. `no_new_privs` must be set.
 /// Returns the ABI used, or 0 on a kernel without Landlock.
-pub fn restrict(writable: &[&Path]) -> Result<i64, String> {
+pub fn restrict(writable: &[&Path], readable: &[&Path]) -> Result<i64, String> {
     let abi = abi();
     if abi == 0 {
         return Ok(0);
@@ -136,6 +137,9 @@ pub fn restrict(writable: &[&Path]) -> Result<i64, String> {
     add_rule(ruleset, Path::new("/proc"), (READ_FILE | WRITE_FILE | READ_DIR) & h)?;
     for w in writable {
         add_rule(ruleset, w, h & !(MAKE_CHAR | MAKE_BLOCK | IOCTL_DEV))?;
+    }
+    for r in readable {
+        add_rule(ruleset, r, READ_FILE)?;
     }
 
     let r = unsafe { sys::syscall(sys::SYS_LANDLOCK_RESTRICT_SELF, ruleset, 0u32) };

@@ -8,7 +8,7 @@ authorizes one specific act, which is what each grant here is. "Harness" already
 
 **Status:** the box is built (`apps/writ`, `pkg:writ`, 2026-11-03): `writ check` and `writ run`. A
 local model runs in a box of its own, on the CPU or novus's GPU, and `writ` can ask it one thing: `writ serve`,
-`writ ask`, R65, R66. And it can work: `writ do` runs the loop and the tools in a box, its writes are held, and `writ diff`,
+`writ ask`, R65, R66, as `work`, and `writ use local` loads it (R68). And it can work: `writ do` runs the loop and the tools in a box, its writes are held, and `writ diff`,
 `apply` and `undo` are the gate. A section marked *(is)* runs today; everything else will be. Still to come: OpenRouter, the `oath` tool, a real terminal.
 
 Full research notes, about 3,300 lines with file and line references, are in
@@ -154,6 +154,16 @@ broken eleven ways the same day (network or PID namespace shared; home, `/etc` o
 mounted; root or the model writable; the socket's directory read-only; environment kept by one layer
 or both; no second stage). It failed on every one.
 
+Since R68 those attacks run as `work`, through the `sudo` a real server goes through, with the model's
+descriptor handed in the same way, under a directory only `home` may enter. Before them, a `work` section
+attacks what an escape would find with the box gone: a file under home by path, home itself, an SSH key, an
+agent's credentials, writ's sockets and sessions, `home`'s runtime directory, `sudo` both ways, a process of
+`home`'s, the catalog's lock. It asks whether a key is reachable and reads none. Broken nine ways on 2026-11-04
+(no `sudo`, so as `home`; a second descriptor kept; the model's not kept; no Landlock rule for it; a model `work`
+could reach by path; `sudo` answering; `home`'s process reachable; the socket's directory left out; a model anyone
+may write), it failed on eight. The ninth was a second wall: Landlock held the writable model read-only, and with
+that rule opened too, it failed. `writ` now also refuses such a model, for a kernel without Landlock.
+
 ## The gate (is)
 
 Writes land in `~/.local/share/writ/sessions/<id>/upper`, and sessions do not see each other. `gate.rs` reads
@@ -255,20 +265,39 @@ directory and at `GGML_BACKEND_PATH`, so a small patch stops that; `build.sh` pl
 and the check does fail without the patch. Its file tools remain, behind `--tools`, which nothing
 here passes.
 
-`writ serve --model FILE`: a box like the project's, with less in it. The model is read-only at
-`/model.gguf`; `/bin`, `/lib` and the store are there, and `/etc`, home and `/work` are not; the
-only places it can write are a small `/tmp` and the socket's directory. It has no network link at all.
-It listens on `~/.local/share/writ/llama/llama.sock`, in a directory only `home` can enter, so `work`,
-a project's box and a web page cannot reach it, and no port is open. It runs as `home`, which R55 would
-make `work`: neither account can reach the other's directory, so `work` cannot make a socket only `home`
-reaches. A CPU without AVX2 gets a sentence, not an illegal instruction.
+`writ use local` switches to the local model and makes sure it is loaded. It takes the only `.gguf` in
+`~/.local/share/writ/models`, or `--model`, and on a machine with a GPU it starts with all of the model on it, a 32,768-token
+context and a 40% share. What it settles on goes in `~/.config/writ/local.json`, once it has loaded, so a model that
+would not load does not stay chosen. New settings restart a server that has others. `writ use` says what is loaded.
+`writ do` and `writ ask` load it if it is not, so choosing is all a person has to do, and `writ llama start`, `stop` and
+`status` do it by hand. It stays loaded until stopped, which holds its memory and uses no compute: there is no idle
+timeout. `writ serve --model FILE` is the same server in the foreground, with its log on the terminal. None of this is a
+tool, so a model cannot change or restart what it runs on.
 
-As a service, on a machine that wants one always loaded:
+The server runs as `work` (R68), in a box like the project's with less in it: `/bin`, `/lib` and the store are there,
+and `/etc`, home and `/work` are not; the only places it can write are a small `/tmp` and its socket's directory, and
+it has no network link at all. `work` can reach nothing of `home`'s by path, which is the point, so `home` hands over
+what it needs, open, through `sudo -u work`, which closes nothing:
 
-```
-sudo oath new svc:llama --from-json '{"exec":["/bin/writ","serve","--model","/home/.local/share/writ/models/M.gguf"],"wants":[],"restart":"on-failure","enabled":true,"user":"home"}'
-sudo oath apply svc:llama
-```
+- **The model.** It stays in `home`'s directory, so an escape cannot change what a later start will parse. bwrap cannot
+  mount it: `--ro-bind-fd` resolves the descriptor's path first, as `work`, through `/home`. So the server opens
+  `/proc/self/fd/N`, with a Landlock rule for that one file, and that descriptor is the only one that enters the box. The
+  file must let others read it, and must not let them write it; `writ` refuses it otherwise. Its directories keep them out by path.
+- **The listening ends of `llama.sock` and `stop.sock`,** which `home` made in `~/.local/share/writ/llama`, a directory
+  only `home` can enter, so `work`, a project's box and a web page cannot reach them, and no port is open. A relay in
+  `writ serve-work`, as `work` and outside the box, carries each connection to the server's own socket in
+  `/run/user/2/writ-llama`. So nothing the box or `work` can write is anywhere `home` looks. Before this the box wrote
+  the directory `home`'s `curl` connects through, and a compromised server could have left a symlink there.
+- **A stop.** `home` cannot signal `work`'s process. Connecting to `stop.sock` stops the server, and the connection ends
+  when it has, so no PID is passed around.
+
+Its log goes to a file `home` opened and handed over, bounded per stream, and comes back scrubbed. No service and no boot
+step are involved, and `work` writes nothing of its own but that runtime directory.
+
+What the account buys: an escape that stops short of the kernel finds no keys, no `sudo` and no way into `home`'s
+processes, which `writ check` attacks. What it does not: an exploit of the kernel, which with `--gpu` includes NVIDIA's
+driver, has everything whichever account it started from. And any other program running as `work` could reach the
+server's own socket, as it could signal the server.
 
 `writ ask PROMPT` sends one request through a `curl` child and shows the turn, cleaned. It runs nothing:
 with `--tool` it offers `read_file` and reports the call. `--record` keeps the stream's bytes, and
@@ -362,7 +391,7 @@ one is on the incident table or lost on evidence. Any of them can come back by d
   it; it cannot judge it.
 - Exfiltration through network you grant.
 - A tired reviewer.
-- Other processes as `home`, outside the box.
+- Other processes as `home`, outside the box. Other processes as `work` can reach the local server's own socket.
 - Passwordless `sudo` turns any box failure into root at once. Whether a set password
   makes `sudo` ask is Open in decisions.md (R42).
 
@@ -394,20 +423,20 @@ the design first asked for, which allowed the crates already in `Cargo.lock`.
 
 | Part | Lines |
 |---|---|
-| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,182 |
-| Attack suite: probe, check (is) | 1,133 |
+| Box: sandbox, seccomp, Landlock, inner stage, sys (is, with tests) | 1,207 |
+| Attack suite: probe, check (is) | 1,128 |
 | Terminal sanitizer (is, with tests) | 149 |
 | Tools (is, with tests) | 877 |
-| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,379 |
-| `writ serve` and its attacks (is, with tests) | 550 |
+| Provider so far: JSON, SSE, a turn, curl (is, with tests) | 1,389 |
+| The local server, as `work`, and its attacks (is, with tests) | 1,291 |
 | Loop, guards, masking, sessions (is, with tests) | 903 |
 | Gate (is, with tests) | 1,137 |
-| Command line (is) | 319 |
+| Command line (is) | 343 |
 | OpenRouter's part of the provider (estimate) | 300 |
 | Hand-off, budgets (estimate) | 300 |
 | Renderer, line editor (estimate) | 650 |
 | `oath` tool, grants (estimate) | 300 |
-| **Total** | **about 9,200** |
+| **Total** | **about 10,000** |
 
 `docs/ideas.md` guessed the size of `cell` (2,900); that was low.
 

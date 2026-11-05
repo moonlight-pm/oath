@@ -118,11 +118,11 @@ pub fn send<F: FnMut(Delta)>(
     Ok(assembler.finish(transport))
 }
 
-/// What the server says about itself: its context's size, for one.
-pub fn props(endpoint: &Endpoint) -> Result<json::Value, String> {
+/// One small GET to the server: its body, or nothing if it said anything but yes.
+fn fetch(endpoint: &Endpoint, path: &str) -> Result<Vec<u8>, String> {
     let Endpoint::Local(socket) = endpoint;
-    let path = socket.to_str().ok_or("the socket's path is not UTF-8")?;
-    let c = format!("unix-socket = {}\nurl = \"http://localhost/props\"\nproto = \"=http\"\nmax-redirs = 0\nmax-time = 10\n", quote(path));
+    let socket = socket.to_str().ok_or("the socket's path is not UTF-8")?;
+    let c = format!("unix-socket = {}\nurl = \"http://localhost{path}\"\nproto = \"=http\"\nmax-redirs = 0\nmax-time = 10\n", quote(socket));
     let mut child = Command::new(CURL)
         .env_clear()
         .args(["-q", "--silent", "--show-error", "--fail", "--config", "-"])
@@ -137,9 +137,19 @@ pub fn props(endpoint: &Endpoint) -> Result<json::Value, String> {
     let mut out = Vec::new();
     child.stdout.take().ok_or("no stdout")?.take(4 << 20).read_to_end(&mut out).map_err(|e| e.to_string())?;
     if !child.wait().map_err(|e| e.to_string())?.success() {
-        return Err("the server gave no properties".into());
+        return Err(format!("the server did not answer {path}"));
     }
-    json::parse(&String::from_utf8_lossy(&out))
+    Ok(out)
+}
+
+/// What the server says about itself: its context's size, for one.
+pub fn props(endpoint: &Endpoint) -> Result<json::Value, String> {
+    json::parse(&String::from_utf8_lossy(&fetch(endpoint, "/props")?))
+}
+
+/// Whether the model is loaded: the server says no while it loads.
+pub fn ready(endpoint: &Endpoint) -> bool {
+    fetch(endpoint, "/health").is_ok()
 }
 
 /// A recorded stream, read as if it were arriving.

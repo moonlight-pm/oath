@@ -277,11 +277,15 @@ apps/writ                            source; pkg:writ, /bin/writ where it is ins
 ~/.cache/writ/check-*/               writ check's project and canary, removed when it ends
 writ → /bin/bwrap → /writ inner → the command
                                      user, mount, PID, net, IPC and UTS namespaces, Landlock, seccomp
-~/.local/share/writ/llama/llama.sock writ serve's socket, in a 0700 directory; no port (R65)
-~/.local/share/writ/models/          where a person keeps models; writ reads the file it is given
-writ serve → /bin/bwrap → /writ inner → /bin/llama-server
-                                     the same layers; the model read-only, no project, no home;
+~/.local/share/writ/llama/           llama.sock, stop.sock and the log, in a 0700 directory of home's; no port (R65, R68)
+~/.local/share/writ/models/          where a person keeps models; writ opens the file it is given
+~/.config/writ/local.json            the model and settings `writ use local` settled on
+writ use, do, ask, llama, serve → /bin/sudo -u work → writ serve-work → /bin/bwrap → /writ inner → /bin/llama-server
+                                     as work, handed the model and the sockets' listening ends, open;
+                                     the same layers; no project, no home;
                                      with --gpu, /dev/nvidiactl and /dev/nvidia<N> (R66)
+writ serve-work                      outside the box, as work: relays to /run/user/2/writ-llama/llama.sock,
+                                     holds the GPU share, takes a stop
 writ ask → /bin/curl --config - → the socket
                                      one request, read back through chat.rs; it runs nothing
 writ do → /bin/bwrap → /writ inner → /writ tools

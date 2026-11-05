@@ -43,7 +43,7 @@ around its snapshot. No hook is the default (crash-consistent).
 | `rivulet/` | `pkg:rivulet` (`pkgs/rivulet`) | the compositor: River 0.4.5 ported to C (R19); see [rivulet/README.md](rivulet/README.md) |
 | `cell/` | `pkg:cell` | run a container image over `crun` and `pasta`, Go's standard library only (R59); source, built by `pkgs/cell` |
 | `route/` | `pkg:route` | an HTTP router by host and path, Go's standard library only (R59); source, built by `pkgs/route` |
-| `writ/` | `pkg:writ` | the coding agent, Rust's standard library only (R64); so far its box, `writ check` and `writ run`, a local model in a box, on the CPU or a GPU, `writ serve` and `writ ask` (R65, R66), and the agent, `writ do`, with its writes held for `writ diff`, `apply` and `undo`; see [docs/specs/writ.md](../docs/specs/writ.md) |
+| `writ/` | `pkg:writ` | the coding agent, Rust's standard library only (R64); so far its box, `writ check` and `writ run`, a local model in a box, on the CPU or a GPU, `writ use local`, `writ llama` and `writ ask`, as `work` (R65, R66, R68), and the agent, `writ do`, with its writes held for `writ diff`, `apply` and `undo`; see [docs/specs/writ.md](../docs/specs/writ.md) |
 | `fetchme/` | `pkg:fetchme` | single-file payload the harness serves; fetch cases make `pkg:fetchme` with `url` `http://10.0.2.2:18765/fetchme` |
 
 The pins in `hello.plan` and `reloc.plan` name products in
