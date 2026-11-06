@@ -12,12 +12,14 @@ Overwrite this file when facts change; do not append a diary.
   `ssh home@10.0.0.169`; host key (`SHA256:pfTb2d1X…6EnEgw`) pinned in
   `build/known_hosts` and buccina's `~/.ssh/known_hosts`, taken on first
   contact. `ssh:local` lists buccina's key alone.
-- **Overlay:** [dulcia.json](dulcia.json) — hostname.
+- **Overlay:** [dulcia.json](dulcia.json) — hostname and Mountain time.
 - **Role:** a server, on the headless `base` profile. Installed
   2026-11-06 by `oath install` from the Samsung stick
   ([novus.md](novus.md)), then renamed from `oath` (generation 1).
   Agents change it at Joshua's word: AGENTS.md does not list it with
   canto and buccina.
 - **Running now:** `base` output `01f12aaf944d` (master `f929e20`),
-  generation 1, in sync. Timezone unset (UTC). The origin has no `base`
-  release, so `oath update` has nothing to take until one is published.
+  generation 2 (Mountain time, `MST7MDT,M3.2.0,M11.1.0`), in sync. A
+  command over SSH gets `TZ` once sshd restarts; a login shell has it
+  now. `oath update` offers `base` release `57192b33e6ab` (2026-11-06,
+  master `c76f4be`): `pkg:oath` moves, so it takes a reboot.
