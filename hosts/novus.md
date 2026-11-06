@@ -132,7 +132,7 @@ Overwrite this file when facts change; do not append a diary.
   --local` from buccina for a server: `base` output `01f12aaf944d`
   (master `f929e20`, 67/67 in QEMU, never published: the origin has no
   `base` release yet), hostname `oath`, no overlay, generation 0, root
-  `UUID=217f1550-e90d-4d6d-a411-20a36299188d`; an installer by `oath
-  install`. Its host key is not pinned. Boot it from the firmware's boot menu (F8), from a
+  `UUID=217f1550-e90d-4d6d-a411-20a36299188d`; it installed
+  [dulcia](dulcia.md) by `oath install`. Its host key is not pinned. Boot it from the firmware's boot menu (F8), from a
   back-panel port: behind the keyboard's USB 2.0 hub it resets four
   times and never becomes a disk.
