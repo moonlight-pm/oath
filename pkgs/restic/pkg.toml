@@ -113,14 +113,14 @@ sha256 = "2eb92ff13970bccd460efae14255bfc03bb51474da0137e477a60f95561acc30"
 file = "gomod/github.com/hashicorp/golang-lru/v2/@v/v2.0.7.zip"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/klauspost/compress/@v/v1.18.7.mod"
-sha256 = "0d66d6069d9e2fb875c5b464d15b2c80232cfc8991e6f88336ce461ca810e0cf"
-file = "gomod/github.com/klauspost/compress/@v/v1.18.7.mod"
+url = "https://proxy.golang.org/github.com/klauspost/compress/@v/v1.20.2.mod"
+sha256 = "0d4e90d99acbc19eea5706e7390f8c925b26b1f5861385bb4f1321d454a1d48c"
+file = "gomod/github.com/klauspost/compress/@v/v1.20.2.mod"
 
 [[source]]
-url = "https://proxy.golang.org/github.com/klauspost/compress/@v/v1.18.7.zip"
-sha256 = "4e5cef30576a158c16e824ebb9c1ded91d8331bf339655e95ebb19710050c39c"
-file = "gomod/github.com/klauspost/compress/@v/v1.18.7.zip"
+url = "https://proxy.golang.org/github.com/klauspost/compress/@v/v1.20.2.zip"
+sha256 = "f85b4729a966a3d0313310482a11b585f0be445a20b2ea0c967937fe14c17acc"
+file = "gomod/github.com/klauspost/compress/@v/v1.20.2.zip"
 
 [[source]]
 url = "https://proxy.golang.org/github.com/klauspost/cpuid/v2/@v/v2.2.11.mod"

@@ -1516,8 +1516,8 @@
     "version": "0.19.1",
     "license": "BSD-2-Clause AND MIT AND BSD-3-Clause AND Apache-2.0 AND MPL-2.0",
     "by": "plan",
-    "plan": "sha256-3831e0fb4403b269d84c008e4af12b768e85c36164e2a2a17a13900e813cb29a",
-    "product": "sha256-75964b4a90474698859c93449abdda4fd80dd148e14d4bfc47dc7a63a6855e15",
+    "plan": "sha256-81764f0b993f56d1c0db41f92cb4e2fd9d6660a7e6e1182487f8e7a910cc5ade",
+    "product": "sha256-9520130d15a33e28d00ec06b0e77e52fdccf7a60274db6c983dbc18fbcf8861b",
     "run": [
       "certs"
     ]

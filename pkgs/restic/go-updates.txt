@@ -1,7 +1,7 @@
 # Modules restic 0.19.1 pins behind their fixes: the lowest version with the fix
 # that is a week old (R57).
 github.com/go-jose/go-jose/v4 v4.1.6 # CVE-2026-116585, -116586, -116587
-github.com/klauspost/compress v1.18.7 # CVE-2026-63209
+github.com/klauspost/compress v1.20.2 # CVE-2026-63209, CVE-2026-116591
 go.opentelemetry.io/otel v1.45.0     # CVE-2026-41178
 go.opentelemetry.io/otel/sdk v1.45.0 # CVE-2026-81870
 golang.org/x/net v0.62.0             # CVE-2026-46600, -78659 and six more; it needs

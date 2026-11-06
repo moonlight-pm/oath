@@ -1,6 +1,6 @@
 # Written by `cargo make pkgs --fetch` (R57): when each package was published.
-pin f8d83acf3502687324cbb014dea3bc6115889ccb7e49b75cfc55158cc3727e75
-checked 2026-11-02
+pin 482bbd07095f04a5e8107be1a321f7b57aebc058396ae93d0dcfe006407c3cb2
+checked 2026-11-06
 source 2026-07-05T09:52:50+02:00
 module go github.com/anacrolix/fuse v0.3.1 2024-06-11T06:18:49Z baseline
 module go github.com/cenkalti/backoff/v4 v4.3.0 2024-01-02T22:56:19Z baseline
@@ -11,7 +11,7 @@ module go github.com/elithrar/simple-scrypt v1.4.1 2026-02-10T16:09:25Z baseline
 module go github.com/go-ini/ini v1.67.0 2022-08-08T11:35:30Z baseline
 module go github.com/google/uuid v1.6.0 2024-01-23T18:54:04Z baseline
 module go github.com/hashicorp/golang-lru/v2 v2.0.7 2023-09-21T18:26:40Z baseline
-module go github.com/klauspost/compress v1.18.7 2026-06-30T09:38:05Z baseline
+module go github.com/klauspost/compress v1.20.2 2026-10-12T09:34:06Z moved from=v1.18.7
 module go github.com/klauspost/cpuid/v2 v2.2.11 2025-06-25T09:40:59Z baseline
 module go github.com/klauspost/crc32 v1.3.0 2025-07-22T09:52:00Z baseline
 module go github.com/kr/fs v0.1.0 2018-05-06T03:17:01Z baseline
