@@ -198,6 +198,21 @@ impl ApplyHooks for Live {
                 ));
             }
             mounts = m.mounted;
+            // The seat's HID interfaces (R71) change now, not at the next plug.
+            if previous.map_or(&[][..], |p| &p.seat_hid[..]) != desired.seat_hid {
+                let nodes = oath_core::hid::open_nodes(
+                    Path::new("/sys"),
+                    Path::new("/dev"),
+                    &desired.seat_hid,
+                );
+                if nodes.is_empty() && !desired.seat_hid.is_empty() {
+                    eprintln!("host:local: seat_hid names no vendor interface plugged in now");
+                }
+                for n in &nodes {
+                    eprintln!("host:local: /dev/{n} is the seat's (root:home 0660)");
+                }
+                tel("oath", "seat_hid", json!({ "ids": desired.seat_hid, "nodes": nodes }));
+            }
         }
         Ok(Host {
             hostname: desired.hostname.clone(),
@@ -210,6 +225,7 @@ impl ApplyHooks for Live {
             publishers: desired.publishers.clone(),
             mounts,
             module_options: desired.module_options.clone(),
+            seat_hid: desired.seat_hid.clone(),
             autologin: desired.autologin,
         })
     }

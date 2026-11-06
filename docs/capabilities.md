@@ -23,7 +23,7 @@ gaps · `target` designed, not built.
 | Network | partial | `net:net0` dhcp or static; supervised dhcpcd; LAN names in `host:local.hosts`; `dig`; chrony | One NIC, chosen at boot |
 | SSH | shipped | OpenSSH's sshd (R36) as `home` (zsh, R27), keys from `ssh:local`, root denied, `host:local` env; `sftp-server`; daemons drop to `void`; `sudo` | — |
 | Login and seat | partial | `svc:login` (R42): `home`'s password, Argon2id; `oath password`; `host:local.autologin`; the seat's turns (`oath desk`); on canto | No password on metal yet; `sudo` asks none |
-| Devices | partial | modules by modalias; `dev:*` from sysfs; `host:local.mounts` by label or UUID, `/home` at boot (R45); sound, pads and `/dev/kvm` `home`'s (R22, R30, R33) | Node ownership is not a field |
+| Devices | partial | modules by modalias; `dev:*` from sysfs; `host:local.mounts`, `/home` at boot (R45); sound, pads, `/dev/kvm`, `seat_hid` `home`'s (R22, R30, R33, R71) | Node ownership a field only for HID |
 | Seed and overlays | shipped | profile `base`, extended; `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables; TIOCSTI off, R60; Landlock, Yama, R64); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | — |
 | Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps the last 5 boots; `oath update` pulls the newest signed output (R38), builds recipes, replaces overlays (`--keep`), makes what the profile gained, takes what it dropped (R47, R62) | No `--reboot`: an older PID 1 restarts the desk |

@@ -161,6 +161,25 @@ on the kernel command line, so a later one wins. Like mounts, they
 belong in the machine's overlay, never in a profile: another machine
 with the same driver gets none of them.
 
+## A device's own protocol
+
+A program on the desk (as `home`) may need to talk to a device in its
+own protocol: a wireless mouse's battery, say, which the kernel does
+not report. `host:local.seat_hid` lists such devices by
+`vendor:product`. `grep HID_ID /sys/class/hidraw/*/device/uevent` shows
+them: `0003:00003554:0000F510` is `3554:f510`.
+
+```
+sudo oath set host:local seat_hid='["3554:f510"]'
+sudo oath apply host:local
+```
+
+PID 1 makes the device's vendor interfaces (`/dev/hidraw*`) root:home
+0660, at once and whenever it is plugged in, whatever number it gets.
+An interface that carries a keyboard, a mouse or touch stays root's, so
+no program reads keys or motion; `oath apply` prints the nodes it gave.
+The list belongs to the machine, never a profile.
+
 ## Who you are
 
 Serial login is **root** (break-glass) when `svc:serial` is enabled.

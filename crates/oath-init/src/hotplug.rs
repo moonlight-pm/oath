@@ -108,7 +108,7 @@ impl Hotplug {
             crate::open_sound_nodes();
         }
         if added(&["input", "hidraw"]) {
-            crate::open_pad_nodes();
+            crate::open_input_nodes();
         }
         // A card's `add` can come before its control device exists, and
         // PipeWire takes a card only once it has one (SOUND_INITIALIZED, set

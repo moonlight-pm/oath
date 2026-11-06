@@ -59,6 +59,7 @@ impl ApplyHooks for MemHooks {
             publishers: desired.publishers.clone(),
             mounts: desired.mounts.clone(),
             module_options: desired.module_options.clone(),
+            seat_hid: desired.seat_hid.clone(),
             autologin: desired.autologin,
         })
     }
@@ -836,6 +837,26 @@ fn host_names_other_machines() {
     set(&cat, "host:local", "hosts", json!({})).unwrap();
     cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
     assert_eq!(cat.get(&id).unwrap().actual["hosts"], json!({}));
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+}
+
+#[test]
+fn host_seat_hid_lists_vendor_and_product() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "host:local".parse().unwrap();
+    for bad in [
+        json!(["3554"]),
+        json!(["3554:f510:0"]),
+        json!(["0x3554:f510"]),
+        json!(["3554:f510", "3554:F510"]),
+        json!("3554:f510"),
+    ] {
+        assert!(set(&cat, "host:local", "seat_hid", bad.clone()).is_err(), "{bad}");
+    }
+    set(&cat, "host:local", "seat_hid", json!(["3554:F510"])).unwrap();
+    cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["seat_hid"], json!(["3554:F510"]));
     assert!(cat.diff(Some(&id)).unwrap().is_empty());
 }
 

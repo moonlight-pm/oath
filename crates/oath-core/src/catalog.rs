@@ -967,6 +967,17 @@ impl Catalog {
                     crate::sshsig::parse_public_key(key)
                         .map_err(|e| Error::hint(format!("{id}: publishers: {e}"), hint()))?;
                 }
+                for (i, d) in h.seat_hid.iter().enumerate() {
+                    if !crate::hid::is_device_id(d) {
+                        return Err(Error::hint(
+                            format!("{id}: seat_hid: `{d}` is not vendor:product (`3554:f510`)"),
+                            hint(),
+                        ));
+                    }
+                    if h.seat_hid[..i].iter().any(|e| e.eq_ignore_ascii_case(d)) {
+                        return Err(Error::hint(format!("{id}: seat_hid: `{d}` twice"), hint()));
+                    }
+                }
                 for (path, m) in &h.mounts {
                     let why = crate::mounts::check_path(path)
                         .or_else(|| crate::mounts::check_source(&m.source))

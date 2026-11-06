@@ -72,6 +72,15 @@ steps = [
 ]
 
 [[case]]
+name = "seat-hid"
+about = "host:local.seat_hid takes vendor:product ids and refuses anything else; an apply says when no listed device is plugged in (the VM's input is virtio, with no hidraw), and undo takes it out (R71)."
+steps = [
+  { run = "sudo oath set host:local seat_hid='[\"3554\"]'", fails = true, expect = ["is not vendor:product"] },
+  { run = "sudo oath set host:local seat_hid='[\"3554:f510\"]' && sudo oath apply host:local 2>&1 && oath get host:local", expect = ["names no vendor interface plugged in now", "\"3554:f510\"", "in-sync"] },
+  { run = "sudo oath undo && oath get host:local", expect = ["undid to generation"], reject = ["3554:f510"] },
+]
+
+[[case]]
 name = "pkg-unlink-relink"
 about = "A removable package unlinks from /bin, keeps its store tree, and links again."
 metal = true

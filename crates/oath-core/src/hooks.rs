@@ -140,6 +140,7 @@ impl ApplyHooks for NullHooks {
             publishers: desired.publishers.clone(),
             mounts: desired.mounts.clone(),
             module_options: desired.module_options.clone(),
+            seat_hid: desired.seat_hid.clone(),
             autologin: desired.autologin,
         })
     }

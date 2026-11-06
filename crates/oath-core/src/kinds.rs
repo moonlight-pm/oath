@@ -98,6 +98,16 @@ pub struct Host {
     /// the next boot.
     #[serde(default)]
     pub module_options: BTreeMap<String, String>,
+    /// HID devices whose vendor interfaces belong to the seat, by USB
+    /// `vendor:product` (`3554:f510`) (R71): PID 1 makes a listed device's
+    /// hidraw nodes root:home 0660 when an interface has a vendor-defined
+    /// collection and no keyboard, mouse or digitizer one, so a program as
+    /// `home` speaks the device's own protocol (a mouse's battery) and
+    /// never reads its keys or motion (R44). On every plug, and at once
+    /// on apply. One machine's devices, never a default.
+    #[serde(default)]
+    #[schemars(inner(regex(pattern = r"^[0-9a-fA-F]{4}:[0-9a-fA-F]{4}$")))]
+    pub seat_hid: Vec<String>,
     /// The seat's console opens a shell as `home` without asking, and the
     /// desk starts unlocked (R42). Off, with a password set (`oath
     /// password`), the console asks for it and the desk starts locked.

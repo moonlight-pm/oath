@@ -6,6 +6,7 @@ mod error;
 pub mod efi;
 pub mod esp;
 mod hooks;
+pub mod hid;
 mod id;
 mod index;
 mod kinds;

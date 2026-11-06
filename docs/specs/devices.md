@@ -3,11 +3,13 @@
 Devices are hardware the system found, recorded as `dev:*` objects, and
 the kernel modules and firmware that make them work. Devices appear as
 objects on their own, and modules load by modalias at boot and on
-hotplug. Filesystems to mount are `host:local.mounts`; device-node rules
-as fields are the target.
+hotplug. Filesystems to mount are `host:local.mounts`, and the HID
+devices whose vendor interfaces the seat gets `host:local.seat_hid`;
+other device-node rules as fields are the target.
 
-**Status:** built, except device-node rules as fields. Discovery and
-hotplug were built 2026-10-16, mounts 2026-10-23.
+**Status:** built, except device-node rules as fields beyond `seat_hid`.
+Discovery and hotplug were built 2026-10-16, mounts 2026-10-23,
+`seat_hid` 2026-11-06.
 
 Replaces: T13 (devices), the module and firmware parts of T27 and T38.
 
@@ -89,7 +91,15 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   input device joydev took (it has a `js*`), its `js*` and `event*`
   nodes, and the `hidraw*` of its HID device; `/dev/uinput` is a static
   node (c 10:223), root:home 0660, whose first open loads `uinput`
-  through the kernel's `char-major-10-223` request. `/dev/kvm` is
+  through the kernel's `char-major-10-223` request. So is each
+  `hidraw*` of a device `host:local.seat_hid` lists by `vendor:product`
+  (R71), when that interface's report descriptor has a vendor-defined
+  top-level collection (usage page 0xFF00 to 0xFFFF) and no keyboard,
+  keypad, mouse, pointer or digitizer one: a program as `home` speaks the
+  device's own protocol (a wireless mouse's battery) and reads no keys or
+  motion (R44). It follows the device across plugs, whatever its number;
+  `oath apply` grants and takes back at once, and a `hidraw*` the seat no
+  longer gets is root:root 0600 again. `/dev/kvm` is
   root:home 0660 too (R33), so a build host's QEMU runs as `home` with
   KVM; devtmpfs makes it when coldplug loads `kvm-intel` or `kvm-amd`
   for the CPU, and a machine without virtualization has none. Display (`card*`)

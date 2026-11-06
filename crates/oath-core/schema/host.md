@@ -70,6 +70,13 @@ oath apply
 
 Running services keep their old `TZ` until they restart.
 
+A HID device's vendor interface for the desk (a mouse's battery, R71):
+
+```
+oath set host:local seat_hid='["3554:f510"]'
+oath apply host:local
+```
+
 Another machine on the LAN by name:
 
 ```

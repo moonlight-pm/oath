@@ -300,6 +300,7 @@ mod tests {
             publishers: Vec::new(),
             mounts: BTreeMap::new(),
             module_options: BTreeMap::new(),
+            seat_hid: Vec::new(),
             autologin: true,
         };
         host.hosts.insert("novus".into(), "10.0.0.5".into());
@@ -326,6 +327,7 @@ mod tests {
             publishers: Vec::new(),
             mounts: BTreeMap::new(),
             module_options: BTreeMap::new(),
+            seat_hid: Vec::new(),
             autologin: true,
         };
         assert_eq!(login_env(&host).get("TZ").map(String::as_str), Some("MST7MDT"));
