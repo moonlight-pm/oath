@@ -128,9 +128,10 @@ Overwrite this file when facts change; do not append a diary.
   host key the install printed, ending `Suecii`. canto's
   `~/.ssh/novus-oath.known_hosts` still has the old stick's key.
 - **The stick:** Joshua's Samsung Type-C 128 GB (`090c:1000`, serial
-  `0354422110003481`), desk output `cf238ebe3360` with novus's overlay
-  and `pkg:nvidia` (generation 1), root
-  `UUID=fcffae46-5f62-4304-97f4-d130910e66e5`; its host key is no
-  longer pinned. Boot it from the firmware's boot menu (F8), from a
+  `0354422110003481`), rewritten 2026-11-06 by `cargo make install
+  --local` from buccina: desk release `220c74bb6867`, generic (hostname
+  `oath`, no overlay, no `pkg:nvidia`), generation 0, root
+  `UUID=ba733f2d-73ca-4798-9919-ef74081dd63d`; an installer by `oath
+  install`. Its host key is not pinned. Boot it from the firmware's boot menu (F8), from a
   back-panel port: behind the keyboard's USB 2.0 hub it resets four
   times and never becomes a disk.
