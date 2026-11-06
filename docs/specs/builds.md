@@ -74,7 +74,9 @@ product's `pkg.needs`.
    (it drops to `home` after mounting `/proc`, which needs root).
 4. Hash `/out` and write `/oath/store/pkg/<name>/<product>/`. Build
    never sets `present` and never links `/bin`; that is still
-   `oath set` plus `oath apply`.
+   `oath set` plus `oath apply`. It creates the product's `pkg`
+   object, absent, if there is none; `--no-pkg` does not, for a
+   product that is only a build input to other plans.
 5. Record `product` and `inputs` on the plan's actual.
 
 A rebuild of the same plan and inputs that yields a different product

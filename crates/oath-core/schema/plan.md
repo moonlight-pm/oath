@@ -13,6 +13,8 @@ does not link `/bin`.
 
 - `oath fmt <path>` — write the only legal form to stdout (`-w` in place).
 - `oath build plan:<name>` — pin required; isolated, netless build.
+  It creates the product's `pkg` object if there is none; `--no-pkg`
+  does not, for a product that is only a build input to other plans.
 - `oath build --file <path>` — ad-hoc; does not copy into `store/plan/`.
 - `oath set plan:<name> --from-file <path>` — lint, store, pin.
 

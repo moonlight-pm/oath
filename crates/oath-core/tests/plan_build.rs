@@ -659,10 +659,10 @@ fn prebuild_fetch_relocate_file_and_skip() {
     );
 
     let hash = file_plan(d.path(), s.as_bytes()).unwrap();
-    let r2 = build_pinned(d.path(), "reloc").expect("first pinned");
+    let r2 = build_pinned(d.path(), "reloc", true).expect("first pinned");
     assert_eq!(r2.product, r1.product);
     assert_eq!(r2.plan_hash, hash);
-    let r3 = build_pinned(d.path(), "reloc").expect("second pinned");
+    let r3 = build_pinned(d.path(), "reloc", true).expect("second pinned");
     assert!(r3.skipped);
     assert_eq!(r3.product, r1.product);
     assert!(!d.path().join("bin/reloc").exists());
@@ -724,15 +724,43 @@ fn a_changed_plan_rebuilds_even_with_the_same_inputs() {
     };
     let one = fmt_plan(&plan(""));
     file_plan(d.path(), one.as_bytes()).unwrap();
-    let r1 = build_pinned(d.path(), "hello").unwrap();
+    let r1 = build_pinned(d.path(), "hello", true).unwrap();
     assert!(!r1.skipped);
-    assert!(build_pinned(d.path(), "hello").unwrap().skipped, "same plan, same inputs: cached");
+    assert!(
+        build_pinned(d.path(), "hello", true).unwrap().skipped,
+        "same plan, same inputs: cached"
+    );
 
     // New script, same inputs: must build again, and the different product
     // is not a "plan is not closed" error.
     let two = fmt_plan(&plan("printf 'v2\\n' > /out/bin/version\n"));
     file_plan(d.path(), two.as_bytes()).unwrap();
-    let r2 = build_pinned(d.path(), "hello").unwrap();
+    let r2 = build_pinned(d.path(), "hello", true).unwrap();
     assert!(!r2.skipped);
     assert_ne!(r2.product, r1.product);
+}
+
+#[test]
+fn a_build_input_leaves_no_pkg_object() {
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_shell(d.path());
+    let src = pack_src(d.path(), b"hello-from-src\n");
+    let plan = PlanFile {
+        name: "hello".into(),
+        produces: "pkg:hello".into(),
+        build_needs: vec![
+            PkgNeed { id: "pkg:bash".into(), hash: bb },
+            PkgNeed { id: "pkg:hello-src".into(), hash: src.clone() },
+        ],
+        run_needs: vec![],
+        script: format!(
+            "mkdir -p /out/bin\ncp /oath/store/pkg/hello-src/{src}/bin/hello /out/bin/hello\nchmod 0755 /out/bin/hello\n"
+        ),
+    };
+    file_plan(d.path(), fmt_plan(&plan).as_bytes()).unwrap();
+    let r = build_pinned(d.path(), "hello", false).unwrap();
+    assert!(d.path().join("store/pkg/hello").join(&r.product).is_dir(), "the product is stored");
+    assert!(!d.path().join("objects/pkg/hello").exists(), "and has no pkg object");
+    assert!(build_pinned(d.path(), "hello", false).unwrap().skipped, "the cache still holds");
 }

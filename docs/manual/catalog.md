@@ -76,7 +76,8 @@ first boots, objects come from:
   installed catalog, after the hostname and the SSH keys the installer
   writes.
 - **Plans** — `oath set plan:<name> --from-file` files a plan, and
-  `oath build` creates the product's `pkg` object if it is missing.
+  `oath build` creates the product's `pkg` object if it is missing
+  (`--no-pkg` does not, for a product only other plans build with).
 
 `oath seed` is the build- and install-time tool behind the first two.
 It is hidden from `oath --help`:

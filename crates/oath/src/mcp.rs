@@ -614,6 +614,9 @@ impl Server {
             }
             "build" => {
                 v.push("build".into());
+                if a.get("no_pkg") == Some(&json!(true)) {
+                    v.push("--no-pkg".into());
+                }
                 rest.extend(s("plan").map(|p| format!("plan:{p}")));
             }
             "file_plan" => {
@@ -1020,7 +1023,15 @@ fn tools() -> Vec<Tool> {
         "Build `plan:<name>` in the netless sandbox and store its product. Does not link /bin; \
          `logs` with `plan:<name>` shows the build."
             .into(),
-        vec![p("plan", Ty::Name, true, "The plan: `plan:<name>`.")],
+        vec![
+            p("plan", Ty::Name, true, "The plan: `plan:<name>`."),
+            p(
+                "no_pkg",
+                Ty::Bool,
+                false,
+                "Make no `pkg:<name>` object: the product is only a build input to other plans.",
+            ),
+        ],
         false,
         true,
         false,
@@ -1442,6 +1453,12 @@ mod tests {
                 vec!["update", "--keep=pkg:sola"],
             ),
             ("build", json!({ "plan": "hello" }), true, vec!["build", "--", "plan:hello"]),
+            (
+                "build",
+                json!({ "plan": "hello", "no_pkg": true }),
+                true,
+                vec!["build", "--no-pkg", "--", "plan:hello"],
+            ),
             (
                 "file_plan",
                 json!({ "name": "hello", "text": "#!oath-plan\n" }),

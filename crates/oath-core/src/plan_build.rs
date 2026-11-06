@@ -104,7 +104,7 @@ pub fn record_build(catalog_root: &Path, r: &BuildReport) -> Result<()> {
 pub fn build_file(catalog_root: &Path, path: &Path) -> Result<BuildReport> {
     let _lock = Catalog::open(catalog_root)?.lock()?;
     let (plan, bytes) = lint_path(path)?;
-    build_inner(catalog_root, &plan, &file_hash(&bytes), None, false)
+    build_inner(catalog_root, &plan, &file_hash(&bytes), None, false, true)
 }
 
 /// [`build_file`] for a caller that runs several builds of different
@@ -113,7 +113,7 @@ pub fn build_file(catalog_root: &Path, path: &Path) -> Result<BuildReport> {
 /// product stored, one build of this process at a time.
 pub fn build_file_concurrent(catalog_root: &Path, path: &Path) -> Result<BuildReport> {
     let (plan, bytes) = lint_path(path)?;
-    build_inner(catalog_root, &plan, &file_hash(&bytes), None, true)
+    build_inner(catalog_root, &plan, &file_hash(&bytes), None, true, true)
 }
 
 /// Serializes the store writes of this process's concurrent builds, so
@@ -144,7 +144,10 @@ fn store_lock(catalog_root: &Path, concurrent: bool) -> Result<Option<StoreLock>
     Ok(Some(StoreLock { _lock: Catalog::open(catalog_root)?.lock()?, _turn: turn }))
 }
 
-pub fn build_pinned(catalog_root: &Path, name: &str) -> Result<BuildReport> {
+/// `pkg_object` false leaves no `pkg:<name>` object behind (`oath build
+/// --no-pkg`): the product is only an input to other plans, which find it
+/// in the store by hash.
+pub fn build_pinned(catalog_root: &Path, name: &str, pkg_object: bool) -> Result<BuildReport> {
     let cat = Catalog::open(catalog_root)?;
     let _lock = cat.lock()?;
     let id = ObjectId::new(KIND_PLAN, name);
@@ -170,7 +173,7 @@ pub fn build_pinned(catalog_root: &Path, name: &str) -> Result<BuildReport> {
             "oath set plan:<name> --from-file <path>",
         ));
     }
-    build_inner(catalog_root, &plan, &hash, Some(&id), false)
+    build_inner(catalog_root, &plan, &hash, Some(&id), false, pkg_object)
 }
 
 fn build_inner(
@@ -179,6 +182,7 @@ fn build_inner(
     plan_hash: &str,
     plan_id: Option<&ObjectId>,
     concurrent: bool,
+    pkg_object: bool,
 ) -> Result<BuildReport> {
     let inputs = input_set_hash(&plan.build_needs);
     if let Some(id) = plan_id {
@@ -287,7 +291,9 @@ fn build_inner(
     }
     writeln!(log, "# product {product}")?;
 
-    ensure_pkg_object(catalog_root, plan, &product)?;
+    if pkg_object {
+        ensure_pkg_object(catalog_root, plan, &product)?;
+    }
     if let Some(id) = plan_id {
         write_json(
             &crate::status_path(catalog_root, id),

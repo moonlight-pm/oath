@@ -15,7 +15,7 @@ store. Do not set `present=false` on the base's fixed packages
 `pkg` object with `oath new pkg:<name>` (`present` defaults to true)
 and remove one with `oath rm`
 (both take effect at `oath apply`); `oath build` creates the product's
-object, and an install overlay can add others.
+object (not with `--no-pkg`), and an install overlay can add others.
 
 ## Fields
 

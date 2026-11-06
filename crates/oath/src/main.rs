@@ -92,6 +92,10 @@ enum Cmd {
         id: Option<String>,
         #[arg(long)]
         file: Option<PathBuf>,
+        /// Make no `pkg:<name>` object for the product: it is only a
+        /// build input to other plans.
+        #[arg(long, requires = "id")]
+        no_pkg: bool,
     },
     Diff {
         id: Option<String>,
@@ -457,7 +461,7 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Build { id, file }) => match (id, file) {
+        Some(Cmd::Build { id, file, no_pkg }) => match (id, file) {
             (Some(id), None) => {
                 let id: ObjectId = id.parse()?;
                 if id.kind != KIND_PLAN {
@@ -466,7 +470,7 @@ fn run() -> oath_core::Result<i32> {
                         "oath schema plan",
                     ));
                 }
-                let r = build_pinned(&cli.root, &id.name)?;
+                let r = build_pinned(&cli.root, &id.name, !no_pkg)?;
                 print_build(&r, cli.json);
                 Ok(0)
             }

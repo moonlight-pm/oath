@@ -36,7 +36,7 @@ for build and install tooling on the build host.
 | `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N`, `keep:N`. `-n N` for the last N |
 | `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50; `--json` gives `{id, path, lines}` |
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
-| `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin` |
+| `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin`. Creates the product's `pkg` object if it is missing; `--no-pkg` does not, for a product that is only a build input to other plans |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
 | `oath mcp` | These verbs as an MCP server on stdin/stdout, for an agent ([Agents](#agents)) |
 
