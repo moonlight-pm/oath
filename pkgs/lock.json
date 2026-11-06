@@ -61,7 +61,7 @@
     "version": "0.35.0",
     "license": "Apache-2.0 AND AGPL-3.0-only AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC AND CC0-1.0",
     "by": "plan",
-    "plan": "sha256-ce1dc3033d29d2ab68ae9cbbf163e5ed2ad14b631351ee7d33ed8ed5c4c3cc06",
+    "plan": "sha256-5bb860f26bf8984d049903c7eefeb31d7c9b207d9d5421c41caccf37a9d50656",
     "product": "sha256-29ee9c9e6a960a7774cee03400e21822fe05db36fcd4ec5788aa628733c296a2",
     "run": [
       "certs"
@@ -153,7 +153,7 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-7b200d2af36df044bd9420af9c81638ea6b4c1dda4c3605a55139a1677aae599",
+    "plan": "sha256-3e8df2486c78a3bc52e2c85b6b3e7bb6805ff797cd0d6cf7151333fd8e1804ed",
     "product": "sha256-bc9b74c2f1af7efbfbc8480537fd28bb34e53d9609aecb3b8482f565510e8476",
     "run": [
       "crun",
@@ -166,8 +166,8 @@
     "version": "3.132",
     "license": "MPL-2.0",
     "by": "plan",
-    "plan": "sha256-d0bdb6d1c2a0f862ac2d83d393e826e66965fa52221d1c6b0283e9c7af067df2",
-    "product": "sha256-eea759cd350d812e16310bd77368c96f168b5f40818431a1c5be8aef40e4e55c",
+    "plan": "sha256-5cf19f07152d8b6dd28854759d14983ecf45bbc3b76031e67bd1653445cd40ec",
+    "product": "sha256-dd0052627dd1192b25e0e5b588b1df4ba561d022d57725c986025dfbf532f111",
     "run": []
   },
   "cf": {
@@ -202,7 +202,7 @@
     "version": "2026.10.5",
     "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause",
     "by": "plan",
-    "plan": "sha256-6950079d122abd41f4585bd3d99944bd8f9650939913c8e7e00d80af0fff442b",
+    "plan": "sha256-e79ec80f0540eaa5f34bd4dc2538c3210bdb78ad064607499f588600423cbe76",
     "product": "sha256-b0e034a2f3475fbf922cddbb0711ca81dd495a5a272f1aa4ec04f7553c1cab6e",
     "run": [
       "certs"
@@ -463,7 +463,7 @@
     "version": "2.103.3",
     "license": "MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND MPL-2.0 AND ISC",
     "by": "plan",
-    "plan": "sha256-3db7c8268763313d15832e46e45209ab525148e733c5bb1ba9d57369a64fa79b",
+    "plan": "sha256-64feba400ca27b15af02f0015ccc4da329d1befccaff17086c753c660be2b425",
     "product": "sha256-d25c369abee3b82790fb2ce2f61565a5ca56a0be54f136d0aef927c572e5b58d",
     "run": [
       "certs"
@@ -1516,7 +1516,7 @@
     "version": "0.19.1",
     "license": "BSD-2-Clause AND MIT AND BSD-3-Clause AND Apache-2.0 AND MPL-2.0",
     "by": "plan",
-    "plan": "sha256-6ea594666ace33955c528b1f7d7cf19e78879f02df6251875da839f84461c928",
+    "plan": "sha256-3831e0fb4403b269d84c008e4af12b768e85c36164e2a2a17a13900e813cb29a",
     "product": "sha256-75964b4a90474698859c93449abdda4fd80dd148e14d4bfc47dc7a63a6855e15",
     "run": [
       "certs"
