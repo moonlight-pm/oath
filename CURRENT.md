@@ -23,9 +23,9 @@ append history (git has it).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
-   profile). R47: the profile pins Sola master `712b942d` (on CEF 156.0.15):
-   core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `f6011e8a6d9a` (2026-11-06; a pin moves PID 1's hash, so it takes a reboot). R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus wants `["3554:f510"]` once it runs `220c74bb6867`. Novus's Sola overlays (next@aa6e9f16) are the same code, so a plain update loses nothing. Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
+   profile). R47: the profile pins Sola master `0c99a6a5` (on CEF 156.0.15):
+   core `pkg:sola`, fifteen `pkg:sola-<app>` (`pkg:sola-oath`, the read-only package app, new), `svc:sola-vault`;
+   a pin moves PID 1's hash, so it takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus wants `["3554:f510"]` once it runs `220c74bb6867`. Novus's Sola overlays (next@aa6e9f16) are the same code, so a plain update loses nothing. Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with

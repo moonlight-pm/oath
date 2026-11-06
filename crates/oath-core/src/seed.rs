@@ -371,6 +371,7 @@ mod tests {
                 "sola-editor",
                 "sola-mail",
                 "sola-monitor",
+                "sola-oath",
                 "sola-paint",
                 "sola-preview",
                 "sola-projects",
