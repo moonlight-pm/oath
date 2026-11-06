@@ -6,9 +6,9 @@ Overwrite this file when facts change; do not append a diary.
   2026-08-30). Intel Core i7-10700T (8 cores, 16 threads), 64 GB. WD
   Green SN3000 NVMe, 1 TB (`nvme0n1`, serial `25152M800175`; GPT:
   512 MiB ESP + btrfs `@`, `@home`, `@work`). Intel graphics (`card0`).
-  UEFI. Its RTC runs five hours behind UTC (18:05 at 23:05 UTC, likely
-  local time from an earlier OS), so each boot starts five hours off
-  until chrony steps it, about 8 s in.
+  UEFI. Its RTC holds UTC since 2026-11-06 (`sudo hwclock --systohc
+  --utc`, which wrote `/etc/adjtime`); it had run five hours behind, so
+  boots started five hours off until chrony stepped them.
 - **Network:** DHCP, 10.0.0.169 (MAC `70:b5:e8:5b:7d:43`, `net0`,
   1 Gb/s). Reach: `ssh dulcia` from buccina (`~/.ssh/config`), or
   `ssh home@10.0.0.169`; host key (`SHA256:pfTb2d1X…6EnEgw`) pinned in
