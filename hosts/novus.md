@@ -123,7 +123,8 @@ Overwrite this file when facts change; do not append a diary.
   2026-10-30) that buccina's `ssh:local` lists (2026-10-31, Joshua), so
   `ssh buccina` logs in (the local DNS names it; its host key is pinned
   in `~/.ssh/known_hosts` by name and address); `~/.ssh/config` names
-  10.0.0.3 for `canto`. Both live in `/home`, outside the catalog. buccina reaches it with
+  10.0.0.3 for `canto`; `ssh dulcia` works by the local DNS, its host key
+  pinned in `~/.ssh/known_hosts` (2026-11-06). Both live in `/home`, outside the catalog. buccina reaches it with
   `ssh novus`: its `~/.ssh/known_hosts` and `build/novus-oath.known_hosts` hold the
   host key the install printed, ending `Suecii`. canto's
   `~/.ssh/novus-oath.known_hosts` still has the old stick's key.
