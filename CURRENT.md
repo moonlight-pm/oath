@@ -14,8 +14,8 @@ append history (git has it).
    master equal to origin/master) puts the newest checked output on the
    bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
    takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `f612b200206c`
-   (2026-11-05); buccina and novus run it (novus without a reboot, so `e42eaf977392`'s PID 1 until it boots), canto `debfd75332ea`. Gap: a
+   the profile, and checks `/bin` and `/lib` names. Newest release: `ab9ff2a9213f`
+   (2026-11-06: Sola `7d7ac3bc`, `oath build --no-pkg`); buccina and novus run `f612b200206c` (novus without a reboot, so `e42eaf977392`'s PID 1 until it boots), canto `debfd75332ea`. Gap: a
    changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
    (built, unreleased); `oath` checks PID 1. R62 (in that release): a machine holds what its packages
    prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. R61–R63's verbs and fields
@@ -23,9 +23,9 @@ append history (git has it).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
-   profile). R47: the profile pins Sola master `e7a051cd` (on CEF 156.0.15):
+   profile). R47: the profile pins Sola master `7d7ac3bc` (on CEF 156.0.15):
    core `pkg:sola`, fourteen `pkg:sola-<app>`, `svc:sola-vault`:
-   release `f612b200206c` (2026-11-05; a pin moves PID 1's hash, so it takes a reboot). Novus took it with `--keep` on its 15 Sola overlays from Sola's next@be11f623, which are newer. Each machine reboots into it,
+   release `ab9ff2a9213f` (2026-11-06; a pin moves PID 1's hash, so it takes a reboot). Novus's 15 Sola overlays (next@cd3e6915) are the same code, so a plain update loses nothing; Joshua updates it. Then Sola's publish builds `plan:sola-build` with `--no-pkg`, and `oath rm pkg:sola-build` clears the object on novus and canto. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
