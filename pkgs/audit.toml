@@ -107,8 +107,19 @@ differs_because = "tools/gn/README.md: the release replaces the tree's pointer w
 [cef.not_affected]
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
 "CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
+"CVE-2026-121037" = "ANGLE in Chrome on Windows (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121045" = "Browser in Chrome on Mac (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121050" = "Mobile in Chrome on iOS (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121053" = "Transactions Platform in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121074" = "GPU in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121090" = "Navigation in Chrome on iOS (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121106" = "Omnibox in Chrome on Android (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121110" = "Shopping in Chrome on Android (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121133" = "Images in Chrome on Mac (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121162" = "Notifications in Chrome on Windows (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121165" = "Mobile in Chrome on Android (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121199" = "Chromoting in Chrome on Mac (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121224" = "Desktop in Chrome on Mac (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121229" = "ANGLE in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121234" = "Contacts in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121241" = "Navigation in Chrome on Android (Google's record); Oath builds CEF for Linux"
@@ -750,6 +761,9 @@ no_compare = "the vendor's build, not its source: there is no tree to set it aga
 cpe = "cpe:2.3:a:openbsd:openssh"
 compare_repo = "https://github.com/openssh/openssh-portable"
 compare_tag = "V_10_6_P1"
+
+[openssh.not_affected]
+"CVE-2026-123158" = "only with musl libc and PAM off (the record; 10.6p2's notes): pkg:openssh builds on glibc with libxcrypt, whose crypt() fails with a token unlike any setting it is given, and Oath's sshd_config turns password authentication off"
 
 [openssl]
 cpe = "cpe:2.3:a:openssl:openssl"
