@@ -120,11 +120,12 @@ A tool that pins a tree it built records where from, with the hash:
 sudo oath set pkg:hello --from-json '{"hash":"sha256-…","source":{"repo":"https://github.com/me/hello","commit":"<40 hex>","branch":"next","dirty":false,"built_by":"home@canto","built_at":"2026-11-01T12:00:00Z"}}'
 ```
 
-A pin that is not the release's is an overlay: `oath get pkg:hello`
-ends with `overlay: pkg:hello is next@1a2b3c4d, not the release's
-sha256-… (output …); oath update replaces it`, and `oath diff` lists
-every overlay above its `in-sync`. `sudo oath update --confirm`
-replaces each with the release's pin; `--keep pkg:hello` keeps one.
+A pin that is not the release's, or not the head this machine took
+(below), is an overlay: `oath get pkg:hello` ends with `overlay:
+pkg:hello is next@1a2b3c4d, not the release's sha256-… (output …); oath
+update replaces it` (or `not its head sha256-… (signed by …)`), and
+`oath diff` lists every overlay above its `in-sync`. `sudo oath update
+--confirm` replaces each; `--keep pkg:hello` keeps one.
 
 A new name is `oath new pkg:hello hash=…` instead of `set`; a source
 pack a plan builds with is `oath new pkg:hello-src hash=… present=false`
@@ -137,6 +138,62 @@ package a service's program comes from (`exec[0]`, through `/bin`),
 PID 1 restarts that service, and no other (an update leaves the
 desk's running: [Services](services.md)). So a change to a program is
 build, `oath store`, `oath set … hash=`, `oath apply`.
+
+## Publishing a package on its own (R72)
+
+Whoever makes a package can publish it from the machine it was built
+on, and every machine that trusts that key for the name takes it at its
+next `oath update`: no profile, release or build host in between. After
+the four steps above:
+
+```
+oath publish pkg:hello                      # what it would publish, and the head it replaces
+oath publish --confirm pkg:hello            # the pack (if the origin lacks it), then its head
+oath publish --confirm pkg:hello --dest d   # or write the same files into a directory
+oath publish --confirm pkg:hello --committed 2026-11-06T12:00:00Z
+```
+
+The head is `pkg/hello.json` on the origin, beside `pkg/hello/<hash>.tar`:
+the pin, its needs, `source`, version and description, signed beside
+itself (`.sig`, namespace `oath-pkg`) by `~/.config/oath/sign_ed25519`
+(`OATH_SIGN_KEY`) and written with the origin's write key, as for `cargo
+make publish` (below). The pin must be applied and built from a clean
+tree (`source.dirty` false). With `--committed` (the commit's time) it
+refuses to replace a head built from a later commit. Publishing needs no
+`sudo`.
+
+A machine trusts a publisher for some names only by putting a list
+before its key in `host:local.publishers`:
+
+```
+sudo oath set host:local publishers='["ssh-ed25519 AAAA… oath@buccina", "names=\"sola,sola-*\" ssh-ed25519 AAAA… oath@novus"]'
+sudo oath apply host:local
+```
+
+Such a key signs heads of those names only: never a release or the
+audit's report, so it cannot ship PID 1, the kernel or sshd. `oath
+update` reads the head of every package the machine has (and of what
+those heads need) from each origin and moves each package to the newest
+head a key may sign for it; `oath update` alone says what would move.
+It records each head it took in `/oath/heads.json` and refuses an older
+one after. A head wins over a release's pin of the same package, and a
+package with a head stays when a release drops it. With
+`host:local.profile` empty a machine takes heads only.
+
+A need is a pin. When the moves leave one at another pin (a new
+`pkg:mesa` under a package built against the old one), the update
+re-points it if every library the package's ELF files load is still in
+`/lib` after the moves, or in its own tree; otherwise it holds the moved
+package back and says which package and library hold it:
+
+```
+pkg:mesa stays at sha256-…; sha256-… waits: pkg:sola needs pkg:mesa at sha256-…, and would lose libEGL.so.1
+pkg:sola keeps its pin; its needs move: pkg:mesa sha256-… -> sha256-… (every library it loads is still in /lib)
+```
+
+A preview, whose packs are not fetched yet, says it checks the
+libraries once they are; `--confirm` fetches them and checks before
+anything changes. A library loaded with `dlopen` is not seen.
 
 Upstream identity is `components.json` at the pack root (`name`,
 `version`, `purl`); it is part of the tree hash, and missing means

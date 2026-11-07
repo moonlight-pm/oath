@@ -109,6 +109,22 @@ steps = [
 ]
 
 [[case]]
+name = "pkg-heads"
+about = "A package moves to its head (R72): oath update takes the newest head a key may sign for that name, refuses one from a key scoped to other names and one older than it took, and replaces a pin that is not its head unless --keep; oath publish writes the pack and a head signed by this machine's key."
+steps = [
+  { run = '''rm -rf /tmp/f && mkdir -p /tmp/f/bin && printf '#!/bin/sh\necho mine\n' >/tmp/f/bin/fetchme && chmod 755 /tmp/f/bin/fetchme && h=$(sudo oath store pkg:fetchme /tmp/f | cut -d' ' -f2) && sudo oath new pkg:fetchme hash=$h && sudo oath apply pkg:fetchme && fetchme''', expect = ["mine"] },
+  { run = '''k=$(curl -fsS http://10.0.2.2:18765/origin/publisher.pub) && printf '{"profile": "", "origins": ["http://10.0.2.2:18765/origin"], "publishers": ["names=\\"other\\" %s"]}' "$k" >/tmp/h.json && sudo oath set host:local --from-json "$(cat /tmp/h.json)" && sudo oath apply host:local && oath update''', expect = ["pkg:fetchme's head on http://10.0.2.2:18765/origin is refused", "lets sign only the heads of other", "no package here has a head"] },
+  { run = '''k=$(curl -fsS http://10.0.2.2:18765/origin/publisher.pub) && printf '{"publishers": ["names=\\"fetch*\\" %s"]}' "$k" >/tmp/h.json && sudo oath set host:local --from-json "$(cat /tmp/h.json)" && sudo oath apply host:local && oath update''', expect = ["(its head, signed by check@oath)", "1 packages move to their heads"] },
+  { run = "sudo oath update --confirm && fetchme && sudo cat /oath/heads.json", expect = ["packages moved to their heads in generation", "fetched", "check@oath"] },
+  { run = "oath update", expect = ["every package with a head runs it (1 here)"] },
+  { run = '''printf '#!/bin/sh\necho mine-two\n' >/tmp/f/bin/fetchme && h=$(sudo oath store pkg:fetchme /tmp/f | cut -d' ' -f2) && sudo oath set pkg:fetchme hash=$h && sudo oath apply pkg:fetchme && oath update''', expect = ["not its head: the update replaces it", "--keep pkg:fetchme"] },
+  { run = "oath update --keep pkg:fetchme", expect = ["waits: --keep"] },
+  { run = "sudo oath update --confirm && fetchme", expect = ["fetched"] },
+  { run = '''sudo oath set host:local origins='["http://10.0.2.2:18765/older"]' && sudo oath apply host:local && oath update''', expect = ["older than the head this machine took", "1 of the 1 packages here with a head wait"] },
+  { run = '''mkdir -p ~/.config/oath && ssh-keygen -q -t ed25519 -N '' -C pub@guest -f ~/.config/oath/sign_ed25519 && oath publish pkg:fetchme --dest /tmp/o && oath --confirm publish pkg:fetchme --dest /tmp/o && ls /tmp/o/pkg/fetchme && printf 'pub@guest %s\n' "$(cut -d' ' -f1,2 ~/.config/oath/sign_ed25519.pub)" >/tmp/as && ssh-keygen -Y verify -f /tmp/as -I pub@guest -n oath-pkg -s /tmp/o/pkg/fetchme.json.sig </tmp/o/pkg/fetchme.json && oath publish pkg:fetchme --dest /tmp/o''', expect = ["would publish pkg:fetchme", "published pkg:fetchme", ".tar", "Good \"oath-pkg\" signature for pub@guest", "is its head on /tmp/o already"] },
+]
+
+[[case]]
 name = "pkg-default-origin"
 about = "A build pack no profile installs (bc) comes from the default origin, at the hash its INDEX.md lists."
 metal = true

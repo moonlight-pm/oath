@@ -46,10 +46,14 @@ not this kind. Do not add a Unix user kind — the accounts are always
 - `profile` — the seed profile this machine was made from (`base`,
   `desk`). `oath update` takes the newest output published for it,
   `{origin}/out/<profile>.json`. The image sets it; empty takes no
-  updates.
-- `publishers` — the keys whose signed outputs `oath update` takes:
-  `ssh-ed25519 AAAA… name` lines, one per build host. The `base`
-  profile lists buccina's. A person adds a key; an agent does not.
+  output, only packages' heads (R72).
+- `publishers` — the keys whose signed outputs and heads `oath update`
+  takes: `ssh-ed25519 AAAA… name` lines, one per publisher. A line may
+  start with `names="sola,sola-*"` (a trailing `*` matches any rest):
+  that key signs only the heads of those packages (`pkg/<name>.json`,
+  R72), never an output or the audit's report. A key with no list signs
+  all three. The `base` profile lists buccina's. A person adds a key; an
+  agent does not.
 
 ## Example
 

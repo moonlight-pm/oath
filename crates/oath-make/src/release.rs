@@ -19,25 +19,12 @@ use crate::util::run_out;
 /// The signing key: `$OATH_SIGN_KEY`, else `sign_ed25519` beside
 /// `origin.env`.
 pub fn sign_key() -> PathBuf {
-    std::env::var_os("OATH_SIGN_KEY")
-        .filter(|p| !p.is_empty())
-        .map(PathBuf::from)
-        .unwrap_or_else(|| crate::origin::config_file().with_file_name("sign_ed25519"))
+    oath_core::origin::sign_key()
 }
 
 /// This host's public signing key (`ssh-ed25519 AAAA… name`).
 pub fn public_key() -> Result<String> {
-    let key = sign_key();
-    let pub_file = PathBuf::from(format!("{}.pub", key.display()));
-    let line = fs::read_to_string(&pub_file).with_context(|| {
-        format!(
-            "no signing key at {}: ssh-keygen -t ed25519 -N '' -C oath@$(hostname) -f {} \
-             (machines trust it once a person adds it to host:local.publishers)",
-            key.display(),
-            key.display()
-        )
-    })?;
-    Ok(line.trim().to_string())
+    Ok(oath_core::origin::public_key()?)
 }
 
 /// A release made in a directory: `update.tar`, `release.json` and its

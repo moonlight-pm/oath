@@ -964,7 +964,7 @@ impl Catalog {
                     ));
                 }
                 for key in &h.publishers {
-                    crate::sshsig::parse_public_key(key)
+                    crate::sshsig::parse_publisher(key)
                         .map_err(|e| Error::hint(format!("{id}: publishers: {e}"), hint()))?;
                 }
                 for (i, d) in h.seat_hid.iter().enumerate() {

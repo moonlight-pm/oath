@@ -44,8 +44,9 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 use oath_core::esp;
+use oath_core::head::{self, Head, Offer, Taken};
 use oath_core::update::{self as up, Move, Release};
-use oath_core::{find_bin, Actor, ApplyHooks, Catalog, Error, ObjectId, Result};
+use oath_core::{find_bin, Actor, ApplyHooks, Catalog, Error, ObjectId, Result, KIND_PKG};
 use serde_json::{json, Map, Value};
 
 use crate::live::{Follow, Live};
@@ -63,9 +64,9 @@ pub struct Opts {
 pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32> {
     let host = cat.get(&ObjectId::new("host", "local"))?.desired;
     let profile = host["profile"].as_str().unwrap_or("").to_string();
-    if profile.is_empty() {
+    if profile.is_empty() && opts.output.is_some() {
         return Err(Error::hint(
-            "host:local names no profile, so there is nothing to follow",
+            "host:local names no profile, so it follows no output",
             "oath set host:local profile=<the profile it was installed from> (oath schema host)",
         ));
     }
@@ -86,6 +87,12 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     };
     fs::create_dir_all(&work)?;
     let _work = Scratch(work.clone());
+    let current: Option<Release> = oath_core::read_json(&root.join(up::RECORD)).ok();
+    // A machine that follows no profile takes only heads (R72).
+    if profile.is_empty() {
+        let ran = up::Ran::of(current.as_ref());
+        return heads_only(root, cat, actor, &opts, &work, &ran, None);
+    }
 
     // 1. The release.
     let name = opts.output.clone().unwrap_or_else(|| profile.clone());
@@ -105,7 +112,6 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
             "the origin serves the wrong release",
         ));
     }
-    let current: Option<Release> = oath_core::read_json(&root.join(up::RECORD)).ok();
     eprintln!(
         "output {} for {profile}, published {} (signed by {signer}), from {origin}",
         release.output, release.published
@@ -169,15 +175,15 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
                 );
             }
         }
-        finish(
-            &opts,
+        let header = (
             json!({ "output": release.output, "runs": true }),
-            &format!(
+            format!(
                 "this machine runs output {}, the newest for {profile}; {pid1}",
                 release.output
             ),
         );
-        return Ok(0);
+        let ran = up::Ran::of(current.as_ref());
+        return heads_only(root, cat, actor, &opts, &work, &ran, Some(header));
     }
 
     // 2. The bundle.
@@ -196,6 +202,14 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     let ran = up::Ran::of(current.as_ref());
     let keep = keep_names(&machine, &opts.keep)?;
     let moves = up::plan(&machine, &output, &ran, &keep, have);
+    // A head wins over the release's pin of its package (R72).
+    let (offers, refused) = fetch_heads(&origins, &machine, &trusted, &work)?;
+    for r in &refused {
+        eprintln!("  {r}");
+    }
+    let taken = read_taken(root);
+    let unsettled = with_heads(&machine, moves, &offers, &taken, &ran, &keep);
+    let moves = settle(root, &machine, unsettled.clone());
     let plans = plan_moves(cat, &bundle, &ran)?;
     let have_ids: Vec<String> = cat.ls(None)?.iter().map(|i| i.to_string()).collect();
     // What the profile gained since the release this machine runs is made
@@ -255,9 +269,13 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     }
 
     // 4–6, every pack and recipe first.
-    prefetch(root, cat, &moves)?;
+    prefetch(root, cat, &unsettled)?;
     let built = build_recipes(root, cat, &bundle, &output, &moves)?;
-    // Every tree is here now: no two packages may ship one name.
+    // Every tree is here now: the library check is real, and no two
+    // packages may ship one name.
+    let moves = resettle(root, &machine, unsettled, &moves);
+    let docs = moved_docs(cat, &moves)?;
+    check_moved_needs(&docs)?;
     check_links(root, &docs)?;
     move_sshd(root, cat, actor, &bundle)?;
     let root_dev =
@@ -300,6 +318,7 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     }
     let generation = result?;
     oath_core::write_json(&root.join(up::RECORD), &release)?;
+    record_heads(root, cat, &offers)?;
     let packages = match generation {
         0 => "no package moved".to_string(),
         g => format!("its packages are generation {g}"),
@@ -396,7 +415,14 @@ fn preview(
                     pin(name).and_then(|h| version_in_store(root, name, h)),
                     doc.and_then(|d| d.get("source")),
                 ),
-                "to": side(to, version_to, doc_to.and_then(|d| d.get("source"))),
+                "to": side(
+                    to,
+                    version_to,
+                    doc_to.and_then(|d| d.get("source")).or_else(|| match m {
+                        Move::Head { set, .. } => set.get("source"),
+                        _ => None,
+                    }),
+                ),
                 "overlay": m.replaces_overlay(),
                 "services": services.get(name).cloned().unwrap_or_default(),
                 "text": m.describe(),
@@ -534,6 +560,61 @@ fn update(
     for r in built {
         oath_core::record_build(root, r)?;
     }
+    let mut made = Vec::new();
+    for id in svcs {
+        let id: ObjectId = id.parse()?;
+        let doc: Value = oath_core::read_json(
+            &stage.join("oath/objects/svc").join(&id.name).join("desired.json"),
+        )?;
+        let Value::Object(map) = doc else { continue };
+        made.push((id, map));
+    }
+    let generation = apply_moves(root, cat, actor, moves, gone, made, reboot, Some(&snap))?;
+
+    eprintln!(">> {}", up::ROOT_FILES.join(" "));
+    put_root_files(&stage, up::ROOT_FILES)?;
+    eprintln!(">> ESP: archive boot {}, write the new kernel, initrd and oath-efi", rotate.new_id);
+    let loader = fs::read_to_string(mnt.join("loader/loader.conf"))
+        .unwrap_or_else(|_| esp::LOADER_CONF_METAL.to_string());
+    let (id, prune) = esp::apply_rotate_files(
+        mnt,
+        &bundle.join(up::KERNEL),
+        &bundle.join(up::INITRD),
+        Some(&bundle.join(up::EFI)),
+        root_dev,
+        &extra,
+        &loader,
+    )?;
+    if id != rotate.new_id {
+        eprintln!("warning: the ESP archived boot {id}, the snapshot is boot {}", rotate.new_id);
+    }
+    for old in prune {
+        let sub = top.join(oath_core::boot_subvol_name(old));
+        if sub.exists() {
+            let _ =
+                Command::new(find_bin("btrfs")).args(["subvolume", "delete"]).arg(&sub).status();
+        }
+    }
+    Ok(generation)
+}
+
+/// Write the moves into the catalog and apply them in one generation:
+/// remove what leaves (`gone`, and each drop), set or make each package,
+/// make each service in `made`. The seat's services keep their programs
+/// (R42), and with `reboot` no service restarts. Waits out a probation, and
+/// on an undo deletes `snap` (the archived boot) and says so. Returns the
+/// generation, 0 when nothing changed.
+#[allow(clippy::too_many_arguments)]
+fn apply_moves(
+    root: &Path,
+    cat: &Catalog,
+    actor: &Actor,
+    moves: &[Move],
+    gone: &[String],
+    made: Vec<(ObjectId, Map<String, Value>)>,
+    reboot: bool,
+    snap: Option<&Path>,
+) -> Result<u64> {
     let mut changed = Vec::new();
     for id in moves.iter().filter(|m| m.kind() == "drop").map(Move::id).chain(gone.iter().cloned()) {
         let id: ObjectId = id.parse()?;
@@ -554,12 +635,7 @@ fn update(
         }
         changed.push(id);
     }
-    for id in svcs {
-        let id: ObjectId = id.parse()?;
-        let doc: Value = oath_core::read_json(
-            &stage.join("oath/objects/svc").join(&id.name).join("desired.json"),
-        )?;
-        let Value::Object(map) = doc else { continue };
+    for (id, map) in made {
         cat.new_object(&id, map)?;
         changed.push(id);
     }
@@ -612,47 +688,27 @@ fn update(
             }
             wait_kept(root, r.generation, secs)?;
             // PID 1's undo puts the old pins back.
-            let undone =
-                changed.iter().zip(moves.iter().filter_map(Move::fields)).any(|(id, f)| {
-                    let pin = cat.get(id).map(|o| o.desired.get("hash").cloned()).ok().flatten();
-                    f.get("hash").is_some_and(|h| pin.as_ref() != Some(h))
-                });
+            let undone = moves.iter().any(|m| {
+                let Some(h) = m.fields().and_then(|f| f.get("hash")) else { return false };
+                let id: Option<ObjectId> = m.id().parse().ok();
+                let pin = id
+                    .and_then(|id| cat.get(&id).ok())
+                    .and_then(|o| o.desired.get("hash").cloned());
+                pin.as_ref() != Some(h)
+            });
             if undone {
-                let _ = Command::new(find_bin("btrfs"))
-                    .args(["subvolume", "delete"])
-                    .arg(&snap)
-                    .status();
+                if let Some(snap) = snap {
+                    let _ = Command::new(find_bin("btrfs"))
+                        .args(["subvolume", "delete"])
+                        .arg(snap)
+                        .status();
+                }
                 return Err(Error::hint(
                     format!("generation {} was undone when its probation ran out", r.generation),
                     "nothing else changed; run `sudo oath update --confirm` again and keep it \
                      from a new SSH session",
                 ));
             }
-        }
-    }
-
-    eprintln!(">> {}", up::ROOT_FILES.join(" "));
-    put_root_files(&stage, up::ROOT_FILES)?;
-    eprintln!(">> ESP: archive boot {}, write the new kernel, initrd and oath-efi", rotate.new_id);
-    let loader = fs::read_to_string(mnt.join("loader/loader.conf"))
-        .unwrap_or_else(|_| esp::LOADER_CONF_METAL.to_string());
-    let (id, prune) = esp::apply_rotate_files(
-        mnt,
-        &bundle.join(up::KERNEL),
-        &bundle.join(up::INITRD),
-        Some(&bundle.join(up::EFI)),
-        root_dev,
-        &extra,
-        &loader,
-    )?;
-    if id != rotate.new_id {
-        eprintln!("warning: the ESP archived boot {id}, the snapshot is boot {}", rotate.new_id);
-    }
-    for old in prune {
-        let sub = top.join(oath_core::boot_subvol_name(old));
-        if sub.exists() {
-            let _ =
-                Command::new(find_bin("btrfs")).args(["subvolume", "delete"]).arg(&sub).status();
         }
     }
     Ok(generation)
@@ -729,6 +785,313 @@ fn fetch_release(
         ),
         "oath get host:local (origins, publishers, profile)",
     ))
+}
+
+/// The head of each package `machine` has, and of each package those
+/// heads and the machine's packages need, from every origin (R72): the
+/// newest a key in `trusted` may sign for that name. Returns the offers and
+/// what was refused or could not be read, one line each.
+fn fetch_heads(
+    origins: &[String],
+    machine: &BTreeMap<String, Value>,
+    trusted: &[String],
+    work: &Path,
+) -> Result<(BTreeMap<String, Offer>, Vec<String>)> {
+    let dir = work.join("heads");
+    let _ = fs::remove_dir_all(&dir);
+    let (mut offers, mut refused) = (BTreeMap::<String, Offer>::new(), Vec::new());
+    let need_names = |d: &Value| -> Vec<String> {
+        d["needs"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|n| n["id"].as_str())
+            .map(|id| id.trim_start_matches("pkg:").to_string())
+            .collect()
+    };
+    let mut want: BTreeSet<String> = machine.keys().cloned().collect();
+    want.extend(machine.values().flat_map(need_names));
+    let mut asked = BTreeSet::new();
+    for round in 0.. {
+        if want.is_empty() {
+            break;
+        }
+        for (i, o) in origins.iter().enumerate() {
+            let o = o.trim_end_matches('/');
+            let d = dir.join(format!("{round}-{i}"));
+            let Some(got) = fetch_many(o, &want, &d)? else {
+                refused.push(format!("{o} did not answer for heads"));
+                continue;
+            };
+            for name in got {
+                let read = |ext: &str| fs::read(d.join(format!("{name}.{ext}")));
+                let checked = (|| {
+                    let bytes = read("json")?;
+                    let sig = String::from_utf8_lossy(&read("json.sig")?).into_owned();
+                    let signer = oath_core::sshsig::verify_for(
+                        &bytes,
+                        &sig,
+                        head::NAMESPACE,
+                        trusted,
+                        &name,
+                    )?;
+                    let h: Head = serde_json::from_slice(&bytes)?;
+                    h.check(&name)?;
+                    Ok::<_, Error>((h, signer))
+                })();
+                match checked {
+                    Ok((head, signer)) => {
+                        let offer = Offer { head, signer, origin: o.to_string() };
+                        let offer = match offers.remove(&name) {
+                            Some(prev) => prev.later(offer),
+                            None => offer,
+                        };
+                        offers.insert(name, offer);
+                    }
+                    Err(e) => refused.push(format!("pkg:{name}'s head on {o} is refused: {e}")),
+                }
+            }
+        }
+        asked.extend(std::mem::take(&mut want));
+        want = offers
+            .values()
+            .flat_map(|o| o.head.needs.iter())
+            .map(|n| n.id.trim_start_matches("pkg:").to_string())
+            .filter(|n| !asked.contains(n))
+            .collect();
+    }
+    Ok((offers, refused))
+}
+
+/// `{origin}/pkg/<name>.json` and its `.sig` for each of `names`, into
+/// `dir`, in one curl run. The names it got both files of, or None when the
+/// origin answered none of the requests.
+fn fetch_many(origin: &str, names: &BTreeSet<String>, dir: &Path) -> Result<Option<Vec<String>>> {
+    fs::create_dir_all(dir)?;
+    let mut cfg = String::new();
+    for n in names {
+        for ext in ["json", "json.sig"] {
+            let out = dir.join(format!("{n}.{ext}"));
+            let url = format!("{origin}/pkg/{n}.{ext}");
+            cfg.push_str(&format!("url = \"{url}\"\noutput = \"{}\"\n", out.display()));
+        }
+    }
+    let cfg_file = dir.join("curl.cfg");
+    fs::write(&cfg_file, cfg)?;
+    let out = Command::new(find_bin("curl"))
+        .args(["-sSL", "--fail", "--parallel", "--parallel-max", "16", "--retry", "1"])
+        .args(["-w", "%{http_code}\\n", "-K"])
+        .arg(&cfg_file)
+        .output()
+        .map_err(|e| Error::Msg(format!("curl: {e}")))?;
+    let answered = String::from_utf8_lossy(&out.stdout).lines().any(|c| c.trim() != "000");
+    if !answered {
+        return Ok(None);
+    }
+    let have = |n: &str, ext: &str| {
+        fs::metadata(dir.join(format!("{n}.{ext}"))).is_ok_and(|m| m.len() > 0)
+    };
+    Ok(Some(names.iter().filter(|n| have(n, "json") && have(n, "json.sig")).cloned().collect()))
+}
+
+/// The heads this machine took (`/oath/heads.json`).
+fn read_taken(root: &Path) -> head::Record {
+    oath_core::read_json(&root.join(head::RECORD)).unwrap_or_default()
+}
+
+/// Record each offered head a package here now runs: the update will
+/// refuse an older one.
+fn record_heads(root: &Path, cat: &Catalog, offers: &BTreeMap<String, Offer>) -> Result<()> {
+    let mut record = read_taken(root);
+    let before = record.clone();
+    for (name, o) in offers {
+        let Ok(obj) = cat.get(&ObjectId::new(KIND_PKG, name)) else { continue };
+        if obj.desired["hash"].as_str() == Some(o.head.hash.as_str()) {
+            record.insert(name.clone(), Taken::of(&o.head, &o.signer));
+        }
+    }
+    if record != before {
+        oath_core::write_json(&root.join(head::RECORD), &record)?;
+    }
+    Ok(())
+}
+
+/// The release's moves, with each package that has a head moved by its
+/// head instead (R72): a head wins over the release's pin, a package with
+/// a head is never dropped for leaving the release, and one new to the
+/// profile is made at its head.
+fn with_heads(
+    machine: &BTreeMap<String, Value>,
+    moves: Vec<Move>,
+    offers: &BTreeMap<String, Offer>,
+    taken: &head::Record,
+    ran: &up::Ran,
+    keep: &BTreeSet<String>,
+) -> Vec<Move> {
+    let mut out = Vec::new();
+    for m in moves {
+        let Some(offer) = offers.get(m.name()) else {
+            out.push(m);
+            continue;
+        };
+        if let Move::New { name, doc, why } = m {
+            let mut d = offer.head.doc();
+            d["present"] = doc.get("present").cloned().unwrap_or(json!(true));
+            out.push(Move::New { name, doc: d, why });
+        }
+    }
+    let made: BTreeSet<String> = out
+        .iter()
+        .filter(|m| matches!(m, Move::New { .. }))
+        .map(|m| m.name().to_string())
+        .collect();
+    let heads = head::plan(machine, offers, taken, keep, |n, pin| ran.overlay(n, pin).is_some());
+    out.extend(heads.into_iter().filter(|m| !made.contains(m.name())));
+    out
+}
+
+/// [`head::settle`] against the trees in this store: what a package's ELF
+/// files load, and what each package puts in `/lib`.
+fn settle(root: &Path, machine: &BTreeMap<String, Value>, moves: Vec<Move>) -> Vec<Move> {
+    let tree =
+        |n: &str, h: &str| Some(oath_core::realization_dir(root, n, h)).filter(|t| t.is_dir());
+    head::settle(
+        machine,
+        moves,
+        |n, h| tree(n, h).map(|t| oath_core::elf::loads(&t)),
+        |n, h| tree(n, h).map(|t| oath_core::elf::provides(&t)),
+    )
+}
+
+/// Settle again once every pack is here, and say what changed since the
+/// preview (`before`).
+fn resettle(
+    root: &Path,
+    machine: &BTreeMap<String, Value>,
+    unsettled: Vec<Move>,
+    before: &[Move],
+) -> Vec<Move> {
+    let after = settle(root, machine, unsettled);
+    let text = |m: &[Move]| m.iter().map(Move::describe).collect::<Vec<_>>();
+    if text(&after) != text(before) {
+        eprintln!("with every pack here, the library check settles:");
+        for m in &after {
+            eprintln!("  {}", m.describe());
+        }
+    }
+    after
+}
+
+/// An update that moves only packages to their heads (R72): the release
+/// this machine runs is the newest (`header` says so), or it follows no
+/// profile. No boot file changes; with `--reboot` it reboots after.
+fn heads_only(
+    root: &Path,
+    cat: &Catalog,
+    actor: &Actor,
+    opts: &Opts,
+    work: &Path,
+    ran: &up::Ran,
+    header: Option<(Value, String)>,
+) -> Result<i32> {
+    let (origins, trusted) = trust(cat)?;
+    let mut machine = BTreeMap::new();
+    for id in cat.ls(Some(KIND_PKG))? {
+        machine.insert(id.name.clone(), cat.get(&id)?.desired);
+    }
+    let (offers, refused) = fetch_heads(&origins, &machine, &trusted, work)?;
+    for r in &refused {
+        eprintln!("  {r}");
+    }
+    let keep = keep_names(&machine, &opts.keep)?;
+    let taken = read_taken(root);
+    let unsettled =
+        head::plan(&machine, &offers, &taken, &keep, |n, pin| ran.overlay(n, pin).is_some());
+    let moves = settle(root, &machine, unsettled.clone());
+    for m in &moves {
+        eprintln!("  {}", m.describe());
+    }
+    let (mut v, said) = header.unwrap_or((json!({}), String::new()));
+    let said = |more: String| if said.is_empty() { more } else { format!("{said}; {more}") };
+    let is_root = unsafe { libc::geteuid() } == 0;
+    v["heads"] = json!(offers.len());
+    v["refused"] = json!(refused);
+    let moving = moves.iter().filter(|m| m.fields().is_some()).count();
+    if moving == 0 {
+        if opts.confirm && is_root {
+            record_heads(root, cat, &offers)?;
+        }
+        v["moves"] = json!(move_list(cat, &moves, &machine)?);
+        let held = moves.len();
+        let text = match (offers.len(), held) {
+            (0, _) => "no package here has a head".to_string(),
+            (n, 0) => format!("every package with a head runs it ({n} here)"),
+            (n, h) => format!("{h} of the {n} packages here with a head wait"),
+        };
+        finish(opts, v, &said(text));
+        return Ok(0);
+    }
+    preflight(root, cat)?;
+    let docs = moved_docs(cat, &moves)?;
+    check_moved_needs(&docs)?;
+    check_links(root, &docs)?;
+    if !opts.confirm {
+        v["moves"] = json!(move_list(cat, &moves, &machine)?);
+        finish(
+            opts,
+            v,
+            &said(format!(
+                "{moving} packages move to their heads; `sudo oath update --confirm` moves them"
+            )),
+        );
+        return Ok(0);
+    }
+    prefetch(root, cat, &unsettled)?;
+    let moves = resettle(root, &machine, unsettled, &moves);
+    let docs = moved_docs(cat, &moves)?;
+    check_moved_needs(&docs)?;
+    check_links(root, &docs)?;
+    let generation = apply_moves(root, cat, actor, &moves, &[], Vec::new(), opts.reboot, None)?;
+    record_heads(root, cat, &offers)?;
+    v["generation"] = json!(generation);
+    v["moves"] = json!(move_list(cat, &moves, &machine)?);
+    let text = match generation {
+        0 => "no package moved".to_string(),
+        g => format!("packages moved to their heads in generation {g}"),
+    };
+    if opts.reboot {
+        v["reboot"] = json!(true);
+        finish(opts, v, &said(format!("{text}; rebooting")));
+        sh(&mut Command::new(find_bin("reboot")))?;
+    } else {
+        finish(opts, v, &said(text));
+    }
+    Ok(0)
+}
+
+/// The moves as a program reads them.
+fn move_list(
+    cat: &Catalog,
+    moves: &[Move],
+    machine: &BTreeMap<String, Value>,
+) -> Result<Vec<Value>> {
+    let services = services_of(cat)?;
+    Ok(moves
+        .iter()
+        .map(|m| {
+            let name = m.name();
+            let from = machine.get(name).and_then(|d| d["hash"].as_str()).filter(|h| !h.is_empty());
+            json!({
+                "id": m.id(),
+                "move": m.kind(),
+                "from": from,
+                "to": m.to(),
+                "overlay": m.replaces_overlay(),
+                "services": services.get(name).cloned().unwrap_or_default(),
+                "text": m.describe(),
+            })
+        })
+        .collect())
 }
 
 /// The bundle, checked against the release and unpacked into `work/bundle`.

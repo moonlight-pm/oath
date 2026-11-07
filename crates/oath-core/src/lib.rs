@@ -4,8 +4,10 @@ mod catalog;
 mod dev;
 mod error;
 pub mod efi;
+pub mod elf;
 pub mod esp;
 mod hooks;
+pub mod head;
 pub mod hid;
 mod id;
 mod index;
@@ -13,6 +15,7 @@ mod kinds;
 mod layout;
 pub mod login;
 pub mod mounts;
+pub mod origin;
 mod net;
 mod packhash;
 mod pkg;
@@ -101,6 +104,11 @@ pub const EXIT_SECURITY: i32 = 4;
 
 pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+}
+
+/// Whether `s` is an RFC 3339 time (`2026-11-06T12:00:00Z`).
+pub fn is_rfc3339(s: &str) -> bool {
+    chrono::DateTime::parse_from_rfc3339(s).is_ok()
 }
 
 /// Pretty JSON, written atomically: temp file, fsync, rename, fsync dir.

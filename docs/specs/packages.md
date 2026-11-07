@@ -179,6 +179,56 @@ publishable packs, their plans, sources and advisories to the default
 origin, then the newest checked output's signed release; `--dest
 <dir>` writes the same tree into a directory (below).
 
+## Heads (R72)
+
+**Will be, building in slices.** A package is published on its own, by
+whoever makes it, and machines meet only at the origin. Today a pack
+reaches a machine through a profile's release (R38): Sola publishes,
+Oath pins the hash in `desk`, buccina builds and publishes the whole
+output, and each machine updates (a reboot, since the seed moved PID 1).
+
+- **The head.** `pkg/<name>.json` on an origin, beside the packs
+  (`pkg/<name>/<hash>.tar`), as `out/<profile>.json` sits beside
+  `out/<id>.json`: `{name, hash, needs, committed, published, source,
+  version, description, home, category}`, signed beside itself
+  (`pkg/<name>.json.sig`, `ssh-keygen -Y sign`, namespace `oath-pkg`).
+  `committed` orders heads, as it orders releases (R45).
+- **Publishing.** `oath publish pkg:<name>` on any machine puts its
+  own pin on the origin: the pack if the origin lacks it, then the
+  head, signed by `~/.config/oath/sign_ed25519` and written with the
+  origin's write key (`~/.config/oath/origin.env`, as for `cargo make
+  publish`). On novus: build, `oath store`, `oath set`, `oath apply`,
+  then `oath publish`, and every machine can take it.
+- **Trust.** A `host:local.publishers` line may start with
+  `names="sola,sola-*"`: that key signs heads for those names only (a
+  trailing `*` matches any rest). A key with no list signs any head,
+  a release and the audit's report; a scoped key signs only heads.
+- **Taking heads.** `oath update` reads the head of every package the
+  machine has (and of what those heads need) from its origins, and
+  moves each to the newest head a key may sign for it. It refuses a
+  head older than the one it took, recorded in `/oath/heads.json`. A
+  pin that is not its head is an overlay, replaced unless `--keep`
+  (R47). A head wins over a release's pin of the same name, and a
+  package with a head is never dropped for leaving a release.
+- **Needs.** A head's needs are pins. When the moves leave a need at
+  another pin (buccina's mesa moved, Sola's head did not), the update
+  re-points it if every `DT_NEEDED` name of the package's ELF files is
+  in `/lib` after the moves or in the package's own tree; otherwise
+  it holds the dependency at the machine's pin and names the package
+  that holds it. `dlopen` is not checked.
+- **Services** (slice 2). A tree may ship `oath/svc/<name>.json`, each a
+  `svc` spec; making the package present makes each service the
+  machine lacks. The owner's changes stay theirs.
+- **Seeds** (slice 3). `base` and `desk` become data files an installer
+  reads once, no longer compiled into `oath-core` or PID 1; PID 1 seeds
+  nothing.
+- **Oath's own packages** (slice 4). buccina's publish writes a head for
+  every package it builds; the kernel, initrd and PID 1 move as
+  `pkg:linux` and `pkg:oath` (the ESP and a PID 1 re-exec, R73), and
+  `out/<profile>.json` goes once every machine follows heads.
+- **Later, not designed:** an official release, a signed file that pins
+  every package, which a machine may follow instead of heads.
+
 ## Components and advisories (built)
 
 - `components.json` at the root of a tree lists the upstreams in it:

@@ -96,6 +96,7 @@ btrfs
   log/apply.jsonl          one line per apply (ok, error, refused), undo or keep
   probation.json           the apply on probation (lockout class), while open
   output.json              the release this machine runs, from `oath update` (R38) or the install (R45)
+  heads.json               the head of each package `oath update` took, and who signed it (R72)
   log/init.log             PID 1's messages (`oath logs`)
   log/svc/<name>.log       each service's stdout+stderr, UTC-stamped,
                            rotated to .1 past 256 KiB (`oath logs svc:<name>`)

@@ -86,11 +86,17 @@ holds), `verified` (`ok`, `at`; `got` when the tree no longer hashes to
 `hash`), and the applied `url`, `needs`, `description`, `home`, `category`
 and `source`.
 
-An **overlay** is a present package whose live hash is not the pin of
-the release this machine runs (`/oath/output.json`): `oath get`
-prints an `overlay:` line (`--json`: `overlay`, with the release's pin
-and the `source`), `oath diff` lists every one, and `oath update`
-replaces each with the release's pin unless `--keep pkg:<name>`. If `removable` is false, `present=false`
+An **overlay** is a present package whose live hash is not the head
+this machine took of it (`/oath/heads.json`, R72) or, with none taken,
+not the pin of the release it runs (`/oath/output.json`): `oath get`
+prints an `overlay:` line (`--json`: `overlay`, with that head and its
+signer, or the release's pin, and the `source`), `oath diff` lists
+every one, and `oath update` replaces each unless `--keep pkg:<name>`.
+
+A **head** is a package published on its own (R72): `pkg/<name>.json`
+on an origin, signed beside itself. `oath update` moves each package to
+the newest head a key in `host:local.publishers` may sign for its name,
+and `oath publish pkg:<name>` puts this machine's pin up as its head. If `removable` is false, `present=false`
 is refused (not `--confirm`).
 
 A tree built on the machine reaches the store with `sudo oath store

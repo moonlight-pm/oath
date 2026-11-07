@@ -92,6 +92,11 @@ publishes each output it checked, signed, and `oath update` takes the
 newest for `host:local.profile` when a key in `host:local.publishers`
 signed it. It moves every package in one generation, then the kernel,
 initrd and PID 1 for the next boot; the boot before stays in the menu.
+A package published on its own has a head on the origins
+(`pkg/<name>.json`, R72): `oath update` moves each package to the newest
+head a key may sign for that name (a `names="…"` list before a key scopes
+it), re-pointing a need only when the package still finds every library
+it loads. `oath publish pkg:<name>` puts this machine's pin up as its head.
 "#,
         index = cat.root().join("INDEX.md").display(),
         kinds = kinds_block.trim_end(),

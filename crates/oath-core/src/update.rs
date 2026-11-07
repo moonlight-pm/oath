@@ -249,6 +249,27 @@ pub enum Move {
     /// The release the machine runs had it, this one does not, and nothing
     /// that stays needs it: it leaves with the update (R62).
     Drop { name: String },
+    /// To its head (R72), which `signer` signed: `set` is its hash, needs,
+    /// `source` and description. `overlay` names what the machine ran when
+    /// that was not the head it took (R47); `repointed`, the needs the
+    /// library check moved.
+    Head {
+        name: String,
+        from: String,
+        to: String,
+        set: Value,
+        overlay: Option<String>,
+        signer: String,
+        repointed: Vec<String>,
+    },
+    /// Not taken: `at` stays and `head` (a head, or a release's pin) waits;
+    /// `why` says why (`--keep`, an older head, or a package here that would
+    /// lose a library).
+    Hold { name: String, at: String, head: String, why: String },
+    /// Its pin stays and its needs move to what the update leaves, after
+    /// the library check (`checked`; false in a preview whose packs are not
+    /// here yet).
+    Repoint { name: String, set: Value, moved: Vec<String>, checked: bool },
 }
 
 impl Move {
@@ -258,7 +279,10 @@ impl Move {
         | Self::Stay { name, .. }
         | Self::New { name, .. }
         | Self::Rebuild { name, .. }
-        | Self::Drop { name }) = self;
+        | Self::Drop { name }
+        | Self::Head { name, .. }
+        | Self::Hold { name, .. }
+        | Self::Repoint { name, .. }) = self;
         name
     }
 
@@ -266,7 +290,8 @@ impl Move {
         format!("pkg:{}", self.name())
     }
 
-    /// `pin`, `keep`, `stay`, `new`, `rebuild` or `drop`.
+    /// `pin`, `keep`, `stay`, `new`, `rebuild`, `drop`, `head`, `hold` or
+    /// `repoint`.
     pub fn kind(&self) -> &'static str {
         match self {
             Self::Pin { .. } => "pin",
@@ -275,33 +300,38 @@ impl Move {
             Self::New { .. } => "new",
             Self::Rebuild { .. } => "rebuild",
             Self::Drop { .. } => "drop",
+            Self::Head { .. } => "head",
+            Self::Hold { .. } => "hold",
+            Self::Repoint { .. } => "repoint",
         }
     }
 
     /// The pin it ends on, when the move says.
     pub fn to(&self) -> Option<&str> {
         match self {
-            Self::Pin { to, .. } | Self::Rebuild { to, .. } => Some(to),
-            Self::Keep { pin, .. } => Some(pin),
-            Self::Stay { .. } | Self::Drop { .. } => None,
+            Self::Pin { to, .. } | Self::Rebuild { to, .. } | Self::Head { to, .. } => Some(to),
+            Self::Keep { pin, .. } | Self::Hold { at: pin, .. } => Some(pin),
+            Self::Stay { .. } | Self::Drop { .. } | Self::Repoint { .. } => None,
             Self::New { doc, .. } => doc["hash"].as_str(),
         }
     }
 
-    /// It replaces a pin that was not the release's (R47).
+    /// It replaces a pin that was not the release's or its head's (R47).
     pub fn replaces_overlay(&self) -> bool {
-        matches!(self, Self::Pin { overlay: Some(_), .. })
+        matches!(self, Self::Pin { overlay: Some(_), .. } | Self::Head { overlay: Some(_), .. })
     }
 
     /// The fields `oath set` writes (or `oath new` makes), if any.
     pub fn fields(&self) -> Option<&Value> {
         match self {
-            Self::Pin { set, .. } | Self::Stay { set, .. } | Self::Rebuild { set, .. } => {
-                Some(set)
-            }
+            Self::Pin { set, .. }
+            | Self::Stay { set, .. }
+            | Self::Rebuild { set, .. }
+            | Self::Head { set, .. }
+            | Self::Repoint { set, .. } => Some(set),
             Self::Keep { set, .. } => set.as_ref(),
             Self::New { doc, .. } => Some(doc),
-            Self::Drop { .. } => None,
+            Self::Drop { .. } | Self::Hold { .. } => None,
         }
     }
 
@@ -348,6 +378,33 @@ impl Move {
             Self::Drop { .. } => {
                 format!("{id} leaves: this release no longer has it; `--keep {id}` keeps it")
             }
+            Self::Head { to, set, overlay: Some(was), signer, .. } => format!(
+                "{id} is {was}, not its head: the update replaces it with {}{} (signed by \
+                 {signer}); `--keep {id}` keeps it",
+                short(to),
+                source_label(set).map(|l| format!(" ({l})")).unwrap_or_default()
+            ),
+            Self::Head { from, to, set, signer, repointed, .. } => {
+                let from = if from.is_empty() { "unpinned" } else { short(from) };
+                format!(
+                    "{id} {from} -> {} (its head{}, signed by {signer}){}",
+                    short(to),
+                    source_label(set).map(|l| format!(", {l}")).unwrap_or_default(),
+                    needs_moved(repointed)
+                )
+            }
+            Self::Hold { at, head, why, .. } => {
+                format!("{id} stays at {}; {} waits: {why}", short(at), short(head))
+            }
+            Self::Repoint { moved, checked, .. } => format!(
+                "{id} keeps its pin{}{}",
+                needs_moved(moved),
+                if *checked {
+                    " (every library it loads is still in /lib)"
+                } else {
+                    " (the update checks its libraries once the packs are here)"
+                }
+            ),
         }
     }
 }

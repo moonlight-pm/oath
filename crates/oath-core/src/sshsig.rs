@@ -1,7 +1,8 @@
 //! OpenSSH signatures (`ssh-keygen -Y sign`, the SSHSIG format) made with
 //! ed25519 keys: how a machine checks that a build host it trusts
-//! published an output (R38). Only `ssh-ed25519` keys, armored signatures,
-//! and SHA-256 or SHA-512 message hashes.
+//! published an output (R38), and that a publisher may sign a package's
+//! head (R72). Only `ssh-ed25519` keys, armored signatures, and SHA-256 or
+//! SHA-512 message hashes.
 
 use ed25519_dalek::{Signature, VerifyingKey};
 use sha2::{Digest, Sha256, Sha512};
@@ -34,13 +35,78 @@ pub fn parse_public_key(line: &str) -> Result<(Vec<u8>, String)> {
     Ok((blob, parts.collect::<Vec<_>>().join(" ")))
 }
 
-/// Check `armored` over `message` in `namespace` against `trusted` (public
-/// key lines). Returns the comment of the key that signed it.
+/// A `host:local.publishers` line (R72): an optional `names="sola,sola-*"`
+/// list, then an `ssh-ed25519 AAAA… comment` key. Returns the names (None:
+/// the key signs anything) and the key part.
+pub fn parse_publisher(line: &str) -> Result<(Option<Vec<String>>, &str)> {
+    let line = line.trim();
+    let Some(rest) = line.strip_prefix("names=\"") else {
+        parse_public_key(line)?;
+        return Ok((None, line));
+    };
+    let bad = |why: &str| {
+        Error::hint(
+            format!("publisher {line:?}: {why}"),
+            "names=\"sola,sola-*\" ssh-ed25519 AAAA… name (a trailing * matches any rest)",
+        )
+    };
+    let (list, key) = rest.split_once('"').ok_or_else(|| bad("names= has no closing quote"))?;
+    if !key.starts_with(char::is_whitespace) {
+        return Err(bad("the key follows names=\"…\" after a space"));
+    }
+    let names: Vec<String> = list.split(',').map(|n| n.trim().to_string()).collect();
+    for n in &names {
+        let stem = n.strip_suffix('*').unwrap_or(n);
+        if n.is_empty() || (stem.is_empty() && n != "*") || n[..stem.len()].contains('*') {
+            return Err(bad(&format!("{n:?} is not a package name or a name ending in *")));
+        }
+        if !stem.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-')) {
+            return Err(bad(&format!("{n:?} is not a package name")));
+        }
+    }
+    let key = key.trim();
+    parse_public_key(key)?;
+    Ok((Some(names), key))
+}
+
+/// Whether a key scoped to `names` may sign the head of `pkg:<name>`.
+pub fn may_sign(names: &[String], name: &str) -> bool {
+    names.iter().any(|n| match n.strip_suffix('*') {
+        Some(stem) => name.starts_with(stem),
+        None => n == name,
+    })
+}
+
+/// Check `armored` over `message` in `namespace` against `trusted`
+/// (`host:local.publishers` lines). Only a key with no `names=` list may
+/// sign a release or the audit's report. Returns the signing key's comment.
 pub fn verify(
     message: &[u8],
     armored: &str,
     namespace: &str,
     trusted: &[String],
+) -> Result<String> {
+    check(message, armored, namespace, trusted, None)
+}
+
+/// [`verify`] for the head of `pkg:<name>` (R72): a key whose `names=` list
+/// covers `name` may sign it too.
+pub fn verify_for(
+    message: &[u8],
+    armored: &str,
+    namespace: &str,
+    trusted: &[String],
+    name: &str,
+) -> Result<String> {
+    check(message, armored, namespace, trusted, Some(name))
+}
+
+fn check(
+    message: &[u8],
+    armored: &str,
+    namespace: &str,
+    trusted: &[String],
+    head: Option<&str>,
 ) -> Result<String> {
     let bad = |why: &str| Error::security(format!("signature: {why}"), "republish the output");
     let body: String = armored
@@ -66,17 +132,37 @@ pub fn verify(
             String::from_utf8_lossy(ns)
         )));
     }
-    let signer = trusted
+    let (signer, names) = trusted
         .iter()
-        .filter_map(|l| parse_public_key(l).ok())
-        .find(|(blob, _)| blob.as_slice() == key)
-        .map(|(_, comment)| comment)
+        .filter_map(|l| {
+            let (names, k) = parse_publisher(l).ok()?;
+            let (blob, comment) = parse_public_key(k).ok()?;
+            (blob.as_slice() == key).then_some((comment, names))
+        })
+        .next()
         .ok_or_else(|| {
             Error::security(
                 "signed by a key this machine does not trust",
                 "host:local.publishers lists the keys it trusts; a person adds one (R38)",
             )
         })?;
+    if let Some(names) = &names {
+        let what = match head {
+            Some(name) if may_sign(names, name) => None,
+            Some(name) => Some(format!("pkg:{name}'s head")),
+            None => Some("a release".to_string()),
+        };
+        if let Some(what) = what {
+            return Err(Error::security(
+                format!(
+                    "{what} is signed by {signer}, whom host:local.publishers lets sign only the \
+                     heads of {}",
+                    names.join(", ")
+                ),
+                "a key with no names= list signs releases and any head (R72)",
+            ));
+        }
+    }
     let digest = match hash_alg {
         b"sha512" => Sha512::digest(message).to_vec(),
         b"sha256" => Sha256::digest(message).to_vec(),
@@ -188,6 +274,46 @@ VXt2S1bOjHWAkohjx1Hx5Nz6aGvft/CQ==
     fn another_namespace_fails() {
         let e = verify(MSG, SIG, "file", &[KEY.into()]);
         assert!(e.unwrap_err().to_string().contains("namespace"));
+    }
+
+    #[test]
+    fn a_scoped_key_signs_only_its_heads() {
+        let scoped = format!("names=\"sola,sola-*\" {KEY}");
+        let trusted = [OTHER.to_string(), scoped];
+        assert_eq!(verify_for(MSG, SIG, "oath-output", &trusted, "sola").unwrap(), "test@oath");
+        assert_eq!(
+            verify_for(MSG, SIG, "oath-output", &trusted, "sola-browser").unwrap(),
+            "test@oath"
+        );
+        let e = verify_for(MSG, SIG, "oath-output", &trusted, "openssh").unwrap_err();
+        assert!(e.to_string().contains("pkg:openssh's head is signed by test@oath"), "{e}");
+        let e = verify(MSG, SIG, "oath-output", &trusted).unwrap_err();
+        assert!(e.to_string().contains("a release is signed by test@oath"), "{e}");
+        // A key with no list signs heads too.
+        assert!(verify_for(MSG, SIG, "oath-output", &[KEY.into()], "openssh").is_ok());
+    }
+
+    #[test]
+    fn publisher_lines() {
+        assert_eq!(parse_publisher(KEY).unwrap(), (None, KEY));
+        let line = format!("names=\"sola, sola-*\" {KEY}");
+        let (names, key) = parse_publisher(&line).unwrap();
+        assert_eq!(names.unwrap(), ["sola", "sola-*"]);
+        assert_eq!(key, KEY);
+        for bad in [
+            format!("names=\"sola {KEY}"),
+            format!("names=\"sola\"{KEY}"),
+            format!("names=\"\" {KEY}"),
+            format!("names=\"so*la\" {KEY}"),
+            format!("names=\"a/b\" {KEY}"),
+            "names=\"sola\" ssh-rsa AAAA x".to_string(),
+        ] {
+            assert!(parse_publisher(&bad).is_err(), "{bad}");
+        }
+        let n = |l: &[&str]| l.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert!(may_sign(&n(&["sola-*"]), "sola-browser"));
+        assert!(!may_sign(&n(&["sola-*"]), "sola"));
+        assert!(may_sign(&n(&["fetchme"]), "fetchme") && !may_sign(&n(&["fetchme"]), "fetch"));
     }
 
     #[test]

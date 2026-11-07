@@ -208,7 +208,7 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     let dir = base.join(utc_stamp());
     fs::create_dir_all(&dir)?;
     let fetchme = fs::read(root.join("apps/fetchme/bin/fetchme")).context("apps/fetchme")?;
-    serve_fetchme(fetchme, fetchme_origin(root)?)?;
+    serve_fetchme(fetchme, fetchme_origin(root, &base)?)?;
 
     eprintln!(
         "check: output {} ({profile}), {} cases, {} at a time, logs in {}",
@@ -410,8 +410,11 @@ pub(crate) fn harness_key(base: &Path) -> Result<(PathBuf, PathBuf)> {
     Ok((key, key_pub))
 }
 
-/// The canary's origin: path to body, `INDEX.md` and the pack's tar.
-fn fetchme_origin(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
+/// The canary's origin: path to body, `INDEX.md` and the pack's tar; the
+/// pack's head (R72), signed by a check key whose `.pub` it serves as
+/// `/origin/publisher.pub`; and under `/older` a head older than that one,
+/// for a pin no origin serves.
+fn fetchme_origin(root: &Path, base: &Path) -> Result<Vec<(String, Vec<u8>)>> {
     let tree = root.join("apps/fetchme");
     let pin = oath_core::hash_tree(&tree).map_err(|e| anyhow::anyhow!("apps/fetchme: {e}"))?;
     let out = Command::new("tar").arg("-C").arg(&tree).args(["-cf", "-", "."]).output()?;
@@ -422,10 +425,62 @@ fn fetchme_origin(root: &Path) -> Result<Vec<(String, Vec<u8>)>> {
         "# Oath pack origin\n\n| name | hash | licence | plan | source |\n\
          |------|------|---------|------|--------|\n| `fetchme` | `{pin}` | MIT | | |\n"
     );
-    Ok(vec![
+    let mut files = vec![
         ("/origin/INDEX.md".into(), index.into_bytes()),
         (format!("/origin/pkg/fetchme/{pin}.tar"), out.stdout),
-    ])
+    ];
+    let key = base.join("head_key");
+    if !key.is_file() {
+        let _ = fs::remove_file(base.join("head_key.pub"));
+        let st = Command::new("ssh-keygen")
+            .args(["-q", "-t", "ed25519", "-N", "", "-C", "check@oath", "-f"])
+            .arg(&key)
+            .stdin(Stdio::null())
+            .status()
+            .context("ssh-keygen")?;
+        if !st.success() {
+            bail!("ssh-keygen failed");
+        }
+    }
+    files.push(("/origin/publisher.pub".into(), fs::read(base.join("head_key.pub"))?));
+    let older = format!("sha256-{}", "0".repeat(64));
+    let heads = [
+        ("origin", pin.as_str(), utc_rfc3339()),
+        ("older", older.as_str(), "2026-01-01T00:00:00Z".to_string()),
+    ];
+    for (dir, hash, published) in heads {
+        let head = oath_core::head::Head {
+            name: "fetchme".into(),
+            hash: hash.into(),
+            needs: Vec::new(),
+            published,
+            committed: None,
+            source: None,
+            version: String::new(),
+            description: "The check's fetch canary.".into(),
+            home: String::new(),
+            category: String::new(),
+        };
+        let file = base.join(format!("{dir}-fetchme.json"));
+        let mut text = serde_json::to_string_pretty(&head)?;
+        text.push('\n');
+        fs::write(&file, &text)?;
+        let sig = PathBuf::from(format!("{}.sig", file.display()));
+        let _ = fs::remove_file(&sig);
+        let st = Command::new("ssh-keygen")
+            .args(["-Y", "sign", "-q", "-n", oath_core::head::NAMESPACE, "-f"])
+            .arg(&key)
+            .arg(&file)
+            .stdin(Stdio::null())
+            .status()
+            .context("ssh-keygen -Y sign")?;
+        if !st.success() {
+            bail!("ssh-keygen -Y sign failed");
+        }
+        files.push((format!("/{dir}/pkg/fetchme.json"), text.into_bytes()));
+        files.push((format!("/{dir}/pkg/fetchme.json.sig"), fs::read(&sig)?));
+    }
+    Ok(files)
 }
 
 /// HTTP for the fetch canary. Thread lives for the rest of the process.

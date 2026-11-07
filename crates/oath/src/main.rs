@@ -16,6 +16,7 @@ mod login;
 mod mcp;
 mod audit;
 mod overlay;
+mod publish;
 mod reap;
 mod update;
 
@@ -148,6 +149,20 @@ enum Cmd {
         #[arg(long, value_name = "pkg:NAME")]
         keep: Vec<String>,
     },
+    /// Put this machine's pin of a package on an origin as its head (R72),
+    /// signed with ~/.config/oath/sign_ed25519, so machines that trust this
+    /// key for the name take it at their next `oath update`. Without
+    /// --confirm it says what it would publish.
+    Publish {
+        id: String,
+        /// Write the origin's files into this directory instead of uploading.
+        #[arg(long)]
+        dest: Option<PathBuf>,
+        /// When the commit it was built from was made (RFC 3339): orders
+        /// it against the head it replaces.
+        #[arg(long)]
+        committed: Option<String>,
+    },
     /// What this machine holds beyond what its packages prescribe (R62):
     /// old versions in the store, filed plans, generations past the newest
     /// five and those since boot. Without --confirm it says what holds each
@@ -277,6 +292,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Verify { .. }) => "verify",
         Some(Cmd::Undo { .. }) => "undo",
         Some(Cmd::Update { .. }) => "update",
+        Some(Cmd::Publish { .. }) => "publish",
         Some(Cmd::Audit { .. }) => "audit",
         Some(Cmd::Reap { .. }) => "reap",
         Some(Cmd::Install { .. }) => "install",
@@ -671,6 +687,11 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
+        Some(Cmd::Publish { id, dest, committed }) => publish::run(
+            &cli.root,
+            &cat,
+            publish::Opts { id, dest, committed, confirm: cli.confirm, json: cli.json },
+        ),
         Some(Cmd::Update { output, reboot, esp, keep }) => update::run(
             &cli.root,
             &cat,
