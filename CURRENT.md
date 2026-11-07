@@ -17,13 +17,13 @@ append history (git has it).
    keeps every library it loads, else the dependency waits and says why. Seed profiles are data in
    `/lib/oath/seed`, so a pin no longer moves PID 1, and `oath update` re-execs PID 1 into the
    output's binary with every service running; a kernel, PID 1's boot work and the first update from
-   a pre-R73 PID 1 still reboot. Built and checked in QEMU on master, in no release yet. Releases
-   (R38, R47) still carry the rest: newest `e555e1a5dd34` (Sola `0c99a6a5`); `base`'s `57192b33e6ab`
-   runs on dulcia. buccina runs `f612b200206c`, novus `f6011e8a6d9a` (generation 95), canto
-   `debfd75332ea`. Gap: a changed `svc` spec goes by hand. Next: a release with R72 and R73
-   (Joshua's word); novus's signing key in each machine's publishers, scoped to Sola (a person adds
-   keys); Sola's publish runs `oath publish`; then services in packages (slice 2) and buccina's
-   heads for Oath's own packages (slice 4).
+   a pre-R73 PID 1 still reboot. Released 2026-11-07 from `7597cc1`: `desk` `6c8d38bd54c4` (Sola
+   `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too) and `base` `ee3e239caa32`, both on
+   no machine yet: dulcia runs `57192b33e6ab`, buccina `f612b200206c`, novus `f6011e8a6d9a`
+   (generation 95), canto `ab9ff2a9213f`. Gap: a changed `svc` spec goes by hand. Next: machines
+   onto these (novus, dulcia: Joshua's word); key `oath@novus` in each machine's publishers as
+   `names="sola,sola-*"` (a person adds it); Sola's publish runs `oath publish` (sandbox or overlay
+   builds: Joshua's call); then slices 2 (packaged services) and 4 (Oath's own heads).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
