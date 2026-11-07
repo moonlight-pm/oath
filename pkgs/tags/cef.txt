@@ -1,9 +1,9 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source chromium-156.0.8078.80.tar.xz 5b1a1f3bfdf4fc559db4eddfb4492b72ffcec7ae1a52b30f8b172230788f5740
-tag 156.0.8078.80 commit fb096c0011f9d50f0a264a9376420cdea9c421e3 tree 9daca4c0f1670a0ead9a94888c1bfe4ace733f4d
+source chromium-156.0.8078.93.tar.xz 669e57f8bb2fe58199d1aef73b94837b7ebd79d0b5831ca1f7eceb501e876f54
+tag 156.0.8078.93 commit 337f55dc817e82871bf6f8275394f2e9222b81b0 tree b7c9025307a0095790d239bdd2bf749d0a4cf8be
 signed no
 same 288065
-only-in-tag 217035
+only-in-tag 217040
 submodule agents/internal 0
 submodule agents/shared 50
 submodule chrome/app/theme/default_100_percent/google_chrome 0
@@ -228,7 +228,7 @@ submodule third_party/search_engines_data/resources 2
 submodule third_party/search_engines_data/resources_internal 0
 submodule third_party/securemessage/src 43
 submodule third_party/sframe/src 39
-submodule third_party/skia 12433
+submodule third_party/skia 12434
 submodule third_party/smhasher/src 47
 submodule third_party/snappy/src 52
 submodule third_party/speedometer/main 2754
@@ -295,6 +295,7 @@ adds-under buildtools/linux64-format/clang-format 1
 adds-under buildtools/linux64/.versions 1
 adds-under buildtools/linux64/clang-format 1
 adds-under buildtools/linux64/gn 1
+adds-under buildtools/reclient_cfgs/reproxy.cfg 1
 adds-under buildtools/third_party/mold 1
 adds-under chrome/build/pgo_profiles 1
 adds-under chromeos/tast_control.gni 1

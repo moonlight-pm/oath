@@ -123,11 +123,11 @@
     ]
   },
   "cef": {
-    "version": "156.0.15+gcf671c0+chromium-156.0.8078.80",
+    "version": "156.0.26+g8ea0c73+chromium-156.0.8078.93",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-d41af4e2bd9741d3e547092ce58a663acf47f572c62e0bd05b6224a07d9da60a",
-    "product": "sha256-69513f329f066fba9e8bf9dbc38d34428a71e6c3303a8ade310214176fc81b37",
+    "plan": "sha256-5cc8e9a9d95aa9afc4a32f457b3acf0ee0dd2ab0ca4627efa416efeaae56b7b1",
+    "product": "sha256-196ea8fa2e4f26fe6e5091faf8a5ca0d3e478cfff17424500d978460ee713cb6",
     "run": [
       "glib",
       "nspr",

@@ -104,6 +104,9 @@ compare_repo = "https://chromium.googlesource.com/chromium/src.git"
 compare_tag = "{version}"
 differs_because = "tools/gn/README.md: the release replaces the tree's pointer with GN's own README (read 2026-11-01)"
 
+[cef.age_because]
+source = "Chromium 156.0.8078.93 (tag 2026-11-05) with CEF 8ea0c73 (156.0.26, 2026-11-06): Chrome's Extended Stable 156.0.8078.88 (2026-11-03) fixes 23 high CVEs this audit matched against .80, among them CVE-2026-121057, CVE-2026-121086, CVE-2026-121127 and CVE-2026-121129 (Google's post), and Google published no tarball for .88; .93 is the same branch's next tarball"
+
 [cef.not_affected]
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
 "CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
@@ -130,6 +133,37 @@ differs_because = "tools/gn/README.md: the release replaces the tree's pointer w
 "CVE-2026-121241" = "Navigation in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121246" = "WebGL in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121247" = "Dawn in Chrome on Android (Google's record); Oath builds CEF for Linux"
+# Chrome 157's records name 157.0.8103.38; Extended Stable 156.0.8078.88 fixed these, and
+# Chromium 156.0.8078.93, this pin's, is that branch after it.
+"CVE-2026-121032" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121057" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121060" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121061" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121071" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121078" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121079" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121084" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121086" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121094" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121097" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121104" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121119" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121127" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121129" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121135" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121137" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121141" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121143" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121148" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121160" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121182" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121201" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121210" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121211" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121221" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121226" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121227" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
+"CVE-2026-121250" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
 
 [certs]
 repo = "https://github.com/nss-dev/nss"
