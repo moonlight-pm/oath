@@ -348,9 +348,14 @@ fn live_update(r: &Remote, o: &Output, boot: &str) -> Result<()> {
     let before = service_pids(r)?;
     let moved = install::ssh_out(r, "sudo -n oath --json update --confirm 2>&1")?;
     eprintln!("{moved}");
-    // The answer is the last object; the steps' own output comes before it.
+    // The answer is the last object to start a line; the steps' own output
+    // comes before it, and a telemetry line after.
     let start = moved.rfind("\n{").map_or(0, |i| i + 1);
-    let v: Value = serde_json::from_str(&moved[start..]).unwrap_or(Value::Null);
+    let v: Value = serde_json::Deserializer::from_str(&moved[start..])
+        .into_iter::<Value>()
+        .next()
+        .and_then(|r| r.ok())
+        .unwrap_or(Value::Null);
     if v["pid1"] != json!("re-executed") {
         bail!("oath update --confirm did not re-execute PID 1 (pid1: {})", v["pid1"]);
     }

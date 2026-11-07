@@ -384,7 +384,12 @@ canto's Steam is), then `sudo oath update --confirm --reboot`, and
 checks: it rebooted, no service restarted on its new program before
 the reboot (when the output's `oath` ran the update), the output's PID
 1, the catalog in sync, each recipe at the output's pin, every service
-that ran before running again, the old boot archived. On 2026-10-28 on buccina it moved
+that ran before running again, the old boot archived. `--live` (R73)
+runs `sudo oath update --confirm` without `--reboot` first and requires
+`"pid1": "re-executed"`, the same boot, the output's PID 1, and every
+service whose package did not move on the process it had; then `sudo
+reboot` and the same checks (an older output from before R73 is never
+asked to re-execute, so `--live` needs one from after). On 2026-10-28 on buccina it moved
 `a14d1acd3c2a` (before the security sweep, Linux 7.3-rc1) to
 `3b2d49886ff7`: `pkg:oath` first, then five plans and 46 packages in
 one generation, a reboot into Linux 7.3 and the output's PID 1. On
