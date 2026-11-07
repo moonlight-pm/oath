@@ -136,12 +136,18 @@ Overwrite this file when facts change; do not append a diary.
   `~/.ssh/novus-oath.known_hosts` still has the old stick's key.
 - **The stick:** Joshua's Samsung Type-C 128 GB (`090c:1000`, serial
   `0354422110003481`), rewritten 2026-11-07 by `cargo make install
-  --local` from buccina: `base` output `bf9a6204eabe` (master `fc74baa`,
-  69/69 in QEMU, never published), the first whose boot screen says what
-  it is doing; hostname `oath`, no overlay, generation 0, root
-  `UUID=0078e846-9402-45ed-b5ae-69f7de80f388`. Its write of 2026-11-06
-  installed [dulcia](dulcia.md), then stopped at the mark on a Windows
-  machine Joshua is moving to Oath (2026-11-07), with nothing to say why.
-  Its host key is not pinned. Boot it from the firmware's boot menu (F8),
-  from a back-panel port: behind the keyboard's USB 2.0 hub it resets four
-  times and never becomes a disk.
+  --local` from buccina for a desk with an NVIDIA card: desk output
+  `06e0194eb4f3` (master `fc74baa`, 74/74 in QEMU, never published; canto
+  runs it), hostname `oath`, no overlay, root
+  `UUID=9a3600aa-1495-42be-8a9a-544f40879739`; booted in QEMU on buccina,
+  it built `plan:nvidia` (`pkg:nvidia` `44c0c5e1…`, NVIDIA 595.104.02,
+  vermagic 7.3.1) and turned it on (generation 1). It is for a machine
+  at 10.0.0.156 that Joshua is moving from Windows (ASUS ROG Strix
+  B760-I, i5-13400 with its own graphics off in setup, 32 GB, a GeForce
+  RTX 4060 `10de:2882`, wired `igc`; no driver for its Intel Wi-Fi
+  `8086:7a70`, no firmware for its Bluetooth `ibt-1040-0041`). Its base
+  write of earlier that day booted the machine to `Oath is running, with
+  no driver for this NVIDIA display (10de:2882)`. Its host key is not
+  pinned. Boot it from the firmware's boot menu (F8), from a back-panel
+  port: behind the keyboard's USB 2.0 hub it resets four times and never
+  becomes a disk.
