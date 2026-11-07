@@ -1,4 +1,5 @@
-//! Pure helpers for the EFI splash: mode pick + white mark on black.
+//! Pure helpers for the EFI splash: mode pick, white mark on black, and
+//! the status under it (`splash`, which PID 1 draws too).
 
 #![no_std]
 
@@ -7,6 +8,9 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+pub mod splash;
+
+include!(concat!(env!("OUT_DIR"), "/logo_size.rs"));
 const RAW: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/logo.bin"));
 const MARK_NUM: u32 = 1;
 const MARK_DEN: u32 = 3;
@@ -44,9 +48,11 @@ pub fn pick_mode(modes: &[(u32, u32)], current: (u32, u32)) -> (u32, u32) {
     modes.iter().copied().max_by_key(|(w, h)| (*w as u64) * (*h as u64)).unwrap_or(current)
 }
 
-pub fn mark_size(vis_w: u32, vis_h: u32, logo: &Logo) -> u32 {
+/// The mark's side on a `vis_w` by `vis_h` screen: a third of the short
+/// side, never larger than the mark itself.
+pub fn mark_side(vis_w: u32, vis_h: u32) -> u32 {
     let short = vis_w.min(vis_h);
-    (short * MARK_NUM / MARK_DEN).max(1).min(short).min(logo.w.max(1))
+    (short * MARK_NUM / MARK_DEN).max(1).min(short).min(LOGO_SIZE.max(1))
 }
 
 pub fn sample_alpha(logo: &Logo, x: u32, y: u32, dw: u32, dh: u32) -> u8 {
@@ -161,6 +167,18 @@ pub fn menu_step(idx: usize, n: usize, key: MenuKey) -> Option<(usize, bool)> {
     }
 }
 
+/// The release a bzImage names in its setup header ("7.3.1"): the
+/// `kernel_version` field points at a string 0x200 bytes in.
+pub fn kernel_release(image: &[u8]) -> Option<&str> {
+    if image.get(0x202..0x206)? != b"HdrS" {
+        return None;
+    }
+    let at = 0x200 + u16::from_le_bytes([*image.get(0x20e)?, *image.get(0x20f)?]) as usize;
+    let s = image.get(at..)?;
+    let end = s.iter().position(|b| *b == 0 || *b == b' ')?;
+    core::str::from_utf8(&s[..end]).ok().filter(|v| !v.is_empty())
+}
+
 /// Fill `out` (len = dw*dh) with grayscale 0..=255 (white over black).
 pub fn raster_mark(logo: &Logo, dw: u32, dh: u32, out: &mut [u8]) {
     for y in 0..dh {
@@ -180,6 +198,7 @@ mod tests {
     fn logo_loads() {
         let l = logo().expect("logo");
         assert!(l.w >= 256 && l.h >= 256);
+        assert_eq!(l.w, LOGO_SIZE);
         assert!(l.alpha[(l.h / 2 * l.w + l.w / 2) as usize] > 200);
         assert_eq!(l.alpha[0], 0);
     }
@@ -222,6 +241,18 @@ mod tests {
         let b = parse_bls("title Oath boot 1\nlinux /oath/boot/1/vmlinuz\ninitrd /oath/boot/1/initrd.gz\noptions oath.subvol=@boot-1\n");
         assert_eq!(b.linux, "\\oath\\boot\\1\\vmlinuz");
         assert!(b.options.contains("@boot-1"));
+    }
+
+    #[test]
+    fn release_from_the_setup_header() {
+        let mut img = vec![0u8; 0x400];
+        img[0x202..0x206].copy_from_slice(b"HdrS");
+        img[0x20e..0x210].copy_from_slice(&0x100u16.to_le_bytes());
+        img[0x300..0x315].copy_from_slice(b"7.3.1 (home@buccina) ");
+        assert_eq!(kernel_release(&img), Some("7.3.1"));
+        img[0x202] = 0;
+        assert_eq!(kernel_release(&img), None);
+        assert_eq!(kernel_release(&[]), None);
     }
 
     #[test]

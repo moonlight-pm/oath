@@ -22,6 +22,7 @@ mod probation;
 mod resume;
 mod rootdev;
 mod shutdown;
+mod splash;
 mod supervise;
 
 /// Lines logged before `/oath/log` exists (the initrd stage), written out
@@ -80,12 +81,14 @@ fn main() {
     // then reboots. Say why first.
     std::panic::set_hook(Box::new(|info| {
         log(&format!("panic: {info}"));
+        splash::fail(&format!("PID 1 failed: {info}"));
         tel("init", "panic", json!({ "msg": info.to_string() }));
     }));
     shutdown::install();
     if let Err(e) = real_main() {
         log(&format!("fatal: {e}"));
         tel("init", "fatal", json!({ "err": e }));
+        splash::fail(&format!("Boot failed: {e}. A shell waits on the serial console."));
         fallback();
     }
 }
@@ -128,6 +131,7 @@ fn real_main() -> Result<(), String> {
     }
     mount_devpts();
     unix_floor();
+    splash::open();
 
     if cmdline_flag("oath.install") {
         return install_ramdisk();
@@ -135,10 +139,22 @@ fn real_main() -> Result<(), String> {
     let hot = hotplug::Hotplug::open();
 
     if !Path::new("/oath/INDEX.md").exists() {
+        splash::say("Loading drivers");
         load_modules(true);
         let dev = root_dev();
         let sub = root_subvol();
-        mount_root(&dev, &sub)?;
+        splash::say(&format!("Mounting the root {dev} ({sub})"));
+        mount_root(&dev, &sub).map_err(|e| {
+            if Path::new(&dev).exists() {
+                e
+            } else {
+                format!(
+                    "the root disk {dev} did not appear in {} s (disks: {})",
+                    ROOT_WAIT.as_secs(),
+                    splash::disks()
+                )
+            }
+        })?;
         tel("init", "mounted", json!({ "dev": dev, "subvol": sub }));
     }
 
@@ -151,6 +167,7 @@ fn real_main() -> Result<(), String> {
     mount_work();
     mount_status();
 
+    splash::say("Reading the catalog");
     // Seed only a machine with no catalog at all. A missing INDEX.md is
     // regenerated, never a reason to throw the catalog away.
     if !Path::new("/oath/objects").is_dir() {
@@ -188,13 +205,16 @@ fn real_main() -> Result<(), String> {
     // Ethernet first. Do not insmod amdgpu before dhcp/sshd — on canto
     // there is no simpledrm, so a "defer KMS" pass that still required
     // firmware_fb_live() would load amdgpu and hang the NIC forever.
+    splash::say("Loading drivers");
     load_modules(true);
+    splash::say("Starting the network");
     apply_net();
     // The inventory is what sysfs has (net0 is named by now).
     if let (Ok(cat), Ok(lock)) = (Catalog::open(DEFAULT_ROOT), &boot_lock) {
         hotplug::sync(&cat, lock);
     }
     // A USB disk can take a few seconds more: hotplug mounts it then.
+    splash::say("Mounting disks");
     mount_host(true);
     ensure_home();
     if let Err(e) = oath_core::seat::ensure_void_home() {
@@ -206,6 +226,7 @@ fn real_main() -> Result<(), String> {
     inject_ssh_from_host();
     apply_ssh();
     // Packages, plans and the generation: observed from the store and /bin.
+    splash::say("Reading the packages");
     if let (Ok(cat), Ok(lock)) = (Catalog::open(DEFAULT_ROOT), &boot_lock) {
         if let Err(e) = cat.observe(lock, Path::new("/bin")) {
             log(&format!("catalog observe: {e}"));
@@ -220,8 +241,11 @@ fn real_main() -> Result<(), String> {
     let _ = listener.set_nonblocking(true);
     let mut sup = supervise::Supervisor::new();
     // sshd and DHCP first, then the deferred KMS and sound modules.
+    splash::say("Starting services");
     sup.converge();
+    splash::say("Loading display and sound drivers");
     load_modules(false);
+    splash::done();
 
     log("ready");
     tel("init", "ready", json!({ "kver": kver() }));
@@ -511,7 +535,7 @@ pub(crate) fn cmdline_flag(key: &str) -> bool {
         .any(|t| t == key || t == format!("{key}=1") || t == format!("{key}=true"))
 }
 
-fn cmdline_val(key: &str) -> Option<String> {
+pub(crate) fn cmdline_val(key: &str) -> Option<String> {
     let prefix = format!("{key}=");
     cmdline().split_whitespace().find_map(|t| t.strip_prefix(&prefix).map(|s| s.to_string()))
 }
@@ -533,11 +557,18 @@ fn root_dev() -> String {
     static ROOT: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     ROOT.get_or_init(|| {
         let Some(want) = cmdline_val("oath.root") else { return guess_root_dev() };
-        let deadline = Instant::now() + ROOT_WAIT;
+        let started = Instant::now();
+        let deadline = started + ROOT_WAIT;
         loop {
             if let Some(dev) = rootdev::find(&want) {
                 return dev;
             }
+            splash::say(&format!(
+                "Waiting for the root disk {want} ({} s of {}). Disks: {}",
+                started.elapsed().as_secs(),
+                ROOT_WAIT.as_secs(),
+                splash::disks()
+            ));
             if Instant::now() >= deadline {
                 log(&format!("root {want} did not appear in {}s", ROOT_WAIT.as_secs()));
                 return want;
@@ -562,6 +593,7 @@ fn guess_root_dev() -> String {
 }
 
 fn install_ramdisk() -> Result<(), String> {
+    splash::say("Installer: loading drivers");
     load_modules(true);
     let _ = fs::create_dir_all("/root/.ssh");
     let _ = fs::create_dir_all("/etc");
@@ -580,6 +612,7 @@ fn install_ramdisk() -> Result<(), String> {
     let _ = oath_core::seat::ensure_void_home();
     let _ = fs::set_permissions("/root/.ssh", fs::Permissions::from_mode(0o700));
     start_install_tty0();
+    splash::say("Installer: starting the network");
     bring_up_install_net();
     if !install_has_ipv4() {
         log("no ipv4 after dhcp; dump dmesg to ESP, keep ramdisk");
@@ -589,6 +622,7 @@ fn install_ramdisk() -> Result<(), String> {
     start_install_sshd();
     let _ = fs::write("/run/oath-install/ready", "1\n");
     log("install ramdisk ready (sshd)");
+    splash::done();
     tel("init", "install", json!({ "ready": true }));
     loop {
         std::thread::sleep(Duration::from_secs(1));

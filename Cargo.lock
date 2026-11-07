@@ -881,6 +881,7 @@ dependencies = [
  "libc",
  "nix",
  "oath-core",
+ "oath-efi",
  "serde",
  "serde_json",
  "tempfile",

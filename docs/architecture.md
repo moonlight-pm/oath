@@ -10,6 +10,9 @@ tree changes.
 
 ```
 firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loader)
+            under the mark a status line and bar: reading the kernel and
+            initrd, then `Starting Linux <release>`; its framebuffer goes
+            to PID 1 as oath.fb=<base>,<w>,<h>,<stride>,<rgb|bgr>
             loader/entries/oath.conf  + oath-N.conf (last 5 boots)
             vmlinuz (own build, 7.3.0) + initrd.gz
   kernel cmdline: oath.root=UUID=<btrfs fsid> (or a node) oath.subvol=@ console=ttyS0 panic=10 …
@@ -19,8 +22,12 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     open the uevent socket (netlink) before the first coldplug
     mount /proc /sys /dev /dev/pts; tmpfs /tmp /run /dev/shm; cgroup2
     kernel modprobe helper = /lib/oath/modprobe (this binary)
+    map the status rows of oath.fb through /dev/mem (splash.rs): each
+      step, the driver being loaded, the root wait and its disks, a failure
+      in amber, a bar a thread moves; let go before any display driver loads
     coldplug by modalias (display and sound wait until services start;
-      the screen keeps the EFI mark until then, then shows tty1, svc:screen)
+      the screen keeps the EFI mark until then, then shows tty1, svc:screen;
+      with no display driver, the line names the display and the address)
     find <root> (waits up to 30 s, coldplugging again: a USB disk is late)
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot

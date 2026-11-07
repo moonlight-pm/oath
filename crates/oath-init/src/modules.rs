@@ -272,6 +272,13 @@ impl Index {
         }
         let file = fs::File::open(self.base.join(path)).map_err(|e| format!("{path}: {e}"))?;
         let params = CString::new(self.params(name)).map_err(|e| e.to_string())?;
+        // The boot screen lets go before a display driver takes it; any
+        // other driver that hangs in its init leaves its name there.
+        if crate::gpu::drives_display(path) {
+            crate::splash::release();
+        } else {
+            crate::splash::say(&format!("Loading drivers: {name}"));
+        }
         match finit_module(&file, &params, ModuleInitFlags::empty()) {
             Ok(()) | Err(Errno::EEXIST) => {}
             Err(e) => return Err(format!("{name}: {e}")),

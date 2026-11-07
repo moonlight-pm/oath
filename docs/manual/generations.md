@@ -84,6 +84,26 @@ archive boots `oath.subvol=@boot-N`, the userspace snapshot taken when
 it was archived. `oath-efi` is the only loader; there is no fallback
 loader on the ESP.
 
+## What the boot screen says
+
+Under the mark, a line says what the machine is doing and a bar moves
+while it works. A machine that stops booting shows where:
+
+- `Reading the kernel` or `Reading the initrd`, with the bar still: the
+  firmware cannot read the disk; try another port.
+- `Starting Linux 7.3.1` and nothing more: the kernel stopped before
+  Oath's PID 1 ran.
+- `Loading drivers: <name>` with the bar still: that driver hung.
+- `Waiting for the root disk … Disks: …`: the disk Oath runs from has
+  not appeared; the list is what the kernel sees.
+- Amber text: the boot failed, and says why. A shell waits on the
+  serial console.
+- `Oath is running, with no driver for this … display (vendor:device).
+  Reach it with ssh home@<address>`: the boot finished, but Oath has no
+  driver for the graphics card.
+
+Once a display driver loads, the screen is the desk's or tty1's.
+
 `cargo make esp --esp <vfat node> --confirm [--root /dev/sda2]
 [--output <id>]` takes the kernel, initrd and `oath-efi` of a build
 output (default: the newest one `cargo make check` passed;

@@ -6,7 +6,7 @@ What exists and what is missing. Design: [specs/](specs/); priority:
 **Status:** `shipped` works and is tested · `partial` works with
 gaps · `target` designed, not built.
 
-**As of:** 2026-11-06
+**As of:** 2026-11-07
 
 ## Core
 
@@ -26,7 +26,7 @@ gaps · `target` designed, not built.
 | Devices | partial | modules by modalias; `dev:*` from sysfs; `host:local.mounts`, `/home` at boot (R45); sound, pads, `/dev/kvm`, `seat_hid` `home`'s (R22, R30, R33, R71) | Node ownership a field only for HID |
 | Seed and overlays | shipped | profiles as data in `/lib/oath/seed` (R72); `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables; TIOCSTI off, R60; Landlock, Yama, R64); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | — |
-| Boot | shipped | initrd from our PID 1, bash and firmware; switch_root into `@`; `oath-efi` the only loader; ESP keeps 5 boots; `oath update` pulls the newest signed output (R38), builds recipes, replaces overlays (`--keep`), makes what the profile gained, takes what it dropped (R47, R62) | Kernels and PID 1's boot work need a reboot |
+| Boot | shipped | initrd: PID 1, bash, firmware; switch_root into `@`; `oath-efi` the only loader; boot steps under the mark; ESP keeps 5 boots; `oath update` takes the newest signed output (R38), builds recipes, replaces overlays, follows the profile (R47, R62) | Kernels, PID 1's boot work need a reboot; a hung kernel shows `Starting Linux` |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, locked and pinned packs (R28); published only from a clean master (R47) | — |
 | Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` (R43), `@home` apart; records its release (R45) | AMI: `UEFI OS` returns; Oath not first |
 | Test harness | shipped | `cargo make check`: a QEMU per case, `check-pass` per output; `--target`: `metal` cases on a machine | — |

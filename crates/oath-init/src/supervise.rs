@@ -692,6 +692,7 @@ impl Supervisor {
     }
 
     fn start(&mut self, id: &str, spec: &Svc) {
+        crate::splash::say(&format!("Starting svc:{id}"));
         let program = program(spec);
         match spawn(id, spec) {
             Ok(kid) => {

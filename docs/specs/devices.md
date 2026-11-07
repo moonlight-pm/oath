@@ -49,7 +49,8 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   that replace the firmware framebuffer (amdgpu, i915, xe, nouveau,
   radeon) and everything under `sound/` wait for a second coldplug
   after services start, so sshd is up first; on canto an early amdgpu
-  stalls the NIC. Loaded and failed modules go to `oath logs`.
+  stalls the NIC. Before any display driver loads, PID 1 lets go of the
+  boot screen's status (boot-and-install.md). Loaded and failed modules go to `oath logs`.
 - **On request.** `/proc/sys/kernel/modprobe` is `/lib/oath/modprobe`,
   a link to PID 1's binary in the initrd and the root. The kernel runs
   it for a filesystem (`fs-btrfs` at the root mount, `fs-vfat`), a code

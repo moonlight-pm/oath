@@ -74,6 +74,25 @@ of T24, and D3 (seed as data).
   only loader on the ESP, USB stick and installer.
 - `oath-efi` draws the mark with GOP, shows the menu (timeout 5 s on
   metal, 0 in QEMU), and starts the kernel with `LoadImage`.
+- **The boot screen says what it is doing** (built 2026-11-07). Under the
+  mark, a bar and up to two lines in a 5×9 font of our own
+  (`crates/oath-efi/src/font.txt`; layout and painting in `splash.rs`,
+  shared by `oath-efi` and PID 1). `oath-efi` fills the bar as it reads
+  the kernel and initrd, then says `Starting Linux <release>`; an error
+  (a missing file, a firmware that refuses the kernel, Secure Boot) stays
+  amber for 10 s before the firmware tries its next boot option. It passes
+  a linear framebuffer to PID 1 as `oath.fb=<base>,<w>,<h>,<stride>,<rgb|bgr>`
+  (none when the firmware only blits). The kernel has no driver for the
+  firmware framebuffer and display drivers wait (devices.md), so PID 1
+  maps the status rows through `/dev/mem` and writes each step: the
+  driver it is loading, the root wait with the disks it sees, mounting,
+  the catalog, the network, each `svc` it starts. A thread moves the bar
+  while PID 1 lives, so a still bar is a hang and the line says where; a
+  hang in the kernel leaves `Starting Linux`. A fatal error is amber and
+  stays; a panic says so before `panic=10` reboots. PID 1 lets go before
+  any DRM, fbdev or NVIDIA module loads. When the boot ends and no DRM
+  device exists, the line says the display has no driver (its PCI id)
+  and gives `ssh home@<address>`, refreshed every 2 s.
 - The kernel command line names the root (`oath.root=`) and subvolume
   (`oath.subvol=`): `@`, `@boot-N` or `@gen-N`. Anything else falls back
   to `@`. `install` names the root `UUID=<fsid>`, a UUID it gives the

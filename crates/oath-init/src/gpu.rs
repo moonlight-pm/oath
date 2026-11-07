@@ -25,6 +25,13 @@ pub fn takes_over_firmware_fb(rel: &str) -> bool {
         || r.rsplit('/').next().is_some_and(|f| f.starts_with("nvidia"))
 }
 
+/// A module that drives a display: any DRM or fbdev driver, or NVIDIA's.
+/// The boot splash lets go of the firmware's framebuffer before one loads.
+pub fn drives_display(rel: &str) -> bool {
+    let r = rel.replace('\\', "/");
+    takes_over_firmware_fb(&r) || r.contains("/gpu/drm/") || r.contains("/video/fbdev/")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -41,5 +48,14 @@ mod tests {
         assert!(!takes_over_firmware_fb("kernel/drivers/gpu/drm/virtio/virtio-gpu.ko"));
         assert!(!takes_over_firmware_fb("kernel/drivers/net/ethernet/broadcom/tg3.ko"));
         assert!(!takes_over_firmware_fb("kernel/fs/btrfs/btrfs.ko"));
+    }
+
+    #[test]
+    fn any_display_driver_ends_the_splash() {
+        assert!(drives_display("kernel/drivers/gpu/drm/virtio/virtio-gpu.ko"));
+        assert!(drives_display("kernel/drivers/gpu/drm/drm.ko"));
+        assert!(drives_display("kernel/drivers/video/fbdev/core/fb.ko"));
+        assert!(drives_display("/oath/store/pkg/nvidia/sha256-0/lib/modules/7/nvidia.ko"));
+        assert!(!drives_display("kernel/drivers/usb/host/xhci-hcd.ko"));
     }
 }

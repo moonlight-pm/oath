@@ -28,6 +28,8 @@ path = "src/bin/login.rs"
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 oath-core = { path = "../oath-core" }
+# The splash's font and layout, which PID 1 draws after the loader (no_std).
+oath-efi = { path = "../oath-efi" }
 nix = { version = "0.30", default-features = false, features = [
     "fs",
     "mount",
