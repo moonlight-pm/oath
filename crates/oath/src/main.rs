@@ -216,6 +216,16 @@ enum Cmd {
     /// running. Root only. For the harness.
     #[command(hide = true)]
     PanicInit,
+    /// Make PID 1 re-execute into another binary as `oath update` does
+    /// (R73), keeping every service. Root only. For the harness.
+    #[command(hide = true)]
+    ReexecInit {
+        /// The new PID 1.
+        bin: PathBuf,
+        /// The hash to ask for; by default the file's own.
+        #[arg(long)]
+        hash: Option<String>,
+    },
     /// Write a fresh catalog from a built-in profile, or merge overlays
     /// into an existing one. Build and install time only.
     #[command(hide = true)]
@@ -287,6 +297,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Desk { .. }) => "desk",
         Some(Cmd::Seed { .. }) => "seed",
         Some(Cmd::PanicInit) => "panic-init",
+        Some(Cmd::ReexecInit { .. }) => "reexec-init",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
     match &cli.cmd {
@@ -349,6 +360,19 @@ fn run() -> oath_core::Result<i32> {
                 return Err(Error::hint("PID 1 did not panic (not root?)", "sudo oath panic-init"));
             }
             println!("PID 1 panicked; `oath logs` shows it resume");
+            Ok(0)
+        }
+        Some(Cmd::ReexecInit { bin, hash }) => {
+            let hash = match hash {
+                Some(h) => h,
+                None => oath_core::file_hash(&std::fs::read(&bin)?),
+            };
+            match live::reexec_init(&bin, &hash)? {
+                live::Reexec::Done => println!("PID 1 runs {} ({hash})", bin.display()),
+                live::Reexec::Unsupported => println!(
+                    "this PID 1 predates re-executing on request (R73): a reboot runs another"
+                ),
+            }
             Ok(0)
         }
         Some(Cmd::Ls { kind }) => {

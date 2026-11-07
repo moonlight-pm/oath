@@ -72,6 +72,10 @@ fn main() {
         }
         _ => {}
     }
+    // A binary PID 1 may re-execute into reads the state first (R73).
+    if args.next().as_deref() == Some(resume::REHEARSE) {
+        std::process::exit(resume::rehearse_main(args.next().as_deref()));
+    }
     // A panic in PID 1 panics the kernel; `panic=` on the command line
     // then reboots. Say why first.
     std::panic::set_hook(Box::new(|info| {
@@ -88,8 +92,18 @@ fn main() {
 
 fn real_main() -> Result<(), String> {
     if resume::resuming() {
-        let r = resume::take()?;
-        run(r.sup, r.listener, hotplug::Hotplug::from_socket(r.uevents), r.resumes);
+        // A binary PID 1 re-executed into that cannot take the state goes
+        // back to the one that handed it over (R73).
+        let why = match std::panic::catch_unwind(resume::take) {
+            Ok(Ok(r)) => {
+                resume::announce(&r.why);
+                run(r.sup, r.listener, hotplug::Hotplug::from_socket(r.uevents), r.resumes);
+            }
+            Ok(Err(e)) => e,
+            Err(_) => "it panicked taking the state".to_string(),
+        };
+        resume::back(&why);
+        return Err(why);
     }
     tel("init", "boot", json!({ "pid": std::process::id(), "kver": kver() }));
     ensure_mount("proc", "/proc", "proc");
@@ -217,12 +231,14 @@ fn real_main() -> Result<(), String> {
     // What no package prescribes goes, once a boot (R62): nothing an older
     // pin ran is still running now.
     sup.run_task("reap", &["/bin/oath", "--confirm", "reap", "--boot"]);
+    resume::announce("boot");
     run(sup, listener, hot, Vec::new())
 }
 
 /// The main loop. A panic in one pass does not take the machine down:
 /// PID 1 hands its state to a fresh copy of itself (`resume`), and only
-/// reboots when that keeps happening.
+/// reboots when that keeps happening. An `upgrade` hands it to a new
+/// binary (R73) and returns only when that did not happen.
 fn run(
     mut sup: supervise::Supervisor,
     listener: UnixListener,
@@ -234,20 +250,26 @@ fn run(
         let pass = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             step(&mut sup, &listener, &mut probation, &mut hot)
         }));
-        if pass.is_err() {
-            resume::handoff(&mut sup, listener, hot.take_socket(), resumes);
-            shutdown::finish(&mut sup, shutdown::Mode::Reboot);
+        match pass {
+            Err(_) => {
+                resume::handoff(&mut sup, listener, hot.take_socket(), resumes);
+                shutdown::finish(&mut sup, shutdown::Mode::Reboot);
+            }
+            Ok(Some(req)) => resume::upgrade(&mut sup, &listener, &mut hot, &resumes, req),
+            Ok(None) => {}
         }
         std::thread::sleep(Duration::from_millis(100));
     }
 }
 
+/// One pass; an `upgrade` request is the caller's to carry out, outside
+/// the pass.
 fn step(
     sup: &mut supervise::Supervisor,
     listener: &UnixListener,
     probation: &mut probation::Watch,
     hot: &mut hotplug::Hotplug,
-) {
+) -> Option<resume::Upgrade> {
     if let Some(mode) = shutdown::requested() {
         shutdown::finish(sup, mode);
     }
@@ -256,18 +278,30 @@ fn step(
     sup.start_due();
     probation.tick(sup);
     hot.tick();
-    if let Ok((mut s, _)) = listener.accept() {
-        let mut buf = [0u8; 64];
-        let n = s.read(&mut buf).unwrap_or(0);
-        // The harness's way to prove a panic is survived; root only.
-        if buf[..n].starts_with(b"panic") && peer_uid(&s) == Some(0) {
-            panic!("asked to over init.sock");
-        }
-        tel("init", "converge", json!({ "bytes": n }));
-        // An update's apply leaves the seat's services running (R42).
-        sup.converge_keeping(buf[..n].starts_with(b"converge keep-seat"));
-        let _ = s.write_all(b"ok\n");
+    let Ok((mut s, _)) = listener.accept() else { return None };
+    let mut buf = [0u8; 4096];
+    let n = s.read(&mut buf).unwrap_or(0);
+    // The harness's way to prove a panic is survived; root only.
+    if buf[..n].starts_with(b"panic") && peer_uid(&s) == Some(0) {
+        panic!("asked to over init.sock");
     }
+    // `oath update`'s new PID 1 (R73); root only.
+    if buf[..n].starts_with(b"upgrade") {
+        let msg = String::from_utf8_lossy(&buf[..n]);
+        let req = match (peer_uid(&s), resume::parse_request(&msg)) {
+            (Some(0), Ok((path, hash))) => return Some(resume::Upgrade { path, hash, reply: s }),
+            (Some(0), Err(e)) => e,
+            _ => "root only".to_string(),
+        };
+        log(&format!("upgrade: refused: {req}"));
+        let _ = s.write_all(format!("refused: {req}\n").as_bytes());
+        return None;
+    }
+    tel("init", "converge", json!({ "bytes": n }));
+    // An update's apply leaves the seat's services running (R42).
+    sup.converge_keeping(buf[..n].starts_with(b"converge keep-seat"));
+    let _ = s.write_all(b"ok\n");
+    None
 }
 
 fn peer_uid(s: &std::os::unix::net::UnixStream) -> Option<u32> {

@@ -126,8 +126,8 @@ pub struct Supervisor {
 }
 
 /// Everything the supervisor knows, for a PID 1 that execs itself after a
-/// panic (`crate::resume`). Children stay PID 1's across the exec; their
-/// log pipes stay open (the fd numbers are here).
+/// panic or into a new binary (`crate::resume`). Children stay PID 1's
+/// across the exec; their log pipes stay open (the fd numbers are here).
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 pub struct State {
     kids: Vec<KidState>,
@@ -149,6 +149,11 @@ impl State {
     pub fn len(&self) -> usize {
         self.kids.len()
     }
+
+    /// The log pipes it names, which the exec must let through.
+    pub fn fds(&self) -> Vec<i32> {
+        self.kids.iter().filter_map(|k| k.out).chain(self.survivors.iter().map(|s| s.1)).collect()
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -167,19 +172,15 @@ struct KidState {
 }
 
 impl Supervisor {
-    /// Hand everything over: the log pipes lose close-on-exec so the next
-    /// PID 1 can read them.
+    /// Hand everything over; the caller lets the log pipes through the exec
+    /// ([`State::fds`]), and [`Self::import`] takes them back.
     pub fn export(&mut self) -> State {
         let now = Instant::now();
         let kids = self
             .kids
             .drain()
             .map(|(pid, k)| {
-                let out = k.out.map(|f| {
-                    let fd = std::os::fd::IntoRawFd::into_raw_fd(f);
-                    unsafe { libc::fcntl(fd, libc::F_SETFD, 0) };
-                    fd
-                });
+                let out = k.out.map(std::os::fd::IntoRawFd::into_raw_fd);
                 KidState {
                     pid,
                     id: k.id,
@@ -215,11 +216,7 @@ impl Supervisor {
             survivors: self
                 .survivors
                 .drain(..)
-                .filter_map(|s| {
-                    let fd = std::os::fd::IntoRawFd::into_raw_fd(s.out?);
-                    unsafe { libc::fcntl(fd, libc::F_SETFD, 0) };
-                    Some((s.id, fd, s.partial))
-                })
+                .filter_map(|s| Some((s.id, std::os::fd::IntoRawFd::into_raw_fd(s.out?), s.partial)))
                 .collect(),
         }
     }

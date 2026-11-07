@@ -967,8 +967,10 @@ fn tools() -> Vec<Tool> {
          (`host:local.profile`, signed by a key in `host:local.publishers`) would move. With \
          `confirm: true`: move to it. Every pack is fetched first, so a failed fetch changes \
          nothing; then the packages move in one generation, the image's own files and the ESP \
-         are written, and the boot it replaced stays in the firmware menu. Its kernel and \
-         PID 1 run after a reboot (`reboot: true`, which ends this connection). On a machine \
+         are written, and the boot it replaced stays in the firmware menu. Without `reboot`, \
+         PID 1 re-executes into the output's binary first, every service running (R73); its \
+         kernel, and what PID 1 does only at boot, run after a reboot (`reboot: true`, which \
+         ends this connection). On a machine \
          still running dropbear, a `confirm` after that reboot moves sshd to OpenSSH on \
          probation: `keep` from a new connection. Do not pass `confirm` unless the owner \
          asked for an update."

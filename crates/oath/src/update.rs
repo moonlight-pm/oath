@@ -48,7 +48,7 @@ use oath_core::update::{self as up, Move, Release};
 use oath_core::{find_bin, Actor, ApplyHooks, Catalog, Error, ObjectId, Result};
 use serde_json::{json, Map, Value};
 
-use crate::live::{Follow, Live};
+use crate::live::{self, Follow, Live};
 
 pub struct Opts {
     pub confirm: bool,
@@ -137,13 +137,17 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     }
 
     if same {
-        let pid1 = if is_root {
-            match oath_core::file_hash(&fs::read("/proc/1/exe")?) {
-                h if h == release.init => "PID 1 is the output's",
-                _ => "PID 1 is not the output's yet: reboot to run it",
-            }
+        let pid1 = if !is_root {
+            "run as root to compare PID 1".to_string()
+        } else if live::init_hash()? == release.init {
+            "PID 1 is the output's".to_string()
+        } else if opts.confirm && !opts.reboot {
+            // An update that ran before this PID 1 could re-execute (R73).
+            reexec_pid1(Path::new("/lib/oath/init"), &release.init).1
         } else {
-            "run as root to compare PID 1"
+            "PID 1 is not the output's yet: `sudo oath update --confirm` re-executes it, or a \
+             reboot runs it"
+                .to_string()
         };
         if sshd_is_dropbear(cat)? {
             if opts.confirm {
@@ -260,6 +264,7 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     // Every tree is here now: no two packages may ship one name.
     check_links(root, &docs)?;
     move_sshd(root, cat, actor, &bundle)?;
+    let old_init = live::init_hash()?;
     let root_dev =
         cmdline_val(&fs::read_to_string("/proc/cmdline")?, "oath.root").ok_or_else(|| {
             Error::hint(
@@ -285,6 +290,14 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     if !is_mounted(&mnt) {
         sh(Command::new(find_bin("mount")).args(["-t", "vfat", &esp_dev]).arg(&mnt))?;
     }
+    // R73: the output's PID 1 takes over before the apply, so it is the one
+    // that converges; what PID 1 does only at boot waits for a boot.
+    let reexec = !opts.reboot && old_init != release.init && {
+        eprintln!(">> PID 1: re-execute into the output's, every service running");
+        let (done, text) = reexec_pid1(&bundle.join("stage/lib/oath/init"), &release.init);
+        eprintln!("{text}");
+        done
+    };
     let steps = Steps {
         moves: &moves,
         svcs: &svcs,
@@ -298,8 +311,30 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     if Command::new(find_bin("umount")).arg(&mnt).status().is_ok_and(|s| s.success()) {
         let _ = fs::remove_dir(&mnt);
     }
+    if reexec && result.is_err() {
+        // Back to the binary it ran, which the update has not replaced yet,
+        // so the machine is as it was.
+        let (back, text) = reexec_pid1(Path::new("/lib/oath/init"), &old_init);
+        if back {
+            eprintln!("the update stopped: PID 1 went back to the binary it ran");
+        } else {
+            eprintln!(
+                "the update stopped with PID 1 on the output's binary ({text}); the next boot \
+                 runs the ESP's"
+            );
+        }
+    }
     let generation = result?;
     oath_core::write_json(&root.join(up::RECORD), &release)?;
+    let kernel = match current.as_ref() {
+        Some(c) if c.kernel.is_some() && c.kernel == release.kernel => "runs",
+        _ => "next-boot",
+    };
+    let pid1 = match (old_init == release.init, reexec) {
+        (true, _) => "runs",
+        (false, true) => "re-executed",
+        (false, false) => "next-boot",
+    };
     let packages = match generation {
         0 => "no package moved".to_string(),
         g => format!("its packages are generation {g}"),
@@ -316,13 +351,63 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         );
         sh(&mut Command::new(find_bin("reboot")))?;
     } else {
+        let mut text = msg;
+        if pid1 == "re-executed" {
+            text.push_str(
+                "; PID 1 re-executed into its binary (what it does only at boot: mounts, \
+                 modules, sysctls, device modes, /etc, waits for the next boot)",
+            );
+        }
+        match (kernel, pid1) {
+            ("next-boot", "next-boot") => text.push_str("; reboot to run its kernel, initrd and PID 1"),
+            ("next-boot", _) => text.push_str("; reboot to run its kernel and initrd"),
+            (_, "next-boot") => text.push_str("; reboot to run its PID 1"),
+            _ => {}
+        }
         finish(
             &opts,
-            json!({ "output": release.output, "generation": generation }),
-            &format!("{msg}; reboot to run its kernel, initrd and PID 1"),
+            json!({
+                "output": release.output,
+                "generation": generation,
+                "pid1": pid1,
+                "kernel": kernel,
+            }),
+            &text,
         );
     }
     Ok(0)
+}
+
+/// Re-execute PID 1 into `bin` when it is the PID 1 hashed `init` (R73):
+/// whether PID 1 runs it now, and what came of it as a person reads it.
+fn reexec_pid1(bin: &Path, init: &str) -> (bool, String) {
+    match fs::read(bin).map(|b| oath_core::file_hash(&b)) {
+        Ok(h) if h == init => {}
+        Ok(h) => {
+            return (
+                false,
+                format!(
+                    "{} is {}, not PID 1 {}: PID 1 stays on its binary until a boot",
+                    bin.display(),
+                    up::short(&h),
+                    up::short(init)
+                ),
+            )
+        }
+        Err(e) => return (false, format!("{}: {e}; PID 1 stays on its binary", bin.display())),
+    }
+    match live::reexec_init(bin, init) {
+        Ok(live::Reexec::Done) => {
+            (true, format!("PID 1 runs {} with every service as it was", up::short(init)))
+        }
+        Ok(live::Reexec::Unsupported) => (
+            false,
+            "this PID 1 predates re-executing on request (R73): the output's runs from the next \
+             boot"
+                .to_string(),
+        ),
+        Err(e) => (false, format!("PID 1 stays on its binary until a boot: {e}")),
+    }
 }
 
 /// A directory removed when the run ends, however it ends: nothing of an
@@ -355,7 +440,15 @@ fn preview(
         machine.get(name).and_then(|d| d["hash"].as_str()).filter(|h| !h.is_empty())
     };
     let moved = |m: &Move| m.to().is_some_and(|to| pin(m.name()) != Some(to));
-    let reboot = up::takes_reboot(current, release);
+    // A new PID 1 alone takes no reboot when this one re-executes (R73).
+    let kernel_moves = !current.is_some_and(|c| c.kernel.is_some() && c.kernel == release.kernel);
+    let runs = live::init_hash().ok().or_else(|| current.map(|c| c.init.clone()));
+    let pid1 = match runs {
+        Some(h) if h == release.init => "runs",
+        _ if live::can_reexec() => "re-exec",
+        _ => "next-boot",
+    };
+    let reboot = kernel_moves || pid1 == "next-boot";
     let probation = moves.iter().any(|m| {
         let runs_sshd = services
             .get(m.name())
@@ -408,6 +501,7 @@ fn preview(
         "from": from,
         "moves": list,
         "reboot": reboot,
+        "pid1": pid1,
         "probation": probation,
         "release": release,
     })))
