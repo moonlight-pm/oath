@@ -18,18 +18,18 @@ append history (git has it).
    `/lib/oath/seed`, so a pin no longer moves PID 1, and `oath update` re-execs PID 1 into the
    output's binary with every service running; a kernel, PID 1's boot work and the first update from
    a pre-R73 PID 1 still reboot. Released 2026-11-07 from `7597cc1`: `desk` `6c8d38bd54c4` (Sola
-   `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too), on novus, and `base` `ee3e239caa32`,
-   on dulcia; both trust key `oath@novus` for `names="sola,sola-*"`. buccina (`f612b200206c`) and
-   canto (`ab9ff2a9213f`) are pre-R72 and refuse a scoped key. Gap: a changed `svc` spec goes by
-   hand. Next: buccina and canto onto `6c8d38bd54c4` (canto: look at its desk first), each
-   then the key in its publishers; Sola's publish runs `oath publish` (sandbox or overlay
-   builds: Joshua's call); then slices 2 (packaged services) and 4 (Oath's own heads).
+   `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too), on novus and canto, and `base`
+   `ee3e239caa32`, on dulcia; all three trust key `oath@novus` for `names="sola,sola-*"`. buccina
+   (`f612b200206c`) is pre-R72 and refuses a scoped key. Gap: a changed `svc` spec goes by hand.
+   Next: buccina onto `6c8d38bd54c4`, then the key; Sola's publish runs `oath publish` (its branch
+   `oath-heads`, sandbox builds, waits on Joshua's merge); then slices 2 (packaged services) and 4
+   (Oath's own heads).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `0c99a6a5` (on CEF 156.0.15):
    core `pkg:sola`, fifteen `pkg:sola-<app>` (`pkg:sola-oath`, the read-only package app, new), `svc:sola-vault`;
-   until a machine runs R72, a pin moves PID 1's hash and takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus wants `["3554:f510"]` once it runs `220c74bb6867` or newer. Novus's Sola overlays (next@7545d519; `pkg:sola` and `pkg:sola-oath` from next@45d19f15) are merged into master `0c99a6a5`, so a plain update loses nothing. Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
+   until a machine runs R72, a pin moves PID 1's hash and takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus has `["3554:f510"]` (generation 99). Novus runs the release's Sola builds but `pkg:sola-browser` (next@33d869a8, kept: a plain update drops it). Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
@@ -45,7 +45,7 @@ append history (git has it).
    CVE-2026-99255 and 99262 wait for that 7.3.y. rsync 3.5.2 (R67) is on the origin; its fix bounds only unbroken collision runs.
    R67: the audit pins a key upstream names and rebuilds CEF itself, the runner carrying what outlasts a 2 h command; neither has run for real.
    Next: the 2026-11-10 run moves fribidi 1.0.18, expat 2.10.0, vulkan-loader and vulkan-tools 1.4.367 and rebuilds CEF, when all are a week old
-   (Joshua, 2026-11-04); buccina takes it at the next run. R60 is on buccina; Joshua left canto on `debfd75332ea` for now.
+   (Joshua, 2026-11-04); buccina takes it at the next run. R60 is on buccina; canto runs `6c8d38bd54c4` (2026-11-07).
 
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
@@ -57,7 +57,7 @@ are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, mo
 
 | Host | Reach | Notes |
 |------|-------|-------|
-| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `debfd75332ea` (2026-11-03, no overlay), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
+| canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `6c8d38bd54c4` (2026-11-07, generation 454, no overlay; key `oath@novus` in its publishers), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
 | novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `6c8d38bd54c4` (generation 98, booted 2026-11-07; `pkg:sola-browser` an overlay from Sola's next@33d869a8; key `oath@novus` in its publishers), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `f612b200206c` (the 2026-11-05 audit's), headless: `desk`'s packages with its services off, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 | dulcia | `ssh dulcia` from buccina or novus (`home@10.0.0.169`, key in `build/known_hosts`) | OptiPlex 5080, i7-10700T, 64 GB; a server on `base`, installed 2026-11-06 from the stick; `base` release `ee3e239caa32` (generation 6, novus's key scoped to Sola, Mountain time); [hosts/dulcia.md](hosts/dulcia.md) |

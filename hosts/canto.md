@@ -57,10 +57,12 @@ Overwrite this file when facts change; do not append a diary.
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** output `debfd75332ea` (master `dcb3216`, generation 444), from
-  `oath update --confirm --reboot` on 2026-11-03: Linux 7.3.1 with the audit's 12 io_uring
-  patches, in sync, 161 packages verified, the desk and its panes back. `keep_children` on
-  `svc:sola-session` set by hand after it (generation 445; the session kept its pid).
+- **Running now:** output `6c8d38bd54c4` (master `7597cc1`, R72 and R73), from `sudo oath
+  update --confirm --reboot` on 2026-11-07 at Joshua's word (generation 453, 164 packages, no
+  overlay; it had run `ab9ff2a9213f`): in sync, its 24 services and the desk back. Generation 454
+  put novus's key in `host:local.publishers` as `names="sola,sola-*" … oath@novus` beside
+  buccina's. Before: `debfd75332ea` (2026-11-03); `keep_children` on `svc:sola-session` set by
+  hand (generation 445).
   `pkg:lzo` and `pkg:dropbear` removed by hand at Joshua's word (generation 446).
   Earlier: Release B, output `dd0f847aa9c9` (R47), from Sola's
   session on 2026-10-31: `oath update --confirm` (generation 432: the 13
