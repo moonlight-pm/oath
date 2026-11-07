@@ -232,3 +232,14 @@ state to a fresh copy of itself, and every service keeps running and
 stays supervised (`oath logs` shows `panic: re-executing PID 1` and
 `resumed after a panic`). A third panic within a minute makes it shut
 down cleanly and reboot.
+
+## A new PID 1 without a reboot
+
+`sudo oath update --confirm` (no `--reboot`) has PID 1 re-execute into
+the output's binary the same way, every service running (R73,
+[install.md](install.md)). `oath logs` shows `upgrade: … rehearsing`,
+`upgrade: re-executing PID 1 into …` and `upgrade: this binary took
+over`; `/run/oath/init.json` says which binary PID 1 runs (`exe`) and
+how it started (`how`: `boot`, `panic` or `upgrade`). A binary with the
+wrong hash, or one that cannot read PID 1's state, is refused
+(`upgrade: not into …`), and PID 1 goes on as it was.
