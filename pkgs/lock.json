@@ -419,11 +419,11 @@
     ]
   },
   "fribidi": {
-    "version": "1.0.17",
+    "version": "1.0.18",
     "license": "LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-47b914bc6f1faaaee9282ace94745b801fa6ce75a4027ddb9d88947b2488a2e2",
-    "product": "sha256-484b099cb4cd28571c0d20f6dd10493937e57a2dda299cf45e7b65982eb14cbd",
+    "plan": "sha256-ddefdf07965c27d4a3541b33a671555f10aa096bf02165a5f1f39f450fa774e4",
+    "product": "sha256-a45139dd2079d72542b8a55864549d10bf65335e12e944addd6b820d9c246b18",
     "run": []
   },
   "gawk": {
@@ -1297,7 +1297,7 @@
     "version": "1.58.2",
     "license": "LGPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-79bd154eec4c032b9d02c7280572c52c5d8d69af43c38f9d19164a65bacebff8",
+    "plan": "sha256-c96eeb73bfed5634bd52d7aa5ca697a0cf553093a336dd1473f81e69a718ec82",
     "product": "sha256-f32334c125dda044b0bf0f3d53e7e1c750ba0f87225c6469b474aaaa0e27f26e",
     "run": [
       "glib",

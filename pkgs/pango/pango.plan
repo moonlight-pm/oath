@@ -41,7 +41,7 @@
     },
     {
       "id": "pkg:fribidi",
-      "hash": "sha256-484b099cb4cd28571c0d20f6dd10493937e57a2dda299cf45e7b65982eb14cbd"
+      "hash": "sha256-a45139dd2079d72542b8a55864549d10bf65335e12e944addd6b820d9c246b18"
     },
     {
       "id": "pkg:gawk",
@@ -163,7 +163,7 @@
     },
     {
       "id": "pkg:fribidi",
-      "hash": "sha256-484b099cb4cd28571c0d20f6dd10493937e57a2dda299cf45e7b65982eb14cbd"
+      "hash": "sha256-a45139dd2079d72542b8a55864549d10bf65335e12e944addd6b820d9c246b18"
     },
     {
       "id": "pkg:gcc",
