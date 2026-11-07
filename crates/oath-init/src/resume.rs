@@ -233,6 +233,7 @@ fn environ() -> *const *const libc::c_char {
 /// `upgrade`).
 pub fn announce(how: &str) {
     let exe = fs::read("/proc/self/exe").map(|b| oath_core::file_hash(&b)).unwrap_or_default();
+    log(&format!("PID 1 is {exe} ({how})"));
     let me = json!({
         "upgrade": 1,
         "format": FORMAT,
