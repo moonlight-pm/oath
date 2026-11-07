@@ -135,11 +135,13 @@ Overwrite this file when facts change; do not append a diary.
   host key the install printed, ending `Suecii`. canto's
   `~/.ssh/novus-oath.known_hosts` still has the old stick's key.
 - **The stick:** Joshua's Samsung Type-C 128 GB (`090c:1000`, serial
-  `0354422110003481`), rewritten 2026-11-06 by `cargo make install
-  --local` from buccina for a server: `base` output `01f12aaf944d`
-  (master `f929e20`, 67/67 in QEMU, never published: the origin has no
-  `base` release yet), hostname `oath`, no overlay, generation 0, root
-  `UUID=217f1550-e90d-4d6d-a411-20a36299188d`; it installed
-  [dulcia](dulcia.md) by `oath install`. Its host key is not pinned. Boot it from the firmware's boot menu (F8), from a
-  back-panel port: behind the keyboard's USB 2.0 hub it resets four
+  `0354422110003481`), rewritten 2026-11-07 by `cargo make install
+  --local` from buccina: `base` output `bf9a6204eabe` (master `fc74baa`,
+  69/69 in QEMU, never published), the first whose boot screen says what
+  it is doing; hostname `oath`, no overlay, generation 0, root
+  `UUID=0078e846-9402-45ed-b5ae-69f7de80f388`. Its write of 2026-11-06
+  installed [dulcia](dulcia.md), then stopped at the mark on a Windows
+  machine Joshua is moving to Oath (2026-11-07), with nothing to say why.
+  Its host key is not pinned. Boot it from the firmware's boot menu (F8),
+  from a back-panel port: behind the keyboard's USB 2.0 hub it resets four
   times and never becomes a disk.

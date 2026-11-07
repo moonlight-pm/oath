@@ -57,11 +57,17 @@ Overwrite this file when facts change; do not append a diary.
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
-- **Running now:** output `6c8d38bd54c4` (master `7597cc1`, R72 and R73), from `sudo oath
-  update --confirm --reboot` on 2026-11-07 at Joshua's word (generation 453, 164 packages, no
-  overlay; it had run `ab9ff2a9213f`): in sync, its 24 services and the desk back. Generation 454
-  put novus's key in `host:local.publishers` as `names="sola,sola-*" … oath@novus` beside
-  buccina's. Before: `debfd75332ea` (2026-11-03); `keep_children` on `svc:sola-session` set by
+- **Running now:** output `06e0194eb4f3` (master `fc74baa`, the boot screen's status line;
+  never published), from `sudo oath update --confirm --reboot` on 2026-11-07 at Joshua's word,
+  pulled from a local origin on buccina (`http://10.0.0.149:8743`, the release `cargo make
+  update --qemu 6c8d38bd54c4` made and signed as `oath@buccina`; `host:local.origins` set to it
+  first for the update, generation 455, and back to the store only, 457). It moved `pkg:oath`,
+  and `pkg:sola-browser` and `pkg:sola-design` to their heads (Sola `master@9cd4737a`, signed
+  by `oath@novus`). The firmware gave `oath.fb=0x90180000,1920,1080,1920,bgr`; PID 1 mapped it
+  and was `ready` 14 s after its first module pass; the desk came back. The store's newest desk
+  release (`6c8d38bd54c4`) is older, so `oath update` waits for the next one. Before:
+  `6c8d38bd54c4` (master `7597cc1`, R72 and R73; generation 453); generation 454 put novus's
+  key in `host:local.publishers` as `names="sola,sola-*" … oath@novus` beside buccina's. Before: `debfd75332ea` (2026-11-03); `keep_children` on `svc:sola-session` set by
   hand (generation 445).
   `pkg:lzo` and `pkg:dropbear` removed by hand at Joshua's word (generation 446).
   Earlier: Release B, output `dd0f847aa9c9` (R47), from Sola's
