@@ -1,4 +1,11 @@
-//! First catalog from a profile (`seed/*.json`), plus overlays.
+//! First catalog from a profile, plus overlays.
+//!
+//! A profile is data (R72): `<name>.json` in [`seed_dir`], which pkg:oath
+//! ships as `/lib/oath/seed` and `cargo make` points at this tree's
+//! `crates/oath-core/seed`. No binary carries one, so a profile's pins never
+//! move PID 1's hash. `base` is a headless machine you reach over SSH;
+//! `desk` adds the graphical session (rivulet, seatd) and turns the screen's
+//! shell off.
 //!
 //! A profile names objects and their first desired document. `extends`
 //! pulls in another profile first. `fixed` lists packages that can never
@@ -7,7 +14,7 @@
 //! Seeding writes spec only: status is observed by the machine (R14).
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use serde::Deserialize;
@@ -17,15 +24,41 @@ use crate::error::{Error, Result};
 use crate::kinds::Meta;
 use crate::{write_json, ObjectId, KIND_SSH, KIND_SVC};
 
-/// Built-in profiles. `base` is a headless machine you reach over SSH;
-/// `desk` adds the graphical session (rivulet, seatd) and turns the
-/// screen's shell off.
-pub const PROFILES: &[(&str, &str)] =
-    &[("base", include_str!("../seed/base.json")), ("desk", include_str!("../seed/desk.json"))];
+/// The variable naming the profiles' directory (`cargo make` sets it to
+/// this tree's).
+pub const SEED_DIR_ENV: &str = "OATH_SEED_DIR";
+/// Where pkg:oath puts the profiles on a machine.
+pub const SEED_DIR: &str = "/lib/oath/seed";
 
 pub const DEFAULT_PROFILE: &str = "base";
 
-/// Whether this build's `base` profile fixes `id`. The image's own files
+/// `$OATH_SEED_DIR`, else `/lib/oath/seed`.
+pub fn seed_dir() -> PathBuf {
+    std::env::var_os(SEED_DIR_ENV)
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(SEED_DIR))
+}
+
+/// The profiles in [`seed_dir`], by name; none when it is missing (a
+/// machine from before R72).
+pub fn profiles() -> Vec<String> {
+    let Ok(rd) = std::fs::read_dir(seed_dir()) else { return Vec::new() };
+    let mut names: Vec<String> = rd
+        .flatten()
+        .filter_map(|e| e.file_name().to_str()?.strip_suffix(".json").map(str::to_string))
+        .filter(|n| is_profile_name(n))
+        .collect();
+    names.sort();
+    names
+}
+
+/// A profile's name is a file's: letters, digits, `-` and `_`.
+pub fn is_profile_name(name: &str) -> bool {
+    !name.is_empty() && name.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_'))
+}
+
+/// Whether this machine's `base` profile fixes `id`. The image's own files
 /// need such a package (`/etc/passwd` names `pkg:zsh`'s shell), so it is
 /// never removable, however the machine came to have it: seeded, or made
 /// by `oath update` for an image that added it.
@@ -55,13 +88,20 @@ pub struct Profile {
 }
 
 impl Profile {
+    /// `<name>.json` from [`seed_dir`], and what it extends.
     pub fn load(name: &str) -> Result<Self> {
-        Self::load_from(name, PROFILES)
+        let dir = seed_dir();
+        let read = |n: &str| std::fs::read_to_string(dir.join(format!("{n}.json"))).ok();
+        let mut seen = Vec::new();
+        Self::load_inner(name, &read, &profiles, &mut seen)
     }
 
+    #[cfg(test)]
     fn load_from(name: &str, profiles: &[(&str, &str)]) -> Result<Self> {
+        let read = |n: &str| profiles.iter().find(|(p, _)| *p == n).map(|(_, t)| t.to_string());
+        let names = || profiles.iter().map(|(n, _)| n.to_string()).collect();
         let mut seen = Vec::new();
-        Self::load_inner(name, profiles, &mut seen)
+        Self::load_inner(name, &read, &names, &mut seen)
     }
 
     /// Whether `id` (`pkg:glibc` or `glibc`) can never be removed.
@@ -112,22 +152,27 @@ impl Profile {
             .collect()
     }
 
-    fn load_inner(name: &str, profiles: &[(&str, &str)], seen: &mut Vec<String>) -> Result<Self> {
+    fn load_inner(
+        name: &str,
+        read: &dyn Fn(&str) -> Option<String>,
+        names: &dyn Fn() -> Vec<String>,
+        seen: &mut Vec<String>,
+    ) -> Result<Self> {
         if seen.iter().any(|s| s == name) {
             return Err(Error::Msg(format!("seed profile `{name}` extends itself")));
         }
         seen.push(name.to_string());
-        let Some((_, text)) = profiles.iter().find(|(n, _)| *n == name) else {
-            let names: Vec<&str> = profiles.iter().map(|(n, _)| *n).collect();
+        let text = is_profile_name(name).then(|| read(name)).flatten();
+        let Some(text) = text else {
             return Err(Error::hint(
-                format!("no seed profile `{name}`"),
-                format!("profiles: {}", names.join(", ")),
+                format!("no seed profile `{name}` in {}", seed_dir().display()),
+                format!("profiles: {}", names().join(", ")),
             ));
         };
-        let file: ProfileFile = serde_json::from_str(text)
+        let file: ProfileFile = serde_json::from_str(&text)
             .map_err(|e| Error::Msg(format!("seed profile {name}: {e}")))?;
         let mut out = match &file.extends {
-            Some(parent) => Self::load_inner(parent, profiles, seen)?,
+            Some(parent) => Self::load_inner(parent, read, names, seen)?,
             None => Self::default(),
         };
         out.layer(file)?;
@@ -317,7 +362,9 @@ mod tests {
 
     #[test]
     fn every_profile_loads() {
-        for (name, _) in PROFILES {
+        let names = profiles();
+        assert!(names.contains(&"base".to_string()) && names.contains(&"desk".to_string()));
+        for name in &names {
             let p = Profile::load(name).unwrap();
             assert!(p.objects.contains_key("host:local"), "{name}");
             assert!(p.objects.contains_key("svc:sshd"), "{name}");
@@ -348,7 +395,8 @@ mod tests {
             "pkg:elsewhere": {"present": true, "hash": "sha256-0000000000000000000000000000000000000000000000000000000000000000"}
         }}"#;
         let looped = r#"{"extends": "looped"}"#;
-        let profiles = [PROFILES[0], ("extra", extra), ("looped", looped)];
+        let base = std::fs::read_to_string(seed_dir().join("base.json")).unwrap();
+        let profiles = [("base", base.as_str()), ("extra", extra), ("looped", looped)];
         let p = Profile::load_from("extra", &profiles).unwrap();
         assert!(p.objects.contains_key("pkg:bash"));
         assert_eq!(p.objects["host:local"]["hostname"], "oath");
@@ -383,6 +431,8 @@ mod tests {
         );
         assert!(Profile::load_from("looped", &profiles).is_err());
         assert!(Profile::load_from("nope", &profiles).is_err());
+        // A name is a file's, never a path.
+        assert!(Profile::load("../seed/base").is_err());
     }
 
     #[test]

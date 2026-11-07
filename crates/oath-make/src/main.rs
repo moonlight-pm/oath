@@ -289,6 +289,11 @@ fn main() {
 fn real() -> Result<()> {
     let cli = Cli::parse();
     let root = util::repo_root();
+    // The seed profiles are this tree's (R72), for oath-make and for each
+    // `oath` it runs, never the host's /lib/oath/seed.
+    if std::env::var_os(oath_core::SEED_DIR_ENV).is_none() {
+        std::env::set_var(oath_core::SEED_DIR_ENV, root.join("crates/oath-core/seed"));
+    }
     let out = util::out_dir(&root);
     match cli.cmd {
         Cmd::Build { profile } => pack_image(&root, &out, &profile)?,

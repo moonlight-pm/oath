@@ -11,3 +11,8 @@ rustflags = ["-C", "link-arg=/Brepro"]
 # Bare `cargo make` prints the tool help. `cargo make --help` is Cargo's alias help.
 [alias]
 make = ["run", "--package", "oath-make", "--"]
+
+# The seed profiles are data (R72), read at run time: tests and `cargo
+# make` read this tree's, a machine /lib/oath/seed.
+[env]
+OATH_SEED_DIR = { value = "crates/oath-core/seed", relative = true }

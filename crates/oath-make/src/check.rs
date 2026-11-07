@@ -352,10 +352,10 @@ fn machine_profile(conn: &Conn) -> Result<String> {
     }
     let have: BTreeSet<&str> = ls.text.lines().map(str::trim).collect();
     let mut best = (0, oath_core::DEFAULT_PROFILE.to_string());
-    for (name, _) in oath_core::PROFILES {
-        let ids = oath_core::Profile::load(name).map_err(|e| anyhow::anyhow!("{e}"))?.ids();
+    for name in oath_core::profiles() {
+        let ids = oath_core::Profile::load(&name).map_err(|e| anyhow::anyhow!("{e}"))?.ids();
         if ids.len() > best.0 && ids.iter().all(|id| have.contains(id.as_str())) {
-            best = (ids.len(), name.to_string());
+            best = (ids.len(), name.clone());
         }
     }
     Ok(best.1)

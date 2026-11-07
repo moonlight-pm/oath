@@ -78,8 +78,8 @@ pub use plan_build::{
 };
 pub use probation::Probation;
 pub use seed::{
-    apply_overlay, merge_patch, seed, seed_profile, write_schemas, Profile, DEFAULT_PROFILE,
-    PROFILES,
+    apply_overlay, is_profile_name, merge_patch, profiles, seed, seed_dir, seed_profile,
+    write_schemas, Profile, DEFAULT_PROFILE, SEED_DIR, SEED_DIR_ENV,
 };
 pub use ssh::{converge as converge_ssh, DROPBEAR_HOST_KEY, HOST_KEY as SSH_HOST_KEY, SSHD_CONFIG};
 pub use svc_order::{

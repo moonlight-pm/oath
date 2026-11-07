@@ -60,9 +60,12 @@ apply reverses them. `host`, `net`, `ssh`, `snap` and `dev` objects,
 and the base packages, cannot be created or removed. Before the box
 first boots, objects come from:
 
-- **Seed profiles** — `crates/oath-core/seed/<profile>.json`, compiled
-  into `oath`. `base` (the only one today) is a headless machine you
-  reach over SSH. A profile can `extend` another. `cargo make build
+- **Seed profiles** — `crates/oath-core/seed/<profile>.json`, data that
+  pkg:oath ships as `/lib/oath/seed/` and no binary carries (R72), so a
+  profile's pins never change PID 1. `base` is a headless machine you
+  reach over SSH; `desk` extends it with the graphical session. `oath
+  seed --profile <name>` reads `/lib/oath/seed` (`OATH_SEED_DIR` for
+  another directory; `cargo make` sets it to the tree's). `cargo make build
   --profile <name>` seeds the image from one; a profile lists the first
   desired document of each object, the packages that can never be
   removed (`fixed`), and any first actual that differs from the

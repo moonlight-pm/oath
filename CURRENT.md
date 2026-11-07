@@ -6,26 +6,30 @@ append history (git has it).
 
 **As of:** 2026-11-06 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R71 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R73 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
-1. **Pull updates (R38, R47).** `cargo make publish` (only from a clean
-   master equal to origin/master) puts the newest checked output on the
-   bucket, signed by buccina's key; `sudo oath update --confirm --reboot`
-   takes it. An update replaces overlays unless `--keep`, makes objects new to
-   the profile, and checks `/bin` and `/lib` names. Newest release: `e555e1a5dd34`
-   (2026-11-06: Sola `0c99a6a5` with `pkg:sola-oath`; `220c74bb6867` before it brought `host:local.seat_hid`, R71); `base`'s first release, `57192b33e6ab` (2026-11-06, master `c76f4be`), runs on dulcia. buccina runs `f612b200206c`, novus `f6011e8a6d9a` (generation 95, booted 2026-11-06 01:54Z, Sola overlays from next), canto `debfd75332ea`. Gap: a
-   changed `svc` spec goes by hand. Next: an absent package new to the profile is made present
-   (built, unreleased); `oath` checks PID 1. R62 (in that release): a machine holds what its packages
-   prescribe; `oath reap` each boot frees about 33 GB on novus, 59 GB on canto. R61–R63's verbs and fields
-   are on novus, and reach canto with its next update; Sola's package app is its `sola-oath` session on novus.
+1. **Packages on their own (R72), PID 1 live (R73).** `oath publish pkg:<name>` puts this
+   machine's pin up as its head (`pkg/<name>.json`, signed `oath-pkg`), and `oath update` moves
+   each package to the newest head a key in `host:local.publishers` may sign for its name
+   (`names="sola,sola-*"` scopes a key: heads only, no release); a need moves only when the package
+   keeps every library it loads, else the dependency waits and says why. Seed profiles are data in
+   `/lib/oath/seed`, so a pin no longer moves PID 1, and `oath update` re-execs PID 1 into the
+   output's binary with every service running; a kernel, PID 1's boot work and the first update from
+   a pre-R73 PID 1 still reboot. Built and checked in QEMU on master, in no release yet. Releases
+   (R38, R47) still carry the rest: newest `e555e1a5dd34` (Sola `0c99a6a5`); `base`'s `57192b33e6ab`
+   runs on dulcia. buccina runs `f612b200206c`, novus `f6011e8a6d9a` (generation 95), canto
+   `debfd75332ea`. Gap: a changed `svc` spec goes by hand. Next: a release with R72 and R73
+   (Joshua's word); novus's signing key in each machine's publishers, scoped to Sola (a person adds
+   keys); Sola's publish runs `oath publish`; then services in packages (slice 2) and buccina's
+   heads for Oath's own packages (slice 4).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the
    profile). R47: the profile pins Sola master `0c99a6a5` (on CEF 156.0.15):
    core `pkg:sola`, fifteen `pkg:sola-<app>` (`pkg:sola-oath`, the read-only package app, new), `svc:sola-vault`;
-   a pin moves PID 1's hash, so it takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus wants `["3554:f510"]` once it runs `220c74bb6867` or newer. Novus's Sola overlays (next@7545d519; `pkg:sola` and `pkg:sola-oath` from next@45d19f15) are merged into master `0c99a6a5`, so a plain update loses nothing. Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
+   until a machine runs R72, a pin moves PID 1's hash and takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus wants `["3554:f510"]` once it runs `220c74bb6867` or newer. Novus's Sola overlays (next@7545d519; `pkg:sola` and `pkg:sola-oath` from next@45d19f15) are merged into master `0c99a6a5`, so a plain update loses nothing. Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
    Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game yet. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with

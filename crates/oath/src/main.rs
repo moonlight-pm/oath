@@ -245,7 +245,8 @@ enum Cmd {
     /// into an existing one. Build and install time only.
     #[command(hide = true)]
     Seed {
-        /// Built-in profile for a fresh catalog (`base`, `dev`).
+        /// Seed profile for a fresh catalog (`/lib/oath/seed/<name>.json`:
+        /// `base`, `desk`).
         #[arg(long)]
         profile: Option<String>,
         /// Overlay JSON (`{"objects": {"kind:name": {…}}}`), applied in order.

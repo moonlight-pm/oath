@@ -956,8 +956,13 @@ impl Catalog {
                         return Err(Error::hint(format!("{id}: origins: `{o}` twice"), hint()));
                     }
                 }
-                if !h.profile.is_empty() && !crate::PROFILES.iter().any(|(p, _)| *p == h.profile) {
-                    let names: Vec<&str> = crate::PROFILES.iter().map(|(p, _)| *p).collect();
+                // A machine before R72 has no profiles on disk: the name is
+                // checked as a name only.
+                let names = crate::profiles();
+                if !h.profile.is_empty()
+                    && (!crate::is_profile_name(&h.profile)
+                        || (!names.is_empty() && !names.contains(&h.profile)))
+                {
                     return Err(Error::hint(
                         format!("{id}: profile: no seed profile `{}`", h.profile),
                         format!("profiles: {}", names.join(", ")),

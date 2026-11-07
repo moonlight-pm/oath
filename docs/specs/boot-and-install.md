@@ -39,6 +39,10 @@ of T24, and D3 (seed as data).
 - A **profile** is a JSON file in `crates/oath-core/seed/`: the objects
   of a fresh catalog and their first desired documents. `extends`
   layers profiles. `fixed` lists packages that can never be removed.
+  Profiles are data (R72): pkg:oath ships them as `/lib/oath/seed/`, the
+  image and the installer's ramdisk carry them there, and `oath-core`
+  reads them at run time (`OATH_SEED_DIR` first), so no binary's hash
+  moves with a pin.
 - `base` is a headless machine reached over SSH: host, net (DHCP), ssh,
   serial, screen, sshd, time, and 39 packages: glibc, the GNU userland
   (R18), util-linux, iproute2, iputils, dhcpcd, chrony, btrfs, oath,

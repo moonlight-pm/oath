@@ -42,6 +42,9 @@ for f in /out/bin/oath /out/lib/oath/*; do
 		exit 1
 	fi
 done
+# The seed profiles, as data: no binary carries them (R72).
+mkdir -p /out/lib/oath/seed
+cp crates/oath-core/seed/*.json /out/lib/oath/seed/
 
 # components.json: oath, and the crates.io crates its binaries build from,
 # sorted by purl.

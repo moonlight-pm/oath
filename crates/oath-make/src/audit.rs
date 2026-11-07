@@ -524,8 +524,8 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
     }
     // A pack a profile pins from elsewhere (R28): its owner builds it, so
     // only what its `components.json` names can be matched.
-    for (profile, _) in oath_core::PROFILES {
-        for (name, p) in crate::pinned::of_profile(repo, profile)? {
+    for profile in oath_core::profiles() {
+        for (name, p) in crate::pinned::of_profile(repo, &profile)? {
             if only.as_ref().is_some_and(|o| *o != name) || out.iter().any(|t| t.name == name) {
                 continue;
             }

@@ -181,7 +181,8 @@ origin, then the newest checked output's signed release; `--dest
 
 ## Heads (R72)
 
-**Will be, building in slices.** A package is published on its own, by
+**Slices 1 (heads) and 3 (seeds) are built; 2 and 4 will be.** A package
+is published on its own, by
 whoever makes it, and machines meet only at the origin. Today a pack
 reaches a machine through a profile's release (R38): Sola publishes,
 Oath pins the hash in `desk`, buccina builds and publishes the whole
@@ -219,9 +220,12 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
 - **Services** (slice 2). A tree may ship `oath/svc/<name>.json`, each a
   `svc` spec; making the package present makes each service the
   machine lacks. The owner's changes stay theirs.
-- **Seeds** (slice 3). `base` and `desk` become data files an installer
-  reads once, no longer compiled into `oath-core` or PID 1; PID 1 seeds
-  nothing.
+- **Seeds** (slice 3, is). `base` and `desk` are data, compiled into
+  neither `oath-core` nor PID 1: pkg:oath ships them as
+  `/lib/oath/seed/<name>.json`, read at run time (`OATH_SEED_DIR` first;
+  `cargo make` and the tests set it to `crates/oath-core/seed`). A pin in
+  a profile no longer moves PID 1's hash. PID 1 still seeds a machine
+  that has no catalog at all, from those files.
 - **Oath's own packages** (slice 4). buccina's publish writes a head for
   every package it builds; the kernel, initrd and PID 1 move as
   `pkg:linux` and `pkg:oath` (the ESP and a PID 1 re-exec, R73), and

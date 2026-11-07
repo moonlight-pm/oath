@@ -51,8 +51,8 @@ pub fn of_profile(repo: &Path, profile: &str) -> Result<BTreeMap<String, Pinned>
 /// Every pack any profile pins from elsewhere.
 pub fn all(repo: &Path) -> Result<BTreeSet<String>> {
     let mut out = BTreeSet::new();
-    for (profile, _) in oath_core::PROFILES {
-        out.extend(of_profile(repo, profile)?.into_keys());
+    for profile in oath_core::profiles() {
+        out.extend(of_profile(repo, &profile)?.into_keys());
     }
     Ok(out)
 }

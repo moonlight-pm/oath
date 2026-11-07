@@ -79,7 +79,8 @@ btrfs
 /sbin/init → /lib/oath/init        same ELF as the initrd's /init
 /lib/oath/  serial-login, screen-login, sudo (setuid), login, dhcpcd.hook, backup-send, backup-daily;
             modprobe and net-lease are links to init (the kernel's module
-            helper, and the DHCP script's lease recorder)
+            helper, and the DHCP script's lease recorder); seed/<profile>.json,
+            the seed profiles as data (R72)
 /bin/       symlink farm → /oath/store/pkg/<name>/<hash>/bin/<x>; modprobe, reboot,
             halt and poweroff → /lib/oath/init
 /lib/       symlink farm → /oath/store/pkg/<name>/<hash>/lib/<x> (R17): glibc's
@@ -203,7 +204,8 @@ cargo make build [--profile base]
   pkg:oath: this tree + every crates.io crate in Cargo.lock → pkg:oath-src;
     `cargo build` with pkg:rust in the sandbox, static against glibc,
     linked by pkg:gcc → bin/oath,
-    lib/oath/{init,serial-login,screen-login,sudo,login}, boot/BOOTX64.EFI (oath-efi)
+    lib/oath/{init,serial-login,screen-login,sudo,login}, lib/oath/seed/*.json,
+    boot/BOOTX64.EFI (oath-efi)
   kernel + modules from pkg:linux (pkgs/linux, a plan), vermagic checked
   every userspace pack (glibc, bash, coreutils, btrfs, openssh, …)
     from pkgs/lock.json; QEMU + OVMF from image/host.nix, or pkg:qemu on an Oath host

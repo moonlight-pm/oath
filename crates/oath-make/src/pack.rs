@@ -212,6 +212,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     // oath-efi is the boot loader (menu, BLS entries, kernel + initrd).
     copy_file(&efi(&oath), &ir_install.join("opt/oath-install/BOOTX64.EFI"))?;
     fs::create_dir_all(ir_install.join("lib/oath"))?;
+    copy_tree(&lib.join("seed"), &ir_install.join("lib/oath/seed"))?;
     fs::write(ir_install.join(&oath_core::DHCP_HOOK[1..]), include_str!("dhcpcd.hook"))?;
     chmod_exec(&ir_install.join(&oath_core::DHCP_HOOK[1..]))?;
     fs::create_dir_all(ir_install.join("root/.ssh"))?;
@@ -230,6 +231,9 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     for n in ["init", "serial-login", "screen-login", "sudo", "login"] {
         copy_file(&lib.join(n), &stage.join("lib/oath").join(n))?;
     }
+    // The seed profiles (R72): `oath seed`, and PID 1 for a machine with no
+    // catalog, read them here.
+    copy_tree(&lib.join("seed"), &stage.join("lib/oath/seed"))?;
     fs::write(stage.join(&oath_core::DHCP_HOOK[1..]), include_str!("dhcpcd.hook"))?;
     fs::write(stage.join("lib/oath/backup-send"), include_str!("backup-send"))?;
     fs::write(stage.join("lib/oath/backup-daily"), include_str!("backup-daily"))?;
@@ -885,8 +889,8 @@ enum Body {
 
 fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publication> {
     let mut named = BTreeSet::new();
-    for (profile, _) in oath_core::PROFILES {
-        let p = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
+    for profile in oath_core::profiles() {
+        let p = oath_core::Profile::load(&profile).map_err(|e| anyhow::anyhow!("{e}"))?;
         named.extend(p.pkgs());
     }
     let lock = crate::pkgs::read_lock(repo)?;
