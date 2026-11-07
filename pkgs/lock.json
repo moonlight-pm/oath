@@ -1086,7 +1086,7 @@
     "version": "b11960",
     "license": "MIT AND BSD-2-Clause AND (MIT OR Unlicense) AND (Unlicense OR MIT-0)",
     "by": "plan",
-    "plan": "sha256-b1c668f02cb549f5851d8338ecbba5dd17e10c5a5d9390b76fc55352d15618a5",
+    "plan": "sha256-b086a01fa76202a703d90c8318126e8db92faa84b86af7032645e5d4e5b5e09a",
     "product": "sha256-0908155920628b60077d64a2e01d2ba5c29a28c238382906b89b93010b1eb946",
     "run": [
       "gcc",
@@ -1665,27 +1665,27 @@
     ]
   },
   "vulkan-headers": {
-    "version": "1.4.365",
+    "version": "1.4.367",
     "license": "Apache-2.0 OR MIT",
     "by": "plan",
-    "plan": "sha256-9cef8f8057254fc1b57c63478230d9f21b33b84eb5ee39d8f2c2c4ab5f668076",
-    "product": "sha256-680280536e73c335078c0e6ae43d7d3f3c00ed07ded4720bc5945cd2a6ddf3d5",
+    "plan": "sha256-08a91b3c220ed77b20f6f315aa0eb536b6ec9415770b4b5d6bec09d014f2299a",
+    "product": "sha256-1736a9cc1c73fed5e226146713e2052b139f28e581082ccee0881ae8655a2f2a",
     "run": []
   },
   "vulkan-loader": {
-    "version": "1.4.365",
+    "version": "1.4.367",
     "license": "Apache-2.0 AND MIT",
     "by": "plan",
-    "plan": "sha256-fba261edb7919ec8488d2cbd35cb8fb46c16f7027cf04ef129269ea44e033d1a",
-    "product": "sha256-64ea990069069ed910f77c5646b0ab0a2a7049f9bdc702e5262409f1c4071892",
+    "plan": "sha256-d4bd0b9b5889f6998aef5a127d2a95cfe4fec308c37527dc954cd4269193f5a5",
+    "product": "sha256-b8cb758d5e134cc1e01851d85166a2118a6edb95af9ab2b7a25a927f1503350a",
     "run": []
   },
   "vulkan-tools": {
-    "version": "1.4.365",
+    "version": "1.4.367",
     "license": "Apache-2.0",
     "by": "plan",
-    "plan": "sha256-936625e3f3257e5d83960b7d25a05a9e5c87da11a891ac4ed2c7fcbc046bbcbd",
-    "product": "sha256-f4819e41fc4926142cd532a8866f5206980f821f40c4a3c847c008606c39fa67",
+    "plan": "sha256-e1b93066bbe90d34659885b63ccfa4a40dbbf4278d67c0693643acb6a1ef6a15",
+    "product": "sha256-5b00dcb8bedb61590abc8969e9be38c8c22ada4c43545906e5eb1ee8cff9e658",
     "run": [
       "vulkan-loader",
       "libx11",

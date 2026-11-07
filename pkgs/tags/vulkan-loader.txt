@@ -1,6 +1,6 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source Vulkan-Loader-1.4.365.tar.gz df0358f57c1936e4abd262a7327ba1f80ffb424dbbdcbcb01bb9288511f31eef
-tag v1.4.365 commit f866657ff687a36d767cd7783bab800e31ebafaa tree 2fd050f486635fd5d3b5174565934f14924606ee
+source Vulkan-Loader-1.4.367.tar.gz f70da1e3c63b55bae070dd44dfb9ca77523dba3781b6cb8aad3a1ceef4e902b7
+tag v1.4.367 commit aa6dee8385afe4b2cc0152d086af2184743e16fd tree e97e8a9155e7ddda6bcc7ea4922b75342f3b2516
 signed no
 same 292
 only-in-tag 0

@@ -5,17 +5,17 @@
 # (vulkan/implicit_layer.d), and NVIDIA's (R34). It also reads
 # /etc/vulkan, /etc/xdg/vulkan and ~/.local/share/vulkan;
 # VK_DRIVER_FILES overrides them all.
-version = "1.4.365"
+version = "1.4.367"
 license = "Apache-2.0 AND MIT"
 description = "The Vulkan loader, libvulkan.so.1: it finds Mesa's RADV and device-select layer, and NVIDIA's driver."
 home = "https://github.com/KhronosGroup/Vulkan-Loader"
 category = "graphics"
-purl = "pkg:github/KhronosGroup/Vulkan-Loader@v1.4.365"
+purl = "pkg:github/KhronosGroup/Vulkan-Loader@v1.4.367"
 build = ["cmake", "pkgconf", "vulkan-headers", "xorgproto", "libx11", "libxcb", "libxrandr"]
 run = []
 
 [[source]]
-url = "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v1.4.365.tar.gz"
-sha256 = "df0358f57c1936e4abd262a7327ba1f80ffb424dbbdcbcb01bb9288511f31eef"
-file = "Vulkan-Loader-1.4.365.tar.gz"
+url = "https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v1.4.367.tar.gz"
+sha256 = "f70da1e3c63b55bae070dd44dfb9ca77523dba3781b6cb8aad3a1ceef4e902b7"
+file = "Vulkan-Loader-1.4.367.tar.gz"
 unsigned = "a GitHub tag archive; Khronos publishes no tarball or signature, and its tags are unsigned"

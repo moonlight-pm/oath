@@ -1,6 +1,6 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source Vulkan-Headers-1.4.365.tar.gz ed832b3292cce324ebba6522fd2d3004bf1b797fa49bfbcad0b302ff23d56abc
-tag v1.4.365 commit c46850864f4661461b0f6cb9922c058ffea4915e tree 563d757342ef812158ec4baf322688306b9d68c6
+source Vulkan-Headers-1.4.367.tar.gz 0df7d58b5df617e0a6a17dec521af459206719f9c7cb12d05d09275597c16f70
+tag v1.4.367 commit 9fbc2a782ee3f8a4db64e7d991e23da75e893f44 tree 8ba5c5fcf31c33de47fa5a8c1aa4c180ce2cdaa3
 signed no
 same 89
 only-in-tag 0
