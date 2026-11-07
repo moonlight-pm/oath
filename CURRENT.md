@@ -18,11 +18,11 @@ append history (git has it).
    `/lib/oath/seed`, so a pin no longer moves PID 1, and `oath update` re-execs PID 1 into the
    output's binary with every service running; a kernel, PID 1's boot work and the first update from
    a pre-R73 PID 1 still reboot. Released 2026-11-07 from `7597cc1`: `desk` `6c8d38bd54c4` (Sola
-   `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too), on no machine yet, and `base`
-   `ee3e239caa32`, on dulcia with key `oath@novus` as `names="sola,sola-*"`. buccina runs
-   `f612b200206c`, novus `f6011e8a6d9a` (generation 95), canto `ab9ff2a9213f`: pre-R72, they refuse
-   a scoped key. Gap: a changed `svc` spec goes by hand. Next: each onto `6c8d38bd54c4` (novus: Joshua's
-   word), then the key in its publishers; Sola's publish runs `oath publish` (sandbox or overlay
+   `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too), on novus, and `base` `ee3e239caa32`,
+   on dulcia; both trust key `oath@novus` for `names="sola,sola-*"`. buccina (`f612b200206c`) and
+   canto (`ab9ff2a9213f`) are pre-R72 and refuse a scoped key. Gap: a changed `svc` spec goes by
+   hand. Next: buccina and canto onto `6c8d38bd54c4` (canto: look at its desk first), each
+   then the key in its publishers; Sola's publish runs `oath publish` (sandbox or overlay
    builds: Joshua's call); then slices 2 (packaged services) and 4 (Oath's own heads).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
@@ -58,7 +58,7 @@ are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, mo
 | Host | Reach | Notes |
 |------|-------|-------|
 | canto | `ssh home@10.0.0.3` (key in `build/known_hosts`) | Mac Pro 2013, the test machine and Joshua's Sola R&D desk (no long Oath builds); output `debfd75332ea` (2026-11-03, no overlay), the `desk` profile (rivulet and Sola on DP-10) and Steam; `ssh novus` and `ssh buccina` work from it; [hosts/canto.md](hosts/canto.md) |
-| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `f6011e8a6d9a` (generation 95, booted 2026-11-06 01:54Z; sixteen `pkg:sola*` overlays from Sola's next), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
+| novus | `ssh home@10.0.0.5` (key in `build/novus-oath.known_hosts`) | Joshua's desk: Ryzen 9 5950X, RTX 3090 Ti; installed 2026-10-30 by `oath install`, output `6c8d38bd54c4` (generation 98, booted 2026-11-07; `pkg:sola-browser` an overlay from Sola's next@33d869a8; key `oath@novus` in its publishers), `/home` on its 2 TB, the KVM server for canto, `desk` with `pkg:nvidia`; `ssh buccina` works from it; ask before changing it (R32); [hosts/novus.md](hosts/novus.md) |
 | buccina | `ssh home@10.0.0.149` (key in `build/known_hosts`) | OptiPlex 5000 Micro, i7-12700T, 64 GB; where Oath work happens (R39): checkout, builds, publishing; output `f612b200206c` (the 2026-11-05 audit's), headless: `desk`'s packages with its services off, `svc:audit`; `ssh canto` works from it; [hosts/buccina.md](hosts/buccina.md) |
 | dulcia | `ssh dulcia` from buccina or novus (`home@10.0.0.169`, key in `build/known_hosts`) | OptiPlex 5080, i7-10700T, 64 GB; a server on `base`, installed 2026-11-06 from the stick; `base` release `ee3e239caa32` (generation 6, novus's key scoped to Sola, Mountain time); [hosts/dulcia.md](hosts/dulcia.md) |
 

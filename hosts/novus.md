@@ -105,10 +105,13 @@ Overwrite this file when facts change; do not append a diary.
   `svc:sola-session` by hand (generation 40). An update swaps the overlay for
   the release's pins; `--keep` must take all 15 or none (the bus's Tab
   payload changed). Joshua took `ab9ff2a9213f` (generation 89) and then `f6011e8a6d9a`, and it booted
-  2026-11-06 01:54Z; Sola's session removed `pkg:sola-build` (generation 90). It runs `f6011e8a6d9a`
-  at generation 95 with sixteen Sola overlays from Sola's next: `pkg:sola` and `pkg:sola-oath` (the
-  read-only package app) from next@45d19f15, the other fourteen from next@7545d519, all merged into
-  master `0c99a6a5`, which release `e555e1a5dd34` pins; `oath update` replaces them unless `--keep`.
+  2026-11-06 01:54Z; Sola's session removed `pkg:sola-build` (generation 90). On 2026-11-07, at
+  Joshua's word, `sudo oath update --confirm --reboot --keep pkg:sola-browser` took it to desk
+  `6c8d38bd54c4` (R72, R73; generation 97): its Sola pins are master@0c99a6a5's, which holds the
+  overlays it ran (next@45d19f15, next@7545d519), but not `pkg:sola-browser` `2e210093af88` from
+  next@33d869a8 (the wheel no longer zooms), kept as an overlay with its `pkg:cef` need moved to
+  156.0.26. Generation 98 put its own key, `oath@novus` (`~/.config/oath/sign_ed25519`, made by Sola's
+  session), in `host:local.publishers` as `names="sola,sola-*"` beside buccina's.
   `host:local.seat_hid` (R71) is not set yet. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile. `pkg:llama-cpp` b11960 (`sha256-0908155920628b60`, from master@cf2448e) and `pkg:writ` 0.1.0 (`sha256-0fcb55acfa02`, from master@5c4bce3, fetched from the origin, generation 88, 2026-11-05), overlays in no profile, added at Joshua's word; testing may use up to half the GPU (R66). No `svc:llama` and no server left running: `writ` is the session on a terminal (R69), which loads ISTA's Qwen3.8 27B `IQ3_XXS-mtp` with MTP drafting on (`--mtp`; Joshua's choice, 2026-11-05; sha256 `63f29a2189a6` as Hugging Face lists it), from `~/.local/share/writ/models`, the only model there, as `work` at a 40% share when a prompt needs it (R68; `~/.config/writ/local.json`), and `/llama stop` frees it. It holds 12.5 GiB; the first prompt after a load waits about 80–100 s, and then it answers at 20–25 tokens/s. The other trial files and Qwen3.5 9B, 65 GB, were deleted at Joshua's word the same day. No OpenRouter key yet (`writ key`).
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
