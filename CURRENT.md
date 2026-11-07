@@ -43,9 +43,9 @@ append history (git has it).
    against upstream's newest release, may publish, and puts findings on the origin (R61). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. Linux 7.3.1 carries 12 io_uring patches, out at the first 7.3.y with the series;
    CVE-2026-99255 and 99262 wait for that 7.3.y. rsync 3.5.2 (R67) is on the origin; its fix bounds only unbroken collision runs.
-   R67: the audit pins a key upstream names and rebuilds CEF itself, the runner carrying what outlasts a 2 h command; neither has run for real.
-   Next: the 2026-11-10 run moves fribidi 1.0.18, expat 2.10.0, vulkan-loader and vulkan-tools 1.4.367 and rebuilds CEF, when all are a week old
-   (Joshua, 2026-11-04); buccina takes it at the next run. R60 is on buccina; canto runs `6c8d38bd54c4` (2026-11-07).
+   R67: the audit pins a key upstream names (not yet run for real) and rebuilds CEF itself: on 2026-11-07 it moved CEF to 156.0.26
+   with Chromium's fixes for CVE-2026-121035 and 121203, and fribidi 1.0.18, vulkan-loader and vulkan-tools 1.4.367 (desk `bda181db1fc6`,
+   then `6c8d38bd54c4`). Next: expat 2.10.0 at the 2026-11-10 run, a week old (Joshua, 2026-11-04); buccina takes a release at the next run. R60 is on buccina; canto runs `6c8d38bd54c4` (2026-11-07).
 
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.
