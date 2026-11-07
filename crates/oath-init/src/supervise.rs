@@ -216,7 +216,9 @@ impl Supervisor {
             survivors: self
                 .survivors
                 .drain(..)
-                .filter_map(|s| Some((s.id, std::os::fd::IntoRawFd::into_raw_fd(s.out?), s.partial)))
+                .filter_map(|s| {
+                    Some((s.id, std::os::fd::IntoRawFd::into_raw_fd(s.out?), s.partial))
+                })
                 .collect(),
         }
     }

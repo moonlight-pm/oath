@@ -359,7 +359,9 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
             );
         }
         match (kernel, pid1) {
-            ("next-boot", "next-boot") => text.push_str("; reboot to run its kernel, initrd and PID 1"),
+            ("next-boot", "next-boot") => {
+                text.push_str("; reboot to run its kernel, initrd and PID 1")
+            }
             ("next-boot", _) => text.push_str("; reboot to run its kernel and initrd"),
             (_, "next-boot") => text.push_str("; reboot to run its PID 1"),
             _ => {}

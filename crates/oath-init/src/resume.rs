@@ -273,7 +273,13 @@ pub fn parse_request(msg: &str) -> Result<(PathBuf, String), String> {
 /// Re-execute into the binary `req` names. Returns only when it did not:
 /// the requester has been told why, and the supervisor, its sockets and
 /// every service are as they were.
-pub fn upgrade(sup: &mut Supervisor, listener: &UnixListener, hot: &mut Hotplug, resumes: &[f64], req: Upgrade) {
+pub fn upgrade(
+    sup: &mut Supervisor,
+    listener: &UnixListener,
+    hot: &mut Hotplug,
+    resumes: &[f64],
+    req: Upgrade,
+) {
     let Upgrade { path, hash, mut reply } = req;
     let why = match try_upgrade(sup, listener, hot, resumes, &path, &hash, &mut reply) {
         Ok(()) => return,
