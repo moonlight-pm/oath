@@ -95,7 +95,14 @@ pub fn run(root: &Path, cat: &Catalog, opts: Opts) -> Result<i32> {
     }
     .and_then(|b| serde_json::from_slice::<Head>(&b).ok());
     if let Some(old) = &replaces {
-        if old.hash == head.hash {
+        // The same pack with other needs (the same tree built against moved
+        // dependencies) is a new head: a machine reads its needs from it.
+        let sorted = |n: &[PkgNeed]| {
+            let mut n = n.to_vec();
+            n.sort_by(|a, b| (&a.id, &a.hash).cmp(&(&b.id, &b.hash)));
+            n
+        };
+        if old.hash == head.hash && sorted(&old.needs) == sorted(&head.needs) {
             let v = json!({ "id": id.to_string(), "hash": hash, "published": false });
             return finish(&opts, v, &format!("{id} {} is its head on {to} already", short(&hash)));
         }
