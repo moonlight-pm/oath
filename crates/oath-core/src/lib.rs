@@ -106,9 +106,11 @@ pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-/// Whether `s` is an RFC 3339 time (`2026-11-06T12:00:00Z`).
-pub fn is_rfc3339(s: &str) -> bool {
-    chrono::DateTime::parse_from_rfc3339(s).is_ok()
+/// `s`, an RFC 3339 time, in UTC to the second (`2026-11-06T12:00:00Z`), as
+/// [`now_rfc3339`] writes it: such times order as text. `None` if it is not one.
+pub fn rfc3339_utc(s: &str) -> Option<String> {
+    let t = chrono::DateTime::parse_from_rfc3339(s).ok()?;
+    Some(t.with_timezone(&chrono::Utc).to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
 }
 
 /// Pretty JSON, written atomically: temp file, fsync, rename, fsync dir.

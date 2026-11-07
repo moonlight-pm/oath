@@ -158,8 +158,9 @@ the pin, its needs, `source`, version and description, signed beside
 itself (`.sig`, namespace `oath-pkg`) by `~/.config/oath/sign_ed25519`
 (`OATH_SIGN_KEY`) and written with the origin's write key, as for `cargo
 make publish` (below). The pin must be applied and built from a clean
-tree (`source.dirty` false). With `--committed` (the commit's time) it
-refuses to replace a head built from a later commit. Publishing needs no
+tree (`source.dirty` false). With `--committed` (the commit's time, any
+offset; the head keeps it in UTC) it refuses to replace a head built
+from a later commit. Publishing needs no
 `sudo`.
 
 A machine trusts a publisher for some names only by putting a list

@@ -485,6 +485,16 @@ fn needs_eq(a: &Value, b: &Value) -> bool {
 mod tests {
     use super::*;
 
+    #[test]
+    fn committed_times_in_utc_order_as_text() {
+        let utc = |s| crate::rfc3339_utc(s).unwrap();
+        assert_eq!(utc("2026-11-07T11:00:00-08:00"), "2026-11-07T19:00:00Z");
+        assert_eq!(utc("2026-11-07T19:00:00.5Z"), "2026-11-07T19:00:00Z");
+        let (pacific, later) = (utc("2026-11-07T11:00:00-08:00"), "2026-11-07T19:30:00Z");
+        assert!(after((Some(&pacific), ""), (Some(later), "")));
+        assert_eq!(crate::rfc3339_utc("yesterday"), None);
+    }
+
     fn h(c: char) -> String {
         format!("sha256-{}", c.to_string().repeat(64))
     }

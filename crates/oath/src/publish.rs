@@ -59,14 +59,13 @@ pub fn run(root: &Path, cat: &Catalog, opts: Opts) -> Result<i32> {
             "commit them, build again and pin that: a head says which commit it is",
         ));
     }
-    if let Some(c) = &opts.committed {
-        if !oath_core::is_rfc3339(c) {
-            return Err(Error::hint(
-                format!("--committed {c:?}"),
-                "an RFC 3339 time: 2026-11-06T12:00:00Z",
-            ));
-        }
-    }
+    // In UTC, as `published` is: heads are ordered by these as text.
+    let committed = match &opts.committed {
+        None => None,
+        Some(c) => Some(oath_core::rfc3339_utc(c).ok_or_else(|| {
+            Error::hint(format!("--committed {c:?}"), "an RFC 3339 time: 2026-11-06T12:00:00Z")
+        })?),
+    };
     let needs: Vec<PkgNeed> = serde_json::from_value(doc["needs"].clone()).unwrap_or_default();
     let s = |k: &str| doc[k].as_str().unwrap_or("").to_string();
     let head = Head {
@@ -74,7 +73,7 @@ pub fn run(root: &Path, cat: &Catalog, opts: Opts) -> Result<i32> {
         hash: hash.clone(),
         needs,
         published: oath_core::now_rfc3339(),
-        committed: opts.committed.clone(),
+        committed,
         source,
         version: oath_core::read_components(&tree)
             .and_then(|c| oath_core::own_version(&c, &name))
