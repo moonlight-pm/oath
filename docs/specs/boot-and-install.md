@@ -245,7 +245,9 @@ overlay and its recipes built (novus's NVIDIA driver).
   on 2026-10-31. Will be: `oath` asks the running PID 1 whether it keeps
   the seat and, if not, restarts nothing and says to reboot. Until then a
   machine whose PID 1 is older takes `--reboot` (buccina's is
-  `e433824d38d0`'s).
+  `e433824d38d0`'s). Since R73 a PID 1 that re-executes into the
+  output's first does that converge itself, so this needs only a PID 1
+  from before both.
 
 From the 2026-10-13 review:
 
@@ -301,6 +303,14 @@ publishes each output it checked, and each machine moves itself:
      1 of the disk in `oath.root=`, through `findfs` for a `UUID=`),
      plans the rotation as `esp` does, and snapshots `@` as `@boot-<n>`,
      so the archived boot pairs the old kernel with the old userspace.
+     Before that snapshot, without `--reboot`, when the release's PID 1
+     (`init`) is not the one running, PID 1 re-executes into the bundle's
+     (`stage/lib/oath/init`, its hash checked first) with every service
+     running (R73, [services.md](services.md)), so the new PID 1 does step
+     3's converge. A PID 1 from before R73 is not asked and runs to the
+     next boot; a refusal is said and the update goes on without it. If
+     the update then stops, PID 1 re-executes back into `/lib/oath/init`
+     (the old binary until step 4) when that is the one it ran.
   3. Writes the accounts, files the output's plans the machine has, and
      sets each package to the output's `hash` and `needs`, then one
      `oath apply`: one generation, undoable, and apply hashes each
@@ -344,8 +354,16 @@ publishes each output it checked, and each machine moves itself:
      five (and their `@boot-*`), writes the new kernel, initrd,
      `oath-efi` and entries, keeps the machine's `loader.conf`, and
      records the release in `/oath/output.json`.
-  6. With `--reboot`, reboots. Afterwards `oath update` says whether
-     PID 1 is the output's.
+  6. With `--reboot`, reboots. Without it, the update says what waits
+     for a boot: the kernel when it moved (`"kernel": "next-boot"` in
+     `--json`), PID 1 when it did not re-execute (`"pid1": "next-boot"`;
+     `"re-executed"` when it did, `"runs"` when it was the output's), and
+     what PID 1 does only at boot (mounts, modules, sysctls, device modes,
+     `/etc`). The preview's `reboot` counts PID 1 only when the running
+     one cannot re-execute (`"pid1": "re-exec"`). Afterwards `oath update`
+     says whether PID 1 is the output's, and for that same release `sudo
+     oath update --confirm` re-executes it into `/lib/oath/init` when
+     that is the release's.
 - **A machine from before R36** runs dropbear as `svc:sshd`. Once it
   has booted a PID 1 that wrote sshd's config and carried dropbear's
   host key over, `sudo oath update --confirm` moves `svc:sshd` to
@@ -366,7 +384,12 @@ canto's Steam is), then `sudo oath update --confirm --reboot`, and
 checks: it rebooted, no service restarted on its new program before
 the reboot (when the output's `oath` ran the update), the output's PID
 1, the catalog in sync, each recipe at the output's pin, every service
-that ran before running again, the old boot archived. On 2026-10-28 on buccina it moved
+that ran before running again, the old boot archived. `--live` (R73)
+runs `sudo oath update --confirm` without `--reboot` first and requires
+`"pid1": "re-executed"`, the same boot, the output's PID 1, and every
+service whose package did not move on the process it had; then `sudo
+reboot` and the same checks (an older output from before R73 is never
+asked to re-execute, so `--live` needs one from after). On 2026-10-28 on buccina it moved
 `a14d1acd3c2a` (before the security sweep, Linux 7.3-rc1) to
 `3b2d49886ff7`: `pkg:oath` first, then five plans and 46 packages in
 one generation, a reboot into Linux 7.3 and the output's PID 1. On

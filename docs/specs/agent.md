@@ -181,8 +181,8 @@ Left out, with the reason:
 - `set` for `dev` (inventory; its one field cannot be set false), for
   `snap` (`snap:current` is a boot-generation change; `undo` is the
   path) and for `plan` (`file_plan` files one from its text).
-- `fmt`, `seed`, `panic-init` and `undo --expired` (build time, the
-  harness, PID 1).
+- `fmt`, `seed`, `panic-init`, `reexec-init` and `undo --expired` (build
+  time, the harness, PID 1).
 
 Each tool's description says what it changes and points to `schema`.
 `apply`'s description repeats the INDEX rule for `confirm`. `keep`'s

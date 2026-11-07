@@ -97,6 +97,86 @@ impl Live {
     }
 }
 
+/// What PID 1 says of itself (R73), written at boot and by each image that
+/// takes over; a PID 1 from before writes none.
+const INIT_SELF: &str = "/run/oath/init.json";
+
+/// What came of asking PID 1 to re-execute into a new binary (R73).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Reexec {
+    /// PID 1 runs the new binary, with every service as it was.
+    Done,
+    /// This PID 1 predates re-executing on request: the new one runs from
+    /// the next boot. It is not asked, since it takes any message it does
+    /// not know for a converge.
+    Unsupported,
+}
+
+/// Whether PID 1 re-executes into a new binary on request (R73).
+pub fn can_reexec() -> bool {
+    oath_core::read_json::<serde_json::Value>(Path::new(INIT_SELF))
+        .is_ok_and(|v| v["upgrade"].as_u64().unwrap_or(0) >= 1)
+}
+
+/// The hash of the binary PID 1 runs, as root.
+pub fn init_hash() -> Result<String> {
+    Ok(oath_core::file_hash(&fs::read("/proc/1/exe")?))
+}
+
+/// Ask PID 1 to re-execute into `bin`, whose hash is `hash`, and wait until
+/// the new binary has taken over (R73). PID 1 hashes the file itself, has
+/// it read a copy of its state, and execs the file it hashed; services keep
+/// running and stay its children. An error says why it did not, and PID 1
+/// then runs what it ran.
+pub fn reexec_init(bin: &Path, hash: &str) -> Result<Reexec> {
+    use std::io::Read;
+    use std::os::unix::fs::MetadataExt;
+    let me = Path::new(INIT_SELF);
+    let says = |p: &Path| oath_core::read_json::<serde_json::Value>(p).ok();
+    let Some(before) = says(me).filter(|v| v["upgrade"].as_u64().unwrap_or(0) >= 1) else {
+        return Ok(Reexec::Unsupported);
+    };
+    let ino = fs::metadata(me)?.ino();
+    let mut s = UnixStream::connect("/oath/run/init.sock")
+        .map_err(|e| Error::Msg(format!("init socket: {e}")))?;
+    s.write_all(format!("upgrade {} {hash}\n", bin.display()).as_bytes())?;
+    // PID 1 closes the connection by executing the new binary, or says why
+    // it did not.
+    let _ = s.set_read_timeout(Some(std::time::Duration::from_secs(60)));
+    let mut reply = String::new();
+    let _ = s.read_to_string(&mut reply);
+    if let Some(why) = reply.lines().find_map(|l| l.strip_prefix("refused: ")) {
+        return Err(Error::hint(format!("PID 1 did not re-execute: {why}"), "oath logs"));
+    }
+    if !reply.starts_with("upgrading") {
+        return Err(Error::hint(
+            format!("PID 1 did not take the request (it said {:?})", reply.trim()),
+            "oath logs",
+        ));
+    }
+    for _ in 0..300 {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        if fs::metadata(me).map(|m| m.ino()).ok() == Some(ino) {
+            continue;
+        }
+        let Some(now) = says(me) else { continue };
+        if now["exe"] == json!(hash) {
+            return Ok(Reexec::Done);
+        }
+        if now["exe"] == before["exe"] {
+            return Err(Error::hint(
+                "the new binary could not take PID 1's state; PID 1 went back to the one it ran, \
+                 with every service",
+                "oath logs",
+            ));
+        }
+    }
+    Err(Error::hint(
+        format!("PID 1 did not say within 30 s that it runs {hash}"),
+        "oath logs; `/run/oath/init.json` says what PID 1 runs",
+    ))
+}
+
 /// Ask our PID 1 for a clean shutdown (it stops services, syncs and
 /// remounts read-only first). Without it, sync and call the kernel.
 fn power(sig: libc::c_int, fallback: RebootMode) -> Result<()> {

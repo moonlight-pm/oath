@@ -86,6 +86,12 @@ impl Hotplug {
         self.sock.take()
     }
 
+    /// Take back the socket [`Self::take_socket`] gave, when the exec it was
+    /// for did not happen.
+    pub fn restore_socket(&mut self, sock: Option<OwnedFd>) {
+        self.sock = sock;
+    }
+
     /// Go on with a socket a previous PID 1 opened.
     pub fn from_socket(sock: Option<OwnedFd>) -> Self {
         Self { sock, index: None, rediscover: None }

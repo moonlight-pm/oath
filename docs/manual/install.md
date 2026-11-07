@@ -167,6 +167,7 @@ publishes every output it checked (`cargo make publish`,
 
 ```sh
 oath update                           # the newest output for this machine, and what moves
+sudo oath update --confirm            # move to it; PID 1 re-executes into its binary
 sudo oath update --confirm --reboot   # move to it, then boot it
 ```
 
@@ -193,7 +194,8 @@ its needs move. With `--confirm`, it:
    fetches the rest. Then no two packages as the moves leave them may
    ship one name in `/bin` or `/lib` (a package kept with `--keep` that
    the output split in two), or it stops there;
-2. snapshots `@` as `@boot-<n>`;
+2. without `--reboot`, has PID 1 re-execute into the output's binary
+   (below), then snapshots `@` as `@boot-<n>`;
 3. writes the output's accounts (`/etc/passwd`, `group`, `shadow`) and
    `/var/empty`, since services that restart next drop to `void` (R36);
 4. sets each package the machine has to the output's pin, needs and
@@ -230,13 +232,27 @@ its needs move. With `--confirm`, it:
    snapshot from step 2) and writes the new kernel, initrd and
    `oath-efi`, keeping five archives (`--esp`, default partition 1 of
    the root disk);
-7. with `--reboot`, reboots. `oath update` afterwards says whether
-   PID 1 is the output's. An `oath` from before R47 that made the
+7. with `--reboot`, reboots; without it, says what waits for a boot
+   (a new kernel, a PID 1 that could not re-execute, and what PID 1
+   does only at boot). `oath update` afterwards says whether PID 1 is
+   the output's. An `oath` from before R47 that made the
    update wrote the record without the release's commit, pins and seed;
    `oath update` says so, and `sudo oath update --confirm` (the same
    release) writes the record as signed. Objects that release's seed
    has and the machine lacks are, from then on, the owner's to add
    (`oath new`).
+
+**A new PID 1 without a reboot (R73).** When the output's PID 1 is not
+the one running, an update without `--reboot` asks PID 1 to re-execute
+into the output's binary before it applies anything, so the new PID 1
+is the one that restarts what moved. PID 1 checks the binary's hash,
+lets it read a copy of its state first, and refuses one that cannot;
+every service keeps its process. The update prints `PID 1 runs …`, and
+`--json` says `"pid1": "re-executed"`. If the update stops after that,
+PID 1 goes back to the binary it ran. A new kernel still takes a
+reboot, and so does what PID 1 does only at boot (mounts, modules,
+sysctls, device modes, `/etc`). A PID 1 from before R73 is not asked:
+its first update to one takes a reboot, as before.
 
 A machine that still runs dropbear as `svc:sshd` (from before R36)
 moves to OpenSSH after it has booted the new PID 1, which writes

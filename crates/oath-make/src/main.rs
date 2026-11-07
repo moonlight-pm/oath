@@ -252,6 +252,11 @@ enum Cmd {
         /// make its package present, as its owner does; repeatable.
         #[arg(long, value_name = "PLAN")]
         build: Vec<String>,
+        /// Update without `--reboot` first: PID 1 must re-execute into the
+        /// output's on the same boot, every unmoved service keeping its
+        /// process (R73); then reboot and check as usual.
+        #[arg(long)]
+        live: bool,
     },
     /// Rotate last-5 boot slots and write kernel+initrd+oath-efi to an existing ESP.
     /// Does not format a disk.
@@ -390,8 +395,8 @@ fn real() -> Result<()> {
         Cmd::Audit { name, offline, upstream, publish } => {
             audit::run(&root, &audit::Opts { name, offline, upstream, publish })?
         }
-        Cmd::Update { qemu, output, unchecked, oath_first, build } => {
-            let opts = update::Opts { qemu, output, unchecked, oath_first, build };
+        Cmd::Update { qemu, output, unchecked, oath_first, build, live } => {
+            let opts = update::Opts { qemu, output, unchecked, oath_first, build, live };
             update::run_update(&root, &out, opts)?;
         }
         Cmd::Esp { esp, confirm, root: root_dev, output, unchecked } => {

@@ -214,6 +214,31 @@ still starts. PID
   an error, PID 1 runs a root shell on the console and respawns it,
   reaping every child. `sudo oath panic-init` (hidden; root only, by
   `SO_PEERCRED`) makes PID 1 panic for the harness.
+- **A new binary (R73, built).** `upgrade <path> <hash>` on `init.sock`,
+  from root only (`SO_PEERCRED`), makes PID 1 re-execute into another
+  binary the same way. It opens the file once and hashes what it opened
+  (a wrong hash is refused), writes a copy of its state to
+  `/run/oath/init-rehearse.json` and runs the file as `/init oath-rehearse
+  <copy>`: within 10 s it must exit 0 and print `oath-rehearse ok <the
+  copy's hash> <n> services`, which only a PID 1 that read the copy can,
+  so `/bin/true` is refused. The state then goes to
+  `/run/oath/init-resume.json` with `why: "upgrade"`, the old image stays
+  open across the exec (`argv[2] = previous=<fd>`), PID 1 answers
+  `upgrading` and `fexecve`s the file it hashed. The handoff carries
+  `format` (1; a handoff with none is 1), and a reader refuses a newer
+  one; a new image that cannot take the state, or panics taking it,
+  execs the previous one, which takes it. A refused request, or a failed
+  exec, answers `refused: <why>` and leaves the supervisor, its sockets
+  and every service as they were; it is not a resume and counts toward
+  no panic limit. Boot-only work (mounts, modules, sysctls, device
+  modes, `/etc`, sshd's keys) does not run again: it waits for a boot.
+  Each PID 1 writes `/run/oath/init.json` at boot and when it takes over
+  (`upgrade: 1`, `format`, `exe`: its binary's hash, `how`: `boot`,
+  `panic` or `upgrade`, `since`); `oath` asks only a PID 1 that wrote
+  one, since a PID 1 from before takes any message it does not know for
+  a plain converge (which would restart a seat's deferred service). `oath
+  update` asks for it (below and [boot-and-install.md](boot-and-install.md));
+  `sudo oath reexec-init <bin> [--hash …]` (hidden) is the harness's way.
 
 ## Target
 

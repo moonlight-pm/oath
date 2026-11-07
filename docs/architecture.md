@@ -44,7 +44,15 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
       dev:* again after a block/net/tty change and mount what appeared),
       answer converge requests;
       a panic in a pass writes /run/oath/init-resume.json and execs
-      /proc/self/exe oath-resume, which takes the state and fds back
+      /proc/self/exe oath-resume, which takes the state and fds back;
+      `upgrade <path> <hash>` from root (R73, `oath update`) hashes the
+      file it opened, runs it as `/init oath-rehearse <copy of the state>`,
+      then hands over the same way and fexecve()s that file (`previous=<fd>`
+      names the old image, which a new one that cannot take the state
+      execs); boot-only work does not run again
+    /run/oath/init.json: written at boot and by each image that takes
+      over (R73): `upgrade` (the request it takes), its binary's hash,
+      how it started (`boot`, `panic`, `upgrade`)
 ```
 
 QEMU (`cargo make run|up|start`) boots the same kernel and initrd with

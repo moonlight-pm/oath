@@ -19,6 +19,10 @@
 //!    catalog in sync, each pack pinned from elsewhere at the newer
 //!    output's pin, each recipe built at the output's pin, every service
 //!    that ran before running again, and the old boot archived on the ESP.
+//!    With `--live`, `sudo oath update --confirm` first, without
+//!    `--reboot` (R73): PID 1 must re-execute into the output's on the same
+//!    boot, and every service whose package did not move keep its process;
+//!    then `sudo reboot`, and the same checks after it.
 //! 5. A machine from before R36 then moves `svc:sshd` to OpenSSH with a
 //!    second `oath update --confirm`, kept from a new SSH session.
 //!
@@ -52,6 +56,8 @@ pub struct Opts {
     pub oath_first: bool,
     /// Recipes (`plan:<name>`) to build on the older machine first.
     pub build: Vec<String>,
+    /// Update without `--reboot` first: PID 1 re-executes (R73).
+    pub live: bool,
 }
 
 pub fn run_update(root: &Path, out: &Path, opts: Opts) -> Result<()> {
@@ -250,19 +256,24 @@ fn rehearse(root: &Path, out: &Path, o: &Output, opts: &Opts) -> Result<()> {
     let followed = follows(&r)?;
     eprintln!("{}", install::ssh_out(&r, "oath update 2>&1")?);
     let boot = install::ssh_out(&r, "cat /proc/sys/kernel/random/boot_id")?;
-    let mut moving = Command::new("ssh");
-    moving.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=3"]);
-    moving.args(install::ssh_base(&r).get_args());
-    moving.arg("sudo -n oath update --confirm --reboot 2>&1");
-    let moved = moving.output().context("ssh oath update")?;
-    let moved = String::from_utf8_lossy(&moved.stdout).into_owned();
-    eprintln!("{moved}");
-    if !moved.contains("; rebooting") {
-        bail!("oath update --confirm --reboot did not reboot (above)");
+    if opts.live {
+        live_update(&r, o, &boot)?;
+        install::ssh_fire(&r, "sudo -n reboot");
+    } else {
+        let mut moving = Command::new("ssh");
+        moving.args(["-o", "ServerAliveInterval=2", "-o", "ServerAliveCountMax=3"]);
+        moving.args(install::ssh_base(&r).get_args());
+        moving.arg("sudo -n oath update --confirm --reboot 2>&1");
+        let moved = moving.output().context("ssh oath update")?;
+        let moved = String::from_utf8_lossy(&moved.stdout).into_owned();
+        eprintln!("{moved}");
+        if !moved.contains("; rebooting") {
+            bail!("oath update --confirm --reboot did not reboot (above)");
+        }
     }
     come_back_and_verify(&r, o, &mut vm, &boot)?;
     let after = follows(&r)?;
-    if no_update || oath_first {
+    if (no_update || oath_first) && !opts.live {
         if after != followed {
             bail!("services restarted on their new programs before the reboot (oath logs)");
         }
@@ -328,6 +339,73 @@ fn rehearse(root: &Path, out: &Path, o: &Output, opts: &Opts) -> Result<()> {
     eprintln!("QEMU update rehearsal ok: {} -> {}  {}", old.id, o.id, dir.display());
     copy_file(&dir.join("known_hosts"), &dir.join("known_hosts.kept")).ok();
     Ok(())
+}
+
+/// `sudo oath update --confirm` without `--reboot` (R73): on the same boot
+/// PID 1 runs the output's binary, and every service that ran keeps its
+/// process unless its package moved.
+fn live_update(r: &Remote, o: &Output, boot: &str) -> Result<()> {
+    let before = service_pids(r)?;
+    let moved = install::ssh_out(r, "sudo -n oath --json update --confirm 2>&1")?;
+    eprintln!("{moved}");
+    // The answer is the last object to start a line; the steps' own output
+    // comes before it, and a telemetry line after.
+    let start = moved.rfind("\n{").map_or(0, |i| i + 1);
+    let v: Value = serde_json::Deserializer::from_str(&moved[start..])
+        .into_iter::<Value>()
+        .next()
+        .and_then(|r| r.ok())
+        .unwrap_or(Value::Null);
+    if v["pid1"] != json!("re-executed") {
+        bail!("oath update --confirm did not re-execute PID 1 (pid1: {})", v["pid1"]);
+    }
+    if install::ssh_out(r, "cat /proc/sys/kernel/random/boot_id")? != boot {
+        bail!("the machine rebooted during oath update --confirm");
+    }
+    let want = sha256_file(&o.file("stage/lib/oath/init"))?;
+    let got = install::ssh_out(r, "sudo -n sha256sum /proc/1/exe")?;
+    if !got.starts_with(&want) {
+        bail!("PID 1 is not the output's after the update ({got}, want {want})");
+    }
+    let after = service_pids(r)?;
+    let mut kept = 0;
+    for (id, (pid, pkg)) in &before {
+        match after.get(id) {
+            Some((p, _)) if p == pid => kept += 1,
+            Some((_, now)) if now != pkg => {
+                eprintln!("{id} restarted on its moved package");
+            }
+            _ => bail!("{id} (pid {pid}) did not keep its process, and its package did not move"),
+        }
+    }
+    eprintln!(
+        "PID 1 re-executed into the output's {} on the same boot; {kept} of {} services kept \
+         their processes",
+        &want[..12],
+        before.len()
+    );
+    Ok(())
+}
+
+/// Each running service's pid and the package hash its program comes from.
+fn service_pids(r: &Remote) -> Result<std::collections::BTreeMap<String, (i64, String)>> {
+    let rows = install::ssh_out(
+        r,
+        "for f in /oath/status/svc/*.json; do n=${f##*/}; printf 'svc:%s\\t' \"${n%.json}\"; \
+         tr -d '\\n' < \"$f\"; echo; done; true",
+    )?;
+    let mut out = std::collections::BTreeMap::new();
+    for line in rows.lines() {
+        let Some((id, doc)) = line.split_once('\t') else { continue };
+        let v: Value = serde_json::from_str(doc).unwrap_or(Value::Null);
+        if v["state"] != json!("running") {
+            continue;
+        }
+        let Some(pid) = v["pid"].as_i64() else { continue };
+        let pkg = v["pkg"]["hash"].as_str().unwrap_or("").to_string();
+        out.insert(id.to_string(), (pid, pkg));
+    }
+    Ok(out)
 }
 
 /// The services running now and ten seconds from now: not one that comes
