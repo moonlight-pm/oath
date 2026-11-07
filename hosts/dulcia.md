@@ -22,8 +22,10 @@ Overwrite this file when facts change; do not append a diary.
   ([novus.md](novus.md)), then renamed from `oath` (generation 1).
   Agents change it at Joshua's word: AGENTS.md does not list it with
   canto and buccina.
-- **Running now:** `base` release `57192b33e6ab` (master `c76f4be`),
-  generation 4, in sync, from `sudo oath update --confirm --reboot` on
-  2026-11-06 (only `pkg:oath` moved). Mountain time
-  (`MST7MDT,M3.2.0,M11.1.0`), over SSH too. `@boot-1` holds the boot
-  before it (`01f12aaf944d`).
+- **Running now:** `base` release `ee3e239caa32` (master `7597cc1`,
+  R72 and R73), generation 6, in sync: 5 from `sudo oath update --confirm
+  --reboot` on 2026-11-07 (only `pkg:oath` moved), 6 put novus's key in
+  `host:local.publishers` as `names="sola,sola-*" … oath@novus` beside
+  buccina's (Joshua 2026-11-07). Mountain time
+  (`MST7MDT,M3.2.0,M11.1.0`), over SSH too. `@boot-2` holds the boot
+  before it (`57192b33e6ab`).
