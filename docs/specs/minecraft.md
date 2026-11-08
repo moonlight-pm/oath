@@ -7,12 +7,10 @@ a root with no `/lib64` or `/usr`. It is the Minecraft half of phase 9
 the other.
 
 **Status:** is, on koeurax since 2026-11-08 (generation 5, each package its
-own head on the origin, in Sola's launcher as Minecraft): Prism
-starts in the box on Wayland and reaches the network over TLS, and in that box
-LWJGL 3.3.3 (the jars Minecraft 1.21.5 loads) opens GLFW on Xwayland, OpenGL on
-NVIDIA's driver and OpenAL through PipeWire. Will be: the game itself, which
-waits for a sign-in: Prism plays nothing, offline or not, until a Microsoft
-account that owns the game is added.
+own head on the origin, in Sola's launcher as Minecraft). Joshua signed in and
+ran it that day: Minecraft 1.21.5 on Fabric Loader 0.16.14 with the restored
+mods, LWJGL 3.3.3, OpenGL on the RTX 4060, sound on the onboard HDA. Prism plays
+nothing, offline or not, until a Microsoft account that owns the game is added.
 
 ## Why Prism
 
@@ -69,7 +67,7 @@ It keeps `home`, not `work` (R55): the game needs the desk's display, sound
 and pads, and opening them to `work` would open them to every server on a
 machine that has some.
 
-**Gaps (is):** the box shares the machine's network, so it reaches
+**Gaps (is):** the game's narrator logs an error at start (no `libflite`) and stays off. The box shares the machine's network, so it reaches
 localhost services (Steam's ports on a desk) and abstract sockets
 (Xwayland's); through Xwayland it sees other X11 clients' input (Steam).
 Prism's "open folder" and links do nothing (no `xdg-open`); sign-in uses

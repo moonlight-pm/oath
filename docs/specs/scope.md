@@ -67,8 +67,8 @@ The last commit with all of them is tagged `t37-t39-final`.
 
 One of the first real uses of Oath is a desk for the owner's daughter
 that launches Steam and runs Minecraft. Steam is being brought up on
-canto since 2026-10-23 ([steam.md](steam.md), R29); Minecraft is not
-started.
+canto since 2026-10-23 ([steam.md](steam.md), R29); Minecraft runs on koeurax since
+2026-11-08 ([minecraft.md](minecraft.md), R74).
 
 What it will need, as packages:
 

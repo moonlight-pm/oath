@@ -31,7 +31,7 @@ append history (git has it).
    core `pkg:sola`, fifteen `pkg:sola-<app>` (`pkg:sola-oath`, the read-only package app, new), `svc:sola-vault`;
    until a machine runs R72, a pin moves PID 1's hash and takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus has `["3554:f510"]` (generation 99). Novus runs the release's Sola builds but `pkg:sola-browser` (next@33d869a8, kept: a plain update drops it). Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
-   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs; on koeurax Joshua played Terraria and Noita on 2026-11-08, and it sees an Xbox pad over Bluetooth LE. Minecraft (R74, [docs/specs/minecraft.md](docs/specs/minecraft.md)): on koeurax since 2026-11-08 (heads on the origin, in Sola's launcher), its GL and sound tested in the box, the game not yet run. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad); sign in to Prism on koeurax and play.
+   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs; on koeurax Joshua played Terraria and Noita on 2026-11-08, and it sees an Xbox pad over Bluetooth LE. Minecraft (R74, [docs/specs/minecraft.md](docs/specs/minecraft.md)): on koeurax since 2026-11-08 (heads on the origin, in Sola's launcher); Joshua ran it that day, the restored 1.21.5 Fabric world's instance on the RTX 4060. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
    profile (R52), on the origin since `c9735fc14e50` (`cloudflared` since 2026-11-03). They run as `work`, which has no `sudo`. Bias against
@@ -45,7 +45,7 @@ append history (git has it).
    CVE-2026-99255 and 99262 wait for that 7.3.y. rsync 3.5.2 (R67) is on the origin; its fix bounds only unbroken collision runs.
    R67: the audit pins a key upstream names (not yet run for real) and rebuilds CEF itself: on 2026-11-07 it moved CEF to 156.0.26
    with Chromium's fixes for CVE-2026-121035 and 121203, and fribidi 1.0.18, vulkan-loader and vulkan-tools 1.4.367 (desk `bda181db1fc6`,
-   then `6c8d38bd54c4`). Next: expat 2.10.0 at the 2026-11-10 run, a week old (Joshua, 2026-11-04); buccina took `6c8d38bd54c4` at the 2026-11-08 run. R60 is on buccina and canto.
+   then `6c8d38bd54c4`). 44 plans, CEF's too, still name the old `pkg:openssl` through `pkg:python` (2026-11-08): the next `cargo make pkgs -j 8` rebuilds them to the same products. Next: expat 2.10.0 at the 2026-11-10 run, a week old (Joshua, 2026-11-04); buccina took `6c8d38bd54c4` at the 2026-11-08 run. R60 is on buccina and canto.
 
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.

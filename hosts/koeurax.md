@@ -38,5 +38,5 @@ Overwrite this file when facts change; do not append a diary.
   `/bin/prismlauncher`). `~/.local/share/PrismLauncher` holds
   `prismlauncher.cfg` and the instance `fabulously-optimized` (1.21.5, Fabric
   Loader 0.16.14): the Modrinth profile "Fabulously Optimized (1)" from the
-  Windows backup, its world "Creative" checked file for file against it. No
-  account is signed in yet.
+  Windows backup, its world "Creative" checked file for file against it. Joshua signed in and ran it on 2026-11-08 (OpenGL on
+  the RTX 4060, sound on the onboard HDA).
