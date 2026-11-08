@@ -13,7 +13,7 @@
       "restart": "never",
       "enabled": true,
       "user": "home",
-      "schedule": "0 4 * * *"
+      "schedule": "0 0 * * *"
     },
     "svc:dbus-session": {
       "enabled": false

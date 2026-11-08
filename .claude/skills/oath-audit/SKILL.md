@@ -1,11 +1,11 @@
 ---
 name: oath-audit
-description: The daily security audit of every Oath package (R48) — scan, triage, fix, check, publish, report. Use when the scheduled run starts it (svc:audit → check/audit/run, at 04:00 on buccina), or when Joshua asks for a security audit, a CVE check, or "are we vulnerable to …".
+description: The daily security audit of every Oath package (R48) — scan, triage, fix, check, publish, report. Use when the scheduled run starts it (svc:audit → check/audit/run, at midnight on buccina), or when Joshua asks for a security audit, a CVE check, or "are we vulnerable to …".
 ---
 
 # Oath security audit (R48)
 
-`svc:audit` runs `check/audit/run` on buccina at 04:00 Mountain as
+`svc:audit` runs `check/audit/run` on buccina at midnight Mountain as
 `home`: one headless run of this skill with the permissions in
 `check/audit/settings.json` (anything not listed is refused; nobody is
 there to ask). Joshua's standing word (2026-10-31): fix what is found,

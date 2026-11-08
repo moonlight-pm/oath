@@ -1,5 +1,5 @@
 #!/bin/sh
-# The daily security audit (R48). `svc:audit` on buccina runs this at 04:00
+# The daily security audit (R48). `svc:audit` on buccina runs this at midnight
 # (host:local.timezone) as `home`: one headless Claude Code run with the
 # `oath-audit` skill scans, fixes, checks and publishes; this then mails its
 # report to Joshua and, when it published a release, moves buccina to it

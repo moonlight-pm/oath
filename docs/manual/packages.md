@@ -550,7 +550,7 @@ writes nothing). `series` holds a package to a release line, `dev_odd` and
 cannot be read. A newer release is a prompt to read its notes, not a
 finding: only one that names a security fix moves the pin.
 
-On buccina, `svc:audit` runs it daily at 04:00 through `check/audit/run`:
+On buccina, `svc:audit` runs it daily at midnight through `check/audit/run`:
 a headless Claude Code run of the `oath-audit` skill triages the hits,
 upgrades to upstream's fixed release (or applies upstream's patch, or a
 backport marked `oath-backport-CVE-…`), checks, commits, pushes and

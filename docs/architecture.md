@@ -252,7 +252,7 @@ cargo make audit [--offline] [--name <pkg>] [--upstream]
   every package by pkgs/audit.toml against CVE List V5 (mirror in
   ~/.local/share/oath/cvelist), OSV, NVD, CISA KEV and EPSS, and each pin
   against upstream's newest stable release; writes
-  build/audit/latest.json (R48). svc:audit (buccina, schedule 0 4 * * *)
+  build/audit/latest.json (R48). svc:audit (buccina, schedule 0 0 * * *)
   runs check/audit/run: claude -p with the oath-audit skill and
   check/audit/settings.json, the report mailed through Resend
   (~/.config/oath/mail.env), then oath update --confirm --reboot when it

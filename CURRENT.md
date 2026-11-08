@@ -39,7 +39,7 @@ append history (git has it).
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
    as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
    image builds if asked.
-4. **Security audit (R48).** `svc:audit` runs on buccina (`0 4 * * *`): scans, reads each pin
+4. **Security audit (R48).** `svc:audit` runs on buccina (`0 0 * * *`): scans, reads each pin
    against upstream's newest release, may publish, and puts findings on the origin (R61). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. Linux 7.3.1 carries 12 io_uring patches, out at the first 7.3.y with the series;
    CVE-2026-99255 and 99262 wait for that 7.3.y. rsync 3.5.2 (R67) is on the origin; its fix bounds only unbroken collision runs.
