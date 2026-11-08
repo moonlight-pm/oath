@@ -749,6 +749,7 @@ compare_tag = "v{version}"
 "CVE-2026-99279" = "ksmbd (ended sessions): boot/config has CONFIG_SMB_SERVER unset"
 "CVE-2026-99280" = "ksmbd (session procfs readers): boot/config has CONFIG_SMB_SERVER unset"
 "CVE-2026-99282" = "sch_teql (teql_master_xmit): boot/config has CONFIG_NET_SCH_TEQL unset"
+"CVE-2026-99284" = "skb_zerocopy() dropping the shared-frag marker: in 7.3.1 only nfnetlink_queue and openvswitch call it (Elixir's references), and boot/config has CONFIG_NETFILTER_NETLINK_QUEUE and CONFIG_OPENVSWITCH unset"
 
 [linux-build]
 skip = "pkg:linux's own tree, for outside modules: its CVEs are pkg:linux's"
@@ -1016,6 +1017,9 @@ repo = "https://github.com/qt/qtimageformats"
 tag = "v{version}"
 differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit (read 2026-11-07)"
 
+[qtimageformats.not_affected]
+"CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
+
 [qtnetworkauth]
 cpe = "cpe:2.3:a:qt:qt"
 names = ["qt", "qtnetworkauth"]
@@ -1023,12 +1027,18 @@ repo = "https://github.com/qt/qtnetworkauth"
 tag = "v{version}"
 differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit (read 2026-11-07)"
 
+[qtnetworkauth.not_affected]
+"CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
+
 [qtsvg]
 cpe = "cpe:2.3:a:qt:qt"
 names = ["qt", "qtsvg"]
 repo = "https://github.com/qt/qtsvg"
 tag = "v{version}"
 differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit (read 2026-11-07)"
+
+[qtsvg.not_affected]
+"CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
 
 [readline]
 cpe = "cpe:2.3:a:gnu:readline"
