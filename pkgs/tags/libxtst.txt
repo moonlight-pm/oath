@@ -1,0 +1,29 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libXtst-1.2.6.tar.xz f94f0b37c07d80d877f3eda2c2405cc7e62aa9842f6310354aa349e3d66a4fe5
+tag libXtst-1.2.6 commit b95aac652cd77f66c4b472aa840b30c337b77715 tree 22777df4636b55fa12f4dcb9e29dfaa053dd6adc
+signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
+same 16
+only-in-tag 5
+from automake 1
+from gettext 2
+from gnulib 7
+from libtool 4
+adds ChangeLog
+adds Makefile.in
+adds aclocal.m4
+adds config.h.in
+adds configure
+adds man/Makefile.in
+adds man/XTestCompareCurrentCursorWithWindow.man
+adds man/XTestCompareCursorWithWindow.man
+adds man/XTestDiscard.man
+adds man/XTestFakeButtonEvent.man
+adds man/XTestFakeKeyEvent.man
+adds man/XTestFakeMotionEvent.man
+adds man/XTestFakeRelativeMotionEvent.man
+adds man/XTestGrabControl.man
+adds man/XTestQueryExtension.man
+adds man/XTestSetGContextOfGC.man
+adds man/XTestSetVisualIDOfVisual.man
+adds specs/Makefile.in
+adds src/Makefile.in

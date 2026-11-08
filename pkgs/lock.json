@@ -218,6 +218,14 @@
       "gcc"
     ]
   },
+  "cmark": {
+    "version": "0.31.2",
+    "license": "BSD-2-Clause AND MIT",
+    "by": "plan",
+    "plan": "sha256-68cb467f82f52c28a8662792cb15cb2717f9ef722a453fdb5b35601c3406a3b9",
+    "product": "sha256-4cd35891f804ff1386a32a4af2d5a36ef1600e3d1d6f495689185faae717caab",
+    "run": []
+  },
   "codex": {
     "version": "0.166.0",
     "license": "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib",
@@ -337,6 +345,14 @@
     "by": "plan",
     "plan": "sha256-1a6bb6d9b6105e9326026262b803fb07609887b6abcc5d1525067d6c15027510",
     "product": "sha256-2e1dbcc6dc5386268a05093540516e54fcd829b06c0e7d003983dc58ddd6cf7b",
+    "run": []
+  },
+  "extra-cmake-modules": {
+    "version": "6.31.0",
+    "license": "BSD-3-Clause",
+    "by": "plan",
+    "plan": "sha256-903004f4e3bebf37d7779e1e2cccb2858806ca2590417d2451e274a535e45ccc",
+    "product": "sha256-b1d9d05b41a16983cfe3e1c34c6617806510406cef747fad6df791dccdf1895a",
     "run": []
   },
   "findutils": {
@@ -616,6 +632,36 @@
     "product": "sha256-febcc26b9d6e4d51d096ad3ffc365014711cfbe10d511e8bf0e151afd19cc807",
     "run": []
   },
+  "jdk-21": {
+    "version": "21.0.13+9",
+    "license": "GPL-2.0-only WITH Classpath-exception-2.0 AND FTL AND MIT AND IJG AND Libpng AND Zlib AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND MPL-2.0",
+    "by": "plan",
+    "plan": "sha256-c683681d8a57d4432b964589f658393ba06a5670cd95c53e4a3d4a6f0e6d9f6b",
+    "product": "sha256-0f19f8f14fd034ff7e386e2f063de8bd6da22deaa37d00d00de65dc68d13f7b7",
+    "run": [
+      "alsa-lib",
+      "libx11",
+      "libxext",
+      "libxi",
+      "libxrender",
+      "libxtst"
+    ]
+  },
+  "jre-21": {
+    "version": "21.0.13+9",
+    "license": "GPL-2.0-only WITH Classpath-exception-2.0 AND FTL AND MIT AND IJG AND Libpng AND Zlib AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND MPL-2.0",
+    "by": "plan",
+    "plan": "sha256-22f8f6a784a5b66ba96f783a688f9c7adafae0a6607a53c2fe5cb14e8de515f4",
+    "product": "sha256-ab7d19102c6f13e3d5a9a820e175bab1bb23e399eab767d4c6dc7c2e790db535",
+    "run": [
+      "alsa-lib",
+      "libx11",
+      "libxext",
+      "libxi",
+      "libxrender",
+      "libxtst"
+    ]
+  },
   "json-c": {
     "version": "0.19-20260627",
     "license": "MIT",
@@ -640,6 +686,19 @@
     "product": "sha256-ea7e1d00bd423976a32e7062721c495f6d5d47a83339233ad2a6bc46d6c28cb9",
     "run": [
       "ncurses"
+    ]
+  },
+  "libarchive": {
+    "version": "3.8.11",
+    "license": "BSD-2-Clause",
+    "by": "plan",
+    "plan": "sha256-e8c43bae508aca08b04cb34e78ed84067b55cd566c9e912cfa1f166c98632166",
+    "product": "sha256-d9b584a8577f87757d8c0e9e8d339383c868a0486af54fe6453a5419acc6c482",
+    "run": [
+      "zlib",
+      "bzip2",
+      "xz",
+      "zstd"
     ]
   },
   "libcap": {
@@ -769,6 +828,14 @@
       "glib",
       "libsndfile"
     ]
+  },
+  "libqrencode": {
+    "version": "4.1.1",
+    "license": "LGPL-2.1-or-later",
+    "by": "plan",
+    "plan": "sha256-cae66f7d0aa951403cd17bfd8d54ba680877870ec8838f8f54d3189a6ecfa7e3",
+    "product": "sha256-a7f7e324b0daee784c5fc6b0762c9934e0efa560e4c453a1b18ce0be88768609",
+    "run": []
   },
   "libseccomp": {
     "version": "2.6.1",
@@ -903,6 +970,18 @@
     "product": "sha256-02f8643f11cb2a834a414736d76765ecf6a6997234161b1e6cd98aa784701a1d",
     "run": []
   },
+  "libxcursor": {
+    "version": "1.2.3",
+    "license": "HPND-sell-variant",
+    "by": "plan",
+    "plan": "sha256-0ecfec6509f3c7e5da7adb696bfcd1f37ddb43b82ce392433365a51d4e823265",
+    "product": "sha256-19eb046fc0f90db804c19ce09ce5047ee940674b3af98c7a220afed61cd38c5a",
+    "run": [
+      "libx11",
+      "libxrender",
+      "libxfixes"
+    ]
+  },
   "libxcvt": {
     "version": "0.1.3",
     "license": "MIT AND HPND-sell-variant",
@@ -973,6 +1052,18 @@
       "zlib"
     ]
   },
+  "libxi": {
+    "version": "1.8.4",
+    "license": "MIT-open-group AND HPND AND HPND-sell-variant AND MIT",
+    "by": "plan",
+    "plan": "sha256-ae24d2be41454a672d10538d29e6ec3d6f91cb915654cf8a290eb8581e4642a5",
+    "product": "sha256-d00347c89e2a41bf2a8bcdb3ffd141c4fcf8e6ce2a3d1351f3286bb95cc05689",
+    "run": [
+      "libx11",
+      "libxext",
+      "libxfixes"
+    ]
+  },
   "libxkbcommon": {
     "version": "1.13.2",
     "license": "MIT AND MIT-open-group AND HPND AND HPND-sell-variant AND X11 AND ISC",
@@ -1041,6 +1132,18 @@
     "plan": "sha256-6d414cf9fc9445074f8b0ead8522120855a7af6fe341bf622920945f2c5e62c4",
     "product": "sha256-05c9c1af8d3dacf2aad897734b98ed97c23cca5837193c17d5f61a8381afe854",
     "run": []
+  },
+  "libxtst": {
+    "version": "1.2.6",
+    "license": "MIT-open-group AND HPND AND HPND-sell-variant AND X11",
+    "by": "plan",
+    "plan": "sha256-2bba988cf909312b4addb46ae5472884b60f0392a84f78da9e8cefaa8d62388b",
+    "product": "sha256-f4fe9205acafa6d9ceff80790fcefdf04229bdec08d6a54eda71ed0406e3f241",
+    "run": [
+      "libx11",
+      "libxext",
+      "libxi"
+    ]
   },
   "libxxf86vm": {
     "version": "1.1.7",
@@ -1417,6 +1520,40 @@
       "zstd"
     ]
   },
+  "prismlauncher": {
+    "version": "11.1.1",
+    "license": "GPL-3.0-only AND Apache-2.0 AND LGPL-3.0-or-later AND MIT",
+    "by": "plan",
+    "plan": "sha256-fcdc97597b10671b8691d79383ff38df53b23eda5477bd93ce36f99e46b3cd16",
+    "product": "sha256-b7e8b14f30bc5ecddb2e9254e133787309d77bdd124aa4bac913724773095021",
+    "run": [
+      "gcc",
+      "qtbase",
+      "qtsvg",
+      "qtimageformats",
+      "qtnetworkauth",
+      "cmark",
+      "libarchive",
+      "libqrencode",
+      "zlib",
+      "bubblewrap",
+      "jre-21",
+      "libglvnd",
+      "vulkan-loader",
+      "libx11",
+      "libxcursor",
+      "libxext",
+      "libxi",
+      "libxrandr",
+      "libxrender",
+      "libxxf86vm",
+      "libxkbcommon",
+      "wayland",
+      "libpulse",
+      "pipewire",
+      "alsa-lib"
+    ]
+  },
   "procps": {
     "version": "4.0.7",
     "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
@@ -1500,6 +1637,60 @@
       "bzip2",
       "zstd",
       "gcc"
+    ]
+  },
+  "qtbase": {
+    "version": "6.11.3",
+    "license": "(LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND BSD-3-Clause AND MIT AND Zlib AND Libpng AND IJG AND CC0-1.0 AND BSL-1.0",
+    "by": "plan",
+    "plan": "sha256-66ecb80086ce38f160f920fd91da9419186162bab6161fd162af809087f5d85b",
+    "product": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85",
+    "run": [
+      "gcc",
+      "zlib",
+      "zstd",
+      "openssl",
+      "harfbuzz",
+      "freetype",
+      "fontconfig",
+      "libxkbcommon",
+      "wayland",
+      "libglvnd",
+      "certs"
+    ]
+  },
+  "qtimageformats": {
+    "version": "6.11.3",
+    "license": "(LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND BSD-3-Clause",
+    "by": "plan",
+    "plan": "sha256-85230f28bd04a4d0edbebd0c0ddea4ca76e721b2e12ed4425dda899260a3825e",
+    "product": "sha256-fbb548b0e9587bad80cc1cf97b4bbfc1994abbcc9d5f86efc5bcca78dcbb6276",
+    "run": [
+      "qtbase",
+      "gcc"
+    ]
+  },
+  "qtnetworkauth": {
+    "version": "6.11.3",
+    "license": "GPL-3.0-only",
+    "by": "plan",
+    "plan": "sha256-3eb36cd3b36283a93f9b10cb77de4a03769678062d5951e442fdcdb18bb3a90c",
+    "product": "sha256-0a9f91df885fc3e8b2359e62865841c359ac37162527f274929dc5364fd2c3e8",
+    "run": [
+      "qtbase",
+      "gcc"
+    ]
+  },
+  "qtsvg": {
+    "version": "6.11.3",
+    "license": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only",
+    "by": "plan",
+    "plan": "sha256-55a6fe46d6ba5aaada9fc6308e5165717b9043f0fc7130bc6efc25623704a397",
+    "product": "sha256-3b51ab31532386d9d5760c4708b270f3ccd06f3513ba1bb5f928695901b6de20",
+    "run": [
+      "qtbase",
+      "gcc",
+      "zlib"
     ]
   },
   "readline": {
@@ -1645,6 +1836,14 @@
       "libevent",
       "ncurses"
     ]
+  },
+  "tomlplusplus": {
+    "version": "3.4.0",
+    "license": "MIT",
+    "by": "plan",
+    "plan": "sha256-c516ff54f78ff5581b2ccfcae65992a9fbdf9a05eb4be66bf621923a09e5e72a",
+    "product": "sha256-fcf0acdc71906fb350006a7f6e3d557e15f425980e21777f4785f4d1a14a8a2c",
+    "run": []
   },
   "util-linux": {
     "version": "2.42.4",

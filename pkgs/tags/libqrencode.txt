@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libqrencode-4.1.1.tar.gz 5385bc1b8c2f20f3b91d258bf8ccc8cf62023935df2d2676b5b67049f31a049c
+tag v4.1.1 commit 715e29fd4cd71b6e452ae0f4e36d917b43122ce8 tree ceec5110f2bd582f990b36480046c6d829213461
+signed no
+same 76
+only-in-tag 0

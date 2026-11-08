@@ -1,0 +1,235 @@
+#!oath-plan
+{
+  "name": "qtimageformats",
+  "produces": "pkg:qtimageformats",
+  "build_needs": [
+    {
+      "id": "pkg:bash",
+      "hash": "sha256-80f160c2dd44f5d3801bd5627163e4203d513ea9bc1edf70cccb567a34f6c371"
+    },
+    {
+      "id": "pkg:bzip2",
+      "hash": "sha256-3e16469f204827a9164fdf7e23e7c001f2174df6bc135f84624d56c1d76bb288"
+    },
+    {
+      "id": "pkg:certs",
+      "hash": "sha256-dd0052627dd1192b25e0e5b588b1df4ba561d022d57725c986025dfbf532f111"
+    },
+    {
+      "id": "pkg:cmake",
+      "hash": "sha256-25bd1cb37f989406b4d30d3b09a2bfdc2078b6a4a6c15467e60561cc8e5497b2"
+    },
+    {
+      "id": "pkg:coreutils",
+      "hash": "sha256-8a793453f26206d3e84614b7ae9e09e29c882dfa103a28022a7772cc3b1fa2da"
+    },
+    {
+      "id": "pkg:diffutils",
+      "hash": "sha256-064d781760f48fb7ee12fa47f1de69b1c644c7cf72dbd83b476b89dad7149002"
+    },
+    {
+      "id": "pkg:expat",
+      "hash": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1"
+    },
+    {
+      "id": "pkg:findutils",
+      "hash": "sha256-0752f905b59e72a4bc41ae54d4f53629d49d82a129219a2eb4c4d2b67bb5fab7"
+    },
+    {
+      "id": "pkg:fontconfig",
+      "hash": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b"
+    },
+    {
+      "id": "pkg:freetype",
+      "hash": "sha256-dfd9298125c5457647d50e4f1c9020d3c112fa5d014ded8491b2b21f748fd697"
+    },
+    {
+      "id": "pkg:gawk",
+      "hash": "sha256-b671a3d6d7871b775c6026322a73b8288a5f889814437a92432fe0f745db118c"
+    },
+    {
+      "id": "pkg:gcc",
+      "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
+    },
+    {
+      "id": "pkg:glib",
+      "hash": "sha256-d54a5306276245833ff98fe2b85ed125e1f207e7d56a0f776ddb6f7643d588e7"
+    },
+    {
+      "id": "pkg:glibc",
+      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
+    },
+    {
+      "id": "pkg:gmp",
+      "hash": "sha256-0b1e2a5849dec5d1ff60bcc036804fa5a2c42f13eb883b979de90ce60aa101d2"
+    },
+    {
+      "id": "pkg:grep",
+      "hash": "sha256-f4fa7ae2900d8fa5a5b390d16a5d2421a6ebd976a448947261f1c54a0118e8d5"
+    },
+    {
+      "id": "pkg:gzip",
+      "hash": "sha256-57d19745c08c6cd9c699f43c419efb8d17ccaa75513d52929c01cc1dcd550fb6"
+    },
+    {
+      "id": "pkg:harfbuzz",
+      "hash": "sha256-dc4300bcf7313d059e65bd61bb89d91d50b181c95845145b9af0331a9bcbc237"
+    },
+    {
+      "id": "pkg:libffi",
+      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
+    },
+    {
+      "id": "pkg:libglvnd",
+      "hash": "sha256-2e2258ee2b411a8dbff5c6b35acac638707b9b99e19310804977be5836f45b99"
+    },
+    {
+      "id": "pkg:libx11",
+      "hash": "sha256-a3480aba17c439f0fb6fd1d26ffafa649abb5a427be3b0d8ebba03e7a72809d5"
+    },
+    {
+      "id": "pkg:libxau",
+      "hash": "sha256-41da8904d2e37a6d0696585fa67d3da3cc369b79785c12ab40261262ad212d16"
+    },
+    {
+      "id": "pkg:libxcb",
+      "hash": "sha256-a7425e57216708f768a1e697bcb4167000aad8e6712f073b404ddd8ce4f779c3"
+    },
+    {
+      "id": "pkg:libxext",
+      "hash": "sha256-ad3ac686b22f8fae4c99512cd2a9ca2d75e765972c734d1fbaa70e6208f3b009"
+    },
+    {
+      "id": "pkg:libxkbcommon",
+      "hash": "sha256-5f3ce84e89dbc8d45dd63f5520ada860f8d4a45eaf279cec549cc436222db70f"
+    },
+    {
+      "id": "pkg:make",
+      "hash": "sha256-68d66ece245940b534e1e7330afb8c011925b43877abba8875c0958d0774d0c1"
+    },
+    {
+      "id": "pkg:mpc",
+      "hash": "sha256-877f9c92df8a5af55c48573a0ee1ef5fc055e26c9a14ae866ab8753cbfd1a171"
+    },
+    {
+      "id": "pkg:mpfr",
+      "hash": "sha256-494241b048adac84186882cbd4d973464df07a671aaeebcfdaec9d460976e5e7"
+    },
+    {
+      "id": "pkg:ninja",
+      "hash": "sha256-96e5d8c682a37a969fec42b691487a24e56773fd49e84ad79b1f583ecde9819a"
+    },
+    {
+      "id": "pkg:openssl",
+      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
+    },
+    {
+      "id": "pkg:patch",
+      "hash": "sha256-1ad74e51fe76d2dc3a320e673306406a8e5751f788a8bd3f775513de78f80899"
+    },
+    {
+      "id": "pkg:pcre2",
+      "hash": "sha256-2865eb487beed29930b59c6cfd1d3d5cb56518368e82731120b8d92446a3d95a"
+    },
+    {
+      "id": "pkg:pkgconf",
+      "hash": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f"
+    },
+    {
+      "id": "pkg:qtbase",
+      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+    },
+    {
+      "id": "pkg:qtimageformats-src",
+      "hash": "sha256-9a3fe179f8443ec939c0e36e060a1d48c8b57dc06dc5c3c6a1c3ee886abe2448"
+    },
+    {
+      "id": "pkg:sed",
+      "hash": "sha256-556a69fbd42c7678178f13eaf6e516211d99f29b6d13d4a47b3066a50195a819"
+    },
+    {
+      "id": "pkg:tar",
+      "hash": "sha256-94263cf077bd23908966915fea3ab0cd481b04f7efa276407088a96b6de96128"
+    },
+    {
+      "id": "pkg:wayland",
+      "hash": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac"
+    },
+    {
+      "id": "pkg:xkeyboard-config",
+      "hash": "sha256-089cd18859102859ffedb44ced07e9a1c86e47ddb21dbfbf8f852963af243cf2"
+    },
+    {
+      "id": "pkg:xz",
+      "hash": "sha256-449080873772868f09eacc3db3243ca5f4376920782f3c1c1199d0302646b33b"
+    },
+    {
+      "id": "pkg:zlib",
+      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
+    },
+    {
+      "id": "pkg:zstd",
+      "hash": "sha256-5bf91c19d01771beccc4dd6c715f577d57ee823e5d7e1a15f733e9d1f664fffa"
+    }
+  ],
+  "run_needs": [
+    {
+      "id": "pkg:gcc",
+      "hash": "sha256-037b1542457e292ba87df1f1e62e9881aaf3c0178605da1e0fef374811dee5a1"
+    },
+    {
+      "id": "pkg:qtbase",
+      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+    }
+  ]
+}
+---
+#!/bin/sh
+set -eu
+# generated by cargo make pkgs from pkgs/qtimageformats/
+SRC=/oath/store/pkg/qtimageformats-src/sha256-9a3fe179f8443ec939c0e36e060a1d48c8b57dc06dc5c3c6a1c3ee886abe2448/src
+FILES=/oath/store/pkg/qtimageformats-src/sha256-9a3fe179f8443ec939c0e36e060a1d48c8b57dc06dc5c3c6a1c3ee886abe2448/files
+SOURCES='qtimageformats-everywhere-src-6.11.3.tar.xz'
+VERSION=6.11.3
+JOBS=$(nproc)
+LIVE=/oath/store/pkg/qtimageformats/live
+LIBDIR=lib
+export CC=cc CXX=c++ AR=ar RANLIB=ranlib NM=nm STRIP=strip
+CPPFLAGS= LDFLAGS= PKG_CONFIG_PATH=
+for d in /oath/store/pkg/*/live; do
+	case $d in */gcc/live | */glibc/live | *-src/live) continue ;; esac
+	[ -d "$d/include" ] && CPPFLAGS="$CPPFLAGS -I$d/include"
+	[ -d "$d/lib" ] && LDFLAGS="$LDFLAGS -L$d/lib"
+	[ -d "$d/lib/pkgconfig" ] && PKG_CONFIG_PATH="$d/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+done
+export CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe" SOURCE_DATE_EPOCH=0
+export CPPFLAGS LDFLAGS PKG_CONFIG_PATH
+# Hand-written Makefiles often ignore CPPFLAGS.
+CFLAGS="$CFLAGS $CPPFLAGS" CXXFLAGS="$CXXFLAGS $CPPFLAGS"
+mkdir -p /out
+cat > /out/components.json <<'OATH_EOF'
+[
+  {
+    "name": "qtimageformats",
+    "purl": "pkg:generic/qtimageformats@6.11.3",
+    "version": "6.11.3"
+  }
+]
+OATH_EOF
+# Shared, with headers and CMake packages, into this pack, built against
+# pkg:qtbase: the WebP plugin alone (plugins/imageformats/libqwebp.so); the
+# others read formats nothing here needs, so they are not shipped.
+tar -xf "$SRC/$SOURCES"
+cd "qtimageformats-everywhere-src-$VERSION"
+prefixes=$(printf %s "$PKG_CONFIG_PATH" | tr : '\n' | sed 's|/lib/pkgconfig$||' | paste -sd ';')
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$LIVE" \
+	-DCMAKE_PREFIX_PATH="/oath/store/pkg/qtbase/live;$prefixes" \
+	-DQT_BUILD_EXAMPLES=OFF -DQT_BUILD_TESTS=OFF \
+	-DFEATURE_webp=ON -DFEATURE_system_webp=OFF -DFEATURE_tiff=OFF -DFEATURE_mng=OFF \
+	-DFEATURE_jasper=OFF
+cmake --build build -j"$JOBS"
+DESTDIR=/tmp/dest cmake --install build
+cp -a "/tmp/dest$LIVE/." /out/
+[ -f /out/plugins/imageformats/libqwebp.so ]
+find /out/plugins/imageformats -type f ! -name libqwebp.so -delete
+find /out/lib/cmake -name 'Qt6Q*Plugin*.cmake' ! -name 'Qt6QWebpPlugin*' -delete

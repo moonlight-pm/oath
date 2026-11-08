@@ -203,6 +203,11 @@ repo = "https://github.com/Kitware/CMake"
 tag = "v{version}"
 differs_because = "Source/CMakeVersion.cmake: git export-subst fills in the commit (read 2026-11-01)"
 
+[cmark]
+cpe = "cpe:2.3:a:commonmark:cmark"
+repo = "https://github.com/commonmark/cmark"
+tag = "{version}"
+
 [codex]
 cpe = "cpe:2.3:a:openai:codex"
 repo = "https://github.com/openai/codex"
@@ -267,6 +272,11 @@ names = ["expat"]
 repo = "https://github.com/libexpat/libexpat"
 tag = "R_{version_}"
 tag_dir = "expat"
+
+[extra-cmake-modules]
+skip = "CMake modules, no compiled code"
+compare_repo = "https://invent.kde.org/frameworks/extra-cmake-modules"
+compare_tag = "v{version}"
 
 [findutils]
 cpe = "cpe:2.3:a:gnu:findutils"
@@ -446,6 +456,22 @@ cpe = "cpe:2.3:a:iputils_project:iputils"
 repo = "https://github.com/iputils/iputils"
 tag = "{version}"
 
+[jdk-21]
+cpe = "cpe:2.3:a:oracle:openjdk"
+names = ["openjdk", "temurin"]
+repo = "https://github.com/adoptium/temurin21-binaries"
+tag = "jdk-{version}"
+series = "21"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
+
+[jre-21]
+cpe = "cpe:2.3:a:oracle:openjdk"
+names = ["openjdk", "temurin"]
+repo = "https://github.com/adoptium/temurin21-binaries"
+tag = "jdk-{version}"
+series = "21"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
+
 [json-c]
 cpe = "cpe:2.3:a:json-c:json-c"
 repo = "https://github.com/json-c/json-c"
@@ -461,6 +487,11 @@ compare_tag = "v{version}"
 cpe = "cpe:2.3:a:gnu:less"
 repo = "https://github.com/gwsw/less"
 tag = "v{version}-rel"
+
+[libarchive]
+cpe = "cpe:2.3:a:libarchive:libarchive"
+repo = "https://github.com/libarchive/libarchive"
+tag = "v{version}"
 
 [libcap]
 cpe = "cpe:2.3:a:libcap_project:libcap"
@@ -521,6 +552,12 @@ dev_micro = 900
 cpe = "cpe:2.3:a:pulseaudio:pulseaudio"
 compare_repo = "https://gitlab.freedesktop.org/pulseaudio/pulseaudio"
 compare_tag = "v{version}"
+
+[libqrencode]
+cpe = "cpe:2.3:a:libqrencode_project:libqrencode"
+names = ["libqrencode", "qrencode"]
+repo = "https://github.com/fukuchi/libqrencode"
+tag = "v{version}"
 
 [libseccomp]
 cpe = "cpe:2.3:a:libseccomp_project:libseccomp"
@@ -587,6 +624,11 @@ cpe = "cpe:2.3:a:libxcrypt_project:libxcrypt"
 repo = "https://github.com/besser82/libxcrypt"
 tag = "v{version}"
 
+[libxcursor]
+cpe = "cpe:2.3:a:x.org:libxcursor"
+compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxcursor"
+compare_tag = "libXcursor-{version}"
+
 [libxcvt]
 cpe = "cpe:2.3:a:x.org:libxcvt"
 compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxcvt"
@@ -611,6 +653,11 @@ compare_tag = "libXfixes-{version}"
 cpe = "cpe:2.3:a:x:libxfont"
 compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxfont"
 compare_tag = "libXfont2-{version}"
+
+[libxi]
+cpe = "cpe:2.3:a:x.org:libxi"
+compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxi"
+compare_tag = "libXi-{version}"
 
 [libxkbcommon]
 cpe = "cpe:2.3:a:xkbcommon:libxkbcommon"
@@ -645,6 +692,11 @@ compare_tag = "libXrender-{version}"
 cpe = "cpe:2.3:a:x.org:libxshmfence"
 compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxshmfence"
 compare_tag = "libxshmfence-{version}"
+
+[libxtst]
+cpe = "cpe:2.3:a:x.org:libxtst"
+compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxtst"
+compare_tag = "libXtst-{version}"
 
 [libxxf86vm]
 cpe = "cpe:2.3:a:x:libxxf86vm"
@@ -888,6 +940,12 @@ cpe = "cpe:2.3:a:postgresql:postgresql"
 repo = "https://github.com/postgres/postgres"
 tag = "REL_{version_}"
 
+[prismlauncher]
+cpe = "cpe:2.3:a:prismlauncher:prism_launcher"
+names = ["prism launcher", "prismlauncher"]
+repo = "https://github.com/PrismLauncher/PrismLauncher"
+tag = "{version}"
+
 [procps]
 cpe = "cpe:2.3:a:procps-ng_project:procps-ng"
 names = ["procps-ng", "procps"]
@@ -943,6 +1001,34 @@ compare_tag = "v{version}"
 "CVE-2018-16847" = "fixed by 87ad860c (2018-11-22, 'This is CVE-2018-16847'), before QEMU 3.1.0"
 "CVE-2023-2680" = "Red Hat's qemu-kvm for RHEL 9.1, an incomplete backport of CVE-2021-3750's fix (the record), not upstream QEMU"
 "CVE-2023-3180" = "virtio-crypto lengths: 11.1.2's hw/virtio/virtio-crypto.c rejects src len != dst len (fixed for 8.1.0)"
+
+[qtbase]
+cpe = "cpe:2.3:a:qt:qt"
+names = ["qt", "qtbase"]
+repo = "https://github.com/qt/qtbase"
+tag = "v{version}"
+differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit; .release-timestamp, only in the release, is QT_PACKAGEDATE_STR=2026-10-21 (read 2026-11-07)"
+
+[qtimageformats]
+cpe = "cpe:2.3:a:qt:qt"
+names = ["qt", "qtimageformats"]
+repo = "https://github.com/qt/qtimageformats"
+tag = "v{version}"
+differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit (read 2026-11-07)"
+
+[qtnetworkauth]
+cpe = "cpe:2.3:a:qt:qt"
+names = ["qt", "qtnetworkauth"]
+repo = "https://github.com/qt/qtnetworkauth"
+tag = "v{version}"
+differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit (read 2026-11-07)"
+
+[qtsvg]
+cpe = "cpe:2.3:a:qt:qt"
+names = ["qt", "qtsvg"]
+repo = "https://github.com/qt/qtsvg"
+tag = "v{version}"
+differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit (read 2026-11-07)"
 
 [readline]
 cpe = "cpe:2.3:a:gnu:readline"
@@ -1029,6 +1115,12 @@ compare_tag = "v{version}"
 cpe = "cpe:2.3:a:tmux_project:tmux"
 repo = "https://github.com/tmux/tmux"
 tag = "{version}"
+
+[tomlplusplus]
+cpe = "cpe:2.3:a:tomlplusplus_project:tomlplusplus"
+names = ["toml++", "tomlplusplus"]
+repo = "https://github.com/marzer/tomlplusplus"
+tag = "v{version}"
 
 [util-linux]
 cpe = "cpe:2.3:a:kernel:util-linux"

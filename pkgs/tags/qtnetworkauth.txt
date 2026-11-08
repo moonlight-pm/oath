@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source qtnetworkauth-everywhere-src-6.11.3.tar.xz a41e2f82158269a4e646da92da052ba9b259d7c9542a0e4e39f1e70649fb6dc3
+tag v6.11.3 commit 0463aead14971d8d2c58bfdebec75a2c0ac5411e tree 9572031122844faf8d3fe0789f411fc74998787e
+signed no
+same 137
+only-in-tag 2
+differs .tag

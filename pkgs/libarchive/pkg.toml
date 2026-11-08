@@ -1,0 +1,19 @@
+# libarchive: reading and writing archives (Prism Launcher unpacks modpacks
+# and Java with it), with zlib, bzip2, xz and zstd from their packs. No
+# OpenSSL, XML or LZ4 (no encrypted zips, xar or lz4 archives), no ACLs or
+# extended attributes, and none of its programs (bsdtar, bsdcpio, bsdcat,
+# bsdunzip). Its maintainers sign the release.
+version = "3.8.11"
+license = "BSD-2-Clause"
+description = "libarchive, shared: tar, zip, 7z and other archives, with gzip, bzip2, xz and zstd."
+home = "https://www.libarchive.org/"
+category = "base"
+purl = "pkg:generic/libarchive@3.8.11"
+build = ["cmake", "ninja", "pkgconf", "zlib", "bzip2", "xz", "zstd"]
+run = ["zlib", "bzip2", "xz", "zstd"]
+
+[[source]]
+url = "https://github.com/libarchive/libarchive/releases/download/v3.8.11/libarchive-3.8.11.tar.xz"
+sha256 = "a3dc0872b1b39da34dc18ef1b944f0f11ffd37425d70ae04be679279f1cf43d2"
+sig = "https://github.com/libarchive/libarchive/releases/download/v3.8.11/libarchive-3.8.11.tar.xz.asc"
+key = "matuska"

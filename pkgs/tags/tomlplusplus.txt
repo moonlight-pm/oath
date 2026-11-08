@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source tomlplusplus-3.4.0.tar.gz 8517f65938a4faae9ccf8ebb36631a38c1cadfb5efa85d9a72e15b9e97d25155
+tag v3.4.0 commit 30172438cee64926dc41fdd9c11fb3ba5b2ba9de tree f566f1b23e28cc6afcb9a124ad5422282c3a8156
+signed no
+same 212
+only-in-tag 0

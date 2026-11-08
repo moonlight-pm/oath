@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source qtimageformats-everywhere-src-6.11.3.tar.xz 2759929c7abbc5376120394d1ccac1abbb816bc2791b34ece6c1412d323e6213
+tag v6.11.3 commit 434c41f81a825e0abcda13ff93ef30bc0e155d1d tree bd1b035d7885c567b18301e42d492fd2989e492a
+signed no
+same 563
+only-in-tag 2
+differs .tag

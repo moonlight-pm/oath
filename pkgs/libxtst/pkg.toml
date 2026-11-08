@@ -1,0 +1,14 @@
+version = "1.2.6"
+license = "MIT-open-group AND HPND AND HPND-sell-variant AND X11"
+description = "libXtst, shared: the XTEST and RECORD extensions (Java's AWT)."
+home = "https://www.x.org/"
+category = "x11"
+purl = "pkg:generic/libXtst@1.2.6"
+build = ["pkgconf", "xorgproto", "libx11", "libxext", "libxi", "libxfixes"]
+run = ["libx11", "libxext", "libxi"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXtst-1.2.6.tar.xz"
+sha256 = "f94f0b37c07d80d877f3eda2c2405cc7e62aa9842f6310354aa349e3d66a4fe5"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libXtst-1.2.6.tar.xz.sig"
+key = "coopersmith"

@@ -1,0 +1,44 @@
+# Prism Launcher: a Minecraft Java Edition launcher that keeps instances
+# (a version, a mod loader, mods, worlds) and installs mods and modpacks from
+# Modrinth and CurseForge. Built from its signed release tag against Qt 6 on
+# Wayland. Microsoft sign-in is a code typed on any device, shown with a QR
+# Code. Its own Java downloader and updater are off: Java is pkg:jre-21 (and
+# any other pkg:jre-* on the machine). The game's libraries, which Minecraft
+# downloads, load OpenGL, Vulkan, X11 (the game runs on Xwayland until 26.3),
+# Wayland, PipeWire, PulseAudio and ALSA from /lib, so those packs run with it.
+# bin/prismlauncher runs it in a bubblewrap box (R74): Prism's folder, the
+# display, sound, the GPU and pads, the network; not the rest of /home, /run
+# or /dev/uinput, and no sudo. Feral's GameMode is not on Oath: a stub header
+# says so, and Prism greys out its setting.
+version = "11.1.1"
+license = "GPL-3.0-only AND Apache-2.0 AND LGPL-3.0-or-later AND MIT"
+description = "Prism Launcher: Minecraft instances, mods and modpacks, in a box."
+home = "https://prismlauncher.org/"
+category = "games"
+purl = "pkg:github/PrismLauncher/PrismLauncher@11.1.1"
+build = [
+	"cmake", "ninja", "pkgconf", "qtbase", "qtsvg", "qtnetworkauth", "extra-cmake-modules",
+	"cmark", "libarchive", "tomlplusplus", "libqrencode", "zlib", "bzip2", "xz", "zstd",
+	"libglvnd", "libxkbcommon", "wayland", "jdk-21",
+]
+run = [
+	"gcc", "qtbase", "qtsvg", "qtimageformats", "qtnetworkauth", "cmark", "libarchive",
+	"libqrencode", "zlib", "bubblewrap", "jre-21", "libglvnd", "vulkan-loader", "libx11",
+	"libxcursor", "libxext", "libxi", "libxrandr", "libxrender", "libxxf86vm", "libxkbcommon",
+	"wayland", "libpulse", "pipewire", "alsa-lib",
+]
+
+[[source]]
+url = "https://github.com/PrismLauncher/PrismLauncher/archive/refs/tags/11.1.1.tar.gz"
+file = "PrismLauncher-11.1.1.tar.gz"
+sha256 = "8a953c25afd0a62d2050edac9fe23d93dcaee27c94b4d1dc86740332c64d2497"
+git = "https://github.com/PrismLauncher/PrismLauncher"
+tag = "11.1.1"
+key = "flynn"
+
+# libraries/libnbtplusplus, the submodule commit the signed tag's tree names.
+[[source]]
+url = "https://github.com/PrismLauncher/libnbtplusplus/archive/3538933614059f0f44388a2b16f3db25ce42285b.tar.gz"
+file = "libnbtplusplus-3538933614059f0f44388a2b16f3db25ce42285b.tar.gz"
+sha256 = "6c4dd30108f6966b9823e2c6ad530ce7124a06e1789e5ee7a67cf3a11bf91c3d"
+unsigned = "Prism's own fork, at the commit its signed 11.1.1 tag names for the submodule; GitHub's archive of that commit"

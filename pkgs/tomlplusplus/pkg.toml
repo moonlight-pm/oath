@@ -1,0 +1,16 @@
+# toml++: a header-only TOML parser for C++17 (Prism Launcher reads mod
+# metadata with it). No signature; the tarball is GitHub's of the release tag.
+version = "3.4.0"
+license = "MIT"
+description = "toml++: header-only TOML parsing for C++ (a build pack)."
+home = "https://marzer.github.io/tomlplusplus/"
+category = "text"
+purl = "pkg:generic/tomlplusplus@3.4.0"
+build = ["cmake", "ninja"]
+run = []
+
+[[source]]
+url = "https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.tar.gz"
+file = "tomlplusplus-3.4.0.tar.gz"
+sha256 = "8517f65938a4faae9ccf8ebb36631a38c1cadfb5efa85d9a72e15b9e97d25155"
+unsigned = "toml++ publishes no signature or checksum; the tarball is GitHub's archive of the tag"

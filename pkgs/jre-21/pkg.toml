@@ -1,0 +1,23 @@
+# Java 21, the runtime: Eclipse Temurin's build of OpenJDK, the vendor's
+# release (R7), pinned by sha256 and checked against the signature Adoptium
+# publishes beside it (pkgs/keys/adoptium.asc). The tree is in
+# libexec/jre-21/ and its libraries find each other by $ORIGIN, so no other
+# Java's bin/ or lib/ meets it in /bin or /lib; a program asks for it by
+# that path. Minecraft 1.20.5 to 1.21.11 needs this line (26.1 on, 25).
+# Its programs name /lib64/ld-linux-x86-64.so.2; the plan points them at
+# /lib's loader (R17). It carries its own FreeType, HarfBuzz, libjpeg, libpng,
+# giflib and LittleCMS; the notices are in libexec/jre-21/legal/.
+version = "21.0.13+9"
+license = "GPL-2.0-only WITH Classpath-exception-2.0 AND FTL AND MIT AND IJG AND Libpng AND Zlib AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND MPL-2.0"
+description = "Java 21: Eclipse Temurin's OpenJDK runtime, in libexec/jre-21."
+home = "https://adoptium.net/"
+category = "toolchain"
+purl = "pkg:generic/temurin-jre@21.0.13%2B9"
+build = ["patchelf", "jdk-21"]
+run = ["alsa-lib", "libx11", "libxext", "libxi", "libxrender", "libxtst"]
+
+[[source]]
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jre_x64_linux_hotspot_21.0.13_9.tar.gz"
+sha256 = "a535a1df9c6284d9618872984e026ae0352d1f7e9e0605425c0e6114f47351dd"
+sig = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jre_x64_linux_hotspot_21.0.13_9.tar.gz.sig"
+key = "adoptium"

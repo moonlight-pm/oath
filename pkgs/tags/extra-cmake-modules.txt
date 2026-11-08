@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source extra-cmake-modules-6.31.0.tar.xz 8f74af329e4c918358bfe54316f8cf4d530c28444595a3e2fb15075f72877f17
+tag v6.31.0 commit 2958379fb49c71129f119ec17f88df0b5ea21550 tree 00b66765791e264cecd8d29d97957328483f5bc0
+signed pgp F33626DA61C04AE38E3D399FC7A04285C669D33C
+same 637
+only-in-tag 0

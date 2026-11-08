@@ -1,0 +1,14 @@
+version = "1.2.3"
+license = "HPND-sell-variant"
+description = "libXcursor, shared: X cursor themes and loading (GLFW and SDL)."
+home = "https://www.x.org/"
+category = "x11"
+purl = "pkg:generic/libXcursor@1.2.3"
+build = ["pkgconf", "xorgproto", "libx11", "libxrender", "libxfixes"]
+run = ["libx11", "libxrender", "libxfixes"]
+
+[[source]]
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXcursor-1.2.3.tar.xz"
+sha256 = "fde9402dd4cfe79da71e2d96bb980afc5e6ff4f8a7d74c159e1966afb2b2c2c0"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libXcursor-1.2.3.tar.xz.sig"
+key = "ncurses"

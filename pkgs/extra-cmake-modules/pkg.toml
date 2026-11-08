@@ -1,0 +1,17 @@
+# KDE's Extra CMake Modules: CMake find modules and macros, no compiled code.
+# A build tool, for programs that use it (Prism Launcher). KDE's release
+# manager signs the tarball.
+version = "6.31.0"
+license = "BSD-3-Clause"
+description = "Extra CMake Modules: KDE's CMake find modules and macros (a build tool)."
+home = "https://invent.kde.org/frameworks/extra-cmake-modules"
+category = "toolchain"
+purl = "pkg:generic/extra-cmake-modules@6.31.0"
+build = ["cmake", "ninja"]
+run = []
+
+[[source]]
+url = "https://download.kde.org/stable/frameworks/6.31/extra-cmake-modules-6.31.0.tar.xz"
+sha256 = "8f74af329e4c918358bfe54316f8cf4d530c28444595a3e2fb15075f72877f17"
+sig = "https://download.kde.org/stable/frameworks/6.31/extra-cmake-modules-6.31.0.tar.xz.sig"
+key = "fella"

@@ -1,0 +1,17 @@
+# libqrencode: encodes QR Code symbols (Prism Launcher shows its Microsoft
+# sign-in link as one). The library alone, with no dependencies. No
+# signature; the tarball is GitHub's of the release tag.
+version = "4.1.1"
+license = "LGPL-2.1-or-later"
+description = "libqrencode, shared: QR Code encoding."
+home = "https://fukuchi.org/works/qrencode/"
+category = "graphics"
+purl = "pkg:generic/libqrencode@4.1.1"
+build = ["cmake", "ninja"]
+run = []
+
+[[source]]
+url = "https://github.com/fukuchi/libqrencode/archive/refs/tags/v4.1.1.tar.gz"
+file = "libqrencode-4.1.1.tar.gz"
+sha256 = "5385bc1b8c2f20f3b91d258bf8ccc8cf62023935df2d2676b5b67049f31a049c"
+unsigned = "libqrencode publishes no signature or checksum; the tarball is GitHub's archive of the tag"

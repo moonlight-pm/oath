@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source PrismLauncher-11.1.1.tar.gz 8a953c25afd0a62d2050edac9fe23d93dcaee27c94b4d1dc86740332c64d2497
+tag 11.1.1 commit 7d2d3c1ec6fcf8255ebacd02d9f792688575dfb4 tree 1118fb2593e03595de785a1be101b4a662896125
+signed pgp 0E15C4B54D8FFEBD3A5FDF73D31BD0D494BBEE86
+same 1842
+only-in-tag 0
+submodule libraries/libnbtplusplus 0

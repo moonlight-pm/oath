@@ -1,0 +1,8 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source qtbase-everywhere-src-6.11.3.tar.xz 46de0710b594945a5d446ae44354daa386141c6903c53781b2ca547bc62f8f8f
+tag v6.11.3 commit 138f955f0b5e50e4a6c2ee1e78a2279db52ae9e3 tree 2cddbe6776b1d3cb254db2005737a7d897769eb6
+signed no
+same 22863
+only-in-tag 36
+differs .tag
+adds .release-timestamp

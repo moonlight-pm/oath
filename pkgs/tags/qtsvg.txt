@@ -1,0 +1,7 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source qtsvg-everywhere-src-6.11.3.tar.xz 9bdf6fa4b5a2d91c3eaa2edd12263fdff0ae19d0ac25d3c99946cd4189a07123
+tag v6.11.3 commit f5d99721911e4a1989965a087813cf1277519bc6 tree 182cab5e06edce7c20f0e0e940bb334429fc302b
+signed no
+same 640
+only-in-tag 9
+differs .tag

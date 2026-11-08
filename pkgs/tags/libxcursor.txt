@@ -1,0 +1,20 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libXcursor-1.2.3.tar.xz fde9402dd4cfe79da71e2d96bb980afc5e6ff4f8a7d74c159e1966afb2b2c2c0
+tag libXcursor-1.2.3 commit 8ae6cf61b18ecddf26f72a07bbfbd1ea9f022c36 tree 2ff5fe4e2fcfa100ebfaad1cf776452ddee9a758
+signed no
+same 75
+only-in-tag 5
+from automake 1
+from gettext 1
+from gnulib 6
+from libtool 3
+adds ChangeLog
+adds Makefile.in
+adds aclocal.m4
+adds config.h.in
+adds configure
+adds include/X11/Xcursor/Xcursor.h
+adds ltmain.sh
+adds m4/libtool.m4
+adds man/Makefile.in
+adds src/Makefile.in

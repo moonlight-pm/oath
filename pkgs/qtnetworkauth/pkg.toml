@@ -1,0 +1,17 @@
+# Qt Network Authorization: OAuth 2 flows over Qt Network (Prism Launcher's
+# Microsoft sign-in, with a code typed on another device or a reply to a
+# local port). Built against pkg:qtbase into its own pack. Qt publishes md5
+# sums, not signatures; the tarball is set against its git tag.
+version = "6.11.3"
+license = "GPL-3.0-only"
+description = "Qt 6's OAuth 2 module."
+home = "https://www.qt.io/"
+category = "desk"
+purl = "pkg:generic/qtnetworkauth@6.11.3"
+build = ["cmake", "ninja", "pkgconf", "qtbase", "zlib", "libglvnd", "libxkbcommon", "wayland"]
+run = ["qtbase", "gcc"]
+
+[[source]]
+url = "https://download.qt.io/official_releases/qt/6.11/6.11.3/submodules/qtnetworkauth-everywhere-src-6.11.3.tar.xz"
+sha256 = "a41e2f82158269a4e646da92da052ba9b259d7c9542a0e4e39f1e70649fb6dc3"
+unsigned = "Qt publishes md5 sums (md5sums.txt) over HTTPS, not a signature"

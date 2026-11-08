@@ -1,0 +1,17 @@
+# cmark: the reference C library for CommonMark (Prism Launcher renders mod
+# descriptions with it). Its project publishes no signature; the tarball is
+# GitHub's of the release tag.
+version = "0.31.2"
+license = "BSD-2-Clause AND MIT"
+description = "cmark: CommonMark parsing and rendering, shared, and the cmark program."
+home = "https://github.com/commonmark/cmark"
+category = "text"
+purl = "pkg:generic/cmark@0.31.2"
+build = ["cmake", "ninja"]
+run = []
+
+[[source]]
+url = "https://github.com/commonmark/cmark/archive/refs/tags/0.31.2.tar.gz"
+file = "cmark-0.31.2.tar.gz"
+sha256 = "f9bc5ca38bcb0b727f0056100fac4d743e768872e3bacec7746de28f5700d697"
+unsigned = "cmark publishes no signature or checksum; the tarball is GitHub's archive of the tag"

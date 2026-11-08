@@ -1,0 +1,6 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source cmark-0.31.2.tar.gz f9bc5ca38bcb0b727f0056100fac4d743e768872e3bacec7746de28f5700d697
+tag 0.31.2 commit eec0eeba6d31189fd828314576494566d539b1e3 tree 14c53ea05f9951232484c8454f27530cfb834caa
+signed no
+same 119
+only-in-tag 0

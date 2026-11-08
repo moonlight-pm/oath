@@ -1,0 +1,92 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source libXi-1.8.4.tar.xz ddd6057b89a91903bc2f884d55c8467440906945e482c36547260dff28661afc
+tag libXi-1.8.4 commit 9ea632ab9dce9ad6630ef7db9d1850ea3d0a2419 tree 88f816f8a9a1abacdada4c34a761f1a26fa7cafd
+signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
+same 114
+only-in-tag 5
+from automake 1
+from gettext 2
+from gnulib 6
+from libtool 4
+adds ChangeLog
+adds Makefile.in
+adds aclocal.m4
+adds configure
+adds man/Makefile.in
+adds man/XAllowDeviceEvents.man
+adds man/XChangeDeviceControl.man
+adds man/XChangeDeviceDontPropagateList.man
+adds man/XChangeDeviceKeyMapping.man
+adds man/XChangeDeviceProperty.man
+adds man/XChangeFeedbackControl.man
+adds man/XChangeKeyboardDevice.man
+adds man/XChangePointerDevice.man
+adds man/XCloseDevice.man
+adds man/XDeleteDeviceProperty.man
+adds man/XDeviceBell.man
+adds man/XDeviceTimeCoord.man
+adds man/XFreeDeviceList.man
+adds man/XGetDeviceButtonMapping.man
+adds man/XGetDeviceControl.man
+adds man/XGetDeviceDontPropagateList.man
+adds man/XGetDeviceFocus.man
+adds man/XGetDeviceKeyMapping.man
+adds man/XGetDeviceModifierMapping.man
+adds man/XGetDeviceMotionEvents.man
+adds man/XGetDeviceProperty.man
+adds man/XGetExtensionVersion.man
+adds man/XGetFeedbackControl.man
+adds man/XGetSelectedExtensionEvents.man
+adds man/XGrabDevice.man
+adds man/XGrabDeviceButton.man
+adds man/XGrabDeviceKey.man
+adds man/XIAllowEvents.man
+adds man/XIBarrierReleasePointer.man
+adds man/XIBarrierReleasePointers.man
+adds man/XIChangeHierarchy.man
+adds man/XIChangeProperty.man
+adds man/XIDefineCursor.man
+adds man/XIDeleteProperty.man
+adds man/XIFreeDeviceInfo.man
+adds man/XIGetClientPointer.man
+adds man/XIGetFocus.man
+adds man/XIGetProperty.man
+adds man/XIGetSelectedEvents.man
+adds man/XIGrabButton.man
+adds man/XIGrabDevice.man
+adds man/XIGrabEnter.man
+adds man/XIGrabFocusIn.man
+adds man/XIGrabKeycode.man
+adds man/XIGrabTouchBegin.man
+adds man/XIListProperties.man
+adds man/XIQueryDevice.man
+adds man/XIQueryPointer.man
+adds man/XIQueryVersion.man
+adds man/XISelectEvents.man
+adds man/XISetClientPointer.man
+adds man/XISetFocus.man
+adds man/XIUndefineCursor.man
+adds man/XIUngrabButton.man
+adds man/XIUngrabDevice.man
+adds man/XIUngrabEnter.man
+adds man/XIUngrabFocusIn.man
+adds man/XIUngrabKeycode.man
+adds man/XIUngrabTouchBegin.man
+adds man/XIWarpPointer.man
+adds man/XListDeviceProperties.man
+adds man/XListInputDevices.man
+adds man/XOpenDevice.man
+adds man/XQueryDeviceState.man
+adds man/XSelectExtensionEvent.man
+adds man/XSendExtensionEvent.man
+adds man/XSetDeviceButtonMapping.man
+adds man/XSetDeviceFocus.man
+adds man/XSetDeviceMode.man
+adds man/XSetDeviceModifierMapping.man
+adds man/XSetDeviceValuators.man
+adds man/XUngrabDevice.man
+adds man/XUngrabDeviceButton.man
+adds man/XUngrabDeviceKey.man
+adds specs/Makefile.in
+adds src/Makefile.in
+adds src/config.h.in
