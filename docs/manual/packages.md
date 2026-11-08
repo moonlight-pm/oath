@@ -509,7 +509,8 @@ libglvnd sends GL and EGL to it, the Vulkan loader and libgbm (32-bit
 too) find it, and its 32-bit libraries serve Steam. Its DLSS DLLs are
 in `/lib/nvidia/wine`, beside `libGLX_nvidia`, where Proton finds them;
 a game also needs `PROTON_ENABLE_NVAPI=1 %command%` unless Proton turns
-NVAPI on for it. A card's own settings (GSP off,
+NVAPI on for it. The closed driver runs on the GSP firmware in its
+package, which PID 1 puts where the kernel looks. A card's own settings (GSP off,
 power caps) belong in the machine's overlay ([Kernel module
 options](using.md#kernel-module-options)).
 

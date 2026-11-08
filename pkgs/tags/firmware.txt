@@ -1,6 +1,6 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source firmware/amdgpu/pitcairn_ce.bin f3ec71541010855af8f23f172f8d894765874660ed3845bb086a0469aa74ea6d
+source firmware/amdgpu/pitcairn_ce.bin fc512ca6ecfd041377bd8b280d4a6839981b1db30537b8f6337810d34da489cc
 tag 20260916 commit ab23307cfe7f9366c819025ca3e4778299bc2db2 tree aa6e25a53fc43e6ee5a3be0ca45750c014c887aa
 signed pgp 4CDE8575E547BF835FE15807A31B6BD72486CFD6
-same 28
+same 30
 only-in-tag 0

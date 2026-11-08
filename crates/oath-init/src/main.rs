@@ -521,8 +521,20 @@ fn make_static_nodes(idx: &modules::Index) {
     }
 }
 
+/// Present packages' firmware (`modules::package_firmware`) is linked
+/// under `/run/oath/firmware`, which the kernel searches before
+/// `/lib/firmware`: NVIDIA's closed driver finds its GSP firmware there.
+/// The initrd has no catalog, so it links none.
+fn link_package_firmware() {
+    let dirs = modules::package_firmware(Path::new("/oath"));
+    if modules::link_package_firmware(&dirs, Path::new(modules::PACKAGE_FIRMWARE)) {
+        let _ = fs::write("/sys/module/firmware_class/parameters/path", modules::PACKAGE_FIRMWARE);
+    }
+}
+
 /// Coldplug by modalias; with `defer_kms`, display and sound wait.
 fn load_modules(defer_kms: bool) {
+    link_package_firmware();
     match modules::Index::open(&modules::base()) {
         Some(idx) => {
             make_static_nodes(&idx);

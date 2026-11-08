@@ -26,6 +26,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
       step, the driver being loaded, the root wait and its disks, a failure
       in amber, a bar a thread moves; let go before any display driver loads
     static nodes: /dev/<devname> of each module not yet loaded (uhid, fuse)
+    package firmware: /run/oath/firmware links each present package's
+      lib/firmware entries; the kernel's firmware_class.path (none in the initrd)
     coldplug by modalias (display and sound wait until services start;
       the screen keeps the EFI mark until then, then shows tty1, svc:screen;
       with no display driver, the line names the display and the address)

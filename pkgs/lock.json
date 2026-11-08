@@ -351,8 +351,8 @@
     "version": "20260916",
     "license": "LicenseRef-linux-firmware",
     "by": "plan",
-    "plan": "sha256-eef1e5e05dd70862d6a509869a9c6681ddf3c9bc18646cf6273250569e12c37c",
-    "product": "sha256-9bbb81862198f0502f943473470eeab9b68709abf087f5ddbdddecb4a81fdb3b",
+    "plan": "sha256-a92b6f293a11e037154c12e98d1b597340fb8b46e6f4699c7451424b33415c01",
+    "product": "sha256-2602a54b75f055c2dd418f557f9c3153c1997766ae154cef9408c47db09630c4",
     "run": []
   },
   "flex": {

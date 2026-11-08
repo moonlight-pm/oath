@@ -1,6 +1,6 @@
 # Firmware blobs the base kernel loads: tg3 (tigon) for canto's Broadcom
-# NIC, SI Pitcairn (amdgpu, radeon) for canto's GPUs and the Intel AX210's
-# Bluetooth (btintel) for novus. Vendor files from
+# NIC, SI Pitcairn (amdgpu, radeon) for canto's GPUs and the Bluetooth
+# (btintel) of novus's Intel AX210 and koeurax's AX211. Vendor files from
 # linux-firmware tag 20260916, pinned one by one, each checked at pin time to be
 # in that tag's tree, whose signature is checked too (R54). Add a blob here when
 # a machine needs it.
@@ -151,3 +151,13 @@ file = "firmware/intel/ibt-0041-0041.sfi"
 url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/intel/ibt-0041-0041.ddc?h=20260916"
 sha256 = "fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077"
 file = "firmware/intel/ibt-0041-0041.ddc"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/intel/ibt-1040-0041.sfi?h=20260916"
+sha256 = "8dcfb3a7c1592c11c3e80505d21ee78dbde3de0c830d8e3e856371c37717b62c"
+file = "firmware/intel/ibt-1040-0041.sfi"
+
+[[source]]
+url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/intel/ibt-1040-0041.ddc?h=20260916"
+sha256 = "fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077"
+file = "firmware/intel/ibt-1040-0041.ddc"

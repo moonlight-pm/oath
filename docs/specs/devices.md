@@ -85,9 +85,18 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   is there PID 1 makes `/dev/nvidiactl`, `/dev/nvidia<N>`,
   `/dev/nvidia-modeset` and `/dev/nvidia-uvm(-tools)` 0666, as it opens
   render nodes.
+- **Firmware a package brings** (built 2026-11-08): before each coldplug
+  PID 1 links each top-level entry of a present package's `lib/firmware`
+  (but pkg:firmware's and pkg:linux's) into `/run/oath/firmware`, and
+  sets the kernel's `firmware_class.path` to it, which the kernel
+  searches before `/lib/firmware`. NVIDIA's closed driver finds its GSP
+  firmware (`nvidia/595.104.02/gsp_ga10x.bin`) there and runs on it,
+  unless the machine turns it off (novus's `NVreg_EnableGpuFirmware=0`).
+  A link whose package moved follows it at the next pass.
 - Firmware is `pkg:firmware`: linux-firmware blobs from tag 20260916,
-  each pinned by sha256 in `pkgs/firmware/pkg.toml` (today tg3 and SI
-  Pitcairn for amdgpu and radeon). Modules and firmware are in the
+  each pinned by sha256 in `pkgs/firmware/pkg.toml` (today tg3, SI
+  Pitcairn for amdgpu and radeon, and the Bluetooth of Intel's AX210,
+  `ibt-0041-0041`, and AX211, `ibt-1040-0041`). Modules and firmware are in the
   initrd and bind-mounted over the root's `/lib/modules` and
   `/lib/firmware` so the deferred pass can load them. A machine that
   needs another blob gets a line there.

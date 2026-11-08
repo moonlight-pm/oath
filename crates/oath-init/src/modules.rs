@@ -61,6 +61,64 @@ pub fn package_bases(oath: &Path, kver: &str) -> Vec<PathBuf> {
     out
 }
 
+/// Where package firmware is linked; the kernel's firmware path
+/// (`firmware_class.path`), searched before `/lib/firmware`.
+pub const PACKAGE_FIRMWARE: &str = "/run/oath/firmware";
+
+/// Firmware packages bring (R34: NVIDIA's GSP firmware): each present
+/// package's `lib/firmware`, but pkg:firmware's and pkg:linux's, which
+/// are `/lib/firmware` already.
+pub fn package_firmware(oath: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let Ok(rd) = fs::read_dir(oath.join("objects/pkg")) else { return out };
+    for e in rd.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if name == "linux" || name == "firmware" {
+            continue;
+        }
+        let Some(spec) = read_json(&e.path().join("applied.json")) else { continue };
+        if spec.get("present").and_then(|p| p.as_bool()) == Some(false) {
+            continue;
+        }
+        let Some(hash) = spec.get("hash").and_then(|h| h.as_str()) else { continue };
+        let dir = oath.join("store/pkg").join(&name).join(hash).join("lib/firmware");
+        if dir.is_dir() {
+            out.push(dir);
+        }
+    }
+    out.sort();
+    out
+}
+
+/// Link each top-level entry of each package firmware dir into `into`
+/// (`nvidia` → `<store>/nvidia/<hash>/lib/firmware/nvidia`); the first
+/// package to name an entry has it. A link whose package moved or left
+/// goes. Whether any link is there.
+pub fn link_package_firmware(dirs: &[PathBuf], into: &Path) -> bool {
+    let mut want: HashMap<std::ffi::OsString, PathBuf> = HashMap::new();
+    for dir in dirs {
+        for e in fs::read_dir(dir).into_iter().flatten().flatten() {
+            want.entry(e.file_name()).or_insert_with(|| e.path());
+        }
+    }
+    for e in fs::read_dir(into).into_iter().flatten().flatten() {
+        if want.get(&e.file_name()) != fs::read_link(e.path()).ok().as_ref() {
+            let _ = fs::remove_file(e.path());
+        }
+    }
+    if want.is_empty() {
+        return false;
+    }
+    let _ = fs::create_dir_all(into);
+    for (name, target) in &want {
+        let link = into.join(name);
+        if fs::read_link(&link).ok().as_ref() != Some(target) {
+            let _ = std::os::unix::fs::symlink(target, &link);
+        }
+    }
+    true
+}
+
 /// `host:local.module_options` as applied: parameters by module name.
 pub fn host_module_options(oath: &Path) -> HashMap<String, String> {
     read_json(&oath.join("objects/host/local/applied.json"))
@@ -639,6 +697,38 @@ alias pci:v*d*sv*sd*bc04sc0[13]i* snd_hda_intel
             [o.join("store/pkg/nvidia/sha256-a/lib/modules/7.3.0")]
         );
         assert!(package_bases(o, "7.2.0").is_empty());
+    }
+
+    #[test]
+    fn package_firmware_links_by_entry() {
+        let d = tempfile::tempdir().unwrap();
+        let o = d.path();
+        let pkg = |name: &str, hash: &str, entry: &str| {
+            fs::create_dir_all(o.join("objects/pkg").join(name)).unwrap();
+            let spec = format!(r#"{{"present": true, "hash": "{hash}"}}"#);
+            fs::write(o.join("objects/pkg").join(name).join("applied.json"), spec).unwrap();
+            let fw = o.join("store/pkg").join(name).join(hash).join("lib/firmware");
+            fs::create_dir_all(fw.join(entry)).unwrap();
+            fw
+        };
+        let nvidia = pkg("nvidia", "sha256-a", "nvidia");
+        pkg("firmware", "sha256-b", "intel");
+        pkg("linux", "sha256-c", "x");
+        assert_eq!(package_firmware(o), [nvidia.clone()]);
+
+        let into = o.join("run/firmware");
+        fs::create_dir_all(&into).unwrap();
+        std::os::unix::fs::symlink("/gone", into.join("old")).unwrap();
+        assert!(link_package_firmware(&package_firmware(o), &into));
+        assert_eq!(fs::read_link(into.join("nvidia")).unwrap(), nvidia.join("nvidia"));
+        assert!(into.join("old").symlink_metadata().is_err());
+
+        // The package moves: its link follows.
+        let moved = pkg("nvidia", "sha256-d", "nvidia");
+        assert!(link_package_firmware(&package_firmware(o), &into));
+        assert_eq!(fs::read_link(into.join("nvidia")).unwrap(), moved.join("nvidia"));
+        assert!(!link_package_firmware(&[], &into));
+        assert!(into.join("nvidia").symlink_metadata().is_err());
     }
 
     #[test]
