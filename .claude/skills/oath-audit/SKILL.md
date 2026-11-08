@@ -137,7 +137,7 @@ backport with the release or upstream's patch, and say so.
   week has passed its age. Move the pins and run `cargo make pkgs --fetch <names>`,
   commit nothing, write a draft report, write the names to `build/audit/long`, and
   stop. The runner then builds them and starts a second run, which finishes from
-  step 4. Do the day's other fixes in that same batch. It publishes by day, so
+  step 4. Do the day's other fixes in that same batch. If it ends after 07:00,
   buccina takes that release at the next run's end.
 - **A fix that rebuilds the toolchain** (gcc, glibc, binutils, rust) is still a
   fix: do it the same way if it is known exploited or critical; otherwise report it

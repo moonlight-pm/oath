@@ -22,7 +22,6 @@ later=$dir/take-later
 # run by hand).
 exec 9>"$dir/lock"
 flock -n 9 || { echo "an audit is already running"; exit 0; }
-started=$(date +%s)
 
 # A run owed across a reboot starts with the services, before the lease.
 i=0
@@ -63,16 +62,15 @@ if [ ! -s "$report" ]; then
         tail -n 60 "$log" | sed 's/^/    /'
     } >"$report"
 fi
-# A long rebuild ends by day, when someone may be at work here: buccina takes
-# that release at the end of the next run that had none. A rebuild inside a
-# command is a long one too, so a run past three hours counts (the usual one
-# takes one or two).
-late=$built
-[ $(($(date +%s) - started)) -gt 10800 ] && late=1
+# After 07:00 someone may be at work here: buccina takes the release at the end
+# of the next run that finishes before then, however long this one took. PID 1
+# gives a service the machine's time zone.
+late=
+[ "$(date +%H)" -ge 7 ] && late=1
 [ -s "$published" ] && cp "$published" "$later"
 if [ -s "$later" ]; then
     if [ -n "$late" ]; then
-        printf '\nbuccina takes output %s at the next run, not now: a long rebuild ends by day.\n' \
+        printf '\nbuccina takes output %s at the next run, not now: it is past 07:00.\n' \
             "$(cat "$later")" >>"$report"
     else
         printf '\nbuccina takes output %s now: sudo oath update --confirm --reboot\n' \
