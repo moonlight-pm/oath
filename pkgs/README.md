@@ -217,7 +217,9 @@ names every one in `components.json`, and `bin/<name>` runs it with
 `pkg:node`. A new version is a new set of pins, each checked against
 npm's registry signature when it is pinned.
 
-`cargo make pkgs --list` shows every package, its licence and its pins.
+`cargo make pkgs --list` shows every package, its licence and its pins;
+`cargo make pkgs --stale`, each one built against something the lock has since
+replaced.
 `cargo make build` packs the image from the products in `lock.json`:
 the profile's packages, and the kernel and its modules from
 `pkg:linux` (`linux/`: the fragment and `patches/`).

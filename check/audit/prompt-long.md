@@ -1,7 +1,7 @@
 Finish today's (@DAY@) security audit of Oath's packages. An earlier run of the
-`oath-audit` skill (`.claude/skills/oath-audit/SKILL.md`) moved pins and left them
-uncommitted in the tree, with a draft report at @REPORT@, because their rebuild lasts
-longer than a command may. The runner has built them: `cargo make pkgs -j 8` exited
+`oath-audit` skill (`.claude/skills/oath-audit/SKILL.md`) moved pins, or found packages
+that needed a rebuild, and left that to the runner, with a draft report at @REPORT@,
+because the rebuild can last longer than a command may. The runner has built them: `cargo make pkgs -j 8` exited
 @BUILT@, and its output is in @LOG@.
 
 If it exited 0, carry on from the skill's step 4. If not, read why, undo the change

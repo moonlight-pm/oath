@@ -163,6 +163,11 @@ enum Cmd {
         /// List packages, versions, licences and what the lock pins.
         #[arg(long)]
         list: bool,
+        /// List each package built against something the lock has since
+        /// replaced, and what moved: what `cargo make pkgs` would rebuild.
+        /// Builds nothing.
+        #[arg(long)]
+        stale: bool,
         /// Fetch and check the sources (sha256 and signature) of the named
         /// packages, or all, without building, and compare a new pin with
         /// upstream's git tag (pkgs/tags/<name>.txt). A pin that moves a Go, npm,
@@ -368,12 +373,14 @@ fn real() -> Result<()> {
             let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2);
             pkgs::bootstrap(&root, jobs.unwrap_or(n / 2).max(1))?
         }
-        Cmd::Pkgs { names, list, fetch, review, jobs } => {
+        Cmd::Pkgs { names, list, stale, fetch, review, jobs } => {
             // `oath` is this tree (pkg:oath), not a pkgs/ package.
             let (oath, rest): (Vec<String>, Vec<String>) =
                 names.into_iter().partition(|n| n == "oath");
             if list {
                 pkgs::list(&root)?
+            } else if stale {
+                pkgs::stale(&root)?
             } else if review {
                 intake::review(&root, &oath.iter().chain(&rest).cloned().collect::<Vec<_>>())?
             } else if fetch {

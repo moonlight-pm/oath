@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-08 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R74 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R75 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -45,7 +45,7 @@ append history (git has it).
    CVE-2026-99255 and 99262 wait for that 7.3.y. rsync 3.5.2 (R67) is on the origin; its fix bounds only unbroken collision runs.
    R67: the audit pins a key upstream names (not yet run for real) and rebuilds CEF itself: on 2026-11-07 it moved CEF to 156.0.26
    with Chromium's fixes for CVE-2026-121035 and 121203, and fribidi 1.0.18, vulkan-loader and vulkan-tools 1.4.367 (desk `bda181db1fc6`,
-   then `6c8d38bd54c4`). 44 plans, CEF's too, still name the old `pkg:openssl` through `pkg:python` (2026-11-08): the next `cargo make pkgs -j 8` rebuilds them to the same products. Next: expat 2.10.0 at the 2026-11-10 run, a week old (Joshua, 2026-11-04); buccina took `6c8d38bd54c4` at the 2026-11-08 run. R60 is on buccina and canto.
+   then `6c8d38bd54c4`). 44 plans, CEF's too, still name the old `pkg:openssl` through `pkg:python` (2026-11-08): the audit's every-run check (R75) rebuilds them to the same products, CEF with expat's rebuild. Next: expat 2.10.0 at the 2026-11-10 run, a week old (Joshua, 2026-11-04); buccina took `6c8d38bd54c4` at the 2026-11-08 run. R60 is on buccina and canto.
 
 **State:** phases 1–7 are done (6 on 2026-10-27, [hosts/buccina.md](hosts/buccina.md)); 8 and 9
 are active ([docs/roadmap.md](docs/roadmap.md)). Left until needed: root SSH, more NICs, node rules.

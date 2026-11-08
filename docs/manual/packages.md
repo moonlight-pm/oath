@@ -555,6 +555,9 @@ a headless Claude Code run of the `oath-audit` skill triages the hits,
 upgrades to upstream's fixed release (or applies upstream's patch, or a
 backport marked `oath-backport-CVE-…`), checks, commits, pushes and
 publishes, then mails Joshua its report and moves buccina to the release.
+Every run, fix or no fix, it also runs `cargo make pkgs --stale`, which lists
+each package built against something the lock has since replaced, and rebuilds
+those (R75); a command may last 6 hours.
 
 ## Host store cache and publishing
 

@@ -131,8 +131,8 @@ backport with the release or upstream's patch, and say so.
 - Then `cargo make pkgs -j 8`: it rebuilds each package whose plan
   moved, the ones that build with it included, and updates
   `pkgs/lock.json`.
-- **A fix that rebuilds CEF** (about 4.5 hours, longer than the 2 hours a command
-  may last) goes ahead (R67). One rebuild carries them: unless one is known
+- **A rebuild that includes CEF** (about 4.5 hours alone, and what moves with it can
+  pass the 6 hours a command may last) goes ahead (R67). One rebuild carries them: unless one is known
   exploited or critical, wait until the newest CEF-bound fix that is due within a
   week has passed its age. Move the pins and run `cargo make pkgs --fetch <names>`,
   commit nothing, write a draft report, write the names to `build/audit/long`, and
@@ -143,6 +143,27 @@ backport with the release or upstream's patch, and say so.
   fix: do it the same way if it is known exploited or critical; otherwise report it
   under "Waiting on Joshua" with what it would rebuild.
 - `cargo test -p oath-make audit` if you edited `pkgs/audit.toml`.
+
+### Every run: what needs a rebuild (R75)
+
+Do this every run, whether or not anything above needed a fix:
+
+```
+cargo make pkgs --stale
+```
+
+It lists each package built against something the lock has since replaced, and what
+moved: a dependency that changed without everything that builds with it being built.
+`nothing needs a rebuild` ends this step. Otherwise rebuild them with `cargo make pkgs
+-j 8`, giving the command a `timeout` of 21600000 (6 hours). If CEF is listed, it takes the path above: with a
+CEF-bound fix due within a week, build the others by name and leave CEF for that
+rebuild; with none due, write the names to `build/audit/long` and stop, as above, with
+no pins to move. Say which in the report.
+
+A rebuild that moved no product changes only plans and `pkgs/lock.json`: commit them
+as `Rebuild: <names> (same products)`, push, and publish nothing. One that moved a
+product is a change like a fix: step 4, and the report names it under "Fixed and
+published".
 
 ## 4. Check and release
 

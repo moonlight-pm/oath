@@ -1192,6 +1192,51 @@ fn check_loads(
     bail!(msg)
 }
 
+/// What `name`'s plan was built with that the lock has since replaced: each
+/// pack it names at a hash other than the lock's product, and `plan` itself
+/// when the file is not the one the lock records. Source packs are not in the
+/// lock, so they are not compared.
+fn moved_since_built(name: &str, text: &str, lock: &Lock) -> Result<Vec<String>> {
+    let plan = oath_core::parse_plan(text).map_err(|e| anyhow::anyhow!("pkg:{name}: {e}"))?;
+    let mut moved = BTreeSet::new();
+    for need in plan.build_needs.iter().chain(plan.run_needs.iter()) {
+        let dep = need.id.strip_prefix("pkg:").unwrap_or(&need.id);
+        if lock.get(dep).is_some_and(|e| e.product != need.hash) {
+            moved.insert(dep.to_string());
+        }
+    }
+    if lock.get(name).is_some_and(|e| e.plan != oath_core::file_hash(text.as_bytes())) {
+        moved.insert("plan".to_string());
+    }
+    Ok(moved.into_iter().collect())
+}
+
+/// `cargo make pkgs --stale`: each package built against something the lock
+/// has since replaced, and what moved. A package whose `pkg.toml` or
+/// `build.sh` was edited and not built yet has no new plan to read, so it is
+/// not listed; `cargo make pkgs` builds it all the same.
+pub fn stale(repo: &Path) -> Result<()> {
+    let lock = read_lock(repo)?;
+    let mut count = 0;
+    for name in load(repo)?.keys() {
+        let path = pkgs_dir(repo).join(name).join(format!("{name}.plan"));
+        if lock.get(name).is_none_or(|e| e.by != "plan") || !path.is_file() {
+            continue;
+        }
+        let moved = moved_since_built(name, &fs::read_to_string(&path)?, &lock)?;
+        if !moved.is_empty() {
+            println!("{name}: {}", moved.join(", "));
+            count += 1;
+        }
+    }
+    if count == 0 {
+        println!("nothing needs a rebuild");
+    } else {
+        println!("{count} packages need a rebuild");
+    }
+    Ok(())
+}
+
 /// `cargo make pkgs --list`: every package, its lock entry and prose.
 pub fn list(repo: &Path) -> Result<()> {
     let lock = read_lock(repo)?;
@@ -1326,6 +1371,43 @@ mod tests {
             build: build.iter().map(|s| s.to_string()).collect(),
             ..Default::default()
         }
+    }
+
+    fn entry(product: &str, plan: &str) -> LockEntry {
+        LockEntry {
+            version: "1".into(),
+            license: "MIT".into(),
+            by: "plan".into(),
+            plan: plan.into(),
+            product: product.into(),
+            run: None,
+        }
+    }
+
+    #[test]
+    fn a_plan_is_stale_when_the_lock_has_moved_past_what_it_names() {
+        let need = |id: &str, hash: &str| oath_core::PkgNeed {
+            id: format!("pkg:{id}"),
+            hash: format!("sha256-{}", hash.repeat(64)),
+        };
+        let text = oath_core::fmt_plan(&oath_core::PlanFile {
+            name: "app".into(),
+            produces: "pkg:app".into(),
+            build_needs: vec![need("old", "a"), need("same", "b"), need("app-src", "c")],
+            run_needs: vec![need("same", "b")],
+            script: "#!/bin/sh\n".into(),
+        });
+        let plan = oath_core::file_hash(text.as_bytes());
+        let product = |c: &str| format!("sha256-{}", c.repeat(64));
+        let mut lock = Lock::new();
+        lock.insert("app".into(), entry(&product("d"), &plan));
+        lock.insert("same".into(), entry(&product("b"), ""));
+        lock.insert("old".into(), entry(&product("a"), ""));
+        assert!(moved_since_built("app", &text, &lock).unwrap().is_empty());
+        lock.insert("old".into(), entry(&product("e"), ""));
+        assert_eq!(moved_since_built("app", &text, &lock).unwrap(), ["old"]);
+        lock.insert("app".into(), entry(&product("d"), "another plan"));
+        assert_eq!(moved_since_built("app", &text, &lock).unwrap(), ["old", "plan"]);
     }
 
     #[test]
