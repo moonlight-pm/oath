@@ -24,7 +24,8 @@ Overwrite this file when facts change; do not append a diary.
   (the Modrinth App's profiles under `users/kora/AppData/Roaming/ModrinthApp`).
 - **Running now:** the `desk` release `f997e9baf436` (master `89cc9eb`,
   published 2026-11-08), rebooted into it that day; generation 3: 1 built
-  `plan:steam` (`pkg:steam`), 2 set `host:local`, 3 the update.
+  `plan:steam` (`pkg:steam`), 2 set `host:local`, 3 the update; 4 and 5
+  Minecraft's packages (below).
   `host:local.publishers` is buccina's key alone, so it refuses Sola's own
   heads (novus's key) and takes Sola with releases. No time zone (UTC).
   Steam runs: Joshua played Terraria and Noita on 2026-11-08, on the GSP

@@ -217,6 +217,10 @@ names every one in `components.json`, and `bin/<name>` runs it with
 `pkg:node`. A new version is a new set of pins, each checked against
 npm's registry signature when it is pinned.
 
+A pack's `lib/` is linked into `/lib` entry by entry, except `pkgconfig`, so
+only one pack can have a `lib/cmake`: a build deletes its CMake package, or
+moves it to `share/cmake` if another package builds against it (Qt, cmark).
+
 `cargo make pkgs --list` shows every package, its licence and its pins;
 `cargo make pkgs --stale`, each one built against something the lock has since
 replaced.
