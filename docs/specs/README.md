@@ -18,6 +18,7 @@ in [../decisions.md](../decisions.md).
 | [desk.md](desk.md) | The graphical session: rivulet, wlroots, Mesa, Xwayland, the seat, Sola | running on canto |
 | [login.md](login.md) | `home`'s password, auto-login, the seat's turns (desk, console), `svc:login`'s contract with Sola (R42) | built (QEMU) |
 | [steam.md](steam.md) | Steam: the recipe, its sandbox, the i386 packages | partly built (canto) |
+| [minecraft.md](minecraft.md) | Minecraft: Prism Launcher, Java, the box | built (koeurax) |
 | [agent.md](agent.md) | `oath mcp`: the verbs as MCP tools over SSH; the real-model acceptance check | partly built (phase 7) |
 | [writ.md](writ.md) | `writ`, Oath's coding agent: the box, the gate, the key, OpenRouter | box built, no model yet (R64) |
 

@@ -6,7 +6,12 @@ a root with no `/lib64` or `/usr`. It is the Minecraft half of phase 9
 ([roadmap](../roadmap.md), [scope.md](scope.md)); [steam.md](steam.md) is
 the other.
 
-**Status:** is: the packages, built on buccina on 2026-11-07. Will be: a game run on koeurax.
+**Status:** is, on koeurax since 2026-11-08 (generation 5, an overlay): Prism
+starts in the box on Wayland and reaches the network over TLS, and in that box
+LWJGL 3.3.3 (the jars Minecraft 1.21.5 loads) opens GLFW on Xwayland, OpenGL on
+NVIDIA's driver and OpenAL through PipeWire. Will be: the game itself, which
+waits for a sign-in: Prism plays nothing, offline or not, until a Microsoft
+account that owns the game is added.
 
 ## Why Prism
 
@@ -38,7 +43,7 @@ Modrinth's catalog stays.
 | `prismlauncher` | 11.1.1 from its tag, signed by Seth Flynn (`flynn`), with `libnbtplusplus` at the commit the tag names. `libexec/prismlauncher/` (the program and its two jars), `bin/prismlauncher` (the box), the desktop entry and icons in `share/`. No updater, no Java downloader; `gamemode_client.h` is a stub that says GameMode is absent. |
 | `jre-21` | Temurin 21.0.13+9, Adoptium's JRE, checked against its signature (`adoptium`). Its programs are pointed at `/lib`'s loader; `lib/libjvm.so` names `lib/server/`'s for the loads check. |
 | `jdk-21` | Temurin's JDK, a build pack (Prism's Java parts). |
-| `qtbase`, `qtsvg`, `qtimageformats`, `qtnetworkauth` | Qt 6.11.3. qtbase on Wayland alone (no xcb), EGL and desktop GL, OpenSSL linked, no D-Bus, GLib, ICU, SQL or printing; not relocatable; its TLS reads `pkg:certs`. It bundles PCRE2 (16-bit), libpng, libjpeg, double-conversion, md4c, libb2, libpsl. qtimageformats ships the WebP plugin alone (Modrinth's icons), with its own libwebp. Qt publishes md5 sums, no signatures: each tarball is set against its tag. |
+| `qtbase`, `qtsvg`, `qtimageformats`, `qtnetworkauth` | Qt 6.11.3. qtbase on Wayland alone (no xcb), EGL and desktop GL, OpenSSL linked, no D-Bus, GLib, ICU, SQL, printing or Android and WebAssembly tools; not relocatable; its TLS reads `pkg:certs`; its CMake files, and its modules', are in `share/cmake` (a pack's `lib/` is linked into `/lib`, which has one `lib/cmake`). It bundles PCRE2 (16-bit), libpng, libjpeg, double-conversion, md4c, libb2, libpsl. qtimageformats ships the WebP plugin alone (Modrinth's icons), with its own libwebp. Qt publishes md5 sums, no signatures: each tarball is set against its tag. |
 | `cmark`, `libarchive`, `libqrencode` | Mod descriptions, archives (zlib, bzip2, xz, zstd; no programs), the sign-in QR Code. libarchive is signed by Martin Matuška (`matuska`). |
 | `extra-cmake-modules`, `tomlplusplus` | Build packs. ECM is signed by Nicolas Fella (`fella`, KDE's release keyring). |
 | `libxi`, `libxtst`, `libxcursor` | The JRE's AWT and the game's GLFW or SDL. |
@@ -67,7 +72,11 @@ machine that has some.
 localhost services (Steam's ports on a desk) and abstract sockets
 (Xwayland's); through Xwayland it sees other X11 clients' input (Steam).
 Prism's "open folder" and links do nothing (no `xdg-open`); sign-in uses
-the code shown with its QR Code.
+the code shown with its QR Code. On a fresh machine, Prism's first session
+still defaults `AutomaticJavaDownload` on when no Java is set, though its
+downloader is compiled out of the interface, and a Java it fetched would name
+`/lib64`: koeurax's `prismlauncher.cfg` sets `JavaPath`, `AutomaticJavaSwitch`
+and `AutomaticJavaDownload=false`.
 
 ## Bringing a Modrinth App profile over
 
@@ -86,5 +95,7 @@ keep the copy.
 
 - **Will be:** `pkg:jre-17` and `pkg:jre-25`.
 - **Will be:** a pad tested in a game (Controlify, through `/dev/input`).
-- **Will be:** the desk's own entry for it, from the package's
-  `share/applications`.
+- **Will be:** an entry in the desk's launcher. Sola's list is its own
+  (`Application:` in `state.yaml`, set from Settings → Applications), and reads
+  no `share/applications`: command `/bin/prismlauncher`, its icon in the pack's
+  `share/icons/hicolor/256x256/apps/`.
