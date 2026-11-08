@@ -266,7 +266,9 @@ zbus does) reads its own policy and BlueZ's, from `pkg:bluez`'s slot;
 Bluetooth plugin plays and records through it (A2DP with SBC; HSP and
 HFP of its own), and WirePlumber, which wants the system bus, makes a
 node for each device; a Bluetooth LE controller or keyboard is an input
-device through `uhid`. No OBEX, mesh, MIDI or LE Audio codecs.
+device through `uhid`, whose static node PID 1 makes (devices.md), so
+bluetoothd's first open loads it (until 2026-11-07 nothing did, and an
+Xbox pad on novus bonded with no input). No OBEX, mesh, MIDI or LE Audio codecs.
 
 The KVM (R44). `svc:sola-kvm` runs `sola-kvm listen --bind
 0.0.0.0:4242` (UDP, and TCP for the clipboard); the `desk` profile has it

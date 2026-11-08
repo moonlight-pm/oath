@@ -636,6 +636,15 @@ steps = [
 ]
 
 [[case]]
+name = "static-nodes-load-their-module"
+about = "PID 1 makes the node of each module with a devname and a fixed major (kmod's static nodes), root:root 0600, so its first open loads the module: /dev/uhid, which BlueZ needs for an LE pad or keyboard; /dev/uinput is the seat's (R30)"
+metal = true
+steps = [
+  { run = "stat -c '%n %U:%G %a %t:%T' /dev/uhid /dev/fuse /dev/uinput", expect = ["/dev/uhid root:root 600 a:ef", "/dev/fuse root:root 600 a:e5", "/dev/uinput root:home 660 a:df"] },
+  { run = "sudo sh -c 'exec 3<>/dev/uhid' && test -d /sys/module/uhid && echo loaded", expect = ["loaded"] },
+]
+
+[[case]]
 name = "void-runs-what-reads-the-network"
 about = "void (R36) is uid 65534 with an empty, root-owned home and no login; chronyd runs as void, dhcpcd's network processes do, and sshd is OpenSSH's, with root logins off."
 metal = true

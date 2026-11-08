@@ -55,6 +55,16 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   a link to PID 1's binary in the initrd and the root. The kernel runs
   it for a filesystem (`fs-btrfs` at the root mount, `fs-vfat`), a code
   page (`nls_cp437`) and the like. `backup-send` uses it for NFS.
+- **Static nodes** (built 2026-11-07). A module with a `devname:` alias
+  and a fixed `char-major-M-m` or `block-major-M-m` one in
+  `modules.alias` (kmod's static nodes, from the same index; Oath has no
+  `modules.devname`) gets its node before it loads: before each coldplug,
+  PID 1 makes each missing one root:root 0600, as devtmpfs would. The
+  first open asks the kernel for `char-major-M-m`, and the helper loads
+  the module. Eight today: `uhid` (BlueZ makes an LE pad's or keyboard's
+  HID device through it), `uinput`, `fuse`, `net/tun`, `btrfs-control`,
+  `rfkill`, `snd/seq`, `snd/timer`. A node made so stays when its module
+  unloads. It is boot work: a live PID 1 upgrade (R73) makes none.
 - Parameters: amdgpu always gets `si_support=1 cik_support=1`, and
   `nvidia_drm` `modeset=1 fbdev=1`; then the machine's
   `host:local.module_options` (one machine's hardware workarounds,
@@ -90,9 +100,9 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   desk's PipeWire opens them as `home` (R22). Game controllers are too
   (R30), again whenever an `input` or `hidraw` device is added: each
   input device joydev took (it has a `js*`), its `js*` and `event*`
-  nodes, and the `hidraw*` of its HID device; `/dev/uinput` is a static
-  node (c 10:223), root:home 0660, whose first open loads `uinput`
-  through the kernel's `char-major-10-223` request. So is each
+  nodes, and the `hidraw*` of its HID device; `/dev/uinput`, a static
+  node (c 10:223) whose first open loads `uinput`, is root:home 0660.
+  So is each
   `hidraw*` of a device `host:local.seat_hid` lists by `vendor:product`
   (R71), when that interface's report descriptor has a vendor-defined
   top-level collection (usage page 0xFF00 to 0xFFFF) and no keyboard,

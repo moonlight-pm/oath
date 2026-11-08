@@ -473,24 +473,17 @@ pub(crate) fn open_sound_nodes() {
 
 /// Game controllers belong to the seat (R30): their nodes are root:home
 /// 0660, so Steam (as `home`) reads them, and so is `/dev/uinput`, where
-/// Steam Input makes its virtual pads. `/dev/uinput` is a static node:
-/// opening it asks the kernel for `char-major-10-223`, and the module
-/// loads then. So are the vendor interfaces of the HID devices
-/// `host:local.seat_hid` lists (R71). Other input nodes stay root's; seatd
-/// opens those.
+/// Steam Input makes its virtual pads. `/dev/uinput` is a static node
+/// ([`make_static_nodes`]): opening it asks the kernel for
+/// `char-major-10-223`, and the module loads then. So are the vendor
+/// interfaces of the HID devices `host:local.seat_hid` lists (R71). Other
+/// input nodes stay root's; seatd opens those.
 pub(crate) fn open_input_nodes() {
     let uinput = Path::new("/dev/uinput");
-    if uinput.symlink_metadata().is_err() {
-        let dev = libc::makedev(10, 223);
-        let _ = nix::sys::stat::mknod(
-            uinput,
-            nix::sys::stat::SFlag::S_IFCHR,
-            nix::sys::stat::Mode::from_bits_truncate(0o660),
-            dev,
-        );
+    if uinput.symlink_metadata().is_ok() {
+        let _ = std::os::unix::fs::chown(uinput, Some(0), Some(oath_core::seat::GID));
+        let _ = fs::set_permissions(uinput, fs::Permissions::from_mode(0o660));
     }
-    let _ = std::os::unix::fs::chown(uinput, Some(0), Some(oath_core::seat::GID));
-    let _ = fs::set_permissions(uinput, fs::Permissions::from_mode(0o660));
     let seat_hid = oath_core::hid::applied_seat_hid(Path::new(DEFAULT_ROOT));
     oath_core::hid::open_nodes(Path::new("/sys"), Path::new("/dev"), &seat_hid);
 }
@@ -507,10 +500,32 @@ pub(crate) fn open_render_nodes() {
     }
 }
 
+/// The static nodes of modules not yet loaded (`modules::Index::
+/// static_nodes`), root:root 0600 as devtmpfs makes them: `/dev/uhid`, so
+/// BlueZ's first open loads `uhid` and an LE pad or keyboard connects.
+/// [`open_dev_nodes`] opens those the seat or everyone gets. A loaded
+/// module's node is devtmpfs's already, and a node made here stays when its
+/// module unloads, as udev's static nodes do.
+fn make_static_nodes(idx: &modules::Index) {
+    use nix::sys::stat::{mknod, Mode, SFlag};
+    for n in idx.static_nodes() {
+        let p = Path::new("/dev").join(&n.name);
+        if p.symlink_metadata().is_ok() {
+            continue;
+        }
+        if let Some(dir) = p.parent() {
+            let _ = fs::create_dir_all(dir);
+        }
+        let kind = if n.block { SFlag::S_IFBLK } else { SFlag::S_IFCHR };
+        let _ = mknod(&p, kind, Mode::from_bits_truncate(0o600), libc::makedev(n.major, n.minor));
+    }
+}
+
 /// Coldplug by modalias; with `defer_kms`, display and sound wait.
 fn load_modules(defer_kms: bool) {
     match modules::Index::open(&modules::base()) {
         Some(idx) => {
+            make_static_nodes(&idx);
             let (loaded, failed) = idx.coldplug(defer_kms);
             if !loaded.is_empty() {
                 log(&format!("modules: {}", loaded.join(" ")));

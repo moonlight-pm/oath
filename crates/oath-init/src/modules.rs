@@ -229,6 +229,33 @@ impl Index {
         out
     }
 
+    /// Nodes for modules that are not loaded yet, as kmod's `static-nodes`
+    /// finds them: a module with a `devname:` alias and a fixed
+    /// `char-major-M-m` (or `block-major-M-m`) one. Its node can be in `/dev`
+    /// before it loads, and the first open asks the kernel for that alias
+    /// (`/dev/uhid`, BlueZ's LE input; `/dev/uinput`; `/dev/fuse`).
+    pub fn static_nodes(&self) -> Vec<StaticNode> {
+        let mut out = Vec::new();
+        for (pattern, m) in &self.aliases {
+            let Some(name) = pattern.strip_prefix("devname:") else { continue };
+            if name.is_empty() || name.split('/').any(|c| c.is_empty() || c == "." || c == "..") {
+                continue;
+            }
+            let dev = self.aliases.iter().filter(|(_, n)| n == m).find_map(|(p, _)| {
+                let (block, rest) = match p.strip_prefix("char-major-") {
+                    Some(r) => (false, r),
+                    None => (true, p.strip_prefix("block-major-")?),
+                };
+                let (major, minor) = rest.split_once('-')?;
+                Some((block, major.parse().ok()?, minor.parse().ok()?))
+            });
+            if let Some((block, major, minor)) = dev {
+                out.push(StaticNode { name: name.to_string(), block, major, minor });
+            }
+        }
+        out
+    }
+
     /// Display drivers that replace the firmware framebuffer, and sound,
     /// wait until the network and sshd are up: on canto an early amdgpu
     /// hangs the NIC.
@@ -330,6 +357,15 @@ impl Index {
         }
         (loaded, failed)
     }
+}
+
+/// A node under `/dev` whose module loads when it is first opened.
+pub struct StaticNode {
+    /// Under `/dev`: `uhid`, `net/tun`, `snd/seq`.
+    pub name: String,
+    pub block: bool,
+    pub major: u32,
+    pub minor: u32,
 }
 
 fn is_loaded(name: &str) -> bool {
@@ -619,6 +655,35 @@ alias pci:v*d*sv*sd*bc04sc0[13]i* snd_hda_intel
         i.options = host_module_options(d.path());
         assert_eq!(i.params("nvidia"), "NVreg_EnableGpuFirmware=0 NVreg_X=1");
         assert_eq!(i.params("nvidia_drm"), "modeset=1 fbdev=1");
+    }
+
+    #[test]
+    fn static_nodes_need_a_devname_and_a_fixed_major() {
+        let i = Index::parse(
+            Path::new("/x"),
+            "",
+            "\
+alias devname:uhid uhid
+alias char-major-10-239 uhid
+alias char-major-116-33 snd_timer
+alias devname:snd/timer snd-timer
+alias devname:loop-control loop
+alias block-major-7-* loop
+alias devname:vhost-net vhost_net
+alias devname:../etc/x evil
+alias char-major-10-1 evil
+alias devname:sr0 sr_mod
+alias block-major-11-0 sr_mod
+",
+            "",
+            "",
+            "",
+        );
+        let nodes = i.static_nodes();
+        let names: Vec<&str> = nodes.iter().map(|n| n.name.as_str()).collect();
+        assert_eq!(names, ["uhid", "snd/timer", "sr0"]);
+        let devs: Vec<_> = nodes.iter().map(|n| (n.block, n.major, n.minor)).collect();
+        assert_eq!(devs, [(false, 10, 239), (false, 116, 33), (true, 11, 0)]);
     }
 
     #[test]

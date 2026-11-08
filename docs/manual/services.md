@@ -20,7 +20,8 @@ and two for Bluetooth: `svc:dbus-system`, the system bus
 (`/run/dbus/system_bus_socket`, as `void`), and `svc:bluetooth`,
 BlueZ's `bluetoothd`. Pair a device with `bluetoothctl`: `power on`,
 `scan on`, then `pair`, `trust` and `connect` with its address;
-`devices` lists the known ones. Headphones then show in `wpctl status`.
+`devices` lists the known ones. Headphones then show in `wpctl status`;
+a game controller, keyboard or mouse on Bluetooth LE is an input device.
 
 Add a service on the box with `oath new` and `oath apply` (below), or
 at install time with an overlay (see [Catalog](catalog.md)).
