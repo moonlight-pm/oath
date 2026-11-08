@@ -373,7 +373,7 @@ answered.
 ### Minecraft: Prism Launcher (R74)
 
 `pkg:prismlauncher` is Prism Launcher, with `pkg:jre-21` (Java 21) and Qt 6, in
-no profile. `prismlauncher` starts it in a box: it sees its own folder
+no profile; each is on the origin as its own head. `prismlauncher` starts it in a box: it sees its own folder
 (`~/.local/share/PrismLauncher`), the display, sound, the GPU, pads and the
 network; not the rest of `/home`, and `sudo` does not work in it, so a mod
 cannot reach them. Mods and modpacks install from Modrinth and CurseForge in

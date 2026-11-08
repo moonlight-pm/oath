@@ -6,7 +6,8 @@ a root with no `/lib64` or `/usr`. It is the Minecraft half of phase 9
 ([roadmap](../roadmap.md), [scope.md](scope.md)); [steam.md](steam.md) is
 the other.
 
-**Status:** is, on koeurax since 2026-11-08 (generation 5, an overlay): Prism
+**Status:** is, on koeurax since 2026-11-08 (generation 5, each package its
+own head on the origin, in Sola's launcher as Minecraft): Prism
 starts in the box on Wayland and reaches the network over TLS, and in that box
 LWJGL 3.3.3 (the jars Minecraft 1.21.5 loads) opens GLFW on Xwayland, OpenGL on
 NVIDIA's driver and OpenAL through PipeWire. Will be: the game itself, which
@@ -95,7 +96,7 @@ keep the copy.
 
 - **Will be:** `pkg:jre-17` and `pkg:jre-25`.
 - **Will be:** a pad tested in a game (Controlify, through `/dev/input`).
-- **Will be:** an entry in the desk's launcher. Sola's list is its own
-  (`Application:` in `state.yaml`, set from Settings → Applications), and reads
+- **Is, per machine:** an entry in the desk's launcher. Sola's list is its own
+  (`Application:` in `state.yaml`, set from Settings → Applications) and reads
   no `share/applications`: command `/bin/prismlauncher`, its icon in the pack's
   `share/icons/hicolor/256x256/apps/`.

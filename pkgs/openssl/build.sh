@@ -1,8 +1,8 @@
 # libcrypto and libssl, shared, with headers and pkg-config, and the
 # openssl tool. OPENSSLDIR is the slot's ssl/: openssl.cnf, and cert.pem,
 # a link to pkg:curl's Mozilla bundle (both are in base), so programs
-# on this OpenSSL verify without SSL_CERT_FILE. No tests, docs or static
-# libraries.
+# on this OpenSSL verify without SSL_CERT_FILE. No tests, docs, static
+# libraries or CMake package (a pack's lib/ is linked into /lib).
 tar -xf "$SRC/$SOURCES"
 cd "openssl-$VERSION"
 perl Configure linux-x86_64 --prefix="$LIVE" --libdir=lib --openssldir="$LIVE/ssl" \
@@ -10,7 +10,7 @@ perl Configure linux-x86_64 --prefix="$LIVE" --libdir=lib --openssldir="$LIVE/ss
 make -j"$JOBS"
 make install_sw install_ssldirs DESTDIR=/tmp/dest
 cp -a "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" /out/
-rm -f /out/lib/*.a
+rm -rf /out/lib/*.a /out/lib/cmake
 mkdir -p /out/bin /out/ssl
 cp "/tmp/dest$LIVE/bin/openssl" /out/bin/
 cp "/tmp/dest$LIVE"/ssl/*.cnf /out/ssl/

@@ -29,11 +29,13 @@ Overwrite this file when facts change; do not append a diary.
   heads (novus's key) and takes Sola with releases. No time zone (UTC).
   Steam runs: Joshua played Terraria and Noita on 2026-11-08, on the GSP
   firmware, with no GPU errors.
-- **Minecraft (R74), generations 4 and 5, 2026-11-08:** overlays from master
+- **Minecraft (R74), generations 4 and 5, 2026-11-08:** from master
   (`certs`, `libxi`, `libxtst`, `libxcursor`, `jre-21`, `libarchive`,
   `libqrencode` from `24ca3bb`; `cmark`, `qtbase`, `qtsvg`, `qtimageformats`,
-  `qtnetworkauth`, `prismlauncher` `abdc5d15…` from `57dc661`). None is on the
-  origin, so nothing updates them. `~/.local/share/PrismLauncher` holds
+  `qtnetworkauth`, `prismlauncher` `abdc5d15…` from `57dc661`). Each is its own head
+  on the origin since that day, signed `oath@buccina`, so `oath update` keeps
+  them. Sola's launcher lists it as Minecraft (`Application:` in `state.yaml`,
+  `/bin/prismlauncher`). `~/.local/share/PrismLauncher` holds
   `prismlauncher.cfg` and the instance `fabulously-optimized` (1.21.5, Fabric
   Loader 0.16.14): the Modrinth profile "Fabulously Optimized (1)" from the
   Windows backup, its world "Creative" checked file for file against it. No
