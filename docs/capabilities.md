@@ -38,4 +38,4 @@ gaps · `target` designed, not built.
 | Desk (rivulet, Sola) | partial | Sola's apps; PipeWire, realtime, BlueZ; Noto; libglvnd, RADV or NVIDIA (R34); H.264, AAC (R40); shortcut inhibiting (R44). Gaps: other apps; Intel GPUs; the KVM's capture, pairing (R44) |
 | Wicket host | target | Left core (R1). |
 | `writ`, coding agent | partial | R64–R70: boxed agent; local model (CPU/GPU) or OpenRouter (`writ`, `check`, `use`, `apply`); buccina, novus. Gaps: long OpenRouter use, `oath` tool |
-| Steam + Minecraft desk | partial | Steam (R29): Valve's launcher, sandboxed; on canto and novus. Gaps: no game run yet, no pad; Minecraft |
+| Steam + Minecraft desk | partial | Steam (R29), sandboxed: canto, novus, koeurax; sees an Xbox pad. Minecraft packaged (R74). No game run yet |

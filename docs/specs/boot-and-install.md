@@ -383,7 +383,10 @@ publishes each output it checked, and each machine moves itself:
      `"re-executed"` when it did, `"runs"` when it was the output's), and
      what PID 1 does only at boot (mounts, modules, sysctls, device modes,
      `/etc`). The preview's `reboot` counts PID 1 only when the running
-     one cannot re-execute (`"pid1": "re-exec"`). Afterwards `oath update`
+     one cannot re-execute (`"pid1": "re-exec"`), and the kernel by
+     `pkg:linux`'s hash. Gap: the initrd's firmware is not counted, so a
+     release that moves only firmware says `"reboot": false` and the
+     firmware waits for a boot (koeurax's AX211, 2026-11-08). Afterwards `oath update`
      says whether PID 1 is the output's, and for that same release `sudo
      oath update --confirm` re-executes it into `/lib/oath/init` when
      that is the release's.

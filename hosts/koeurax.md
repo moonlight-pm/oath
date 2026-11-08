@@ -9,7 +9,9 @@ Overwrite this file when facts change; do not append a diary.
   SN7100 1 TB (`nvme0n1`, serial `24493B803192`; 512 MiB ESP + btrfs).
   A 3440-wide display. UEFI. No driver for its Intel Wi-Fi (`8086:7a70`).
   Its Bluetooth is the AX211's (USB `8087:0033`, firmware
-  `ibt-1040-0041`): controller up since 2026-11-08.
+  `ibt-1040-0041`): controller up since 2026-11-08. An Xbox Series pad
+  (`045E:0B13`, `A8:8C:3E:64:E6:B5`) is paired and trusted over Bluetooth
+  LE that day; Steam sees it, and no game has been seen using it.
 - **Network:** DHCP, 10.0.0.156 (MAC `60:cf:84:bc:ff:3e`, `net0`, wired
   `igc`). Reach: `ssh koeurax` from buccina (the router's DNS names it);
   `ssh:local` lists buccina's two keys. Its host key is not pinned in

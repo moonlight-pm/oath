@@ -15,8 +15,9 @@ find radeonsi and RADV. No game has run yet: canto's one try, Noita
 (32-bit Windows) on Proton Experimental on 2026-10-24, left a prefix
 that never finished ([canto](../../hosts/canto.md)). novus, the first
 NVIDIA machine, runs the same recipe since 2026-10-31 (its webhelper on
-NVIDIA's GL through ANGLE). Will be: a native Vulkan game, a 32-bit
-game and a Proton game run, controllers, a launcher entry.
+NVIDIA's GL through ANGLE), and koeurax since 2026-11-07. Will be: a
+native Vulkan game, a 32-bit game and a Proton game run, a controller in
+a game, a launcher entry.
 
 ## What Steam assumes
 
@@ -130,7 +131,9 @@ exists. Steam's settings change them afterwards.
 
 - **Will be:** a 32-bit game run (Valve suggests Floating Point:
   small, 32-bit, OpenGL).
-- **Will be:** a controller tested. The kernel has `uinput`, `joydev`,
+- **Is, 2026-11-08:** on koeurax an Xbox Series pad over Bluetooth LE
+  connects (`uhid`, `hid-microsoft`) and Steam sees it.
+- **Will be:** a controller used in a game. The kernel has `uinput`, `joydev`,
   `xpad`, `hid-steam`, `hid-nintendo`, `hid-microsoft` and
   `hid-playstation` (`pkg:linux` 333089ed, running on canto since
   2026-10-24); PID 1 gives `home` the pads' nodes and `/dev/uinput`

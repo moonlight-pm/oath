@@ -141,4 +141,5 @@ and browser on canto (R21; 2026-10-18; [specs/desk.md](specs/desk.md)).
 A desk for Joshua's daughter that launches Steam and runs Minecraft.
 Steam is on canto since 2026-10-23 (R29, [specs/steam.md](specs/steam.md)):
 Valve's launcher as a recipe in a sandbox, the 64-bit client; the
-32-bit stack and pads are being built. Minecraft needs a JVM.
+32-bit stack is built, and an Xbox pad connects (koeurax, 2026-11-08). Minecraft is Prism
+Launcher with Temurin's Java (R74, [specs/minecraft.md](specs/minecraft.md)), built, not yet run.

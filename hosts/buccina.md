@@ -31,8 +31,9 @@ Overwrite this file when facts change; do not append a diary.
   beside Joshua's `root@hub` and the Wicket deploy key.
   Agents install, update, reboot and wipe it without asking (Joshua,
   2026-10-26).
-- **Running now:** output `f612b200206c` (the 2026-11-05 audit's release; generation 173
-  on 2026-11-06), its overlays kept. Before it, `e73aa522ec58` (master `1678f60`,
+- **Running now:** output `6c8d38bd54c4` (the 2026-11-07 release, by the 2026-11-08 audit's
+  `oath update --confirm --reboot`; generation 174), in sync. Before it, `f612b200206c` (the
+  2026-11-05 audit's release; generation 173 on 2026-11-06), its overlays kept. Before it, `e73aa522ec58` (master `1678f60`,
   generation 166), from the audit's `oath update --confirm --reboot` on 2026-11-04: Linux 7.3.1 with its 12 io_uring
   patches, TIOCSTI off (R60), Landlock and Yama (R64), Codex 0.165.0, in sync, its overlays
   kept. Before it, `ca0f80bd441a` (master `75def41`, generation 162, 2026-11-03).

@@ -38,7 +38,7 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
 ## Modules and firmware (built)
 
 - The image ships every module the kernel config builds
-  (`modules.order`, 179 today), uncompressed, with depmod's index:
+  (`modules.order`, 260 today), uncompressed, with depmod's index:
   `modules.dep`, `modules.alias`, `modules.softdep`, `modules.builtin`.
   No list in the tree names a driver.
 - **Coldplug.** PID 1 walks `/sys/devices` for `modalias` files,

@@ -65,13 +65,13 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 7 November 2026 the current build passes all 70 test cases in QEMU (75 with the desk), <code>oath install</code> its rehearsal, and updates from the releases machines run; the desk's hardware cases passed on the Mac Pro on 22 October, and the hardware cases that apply to a headless Intel machine on 27 October; on 30 October <code>oath install</code> put it on an AMD desktop with an NVIDIA card, from a stick. Not there yet:</p>
+<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 8 November 2026 the current build passes all 70 test cases in QEMU (75 with the desk), <code>oath install</code> its rehearsal, and updates from the releases machines run; the desk's hardware cases passed on the Mac Pro on 22 October, and the hardware cases that apply to a headless Intel machine on 27 October; on 30 October <code>oath install</code> put it on an AMD desktop with an NVIDIA card, from a stick. Not there yet:</p>
 <ul>
 <li>Releases. x86-64 with UEFI is the only platform.</li>
 <li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures, and machines take only builds a key they trust signed (a release by the build host, a package by a key they trust for its name), but the index of the pack origin is not signed.</li>
 <li>More than one network interface. One is chosen at boot.</li>
 <li>Device node ownership as a catalog field.</li>
-<li>Desktop applications beyond Sola's terminal, Projects, browser and Design, and Steam: its 64-bit client runs on the Mac Pro and on an NVIDIA desk, but no game has run through it yet and gamepads are untested.</li>
+<li>Desktop applications beyond Sola's terminal, Projects, browser and Design, and Steam: its 64-bit client runs on the Mac Pro and on two NVIDIA desks and sees a Bluetooth Xbox pad, but no game has run through it yet.</li>
 </ul>
 <p>The work under way is in <a href="{{repository}}/blob/master/CURRENT.md">CURRENT.md</a>, the decisions behind it in <a href="{{repository}}/blob/master/docs/decisions.md">docs/decisions.md</a>, and what each part can do in <a href="{{repository}}/blob/master/docs/capabilities.md">docs/capabilities.md</a>.</p>
 </section>
