@@ -4,7 +4,7 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-11-06 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-11-07 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
 · decisions R1–R73 in [docs/decisions.md](docs/decisions.md)
 
