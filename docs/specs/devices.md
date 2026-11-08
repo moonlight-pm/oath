@@ -91,7 +91,8 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   sets the kernel's `firmware_class.path` to it, which the kernel
   searches before `/lib/firmware`. NVIDIA's closed driver finds its GSP
   firmware (`nvidia/595.104.02/gsp_ga10x.bin`) there and runs on it,
-  unless the machine turns it off (novus's `NVreg_EnableGpuFirmware=0`).
+  unless the machine turns it off (novus's `NVreg_EnableGpuFirmware=0`):
+  koeurax's RTX 4060 has run on it since 2026-11-08.
   A link whose package moved follows it at the next pass.
 - Firmware is `pkg:firmware`: linux-firmware blobs from tag 20260916,
   each pinned by sha256 in `pkgs/firmware/pkg.toml` (today tg3, SI

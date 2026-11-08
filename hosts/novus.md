@@ -145,7 +145,7 @@ Overwrite this file when facts change; do not append a diary.
   at 10.0.0.156 that Joshua is moving from Windows (ASUS ROG Strix
   B760-I, i5-13400 with its own graphics off in setup, 32 GB, a GeForce
   RTX 4060 `10de:2882`, wired `igc`; no driver for its Intel Wi-Fi
-  `8086:7a70`, no firmware for its Bluetooth `ibt-1040-0041`). Its base
+  `8086:7a70`). Its base
   write of earlier that day booted the machine to `Oath is running, with
   no driver for this NVIDIA display (10de:2882)`. Its host key is not
   pinned. Boot it from the firmware's boot menu (F8), from a back-panel
