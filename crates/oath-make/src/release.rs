@@ -74,6 +74,7 @@ pub fn make(o: &Output, dir: &Path) -> Result<Made> {
         pins: pins(o)?,
         seed: up::seed_ids(&o.dir).map_err(|e| anyhow::anyhow!("{e}"))?,
         kernel: kernel(&manifest),
+        firmware: firmware(&manifest),
         repo: repo(),
         packs: packs(o, &manifest)?,
     };
@@ -186,6 +187,11 @@ pub(crate) fn pins(o: &Output) -> Result<BTreeMap<String, String>> {
 /// The tree of the kernel `manifest`'s output boots.
 pub(crate) fn kernel(manifest: &Value) -> Option<String> {
     manifest["packs"]["linux"]["hash"].as_str().map(String::from)
+}
+
+/// The firmware it boots with: `pkg:firmware`'s hash, from the manifest.
+pub(crate) fn firmware(manifest: &Value) -> Option<String> {
+    manifest["packs"]["firmware"]["hash"].as_str().map(String::from)
 }
 
 /// What a release says of each package beside its pin: its version and

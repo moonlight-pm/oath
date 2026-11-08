@@ -27,4 +27,5 @@ Overwrite this file when facts change; do not append a diary.
   `plan:steam` (`pkg:steam`), 2 set `host:local`, 3 the update.
   `host:local.publishers` is buccina's key alone, so it refuses Sola's own
   heads (novus's key) and takes Sola with releases. No time zone (UTC).
-  Steam runs, and has run a game (SteamWorld Dig 2 left its save folder).
+  Steam runs: Joshua played Terraria and Noita on 2026-11-08, on the GSP
+  firmware, with no GPU errors.

@@ -345,10 +345,9 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     let generation = result?;
     oath_core::write_json(&root.join(up::RECORD), &release)?;
     record_heads(root, cat, &offers)?;
-    let kernel = match current.as_ref() {
-        Some(c) if c.kernel.is_some() && c.kernel == release.kernel => "runs",
-        _ => "next-boot",
-    };
+    let at_boot = |moves: bool| if moves { "next-boot" } else { "runs" };
+    let kernel = at_boot(up::kernel_moves(current.as_ref(), &release));
+    let firmware = at_boot(up::firmware_moves(current.as_ref(), &release));
     let pid1 = match (old_init == release.init, reexec) {
         (true, _) => "runs",
         (false, true) => "re-executed",
@@ -377,13 +376,9 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
                  modules, sysctls, device modes, /etc, waits for the next boot)",
             );
         }
-        match (kernel, pid1) {
-            ("next-boot", "next-boot") => {
-                text.push_str("; reboot to run its kernel, initrd and PID 1")
-            }
-            ("next-boot", _) => text.push_str("; reboot to run its kernel and initrd"),
-            (_, "next-boot") => text.push_str("; reboot to run its PID 1"),
-            _ => {}
+        if let Some(wait) = next_boot(kernel, firmware, pid1) {
+            text.push_str("; ");
+            text.push_str(wait);
         }
         finish(
             &opts,
@@ -392,11 +387,26 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
                 "generation": generation,
                 "pid1": pid1,
                 "kernel": kernel,
+                "firmware": firmware,
             }),
             &text,
         );
     }
     Ok(0)
+}
+
+/// What an update left for the next boot, as a person reads it. A new
+/// kernel's initrd says the firmware too.
+fn next_boot(kernel: &str, firmware: &str, pid1: &str) -> Option<&'static str> {
+    let waits = |s: &str| s == "next-boot";
+    match (waits(kernel), waits(firmware), waits(pid1)) {
+        (true, _, true) => Some("reboot to run its kernel, initrd and PID 1"),
+        (true, _, false) => Some("reboot to run its kernel and initrd"),
+        (false, true, true) => Some("reboot to load its firmware and run its PID 1"),
+        (false, true, false) => Some("reboot to load its firmware"),
+        (false, false, true) => Some("reboot to run its PID 1"),
+        (false, false, false) => None,
+    }
 }
 
 /// Re-execute PID 1 into `bin` when it is the PID 1 hashed `init` (R73):
@@ -462,14 +472,15 @@ fn preview(
     };
     let moved = |m: &Move| m.to().is_some_and(|to| pin(m.name()) != Some(to));
     // A new PID 1 alone takes no reboot when this one re-executes (R73).
-    let kernel_moves = !current.is_some_and(|c| c.kernel.is_some() && c.kernel == release.kernel);
+    let kernel_moves = up::kernel_moves(current, release);
+    let firmware_moves = up::firmware_moves(current, release);
     let runs = live::init_hash().ok().or_else(|| current.map(|c| c.init.clone()));
     let pid1 = match runs {
         Some(h) if h == release.init => "runs",
         _ if live::can_reexec() => "re-exec",
         _ => "next-boot",
     };
-    let reboot = kernel_moves || pid1 == "next-boot";
+    let reboot = kernel_moves || firmware_moves || pid1 == "next-boot";
     let probation = moves.iter().any(|m| {
         let runs_sshd = services
             .get(m.name())
@@ -529,6 +540,7 @@ fn preview(
         "from": from,
         "moves": list,
         "reboot": reboot,
+        "firmware": if firmware_moves { "next-boot" } else { "runs" },
         "pid1": pid1,
         "probation": probation,
         "release": release,
@@ -1615,6 +1627,19 @@ pub(crate) fn extra_options(current: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn what_waits_for_a_boot_is_said() {
+        let (w, r) = ("next-boot", "runs");
+        assert_eq!(next_boot(r, r, r), None);
+        assert_eq!(next_boot(r, w, r), Some("reboot to load its firmware"));
+        assert_eq!(next_boot(r, w, w), Some("reboot to load its firmware and run its PID 1"));
+        assert_eq!(next_boot(r, r, "re-executed"), None);
+        assert_eq!(next_boot(r, w, "re-executed"), Some("reboot to load its firmware"));
+        assert_eq!(next_boot(w, w, r), Some("reboot to run its kernel and initrd"));
+        assert_eq!(next_boot(w, r, w), Some("reboot to run its kernel, initrd and PID 1"));
+        assert_eq!(next_boot(r, r, w), Some("reboot to run its PID 1"));
+    }
 
     #[test]
     fn esp_is_partition_one_of_the_root_disk() {

@@ -20,7 +20,7 @@ append history (git has it).
    a pre-R73 PID 1 still reboot. Released 2026-11-07 from `7597cc1`: `desk` `6c8d38bd54c4` (Sola
    `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too), on novus and buccina, and `base`
    `ee3e239caa32`, on dulcia; canto runs its unpublished successor `06e0194eb4f3`. novus, canto and dulcia trust key `oath@novus` for `names="sola,sola-*"`;
-   buccina and koeurax do not yet. The newest `desk` release is `f997e9baf436` (2026-11-08, from `89cc9eb`: `/dev/uhid` and the other static nodes, AX211 Bluetooth firmware, packages' firmware), on koeurax; no `base` went with it. Gaps: a changed `svc` spec goes by hand; a release that moves only the initrd's firmware says no reboot.
+   buccina and koeurax do not yet. The newest `desk` release is `f997e9baf436` (2026-11-08, from `89cc9eb`: `/dev/uhid` and the other static nodes, AX211 Bluetooth firmware, packages' firmware), on koeurax; no `base` went with it. Gap: a changed `svc` spec goes by hand.
    Next: the key on buccina; Sola's publish runs `oath publish` (its branch
    `oath-heads`, sandbox builds, waits on Joshua's merge); then slices 2 (packaged services) and 4
    (Oath's own heads).
@@ -31,7 +31,7 @@ append history (git has it).
    core `pkg:sola`, fifteen `pkg:sola-<app>` (`pkg:sola-oath`, the read-only package app, new), `svc:sola-vault`;
    until a machine runs R72, a pin moves PID 1's hash and takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus has `["3554:f510"]` (generation 99). Novus runs the release's Sola builds but `pkg:sola-browser` (next@33d869a8, kept: a plain update drops it). Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
-   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs, no game confirmed yet; on koeurax it sees an Xbox pad over Bluetooth LE. Minecraft (R74, [docs/specs/minecraft.md](docs/specs/minecraft.md)): built on buccina 2026-11-07, not yet run. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad); Minecraft on koeurax.
+   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs; on koeurax Joshua played Terraria and Noita on 2026-11-08, and it sees an Xbox pad over Bluetooth LE. Minecraft (R74, [docs/specs/minecraft.md](docs/specs/minecraft.md)): built on buccina 2026-11-07, not yet run. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad); Minecraft on koeurax.
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
    PostGIS, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
    profile (R52), on the origin since `c9735fc14e50` (`cloudflared` since 2026-11-03). They run as `work`, which has no `sudo`. Bias against

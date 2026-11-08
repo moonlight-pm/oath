@@ -90,6 +90,10 @@ pub struct Release {
     /// the initrd, so `pins` does not name it).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub kernel: Option<String>,
+    /// The firmware it boots with (`pkg:firmware`'s tree, which ships in the
+    /// initrd alone, so `pins` does not name it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub firmware: Option<String>,
     /// The repository `commit` is in, as `https://<host>/<owner>/<name>`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub repo: Option<String>,
@@ -180,12 +184,25 @@ pub fn source_label(doc: &Value) -> Option<String> {
     Some(s.label())
 }
 
-/// Whether moving from `ran` to `next` takes a reboot to run: its PID 1 or
-/// kernel differs, or the record of the one it runs does not say which
-/// kernel that is.
+/// Whether `next` boots another kernel than `ran`, or the record of the
+/// one it runs does not say which kernel that is.
+pub fn kernel_moves(ran: Option<&Release>, next: &Release) -> bool {
+    !ran.is_some_and(|r| r.kernel.is_some() && r.kernel == next.kernel)
+}
+
+/// Whether `next` boots with other firmware than `ran`, or the record of
+/// the one it runs does not say (a release from before 2026-11-08).
+/// Firmware is in the initrd, so a driver only gets it at a boot.
+pub fn firmware_moves(ran: Option<&Release>, next: &Release) -> bool {
+    !ran.is_some_and(|r| r.firmware.is_some() && r.firmware == next.firmware)
+}
+
+/// Whether moving from `ran` to `next` takes a reboot to run: its PID 1,
+/// kernel or firmware differs, or the record of the one it runs does not
+/// say which that is.
 pub fn takes_reboot(ran: Option<&Release>, next: &Release) -> bool {
-    let Some(ran) = ran else { return true };
-    ran.init != next.init || ran.kernel.is_none() || ran.kernel != next.kernel
+    let Some(r) = ran else { return true };
+    r.init != next.init || kernel_moves(ran, next) || firmware_moves(ran, next)
 }
 
 /// Whether `ran`, the release this machine runs, is newer than `next`: by
@@ -780,6 +797,7 @@ mod tests {
             pins: BTreeMap::new(),
             seed: Vec::new(),
             kernel: None,
+            firmware: None,
             repo: None,
             packs: BTreeMap::new(),
         }
@@ -1212,19 +1230,27 @@ mod tests {
     }
 
     #[test]
-    fn a_new_kernel_or_pid_1_takes_a_reboot() {
+    fn a_new_kernel_firmware_or_pid_1_takes_a_reboot() {
         let mut a = release("2026-11-01T00:00:00Z", None);
         a.kernel = Some(A.into());
+        a.firmware = Some(A.into());
         let mut b = a.clone();
         assert!(!takes_reboot(Some(&a), &b));
         b.kernel = Some(B.into());
         assert!(takes_reboot(Some(&a), &b), "another kernel");
         b.kernel = a.kernel.clone();
+        b.firmware = Some(B.into());
+        assert!(takes_reboot(Some(&a), &b), "another firmware");
+        assert!(firmware_moves(Some(&a), &b) && !kernel_moves(Some(&a), &b));
+        b.firmware = a.firmware.clone();
         b.init = B.into();
         assert!(takes_reboot(Some(&a), &b), "another PID 1");
         b.init = a.init.clone();
+        a.firmware = None;
+        assert!(takes_reboot(Some(&a), &b), "a record that does not say its firmware");
+        a.firmware = b.firmware.clone();
         a.kernel = None;
-        assert!(takes_reboot(Some(&a), &b), "a record that does not say");
+        assert!(takes_reboot(Some(&a), &b), "a record that does not say its kernel");
         assert!(takes_reboot(None, &b), "no record");
     }
 }

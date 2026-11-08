@@ -379,14 +379,15 @@ publishes each output it checked, and each machine moves itself:
      records the release in `/oath/output.json`.
   6. With `--reboot`, reboots. Without it, the update says what waits
      for a boot: the kernel when it moved (`"kernel": "next-boot"` in
-     `--json`), PID 1 when it did not re-execute (`"pid1": "next-boot"`;
+     `--json`), the firmware in the initrd when it moved (`"firmware":
+     "next-boot"`), PID 1 when it did not re-execute (`"pid1": "next-boot"`;
      `"re-executed"` when it did, `"runs"` when it was the output's), and
      what PID 1 does only at boot (mounts, modules, sysctls, device modes,
-     `/etc`). The preview's `reboot` counts PID 1 only when the running
-     one cannot re-execute (`"pid1": "re-exec"`), and the kernel by
-     `pkg:linux`'s hash. Gap: the initrd's firmware is not counted, so a
-     release that moves only firmware says `"reboot": false` and the
-     firmware waits for a boot (koeurax's AX211, 2026-11-08). Afterwards `oath update`
+     `/etc`). The preview's `reboot` counts the kernel and the firmware,
+     by the hashes of `pkg:linux` and `pkg:firmware` a release records,
+     and PID 1 only when the running one cannot re-execute (`"pid1":
+     "re-exec"`). A record that does not name them (a release from before
+     2026-11-08 has no firmware hash) counts as moved. Afterwards `oath update`
      says whether PID 1 is the output's, and for that same release `sudo
      oath update --confirm` re-executes it into `/lib/oath/init` when
      that is the release's.

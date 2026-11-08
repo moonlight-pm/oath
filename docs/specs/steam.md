@@ -11,13 +11,14 @@ packages (`pkg:gcc` with `-m32`, glibc, Mesa and 15 libraries). Valve's
 64-bit client installs and updates itself in the sandbox and is signed
 in; its webhelper renders on the GPU (ANGLE on radeonsi, Mesa 26.2.5);
 its container imports both Mesas, and its 32-bit GL and Vulkan probes
-find radeonsi and RADV. No game has run yet: canto's one try, Noita
-(32-bit Windows) on Proton Experimental on 2026-10-24, left a prefix
-that never finished ([canto](../../hosts/canto.md)). novus, the first
+find radeonsi and RADV. Canto's one try at a game, Noita (32-bit
+Windows) on Proton Experimental on 2026-10-24, left a prefix that never
+finished ([canto](../../hosts/canto.md)). On koeurax, on NVIDIA, Joshua
+played Terraria and Noita on 2026-11-08: "working fine". novus, the first
 NVIDIA machine, runs the same recipe since 2026-10-31 (its webhelper on
 NVIDIA's GL through ANGLE), and koeurax since 2026-11-07. Will be: a
-native Vulkan game, a 32-bit game and a Proton game run, a controller in
-a game, a launcher entry.
+native Vulkan game and a 32-bit Linux game run, a controller in a game,
+a launcher entry.
 
 ## What Steam assumes
 
