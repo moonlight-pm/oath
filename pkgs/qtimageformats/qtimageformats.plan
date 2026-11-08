@@ -137,7 +137,7 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
     },
     {
       "id": "pkg:qtimageformats-src",
@@ -179,7 +179,7 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
     }
   ]
 }
@@ -232,4 +232,5 @@ DESTDIR=/tmp/dest cmake --install build
 cp -a "/tmp/dest$LIVE/." /out/
 [ -f /out/plugins/imageformats/libqwebp.so ]
 find /out/plugins/imageformats -type f ! -name libqwebp.so -delete
-find /out/lib/cmake -name 'Qt6Q*Plugin*.cmake' ! -name 'Qt6QWebpPlugin*' -delete
+find /out/share/cmake -name 'Qt6Q*Plugin*.cmake' ! -name 'Qt6QWebpPlugin*' -delete
+[ ! -e /out/lib/cmake ]

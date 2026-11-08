@@ -14,4 +14,5 @@ DESTDIR=/tmp/dest cmake --install build
 cp -a "/tmp/dest$LIVE/." /out/
 [ -f /out/plugins/imageformats/libqwebp.so ]
 find /out/plugins/imageformats -type f ! -name libqwebp.so -delete
-find /out/lib/cmake -name 'Qt6Q*Plugin*.cmake' ! -name 'Qt6QWebpPlugin*' -delete
+find /out/share/cmake -name 'Qt6Q*Plugin*.cmake' ! -name 'Qt6QWebpPlugin*' -delete
+[ ! -e /out/lib/cmake ]

@@ -25,7 +25,7 @@
     },
     {
       "id": "pkg:cmark",
-      "hash": "sha256-4cd35891f804ff1386a32a4af2d5a36ef1600e3d1d6f495689185faae717caab"
+      "hash": "sha256-9a6333a6c6d6fd09c21b4f5b40a8d7e0594e104a1c62ff61f20c59ecdaae0cdf"
     },
     {
       "id": "pkg:coreutils",
@@ -181,15 +181,15 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
     },
     {
       "id": "pkg:qtnetworkauth",
-      "hash": "sha256-0a9f91df885fc3e8b2359e62865841c359ac37162527f274929dc5364fd2c3e8"
+      "hash": "sha256-c95b729c0151719fd28b49ef06146a00581ed604a4eae8fe65e5b08ef08e52f9"
     },
     {
       "id": "pkg:qtsvg",
-      "hash": "sha256-3b51ab31532386d9d5760c4708b270f3ccd06f3513ba1bb5f928695901b6de20"
+      "hash": "sha256-7d92d10d4f3b1d082cfeb8ab381783dbed201fe1ef4a40315f8d711077257f7a"
     },
     {
       "id": "pkg:sed",
@@ -235,7 +235,7 @@
     },
     {
       "id": "pkg:cmark",
-      "hash": "sha256-4cd35891f804ff1386a32a4af2d5a36ef1600e3d1d6f495689185faae717caab"
+      "hash": "sha256-9a6333a6c6d6fd09c21b4f5b40a8d7e0594e104a1c62ff61f20c59ecdaae0cdf"
     },
     {
       "id": "pkg:gcc",
@@ -299,19 +299,19 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
     },
     {
       "id": "pkg:qtimageformats",
-      "hash": "sha256-fbb548b0e9587bad80cc1cf97b4bbfc1994abbcc9d5f86efc5bcca78dcbb6276"
+      "hash": "sha256-5eda5f8cdfd771ee9bb4e7ac12250f23aba48b1f1af51f0e12f37503f4028e6a"
     },
     {
       "id": "pkg:qtnetworkauth",
-      "hash": "sha256-0a9f91df885fc3e8b2359e62865841c359ac37162527f274929dc5364fd2c3e8"
+      "hash": "sha256-c95b729c0151719fd28b49ef06146a00581ed604a4eae8fe65e5b08ef08e52f9"
     },
     {
       "id": "pkg:qtsvg",
-      "hash": "sha256-3b51ab31532386d9d5760c4708b270f3ccd06f3513ba1bb5f928695901b6de20"
+      "hash": "sha256-7d92d10d4f3b1d082cfeb8ab381783dbed201fe1ef4a40315f8d711077257f7a"
     },
     {
       "id": "pkg:vulkan-loader",

@@ -2,7 +2,8 @@
 # moc, rcc, uic) and plugins/ (platforms/libqwayland.so, tls/, imageformats/).
 # Not relocatable: Qt finds its plugins and data at $LIVE, not beside wherever
 # a link to its library is. Other Qt modules install into their own packs; a
-# program names their plugins/ in QT_PLUGIN_PATH.
+# program names their plugins/ in QT_PLUGIN_PATH. Its CMake files are in
+# share/cmake: a pack's lib/ is linked into /lib, which has one lib/cmake.
 tar -xf "$SRC/$SOURCES"
 cd "qtbase-everywhere-src-$VERSION"
 # CA roots: pkg:certs' list first, then the files Qt reads under /etc.
@@ -15,6 +16,7 @@ prefixes=$(printf %s "$PKG_CONFIG_PATH" | tr : '\n' | sed 's|/lib/pkgconfig$||' 
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$LIVE" \
 	-DCMAKE_PREFIX_PATH="$prefixes" \
 	-DQT_BUILD_EXAMPLES=OFF -DQT_BUILD_TESTS=OFF -DQT_BUILD_BENCHMARKS=OFF -DFEATURE_relocatable=OFF \
+	-DINSTALL_CMAKEDIR=share/cmake -DFEATURE_androiddeployqt=OFF -DFEATURE_wasmdeployqt=OFF \
 	-DFEATURE_xcb=OFF -DFEATURE_xlib=OFF -DFEATURE_wayland=ON -DFEATURE_wayland_server=OFF \
 	-DFEATURE_egl=ON -DINPUT_opengl=desktop -DFEATURE_vulkan=OFF \
 	-DFEATURE_eglfs=OFF -DFEATURE_linuxfb=OFF -DFEATURE_vnc=OFF -DFEATURE_vkkhrdisplay=OFF \
@@ -31,6 +33,7 @@ grep -q '^QT_FEATURE_xcb:INTERNAL=OFF' build/CMakeCache.txt
 cmake --build build -j"$JOBS"
 DESTDIR=/tmp/dest cmake --install build
 cp -a "/tmp/dest$LIVE/." /out/
+[ ! -e /out/lib/cmake ] && [ -f /out/share/cmake/Qt6/Qt6Config.cmake ]
 [ -f /out/plugins/platforms/libqwayland.so ]
 [ -f /out/plugins/tls/libqopensslbackend.so ]
 "/out/bin/qtpaths" --query QT_INSTALL_PLUGINS | grep -qx "$LIVE/plugins"

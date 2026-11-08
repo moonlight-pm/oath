@@ -137,7 +137,7 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
     },
     {
       "id": "pkg:qtnetworkauth-src",
@@ -179,7 +179,7 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-c2013f2bf84219ef6eefabb4201c3dafe8bacd4ef8d4e6b88946bbea19888e85"
+      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
     }
   ]
 }
@@ -227,3 +227,4 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="
 cmake --build build -j"$JOBS"
 DESTDIR=/tmp/dest cmake --install build
 cp -a "/tmp/dest$LIVE/." /out/
+[ ! -e /out/lib/cmake ]

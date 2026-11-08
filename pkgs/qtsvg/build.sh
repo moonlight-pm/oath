@@ -9,4 +9,4 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="
 cmake --build build -j"$JOBS"
 DESTDIR=/tmp/dest cmake --install build
 cp -a "/tmp/dest$LIVE/." /out/
-[ -f /out/plugins/iconengines/libqsvgicon.so ] && [ -f /out/plugins/imageformats/libqsvg.so ]
+[ ! -e /out/lib/cmake ] && [ -f /out/plugins/iconengines/libqsvgicon.so ] && [ -f /out/plugins/imageformats/libqsvg.so ]
