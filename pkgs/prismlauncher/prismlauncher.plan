@@ -367,6 +367,9 @@ OATH_EOF
 # its own release artifacts), no Java downloader, no tests.
 tar -xf "$SRC/PrismLauncher-$VERSION.tar.gz"
 cd "PrismLauncher-$VERSION"
+# The same bytes from every build: Qt's rcc and CMake's build date read this,
+# the release's own time, as the tarball has it before anything below edits it.
+export SOURCE_DATE_EPOCH=$(stat -c %Y CMakeLists.txt)
 nbt=3538933614059f0f44388a2b16f3db25ce42285b
 rmdir libraries/libnbtplusplus
 tar -xf "$SRC/libnbtplusplus-$nbt.tar.gz" -C libraries
@@ -406,6 +409,19 @@ mkdir -p /out/libexec /out/bin /out/share
 cp -a "/tmp/dest$d" /out/libexec/
 p=/out/libexec/prismlauncher
 [ -f "$p/share/PrismLauncher/NewLaunch.jar" ] && [ -f "$p/share/PrismLauncher/JavaCheck.jar" ]
+# CMake's jar stamps each entry with this build's time, and jar reads no
+# SOURCE_DATE_EPOCH: pack each again, sorted, at the release's.
+when=$(date -u -d "@$SOURCE_DATE_EPOCH" +%Y-%m-%dT%H:%M:%SZ)
+for j in "$p"/share/PrismLauncher/*.jar; do
+	rm -rf /tmp/jar
+	mkdir /tmp/jar
+	(
+		cd /tmp/jar
+		"$JAVA_HOME/bin/jar" --extract --file "$j"
+		"$JAVA_HOME/bin/jar" --create --file "$j" --manifest META-INF/MANIFEST.MF --date "$when" \
+			$(find . -type f ! -path ./META-INF/MANIFEST.MF | LC_ALL=C sort)
+	)
+done
 for s in applications icons metainfo mime; do
 	[ -d "$p/share/$s" ] && mv "$p/share/$s" /out/share/
 done

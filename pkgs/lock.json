@@ -1524,8 +1524,8 @@
     "version": "11.1.1",
     "license": "GPL-3.0-only AND Apache-2.0 AND LGPL-3.0-or-later AND MIT",
     "by": "plan",
-    "plan": "sha256-1e8dc255f37822699fc6f97262163b6a5742af3b72934c1c24f6bde49fa08556",
-    "product": "sha256-d1114dc9b6a5f029d90d3f97542d98c739ec343ab993e425af0ef400c34d00d1",
+    "plan": "sha256-042977cd764f05062b0fa83bb39d14ddacf8dc6dee2b4a40b186813b9ea52843",
+    "product": "sha256-0b9923835fdb2ebebaccc053b39ce93b10350a4a99fa84b7d1706bcefb39041e",
     "run": [
       "gcc",
       "qtbase",
