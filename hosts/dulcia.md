@@ -22,9 +22,10 @@ Overwrite this file when facts change; do not append a diary.
   ([novus.md](novus.md)), then renamed from `oath` (generation 1).
   Agents change it at Joshua's word: AGENTS.md does not list it with
   canto and buccina. Wicket runs here as `work` (read 2026-11-09):
-  `svc:wicket` and its siblings, and 13 workloads `svc:wl-*`, each a
+  `svc:wicket` and its siblings, and 10 workloads `svc:wl-*`, each a
   cell started by `/bin/wicket`, from images in a registry cell on
-  127.0.0.1:5000.
+  127.0.0.1:5000. `svc:wl-b6703b0fa806-web`, the retired `oath`
+  workload (R79), is stopped until `wicketctl services install` removes it.
 - **Running now:** `base` release `ee3e239caa32` (master `7597cc1`,
   R72 and R73), generation 6, in sync: 5 from `sudo oath update --confirm
   --reboot` on 2026-11-07 (only `pkg:oath` moved), 6 put novus's key in
