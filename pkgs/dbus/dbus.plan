@@ -81,7 +81,7 @@
     },
     {
       "id": "pkg:openssl",
-      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
+      "hash": "sha256-422281b69047b884063bec0c4be9e61f8bb9002814edc29105cab39c0c095fd9"
     },
     {
       "id": "pkg:patch",
