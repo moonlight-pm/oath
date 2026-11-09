@@ -87,7 +87,7 @@
   "run_needs": [
     {
       "id": "pkg:certs",
-      "hash": "sha256-dd0052627dd1192b25e0e5b588b1df4ba561d022d57725c986025dfbf532f111"
+      "hash": "sha256-55a5c52e35c515c496a70a5ac439dbc3babd26f8080961e3be84ae35e572b507"
     }
   ]
 }
