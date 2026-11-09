@@ -254,8 +254,10 @@ cargo make audit [--offline] [--name <pkg>] [--upstream]
   against upstream's newest stable release; writes
   build/audit/latest.json (R48). svc:audit (buccina, schedule 0 0 * * *)
   runs check/audit/run: claude -p with the oath-audit skill and
-  check/audit/settings.json in check/audit/box (R77), then lands its
-  commits, pushes and publishes outside it; the report mailed through Resend
+  check/audit/settings.json in check/audit/box (R77: build/audit/repo holds
+  its .git, build/audit/claude its Claude state, ~/.config/oath/claude-token
+  its login), then lands its commits, pushes and publishes outside it (lock
+  and take-later in ~/.local/share/oath-audit); the report mailed through Resend
   (~/.config/oath/mail.env), then oath update --confirm --reboot when it
   published
 cargo make check
