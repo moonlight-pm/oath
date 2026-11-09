@@ -44,8 +44,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Pack the image into a build output, `build/out/<id>/` (needs sudo
-    /// for the loop-mount). An unchanged tree reuses its output.
+    /// Pack the image into a build output, `build/out/<id>/`. An unchanged
+    /// tree reuses its output.
     Build {
         /// Seed profile (`base`: headless, reached over SSH).
         #[arg(long, default_value = oath_core::DEFAULT_PROFILE)]
@@ -53,19 +53,19 @@ enum Cmd {
     },
     /// Interactive serial QEMU; writes build/runs/<id>/.
     Run {
-        /// Pack the image first (sudo for the loop-mount).
+        /// Pack the image first.
         #[arg(long)]
         build: bool,
     },
     /// Headless QEMU in the foreground. Serial in the run log. Ctrl-C kills the VM.
     Up {
-        /// Pack the image first (sudo for the loop-mount).
+        /// Pack the image first.
         #[arg(long)]
         build: bool,
     },
     /// Headless QEMU in the background. Serial in the run log.
     Start {
-        /// Pack the image first (sudo for the loop-mount).
+        /// Pack the image first.
         #[arg(long)]
         build: bool,
     },
@@ -75,7 +75,7 @@ enum Cmd {
     /// A clean run is required before `install`. With `--target`, run the
     /// `metal` cases on an installed machine instead.
     Check {
-        /// Pack the image first (sudo for the loop-mount).
+        /// Pack the image first.
         #[arg(long)]
         build: bool,
         /// Run only these cases.

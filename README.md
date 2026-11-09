@@ -72,14 +72,13 @@ Maturity: [docs/capabilities.md](docs/capabilities.md). Manual:
 ## Build
 
 Needs Rust (for `oath-make`), Nix (for
-stage 0's host compilers, and QEMU), sudo (to loop-mount
-the image) and `mkfs.btrfs`. Details: [docs/manual/build.md](docs/manual/build.md).
+stage 0's host compilers, and QEMU) and `mkfs.btrfs`. Details: [docs/manual/build.md](docs/manual/build.md).
 
 ```sh
 cargo test
 cargo make bootstrap             # the toolchain, once (an hour or more)
 cargo make pkgs                  # every package in pkgs/ (the kernel too), from source
-cargo make build                 # headless base image (sudo for the loop mount)
+cargo make build                 # headless base image
 cargo make check                 # the QEMU harness
 cargo make run                   # serial console in this terminal
 cargo make up | start | ssh | stop

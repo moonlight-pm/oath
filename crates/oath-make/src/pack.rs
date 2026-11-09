@@ -14,7 +14,7 @@ use serde_json::json;
 use crate::cpio;
 use crate::output::{self, Output};
 use crate::tools::Tools;
-use crate::util::{chmod_exec, copy_file, copy_tree, run, run_out, sudo};
+use crate::util::{chmod_exec, copy_file, copy_tree, run, run_out};
 
 /// The boot initrd's one program besides PID 1 (static): the shell PID 1
 /// falls back to.
@@ -321,47 +321,35 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     write_categories(&oath_root, &all)?;
     settle_pkg_applied(&oath_root)?;
 
-    eprintln!(">> rootfs (btrfs subvol @) — loop-mount needs root");
+    eprintln!(">> rootfs (btrfs subvol @)");
     let raw = dir.join("root.raw");
     let qcow = dir.join("oath.qcow2");
     let _ = fs::remove_file(&raw);
     let _ = fs::remove_file(&qcow);
     run(Command::new(&tools.qemu_img).args(["create", "-f", "raw", raw.to_str().unwrap(), "4G"]))?;
-    run(Command::new("mkfs.btrfs").args(["-q", "-L", "oath", raw.to_str().unwrap()]))?;
-    let mnt = dir.join("mnt");
+    // mkfs fills the image from a directory, so nothing is mounted and no root
+    // is needed: `@` is the stage, and mapped to root, this user's files are
+    // root's in the image. /home and its .ssh are the only others, and PID 1
+    // gives them to `home` at every boot.
     let rootfs = dir.join("rootfs");
-    fs::create_dir_all(&mnt)?;
+    let subvol = rootfs.join("@");
     fs::create_dir_all(&rootfs)?;
-    // A `mount` early on PATH may not understand `subvol=@`. Use the
-    // host's util-linux wrappers.
-    let mount = host_mount();
-    let umount = host_umount();
-    sudo(&[mount.as_str(), "-o", "loop", raw.to_str().unwrap(), mnt.to_str().unwrap()])?;
-    let mount_ok = (|| -> Result<()> {
-        sudo(&["btrfs", "subvolume", "create", mnt.join("@").to_str().unwrap()])?;
-        sudo(&[umount.as_str(), mnt.to_str().unwrap()])?;
-        sudo(&[
-            mount.as_str(),
-            "-o",
-            "loop,subvol=@",
-            raw.to_str().unwrap(),
-            rootfs.to_str().unwrap(),
-        ])?;
-        let stage_dot = format!("{}/.", stage.display());
-        sudo(&["cp", "-a", &stage_dot, &format!("{}/", rootfs.display())])?;
-        sudo(&["chown", "-R", "0:0", rootfs.to_str().unwrap()])?;
-        sudo(&[
-            "chown",
-            "-R",
-            &format!("{}:{}", oath_core::seat::UID, oath_core::seat::GID),
-            rootfs.join("home").to_str().unwrap(),
-        ])?;
-        sudo(&["chmod", "4755", rootfs.join("lib/oath/sudo").to_str().unwrap()])?;
-        sudo(&[umount.as_str(), rootfs.to_str().unwrap()])?;
-        Ok(())
-    })();
-    let _ = sudo(&[umount.as_str(), mnt.to_str().unwrap()]);
-    mount_ok?;
+    fs::rename(&stage, &subvol)?;
+    let made = run(Command::new("unshare").args(["--map-root-user", "mkfs.btrfs"]).args([
+        "-q",
+        "-L",
+        "oath",
+        "--rootdir",
+        rootfs.to_str().unwrap(),
+        "--subvol",
+        "rw:@",
+        "-f",
+        raw.to_str().unwrap(),
+    ]));
+    fs::rename(&subvol, &stage)?;
+    made?;
+    // Setuid in the image only; this copy stays in the output as this user's.
+    fs::set_permissions(stage.join("lib/oath/sudo"), fs::Permissions::from_mode(0o755))?;
     run(Command::new(&tools.qemu_img).args([
         "convert",
         "-f",
@@ -372,9 +360,6 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
         qcow.to_str().unwrap(),
     ]))?;
     let _ = fs::remove_file(&raw);
-    let uid = format!("{}", nix_uid());
-    let gid = format!("{}", nix_gid());
-    let _ = sudo(&["chown", "-R", &format!("{uid}:{gid}"), dir.to_str().unwrap()]);
     let bz = dir.join("bzImage");
     let _ = fs::remove_file(&bz);
     copy_file(&tools.kernel, &bz)?;
@@ -1178,37 +1163,6 @@ fn pack_tar(cache: &Path, name: &str, hash: &str) -> Result<PathBuf> {
         write_pack_tar(&cache.join("pkg").join(name).join(hash), &tar)?;
     }
     Ok(tar)
-}
-
-fn host_mount() -> String {
-    for p in ["/run/wrappers/bin/mount", "/usr/bin/mount"] {
-        if Path::new(p).is_file() {
-            return p.to_string();
-        }
-    }
-    "mount".into()
-}
-
-fn host_umount() -> String {
-    for p in ["/run/wrappers/bin/umount", "/usr/bin/umount"] {
-        if Path::new(p).is_file() {
-            return p.to_string();
-        }
-    }
-    "umount".into()
-}
-
-fn nix_uid() -> u32 {
-    extern "C" {
-        fn getuid() -> u32;
-    }
-    unsafe { getuid() }
-}
-fn nix_gid() -> u32 {
-    extern "C" {
-        fn getgid() -> u32;
-    }
-    unsafe { getgid() }
 }
 
 #[cfg(test)]

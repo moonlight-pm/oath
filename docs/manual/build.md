@@ -78,8 +78,8 @@ takes its UAPI headers from the same tarball).
 
 ## The image
 
-Needs: the packs in `pkgs/lock.json` (`pkg:rust` among them), `sudo`
-for the loop mount, and `mkfs.btrfs` on the host (`shell.nix` has it).
+Needs: the packs in `pkgs/lock.json` (`pkg:rust` among them) and
+`mkfs.btrfs` and `unshare` on the host (`shell.nix` has them); no root.
 The build host's Rust compiles only `oath-make`.
 
 ```sh
