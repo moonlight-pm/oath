@@ -30,9 +30,8 @@ pub fn make(
     let mut at = |name: &str, place| {
         ships.entry(name.to_string()).or_default().insert(place);
     };
-    let wanted =
-        oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?.present_pkgs();
-    for name in &wanted {
+    let seed = oath_core::Profile::load(profile).map_err(|e| anyhow::anyhow!("{e}"))?;
+    for name in &seed.present_pkgs() {
         at(name, "rootfs");
     }
     // Each ramdisk program comes with the packs of the libraries it loads.
@@ -126,6 +125,10 @@ pub fn make(
     if !pins.is_empty() {
         m["pinned"] = json!(pins.keys().collect::<Vec<_>>());
     }
+    let recipes = recipe_plans(&seed.ids(), &all, &lock);
+    if !recipes.is_empty() {
+        m["recipes"] = json!(recipes);
+    }
     if !own_kernel {
         m["kernel_override"] = json!({
             "vmlinuz": crate::util::sha256_file(&tools.kernel)?,
@@ -133,6 +136,21 @@ pub fn make(
         });
     }
     Ok(m)
+}
+
+/// The plan of each recipe a profile seeds. A recipe ships no pack, so without
+/// these a bump to one alone (Codex's fix, say) would make the same output and
+/// reach no machine.
+fn recipe_plans(
+    ids: &[String],
+    all: &BTreeMap<String, crate::pkgs::PkgToml>,
+    lock: &crate::pkgs::Lock,
+) -> BTreeMap<String, String> {
+    ids.iter()
+        .filter_map(|id| id.strip_prefix("pkg:"))
+        .filter(|name| crate::pkgs::is_recipe(all, name))
+        .filter_map(|name| Some((name.to_string(), lock.get(name)?.plan.clone())))
+        .collect()
 }
 
 /// HEAD of this tree, with `-dirty` when what a pack is made from (`paths`)
@@ -152,5 +170,36 @@ fn commit(root: &Path, paths: &[&str]) -> String {
         format!("{head}-dirty")
     } else {
         head
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pkgs::{LockEntry, PkgToml};
+
+    #[test]
+    fn a_recipes_plan_is_in_the_manifest() {
+        let all = BTreeMap::from([
+            ("codex".to_string(), PkgToml { recipe: Some("terms".into()), ..Default::default() }),
+            ("curl".to_string(), PkgToml::default()),
+        ]);
+        let entry = |plan: &str| LockEntry {
+            version: "1".into(),
+            license: "MIT".into(),
+            by: "plan".into(),
+            plan: plan.into(),
+            product: "p".into(),
+            ..Default::default()
+        };
+        let lock = BTreeMap::from([
+            ("codex".to_string(), entry("codex-plan")),
+            ("curl".to_string(), entry("curl-plan")),
+        ]);
+        let ids = ["pkg:codex", "pkg:curl", "plan:codex", "svc:x"].map(String::from);
+        assert_eq!(
+            recipe_plans(&ids, &all, &lock),
+            BTreeMap::from([("codex".to_string(), "codex-plan".to_string())])
+        );
     }
 }
