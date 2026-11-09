@@ -312,7 +312,8 @@ to curl's bundle) and the libraries they load
 (individual linux-firmware blobs); kexec-tools (`pkg:kexec`, static)
 for the installer; and the build tools (`pkg:rust`, `pkg:go`, python, meson,
 ninja, perl, m4, flex, bison, bc, elfutils, pkgconf, patchelf).
-In no profile: `pkg:certs`, Oath's CA roots (R50), and servers built from
+`pkg:certs`, Oath's CA roots (R50), is in `base`, from the release after 2026-11-09 (R77).
+In no profile: servers built from
 source (R49): Blocky, restic, rsync, `route`, `cell` with `crun` and
 `passt`, PostgreSQL and PostGIS with theirs.
 `pkg:oath` follows this tree and is not locked. Nothing in the image

@@ -233,6 +233,11 @@
       "description": "mkfs.fat and fsck.fat for the EFI system partition.",
       "home": "https://github.com/dosfstools/dosfstools"
     },
+    "pkg:certs": {
+      "present": true,
+      "description": "Oath's CA roots: Mozilla's, from NSS, less what it dates and pkgs/certs/distrust.txt names.",
+      "home": "https://wiki.mozilla.org/CA"
+    },
     "pkg:curl": {
       "present": true,
       "description": "curl over Mbed TLS, with Mozilla's CA bundle (curl.se/ca).",
