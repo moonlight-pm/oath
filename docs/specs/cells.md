@@ -1,7 +1,7 @@
 # Cells
 
 **Status:** an installed package runs in a box (R76) and `cell:<name>` is a kind (R78),
-both built 2026-11-09 and in no release yet. Images run as they did (R59). A project's
+both released 2026-11-09. Images run as they did (R59). A project's
 path from source to a `cell:` on a host is not built.
 
 A cell is one program in a box of its own: namespaces through `crun`, a network

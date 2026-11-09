@@ -21,7 +21,7 @@ in [../decisions.md](../decisions.md).
 | [minecraft.md](minecraft.md) | Minecraft: Prism Launcher, Java, the box | built (koeurax) |
 | [agent.md](agent.md) | `oath mcp`: the verbs as MCP tools over SSH; the real-model acceptance check | partly built (phase 7) |
 | [writ.md](writ.md) | `writ`, Oath's coding agent: the box, the gate, the key, OpenRouter | box built, no model yet (R64) |
-| [cells.md](cells.md) | `cell`: an installed package or `cell:` object in a box, images, one uid | built, unreleased (R76, R78) |
+| [cells.md](cells.md) | `cell`: an installed package or `cell:` object in a box, images, one uid | released 2026-11-09 (R76, R78) |
 
 Each spec has a **Status** line, then sections labelled *built*, *known
 defects* and *target*. "Is" and "will be" never share a paragraph.
