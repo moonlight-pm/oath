@@ -84,5 +84,5 @@ the lock's own hashes. No image is made.
 `oath store`, `oath new` or `oath set`, and `oath apply`. A package the machine lacks is
 installed first. `work` only runs.
 
-Whether a project may ship a new image before its port is Open in
-[../decisions.md](../decisions.md).
+Nothing on Oath builds an image (R80): a project that must ship before its port ports
+first.
