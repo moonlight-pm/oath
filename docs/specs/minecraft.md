@@ -67,7 +67,7 @@ It keeps `home`, not `work` (R55): the game needs the desk's display, sound
 and pads, and opening them to `work` would open them to every server on a
 machine that has some.
 
-**Gaps (is):** the game's narrator logs an error at start (no `libflite`) and stays off. The box shares the machine's network, so it reaches
+**Gaps (is):** the packs and heads are on the origin, but the plans and source packs that R13 puts beside them go up with the next release. The game's narrator logs an error at start (no `libflite`) and stays off. The box shares the machine's network, so it reaches
 localhost services (Steam's ports on a desk) and abstract sockets
 (Xwayland's); through Xwayland it sees other X11 clients' input (Steam).
 Prism's "open folder" and links do nothing (no `xdg-open`); sign-in uses

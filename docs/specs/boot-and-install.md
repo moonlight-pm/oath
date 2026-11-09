@@ -387,7 +387,9 @@ publishes each output it checked, and each machine moves itself:
      by the hashes of `pkg:linux` and `pkg:firmware` a release records,
      and PID 1 only when the running one cannot re-execute (`"pid1":
      "re-exec"`). A record that does not name them (a release from before
-     2026-11-08 has no firmware hash) counts as moved. Afterwards `oath update`
+     2026-11-08 has no firmware hash) counts as moved. The record is of
+     the last update, not the last boot, so a machine that skipped a reboot
+     is not told again by a later release. Afterwards `oath update`
      says whether PID 1 is the output's, and for that same release `sudo
      oath update --confirm` re-executes it into `/lib/oath/init` when
      that is the release's.

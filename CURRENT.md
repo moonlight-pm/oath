@@ -20,7 +20,7 @@ append history (git has it).
    a pre-R73 PID 1 still reboot. Released 2026-11-07 from `7597cc1`: `desk` `6c8d38bd54c4` (Sola
    `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too), on novus and buccina, and `base`
    `ee3e239caa32`, on dulcia; canto runs its unpublished successor `06e0194eb4f3`. novus, canto and dulcia trust key `oath@novus` for `names="sola,sola-*"`;
-   buccina and koeurax do not yet. The newest `desk` release is `f997e9baf436` (2026-11-08, from `89cc9eb`: `/dev/uhid` and the other static nodes, AX211 Bluetooth firmware, packages' firmware), on koeurax; no `base` went with it. Gap: a changed `svc` spec goes by hand.
+   buccina and koeurax do not yet. The newest `desk` release is `f997e9baf436` (2026-11-08, from `89cc9eb`: `/dev/uhid` and the other static nodes, AX211 Bluetooth firmware, packages' firmware), on koeurax; no `base` went with it. The next `desk` release, which the 2026-11-10 audit run should make with expat and CEF (nothing is published for these alone before it, Joshua, 2026-11-08), carries Minecraft's plans and source packs (R13: its packs and heads are on the origin, its plans are not), `pkg:openssl`'s new pack, and `ab0a7dc`'s firmware report, which the update after that release is the first to use. Gap: a changed `svc` spec goes by hand.
    Next: the key on buccina; Sola's publish runs `oath publish` (its branch
    `oath-heads`, sandbox builds, waits on Joshua's merge); then slices 2 (packaged services) and 4
    (Oath's own heads).
