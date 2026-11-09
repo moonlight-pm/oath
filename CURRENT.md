@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-09 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R76 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R78 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -37,7 +37,7 @@ append history (git has it).
    profile (R52), on the origin since `c9735fc14e50` (`cloudflared` since 2026-11-03). They run as `work`, which has no `sudo`. Bias against
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
-   as `work` under a `svc` on buccina, 2026-11-02. `cell run pkg:<name>` (R76, [specs/cells.md](docs/specs/cells.md)) runs an installed package with no image, its packs bound in read-only: tested as `work` on buccina 2026-11-09, unpublished, so not yet in the manual. Images and packages run side by side. Next: a project's source to a pack, built by `home` on one machine and run on another (novus to dulcia), porting dulcia's cells one by one; a sandbox for project installs.
+   as `work` under a `svc` on buccina, 2026-11-02. `cell run pkg:<name>` (R76, [specs/cells.md](docs/specs/cells.md)) runs an installed package with no image, its packs bound in read-only; `cell:<name>` (R78), a ninth kind, is one project's own software, stored apart, never linked or published. Tested on buccina 2026-11-09, unpublished, so not yet in the manual or on the site. Images and both of these run side by side. Next: a project's source to a `cell:`, built by `home` on one machine and run on another (novus to dulcia), porting dulcia's workloads one by one; a sandbox for project installs.
 4. **Security audit (R48, R77).** `svc:audit` runs on buccina (`0 0 * * *`): the agent, in a box (`check/audit/box`) with no key but `~/.config/oath/claude-token` (made 2026-11-09, good for a year; a run without it mails that it did not run), scans, reads each pin
    against upstream's newest release, fixes and checks; the runner, outside, lands its commits, pushes, publishes, and puts findings on the origin (R61). Left by Joshua's word: libsndfile but for R77's one fix, the
    toolchain rebuilds, flex, QEMU's 9p. Linux 7.3.1 carries 12 io_uring patches, out at the 2026-11-14 run with 7.3.2 or newer,

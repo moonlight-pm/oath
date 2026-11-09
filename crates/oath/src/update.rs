@@ -205,7 +205,8 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     };
     let ran = up::Ran::of(current.as_ref());
     let keep = keep_names(&machine, &opts.keep)?;
-    let moves = up::plan(&machine, &output, &ran, &keep, have);
+    let held = held_by_cells(cat, &keep, |n| output.pin(n).is_some())?;
+    let moves = up::plan(&machine, &output, &ran, &held, have);
     // A head wins over the release's pin of its package (R72).
     let (offers, refused) = fetch_heads(&origins, &machine, &trusted, &work)?;
     for r in &refused {
@@ -1319,6 +1320,27 @@ fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
 
 /// The names `--keep` gives (`pkg:<name>` or `<name>`), each a package
 /// this machine has.
+/// `keep`, and what a present cell needs that this release no longer pins
+/// (R78): an update does not take a package from under a cell. A package
+/// the release does pin is not held, since a cell runs with what is linked.
+fn held_by_cells(
+    cat: &Catalog,
+    keep: &BTreeSet<String>,
+    pinned: impl Fn(&str) -> bool,
+) -> Result<BTreeSet<String>> {
+    let mut held = keep.clone();
+    for id in cat.ls(Some(oath_core::KIND_CELL))? {
+        let Ok(cell) = serde_json::from_value::<oath_core::Cell>(cat.get(&id)?.desired) else {
+            continue;
+        };
+        if cell.present {
+            let names = cell.needs.iter().map(|n| n.trim_start_matches("pkg:").to_string());
+            held.extend(names.filter(|n| !pinned(n)));
+        }
+    }
+    Ok(held)
+}
+
 fn keep_names(machine: &BTreeMap<String, Value>, keep: &[String]) -> Result<BTreeSet<String>> {
     let mut out = BTreeSet::new();
     for k in keep.iter().filter(|k| !k.starts_with("svc:")) {
@@ -1627,6 +1649,24 @@ pub(crate) fn extra_options(current: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn what_a_cell_needs_stays_unless_the_release_pins_it() {
+        let d = tempfile::tempdir().unwrap();
+        oath_core::seed(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        let hash = format!("sha256-{}", "a".repeat(64));
+        let doc = |present: bool, needs: Value| {
+            json!({ "present": present, "hash": hash, "needs": needs }).as_object().unwrap().clone()
+        };
+        let on: ObjectId = "cell:on".parse().unwrap();
+        let off: ObjectId = "cell:off".parse().unwrap();
+        cat.new_object(&on, doc(true, json!(["pkg:gone", "pkg:pinned"]))).unwrap();
+        cat.new_object(&off, doc(false, json!(["pkg:idle"]))).unwrap();
+        let keep = BTreeSet::from(["kept".to_string()]);
+        let held = held_by_cells(&cat, &keep, |n| n == "pinned").unwrap();
+        assert_eq!(held, BTreeSet::from(["gone".to_string(), "kept".to_string()]));
+    }
 
     #[test]
     fn what_waits_for_a_boot_is_said() {

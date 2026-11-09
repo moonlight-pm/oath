@@ -357,6 +357,58 @@ pub struct Pkg {
     pub source: Option<PkgSource>,
 }
 
+/// One project's own software, made to run in a cell and nowhere else
+/// (R78): a tree under /oath/store/cell/<name>/<hash>/, never linked into
+/// /bin or /lib, from no origin, and never published.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct Cell {
+    /// If true, `cell run cell:<name>` starts this tree. If false, it
+    /// refuses to. The store tree stays.
+    #[serde(default = "default_true")]
+    pub present: bool,
+    /// Pin: realization id sha256-<64 hex> of the tree, required while
+    /// present. Apply verifies it. The tree must be in the store already
+    /// (`oath store cell:<name>`, or `oath build`).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    #[schemars(regex(pattern = r"^(sha256-[0-9a-f]{64})?$"))]
+    pub hash: String,
+    /// The packages it runs with, each pkg:<name>, named and not pinned:
+    /// a cell starts with each at the hash this machine links. Apply
+    /// refuses one this machine lacks, and refuses to remove one a present
+    /// cell needs.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub needs: Vec<String>,
+    /// Short prose for humans and agents. Empty means none.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub description: String,
+    /// HTTPS URL of the source tree or main project page.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub home: String,
+    /// Where the pinned tree was built from (R47). Not part of any hash.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<PkgSource>,
+}
+
+/// What the store says of a cell.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CellActual {
+    pub present: bool,
+    /// The tree `live` names. Empty when not present.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub hash: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub needs: Vec<String>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub description: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub home: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<PkgSource>,
+    /// The last time the tree was hashed again against `hash`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verified: Option<PkgVerified>,
+}
+
 /// The commit a package's tree was built from, and who built it (R47).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

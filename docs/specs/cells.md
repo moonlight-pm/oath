@@ -1,8 +1,8 @@
 # Cells
 
-**Status:** an installed package runs in a box (built 2026-11-09, R76, in no release
-yet). Images run as they did (R59). A project's path from source to a pack on a host
-is not built.
+**Status:** an installed package runs in a box (R76) and `cell:<name>` is a kind (R78),
+both built 2026-11-09 and in no release yet. Images run as they did (R59). A project's
+path from source to a `cell:` on a host is not built.
 
 A cell is one program in a box of its own: namespaces through `crun`, a network
 through `pasta`, one uid (R53), no daemon. The code is `apps/cell`, on Go's standard
@@ -34,6 +34,26 @@ takes the flags an image's run takes, and `--with pkg:<other>` for one more pack
 
 A `svc` runs it like any program, as `work`, with `/bin/cell` as its `exec`.
 
+### A project's own software (R78)
+
+`cell:<name>` is a kind beside `pkg`, for software that belongs to one project. `cell
+run cell:<name>` is the same box as a package's, with the tree bound read-only at
+`/oath/store/cell/<name>/<hash>`.
+
+- **It stays home.** It is not linked into `/bin` or `/lib`, comes from no origin, and
+  `oath publish` refuses it. Those are `pkg:` paths, so nothing has to remember to skip
+  one. Its name cannot clash with a package's.
+- **Its needs are named, not pinned.** `needs` are `pkg:` ids with no hash: a cell starts
+  with each at the hash this machine links, so an update that moves a package leaves
+  nothing to re-point. Apply refuses a need the machine lacks and refuses to remove one a
+  present cell needs, and an update holds what a present cell needs when a release drops
+  it.
+- **How it gets there.** `sudo oath store cell:<name> <dir|tar>`, `oath new` with `hash`
+  and `needs`, then `oath apply`. A plan can make one: `"produces": "cell:<name>"`, built
+  from `cell:<name>-src`. A package's plan cannot name a `cell:`, since its source is
+  published with it.
+- **What goes.** Reap keeps the pin and lets a cell's other versions go, as for a package.
+
 ### An image (R59)
 
 `cell run <image>` pulls a registry's image if it is not on disk, and runs a copy of
@@ -41,10 +61,11 @@ it. This stays for what other people publish, and for a project until it is port
 
 ### Both at once
 
-Images and packages share one binary, account, store and set of commands: a runner
-changes only the name it passes. An nginx image and `pkg:python` ran side by side as
-`work` on buccina on 2026-11-09, each serving a volume on a published port, with
-`exec`, `ls` and `stop`.
+Images, packages and `cell:` objects share one binary, account, store and set of
+commands: a runner changes only the name it passes. An nginx image and `pkg:python` ran
+side by side as `work` on buccina on 2026-11-09, each serving a volume on a published
+port, with `exec`, `ls` and `stop`; a `cell:` did the same as `home`, against a scratch
+copy of its catalog.
 
 ## Known defects
 
@@ -55,14 +76,13 @@ changes only the name it passes. An nginx image and `pkg:python` ran side by sid
 
 ## Target
 
-A project outside Oath's tree becomes a package: `pkg.toml` and `build.sh`, built by
+A project outside Oath's tree becomes a `cell:`: `pkg.toml` and `build.sh`, built by
 `oath build` with no network, its locked dependencies fetched first and checked against
-the lock's own hashes. The result is a pack, and a cell runs it. No image is made.
+the lock's own hashes. No image is made.
 
-`home` builds, on any machine, and installs on the machine that runs it: over SSH with
-`oath store`, `oath set` and `oath apply`, or from an origin. `apply` refuses a need at
-another hash than the machine's, so the pin it sets names the target's hashes, and a
-need the machine lacks is installed first. `work` only runs.
+`home` builds, on any machine, and installs on the machine that runs it, over SSH with
+`oath store`, `oath new` or `oath set`, and `oath apply`. A package the machine lacks is
+installed first. `work` only runs.
 
 Whether a project may ship a new image before its port is Open in
 [../decisions.md](../decisions.md).

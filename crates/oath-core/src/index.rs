@@ -26,8 +26,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath schema [kind]   kinds, or one kind's schema + prose
     oath get <id>        desired + actual
     oath set <id> k=v    write desired only (checked against the kind's type)
-    oath new <id> k=v    create a svc or pkg (runs after apply)
-    oath rm <id>         remove a svc or pkg (after apply)
+    oath new <id> k=v    create a svc, pkg or cell (runs after apply)
+    oath rm <id>         remove a svc, pkg or cell (after apply)
     oath diff [id]       drift
     oath apply [id...]   check, snapshot, then converge
     oath keep            keep an apply on probation (from a new SSH session)
@@ -43,7 +43,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          (plan:<name>), or PID 1 (no id)
     oath fmt <path>      canonical plan.plan
     oath build           isolated plan build (no /bin link; log in /oath/log/plan/)
-    oath store pkg:<name> <dir|tar>
+    oath store pkg:<name>|cell:<name> <dir|tar>
                          put a tree built elsewhere into the store and print
                          its hash; `oath set pkg:<name> hash=…` pins it
     oath mcp             these verbs as an MCP server on stdin/stdout
@@ -164,7 +164,8 @@ fn probation_block(cat: &Catalog) -> String {
 /// Packages whose store tree no longer hashes to its pin.
 fn damage_block(cat: &Catalog) -> String {
     let mut bad = Vec::new();
-    for id in cat.ls(Some("pkg")).unwrap_or_default() {
+    let cells = cat.ls(Some("cell")).unwrap_or_default();
+    for id in cat.ls(Some("pkg")).unwrap_or_default().into_iter().chain(cells) {
         let Ok(obj) = cat.get(&id) else { continue };
         if obj.actual.pointer("/verified/ok") == Some(&serde_json::json!(false)) {
             let got = obj.actual.pointer("/verified/got").and_then(|g| g.as_str()).unwrap_or("");
@@ -193,6 +194,7 @@ fn kind_line(kind: &str) -> &'static str {
         "ssh" => "owner SSH public keys (login as home)",
         "dev" => "a hardware device (inventory)",
         "plan" => "a build plan (hash-pinned file; oath build)",
+        "cell" => "one project's software, run only in a cell (never linked or published)",
         _ => "see schema",
     }
 }

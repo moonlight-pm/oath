@@ -14,7 +14,8 @@ import (
 	"strings"
 )
 
-// A cell can run a package this machine has installed, with no image (R76). Its root is
+// A cell can run a package this machine has installed, or a cell: object, which is
+// one project's own software (R78), with no image (R76). Its root is
 // a directory of its own that holds links and little else, and each pack the program
 // runs with is bound in read-only at the path it has on the machine. Nothing is copied,
 // so a cell costs its links, and the store stays the only copy of the software. It sees
@@ -33,17 +34,35 @@ var floor = []string{"glibc", "bash", "coreutils", "curl"}
 // notLinked are the names in a pack's lib/ that a machine's /lib leaves out too.
 var notLinked = map[string]bool{"oath": true, "modules": true, "firmware": true, "pkgconfig": true}
 
-// pack is one installed package, at the hash this machine links.
-type pack struct{ name, hash string }
+// pack is one installed package or cell, at the hash this machine links.
+type pack struct{ kind, name, hash string }
+
+// need is what a package or a cell runs with: an object in a package's status, and the
+// id alone in a cell's, which names packages and pins none.
+type need string
+
+func (n *need) UnmarshalJSON(data []byte) error {
+	var id string
+	if json.Unmarshal(data, &id) == nil {
+		*n = need(id)
+		return nil
+	}
+	var object struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(data, &object); err != nil {
+		return err
+	}
+	*n = need(object.ID)
+	return nil
+}
 
 // packInfo is the part of `oath --json get` that a cell reads.
 type packInfo struct {
 	Actual struct {
 		Present bool   `json:"present"`
 		Hash    string `json:"hash"`
-		Needs   []struct {
-			ID string `json:"id"`
-		} `json:"needs"`
+		Needs   []need `json:"needs"`
 	} `json:"actual"`
 }
 
@@ -69,20 +88,24 @@ var oathGet = func(id string) (packInfo, error) {
 // closure is every pack the roots run with, each once, in the order they are met: where
 // two hold one name the first has it, as in a build's sandbox, so a package's own programs
 // win. A need is taken at the hash this machine links, which is what its /lib would give
-// the program, and not at the hash some plan pinned.
+// the program, and not at the hash some plan pinned. Only the first root may be a cell:
+// a cell runs with packages.
 func closure(roots []string, get func(string) (packInfo, error)) ([]pack, error) {
 	var out []pack
 	seen := map[string]bool{}
-	var walk func(name string) error
-	walk = func(name string) error {
-		if seen[name] {
+	var walk func(id string, first bool) error
+	walk = func(id string, first bool) error {
+		if !strings.Contains(id, ":") {
+			id = "pkg:" + id
+		}
+		if seen[id] {
 			return nil
 		}
-		seen[name] = true
-		if !packName.MatchString(name) {
-			return fmt.Errorf("%q is not a package's name", name)
+		seen[id] = true
+		kind, name, _ := strings.Cut(id, ":")
+		if (kind != "pkg" && (kind != "cell" || !first)) || !packName.MatchString(name) {
+			return fmt.Errorf("%q is not the name of a package", id)
 		}
-		id := "pkg:" + name
 		info, err := get(id)
 		if err != nil {
 			return err
@@ -90,16 +113,16 @@ func closure(roots []string, get func(string) (packInfo, error)) ([]pack, error)
 		if !info.Actual.Present || !packHash.MatchString(info.Actual.Hash) {
 			return fmt.Errorf("%s is not installed on this machine", id)
 		}
-		out = append(out, pack{name, info.Actual.Hash})
-		for _, need := range info.Actual.Needs {
-			if err := walk(strings.TrimPrefix(need.ID, "pkg:")); err != nil {
+		out = append(out, pack{kind, name, info.Actual.Hash})
+		for _, n := range info.Actual.Needs {
+			if err := walk(string(n), false); err != nil {
 				return err
 			}
 		}
 		return nil
 	}
-	for _, name := range roots {
-		if err := walk(name); err != nil {
+	for i, id := range roots {
+		if err := walk(id, i == 0); err != nil {
 			return nil, err
 		}
 	}
@@ -114,14 +137,11 @@ func machineRoot() string {
 	return "/oath"
 }
 
-// packSource is the root of a cell that runs an installed package. Its program is
-// bin/<name>, unless the command line says another.
+// packSource is the root of a cell that runs an installed package or cell. Its program
+// is bin/<name>, unless the command line says another.
 func packSource(o *options) (*source, error) {
-	name := strings.TrimPrefix(o.image, "pkg:")
-	roots := []string{name}
-	for _, w := range o.with {
-		roots = append(roots, strings.TrimPrefix(w, "pkg:"))
-	}
+	kind, name, _ := strings.Cut(o.image, ":")
+	roots := append([]string{o.image}, o.with...)
 	packs, err := closure(append(roots, floor...), oathGet)
 	if err != nil {
 		return nil, err
@@ -129,11 +149,11 @@ func packSource(o *options) (*source, error) {
 	machine := machineRoot()
 	var config imageConfig
 	config.Config.Env = []string{"PATH=/bin"}
-	bin := filepath.Join(machine, "store/pkg", name, packs[0].hash, "bin")
+	bin := filepath.Join(machine, "store", kind, name, packs[0].hash, "bin")
 	if _, err := os.Stat(filepath.Join(bin, name)); err == nil {
 		config.Config.Entrypoint = []string{"/bin/" + name}
 	} else if o.entrypoint == "" && len(o.args) == 0 {
-		return nil, fmt.Errorf("pkg:%s has no bin/%s, so name a program: %s", name, name, programs(bin))
+		return nil, fmt.Errorf("%s has no bin/%s, so name a program: %s", o.image, name, programs(bin))
 	}
 	return &source{
 		name:   o.image,
@@ -160,7 +180,7 @@ func programs(bin string) string {
 
 // packRoot makes a root of links, and returns the mounts that give them something to
 // point at. A pack goes in at the path it has on a machine, since its programs name
-// /oath/store/pkg/<name>/live. /bin and /lib are this cell's own, made as a machine's
+// /oath/store/<kind>/<name>/live. /bin and /lib are this cell's own, made as a machine's
 // are, so the program finds what it runs with and no more.
 func packRoot(rootfs, machine string, packs []pack, user string) ([]mount, error) {
 	if err := os.Mkdir(rootfs, 0o755); err != nil {
@@ -181,14 +201,14 @@ func packRoot(rootfs, machine string, packs []pack, user string) ([]mount, error
 	}
 	var mounts []mount
 	for _, p := range packs {
-		slot := path.Join("oath/store/pkg", p.name)
+		slot := path.Join("oath/store", p.kind, p.name)
 		if err := root.MkdirAll(path.Join(slot, p.hash), 0o755); err != nil {
 			return nil, err
 		}
 		if err := root.Symlink(p.hash, path.Join(slot, "live")); err != nil {
 			return nil, err
 		}
-		source := filepath.Join(machine, "store/pkg", p.name, p.hash)
+		source := filepath.Join(machine, "store", p.kind, p.name, p.hash)
 		for _, dir := range []string{"bin", "lib"} {
 			entries, err := os.ReadDir(filepath.Join(source, dir))
 			if errors.Is(err, fs.ErrNotExist) {

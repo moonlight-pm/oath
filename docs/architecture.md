@@ -126,6 +126,8 @@ btrfs
   .gens/<n>/objects/       copy snapshots (off btrfs or under --root only)
   store/pkg/<name>/<hash>/ package trees; `live` → the linked hash; only
                            what something names stays (`oath reap`, R62)
+  store/cell/<name>/<hash>/ one project's own trees (R78); `live` → the pin;
+                            never linked, fetched or published
   store/plan/<name>/<hash>/plan.plan   plans; the image files each recipe's (R23)
   store/adv/<name>/<hash>.json   advisories
   ssh/ssh_host_ed25519_key sshd's host key (+ .pub); host_ed25519 is

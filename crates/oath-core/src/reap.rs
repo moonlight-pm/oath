@@ -7,7 +7,8 @@
 //! keeps its program across an update, and the kernel its modules), so this
 //! is safe at any time, and at boot it leaves exactly what is prescribed. A
 //! tree that arrived in the last day stays too: `oath store` and `oath
-//! build` put it there, and its pin comes next.
+//! build` put it there, and its pin comes next. A cell's versions (R78) go
+//! the same way, under `cell:<name>`.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -17,7 +18,10 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{probation, read_json, tree_size, Catalog, CatalogLock, ObjectId, Result, KIND_PKG};
+use crate::{
+    is_realization_id, probation, read_json, tree_size, Catalog, CatalogLock, ObjectId, Result,
+    KIND_CELL, KIND_PKG,
+};
 
 /// Generations kept for undo, as the ESP keeps its boots.
 pub const GENERATIONS_KEPT: usize = 5;
@@ -73,7 +77,7 @@ pub struct Policy {
     pub sizes: bool,
 }
 
-/// `(pkg name, hash)` to what keeps it.
+/// A package's name, or `cell:<name>`, and a hash, to what keeps it.
 type Holds = BTreeMap<(String, String), BTreeSet<String>>;
 
 fn strs<'a>(v: &'a Value, keys: &[&str]) -> Vec<&'a str> {
@@ -117,6 +121,22 @@ fn hold_packages(
                 holds.entry((need, hash.to_string())).or_default().insert(needs(&name));
             }
         }
+    }
+    // A cell's needs are named, not pinned: the machine's pin holds those.
+    for name in names_in(&root.join("objects/cell")) {
+        for spec in specs(root, "cell", &name) {
+            for hash in strs(&spec, &["hash"]) {
+                holds.entry((format!("cell:{name}"), hash.to_string())).or_default().insert(why());
+            }
+        }
+    }
+}
+
+/// Where a package or a `cell:<name>` keeps its versions.
+fn slot_of(root: &Path, key: &str) -> PathBuf {
+    match key.strip_prefix("cell:") {
+        Some(name) => crate::cell::slot_dir(root, name),
+        None => crate::slot_dir(root, key),
     }
 }
 
@@ -176,6 +196,12 @@ pub fn survey(cat: &Catalog, generations: &[(u64, PathBuf)], policy: &Policy) ->
             holds.entry((id.name.clone(), hash.to_string())).or_default().insert("pin".into());
         }
     }
+    for id in cat.ls(Some(KIND_CELL))? {
+        let actual = cat.get(&id)?.actual;
+        for hash in strs(&actual, &["hash"]) {
+            holds.entry((id.to_string(), hash.to_string())).or_default().insert("pin".into());
+        }
+    }
     if let Ok(record) = read_json::<Value>(&root.join(crate::update::RECORD)) {
         for key in ["pins", "pinned"] {
             for (name, hash) in record[key].as_object().into_iter().flatten() {
@@ -206,25 +232,32 @@ pub fn survey(cat: &Catalog, generations: &[(u64, PathBuf)], policy: &Policy) ->
     }
     generations_gone.sort_unstable();
 
-    let store = root.join("store/pkg");
     let mut versions = Vec::new();
     let mut slots_gone = Vec::new();
-    for name in names_in(&store) {
-        let slot = store.join(&name);
+    let names = |area: &str| -> Vec<(String, String)> {
+        let of = names_in(&root.join("store").join(area));
+        of.into_iter().map(|n| (area.to_string(), n)).collect()
+    };
+    for (area, name) in names("pkg").into_iter().chain(names("cell")) {
+        let key = if area == "cell" { format!("cell:{name}") } else { name.clone() };
+        let slot = slot_of(root, &key);
         if !slot.is_dir() {
             continue;
         }
-        let has_object = root.join("objects/pkg").join(&name).is_dir();
+        let has_object = root.join("objects").join(&area).join(&name).is_dir();
         let live = fs::read_link(slot.join(crate::LIVE_NAME))
             .ok()
             .and_then(|l| l.file_name().map(|n| n.to_string_lossy().into_owned()))
             .filter(|_| has_object);
         let mut stays = false;
-        for hash in crate::list_realization_ids(root, &name)? {
+        for hash in names_in(&slot).into_iter().filter(|h| is_realization_id(h)) {
             let tree = slot.join(&hash);
+            if !tree.is_dir() {
+                continue;
+            }
             let ctime = fs::metadata(&tree)?.ctime();
             let mut held: BTreeSet<String> =
-                holds.get(&(name.clone(), hash.clone())).cloned().unwrap_or_default();
+                holds.get(&(key.clone(), hash.clone())).cloned().unwrap_or_default();
             if live.as_deref() == Some(hash.as_str()) {
                 held.insert("live".into());
             }
@@ -233,7 +266,7 @@ pub fn survey(cat: &Catalog, generations: &[(u64, PathBuf)], policy: &Policy) ->
             }
             stays |= !held.is_empty();
             versions.push(Version {
-                id: format!("pkg:{name}"),
+                id: format!("{area}:{name}"),
                 size: policy.sizes.then(|| tree_size(&tree)).transpose()?,
                 arrived: rfc3339(ctime),
                 held: held.into_iter().collect(),
@@ -241,7 +274,7 @@ pub fn survey(cat: &Catalog, generations: &[(u64, PathBuf)], policy: &Policy) ->
             });
         }
         if !stays && !has_object {
-            slots_gone.push(name);
+            slots_gone.push(key);
         }
     }
     let mut plans_gone = Vec::new();
@@ -287,11 +320,11 @@ impl Reap {
         let mut touched = BTreeSet::new();
         for (i, v) in self.going().enumerate() {
             let name = v.name();
-            fs::rename(crate::realization_dir(root, name, &v.hash), trash.join(i.to_string()))?;
+            fs::rename(slot_of(root, name).join(&v.hash), trash.join(i.to_string()))?;
             touched.insert(name.to_string());
         }
         for name in &self.slots_gone {
-            fs::remove_dir_all(crate::slot_dir(root, name))?;
+            fs::remove_dir_all(slot_of(root, name))?;
         }
         for (name, hash) in &self.plans_gone {
             let dir = root.join("store/plan").join(name);
@@ -302,7 +335,7 @@ impl Reap {
         }
         for name in touched {
             let id = ObjectId::new(KIND_PKG, &name);
-            if root.join("objects/pkg").join(&name).is_dir() {
+            if !name.starts_with("cell:") && root.join("objects/pkg").join(&name).is_dir() {
                 cat.refresh_realizations(lock, &id)?;
             }
         }
@@ -394,6 +427,40 @@ mod tests {
         assert!(!root.join(TRASH).exists());
         let again = survey(&cat, &[], &policy()).unwrap();
         assert!(again.is_empty(), "nothing is left to go: {again:?}");
+    }
+
+    #[test]
+    fn a_cell_keeps_its_pin_and_loses_the_rest() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path();
+        let cat = catalog(root);
+        let dir = root.join("objects/cell/hamlet");
+        fs::create_dir_all(&dir).unwrap();
+        crate::write_json(&dir.join("desired.json"), &json!({ "present": true, "hash": A }))
+            .unwrap();
+        let meta = crate::Meta::new("cell", "hamlet", "mutate");
+        crate::write_json(&dir.join("meta.json"), &meta).unwrap();
+        for h in [A, B] {
+            fs::create_dir_all(root.join("store/cell/hamlet").join(h).join("bin")).unwrap();
+        }
+        // A package of the same name is another thing, held by nothing.
+        tree(root, "hamlet", A);
+
+        let r = survey(&cat, &[], &policy()).unwrap();
+        let of = |id: &str, h: &str| {
+            r.versions.iter().find(|v| v.id == id && v.hash == h).unwrap().held.clone()
+        };
+        assert_eq!(of("cell:hamlet", A), ["pin"]);
+        assert!(of("cell:hamlet", B).is_empty());
+        assert!(of("pkg:hamlet", A).is_empty());
+
+        let lock = cat.lock().unwrap();
+        r.execute(&cat, &lock).unwrap();
+        drop(lock);
+        empty_trash(root).unwrap();
+        assert!(root.join("store/cell/hamlet").join(A).is_dir());
+        assert!(!root.join("store/cell/hamlet").join(B).exists());
+        assert!(!root.join("store/pkg/hamlet").exists());
     }
 
     #[test]

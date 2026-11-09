@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 use oath_core::{
     apply_overlay, build_file, build_pinned, file_plan, fmt_plan, lint_bytes, lint_path,
     parse_plan, seed_profile, tel, Actor, BuildReport, Catalog, Error, ObjectId, DEFAULT_PROFILE,
-    DEFAULT_ROOT, EXIT_CONFIRM, KIND_PKG, KIND_PLAN,
+    DEFAULT_ROOT, EXIT_CONFIRM, KIND_CELL, KIND_PKG, KIND_PLAN,
 };
 use serde_json::{json, Map, Value};
 
@@ -82,8 +82,8 @@ enum Cmd {
         write: bool,
     },
     /// Put a tree built elsewhere (a directory, or a tar of one) into the
-    /// store as a realization of `pkg:<name>`, and print its hash. Changes
-    /// no object: `oath set pkg:<name> hash=…` and `oath apply` link it.
+    /// store as a realization of `pkg:<name>` or `cell:<name>`, and print its
+    /// hash. Changes no object: `oath set <id> hash=…` and `oath apply` do.
     Store {
         id: String,
         src: PathBuf,
@@ -117,8 +117,8 @@ enum Cmd {
     /// Keep the apply on probation. Run it from an SSH session opened
     /// after that apply: the new login is the proof.
     Keep,
-    /// Hash linked package trees again against the hash they are linked
-    /// as (all packages, or the ids given). Exit 1 if any is damaged.
+    /// Hash linked package and cell trees again against the hash they are
+    /// linked as (all of them, or the ids given). Exit 1 if any is damaged.
     Verify {
         ids: Vec<String>,
         /// Print only damaged packages and the count (PID 1's boot check).
@@ -487,13 +487,16 @@ fn run() -> oath_core::Result<i32> {
         }
         Some(Cmd::Store { id, src }) => {
             let id: ObjectId = id.parse()?;
-            if id.kind != KIND_PKG {
-                return Err(Error::hint(
-                    "oath store takes pkg:<name> and a directory or tar",
-                    "oath store pkg:<name> <dir|file.tar>",
-                ));
-            }
-            let hash = oath_core::store_pkg(&cli.root, &id.name, &src)?;
+            let hash = match id.kind.as_str() {
+                KIND_PKG => oath_core::store_pkg(&cli.root, &id.name, &src)?,
+                KIND_CELL => oath_core::cell::store(&cli.root, &id.name, &src)?,
+                _ => {
+                    return Err(Error::hint(
+                        "oath store takes pkg:<name> or cell:<name>, and a directory or tar",
+                        "oath store pkg:<name> <dir|file.tar>",
+                    ));
+                }
+            };
             tel("oath", "store", json!({ "id": id.to_string(), "hash": hash }));
             if cli.json {
                 println!("{}", json!({ "id": id.to_string(), "hash": hash }));
@@ -810,6 +813,7 @@ fn print_build(r: &BuildReport, json_mode: bool) {
             "{}",
             serde_json::to_string_pretty(&json!({
                 "name": r.name,
+                "produces": r.produces,
                 "plan": r.plan_hash,
                 "product": r.product,
                 "inputs": r.inputs,
@@ -819,9 +823,9 @@ fn print_build(r: &BuildReport, json_mode: bool) {
             .unwrap()
         );
     } else if r.skipped {
-        println!("pkg:{} {} (cached)", r.name, r.product);
+        println!("{} {} (cached)", r.produces, r.product);
     } else {
-        println!("pkg:{} {}", r.name, r.product);
+        println!("{} {}", r.produces, r.product);
         println!("log {}", r.log.display());
     }
 }

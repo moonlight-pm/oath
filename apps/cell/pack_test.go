@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -30,9 +31,7 @@ func catalogOf(needs map[string][]string) func(string) (packInfo, error) {
 		info.Actual.Present = true
 		info.Actual.Hash = hashOf(name)
 		for _, n := range list {
-			info.Actual.Needs = append(info.Actual.Needs, struct {
-				ID string `json:"id"`
-			}{"pkg:" + n})
+			info.Actual.Needs = append(info.Actual.Needs, need("pkg:"+n))
 		}
 		return info, nil
 	}
@@ -104,7 +103,11 @@ func machineWith(t *testing.T, packs map[string][]string) string {
 	machine := t.TempDir()
 	for name, files := range packs {
 		for _, f := range files {
-			p := filepath.Join(machine, "store/pkg", name, hashOf(name), f)
+			kind, slot := "pkg", name
+			if cell, ok := strings.CutPrefix(name, "cell:"); ok {
+				kind, slot = "cell", cell
+			}
+			p := filepath.Join(machine, "store", kind, slot, hashOf(name), f)
 			if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 				t.Fatal(err)
 			}
@@ -122,7 +125,7 @@ func TestPackRootIsLinksAndMounts(t *testing.T) {
 		"glibc": {"bin/shared", "lib/libc.so.6", "include/stdio.h"},
 	})
 	rootfs := filepath.Join(t.TempDir(), "rootfs")
-	packs := []pack{{"app", hashOf("app")}, {"glibc", hashOf("glibc")}}
+	packs := []pack{{"pkg", "app", hashOf("app")}, {"pkg", "glibc", hashOf("glibc")}}
 	mounts, err := packRoot(rootfs, machine, packs, "")
 	if err != nil {
 		t.Fatal(err)
@@ -183,7 +186,7 @@ func TestPackRootIsLinksAndMounts(t *testing.T) {
 func TestPackRootGivesANumberAName(t *testing.T) {
 	machine := machineWith(t, map[string][]string{"app": {"bin/app"}})
 	rootfs := filepath.Join(t.TempDir(), "rootfs")
-	if _, err := packRoot(rootfs, machine, []pack{{"app", hashOf("app")}}, "999:998"); err != nil {
+	if _, err := packRoot(rootfs, machine, []pack{{"pkg", "app", hashOf("app")}}, "999:998"); err != nil {
 		t.Fatal(err)
 	}
 	u, err := findUser(rootfs, "999:998", "")
@@ -200,7 +203,7 @@ func TestPackRootGivesANumberAName(t *testing.T) {
 func TestPackRootAsRootNamesNoOne(t *testing.T) {
 	machine := machineWith(t, map[string][]string{"app": {"bin/app"}})
 	rootfs := filepath.Join(t.TempDir(), "rootfs")
-	if _, err := packRoot(rootfs, machine, []pack{{"app", hashOf("app")}}, ""); err != nil {
+	if _, err := packRoot(rootfs, machine, []pack{{"pkg", "app", hashOf("app")}}, ""); err != nil {
 		t.Fatal(err)
 	}
 	passwd, _ := os.ReadFile(filepath.Join(rootfs, "etc/passwd"))
@@ -303,5 +306,58 @@ func TestPackSourceTakesWhatWithNamesAndTheFloor(t *testing.T) {
 		if !slices.ContainsFunc(mounts, func(m mount) bool { return m.Destination == b.Destination && m.Source == b.Source }) {
 			t.Errorf("no mount for %s", b.Destination)
 		}
+	}
+}
+
+func TestANeedIsAnIdOrAnObject(t *testing.T) {
+	var info packInfo
+	doc := `{"actual":{"present":true,"hash":"x","needs":["pkg:a",{"id":"pkg:b","hash":"y"}]}}`
+	if err := json.Unmarshal([]byte(doc), &info); err != nil {
+		t.Fatal(err)
+	}
+	if want := []need{"pkg:a", "pkg:b"}; !reflect.DeepEqual(info.Actual.Needs, want) {
+		t.Errorf("got %v", info.Actual.Needs)
+	}
+}
+
+func TestACellRunsWithPackagesOnly(t *testing.T) {
+	get := catalogOf(map[string][]string{"cell:hamlet": {"node"}, "node": nil, "cell:other": nil})
+	packs, err := closure([]string{"cell:hamlet"}, get)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []pack{{"cell", "hamlet", hashOf("cell:hamlet")}, {"pkg", "node", hashOf("node")}}; !reflect.DeepEqual(packs, want) {
+		t.Errorf("got %v", packs)
+	}
+	if _, err := closure([]string{"pkg:node", "cell:other"}, get); err == nil {
+		t.Error("a cell was taken as what another runs with")
+	}
+}
+
+func TestACellIsBoundFromItsOwnStore(t *testing.T) {
+	machine := machineWith(t, map[string][]string{"cell:hamlet": {"bin/hamlet", "lib/libham.so"}})
+	withMachine(t, machine, needsWith(map[string][]string{"cell:hamlet": nil}))
+	o := &options{image: "cell:hamlet"}
+	from, err := packSource(o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := from.config.Config.Entrypoint; !reflect.DeepEqual(got, []string{"/bin/hamlet"}) {
+		t.Errorf("entrypoint %v", got)
+	}
+	rootfs := filepath.Join(t.TempDir(), "rootfs")
+	if err := from.fill(rootfs); err != nil {
+		t.Fatal(err)
+	}
+	hash := hashOf("cell:hamlet")
+	if m := o.binds[0]; m.Destination != "/oath/store/cell/hamlet/"+hash || m.Source != filepath.Join(machine, "store/cell/hamlet", hash) {
+		t.Errorf("got %+v", m)
+	}
+	link, err := os.Readlink(filepath.Join(rootfs, "bin/hamlet"))
+	if err != nil || link != "/oath/store/cell/hamlet/"+hash+"/bin/hamlet" {
+		t.Errorf("got %q, %v", link, err)
+	}
+	if live, _ := os.Readlink(filepath.Join(rootfs, "oath/store/cell/hamlet/live")); live != hash {
+		t.Errorf("live is %q", live)
 	}
 }

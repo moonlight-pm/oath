@@ -6,7 +6,7 @@ use schemars::generate::SchemaSettings;
 use schemars::JsonSchema;
 use serde_json::{json, Value};
 
-use crate::kinds::{Dev, Host, Net, Pkg, Plan, Snap, Ssh, Svc};
+use crate::kinds::{Cell, Dev, Host, Net, Pkg, Plan, Snap, Ssh, Svc};
 
 /// Every kind, with its prose.
 pub const KINDS: &[(&str, &str)] = &[
@@ -18,6 +18,7 @@ pub const KINDS: &[(&str, &str)] = &[
     ("ssh", include_str!("../schema/ssh.md")),
     ("dev", include_str!("../schema/dev.md")),
     ("plan", include_str!("../schema/plan.md")),
+    ("cell", include_str!("../schema/cell.md")),
 ];
 
 /// The schema of `kind`'s desired document, or `None` for no such kind.
@@ -31,6 +32,7 @@ pub fn schema(kind: &str) -> Option<Value> {
         "ssh" => of::<Ssh>(),
         "dev" => of::<Dev>(),
         "plan" => of::<Plan>(),
+        "cell" => of::<Cell>(),
         _ => return None,
     };
     let o = v.as_object_mut()?;

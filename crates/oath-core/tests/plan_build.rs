@@ -764,3 +764,56 @@ fn a_build_input_leaves_no_pkg_object() {
     assert!(!d.path().join("objects/pkg/hello").exists(), "and has no pkg object");
     assert!(build_pinned(d.path(), "hello", false).unwrap().skipped, "the cache still holds");
 }
+
+#[test]
+fn a_cell_is_built_from_a_cell_and_stored_apart() {
+    let d = tmp();
+    let root = d.path();
+    seed(root).unwrap();
+    let sh = pack_shell(root);
+    let stage = root.join("stage-cell-src");
+    std::fs::create_dir_all(stage.join("bin")).unwrap();
+    std::fs::write(stage.join("bin/hello"), "#!/bin/sh\necho hello\n").unwrap();
+    let src = oath_core::cell::store(root, "hello-src", &stage).unwrap();
+    assert!(!root.join("store/pkg/hello-src").exists());
+    let plan = PlanFile {
+        name: "hello".into(),
+        produces: "cell:hello".into(),
+        build_needs: vec![
+            PkgNeed { id: "cell:hello-src".into(), hash: src.clone() },
+            PkgNeed { id: "pkg:bash".into(), hash: sh.clone() },
+        ],
+        run_needs: vec![PkgNeed { id: "pkg:bash".into(), hash: sh }],
+        script: format!("cp /oath/store/cell/hello-src/{src}/bin/hello /out/bin/hello\n"),
+    };
+    let path = root.join("hello.plan");
+    std::fs::write(&path, fmt_plan(&plan)).unwrap();
+    let r = build_file(root, &path).unwrap();
+    assert!(root.join("store/cell/hello").join(&r.product).join("bin/hello").is_file());
+    assert!(!root.join("store/pkg/hello").exists(), "a cell's product is not a package's");
+    let doc: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(root.join("objects/cell/hello/desired.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(doc, json!({ "present": false, "hash": r.product, "needs": ["pkg:bash"] }));
+    assert!(!root.join("objects/pkg/hello").exists());
+}
+
+#[test]
+fn a_cell_build_need_has_no_origin() {
+    let d = tmp();
+    let root = d.path();
+    seed(root).unwrap();
+    let absent = format!("sha256-{}", "a".repeat(64));
+    let plan = PlanFile {
+        name: "hello".into(),
+        produces: "cell:hello".into(),
+        build_needs: vec![PkgNeed { id: "cell:hello-src".into(), hash: absent }],
+        run_needs: vec![],
+        script: String::new(),
+    };
+    let path = root.join("hello.plan");
+    std::fs::write(&path, fmt_plan(&plan)).unwrap();
+    let err = build_file(root, &path).unwrap_err().to_string();
+    assert!(err.contains("not in the store"), "{err}");
+}

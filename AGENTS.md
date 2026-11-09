@@ -100,7 +100,7 @@ forks/            submodules of patched upstreams (river, wlroots)
 apocrypha/        gitignored scratch — never a source of truth
 ```
 
-Kinds are `host svc snap pkg net ssh dev plan`. Do not add a kind
+Kinds are `host svc snap pkg net ssh dev plan cell`. Do not add a kind
 without a decision in `docs/decisions.md`.
 
 ## Workflow

@@ -93,6 +93,17 @@ fn main() {
     }
 }
 
+/// The schema files describe the binaries on this machine, so an upgraded
+/// oath brings its schemas with it, across a re-exec as well as a boot: a
+/// new kind exists only once its schema does.
+fn write_schemas() {
+    match oath_core::write_schemas(Path::new(DEFAULT_ROOT)) {
+        Ok(files) if !files.is_empty() => log(&format!("schema: wrote {}", files.join(" "))),
+        Ok(_) => {}
+        Err(e) => log(&format!("schema: {e}")),
+    }
+}
+
 fn real_main() -> Result<(), String> {
     if resume::resuming() {
         // A binary PID 1 re-executed into that cannot take the state goes
@@ -100,6 +111,7 @@ fn real_main() -> Result<(), String> {
         let why = match std::panic::catch_unwind(resume::take) {
             Ok(Ok(r)) => {
                 resume::announce(&r.why);
+                write_schemas();
                 run(r.sup, r.listener, hotplug::Hotplug::from_socket(r.uevents), r.resumes);
             }
             Ok(Err(e)) => e,
@@ -188,13 +200,7 @@ fn real_main() -> Result<(), String> {
             Err(e) => log(&format!("catalog migrate: {e}")),
         }
     }
-    // The schema files describe the binaries on this machine, so an
-    // upgraded oath brings its schemas with it.
-    match oath_core::write_schemas(Path::new(DEFAULT_ROOT)) {
-        Ok(files) if !files.is_empty() => log(&format!("schema: wrote {}", files.join(" "))),
-        Ok(_) => {}
-        Err(e) => log(&format!("schema: {e}")),
-    }
+    write_schemas();
     if !Path::new("/oath/INDEX.md").exists() {
         if let Ok(c) = Catalog::open(DEFAULT_ROOT) {
             let _ = c.write_index();

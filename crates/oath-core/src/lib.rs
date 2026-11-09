@@ -1,6 +1,7 @@
 //! Catalog, kinds, apply/undo. The live tree is `/oath` on an appliance.
 
 mod catalog;
+pub mod cell;
 mod dev;
 mod error;
 pub mod efi;
@@ -43,8 +44,8 @@ pub use error::{Error, Result};
 pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
 pub use id::ObjectId;
 pub use kinds::{
-    Dev, DevActual, DhcpLease, Host, HostPower, Meta, Mount, Net, Pkg, PkgActual, PkgAdvisory,
-    PkgComponent, PkgNeed, PkgRealization, PkgSource, PkgVerified, Plan, PlanActual, Snap, Ssh,
+    Cell, CellActual, Dev, DevActual, DhcpLease, Host, HostPower, Meta, Mount, Net, Pkg, PkgActual,
+    PkgAdvisory, PkgComponent, PkgNeed, PkgRealization, PkgSource, PkgVerified, Plan, PlanActual, Snap, Ssh,
     SshActual,
     Svc, SvcActual, SvcRestart, SvcSeat, SvcUser,
 };
@@ -100,6 +101,7 @@ pub const KIND_NET: &str = "net";
 pub const KIND_SSH: &str = "ssh";
 pub const KIND_DEV: &str = "dev";
 pub const KIND_PLAN: &str = "plan";
+pub const KIND_CELL: &str = "cell";
 pub const EXIT_SECURITY: i32 = 4;
 
 pub fn now_rfc3339() -> String {

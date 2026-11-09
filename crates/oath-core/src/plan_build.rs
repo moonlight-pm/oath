@@ -13,17 +13,19 @@ use serde_json::json;
 use crate::error::{Error, Result};
 use crate::id::ObjectId;
 use crate::kinds::{Meta, PkgNeed, PlanActual};
-use crate::packhash::{hash_tree, is_realization_id, realization_dir, slot_dir, LIVE_NAME};
+use crate::packhash::{hash_tree, is_realization_id, slot_dir, LIVE_NAME};
 use crate::pkg::{fetch_pkg_any, put_tree, resolve_tree, store_present};
 use crate::plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, PlanFile, PLAN_NAME,
 };
 use crate::write_json;
-use crate::{Catalog, KIND_PKG, KIND_PLAN};
+use crate::{Catalog, KIND_CELL, KIND_PKG, KIND_PLAN};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BuildReport {
     pub name: String,
+    /// What it made: `pkg:<name>`, or `cell:<name>`.
+    pub produces: String,
     pub plan_hash: String,
     pub product: String,
     pub inputs: String,
@@ -192,10 +194,11 @@ fn build_inner(
             let prev_i = obj.actual.get("inputs").and_then(|v| v.as_str()).unwrap_or("");
             // The cache key is the plan file and its inputs, both.
             if prev_h == plan_hash && prev_i == inputs && is_realization_id(prev_p) {
-                let dest = realization_dir(catalog_root, &plan.name, prev_p);
+                let dest = product_slot(catalog_root, plan).join(prev_p);
                 if dest.is_dir() {
                     return Ok(BuildReport {
                         name: plan.name.clone(),
+                        produces: plan.produces.clone(),
                         plan_hash: plan_hash.to_string(),
                         product: prev_p.to_string(),
                         inputs,
@@ -228,8 +231,7 @@ fn build_inner(
 
     let mut packs: Vec<(PkgNeed, PathBuf)> = Vec::new();
     for n in &plan.build_needs {
-        let name = n.id.strip_prefix("pkg:").unwrap();
-        packs.push((n.clone(), resolve_tree(catalog_root, name, &n.hash)?));
+        packs.push((n.clone(), need_tree(catalog_root, n)?));
     }
 
     let log_path = build_log(catalog_root, &plan.name);
@@ -277,7 +279,8 @@ fn build_inner(
     }
 
     let _store = store_lock(catalog_root, concurrent)?;
-    let dest = realization_dir(catalog_root, &plan.name, &product);
+    let slot = product_slot(catalog_root, plan);
+    let dest = slot.join(&product);
     if dest.is_dir() {
         let existing = hash_tree(&dest)?;
         if existing != product {
@@ -287,7 +290,7 @@ fn build_inner(
             ));
         }
     } else {
-        put_tree(&slot_dir(catalog_root, &plan.name), &product, &out)?;
+        put_tree(&slot, &product, &out)?;
     }
     writeln!(log, "# product {product}")?;
 
@@ -309,6 +312,7 @@ fn build_inner(
     let _ = script;
     Ok(BuildReport {
         name: plan.name.clone(),
+        produces: plan.produces.clone(),
         plan_hash: plan_hash.to_string(),
         product,
         inputs,
@@ -318,22 +322,55 @@ fn build_inner(
 }
 
 fn ensure_pkg_object(catalog_root: &Path, plan: &PlanFile, product: &str) -> Result<()> {
-    let dir = catalog_root.join("objects/pkg").join(&plan.name);
+    let kind = if plan.makes_cell() { KIND_CELL } else { KIND_PKG };
+    let dir = catalog_root.join("objects").join(kind).join(&plan.name);
     if dir.join("desired.json").is_file() {
         return Ok(());
     }
     fs::create_dir_all(&dir)?;
     let mut desired = json!({ "present": false, "hash": product });
     if !plan.run_needs.is_empty() {
-        desired["needs"] = serde_json::to_value(&plan.run_needs)?;
+        desired["needs"] = if plan.makes_cell() {
+            json!(plan.run_needs.iter().map(|n| n.id.as_str()).collect::<Vec<_>>())
+        } else {
+            serde_json::to_value(&plan.run_needs)?
+        };
     }
     write_json(&dir.join("desired.json"), &desired)?;
     write_json(&dir.join("applied.json"), &desired)?;
-    write_json(&dir.join("meta.json"), &Meta::new(KIND_PKG, &plan.name, "mutate"))?;
+    write_json(&dir.join("meta.json"), &Meta::new(kind, &plan.name, "mutate"))?;
     Ok(())
 }
 
+/// Where a plan's product goes: a package's store, or a cell's (R78).
+fn product_slot(catalog_root: &Path, plan: &PlanFile) -> PathBuf {
+    if plan.makes_cell() {
+        crate::cell::slot_dir(catalog_root, &plan.name)
+    } else {
+        slot_dir(catalog_root, &plan.name)
+    }
+}
+
+/// The tree of a build need that has been ensured.
+fn need_tree(catalog_root: &Path, n: &PkgNeed) -> Result<PathBuf> {
+    match n.id.strip_prefix("cell:") {
+        Some(name) => Ok(crate::cell::tree_dir(catalog_root, name, &n.hash)),
+        None => resolve_tree(catalog_root, n.id.strip_prefix("pkg:").unwrap(), &n.hash),
+    }
+}
+
 fn ensure_need(catalog_root: &Path, n: &PkgNeed, concurrent: bool) -> Result<()> {
+    if let Some(name) = n.id.strip_prefix("cell:") {
+        // A cell's source is in this store or nowhere: it has no origin.
+        let tree = crate::cell::tree_dir(catalog_root, name, &n.hash);
+        if !tree.is_dir() || hash_tree(&tree)? != n.hash {
+            return Err(Error::hint(
+                format!("{} @ {} is not in the store", n.id, n.hash),
+                format!("oath store {} <dir|file.tar>", n.id),
+            ));
+        }
+        return Ok(());
+    }
     let name = n.id.strip_prefix("pkg:").ok_or_else(|| {
         Error::hint(format!("build_needs id must be pkg:*, got {}", n.id), "oath schema plan")
     })?;
@@ -556,11 +593,15 @@ fn sandbox_in_child(
                 "oath schema plan",
             ));
         }
-        let dest = scratch.join("oath/store/pkg").join(name).join(hash);
+        let (area, name) = match name.strip_prefix("cell:") {
+            Some(cell) => ("cell", cell),
+            None => ("pkg", name.as_str()),
+        };
+        let dest = scratch.join("oath/store").join(area).join(name).join(hash);
         fs::create_dir_all(dest.parent().unwrap())?;
         fs::create_dir_all(&dest)?;
         bind(src, &dest, true)?;
-        slot_compat(scratch, name, hash, src)?;
+        slot_compat(scratch, area, name, hash, src)?;
         // `/bin` and `/lib` are link farms of the packs' programs and
         // libraries, as on a machine (R17): glibc's loader is
         // /lib/ld-linux-x86-64.so.2 and it searches /lib. `/lib32` is the
@@ -581,7 +622,8 @@ fn sandbox_in_child(
                 if link.symlink_metadata().is_ok() {
                     continue;
                 }
-                let target = PathBuf::from("/oath/store/pkg")
+                let target = PathBuf::from("/oath/store")
+                    .join(area)
                     .join(name)
                     .join(hash)
                     .join(dir)
@@ -667,8 +709,8 @@ fn sandbox_in_child(
 
 /// T32 slot face so wrappers that hardcode `/oath/store/pkg/<name>/libexec`
 /// still work when the tree is bound at `<name>/<hash>`.
-fn slot_compat(scratch: &Path, name: &str, hash: &str, src: &Path) -> Result<()> {
-    let slot = scratch.join("oath/store/pkg").join(name);
+fn slot_compat(scratch: &Path, area: &str, name: &str, hash: &str, src: &Path) -> Result<()> {
+    let slot = scratch.join("oath/store").join(area).join(name);
     let live = slot.join(LIVE_NAME);
     if live.symlink_metadata().is_err() {
         symlink(Path::new(hash), &live)?;

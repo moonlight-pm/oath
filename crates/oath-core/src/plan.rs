@@ -21,6 +21,13 @@ pub struct PlanFile {
     pub script: String,
 }
 
+impl PlanFile {
+    /// Whether its product is a `cell:` (R78) and not a `pkg:`.
+    pub fn makes_cell(&self) -> bool {
+        self.produces.starts_with("cell:")
+    }
+}
+
 pub fn file_hash(bytes: &[u8]) -> String {
     format!("{HASH_PREFIX}{}", hex(Sha256::digest(bytes).as_ref()))
 }
@@ -76,14 +83,16 @@ pub fn parse_plan(text: &str) -> Result<PlanFile> {
         .as_str()
         .ok_or_else(|| Error::hint("produces must be a string", "oath fmt <path>"))?
         .to_string();
-    if produces != format!("pkg:{name}") {
+    let makes_cell = produces == format!("cell:{name}");
+    if produces != format!("pkg:{name}") && !makes_cell {
         return Err(Error::hint(
-            format!("produces must be pkg:{name}"),
+            format!("produces must be pkg:{name} or cell:{name}"),
             "one plan → one product; names match",
         ));
     }
-    let build_needs = parse_needs(&obj["build_needs"], "build_needs")?;
-    let run_needs = parse_needs(&obj["run_needs"], "run_needs")?;
+    // Only a cell builds from a cell, or a package's source would be private.
+    let build_needs = parse_needs(&obj["build_needs"], "build_needs", makes_cell)?;
+    let run_needs = parse_needs(&obj["run_needs"], "run_needs", false)?;
     let script_part = script_part.strip_suffix('\n').unwrap_or(script_part);
     let mut lines = script_part.lines();
     if lines.next() != Some(SHEBANG) {
@@ -155,7 +164,7 @@ pub fn lint_path(path: &std::path::Path) -> Result<(PlanFile, Vec<u8>)> {
     Ok((plan, bytes))
 }
 
-fn parse_needs(v: &serde_json::Value, field: &str) -> Result<Vec<PkgNeed>> {
+fn parse_needs(v: &serde_json::Value, field: &str, cells: bool) -> Result<Vec<PkgNeed>> {
     let arr = v
         .as_array()
         .ok_or_else(|| Error::hint(format!("{field} must be an array"), "oath fmt <path>"))?;
@@ -177,10 +186,11 @@ fn parse_needs(v: &serde_json::Value, field: &str) -> Result<Vec<PkgNeed>> {
         let id = o["id"]
             .as_str()
             .ok_or_else(|| Error::hint("need id must be a string", "oath fmt <path>"))?;
-        if !id.starts_with("pkg:") || id.len() < 5 {
+        let named = id.strip_prefix("pkg:").or(id.strip_prefix("cell:").filter(|_| cells));
+        if named.is_none_or(str::is_empty) {
             return Err(Error::hint(
                 format!("need id must be pkg:<name>, got `{id}`"),
-                "oath fmt <path>",
+                "only a plan that produces a cell may build from cell:<name>",
             ));
         }
         let hash = o["hash"]
@@ -244,6 +254,29 @@ fn hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_cell_plan_may_build_from_a_cell_and_a_package_plan_may_not() {
+        let need = PkgNeed {
+            id: "cell:hello-src".into(),
+            hash: format!("sha256-{}", "c".repeat(64)),
+        };
+        let mut p = sample();
+        p.produces = "cell:hello".into();
+        p.build_needs.insert(0, need.clone());
+        let parsed = parse_plan(&fmt_plan(&p)).unwrap();
+        assert!(parsed.makes_cell());
+        assert_eq!(parsed.build_needs[0].id, "cell:hello-src");
+
+        p.produces = "pkg:hello".into();
+        let err = parse_plan(&fmt_plan(&p)).unwrap_err().to_string();
+        assert!(err.contains("cell:hello-src"), "{err}");
+
+        let mut r = sample();
+        r.produces = "cell:hello".into();
+        r.run_needs = vec![need];
+        assert!(parse_plan(&fmt_plan(&r)).is_err(), "a cell runs with packages, not cells");
+    }
 
     fn sample() -> PlanFile {
         PlanFile {

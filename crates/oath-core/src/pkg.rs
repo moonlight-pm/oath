@@ -748,8 +748,13 @@ pub fn program_realization(catalog_root: &Path, path: &Path) -> Option<(String, 
 /// fetch has, and return its hash. No object and no link changes: the
 /// caller pins the hash (`oath set pkg:<name> hash=…`) and applies.
 pub fn store_pkg(catalog_root: &Path, name: &str, src: &Path) -> Result<String> {
+    store_in(catalog_root, "pkg", name, src)
+}
+
+/// [`store_pkg`], into `store/<area>/<name>`: `pkg`, or `cell` (R78).
+pub(crate) fn store_in(catalog_root: &Path, area: &str, name: &str, src: &Path) -> Result<String> {
     let _lock = crate::Catalog::open(catalog_root)?.lock()?;
-    let slot = slot_dir(catalog_root, name);
+    let slot = catalog_root.join("store").join(area).join(name);
     if src.is_dir() {
         let hash = hash_tree(src)?;
         put_tree(&slot, &hash, src)?;
@@ -758,10 +763,10 @@ pub fn store_pkg(catalog_root: &Path, name: &str, src: &Path) -> Result<String> 
     if !src.is_file() || !looks_like_tar(src) {
         return Err(Error::hint(
             format!("not a directory or a tar: {}", src.display()),
-            "oath store pkg:<name> <dir|file.tar>",
+            format!("oath store {area}:<name> <dir|file.tar>"),
         ));
     }
-    let tmp = catalog_root.join("store/pkg").join(format!(".{name}.store"));
+    let tmp = catalog_root.join("store").join(area).join(format!(".{name}.store"));
     let _ = fs::remove_dir_all(&tmp);
     let tree = tmp.join("tree");
     fs::create_dir_all(&tree)?;
@@ -922,7 +927,7 @@ pub fn write_slot_links(catalog_root: &Path, name: &str, hash: &str) -> Result<(
     Ok(())
 }
 
-fn replace_symlink(path: &Path, target: &str) -> Result<()> {
+pub(crate) fn replace_symlink(path: &Path, target: &str) -> Result<()> {
     if let Ok(meta) = fs::symlink_metadata(path) {
         if meta.file_type().is_symlink() || meta.file_type().is_file() {
             fs::remove_file(path)?;

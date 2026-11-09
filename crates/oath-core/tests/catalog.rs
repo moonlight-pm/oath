@@ -1533,3 +1533,149 @@ fn a_package_links_its_libraries_into_lib() {
     converge_pkg(root, &root.join("bin"), "zz", false, &z).unwrap();
     assert!(link.symlink_metadata().is_err() && !root.join("bin/zz").exists());
 }
+
+/// A tree for `cell:<name>` in the store; its hash.
+fn cell_tree(root: &std::path::Path, name: &str) -> String {
+    let src = root.join(format!("src-{name}"));
+    std::fs::create_dir_all(src.join("bin")).unwrap();
+    std::fs::write(src.join("bin").join(name), "#!/bin/sh\n").unwrap();
+    oath_core::cell::store(root, name, &src).unwrap()
+}
+
+fn cell_fields(doc: serde_json::Value) -> Map<String, serde_json::Value> {
+    doc.as_object().unwrap().clone()
+}
+
+/// `cell:hamlet`, applied: its id, hash and hooks.
+fn applied_cell(
+    d: &tempfile::TempDir,
+    cat: &Catalog,
+    needs: serde_json::Value,
+) -> (ObjectId, String, MemHooks) {
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let hash = cell_tree(d.path(), "hamlet");
+    let id: ObjectId = "cell:hamlet".parse().unwrap();
+    cat.new_object(&id, cell_fields(json!({ "hash": hash, "needs": needs }))).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    (id, hash, hooks)
+}
+
+#[test]
+fn a_cell_is_stored_apart_and_links_nothing() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    let got = cat.get(&id).unwrap();
+    assert_eq!(got.actual["present"], json!(true));
+    assert_eq!(got.actual["hash"], json!(hash));
+    assert_eq!(got.actual["verified"]["ok"], json!(true));
+    assert_eq!(got.meta.status, "in-sync");
+    let live = std::fs::read_link(d.path().join("store/cell/hamlet/live")).unwrap();
+    assert_eq!(live, std::path::Path::new(&hash));
+    assert!(std::fs::symlink_metadata(d.path().join("bin/hamlet")).is_err(), "linked into /bin");
+    assert!(!d.path().join("store/pkg/hamlet").exists());
+    assert_eq!(*hooks.pkg_converges.lock().unwrap(), 0, "a cell took a package's path");
+}
+
+#[test]
+fn a_cell_comes_from_the_store_and_has_a_pin() {
+    let (d, cat) = seeded();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "cell:hamlet".parse().unwrap();
+    assert!(cat.new_object(&id, cell_fields(json!({}))).is_err(), "present with no pin");
+    let absent = format!("sha256-{}", "a".repeat(64));
+    cat.new_object(&id, cell_fields(json!({ "hash": absent }))).unwrap();
+    let err = cat.apply(Some(vec![id]), false, &Actor::unknown(), &hooks).unwrap_err();
+    match err {
+        Error::Hint { message, hint } => {
+            assert!(message.contains("not in the store"), "{message}");
+            assert!(hint.contains("oath store cell:hamlet"), "{hint}");
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_cell_needs_packages_by_name() {
+    let (d, cat) = seeded();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let hash = cell_tree(d.path(), "hamlet");
+    let id: ObjectId = "cell:hamlet".parse().unwrap();
+    for bad in ["cell:other", "libfoo", "svc:sshd"] {
+        let doc = json!({ "hash": hash, "needs": [bad] });
+        assert!(cat.new_object(&id, cell_fields(doc)).is_err(), "{bad}");
+    }
+    cat.new_object(&id, cell_fields(json!({ "hash": hash, "needs": ["pkg:nope"] }))).unwrap();
+    let err = cat.apply(Some(vec![id]), false, &Actor::unknown(), &hooks).unwrap_err();
+    assert!(err.to_string().contains("needs pkg:nope"), "{err}");
+}
+
+#[test]
+fn a_package_a_cell_needs_can_move_but_not_go() {
+    let (d, cat) = tmp_with_needs();
+    let (_, _, hooks) = applied_cell(&d, &cat, json!(["pkg:libfoo"]));
+    let app: ObjectId = "pkg:app".parse().unwrap();
+    let lib: ObjectId = "pkg:libfoo".parse().unwrap();
+
+    // Another hash on the package refuses nothing about the cell.
+    let other = format!("sha256-{}", "b".repeat(64));
+    let need = json!([{ "id": "pkg:libfoo", "hash": other }]);
+    cat.set_fields(&app, cell_fields(json!({ "needs": need, "hash": other }))).unwrap();
+    cat.set_fields(&lib, cell_fields(json!({ "hash": other }))).unwrap();
+    cat.apply(Some(vec![lib.clone(), app.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+
+    cat.set_fields(&app, cell_fields(json!({ "present": false }))).unwrap();
+    cat.apply(Some(vec![app]), false, &Actor::unknown(), &hooks).unwrap();
+    cat.set_fields(&lib, cell_fields(json!({ "present": false }))).unwrap();
+    let err = cat.apply(Some(vec![lib]), false, &Actor::unknown(), &hooks).unwrap_err();
+    assert!(err.to_string().contains("cell:hamlet needs pkg:libfoo"), "{err}");
+}
+
+#[test]
+fn removing_a_cell_ends_it_and_undo_brings_it_back() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    let live = d.path().join("store/cell/hamlet/live");
+    cat.remove_object(&id).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert!(cat.get(&id).is_err());
+    assert!(std::fs::symlink_metadata(&live).is_err());
+    assert!(d.path().join("store/cell/hamlet").join(&hash).is_dir(), "the tree stays for reap");
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.get(&id).unwrap().actual["present"], json!(true));
+    assert_eq!(std::fs::read_link(&live).unwrap(), std::path::Path::new(&hash));
+}
+
+#[test]
+fn a_cell_is_observed_again_after_a_boot() {
+    let (d, cat) = seeded();
+    let (id, hash, _hooks) = applied_cell(&d, &cat, json!(["pkg:bash"]));
+    std::fs::remove_file(oath_core::status_path(d.path(), &id)).unwrap();
+    assert!(cat.get(&id).unwrap().actual.is_null());
+    let lock = cat.lock().unwrap();
+    cat.observe(&lock, &d.path().join("bin")).unwrap();
+    drop(lock);
+    let actual = cat.get(&id).unwrap().actual;
+    assert_eq!(actual["present"], json!(true));
+    assert_eq!(actual["hash"], json!(hash));
+    assert_eq!(actual["needs"], json!(["pkg:bash"]));
+}
+
+#[test]
+fn a_damaged_cell_is_found() {
+    let (d, cat) = seeded();
+    let (id, hash, _hooks) = applied_cell(&d, &cat, json!([]));
+    std::fs::write(d.path().join("store/cell/hamlet").join(&hash).join("bin/hamlet"), "x").unwrap();
+    let found = cat.verify(None).unwrap();
+    assert!(found.iter().any(|v| v.id == id && !v.verified.ok));
+    assert_eq!(cat.get(&id).unwrap().meta.status, "error");
+    assert!(cat.index_text().unwrap().contains("`cell:hamlet` hashes to"));
+}
+
+#[test]
+fn the_kind_explains_itself() {
+    let (_d, cat) = seeded();
+    assert!(cat.kinds().unwrap().contains(&"cell".to_string()));
+    assert!(cat.schema_md("cell").unwrap().contains("oath publish"));
+    assert!(cat.schema_json("cell").unwrap().contains("\"needs\""));
+    assert!(cat.index_text().unwrap().contains("`cell`"));
+}

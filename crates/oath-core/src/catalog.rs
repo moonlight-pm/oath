@@ -10,12 +10,12 @@ use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
 use crate::kinds::{
-    Dev, Host, HostPower, Meta, Net, Pkg, PkgActual, Plan, Snap, Ssh, Svc, SvcRestart,
+    Cell, Dev, Host, HostPower, Meta, Net, Pkg, PkgActual, Plan, Snap, Ssh, Svc, SvcRestart,
 };
 use crate::probation;
 use crate::{
-    now_rfc3339, parse_gen_subvol, read_json, write_atomic, write_json, BTRFS_TOP, KIND_DEV,
-    KIND_HOST, KIND_NET, KIND_PKG, KIND_PLAN, KIND_SNAP, KIND_SSH, KIND_SVC,
+    now_rfc3339, parse_gen_subvol, read_json, write_atomic, write_json, BTRFS_TOP, KIND_CELL,
+    KIND_DEV, KIND_HOST, KIND_NET, KIND_PKG, KIND_PLAN, KIND_SNAP, KIND_SSH, KIND_SVC,
 };
 
 /// In an object directory: created by `oath new`, not applied yet.
@@ -49,7 +49,7 @@ fn fixed(obj: &Object) -> bool {
 
 /// Kinds `oath new` / `oath rm` work on. host, net, ssh, snap and dev are
 /// singletons or inventory owned by the engine.
-const CREATABLE: &[&str] = &[KIND_SVC, KIND_PKG];
+const CREATABLE: &[&str] = &[KIND_SVC, KIND_PKG, KIND_CELL];
 const LOCK_WAIT: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Debug)]
@@ -287,6 +287,11 @@ impl Catalog {
             actual.source = spec.source;
             self.write_actual(&id, &actual)?;
         }
+        for id in self.ls(Some(KIND_CELL))? {
+            let spec = self.applied(&id)?.unwrap_or(self.get(&id)?.desired);
+            let Ok(spec) = serde_json::from_value::<Cell>(spec) else { continue };
+            self.write_actual(&id, &crate::cell::observe(&self.root, &id.name, &spec))?;
+        }
         for id in self.ls(Some(KIND_PLAN))? {
             let spec = self.applied(&id)?.unwrap_or(self.get(&id)?.desired);
             let hash = spec.get("hash").cloned().unwrap_or(json!(""));
@@ -479,6 +484,7 @@ impl Catalog {
         let desired = match id.kind.as_str() {
             KIND_SVC => serde_json::to_value(serde_json::from_value::<Svc>(given)?)?,
             KIND_PKG => serde_json::to_value(serde_json::from_value::<Pkg>(given)?)?,
+            KIND_CELL => serde_json::to_value(serde_json::from_value::<Cell>(given)?)?,
             _ => given,
         };
         fs::create_dir_all(&dir)?;
@@ -832,22 +838,38 @@ impl Catalog {
     pub fn verify(&self, ids: Option<Vec<ObjectId>>) -> Result<Vec<Verified>> {
         let ids = match ids {
             Some(ids) => ids,
-            None => self.ls(Some(KIND_PKG))?,
+            None => {
+                let mut all = self.ls(Some(KIND_PKG))?;
+                all.extend(self.ls(Some(KIND_CELL))?);
+                all
+            }
         };
         let mut out = Vec::new();
         for id in ids {
-            if id.kind != KIND_PKG {
-                return Err(Error::hint(format!("{id} is not a package"), "oath verify [pkg:…]"));
+            if id.kind != KIND_PKG && id.kind != KIND_CELL {
+                return Err(Error::hint(
+                    format!("{id} is not a package or a cell"),
+                    "oath verify [pkg:…|cell:…]",
+                ));
             }
             let obj = self.get(&id)?;
             let hash = obj.actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
+            let tree = if id.kind == KIND_CELL {
+                crate::cell::tree_dir(&self.root, &id.name, hash)
+            } else {
+                crate::realization_dir(&self.root, &id.name, hash)
+            };
             if obj.actual.get("present") != Some(&json!(true))
                 || !crate::is_realization_id(hash)
-                || !crate::realization_dir(&self.root, &id.name, hash).is_dir()
+                || !tree.is_dir()
             {
                 continue;
             }
-            let v = crate::verify_tree(&self.root, &id.name, hash)?;
+            let v = if id.kind == KIND_CELL {
+                crate::cell::verify_tree(&self.root, &id.name, hash)?
+            } else {
+                crate::verify_tree(&self.root, &id.name, hash)?
+            };
             out.push(Verified { id, hash: hash.to_string(), verified: v });
         }
         let Ok(_lock) = self.lock() else { return Ok(out) };
@@ -1023,6 +1045,29 @@ impl Catalog {
                     return Err(Error::hint(format!("{id}: {why}"), hint()));
                 }
             }
+            KIND_CELL => {
+                let c: Cell = serde_json::from_value(doc.clone()).map_err(bad)?;
+                if !c.hash.is_empty() && !crate::is_realization_id(&c.hash) {
+                    return Err(Error::hint(
+                        format!("{id}: hash must be sha256- and 64 hex digits"),
+                        hint(),
+                    ));
+                }
+                if c.present && c.hash.is_empty() {
+                    return Err(Error::hint(format!("{id}: present needs a hash"), hint()));
+                }
+                let not_pkg =
+                    |n: &&String| n.parse::<ObjectId>().map_or(true, |i| i.kind != KIND_PKG);
+                if let Some(n) = c.needs.iter().find(not_pkg) {
+                    return Err(Error::hint(
+                        format!("{id}: needs: `{n}` is not pkg:<name>"),
+                        hint(),
+                    ));
+                }
+                if let Some(Err(why)) = c.source.as_ref().map(crate::PkgSource::check) {
+                    return Err(Error::hint(format!("{id}: {why}"), hint()));
+                }
+            }
             KIND_NET => {
                 let n: Net = serde_json::from_value(doc.clone()).map_err(bad)?;
                 if n.ipv4 != "dhcp" && !is_cidr(&n.ipv4) {
@@ -1089,6 +1134,7 @@ impl Catalog {
         }
         self.check_svc_wants()?;
         self.check_pkg_needs()?;
+        self.check_cell_needs()?;
         Ok(())
     }
 
@@ -1193,6 +1239,12 @@ impl Catalog {
                 desired
             }
             KIND_PKG => self.converge_one_pkg(id, hooks)?,
+            KIND_CELL => {
+                let cell: Cell = serde_json::from_value(desired.clone())?;
+                let actual = crate::cell::converge(&self.root, &id.name, &cell)?;
+                self.write_actual(id, &actual)?;
+                desired
+            }
             KIND_NET => {
                 let net: Net = serde_json::from_value(desired.clone())?;
                 let actual = hooks.converge_net(id, &net)?;
@@ -1260,6 +1312,7 @@ impl Catalog {
                 pkg.present = false;
                 hooks.converge_pkg(id, &pkg)?;
             }
+            KIND_CELL => self.unlive_cell(id, obj.desired)?,
             _ => {}
         }
         fs::remove_dir_all(&dir)?;
@@ -1291,6 +1344,7 @@ impl Catalog {
                             hooks.converge_pkg(id, &pkg)?;
                         }
                     }
+                    KIND_CELL => self.unlive_cell(id, self.get(id)?.desired)?,
                     KIND_SVC => {
                         let mut off: Value = read_json(&to.join("desired.json"))?;
                         off["enabled"] = json!(false);
@@ -1477,6 +1531,42 @@ impl Catalog {
             }
         }
         crate::svc_start_order(&svcs)?;
+        Ok(())
+    }
+
+    /// A cell that is going away no longer starts. Its trees stay for reap.
+    fn unlive_cell(&self, id: &ObjectId, desired: Value) -> Result<()> {
+        let mut cell: Cell = serde_json::from_value(desired)?;
+        cell.present = false;
+        crate::cell::converge(&self.root, &id.name, &cell)?;
+        Ok(())
+    }
+
+    /// What a present cell needs is on this machine, and stays. Hashes are
+    /// not compared: a cell starts with what the machine links.
+    fn check_cell_needs(&self) -> Result<()> {
+        for id in self.ls(Some(KIND_CELL))? {
+            if self.removing(&id) {
+                continue;
+            }
+            let Ok(cell) = serde_json::from_value::<Cell>(self.get(&id)?.desired) else {
+                continue;
+            };
+            if !cell.present {
+                continue;
+            }
+            for need in &cell.needs {
+                let there = need.parse::<ObjectId>().ok().filter(|n| !self.removing(n)).is_some_and(
+                    |n| self.get(&n).is_ok_and(|o| o.desired["present"] != json!(false)),
+                );
+                if !there {
+                    return Err(Error::hint(
+                        format!("{id} needs {need}, which this machine would not have"),
+                        format!("oath new {need}, or take it out of {id}'s needs"),
+                    ));
+                }
+            }
+        }
         Ok(())
     }
 

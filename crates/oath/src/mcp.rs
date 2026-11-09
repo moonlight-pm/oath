@@ -870,6 +870,7 @@ fn tools() -> Vec<Tool> {
         ("host", "Always `local`: the one host object is `host:local`."),
         ("svc", "The service: `svc:<name>`."),
         ("pkg", "The package: `pkg:<name>`."),
+        ("cell", "The cell: `cell:<name>`."),
         ("net", "`net0`: the one network link is `net:net0`."),
         ("ssh", "Always `local`: the owner's keys are `ssh:local`."),
     ] {
@@ -888,7 +889,11 @@ fn tools() -> Vec<Tool> {
             false,
         ));
     }
-    for (kind, what) in [("svc", "a process PID 1 supervises"), ("pkg", "a package")] {
+    for (kind, what) in [
+        ("svc", "a process PID 1 supervises"),
+        ("pkg", "a package"),
+        ("cell", "one project's software, run only in a cell"),
+    ] {
         t.push(write(
             &format!("new_{kind}"),
             format!(
@@ -906,9 +911,10 @@ fn tools() -> Vec<Tool> {
     }
     t.push(write(
         "rm",
-        "Mark a `svc` or `pkg` for removal. `apply` stops or unlinks it; `undo` brings it back."
+        "Mark a `svc`, `pkg` or `cell` for removal. `apply` stops or unlinks it; `undo` brings \
+         it back."
             .into(),
-        vec![p("id", Ty::Str, true, "`svc:<name>` or `pkg:<name>`.")],
+        vec![p("id", Ty::Str, true, "`svc:<name>`, `pkg:<name>` or `cell:<name>`.")],
         false,
         true,
         false,
@@ -1297,10 +1303,12 @@ mod tests {
                 "set_host",
                 "set_svc",
                 "set_pkg",
+                "set_cell",
                 "set_net",
                 "set_ssh",
                 "new_svc",
                 "new_pkg",
+                "new_cell",
                 "rm",
                 "apply",
                 "undo",
@@ -1331,7 +1339,7 @@ mod tests {
         assert_eq!(m.last()[4], "mcp:claudecode", "the label keeps A-Za-z0-9._/-");
 
         let r = modern(&mut s, &m, "tools/list", json!({}));
-        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 24);
+        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 26);
         assert_eq!(r["result"]["ttlMs"], TTL_MS);
         let r = modern(&mut s, &m, "tools/call", json!({ "name": "ls", "arguments": {} }));
         assert_eq!(r["result"]["resultType"], "complete");

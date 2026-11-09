@@ -503,7 +503,7 @@ impl Output {
         Ok(Self { pins, fixed, pinned, packs, versions })
     }
 
-    fn pin(&self, name: &str) -> Option<&str> {
+    pub fn pin(&self, name: &str) -> Option<&str> {
         self.pins.iter().find(|(n, _, _)| n == name).map(|(_, h, _)| h.as_str())
     }
 }

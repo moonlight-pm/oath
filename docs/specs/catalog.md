@@ -56,7 +56,7 @@ the parse apply runs all come from the same type. The files under
 `schema/` are copies for readers: seed writes them, and PID 1 rewrites
 any that differ at every boot, so an upgraded `oath` brings its
 schemas. The prose (`<kind>.md`) is hand-written and embedded too. Today's kinds: `host`,
-`svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`. No kind is added
+`svc`, `snap`, `pkg`, `net`, `ssh`, `dev`, `plan`, `cell`. No kind is added
 without a recorded decision.
 
 `status`, as `oath get` reports it, is `in-sync`, `drift`, `new`,

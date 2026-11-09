@@ -25,7 +25,7 @@ Replaces: T43, and the toolchain parts of T35.
 - Catalog id `plan:<name>`. Store
   `/oath/store/plan/<name>/<hash>/plan.plan`. The realization id is
   SHA-256 of the file's bytes.
-- One plan, one product: `name`, the slot, and `produces: "pkg:<name>"`
+- One plan, one product: `name`, the slot, and `produces: "pkg:<name>"` (or `"cell:<name>"`, R78)
   agree, or the plan is refused.
 - No anonymous blobs. Every input is a named package at a pin. A source
   tarball is a package such as `pkg:hello-src` with `url` and `hash`.

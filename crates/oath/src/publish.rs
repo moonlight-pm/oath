@@ -17,7 +17,7 @@ use std::process::Command;
 use oath_core::head::{self, Head};
 use oath_core::origin::{self, Origin};
 use oath_core::update::short;
-use oath_core::{find_bin, Catalog, Error, ObjectId, PkgNeed, Result, KIND_PKG};
+use oath_core::{find_bin, Catalog, Error, ObjectId, PkgNeed, Result, KIND_CELL, KIND_PKG};
 use serde_json::{json, Value};
 
 pub struct Opts {
@@ -33,6 +33,12 @@ pub struct Opts {
 
 pub fn run(root: &Path, cat: &Catalog, opts: Opts) -> Result<i32> {
     let id: ObjectId = opts.id.parse()?;
+    if id.kind == KIND_CELL {
+        return Err(Error::hint(
+            format!("{id} is a cell, and a cell never goes to an origin (R78)"),
+            "it reaches the machine that runs it by `oath store`",
+        ));
+    }
     if id.kind != KIND_PKG {
         return Err(Error::hint("oath publish takes pkg:<name>", "oath publish pkg:<name>"));
     }
@@ -234,4 +240,25 @@ fn finish(opts: &Opts, v: Value, text: &str) -> Result<i32> {
         println!("{text}");
     }
     Ok(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_cell_never_goes_to_an_origin() {
+        let d = tempfile::tempdir().unwrap();
+        oath_core::seed(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        let opts = Opts {
+            id: "cell:hamlet".into(),
+            dest: None,
+            committed: None,
+            confirm: true,
+            json: false,
+        };
+        let err = run(d.path(), &cat, opts).unwrap_err().to_string();
+        assert!(err.contains("never goes to an origin"), "{err}");
+    }
 }

@@ -65,7 +65,7 @@ func (s *store) runCommand(args []string) (int, error) {
 	fs.Var(&o.tmpfs, "tmpfs", "/path, a memory file system")
 	fs.Var(&o.env, "e", "NAME=value, which every process listing shows")
 	fs.Var(&o.envFile, "env-file", "a file of NAME=value lines, for what should not show")
-	fs.Var(&o.with, "with", "pkg:name, another package a pkg: cell runs with")
+	fs.Var(&o.with, "with", "pkg:name, another package a pkg: or cell: run has")
 	fs.StringVar(&o.workdir, "w", "", "the directory to start in")
 	fs.StringVar(&o.entrypoint, "entrypoint", "", "the program, over the image's")
 	fs.StringVar(&o.user, "user", "", "uid[:gid] or a name in the image, over its USER: the number this cell's one uid wears")
@@ -93,10 +93,10 @@ func (s *store) run(o *options) (int, error) {
 	}
 	var from *source
 	var err error
-	if strings.HasPrefix(o.image, "pkg:") {
+	if strings.HasPrefix(o.image, "pkg:") || strings.HasPrefix(o.image, "cell:") {
 		from, err = packSource(o)
 	} else if len(o.with) > 0 {
-		err = errors.New("--with is for a pkg: cell")
+		err = errors.New("--with is for a pkg: or cell: run")
 	} else {
 		from, err = s.imageSource(o)
 	}
@@ -347,7 +347,8 @@ func chain(pasta int) (crun, first int) {
 			return 0
 		}
 		for _, c := range children[pid] {
-			if names[c] == "crun" {
+			// crun may re-execute from a copy of itself in memory, under this name.
+			if names[c] == "crun" || strings.HasPrefix(names[c], "memfd:crun") {
 				return c
 			}
 			if got := find(c, depth+1); got > 0 {
