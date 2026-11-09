@@ -17,7 +17,7 @@
     },
     {
       "id": "pkg:certs",
-      "hash": "sha256-dd0052627dd1192b25e0e5b588b1df4ba561d022d57725c986025dfbf532f111"
+      "hash": "sha256-55a5c52e35c515c496a70a5ac439dbc3babd26f8080961e3be84ae35e572b507"
     },
     {
       "id": "pkg:cmake",
@@ -161,7 +161,7 @@
     },
     {
       "id": "pkg:openssl",
-      "hash": "sha256-0deca3eddfe64139f3a6443f3e3298ae564f750a5eae0fb749202699e2b68403"
+      "hash": "sha256-422281b69047b884063bec0c4be9e61f8bb9002814edc29105cab39c0c095fd9"
     },
     {
       "id": "pkg:patch",
