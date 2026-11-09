@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-09 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R80 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R81 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -21,9 +21,8 @@ append history (git has it).
    `0c99a6a5`; the audit's `bda181db1fc6` had R72 and R73 too), on novus and buccina, and `base`
    `ee3e239caa32`, on dulcia; canto runs its unpublished successor `06e0194eb4f3`. novus, canto, dulcia and buccina trust key `oath@novus` for `names="sola,sola-*"`;
    koeurax does not yet. The newest releases are `desk` `f4e271a5e318` and `base` `18e3d7395a22` (2026-11-09, from `d2e61b0`, for R78), on no machine yet; koeurax runs `desk` `f997e9baf436`. They carry `pkg:certs` in `base`, recipe plans in the manifest, Minecraft's plans and source packs (R13), `pkg:openssl`'s new pack, and `ab0a7dc`'s firmware report, which the update after them is the first to use. The 2026-11-12 audit run should make the next `desk` with expat, harfbuzz, libsndfile's fix and CEF. Gap: a changed `svc` spec goes by hand.
-   Next: Sola's publish runs `oath publish` (its branch
-   `oath-heads`, sandbox builds, waits on Joshua's merge); then slices 2 (packaged services) and 4
-   (Oath's own heads).
+   R81: `oath add <name>` and `oath ls --origin` install by name with dependencies, from a signed head for every package but `linux`, `oath` and `firmware`; built 2026-11-09, not published, so not yet in the manual.
+   Next: publish R81 (Joshua's word); Sola's publish runs `oath publish` (its branch `oath-heads`, sandbox builds, waits on Joshua's merge); then slice 2 (packaged services) and the rest of 4 (the kernel and PID 1 as heads).
 2. **Phase 8 slice 2: the desk** (R19–R22, R28, R37, R40, R42,
    [docs/specs/desk.md](docs/specs/desk.md)) on canto and novus. R44:
    novus's `sola-kvm server` drives canto (`svc:sola-kvm` off in the

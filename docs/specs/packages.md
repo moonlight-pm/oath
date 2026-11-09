@@ -181,7 +181,8 @@ origin, then the newest checked output's signed release; `--dest
 
 ## Heads (R72)
 
-**Slices 1 (heads) and 3 (seeds) are built; 2 and 4 will be.** A package
+**Slices 1 (heads) and 3 (seeds) are built, and so is the first half of 4
+(R81); 2 and the rest of 4 will be.** A package
 is published on its own, by
 whoever makes it, and machines meet only at the origin. Today a pack
 reaches a machine through a profile's release (R38): Sola publishes,
@@ -226,7 +227,22 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   `cargo make` and the tests set it to `crates/oath-core/seed`). A pin in
   a profile no longer moves PID 1's hash. PID 1 still seeds a machine
   that has no catalog at all, from those files.
-- **Oath's own packages** (slice 4). buccina's publish writes a head for
+- **By name (R81, is).** `cargo make publish` writes a signed head for
+  every package it builds but `linux`, `oath` and `firmware`, which a
+  release carries because a machine boots them. A head that says the same
+  pack and needs is left, and so is one from a later commit. `oath ls
+  --origin [word]` lists `index.json`, which is not signed; nothing is
+  installed from it. `oath add <name>` takes the newest head a key may sign
+  for that name, makes each package it needs that the machine lacks, and
+  applies them; `oath new pkg:<name>` with no fields makes them without
+  applying. Nothing the machine has moves. A need it holds at another pin
+  is re-pointed if the package loses no library (the check above), and
+  otherwise nothing is made and `oath update` comes first. A recipe has no
+  pack, so no head: it is listed and built on the machine. A head beats a
+  release and never goes back, so `oath update --output <older>` leaves
+  these packages where they are, and a publish for one profile moves them on
+  machines that follow the other.
+- **Oath's own packages** (slice 4, the rest). buccina's publish writes a head for
   every package it builds; the kernel, initrd and PID 1 move as
   `pkg:linux` and `pkg:oath` (the ESP and a PID 1 re-exec, R73), and
   `out/<profile>.json` goes once every machine follows heads.

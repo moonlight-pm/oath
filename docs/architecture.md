@@ -242,7 +242,8 @@ cargo make publish [--dest <dir>] [--output <id>]
   to the origin only from a clean master equal to origin/master after a
   fetch, with an output built clean at a commit master has (R47); then
   every locked pack and every profile-named one, with its plan, source
-  pack and advisories, then index.json and INDEX.md (R25): without --dest, curl
+  pack and advisories, a signed head for each but linux, oath and firmware
+  (R81), then index.json and INDEX.md (R25): without --dest, curl
   --aws-sigv4 lists the R2 bucket oath-store and puts what it lacks,
   key from ~/.config/oath/origin.env; machines read it at
   https://store.oath.moonlight.pm (host:local.origins). Then the newest

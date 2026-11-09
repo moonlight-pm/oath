@@ -255,6 +255,48 @@ pub fn plan(
     moves
 }
 
+/// What `oath new pkg:<name>` and `oath add` make (R81): each of `names` at
+/// its head and, at theirs, each package those need that `machine` lacks.
+/// Nothing the machine has moves. The moves are [`Move::Head`]s from no pin,
+/// and `machine` comes back with an empty entry for each, so [`settle`] can
+/// hold one that would lose a library. A need with no head is an error:
+/// nothing says what that package needs in turn.
+pub fn additions(
+    machine: &BTreeMap<String, Value>,
+    offers: &BTreeMap<String, Offer>,
+    names: &[String],
+) -> Result<(BTreeMap<String, Value>, Vec<Move>)> {
+    let mut with = machine.clone();
+    let mut moves = Vec::new();
+    let mut todo: Vec<(String, Option<String>)> =
+        names.iter().rev().map(|n| (n.clone(), None)).collect();
+    while let Some((name, by)) = todo.pop() {
+        if with.contains_key(&name) {
+            continue;
+        }
+        let Some(offer) = offers.get(&name) else {
+            let what = match by {
+                Some(p) => format!("pkg:{p} needs pkg:{name}, which has no head on any origin"),
+                None => format!("pkg:{name} has no head on any origin"),
+            };
+            return Err(Error::hint(what, format!("oath ls --origin {name}")));
+        };
+        let set = offer.head.fields();
+        todo.extend(need_names(&set).into_iter().rev().map(|n| (n, Some(name.clone()))));
+        with.insert(name.clone(), json!({ "present": true, "hash": "" }));
+        moves.push(Move::Head {
+            name,
+            from: String::new(),
+            to: offer.head.hash.clone(),
+            set,
+            overlay: None,
+            signer: offer.signer.clone(),
+            repointed: Vec::new(),
+        });
+    }
+    Ok((with, moves))
+}
+
 /// One package as the moves leave it.
 struct Final {
     hash: String,
@@ -703,6 +745,63 @@ mod tests {
         let m = settle(&machine, moves, |_, _| None, |_, _| None);
         assert_eq!(m.iter().map(Move::kind).collect::<Vec<_>>(), ["head", "repoint"]);
         assert!(texts(&m)[1].contains("checks its libraries once the packs are here"));
+    }
+
+    fn addition_names(moves: &[Move]) -> Vec<String> {
+        moves.iter().map(|m| m.name().to_string()).collect()
+    }
+
+    #[test]
+    fn additions_take_what_the_machine_lacks_and_move_nothing_it_has() {
+        let machine = BTreeMap::from([("glibc".to_string(), doc('g', &[]))]);
+        let o = offers(vec![
+            head("cell", 'c', &[("crun", 'r'), ("glibc", 'g')], "t"),
+            head("crun", 'r', &[("seccomp", 's')], "t"),
+            head("seccomp", 's', &[], "t"),
+            head("glibc", 'G', &[], "t"),
+            head("other", 'o', &[], "t"),
+        ]);
+        let (with, moves) = additions(&machine, &o, &["cell".to_string()]).unwrap();
+        assert_eq!(addition_names(&moves), ["cell", "crun", "seccomp"]);
+        assert_eq!(with["cell"]["hash"], "");
+        assert_eq!(with["glibc"], machine["glibc"]);
+    }
+
+    #[test]
+    fn a_need_with_no_head_is_named() {
+        let o = offers(vec![head("cell", 'c', &[("crun", 'r')], "t")]);
+        let names = ["cell".to_string()];
+        let e = additions(&BTreeMap::new(), &o, &names).unwrap_err().to_string();
+        assert!(e.contains("pkg:cell needs pkg:crun, which has no head"), "{e}");
+        let names = ["nothing".to_string()];
+        let e = additions(&BTreeMap::new(), &o, &names).unwrap_err().to_string();
+        assert!(e.contains("pkg:nothing has no head"), "{e}");
+    }
+
+    #[test]
+    fn a_new_package_runs_with_the_machines_pin_if_it_loses_no_library() {
+        let machine = BTreeMap::from([("certs".to_string(), doc('n', &[]))]);
+        let o = offers(vec![head("cell", 'c', &[("certs", 'o')], "t")]);
+        let (with, moves) = additions(&machine, &o, &["cell".to_string()]).unwrap();
+        let none = trees(&[]);
+        let m = run(&with, moves, &none, &none);
+        assert_eq!(addition_names(&m), ["cell"]);
+        let Move::Head { set, repointed, .. } = &m[0] else { panic!("{m:?}") };
+        assert_eq!(set["needs"][0]["hash"], json!(h('n')));
+        assert_eq!(repointed.len(), 1, "{repointed:?}");
+    }
+
+    #[test]
+    fn a_new_package_that_would_lose_a_library_is_held() {
+        let machine = BTreeMap::from([("foo".to_string(), doc('n', &[]))]);
+        let o = offers(vec![head("app", 'a', &[("foo", 'o')], "t")]);
+        let (with, moves) = additions(&machine, &o, &["app".to_string()]).unwrap();
+        let loads = trees(&[("app", 'a', &["libfoo.so.1"])]);
+        let provides = trees(&[("foo", 'n', &["libfoo.so.2"])]);
+        let m = run(&with, moves, &loads, &provides);
+        let Move::Hold { name, why, .. } = &m[0] else { panic!("{m:?}") };
+        assert_eq!(name, "app");
+        assert!(why.contains("would lose libfoo.so.1"), "{why}");
     }
 
     #[test]

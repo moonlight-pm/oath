@@ -23,6 +23,9 @@ Do **not** edit `/etc` or random files. Use `oath`.
 
     oath                 this INDEX (the file is {index})
     oath ls              list objects  (optional --kind)
+    oath ls --origin [word]  what the origins hold; `*` is here
+    oath add <name>...   install by name, with what it needs (`oath new pkg:<name>`
+                         with no fields makes them without applying)
     oath schema [kind]   kinds, or one kind's schema + prose
     oath get <id>        desired + actual
     oath set <id> k=v    write desired only (checked against the kind's type)

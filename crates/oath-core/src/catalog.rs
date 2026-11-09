@@ -495,6 +495,18 @@ impl Catalog {
         Ok(())
     }
 
+    /// Delete an object that was never applied; one that was stays as it
+    /// is. What undoes an `oath new` when the apply after it failed.
+    pub fn forget_new(&self, id: &ObjectId) -> Result<()> {
+        let _lock = self.lock()?;
+        let dir = self.obj_dir(id);
+        if dir.join(NEW_MARK).exists() {
+            fs::remove_dir_all(&dir)?;
+            self.write_index()?;
+        }
+        Ok(())
+    }
+
     /// `oath rm`: mark a `svc` or `pkg` for removal. `oath apply` stops or
     /// unlinks it and deletes the object; undo brings it back. An object
     /// that was never applied is deleted at once.

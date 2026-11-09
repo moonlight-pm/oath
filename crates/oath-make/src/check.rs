@@ -427,6 +427,14 @@ fn fetchme_origin(root: &Path, base: &Path) -> Result<Vec<(String, Vec<u8>)>> {
     );
     let mut files = vec![
         ("/origin/INDEX.md".into(), index.into_bytes()),
+        (
+            "/origin/index.json".into(),
+            serde_json::to_vec(&serde_json::json!({
+                "packages": [{ "name": "fetchme", "hash": pin, "version": "1.0",
+                               "category": "check", "description": "The check's fetch canary." }],
+                "recipes": [],
+            }))?,
+        ),
         (format!("/origin/pkg/fetchme/{pin}.tar"), out.stdout),
     ];
     let key = base.join("head_key");

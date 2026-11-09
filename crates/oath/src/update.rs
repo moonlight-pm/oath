@@ -444,7 +444,7 @@ fn reexec_pid1(bin: &Path, init: &str) -> (bool, String) {
 
 /// A directory removed when the run ends, however it ends: nothing of an
 /// update stays behind.
-struct Scratch(PathBuf);
+pub(crate) struct Scratch(pub(crate) PathBuf);
 
 impl Drop for Scratch {
     fn drop(&mut self) {
@@ -900,7 +900,7 @@ fn fetch_release(
 /// heads and the machine's packages need, from every origin (R72): the
 /// newest a key in `trusted` may sign for that name. Returns the offers and
 /// what was refused or could not be read, one line each.
-fn fetch_heads(
+pub(crate) fn fetch_heads(
     origins: &[String],
     machine: &BTreeMap<String, Value>,
     trusted: &[String],
@@ -1061,7 +1061,7 @@ fn with_heads(
 
 /// [`head::settle`] against the trees in this store: what a package's ELF
 /// files load, and what each package puts in `/lib`.
-fn settle(root: &Path, machine: &BTreeMap<String, Value>, moves: Vec<Move>) -> Vec<Move> {
+pub(crate) fn settle(root: &Path, machine: &BTreeMap<String, Value>, moves: Vec<Move>) -> Vec<Move> {
     let tree =
         |n: &str, h: &str| Some(oath_core::realization_dir(root, n, h)).filter(|t| t.is_dir());
     head::settle(

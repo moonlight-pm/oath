@@ -112,6 +112,11 @@ pub fn make(o: &Output, dir: &Path) -> Result<Made> {
 /// (`oath_core::update::newer`). None when git does not have the commit.
 pub(crate) fn committed(manifest: &Value) -> Option<String> {
     let commit = manifest["packs"]["oath"]["commit"].as_str()?.trim_end_matches("-dirty");
+    commit_time(commit)
+}
+
+/// When `commit` was made (RFC 3339, UTC), as this checkout's git knows it.
+pub(crate) fn commit_time(commit: &str) -> Option<String> {
     let out = run_out(
         Command::new("git")
             .arg("-C")

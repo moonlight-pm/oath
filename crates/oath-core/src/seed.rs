@@ -116,6 +116,11 @@ impl Profile {
         self.objects.keys().filter_map(|id| id.strip_prefix("pkg:")).map(str::to_string).collect()
     }
 
+    /// The spec the profile gives object `id`, if it names it.
+    pub fn object(&self, id: &str) -> Option<&Value> {
+        self.objects.get(id)
+    }
+
     /// Every `pkg:*` object the profile pins with a `hash`, by name, with its
     /// spec: a pack built elsewhere (R28), not from `pkgs/`.
     pub fn pinned_pkgs(&self) -> BTreeMap<String, Value> {

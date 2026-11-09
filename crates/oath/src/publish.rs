@@ -209,7 +209,7 @@ fn first_origin(cat: &Catalog) -> Option<String> {
     host["origins"].as_array()?.first()?.as_str().map(|o| o.trim_end_matches('/').to_string())
 }
 
-fn read_url(url: &str) -> Option<Vec<u8>> {
+pub(crate) fn read_url(url: &str) -> Option<Vec<u8>> {
     let out = Command::new(find_bin("curl")).args(["-fsSL", url]).output().ok()?;
     out.status.success().then_some(out.stdout)
 }

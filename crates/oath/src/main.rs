@@ -10,6 +10,7 @@ use oath_core::{
 };
 use serde_json::{json, Map, Value};
 
+mod add;
 mod install;
 mod live;
 mod login;
@@ -43,6 +44,14 @@ enum Cmd {
     Ls {
         #[arg(long)]
         kind: Option<String>,
+        /// What the origins hold (R81), not what this machine has: each
+        /// package's version and what it is, `*` on those here.
+        #[arg(long, conflicts_with = "kind")]
+        origin: bool,
+        /// With --origin: only packages with this in their name, category
+        /// or description.
+        #[arg(requires = "origin")]
+        word: Option<String>,
     },
     Schema {
         kind: Option<String>,
@@ -70,6 +79,14 @@ enum Cmd {
         from_json: Option<String>,
         #[arg(value_name = "K=V")]
         fields: Vec<String>,
+    },
+    /// Install packages by name (R81): each at its newest signed head, with
+    /// what it needs that this machine lacks, made and applied at once.
+    /// `oath new pkg:<name>` with no fields makes them without applying.
+    Add {
+        /// `<name>` or `pkg:<name>`.
+        #[arg(required = true)]
+        names: Vec<String>,
     },
     /// Mark a svc or pkg for removal; `oath apply` stops or unlinks it.
     Rm {
@@ -293,6 +310,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Get { .. }) => "get",
         Some(Cmd::Set { .. }) => "set",
         Some(Cmd::New { .. }) => "new",
+        Some(Cmd::Add { .. }) => "add",
         Some(Cmd::Rm { .. }) => "rm",
         Some(Cmd::Fmt { .. }) => "fmt",
         Some(Cmd::Store { .. }) => "store",
@@ -392,7 +410,10 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Ls { kind }) => {
+        Some(Cmd::Ls { origin: true, word, .. }) => {
+            add::list(&cli.root, &cat, word.as_deref(), cli.json)
+        }
+        Some(Cmd::Ls { kind, .. }) => {
             let ids = cat.ls(kind.as_deref())?;
             if cli.json {
                 let v: Vec<String> = ids.iter().map(|i| i.to_string()).collect();
@@ -567,13 +588,28 @@ fn run() -> oath_core::Result<i32> {
         }
         Some(Cmd::New { id, from_json, fields }) => {
             let id: ObjectId = id.parse()?;
-            cat.new_object(&id, field_map(&id, from_json, fields)?)?;
-            if cli.json {
-                println!("{}", json!({"ok": true, "id": id.to_string()}));
+            let map = field_map(&id, from_json, fields)?;
+            let named = if id.kind == KIND_PKG && map.is_empty() {
+                add::new(&cli.root, &cat, &id, cli.json)?
             } else {
-                println!("{id} created; `oath apply {id}` starts it");
+                None
+            };
+            match named {
+                Some(code) => Ok(code),
+                None => {
+                    cat.new_object(&id, map)?;
+                    if cli.json {
+                        println!("{}", json!({"ok": true, "id": id.to_string()}));
+                    } else {
+                        println!("{id} created; `oath apply {id}` starts it");
+                    }
+                    Ok(0)
+                }
             }
-            Ok(0)
+        }
+        Some(Cmd::Add { names }) => {
+            let hooks = live::Live::new(&cli.root);
+            add::add(&cli.root, &cat, &actor, &hooks, names, cli.confirm, cli.json)
         }
         Some(Cmd::Rm { id }) => {
             let id: ObjectId = id.parse()?;

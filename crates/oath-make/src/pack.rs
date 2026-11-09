@@ -8,7 +8,8 @@ use anyhow::{bail, Context, Result};
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
-use oath_core::{converge_with_link_root, promote_store, write_json};
+use oath_core::head::{self, Head};
+use oath_core::{converge_with_link_root, promote_store, write_json, PkgNeed};
 use serde_json::json;
 
 use crate::cpio;
@@ -836,7 +837,8 @@ pub fn publish_store(
         None => BTreeSet::new(),
     };
     let there = |key: &str| have.contains(key) || dest.is_some_and(|d| d.join(key).is_file());
-    let p = collect_publication(repo, there)?;
+    let mut p = collect_publication(repo, there)?;
+    sign_heads(repo, &mut p, dest, there)?;
     match dest {
         Some(d) => write_publication(repo, &p, d)?,
         None => upload_publication(repo, &p)?,
@@ -860,6 +862,8 @@ struct Publication {
     files: Vec<(String, Body)>,
     packs: usize,
     skipped: Vec<String>,
+    /// The head of each package, not yet signed (R81).
+    heads: Vec<Head>,
 }
 
 enum Body {
@@ -874,8 +878,14 @@ enum Body {
 
 fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publication> {
     let mut named = BTreeSet::new();
+    let mut seeded = BTreeMap::<String, serde_json::Value>::new();
     for profile in oath_core::profiles() {
         let p = oath_core::Profile::load(&profile).map_err(|e| anyhow::anyhow!("{e}"))?;
+        for n in p.pkgs() {
+            if let Some(o) = p.object(&format!("pkg:{n}")) {
+                seeded.entry(n).or_insert_with(|| o.clone());
+            }
+        }
         named.extend(p.pkgs());
     }
     let lock = crate::pkgs::read_lock(repo)?;
@@ -949,7 +959,8 @@ fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publ
                 );
             }
         }
-        rows.push(Published { name: name.clone(), hash, license, plan, plan_hash, src });
+        let needs = parsed.run_needs.clone();
+        rows.push(Published { name: name.clone(), hash, license, plan, plan_hash, src, needs });
     }
 
     let mut files = Vec::new();
@@ -992,9 +1003,11 @@ fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publ
 
     let mut index = String::from(
         "# Oath pack origin\n\n\
-         Not a package manager. Trees are `oath-tree-v1` (SHA-256). \
-         Fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`; any origin may serve \
-         any pack, and the hash decides. \
+         A machine takes a package by name with `oath add <name>`: its head, \
+         `{origin}/pkg/<name>.json`, is signed and says its pin and what it needs. \
+         `index.json` lists what is here for `oath ls --origin`. Trees are `oath-tree-v1` \
+         (SHA-256). By hand: fetch `{origin}/pkg/<name>/<hash>.tar` and pin `desired.hash`; any \
+         origin may serve any pack, and the hash decides. \
          Advisories are `{origin}/adv/<name>/<hash>.json` (not part of the pack hash). \
          Each pack was built by `{origin}/plan/<name>/<plan>.plan` from the source pack \
          `{origin}/pkg/<name>-src/<source>.tar` that the plan pins; every pack a plan builds \
@@ -1031,6 +1044,7 @@ fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publ
             "hash": r.hash,
             "version": version,
             "category": toml.map(|t| t.category.as_str()).filter(|c| !c.is_empty()),
+            "description": toml.map(|t| t.description.as_str()).filter(|d| !d.is_empty()),
             "license": r.license,
             "plan": r.plan_hash,
             "source": r.src,
@@ -1043,6 +1057,7 @@ fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publ
             "builds": product,
             "version": all.get(name).map(|t| t.version.as_str()),
             "category": all.get(name).map(|t| t.category.as_str()).filter(|c| !c.is_empty()),
+            "description": all.get(name).map(|t| t.description.as_str()).filter(|d| !d.is_empty()),
             "license": license,
             "plan": plan,
         })
@@ -1055,7 +1070,127 @@ fn collect_publication(repo: &Path, there: impl Fn(&str) -> bool) -> Result<Publ
     listing.push(b'\n');
     files.push(("index.json".into(), Body::Bytes(listing)));
     files.push(("INDEX.md".into(), Body::Bytes(index.into_bytes())));
-    Ok(Publication { files, packs: rows.len(), skipped })
+    let published = oath_core::now_rfc3339();
+    let committed = crate::release::commit_time("HEAD");
+    let heads = rows
+        .iter()
+        .filter(|r| !BOOTS_THE_MACHINE.contains(&r.name.as_str()))
+        .map(|r| {
+            let toml = all.get(&r.name);
+            // A machine's object says what the seed does, then the package:
+            // a head that said otherwise would move every package once.
+            let text = |k: &str, f: fn(&crate::pkgs::PkgToml) -> &String| {
+                seeded
+                    .get(&r.name)
+                    .and_then(|s| s[k].as_str())
+                    .filter(|v| !v.is_empty())
+                    .map(String::from)
+                    .or_else(|| toml.map(|t| f(t).clone()))
+                    .unwrap_or_default()
+            };
+            Head {
+                name: r.name.clone(),
+                hash: r.hash.clone(),
+                needs: r.needs.clone(),
+                published: published.clone(),
+                committed: committed.clone(),
+                source: None,
+                version: toml.map(|t| t.version.clone()).unwrap_or_default(),
+                description: text("description", |t| &t.description),
+                home: text("home", |t| &t.home),
+                category: text("category", |t| &t.category),
+            }
+        })
+        .collect();
+    Ok(Publication { files, packs: rows.len(), skipped, heads })
+}
+
+/// What a machine boots with moves with its release (`Release`'s kernel,
+/// firmware and PID 1), so these have no head (R81).
+const BOOTS_THE_MACHINE: [&str; 3] = ["linux", "oath", "firmware"];
+
+fn from_a_later_commit(old: &Head, new: &Head) -> bool {
+    matches!((&old.committed, &new.committed), (Some(a), Some(b)) if b < a)
+}
+
+/// The same pack with the same needs: a machine has nothing to take from it.
+fn says_the_same(old: &Head, new: &Head) -> bool {
+    let sorted = |n: &[PkgNeed]| {
+        let mut n = n.to_vec();
+        n.sort_by(|a, b| (&a.id, &a.hash).cmp(&(&b.id, &b.hash)));
+        n
+    };
+    old.hash == new.hash && sorted(&old.needs) == sorted(&new.needs)
+}
+
+/// Sign the head of each package that says something new, and put it ahead
+/// of the listing: a head goes up after its pack, and `index.json` never
+/// lists what has no head yet. A head with this pack and these needs stays
+/// as it is, and so does one from a later commit.
+fn sign_heads(
+    repo: &Path,
+    p: &mut Publication,
+    dest: Option<&Path>,
+    there: impl Fn(&str) -> bool,
+) -> Result<()> {
+    let key = oath_core::origin::public_key().map_err(|e| anyhow::anyhow!("{e}"))?;
+    let base = oath_core::Profile::load("base").map_err(|e| anyhow::anyhow!("{e}"))?;
+    let public = base
+        .origins()
+        .first()
+        .context("the base profile names no origin (host:local.origins)")?
+        .trim_end_matches('/')
+        .to_string();
+    let cache = host_store_cache(repo);
+    let dir = cache.parent().context("store cache has no parent")?.join("heads");
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir)?;
+    let mut files = Vec::new();
+    let (mut signed, mut kept) = (0usize, 0usize);
+    for h in std::mem::take(&mut p.heads) {
+        let key_name = head::key(&h.name);
+        let current = if !there(&key_name) {
+            None
+        } else if let Some(d) = dest {
+            fs::read_to_string(d.join(&key_name)).ok()
+        } else {
+            run_out(Command::new("curl").args(["-fsSL", &format!("{public}/{key_name}")])).ok()
+        }
+        .and_then(|t| serde_json::from_str::<Head>(&t).ok());
+        if let Some(old) = &current {
+            if from_a_later_commit(old, &h) {
+                println!("pkg:{}: the origin's head is from a later commit; left", h.name);
+            }
+            if from_a_later_commit(old, &h) || says_the_same(old, &h) {
+                kept += 1;
+                continue;
+            }
+        }
+        let file = dir.join(format!("{}.json", h.name));
+        let mut text = serde_json::to_string_pretty(&h)?;
+        text.push('\n');
+        fs::write(&file, &text)?;
+        let sig = oath_core::origin::sign(&file, head::NAMESPACE)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        let sig = fs::read_to_string(&sig)?;
+        // The signature every machine will check, checked here first.
+        oath_core::sshsig::verify_for(
+            text.as_bytes(),
+            &sig,
+            head::NAMESPACE,
+            std::slice::from_ref(&key),
+            &h.name,
+        )
+        .map_err(|e| anyhow::anyhow!("pkg:{}: {e}", h.name))?;
+        files.push((format!("{key_name}.sig"), Body::Bytes(sig.into_bytes())));
+        files.push((key_name, Body::Bytes(text.into_bytes())));
+        signed += 1;
+    }
+    let _ = fs::remove_dir_all(&dir);
+    println!("{signed} heads signed, {kept} stay as they are (R81)");
+    let at = p.files.iter().position(|(k, _)| k == "index.json").unwrap_or(p.files.len());
+    p.files.splice(at..at, files);
+    Ok(())
 }
 
 /// Write the publication into `dest`, an origin tree on disk.
@@ -1153,6 +1288,7 @@ struct Published {
     plan: Vec<u8>,
     plan_hash: String,
     src: String,
+    needs: Vec<PkgNeed>,
 }
 
 /// `pkg/<name>/<hash>.tar` beside the cached tree, written first if it
@@ -1168,6 +1304,101 @@ fn pack_tar(cache: &Path, name: &str, hash: &str) -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn head(hash: &str, committed: Option<&str>, needs: &[(&str, &str)]) -> Head {
+        Head {
+            name: "x".into(),
+            hash: hash.into(),
+            needs: needs
+                .iter()
+                .map(|(id, h)| PkgNeed { id: format!("pkg:{id}"), hash: h.to_string() })
+                .collect(),
+            published: "2026-11-09T00:00:00Z".into(),
+            committed: committed.map(String::from),
+            source: None,
+            version: String::new(),
+            description: String::new(),
+            home: String::new(),
+            category: String::new(),
+        }
+    }
+
+    #[test]
+    fn heads_are_signed_and_go_up_after_the_packs_and_before_the_listing() {
+        let d = tempfile::tempdir().unwrap();
+        let key = d.path().join("key");
+        let st = Command::new("ssh-keygen")
+            .args(["-q", "-t", "ed25519", "-N", "", "-C", "t@oath", "-f"])
+            .arg(&key)
+            .status()
+            .unwrap();
+        assert!(st.success());
+        std::env::set_var("OATH_SIGN_KEY", &key);
+        std::env::set_var("OATH_STORE", d.path().join("cache/store"));
+        let public = fs::read_to_string(d.path().join("key.pub")).unwrap();
+        let dest = d.path().join("dest");
+        let there = |k: &str| dest.join(k).is_file();
+        let publication = |heads: Vec<Head>| Publication {
+            files: vec![
+                ("pkg/x/a.tar".into(), Body::Bytes(b"pack".to_vec())),
+                ("index.json".into(), Body::Bytes(b"{}".to_vec())),
+                ("INDEX.md".into(), Body::Bytes(b"#".to_vec())),
+            ],
+            packs: 1,
+            skipped: Vec::new(),
+            heads,
+        };
+        let keys = |p: &Publication| p.files.iter().map(|(k, _)| k.clone()).collect::<Vec<_>>();
+
+        let mut p = publication(vec![head("a", None, &[("q", "b")])]);
+        sign_heads(d.path(), &mut p, Some(&dest), there).unwrap();
+        assert_eq!(
+            keys(&p),
+            ["pkg/x/a.tar", "pkg/x.json.sig", "pkg/x.json", "index.json", "INDEX.md"]
+        );
+        let body = |p: &Publication, key: &str| match &p.files.iter().find(|(k, _)| k == key) {
+            Some((_, Body::Bytes(b))) => b.clone(),
+            _ => panic!("no {key}"),
+        };
+        let (text, sig) = (body(&p, "pkg/x.json"), body(&p, "pkg/x.json.sig"));
+        let who = oath_core::sshsig::verify_for(
+            &text,
+            &String::from_utf8_lossy(&sig),
+            head::NAMESPACE,
+            &[public.trim().to_string()],
+            "x",
+        )
+        .unwrap();
+        assert_eq!(who, "t@oath");
+
+        // On the origin now: the same pack and needs is left as it is.
+        fs::create_dir_all(dest.join("pkg")).unwrap();
+        fs::write(dest.join("pkg/x.json"), &text).unwrap();
+        let mut p = publication(vec![head("a", None, &[("q", "b")])]);
+        sign_heads(d.path(), &mut p, Some(&dest), there).unwrap();
+        assert_eq!(keys(&p), ["pkg/x/a.tar", "index.json", "INDEX.md"]);
+
+        // Another pack is signed again.
+        let mut p = publication(vec![head("c", None, &[("q", "b")])]);
+        sign_heads(d.path(), &mut p, Some(&dest), there).unwrap();
+        assert!(keys(&p).contains(&"pkg/x.json".to_string()));
+    }
+
+    #[test]
+    fn a_head_is_rewritten_only_when_it_says_something_new() {
+        let old = head("a", None, &[("p", "1"), ("q", "2")]);
+        assert!(says_the_same(&old, &head("a", None, &[("q", "2"), ("p", "1")])), "the order");
+        assert!(!says_the_same(&old, &head("b", None, &[("p", "1"), ("q", "2")])), "another pack");
+        assert!(!says_the_same(&old, &head("a", None, &[("p", "9"), ("q", "2")])), "another need");
+    }
+
+    #[test]
+    fn a_head_from_a_later_commit_stays() {
+        let (t1, t2) = (Some("2026-11-08T00:00:00Z"), Some("2026-11-09T00:00:00Z"));
+        assert!(from_a_later_commit(&head("a", t2, &[]), &head("b", t1, &[])));
+        assert!(!from_a_later_commit(&head("a", t1, &[]), &head("b", t2, &[])));
+        assert!(!from_a_later_commit(&head("a", None, &[]), &head("b", t1, &[])));
+    }
 
     #[test]
     fn plain_dep_cuts_compressed_paths() {

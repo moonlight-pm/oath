@@ -547,6 +547,14 @@ impl Server {
                     v.extend(["--kind".into(), k]);
                 }
             }
+            "ls_origin" => {
+                v.extend(["ls".into(), "--origin".into()]);
+                rest.extend(s("word"));
+            }
+            "add" => {
+                v.push("add".into());
+                rest = ids("names");
+            }
             "schema" => {
                 v.push("schema".into());
                 rest.extend(s("kind"));
@@ -802,6 +810,20 @@ fn tools() -> Vec<Tool> {
             "List object ids (`kind:name`), all or of one kind.",
             vec![p("kind", Ty::Enum(kinds()), false, "Only this kind.")],
         ),
+        Tool {
+            open_world: true,
+            ..read(
+                "ls_origin",
+                "What the origins hold, not what this machine has: each package's name, version, \
+                 category, description and, in `installed`, the pin here. `add` takes one.",
+                vec![p(
+                    "word",
+                    Ty::Str,
+                    false,
+                    "Only packages with this in their name, category or description.",
+                )],
+            )
+        },
         read(
             "schema",
             "Without `kind`: the kinds. With it: that kind's JSON Schema and prose, the fields \
@@ -966,6 +988,17 @@ fn tools() -> Vec<Tool> {
         false,
         false,
         false,
+    ));
+    t.push(write(
+        "add",
+        "Install packages by name: each at its newest signed head, with what it needs that this \
+         machine lacks, made and applied at once. Nothing the machine has moves. `new_pkg` with \
+         empty `fields` makes them without applying."
+            .into(),
+        vec![p("names", Ty::Ids, true, "The packages, each `pkg:NAME`.")],
+        false,
+        false,
+        true,
     ));
     t.push(write(
         "update",
@@ -1293,6 +1326,7 @@ mod tests {
             [
                 "index",
                 "ls",
+                "ls_origin",
                 "schema",
                 "get",
                 "diff",
@@ -1313,6 +1347,7 @@ mod tests {
                 "apply",
                 "undo",
                 "keep",
+                "add",
                 "update",
                 "reap",
                 "file_plan",
@@ -1339,7 +1374,7 @@ mod tests {
         assert_eq!(m.last()[4], "mcp:claudecode", "the label keeps A-Za-z0-9._/-");
 
         let r = modern(&mut s, &m, "tools/list", json!({}));
-        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 26);
+        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 28);
         assert_eq!(r["result"]["ttlMs"], TTL_MS);
         let r = modern(&mut s, &m, "tools/call", json!({ "name": "ls", "arguments": {} }));
         assert_eq!(r["result"]["resultType"], "complete");
@@ -1404,6 +1439,9 @@ mod tests {
             ("index", json!({}), false, vec![]),
             ("ls", json!({}), false, vec!["ls"]),
             ("ls", json!({ "kind": "svc" }), false, vec!["ls", "--kind", "svc"]),
+            ("ls_origin", json!({}), false, vec!["ls", "--origin"]),
+            ("ls_origin", json!({ "word": "cell" }), false, vec!["ls", "--origin", "--", "cell"]),
+            ("add", json!({ "names": ["pkg:cell"] }), true, vec!["add", "--", "pkg:cell"]),
             ("schema", json!({}), false, vec!["schema"]),
             ("schema", json!({ "kind": "host" }), false, vec!["schema", "--", "host"]),
             ("get", json!({ "id": "svc:sshd" }), false, vec!["get", "--", "svc:sshd"]),
@@ -1643,7 +1681,7 @@ mod tests {
         assert!(r["result"]["instructions"].as_str().unwrap().contains("read-only"));
         let r = send(&mut s, &m, json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }));
         let tools = r["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 9);
+        assert_eq!(tools.len(), 10);
         assert!(!tools.iter().any(|t| t["name"] == "file_plan"));
         assert!(tools.iter().all(|t| t["annotations"]["readOnlyHint"] == true));
         for (tool, args) in

@@ -17,6 +17,16 @@ and remove one with `oath rm`
 (both take effect at `oath apply`); `oath build` creates the product's
 object (not with `--no-pkg`), and an install overlay can add others.
 
+**By name (R81).** `oath ls --origin [word]` lists what the origins hold.
+`oath add <name>` takes a package at its newest head a key in
+`host:local.publishers` may sign for it, with each package it needs that
+this machine lacks, and applies them at once. `oath new pkg:<name>` with
+no fields makes the same objects without applying. Nothing the machine
+has moves: a need it holds at another pin is re-pointed if the package
+loses no library, and otherwise nothing is made and `oath update` comes
+first. With no head on any origin, a tree already in the store is the
+pin, as an empty `hash` says below.
+
 ## Fields
 
 - `present` — `true` links `store/.../<hash>/bin/*` into `/bin`, and
