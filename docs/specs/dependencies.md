@@ -76,7 +76,7 @@ Building from the tree instead removes it.
 | What | Before | After | How |
 |------|--------|-------|-----|
 | HTTP routing | `pkg:caddy`, 148 modules, 49 MB | `pkg:route`: 0 modules, 6 MB, 370 lines | Our own, in `apps/route` (R59) |
-| Containers | `pkg:podman`, 157 modules, 51 MB, and `pkg:conmon` with GLib | `pkg:cell`: 0 modules, 7 MB, 1,800 lines, over `crun` and `pasta` | Our own, in `apps/cell` (R59). Building images is not covered |
+| Containers | `pkg:podman`, 157 modules, 51 MB, and `pkg:conmon` with GLib | `pkg:cell`: 0 modules, 7 MB, 2,100 lines, over `crun` and `pasta` | Our own, in `apps/cell` (R59). Building images is not covered: a package runs with no image (R76) |
 | `pkg:caddy` | 148 modules, 49 MB | gone | Behind a tunnel, TLS ends at Cloudflare (R58) |
 | `pkg:netavark`, `pkg:protobuf`, Abseil | 257 crates and a C++ build | gone | Rootless containers use pasta |
 | `pkg:lzo` | no public history | gone | `btrfs restore` loses LZO extents; the kernel keeps them |

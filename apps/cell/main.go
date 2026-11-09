@@ -5,6 +5,7 @@
 //
 //	cell pull <image>              fetch an image, or move its tag
 //	cell run [flags] <image> [args...]
+//	cell run [flags] pkg:<name> [args...]  a package this machine has: no image, nothing copied
 //	cell exec <name> <command...>  run a command in a running cell
 //	cell stop <name>               stop a running cell, as SIGTERM to its cell does
 //	cell ls                        the cells

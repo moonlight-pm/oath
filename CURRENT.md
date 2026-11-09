@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-11-08 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-11-09 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R75 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R76 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -37,8 +37,7 @@ append history (git has it).
    profile (R52), on the origin since `c9735fc14e50` (`cloudflared` since 2026-11-03). They run as `work`, which has no `sudo`. Bias against
    packages, intake gates (R57). PostgreSQL's real test is elsewhere, not on buccina.
    What could still go: [specs/dependencies.md](docs/specs/dependencies.md). `cell` ran
-   as `work` under a `svc` on buccina, 2026-11-02. Next: a sandbox for project installs;
-   image builds if asked.
+   as `work` under a `svc` on buccina, 2026-11-02. `cell run pkg:<name>` (R76, [specs/cells.md](docs/specs/cells.md)) runs an installed package with no image, its packs bound in read-only: tested as `work` on buccina 2026-11-09, unpublished, so not yet in the manual. Next: a project's source to a pack on a host (Open: private packs, who installs for `work`); a sandbox for project installs.
 4. **Security audit (R48).** `svc:audit` runs on buccina (`0 0 * * *`): scans, reads each pin
    against upstream's newest release, may publish, and puts findings on the origin (R61). Left by Joshua's word: libsndfile, the
    toolchain rebuilds, flex, QEMU's 9p. Linux 7.3.1 carries 12 io_uring patches, out at the first 7.3.y with the series;

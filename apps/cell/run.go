@@ -51,6 +51,8 @@ type options struct {
 	noNet      bool
 	tty        bool
 	stopAfter  time.Duration
+	with       list
+	binds      []mount
 }
 
 func (s *store) runCommand(args []string) (int, error) {
@@ -63,6 +65,7 @@ func (s *store) runCommand(args []string) (int, error) {
 	fs.Var(&o.tmpfs, "tmpfs", "/path, a memory file system")
 	fs.Var(&o.env, "e", "NAME=value, which every process listing shows")
 	fs.Var(&o.envFile, "env-file", "a file of NAME=value lines, for what should not show")
+	fs.Var(&o.with, "with", "pkg:name, another package a pkg: cell runs with")
 	fs.StringVar(&o.workdir, "w", "", "the directory to start in")
 	fs.StringVar(&o.entrypoint, "entrypoint", "", "the program, over the image's")
 	fs.StringVar(&o.user, "user", "", "uid[:gid] or a name in the image, over its USER: the number this cell's one uid wears")
@@ -88,24 +91,19 @@ func (s *store) run(o *options) (int, error) {
 	if !cellName.MatchString(o.name) {
 		return 0, fmt.Errorf("%q is not a name", o.name)
 	}
-	r, err := parseRef(o.image)
+	var from *source
+	var err error
+	if strings.HasPrefix(o.image, "pkg:") {
+		from, err = packSource(o)
+	} else if len(o.with) > 0 {
+		err = errors.New("--with is for a pkg: cell")
+	} else {
+		from, err = s.imageSource(o)
+	}
 	if err != nil {
 		return 0, err
 	}
-	digest := s.lookup(r)
-	if digest == "" {
-		if digest, err = s.pull(r); err != nil {
-			return 0, err
-		}
-	}
-	data, err := os.ReadFile(filepath.Join(s.image(digest), "config.json"))
-	if err != nil {
-		return 0, err
-	}
-	var image imageConfig
-	if err := json.Unmarshal(data, &image); err != nil {
-		return 0, err
-	}
+	image := &from.config
 	dir := s.cell(o.name)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return 0, err
@@ -125,10 +123,8 @@ func (s *store) run(o *options) (int, error) {
 		}
 	}
 	rootfs := filepath.Join(dir, "rootfs")
-	cp := exec.Command("cp", "-a", "--reflink=auto", filepath.Join(s.image(digest), "rootfs"), rootfs)
-	cp.Stderr = os.Stderr
-	if err := cp.Run(); err != nil {
-		return 0, fmt.Errorf("copying the image: %w", err)
+	if err := from.fill(rootfs); err != nil {
+		return 0, err
 	}
 	defer forceRemove(dir)
 	if err := writeEtc(dir, rootfs, o.name); err != nil {
@@ -138,18 +134,18 @@ func (s *store) run(o *options) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	config, err := spec(o, &image, u, dir)
+	config, err := spec(o, image, u, dir)
 	if err != nil {
 		return 0, err
 	}
-	data, err = json.MarshalIndent(config, "", "  ")
+	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return 0, err
 	}
 	if err := os.WriteFile(filepath.Join(dir, "config.json"), data, 0o600); err != nil {
 		return 0, err
 	}
-	if err := os.WriteFile(filepath.Join(dir, "image"), []byte(r.String()+"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "image"), []byte(from.name+"\n"), 0o600); err != nil {
 		return 0, err
 	}
 	if err := os.WriteFile(filepath.Join(dir, "cell.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0o600); err != nil {
@@ -171,6 +167,43 @@ func (s *store) run(o *options) (int, error) {
 	// If this process is killed, its lock goes, and so must what the lock stood for.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
 	return supervise(cmd, filepath.Join(dir, "pasta.pid"), stopSignal(image.Config.StopSignal), o.stopAfter)
+}
+
+// source is where a cell's root comes from: an image, or this machine's packages.
+type source struct {
+	name   string // what cell ls shows
+	config imageConfig
+	fill   func(rootfs string) error
+}
+
+// imageSource is an image's, pulled if it is not on disk. Each run gets a copy.
+func (s *store) imageSource(o *options) (*source, error) {
+	r, err := parseRef(o.image)
+	if err != nil {
+		return nil, err
+	}
+	digest := s.lookup(r)
+	if digest == "" {
+		if digest, err = s.pull(r); err != nil {
+			return nil, err
+		}
+	}
+	data, err := os.ReadFile(filepath.Join(s.image(digest), "config.json"))
+	if err != nil {
+		return nil, err
+	}
+	var image imageConfig
+	if err := json.Unmarshal(data, &image); err != nil {
+		return nil, err
+	}
+	return &source{r.String(), image, func(rootfs string) error {
+		cp := exec.Command("cp", "-a", "--reflink=auto", filepath.Join(s.image(digest), "rootfs"), rootfs)
+		cp.Stderr = os.Stderr
+		if err := cp.Run(); err != nil {
+			return fmt.Errorf("copying the image: %w", err)
+		}
+		return nil
+	}}, nil
 }
 
 // wire gives cmd this process's standard files. Without a terminal its output goes through
@@ -681,6 +714,7 @@ func mountsFor(o *options, dir string) ([]mount, error) {
 	for _, file := range []string{"resolv.conf", "hosts", "hostname"} {
 		mounts = append(mounts, mount{"/etc/" + file, "bind", filepath.Join(dir, file), []string{"bind", "ro", "nosuid", "nodev"}})
 	}
+	mounts = append(mounts, o.binds...)
 	for _, v := range o.volumes {
 		parts := strings.Split(v, ":")
 		if len(parts) < 2 || len(parts) > 3 || !filepath.IsAbs(parts[0]) || !filepath.IsAbs(parts[1]) {
