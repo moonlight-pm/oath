@@ -37,7 +37,14 @@ A `svc` runs it like any program, as `work`, with `/bin/cell` as its `exec`.
 ### An image (R59)
 
 `cell run <image>` pulls a registry's image if it is not on disk, and runs a copy of
-it. This stays for what other people publish.
+it. This stays for what other people publish, and for a project until it is ported.
+
+### Both at once
+
+Images and packages share one binary, account, store and set of commands: a runner
+changes only the name it passes. An nginx image and `pkg:python` ran side by side as
+`work` on buccina on 2026-11-09, each serving a volume on a published port, with
+`exec`, `ls` and `stop`.
 
 ## Known defects
 
@@ -45,7 +52,6 @@ it. This stays for what other people publish.
   not name curl. The floor carries curl for that reason.
 - A program that is first in its box and has no handler for SIGTERM ignores it, so
   `cell stop` waits out `--stop-after` (10 s) for SIGKILL. `python3 -m http.server` did.
-- `work` cannot install a package, so someone with `sudo` puts it on the machine.
 
 ## Target
 
@@ -53,5 +59,10 @@ A project outside Oath's tree becomes a package: `pkg.toml` and `build.sh`, buil
 `oath build` with no network, its locked dependencies fetched first and checked against
 the lock's own hashes. The result is a pack, and a cell runs it. No image is made.
 
-`oath build` has not been run as `work`. Where a private project's packs live and who
-installs one are Open in [../decisions.md](../decisions.md).
+`home` builds, on any machine, and installs on the machine that runs it: over SSH with
+`oath store`, `oath set` and `oath apply`, or from an origin. `apply` refuses a need at
+another hash than the machine's, so the pin it sets names the target's hashes, and a
+need the machine lacks is installed first. `work` only runs.
+
+Whether a project may ship a new image before its port is Open in
+[../decisions.md](../decisions.md).

@@ -9,9 +9,9 @@ Overwrite this file when facts change; do not append a diary.
   UEFI. Its RTC holds UTC since 2026-11-06 (`sudo hwclock --systohc
   --utc`, which wrote `/etc/adjtime`); it had run five hours behind, so
   boots started five hours off until chrony stepped them.
-- **Network:** DHCP, 10.0.0.169 (MAC `70:b5:e8:5b:7d:43`, `net0`,
-  1 Gb/s). Reach: `ssh dulcia` from buccina (`~/.ssh/config`), or
-  `ssh home@10.0.0.169`; host key (`SHA256:pfTb2d1X…6EnEgw`) pinned in
+- **Network:** DHCP, 10.0.0.146, which local DNS names `dulcia` (MAC
+  `70:b5:e8:5b:7d:43`, `net0`, 1 Gb/s). Reach: `ssh dulcia` from buccina
+  (`~/.ssh/config`), or `ssh home@10.0.0.146`; host key (`SHA256:pfTb2d1X…6EnEgw`) pinned in
   `build/known_hosts` and buccina's `~/.ssh/known_hosts`, taken on first
   contact. `ssh:local` lists buccina's keys and `home@novus`
   (generation 3, Joshua 2026-11-06); novus reaches it as `ssh dulcia`
@@ -21,7 +21,10 @@ Overwrite this file when facts change; do not append a diary.
   2026-11-06 by `oath install` from the Samsung stick
   ([novus.md](novus.md)), then renamed from `oath` (generation 1).
   Agents change it at Joshua's word: AGENTS.md does not list it with
-  canto and buccina.
+  canto and buccina. Wicket runs here as `work` (read 2026-11-09):
+  `svc:wicket` and its siblings, and 13 workloads `svc:wl-*`, each a
+  cell started by `/bin/wicket`, from images in a registry cell on
+  127.0.0.1:5000.
 - **Running now:** `base` release `ee3e239caa32` (master `7597cc1`,
   R72 and R73), generation 6, in sync: 5 from `sudo oath update --confirm
   --reboot` on 2026-11-07 (only `pkg:oath` moved), 6 put novus's key in
