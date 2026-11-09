@@ -24,6 +24,9 @@ if [ ! -d "$copy/.git" ]; then
     git -C "$copy" config user.email "$(git -C "$repo" config user.email)"
     # forks/ are submodules, and the copy holds none of them.
     git -C "$copy" config diff.ignoreSubmodules all
+    # What this machine ignores: a tree the copy calls dirty makes an output that
+    # cannot be released.
+    cp "$repo/.git/info/exclude" "$copy/.git/info/exclude"
 fi
 
 if [ "${1:-}" = claude ]; then

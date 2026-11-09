@@ -1,4 +1,10 @@
 {
+  "model": "claude-opus-5-5",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    }
+  },
   "env": {
     "BASH_MAX_TIMEOUT_MS": "21600000"
   },

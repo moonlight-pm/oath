@@ -49,7 +49,7 @@ Overwrite this file when facts change; do not append a diary.
   `178ac39ce817` (Linux 7.3.1, generation 111) and Release B
   (`dd0f847aa9c9`, generation 110).
   `svc:audit` (R48, this file's overlay: `check/audit/run` as `home`,
-  schedule `0 0 * * *`, the agent in a box with `~/.config/oath/claude-token`, R77) since generations 113-114. `pkg:qemu` 11.1.3
+  schedule `0 0 * * *`, the agent in a box with `~/.config/oath/claude-token`, made 2026-11-09 and good for a year, R77) since generations 113-114. `pkg:qemu` 11.1.3
   (`0b1ad2cc`, from master@9e60f4f, an overlay no release sets) since
   generation 116; `cargo make check` passed 65/65 on it. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
