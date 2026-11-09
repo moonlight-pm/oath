@@ -175,6 +175,12 @@ impl Origin {
 
     /// Upload `file` as `key`.
     pub fn put(&self, key: &str, file: &Path) -> Result<()> {
+        // Only a plain file goes up: curl would follow a link to anything this
+        // user can read, and the audit's box can leave one where a pack goes (R77).
+        let plain = fs::symlink_metadata(file).is_ok_and(|m| m.file_type().is_file());
+        if !plain {
+            return Err(Error::Msg(format!("put {key}: {} is not a plain file", file.display())));
+        }
         let url = format!("{}/{key}", self.s3);
         let cache = if is_immutable(key) {
             "Cache-Control: public, max-age=31536000, immutable"
@@ -251,6 +257,20 @@ fn pct(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn put_refuses_a_link() {
+        let dir = std::env::temp_dir().join(format!("oath-put-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let secret = dir.join("secret");
+        fs::write(&secret, "key").unwrap();
+        let link = dir.join("update.tar");
+        std::os::unix::fs::symlink(&secret, &link).unwrap();
+        let o = Origin { s3: "http://127.0.0.1:1".into(), id: "x".into(), secret: "x".into() };
+        let err = o.put("out/x/update.tar", &link).unwrap_err().to_string();
+        assert!(err.contains("not a plain file"), "{err}");
+        fs::remove_dir_all(&dir).unwrap();
+    }
 
     #[test]
     fn list_page_keys_and_token() {

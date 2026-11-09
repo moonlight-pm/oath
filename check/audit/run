@@ -1,55 +1,78 @@
 #!/bin/sh
 # The daily security audit (R48). `svc:audit` on buccina runs this at midnight
 # (host:local.timezone) as `home`: one headless Claude Code run with the
-# `oath-audit` skill scans, fixes, checks and publishes; this then mails its
-# report to Joshua and, when it published a release, moves buccina to it
-# with a reboot. Never novus or canto. A rebuild that can pass what a command may
-# last (CEF and what moves with it; R67, R75) happens here, between two runs of
-# the skill.
+# `oath-audit` skill scans, fixes and checks, in a box (check/audit/box, R77). This,
+# outside the box, then lands its commits, pushes, publishes, mails its report to
+# Joshua and, when a release went out, moves buccina to it with a reboot. Never
+# novus or canto. A rebuild that can pass what a command may last (CEF and what moves
+# with it; R67, R75) happens here, between two runs of the skill.
 set -u
 repo=${OATH_REPO:-/home/Projects/Oath}
 cd "$repo" || exit 1
 dir=$repo/build/audit
 mkdir -p "$dir"
+box=$repo/check/audit/box
 day=$(date +%F)
 log=$dir/run-$day.log
 report=$dir/report-$day.md
-published=$dir/published
+publish=$dir/publish
+bundle=$dir/commits.bundle
 long=$dir/long
-later=$dir/take-later
+# What the box must not be able to touch.
+state=$HOME/.local/share/oath-audit
+mkdir -p "$state"
+later=$state/take-later
+published=
 
 # One at a time (PID 1 skips a time while the last run goes; this covers a
 # run by hand).
-exec 9>"$dir/lock"
+exec 9>"$state/lock"
 flock -n 9 || { echo "an audit is already running"; exit 0; }
 
 # A run owed across a reboot starts with the services, before the lease.
 i=0
-until curl -fsS -o /dev/null --max-time 10 https://api.osv.dev/ 2>/dev/null; do
+until curl -sS -o /dev/null --max-time 10 https://api.osv.dev/ 2>/dev/null; do
     i=$((i + 1))
     [ "$i" -ge 60 ] && break
     sleep 10
 done
 
-rm -f "$published" "$report" "$long"
-prompt=$(sed -e "s|@DAY@|$day|g" -e "s|@REPORT@|$report|g" -e "s|@PUBLISHED@|$published|g" \
+# The box can leave anything in build/audit. When it has gone, what this reads or
+# writes there must be a plain file: a link would aim this at ~/.ssh or a key.
+boxed() {
+    "$box" "$@"
+    boxed_rc=$?
+    for f in "$log" "$report" "$publish" "$bundle" "$long" "$dir/mail.json"; do
+        if [ -L "$f" ] || { [ -e "$f" ] && [ ! -f "$f" ]; }; then
+            rm -rf -- "$f"
+        fi
+    done
+    return "$boxed_rc"
+}
+
+rm -rf -- "$log" "$publish" "$report" "$long" "$bundle" "$dir/mail.json"
+# The box's copy of .git and its clones are the run's own; a week of downloads is plenty.
+rm -rf "$dir/repo" "$dir/src"
+find "$dir" -maxdepth 1 -type d -name 'dl-*' -mtime +7 -exec rm -rf {} +
+start=$(git rev-parse HEAD)
+prompt=$(sed -e "s|@DAY@|$day|g" -e "s|@REPORT@|$report|g" -e "s|@PUBLISH@|$publish|g" \
     check/audit/prompt.md)
-claude -p "$prompt" --settings check/audit/settings.json --permission-mode dontAsk \
-    --output-format text >"$log" 2>&1
+boxed claude -p "$prompt" --settings check/audit/settings.json --permission-mode dontAsk \
+    --output-format text </dev/null >"$log" 2>&1
 rc=$?
 
 # A command stops at 6 h (BASH_MAX_TIMEOUT_MS in settings.json). A run whose
 # rebuild can take longer leaves its pins in the tree and a draft report, and
-# writes `long`; this builds them, and a second run checks, commits and publishes.
+# writes `long`; this builds them, and a second run checks and commits.
 built=
 if [ -s "$long" ]; then
-    cargo make pkgs -j 8 >>"$log" 2>&1
+    boxed cargo make pkgs -j 8 >>"$log" 2>&1
     built=$?
     rm -f "$long"
-    prompt=$(sed -e "s|@DAY@|$day|g" -e "s|@REPORT@|$report|g" -e "s|@PUBLISHED@|$published|g" \
+    prompt=$(sed -e "s|@DAY@|$day|g" -e "s|@REPORT@|$report|g" -e "s|@PUBLISH@|$publish|g" \
         -e "s|@LOG@|$log|g" -e "s|@BUILT@|$built|g" check/audit/prompt-long.md)
-    claude -p "$prompt" --settings check/audit/settings.json --permission-mode dontAsk \
-        --output-format text >>"$log" 2>&1
+    boxed claude -p "$prompt" --settings check/audit/settings.json --permission-mode dontAsk \
+        --output-format text </dev/null >>"$log" 2>&1
     rc=$?
 fi
 
@@ -62,12 +85,82 @@ if [ ! -s "$report" ]; then
         tail -n 60 "$log" | sed 's/^/    /'
     } >"$report"
 fi
+
+# What the box made is data from here on, and nothing in it is run. A bundle holds
+# only commits, and nothing of the copy's config or hooks.
+say() { printf '\n%s\n' "$1" >>"$report"; }
+
+land() {
+    # No commits make no bundle.
+    boxed git bundle create "$bundle" master "^$start" >>"$log" 2>&1 || return 0
+    if ! git fetch -q origin master >>"$log" 2>&1; then
+        say "**Not landed:** git could not fetch origin; see $log. The commits are in $bundle."
+        return 1
+    fi
+    if ! git fetch -q "$bundle" master >>"$log" 2>&1; then
+        say "**Not landed:** $bundle did not import; see $log."
+        return 1
+    fi
+    tip=$(git rev-parse FETCH_HEAD)
+    head=$(git rev-parse HEAD)
+    if [ "$head" != "$start" ] || [ "$(git rev-parse --abbrev-ref HEAD)" != master ]; then
+        say "**Not landed:** master moved during the run. The commits are in $bundle, the pins in pkgs/."
+        return 1
+    fi
+    if [ "$head" != "$(git rev-parse origin/master)" ]; then
+        say "**Not landed:** master has commits origin does not, not the audit's to push. The commits are in $bundle."
+        return 1
+    fi
+    if ! git merge-base --is-ancestor "$head" "$tip"; then
+        say "**Not landed:** the box's master does not descend from master."
+        return 1
+    fi
+    # Only what the audit may change (R48): no submodule, no key to the intake.
+    bad=$(git diff --no-renames --raw "$head" "$tip" | awk -F'\t' '{
+        split($1, f, " ")
+        if (f[2] == "160000" || $2 !~ /^pkgs\// || $2 == "pkgs/intake/approved.txt" || $2 == "pkgs/go-modules.sh") print $2
+    }')
+    if [ -n "$bad" ]; then
+        say "**Not landed:** the run committed what it may not:"
+        printf '%s\n' "$bad" | sed 's/^/    /' >>"$report"
+        return 1
+    fi
+    # The tree already holds what these commits hold, since the box wrote it.
+    if ! git update-ref -m "audit $day" refs/heads/master "$tip" "$head" || ! git read-tree HEAD; then
+        say "**Not landed:** master could not move to $tip; see $bundle."
+        return 1
+    fi
+    git update-index -q --refresh >/dev/null
+    if ! git push -q origin master >>"$log" 2>&1; then
+        say "**Not pushed:** master is $tip here; see $log."
+        return 1
+    fi
+    say "Landed and pushed $(git rev-list --count "$head..$tip") commit(s), to $(git rev-parse --short "$tip")."
+}
+
+if land && [ -s "$publish" ]; then
+    id=$(cat "$publish")
+    case $id in
+    '' | *[!0-9a-f]*)
+        say "**Not published:** $publish holds no output id."
+        ;;
+    *)
+        if cargo make publish --output "$id" >>"$log" 2>&1; then
+            published=$id
+            say "Published output $id."
+        else
+            say "**Not published:** cargo make publish --output $id failed; see $log."
+        fi
+        ;;
+    esac
+fi
+
 # After 07:00 someone may be at work here: buccina takes the release at the end
 # of the next run that finishes before then, however long this one took. PID 1
 # gives a service the machine's time zone.
 late=
 [ "$(date +%H)" -ge 7 ] && late=1
-[ -s "$published" ] && cp "$published" "$later"
+[ -n "$published" ] && printf '%s\n' "$published" >"$later"
 if [ -s "$later" ]; then
     if [ -n "$late" ]; then
         printf '\nbuccina takes output %s at the next run, not now: it is past 07:00.\n' \

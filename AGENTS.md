@@ -91,7 +91,7 @@ pkgs/             every package that ships: pkg.toml + build.sh per package, loc
                   pkgs/linux is the kernel (linux.fragment, patches/); pkgs/keys the upstream signing keys
 image/            host.nix (QEMU + OVMF, build host only)
 check/            cases.toml for `cargo make check` (the QEMU harness), agent.toml for `--agent`,
-                  audit/ the daily security audit's runner, prompt and permissions (R48),
+                  audit/ the daily security audit's runner, box, prompt and permissions (R48, R77),
                   writ-terminal/ drives writ's session in a private tmux, against a hostile fake model
 apps/             first-party package sources and example plans
 site/             oath.moonlight.pm: home page and docs/manual as one page, its own Cargo workspace, Wicket workload

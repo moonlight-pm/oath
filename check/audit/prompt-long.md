@@ -10,5 +10,6 @@ start the long rebuild again. No one answers questions, so what needs Joshua goe
 the report.
 
 Replace the draft at @REPORT@ with the finished report (its first line is the mail's
-subject). If you published a release, write its output id, alone, to @PUBLISHED@. If
-you published nothing, do not create that file.
+subject). If a release should go out, write its output id, alone, to @PUBLISH@: after
+you stop, the runner lands your commits, pushes and publishes it. If no release should
+go out, do not create that file.

@@ -1,18 +1,26 @@
 ---
 name: oath-audit
-description: The daily security audit of every Oath package (R48) — scan, triage, fix, check, publish, report. Use when the scheduled run starts it (svc:audit → check/audit/run, at midnight on buccina), or when Joshua asks for a security audit, a CVE check, or "are we vulnerable to …".
+description: The daily security audit of every Oath package (R48) — scan, triage, fix, check, name a release, report. Use when the scheduled run starts it (svc:audit → check/audit/run, at midnight on buccina), or when Joshua asks for a security audit, a CVE check, or "are we vulnerable to …".
 ---
 
 # Oath security audit (R48)
 
 `svc:audit` runs `check/audit/run` on buccina at midnight Mountain as
-`home`: one headless run of this skill with the permissions in
-`check/audit/settings.json` (anything not listed is refused; nobody is
+`home`: one headless run of this skill in a box (`check/audit/box`, R77), with the
+permissions in `check/audit/settings.json` (anything not listed is refused; nobody is
 there to ask). Joshua's standing word (2026-10-31): fix what is found,
 publish the fix, and buccina takes it; the runner mails him your report
 and then updates and reboots buccina. novus and canto are never yours. His word
 of 2026-11-04 (R67): lessen the need for his approval. So what this skill lets
 you do, do, and say so in the report; "Waiting on Joshua" is for what it does not.
+
+The box holds no key. You can write `pkgs/`, `build/` and the store cache, the rest
+of the checkout is read-only, and your `.git` is a copy of the real one. So commit
+as usual, but you cannot push or publish: when you stop, the runner brings your
+commits out and lands them on master, pushes, and publishes the output you name.
+It refuses all of them if any commit touches a path outside `pkgs/`, or
+`pkgs/intake/approved.txt`, or `pkgs/go-modules.sh`, and it says how it went at the
+end of your report.
 
 ## 1. Scan
 
@@ -95,9 +103,14 @@ references, the project's security page or release notes (WebFetch), and
   from upstream if you can; else it goes under "Waiting on Joshua".
 
 Every run, for each package with `newer`: read upstream's release notes
-back to the pin (WebFetch). A release that names a security fix is a fixed
+back to the pin (WebFetch), both its release page (a forge's, such as GitHub's)
+and the ChangeLog or NEWS the project ships, since a fix can be named in only one:
+bluez's memory-safety fixes in 5.88 were on its release page and not in its
+ChangeLog. A release that names a security fix is a fixed
 upstream release: upgrade it under step 3's rules, signing keys and rebuilds
-included. One that names none is no reason to move: list it under "Seen".
+included. One that names none is no reason to move: list it under "Seen". Notes
+you could not read are not notes that name nothing: say which you could not, and
+read that package's commit titles back to the pin instead.
 `upstream_unread` goes under "Seen" too, unless it hides a package you have
 another reason to doubt. A false `newer` (a beta, a stale tag, a dev line)
 is fixed in `pkgs/audit.toml`: `tag`, `series`, `dev_odd` or `dev_micro`.
@@ -161,13 +174,17 @@ rebuild; with none due, write the names to `build/audit/long` and stop, as above
 no pins to move. Say which in the report.
 
 A rebuild that moved no product changes only plans and `pkgs/lock.json`: commit them
-as `Rebuild: <names> (same products)`, push, and publish nothing. One that moved a
+as `Rebuild: <names> (same products)`, and name no output: the runner pushes them. One that moved a
 product is a change like a fix: step 4, and the report names it under "Fixed and
 published".
 
 ## 4. Check and release
 
-Only when something changed:
+Only when something changed. Commit first, since an output built from a tree that
+is not committed cannot be released: one commit per package, `Security: pkg:<name>
+<old> -> <new> (CVE-…, CVE-…)`, or `… (oath backport of CVE-…)`, with what you
+verified in the body and the `Co-Authored-By` line this session's instructions give.
+`pkgs/lock.json` holds every package: it goes in the last commit. Then:
 
 ```
 cargo make build --profile desk
@@ -175,17 +192,10 @@ cargo make check
 ```
 
 `cargo make check` must pass every case (it prints `N pass, 0 fail`).
-A failure: undo that package's change (`git restore` before a commit,
-`git revert` after), build and check again without it, and report what
-failed. Then:
-
-- One commit per package: `Security: pkg:<name> <old> -> <new> (CVE-…,
-  CVE-…)`, or `… (oath backport of CVE-…)`, with what you verified in the
-  body and the `Co-Authored-By` line this session's instructions give.
-- `git push origin master`, then `cargo make publish`. It refuses unless
-  the tree is clean and equals `origin/master` and the output was checked:
-  never work around it. Write the output id it published, alone, to the
-  file the prompt names.
+A failure: `git revert` that package's commit, build and check again without it,
+and report what failed. Then write the output id the build printed, alone, to the
+file the prompt names, and leave the tree clean: the runner publishes only an output
+built from a clean commit that it has landed.
 
 ## 5. Report
 
@@ -195,7 +205,7 @@ example `2 fixed and published, 1 waits on you` or `nothing affected`).
 Then, each section only if it has something:
 
 - **Fixed and published**: package, old -> new, the CVEs, how (upstream
-  release, upstream patch, Oath backport), the output id.
+  release, upstream patch, Oath backport), the output id you named.
 - **Backports in place**: each, and whether upstream has fixed it yet.
 - **Waiting on Joshua**: new signing keys, big rebuilds, unknowns that
   need judgment, a failed check, a source that was down.
@@ -203,9 +213,33 @@ Then, each section only if it has something:
 - **Seen**: the counts the scan reported, by package; each `newer` you did
   not act on, and why; each `upstream_unread`.
 
+## Joshua's answers (2026-11-09)
+
+Act on these, and do not ask them again:
+
+- **libsndfile:** the next CEF rebuild carries upstream's `7ff854d1` for
+  CVE-2025-52194 (one line in `src/ircam.c`), as
+  `pkgs/libsndfile/patches/upstream-CVE-2025-52194.patch`, named in that rebuild's
+  batch since libsndfile rebuilds CEF. CVE-2026-88386 has no upstream fix and stays
+  left. Nothing of libsndfile's moves apart from a CEF rebuild.
+- **CEF 157:** build and publish it when CEF ships it (R67), naming the advisory for
+  a release under a week old. The report says to update canto first and that Sola's
+  session should be ready to rebuild against it.
+- **The rebuild that takes CEF 157 also takes the toolchain (R50, R77), by his word,
+  whatever step 3 says of toolchain rebuilds:** zlib 1.4, under the week rule and
+  the review as any pin, and `pkg:curl`'s `ssl/cert.pem` as a link to
+  `/oath/store/pkg/certs/live/ssl/cert.pem` in place of its copy of `cacert-*.pem`,
+  with no pin on `pkg:certs`, so that a later distrust is one new pack and no
+  rebuild. `pkg:openssl`, Steam and `SSL_CERT_FILE` keep pointing at curl's path.
+  Not before CEF 157.
+- **Qt:** moves to 6.12.1 when it is out and a week old, not to 6.12.0.
+- **A root Mozilla stops trusting for TLS with no date and no incident** (Buypass
+  Class 2 and 3 removed; Certigna, DigiCert Trusted Root G4 and QuoVadis 1 G3 and 3
+  G3 now Email only): leave it for the NSS release that drops it.
+
 ## Never
 
 `sudo`, `ssh`, `oath` on any machine, `cargo make install` or `update`,
-a force push or a reset; an edit to `crates/`, `check/` or
-`.claude/`; a publish of anything `cargo make check` did not pass; a
+a push, `cargo make publish` or a reset; an edit to `crates/`, `check/` or
+`.claude/`; naming an output `cargo make check` did not pass; a
 backport not marked as one.

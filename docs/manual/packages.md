@@ -41,7 +41,7 @@ Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
 `arping`), `chrony` (`svc:time`), `dosfstools` (`mkfs.fat`), `curl`
 (Mbed TLS, CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`),
 `bind` (`dig`, `host`, `nslookup`; no `named`), `openssl` (`openssl`;
-its default `ssl/cert.pem` links to curl's bundle), and the libraries they load:
+its default `ssl/cert.pem` links to curl's bundle), `certs` (Oath's CA roots, R50), and the libraries they load:
 `ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`, `mbedtls`, `libuv`,
 `liburcu`, `libcap`, `libxcrypt`. A pack's `needs` lists the libraries it loads, so
 apply refuses removing `pkg:ncurses` while `pkg:less` is present.
@@ -258,7 +258,8 @@ Go programs read their CA roots from `pkg:certs` (R50), through Go's own
 `/oath/store/pkg/certs/live/ssl/cert.pem`. A machine without `pkg:certs` makes it
 first, at the hash the plan names. It is Mozilla's roots for servers, from
 NSS's `certdata.txt`, less any with a distrust-after date and what
-`pkgs/certs/distrust.txt` names. curl and OpenSSL still read `pkg:curl`'s copy.
+`pkgs/certs/distrust.txt` names. curl and OpenSSL still read `pkg:curl`'s copy,
+until the rebuild that takes CEF 157 (R77).
 
 PostgreSQL finds PostGIS, a separate pack, through one line in
 `postgresql.conf`:
@@ -551,10 +552,14 @@ cannot be read. A newer release is a prompt to read its notes, not a
 finding: only one that names a security fix moves the pin.
 
 On buccina, `svc:audit` runs it daily at midnight through `check/audit/run`:
-a headless Claude Code run of the `oath-audit` skill triages the hits,
-upgrades to upstream's fixed release (or applies upstream's patch, or a
-backport marked `oath-backport-CVE-…`), checks, commits, pushes and
-publishes, then mails Joshua its report and moves buccina to the release.
+a headless Claude Code run of the `oath-audit` skill, in a box
+(`check/audit/box`, R77), triages the hits, upgrades to upstream's fixed release
+(or applies upstream's patch, or a backport marked `oath-backport-CVE-…`), commits
+and checks. Outside the box the runner then lands those commits, pushes and
+publishes, mails Joshua the report and moves buccina to the release. The box holds
+no key but its own Claude token, `~/.config/oath/claude-token` (mode 600), which
+lasts a year. Without it the run mails that it did not run; to make one, run
+`claude setup-token` and save what it prints there.
 Every run, fix or no fix, it also runs `cargo make pkgs --stale`, which lists
 each package built against something the lock has since replaced, and rebuilds
 those (R75); a command may last 6 hours.

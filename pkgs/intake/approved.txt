@@ -1,0 +1,2 @@
+# A person's word that a new name or publisher may come in (R57), one to a line:
+# <eco> <name> <who, date>

@@ -1,0 +1,88 @@
+#!/bin/sh
+# The audit's box (R77). The agent, every command it runs and the rebuild between
+# its two runs go in here, so what they cannot reach is the kernel's doing and not
+# a rule in settings.json: bubblewrap, the box writ (R64) and Prism (R74) use.
+#
+# Not in it: ~/.config/oath (the release key, the origin's and the mail's
+# credentials), ~/.ssh, ~/.claude, other projects, sudo, PID 1's socket. It may
+# write pkgs/, build/ and the store cache; the rest of the checkout is read-only,
+# since check/audit/run, outside the box, compiles and runs it. Its .git is a copy:
+# the real one never enters, and what the agent commits comes out as a bundle.
+#
+#   box claude ARGS...    the agent, holding only its Claude token
+#   box COMMAND ARGS...   anything else, with no token
+set -eu
+repo=${OATH_REPO:-/home/Projects/Oath}
+audit=$repo/build/audit
+token=$HOME/.config/oath/claude-token
+copy=$audit/repo
+mkdir -p "$audit/claude" "$audit/target"
+if [ ! -d "$copy/.git" ]; then
+    git clone -q --no-hardlinks --no-checkout "$repo" "$copy"
+    git -C "$copy" read-tree HEAD
+    git -C "$copy" config user.name "$(git -C "$repo" config user.name)"
+    git -C "$copy" config user.email "$(git -C "$repo" config user.email)"
+    # forks/ are submodules, and the copy holds none of them.
+    git -C "$copy" config diff.ignoreSubmodules all
+fi
+
+if [ "${1:-}" = claude ]; then
+    if [ ! -s "$token" ]; then
+        echo "no $token: make one with \`claude setup-token\` (docs/manual/packages.md)" >&2
+        exit 78
+    fi
+    set -- --ro-bind "$token" /run/claude-token -- /bin/sh -c \
+        'export CLAUDE_CODE_OAUTH_TOKEN="$(cat /run/claude-token)"; exec "$@"' sh "$@"
+else
+    set -- -- "$@"
+fi
+
+# The PID namespace and /proc come from unshare: bwrap's own /proc has read-only
+# mounts over parts of it, and the kernel then refuses the build sandbox inside
+# its fresh /proc. This one holds only the box's processes.
+exec unshare --user --map-current-user --pid --fork --kill-child --mount-proc \
+    bwrap --new-session --die-with-parent --unshare-ipc --unshare-uts --unshare-cgroup-try \
+    --clearenv \
+    --setenv HOME "$HOME" \
+    --setenv PATH /bin:/sbin \
+    --setenv LANG C.UTF-8 \
+    --setenv TZ "${TZ:-}" \
+    --setenv SHELL /bin/bash \
+    --setenv TERM dumb \
+    --setenv TMPDIR /tmp \
+    --setenv NO_COLOR 1 \
+    --setenv CARGO_TARGET_DIR "$audit/target" \
+    --setenv CARGO_NET_OFFLINE true \
+    --setenv CLAUDE_CONFIG_DIR "$audit/claude" \
+    --setenv DISABLE_AUTOUPDATER 1 \
+    --setenv GIT_CEILING_DIRECTORIES "$audit" \
+    --setenv GIT_TERMINAL_PROMPT 0 \
+    --ro-bind /bin /bin \
+    --ro-bind /sbin /sbin \
+    --ro-bind /lib /lib \
+    --ro-bind-try /lib32 /lib32 \
+    --ro-bind /oath/store /oath/store \
+    --ro-bind /etc/passwd /etc/passwd \
+    --ro-bind /etc/group /etc/group \
+    --ro-bind-try /etc/nsswitch.conf /etc/nsswitch.conf \
+    --ro-bind-try /etc/hosts /etc/hosts \
+    --ro-bind-try /etc/resolv.conf /etc/resolv.conf \
+    --ro-bind-try /etc/localtime /etc/localtime \
+    --dev /dev \
+    --dev-bind /dev/kvm /dev/kvm \
+    --bind /proc /proc \
+    --tmpfs /tmp \
+    --tmpfs /run \
+    --tmpfs /home \
+    --ro-bind "$repo" "$repo" \
+    --bind "$copy/.git" "$repo/.git" \
+    --bind "$repo/pkgs" "$repo/pkgs" \
+    --ro-bind "$repo/pkgs/intake/approved.txt" "$repo/pkgs/intake/approved.txt" \
+    --ro-bind "$repo/pkgs/go-modules.sh" "$repo/pkgs/go-modules.sh" \
+    --bind "$repo/build" "$repo/build" \
+    --bind "$audit" "$audit" \
+    --tmpfs "$copy" \
+    --bind "$HOME/.local/share/oath" "$HOME/.local/share/oath" \
+    --ro-bind "$HOME/.cargo/registry" "$HOME/.cargo/registry" \
+    --chdir "$repo" \
+    "$@"

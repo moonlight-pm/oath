@@ -33,7 +33,7 @@ Overwrite this file when facts change; do not append a diary.
   2026-10-26).
 - **Heads it publishes (R72):** generation 175 (2026-11-08) applied the 13 packages Minecraft runs with (`prismlauncher`, `jre-21`, the Qt modules, `certs` and the small libraries), from master `24ca3bb` and `57dc661`, because `oath publish` publishes this machine's pin. buccina runs none of them.
 - **Running now:** output `6c8d38bd54c4` (the 2026-11-07 release, by the 2026-11-08 audit's
-  `oath update --confirm --reboot`; generation 174), in sync; generations 175 (above) and 176 (`svc:audit` at midnight, R75) since. Before it, `f612b200206c` (the
+  `oath update --confirm --reboot`; generation 174), in sync; generations 175 (above), 176 (`svc:audit` at midnight, R75) and 177 (key `oath@novus` in its publishers, scoped to `sola,sola-*`) since. Before it, `f612b200206c` (the
   2026-11-05 audit's release; generation 173 on 2026-11-06), its overlays kept. Before it, `e73aa522ec58` (master `1678f60`,
   generation 166), from the audit's `oath update --confirm --reboot` on 2026-11-04: Linux 7.3.1 with its 12 io_uring
   patches, TIOCSTI off (R60), Landlock and Yama (R64), Codex 0.165.0, in sync, its overlays
@@ -49,7 +49,7 @@ Overwrite this file when facts change; do not append a diary.
   `178ac39ce817` (Linux 7.3.1, generation 111) and Release B
   (`dd0f847aa9c9`, generation 110).
   `svc:audit` (R48, this file's overlay: `check/audit/run` as `home`,
-  schedule `0 0 * * *`) since generations 113-114. `pkg:qemu` 11.1.3
+  schedule `0 0 * * *`, the agent in a box with `~/.config/oath/claude-token`, R77) since generations 113-114. `pkg:qemu` 11.1.3
   (`0b1ad2cc`, from master@9e60f4f, an overlay no release sets) since
   generation 116; `cargo make check` passed 65/65 on it. Not here, listed by
   every update and now counted as the owner's to add: `svc:login`,
