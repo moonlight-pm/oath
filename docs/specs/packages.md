@@ -171,7 +171,7 @@ The default origin (is, 2026-10-19) is `https://store.oath.moonlight.pm`,
 first in the `base` profile's `host:local.origins`: the R2 bucket
 `oath-store` behind a Cloudflare custom domain, public read; only a
 build host's key writes it (buccina's, R38). The product page at `oath.moonlight.pm` is
-separate (Wicket).
+separate (a Cloudflare Worker, R79).
 
 Host side: `cargo make store --name <n> --from <dir> [--tar]` hashes a
 tree into `~/.local/share/oath/store`. `cargo make publish` uploads the

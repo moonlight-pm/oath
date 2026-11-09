@@ -2,6 +2,10 @@
 /target
 /apps/writ/target
 /site/target
+/site/dist
+/site/.cloudflare
+/site/.wrangler
+/site/node_modules
 /.worktrees/
 /.cache/
 /result

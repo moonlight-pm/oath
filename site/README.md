@@ -2,22 +2,25 @@
 
 The public page: what Oath is and its goals (`/`), and the manual
 (`/manual`), which is `docs/manual/*.md` rendered as one page. A small
-Rust server in its own Cargo workspace, so its crates stay out of the
-root `Cargo.lock` and `pkg:oath`. Not part of the OS.
+Rust program in its own Cargo workspace, so its crates stay out of the
+root `Cargo.lock` and `pkg:oath`, writes it all as plain files into
+`dist/`, and Cloudflare serves them as a Worker with static assets (R79).
+Not part of the OS.
 
 | Path | What |
 |------|------|
 | `pages/` | `page.html` (the shell), `home.html`, `manual.html`, `missing.html`; `{{name}}` is filled in by `src/site.rs` |
 | `src/manual.rs` | Markdown to HTML (pulldown-cmark): chapters numbered, headings anchored, links between chapters made anchors, other relative links sent to GitHub, raw HTML shown as text |
-| `src/main.rs` | HTTP/1.1, GET and HEAD; ETags and 304s; security headers; `oath.wicket.cloud` redirects here |
+| `src/main.rs` | Writes every file into `dist/` |
 | `samples/` | `session.txt` and `index.md`, recorded on canto, shown on the home page |
-| `static/` | `style.css`, the favicons (SVG, and `favicon.ico` and `apple-touch-icon.png` rendered from it for browsers that take only raster icons), fonts (OFL, licences beside them) |
+| `static/` | `style.css`, `_headers` (security and caching headers), the favicons (SVG, and `favicon.ico` and `apple-touch-icon.png` rendered from it for browsers that take only raster icons), fonts (OFL, licences beside them) |
+| `cloudflare.config.ts`, `wrangler.config.ts` | The Worker and where its files are |
+| `package.json`, `package-lock.json` | Pin `cf` and the Wrangler it builds with |
 
 The seal is `brand/oath.svg`, drawn in `currentColor`.
 
-Everything is compiled into the binary and rendered once at start, so
-an image serves the manual of the commit it was built from. A change to
-`docs/manual` reaches the site at the next deploy.
+Everything is compiled into the generator, so `dist/` is the manual of
+the commit it was built from.
 
 ## Keeping it true
 
@@ -33,23 +36,18 @@ an image serves the manual of the commit it was built from. A change to
 ```sh
 cd site
 cargo test
-cargo run          # http://127.0.0.1:8090/ (OATH_SITE_PORT to change)
+cargo run          # writes dist/
 ```
 
-The listen port is the first of `PORT` (Wicket), `WICKET_PORT_HTTP`,
-`OATH_SITE_PORT` that is set, else 8090.
+## Deploy
 
-## Deploy (Wicket on aulos)
+`.github/workflows/site.yml` tests and builds on every pull request that
+touches the site, the manual or the seal, and deploys on a push to
+`master`. So the public manual follows `master`, which can be ahead of
+what a machine runs. On an Oath machine `npx cf` fails (there is no
+`/usr/bin/env`), so `cf` runs only in the workflow.
 
-From the repo root:
-
-```sh
-podman build -f site/Containerfile --ignorefile site/.containerignore \
-  -t oath-site:latest -t registry.wicket.cloud/oath-site:latest .
-wicketctl registry push aulos --image oath-site:latest
-wicketctl workload apply aulos --file site/workload.toml --confirm
-```
-
-The image is the one static binary on `scratch` (about 2 MB), running
-as UID 65534; it exits on SIGTERM. The workload keeps the id of the
-`oath` workload that Thoxa's `workloads/oath` created.
+It reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the
+repo's secrets. The public name is the repo's `SITE_DOMAIN` variable, and
+never goes in the repo; without it the site deploys to its `workers.dev`
+address only.

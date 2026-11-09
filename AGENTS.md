@@ -94,7 +94,7 @@ check/            cases.toml for `cargo make check` (the QEMU harness), agent.to
                   audit/ the daily security audit's runner, box, prompt and permissions (R48, R77),
                   writ-terminal/ drives writ's session in a private tmux, against a hostile fake model
 apps/             first-party package sources and example plans
-site/             oath.moonlight.pm: home page and docs/manual as one page, its own Cargo workspace, Wicket workload
+site/             oath.moonlight.pm: home page and docs/manual as one page, its own Cargo workspace; .github/workflows/site.yml deploys it to Cloudflare (R79)
 brand/            the seal: oath.svg (vector), oath.png, logo-white.png
 forks/            submodules of patched upstreams (river, wlroots)
 apocrypha/        gitignored scratch — never a source of truth

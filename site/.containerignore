@@ -1,9 +1,0 @@
-*
-!docs/
-!docs/manual/
-!docs/manual/**
-!brand/
-!brand/oath.svg
-!site/
-!site/**
-site/target

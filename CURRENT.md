@@ -6,7 +6,7 @@ append history (git has it).
 
 **As of:** 2026-11-09 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R78 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R79 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
