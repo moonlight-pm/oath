@@ -52,6 +52,10 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   reads. `BOUND` and `REBOOT` record a `bound` event, `RENEW` and
   `REBIND` a `renew`; `EXPIRE`, `NAK`, `RELEASE`, `NOCARRIER` and
   `DEPARTED` clear both.
+- A static address's DNS servers are `dns` (R83): apply and every boot
+  write them to `/etc/resolv.conf`; an empty list leaves the file as it
+  is. Going back to dhcp flushes the static IPv4 address and its routes
+  before the client starts; neither flush touches IPv6.
 - Any change to `up`, `ipv4` or `gateway` is confirm-class: `oath apply`
   exits 3 without `--confirm`, because it can cut the machine off from
   SSH. Serial still works.
