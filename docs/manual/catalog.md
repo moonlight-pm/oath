@@ -28,14 +28,15 @@ The catalog is the source of truth. It lives at `/oath`.
   store/cell/<name>/<hash>/ cell trees (not linked into /bin or /lib)
   store/plan/<name>/<hash>/plan.plan
   store/adv/<name>/<hash>.json  a pin's advisories, when its origin serves them
-  heads.json               the head `oath update` took of each package
+  heads.json               the head `oath update`, `oath new` or `oath add` took of each package
   output.json              the release this machine runs (an install or `oath update` writes it)
+  machine-id               this machine's id: PID 1 makes it at the first boot
   login/password           `home`'s password hash, root's alone
   ssh/                     host keys
   run/                     sockets and mounts, not desired state
     init.sock              `oath apply` asks PID 1 to converge here
     login.sock             `svc:login`: `oath password`, `oath desk`
-    seat                   who has tty1: `desk` or `console`; absent is `desk`
+    seat                   who has tty1: `desk` or `console`; absent is `desk` (each boot removes it)
     fs/                    btrfs top level (subvolid=0)
 ```
 
@@ -44,7 +45,9 @@ except the SSH host's private key and `login/`, which are root's;
 `oath get` is the supported way. If a kind is not under
 `/oath/schema`, it does not exist. Spec, status and `INDEX.md` are
 replaced atomically (temp file, fsync, rename), so a reader never sees
-half of one. Logs are appended to.
+half of one. Logs are appended to. Past 256 KiB a log moves to
+`<file>.1`, one old file kept; `apply.jsonl` stays whole, and a plan's
+`.1` is its build before.
 
 ## Kinds
 
@@ -52,9 +55,9 @@ half of one. Logs are appended to.
 |------|---------------------------|------|
 | `host` | `host:local` | Hostname, power, `env`, `timezone`, `hosts`, `origins`, `profile`, `publishers`, `mounts`, `module_options`, `seat_hid`, `autologin` |
 | `svc` | `svc:login`, `svc:screen`, `svc:serial`, `svc:sshd`, `svc:time` | PID 1's only config |
-| `snap` | `snap:current`, then `snap:N` | Generations |
+| `snap` | `snap:current`, then `snap:N` | Generations: apply and `oath undo` write them, and `oath set` refuses them |
 | `pkg` | `pkg:glibc`, `pkg:bash`, `pkg:zsh`, `pkg:coreutils`, `pkg:btrfs`, `pkg:oath`, `pkg:openssh`, `pkg:curl`, … (45 in `base`, 39 present; the rest are recipes and their sources) | Store + `/bin` and `/lib` symlink farms |
-| `net` | `net:net0` | The link: `dhcp` or a static address |
+| `net` | `net:net0` | The link: `dhcp`, or a static address with its `gateway` and `dns` servers |
 | `ssh` | `ssh:local` | Keys that may log in as `home` |
 | `dev` | `dev:net0`, `dev:disk-pci-…` (discovered) | Hardware inventory |
 | `plan` | `plan:claude-code`, `plan:codex`, `plan:grok-build` | Hashed `plan.plan`; `oath build` writes a `pkg` or `cell` tree |
@@ -68,7 +71,10 @@ plan's name is narrower: lowercase letters, digits and `-`, with no
 
 Drift is desired against `applied.json`, the spec as last applied, for
 every kind; actual (`/oath/status/…`) is only what the machine observed (`svc`
-actual is runtime: `state`, `pid`, `restarts`).
+actual is runtime: `state`, `pid`, `restarts`). A package whose pinned
+tree is gone from the store, or that a check found damaged, drifts in
+`tree` too, and `oath apply` fetches it again
+([Packages](packages.md#a-damaged-package)).
 
 `oath schema` lists the kinds. `oath schema <kind>` prints the kind's
 prose (its fields and, where the kind has them, when to use it, safety
@@ -82,8 +88,11 @@ not list.
 
 On the box, `oath new <id>` creates a `svc`, `pkg` or `cell` and
 `oath rm <id>` removes one; both take effect at `oath apply`, and
-`oath undo` of that apply reverses them. `oath rm` of an object
-`oath new` made, before an apply has taken it, deletes it at once.
+`oath undo` of that apply reverses them. `oath new` says what that
+apply does with the object: it starts a service, links a package, or
+checks a cell's tree, which `cell run` then runs. `oath rm` of an object
+`oath new` made, before an apply has taken it, deletes it at once and
+says so (`removed: no apply had taken it`).
 `host`, `net`, `ssh`, `snap`, `dev` and `plan` objects cannot be
 created or removed this way, and the ten packages the `base` profile
 lists as `fixed` cannot be removed.
@@ -99,14 +108,17 @@ that a key in `host:local.publishers` may sign for that name, and the
 same for each package it needs that the machine lacks. Each is made
 present at its head's `hash` and `needs`, with the head's
 `description`, `home`, `category` and `source`; its pack is fetched
-into the store, and nothing is linked until `oath apply`. A need the
-machine lacks that has no head refuses the command, and so does a name
-with no head unless the store holds one tree of it, which is then the
-pin (an empty `hash`). `oath add <name>...` makes the same objects and
-applies them in one generation; it takes no tree from the store, so a
-name with no head refuses it. Both need root; what they refuse, and
-how a need the machine holds at another pin is settled, is in
-[Packages](packages.md#install--remove).
+into the store, and nothing is linked until `oath apply`; each head it
+takes goes in `/oath/heads.json`. A need the machine lacks that has no
+head refuses the command, and so does a name with no head unless the
+store holds one tree of it, which is then the pin (an empty `hash`).
+`oath add <name>...` makes the same objects and applies them in one
+generation, recording the heads once they are linked; when that apply
+fails, it leaves the machine as it was. It takes no tree from the
+store, so a name with no head refuses it. Both refuse a head older than
+one this machine took, for the name or a need. Both need root; what
+they refuse, and how a need the machine holds at another pin is
+settled, is in [Packages](packages.md#install--remove).
 
 Before the box first boots, objects come from:
 
@@ -130,21 +142,23 @@ Before the box first boots, objects come from:
   document (`svc:web` needs its `exec`). A `cell:` id is refused, and
   so are `extends` and `fixed`, which only a profile has. Each patched
   document must parse as its kind and pass `oath set`'s value checks
-  (a host name, a service's `exec`). `oath set`'s other refusals do
-  not apply: a key the kind does not have is kept, and `pkg:glibc`
-  or an existing `dev:` object can be set absent, which `oath apply`
-  then fails on. A patch to a `svc`, `host`, `net` or `ssh` counts
-  as applied: PID 1 boots with it. A new object of any kind but
-  `pkg` counts as applied too. A new package starts applied as
+  (a host name, a POSIX TZ string, a service's `exec`). `oath set`'s
+  other refusals do not apply: a key the kind does not have is kept,
+  and `pkg:glibc` or an existing `dev:` object can be set absent, which
+  `oath apply` then fails on. A patch to a `svc`, `host`, `net` or
+  `ssh` counts as applied: PID 1 boots with it. A new object of any
+  kind but `pkg` counts as applied too. A new package starts applied as
   absent, and a patch to an existing `pkg`, `plan` or `dev` stays
   desired: `oath diff` shows it and `oath apply` takes it. A patch to
-  `snap:current` stays desired and `oath diff` shows it, but no apply
-  takes its number: the next apply that takes a generation, or
-  `oath undo`, writes the machine's own generation over it
-  ([Generations](generations.md)). `cargo make install --overlay <file.json>`
-  merges an overlay into the installed catalog, after the hostname and
-  the SSH keys the installer writes. The `overlay:` line in `oath get`
-  and `oath diff` is something else: a package pin that is not its
+  `snap:current`, which `oath set` refuses, stays desired and
+  `oath diff` shows it, but no apply takes its number: the next apply
+  that takes a generation, or `oath undo`, writes the machine's own
+  generation over it ([Generations](generations.md)).
+  `cargo make install --overlay <file.json>` checks the file against a
+  catalog of the output's own profile before anything is wiped, then
+  merges it into the installed catalog, after the hostname and the SSH
+  keys the installer writes. The `overlay:` line in `oath get` and
+  `oath diff` is something else: a package pin that is not its
   release's or head's ([Packages](packages.md)).
 
 `oath seed` is the build- and install-time tool behind both.
@@ -200,17 +214,20 @@ memory. `/etc/hosts` has `localhost`, the hostname and
 ## `/etc`
 
 Do not edit these files, except `resolv.conf` on a static address
-([Network](network.md#names)). An edit lasts until the file's writer
-next runs.
+with an empty `net:net0.dns` ([Network](network.md#names)). An edit
+lasts until the file's writer next runs.
 
 | Files | Written by | When |
 |-------|------------|------|
 | `hostname`, `hosts`, `profile`, `zprofile`, `zshrc`, `shells`, `ssh/sshd_config` | oath, from `host:local` | each boot, and when `host:local` converges |
-| `resolv.conf` | the DHCP client's hook | each lease and renewal that names DNS servers; never for a static address ([Network](network.md#names)) |
+| `resolv.conf` | the DHCP client's hook; on a static address, oath from `net:net0.dns` (R83) | each lease and renewal that names DNS servers; on a static address, each boot and when `net:net0` converges, unless `dns` is empty ([Network](network.md#names)) |
 | `passwd`, `group`, `shadow`, `nsswitch.conf`, `ssh/ssh_config` | the image | replaced by `oath update` |
-| `machine-id` | PID 1 | at boot, when it is missing; `00000000000000000000000000000001` on every machine |
+| `machine-id` | PID 1, from `/oath/machine-id` | each boot; the id is random, made at the machine's first boot, and `oath install` does not copy it |
 
 There is no `fstab`, `os-release`, `localtime`, `sudoers`,
 `sysctl.conf` or `crontab`. Mounts are `host:local.mounts`, the time
-zone is `host:local.timezone`, a timed job is a service's `schedule`,
-and on an installed machine the release is in `/oath/output.json`.
+zone is `host:local.timezone` (a POSIX TZ string such as
+`MST7MDT,M3.2.0,M11.1.0` or `UTC0`, R83: no zoneinfo ships, so
+`oath set` refuses a zone name such as `America/Denver`, and a bare
+`UTC`), a timed job is a service's `schedule`, and on an installed
+machine the release is in `/oath/output.json`.

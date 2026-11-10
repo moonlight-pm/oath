@@ -19,7 +19,8 @@ machine` with the `sudo` command as the hint, and `oath add` says what
 1 for a failure, 2 for a command line `oath` cannot parse, 3 for an
 apply that needs `--confirm`, and 4 for a refusal printed as
 `security: …`: a tree, download or signature that is not what it should
-be.
+be. A reader that stops early (`oath ls --origin | head`) ends `oath`
+quietly, as it ends any Unix tool.
 
 The catalog root is `/oath`. `--root` / `OATH_ROOT` is for tests and
 for build and install tooling on the build host.
@@ -30,8 +31,8 @@ Stdout never carries it and nothing turns it off. `2>/dev/null` drops
 it, and a failure's message with it unless `--json`. `oath` run as root
 appends the same objects to `/oath/log/oath.jsonl`; PID 1 appends its
 own (boot steps, each service's start and exit, hotplug, shutdown) to
-`/oath/log/init.jsonl`. Neither file rotates. Nothing sends them off
-the machine.
+`/oath/log/init.jsonl`. Each is rotated to `<file>.1` past 256 KiB,
+keeping one old file. Nothing sends them off the machine.
 
 ## Verbs
 
@@ -41,23 +42,23 @@ the machine.
 | `oath schema [kind]` | List kinds, or one kind's prose + JSON Schema |
 | `oath get <id>` | Desired + actual + status. `--desired` / `--actual` to clip |
 | `oath set <id> k=v` | Write **desired** only. Does not converge. `--from-json '<obj>'` sets several fields. The result must fit the kind's type. `oath set plan:<name> --from-file <path>` files a plan (canonical, `oath fmt -w`); `--from-file -` files the canonical form of a plan read from stdin |
-| `oath new <id> k=v` | Create a `svc`, `pkg` or `cell` (`--from-json` too). Runs after `apply`. `oath new pkg:<name>` with no fields makes what `oath add` would and applies nothing; when no origin has a head of it, a tree of it already in the store is the pin |
-| `oath add <name>...` | Install packages by name (`<name>` or `pkg:<name>`) from the origins: each at its newest head a key in `host:local.publishers` may sign for it, with each package it needs that this machine lacks, made and applied in one generation; `oath undo` takes them back. Nothing the machine has moves: if a need it holds at another pin would cost the package a library, nothing changes and `sudo oath update --confirm` comes first. A package already here is named and left to `oath update`, and one here with `present=false` is refused; a name with no head, such as a recipe, is refused. Without root it says what it would add and each pack's size, and changes nothing ([Packages](packages.md#install--remove)) |
-| `oath rm <id>` | Mark a `svc`, `pkg` or `cell` for removal. Removed at `apply`; one that was never applied is deleted at once |
+| `oath new <id> k=v` | Create a `svc`, `pkg` or `cell` (`--from-json` too). Nothing runs until `apply`, and `new` says what the apply does: starts a `svc`, links a `pkg`, and checks a `cell`'s tree, which `cell run` then runs. `oath new pkg:<name>` with no fields makes what `oath add` would, recording its heads and refusing an older one as `oath add` does, and applies nothing; when no origin has a head of it, a tree of it already in the store is the pin |
+| `oath add <name>...` | Install packages by name (`<name>` or `pkg:<name>`) from the origins: each at its newest head a key in `host:local.publishers` may sign for it, with each package it needs that this machine lacks, made and applied in one generation; an add that fails leaves the machine as it was, and `oath undo` takes back one that worked. Each head it takes is recorded in `/oath/heads.json`, as `oath update` records one, and a head older than one recorded there is refused. Nothing the machine has moves: if a need it holds at another pin would cost the package a library, nothing changes and `sudo oath update --confirm` comes first. A package already here is named and left to `oath update`, and one here with `present=false` is refused; a name with no head, such as a recipe, is refused. Without root it says what it would add and each pack's size, and changes nothing ([Packages](packages.md#install--remove)) |
+| `oath rm <id>` | Mark a `svc`, `pkg` or `cell` for removal. Removed at `apply`; one no apply has taken is deleted at once, and `rm` says it was removed |
 | `oath diff [id]` | Drift: desired against the spec last applied, for every kind (`field: old -> new`, or `in-sync`). A live state that differs is not drift: a mount waiting for its disk is in sync |
 | `oath apply [id...]` | Check, snapshot, then converge the listed ids or all drift. `--confirm` and `--probation <secs>`: [Safety](#safety). `--keep-seat`: a running service with a `seat` keeps its program when its package moves, and takes the new one when it next starts |
 | `oath keep` | Keep an apply that is on probation. Run it from a new SSH session |
 | `oath undo` | Put back what the last apply changed (repeat to go further back) |
-| `oath verify [id...]` | Hash linked `pkg` and `cell` trees again (all of them, or the ids given) against the hash each is linked as; exit 1 if one changed on disk (`-q`: only damaged ones and the count) |
+| `oath verify [id...]` | Hash linked `pkg` and `cell` trees again (all of them, or the ids given) against the hash each is linked as; exit 1 if one changed on disk or is gone from the store (`-q`: only damaged ones and the count; [A damaged package](packages.md#a-damaged-package)) |
 | `oath audit [pkg:<name>]` | The daily security audit's findings for what is here, when a key this machine trusts signed them; `--json` is the report ([Security audit](packages.md#security-audit)) |
-| `oath reap` | What would go: versions in the store that nothing holds, filed plans nothing pins, and generations past the newest five and those since boot (`--json`: every version and what holds it). A version stays while it is live, or a pin, a need, the release, a current plan or a kept generation names it; a tree younger than a day stays too (`--arriving <secs>`). `sudo oath reap --confirm` removes the rest, and each boot does |
+| `oath reap` | What would go: versions in the store that nothing holds, filed plans nothing pins, and generations past the newest five and those since boot. Before them, a line for each version that stays says what holds it (`pkg:less sha256-ea7e1d00bd42 stays: live, pin`); `--json` gives every version and what holds it. A version stays while it is live, or a pin, a need, the release, a current plan or a kept generation names it; a tree younger than a day stays too (`--arriving <secs>`). `sudo oath reap --confirm` removes the rest, and each boot does |
 | `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N`, `keep:N`. `-n N` for the last N |
 | `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50; `--json` gives `{id, path, lines}` |
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
 | `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin`. Creates the product's `pkg` or `cell` object if it is missing; `--no-pkg` does not, for a product that is only a build input to other plans |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
 | `oath store <id> <path>` | Put a tree built elsewhere (a directory, or a tar of one) into the store as `pkg:<name>` or `cell:<name>` and print its hash. Changes no object ([Packages](packages.md#a-tree-built-here)) |
-| `oath update` | What the newest output published for this machine, and the newest head a key it trusts signed for each package here, would change; `sudo oath update --confirm [--reboot]` moves to them; `--keep pkg:<name>`, `--output <id>`; `--record` moves nothing and lists each package's head, and `sudo oath update --record --confirm` records each one this machine runs as the head it took (after `oath publish`). A head wins over a release's pin and never goes back, so `--output` of an older output sets each package that has a head to its head, not to that output's pin; `oath undo` puts back the pins an update moved ([Install](install.md#update-an-installed-machine)) |
+| `oath update` | What the newest output published for this machine, and the newest head a key it trusts signed for each package here, would change; `sudo oath update --confirm [--reboot]` moves to them; `--keep pkg:<name>` or `svc:<name>` (one this machine has), `--output <id>`; `--record` moves nothing and lists each package's head, and `sudo oath update --record --confirm` records each one this machine runs as the head it took (after `oath publish`). A head wins over a release's pin and never goes back, so `--output` of an older output sets each package that has a head to its head, not to that output's pin; `oath undo` puts back the pins an update moved ([Install](install.md#update-an-installed-machine)) |
 | `oath publish pkg:<name>` | What it would publish: this machine's pin of the package, as its head on an origin; `--confirm` publishes it, without `sudo` ([Packages](packages.md#publishing-a-package-on-its-own-r72)) |
 | `oath install [disk]` | The disks; `sudo oath install <disk>` says what it would erase and write; with `--confirm` it wipes that disk and installs this system ([Install](install.md#from-a-stick-on-the-machine-oath-install)) |
 | `oath password` | Set, change or remove `home`'s password; `--status` says whether one is set, with auto-login and the seat ([below](#the-password-and-the-seat)) |
@@ -91,13 +92,12 @@ takes a filesystem snapshot and converges.
 
 - **mutate** — hostname, service enable, package present. Snapshot and
   go.
-- **confirm** — halt, reboot, a change to `snap:current` (it picks no
-  generation; [Generations](generations.md)), and anything that can cut
-  this machine off from SSH:
+- **confirm** — halt, reboot, and anything that can cut this machine
+  off from SSH:
   disabling or removing `svc:sshd`, changing its `exec`, `user` or
   `env`, moving the package it runs from (`pkg:openssh`'s `hash`),
-  dropping a key from `ssh:local`, changing `net:net0`. `oath apply`
-  without `--confirm` exits **3** and explains. Do not pass `--confirm`
+  dropping a key from `ssh:local`, changing `net:net0`'s `up`, `ipv4`
+  or `gateway`. `oath apply` without `--confirm` exits **3** and explains. Do not pass `--confirm`
   unless the owner asked for that class of change.
 
 ```
@@ -135,7 +135,9 @@ applies, and `oath` shows it under **Probation** with its deadline;
 `oath undo` puts back the spec of the objects the newest apply changed
 (an apply that failed counts), converges them, and logs `undo:N`. Run
 it again to undo the apply before that. It never rewinds the log, the
-package store, or the SSH host keys.
+package store, or the SSH host keys. Only apply and undo move
+`snap:current`: `oath set` refuses it, and an older system boots from
+the [boot menu](generations.md#boot-menu).
 
 ## Time zone
 
@@ -146,8 +148,9 @@ sudo oath set host:local timezone=MST7MDT,M3.2.0,M11.1.0
 sudo oath apply host:local
 ```
 
-Empty is UTC. There is no zoneinfo database, so a zone name such as
-`America/Denver` gives UTC, and neither `set` nor `apply` refuses one.
+Empty is UTC. There is no zoneinfo database, so `set` and `apply`
+refuse what is not a POSIX `TZ` string (R83): a zone name such as
+`America/Denver`, and plain `UTC`, which has no offset, for `UTC0`.
 Every service and every login gets `TZ` from it, unless `host:local.env`
 sets `TZ`. The system clock and the logs stay UTC. A running service
 keeps its old `TZ` until it restarts.
@@ -320,9 +323,9 @@ desk or the console has it. Exit Sola ends the desk on purpose
 (`oath desk stop` does the same): its services are held (`state:
 "held"`) and the console, a shell as `home` (or the password prompt), takes
 tty1. `oath desk`, from that shell or over SSH, gives the seat back and
-the desk's services start again. A reboot keeps the seat:
-`/oath/run/seat` is on disk, so after `oath desk stop` the next boot
-starts with the console, until `oath desk`.
+the desk's services start again. Every boot starts with the desk: PID 1
+gives it the seat before any service starts, so the console's turn ends
+with the boot it was taken in.
 
 A desk that lacks `svc:login` gets the programs from `oath update`
 ([install.md](install.md)) but not the objects: the update lists it as

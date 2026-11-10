@@ -31,14 +31,15 @@ undid back to since it booted, and the one on probation. PID 1 removes
 the rest once a boot (`oath reap`, R62), and undo stops at the last one
 kept (`no snapshot of generation N: it is past what undo can reach`).
 
-`oath reap` says what would go, `oath reap --json` also what holds each
-version in the store (`held`), and `sudo oath reap --confirm` removes
-what would go. A package or cell version stays while something names
-it: its pin or live link, another package's `needs`, the release the
-machine runs, a plan's needs, or a kept generation. A tree no pin names
-yet waits a day for one (`--arriving <secs>`). Nothing goes while a
-build runs. The space comes back once no `@gen-N` or `@boot-N` holds
-the files.
+`oath reap` says what holds each version that stays
+(`pkg:chrony sha256-2b9386c5aeb0 stays: live, pin`) and what would go,
+`oath reap --json` lists every version with what holds it (`held`), and
+`sudo oath reap --confirm` removes what would go. A package or cell
+version stays while something names it: its pin or live link, another
+package's `needs`, the release the machine runs, a plan's needs, or a
+kept generation. A tree no pin names yet waits a day for one
+(`--arriving <secs>`). Nothing goes while a build runs. The space comes
+back once no `@gen-N` or `@boot-N` holds the files.
 
 A generation is all of `@`, so every apply pins whatever is there until
 that `@gen-N` is gone. Keep fast-changing
@@ -46,11 +47,13 @@ bulk, such as a cargo `target/`, on another disk or in a nested
 subvolume, which a snapshot leaves out.
 
 `snap:current` is the generation the machine is at: the newest apply's,
-or after an undo the parent of the apply it took back. Setting it picks
-nothing: the apply needs `--confirm`, takes a new generation and records
-that number. `snap:N` is a read-only record (`generation`, `parent`,
-`time`, `reason`) in its desired document, and it stays after `@gen-N`
-goes; `oath set` refuses it.
+or after an undo the parent of the apply it took back. Only apply and
+undo move it: `oath set` refuses it (`snap:current is read-only: each
+apply moves it to the generation it takes`). An older system boots from
+the [boot menu](#boot-menu), and `oath undo` puts back an apply.
+`snap:N` is a read-only record (`generation`, `parent`, `time`,
+`reason`) in its desired document, and it stays after `@gen-N` goes;
+`oath set` refuses it too.
 
 A generation holds no status: status lives on the `/oath/status`
 tmpfs, so no `@gen-N` or `@boot-N` carries it, and an archived boot
@@ -132,11 +135,13 @@ Once a display driver loads, the screen is the desk's or tty1's.
 
 `cargo make esp --esp <vfat node> --confirm [--root <root>]
 [--output <id>]` (`--root` is the `oath.root=` of the boot entries it
-writes, a node or `UUID=…`; default `/dev/sda2`) takes the kernel,
-initrd and `oath-efi` of a build output (default: the newest one
-`cargo make check` passed; `--unchecked` for another), archives the
-live ESP kernel as a new boot, keeps five, snapshots `@` to
-`@boot-N`, and copies the new bits. It does not format anything. It
+writes, a node or `UUID=…`; default: the running kernel's, the UUID an
+install wrote) takes the kernel, initrd and `oath-efi` of a build
+output (default: the newest one `cargo make check` passed;
+`--unchecked` for another), archives the live ESP kernel as a new boot,
+keeps five, snapshots `@` to `@boot-N`, and copies the new bits. The
+new entries keep the options the current entry added, as `oath update`
+does. It does not format anything. It
 mounts the node you name **on the machine where you run it**, so it
 refuses to run on a machine that is not Oath (no `/oath/INDEX.md`),
 such as a NixOS build host.
