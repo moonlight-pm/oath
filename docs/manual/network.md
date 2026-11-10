@@ -31,9 +31,11 @@ ssh home@192.168.1.20 sudo oath keep
 `up: false` takes the address and default route off and sets the link
 down. `ipv4` is `dhcp` or `a.b.c.d/n`; `set` refuses anything else.
 `gateway` is the default route of a static address; empty adds no
-default route, and `dhcp` ignores it. `set` does not check it: a gateway
-`ip` refuses fails the apply, which goes on probation like one that
-succeeds.
+default route, and `dhcp` ignores it. `set` refuses anything but an IPv4
+address; one `ip` refuses, such as a gateway off the address's subnet
+(`Network is unreachable`), fails the apply, which goes on probation
+like one that succeeds. `dns` is a static address's DNS servers
+([Names](#names)).
 
 Any change to `up`, `ipv4` or `gateway` can cut your SSH session, so
 `oath apply` refuses it (exit 3) without `--confirm`, and once applied
@@ -41,10 +43,11 @@ it is on probation: unless a **new** SSH session runs `sudo oath keep`
 within 180 s (`--probation <secs>`), or if the machine reboots first,
 PID 1 undoes it. Serial still works. A bad address rolls itself back:
 the spec and the lease return. Back on `dhcp`, by rollback or by
-`oath set` and `oath keep`, a static address other than the lease and
-any default route it set stay on `net0` beside the lease until the
-next boot, and that route carries everything off-subnet, so reboot
-after the move.
+`oath set` and `oath keep`, converge first flushes what the static
+address left (IPv4 addresses with no lifetime, and the routes `ip route
+add` made), so only the lease's address and routes stay on `net0`.
+A static address, and the move back, flush IPv4 only: the link-local
+and router-advertised IPv6 addresses stay, and sshd answers on them.
 
 On QEMU, user networking hands out `10.0.2.15` by DHCP and forwards
 host `127.0.0.1:2222` to guest port 22 (`OATH_SSH_PORT`).
@@ -75,11 +78,11 @@ on every NIC that is up (`ip -6 addr`), and sshd answers on them.
 
 ## Names
 
-Names resolve through `/etc/hosts`, then the DNS servers the lease
-names (or that `/etc/resolv.conf` has): `/etc/nsswitch.conf` says
-`hosts: files dns`. A LAN machine the DNS does not know goes in
-`host:local.hosts`, which `/etc/hosts` lists after localhost and this
-hostname:
+Names resolve through `/etc/hosts`, then the DNS servers in
+`/etc/resolv.conf`, the lease's or a static address's `dns`:
+`/etc/nsswitch.conf` says `hosts: files dns`. A LAN machine the DNS
+does not know goes in `host:local.hosts`, which `/etc/hosts` lists
+after localhost and this hostname:
 
 ```
 sudo oath set host:local hosts='{"printer": "10.0.0.20", "nas": "10.0.0.12"}'
@@ -99,12 +102,24 @@ network's DNS can serve a name, add it there instead, for every machine
 at once. A machine-specific map belongs in the host's install overlay
 (`hosts/<name>.json`).
 
-A static address has no DNS servers of its own: `net:net0` has no field
-for them, and only the DHCP client's hook writes `/etc/resolv.conf`. A
-change to static leaves the file as the last lease wrote it; if no
-lease ever wrote it, there is no file and only `/etc/hosts` resolves.
-Put `nameserver <address>` lines in it by hand; nothing rewrites it
-while the address is static.
+A static address names its DNS servers in `net:net0.dns` (R83), a list
+of IPv4 or IPv6 addresses, even for one; `set` refuses a host name:
+
+```
+sudo oath set net:net0 dns='["192.168.1.1", "1.1.1.1"]'
+sudo oath apply
+cat /etc/resolv.conf
+```
+
+With a static address, apply and every boot write `/etc/resolv.conf`
+with a `nameserver` line for each, so set `dns` rather than edit the
+file. A change to `dns` cannot cut SSH: it needs no `--confirm` and has
+no probation. With `dhcp`, `dns` is ignored and the DHCP client's hook
+writes the file from each lease that names servers. An empty `dns` (the
+default) leaves the file as it is, so `oath undo` of the first `dns`
+leaves its servers there; a change to static keeps what the last lease
+wrote, and if no lease ever wrote it, there is no file and only
+`/etc/hosts` resolves.
 
 `dig`, `host` and `nslookup` (BIND 9, `pkg:bind`) ask the DNS servers
 in `/etc/resolv.conf` directly and never read `/etc/hosts`; `getent
