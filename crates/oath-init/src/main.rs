@@ -364,8 +364,8 @@ fn ensure_mount(fstype: &str, target: &str, source: &str) {
     let _ = mount(Some(source), target, Some(fstype), MsFlags::empty(), None::<&str>);
 }
 
-/// Dropbear allocates PTYs via `/dev/pts/ptmx`. Kernel default is
-/// `mode=600,ptmxmode=000`, which refuses interactive SSH for `home`.
+/// sshd (OpenSSH) allocates PTYs through `/dev/ptmx` on this devpts. Kernel
+/// default is `mode=600,ptmxmode=000`, which refuses interactive SSH for `home`.
 fn mount_devpts() {
     let _ = fs::create_dir_all("/dev/pts");
     let opts = "mode=0666,ptmxmode=0666";
