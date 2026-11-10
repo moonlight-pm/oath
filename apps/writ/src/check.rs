@@ -120,7 +120,7 @@ fn sensitive(home: &Path) -> Vec<PathBuf> {
     paths.extend(
         [
             "/oath/login", "/oath/ssh", "/oath/log", "/oath/run", "/oath/run/init.sock", "/oath/run/login.sock",
-            "/etc/shadow", "/etc/ssh", "/etc/machine-id", "/etc/profile", "/root", "/work", "/run", "/run/user",
+            "/etc/shadow", "/etc/ssh", "/etc/machine-id", "/oath/machine-id", "/etc/profile", "/root", "/work", "/run", "/run/user",
             "/boot", "/sys", "/tmp/tmux-1", "/dev/kvm", "/dev/uinput", "/dev/mem", "/dev/kmem", "/dev/port",
             "/dev/sda", "/dev/nvme0n1", "/dev/dri", "/dev/input", "/dev/snd", "/dev/fuse", "/dev/net",
             "/dev/loop0", "/dev/vfio",

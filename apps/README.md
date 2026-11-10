@@ -47,6 +47,6 @@ around its snapshot. No hook is the default (crash-consistent).
 | `fetchme/` | `pkg:fetchme` | single-file payload the harness serves; fetch cases make `pkg:fetchme` with `url` `http://10.0.2.2:18765/fetchme` |
 
 The pins in `hello.plan` and `reloc.plan` name products in
-`pkgs/lock.json` (as of 2026-10-18); re-pin them when those change.
+`pkgs/lock.json` (as of 2026-11-10); re-pin them when those change.
 Build them on the build host with `cargo make store` for the source
 pack, then `oath --root ~/.local/share/oath build --file apps/hello.plan`.
