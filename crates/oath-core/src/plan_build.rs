@@ -14,7 +14,7 @@ use crate::error::{Error, Result};
 use crate::id::ObjectId;
 use crate::kinds::{Meta, PkgNeed, PlanActual};
 use crate::packhash::{hash_tree, is_realization_id, slot_dir, LIVE_NAME};
-use crate::pkg::{prefetch_pkg_any, put_tree, resolve_tree, store_present};
+use crate::pkg::{prefetch_pkg_any, put_tree_intact, resolve_tree, store_present};
 use crate::plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, PlanFile, PLAN_NAME,
 };
@@ -279,19 +279,8 @@ fn build_inner(
     }
 
     let _store = store_lock(catalog_root, concurrent)?;
-    let slot = product_slot(catalog_root, plan);
-    let dest = slot.join(&product);
-    if dest.is_dir() {
-        let existing = hash_tree(&dest)?;
-        if existing != product {
-            return Err(Error::security(
-                format!("store already has {} with a different tree", dest.display()),
-                "oath schema pkg",
-            ));
-        }
-    } else {
-        put_tree(&slot, &product, &out)?;
-    }
+    // A product the store has damaged is replaced by this build's.
+    put_tree_intact(&product_slot(catalog_root, plan), &product, &out)?;
     writeln!(log, "# product {product}")?;
 
     if pkg_object {

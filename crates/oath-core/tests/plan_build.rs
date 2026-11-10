@@ -237,6 +237,11 @@ fn sandbox_relocate_and_cache() {
     assert_eq!(std::fs::read(&product).unwrap(), b"hello-from-src\n");
     let r2 = build_file(d.path(), &path).expect("rebuild");
     assert_eq!(r2.product, r1.product);
+    // A product the store has damaged is replaced by the next build's.
+    std::fs::write(&product, b"tampered\n").unwrap();
+    let r3 = build_file(d.path(), &path).expect("rebuild over a damaged product");
+    assert_eq!(r3.product, r1.product);
+    assert_eq!(std::fs::read(&product).unwrap(), b"hello-from-src\n");
 }
 
 #[test]

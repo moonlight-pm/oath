@@ -1348,6 +1348,17 @@ fn a_tree_gone_from_the_store_is_damage_and_apply_fetches_it_again() {
     assert!(cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
     assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync");
     assert!(cat.diff(Some(&id)).unwrap().is_empty());
+
+    // A tree verify found changed is fetched again the same way.
+    let file = d.path().join("store/pkg/hello").join(&pin).join("bin/hello");
+    std::fs::write(&file, "tampered\n").unwrap();
+    let got = cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.got.clone();
+    assert!(is_realization_id(&got) && got != pin, "{got}");
+    let drift = cat.diff(Some(&id)).unwrap();
+    assert_eq!(drift[0].fields, [("tree".to_string(), json!(pin), json!(got))]);
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "hello\n");
+    assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync");
 }
 
 #[test]
@@ -1724,6 +1735,11 @@ fn a_damaged_cell_is_found() {
     assert!(found.iter().any(|v| v.id == id && !v.verified.ok));
     assert_eq!(cat.get(&id).unwrap().meta.status, "error");
     assert!(cat.index_text().unwrap().contains("`cell:hamlet` hashes to"));
+    // `oath store` of the right tree puts it back, as the refusal says.
+    let src = d.path().join("src-hamlet");
+    assert_eq!(oath_core::cell::store(d.path(), "hamlet", &src).unwrap(), hash);
+    assert!(cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+    assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync");
 }
 
 #[test]

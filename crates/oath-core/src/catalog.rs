@@ -946,17 +946,26 @@ impl Catalog {
     }
 
     /// A package applied present at a pin whose tree is gone from the store,
-    /// and still wanted there: apply fetches it again. Its pin, if so.
-    fn missing_tree(&self, obj: &Object, applied: &Value) -> Option<String> {
+    /// or was found damaged (`verified`), and still wanted there: apply
+    /// fetches it again. Its pin and what its tree hashes to, if so.
+    fn damaged_tree(&self, obj: &Object, applied: &Value) -> Option<(String, String)> {
         let wanted = |v: &Value| v.get("present") != Some(&json!(false));
         let hash = applied.get("hash").and_then(|h| h.as_str())?;
-        let missing = obj.id.kind == KIND_PKG
-            && wanted(applied)
-            && wanted(&obj.desired)
-            && obj.desired.get("hash").and_then(|h| h.as_str()) == Some(hash)
-            && crate::is_realization_id(hash)
-            && crate::pkg::tree_missing(&self.root, &obj.id.name, hash);
-        missing.then(|| hash.to_string())
+        if obj.id.kind != KIND_PKG
+            || !wanted(applied)
+            || !wanted(&obj.desired)
+            || obj.desired.get("hash").and_then(|h| h.as_str()) != Some(hash)
+            || !crate::is_realization_id(hash)
+        {
+            return None;
+        }
+        if crate::pkg::tree_missing(&self.root, &obj.id.name, hash) {
+            return Some((hash.to_string(), MISSING.into()));
+        }
+        let found = obj.actual.get("hash").and_then(|h| h.as_str()) == Some(hash)
+            && obj.actual.pointer("/verified/ok") == Some(&json!(false));
+        let got = obj.actual.pointer("/verified/got").and_then(|g| g.as_str()).unwrap_or("");
+        found.then(|| (hash.to_string(), got.to_string()))
     }
 
     /// Say in `id`'s status which versions the store holds now (R62).
@@ -1589,7 +1598,7 @@ impl Catalog {
         };
         let pin = applied["hash"].as_str().unwrap_or("");
         let present = obj.desired["present"] != json!(false);
-        if self.missing_tree(obj, &applied).is_some() {
+        if self.damaged_tree(obj, &applied).is_some() {
             return Ok(None);
         }
         Ok((!pin.is_empty() && live.hash == pin && live.present == present).then_some(live))
@@ -1687,12 +1696,13 @@ impl Catalog {
     }
 
     /// Desired against the spec last applied. Never applied: everything.
-    /// A package whose pinned tree is gone from the store drifts in `tree`.
+    /// A package whose pinned tree is gone from the store, or damaged,
+    /// drifts in `tree`.
     fn drift_fields(&self, obj: &Object) -> Result<Vec<(String, Value, Value)>> {
         if let Some(applied) = self.applied(&obj.id)? {
             let mut fields = diff_values(&obj.desired, &applied);
-            if let Some(hash) = self.missing_tree(obj, &applied) {
-                fields.push(("tree".into(), json!(hash), json!(MISSING)));
+            if let Some((hash, got)) = self.damaged_tree(obj, &applied) {
+                fields.push(("tree".into(), json!(hash), json!(got)));
             }
             return Ok(fields);
         }

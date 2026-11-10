@@ -68,7 +68,10 @@ pub fn converge_with_link_root(
                     "pkg:{name} store tree {live_hash} now hashes to {}: the store is damaged",
                     v.got
                 ),
-                format!("oath verify; fetch pkg:{name} again (url) or reinstall"),
+                format!(
+                    "fetch it again (url, host:local.origins), or oath store pkg:{name} \
+                     <dir|file.tar> puts it back"
+                ),
             ));
         }
         write_slot_links(store_root, name, &live_hash)?;
@@ -716,15 +719,28 @@ fn parse_pin(pin: &str) -> Result<()> {
 /// (`.<name>.<hash>.part`), hashed again, and renamed into place. A
 /// realization that exists is never written into.
 pub fn put_tree(slot: &Path, hash: &str, src: &Path) -> Result<PathBuf> {
+    put(slot, hash, src, false)
+}
+
+/// [`put_tree`] where the store must then hold `hash` intact (a fetch,
+/// `oath store`, a build): a realization there that no longer hashes to
+/// `hash` is damaged, and the checked copy takes its place. One that
+/// hashes right is left as it is.
+pub(crate) fn put_tree_intact(slot: &Path, hash: &str, src: &Path) -> Result<PathBuf> {
+    put(slot, hash, src, true)
+}
+
+fn put(slot: &Path, hash: &str, src: &Path, repair: bool) -> Result<PathBuf> {
     parse_pin(hash)?;
     let dest = slot.join(hash);
-    if dest.is_dir() {
+    if dest.is_dir() && (!repair || hash_tree(&dest).is_ok_and(|got| got == hash)) {
         return Ok(dest);
     }
     let (Some(parent), Some(name)) = (slot.parent(), slot.file_name()) else {
         return Err(Error::Msg(format!("bad store slot {}", slot.display())));
     };
-    let part = parent.join(format!(".{}.{hash}.part", name.to_string_lossy()));
+    let name = name.to_string_lossy();
+    let part = parent.join(format!(".{name}.{hash}.part"));
     let _ = fs::remove_dir_all(&part);
     copy_tree(src, &part)?;
     let got = hash_tree(&part)?;
@@ -736,6 +752,19 @@ pub fn put_tree(slot: &Path, hash: &str, src: &Path) -> Result<PathBuf> {
         ));
     }
     fs::create_dir_all(slot)?;
+    if dest.is_dir() {
+        // The damaged tree goes once the checked one is in its place.
+        let old = parent.join(format!(".{name}.{hash}.damaged"));
+        let _ = fs::remove_dir_all(&old);
+        fs::rename(&dest, &old)?;
+        if let Err(e) = fs::rename(&part, &dest) {
+            let _ = fs::rename(&old, &dest);
+            return Err(e.into());
+        }
+        let _ = fs::remove_dir_all(&old);
+        eprintln!("{} did not hash to its name; replaced it", dest.display());
+        return Ok(dest);
+    }
     fs::rename(&part, &dest)?;
     Ok(dest)
 }
@@ -767,7 +796,7 @@ pub(crate) fn store_in(catalog_root: &Path, area: &str, name: &str, src: &Path) 
     let slot = catalog_root.join("store").join(area).join(name);
     if src.is_dir() {
         let hash = hash_tree(src)?;
-        put_tree(&slot, &hash, src)?;
+        put_tree_intact(&slot, &hash, src)?;
         return Ok(hash);
     }
     if !src.is_file() || !looks_like_tar(src) {
@@ -782,7 +811,7 @@ pub(crate) fn store_in(catalog_root: &Path, area: &str, name: &str, src: &Path) 
     fs::create_dir_all(&tree)?;
     let got = extract_tar(src, &tree)
         .and_then(|()| hash_tree(&tree))
-        .and_then(|hash| put_tree(&slot, &hash, &tree).map(|_| hash));
+        .and_then(|hash| put_tree_intact(&slot, &hash, &tree).map(|_| hash));
     let _ = fs::remove_dir_all(&tmp);
     got
 }
@@ -807,8 +836,9 @@ pub fn install_tree(
     Ok(got)
 }
 
-/// Put a pack tree in the store under its hash, checked against `pin`
-/// when there is one. Nothing links it and no object changes.
+/// Put a pack tree in the store under its hash, in place of a damaged one,
+/// checked against `pin` when there is one. Nothing links it and no object
+/// changes.
 fn store_tree(catalog_root: &Path, name: &str, src: &Path, pin: &str) -> Result<(String, PathBuf)> {
     if !src.is_dir() {
         return Err(Error::hint(
@@ -823,7 +853,7 @@ fn store_tree(catalog_root: &Path, name: &str, src: &Path, pin: &str) -> Result<
             "oath schema pkg",
         ));
     }
-    let dest = put_tree(&slot_dir(catalog_root, name), &got, src)?;
+    let dest = put_tree_intact(&slot_dir(catalog_root, name), &got, src)?;
     Ok((got, dest))
 }
 
@@ -1119,6 +1149,16 @@ pub fn link_clashes(
     clashes
 }
 
+/// The store has realization `hash` of `name` and it still hashes to it.
+/// With no pin there is nothing to check against: present will do.
+fn store_intact(catalog_root: &Path, name: &str, hash: &str) -> bool {
+    let tree = realization_dir(catalog_root, name, hash);
+    if hash.is_empty() || !tree.is_dir() {
+        return store_present(catalog_root, name, hash);
+    }
+    hash_tree(&tree).is_ok_and(|got| got == hash)
+}
+
 pub fn store_present(catalog_root: &Path, name: &str, hash: &str) -> bool {
     if !hash.is_empty() {
         return realization_dir(catalog_root, name, hash).is_dir()
@@ -1306,7 +1346,8 @@ pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &
 }
 
 /// `fetch_pkg`; with `link` false the pack only goes in the store, and
-/// neither `live` nor the object's pin moves.
+/// neither `live` nor the object's pin moves. A tree the store has that
+/// hashes to `hash` is not fetched again; a damaged one is.
 fn fetch_tree(
     catalog_root: &Path,
     name: &str,
@@ -1315,7 +1356,7 @@ fn fetch_tree(
     hash: &str,
     link: bool,
 ) -> Result<()> {
-    if store_present(catalog_root, name, hash) {
+    if store_intact(catalog_root, name, hash) {
         return Ok(());
     }
     if !file.is_empty() && !is_tree_path(file) {
@@ -1409,11 +1450,11 @@ pub fn host_origins(catalog_root: &Path) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// Fetch a pack the store does not have from where its consumer looks:
-/// the pkg's own `url`, else (with a pin, no `file`) each of
-/// `host:local.origins` in order until one serves the pinned tree.
-/// Returns where it came from; `None` when the store already had it or
-/// there is nowhere to look.
+/// Fetch a pack the store does not have intact from where its consumer
+/// looks: the pkg's own `url`, else (with a pin, no `file`) each of
+/// `host:local.origins` in order until one serves the pinned tree. A
+/// damaged tree is replaced by the one fetched. Returns where it came
+/// from; `None` when the store already had it or there is nowhere to look.
 pub fn fetch_pkg_any(
     catalog_root: &Path,
     name: &str,
@@ -1446,7 +1487,7 @@ fn fetch_any(
     hash: &str,
     link: bool,
 ) -> Result<Option<String>> {
-    if store_present(catalog_root, name, hash) {
+    if store_intact(catalog_root, name, hash) {
         return Ok(None);
     }
     if !url.trim().is_empty() {
@@ -1934,6 +1975,65 @@ mod needs_tests {
         }
         // Apply's own fetch finds it in the store and fetches nothing.
         assert_eq!(fetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), None);
+    }
+
+    #[test]
+    fn a_damaged_tree_is_fetched_or_stored_again_and_an_intact_one_is_left() {
+        use std::os::unix::fs::MetadataExt;
+        let d = tempfile::tempdir().unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let pin = hash_tree(&tree).unwrap();
+        let origin = d.path().join("origin");
+        fs::create_dir_all(origin.join("pkg/hello")).unwrap();
+        let tar = origin.join("pkg/hello").join(format!("{pin}.tar"));
+        let st = Command::new("tar")
+            .args(["-C", tree.to_str().unwrap(), "-cf", tar.to_str().unwrap(), "."])
+            .status()
+            .unwrap();
+        assert!(st.success());
+        let cat = d.path().join("cat");
+        crate::seed(&cat).unwrap();
+        let host = cat.join("objects/host/local/desired.json");
+        let mut h: serde_json::Value = crate::read_json(&host).unwrap();
+        let from = format!("file://{}", origin.display());
+        h["origins"] = serde_json::json!([from]);
+        write_json(&host, &h).unwrap();
+        let stored = realization_dir(&cat, "hello", &pin);
+        let ino = |p: &Path| fs::metadata(p).unwrap().ino();
+        let damage = || fs::write(stored.join("bin/hello"), b"tampered\n").unwrap();
+        let leftovers = || {
+            fs::read_dir(cat.join("store/pkg"))
+                .unwrap()
+                .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+                .filter(|n| n.starts_with('.'))
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(prefetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), Some(from.clone()));
+        let first = ino(&stored);
+        // Intact: neither fetched again nor written, with the origin gone.
+        fs::rename(&origin, d.path().join("away")).unwrap();
+        assert_eq!(fetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), None);
+        assert_eq!(store_pkg(&cat, "hello", &tree).unwrap(), pin);
+        assert_eq!(ino(&stored), first);
+        // Damaged: a fetch that finds nothing leaves it, one that does replaces it.
+        damage();
+        assert!(fetch_pkg_any(&cat, "hello", "", "", &pin).is_err());
+        assert_eq!(fs::read(stored.join("bin/hello")).unwrap(), b"tampered\n");
+        fs::rename(d.path().join("away"), &origin).unwrap();
+        assert_eq!(fetch_pkg_any(&cat, "hello", "", "", &pin).unwrap(), Some(from));
+        assert_eq!(hash_tree(&stored).unwrap(), pin);
+        // `oath store` of the right tree puts a damaged one back too.
+        damage();
+        assert_eq!(store_pkg(&cat, "hello", &tree).unwrap(), pin);
+        assert_eq!(hash_tree(&stored).unwrap(), pin);
+        assert!(leftovers().is_empty(), "{:?}", leftovers());
+        // A plain put never writes into a realization, damaged or not.
+        damage();
+        put_tree(&slot_dir(&cat, "hello"), &pin, &tree).unwrap();
+        assert_eq!(fs::read(stored.join("bin/hello")).unwrap(), b"tampered\n");
     }
 
     #[test]
