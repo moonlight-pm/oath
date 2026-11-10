@@ -22,8 +22,9 @@ stage 0, its `pkg:rust` builds `oath-make` (a `desk` machine has both;
 `base` has neither), and `pkg:qemu` runs images, with the edk2 firmware
 from QEMU's release as OVMF. `home` has `/dev/kvm` there (R33); without
 it QEMU runs without KVM. Without `qemu-system-x86_64` or `qemu-img` on
-`PATH`, `build`, the `check` cases in QEMU and the QEMU rehearsals stop
-and say so. No profile has `pkg:qemu` or the `pkg:libslirp` it loads.
+`PATH`, `build`, `run`, `up`, `start`, `check` in QEMU (`--agent` too)
+and the QEMU rehearsals stop and name `sudo oath add qemu`. No profile
+has `pkg:qemu` or the `pkg:libslirp` it loads.
 `oath add` takes `pkg:qemu` at its head, with each package it needs that
 the machine lacks, and applies them ([Packages](packages.md)): on a
 `desk` machine that is `pkg:libslirp`; `base` also takes `pkg:gcc`,
@@ -196,9 +197,9 @@ that passes, which fails the run until its `gap` line is removed). Logs
 and the serial console of every boot are under
 `build/check/<time>/<case>/`, and `report.json` is in
 `build/check/<time>/`. A clean full run writes `check-pass` into the
-output it booted, which `cargo make install` requires. Any other
-finished run of the cases in QEMU removes it, a passing `--case` run
-included.
+output it booted, which `cargo make install` requires. A run in QEMU
+with a FAIL or FIXED case removes it; a clean `--case` run leaves it as
+it was.
 
 ```sh
 cargo make check --target home@10.0.0.108
@@ -271,12 +272,13 @@ oath ls
 ```
 
 When `DISPLAY` is set, or `OATH_DISPLAY` is anything but `none` or `0`,
-`run`, `up` and `start` open a gtk window on the guest's virtio-gpu: its
-screen, on `base` a shell as `home` (`svc:screen`), 1280 by 800
-(`OATH_DISPLAY_WIDTH`, `OATH_DISPLAY_HEIGHT`, each 640 to 7680).
-`OATH_DISPLAY=none` or `0` hides the window. `pkg:qemu` has no gtk: an
-Oath build host with `DISPLAY` set needs `OATH_DISPLAY=none`, or QEMU
-refuses to start.
+and QEMU has gtk, `run`, `up` and `start` open a gtk window on the
+guest's virtio-gpu: its screen, on `base` a shell as `home`
+(`svc:screen`), 1280 by 800 (`OATH_DISPLAY_WIDTH`,
+`OATH_DISPLAY_HEIGHT`, each 640 to 7680). `OATH_DISPLAY=none` or `0`
+hides the window. `pkg:qemu` has no gtk: on an Oath build host that asks
+for a window they print `display: /bin/qemu-system-x86_64 has no gtk, so
+no window` and run without one.
 
 ## Leave the VM
 
@@ -307,7 +309,7 @@ is dead, `pkill -f qemu-system-x86_64` from another terminal.
 | `OATH_SSH_PORT` | Host port forwarded to the guest's 22 (default 2222): `run`, `up`, `start`, `ssh`, and the QEMU steps of `install` and `update`. `check` takes 2300 and up, `check --agent` 2400 and up. |
 | `OATH_SSH_PUBKEY` | A file of public keys, added to the ones [Network](network.md) lists. |
 | `OATH_BRIDGE` | A host bridge in place of the port forward ([Network](network.md)): `run`, `up`, `start`, and `check`, whose cases then cannot reach their VMs. |
-| `DISPLAY`, `OATH_DISPLAY` | Whether `run`, `up` and `start` open a window: they do when `DISPLAY` is set. `OATH_DISPLAY=none` or `0` hides it; any other value opens it without `DISPLAY`. |
+| `DISPLAY`, `OATH_DISPLAY` | Whether `run`, `up` and `start` open a window, which takes a QEMU with gtk: they do when `DISPLAY` is set. `OATH_DISPLAY=none` or `0` hides it; any other value opens it without `DISPLAY`. |
 | `OATH_DISPLAY_WIDTH`, `OATH_DISPLAY_HEIGHT` | The guest's screen, 640 to 7680 (default 1280 by 800). |
 | `OATH_SEED_DIR` | The seed profiles (default this tree's `crates/oath-core/seed`). |
 | `ANTHROPIC_API_KEY` | `check --agent`'s key. |
@@ -317,5 +319,7 @@ is dead, `pkill -f qemu-system-x86_64` from another terminal.
 
 ## Telemetry
 
-PID 1 and `oath` write JSON lines prefixed `oath-tel ` to stderr, and
-to `/oath/log/*.jsonl` once the disk is mounted.
+PID 1 and `oath` write JSON lines prefixed `oath-tel ` to stderr. Once
+the disk is mounted PID 1 also appends them to `/oath/log/init.jsonl`,
+and `oath` run as root to `oath.jsonl`; past 256 KiB each moves to
+`<file>.1`, one old file kept.

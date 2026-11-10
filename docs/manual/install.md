@@ -10,11 +10,15 @@ cargo make install --target user@host --disk /dev/sda --confirm \
 
 `--confirm` is required. `--disk` is the **whole disk** (GPT). `--target`
 is `[user@]host[:port]`; no user means `root`. The live OS on that host
-must be reachable over SSH as root, or as a user with `sudo -n`. The port
-is the live OS's and the one `install` waits on at the end; the installer
-ramdisk answers on 22. Every command is fed to the target's `/bin/sh` on
-stdin and files are written with `dd`, so the user's login shell does not
-matter.
+must be reachable over SSH as root, or as a user with `sudo -n`. The
+installer ramdisk's sshd and the installed system's listen on 22, so a
+port names a forward to the machine's 22 (QEMU's, a NAT's), and every
+stage is reached there: the live OS, the ramdisk, the pinned key and the
+new system. When the ramdisk does not answer at a port other than 22 (a
+live OS whose own sshd listens there), `install` stops before anything is
+wiped and says to run it again with `--target root@<host>`. Every command
+is fed to the target's `/bin/sh` on stdin and files are written with
+`dd`, so the user's login shell does not matter.
 
 ## What it does
 
@@ -25,11 +29,11 @@ matter.
    Everything below comes from that one output; the build host's keys
    are baked into a copy of its installer ramdisk under
    `build/runs/<time>-install/`, never into the output.
-   Reads and checks `--overlay` against a scratch catalog of the `base`
-   profile, whatever the output's profile, before anything is wiped, so a
-   patch on an object `base` does not have must be valid alone (a service
-   needs its `exec`). Refuses a `--target` that is the machine it runs on
-   (the same `boot_id`).
+   Reads and checks `--overlay` against a scratch catalog of the output's
+   own profile (its manifest's, the catalog step 5 patches) before
+   anything is wiped, so a patch on an object that profile does not have
+   must be valid alone (a service needs its `exec`). Refuses a `--target`
+   that is the machine it runs on (the same `boot_id`).
 2. Boots an **installer ramdisk** on the target (`oath.install=1`,
    OpenSSH's sshd, the build host's keys for root). On EFI machines whose
    ESP has `loader/entries` this replaces that ESP's `oath.conf` and the
@@ -146,7 +150,8 @@ likewise). It copies the system the stick
 runs: its packages (NVIDIA's driver too, if the stick built it), its
 settings (hostname, overlay, SSH keys it trusts) and its release, at
 generation 0, with an empty home, a new SSH host key (printed at the
-end), and none of the stick's history, password or pairings. It writes
+end), and none of the stick's history, password, pairings or machine id:
+its first boot makes its own. It writes
 the ESP, adds `Oath` to the firmware's boot list first and removes the
 other systems' entries; the firmware's own (USB, network, setup) stay,
 and the only other firmware variable it touches is a `BootNext` that
@@ -239,7 +244,9 @@ heads only, an overlay of a package with no head it trusts stays, and
 the preview does not name it.
 `--keep pkg:<name>` (repeat for more) keeps the machine's pin of any
 package the update would move, and only its needs move: `pkg:certs stays
-at sha256-…; sha256-… waits: --keep`.
+at sha256-…; sha256-… waits: --keep`. Each `--keep` names a package
+(`pkg:<name>` or `<name>`) or a service (`svc:<name>`) the machine has;
+any other is refused: `--keep svc:bogus: this machine has no svc:bogus`.
 
 With `--confirm`, it:
 
@@ -366,10 +373,11 @@ If the new boot fails, pick the archived boot in `oath-efi`'s boot menu
 ([Generations](generations.md)): it is the old kernel with the old
 userspace.
 
-`cargo make esp --esp <node> --root <root> --confirm` does step 6 and the
-snapshot of step 2 on the Oath machine itself: it mounts the node you name
-there, and refuses a machine that is not Oath. The boot entries it writes
-name `--root` (a node or `UUID=…`; default `/dev/sda2`), not the root the
-machine booted, and keep none of the current entry's added kernel options.
-It writes the default `loader/loader.conf` (a 5 s menu) over the ESP's. See
-[Generations](generations.md).
+`cargo make esp --esp <node> --confirm` does step 6 and the snapshot of
+step 2 on the Oath machine itself: it mounts the node you name there, and
+refuses a machine that is not Oath. The boot entries it writes name the
+root the running kernel booted (its `oath.root=`, the UUID the install
+wrote), or `--root` (a node or `UUID=…`), and keep the kernel options the
+current entry added, as `oath update` does; a kernel booted with no
+`oath.root=` needs `--root`. It writes the default `loader/loader.conf`
+(a 5 s menu) over the ESP's. See [Generations](generations.md).
