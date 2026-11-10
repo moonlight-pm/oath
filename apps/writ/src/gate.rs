@@ -1310,8 +1310,12 @@ mod tests {
             t.real(p, &format!("was {p}"));
             t.upper(p, &format!("now {p}"));
         }
+        // A first round leaves a record that the session left "was c" at c.
         t.apply(true, &[]).unwrap();
-        t.real("c", "owner's c");
+        assert_eq!(t.undo(), (0, vec![]));
+        t.apply(true, &[]).unwrap();
+        // The owner puts c back by hand, as that first undo left it.
+        t.real("c", "was c");
         // With a's copy gone, undo stops at a, after c and b, which were applied after it.
         let entry = read_log(&t.dir(), "undo.jsonl").unwrap().into_iter().find(|v| v.get("path").and_then(|p| p.str()) == Some("a")).unwrap();
         let copy = t.dir().join("undo").join(entry.get("backup").and_then(|b| b.str()).unwrap());
@@ -1332,7 +1336,7 @@ mod tests {
         assert_eq!(t.undo(), (0, vec![]));
         assert_eq!(t.text("a"), "was a");
         assert_eq!(t.text("b"), "was b");
-        assert_eq!(t.text("c"), "owner's c");
+        assert_eq!(t.text("c"), "was c");
     }
 
     #[test]
