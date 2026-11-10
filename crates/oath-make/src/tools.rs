@@ -34,8 +34,8 @@ impl Tools {
             if p.file_name() == Some(std::ffi::OsStr::new("true")) {
                 bail!(
                     "no qemu-system-x86_64 or qemu-img on PATH: on an Oath host they are \
-                     pkg:qemu (R32), which no profile installs; add it and pkg:libslirp \
-                     from the origin with their needs (docs/manual/build.md)"
+                     pkg:qemu (R32), which no profile installs; `sudo oath add qemu` adds \
+                     it with pkg:libslirp and what else it needs (R81)"
                 );
             }
         }
@@ -129,4 +129,24 @@ pub fn load(root: &Path) -> Result<Tools> {
         qemu,
         qemu_img,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_qemu_names_the_command_that_adds_it() {
+        let tools = Tools {
+            kernel: PathBuf::new(),
+            modules: PathBuf::new(),
+            packs: BTreeMap::new(),
+            ovmf_code: None,
+            ovmf_vars: None,
+            qemu: PathBuf::from("/bin/true"),
+            qemu_img: PathBuf::from("/bin/qemu-img"),
+        };
+        let e = tools.require_qemu().unwrap_err().to_string();
+        assert!(e.contains("`sudo oath add qemu`"), "{e}");
+    }
 }
