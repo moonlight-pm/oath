@@ -8,38 +8,47 @@ cargo make install --target user@host --disk /dev/sda --confirm \
   --hostname canto --overlay hosts/canto.json
 ```
 
-`--confirm` is required. `--disk` is the **whole disk** (GPT). The live
-OS on that host must be reachable over SSH as root, or as a user with
-`sudo -n`. Every command is fed to the target's `/bin/sh` on stdin and
-files are written with `dd`, so the user's login shell does not matter.
+`--confirm` is required. `--disk` is the **whole disk** (GPT). `--target`
+is `[user@]host[:port]`; no user means `root`. The live OS on that host
+must be reachable over SSH as root, or as a user with `sudo -n`. The port
+is the live OS's and the one `install` waits on at the end; the installer
+ramdisk answers on 22. Every command is fed to the target's `/bin/sh` on
+stdin and files are written with `dd`, so the user's login shell does not
+matter.
 
 ## What it does
 
 1. Picks a build output: `--output <id>`, else the newest one that
-   passed `cargo make check` (its `check-pass` must match the kernel,
-   initrd and image). `--unchecked` takes the latest output without
-   that; `--qemu` rehearsals take the latest and are not gated.
+   passed `cargo make check`, or with `--unchecked` or `--qemu` the
+   latest. Its `check-pass` must match the kernel, initrd and image,
+   a named output's too, unless `--unchecked` or `--qemu` is given.
    Everything below comes from that one output; the build host's keys
    are baked into a copy of its installer ramdisk under
    `build/runs/<time>-install/`, never into the output.
-   Reads and checks `--overlay` against a scratch catalog, before
-   anything is wiped, and refuses a `--target` that is the machine it
-   runs on (the same `boot_id`).
+   Reads and checks `--overlay` against a scratch catalog of the `base`
+   profile, whatever the output's profile, before anything is wiped, so a
+   patch on an object `base` does not have must be valid alone (a service
+   needs its `exec`). Refuses a `--target` that is the machine it runs on
+   (the same `boot_id`).
 2. Boots an **installer ramdisk** on the target (`oath.install=1`,
-   OpenSSH's sshd, the build host's keys for root). On EFI machines this is
-   a one-shot loader entry; kexec is the fallback (Oath's own static
-   `kexec`, copied to the target, so the live OS needs none).
+   OpenSSH's sshd, the build host's keys for root). On EFI machines whose
+   ESP has `loader/entries` this replaces that ESP's `oath.conf` and the
+   loader's default, so the machine boots the installer until step 3 wipes
+   the ESP; kexec is the fallback (Oath's own static `kexec`, copied to
+   the target, so the live OS needs none).
 3. Partitions GPT with the ramdisk's native tools (`wipefs`, `sfdisk`):
    a 512 MiB ESP (`mkfs.fat`), then btrfs (`mkfs.btrfs`) with subvolume
    `@` and a new UUID, which the boot entry names the root by
    (`oath.root=UUID=…`): the disk's node changes with the order disks
-   are found in.
+   are found in. There is no `@home`: `/home` is part of `@`, in every
+   generation and boot snapshot, unless `host:local.mounts` names it.
+   `oath install`, below, makes an `@home`.
 4. Copies the packed root tree (GNU `tar`).
 5. Merges the catalog overlay with the ramdisk's `oath`
    (`oath --root /mnt/oath seed --overlay`): `host:local.hostname`
    (default `oath`), the build host's public keys as `ssh:local`, then
    your `--overlay` on top. Makes the new system's SSH host key
-   (`/oath/ssh/host_ed25519`) and pins it in `build/known_hosts`.
+   (`/oath/ssh/ssh_host_ed25519_key`) and pins it in `build/known_hosts`.
 6. Writes the ESP: `oath-efi` as `EFI/BOOT/BOOTX64.EFI` (the only
    loader), `vmlinuz`, `initrd.gz`, `loader/entries/oath.conf`, and
    `loader/oath-boots`. The kernel and the initrd modules are the same
@@ -92,6 +101,12 @@ cargo make install --qemu --disk /dev/vda --confirm
 That runs the same steps against a fresh qcow2 in QEMU with OVMF, then
 boots it through `oath-efi`.
 
+`--oath-install` with `--qemu` rehearses `oath install` (below): it
+installs the output on a stick in QEMU, boots it beside a blank disk
+and a disk that must not change, runs `oath install <serial> --confirm`,
+and boots the firmware's first entry. `--disk` is required and must be a
+`/dev/` node, but its value is not used.
+
 ## Onto a USB disk plugged into this host
 
 ```sh
@@ -134,7 +149,8 @@ generation 0, with an empty home, a new SSH host key (printed at the
 end), and none of the stick's history, password or pairings. It writes
 the ESP, adds `Oath` to the firmware's boot list first and removes the
 other systems' entries; the firmware's own (USB, network, setup) stay,
-and nothing else in the firmware's variables is touched.
+and the only other firmware variable it touches is a `BootNext` that
+names a removed entry, which it deletes.
 
 Remove the stick only once the machine is off: the system runs from it
 until then, and `reboot` with the stick gone finds no programs. Some
@@ -143,10 +159,11 @@ board) kept `UEFI OS`, its entry for another disk's fallback loader,
 and did not start Oath first. If the machine starts something else,
 move `Oath` first in the firmware's setup.
 
-It checks no backups and reads no other disk: knowing what is on them
-is yours. It refuses only the disk the stick runs from and a disk with
-something mounted. Agents run the same over SSH (`--json` for each
-step).
+It checks no backups and reads no other disk past each filesystem's
+type and label: knowing what is on them is yours. It refuses the disk
+the stick runs from, a disk with something mounted, pending changes, an
+apply on probation and an archived boot. Agents run the same over SSH
+(`--json` for each step).
 
 ## USB installer stick
 
@@ -156,14 +173,25 @@ cargo make install --usb --disk /dev/sdd --confirm
 
 The disk must be a removable USB device. Boot the stick's EFI entry
 (hold Option on a Mac). The ramdisk gets a shell on `tty0` and DHCP on
-the NIC with carrier. Then run the `--target` command from the build
-host; it sees `/run/oath-install/ready` and skips step 2.
+the NIC with carrier. Then run the `--target root@<host>` command from
+the build host (root is the ramdisk's only login); it sees
+`/run/oath-install/ready` and skips step 2.
+
+On a network with no DHCP, add `oath.ip=<a.b.c.d/n>` and
+`oath.gw=<gateway>` to the `options` line of the stick's
+`loader/entries/oath-install.conf`: the ramdisk sets that address on
+the NIC and runs no DHCP. A ramdisk left with no address writes
+`oath-kexec.log` (its command line, NICs, addresses, PCI devices and
+`dmesg`) to the first of `/dev/sda1`, `/dev/nvme0n1p1`, `/dev/vda1` and
+`/dev/sdb1` that mounts as FAT, if any, then tries the network once
+more and starts `sshd` anyway.
 
 ## Update an installed machine
 
 Each machine updates itself from its origins (R38). The build host
-publishes every output it checked (`cargo make publish`,
-[Packages](packages.md)); on the machine:
+publishes the release of its newest checked output (`cargo make publish`;
+`--output <id>` names another it checked, [Packages](packages.md)); on
+the machine:
 
 ```sh
 oath update                           # the newest output for this machine, and what moves
@@ -181,10 +209,19 @@ on probation, and a set of moves that would leave a package needing
 another at a hash it will not have (the check `oath apply` makes, made
 first, so the preview says it too). The preview names each **overlay**,
 a package the machine runs at a pin other than the release it runs set
-(R47): `pkg:sola is sessions-anywhere@0d99e340, not the release's: the
-update replaces it with sha256-… (master@…)`. The update replaces it;
-`--keep pkg:sola` (repeat for more) keeps the machine's pin, and only
-its needs move. With `--confirm`, it:
+(R47): ``pkg:sola is sessions-anywhere@0d99e340, not the release's: the
+update replaces it with sha256-… (master@…); `--keep pkg:sola` keeps
+it``. The update replaces it; `--keep pkg:sola` (repeat for more) keeps
+the machine's pin, and only its needs move.
+
+Each run also reads the head of every package the machine has
+([Packages](packages.md)). A head wins over the release's pin, and the
+preview says so: `pkg:certs sha256-… -> sha256-… (its head, signed by
+oath@buccina)`. On the newest release already, or with
+`host:local.profile` empty, the update moves heads only: no boot file
+changes, and `--reboot` reboots only if a package moves.
+
+With `--confirm`, it:
 
 1. fetches every pack it will pin that the store lacks, and builds each
    recipe the owner built (Steam, NVIDIA's driver) from the output's
@@ -194,18 +231,20 @@ its needs move. With `--confirm`, it:
    fetches the rest. Then no two packages as the moves leave them may
    ship one name in `/bin` or `/lib` (a package kept with `--keep` that
    the output split in two), or it stops there;
-2. without `--reboot`, has PID 1 re-execute into the output's binary
-   (below), then snapshots `@` as `@boot-<n>`;
+2. has PID 1 re-execute into the output's binary (below; not with
+   `--reboot`), then snapshots `@` as `@boot-<n>`;
 3. writes the output's accounts (`/etc/passwd`, `group`, `shadow`) and
    `/var/empty`, since services that restart next drop to `void` (R36);
 4. sets each package the machine has to the output's pin, needs and
-   `source`; makes each package and service new to the profile since
-   the release the machine runs (its record lists that release's
-   objects, `seed`; a record from before R47 tells only for the
+   `source`, or to its head when a key the machine trusts for it signed
+   one ([Packages](packages.md)); makes each package and service new to
+   the profile since the release the machine runs (its record lists
+   that release's objects, `seed`; a record from before R47 tells only for the
    packages pinned from elsewhere, `pinned`), each package the output
    fixes (the image's files need it: `/etc/passwd` names `pkg:zsh`'s
    shell) and each one a package it has present needs, down their needs
-   (R41's `pkg:libglvnd`); files each plan new to the profile; and runs
+   (R41's `pkg:libglvnd`); files each plan whose pin the output moves and
+   each new to the profile; and runs
    `oath apply` once (a name in `/bin` or `/lib` that moves from one
    package to another, `libEGL.so.1` there, moves in it whichever
    converges first). `oath undo` takes it back but keeps a fixed
@@ -213,10 +252,12 @@ its needs move. With `--confirm`, it:
    lacks was its owner's to remove and is not made again; one new to the
    profile that the machine has absent (`oath build` leaves a product it
    made so) is made present, never the other way; any other the
-   output's seed has is listed, for `oath new`. A package the machine's
-   output had and this one does not is removed, unless `--keep` names it or
-   something that stays needs it (R62, from the next release); one its owner
-   added keeps its pin. A recipe the owner built moves to
+   output's seed has is listed, for `oath new`. A package the release
+   the machine runs had and this one does not is removed, unless `--keep`
+   names it, it has a head, or something that stays needs it (R62); one its
+   owner added keeps its pin. A service that release had and this one does
+   not is removed too, unless `--keep svc:<name>` names it.
+   A recipe the owner built moves to
    the pin step 1 built. Each running service whose program moved
    restarts on it, except one with a `seat` (the desk's and the
    console's, R42), which keeps its program until it next starts: the
@@ -225,7 +266,9 @@ its needs move. With `--confirm`, it:
    on its new program. When sshd's program moved, the apply is on
    probation: the services restart then (the seat's still keep theirs),
    and the update waits until you open a **new** SSH session and run
-   `sudo oath keep` there;
+   `sudo oath keep` there. If none does in 180 s, PID 1 undoes the
+   apply and the update stops; run it again and keep it from a new
+   session;
 5. replaces `/lib/oath`, the image's static `/etc` files, `/sbin/init`
    and `/bin/sudo`;
 6. archives the ESP's kernel and initrd as boot `<n>` (with the
@@ -233,9 +276,10 @@ its needs move. With `--confirm`, it:
    `oath-efi`, keeping five archives (`--esp`, default partition 1 of
    the root disk);
 7. with `--reboot`, reboots; without it, says what waits for a boot
-   (a new kernel, a PID 1 that could not re-execute, and what PID 1
-   does only at boot). `oath update` afterwards says whether PID 1 is
-   the output's. An `oath` from before R47 that made the
+   (a new kernel or firmware, a PID 1 that could not re-execute, and
+   what PID 1 does only at boot). `sudo oath update` afterwards says
+   whether PID 1 is the output's, and `sudo oath update --confirm`
+   re-executes it when it is not. An `oath` from before R47 that made the
    update wrote the record without the release's commit, pins and seed;
    `oath update` says so, and `sudo oath update --confirm` (the same
    release) writes the record as signed. Objects that release's seed
@@ -249,10 +293,10 @@ is the one that restarts what moved. PID 1 checks the binary's hash,
 lets it read a copy of its state first, and refuses one that cannot;
 every service keeps its process. The update prints `PID 1 runs …`, and
 `--json` says `"pid1": "re-executed"`. If the update stops after that,
-PID 1 goes back to the binary it ran. A new kernel still takes a
+PID 1 goes back to the binary it ran. A new kernel or new firmware takes a
 reboot, and so does what PID 1 does only at boot (mounts, modules,
 sysctls, device modes, `/etc`). A PID 1 from before R73 is not asked:
-its first update to one takes a reboot, as before.
+its first update to one takes a reboot.
 
 A machine that still runs dropbear as `svc:sshd` (from before R36)
 moves to OpenSSH after it has booted the new PID 1, which writes
@@ -260,53 +304,50 @@ moves to OpenSSH after it has booted the new PID 1, which writes
 oath update --confirm` again, then `sudo oath keep` from a new SSH
 session. If none gets in, PID 1 undoes it and dropbear serves again.
 
-An `oath` from before step 1 (`pkg:oath` `sha256-6e563f2d6c69…` and
-older) fetches during the apply instead; if a fetch fails there, the
-machine is half moved and `oath update` refuses the pending changes.
-`sudo oath apply` finishes them; the update run after it snapshots the
-half-moved `@` as `@boot-<n>`, so move the first one aside and back if
-the archived boot should keep the old userspace. Two builds of step 1
-(`pkg:oath` `sha256-e3790fbd2f8b…` and `sha256-fa9f700146a9…`) also
-pinned each pack as they fetched it, so the apply skipped a package
-that had been applied before and left it unlinked: on a machine with
-either, take the newer `oath` by hand first, as above, then update.
-
-An `oath` from before R42 (`pkg:oath` `sha256-618db152642b…` and older)
-does not make the new packages the others need, nor hand `/lib`'s names
-from one package to another, so its apply refuses:
-nothing converges, but the specs it set stay as drift, and the next
-update sets them again. An `oath` from before 2026-10-30 (`pkg:oath`
-`sha256-92735e24e583…` and older) does not build a recipe the owner
-built, so a Steam pinned to the old 32-bit Mesa makes its apply refuse
-the same way (canto, 2026-10-29), and it restarts the desk under the
-person at it, `--reboot` or not. Take the newer `oath` (desk output
-`fed6fb141a5e`'s) first, then update:
-
-```sh
-sudo oath set pkg:oath hash=sha256-a937565c5f8a5a210f233f9ec58c56ec1ed844e93fc5847fb2edddedbdf890a5 && sudo oath apply pkg:oath
-oath update && sudo oath update --confirm --reboot
-```
-
-A machine from before R38 has no `oath update` yet. Give it the newer
-`oath` first (the pin is `pkg:oath`'s `hash` in the output's seed,
-`oath get pkg:oath` on any newer machine), then the profile it follows
-and the key it trusts:
+A machine whose `oath` is too old to make the update takes the newer
+`oath` by hand first. The pin is `pkg:oath`'s `hash` in the output's
+seed (`oath get pkg:oath` on any newer machine):
 
 ```sh
 sudo oath set pkg:oath hash=sha256-… && sudo oath apply pkg:oath
+```
+
+One with no `oath update` also needs the profile it follows and the key
+it trusts:
+
+```sh
 sudo oath set host:local profile=desk \
   publishers='["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+YKD3yXYsGJMxwpBIWSYP7VuQvjhzGG+LWvYhKTESD oath@buccina"]'
 sudo oath apply host:local
-sudo oath update --confirm --reboot
+```
+
+Then update:
+
+```sh
+oath update && sudo oath update --confirm --reboot
 ```
 
 To try an output first, `cargo make update --qemu <older output>`
 installs the older one in QEMU and runs the same update from a local
-origin on the build host.
+origin on the build host, signed with the build host's key
+([Packages](packages.md)). It updates to the newest output `check`
+passed; `--output <id>` names another, and `--unchecked` takes one that
+has not passed (the latest, without `--output`). `--oath-first` moves
+`pkg:oath` to the output's first. `--build plan:<name>` (repeatable)
+builds that recipe on the older machine and makes its package present,
+as its owner does. `--live` updates without `--reboot` first and requires
+PID 1 to re-execute into the output's on the same boot and every service
+whose package did not move to keep its process, then reboots and checks
+as usual.
 
-If the new boot fails, pick the archived boot in the firmware menu: it
-is the old kernel with the old userspace.
+If the new boot fails, pick the archived boot in `oath-efi`'s boot menu
+([Generations](generations.md)): it is the old kernel with the old
+userspace.
 
-`cargo make esp` does steps 2 and 6 on the Oath machine itself, for an
-ESP you mount there. See [Generations](generations.md) for why it must
-not be pointed at the build host's own ESP.
+`cargo make esp --esp <node> --root <root> --confirm` does step 6 and the
+snapshot of step 2 on the Oath machine itself: it mounts the node you name
+there, and refuses a machine that is not Oath. The boot entries it writes
+name `--root` (a node or `UUID=…`; default `/dev/sda2`), not the root the
+machine booted, and keep none of the current entry's added kernel options.
+It writes the default `loader/loader.conf` (a 5 s menu) over the ESP's. See
+[Generations](generations.md).
