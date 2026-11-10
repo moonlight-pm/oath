@@ -17,7 +17,7 @@ const SESSION: &str = include_str!("../samples/session.txt");
 const INDEX: &str = include_str!("../samples/index.md");
 
 const DESCRIPTION: &str = "Oath is a Linux distribution with its own PID 1 and userspace. \
-     The machine is a typed catalog that people and AI agents change with one command, and every change can be undone.";
+     The machine is a typed catalog that people and AI agents change with one command, and an apply can be undone.";
 
 /// Files copied as they are. `_headers` is Cloudflare's, and sets the
 /// security and caching headers.

@@ -6,12 +6,12 @@ $ oath diff
 svc:time
   restart: "always" -> "on-failure"
 $ sudo oath apply
-Create readonly snapshot of '/oath/run/fs/@' in '/oath/run/fs/@gen-162'
-applied generation 162 (svc:time)
+Create readonly snapshot of '/oath/run/fs/@' in '/oath/run/fs/@gen-1'
+applied generation 1 (svc:time)
 $ sudo oath undo
-undid to generation 135
+undid to generation 0
 $ oath diff
 in-sync
 $ oath log -n 2
-{"actor":{"tty":"unknown","uid":0},"error":null,"generation":162,"ids":["svc:time"],"parent_generation":135,"result":"ok","time":"2026-10-20T03:34:37Z"}
-{"actor":{"tty":"unknown","uid":0},"error":null,"generation":135,"ids":["undo:162"],"parent_generation":162,"result":"ok","time":"2026-10-20T03:34:37Z"}
+{"actor":{"tty":"/dev/pts/0","uid":0},"error":null,"generation":1,"ids":["svc:time"],"parent_generation":0,"result":"ok","time":"2026-11-09T22:46:05Z"}
+{"actor":{"tty":"/dev/pts/0","uid":0},"error":null,"generation":0,"ids":["undo:1"],"parent_generation":1,"result":"ok","time":"2026-11-09T22:46:06Z"}

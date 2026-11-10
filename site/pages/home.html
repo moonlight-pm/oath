@@ -1,35 +1,36 @@
 <main class="home" id="main">
 <header class="intro">
 <div class="title">{{seal}}<h1>Oath</h1></div>
-<p class="lede">A Linux distribution: the Linux kernel and its own userspace, PID 1 included. The machine is a catalog of typed objects at <code>/oath</code>, and one command, <code>oath</code>, reads and changes it. People and AI agents use it the same way, and every change can be undone.</p>
-<p class="facts"><span>Pre-alpha</span><span>x86-64, UEFI</span><span>No releases yet</span><a href="/manual">Manual</a><a href="{{repository}}">Source</a></p>
+<p class="lede">A Linux distribution: the Linux kernel and its own userspace, PID 1 included. The machine is a catalog of typed objects at <code>/oath</code>, and one command, <code>oath</code>, reads and changes it. People and AI agents use it the same way, and <code>oath undo</code> puts back what an apply changed.</p>
+<p class="facts"><span>Pre-alpha</span><span>x86-64, UEFI</span><span>No install images to download</span><a href="/manual">Manual</a><a href="{{repository}}">Source</a></p>
 </header>
 
 <section id="goals">
 <h2>Goals</h2>
-<p><strong>An AI agent can run the machine.</strong> A new operating system has no forum answers and no training data, so the running machine has to explain itself. <code>/oath/INDEX.md</code> is generated from the live catalog: the verbs, the kinds of object on this machine and the safety rules. An agent that has never seen Oath reads it, or connects with <code>ssh -T home@host oath mcp</code> and gets each verb as a tool. Its changes go through <code>sudo</code> and into the same log as the owner's. The acceptance test gives a model nothing but that server and a task.</p>
+<p><strong>An AI agent can run the machine.</strong> A new operating system has no forum answers and no training data, so the running machine has to explain itself. <code>/oath/INDEX.md</code> is generated from the live catalog: the verbs, the kinds of object on this machine and the safety rules. An agent that has never seen Oath reads it, or connects with <code>ssh -T home@host oath mcp</code> and gets the verbs that read and change the catalog as tools. Its changes go through <code>sudo</code> and into the same log as the owner's. The acceptance test gives a model nothing but that server and a task.</p>
 <p><strong>One catalog, one command.</strong> Everything you administer is an object with a typed schema: <code>host:local</code>, <code>svc:sshd</code>, <code>pkg:curl</code>. <code>oath set</code> writes what you want, <code>oath diff</code> shows how it differs from what is applied, and <code>oath apply</code> makes it so. There are no files in <code>/etc</code> to edit and no unit files. Unix is the substrate, not the admin interface.</p>
-<p><strong>Every change can be undone.</strong> <code>oath apply</code> checks every object before it touches the machine, and a refusal changes nothing. Then it snapshots the root filesystem to a btrfs generation and converges. <code>oath undo</code> puts back what the last apply changed. A change that could cut off SSH goes on probation: PID 1 reverts it after 180 seconds unless it is kept from a new session.</p>
+<p><strong>An apply can be undone.</strong> <code>oath apply</code> checks every object before it touches the machine, and a refusal changes nothing. An apply that changes configuration then snapshots the root filesystem to a btrfs generation and converges. <code>oath undo</code> puts back what the last apply changed. A change that could cut off SSH goes on probation: PID 1 reverts it after 180 seconds unless it is kept from a new session.</p>
 <p><strong>Independent, and built from source.</strong> Oath is not a remix of Debian, Arch, NixOS, Alpine or Ubuntu. PID 1, the catalog, <code>oath</code>, the boot loader and the installer are written for Oath, in Rust. Every other package, the kernel, GCC and glibc among them, is built from pinned source by an Oath plan or is the vendor's own release pinned by sha256. No package comes from another distribution, and rebuilds are bit-identical.</p>
-<p><strong>Open to inspection.</strong> Every package is published at <a href="https://store.oath.moonlight.pm/INDEX.md">store.oath.moonlight.pm</a> with its licence, the plan that built it and the source that plan pins, so the origin alone can rebuild any of them. Sources are checked against their upstream signatures where upstream signs.</p>
-<p><strong>Small on purpose.</strong> One compiler, one C library, one GNU tool for each job. Two accounts, <code>root</code> and <code>home</code>, and no <code>/usr</code>. The machine belongs to one person.</p>
+<p><strong>Open to inspection.</strong> The current pack of every package Oath publishes is listed at <a href="https://store.oath.moonlight.pm/INDEX.md">store.oath.moonlight.pm</a> with its licence, the plan that built it and the source that plan pins, so the origin alone can rebuild any of them. A recipe is published as its plan alone. A package from another project, such as Sola's, is a pack there, with its source in that project. Sources are checked against their upstream signatures where the package names one.</p>
+<p><strong>Small on purpose.</strong> Oath ships one C compiler, one C library and one GNU tool for each job. Four accounts, <code>root</code>, <code>home</code>, <code>work</code> for servers and <code>void</code> for daemons, and no <code>/usr</code>. The machine belongs to one person.</p>
 </section>
 
 <section id="catalog" class="catalog">
 <h2>The catalog</h2>
-<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are eight kinds. The counts are from one machine on 26 October 2026: a 2013 Mac Pro that runs Oath as a desktop.</p>
+<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are nine kinds. The counts are from a fresh QEMU machine running the <code>desk</code> output <code>f4e271a5e318</code> on 9 November 2026, before the session below.</p>
 <div class="table-wrap">
 <table class="kinds">
 <thead><tr><th scope="col">Kind</th><th scope="col">One object is</th><th scope="col" class="count">Count</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>host</code></th><td>The machine itself: hostname, timezone, environment, power state, package origins.<span class="ids">host:local</span></td><td class="count">1</td></tr>
-<tr><th scope="row"><code>svc</code></th><td>A process PID 1 supervises: its command, user, restart policy and the services it wants up first.<span class="ids">svc:sshd · svc:time · svc:pipewire</span></td><td class="count">19</td></tr>
-<tr><th scope="row"><code>pkg</code></th><td>A package tree in the store, named by its hash and linked into <code>/bin</code> and <code>/lib</code>.<span class="ids">pkg:curl · pkg:gcc · pkg:mesa</span></td><td class="count">149</td></tr>
-<tr><th scope="row"><code>plan</code></th><td>A build pinned by hash. <code>oath build</code> runs it in a sandbox with no network.<span class="ids">plan:claude-code</span></td><td class="count">8</td></tr>
-<tr><th scope="row"><code>snap</code></th><td>A btrfs generation of the root filesystem, taken by each apply.<span class="ids">snap:current · snap:162</span></td><td class="count">333</td></tr>
+<tr><th scope="row"><code>svc</code></th><td>A process PID 1 supervises: its command, user, restart policy and the services it wants up first.<span class="ids">svc:sshd · svc:time · svc:pipewire</span></td><td class="count">23</td></tr>
+<tr><th scope="row"><code>pkg</code></th><td>A package tree in the store, named by its hash and linked into <code>/bin</code> and <code>/lib</code>.<span class="ids">pkg:curl · pkg:gcc · pkg:mesa</span></td><td class="count">167</td></tr>
+<tr><th scope="row"><code>plan</code></th><td>A build pinned by hash. <code>oath build</code> runs it in a sandbox with no network.<span class="ids">plan:claude-code</span></td><td class="count">5</td></tr>
+<tr><th scope="row"><code>snap</code></th><td>A btrfs generation of the root filesystem, taken by each apply that changes configuration.<span class="ids">snap:current</span></td><td class="count">1</td></tr>
 <tr><th scope="row"><code>net</code></th><td>The network link, by DHCP or a static address.<span class="ids">net:net0</span></td><td class="count">1</td></tr>
 <tr><th scope="row"><code>ssh</code></th><td>The keys that may log in as <code>home</code>.<span class="ids">ssh:local</span></td><td class="count">1</td></tr>
-<tr><th scope="row"><code>dev</code></th><td>A device found in sysfs: a disk by its bus path, a network card, a serial port.<span class="ids">dev:net0 · dev:disk-pci-0000.0e.00.0-ata-1</span></td><td class="count">4</td></tr>
+<tr><th scope="row"><code>dev</code></th><td>A device found in sysfs: a disk by its bus path, a network card, a serial port.<span class="ids">dev:net0 · dev:ttyS0 · dev:disk-pci-0000.00.06.0</span></td><td class="count">4</td></tr>
+<tr><th scope="row"><code>cell</code></th><td>One project's own software, run only in a cell: stored apart, never linked into <code>/bin</code> or <code>/lib</code>, from no origin and never published.</td><td class="count">0</td></tr>
 </tbody>
 </table>
 </div>
@@ -39,50 +40,51 @@
 <h2>What works today</h2>
 <dl class="features">
 <div><dt>PID 1</dt><dd>Runs only applied <code>svc</code> specs, each in its own cgroup with its own log. Restarts a failing service with backoff, then marks it <code>failed</code> with a reason. Restarts a service when an apply moves the package its program comes from. Stops services in reverse order at shutdown, loads kernel modules by modalias, and survives its own panic.</dd></div>
-<div><dt><code>oath</code></dt><dd><code>ls schema get set new rm diff apply keep undo verify log logs fmt build store mcp</code>, each with <code>--json</code>. A failure names the next step to take.</dd></div>
-<div><dt>Agents</dt><dd><code>oath mcp</code> over SSH: one tool per verb, the INDEX as instructions, <code>--read-only</code> for an agent that only looks. The apply log records which agent made each change.</dd></div>
-<div><dt>Generations</dt><dd>A btrfs snapshot before every apply. <code>oath undo</code> repeats to go further back. The boot menu keeps the last five boots.</dd></div>
-<div><dt>Packages</dt><dd>A store addressed by hash, <code>/bin</code> and <code>/lib</code> link farms, a <code>needs</code> graph, origins tried in order, <code>oath store</code> for a tree built on the machine, and <code>oath verify</code> at every boot. A package whose licence forbids redistribution ships as a recipe that the machine builds itself.</dd></div>
-<div><dt>Plans</dt><dd>Builds in a sandbox with no network and its own PID namespace, cached by plan and inputs. Everything in the image is a plan product: the kernel, the toolchain and Oath's own binaries.</dd></div>
+<div><dt><code>oath</code></dt><dd><code>ls schema get set new rm diff apply keep undo update verify reap audit log logs fmt build store publish install password desk mcp</code>, each with <code>--json</code> except <code>fmt</code> and <code>mcp</code>. A failure names the next step to take.</dd></div>
+<div><dt>Agents</dt><dd><code>oath mcp</code> over SSH: the verbs as tools, <code>set</code> and <code>new</code> split by kind, none for <code>fmt</code>, <code>store</code>, <code>publish</code>, <code>install</code>, <code>password</code> or <code>desk</code>; the INDEX as instructions; <code>--read-only</code> for an agent that only looks. The apply log records which agent made each change.</dd></div>
+<div><dt>Generations</dt><dd>A btrfs snapshot before every apply that changes configuration. <code>oath undo</code> repeats to go further back. The boot menu keeps the last five boots.</dd></div>
+<div><dt>Packages</dt><dd>A store addressed by hash, <code>/bin</code> and <code>/lib</code> link farms, a <code>needs</code> graph, origins tried in order, <code>oath store</code> for a tree built outside a plan, and <code>oath verify</code> at every boot. A package whose licence forbids redistribution ships as a recipe that the machine builds itself.</dd></div>
+<div><dt>Cells</dt><dd><code>cell:&lt;name&gt;</code> holds one project's own software: stored apart, never linked into <code>/bin</code> or <code>/lib</code>, from no origin and never published. <code>cell run</code>, from <code>pkg:cell</code>, which is in no profile, starts it in a box that sees only the packages it runs with.</dd></div>
+<div><dt>Plans</dt><dd>Builds in a sandbox with no network and its own PID namespace, cached by plan and inputs. Every package Oath builds is a plan product: the kernel, the toolchain and Oath's own binaries. The desk adds Sola's packages, which Sola builds and the profile pins by hash.</dd></div>
 <div><dt>Toolchain</dt><dd>GCC, binutils and glibc built from source, bootstrapped once by the build host and then rebuilt by themselves. bash and the GNU userland; zsh is the login shell.</dd></div>
 <div><dt>Kernel and boot</dt><dd>Linux from kernel.org, pinned by sha256 and built as a plan. <code>oath-efi</code> is the only boot loader, and the initrd runs Oath's PID 1.</dd></div>
 <div><dt>Network and SSH</dt><dd><code>net0</code> by DHCP or a static address, time from pool.ntp.org, OpenSSH for SSH as <code>home</code> with root login refused, the network daemons dropped to the unprivileged <code>void</code>, and <code>dig</code>.</dd></div>
 <div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick; from a stick booted on the machine, <code>oath install</code> lists the disks and copies the system onto the one you name, with home in its own subvolume. Each machine updates itself: <code>oath update</code> takes the newest output its build host signed, without wiping it.</dd></div>
 <div><dt>Testing</dt><dd><code>cargo make check</code> boots one QEMU machine per case and reboots for real. <code>--target</code> runs the hardware cases on an installed machine and undoes each one. <code>--agent</code> gives a real model five administration tasks.</dd></div>
-<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV for Vulkan and PipeWire for sound.</dd></div>
+<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV or NVIDIA's driver (a recipe) for Vulkan and PipeWire for sound. The <code>desk</code> profile pins Sola's other eleven apps as well.</dd></div>
 </dl>
 <p class="more">The <a href="/manual">manual</a> covers each of these in detail.</p>
 </section>
 
 <section id="session">
 <h2>A session</h2>
-<p>Recorded on the same Mac Pro. The first <code>set</code> is refused because <code>sometimes</code> is not a restart policy the kind allows, and nothing is written. The apply takes generation 162 before it changes the service; the undo returns to the generation before it, and the log records both.</p>
+<p>Recorded on a fresh QEMU machine of the <code>desk</code> release on 9 November 2026, with the <code>oath-tel</code> telemetry lines left out. The first <code>set</code> is refused because <code>sometimes</code> is not a restart policy the kind allows, and nothing is written. The apply takes generation 1 before it changes the service; the undo returns to the generation before it, and the log records both.</p>
 <pre class="term"><code>{{session}}</code></pre>
 <h3>What an agent reads first</h3>
-<p><code>oath</code> with no arguments prints <code>/oath/INDEX.md</code>, which is generated from the live catalog. This is the Mac Pro's.</p>
+<p><code>oath</code> with no arguments prints <code>/oath/INDEX.md</code>, which is generated from the live catalog. This is that QEMU machine's.</p>
 <pre class="term index"><code>{{index}}</code></pre>
 </section>
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha and not a daily driver. There are no releases or install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 8 November 2026 the current build passes all 70 test cases in QEMU (75 with the desk), <code>oath install</code> its rehearsal, and updates from the releases machines run; the desk's hardware cases passed on the Mac Pro on 22 October, and the hardware cases that apply to a headless Intel machine on 27 October; on 30 October <code>oath install</code> put it on an AMD desktop with an NVIDIA card, from a stick. Not there yet:</p>
+<p>Oath is pre-alpha. There are no install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 9 November 2026 the current release passes all 70 test cases in QEMU (75 with the desk); no installed machine runs it, so the hardware cases have not run on it. Not there yet:</p>
 <ul>
-<li>Releases. x86-64 with UEFI is the only platform.</li>
-<li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures, and machines take only builds a key they trust signed (a release by the build host, a package by a key they trust for its name), but the index of the pack origin is not signed.</li>
+<li>Install images to download. x86-64 with UEFI is the only platform.</li>
+<li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures where the package names one, and <code>oath update</code> takes only builds a key the machine trusts signed (a release by the build host, a package by a key it trusts for its name), but the index of the pack origin is not signed.</li>
 <li>More than one network interface. One is chosen at boot.</li>
-<li>Device node ownership as a catalog field.</li>
-<li>Desktop applications beyond Sola's terminal, Projects, browser and Design, and Steam: its 64-bit client runs on the Mac Pro and on two NVIDIA desks, one of which has played Terraria and Noita and connects a Bluetooth Xbox pad. Minecraft runs on that desk through Prism Launcher.</li>
+<li>Device node ownership as a catalog field, beyond <code>host:local.seat_hid</code> for a listed HID device's vendor interfaces.</li>
+<li>Desktop applications beyond Sola's, Steam and Minecraft. Steam is a recipe in the <code>desk</code> profile (<code>plan:steam</code>): Valve's launcher, which installs its 64-bit client. For Minecraft, Prism Launcher (<code>pkg:prismlauncher</code>) is on the origin and in no profile.</li>
 </ul>
 <p>The work under way is in <a href="{{repository}}/blob/master/CURRENT.md">CURRENT.md</a>, the decisions behind it in <a href="{{repository}}/blob/master/docs/decisions.md">docs/decisions.md</a>, and what each part can do in <a href="{{repository}}/blob/master/docs/capabilities.md">docs/capabilities.md</a>.</p>
 </section>
 
 <section id="building">
 <h2>Building</h2>
-<p>You need an x86-64 Linux build host with Rust, Nix (for the stage-0 compilers and QEMU), sudo and <code>mkfs.btrfs</code>. The first toolchain build takes an hour or more.</p>
+<p>You need an x86-64 Linux build host with Rust, <code>curl</code>, <code>mkfs.btrfs</code>, <code>unshare</code>, the compilers that build stage 0 of the toolchain, and QEMU with its UEFI firmware. Where Nix is installed, <code>cargo make</code> takes the compilers from <code>pkgs/bootstrap.nix</code> and QEMU from <code>image/host.nix</code>. An Oath machine on the <code>desk</code> profile has the compilers in <code>/bin</code> and needs <code>pkg:qemu</code> and <code>pkg:libslirp</code> added. <code>sudo</code> is needed only to write a disk on the build host (<code>install --usb</code>, <code>install --local</code>, <code>cargo make esp</code>). The first toolchain build takes an hour or more.</p>
 <pre><code>git clone https://github.com/moonlight-pm/oath
 cd oath
 cargo make bootstrap    <span class="comment"># the toolchain, once</span>
-cargo make pkgs         <span class="comment"># every package in pkgs/, from source</span>
+cargo make pkgs         <span class="comment"># every package in pkgs/, each a sandboxed plan</span>
 cargo make build        <span class="comment"># the base image</span>
 cargo make check        <span class="comment"># the QEMU test cases</span>
 cargo make run          <span class="comment"># boot it, with the serial console in this terminal</span></code></pre>

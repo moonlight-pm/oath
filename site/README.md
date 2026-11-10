@@ -12,7 +12,7 @@ Not part of the OS.
 | `pages/` | `page.html` (the shell), `home.html`, `manual.html`, `missing.html`; `{{name}}` is filled in by `src/site.rs` |
 | `src/manual.rs` | Markdown to HTML (pulldown-cmark): chapters numbered, headings anchored, links between chapters made anchors, other relative links sent to GitHub, raw HTML shown as text |
 | `src/main.rs` | Writes every file into `dist/` |
-| `samples/` | `session.txt` and `index.md`, recorded on canto, shown on the home page |
+| `samples/` | `session.txt` and `index.md`, recorded on a fresh QEMU machine of the `desk` release, shown on the home page |
 | `static/` | `style.css`, `_headers` (security and caching headers), the favicons (SVG, and `favicon.ico` and `apple-touch-icon.png` rendered from it for browsers that take only raster icons), fonts (OFL, licences beside them) |
 | `cloudflare.config.ts`, `wrangler.config.ts` | The Worker and where its files are |
 | `package.json`, `package-lock.json` | Pin `cf` and the Wrangler it builds with |
@@ -29,7 +29,8 @@ the commit it was built from.
   they match, or if an anchor on the page has no target.
 - The home page's Status section and the counts in its catalog table
   are dated. Update them with `docs/capabilities.md`, and re-record
-  `samples/` from canto when `oath`'s output changes.
+  `samples/` on a fresh QEMU machine of the `desk` release when `oath`'s
+  output changes, leaving out the `oath-tel` lines.
 
 ## Local
 
