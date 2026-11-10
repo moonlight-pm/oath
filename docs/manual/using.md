@@ -12,10 +12,10 @@ oath                 the INDEX (generated, live; also /oath/INDEX.md)
 `--json` prints the same facts as JSON. Most failures include a **hint**
 pointing at the next step (`oath ls`, `oath schema <kind>`, INDEX
 safety); `set`, `new`, `rm`, `apply` and `undo` without root print
-`io Permission denied (os error 13)` and no hint; `oath add`, and
-`oath new pkg:<name>` with no fields for a name this machine lacks, print
-`add changes this machine` (or `new …`) with the `sudo` command as the
-hint. The exit status is 0,
+`io Permission denied (os error 13)` and no hint; `oath new pkg:<name>`
+with no fields for a name this machine lacks prints `new changes this
+machine` with the `sudo` command as the hint, and `oath add` says what
+`sudo oath add` would add. The exit status is 0,
 1 for a failure, 2 for a command line `oath` cannot parse, 3 for an
 apply that needs `--confirm`, and 4 for a refusal printed as
 `security: …`: a tree, download or signature that is not what it should
@@ -42,7 +42,7 @@ the machine.
 | `oath get <id>` | Desired + actual + status. `--desired` / `--actual` to clip |
 | `oath set <id> k=v` | Write **desired** only. Does not converge. `--from-json '<obj>'` sets several fields. The result must fit the kind's type. `oath set plan:<name> --from-file <path>` files a plan (canonical, `oath fmt -w`); `--from-file -` files the canonical form of a plan read from stdin |
 | `oath new <id> k=v` | Create a `svc`, `pkg` or `cell` (`--from-json` too). Runs after `apply`. `oath new pkg:<name>` with no fields makes what `oath add` would and applies nothing; when no origin has a head of it, a tree of it already in the store is the pin |
-| `oath add <name>...` | Install packages by name (`<name>` or `pkg:<name>`) from the origins: each at its newest head a key in `host:local.publishers` may sign for it, with each package it needs that this machine lacks, made and applied in one generation; `oath undo` takes them back. Nothing the machine has moves: if a need it holds at another pin would cost the package a library, nothing changes and `sudo oath update --confirm` comes first. A package already here is named and left to `oath update`, and one here with `present=false` is refused; a name with no head, such as a recipe, is refused ([Packages](packages.md#install--remove)) |
+| `oath add <name>...` | Install packages by name (`<name>` or `pkg:<name>`) from the origins: each at its newest head a key in `host:local.publishers` may sign for it, with each package it needs that this machine lacks, made and applied in one generation; `oath undo` takes them back. Nothing the machine has moves: if a need it holds at another pin would cost the package a library, nothing changes and `sudo oath update --confirm` comes first. A package already here is named and left to `oath update`, and one here with `present=false` is refused; a name with no head, such as a recipe, is refused. Without root it says what it would add and each pack's size, and changes nothing ([Packages](packages.md#install--remove)) |
 | `oath rm <id>` | Mark a `svc`, `pkg` or `cell` for removal. Removed at `apply`; one that was never applied is deleted at once |
 | `oath diff [id]` | Drift: desired against the spec last applied, for every kind (`field: old -> new`, or `in-sync`). A live state that differs is not drift: a mount waiting for its disk is in sync |
 | `oath apply [id...]` | Check, snapshot, then converge the listed ids or all drift. `--confirm` and `--probation <secs>`: [Safety](#safety). `--keep-seat`: a running service with a `seat` keeps its program when its package moves, and takes the new one when it next starts |
@@ -57,7 +57,7 @@ the machine.
 | `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin`. Creates the product's `pkg` or `cell` object if it is missing; `--no-pkg` does not, for a product that is only a build input to other plans |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
 | `oath store <id> <path>` | Put a tree built elsewhere (a directory, or a tar of one) into the store as `pkg:<name>` or `cell:<name>` and print its hash. Changes no object ([Packages](packages.md#a-tree-built-here)) |
-| `oath update` | What the newest output published for this machine, and the newest head a key it trusts signed for each package here, would change; `sudo oath update --confirm [--reboot]` moves to them; `--keep pkg:<name>`, `--output <id>`. A head wins over a release's pin and never goes back, so `--output` of an older output sets each package that has a head to its head, not to that output's pin; `oath undo` puts back the pins an update moved ([Install](install.md#update-an-installed-machine)) |
+| `oath update` | What the newest output published for this machine, and the newest head a key it trusts signed for each package here, would change; `sudo oath update --confirm [--reboot]` moves to them; `--keep pkg:<name>`, `--output <id>`; `--record` moves nothing and lists each package's head, and `sudo oath update --record --confirm` records each one this machine runs as the head it took (after `oath publish`). A head wins over a release's pin and never goes back, so `--output` of an older output sets each package that has a head to its head, not to that output's pin; `oath undo` puts back the pins an update moved ([Install](install.md#update-an-installed-machine)) |
 | `oath publish pkg:<name>` | What it would publish: this machine's pin of the package, as its head on an origin; `--confirm` publishes it, without `sudo` ([Packages](packages.md#publishing-a-package-on-its-own-r72)) |
 | `oath install [disk]` | The disks; `sudo oath install <disk>` says what it would erase and write; with `--confirm` it wipes that disk and installs this system ([Install](install.md#from-a-stick-on-the-machine-oath-install)) |
 | `oath password` | Set, change or remove `home`'s password; `--status` says whether one is set, with auto-login and the seat ([below](#the-password-and-the-seat)) |

@@ -612,13 +612,17 @@ impl Server {
                     v.push("--confirm".into());
                 }
                 v.push("update".into());
-                if let Some(o) = s("output") {
-                    v.push(format!("--output={o}"));
+                if a.get("record") == Some(&json!(true)) {
+                    v.push("--record".into());
+                } else {
+                    if let Some(o) = s("output") {
+                        v.push(format!("--output={o}"));
+                    }
+                    if confirm && a.get("reboot") == Some(&json!(true)) {
+                        v.push("--reboot".into());
+                    }
+                    v.extend(ids("keep").into_iter().map(|k| format!("--keep={k}")));
                 }
-                if confirm && a.get("reboot") == Some(&json!(true)) {
-                    v.push("--reboot".into());
-                }
-                v.extend(ids("keep").into_iter().map(|k| format!("--keep={k}")));
             }
             "build" => {
                 v.push("build".into());
@@ -1025,6 +1029,14 @@ fn tools() -> Vec<Tool> {
                 "Packages (pkg:NAME) that keep this machine's pin: an overlay, which the update \
                  otherwise replaces with the release's (the preview names each). Only when the \
                  owner asked to keep it.",
+            ),
+            p(
+                "record",
+                Ty::Bool,
+                false,
+                "Move nothing and read no release: list each package's head (`heads`, with \
+                 `runs`), and with `confirm` record each one this machine runs as the head it \
+                 took, as after `oath publish` here. `output`, `reboot` and `keep` do not apply.",
             ),
         ],
         true,
@@ -1499,6 +1511,12 @@ mod tests {
                 json!({ "keep": ["pkg:sola"] }),
                 true,
                 vec!["update", "--keep=pkg:sola"],
+            ),
+            (
+                "update",
+                json!({ "record": true, "confirm": true, "reboot": true }),
+                true,
+                vec!["--confirm", "update", "--record"],
             ),
             ("build", json!({ "plan": "hello" }), true, vec!["build", "--", "plan:hello"]),
             (

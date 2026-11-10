@@ -44,7 +44,7 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 use oath_core::esp;
-use oath_core::head::{self, Head, Offer, Taken};
+use oath_core::head::{self, Head, Offer};
 use oath_core::update::{self as up, Move, Release};
 use oath_core::{find_bin, Actor, ApplyHooks, Catalog, Error, ObjectId, Result, KIND_PKG};
 use serde_json::{json, Map, Value};
@@ -58,6 +58,8 @@ pub struct Opts {
     pub keep: Vec<String>,
     pub reboot: bool,
     pub esp: Option<String>,
+    /// Record the heads this machine runs and move nothing (`--record`).
+    pub record: bool,
     pub json: bool,
 }
 
@@ -70,8 +72,14 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
             "oath set host:local profile=<the profile it was installed from> (oath schema host)",
         ));
     }
-    let (origins, trusted) = trust(cat)?;
     let is_root = unsafe { libc::geteuid() } == 0;
+    if opts.record {
+        let work = std::env::temp_dir().join(format!("oath-record-{}", std::process::id()));
+        fs::create_dir_all(&work)?;
+        let _work = Scratch(work.clone());
+        return record_only(root, cat, &opts, &work);
+    }
+    let (origins, trusted) = trust(cat)?;
     if opts.confirm && !is_root {
         return Err(Error::hint("an update writes the boot files", "sudo oath update --confirm"));
     }
@@ -1010,19 +1018,110 @@ fn read_taken(root: &Path) -> head::Record {
 
 /// Record each offered head a package here now runs: the update will
 /// refuse an older one.
-fn record_heads(root: &Path, cat: &Catalog, offers: &BTreeMap<String, Offer>) -> Result<()> {
-    let mut record = read_taken(root);
-    let before = record.clone();
-    for (name, o) in offers {
-        let Ok(obj) = cat.get(&ObjectId::new(KIND_PKG, name)) else { continue };
-        if obj.desired["hash"].as_str() == Some(o.head.hash.as_str()) {
-            record.insert(name.clone(), Taken::of(&o.head, &o.signer));
+pub(crate) fn record_heads(
+    root: &Path,
+    cat: &Catalog,
+    offers: &BTreeMap<String, Offer>,
+) -> Result<()> {
+    let mut machine = BTreeMap::new();
+    for name in offers.keys() {
+        if let Ok(obj) = cat.get(&ObjectId::new(KIND_PKG, name)) {
+            machine.insert(name.clone(), obj.desired);
         }
     }
+    let before = read_taken(root);
+    let record = head::record(&machine, offers, &before);
     if record != before {
         oath_core::write_json(&root.join(head::RECORD), &record)?;
     }
     Ok(())
+}
+
+/// `oath update --record`: read the head of each package here as an update
+/// does, and record each one this machine runs as the head it took; nothing
+/// moves and no release is read. `oath publish` runs as the publisher, who
+/// cannot write `/oath`, so this is how the machine that published a head
+/// learns it runs it (else `oath get` calls the pin an overlay, and an
+/// origin could hand it the older head it took). Without --confirm it lists
+/// the heads, which needs no root.
+fn record_only(root: &Path, cat: &Catalog, opts: &Opts, work: &Path) -> Result<i32> {
+    if opts.confirm && unsafe { libc::geteuid() } != 0 {
+        return Err(Error::hint(
+            "recording heads writes /oath/heads.json",
+            "sudo oath update --record --confirm",
+        ));
+    }
+    let (origins, trusted) = trust(cat)?;
+    // What each package runs: its applied pin, not one waiting for an apply.
+    let mut machine = BTreeMap::new();
+    for id in cat.ls(Some(KIND_PKG))? {
+        let obj = cat.get(&id)?;
+        let applied = obj.actual["present"] == json!(true)
+            && obj.desired["present"] != json!(false)
+            && obj.actual["hash"] == obj.desired["hash"];
+        if applied {
+            machine.insert(id.name.clone(), obj.actual);
+        }
+    }
+    let (offers, refused) = fetch_heads(&origins, &machine, &trusted, work)?;
+    for r in &refused {
+        eprintln!("  {r}");
+    }
+    let before = read_taken(root);
+    let after = head::record(&machine, &offers, &before);
+    let mut heads = Vec::new();
+    let mut records = Vec::new();
+    let mut other = 0;
+    for (name, o) in offers.iter().filter(|(n, _)| machine.contains_key(*n)) {
+        let runs = machine[name]["hash"].as_str() == Some(o.head.hash.as_str());
+        let taken = before.get(name).is_some_and(|t| t.hash == o.head.hash);
+        if after.get(name) != before.get(name) {
+            records.push(format!("pkg:{name}"));
+            eprintln!(
+                "  pkg:{name} {} (signed by {}, published {}): {}",
+                up::short(&o.head.hash),
+                o.signer,
+                o.head.published,
+                if opts.confirm { "recorded" } else { "would record" }
+            );
+        }
+        other += usize::from(!runs);
+        heads.push(json!({
+            "id": format!("pkg:{name}"),
+            "hash": o.head.hash,
+            "signer": o.signer,
+            "published": o.head.published,
+            "committed": o.head.committed,
+            "origin": o.origin,
+            "runs": runs,
+            "taken": taken,
+        }));
+    }
+    if opts.confirm && after != before {
+        oath_core::write_json(&root.join(head::RECORD), &after)?;
+    }
+    let mut text = match (records.len(), opts.confirm) {
+        (0, _) => {
+            format!("the record holds every head this machine runs ({})", heads.len() - other)
+        }
+        (n, true) => format!("recorded {n} heads this machine runs"),
+        (n, false) => format!(
+            "would record {n} heads this machine runs; `sudo oath update --record --confirm` does"
+        ),
+    };
+    if other > 0 {
+        text.push_str(&format!(
+            "; {other} packages here run another pin than their head: `oath update` says what moves"
+        ));
+    }
+    let v = json!({
+        "heads": heads,
+        "records": records,
+        "written": opts.confirm && after != before,
+        "refused": refused,
+    });
+    finish(opts, v, &text);
+    Ok(0)
 }
 
 /// The release's moves, with each package that has a head moved by its

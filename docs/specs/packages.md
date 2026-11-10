@@ -208,7 +208,10 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
 - **Taking heads.** `oath update` reads the head of every package the
   machine has (and of what those heads need) from its origins, and
   moves each to the newest head a key may sign for it. It refuses a
-  head older than the one it took, recorded in `/oath/heads.json`. A
+  head older than the one it took, recorded in `/oath/heads.json`, which
+  never goes back to an older head. `oath publish` runs as the publisher,
+  who cannot write it, so `sudo oath update --record --confirm` records each
+  head the machine runs and moves nothing (is, 2026-11-09). A
   pin that is not its head is an overlay, replaced unless `--keep`
   (R47). A head wins over a release's pin of the same name, and a
   package with a head is never dropped for leaving a release.
@@ -237,7 +240,10 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   applies them; `oath new pkg:<name>` with no fields makes them without
   applying. Nothing the machine has moves. A need it holds at another pin
   is re-pointed if the package loses no library (the check above), and
-  otherwise nothing is made and `oath update` comes first. A recipe has no
+  otherwise nothing is made and `oath update` comes first. It records the
+  heads it took, as an update does; run by a user who cannot change the
+  catalog, it says what it would add and each pack's size, and changes
+  nothing. A recipe has no
   pack, so no head: it is listed and built on the machine. A head beats a
   release and never goes back, so `oath update --output <older>` leaves
   these packages where they are, and a publish for one profile moves them on

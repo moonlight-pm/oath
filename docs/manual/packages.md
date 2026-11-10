@@ -93,6 +93,7 @@ PID 1 stays at `/lib/oath/init`; it is not a package.
 ```
 oath ls --origin                  # what the origins hold; * on what this machine has
 oath ls --origin sql              # a word in a name, category or description
+oath add aws                      # without root: what it would take, and each pack's size
 sudo oath add aws                 # at its head, with what it needs that the machine lacks
 ```
 
@@ -118,7 +119,14 @@ neither do `linux`, `oath` and `firmware`, which move with a release.
 `sudo oath new pkg:<name>` with no fields makes the same objects without applying them
 and prints the `oath apply` that starts them. For a name no origin has a head of, with one
 tree of it in the store (`oath store`), it makes the object with no `hash`, and apply
-links that tree.
+links that tree. `oath add` records each head it took in `/oath/heads.json`, as an update does.
+
+Run by a user who cannot change the catalog, `oath add` fetches no pack and changes
+nothing: it prints `would add` and each package with its pack's size on its origin (or
+`in the store already`), and the total to fetch. `oath --json add` gives `would_add`,
+each row with `asked` (named, not a need), `size` (bytes, or `null`) and `in_store`;
+`size`, the total; `size_known`; and `run`, the `sudo` command that adds them. Until the
+packs are here the library check is not run, so `sudo oath add` can still refuse.
 
 ```
 oath ls --kind pkg
@@ -302,7 +310,15 @@ make publish` (below). The pin must be applied. A pin with `source.dirty`
 true is refused; one with no `source` goes out without one. With `--committed` (the commit's time, any
 offset; the head keeps it in UTC) it refuses to replace a head built
 from a later commit. Publishing needs no
-`sudo`.
+`sudo`, so it cannot write this machine's record of the heads it took
+(below): when this machine trusts the key for that name, a confirmed
+publish names the step that does, and until it runs `oath get` calls the
+published pin an overlay:
+
+```
+sudo oath update --record --confirm         # record each head this machine runs; nothing moves
+oath update --record                        # or list each package's head, and whether it runs it
+```
 
 A machine trusts a publisher for some names only by putting a list
 before its key in `host:local.publishers`:
@@ -322,7 +338,8 @@ Each line is an `ssh-ed25519` public key; a person adds one, an agent does not.
 those heads need) from each origin and moves each package to the newest
 head a key may sign for it; `oath update` alone says what would move.
 It records each head it took in `/oath/heads.json` and refuses an older
-one after. A head wins over a release's pin of the same package, so
+one after; `oath add` and `oath update --record` record theirs the same
+way, and the record never goes back to an older head. A head wins over a release's pin of the same package, so
 `oath update --output <older>` leaves each package with a head at its head
 (`oath undo` puts back what an update moved), and a package with a head
 stays when a release drops it. With

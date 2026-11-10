@@ -151,6 +151,26 @@ fn after(a: (Option<&str>, &str), b: (Option<&str>, &str)) -> bool {
 /// The heads a machine took, by package name (`/oath/heads.json`).
 pub type Record = BTreeMap<String, Taken>;
 
+/// `taken` once each offered head a package in `machine` runs (its doc's
+/// `hash`) is recorded. One older than the head taken stays out: an origin
+/// that serves an old head to a machine an undo took back to it does not
+/// lower the floor.
+pub fn record(
+    machine: &BTreeMap<String, Value>,
+    offers: &BTreeMap<String, Offer>,
+    taken: &Record,
+) -> Record {
+    let mut out = taken.clone();
+    for (name, o) in offers {
+        let runs = machine.get(name).is_some_and(|d| d["hash"].as_str() == Some(&o.head.hash));
+        let older = taken.get(name).is_some_and(|t| after(o.head.order(), t.order()));
+        if runs && !older {
+            out.insert(name.clone(), Taken::of(&o.head, &o.signer));
+        }
+    }
+    out
+}
+
 /// A head an origin served, checked: who signed it and where it came from.
 #[derive(Clone, Debug)]
 pub struct Offer {
@@ -642,6 +662,31 @@ mod tests {
         let m = plan(&machine, &o, &taken, &BTreeSet::new(), |_, _| false);
         assert!(m[0].replaces_overlay(), "{:?}", texts(&m));
         assert!(texts(&m)[0].contains("not its head"), "{:?}", texts(&m));
+    }
+
+    #[test]
+    fn the_record_takes_what_runs_and_never_goes_back() {
+        // novus published sola 'b' and runs it; the record says 'a'.
+        let machine = BTreeMap::from([
+            ("sola".to_string(), doc('b', &[])),
+            ("mesa".to_string(), doc('m', &[])),
+        ]);
+        let taken = Record::from([(
+            "sola".to_string(),
+            Taken { hash: h('a'), published: "2026-11-10T01:44:00Z".into(), ..Taken::default() },
+        )]);
+        let o = offers(vec![
+            head("sola", 'b', &[], "2026-11-10T04:03:54Z"),
+            head("mesa", 'M', &[], "2026-11-10T00:00:00Z"),
+        ]);
+        let r = record(&machine, &o, &taken);
+        assert_eq!(r["sola"].hash, h('b'));
+        assert_eq!(r["sola"].signer, "oath@novus");
+        assert!(!r.contains_key("mesa"), "it runs another pin: {r:?}");
+        // An undo took sola back to 'a', and an origin serves 'a' again.
+        let machine = BTreeMap::from([("sola".to_string(), doc('a', &[]))]);
+        let o = offers(vec![head("sola", 'a', &[], "2026-11-10T01:44:00Z")]);
+        assert_eq!(record(&machine, &o, &r)["sola"].hash, h('b'));
     }
 
     #[test]

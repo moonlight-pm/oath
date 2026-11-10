@@ -9,6 +9,10 @@
 //! The pack goes up first when the origin lacks it, then the signature,
 //! then the head. A head older than the one the origin serves, by commit
 //! time, is refused. Without `--confirm` it says what it would publish.
+//! The publisher has no root, so it cannot write this machine's record of
+//! the heads it took (`/oath/heads.json`); when this machine trusts the key
+//! for the name, a publish names `sudo oath update --record --confirm`,
+//! which writes it.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -141,10 +145,11 @@ pub fn run(root: &Path, cat: &Catalog, opts: Opts) -> Result<i32> {
     text.push('\n');
     fs::write(&file, &text)?;
     let sig = origin::sign(&file, head::NAMESPACE)?;
+    let sig_text = fs::read_to_string(&sig)?;
     // The signature every machine will check, checked here first.
     oath_core::sshsig::verify_for(
         text.as_bytes(),
-        &fs::read_to_string(&sig)?,
+        &sig_text,
         head::NAMESPACE,
         std::slice::from_ref(&key),
         &name,
@@ -176,8 +181,34 @@ pub fn run(root: &Path, cat: &Catalog, opts: Opts) -> Result<i32> {
         }
     }
     oath_core::tel("oath", "publish", json!({ "id": id.to_string(), "hash": hash, "to": to }));
-    let v = json!({ "id": id.to_string(), "head": head, "to": to, "published": true });
-    finish(&opts, v, &format!("published {what}"))
+    // This machine runs the head now, but only root writes the record of the
+    // heads it took, which an update would write once it read this one.
+    let record = (opts.dest.is_none() && trusts(cat, text.as_bytes(), &sig_text, &name))
+        .then_some(RECORD);
+    let v = json!({
+        "id": id.to_string(), "head": head, "to": to, "published": true, "record": record,
+    });
+    let text = match record {
+        Some(r) => format!("published {what}; `{r}` records it as the head this machine took"),
+        None => format!("published {what}"),
+    };
+    finish(&opts, v, &text)
+}
+
+/// What records a head this machine published as the head it took.
+const RECORD: &str = "sudo oath update --record --confirm";
+
+/// Whether this machine's `host:local.publishers` lets the head's signer
+/// sign `name`: whether its own update would take it.
+fn trusts(cat: &Catalog, text: &[u8], sig: &str, name: &str) -> bool {
+    let Ok(host) = cat.get(&ObjectId::new("host", "local")) else { return false };
+    let keys: Vec<String> = host.desired["publishers"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|k| k.as_str().map(String::from))
+        .collect();
+    oath_core::sshsig::verify_for(text, sig, head::NAMESPACE, &keys, name).is_ok()
 }
 
 /// A directory of its own under the system's temporary one, removed when

@@ -5,6 +5,9 @@
 //! `host:local.publishers` lets sign that name. Nothing the machine has
 //! moves. A need it holds at another pin is re-pointed if the package loses
 //! no library; if it would, nothing is made and the update comes first.
+//! What it takes is recorded in `/oath/heads.json`, as an update records
+//! the heads it took. Run by a user who cannot change the catalog, `oath
+//! add` says what `sudo oath add` would make and the size of each pack.
 //!
 //! The list is `index.json`, which is not signed. Nothing is installed from
 //! it: only a head says what a name is.
@@ -21,7 +24,7 @@ use oath_core::{Actor, ApplyHooks, Catalog, Error, ObjectId, Result, KIND_PKG};
 use serde_json::{json, Map, Value};
 
 use crate::publish::read_url;
-use crate::update::{fetch_heads, settle, trust, Scratch};
+use crate::update::{fetch_heads, record_heads, settle, trust, Scratch};
 
 /// One package to make, its pack in the store.
 struct Made {
@@ -79,20 +82,23 @@ fn offers_for(cat: &Catalog, names: &[String], work: &Path) -> Result<BTreeMap<S
     Ok(offers)
 }
 
-/// What taking `names` makes, every pack fetched and every need settled
-/// before the catalog changes: a failure here leaves the machine as it was.
+/// What taking `names` makes, every pack fetched (with `fetch`) and every
+/// need settled before the catalog changes: a failure here leaves the
+/// machine as it was. Without `fetch`, a need is re-pointed unchecked when
+/// a pack is not in the store yet, as an update's preview does.
 fn plan(
     root: &Path,
     cat: &Catalog,
     names: &[String],
     offers: &BTreeMap<String, Offer>,
+    fetch: bool,
 ) -> Result<Vec<Made>> {
     let mut machine = BTreeMap::new();
     for id in cat.ls(Some(KIND_PKG))? {
         machine.insert(id.name.clone(), cat.get(&id)?.desired);
     }
     let (with, moves) = head::additions(&machine, offers, names)?;
-    for m in &moves {
+    for m in moves.iter().filter(|_| fetch) {
         let Move::Head { name, to, .. } = m else { continue };
         if !oath_core::store_present(root, name, to) {
             oath_core::prefetch_pkg_any(root, name, "", "", to)?;
@@ -163,7 +169,7 @@ pub fn new(root: &Path, cat: &Catalog, id: &ObjectId, as_json: bool) -> Result<O
         return Ok(None);
     }
     need_root(root, "new", &id.to_string())?;
-    let made = plan(root, cat, &names, &offers)?;
+    let made = plan(root, cat, &names, &offers, true)?;
     let ids = create(cat, &made)?;
     let list: Vec<String> = ids.iter().map(ObjectId::to_string).collect();
     if as_json {
@@ -235,10 +241,12 @@ pub fn add(
         }
         return Ok(0);
     }
-    need_root(root, "add", &wanted.join(" "))?;
     let work = scratch()?;
     let offers = offers_for(cat, &wanted, &work.0)?;
-    let made = plan(root, cat, &wanted, &offers)?;
+    if !can_write(root) {
+        return preview(root, cat, &wanted, &offers, here_json, as_json);
+    }
+    let made = plan(root, cat, &wanted, &offers, true)?;
     let ids = create(cat, &made)?;
     let report = cat.apply_with(
         Some(ids.clone()),
@@ -254,6 +262,8 @@ pub fn add(
             return Err(e);
         }
     };
+    // The heads it took, as an update records them: none older comes after.
+    record_heads(root, cat, &offers)?;
     if as_json {
         let v: Vec<Value> = made.iter().map(Made::json).collect();
         println!("{}", json!({ "added": v, "here": here_json, "generation": report.generation }));
@@ -267,6 +277,92 @@ pub fn add(
         println!("added in generation {}", report.generation);
     }
     Ok(0)
+}
+
+/// `oath add` by a user who cannot change the catalog: what `sudo oath add`
+/// would make, each with its pack's size on the origin it came from, and
+/// nothing fetched or changed.
+fn preview(
+    root: &Path,
+    cat: &Catalog,
+    wanted: &[String],
+    offers: &BTreeMap<String, Offer>,
+    here: Vec<Value>,
+    as_json: bool,
+) -> Result<i32> {
+    let made = plan(root, cat, wanted, offers, false)?;
+    let run = format!("sudo oath add {}", wanted.join(" "));
+    let mut rows = Vec::new();
+    let mut fetch = 0u64;
+    let mut unknown = false;
+    for m in &made {
+        let in_store = oath_core::store_present(root, &m.id.name, m.hash());
+        let size = offers.get(&m.id.name).and_then(|o| pack_size(&o.origin, &m.id.name, m.hash()));
+        match size {
+            Some(n) if !in_store => fetch += n,
+            None if !in_store => unknown = true,
+            _ => {}
+        }
+        let mut v = m.json();
+        v["asked"] = json!(wanted.contains(&m.id.name));
+        v["size"] = json!(size);
+        v["in_store"] = json!(in_store);
+        rows.push(v);
+        if !as_json {
+            let what = match (in_store, size) {
+                (true, _) => "in the store already".to_string(),
+                (false, Some(n)) => mb(n),
+                (false, None) => "its size unknown".to_string(),
+            };
+            println!("would add {}: {what}", m.line());
+            for r in &m.repointed {
+                println!("  runs with this machine's {r}");
+            }
+        }
+    }
+    if as_json {
+        let v = json!({
+            "would_add": rows,
+            "size": fetch,
+            "size_known": !unknown,
+            "added": [],
+            "here": here,
+            "generation": Value::Null,
+            "run": run,
+        });
+        println!("{v}");
+    } else {
+        let more = if unknown { " and more" } else { "" };
+        println!(
+            "{}{more} to fetch; `{run}` adds {} and checks every library once the packs are here",
+            mb(fetch),
+            starts(made.len()),
+        );
+    }
+    Ok(0)
+}
+
+/// The size of `pkg/<name>/<hash>.tar` on `origin`, from its headers.
+fn pack_size(origin: &str, name: &str, hash: &str) -> Option<u64> {
+    let url = oath_core::fetch_url(origin, name, hash);
+    let out = std::process::Command::new(oath_core::find_bin("curl"))
+        .args(["-sfIL", &url])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    // After a redirect, the last response's length.
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|l| l.split_once(':'))
+        .filter(|(k, _)| k.trim().eq_ignore_ascii_case("content-length"))
+        .filter_map(|(_, v)| v.trim().parse().ok())
+        .last()
+}
+
+fn mb(bytes: u64) -> String {
+    format!("{:.1} MB", bytes as f64 / 1e6)
 }
 
 /// One row of an origin's `index.json`.

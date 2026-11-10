@@ -165,6 +165,12 @@ enum Cmd {
         /// would replace); repeat for more.
         #[arg(long, value_name = "pkg:NAME")]
         keep: Vec<String>,
+        /// Move nothing: list the head of each package here, and record each
+        /// one this machine runs as the head it took (/oath/heads.json), as
+        /// after `oath publish`. Without --confirm it says what it would
+        /// record.
+        #[arg(long, conflicts_with_all = ["output", "reboot", "esp", "keep"])]
+        record: bool,
     },
     /// Put this machine's pin of a package on an origin as its head (R72),
     /// signed with ~/.config/oath/sign_ed25519, so machines that trust this
@@ -756,11 +762,19 @@ fn run() -> oath_core::Result<i32> {
             &cat,
             publish::Opts { id, dest, committed, confirm: cli.confirm, json: cli.json },
         ),
-        Some(Cmd::Update { output, reboot, esp, keep }) => update::run(
+        Some(Cmd::Update { output, reboot, esp, keep, record }) => update::run(
             &cli.root,
             &cat,
             &actor,
-            update::Opts { confirm: cli.confirm, output, keep, reboot, esp, json: cli.json },
+            update::Opts {
+                confirm: cli.confirm,
+                output,
+                keep,
+                reboot,
+                esp,
+                record,
+                json: cli.json,
+            },
         ),
         Some(Cmd::Reap { arriving, boot }) => reap::run(
             &cli.root,
