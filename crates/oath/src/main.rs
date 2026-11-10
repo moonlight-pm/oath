@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 use oath_core::{
     apply_overlay, build_file, build_pinned, file_plan, fmt_plan, lint_bytes, lint_path,
     parse_plan, seed_profile, tel, Actor, BuildReport, Catalog, Error, ObjectId, DEFAULT_PROFILE,
-    DEFAULT_ROOT, EXIT_CONFIRM, KIND_CELL, KIND_PKG, KIND_PLAN,
+    DEFAULT_ROOT, EXIT_CONFIRM, KIND_CELL, KIND_PKG, KIND_PLAN, KIND_SVC,
 };
 use serde_json::{json, Map, Value};
 
@@ -72,7 +72,9 @@ enum Cmd {
         #[arg(value_name = "K=V")]
         fields: Vec<String>,
     },
-    /// Create a svc or pkg. Nothing runs until `oath apply`.
+    /// Create a svc, pkg or cell. Nothing runs until `oath apply`.
+    /// `oath new pkg:<name>` with no fields takes the package by name (R81):
+    /// at its newest signed head, with what it needs that this machine lacks.
     New {
         id: String,
         #[arg(long = "from-json")]
@@ -88,7 +90,8 @@ enum Cmd {
         #[arg(required = true)]
         names: Vec<String>,
     },
-    /// Mark a svc or pkg for removal; `oath apply` stops or unlinks it.
+    /// Mark a svc, pkg or cell for removal; `oath apply` stops or unlinks it.
+    /// One no apply has taken is removed at once.
     Rm {
         id: String,
     },
@@ -152,7 +155,9 @@ enum Cmd {
     /// (`host:local.profile`) when a key in `host:local.publishers` signed
     /// it (R38). Without --confirm it says what would change.
     Update {
-        /// A named output instead of the newest (an older one is a rollback).
+        /// A named output instead of the newest. An older one takes back
+        /// only what has no head (linux, oath, firmware, recipes): each
+        /// package with a head stays at its head (R72, R81).
         #[arg(long)]
         output: Option<String>,
         /// Reboot through PID 1 when it is done.
@@ -265,8 +270,9 @@ enum Cmd {
         #[arg(long)]
         hash: Option<String>,
     },
-    /// Write a fresh catalog from a built-in profile, or merge overlays
-    /// into an existing one. Build and install time only.
+    /// Write a fresh catalog from a seed profile, which is data
+    /// (`/lib/oath/seed`, or `$OATH_SEED_DIR`), or merge overlays into an
+    /// existing one. Build and install time only.
     #[command(hide = true)]
     Seed {
         /// Seed profile for a fresh catalog (`/lib/oath/seed/<name>.json`:
@@ -623,7 +629,7 @@ fn run() -> oath_core::Result<i32> {
                     if cli.json {
                         println!("{}", json!({"ok": true, "id": id.to_string()}));
                     } else {
-                        println!("{id} created; `oath apply {id}` starts it");
+                        println!("{id} created; {}", on_apply(&id, &cat.get(&id)?.desired));
                     }
                     Ok(0)
                 }
@@ -635,9 +641,11 @@ fn run() -> oath_core::Result<i32> {
         }
         Some(Cmd::Rm { id }) => {
             let id: ObjectId = id.parse()?;
-            cat.remove_object(&id)?;
+            let gone = remove(&cat, &id)?;
             if cli.json {
-                println!("{}", json!({"ok": true, "id": id.to_string()}));
+                println!("{}", json!({"ok": true, "id": id.to_string(), "removed": gone}));
+            } else if gone {
+                println!("{id} removed: no apply had taken it");
             } else {
                 println!("{id} marked for removal; `oath apply {id}` removes it");
             }
@@ -896,6 +904,32 @@ fn print_build(r: &BuildReport, json_mode: bool) {
     }
 }
 
+/// What `oath apply` does with an object `oath new` made, by its kind.
+fn on_apply(id: &ObjectId, doc: &Value) -> String {
+    let apply = format!("`oath apply {id}`");
+    let off = |k: &str| doc[k] == json!(false);
+    match id.kind.as_str() {
+        KIND_SVC if off("enabled") => {
+            format!("{apply} takes it, and it does not run (enabled=false)")
+        }
+        KIND_SVC => format!("{apply} starts it"),
+        KIND_PKG if off("present") => format!("{apply} takes it, linked nowhere (present=false)"),
+        KIND_PKG => format!("{apply} links it"),
+        KIND_CELL if off("present") => {
+            format!("{apply} takes it, and `cell run` refuses it (present=false)")
+        }
+        KIND_CELL => format!("{apply} checks its tree, and `cell run {id}` runs it"),
+        _ => format!("{apply} applies it"),
+    }
+}
+
+/// `oath rm`. True when the object is gone already: one no apply has taken
+/// is deleted at once, and there is nothing left to apply.
+fn remove(cat: &Catalog, id: &ObjectId) -> oath_core::Result<bool> {
+    cat.remove_object(id)?;
+    Ok(cat.get(id).is_err())
+}
+
 /// `--from-json '{…}'` plus `k=v` pairs (v is JSON if it parses, else a string).
 fn field_map(
     id: &ObjectId,
@@ -943,4 +977,54 @@ fn print_val_indent(v: &Value) {
 #[allow(dead_code)]
 fn _flush() {
     let _ = io::stdout().flush();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    fn help(verb: &str) -> String {
+        let mut cli = Cli::command();
+        let cmd = cli.find_subcommand_mut(verb).unwrap();
+        cmd.render_long_help().to_string()
+    }
+
+    #[test]
+    fn the_help_names_what_each_verb_takes() {
+        Cli::command().debug_assert();
+        assert!(help("new").contains("svc, pkg or cell"));
+        assert!(help("new").contains("takes the package by name"));
+        assert!(help("rm").contains("svc, pkg or cell"));
+        assert!(help("update").contains("svc:<name>"));
+        assert!(!help("update").contains("rollback"));
+        assert!(!help("seed").contains("built-in"));
+    }
+
+    #[test]
+    fn new_says_what_an_apply_does_with_each_kind() {
+        let says = |id: &str, doc: Value| on_apply(&id.parse().unwrap(), &doc);
+        assert!(says("svc:web", json!({ "enabled": true })).ends_with("starts it"));
+        assert!(says("svc:web", json!({ "enabled": false })).contains("does not run"));
+        assert!(says("pkg:jq", json!({ "present": true })).ends_with("links it"));
+        assert!(says("pkg:jq", json!({ "present": false })).contains("linked nowhere"));
+        let cell = says("cell:hamlet", json!({ "present": true }));
+        assert!(cell.contains("checks its tree") && cell.contains("`cell run cell:hamlet`"));
+        assert!(!cell.contains("starts"), "{cell}");
+    }
+
+    #[test]
+    fn rm_of_what_no_apply_took_removes_it_at_once() {
+        let d = tempfile::tempdir().unwrap();
+        oath_core::seed(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        let id: ObjectId = "svc:web".parse().unwrap();
+        let doc = json!({ "exec": ["/bin/true"] }).as_object().unwrap().clone();
+        cat.new_object(&id, doc).unwrap();
+        assert!(remove(&cat, &id).unwrap());
+        assert!(cat.get(&id).is_err());
+        let sshd: ObjectId = "svc:sshd".parse().unwrap();
+        assert!(!remove(&cat, &sshd).unwrap(), "applied: an apply removes it");
+        assert_eq!(cat.get(&sshd).unwrap().meta.status, "removing");
+    }
 }
