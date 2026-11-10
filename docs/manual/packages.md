@@ -657,7 +657,7 @@ Code is one:
 sudo oath build plan:claude-code         # fetches ~240 MB from downloads.claude.ai
 sudo oath set pkg:claude-code present=true
 sudo oath apply pkg:claude-code
-claude --version                         # 2.1.292 (Claude Code)
+claude --version                         # 2.1.311 (Claude Code)
 ```
 
 `claude doctor` then warns that `~/.local/bin/claude` is missing: that
