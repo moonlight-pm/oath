@@ -1855,6 +1855,62 @@ fn a_cell_that_does_not_hash_to_its_pin_is_refused_before_a_generation() {
     assert!(cat.get(&id).is_err());
 }
 
+/// A VM, 2026-11-10: after verify found cell:<name> damaged, `oath diff`
+/// and `oath apply cell:<name>` both said in-sync.
+#[test]
+fn a_damaged_cell_drifts_and_apply_refuses_it_until_it_is_stored_again() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    let file = d.path().join("store/cell/hamlet").join(&hash).join("bin/hamlet");
+    std::fs::write(&file, "x").unwrap();
+    let got = cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.got.clone();
+    assert!(is_realization_id(&got) && got != hash, "{got}");
+    let drift = cat.diff(Some(&id)).unwrap();
+    assert_eq!(drift[0].fields, [("tree".to_string(), json!(hash), json!(got))]);
+    let logged = results(&cat).len();
+    let err = cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_SECURITY, "{err}");
+    let hint = err.hint_str().unwrap();
+    assert!(hint.contains("sudo oath store cell:hamlet <dir|file.tar>"), "{hint}");
+    assert_eq!(results(&cat)[logged..], [("refused".to_string(), None)]);
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "x");
+    assert_eq!(cat.get(&id).unwrap().meta.status, "error");
+
+    // The same files, stored again, replace the damaged tree; apply links it.
+    oath_core::cell::store(d.path(), "hamlet", &d.path().join("src-hamlet")).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["verified"]["ok"], json!(true));
+    assert_eq!(obj.meta.status, "in-sync");
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+}
+
+/// A cell whose tree is gone from the store drifts in `tree`, and apply
+/// refuses it, before verify and after a boot that observes it not linked.
+#[test]
+fn a_cell_whose_tree_is_gone_drifts_and_apply_refuses_it() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    std::fs::remove_dir_all(d.path().join("store/cell/hamlet").join(&hash)).unwrap();
+    for boot in [false, true] {
+        if boot {
+            let lock = cat.lock().unwrap();
+            cat.observe(&lock, &d.path().join("bin")).unwrap();
+            drop(lock);
+            assert_eq!(cat.get(&id).unwrap().actual["present"], json!(false));
+            assert_eq!(cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.got, "missing");
+            assert_eq!(cat.get(&id).unwrap().meta.status, "error");
+        }
+        let drift = cat.diff(Some(&id)).unwrap();
+        assert_eq!(drift[0].fields, [("tree".to_string(), json!(hash), json!("missing"))]);
+        let err = cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err();
+        assert!(err.to_string().contains("is not in the store"), "boot {boot}: {err}");
+        let hint = err.hint_str().unwrap();
+        assert!(hint.contains("sudo oath store cell:hamlet <dir|file.tar>"), "{hint}");
+        assert_eq!(results(&cat).last().unwrap(), &("refused".to_string(), None));
+    }
+}
+
 #[test]
 fn the_kind_explains_itself() {
     let (_d, cat) = seeded();

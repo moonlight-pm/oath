@@ -52,6 +52,10 @@ run cell:<name>` is the same box as a package's, with the tree bound read-only a
   and `needs`, then `oath apply`. A plan can make one: `"produces": "cell:<name>"`, built
   from `cell:<name>-src`. A package's plan cannot name a `cell:`, since its source is
   published with it.
+- **Damage.** A tree gone from the store, or one `oath verify` found no longer hashes
+  to its pin, drifts in `tree`. A cell comes from no origin, so apply refuses it before
+  it takes a generation, and `sudo oath store cell:<name> <dir|tar>` of the same files
+  is the repair: the next apply links it.
 - **What goes.** Reap keeps the pin and lets a cell's other versions go, as for a package.
 
 ### An image (R59)
