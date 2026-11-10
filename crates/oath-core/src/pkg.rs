@@ -294,9 +294,12 @@ pub fn check_needs(pkgs: &[(String, Pkg)]) -> Result<()> {
 }
 
 /// Names in `/lib` that are Oath's own (its helpers, the kernel's modules
-/// and firmware), never a package's link; and pkg-config files, which
-/// stay with their pack.
-const LIB_NOT_LINKED: &[&str] = &["oath", "modules", "firmware", "pkgconfig"];
+/// and firmware), never a package's link; pkg-config files, which stay
+/// with their pack; and `python`, the pure-Python modules of a build pack
+/// (`pkg:python-mako`), which a build reads from the store on its
+/// `PYTHONPATH` and Python never looks for in `/lib`: each such pack ships
+/// one, so linking it would let only one be on a machine.
+const LIB_NOT_LINKED: &[&str] = &["oath", "modules", "firmware", "pkgconfig", "python"];
 
 /// The entries of a pack's `lib/` that go into `/lib`.
 fn lib_names(lib: &Path) -> Result<Vec<String>> {

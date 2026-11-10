@@ -111,6 +111,7 @@ fn plan(
             "nothing changed; `sudo oath update --confirm` moves this machine to the heads",
         ));
     }
+    check_links(root, cat, &settled)?;
     let mut out = Vec::new();
     for m in settled {
         let Move::Head { name, set, signer, repointed, .. } = m else { continue };
@@ -121,6 +122,34 @@ fn plan(
         out.push(Made { id: ObjectId::new(KIND_PKG, &name), doc, version, signer, repointed });
     }
     Ok(out)
+}
+
+/// Refuse when a package made would put a name in `/bin` or `/lib` that a
+/// package here, or another one made, puts there: the apply would link
+/// some and stop. A pack not in the store yet (a preview's) is not checked.
+fn check_links(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
+    let mut pkgs = Vec::new();
+    for id in cat.ls(Some(KIND_PKG))? {
+        let actual = cat.get(&id)?.actual;
+        if actual["present"] == json!(true) {
+            pkgs.push((id.name.clone(), actual["hash"].as_str().unwrap_or("").to_string()));
+        }
+    }
+    for m in moves {
+        if let Move::Head { name, to, .. } = m {
+            pkgs.push((name.clone(), to.clone()));
+        }
+    }
+    let clashes = oath_core::link_clashes(root, &pkgs);
+    if clashes.is_empty() {
+        return Ok(());
+    }
+    let list: Vec<String> =
+        clashes.iter().map(|(n, a, b)| format!("{n} (pkg:{a} and pkg:{b})")).collect();
+    Err(Error::hint(
+        format!("two packages would ship one name: {}", list.join(", ")),
+        "nothing changed; one machine has one of them (oath get pkg:<name>)",
+    ))
 }
 
 /// Make each object, or none of them.
@@ -258,6 +287,12 @@ pub fn add(
     let report = match report {
         Ok(r) => r,
         Err(e) => {
+            // Each or none: an apply that stopped part way linked some.
+            match cat.undo_if_newest(&ids, actor, hooks) {
+                Ok(Some(r)) => eprintln!("undone: back to generation {}", r.generation),
+                Ok(None) => {}
+                Err(u) => eprintln!("could not undo the failed apply: {u}; `sudo oath undo`"),
+            }
             forget(cat, &ids);
             return Err(e);
         }
@@ -334,7 +369,8 @@ fn preview(
     } else {
         let more = if unknown { " and more" } else { "" };
         println!(
-            "{}{more} to fetch; `{run}` adds {} and checks every library once the packs are here",
+            "{}{more} to fetch; `{run}` adds {} and checks every library and link once the packs \
+             are here",
             mb(fetch),
             starts(made.len()),
         );
@@ -362,6 +398,9 @@ fn pack_size(origin: &str, name: &str, hash: &str) -> Option<u64> {
 }
 
 fn mb(bytes: u64) -> String {
+    if bytes < 1_000_000 {
+        return format!("{} kB", bytes.div_ceil(1000));
+    }
     format!("{:.1} MB", bytes as f64 / 1e6)
 }
 

@@ -32,7 +32,7 @@ var (
 var floor = []string{"glibc", "bash", "coreutils", "curl"}
 
 // notLinked are the names in a pack's lib/ that a machine's /lib leaves out too.
-var notLinked = map[string]bool{"oath": true, "modules": true, "firmware": true, "pkgconfig": true}
+var notLinked = map[string]bool{"oath": true, "modules": true, "firmware": true, "pkgconfig": true, "python": true}
 
 // pack is one installed package or cell, at the hash this machine links.
 type pack struct{ kind, name, hash string }

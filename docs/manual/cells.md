@@ -126,7 +126,7 @@ bzip2  curl	  gmp	 mbedtls  python   zlib
   script that calls one fails (`/bin/sh: line 1: grep: command not found`)
   until its package needs it or `--with pkg:grep` brings it.
 - **`/bin` and `/lib`.** The cell's own links, made by a machine's rules
-  (`bin/`, and `lib/` less `oath`, `modules`, `firmware` and `pkgconfig`).
+  (`bin/`, and `lib/` less `oath`, `modules`, `firmware`, `pkgconfig` and `python`).
   The first pack to name an entry has it, and the package comes first.
 - **`/etc`.** `passwd` and `group`, naming root and any number `--user`
   gives, and `hosts`, `hostname` and `resolv.conf`. Nothing of the

@@ -758,6 +758,28 @@ impl Catalog {
         self.undo_locked(target, actor, hooks)
     }
 
+    /// Undo the newest apply when it is of exactly `ids`: `oath add`'s, which
+    /// failed part way, so none of what it made stays. None when the newest
+    /// apply is another's, or none took a generation.
+    pub fn undo_if_newest(
+        &self,
+        ids: &[ObjectId],
+        actor: &Actor,
+        hooks: &dyn ApplyHooks,
+    ) -> Result<Option<ApplyReport>> {
+        let _lock = self.lock()?;
+        let Some(target) = self.undo_target()? else { return Ok(None) };
+        let names = |ids: &[ObjectId]| {
+            let mut v: Vec<String> = ids.iter().map(ObjectId::to_string).collect();
+            v.sort();
+            v
+        };
+        if names(&target.2) != names(ids) {
+            return Ok(None);
+        }
+        self.undo_locked(target, actor, hooks).map(Some)
+    }
+
     /// PID 1's rollback: undo the apply on probation if its time has run
     /// out and nothing has kept or undone it since. `None` when there is
     /// nothing to do.

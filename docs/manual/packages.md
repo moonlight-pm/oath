@@ -113,7 +113,10 @@ them back. Nothing the machine has moves. A package already here is named and le
 `oath update`, and one here with `present=false` is refused. A need the machine holds
 at another pin is re-pointed when the new package loses no library it loads
 (`runs with this machine's pkg:<name> sha256-… -> sha256-…`); otherwise nothing is
-made, and `sudo oath update --confirm` comes first. A name no origin has a head of is refused
+made, and `sudo oath update --confirm` comes first. Two packages that would link one name
+in `/bin` or `/lib` are refused (`two packages would ship one name: /bin/<x> (pkg:<a> and
+pkg:<b>)`) before anything changes, and an apply that stops part way is undone whole
+(`undone: back to generation <n>`). A name no origin has a head of is refused
 (`pkg:<name> has no head on any origin`): a recipe has none ([Recipes](#recipes)), and
 neither do `linux`, `oath` and `firmware`, which move with a release.
 `sudo oath new pkg:<name>` with no fields makes the same objects without applying them

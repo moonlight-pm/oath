@@ -1679,3 +1679,60 @@ fn the_kind_explains_itself() {
     assert!(cat.schema_json("cell").unwrap().contains("\"needs\""));
     assert!(cat.index_text().unwrap().contains("`cell`"));
 }
+
+/// A tree with these files, in the store as `name`: its hash.
+fn store_files(root: &std::path::Path, name: &str, files: &[&str]) -> String {
+    let t = root.join(format!("src-{name}"));
+    for f in files {
+        std::fs::create_dir_all(t.join(f).parent().unwrap()).unwrap();
+        std::fs::write(t.join(f), format!("{name} {f}\n")).unwrap();
+    }
+    install_tree(root, name, &t, None, "").unwrap()
+}
+
+/// novus, 2026-11-10: two pure-Python build packs each ship `lib/python`,
+/// which no package links into `/lib`, so both are on one machine.
+#[test]
+fn python_build_packs_go_side_by_side() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let mako = store_files(d.path(), "python-mako", &["lib/python/mako/__init__.py"]);
+    let safe = store_files(d.path(), "python-markupsafe", &["lib/python/markupsafe/__init__.py"]);
+    let pkgs = vec![("python-mako".to_string(), mako.clone()), ("python-markupsafe".into(), safe)];
+    assert!(oath_core::link_clashes(d.path(), &pkgs).is_empty());
+    let mut ids = Vec::new();
+    for (name, hash) in &pkgs {
+        let id: ObjectId = format!("pkg:{name}").parse().unwrap();
+        let doc = json!({ "present": true, "hash": hash }).as_object().unwrap().clone();
+        cat.new_object(&id, doc).unwrap();
+        ids.push(id);
+    }
+    cat.apply(Some(ids), false, &Actor::unknown(), &hooks).unwrap();
+    assert!(d.path().join("lib/python").symlink_metadata().is_err());
+}
+
+/// `oath add`'s apply that stops part way is undone whole; another's is not.
+#[test]
+fn undo_if_newest_takes_back_a_half_applied_add() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let a = store_files(d.path(), "tool-a", &["bin/tool"]);
+    let b = store_files(d.path(), "tool-b", &["bin/tool"]);
+    let ids: Vec<ObjectId> = vec!["pkg:tool-a".parse().unwrap(), "pkg:tool-b".parse().unwrap()];
+    for (id, hash) in ids.iter().zip([&a, &b]) {
+        let doc = json!({ "present": true, "hash": hash }).as_object().unwrap().clone();
+        cat.new_object(id, doc).unwrap();
+    }
+    let actor = Actor::unknown();
+    let e = cat.apply_with(Some(ids.clone()), false, 300, &actor, &hooks).unwrap_err();
+    assert!(e.to_string().contains("/bin/tool exists and is not pkg:tool-b"), "{e}");
+    assert!(d.path().join("bin/tool").symlink_metadata().is_ok(), "tool-a linked it");
+    // Another apply's ids: nothing is undone.
+    assert!(cat.undo_if_newest(&ids[..1], &actor, &hooks).unwrap().is_none());
+    assert!(cat.undo_if_newest(&ids, &actor, &hooks).unwrap().is_some());
+    assert!(d.path().join("bin/tool").symlink_metadata().is_err());
+    for id in &ids {
+        assert!(cat.get(id).is_err(), "{id} is gone");
+    }
+    assert!(cat.diff(None).unwrap().is_empty());
+}

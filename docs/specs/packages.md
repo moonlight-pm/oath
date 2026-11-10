@@ -240,7 +240,9 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   applies them; `oath new pkg:<name>` with no fields makes them without
   applying. Nothing the machine has moves. A need it holds at another pin
   is re-pointed if the package loses no library (the check above), and
-  otherwise nothing is made and `oath update` comes first. It records the
+  otherwise nothing is made and `oath update` comes first. Two packages
+  that would link one name in `/bin` or `/lib` refuse it before anything
+  changes, and an apply that stops part way is undone whole. It records the
   heads it took, as an update does; run by a user who cannot change the
   catalog, it says what it would add and each pack's size, and changes
   nothing. A recipe has no
@@ -345,8 +347,9 @@ comes from nixpkgs.
 
 Programs link dynamically against glibc, whose loader is
 `/lib/ld-linux-x86-64.so.2`. `/lib` is a link farm of every linked
-package's `lib/` entries (not `oath/`, `modules/`, `firmware/` or
-`pkgconfig/`), made and removed with its `/bin` links, so a re-pin of
+package's `lib/` entries (not `oath/`, `modules/`, `firmware/`,
+`pkgconfig/` or `python/`, a pure-Python build pack's modules, which a
+build reads from the store on its `PYTHONPATH`), made and removed with its `/bin` links, so a re-pin of
 a library changes the programs that load it, as on any distro; sonames
 keep incompatible versions apart, the `needs` graph checks the set,
 and undo takes a bad re-pin back. No `/lib64`, and Oath sets no

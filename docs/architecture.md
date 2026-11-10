@@ -95,7 +95,8 @@ btrfs
             halt and poweroff → /lib/oath/init
 /lib/       symlink farm → /oath/store/pkg/<name>/<hash>/lib/<x> (R17): glibc's
             loader ld-linux-x86-64.so.2 and every linked package's libraries;
-            no /lib64. oath/, modules/ and firmware/ are not links. A pack's
+            no /lib64. oath/, modules/ and firmware/ are not links, and no pack's
+            pkgconfig/ or python/ (a build pack's modules, read from the store) is. A pack's
             lib32/ (i386, R29) is never linked: no /lib32 or ld-linux.so.2
 /home       the `home` account (uid 1); SSH logs in here; `@home` when the root has one, or host:local.mounts' /home (R45)
 /work       the `work` account (uid 2, R55): `@work` when the root has `@`, made at first boot; 0700, and /home is 0700 too
