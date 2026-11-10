@@ -27,10 +27,12 @@ Overwrite this file when facts change; do not append a diary.
   127.0.0.1:5000. `svc:wl-b6703b0fa806-web`, the retired `oath`
   workload (R79), is stopped until `wicketctl services install` removes it.
 - **Running now:** `base` release `ee3e239caa32` (master `7597cc1`,
-  R72 and R73), generation 6, in sync: 5 from `sudo oath update --confirm
+  R72 and R73), generation 64, in sync: 5 from `sudo oath update --confirm
   --reboot` on 2026-11-07 (only `pkg:oath` moved), 6 put novus's key in
-  `host:local.publishers` beside buccina's (Joshua 2026-11-07); since
-  generation 64 it is `names="*" … oath@novus`, any package's head
-  (Joshua, 2026-11-10). Mountain time
+  `host:local.publishers` beside buccina's (Joshua 2026-11-07), 7–63
+  (2026-11-08 and 09) are mostly Wicket's services and workloads (above),
+  and 64 made that key `names="*" … oath@novus`, any package's head
+  (Joshua, 2026-11-10). The `base` release `4f32ebdf39cd` (2026-11-10)
+  is not taken yet. Mountain time
   (`MST7MDT,M3.2.0,M11.1.0`), over SSH too. `@boot-2` holds the boot
   before it (`57192b33e6ab`).

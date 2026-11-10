@@ -205,6 +205,8 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   `names="sola,sola-*"`: that key signs heads for those names only (a
   trailing `*` matches any rest). A key with no list signs any head,
   a release and the audit's report; a scoped key signs only heads.
+  `names="*"` signs any head and still no release: novus's key, on
+  every machine but koeurax since 2026-11-10 (R72 as amended).
 - **Taking heads.** `oath update` reads the head of every package the
   machine has (and of what those heads need) from its origins, and
   moves each to the newest head a key may sign for it. It refuses a
