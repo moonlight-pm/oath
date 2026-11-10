@@ -202,8 +202,10 @@ impl Offer {
     }
 }
 
-/// The [`Move::Hold`] of `name` at `at`, its pin here, when its offered
-/// head is older than the one this machine took (`taken`).
+/// The [`Move::Hold`] of `name` at `at`, its pin here (none when the
+/// machine lacks it), when its offered head is older than the one this
+/// machine took (`taken`). A package removed since does not come back at
+/// an older head either.
 pub fn hold_older(name: &str, at: &str, offer: &Offer, taken: &Record) -> Option<Move> {
     let head = &offer.head;
     let t = taken.get(name).filter(|t| after(head.order(), t.order()))?;
@@ -228,7 +230,8 @@ pub fn hold_older(name: &str, at: &str, offer: &Offer, taken: &Record) -> Option
 /// the head the machine took is an overlay and is replaced (R47); with no
 /// record, `overlay(name, pin)` says (the release's view). A package the
 /// machine lacks is made when something present here, or a head taken,
-/// needs it and it has a head. Needs are not settled here: see [`settle`].
+/// needs it and it has a head, and held when that head is older than the
+/// one this machine took. Needs are not settled here: see [`settle`].
 pub fn plan(
     machine: &BTreeMap<String, Value>,
     offers: &BTreeMap<String, Offer>,
@@ -293,6 +296,10 @@ pub fn plan(
             continue;
         }
         let Some(offer) = offers.get(&n) else { continue };
+        if let Some(hold) = hold_older(&n, "", offer, taken) {
+            moves.push(hold);
+            continue;
+        }
         let doc = offer.head.doc();
         todo.extend(need_names(&doc));
         moves.push(Move::New { name: n, doc, why: "a package here needs it, from its head" });
@@ -373,7 +380,9 @@ struct Final {
 /// (`provides`) now is still provided after the moves. Otherwise the
 /// dependency is held at the machine's pin (or, when that does not help,
 /// the package itself), whether a head or a release moved it, and the rest
-/// is settled again. `loads` and
+/// is settled again. A package that needs one the machine lacks and the
+/// moves hold (its head is older than the one this machine took) is held
+/// too, whether the moves would move it or make it. `loads` and
 /// `provides` return None when the tree is not in the store yet: a preview
 /// re-points such a need unchecked, and says so.
 pub fn settle(
@@ -411,7 +420,27 @@ pub fn settle(
         let mut hold: Option<(String, String)> = None;
         'pkgs: for (p, f) in after.iter().filter(|(_, f)| f.present) {
             for (q, h) in &f.needs {
-                let Some(qf) = after.get(q) else { continue };
+                let Some(qf) = after.get(q) else {
+                    // One the machine lacks and the moves hold: what needs
+                    // it is not moved or made either.
+                    let waits =
+                        moves.iter().any(|m| m.name() == q && matches!(m, Move::Hold { .. }));
+                    let takes = moves.iter().any(|m| {
+                        m.name() == p
+                            && matches!(
+                                m,
+                                Move::Head { .. }
+                                    | Move::Pin { .. }
+                                    | Move::Rebuild { .. }
+                                    | Move::New { .. }
+                            )
+                    });
+                    if waits && takes {
+                        hold = Some((p.clone(), format!("pkg:{p} needs pkg:{q}, which waits")));
+                        break 'pkgs;
+                    }
+                    continue;
+                };
                 if qf.hash == *h || qf.hash.is_empty() {
                     continue;
                 }
@@ -466,14 +495,16 @@ pub fn settle(
         }
         if let Some((name, why)) = hold {
             for m in moves.iter_mut().filter(|m| m.name() == name) {
-                if let Move::Head { from, to, .. } | Move::Pin { from, to, .. } = m {
-                    *m = Move::Hold {
-                        name: name.clone(),
-                        at: from.clone(),
-                        head: to.clone(),
-                        why: why.clone(),
-                    };
-                }
+                let (at, head) = match m {
+                    Move::Head { from, to, .. }
+                    | Move::Pin { from, to, .. }
+                    | Move::Rebuild { from, to, .. } => (from.clone(), to.clone()),
+                    Move::New { doc, .. } => {
+                        (String::new(), doc["hash"].as_str().unwrap_or("").to_string())
+                    }
+                    _ => continue,
+                };
+                *m = Move::Hold { name: name.clone(), at, head, why: why.clone() };
             }
             continue;
         }
@@ -790,6 +821,46 @@ mod tests {
         let m = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
         assert_eq!(m.iter().map(Move::kind).collect::<Vec<_>>(), ["head", "new"]);
         assert_eq!(m[1].name(), "libnew");
+    }
+
+    #[test]
+    fn a_package_removed_never_comes_back_at_an_older_head() {
+        // This machine took libnew at 'N' and removed it; Sola's head needs
+        // it again, and the origins serve an older one.
+        let machine = BTreeMap::from([("sola".to_string(), doc('a', &[]))]);
+        let taken = Record::from([(
+            "libnew".to_string(),
+            Taken { hash: h('N'), published: "2026-11-06T00:00:00Z".into(), ..Taken::default() },
+        )]);
+        let o = offers(vec![
+            head("sola", 'b', &[("libnew", 'n')], "2026-11-07T00:00:00Z"),
+            head("libnew", 'n', &[], "2026-11-05T00:00:00Z"),
+        ]);
+        let moves = plan(&machine, &o, &taken, &BTreeSet::new(), |_, _| false);
+        let kinds = |m: &[Move]| m.iter().map(Move::kind).collect::<Vec<_>>();
+        assert_eq!(kinds(&moves), ["head", "hold"], "{:?}", texts(&moves));
+        let said = texts(&moves)[1].clone();
+        assert!(said.starts_with("pkg:libnew sha256-nnnnnnnnnnnn waits: it (published"), "{said}");
+        assert!(said.contains("older than the head this machine took"), "{said}");
+        assert_eq!(moves[1].to(), None, "it ends on no pin");
+        // Sola waits for it: nothing is moved or made half-way.
+        let none = trees(&[]);
+        let m = run(&machine, moves, &none, &none);
+        assert_eq!(kinds(&m), ["hold", "hold"], "{:?}", texts(&m));
+        assert!(texts(&m)[0].contains("pkg:sola needs pkg:libnew, which waits"), "{:?}", texts(&m));
+        // Needed through a package the moves make: that one waits too.
+        let o = offers(vec![
+            head("sola", 'b', &[("gtk", 'g')], "2026-11-07T00:00:00Z"),
+            head("gtk", 'g', &[("libnew", 'n')], "2026-11-07T00:00:00Z"),
+            head("libnew", 'n', &[], "2026-11-05T00:00:00Z"),
+        ]);
+        let moves = plan(&machine, &o, &taken, &BTreeSet::new(), |_, _| false);
+        assert_eq!(kinds(&moves), ["head", "new", "hold"], "{:?}", texts(&moves));
+        let m = run(&machine, moves, &none, &none);
+        assert_eq!(kinds(&m), ["hold", "hold", "hold"], "{:?}", texts(&m));
+        assert_eq!(addition_names(&m), ["sola", "gtk", "libnew"]);
+        assert!(texts(&m)[1].contains("pkg:gtk needs pkg:libnew, which waits"), "{:?}", texts(&m));
+        assert!(texts(&m)[0].contains("pkg:sola needs pkg:gtk, which waits"), "{:?}", texts(&m));
     }
 
     #[test]

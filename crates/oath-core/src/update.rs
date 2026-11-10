@@ -279,9 +279,10 @@ pub enum Move {
         signer: String,
         repointed: Vec<String>,
     },
-    /// Not taken: `at` stays and `head` (a head, or a release's pin) waits;
-    /// `why` says why (`--keep`, an older head, or a package here that would
-    /// lose a library).
+    /// Not taken: `at` stays (empty when the machine lacks it or runs no
+    /// pin) and `head` (a head, or a release's pin) waits; `why` says why
+    /// (`--keep`, an older head, a package here that would lose a library,
+    /// or a need that waits).
     Hold { name: String, at: String, head: String, why: String },
     /// Its pin stays and its needs move to what the update leaves, after
     /// the library check (`checked`; false in a preview whose packs are not
@@ -327,7 +328,8 @@ impl Move {
     pub fn to(&self) -> Option<&str> {
         match self {
             Self::Pin { to, .. } | Self::Rebuild { to, .. } | Self::Head { to, .. } => Some(to),
-            Self::Keep { pin, .. } | Self::Hold { at: pin, .. } => Some(pin),
+            Self::Keep { pin, .. } => Some(pin),
+            Self::Hold { at, .. } => Some(at.as_str()).filter(|a| !a.is_empty()),
             Self::Stay { .. } | Self::Drop { .. } | Self::Repoint { .. } => None,
             Self::New { doc, .. } => doc["hash"].as_str(),
         }
@@ -409,6 +411,9 @@ impl Move {
                     source_label(set).map(|l| format!(", {l}")).unwrap_or_default(),
                     needs_moved(repointed)
                 )
+            }
+            Self::Hold { at, head, why, .. } if at.is_empty() => {
+                format!("{id} {} waits: {why}", short(head))
             }
             Self::Hold { at, head, why, .. } => {
                 format!("{id} stays at {}; {} waits: {why}", short(at), short(head))
