@@ -11,7 +11,7 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::{CString, OsString};
 use std::fs;
 use std::hash::{Hash, Hasher};
-use std::io::{Read, Write};
+use std::io::{ErrorKind, Read, Write};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt};
 use std::path::{Component, Path, PathBuf};
@@ -509,14 +509,14 @@ fn parents_are_plain(real: &Path, rel: &Path) -> Result<(), String> {
     if rel.is_absolute() || rel.components().any(|c| !matches!(c, Component::Normal(_))) {
         return Err(format!("{} is not a plain relative path", name(rel)));
     }
-    let mut at = real.to_path_buf();
+    let mut through = PathBuf::new();
     if let Some(parent) = rel.parent() {
         for part in parent.components() {
-            at.push(part);
-            match fs::symlink_metadata(&at) {
+            through.push(part);
+            match fs::symlink_metadata(real.join(&through)) {
                 Err(_) => return Ok(()),
                 Ok(m) if m.is_dir() => {}
-                Ok(_) => return Err(format!("{} goes through {}, which is not a directory", name(rel), name(&at))),
+                Ok(_) => return Err(format!("{} goes through {}, which is not a directory", name(rel), name(&through))),
             }
         }
     }
@@ -801,7 +801,12 @@ fn undo_one(dir: &Path, real: &Path, seq: usize, v: &Value) -> Result<Option<Str
     }
     let (backup, link) = (v.get("backup").and_then(|b| b.str()), v.get("link").and_then(|l| l.str()));
     if is_true("made_dir") {
-        let _ = fs::remove_dir(&at);
+        // Anything still in it is the owner's, and keeps it.
+        match fs::remove_dir(&at) {
+            Err(e) if e.kind() == ErrorKind::DirectoryNotEmpty => return Ok(Some(format!("{} is not empty, and stays", name(&rel)))),
+            Err(e) if e.kind() != ErrorKind::NotFound => return Ok(Some(format!("{}: {e}, and stays", name(&rel)))),
+            _ => {}
+        }
     } else if is_true("was_dir") {
         let mode = v.get("mode").and_then(|m| m.u64()).unwrap_or(0o755) as u32;
         fs::create_dir_all(&at).map_err(|e| format!("{}: {e}", name(&rel)))?;
@@ -858,25 +863,32 @@ pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String>
     let restored = dir.join("restored.jsonl");
     let mut log = fs::OpenOptions::new().create(true).append(true).open(&restored).map_err(|e| format!("{}: {e}", restored.display()))?;
     let mut left = Vec::new();
+    let mut theirs = HashSet::new();
     let stopped = (|| -> Result<(), String> {
         for (i, (start, v)) in entries.iter().enumerate().rev() {
             let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
-            let rel = Path::new(path);
-            let stays = undo_one(dir, real, i, v)
-                .map_err(|e| format!("stopped at {}: {e}. What was applied after it is taken back; `writ undo` again goes on from there", name(rel)))?;
-            // A path put back is recorded with what is there now, and one that stays with nothing.
-            let mut pairs = vec![("path".to_string(), s(path))];
-            if let Some(h) = if stays.is_none() { found_at(&real.join(rel)) } else { None } {
-                pairs.push(("after".to_string(), s(&h)));
-            }
-            writeln!(log, "{}", Value::Obj(pairs).text()).map_err(|e| format!("{}: {e}", restored.display()))?;
-            cut.set_len(*start).map_err(|e| format!("{}: {e}", todo.display()))?;
-            match stays {
-                Some(why) => left.push(why),
-                None => {
-                    let _ = writeln!(out, "restored {}", name(rel));
+            // An older entry for a path that stays has nothing to put back over the owner's change.
+            if !theirs.contains(path) {
+                let rel = Path::new(path);
+                let stays = undo_one(dir, real, i, v)
+                    .map_err(|e| format!("stopped at {}: {e}. What was applied after it is taken back; `writ undo` again goes on from there", name(rel)))?;
+                // A path put back is recorded with what is there now, and one that stays with nothing.
+                let mut pairs = vec![("path".to_string(), s(path))];
+                if let Some(h) = if stays.is_none() { found_at(&real.join(rel)) } else { None } {
+                    pairs.push(("after".to_string(), s(&h)));
+                }
+                writeln!(log, "{}", Value::Obj(pairs).text()).map_err(|e| format!("{}: {e}", restored.display()))?;
+                match stays {
+                    Some(why) => {
+                        left.push(why);
+                        theirs.insert(path);
+                    }
+                    None => {
+                        let _ = writeln!(out, "restored {}", name(rel));
+                    }
                 }
             }
+            cut.set_len(*start).map_err(|e| format!("{}: {e}", todo.display()))?;
         }
         Ok(())
     })();
@@ -1256,9 +1268,7 @@ mod tests {
         std::os::unix::fs::symlink("owner's", t.real.join("l")).unwrap();
         let (code, stays) = t.undo();
         assert_eq!(code, 1);
-        assert_eq!(stays.len(), 4, "{stays:?}");
-        assert_eq!(stays[..3], ["l changed after it was applied, and stays", "f changed after it was applied, and stays", "d changed after it was applied, and stays"]);
-        assert!(stays[3].starts_with("d/x goes through") && stays[3].ends_with("which is not a directory, and stays"), "{}", stays[3]);
+        assert_eq!(stays, ["l changed after it was applied, and stays", "f changed after it was applied, and stays", "d changed after it was applied, and stays", "d/x goes through d, which is not a directory, and stays"]);
         assert_eq!(t.text("f"), "owner's f");
         assert_eq!(t.text("d"), "owner's d");
         assert_eq!(fs::read_link(t.real.join("l")).unwrap(), Path::new("owner's"));
@@ -1323,6 +1333,56 @@ mod tests {
         assert_eq!(t.text("a"), "was a");
         assert_eq!(t.text("b"), "was b");
         assert_eq!(t.text("c"), "owner's c");
+    }
+
+    #[test]
+    fn a_path_applied_twice_and_changed_by_the_owner_is_named_once_and_stays() {
+        let t = T::new("twice-owned");
+        for p in ["a", "b"] {
+            t.real(p, &format!("was {p}"));
+            t.upper(p, "one");
+        }
+        t.apply(true, &[]).unwrap();
+        t.upper("a", "two");
+        t.upper("b", "two");
+        t.apply(true, &[]).unwrap();
+        // The owner edits a, and puts b back as the first apply left it.
+        t.real("a", "owner's");
+        t.real("b", "one");
+        let (code, stays) = t.undo();
+        assert_eq!(code, 1);
+        assert_eq!(stays, ["b changed after it was applied, and stays", "a changed after it was applied, and stays"]);
+        assert_eq!(t.text("a"), "owner's");
+        assert_eq!(t.text("b"), "one");
+    }
+
+    #[test]
+    fn a_directory_apply_made_stays_when_the_owner_put_something_in_it() {
+        let t = T::new("kept-dir");
+        t.upper("new/dir/c", "c");
+        t.apply(true, &[]).unwrap();
+        t.real("new/mine", "owner's");
+        let mut said = Vec::new();
+        assert_eq!(undo(&t.dir(), &t.real, &mut said).unwrap(), 1);
+        assert_eq!(String::from_utf8(said).unwrap(), "restored new/dir/c\nrestored new/dir\nnew is not empty, and stays\n");
+        assert_eq!(t.text("new/mine"), "owner's");
+    }
+
+    #[test]
+    fn what_goes_through_something_else_is_named_from_the_project() {
+        let t = T::new("through-apply");
+        std::os::unix::fs::symlink("elsewhere", t.real.join("a")).unwrap();
+        t.upper("a/b", "x");
+        let e = t.apply(true, &[]).unwrap_err();
+        assert!(e.ends_with("\n  a/b goes through a, which is not a directory"), "{e}");
+        let t = T::new("through-undo");
+        t.upper("d/x", "x");
+        t.apply(true, &[]).unwrap();
+        fs::remove_dir_all(t.real.join("d")).unwrap();
+        t.real("d", "owner's d");
+        let (code, stays) = t.undo();
+        assert_eq!(code, 1);
+        assert_eq!(stays, ["d/x goes through d, which is not a directory, and stays", "d changed after it was applied, and stays"]);
     }
 
     #[test]
