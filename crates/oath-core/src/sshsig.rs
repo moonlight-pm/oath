@@ -291,6 +291,11 @@ VXt2S1bOjHWAkohjx1Hx5Nz6aGvft/CQ==
         assert!(e.to_string().contains("a release is signed by test@oath"), "{e}");
         // A key with no list signs heads too.
         assert!(verify_for(MSG, SIG, "oath-output", &[KEY.into()], "openssh").is_ok());
+        // names="*" signs any package's head, and still no release.
+        let any = [format!("names=\"*\" {KEY}")];
+        assert!(verify_for(MSG, SIG, "oath-output", &any, "openssh").is_ok());
+        let e = verify(MSG, SIG, "oath-output", &any).unwrap_err();
+        assert!(e.to_string().contains("a release is signed by test@oath"), "{e}");
     }
 
     #[test]
@@ -314,6 +319,8 @@ VXt2S1bOjHWAkohjx1Hx5Nz6aGvft/CQ==
         assert!(may_sign(&n(&["sola-*"]), "sola-browser"));
         assert!(!may_sign(&n(&["sola-*"]), "sola"));
         assert!(may_sign(&n(&["fetchme"]), "fetchme") && !may_sign(&n(&["fetchme"]), "fetch"));
+        assert_eq!(parse_publisher(&format!("names=\"*\" {KEY}")).unwrap().0.unwrap(), ["*"]);
+        assert!(may_sign(&n(&["*"]), "openssh") && may_sign(&n(&["*"]), "oath"));
     }
 
     #[test]

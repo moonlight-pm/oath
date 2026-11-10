@@ -51,9 +51,9 @@ not this kind. Do not add a Unix user kind — the accounts are always
   takes: `ssh-ed25519 AAAA… name` lines, one per publisher. A line may
   start with `names="sola,sola-*"` (a trailing `*` matches any rest):
   that key signs only the heads of those packages (`pkg/<name>.json`,
-  R72), never an output or the audit's report. A key with no list signs
-  all three. The `base` profile lists buccina's. A person adds a key; an
-  agent does not.
+  R72), never an output or the audit's report; `names="*"` signs any
+  package's head. A key with no list signs all three. The `base` profile
+  lists buccina's. A person adds a key; an agent does not.
 
 ## Example
 
