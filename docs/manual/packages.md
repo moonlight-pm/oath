@@ -4,13 +4,21 @@ A package is a `pkg:*` catalog object. Bits live under
 `/oath/store/pkg/<name>/<hash>/`. `/bin` is a **symlink farm**, not an
 unpack target, and so is `/lib`: glibc's loader
 (`/lib/ld-linux-x86-64.so.2`) and every linked pack's `lib/` entries
-(decision R17). There is no `/lib64` and no RPATH; a program finds its
-libraries through `/lib`. Name is a slot; hash is the bits (`sha256-` plus 64 hex
-of `oath-tree-v1`). There is no `apt` and no `oath install`.
+(decision R17). There is no `/lib64`. A program finds its libraries through
+`/lib`; some packs also carry an RPATH or RUNPATH (`curl`'s is
+`/oath/store/pkg/curl/live/lib`, `rustc`'s is `$ORIGIN/../lib`). Name is a slot;
+hash is the bits (`sha256-` plus 64 hex of `oath-tree-v1`). There is no `apt`.
+`oath install` takes no package: it puts the system on a disk
+([Install](install.md)). A package comes through `oath new` or `oath set`, then
+`oath apply`, or with `oath update`.
 
 The slot also has `live` → `<hash>` and compatibility links (`bin` →
 `live/bin`, …) so paths like `/oath/store/pkg/<name>/bin` resolve.
 Those links are not part of the hash.
+
+There is no `/usr`: a script that starts `#!/usr/bin/env` does not run
+(`bad interpreter`), and one that starts `#!/bin/env` does. `/var` holds
+`empty`, `lib` and `run`; there is no `/var/tmp` or `/var/log`.
 
 ## What ships
 
@@ -26,31 +34,55 @@ Not removable (`present=false` is refused):
 | `pkg:util-linux` | `mount`, `dmesg`, `sfdisk`, `wipefs`, `blkid`, `lsblk`, `findmnt` |
 | `pkg:iproute2` | `ip`, `ss`, `bridge`, `tc` |
 | `pkg:dhcpcd` | the DHCP client of `net:net0` |
-| `pkg:btrfs` | `btrfs`, `mkfs.btrfs` |
+| `pkg:btrfs` | `btrfs`, `mkfs.btrfs`. Built without LZO: `btrfs restore` cannot read LZO extents; the kernel can |
 | `pkg:oath` | `oath` |
 | `pkg:openssh` | the SSH server `sshd` (R36), and `ssh`, `scp`, `sftp`, `ssh-keygen`, `sftp-server` |
 | `pkg:zsh` | `zsh`, `home`'s login shell |
 
-What the running `oath`'s base profile fixes is what counts: a package a
-machine was seeded with as fixed and the base no longer fixes
-(`pkg:dropbear`, before R36) can be removed.
+What the running `oath`'s base profile fixes is what counts: a package it
+does not fix can be removed, even one a machine was seeded with as fixed.
 
-Present and removable: `sed`, `grep`, `gawk`, `findutils`, `diffutils`,
-`tar`, `gzip`, `xz`, `bzip2`, `procps` (`ps`, `pidof`, `free`, `top`,
-`kill`), `less`, `vim` (also `vi`), `iputils` (`ping`, `tracepath`,
-`arping`), `chrony` (`svc:time`), `dosfstools` (`mkfs.fat`), `curl`
+Present, and removable once nothing present needs them: `sed`, `grep`, `gawk`,
+`findutils`, `diffutils`, `tar`, `gzip`, `bzip2`, `procps` (`ps`, `pidof`,
+`free`, `top`, `kill`), `less`, `vim` (also `vi`), `iputils` (`ping`,
+`tracepath`, `arping`), `chrony` (`svc:time`), `dosfstools` (`mkfs.fat`), `curl`
 (Mbed TLS, CA bundle at `/oath/store/pkg/curl/live/ssl/cert.pem`),
-`bind` (`dig`, `host`, `nslookup`; no `named`), `openssl` (`openssl`;
-its default `ssl/cert.pem` links to curl's bundle), `certs` (Oath's CA roots, R50), and the libraries they load:
-`ncurses`, `gmp`, `mpfr`, `zlib`, `zstd`, `mbedtls`, `libuv`,
-`liburcu`, `libcap`, `libxcrypt`. A pack's `needs` lists the libraries it loads, so
-apply refuses removing `pkg:ncurses` while `pkg:less` is present.
+`bind` (`dig`, `host`, `nslookup`; no `named`), `certs` (Oath's CA roots, R50),
+and the libraries only they load: `mpfr`, `mbedtls`, `libuv`, `liburcu`, `libcap`.
 
-Every pack is built from pinned source on the build host: the Oath
-binaries (`pkg:oath`) from this tree, the rest from `pkgs/`
-([Build](build.md)). There is no C compiler on the box yet: the
-toolchain (`pkg:gcc`) exists on the build host but is not in the base
-profile.
+Present and held by a non-removable package, so apply refuses removing them:
+`gmp` (`coreutils`), `ncurses` (`zsh`), `zlib` (`btrfs`, `openssh`), `zstd` (`btrfs`),
+`xz` (through `zstd`), `libxcrypt` and `openssl` (`openssh`). `openssl` is also the
+`openssl` tool; its default `ssl/cert.pem` links to curl's bundle.
+
+A pack's `needs` lists the libraries it loads, so apply refuses removing
+`pkg:mbedtls` while `pkg:curl` is present.
+
+Also in the catalog, with `present=false`: the recipes `pkg:claude-code`,
+`pkg:codex` and `pkg:grok-build` and their `-src` packs. Their plans are there
+too; a machine builds each one itself (see Recipes).
+
+The `desk` profile extends `base` with the packages below and the libraries and
+data they load; `oath ls --kind pkg` lists every one on a machine.
+
+| Packages | What |
+|----------|------|
+| `gcc`, `make`, `m4`, `bison`, `cmake`, `meson`, `ninja`, `pkgconf`, `perl`, `python`, `rust`, `git` | a compiler and build tools: `cc`, `make`, `cmake`, `cargo`, `python3`, `git`, … |
+| `tmux`, `wl-clipboard`, `vulkan-tools`, `bubblewrap` | `tmux`, `wl-copy`, `wl-paste`, `vulkaninfo`, `bwrap` |
+| `rivulet`, `wlroots`, `seatd`, `xwayland`, `xkbcomp`, `mesa`, `libglvnd`, `vulkan-loader` | the compositor, the GPU, X clients |
+| `pipewire`, `wireplumber`, `libpulse`, `alsa-lib` | sound: `wpctl`, `pactl`, the `pw-*` tools |
+| `bluez`, `dbus` | `bluetoothctl`, `btmon`; D-Bus |
+| `cef` | the browser engine |
+| `font-noto`, `font-noto-cjk`, `font-noto-emoji`, `font-iosevka-term-slab` | typefaces |
+| `sola`, `sola-*` | Sola's packs, from Sola's own repository, pinned by hash |
+| `steam`, `nvidia` | recipes, `present=false` ([Recipes](#recipes)) |
+| `*-i386` | 32-bit libraries for Steam's games |
+
+Every pack but Sola's is made on the build host from pinned sources: the Oath
+binaries (`pkg:oath`) from this tree, the rest from `pkgs/`, compiled or, as
+with `pkg:rust`, taken from the vendor's own release ([Build](build.md)). The
+`base` profile has no C compiler. The `desk` profile has `pkg:gcc`; a `base`
+machine takes it from the origins (below), with `pkg:mpc`, which it loads.
 
 PID 1 stays at `/lib/oath/init`; it is not a package.
 
@@ -59,21 +91,26 @@ PID 1 stays at `/lib/oath/init`; it is not a package.
 ```
 oath ls --kind pkg
 oath get pkg:dosfstools
-oath set pkg:dosfstools present=false
-oath apply
+sudo oath set pkg:dosfstools present=false
+sudo oath apply
 ls /oath/store/pkg/dosfstools     # the tree stays
 
-oath set pkg:dosfstools present=true
-oath apply
+sudo oath set pkg:dosfstools present=true
+sudo oath apply
 readlink /bin/mkfs.fat
-oath undo
+sudo oath undo
 ```
 
-`present=false` removes **this object's** `/bin` links. The store tree
+`present=false` removes **this object's** `/bin` and `/lib` links. The store tree
 stays, so a re-install needs no network. A new `hash` relinks, and a
-program the new tree no longer has leaves `/bin`. Apply refuses to clobber a
-`/bin` name it does not own. `present=false` on a non-removable
-package is refused (not `--confirm`).
+name the new tree no longer has leaves `/bin` or `/lib`. Apply refuses to clobber a
+`/bin` or `/lib` name it does not own. `present=false` on a non-removable
+package is refused (not `--confirm`), and so is `oath rm`. `oath get` shows
+`removable` under actual.
+
+`sudo oath rm pkg:foo` marks the object for removal. `sudo oath apply` unlinks
+it and deletes the object, and `sudo oath undo` brings it back. Its store tree
+stays until `oath reap` finds nothing holding it.
 
 ## Fields in practice
 
@@ -81,9 +118,11 @@ package is refused (not `--confirm`).
   refuses one that changed on disk. Empty hash is
   discovery (`actual.hash` reports what is live). Switch with
   `oath set pkg:foo hash=sha256-…`, then apply. Other hashes stay on
-  disk.
+  disk while a pin, a need, the release, a current plan or a kept
+  generation holds them, and for a day after they arrive; `oath reap`,
+  which PID 1 runs once a boot, removes the rest.
 - `url`: if `present` and the store is missing, apply fetches it, then
-  links. A `.tar` is a pack tree. An origin prefix plus `hash` fetches
+  links. A `.tar`, `.tar.gz` or `.tgz` is a pack tree. An origin prefix plus `hash` fetches
   `{url}/pkg/{name}/{hash}.tar`. A single file becomes `bin/<name>`.
   With no `url`, a pinned pack the store lacks comes from the machine's
   origins (below).
@@ -94,12 +133,74 @@ package is refused (not `--confirm`).
   hash. Apply refuses a broken graph: a missing need, a need at the
   wrong hash, a cycle, or removing a need while a present pack still
   lists it. Apply does not change the other objects for you.
-- `description` and `home` are prose and a project URL.
+- `description` and `home` are prose and a project URL. `category` is
+  one word for what the package mostly is; Oath's own use `agents`,
+  `base`, `browser`, `desk`, `games`, `graphics`, `kernel`, `machines`,
+  `network`, `security`, `server`, `sound`, `text`, `toolchain` and
+  `x11`. None of the three is in a hash, and `oath update` writes the
+  release's.
 - `source` records where the pinned tree was built from: `{repo,
   commit, branch, dirty, built_by, built_at}` (`oath schema pkg`). Set
   it with the hash it describes, in one apply. It is in no hash, and an
   apply that changes only it (or the prose) touches no store, link or
   service.
+
+Actual has what the machine sees: `links` (its names in `/bin`),
+`removable`, the live `hash`, `components`, `advisories` (absent when
+never fetched), `realizations` (the trees of this name on disk, each
+with `hash`, `linked`, `bins` and `components`; `oath reap` says what
+holds each), `verified` (`ok`, `at`, and `got` when the tree hashes to
+something else: [A damaged package](#a-damaged-package)), and the applied
+`url`, `needs`, `description`, `home`, `category` and `source`.
+
+## A damaged package
+
+A tree that no longer hashes to its pin is damaged. PID 1 hashes every
+linked package and cell tree again once a boot, after the services start
+(`oath verify --quiet`; `oath logs` shows a line like
+`39 verified, 0 damaged`). `oath verify` prints `pkg:<name> DAMAGED: …` and
+exits 1. `oath get pkg:<name> --actual` has the outcome in `verified`: `at`,
+`ok`, and `got` for a tree that differs. A damaged tree has status `error`,
+`oath` (INDEX.md) lists it under **Store damage**, and `oath apply` refuses
+to link it. Apply, `sudo oath verify` and the boot's check write
+`verified`; `oath verify` as `home` only reports. No check repairs
+anything. An apply with no change says `in-sync`, and one that changes
+only `description`, `home`, `category` or `source` records it; neither
+looks at the tree. To take the tree again from the origins, delete it
+and set its `url` to an origin, so apply fetches it:
+
+```
+sudo rm -rf /oath/store/pkg/less/sha256-…
+sudo oath set pkg:less url=https://store.oath.moonlight.pm
+sudo oath apply pkg:less
+```
+
+The fetch runs `curl` and `tar`, so `pkg:curl` and `pkg:tar` cannot come
+back this way.
+
+## What stays in the store
+
+A tree stays while something holds it, and PID 1 runs `oath reap` once a
+boot and removes the rest. `oath reap` says what this machine holds
+beyond what its packages prescribe: the versions of each package and cell
+that would go and their size, store slots with no object, filed plans
+nothing pins, and generations ([Generations](generations.md)).
+`sudo oath reap --confirm` removes them at once. `oath undo` cannot reach a
+generation that went. A build underway stops `--confirm`, and the preview
+says so.
+
+`oath --json reap` lists every version with what holds it (`held`); one
+with nothing there goes.
+
+| `held` | The version stays because |
+|--------|---------------------------|
+| `pin` | a `pkg` or `cell` object's spec, or its actual, names it |
+| `live` | the slot's `live` link names it, and the slot has an object |
+| `needs:pkg:<name>` | that package needs it at this hash |
+| `release` | the release this machine runs pins it |
+| `plan:<name>` | that pinned plan builds or runs with it |
+| `generation:<n>` | that kept generation pins or needs it |
+| `arrived` | it reached the store less than `--arriving` seconds ago (default 86400), so its pin may still come; an `oath store` nobody pins goes at the first boot after that |
 
 ## A tree built here
 
@@ -120,18 +221,24 @@ A tool that pins a tree it built records where from, with the hash:
 sudo oath set pkg:hello --from-json '{"hash":"sha256-…","source":{"repo":"https://github.com/me/hello","commit":"<40 hex>","branch":"next","dirty":false,"built_by":"home@canto","built_at":"2026-11-01T12:00:00Z"}}'
 ```
 
-A pin that is not the release's, or not the head this machine took
-(below), is an overlay: `oath get pkg:hello` ends with `overlay:
-pkg:hello is next@1a2b3c4d, not the release's sha256-… (output …); oath
-update replaces it` (or `not its head sha256-… (signed by …)`), and
-`oath diff` lists every overlay above its `in-sync`. `sudo oath update
---confirm` replaces each; `--keep pkg:hello` keeps one.
+A package's pin is an overlay when it is not the head this machine took of
+that package (below) or, with none taken, not the pin of the release it runs.
+A name the release does not pin, with no head taken, is no overlay: `pkg:hello`
+above is not one. `oath get pkg:less` ends with `overlay: pkg:less is
+next@1a2b3c4d, not the release's sha256-… (output …); oath update replaces it`
+(or `not its head sha256-… (signed by …)`), and `oath diff` lists every overlay
+above its `in-sync`. `sudo oath update --confirm` replaces an overlay of a head
+and, when it moves the machine to another release or the package has a head, an
+overlay of the release's pin; at the newest release, with no head, that one
+stays. `--keep pkg:less` keeps one.
 
 A new name is `oath new pkg:hello hash=…` instead of `set`; a source
 pack a plan builds with is `oath new pkg:hello-src hash=… present=false`
 and goes in the plan's `build_needs`. Every file is stored 0755 or 0644
 (the hash records only whether it is executable), and a pipe, socket or
-device in the tree is refused, as a fetch refuses it.
+device in the tree is refused, as a fetch refuses it. A package that is
+present needs a `bin/` directory in its tree, even an empty one (`pkg:certs`
+has one); without it apply stops at `no store for pkg:<name>`.
 
 A service follows its package: when an apply moves the pin of the
 package a service's program comes from (`exec[0]`, through `/bin`),
@@ -157,8 +264,8 @@ The head is `pkg/hello.json` on the origin, beside `pkg/hello/<hash>.tar`:
 the pin, its needs, `source`, version and description, signed beside
 itself (`.sig`, namespace `oath-pkg`) by `~/.config/oath/sign_ed25519`
 (`OATH_SIGN_KEY`) and written with the origin's write key, as for `cargo
-make publish` (below). The pin must be applied and built from a clean
-tree (`source.dirty` false). With `--committed` (the commit's time, any
+make publish` (below). The pin must be applied. A pin with `source.dirty`
+true is refused; one with no `source` goes out without one. With `--committed` (the commit's time, any
 offset; the head keeps it in UTC) it refuses to replace a head built
 from a later commit. Publishing needs no
 `sudo`.
@@ -172,8 +279,12 @@ sudo oath apply host:local
 ```
 
 Such a key signs heads of those names only: never a release or the
-audit's report, so it cannot ship PID 1, the kernel or sshd. `oath
-update` reads the head of every package the machine has (and of what
+audit's report, so it cannot ship PID 1 or the kernel. A list that covers
+`openssh` (`names="openssh"`, or `names="*"`) lets it sign `pkg:openssh`'s head,
+and so sshd. A key with no list signs heads, releases and the audit's report.
+Each line is an `ssh-ed25519` public key; a person adds one, an agent does not.
+
+`oath update` reads the head of every package the machine has (and of what
 those heads need) from each origin and moves each package to the newest
 head a key may sign for it; `oath update` alone says what would move.
 It records each head it took in `/oath/heads.json` and refuses an older
@@ -212,8 +323,8 @@ until one serves the pinned tree. Apply uses them for a pinned pkg with
 no `url`; `oath build` uses them for a build pack the store lacks. The
 `base` profile lists the default origin, the R2 bucket at
 `https://store.oath.moonlight.pm`, which carries every locked pack
-(build packs too) with its plan and source; its `INDEX.md` lists names
-and hashes.
+(build packs too) with its plan and source, but of a recipe only the plan (see
+Recipes); its `INDEX.md` lists names and hashes.
 
 ```
 oath get host:local                                   # origins
@@ -228,19 +339,60 @@ this way: Node.js (`pkg:node`, which needs `pkg:gcc`), the GitHub CLI
 (`pkg:gh`, which needs `pkg:certs` for its CA roots) and Cloudflare's
 CLI (`pkg:cf`, which needs `pkg:node`). Each need is pinned at the hash
 the pack's plan names (`run_needs` in `{origin}/plan/<name>/<plan>.plan`),
-which must be the one the machine runs:
+which must be the one the machine runs. A need the machine lacks is made
+first, the same way: `desk` has `pkg:gcc`, and a `base` machine makes
+`pkg:mpc` and `pkg:gcc` before `pkg:node`:
 
 ```
 sudo oath new pkg:node --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:gcc","hash":"sha256-…"}]}'
 sudo oath apply pkg:node
-sudo oath new pkg:gh --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:curl","hash":"sha256-…"}]}'
+sudo oath new pkg:gh --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:certs","hash":"sha256-…"}]}'
 sudo oath apply pkg:gh
 sudo oath new pkg:cf --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:node","hash":"sha256-…"}]}'
 sudo oath apply pkg:cf
 node --version                           # v26.13.0
-gh --version                             # gh version 2.103.3 (2026-10-26)
+gh --version                             # gh version 2.103.3 (0000-00-00)
 cf --version                             # 1.0.0-beta.26
 ```
+
+`cf` (also `cloudflare`) carries the npm packages it was pinned with in
+its own tree and runs on `pkg:node` (R46), and puts nothing in a global
+`node_modules`. `npm install -g` fails as `home`, since the store is root's;
+under `sudo` it writes into the pack, which `oath verify pkg:node` then reports
+as damaged. `cf` still prints a notice when npm has a newer cf;
+that is a new pin in `pkgs/cf`. `gh` runs with its update notice off and
+`gh auth login` keeps its settings under `~/.config/gh`. Both send
+telemetry unless `DO_NOT_TRACK=1` (or `GH_TELEMETRY=false`,
+`CF_SEND_TELEMETRY=false`). `npm` from `pkg:node` takes nothing younger than a
+week and runs no package's install scripts (`min-release-age=7`,
+`ignore-scripts=true`); a project that needs a script says so in its own
+`.npmrc`.
+
+`pkg:python` puts no `pip` in `/bin`, and `python3 -m pip` fails until pip is
+installed. The pack carries pip's wheel: `python3 -m venv DIR` installs it in
+`DIR`, and `python3 -m ensurepip --user` installs it under `~/.local`, whose
+`bin` is not on `PATH`, so it runs as `python3 -m pip`. Under `sudo`,
+`python3 -m ensurepip` writes into the pack, which `oath verify pkg:python`
+then reports as damaged.
+
+`pkg:sqlite` is the `sqlite3` shell and a static library for programs that embed it
+(needs `pkg:zlib`). `pkg:llama-cpp` is `llama-server`, local models over Chat
+Completions on the CPU or, through Vulkan, a GPU: it needs AVX2, `pkg:gcc` and
+`pkg:vulkan-loader`, and reads a model from a file (`-m`). `pkg:writ` is a coding
+agent whose tools run in a box ([writ](#writ-a-coding-agent-in-a-box-r64)), and
+`writ serve --model FILE` runs `llama-server` in a box.
+
+Put a LAN mirror first to prefer it (any directory `cargo make publish
+--dest` wrote, served over HTTP):
+
+```
+sudo oath set host:local origins='["http://10.0.0.5:8080", "https://store.oath.moonlight.pm"]'
+sudo oath apply host:local
+```
+
+An empty list fetches nothing without a `url`. A failed origin is
+skipped; apply fails only when none serves the pin, and says what each
+answered.
 
 ### Servers: Blocky, restic, route, cell, PostgreSQL, MySQL (R49)
 
@@ -248,8 +400,8 @@ These are built from source here and are in no profile:
 `pkg:blocky`, `pkg:cloudflared`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell` (with `pkg:crun`,
 `pkg:passt`), `pkg:mysql`, `pkg:postgresql` and `pkg:postgis`
 (with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
-takes them from the origin as above, with each need the plan names, once a
-release has published them. `pkg:go` is what builds the Go ones; a machine needs
+takes them from the origin as above, with each need the plan names.
+`pkg:go` is what builds the Go ones; a machine needs
 it only to build. `cloudflared` does not update itself: `cloudflared update` says so,
 and a newer one is a new pin in `pkgs/cloudflared`.
 
@@ -262,11 +414,11 @@ to older servers.
 
 Go programs read their CA roots from `pkg:certs` (R50), through Go's own
 `crypto/x509`, unless `SSL_CERT_FILE` names others:
-`/oath/store/pkg/certs/live/ssl/cert.pem`. A machine without `pkg:certs` makes it
-first, at the hash the plan names. It is Mozilla's roots for servers, from
+`/oath/store/pkg/certs/live/ssl/cert.pem`. It is Mozilla's roots for servers, from
 NSS's `certdata.txt`, less any with a distrust-after date and what
-`pkgs/certs/distrust.txt` names. curl and OpenSSL still read `pkg:curl`'s copy,
-until the rebuild that takes CEF 157 (R77).
+`pkgs/certs/distrust.txt` names. curl and OpenSSL read `pkg:curl`'s own copy,
+Mozilla's bundle from curl.se, at `/oath/store/pkg/curl/live/ssl/cert.pem`
+(OpenSSL's `cert.pem` links to it). It keeps the roots `pkg:certs` leaves out.
 
 PostgreSQL finds PostGIS, a separate pack, through one line in
 `postgresql.conf`:
@@ -275,12 +427,21 @@ PostgreSQL finds PostGIS, a separate pack, through one line in
 extension_control_path = '$system:/oath/store/pkg/postgis/live/share'
 ```
 
+`pkg:postgresql` and `pkg:postgis` both carry `lib/postgresql/`, which `/lib`
+links for one package only, so the second to apply is refused:
+`/lib/postgresql exists and is not pkg:postgis`. Apply `pkg:postgresql` first: a
+bare `oath apply` takes PostGIS first and leaves PostgreSQL out of `/bin`. The
+refused apply still leaves PostGIS's `live` link in the store, which is all this
+line needs, so `CREATE EXTENSION postgis` works. `pkg:postgis` stays `status=new`,
+and every `oath apply` with no id stops at it.
+
 The server refuses to run as root, so its `svc` names a `user`. A new major
 version changes the data directory's format, so moving across one is
 `pg_upgrade`, not a new pin alone.
 
-`pkg:cell` runs a container image (R59), in `apps/cell`, with nothing but Go's standard
-library over `crun` and `pasta`. There is no daemon: `cell run` stays in the foreground,
+`pkg:cell`, in `apps/cell`, runs a container image (R59), a package this machine has
+or a `cell:` object, with nothing but Go's standard library over `crun` and `pasta`.
+There is no daemon: `cell run` stays in the foreground,
 so a `svc` supervises it like any program, and its output is the service's log. Without
 `-t` that output goes through pipes `cell` makes, so a program can open `/dev/stderr`.
 
@@ -294,21 +455,27 @@ sudo oath apply svc:web
 |---------|------|
 | `cell pull <image>` | fetch an image, or move its tag; prints the digest for linux/amd64 |
 | `cell run [flags] <image> [args...]` | pull it if it is not on disk, and run it |
+| `cell run [flags] pkg:<name> [args...]`, `cell run [flags] cell:<name> [args...]` | run a package this machine has or a `cell:` object, with no image and nothing copied. The program is its `bin/<name>`; one with no such file names a program first in `[args...]` or with `--entrypoint` |
 | `cell exec [-t] [-w dir] <name> <cmd...>` | run a command in a running cell, under the same limits |
 | `cell stop <name>` | stop it: the image's `STOPSIGNAL`, then SIGKILL after `--stop-after` (10 s) |
-| `cell ls`, `cell images` | what is running, what is on disk |
+| `cell ls`, `cell images` | every cell, running or left stopped by a kill, with what it runs and when it started; the images on disk, by name and digest |
 | `cell rmi <image>`, `cell prune` | forget a name; delete images no name holds, and what a killed cell left |
 | `cell login <registry> <user>` | keep a password, read from stdin, in `auth.json` |
 
 `run` takes `-p [addr:]host:port[/udp]`, `--reach port[:hostport]`, `-v /host:/path[:ro]`,
 `--tmpfs /path`, `-e NAME=value`, `--env-file file`, `-w dir`, `--entrypoint cmd`,
-`--user uid[:gid]`, `--read-only`, `--no-net`, `-t`, `--name`.
+`--user uid[:gid]` or a name in the image, `--read-only`, `--no-net`, `-t`, `--name`,
+`--stop-after duration` (10 s), and for a `pkg:` or `cell:` run `--with pkg:<name>`.
+
+A `pkg:` or `cell:` run has that pack, `glibc`, `bash`, `coreutils`, `curl`, any package
+`--with` adds, and everything those need, each bound read-only at the hash this machine
+links. It does not have the machine's catalog, homes, `/etc` or other packages.
 
 Each run starts from a fresh copy of the image, a reflink on btrfs, and leaves nothing
 behind: what is kept goes on a volume. Images live under `~/.local/share/cell`. A name
-with `@sha256:...` holds one image for good; a tag only moves on `cell pull`. Every
-manifest, blob and layer is checked against its digest, and a layer's own `urls` are
-never fetched.
+with `@sha256:...` holds one image for good; a tag only moves on `cell pull`. A manifest
+named by digest, and every blob and layer, is checked against its digest, and a layer's
+own `urls` are never fetched.
 
 A cell holds one uid (R53): the account that ran it, not root, which `cell` refuses.
 It owns every file, and is root inside, or the number the image's `USER` or `--user`
@@ -326,9 +493,7 @@ leaves it only `-p` and `--reach`. New namespaces, `mount`, `bpf`, `ptrace` and
 
 There is no way to build an image here, no bridge between cells, and no memory or CPU
 limit: those need `CONFIG_MEMCG` and `CONFIG_CFS_BANDWIDTH`, which Oath's kernel leaves
-off. PID 1 loads `tun` and opens `/dev/net/tun` at boot, from the release after
-`3e42879d38e5`; on a machine that has not rebooted into it, do so by hand (`modprobe
-tun`, `chmod 666`).
+off. PID 1 loads `tun` and opens `/dev/net/tun` to every account at boot.
 
 `pkg:route` is Oath's own HTTP router (R59), in `apps/route`, with nothing but Go's
 standard library: by host and path, to a local service, a redirect or a fixed answer.
@@ -352,31 +517,12 @@ It holds no TLS and belongs on a loopback address, behind a tunnel or other prox
 The longest path wins, at a segment's edge, and `*` stands in for a host no route
 names. `strip` takes a prefix off, then `prefix` puts one on. An empty header value
 removes that header. A service gets the path that matched: repeated slashes collapse,
-and a path with a `.` or `..` segment gets a 400. `route <file>` runs it, `route -check
-<file>` tries a file, SIGHUP reads it again and keeps the old routes if the new file
-is bad, SIGTERM drains. Websockets and streams pass through. A forwarded `X-Forwarded-*`
+and a path with a `.` or `..` segment gets a 400. `route <file>` runs it,
+`route -check <file>` tries a file, SIGHUP reads it again and keeps the old routes if
+the new file is bad or moves `listen`, which takes a restart, and SIGTERM drains. A
+redirect to a target with no path or query keeps the request's path and query.
+Websockets and streams pass through. A forwarded `X-Forwarded-*`
 is kept, so it trusts whatever reaches its address.
-
-`cf` (also `cloudflare`) carries the npm packages it was pinned with in
-its own tree and runs on `pkg:node` (R46); nothing goes in a global
-`node_modules`, and `npm install -g` has nowhere to write, since the
-store is read-only. `cf` still prints a notice when npm has a newer cf;
-that is a new pin in `pkgs/cf`. `gh` runs with its update notice off and
-`gh auth login` keeps its settings under `~/.config/gh`. Both send
-telemetry unless `DO_NOT_TRACK=1` (or `GH_TELEMETRY=false`,
-`CF_SEND_TELEMETRY=false`).
-
-Put a LAN mirror first to prefer it (any directory `cargo make publish
---dest` wrote, served over HTTP):
-
-```
-sudo oath set host:local origins='["http://10.0.0.5:8080", "https://store.oath.moonlight.pm"]'
-sudo oath apply host:local
-```
-
-An empty list fetches nothing without a `url`. A failed origin is
-skipped; apply fails only when none serves the pin, and says what each
-answered.
 
 ### AWS CLI (R82)
 
@@ -396,7 +542,11 @@ aws ssm start-session --target i-0123…    # runs session-manager-plugin
 ### Minecraft: Prism Launcher (R74)
 
 `pkg:prismlauncher` is Prism Launcher, with `pkg:jre-21` (Java 21) and Qt 6, in
-no profile; each is on the origin as its own head. `prismlauncher` starts it in a box: it sees its own folder
+no profile. A `desk` machine adds it from the origin as above, with each need the plans
+name that it lacks (`cmark`, `jre-21`, `libarchive`, `libqrencode`, `libxcursor`,
+`libxi`, `libxtst`, `qtbase`, `qtimageformats`, `qtnetworkauth`, `qtsvg`), and applies
+them together. Each has a head on the origin, so `oath update` moves it to its head.
+`prismlauncher` starts it in a box: it sees its own folder
 (`~/.local/share/PrismLauncher`), the display, sound, the GPU, pads and the
 network; not the rest of `/home`, and `sudo` does not work in it, so a mod
 cannot reach them. Mods and modpacks install from Modrinth and CurseForge in
@@ -405,28 +555,74 @@ microsoft.com/link; nothing plays until a Microsoft account that owns the game
 is added. To bring a Modrinth App profile over, see
 [Minecraft](../specs/minecraft.md#bringing-a-modrinth-app-profile-over).
 
+### writ: a coding agent in a box (R64)
+
+`pkg:writ` is Oath's own coding agent, on the origin and in no profile. It needs `pkg:bubblewrap` (a desk has it) and `pkg:curl`, each at the hash the plan names:
+
+```
+sudo oath new pkg:writ --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:bubblewrap","hash":"sha256-…"},{"id":"pkg:curl","hash":"sha256-…"}]}'
+sudo oath apply pkg:writ
+```
+
+It runs as `home`, and everything a model drives runs in a box: the system read-only, the project as an overlay, of `home`'s other files only its Cargo and Go module caches (writes there vanish with the box), no network and no way to `sudo`. A project is a directory under `/home`, `/tmp` or `/work`. A write is held under `~/.local/share/writ/sessions/<name>/`, and the real tree changes only at `writ apply`. Committing is yours.
+
+| Command | Does |
+|---------|------|
+| `writ` | A session on this terminal, in the terminal's own scrollback: talk to the model, review, apply. `/help` lists its commands; Ctrl-T shows or hides the model's thinking |
+| `writ do [--session NAME] PROMPT` | The model works on the project, in a box, until it stops |
+| `writ ask PROMPT` | Ask one thing; the model can run nothing |
+| `writ diff SESSION [--names]` | What a session would change in the tree |
+| `writ apply SESSION [PATH...] [--all]` | Take its changes. A file that runs later (a build script, a hook, an agent's instructions) waits for its name or `--all` |
+| `writ undo SESSION` | Take back what `apply` did |
+| `writ sessions` | Every session, and what each holds |
+| `writ run [--session NAME] -- CMD` | One command in a box over the project; its writes are dropped unless `--session` keeps them. `writ sessions`, `writ diff` and `writ apply` see a session once the model has worked in it |
+| `writ check [--json] [-v]` | Attack the box on this machine and report what got through |
+
+`writ --help` lists every option.
+
+A local model is a `.gguf` file in `~/.local/share/writ/models`, served by `llama-server` from `pkg:llama-cpp`, which needs AVX2, `pkg:gcc` and `pkg:vulkan-loader`. `writ use local` switches to it and loads it (`--model`, `--context`, `--threads`, `--gpu`, `--cpu`, `--gpu-share P`). `writ do` and `writ ask` load it if it is not loaded, and it stays loaded until `writ llama stop`; `writ llama start` and `status` do the rest by hand. The server runs as `work`, in a box of its own: the model read-only, no network, no home, on a socket only `home` reaches. The context defaults to 32,768 tokens with a GPU and 16,384 without. `--gpu` gives that box NVIDIA's `nvidiactl` and `nvidia<N>` and no other GPU node, and a process in it can still call the closed driver. `--gpu-share P` holds the server to P percent of the GPU's time (default 40) by stopping it for the rest.
+
+`writ key` takes an OpenRouter key, unseen, into `~/.config/writ/openrouter.key` (mode 600), and `writ use openrouter AUTHOR/NAME` switches to a model as openrouter.ai/models names it. No model is compiled in. A session stops at $1 unless `--budget` says otherwise, and at a turn that does not report its cost; the key's own limit is what stops everything. What the model reads leaves the machine: each request asks for routes that keep nothing, which cannot be checked from here, and a model with no such route is refused. The curl that carries a request runs in its own box, with TCP only to ports 443 and 53.
+
 ## Plans
 
 A **plan** (`plan:<name>`) is a hashed `plan.plan` file that builds a
-product tree for `pkg:<name>`: a JSON head (`name`, `produces`,
-`build_needs`, `run_needs`, each need pinned by hash) and a `/bin/sh`
-script that writes `/out`. `oath build` runs it in a sandbox with only
-the pinned needs mounted and no network. Its `/bin` and `/lib` are link
+product tree for the `pkg:<name>` or `cell:<name>` that `produces` names:
+the line `#!oath-plan`, a JSON head (`name`, `produces`, `build_needs`,
+`run_needs`, each need pinned by hash), the line `---`, and a script whose
+first two lines are `#!/bin/sh` and `set -eu` and which writes `/out`.
+`oath build` runs it in a sandbox with only
+the pinned needs mounted and no network. The script is PID 1 of its own
+PID namespace, with its own `/proc`, `PATH=/bin` and `HOME=/tmp`; on a
+machine (`sudo oath build`) it runs as `home`, uid 1. The sandbox's `/bin` and `/lib` are link
 farms of those packs, as on a machine, so a plan pins every pack its
 tools load: `apps/hello.plan` pins bash, coreutils, gcc and glibc, and
 gmp, mpfr and mpc, which they run with.
 
 ```
 oath fmt -w apps/hello.plan
-oath build --file apps/hello.plan
-oath set plan:hello --from-file apps/hello.plan
-oath build plan:hello
-oath set pkg:hello present=true
-oath apply
+sudo oath store pkg:hello-src apps/hello-src     # the source no origin carries
+sudo oath build --file apps/hello.plan
+sudo oath set plan:hello --from-file apps/hello.plan
+sudo oath build plan:hello
+sudo oath set pkg:hello present=true
+sudo oath apply pkg:hello
 ```
 
-A missing `build_needs` pack is fetched first when its `pkg` object
-has a `url`. The second build of an unchanged input set is a no-op.
+`plan:<name>` has one field, `hash`, the pin of the canonical file:
+`oath set plan:<name> --from-file` lints the file, stores it under
+`/oath/store/plan/<name>/<hash>/`, and makes or updates the object, pinned
+at once with no `oath apply`. Empty is unpinned, and `oath build plan:<name>`
+refuses it. Actual adds the last build's `product` and `inputs` hashes;
+neither is a proof.
+
+A `build_needs` pack the store lacks is fetched first, from its `pkg`
+object's `url` or else from `host:local.origins`; it needs no `pkg` object.
+A second `oath build plan:<name>` of an unchanged input set is a no-op; `--file`
+always builds. A build with no `pkg:<name>` object makes one, absent, at the
+product's hash, with the plan's `run_needs` as its `needs`
+(`oath build plan:<name> --no-pkg` makes none, for a product that is only another
+plan's build input).
 The script's output goes to `/oath/log/plan/<name>.log`, not the
 terminal: `oath build` prints the path (and a failed build the last
 lines), and `oath logs plan:hello` reads it. The previous build's log
@@ -435,9 +631,64 @@ is `hello.log.1`.
 The build cache is keyed on the plan hash and the input set, so an
 edited script always rebuilds.
 
-Known gap: the base image does not carry `pkg:gcc`, so
-`apps/hello.plan` builds on the build host (in `~/.local/share/oath`), not on
-the box. The plans in `pkgs/` are the larger examples.
+`apps/hello.plan` pins `pkg:hello-src`, which no origin carries, so a machine
+stores it first (`sudo oath store pkg:hello-src apps/hello-src`); its other needs
+come from the origins, so it builds on a machine with no compiler in `/bin`. Its
+`pkg:gcc` and `pkg:glibc` pins are older than a release's, and a build that
+fetches a need moves that package's pin and `live` to the need's hash: where a
+present package needs one at the release's pin, as on a desk, the next apply
+refuses until `oath set` puts it back. The plans in `pkgs/` are the larger
+examples.
+
+## Cells
+
+A **cell** (`cell:<name>`) is one project's own software, made to run
+in a cell and nowhere else: a tree under
+`/oath/store/cell/<name>/<hash>/`. It is not linked into `/bin` or
+`/lib`, no origin serves it, and `oath publish` refuses it, so it reaches
+a machine by `oath store cell:<name> <dir|file.tar>` or `oath build`. A
+`cell:` and a `pkg:` may share a name and do not touch each other.
+`pkg:cell` runs it. A cell does not start itself: a `svc`, or whatever
+runs the project, runs `cell run`.
+
+```sh
+sudo oath store cell:hamlet ./out      # cell:hamlet sha256-…
+sudo oath new cell:hamlet hash=sha256-… 'needs=["pkg:curl"]'
+sudo oath apply cell:hamlet
+sudo -u work cell run --name hamlet -p 8080:8080 -v /work/hamlet:/data cell:hamlet
+```
+
+- `present` (default `true`): `cell run` starts the `hash` tree. `false`
+  makes `cell run` refuse it; the tree stays.
+- `hash`: the pin, `sha256-` plus 64 hex, required while `present`.
+  Apply hashes the tree against it, refuses one missing or changed, and
+  fetches nothing.
+- `needs`: the packages it runs with, each `pkg:<name>`, named and not
+  pinned. A cell starts with each at the hash this machine links, so
+  moving a package leaves no cell behind. Apply refuses a need this
+  machine lacks and refuses to remove a package a present cell needs;
+  `oath update` keeps one a release drops.
+- `description`, `home`, `source`: as for a `pkg`, and in no hash.
+
+Actual has the same fields and `verified`; `oath verify cell:<name>`
+hashes the tree again. `oath rm cell:<name>` and an apply delete the
+object and leave the tree, `oath undo` brings it back, and `oath reap`
+takes a cell's old trees the same way as a package's.
+
+`cell run cell:<name> [args...]` starts `bin/<name>`, unless
+`--entrypoint` names another program; a tree with no `bin/<name>` needs
+one, or a command as its arguments. It sees its tree, its `needs`, each
+`--with pkg:<name>`, `glibc`, `bash`, `coreutils` and `curl`, and what
+those need, read-only at their store paths. It takes the flags an image
+takes and refuses to run as root. What should last goes to a `-v`
+volume: the rest is gone when it stops.
+
+A plan makes one with `"produces": "cell:<name>"` and may build from
+`cell:<name>-src`, a tree `oath store` put there, so a project's source
+stays off every origin too; a `pkg`'s plan cannot name a `cell:`.
+`oath build` makes the object if it is missing, with `present: false`
+and the plan's `run_needs` as its `needs`, by name:
+`sudo oath set cell:<name> present=true` and `sudo oath apply` put it to use.
 
 ## Recipes
 
@@ -464,19 +715,18 @@ that tree, so a changed download is refused. The plan builds with
 packs every machine has (bash, coreutils, grep, glibc) and must make
 the very pack the build host made: `pkg:claude-code`'s `hash` is that
 pin, and apply refuses another. `claude` runs with `DISABLE_UPDATES=1`;
-a newer Claude Code is a new pin from the build host (`cargo make
-update` moves the plan and the source; a built `pkg:claude-code` is
-left at its version, with the commands to rebuild it). Its settings,
-login and history are under `/home/.claude` and `/home/.claude.json`.
+a newer Claude Code is a new pin in `pkgs/claude-code`, and `oath update`
+builds it on a machine where `pkg:claude-code` is present, as for every
+recipe the owner built (below). Its settings, login and history are under `/home/.claude` and `/home/.claude.json`.
 
 Codex (OpenAI) and Grok Build (xAI) are recipes the same way (R31),
 though their licences would allow a pack:
 
 ```
-sudo oath build plan:codex               # fetches 117 MB from github.com
+sudo oath build plan:codex               # fetches 144 MB from github.com
 sudo oath set pkg:codex present=true
 sudo oath apply pkg:codex
-codex --version                          # codex-cli 0.164.0
+codex --version                          # codex-cli 0.166.0
 
 sudo oath build plan:grok-build          # fetches 57 MB from x.ai
 sudo oath set pkg:grok-build present=true
@@ -493,19 +743,23 @@ build host checks that signature. `grok` sets `auto_update = false` in
 its updater has. `grok login` signs in; its settings are under
 `/home/.grok`. xAI publishes no checksum or signature, so the pin is
 what the build host downloaded. Grok looks for `bwrap` only under
-`/usr`, so on Oath it runs commands without its sandbox. A machine
-installed before these recipes gets their objects the way the update
-names them: `oath new pkg:<name>-src --from-json` and `oath new
-pkg:<name> --from-json` with the output's documents, and `oath set
-plan:<name> --from-file pkgs/<name>/<name>.plan`.
+`/usr`, so on Oath it runs commands without its sandbox.
+
+`oath update` makes a recipe new to the profile, absent, and files its plan.
+One it lists as `in the output's seed, not here, left to the owner (oath new)`
+takes `oath new pkg:<name>-src --from-json` and `oath new pkg:<name> --from-json`
+with the output's documents, and `oath set plan:<name> --from-file` with its plan
+from the output.
 
 Steam is another, in the `desk` profile (R29): `pkg:steam` is Valve's
 launcher, from repo.steampowered.com, checked against Valve's signed
-`.dsc`. Its needs (bubblewrap, glibc for i386, libxcrypt) are present
-on the desk. A machine whose catalog lacks the objects (an update
-reports `pkg:steam pkg:steam-src plan:steam`) gets them as `oath new
-pkg:steam-src --from-json …` with the output's document and `oath set
-plan:steam --from-file pkgs/steam/steam.plan`. Then:
+`.dsc`. Its needs (`bubblewrap`, `libxcrypt`, and the 32-bit `glibc-i386`,
+`libxcrypt-i386`, `mesa-i386` and `libglvnd-i386`) are present on the desk. A
+machine whose catalog lacks the objects gets the ones an update lists as left
+to its owner (`pkg:steam pkg:steam-src plan:steam`) as
+`oath new pkg:steam-src --from-json …` and `oath new pkg:steam --from-json …`
+with the output's documents and `oath set plan:steam --from-file` on a copy of
+`pkgs/steam/steam.plan`. Then:
 
 ```
 sudo oath build plan:steam               # fetches 20 MB from repo.steampowered.com
@@ -528,7 +782,7 @@ plan, before it changes anything, and moves it in the same apply: Steam
 when its plan or its needs move (the 32-bit Mesa), NVIDIA's driver when
 `pkg:linux` moves.
 
-NVIDIA's driver is a third, in `desk` (R34), for a machine with an
+NVIDIA's driver is another, in `desk` (R34), for a machine with an
 NVIDIA card. Its build compiles the kernel modules against
 `pkg:linux-build`, so an update that moves `pkg:linux` builds it
 again, to the new kernel:
@@ -555,8 +809,12 @@ options](using.md#kernel-module-options)).
 Rust crates in `pkg:oath`, against cve.org's CVE List V5 (a local mirror
 in `~/.local/share/oath/cvelist`, fetched each run), OSV, NVD, CISA's
 Known Exploited Vulnerabilities and EPSS, and writes
-`build/audit/latest.json`. `--offline` keeps the mirror as it is and
-skips NVD; `--name <pkg>` scans one. What it matches each package by is
+`build/audit/latest.json` and `build/audit/<day>.json`. `--offline` keeps the
+mirror as it is and skips NVD; `--name <pkg>` scans one and writes no report. A
+hit on one of OSV's `MAL-` records fails the scan. `OATH_CVELIST` names another
+mirror directory. The scan waits 6.5 s after each NVD query, or 0.7 s with
+`NVD_API_KEY`, from the environment or `~/.config/oath/nvd.env`
+(`NVD_API_KEY=…`, never committed). What it matches each package by is
 `pkgs/audit.toml`: its NVD CPE, the names CVE records use, its upstream
 repo and release tag (OSV's commit query), an OSV ecosystem name, or why
 there is nothing to match; no plan reads that file, so an edit there
@@ -578,13 +836,28 @@ a headless Claude Code run of the `oath-audit` skill, in a box
 (`check/audit/box`, R77), triages the hits, upgrades to upstream's fixed release
 (or applies upstream's patch, or a backport marked `oath-backport-CVE-…`), commits
 and checks. Outside the box the runner then lands those commits, pushes and
-publishes, mails Joshua the report and moves buccina to the release. The box holds
-no key but its own Claude token, `~/.config/oath/claude-token` (mode 600), which
+publishes, mails Joshua the report and moves buccina to the release with a reboot;
+a run that ends at 07:00 or later leaves that move to the next run that ends before
+07:00. Each run also puts the findings on the origin (`cargo make audit --publish`).
+The box holds no key but its own Claude token, `~/.config/oath/claude-token` (mode 600), which
 lasts a year. Without it the run mails that it did not run; to make one, run
 `claude setup-token` and save what it prints there.
 Every run, fix or no fix, it also runs `cargo make pkgs --stale`, which lists
 each package built against something the lock has since replaced, and rebuilds
 those (R75); a command may last 6 hours.
+
+On a machine, `oath audit [pkg:<name>]` reads the report
+`cargo make audit --publish` put on the origin (`audit/latest.json`), from the
+first origin whose copy a key in `host:local.publishers` signed, and lists what
+it found for the packages present here: a finding per line
+(`pkg:<name> <version>: <id> <severity> <status>`, with `known exploited` and
+`fixed in <version>` when the report says so) and each newer upstream release
+(`pkg:<name> <version>: upstream has <version>`). A package at another version
+than the audit read is `not assessed`,
+which is not clean; an `-i386` package is read without that check. A source that
+failed says so before the findings, and the last lines say how many packages were
+read and which are not in the report. `--json` is the report, with `origin` and
+`signer`; an id narrows it to that package. It exits 0 whatever it finds.
 
 ## Host store cache and publishing
 
@@ -593,7 +866,8 @@ The build host keeps the same layout under `~/.local/share/oath/store` (or
 
 ```
 cargo make store --name hello --from apps/hello --tar
-cargo make advisories            # OSV lookup from components.json
+cargo make advisories            # OSV lookup from components.json (OATH_OSV for another endpoint)
+cargo make advisories --name <n> # or only that package
 cargo make audit --publish       # the audit's latest.json, signed, on the origin (R61)
 cargo make publish               # upload to the default origin what it lacks
 cargo make publish --dest <dir>  # or write the same tree into a directory
@@ -602,11 +876,13 @@ cargo make publish --dest <dir>  # or write the same tree into a directory
 To the origin, `publish` goes only from a clean `master` that is
 `origin/master` (it fetches first), and only with an output built from
 a clean tree at a commit master has (R47): commit, push and `cargo make
-build` again otherwise; nothing overrides it. `--dest` is not checked.
+build` again otherwise; nothing overrides it. An OSV `MAL-` record against a
+Go, npm, PyPI or Cargo component of a locked pack stops it too, and nothing
+overrides that either. `--dest` is not checked.
 
 `publish` carries every pack `pkgs/lock.json` records, build packs
 included (`gcc`, `rust`, `python`, …), and every package a seed profile
-names, each at the hash this tree records for it: the product in
+names, except one it pins from elsewhere, each at the hash this tree records for it: the product in
 `pkgs/lock.json`, or `pkg:oath`'s last `cargo make build`. Each needs a
 licence on record: `lock.json`'s, or for `pkg:oath` the workspace
 licence AND every crate's in its `components.json`. Each pack goes out
@@ -616,16 +892,17 @@ hash>.plan`) and the source pack the plan pins
 package that is not built, has no licence, has no plan matching the
 record, needs a package that is not published, or whose plan builds
 with a pack not published at the hash it pins (the lock's, or one the
-origin already has from an earlier publish, as CEF's older Mesa): an
+origin already has from an earlier publish, as CEF's earlier build of OpenSSL): an
 origin alone rebuilds every plan on it. `INDEX.md` lists name, hash, licence, plan and source,
-and goes up last. A recipe goes out as its plan only, listed with the
+`index.json` the same rows with version, category and size for a program to read,
+and `INDEX.md` goes up last. A recipe goes out as its plan only, listed with the
 product hash it builds. Test packs and other hashes in the cache are
-never published; the last line names what was left out.
+never published; one line names the packages left out.
 
 To the default origin, `publish` lists the bucket, uploads only the
-hashed files it lacks (`pkg/` and `plan/` never change) plus `adv/` and
-`INDEX.md`, and reads `INDEX.md` back from
-`https://store.oath.moonlight.pm`. The write key is the build host's
+hashed files it lacks (`pkg/` and `plan/` never change) plus `adv/`,
+`index.json` and `INDEX.md`, and reads `INDEX.md` back from
+`https://store.oath.moonlight.pm`. The write key is on a publisher's machine
 alone: `OATH_ORIGIN_S3` (`https://<account>.r2.cloudflarestorage.com/oath-store`),
 `OATH_ORIGIN_KEY_ID` and `OATH_ORIGIN_SECRET`, from the environment or
 `~/.config/oath/origin.env` (mode 600, never committed). They are an R2
