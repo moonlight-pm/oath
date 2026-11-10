@@ -13,8 +13,9 @@
 # Oath's Python has no POSIX semaphores (its configure found no /dev/shm), so
 # the mojom parser and Blink's bindings generator run in one process; fontconfig
 # and ANGLE link libuuid and libXi, which they never call and Oath does not ship;
-# upstream-CVE-*: Chromium's own fixes from main for critical CVEs Chrome fixed
-# only in 157, until CEF 157 has them.
+# upstream-CVE-*: Chromium's own fixes for critical CVEs Chrome fixed only in 157,
+# from main, and for one exploited in the wild (libxslt), from the M156 branch past
+# this tarball, until CEF 157 has them.
 #
 # The layout is the vendor's minimal distribution's: cef/Release (libcef.so,
 # SwiftShader, the V8 snapshot) and cef/Resources, whose files are also linked
