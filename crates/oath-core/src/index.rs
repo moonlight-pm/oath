@@ -167,25 +167,41 @@ fn probation_block(cat: &Catalog) -> String {
     )
 }
 
-/// Packages and cells whose store tree no longer hashes to its pin.
+/// Packages and cells whose store tree no longer hashes to its pin, or is
+/// gone from the store, each with its repair.
 fn damage_block(cat: &Catalog) -> String {
     let mut bad = Vec::new();
-    let cells = cat.ls(Some("cell")).unwrap_or_default();
-    for id in cat.ls(Some("pkg")).unwrap_or_default().into_iter().chain(cells) {
+    let cells = cat.ls(Some(crate::KIND_CELL)).unwrap_or_default();
+    for id in cat.ls(Some(crate::KIND_PKG)).unwrap_or_default().into_iter().chain(cells) {
         let Ok(obj) = cat.get(&id) else { continue };
-        if obj.actual.pointer("/verified/ok") == Some(&serde_json::json!(false)) {
-            let got = obj.actual.pointer("/verified/got").and_then(|g| g.as_str()).unwrap_or("");
-            bad.push(format!("- `{id}` hashes to `{got}`, not its pin\n"));
+        if obj.actual.pointer("/verified/ok") != Some(&serde_json::json!(false)) {
+            continue;
         }
+        let got = obj.actual.pointer("/verified/got").and_then(|g| g.as_str()).unwrap_or("");
+        // `oath verify` records a tree gone from the store as `missing`.
+        let what = if got == "missing" {
+            "is gone from the store".to_string()
+        } else {
+            format!("hashes to `{got}`, not its pin")
+        };
+        let fix = if id.kind == crate::KIND_CELL {
+            format!("sudo oath store {id} <dir|file.tar>")
+        } else {
+            format!("sudo oath apply {id}")
+        };
+        bad.push(format!("- `{id}` {what}: `{fix}`\n"));
     }
     if bad.is_empty() {
         return String::new();
     }
     format!(
         "\n## Store damage\n\n\
-         These package and cell trees changed on disk since they were stored. Do not trust \
-         what they run. Fetch them again (`url`) or reinstall; `oath verify` checks \
-         again.\n\n{}",
+         These trees changed on disk, or are gone from the store, since they were stored. \
+         Do not trust what a changed one runs. Apply fetches a package's tree again from its \
+         `url` or `host:local.origins` and puts the new copy in place only once it hashes to \
+         its pin; if nothing serves one that does, apply fails and says what each answered. \
+         A cell comes from no origin: `oath store` of the project's tree puts it back. \
+         `oath verify` checks again.\n\n{}",
         bad.concat()
     )
 }
@@ -202,5 +218,48 @@ fn kind_line(kind: &str) -> &'static str {
         "plan" => "a build plan (hash-pinned file; oath build)",
         "cell" => "one project's software, run only in a cell (never linked or published)",
         _ => "see schema",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{status_path, write_json, ObjectId};
+    use serde_json::json;
+
+    #[test]
+    fn store_damage_names_each_tree_and_its_repair() {
+        let d = tempfile::tempdir().unwrap();
+        crate::seed(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        assert!(!generate(&cat).unwrap().contains("## Store damage"));
+        let cell: ObjectId = "cell:hamlet".parse().unwrap();
+        let spec = json!({ "present": false });
+        cat.new_object(&cell, spec.as_object().unwrap().clone()).unwrap();
+        let got = format!("sha256-{}", "b".repeat(64));
+        let found = [("pkg:less", "missing"), ("pkg:bash", got.as_str()), ("cell:hamlet", &got)];
+        for (id, got) in found {
+            let id: ObjectId = id.parse().unwrap();
+            let p = status_path(d.path(), &id);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            let actual = json!({ "verified": { "ok": false, "at": "", "got": got } });
+            write_json(&p, &actual).unwrap();
+        }
+        let idx = generate(&cat).unwrap();
+        let block = idx.split("## Store damage").nth(1).unwrap_or("");
+        for line in [
+            "- `pkg:less` is gone from the store: `sudo oath apply pkg:less`".to_string(),
+            format!("- `pkg:bash` hashes to `{got}`, not its pin: `sudo oath apply pkg:bash`"),
+            format!(
+                "- `cell:hamlet` hashes to `{got}`, not its pin: \
+                 `sudo oath store cell:hamlet <dir|file.tar>`"
+            ),
+        ] {
+            assert!(block.contains(&line), "{line}\n{block}");
+        }
+        assert!(!block.contains("reinstall"), "{block}");
+        // check/cases.toml's store-damage-is-caught reads the first with `grep -A4`.
+        let after: Vec<&str> = idx.lines().skip_while(|l| *l != "## Store damage").collect();
+        assert!(after[4].starts_with("- `pkg:"), "{after:?}");
     }
 }
