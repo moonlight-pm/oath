@@ -13,5 +13,5 @@ undid to generation 0
 $ oath diff
 in-sync
 $ oath log -n 2
-{"actor":{"tty":"/dev/pts/0","uid":0},"error":null,"generation":1,"ids":["svc:time"],"parent_generation":0,"result":"ok","time":"2026-11-09T22:46:05Z"}
-{"actor":{"tty":"/dev/pts/0","uid":0},"error":null,"generation":0,"ids":["undo:1"],"parent_generation":1,"result":"ok","time":"2026-11-09T22:46:06Z"}
+{"actor":{"tty":"/dev/pts/0","uid":0},"error":null,"generation":1,"ids":["svc:time"],"parent_generation":0,"result":"ok","time":"2026-11-10T01:11:55Z"}
+{"actor":{"tty":"/dev/pts/0","uid":0},"error":null,"generation":0,"ids":["undo:1"],"parent_generation":1,"result":"ok","time":"2026-11-10T01:11:55Z"}
