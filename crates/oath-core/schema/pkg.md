@@ -43,15 +43,16 @@ empty `hash` says below.
   match; it does not choose. Empty hash is discovery: the unique
   on-disk tree, or a fetch, reports `actual.hash`. Two hashes of one
   name can sit on disk; only the pin is linked.
-- `url` — optional. If set and the store is missing, apply fetches it
-  then links. `oath build` fetches a missing `build_needs` pack the
-  same way before the sandbox starts (it does not set `present`). A
-  `.tar` (or `.tar.gz`) is a pack tree; the hash is of the tree, not
-  the tar. An origin prefix plus `hash` fetches
+- `url` — optional. If set and the store lacks the tree, or has it
+  damaged, apply fetches it then links. `oath build` fetches a missing
+  `build_needs` pack the same way before the sandbox starts (it does
+  not set `present`). A `.tar` (or `.tar.gz`) is a pack tree; the hash
+  is of the tree, not the tar. An origin prefix plus `hash` fetches
   `{url}/pkg/{name}/{hash}.tar`. A single file becomes `bin/<name>`.
-  Local store wins if the realization is already there. Empty with a
-  `hash`: the machine's `host:local.origins`, in order. A pack does
-  not know where it is hosted; `url` is this machine's choice.
+  Local store wins if the realization is already there and hashes to
+  its name. Empty with a `hash`: the machine's `host:local.origins`, in
+  order. A pack does not know where it is hosted; `url` is this
+  machine's choice.
 - `file` — optional, with `url`: the URL is one file, a vendor's
   release, and the tree is that file alone at this relative path, not
   executable (`src/claude`). A recipe's source package (below).
@@ -98,8 +99,8 @@ Actual also has `links` (basenames in `/bin`), `removable`, live
 `hash`, `components`, optional `advisories`, `realizations` (the trees
 for this name; `oath reap` says what holds each, and removes one nothing
 holds), `verified` (`ok`, `at`; `got` when the tree no longer hashes to
-`hash`), and the applied `url`, `needs`, `description`, `home`, `category`
-and `source`.
+`hash`, `missing` when it is gone from the store), and the applied
+`url`, `needs`, `description`, `home`, `category` and `source`.
 
 An **overlay** is a present package whose live hash is not the head
 this machine took of it (`/oath/heads.json`, R72) or, with none taken,
@@ -122,10 +123,16 @@ object and no link: `oath set pkg:<name> hash=… needs=[…]` (or `oath
 new`) and `oath apply` do that. A service whose program (`exec[0]`
 through `/bin`) is in this package restarts when apply moves the pin.
 
-Integrity: apply hashes the tree again before linking and refuses a
-changed one. `oath verify` re-hashes every linked tree (PID 1 runs it
-after each boot); a damaged package has status `error` and INDEX lists
-it. Fetch it again (`url`) or reinstall.
+Integrity: apply hashes the tree before it links it. `oath verify`
+hashes every linked tree again (PID 1 runs it after each boot); one
+that changed on disk or is gone from the store is damaged: the package
+has status `error` and INDEX lists it. `sudo oath apply pkg:<name>`
+repairs it: apply fetches the tree again from `url`, or with none from
+`host:local.origins`, and puts the new copy in place of the damaged one
+only once it hashes to the pin. If nothing serves a tree that does,
+apply fails, says what each answered, and leaves the damaged tree as it
+is. `sudo oath store pkg:<name> <dir|file.tar>` of a tree that hashes
+to the pin puts it back too.
 
 Safety: `mutate`. Apply snapshots, then converges links. Moving the
 `hash` of the package `svc:sshd`'s `exec[0]` resolves into

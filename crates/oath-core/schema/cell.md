@@ -21,8 +21,9 @@ start itself: a `svc`, or whatever runs the project, runs `cell run`.
 - `present` — `true` makes `hash` the tree `cell run` starts. `false` means
   `cell run` refuses it. The store tree stays.
 - `hash` — the pin, required while present: `sha256-` plus 64 lowercase hex
-  of the tree. Apply hashes the tree against it. The tree must be in the
-  store already, by `oath store cell:<name>` or `oath build`.
+  of the tree. Apply hashes the tree against it, and refuses one that is
+  not in the store or does not hash to it. The tree must be in the store
+  already, by `oath store cell:<name>` or `oath build`.
 - `needs` — the packages it runs with, each `pkg:<name>`, named and not
   pinned: a cell starts with each at the hash this machine links, so moving
   a package leaves no cell behind. Apply refuses a need this machine lacks,
@@ -32,6 +33,13 @@ start itself: a `svc`, or whatever runs the project, runs `cell run`.
 A plan makes one with `"produces": "cell:<name>"`, and may build from
 `cell:<name>-src`, so a project's source stays off every origin too. A
 `pkg`'s plan cannot name a `cell:`.
+
+Integrity: `oath verify` hashes each present cell's tree again (PID 1
+runs it after each boot). One that changed on disk or is gone from the
+store is damaged: the cell has status `error` and INDEX lists it.
+Nothing fetches a cell again. `sudo oath store cell:<name>
+<dir|file.tar>` of the project's tree, one that hashes to the pin, puts
+it in place of the damaged one; `oath verify` checks again.
 
 ## Example
 
