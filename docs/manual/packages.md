@@ -9,7 +9,8 @@ unpack target, and so is `/lib`: glibc's loader
 `/oath/store/pkg/curl/live/lib`, `rustc`'s is `$ORIGIN/../lib`). Name is a slot;
 hash is the bits (`sha256-` plus 64 hex of `oath-tree-v1`). There is no `apt`.
 `oath install` takes no package: it puts the system on a disk
-([Install](install.md)). A package comes through `oath new` or `oath set`, then
+([Install](install.md)). A package comes by name with `oath add`
+([Install / remove](#install--remove)), through `oath new` or `oath set` then
 `oath apply`, or with `oath update`.
 
 The slot also has `live` → `<hash>` and compatibility links (`bin` →
@@ -81,12 +82,43 @@ data they load; `oath ls --kind pkg` lists every one on a machine.
 Every pack but Sola's is made on the build host from pinned sources: the Oath
 binaries (`pkg:oath`) from this tree, the rest from `pkgs/`, compiled or, as
 with `pkg:rust`, taken from the vendor's own release ([Build](build.md)). The
-`base` profile has no C compiler. The `desk` profile has `pkg:gcc`; a `base`
-machine takes it from the origins (below), with `pkg:mpc`, which it loads.
+`base` profile has no C compiler. The `desk` profile has `pkg:gcc`; on a `base`
+machine `sudo oath add gcc` takes it, with `pkg:mpc`, which it loads
+([Install / remove](#install--remove)).
 
 PID 1 stays at `/lib/oath/init`; it is not a package.
 
 ## Install / remove
+
+```
+oath ls --origin                  # what the origins hold; * on what this machine has
+oath ls --origin sql              # a word in a name, category or description
+sudo oath add aws                 # at its head, with what it needs that the machine lacks
+```
+
+`oath ls --origin [word]` lists the origins' `index.json` ([Origins](#origins)): each
+package's name, version, category and what it is, `*` on one this machine has, and a
+recipe as ``(a recipe: `oath build` makes it here)``. `oath --json ls --origin` gives
+each row's `name`, `version`, `category`, `description`, `license`, `hash` (a recipe's
+is the pack it builds), `recipe` and `installed`, the pin here or `null`. The list is
+not signed, and nothing installs from it.
+
+`sudo oath add <name>...` takes each package at the newest head a key in
+`host:local.publishers` may sign for that name ([Publishing a package on its
+own](#publishing-a-package-on-its-own-r72)), with each package it needs that the
+machine lacks, each at its own head, and applies them in one generation. It prints
+each with its version and signer, then `added in generation <n>`; `oath undo` takes
+them back. Nothing the machine has moves. A package already here is named and left to
+`oath update`, and one here with `present=false` is refused. A need the machine holds
+at another pin is re-pointed when the new package loses no library it loads
+(`runs with this machine's pkg:<name> sha256-… -> sha256-…`); otherwise nothing is
+made, and `sudo oath update --confirm` comes first. A name no origin has a head of is refused
+(`pkg:<name> has no head on any origin`): a recipe has none ([Recipes](#recipes)), and
+neither do `linux`, `oath` and `firmware`, which move with a release.
+`sudo oath new pkg:<name>` with no fields makes the same objects without applying them
+and prints the `oath apply` that starts them. For a name no origin has a head of, with one
+tree of it in the store (`oath store`), it makes the object with no `hash`, and apply
+links that tree.
 
 ```
 oath ls --kind pkg
@@ -249,9 +281,11 @@ build, `oath store`, `oath set … hash=`, `oath apply`.
 ## Publishing a package on its own (R72)
 
 Whoever makes a package can publish it from the machine it was built
-on, and every machine that trusts that key for the name takes it at its
-next `oath update`: no profile, release or build host in between. After
-the four steps above:
+on. Every machine that trusts that key for the name takes it at its next
+`oath update`, and `sudo oath add hello` takes it on one that lacks it: no
+profile, release or build host in between. Only `cargo make publish` writes
+`index.json`, so `oath ls --origin` does not list a package published only
+this way. After the four steps above:
 
 ```
 oath publish pkg:hello                      # what it would publish, and the head it replaces
@@ -288,8 +322,10 @@ Each line is an `ssh-ed25519` public key; a person adds one, an agent does not.
 those heads need) from each origin and moves each package to the newest
 head a key may sign for it; `oath update` alone says what would move.
 It records each head it took in `/oath/heads.json` and refuses an older
-one after. A head wins over a release's pin of the same package, and a
-package with a head stays when a release drops it. With
+one after. A head wins over a release's pin of the same package, so
+`oath update --output <older>` leaves each package with a head at its head
+(`oath undo` puts back what an update moved), and a package with a head
+stays when a release drops it. With
 `host:local.profile` empty a machine takes heads only.
 
 A need is a pin. When the moves leave one at another pin (a new
@@ -320,36 +356,38 @@ A pack is its hash; it does not know where it is hosted. The machine
 says where it looks: `host:local.origins`, a list of `http://` or
 `https://` prefixes tried in order as `{origin}/pkg/<name>/<hash>.tar`
 until one serves the pinned tree. Apply uses them for a pinned pkg with
-no `url`; `oath build` uses them for a build pack the store lacks. The
-`base` profile lists the default origin, the R2 bucket at
+no `url`; `oath build` uses them for a build pack the store lacks; `oath add`
+and `oath update` read each package's head from every one. The `base`
+profile lists the default origin, the R2 bucket at
 `https://store.oath.moonlight.pm`, which carries every locked pack
 (build packs too) with its plan and source, but of a recipe only the plan (see
-Recipes); its `INDEX.md` lists names and hashes.
+Recipes). `INDEX.md` lists names and hashes, and `index.json` is the same list
+for `oath ls --origin`. Each package it lists but `linux`, `oath`, `firmware` and
+a recipe has a signed head there, `pkg/<name>.json`.
 
 ```
 oath get host:local                                   # origins
-curl -fsS https://store.oath.moonlight.pm/INDEX.md    # what it serves
+oath ls --origin m4                                   # what they serve
+sudo oath add m4
+```
+
+By hand, a pin with no `url` comes from the origins when it is applied, and the log
+says which one served it:
+
+```
 sudo oath new pkg:m4 --from-json '{"present":true,"hash":"sha256-…"}'
 sudo oath apply pkg:m4
 sudo grep '"fetched"' /oath/log/oath.jsonl | tail -1  # where it came from
 ```
 
-Some packs are on the origin and in no profile, and a machine adds them
-this way: Node.js (`pkg:node`, which needs `pkg:gcc`), the GitHub CLI
-(`pkg:gh`, which needs `pkg:certs` for its CA roots) and Cloudflare's
-CLI (`pkg:cf`, which needs `pkg:node`). Each need is pinned at the hash
-the pack's plan names (`run_needs` in `{origin}/plan/<name>/<plan>.plan`),
-which must be the one the machine runs. A need the machine lacks is made
-first, the same way: `desk` has `pkg:gcc`, and a `base` machine makes
-`pkg:mpc` and `pkg:gcc` before `pkg:node`:
+Some packs are on the origin and in no profile: Node.js (`pkg:node`, which
+needs `pkg:gcc`), the GitHub CLI (`pkg:gh`, which needs `pkg:certs` for its CA
+roots) and Cloudflare's CLI (`pkg:cf`, which needs `pkg:node`). `oath add` takes
+each with the needs the machine lacks: `desk` has `pkg:gcc`, and on a `base` machine
+it makes `pkg:gcc` and `pkg:mpc` too:
 
 ```
-sudo oath new pkg:node --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:gcc","hash":"sha256-…"}]}'
-sudo oath apply pkg:node
-sudo oath new pkg:gh --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:certs","hash":"sha256-…"}]}'
-sudo oath apply pkg:gh
-sudo oath new pkg:cf --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:node","hash":"sha256-…"}]}'
-sudo oath apply pkg:cf
+sudo oath add node gh cf
 node --version                           # v26.13.0
 gh --version                             # gh version 2.103.3 (0000-00-00)
 cf --version                             # 1.0.0-beta.26
@@ -379,8 +417,8 @@ then reports as damaged.
 (needs `pkg:zlib`). `pkg:llama-cpp` is `llama-server`, local models over Chat
 Completions on the CPU or, through Vulkan, a GPU: it needs AVX2, `pkg:gcc` and
 `pkg:vulkan-loader`, and reads a model from a file (`-m`). `pkg:writ` is a coding
-agent whose tools run in a box ([writ](#writ-a-coding-agent-in-a-box-r64)), and
-`writ serve --model FILE` runs `llama-server` in a box.
+agent whose tools run in a box, and `writ serve --model FILE` runs `llama-server`
+in a box of its own ([writ](writ.md#local-models)).
 
 Put a LAN mirror first to prefer it (any directory `cargo make publish
 --dest` wrote, served over HTTP):
@@ -397,20 +435,21 @@ answered.
 ### Servers: Blocky, restic, route, cell, PostgreSQL, MySQL (R49)
 
 These are built from source here and are in no profile:
-`pkg:blocky`, `pkg:cloudflared`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell` (with `pkg:crun`,
-`pkg:passt`), `pkg:mysql`, `pkg:postgresql` and `pkg:postgis`
-(with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
-takes them from the origin as above, with each need the plan names.
+`pkg:blocky`, `pkg:cloudflared`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell`,
+`pkg:mysql`, `pkg:postgresql` and `pkg:postgis`
+(with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`).
+`sudo oath add <name>` takes each with what it needs, except PostGIS (below).
 `pkg:go` is what builds the Go ones; a machine needs
 it only to build. `cloudflared` does not update itself: `cloudflared update` says so,
 and a newer one is a new pin in `pkgs/cloudflared`.
 
 `pkg:mysql` is MySQL 9.7, its server and clients in one package (R82). Nothing runs until a
-`svc` starts `mysqld` with a `--datadir`. `LOAD DATA` and `INTO OUTFILE` are off until
+`svc` starts `mysqld` with a `--datadir`. As root, `mysqld` stops unless `--user` names an
+account, so its `svc` names a `user`. `LOAD DATA` and `INTO OUTFILE` are off until
 `secure_file_priv` names a directory. Not built: Group Replication, NDB, Router, and LDAP,
 Kerberos, FIDO, OCI and OpenID logins. A 9.x server has no `mysql_native_password`, so an
-account from 8.x moves to `caching_sha2_password`; the client keeps that plugin, to log in
-to older servers.
+account from 8.x moves to `caching_sha2_password`; the client keeps `mysql_native_password`,
+to log in to older servers.
 
 Go programs read their CA roots from `pkg:certs` (R50), through Go's own
 `crypto/x509`, unless `SSL_CERT_FILE` names others:
@@ -429,71 +468,30 @@ extension_control_path = '$system:/oath/store/pkg/postgis/live/share'
 
 `pkg:postgresql` and `pkg:postgis` both carry `lib/postgresql/`, which `/lib`
 links for one package only, so the second to apply is refused:
-`/lib/postgresql exists and is not pkg:postgis`. Apply `pkg:postgresql` first: a
-bare `oath apply` takes PostGIS first and leaves PostgreSQL out of `/bin`. The
-refused apply still leaves PostGIS's `live` link in the store, which is all this
-line needs, so `CREATE EXTENSION postgis` works. `pkg:postgis` stays `status=new`,
-and every `oath apply` with no id stops at it.
+`/lib/postgresql exists and is not pkg:postgis`. `sudo oath add postgis` fails either
+way: with PostgreSQL here it leaves PostGIS out, and without it applies PostGIS first,
+is refused (`/lib/postgresql exists and is not pkg:postgresql`) and leaves PostGIS
+without PostgreSQL or PROJ, which `sudo oath undo` takes back. Add PostgreSQL and
+PostGIS's other needs first, then make PostGIS's object and apply it:
+
+```
+sudo oath add postgresql geos json-c proj
+sudo oath new pkg:postgis
+sudo oath apply pkg:postgis       # refused: /lib/postgresql exists and is not pkg:postgis
+```
+
+The refused apply still leaves PostGIS's `live` link in the store, which is all
+the `extension_control_path` line needs, so `CREATE EXTENSION postgis` works.
+`pkg:postgis` stays `status=new`, and every `oath apply` with no id stops at it.
 
 The server refuses to run as root, so its `svc` names a `user`. A new major
 version changes the data directory's format, so moving across one is
 `pg_upgrade`, not a new pin alone.
 
-`pkg:cell`, in `apps/cell`, runs a container image (R59), a package this machine has
-or a `cell:` object, with nothing but Go's standard library over `crun` and `pasta`.
-There is no daemon: `cell run` stays in the foreground,
-so a `svc` supervises it like any program, and its output is the service's log. Without
-`-t` that output goes through pipes `cell` makes, so a program can open `/dev/stderr`.
-
-```sh
-sudo -u work cell run --name web -p 8080:8080 -v /work/web:/data --env-file /work/web.env nginxinc/nginx-unprivileged:alpine
-sudo oath new svc:web --from-json '{"exec":["/bin/cell","run","--name","web","-p","8080:8080","nginxinc/nginx-unprivileged:alpine"],"wants":[],"restart":"always","enabled":true,"user":"work"}'
-sudo oath apply svc:web
-```
-
-| Command | Does |
-|---------|------|
-| `cell pull <image>` | fetch an image, or move its tag; prints the digest for linux/amd64 |
-| `cell run [flags] <image> [args...]` | pull it if it is not on disk, and run it |
-| `cell run [flags] pkg:<name> [args...]`, `cell run [flags] cell:<name> [args...]` | run a package this machine has or a `cell:` object, with no image and nothing copied. The program is its `bin/<name>`; one with no such file names a program first in `[args...]` or with `--entrypoint` |
-| `cell exec [-t] [-w dir] <name> <cmd...>` | run a command in a running cell, under the same limits |
-| `cell stop <name>` | stop it: the image's `STOPSIGNAL`, then SIGKILL after `--stop-after` (10 s) |
-| `cell ls`, `cell images` | every cell, running or left stopped by a kill, with what it runs and when it started; the images on disk, by name and digest |
-| `cell rmi <image>`, `cell prune` | forget a name; delete images no name holds, and what a killed cell left |
-| `cell login <registry> <user>` | keep a password, read from stdin, in `auth.json` |
-
-`run` takes `-p [addr:]host:port[/udp]`, `--reach port[:hostport]`, `-v /host:/path[:ro]`,
-`--tmpfs /path`, `-e NAME=value`, `--env-file file`, `-w dir`, `--entrypoint cmd`,
-`--user uid[:gid]` or a name in the image, `--read-only`, `--no-net`, `-t`, `--name`,
-`--stop-after duration` (10 s), and for a `pkg:` or `cell:` run `--with pkg:<name>`.
-
-A `pkg:` or `cell:` run has that pack, `glibc`, `bash`, `coreutils`, `curl`, any package
-`--with` adds, and everything those need, each bound read-only at the hash this machine
-links. It does not have the machine's catalog, homes, `/etc` or other packages.
-
-Each run starts from a fresh copy of the image, a reflink on btrfs, and leaves nothing
-behind: what is kept goes on a volume. Images live under `~/.local/share/cell`. A name
-with `@sha256:...` holds one image for good; a tag only moves on `cell pull`. A manifest
-named by digest, and every blob and layer, is checked against its digest, and a layer's
-own `urls` are never fetched.
-
-A cell holds one uid (R53): the account that ran it, not root, which `cell` refuses.
-It owns every file, and is root inside, or the number the image's `USER` or `--user`
-names, so software that refuses to run as root is given `--user`. It cannot change to
-another uid, so an image whose start script drops privileges (`su-exec`, `gosu`, stock
-nginx's `user nginx;`) fails unless told to stay where it is. Setuid bits, devices and
-xattrs in an image do not land.
-
-A published port is on 127.0.0.1 unless it names an address. Nothing else comes in.
-Going out, a cell reaches what its account reaches, the network and other machines
-included, except this machine's loopback: `--reach 5432` opens one of its ports at the
-cell's own `127.0.0.1:5432`, which is also how one cell talks to another. `--no-net`
-leaves it only `-p` and `--reach`. New namespaces, `mount`, `bpf`, `ptrace` and
-`io_uring`, among others, are refused by seccomp.
-
-There is no way to build an image here, no bridge between cells, and no memory or CPU
-limit: those need `CONFIG_MEMCG` and `CONFIG_CFS_BANDWIDTH`, which Oath's kernel leaves
-off. PID 1 loads `tun` and opens `/dev/net/tun` to every account at boot.
+`pkg:cell`, in `apps/cell`, runs a program in a box of its own, with one uid and no daemon: an
+image from a registry, a package this machine has, or a `cell:` object. It is in no profile;
+`sudo oath add cell` takes it with the four packages it needs that `base` and `desk` lack
+(`crun`, `json-c`, `libseccomp`, `passt`). [Cells](cells.md) is its chapter.
 
 `pkg:route` is Oath's own HTTP router (R59), in `apps/route`, with nothing but Go's
 standard library: by host and path, to a local service, a redirect or a fixed answer.
@@ -542,10 +540,9 @@ aws ssm start-session --target i-0123…    # runs session-manager-plugin
 ### Minecraft: Prism Launcher (R74)
 
 `pkg:prismlauncher` is Prism Launcher, with `pkg:jre-21` (Java 21) and Qt 6, in
-no profile. A `desk` machine adds it from the origin as above, with each need the plans
-name that it lacks (`cmark`, `jre-21`, `libarchive`, `libqrencode`, `libxcursor`,
-`libxi`, `libxtst`, `qtbase`, `qtimageformats`, `qtnetworkauth`, `qtsvg`), and applies
-them together. Each has a head on the origin, so `oath update` moves it to its head.
+no profile. On a `desk` machine, `sudo oath add prismlauncher` takes it with each need it
+lacks (`cmark`, `jre-21`, `libarchive`, `libqrencode`, `libxcursor`, `libxi`, `libxtst`,
+`qtbase`, `qtimageformats`, `qtnetworkauth`, `qtsvg`), and `oath update` moves each to its head.
 `prismlauncher` starts it in a box: it sees its own folder
 (`~/.local/share/PrismLauncher`), the display, sound, the GPU, pads and the
 network; not the rest of `/home`, and `sudo` does not work in it, so a mod
@@ -557,32 +554,11 @@ is added. To bring a Modrinth App profile over, see
 
 ### writ: a coding agent in a box (R64)
 
-`pkg:writ` is Oath's own coding agent, on the origin and in no profile. It needs `pkg:bubblewrap` (a desk has it) and `pkg:curl`, each at the hash the plan names:
-
-```
-sudo oath new pkg:writ --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:bubblewrap","hash":"sha256-…"},{"id":"pkg:curl","hash":"sha256-…"}]}'
-sudo oath apply pkg:writ
-```
-
-It runs as `home`, and everything a model drives runs in a box: the system read-only, the project as an overlay, of `home`'s other files only its Cargo and Go module caches (writes there vanish with the box), no network and no way to `sudo`. A project is a directory under `/home`, `/tmp` or `/work`. A write is held under `~/.local/share/writ/sessions/<name>/`, and the real tree changes only at `writ apply`. Committing is yours.
-
-| Command | Does |
-|---------|------|
-| `writ` | A session on this terminal, in the terminal's own scrollback: talk to the model, review, apply. `/help` lists its commands; Ctrl-T shows or hides the model's thinking |
-| `writ do [--session NAME] PROMPT` | The model works on the project, in a box, until it stops |
-| `writ ask PROMPT` | Ask one thing; the model can run nothing |
-| `writ diff SESSION [--names]` | What a session would change in the tree |
-| `writ apply SESSION [PATH...] [--all]` | Take its changes. A file that runs later (a build script, a hook, an agent's instructions) waits for its name or `--all` |
-| `writ undo SESSION` | Take back what `apply` did |
-| `writ sessions` | Every session, and what each holds |
-| `writ run [--session NAME] -- CMD` | One command in a box over the project; its writes are dropped unless `--session` keeps them. `writ sessions`, `writ diff` and `writ apply` see a session once the model has worked in it |
-| `writ check [--json] [-v]` | Attack the box on this machine and report what got through |
-
-`writ --help` lists every option.
-
-A local model is a `.gguf` file in `~/.local/share/writ/models`, served by `llama-server` from `pkg:llama-cpp`, which needs AVX2, `pkg:gcc` and `pkg:vulkan-loader`. `writ use local` switches to it and loads it (`--model`, `--context`, `--threads`, `--gpu`, `--cpu`, `--gpu-share P`). `writ do` and `writ ask` load it if it is not loaded, and it stays loaded until `writ llama stop`; `writ llama start` and `status` do the rest by hand. The server runs as `work`, in a box of its own: the model read-only, no network, no home, on a socket only `home` reaches. The context defaults to 32,768 tokens with a GPU and 16,384 without. `--gpu` gives that box NVIDIA's `nvidiactl` and `nvidia<N>` and no other GPU node, and a process in it can still call the closed driver. `--gpu-share P` holds the server to P percent of the GPU's time (default 40) by stopping it for the rest.
-
-`writ key` takes an OpenRouter key, unseen, into `~/.config/writ/openrouter.key` (mode 600), and `writ use openrouter AUTHOR/NAME` switches to a model as openrouter.ai/models names it. No model is compiled in. A session stops at $1 unless `--budget` says otherwise, and at a turn that does not report its cost; the key's own limit is what stops everything. What the model reads leaves the machine: each request asks for routes that keep nothing, which cannot be checked from here, and a model with no such route is refused. The curl that carries a request runs in its own box, with TCP only to ports 443 and 53.
+`pkg:writ` is Oath's own coding agent, in `apps/writ`, on the origin and in no
+profile. It needs `pkg:bubblewrap` and `pkg:curl`, which `desk` has;
+`sudo oath add writ` installs it, and on a `base` machine `pkg:bubblewrap` with it.
+It has a head on the origin, so `oath update` moves it to its head. [writ](writ.md)
+is its chapter.
 
 ## Plans
 
@@ -642,53 +618,11 @@ examples.
 
 ## Cells
 
-A **cell** (`cell:<name>`) is one project's own software, made to run
-in a cell and nowhere else: a tree under
-`/oath/store/cell/<name>/<hash>/`. It is not linked into `/bin` or
-`/lib`, no origin serves it, and `oath publish` refuses it, so it reaches
-a machine by `oath store cell:<name> <dir|file.tar>` or `oath build`. A
-`cell:` and a `pkg:` may share a name and do not touch each other.
-`pkg:cell` runs it. A cell does not start itself: a `svc`, or whatever
-runs the project, runs `cell run`.
-
-```sh
-sudo oath store cell:hamlet ./out      # cell:hamlet sha256-…
-sudo oath new cell:hamlet hash=sha256-… 'needs=["pkg:curl"]'
-sudo oath apply cell:hamlet
-sudo -u work cell run --name hamlet -p 8080:8080 -v /work/hamlet:/data cell:hamlet
-```
-
-- `present` (default `true`): `cell run` starts the `hash` tree. `false`
-  makes `cell run` refuse it; the tree stays.
-- `hash`: the pin, `sha256-` plus 64 hex, required while `present`.
-  Apply hashes the tree against it, refuses one missing or changed, and
-  fetches nothing.
-- `needs`: the packages it runs with, each `pkg:<name>`, named and not
-  pinned. A cell starts with each at the hash this machine links, so
-  moving a package leaves no cell behind. Apply refuses a need this
-  machine lacks and refuses to remove a package a present cell needs;
-  `oath update` keeps one a release drops.
-- `description`, `home`, `source`: as for a `pkg`, and in no hash.
-
-Actual has the same fields and `verified`; `oath verify cell:<name>`
-hashes the tree again. `oath rm cell:<name>` and an apply delete the
-object and leave the tree, `oath undo` brings it back, and `oath reap`
-takes a cell's old trees the same way as a package's.
-
-`cell run cell:<name> [args...]` starts `bin/<name>`, unless
-`--entrypoint` names another program; a tree with no `bin/<name>` needs
-one, or a command as its arguments. It sees its tree, its `needs`, each
-`--with pkg:<name>`, `glibc`, `bash`, `coreutils` and `curl`, and what
-those need, read-only at their store paths. It takes the flags an image
-takes and refuses to run as root. What should last goes to a `-v`
-volume: the rest is gone when it stops.
-
-A plan makes one with `"produces": "cell:<name>"` and may build from
-`cell:<name>-src`, a tree `oath store` put there, so a project's source
-stays off every origin too; a `pkg`'s plan cannot name a `cell:`.
-`oath build` makes the object if it is missing, with `present: false`
-and the plan's `run_needs` as its `needs`, by name:
-`sudo oath set cell:<name> present=true` and `sudo oath apply` put it to use.
+A **cell** (`cell:<name>`) is one project's own software: a tree under
+`/oath/store/cell/<name>/<hash>/`, never linked into `/bin` or `/lib`, from no
+origin and never published, which only `cell run` from `pkg:cell` starts.
+[Cells](cells.md) is its chapter: the fields, `oath store`, a plan that makes
+one, and what `oath reap` keeps.
 
 ## Recipes
 
@@ -745,6 +679,8 @@ its updater has. `grok login` signs in; its settings are under
 what the build host downloaded. Grok looks for `bwrap` only under
 `/usr`, so on Oath it runs commands without its sandbox.
 
+A recipe has no head: `oath add` and `oath new pkg:<name>` with no fields refuse it,
+and `oath ls --origin` ends its line with ``(a recipe: `oath build` makes it here)``.
 `oath update` makes a recipe new to the profile, absent, and files its plan.
 One it lists as `in the output's seed, not here, left to the owner (oath new)`
 takes `oath new pkg:<name>-src --from-json` and `oath new pkg:<name> --from-json`
@@ -755,11 +691,8 @@ Steam is another, in the `desk` profile (R29): `pkg:steam` is Valve's
 launcher, from repo.steampowered.com, checked against Valve's signed
 `.dsc`. Its needs (`bubblewrap`, `libxcrypt`, and the 32-bit `glibc-i386`,
 `libxcrypt-i386`, `mesa-i386` and `libglvnd-i386`) are present on the desk. A
-machine whose catalog lacks the objects gets the ones an update lists as left
-to its owner (`pkg:steam pkg:steam-src plan:steam`) as
-`oath new pkg:steam-src --from-json …` and `oath new pkg:steam --from-json …`
-with the output's documents and `oath set plan:steam --from-file` on a copy of
-`pkgs/steam/steam.plan`. Then:
+machine whose catalog lacks the objects makes the ones an update lists as left
+to its owner (`pkg:steam pkg:steam-src plan:steam`) as above. Then:
 
 ```
 sudo oath build plan:steam               # fetches 20 MB from repo.steampowered.com
@@ -836,7 +769,7 @@ a headless Claude Code run of the `oath-audit` skill, in a box
 (`check/audit/box`, R77), triages the hits, upgrades to upstream's fixed release
 (or applies upstream's patch, or a backport marked `oath-backport-CVE-…`), commits
 and checks. Outside the box the runner then lands those commits, pushes and
-publishes, mails Joshua the report and moves buccina to the release with a reboot;
+publishes, mails the report and moves buccina to the release with a reboot;
 a run that ends at 07:00 or later leaves that move to the next run that ends before
 07:00. Each run also puts the findings on the origin (`cargo make audit --publish`).
 The box holds no key but its own Claude token, `~/.config/oath/claude-token` (mode 600), which
@@ -893,15 +826,27 @@ package that is not built, has no licence, has no plan matching the
 record, needs a package that is not published, or whose plan builds
 with a pack not published at the hash it pins (the lock's, or one the
 origin already has from an earlier publish, as CEF's earlier build of OpenSSL): an
-origin alone rebuilds every plan on it. `INDEX.md` lists name, hash, licence, plan and source,
-`index.json` the same rows with version, category and size for a program to read,
-and `INDEX.md` goes up last. A recipe goes out as its plan only, listed with the
-product hash it builds. Test packs and other hashes in the cache are
-never published; one line names the packages left out.
+origin alone rebuilds every plan on it. `INDEX.md` lists name, hash, licence, plan and
+source, and `index.json`, which `oath ls --origin` reads, the same rows with version,
+category, description and size; `INDEX.md` goes up last. A recipe goes out as its plan
+only, listed with the product hash it builds. Test packs and other hashes in the cache
+are never published; one line names the packages left out.
+
+`publish` also signs a head ([Publishing a package on its
+own](#publishing-a-package-on-its-own-r72)) for every package it carries but
+`linux`, `oath` and `firmware`, which move with a release: `pkg/<name>.json`,
+with the lock's pin, its plan's `run_needs`, the version, description, home and
+category, and the commit's time, and a `.sig` from the build host's signing key
+(below). A head already there that names the same pack and needs, or that comes
+from a later commit, stays as it is. A recipe has no head. Each head goes up after
+its pack and before `index.json`. A machine whose `host:local.publishers` trusts
+that key for the name takes these heads at `oath update` and `oath add`, whatever
+profile it follows.
 
 To the default origin, `publish` lists the bucket, uploads only the
-hashed files it lacks (`pkg/` and `plan/` never change) plus `adv/`,
-`index.json` and `INDEX.md`, and reads `INDEX.md` back from
+hashed files it lacks (`pkg/<name>/` and `plan/` never change) plus the
+heads it signed (`pkg/<name>.json` and its `.sig`), `adv/`, `index.json`
+and `INDEX.md`, and reads `INDEX.md` back from
 `https://store.oath.moonlight.pm`. The write key is on a publisher's machine
 alone: `OATH_ORIGIN_S3` (`https://<account>.r2.cloudflarestorage.com/oath-store`),
 `OATH_ORIGIN_KEY_ID` and `OATH_ORIGIN_SECRET`, from the environment or
