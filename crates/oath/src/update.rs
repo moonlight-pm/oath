@@ -1127,7 +1127,8 @@ fn record_only(root: &Path, cat: &Catalog, opts: &Opts, work: &Path) -> Result<i
 /// The release's moves, with each package that has a head moved by its
 /// head instead (R72): a head wins over the release's pin, a package with
 /// a head is never dropped for leaving the release, and one new to the
-/// profile is made at its head.
+/// profile is made at its head, or held when that head is older than the
+/// one this machine took.
 fn with_heads(
     machine: &BTreeMap<String, Value>,
     moves: Vec<Move>,
@@ -1143,14 +1144,20 @@ fn with_heads(
             continue;
         };
         if let Move::New { name, doc, why } = m {
+            if let Some(hold) = head::hold_older(&name, "", offer, taken) {
+                out.push(hold);
+                continue;
+            }
             let mut d = offer.head.doc();
             d["present"] = doc.get("present").cloned().unwrap_or(json!(true));
             out.push(Move::New { name, doc: d, why });
         }
     }
+    // Each package the release makes is made or held above, not again by
+    // head::plan.
     let made: BTreeSet<String> = out
         .iter()
-        .filter(|m| matches!(m, Move::New { .. }))
+        .filter(|m| matches!(m, Move::New { .. } | Move::Hold { .. }))
         .map(|m| m.name().to_string())
         .collect();
     let heads = head::plan(machine, offers, taken, keep, |n, pin| ran.overlay(n, pin).is_some());
@@ -1810,6 +1817,53 @@ mod tests {
             let e = keep(&[k]).unwrap_err().to_string();
             assert!(e.contains(says), "{k}: {e}");
         }
+    }
+
+    #[test]
+    fn a_package_new_to_the_profile_never_takes_a_head_older_than_one_taken() {
+        let h = |c: char| format!("sha256-{}", c.to_string().repeat(64));
+        let offer = |name: &str, c: char, needs: Value| {
+            let head: Head = serde_json::from_value(json!({
+                "name": name,
+                "hash": h(c),
+                "needs": needs,
+                "published": "2026-11-05T00:00:00Z",
+            }))
+            .unwrap();
+            let o = Offer { head, signer: "oath@novus".into(), origin: "https://o".into() };
+            (name.to_string(), o)
+        };
+        // This machine took foot at 'f' and removed it; the profile has it
+        // now, the origins serve an older head of it, and Sola's head needs it.
+        let sola = json!({ "present": true, "hash": h('a') });
+        let machine = BTreeMap::from([("sola".to_string(), sola)]);
+        let offers = BTreeMap::from([
+            offer("foot", 'o', json!([])),
+            offer("sola", 'b', json!([{ "id": "pkg:foot", "hash": h('o') }])),
+        ]);
+        let (ran, keep) = (up::Ran::default(), BTreeSet::new());
+        let heads = |published: &str| {
+            let t = head::Taken { hash: h('f'), published: published.into(), ..Default::default() };
+            let taken = head::Record::from([("foot".to_string(), t)]);
+            let doc = json!({ "present": true, "hash": h('r') });
+            let release = vec![Move::New { name: "foot".into(), doc, why: "new to the profile" }];
+            with_heads(&machine, release, &offers, &taken, &ran, &keep)
+        };
+        let kinds = |m: &[Move]| m.iter().map(Move::kind).collect::<Vec<_>>();
+        let moves = heads("2026-11-06T00:00:00Z");
+        let said: Vec<String> = moves.iter().map(Move::describe).collect();
+        assert_eq!(kinds(&moves), ["hold", "head"], "{said:?}");
+        assert!(said[0].contains("older than the head this machine took"), "{said:?}");
+        // Sola's head needs it: Sola waits too.
+        let all = |_: &str, _: &str| Some(BTreeSet::new());
+        let settled = head::settle(&machine, moves, all, all);
+        let said: Vec<String> = settled.iter().map(Move::describe).collect();
+        assert_eq!(kinds(&settled), ["hold", "hold"], "{said:?}");
+        assert!(said[1].contains("pkg:sola needs pkg:foot, which waits"), "{said:?}");
+        // A head newer than the one taken is made.
+        let moves = heads("2026-11-04T00:00:00Z");
+        assert_eq!(kinds(&moves), ["new", "head"]);
+        assert_eq!(moves[0].to(), Some(h('o').as_str()));
     }
 
     #[test]
