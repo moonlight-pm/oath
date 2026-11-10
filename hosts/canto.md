@@ -67,7 +67,7 @@ Overwrite this file when facts change; do not append a diary.
   and was `ready` 14 s after its first module pass; the desk came back. The store's newest desk
   release (`6c8d38bd54c4`) is older, so `oath update` waits for the next one. Before:
   `6c8d38bd54c4` (master `7597cc1`, R72 and R73; generation 453); generation 454 put novus's
-  key in `host:local.publishers` as `names="sola,sola-*" … oath@novus` beside buccina's. Before: `debfd75332ea` (2026-11-03); `keep_children` on `svc:sola-session` set by
+  key in `host:local.publishers` beside buccina's, as `names="*" … oath@novus` (any package's head, R72) since generation 461 (Joshua, 2026-11-10). Before: `debfd75332ea` (2026-11-03); `keep_children` on `svc:sola-session` set by
   hand (generation 445).
   `pkg:lzo` and `pkg:dropbear` removed by hand at Joshua's word (generation 446).
   Earlier: Release B, output `dd0f847aa9c9` (R47), from Sola's

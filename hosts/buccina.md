@@ -35,7 +35,7 @@ Overwrite this file when facts change; do not append a diary.
 - **Heads it took (R72):** `/oath/heads.json` was first written 2026-11-09 by `oath update --record --confirm` (from master's build): the 155 heads it runs; 21 packages run another pin.
 - **Heads it publishes (R72):** generation 175 (2026-11-08) applied the 13 packages Minecraft runs with (`prismlauncher`, `jre-21`, the Qt modules, `certs` and the small libraries), from master `24ca3bb` and `57dc661`, because `oath publish` publishes this machine's pin. buccina runs none of them.
 - **Running now:** output `6c8d38bd54c4` (the 2026-11-07 release, by the 2026-11-08 audit's
-  `oath update --confirm --reboot`; generation 174), in sync; generations 175 (above), 176 (`svc:audit` at midnight, R75) and 177 (key `oath@novus` in its publishers, scoped to `sola,sola-*`) since. Before it, `f612b200206c` (the
+  `oath update --confirm --reboot`; generation 174), in sync; generations 175 (above), 176 (`svc:audit` at midnight, R75) 177 (key `oath@novus` in its publishers) and 187 (that key as `names="*"`, any package's head; Joshua, 2026-11-10) since. Before it, `f612b200206c` (the
   2026-11-05 audit's release; generation 173 on 2026-11-06), its overlays kept. Before it, `e73aa522ec58` (master `1678f60`,
   generation 166), from the audit's `oath update --confirm --reboot` on 2026-11-04: Linux 7.3.1 with its 12 io_uring
   patches, TIOCSTI off (R60), Landlock and Yama (R64), Codex 0.165.0, in sync, its overlays

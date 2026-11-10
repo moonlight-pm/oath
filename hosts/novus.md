@@ -111,7 +111,7 @@ Overwrite this file when facts change; do not append a diary.
   overlays it ran (next@45d19f15, next@7545d519), but not `pkg:sola-browser` `2e210093af88` from
   next@33d869a8 (the wheel no longer zooms), kept as an overlay with its `pkg:cef` need moved to
   156.0.26. Generation 98 put its own key, `oath@novus` (`~/.config/oath/sign_ed25519`, made by Sola's
-  session), in `host:local.publishers` as `names="sola,sola-*"` beside buccina's. Sola's publish of
+  session), in `host:local.publishers` beside buccina's; since generation 131 (Joshua, 2026-11-10) as `names="*"`, any package's head. Sola's publish of
   2026-11-10 01:44Z applied its heads here: all 17 Sola packages from master@cf0e2d40 (`pkg:sola`
   `90ca782c6acc`, the new `pkg:sola-kvm` `0e0a8d721a46`, `pkg:sola-browser` `58281b23ab33`), which the
   `desk` profile pins, so `pkg:sola-browser` is no longer an overlay.
