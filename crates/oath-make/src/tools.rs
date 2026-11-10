@@ -24,10 +24,11 @@ pub struct Tools {
 }
 
 impl Tools {
-    /// QEMU and qemu-img, which `build`, `check` and the QEMU rehearsals
-    /// need. `load` lets a host without them through (as `/bin/true`) for
-    /// `cargo make esp`; everything else asks here first, or an image
-    /// "made" by `true create` reaches mkfs.btrfs as a missing file.
+    /// QEMU and qemu-img, which `build`, `run`, `up`, `start`, `check` and
+    /// the QEMU rehearsals need. `load` lets a host without them through
+    /// (as `/bin/true`) for `cargo make esp`; everything else asks here
+    /// first, or an image "made" by `true create` reaches mkfs.btrfs as a
+    /// missing file, and `run` reports `true`'s exit as QEMU's.
     pub fn require_qemu(&self) -> Result<()> {
         for p in [&self.qemu, &self.qemu_img] {
             if p.file_name() == Some(std::ffi::OsStr::new("true")) {

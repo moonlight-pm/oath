@@ -144,6 +144,7 @@ fn run_qemu(
     opts: &Opts,
 ) -> Result<i32> {
     let tools = crate::tools::load(root)?;
+    tools.require_qemu()?;
     let output = crate::output::pick(out, opts.output.as_deref(), false)?;
     let img = crate::qemu::load_image(&output.dir)?;
     let base = out.join("check");

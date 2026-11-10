@@ -57,13 +57,15 @@ enum Cmd {
         #[arg(long)]
         build: bool,
     },
-    /// Headless QEMU in the foreground. Serial in the run log. Ctrl-C kills the VM.
+    /// QEMU in the foreground: serial in the run log, a gtk window if
+    /// DISPLAY is set and QEMU has gtk. Ctrl-C kills the VM.
     Up {
         /// Pack the image first.
         #[arg(long)]
         build: bool,
     },
-    /// Headless QEMU in the background. Serial in the run log.
+    /// QEMU in the background: serial in the run log, a gtk window if
+    /// DISPLAY is set and QEMU has gtk.
     Start {
         /// Pack the image first.
         #[arg(long)]

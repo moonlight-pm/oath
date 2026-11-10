@@ -238,6 +238,31 @@ fn host_wants_window() -> bool {
     }
 }
 
+/// A gtk window when the host wants one and this QEMU has gtk. pkg:qemu
+/// is built without it, and QEMU refuses to start with a display it lacks.
+fn window(tools: &Tools) -> bool {
+    if !host_wants_window() {
+        return false;
+    }
+    let help = Command::new(&tools.qemu)
+        .args(["-display", "help"])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+        .unwrap_or_default();
+    if !lists_gtk(&help) {
+        eprintln!("display: {} has no gtk, so no window", tools.qemu.display());
+        return false;
+    }
+    true
+}
+
+/// `-display help` names one backend a line.
+fn lists_gtk(help: &str) -> bool {
+    help.lines().any(|l| l.trim() == "gtk")
+}
+
 pub fn ssh_port() -> u16 {
     std::env::var("OATH_SSH_PORT").ok().and_then(|s| s.parse().ok()).unwrap_or(2222)
 }
@@ -364,12 +389,14 @@ fn netdev(port: u16) -> String {
 
 pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     let tools = crate::tools::load(root)?;
+    tools.require_qemu()?;
     let img = load_image(&crate::output::latest(out)?.dir)?;
     let run = new_run(out, "int")?;
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, "int")?;
     let inject = write_host_authorized(&run.join("host.authorized"));
     let (serial_log, qemu_log) = (run.join("serial.log"), run.join("qemu.log"));
+    let window = window(&tools);
     let args = qemu_args(
         &tools,
         &img,
@@ -379,29 +406,14 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
             qemu_log: &qemu_log,
             serial: SerialMode::Stdio,
             inject_authorized: inject.as_deref(),
-            window: host_wants_window(),
+            window,
             ssh_port: ssh_port(),
             mem_mb: 4096,
             scratch: None,
         },
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
-    eprintln!("run: {}", run.display());
-    eprintln!("serial log: {}", run.join("serial.log").display());
-    if host_wants_window() {
-        let (w, h) = display_size();
-        eprintln!(
-            "display: gtk {w}x{h} 1:1 (OATH_DISPLAY=none to hide; OATH_DISPLAY_WIDTH/HEIGHT)"
-        );
-    }
-    if std::env::var("OATH_BRIDGE").map(|s| s.is_empty()).unwrap_or(true) {
-        eprintln!("ssh: cargo make ssh   (port {})", ssh_port());
-    } else {
-        eprintln!(
-            "ssh: guest is on bridge {} (DHCP: oath set net:net0 ipv4=dhcp)",
-            std::env::var("OATH_BRIDGE").unwrap()
-        );
-    }
+    print_reachability(&run, window);
     let mut cmd = qemu_command(&args);
     cmd.stdin(Stdio::inherit()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
     let status = cmd.status().context("qemu")?;
@@ -448,10 +460,10 @@ fn running_pid(out: &Path) -> Result<Option<i32>> {
     }
 }
 
-fn print_reachability(run: &Path) {
+fn print_reachability(run: &Path, window: bool) {
     eprintln!("run: {}", run.display());
     eprintln!("serial log: {}", run.join("serial.log").display());
-    if host_wants_window() {
+    if window {
         let (w, h) = display_size();
         eprintln!(
             "display: gtk {w}x{h} 1:1 (OATH_DISPLAY=none to hide; OATH_DISPLAY_WIDTH/HEIGHT)"
@@ -467,14 +479,18 @@ fn print_reachability(run: &Path) {
     }
 }
 
-fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<String>, PathBuf)> {
+/// The QEMU arguments of an `up` or `start` run, its directory, and
+/// whether it opens a window.
+fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Vec<String>, PathBuf, bool)> {
     let tools = crate::tools::load(root)?;
+    tools.require_qemu()?;
     let img = load_image(&crate::output::latest(out)?.dir)?;
     let run = new_run(out, label)?;
     let overlay = overlay_disk(&tools, &run, &img.backing)?;
     write_meta(&run, &tools, &img, &overlay, label)?;
     let inject = write_host_authorized(&run.join("host.authorized"));
     let (serial_log, qemu_log) = (run.join("serial.log"), run.join("qemu.log"));
+    let window = window(&tools);
     let args = qemu_args(
         &tools,
         &img,
@@ -484,14 +500,14 @@ fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Tools, Vec<Strin
             qemu_log: &qemu_log,
             serial: SerialMode::File,
             inject_authorized: inject.as_deref(),
-            window: host_wants_window(),
+            window,
             ssh_port: ssh_port(),
             mem_mb: 4096,
             scratch: None,
         },
     );
     fs::write(run.join("qemu.cmd"), args.join(" ") + "\n")?;
-    Ok((tools, args, run))
+    Ok((args, run, window))
 }
 
 /// Foreground, serial in a file. Ctrl-C kills QEMU.
@@ -499,8 +515,8 @@ pub fn run_up(root: &Path, out: &Path) -> Result<i32> {
     if let Some(pid) = running_pid(out)? {
         bail!("already running pid {pid} — cargo make stop");
     }
-    let (_tools, args, run) = prepare_run(root, out, "up")?;
-    print_reachability(&run);
+    let (args, run, window) = prepare_run(root, out, "up")?;
+    print_reachability(&run, window);
     eprintln!("Ctrl-C stops the VM");
     let mut cmd = qemu_command(&args);
     cmd.stdin(Stdio::null()).stdout(Stdio::inherit()).stderr(Stdio::inherit());
@@ -521,7 +537,7 @@ pub fn start(root: &Path, out: &Path) -> Result<()> {
     if let Some(pid) = running_pid(out)? {
         bail!("already running pid {pid} — cargo make stop");
     }
-    let (_tools, args, run) = prepare_run(root, out, "vm")?;
+    let (args, run, window) = prepare_run(root, out, "vm")?;
     let log = fs::File::create(run.join("qemu.out"))?;
     let mut cmd = qemu_command(&args);
     cmd.stdin(Stdio::null()).stdout(Stdio::from(log.try_clone()?)).stderr(Stdio::from(log));
@@ -535,7 +551,7 @@ pub fn start(root: &Path, out: &Path) -> Result<()> {
     let pid = child.id() as i32;
     fs::write(pid_file(out), format!("{pid}\n"))?;
     fs::write(run_file(out), format!("{}\n", run.display()))?;
-    print_reachability(&run);
+    print_reachability(&run, window);
     eprintln!("pid {pid}");
     eprintln!("stop: cargo make stop");
     Ok(())
@@ -585,6 +601,15 @@ mod tests {
     fn display_backend_gtk_is_one_to_one() {
         assert_eq!(display_backend(true), "gtk,zoom-to-fit=off,gl=off");
         assert_eq!(display_backend(false), "none");
+    }
+
+    #[test]
+    fn gtk_only_when_qemu_lists_it() {
+        let oath = "Available display backend types:\nnone\ndbus\n\n\
+                    Some display backends support suboptions, which can be set with\n";
+        assert!(!lists_gtk(oath));
+        assert!(lists_gtk("Available display backend types:\nnone\ngtk\nsdl\n"));
+        assert!(!lists_gtk(""));
     }
 
     #[test]
