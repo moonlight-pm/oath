@@ -12,7 +12,10 @@ oath                 the INDEX (generated, live; also /oath/INDEX.md)
 `--json` prints the same facts as JSON. Most failures include a **hint**
 pointing at the next step (`oath ls`, `oath schema <kind>`, INDEX
 safety); `set`, `new`, `rm`, `apply` and `undo` without root print
-`io Permission denied (os error 13)` and no hint. The exit status is 0,
+`io Permission denied (os error 13)` and no hint; `oath add`, and
+`oath new pkg:<name>` with no fields for a name this machine lacks, print
+`add changes this machine` (or `new …`) with the `sudo` command as the
+hint. The exit status is 0,
 1 for a failure, 2 for a command line `oath` cannot parse, 3 for an
 apply that needs `--confirm`, and 4 for a refusal printed as
 `security: …`: a tree, download or signature that is not what it should
@@ -34,11 +37,12 @@ the machine.
 
 | Verb | Does |
 |------|------|
-| `oath ls` | List object ids. `--kind host` (etc.) to filter |
+| `oath ls` | List object ids. `--kind host` (etc.) to filter. `oath ls --origin [word]` lists what the origins hold instead (their `index.json`): each package's name, version, category and description, with `*` on those this machine has and recipes marked. A word keeps those with it in their name, category or description |
 | `oath schema [kind]` | List kinds, or one kind's prose + JSON Schema |
 | `oath get <id>` | Desired + actual + status. `--desired` / `--actual` to clip |
 | `oath set <id> k=v` | Write **desired** only. Does not converge. `--from-json '<obj>'` sets several fields. The result must fit the kind's type. `oath set plan:<name> --from-file <path>` files a plan (canonical, `oath fmt -w`); `--from-file -` files the canonical form of a plan read from stdin |
-| `oath new <id> k=v` | Create a `svc`, `pkg` or `cell` (`--from-json` too). Runs after `apply` |
+| `oath new <id> k=v` | Create a `svc`, `pkg` or `cell` (`--from-json` too). Runs after `apply`. `oath new pkg:<name>` with no fields makes what `oath add` would and applies nothing; when no origin has a head of it, a tree of it already in the store is the pin |
+| `oath add <name>...` | Install packages by name (`<name>` or `pkg:<name>`) from the origins: each at its newest head a key in `host:local.publishers` may sign for it, with each package it needs that this machine lacks, made and applied in one generation; `oath undo` takes them back. Nothing the machine has moves: if a need it holds at another pin would cost the package a library, nothing changes and `sudo oath update --confirm` comes first. A package already here is named and left to `oath update`, and one here with `present=false` is refused; a name with no head, such as a recipe, is refused ([Packages](packages.md#install--remove)) |
 | `oath rm <id>` | Mark a `svc`, `pkg` or `cell` for removal. Removed at `apply`; one that was never applied is deleted at once |
 | `oath diff [id]` | Drift: desired against the spec last applied, for every kind (`field: old -> new`, or `in-sync`). A live state that differs is not drift: a mount waiting for its disk is in sync |
 | `oath apply [id...]` | Check, snapshot, then converge the listed ids or all drift. `--confirm` and `--probation <secs>`: [Safety](#safety). `--keep-seat`: a running service with a `seat` keeps its program when its package moves, and takes the new one when it next starts |
@@ -53,7 +57,7 @@ the machine.
 | `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin`. Creates the product's `pkg` or `cell` object if it is missing; `--no-pkg` does not, for a product that is only a build input to other plans |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
 | `oath store <id> <path>` | Put a tree built elsewhere (a directory, or a tar of one) into the store as `pkg:<name>` or `cell:<name>` and print its hash. Changes no object ([Packages](packages.md#a-tree-built-here)) |
-| `oath update` | What the newest output published for this machine would change; `sudo oath update --confirm [--reboot]` moves to it; `--keep pkg:<name>`, `--output <id>` ([Install](install.md#update-an-installed-machine)) |
+| `oath update` | What the newest output published for this machine, and the newest head a key it trusts signed for each package here, would change; `sudo oath update --confirm [--reboot]` moves to them; `--keep pkg:<name>`, `--output <id>`. A head wins over a release's pin and never goes back, so `--output` of an older output sets each package that has a head to its head, not to that output's pin; `oath undo` puts back the pins an update moved ([Install](install.md#update-an-installed-machine)) |
 | `oath publish pkg:<name>` | What it would publish: this machine's pin of the package, as its head on an origin; `--confirm` publishes it, without `sudo` ([Packages](packages.md#publishing-a-package-on-its-own-r72)) |
 | `oath install [disk]` | The disks; `sudo oath install <disk>` says what it would erase and write; with `--confirm` it wipes that disk and installs this system ([Install](install.md#from-a-stick-on-the-machine-oath-install)) |
 | `oath password` | Set, change or remove `home`'s password; `--status` says whether one is set, with auto-login and the seat ([below](#the-password-and-the-seat)) |
@@ -87,8 +91,9 @@ takes a filesystem snapshot and converges.
 
 - **mutate** — hostname, service enable, package present. Snapshot and
   go.
-- **confirm** — halt, reboot, picking an old boot generation (not
-  `undo`), and anything that can cut this machine off from SSH:
+- **confirm** — halt, reboot, a change to `snap:current` (it picks no
+  generation; [Generations](generations.md)), and anything that can cut
+  this machine off from SSH:
   disabling or removing `svc:sshd`, changing its `exec`, `user` or
   `env`, moving the package it runs from (`pkg:openssh`'s `hash`),
   dropping a key from `ssh:local`, changing `net:net0`. `oath apply`
@@ -199,10 +204,10 @@ sudo oath apply host:local
 ```
 
 They come after the parameters Oath always gives a module (amdgpu's
-`si_support=1`, `nvidia_drm`'s `modeset=1`) and before `module.key=value`
-on the kernel command line, so a later one wins. Like mounts, they
-belong in the machine's overlay, never in a profile: another machine
-with the same driver gets none of them.
+`si_support=1 cik_support=1`, `nvidia_drm`'s `modeset=1 fbdev=1`) and
+before `module.key=value` on the kernel command line, so a later one
+wins. Like mounts, they belong in the machine's overlay, never in a
+profile: another machine with the same driver gets none of them.
 
 `sudo modprobe <name or alias>` loads a module and what it needs, with
 these parameters; `sudo modprobe -r <name>` unloads one. `/proc/modules`
@@ -248,21 +253,26 @@ never a profile.
 ## Who you are
 
 Serial login is **root** (break-glass) when `svc:serial` is enabled.
-The screen and keyboard are **home** when `svc:screen` is enabled. SSH is **home** (uid 1, `HOME=/home`, login shell zsh). `sudo` (no
-password) becomes root. The groups are `root`, `home`, `work` and `void`. The
-apply log records uid and tty. `host:local.env` and `TZ` (from
-`host:local.timezone`) are injected by PID 1 into services and written
-to root-owned `/etc/profile` for logins, and to sshd's `SetEnv` in
-`/etc/ssh/sshd_config`, so `ssh host 'command'` has them too, as of
-sshd's last start. `oath apply` does not write `$HOME/.profile`.
-`work` (uid 2, home `/work`, R55) is for servers and workloads: nobody logs in
-as it, `sudo` refuses it, and `/home` is closed to it. `sudo -u work <command>`
-runs a command as it from `home`, and it cannot type into `home`'s terminal, since
-the kernel's `TIOCSTI` needs root (R60); a service names it in `user`. `/work` is its
-own subvolume, `@work`, which PID 1 makes on the first boot that lacks it, so no
-generation or boot snapshot holds its data.
-`void` (uid 65534, home `/var/empty`) is the fourth account: nobody logs
-in as it; sshd, dhcpcd and chronyd drop to it.
+The screen and keyboard are **home** when `svc:screen` is enabled. SSH
+is **home** (uid 1, `HOME=/home`, login shell zsh). `sudo` (no
+password) becomes root. The apply log records uid and tty.
+
+The groups are `root`, `home`, `work` and `void`. `work` (uid 2, home
+`/work`, R55) is for servers and workloads: nobody logs in as it,
+`sudo` refuses it, and `/home` is closed to it. `sudo -u work <command>`
+runs a command as it from `home`, and it cannot type into `home`'s
+terminal, since the kernel's `TIOCSTI` needs root (R60); a service names
+it in `user`. `/work` is its own subvolume, `@work`, which PID 1 makes on
+the first boot that lacks it, so no generation or boot snapshot holds
+its data. `void` (uid 65534, home `/var/empty`) is the fourth account:
+nobody logs in as it; sshd, dhcpcd, chronyd and a desk's system bus drop
+to it.
+
+`host:local.env` and `TZ` (from `host:local.timezone`) are injected by
+PID 1 into services and written to root-owned `/etc/profile` for logins,
+and to sshd's `SetEnv` in `/etc/ssh/sshd_config`, so `ssh host
+'command'` has them too, as of sshd's last start. `oath apply` does not
+write `$HOME/.profile`.
 
 `sudo` is Oath's own (`/lib/oath/sudo`, setuid), for `home` and root
 only: `sudo [-n] [-u root|work] [--] <command>`. `-n` changes nothing,
@@ -314,10 +324,11 @@ the desk's services start again. A reboot keeps the seat:
 `/oath/run/seat` is on disk, so after `oath desk stop` the next boot
 starts with the console, until `oath desk`.
 
-A machine installed before R42 gets the programs with `oath update`
-(its `pkg:oath` moved first, [install.md](install.md)) but not the objects. Reboot into the update first: an older PID 1 knows no
-`seat` and would start the console on tty1 under the running desk. Then
-make them once:
+A desk that lacks `svc:login` gets the programs from `oath update`
+([install.md](install.md)) but not the objects: the update lists it as
+`left to the owner (oath new)`. Reboot into the update first, so PID 1 is
+the output's: one that knows no `seat` starts the console on tty1 under
+the running desk. Then make them once:
 
 ```
 sudo oath new svc:login --from-json '{"exec":["/lib/oath/login"],"wants":[],"restart":"always","enabled":true}'
@@ -325,7 +336,6 @@ sudo oath set svc:screen enabled=true seat=console
 for s in rivulet sola-river sola-shell sola-session sola-kvm; do sudo oath set svc:$s seat=desk; done
 sudo oath apply
 ```
-
 
 ### The shell
 
@@ -335,7 +345,7 @@ bash, and root's shell. A login zsh reads `/etc/profile` through
 `~/.zsh_history`, emacs keys and completion:
 
 ```
-14:02:07 home@canto Workspace/sola main § 
+14:02:07 home@atlas src/oath main § 
 ```
 
 The time, `user@host`, the last two directories of the working
@@ -360,16 +370,20 @@ ssh -T home@<host> oath mcp --read-only    # only the tools that look
 ```
 
 Each tool runs one `oath --json` command and returns its JSON: `index`,
-`ls`, `schema`, `get`, `diff`, `log`, `logs`, `verify` and `audit` look;
-`set_host`, `set_svc`, `set_pkg`, `set_cell`, `set_net`, `set_ssh`,
-`new_svc`, `new_pkg`, `new_cell`, `rm`, `apply`, `undo`, `keep`, `update`
-(what the newest output would move, or with `confirm` move to it),
-`reap` (what would go, or with `confirm` remove it), `file_plan` (a plan
-from its text) and `build` run through `sudo`, as the owner's would. The same
-reads are resources too: `oath://index`, `oath://schema/<kind>` and
-`oath://object/<kind>/<name>`. A client that sends a `progressToken`
-hears every 5 s that a long `build` or `apply` is still running. A tool's `fields` are the kind's schema,
-so a field added to a kind reaches the tools with nothing else to do.
+`ls`, `ls_origin` (what the origins hold), `schema`, `get`, `diff`, `log`,
+`logs`, `verify` and `audit` look; `set_host`, `set_svc`, `set_pkg`,
+`set_cell`, `set_net`, `set_ssh`, `new_svc`, `new_pkg` (with empty
+`fields`, a package by name and what it needs, not applied), `new_cell`,
+`rm`, `apply`, `undo`, `keep`, `add` (packages by name with what they
+need, applied at once), `update` (what the newest output and the heads
+would move, or with `confirm` move them), `reap` (what would go, or with
+`confirm` remove it), `file_plan` (a plan from its text) and `build` run
+through `sudo`, as the owner's would. The same reads are resources too:
+`oath://index`, `oath://schema/<kind>` and `oath://object/<kind>/<name>`.
+A client that sends a `progressToken` hears every 5 s that a long
+`build` or `apply` is still running. A tool's `fields` are the kind's
+schema, so a field added to a kind reaches the tools with nothing else
+to do.
 A failed command is a tool error carrying the CLI's hint; exit 3 says
 the apply needs `confirm`, which an agent passes only when the owner
 asked for that class of change.

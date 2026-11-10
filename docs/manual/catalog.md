@@ -14,7 +14,6 @@ The catalog is the source of truth. It lives at `/oath`.
     new / remove           markers for a pending `oath new` / `oath rm`
   status/<kind>/<name>.json  what the machine observed: tmpfs, rebuilt each boot
   log/apply.jsonl          every apply (ok, error, refused), undo and keep
-  probation.json           an apply that can cut off SSH, until `oath keep` or an undo
   log/init.log             PID 1's messages
   log/init.jsonl           PID 1's events
   log/oath.jsonl           the events of each `oath` command run as root
@@ -23,6 +22,7 @@ The catalog is the source of truth. It lives at `/oath`.
   log/svc/<name>.last.json  a service's own record of its last run, shown in its actual
   log/net/net0.log         the DHCP client
   log/plan/<name>.log      a plan's last build (`oath logs plan:<name>`; `.1` is the one before)
+  probation.json           an apply that can cut off SSH, until `oath keep` or an undo
   .lock                    held by whoever is writing the catalog
   store/pkg/<name>/<hash>/ package trees (apply links /bin and /lib)
   store/cell/<name>/<hash>/ cell trees (not linked into /bin or /lib)
@@ -90,7 +90,23 @@ lists as `fixed` cannot be removed.
 `oath set plan:<name> --from-file <path>` files a plan, and
 `oath build` creates the product's `pkg` or `cell` object, absent, if
 it is missing (`--no-pkg` does not, for a product only other plans
-build with).
+build with). `oath update` also makes and removes packages and
+services, and files plans ([Install](install.md#update-an-installed-machine)).
+
+`oath new pkg:<name>` with no fields takes the package by name
+(`oath ls --origin [word]` lists what the origins hold): its newest head
+that a key in `host:local.publishers` may sign for that name, and the
+same for each package it needs that the machine lacks. Each is made
+present at its head's `hash` and `needs`, with the head's
+`description`, `home`, `category` and `source`; its pack is fetched
+into the store, and nothing is linked until `oath apply`. A need the
+machine lacks that has no head refuses the command, and so does a name
+with no head unless the store holds one tree of it, which is then the
+pin (an empty `hash`). `oath add <name>...` makes the same objects and
+applies them in one generation; it takes no tree from the store, so a
+name with no head refuses it. Both need root; what they refuse, and
+how a need the machine holds at another pin is settled, is in
+[Packages](packages.md#install--remove).
 
 Before the box first boots, objects come from:
 

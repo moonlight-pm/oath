@@ -70,7 +70,7 @@ the object. See [Catalog](catalog.md).
     "host:local": { "timezone": "MST7MDT,M3.2.0,M11.1.0" },
     "svc:serial": { "enabled": false },
     "svc:backup": {
-      "exec": ["/lib/oath/backup-daily", "nas:/export/backup/canto"],
+      "exec": ["/lib/oath/backup-daily", "nas:/export/backup"],
       "wants": [], "restart": "always", "enabled": true
     }
   }
@@ -154,10 +154,9 @@ names a removed entry, which it deletes.
 
 Remove the stick only once the machine is off: the system runs from it
 until then, and `reboot` with the stick gone finds no programs. Some
-firmware keeps its own order or makes entries again: AMI's (an ASUS
-board) kept `UEFI OS`, its entry for another disk's fallback loader,
-and did not start Oath first. If the machine starts something else,
-move `Oath` first in the firmware's setup.
+firmware keeps its own order or makes entries again, such as AMI's
+`UEFI OS` entry for another disk's fallback loader. If the machine
+starts something else, move `Oath` first in the firmware's setup.
 
 It checks no backups and reads no other disk past each filesystem's
 type and label: knowing what is on them is yours. It refuses the disk
@@ -200,26 +199,47 @@ sudo oath update --confirm --reboot   # move to it, then boot it
 ```
 
 It takes the newest release for `host:local.profile` from the first of
-`host:local.origins` that serves one a key in `host:local.publishers`
-signed (the `base` profile trusts buccina's), and refuses one older
-than the release the machine runs (`/oath/output.json`, written by the
-install too), or one it cannot order against it, unless `--output <id>`
-names it. It also refuses pending changes and an apply
-on probation, and a set of moves that would leave a package needing
-another at a hash it will not have (the check `oath apply` makes, made
-first, so the preview says it too). The preview names each **overlay**,
-a package the machine runs at a pin other than the release it runs set
-(R47): ``pkg:sola is sessions-anywhere@0d99e340, not the release's: the
-update replaces it with sha256-… (master@…); `--keep pkg:sola` keeps
-it``. The update replaces it; `--keep pkg:sola` (repeat for more) keeps
-the machine's pin, and only its needs move.
+`host:local.origins` that serves one signed by a key in
+`host:local.publishers` with no `names=` list (the `base` profile trusts
+buccina's), and refuses one older than the release the machine runs
+(`/oath/output.json`, written by the install too), or one it cannot
+order against it, unless `--output <id>` names it. It also refuses
+pending changes and an apply on probation, and a set of moves that would
+leave a package needing another at a hash it will not have (the check
+`oath apply` makes, made first, so the preview says it too).
 
-Each run also reads the head of every package the machine has
-([Packages](packages.md)). A head wins over the release's pin, and the
-preview says so: `pkg:certs sha256-… -> sha256-… (its head, signed by
-oath@buccina)`. On the newest release already, or with
-`host:local.profile` empty, the update moves heads only: no boot file
-changes, and `--reboot` reboots only if a package moves.
+Every package `cargo make publish` publishes has a signed head, except
+`linux`, `oath` and `firmware`, which move with the release; a recipe
+has none. Each `oath update` reads the head of every package the machine
+has, and of what those heads need, and takes the newest a key in
+`host:local.publishers` may sign for that name ([Packages](packages.md)).
+A head wins over the release's pin, and the preview says so:
+`pkg:certs sha256-… -> sha256-… (its head, signed by oath@buccina)`. A
+head no trusted key may sign is refused, one line each, and its package
+follows the release: `pkg:sola's head on … is refused: security: signed
+by a key this machine does not trust`. A head never goes back: one older
+than the head the machine took (`/oath/heads.json`) waits. `--output
+<older>` moves the machine to that release except each package with a
+head the machine trusts, which goes to its head, never to that release's
+pin. `oath undo` takes back the apply that moved a package to its head;
+the next update moves it there again unless `--keep pkg:<name>` names
+it. On the newest release already, or with `host:local.profile` empty,
+the update moves heads only: no boot file changes, and `--reboot`
+reboots only if a package moves.
+
+The preview names each **overlay**, a package the machine runs at a pin
+other than the head it took of it or, with none taken, the pin the
+release it runs set (R47, [Packages](packages.md)): ``pkg:certs is
+sha256-…, not its head: the update replaces it with sha256-… (signed by
+oath@buccina); `--keep pkg:certs` keeps it``, or, for a package with no
+head it trusts, ``pkg:sola is sessions-anywhere@0d99e340, not the
+release's: the update replaces it with sha256-… (master@…); `--keep
+pkg:sola` keeps it``. The update replaces it, except that when it moves
+heads only, an overlay of a package with no head it trusts stays, and
+the preview does not name it.
+`--keep pkg:<name>` (repeat for more) keeps the machine's pin of any
+package the update would move, and only its needs move: `pkg:certs stays
+at sha256-…; sha256-… waits: --keep`.
 
 With `--confirm`, it:
 
@@ -255,8 +275,9 @@ With `--confirm`, it:
    output's seed has is listed, for `oath new`. A package the release
    the machine runs had and this one does not is removed, unless `--keep`
    names it, it has a head, or something that stays needs it (R62); one its
-   owner added keeps its pin. A service that release had and this one does
-   not is removed too, unless `--keep svc:<name>` names it.
+   owner added keeps its pin, or moves to its head when it has one. A
+   service that release had and this one does not is removed too, unless
+   `--keep svc:<name>` names it.
    A recipe the owner built moves to
    the pin step 1 built. Each running service whose program moved
    restarts on it, except one with a `seat` (the desk's and the
@@ -298,11 +319,11 @@ reboot, and so does what PID 1 does only at boot (mounts, modules,
 sysctls, device modes, `/etc`). A PID 1 from before R73 is not asked:
 its first update to one takes a reboot.
 
-A machine that still runs dropbear as `svc:sshd` (from before R36)
-moves to OpenSSH after it has booted the new PID 1, which writes
-`/etc/ssh/sshd_config` and carries dropbear's host key over: run `sudo
-oath update --confirm` again, then `sudo oath keep` from a new SSH
-session. If none gets in, PID 1 undoes it and dropbear serves again.
+A machine whose `svc:sshd` runs dropbear moves to OpenSSH (R36) after
+it has booted the new PID 1, which writes `/etc/ssh/sshd_config` and
+carries dropbear's host key over: run `sudo oath update --confirm`
+again, then `sudo oath keep` from a new SSH session. If none gets in,
+PID 1 undoes it and dropbear serves again.
 
 A machine whose `oath` is too old to make the update takes the newer
 `oath` by hand first. The pin is `pkg:oath`'s `hash` in the output's
@@ -330,7 +351,8 @@ oath update && sudo oath update --confirm --reboot
 To try an output first, `cargo make update --qemu <older output>`
 installs the older one in QEMU and runs the same update from a local
 origin on the build host, signed with the build host's key
-([Packages](packages.md)). It updates to the newest output `check`
+([Packages](packages.md)); that origin serves no heads, so every package
+follows the output. It updates to the newest output `check`
 passed; `--output <id>` names another, and `--unchecked` takes one that
 has not passed (the latest, without `--output`). `--oath-first` moves
 `pkg:oath` to the output's first. `--build plan:<name>` (repeatable)
