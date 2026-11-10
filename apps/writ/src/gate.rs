@@ -542,26 +542,55 @@ fn undo_line(path: &Path, backup: Option<&str>, mode: u32, link: Option<&Path>, 
     Ok(Value::Obj(pairs).text())
 }
 
-fn read_undo(dir: &Path) -> Result<Vec<Value>, String> {
-    let p = dir.join("undo.jsonl");
+/// One of the session's logs: undo.jsonl, what `apply` did, or restored.jsonl, what `undo` put back.
+fn read_log(dir: &Path, file: &str) -> Result<Vec<Value>, String> {
+    let p = dir.join(file);
     match fs::read_to_string(&p) {
         Err(_) => Ok(Vec::new()),
         Ok(t) => t.lines().map(|l| json::parse(l).map_err(|e| format!("{}: {e}", p.display()))).collect(),
     }
 }
 
-/// The real tree's file changed since the session began, and not by an earlier apply of this
-/// session: the model worked from something else, so applying would lose the owner's change.
-fn base_moved(real: &Path, rel: &Path, started: u64, applied: &HashMap<String, String>) -> bool {
+/// What is at a path in the real tree, as the logs record it: a file's contents, or where a link
+/// points, hashed. Nothing for a directory, or where nothing is.
+fn found_at(at: &Path) -> Option<String> {
+    let m = fs::symlink_metadata(at).ok()?;
+    if m.file_type().is_symlink() {
+        let to = fs::read_link(at).ok()?;
+        Some(format!("link {:016x}", hash_of(to.as_os_str().as_bytes())))
+    } else if m.is_file() {
+        fs::read(at).ok().map(|b| format!("{:016x}", hash_of(&b)))
+    } else {
+        None
+    }
+}
+
+/// What this session last left at each path, by `apply`, whose entries are given, or by `undo`.
+/// `undo` empties undo.jsonl, so what it put back is older than anything in there. An entry with no
+/// hash left nothing of its own, and forgets what was left there before.
+fn left_by_session(dir: &Path, applied: &[Value]) -> Result<HashMap<String, String>, String> {
+    let mut left = HashMap::new();
+    for v in read_log(dir, "restored.jsonl")?.iter().chain(applied) {
+        let Some(p) = v.get("path").and_then(|p| p.str()) else { continue };
+        match v.get("after").and_then(|h| h.str()) {
+            Some(h) => left.insert(p.to_string(), h.to_string()),
+            None => left.remove(p),
+        };
+    }
+    Ok(left)
+}
+
+/// The real tree's file changed since the session began, and not by this session's own `apply` or
+/// `undo`: the model worked from something else, so applying would lose the owner's change.
+fn base_moved(real: &Path, rel: &Path, started: u64, left: &HashMap<String, String>) -> bool {
     let at = real.join(rel);
     let Ok(m) = fs::symlink_metadata(&at) else { return false };
     if m.is_dir() || (m.mtime().max(0) as u64) < started {
         return false;
     }
-    let mine = rel.to_str().and_then(|p| applied.get(p));
-    match (mine, fs::read(&at)) {
-        (Some(h), Ok(b)) => format!("{:016x}", hash_of(&b)) != *h,
-        _ => true,
+    match rel.to_str().and_then(|p| left.get(p)) {
+        Some(h) => found_at(&at).as_ref() != Some(h),
+        None => true,
     }
 }
 
@@ -677,13 +706,8 @@ pub fn apply_main(args: &[OsString]) -> Result<i32, String> {
 pub fn apply(upper: &Path, dir: &Path, meta: &Meta, all: bool, named: &[PathBuf], out: &mut dyn Write) -> Result<i32, String> {
     let real = &meta.project;
     let list = changes(upper, real)?;
-    let mut applied: HashMap<String, String> = HashMap::new();
-    let undo_so_far = read_undo(dir)?;
-    for v in &undo_so_far {
-        if let (Some(p), Some(h)) = (v.get("path").and_then(|p| p.str()), v.get("after").and_then(|h| h.str())) {
-            applied.insert(p.to_string(), h.to_string());
-        }
-    }
+    let undo_so_far = read_log(dir, "undo.jsonl")?;
+    let left = left_by_session(dir, &undo_so_far)?;
     for p in named {
         if !list.iter().any(|c| c.path == *p || c.path.starts_with(p)) {
             return Err(format!("the session does not change {}", name(p)));
@@ -698,7 +722,7 @@ pub fn apply(upper: &Path, dir: &Path, meta: &Meta, all: bool, named: &[PathBuf]
         if let Kind::Unusual(what) = c.kind {
             problems.push(format!("{} is {what}, which is never applied", name(&c.path)));
         }
-        if base_moved(real, &c.path, meta.started, &applied) {
+        if base_moved(real, &c.path, meta.started, &left) {
             problems.push(format!("{} changed in your tree since this session began", name(&c.path)));
         }
         if let Err(e) = parents_are_plain(real, &c.path) {
@@ -742,24 +766,26 @@ pub fn undo_main(args: &[OsString]) -> Result<i32, String> {
 }
 
 /// Take back what `apply` did, newest first. A file changed since it was applied stays, and is named.
+/// What is put back is recorded, so a later `apply` can tell it from the owner's change.
 pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String> {
-    let entries = read_undo(dir)?;
+    let entries = read_log(dir, "undo.jsonl")?;
     if entries.is_empty() {
         let _ = writeln!(out, "nothing to undo");
         return Ok(0);
     }
+    // What is put back has a new mtime, so a build sees it changed. This log says it is the session's.
+    let restored = dir.join("restored.jsonl");
+    let mut log = fs::OpenOptions::new().create(true).append(true).open(&restored).map_err(|e| format!("{}: {e}", restored.display()))?;
     let mut left = Vec::new();
     for v in entries.iter().rev() {
-        let rel = PathBuf::from(v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?);
+        let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
+        let rel = PathBuf::from(path);
         parents_are_plain(real, &rel)?;
         let at = real.join(&rel);
         if let Some(want) = v.get("after").and_then(|h| h.str()) {
-            match fs::read(&at) {
-                Ok(b) if format!("{:016x}", hash_of(&b)) == want => {}
-                _ => {
-                    left.push(format!("{} changed after it was applied, and stays", name(&rel)));
-                    continue;
-                }
+            if found_at(&at).as_deref() != Some(want) {
+                left.push(format!("{} changed after it was applied, and stays", name(&rel)));
+                continue;
             }
         }
         let is_true = |k: &str| v.get(k) == Some(&Value::Bool(true));
@@ -787,6 +813,11 @@ pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String>
         } else {
             let _ = fs::remove_file(&at);
         }
+        let mut pairs = vec![("path".to_string(), s(path))];
+        if let Some(h) = found_at(&at) {
+            pairs.push(("after".to_string(), s(&h)));
+        }
+        writeln!(log, "{}", Value::Obj(pairs).text()).map_err(|e| format!("{}: {e}", restored.display()))?;
         let _ = writeln!(out, "restored {}", name(&rel));
     }
     let _ = fs::remove_file(dir.join("undo.jsonl"));
@@ -1089,6 +1120,32 @@ mod tests {
         assert_eq!(t.text("b"), "owner's b");
         assert!(!t.real.join("new").exists());
         assert_eq!(undo(&t.dir(), &t.real, &mut std::io::sink()).unwrap(), 0);
+    }
+
+    #[test]
+    fn what_undo_put_back_is_not_mistaken_for_the_owner() {
+        let t = T::new("again");
+        t.real("a", "was a");
+        std::os::unix::fs::symlink("a", t.real.join("l")).unwrap();
+        t.upper("a", "now a");
+        t.upper("l", "a file now");
+        t.apply(true, &[]).unwrap();
+        assert_eq!(undo(&t.dir(), &t.real, &mut std::io::sink()).unwrap(), 0);
+        assert_eq!(t.text("a"), "was a");
+        assert_eq!(fs::read_link(t.real.join("l")).unwrap(), Path::new("a"));
+        // From here every mtime is since the session began, so only what the session recorded
+        // tells what undo put back from the owner's change.
+        let meta = Meta { project: t.real.clone(), started: 0 };
+        let apply_all = || apply(&t.upper, &t.dir(), &meta, true, &[], &mut std::io::sink());
+        apply_all().unwrap();
+        assert_eq!(t.text("a"), "now a");
+        assert_eq!(t.text("l"), "a file now");
+        // The owner edits what undo put back: that is theirs, and it stops the next apply.
+        assert_eq!(undo(&t.dir(), &t.real, &mut std::io::sink()).unwrap(), 0);
+        t.real("a", "owner's");
+        let e = apply_all().unwrap_err();
+        assert!(e.contains("a changed in your tree") && !e.contains("l changed"), "{e}");
+        assert_eq!(t.text("a"), "owner's");
     }
 
     #[test]
