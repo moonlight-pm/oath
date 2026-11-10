@@ -485,8 +485,9 @@ boots the same disk again.
 A case marked `gap` is a known failure assigned to a phase; it may fail,
 and the run fails if it starts passing so the mark gets removed. A clean
 full run writes `check-pass` into that output (sha256 of kernel, initrd
-and image); `cargo make install` refuses an output without a matching
-stamp unless given `--unchecked`. `install --qemu` is itself a test and is not gated.
+and image), and a failing case removes it; a clean `--case` run judged
+nothing else and leaves it. `cargo make install` refuses an output
+without a matching stamp unless given `--unchecked`. `install --qemu` is itself a test and is not gated.
 
 `cargo make check --target user@host` runs the cases marked `metal` on
 an installed machine, one at a time, trusting only the host key in

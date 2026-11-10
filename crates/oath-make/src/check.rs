@@ -3,8 +3,9 @@
 //! (the latest, or `--output <id>`); cases run
 //! in parallel. A case with `gap` is a known failure scheduled for a phase:
 //! it may fail without failing the run, and if it starts passing the run
-//! fails so the gap gets removed. A clean run writes `check-pass` into the
-//! output, which `cargo make install` requires.
+//! fails so the gap gets removed. A clean full run writes `check-pass` into
+//! the output, which `cargo make install` requires; a failing case removes
+//! it, and a clean `--case` run leaves it as it was.
 //!
 //! `--target user@host` runs the cases marked `metal` against a real
 //! machine instead, one at a time. After each case the harness undoes back
@@ -247,12 +248,36 @@ pub fn run_check(root: &Path, out: &Path, opts: Opts) -> Result<i32> {
     results.sort_by(|a, b| a.name.cmp(&b.name));
     let all_ok = summarize(&results, &dir)?;
     let stamp = output.file("check-pass");
-    let _ = fs::remove_file(&stamp);
-    if all_ok && opts.only.is_empty() {
-        write_pretty(&stamp, &image_stamp(&ctx.img)?)?;
-        println!("image checked: {}", stamp.display());
+    match stamp_after(all_ok, opts.only.is_empty()) {
+        Stamp::Write => {
+            write_pretty(&stamp, &image_stamp(&ctx.img)?)?;
+            println!("image checked: {}", stamp.display());
+        }
+        Stamp::Remove => {
+            let _ = fs::remove_file(&stamp);
+        }
+        Stamp::Keep => {}
     }
     Ok(if all_ok { 0 } else { 1 })
+}
+
+/// What a QEMU run does to the output's `check-pass`.
+#[derive(Debug, PartialEq, Eq)]
+enum Stamp {
+    Write,
+    Keep,
+    Remove,
+}
+
+/// A failing case removes the stamp and only a clean full run writes one.
+/// A clean `--case` run judged none of the other cases, so a full run's
+/// stamp stands.
+fn stamp_after(all_ok: bool, full: bool) -> Stamp {
+    match (all_ok, full) {
+        (false, _) => Stamp::Remove,
+        (true, true) => Stamp::Write,
+        (true, false) => Stamp::Keep,
+    }
 }
 
 /// Write `report.json`, print one line per case and the totals.
@@ -1024,5 +1049,13 @@ mod tests {
         assert_eq!(verdict(true, true), Verdict::Fixed);
         assert!(Verdict::Gap.ok() && Verdict::Skip.ok());
         assert!(!Verdict::Fixed.ok() && !Verdict::Fail.ok());
+    }
+
+    #[test]
+    fn only_a_clean_full_run_stamps_and_a_partial_one_keeps_it() {
+        assert_eq!(stamp_after(true, true), Stamp::Write);
+        assert_eq!(stamp_after(true, false), Stamp::Keep);
+        assert_eq!(stamp_after(false, true), Stamp::Remove);
+        assert_eq!(stamp_after(false, false), Stamp::Remove);
     }
 }
