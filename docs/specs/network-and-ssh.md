@@ -56,9 +56,16 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
   write them to `/etc/resolv.conf`; an empty list leaves the file as it
   is. Going back to dhcp flushes the static IPv4 address and its routes
   before the client starts; neither flush touches IPv6.
+- A static converge leaves a link that already holds its address (the
+  one IPv4 address, permanent) and its default route as it is, so a
+  change to `dns` alone writes `/etc/resolv.conf` and nothing else. Any
+  other link is flushed and given the address, and with a gateway `ip
+  route del default` runs before the route is added. A step whose
+  failure is expected and ignored (that `route del`, once the flush has
+  taken the route) prints nothing.
 - Any change to `up`, `ipv4` or `gateway` is confirm-class: `oath apply`
   exits 3 without `--confirm`, because it can cut the machine off from
-  SSH. Serial still works.
+  SSH. Serial still works. A change to `dns` is not.
 - PID 1 brings `lo` up itself. Loopback is not a catalog object.
 - The base profile seeds DHCP. QEMU user networking hands out
   10.0.2.15 and forwards host port 2222 (`OATH_SSH_PORT`) to guest 22.
