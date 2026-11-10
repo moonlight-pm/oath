@@ -1,8 +1,9 @@
 # pkg
 
 A package. Bits live under `/oath/store/pkg/<name>/<hash>/`. `/bin` is
-a symlink farm, not an unpack target. There is no `apt` and no
-`oath install`. Name is a slot; hash is the bits.
+a symlink farm, not an unpack target. There is no `apt`: a package
+comes by name with `oath add` (R81), and `oath install` puts this whole
+system on a disk (R43). Name is a slot; hash is the bits.
 
 **When to use:** install or remove a package (`present`); pin a
 realization (`hash`).
@@ -24,8 +25,10 @@ this machine lacks, and applies them at once. `oath new pkg:<name>` with
 no fields makes the same objects without applying. Nothing the machine
 has moves: a need it holds at another pin is re-pointed if the package
 loses no library, and otherwise nothing is made and `oath update` comes
-first. With no head on any origin, a tree already in the store is the
-pin, as an empty `hash` says below.
+first. `oath add` refuses a name with no head on any origin. `oath new
+pkg:<name>` with no fields takes one only when the store already has a
+tree of it: the object gets no `hash`, and apply links that tree, as an
+empty `hash` says below.
 
 ## Fields
 
@@ -123,8 +126,9 @@ after each boot); a damaged package has status `error` and INDEX lists
 it. Fetch it again (`url`) or reinstall.
 
 Safety: `mutate`. Apply snapshots, then converges links. Moving the
-`hash` of the package `svc:sshd` runs from (`pkg:dropbear`) restarts
-sshd, so it needs `--confirm` and goes on probation.
+`hash` of the package `svc:sshd`'s `exec[0]` resolves into
+(`pkg:openssh`) restarts sshd, so it needs `--confirm` and goes on
+probation.
 
 ## Example
 
@@ -138,23 +142,27 @@ oath apply pkg:dosfstools
 oath undo
 ```
 
-The `base` profile ships every package present: the fixed ones above,
-one GNU tool for each job (coreutils, sed, grep, gawk, findutils,
-diffutils, tar, gzip, xz, bzip2, procps-ng, less, vim), ping, chrony,
-OpenSSH's client tools, dosfstools, curl, dig, host and nslookup
-(`pkg:bind`), openssl, and the libraries they load.
+The `base` profile ships present: the fixed ones above, one GNU tool
+for each job (coreutils, sed, grep, gawk, findutils, diffutils, tar,
+gzip, xz, bzip2, procps-ng, less, vim), ping, chrony, OpenSSH's client
+tools, dosfstools, curl, dig, host and nslookup (`pkg:bind`), openssl,
+the CA certificates (`pkg:certs`), and the libraries they load. It also
+has three recipes, absent (below): `pkg:claude-code`, `pkg:codex` and
+`pkg:grok-build`, each with its `-src`.
 A library a present package needs cannot be removed: apply refuses a
-broken `needs` graph. All but `pkg:oath` (built by cargo) come from
-plans in `pkgs/`, built from source with GCC against glibc. Programs
-load their libraries from `/lib`, a link farm like `/bin`: a package's
-`lib/` entries are linked there when it is present. There is no C
-compiler on the box yet.
+broken `needs` graph. The present ones, all but `pkg:oath` (built by
+cargo), come from plans in `pkgs/`, built from source; the programs and
+libraries with GCC against glibc. Programs load their libraries from
+`/lib`, a link farm like `/bin`: a package's `lib/` entries are linked
+there when it is present. `base` has no C compiler; `desk` adds
+`pkg:gcc`.
 
-**Recipes** (R23): a package whose licence does not allow
-redistribution is not in the image. The catalog has its plan
+**Recipes** (R23, R31): a package whose licence does not allow
+redistribution, or a coding agent each machine takes from its vendor's
+own build, is not in the image. The catalog has its plan
 (`plan:<name>`), its source (`pkg:<name>-src`, the vendor's file by
 `url` and `file`) and `pkg:<name>` absent at the pin the build host
 got; INDEX lists it under Recipes. Build it here with `sudo oath build
 plan:<name>`, then `oath set pkg:<name> present=true` and apply: the
-pin refuses a pack that is not the build host's. `pkg:claude-code` is
-one (`claude`).
+pin refuses a pack that is not the build host's. `pkg:claude-code`
+(`claude`), `pkg:codex` and `pkg:grok-build` are recipes.
