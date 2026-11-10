@@ -25,7 +25,9 @@ this machine lacks, and applies them at once. `oath new pkg:<name>` with
 no fields makes the same objects without applying. Nothing the machine
 has moves: a need it holds at another pin is re-pointed if the package
 loses no library, and otherwise nothing is made and `oath update` comes
-first. `oath add` refuses a name with no head on any origin. `oath new
+first. Both refuse a head older than one this machine took
+(`/oath/heads.json`), as `oath update` holds it. `oath add` refuses a
+name with no head on any origin. `oath new
 pkg:<name>` with no fields takes one only when the store already has a
 tree of it: the object gets no `hash`, and apply links that tree, as an
 empty `hash` says below.

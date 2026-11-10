@@ -101,7 +101,9 @@ fn plan(
     for id in cat.ls(Some(KIND_PKG))? {
         machine.insert(id.name.clone(), cat.get(&id)?.desired);
     }
-    let (with, moves) = head::additions(&machine, offers, names)?;
+    let taken: head::Record =
+        oath_core::read_json(&root.join(head::RECORD)).unwrap_or_default();
+    let (with, moves) = head::additions(&machine, offers, &taken, names)?;
     for m in moves.iter().filter(|_| fetch) {
         let Move::Head { name, to, .. } = m else { continue };
         if !oath_core::store_present(root, name, to) {

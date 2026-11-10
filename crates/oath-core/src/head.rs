@@ -284,6 +284,7 @@ pub fn plan(
 pub fn additions(
     machine: &BTreeMap<String, Value>,
     offers: &BTreeMap<String, Offer>,
+    taken: &Record,
     names: &[String],
 ) -> Result<(BTreeMap<String, Value>, Vec<Move>)> {
     let mut with = machine.clone();
@@ -301,6 +302,22 @@ pub fn additions(
             };
             return Err(Error::hint(what, format!("oath ls --origin {name}")));
         };
+        if let Some(t) = taken.get(&name).filter(|t| after(offer.head.order(), t.order())) {
+            let head = format!(
+                "the head on the origins, {}, is older than the one this machine took, {} \
+                 (signed by {}, published {})",
+                short(&offer.head.hash),
+                short(&t.hash),
+                t.signer,
+                t.published
+            );
+            let what = match by {
+                Some(p) => format!("pkg:{p} needs pkg:{name}, and {head}"),
+                None => format!("pkg:{name}: {head}"),
+            };
+            let pin = format!("sudo oath new pkg:{name} hash={}", t.hash);
+            return Err(Error::hint(what, format!("nothing changed; `{pin}` pins the one taken")));
+        }
         let set = offer.head.fields();
         todo.extend(need_names(&set).into_iter().rev().map(|n| (n, Some(name.clone()))));
         with.insert(name.clone(), json!({ "present": true, "hash": "" }));
@@ -806,7 +823,7 @@ mod tests {
             head("glibc", 'G', &[], "t"),
             head("other", 'o', &[], "t"),
         ]);
-        let (with, moves) = additions(&machine, &o, &["cell".to_string()]).unwrap();
+        let (with, moves) = additions(&machine, &o, &Record::new(), &["cell".to_string()]).unwrap();
         assert_eq!(addition_names(&moves), ["cell", "crun", "seccomp"]);
         assert_eq!(with["cell"]["hash"], "");
         assert_eq!(with["glibc"], machine["glibc"]);
@@ -816,18 +833,42 @@ mod tests {
     fn a_need_with_no_head_is_named() {
         let o = offers(vec![head("cell", 'c', &[("crun", 'r')], "t")]);
         let names = ["cell".to_string()];
-        let e = additions(&BTreeMap::new(), &o, &names).unwrap_err().to_string();
+        let e = additions(&BTreeMap::new(), &o, &Record::new(), &names).unwrap_err().to_string();
         assert!(e.contains("pkg:cell needs pkg:crun, which has no head"), "{e}");
         let names = ["nothing".to_string()];
-        let e = additions(&BTreeMap::new(), &o, &names).unwrap_err().to_string();
+        let e = additions(&BTreeMap::new(), &o, &Record::new(), &names).unwrap_err().to_string();
         assert!(e.contains("pkg:nothing has no head"), "{e}");
+    }
+
+    #[test]
+    fn an_addition_never_takes_a_head_older_than_one_taken() {
+        let o = offers(vec![
+            head("cell", 'c', &[("crun", 'r')], "2026-11-05T00:00:00Z"),
+            head("crun", 'r', &[], "2026-11-05T00:00:00Z"),
+        ]);
+        let later =
+            |c| Taken { hash: h(c), published: "2026-11-06T00:00:00Z".into(), ..Taken::default() };
+        let names = ["cell".to_string()];
+        let taken = Record::from([("cell".to_string(), later('d'))]);
+        let e = additions(&BTreeMap::new(), &o, &taken, &names).unwrap_err().to_string();
+        assert!(e.contains("pkg:cell: the head on the origins"), "{e}");
+        assert!(e.contains("is older than the one this machine took"), "{e}");
+        let taken = Record::from([("crun".to_string(), later('e'))]);
+        let e = additions(&BTreeMap::new(), &o, &taken, &names).unwrap_err().to_string();
+        assert!(e.contains("pkg:cell needs pkg:crun, and the head on the origins"), "{e}");
+        let taken = Record::from([(
+            "cell".to_string(),
+            Taken { hash: h('b'), published: "2026-11-04T00:00:00Z".into(), ..Taken::default() },
+        )]);
+        let (_, moves) = additions(&BTreeMap::new(), &o, &taken, &names).unwrap();
+        assert_eq!(addition_names(&moves), ["cell", "crun"], "a newer head is taken");
     }
 
     #[test]
     fn a_new_package_runs_with_the_machines_pin_if_it_loses_no_library() {
         let machine = BTreeMap::from([("certs".to_string(), doc('n', &[]))]);
         let o = offers(vec![head("cell", 'c', &[("certs", 'o')], "t")]);
-        let (with, moves) = additions(&machine, &o, &["cell".to_string()]).unwrap();
+        let (with, moves) = additions(&machine, &o, &Record::new(), &["cell".to_string()]).unwrap();
         let none = trees(&[]);
         let m = run(&with, moves, &none, &none);
         assert_eq!(addition_names(&m), ["cell"]);
@@ -840,7 +881,7 @@ mod tests {
     fn a_new_package_that_would_lose_a_library_is_held() {
         let machine = BTreeMap::from([("foo".to_string(), doc('n', &[]))]);
         let o = offers(vec![head("app", 'a', &[("foo", 'o')], "t")]);
-        let (with, moves) = additions(&machine, &o, &["app".to_string()]).unwrap();
+        let (with, moves) = additions(&machine, &o, &Record::new(), &["app".to_string()]).unwrap();
         let loads = trees(&[("app", 'a', &["libfoo.so.1"])]);
         let provides = trees(&[("foo", 'n', &["libfoo.so.2"])]);
         let m = run(&with, moves, &loads, &provides);
