@@ -14,7 +14,7 @@ use crate::error::{Error, Result};
 use crate::id::ObjectId;
 use crate::kinds::{Meta, PkgNeed, PlanActual};
 use crate::packhash::{hash_tree, is_realization_id, slot_dir, LIVE_NAME};
-use crate::pkg::{fetch_pkg_any, put_tree, resolve_tree, store_present};
+use crate::pkg::{prefetch_pkg_any, put_tree, resolve_tree, store_present};
 use crate::plan::{
     file_hash, fmt_plan, input_set_hash, lint_bytes, lint_path, PlanFile, PLAN_NAME,
 };
@@ -396,7 +396,9 @@ fn ensure_need(catalog_root: &Path, n: &PkgNeed, concurrent: bool) -> Result<()>
         obj.as_ref().and_then(|o| o.desired.get(k).and_then(|u| u.as_str())).unwrap_or("")
     };
     let (url, file) = (field("url"), field("file"));
-    if fetch_pkg_any(catalog_root, name, url, file, &n.hash)?.is_none() {
+    // A build need goes in the store alone: the machine's own pin, `live`
+    // and links stay for apply to move. The build reads it by its hash.
+    if prefetch_pkg_any(catalog_root, name, url, file, &n.hash)?.is_none() {
         return Err(Error::hint(
             format!("{} @ {} is not in the store", n.id, n.hash),
             "fetch it (pkg.url or host:local.origins) or pack it first",

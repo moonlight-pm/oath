@@ -669,6 +669,35 @@ fn prebuild_fetch_relocate_file_and_skip() {
 }
 
 #[test]
+fn a_fetched_build_need_moves_no_pin() {
+    // A plan that needs another version of a package the machine runs
+    // (apps/hello.plan's older glibc): the need goes in the store, and the
+    // package's pin, applied spec and `live` stay for apply to move.
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_shell(d.path());
+    let (src, tar) = pack_upstream(d.path());
+    let (url, _srv) = serve_file(&tar);
+    let running = format!("sha256-{}", "a".repeat(64));
+    write_pkg_url(d.path(), "reloc-src", &url, &running);
+    let obj = d.path().join("objects/pkg/reloc-src");
+    std::fs::copy(obj.join("desired.json"), obj.join("applied.json")).unwrap();
+    let live = d.path().join("store/pkg/reloc-src/live");
+    std::fs::create_dir_all(live.parent().unwrap()).unwrap();
+    std::os::unix::fs::symlink(&running, &live).unwrap();
+    let path = d.path().join("reloc.plan");
+    std::fs::write(&path, fmt_plan(&reloc_plan(&bb, &src))).unwrap();
+    with_fetch(|| build_file(d.path(), &path).expect("build with a fetched need"));
+    assert!(d.path().join("store/pkg/reloc-src").join(&src).is_dir(), "the need is stored");
+    for f in ["desired.json", "applied.json"] {
+        let v: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(obj.join(f)).unwrap()).unwrap();
+        assert_eq!(v["hash"], running.as_str(), "{f}");
+    }
+    assert_eq!(std::fs::read_link(&live).unwrap(), Path::new(&running));
+}
+
+#[test]
 fn prebuild_missing_url_refuses() {
     let d = tmp();
     seed(d.path()).unwrap();

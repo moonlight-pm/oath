@@ -1293,8 +1293,7 @@ pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
 /// T20 fetch: curl `url` (or `{url}/pkg/{name}/{hash}.tar`) into the store.
 /// A `.tar` / gzip is a pack tree; a single file becomes `bin/<name>`.
 /// With `file` (R23), `url` is one file and the tree is that file alone at
-/// the path `file` names. Plan pre-build uses this with `present` still
-/// false.
+/// the path `file` names.
 pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &str) -> Result<()> {
     fetch_tree(catalog_root, name, url, file, hash, true)
 }
@@ -1420,7 +1419,8 @@ pub fn fetch_pkg_any(
 
 /// `fetch_pkg_any` into the store alone: `live` and the object's pin stay
 /// where they are until apply converges the package. `oath update` fetches
-/// every pack this way before it changes anything.
+/// every pack this way before it changes anything, and `oath build` each
+/// build need.
 pub fn prefetch_pkg_any(
     catalog_root: &Path,
     name: &str,
