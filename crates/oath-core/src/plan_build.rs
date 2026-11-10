@@ -581,10 +581,21 @@ fn sandbox_in_child(
     }
 
     bind(out, &scratch.join("out"), false)?;
-    chmod(out, 0o0777)?;
     let out_bin = out.join("bin");
-    if out_bin.is_dir() {
-        chmod(&out_bin, 0o0777)?;
+    if host_root {
+        // The script runs as seat `home` and owns what it writes under /out:
+        // `cp -a … /out/` sets the times of /out/bin, which only its owner
+        // may. The tree hash records no owner.
+        for dir in [out, out_bin.as_path()] {
+            if dir.is_dir() {
+                std::os::unix::fs::chown(dir, Some(crate::seat::UID), Some(crate::seat::GID))?;
+            }
+        }
+    } else {
+        chmod(out, 0o0777)?;
+        if out_bin.is_dir() {
+            chmod(&out_bin, 0o0777)?;
+        }
     }
     chmod(&scratch.join("tmp"), 0o1777)?;
     fs::create_dir_all(scratch.join("proc"))?;

@@ -698,6 +698,34 @@ fn a_fetched_build_need_moves_no_pin() {
 }
 
 #[test]
+fn a_script_may_copy_a_tree_over_out_bin() {
+    // `cp -a … /out/` (40 pkgs/*/build.sh) sets the times of /out/bin, so
+    // the script owns it: on a machine it runs as seat `home`, here as the
+    // user namespace's root. Owners are not in the hash.
+    let d = tmp();
+    seed(d.path()).unwrap();
+    let bb = pack_shell(d.path());
+    let src = pack_src(d.path(), b"hello-from-src\n");
+    let p = PlanFile {
+        name: "copied".into(),
+        produces: "pkg:copied".into(),
+        build_needs: vec![
+            PkgNeed { id: "pkg:bash".into(), hash: bb },
+            PkgNeed { id: "pkg:hello-src".into(), hash: src.clone() },
+        ],
+        run_needs: vec![],
+        script: format!(
+            "mkdir -p /tmp/stage\ncp -a /oath/store/pkg/hello-src/{src}/bin /tmp/stage/\n\
+             cp -a /tmp/stage/bin /out/\n"
+        ),
+    };
+    let path = d.path().join("copied.plan");
+    std::fs::write(&path, fmt_plan(&p)).unwrap();
+    let r = build_file(d.path(), &path).expect("cp -a over /out/bin");
+    assert_eq!(r.product, src, "the same tree as the source pack");
+}
+
+#[test]
 fn prebuild_missing_url_refuses() {
     let d = tmp();
     seed(d.path()).unwrap();
