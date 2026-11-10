@@ -72,12 +72,16 @@ pub struct Host {
     pub origins: Vec<String>,
     /// The seed profile this machine follows (`desk`): `oath update` takes
     /// the newest output published for it, {origin}/out/{profile}.json.
-    /// The image sets it; empty takes no updates.
+    /// The image sets it; empty takes no output, only packages' heads
+    /// (R72).
     #[serde(default)]
     pub profile: String,
-    /// The keys whose signed outputs `oath update` takes (R38):
-    /// `ssh-ed25519 AAAA… name` lines, each a build host's signing key. A
-    /// person adds one; an agent does not.
+    /// The keys whose signed outputs and package heads `oath update` and
+    /// `oath add` take (R38, R72): `ssh-ed25519 AAAA… name` lines. A line
+    /// may start `names="sola,sola-*"` (a trailing `*` matches any rest):
+    /// that key signs only those packages' heads. A key with no list signs
+    /// any head, the outputs and the audit's report. A person adds one; an
+    /// agent does not.
     #[serde(default)]
     pub publishers: Vec<String>,
     /// Filesystems to mount: a path under /mnt or /home, or /home itself
@@ -201,8 +205,8 @@ pub struct Svc {
     /// If false, the process is not running.
     #[serde(default = "default_true")]
     pub enabled: bool,
-    /// Unix account: root or home (uid 1). Absent means root. Does not
-    /// create accounts.
+    /// Unix account: root, home (uid 1), work (uid 2) or void (65534).
+    /// Absent means root. Does not create accounts.
     // The effective account is `crate::svc_spawn`'s.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user: Option<SvcUser>,
@@ -477,7 +481,8 @@ pub struct PkgAdvisory {
     pub summary: String,
 }
 
-/// The pin of a plan file. The product lives on pkg:<name>, not here.
+/// The pin of a plan file. The product lives on pkg:<name> or cell:<name>,
+/// not here.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Plan {
     /// sha256- plus 64 lowercase hex of the canonical plan.plan file.
@@ -491,8 +496,8 @@ pub struct Plan {
 /// apply's snapshot (read-only).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Snap {
-    /// For snap:current, the last snapshot apply created. For snap:N,
-    /// that generation's id.
+    /// For snap:current, the generation the last apply took, or the one
+    /// `oath undo` went back to. For snap:N, that generation's id.
     pub generation: u64,
     /// Parent generation (snap:N only).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -517,7 +522,7 @@ pub struct PlanActual {
     pub inputs: String,
 }
 
-/// The network link net0 (the machine's one NIC).
+/// The network link net0 (the wired NIC PID 1 found a carrier on).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Net {
     /// If true, net0 is up. If false, the link is down.
@@ -572,8 +577,9 @@ pub struct Ssh {
 /// A hardware device (inventory).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Dev {
-    /// Whether this hardware is in the inventory. The seeded devices
-    /// cannot be set false.
+    /// Whether this hardware is in the inventory. PID 1 makes the object
+    /// when it finds the device and removes it when the device is gone;
+    /// `oath set` refuses false.
     pub present: bool,
 }
 
