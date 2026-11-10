@@ -12,6 +12,8 @@ pub const CHAPTERS: &[(&str, &str)] = &[
     ("catalog", include_str!("../../docs/manual/catalog.md")),
     ("services", include_str!("../../docs/manual/services.md")),
     ("packages", include_str!("../../docs/manual/packages.md")),
+    ("cells", include_str!("../../docs/manual/cells.md")),
+    ("writ", include_str!("../../docs/manual/writ.md")),
     ("network", include_str!("../../docs/manual/network.md")),
     ("generations", include_str!("../../docs/manual/generations.md")),
     ("build", include_str!("../../docs/manual/build.md")),
