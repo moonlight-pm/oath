@@ -120,6 +120,7 @@ source = "Chromium 156.0.8078.93 (tag 2026-11-05) with CEF 8ea0c73 (156.0.26, 20
 [cef.not_affected]
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
 "CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
+"CVE-2026-121034" = "Views in Chrome on Windows (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121037" = "ANGLE in Chrome on Windows (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121045" = "Browser in Chrome on Mac (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121050" = "Mobile in Chrome on iOS (Google's record); Oath builds CEF for Linux"
@@ -824,6 +825,9 @@ compare_tag = "{version}"
 cpe = "cpe:2.3:a:oracle:mysql"
 repo = "https://github.com/mysql/mysql-server"
 tag = "mysql-{version}"
+# 9.7 is the LTS line, the last before calendar versioning; 26.7 and 26.10 are
+# Innovation releases (MySQL's manual; read 2026-11-10).
+series = "9.7"
 differs_because = "packaging/rpm-sles/mysql.spec.in: the tag adds SLES 16 Provides lines for the mysql and mysqlrouter users, in an RPM spec this build does not read (read 2026-11-09)"
 
 [ncurses]
@@ -1035,6 +1039,7 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 
 [qtimageformats.not_affected]
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
+"CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module carries no Qt Network code"
 
 [qtnetworkauth]
 cpe = "cpe:2.3:a:qt:qt"
@@ -1045,6 +1050,7 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 
 [qtnetworkauth.not_affected]
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
+"CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module calls Qt Network but carries none of its code; qtbase keeps the hit"
 
 [qtsvg]
 cpe = "cpe:2.3:a:qt:qt"
@@ -1055,6 +1061,7 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 
 [qtsvg.not_affected]
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
+"CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module carries no Qt Network code"
 
 [readline]
 cpe = "cpe:2.3:a:gnu:readline"
