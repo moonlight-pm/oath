@@ -51,7 +51,7 @@
 <div><dt>Network and SSH</dt><dd><code>net0</code> by DHCP or a static address, time from pool.ntp.org, OpenSSH for SSH as <code>home</code> with root login refused, the network daemons dropped to the unprivileged <code>void</code>, and <code>dig</code>.</dd></div>
 <div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick; from a stick booted on the machine, <code>oath install</code> lists the disks and copies the system onto the one you name, with home in its own subvolume. Each machine updates itself: <code>oath update</code> takes the newest output its build host signed, without wiping it.</dd></div>
 <div><dt>Testing</dt><dd><code>cargo make check</code> boots one QEMU machine per case and reboots for real. <code>--target</code> runs the hardware cases on an installed machine and undoes each one. <code>--agent</code> gives a real model five administration tasks.</dd></div>
-<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV or NVIDIA's driver (a recipe) for Vulkan and PipeWire for sound. The <code>desk</code> profile pins Sola's other eleven apps as well.</dd></div>
+<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV or NVIDIA's driver (a recipe) for Vulkan and PipeWire for sound. The <code>desk</code> profile pins Sola's other apps as well.</dd></div>
 </dl>
 <p class="more">The <a href="/manual">manual</a> covers each of these in detail.</p>
 </section>
