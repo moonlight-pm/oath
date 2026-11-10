@@ -4,11 +4,14 @@ The machine itself. There is exactly one object: `host:local`.
 
 **When to use:** change the hostname; reboot or halt; set the
 environment every service gets; set the local timezone; name other
-machines the network's DNS does not; say where packs come from.
+machines the network's DNS does not; say where packs come from; mount
+disks; give a kernel module this machine's options; turn auto-login on
+or off.
 
 **When not:** do not invent extra host objects. Network and packages are
 not this kind. Do not add a Unix user kind — the accounts are always
-`root` and `home`.
+`root`, `home`, `work` (R55: servers and workloads, no `sudo`) and
+`void` (R36: owns nothing).
 
 ## Fields
 
@@ -29,11 +32,11 @@ not this kind. Do not add a Unix user kind — the accounts are always
   `TZ` itself. The system clock and logs stay UTC.
 - `hosts` — other machines by name: a map of host name to one IPv4 or
   IPv6 address. `/etc/hosts` is localhost, this `hostname`, then these,
-  rewritten on every apply and boot, so do not edit it. A name is
-  letters, digits, `-` and `.`; `localhost` and this hostname are
-  refused (`/etc/hosts` has them). `set` replaces the whole map. Empty
-  in the `base` profile. Prefer the network's DNS when it can serve the
-  name: it covers every machine at once.
+  rewritten at every boot and every apply of `host:local`, so do not
+  edit it. A name is letters, digits, `-` and `.`; `localhost` and this
+  hostname are refused (`/etc/hosts` has them). `set` replaces the whole
+  map. Empty in the `base` profile. Prefer the network's DNS when it can
+  serve the name: it covers every machine at once.
 - `origins` — where this machine fetches a pinned pack it does not
   have, in order: a list of `http://` or `https://` prefixes, each tried
   as `{origin}/pkg/<name>/<hash>.tar` until one serves the pinned tree
@@ -54,6 +57,31 @@ not this kind. Do not add a Unix user kind — the accounts are always
   R72), never an output or the audit's report; `names="*"` signs any
   package's head. A key with no list signs all three. The `base` profile
   lists buccina's. A person adds a key; an agent does not.
+- `mounts` — filesystems to mount: a path under `/mnt` or `/home`, or
+  `/home` itself (home on another volume, R45), to `{source, options}`.
+  `source` is `LABEL=`, `UUID=`, `PARTLABEL=` or `PARTUUID=` a value; a
+  device name (`/dev/sdb1`) moves between boots, so it is refused.
+  `options` are mount(8) `-o` options, empty for the filesystem's
+  defaults. PID 1 mounts each at boot and when its disk appears; apply
+  mounts, remounts and unmounts. A source not plugged in waits and is not
+  an error. `/home` itself changes only at boot, before sshd and the
+  desk. Actual lists what is mounted now. `set` replaces the whole map.
+- `module_options` — kernel module parameters by module name (`nvidia`:
+  `NVreg_EnableGpuFirmware=0`): one machine's hardware workarounds, never
+  a default (R34). PID 1 passes them when it loads the module, after its
+  own defaults and before `module.key=value` on the kernel command line.
+  A module already loaded takes a change at the next boot.
+- `seat_hid` — USB `vendor:product` ids (`3554:f510`) whose vendor
+  interfaces belong to the seat (R71). PID 1 makes a listed device's
+  hidraw node `root:home` 0660 when its interface has a vendor-defined
+  collection and no keyboard, mouse or digitizer one: a program as `home`
+  speaks the device's own protocol (a mouse's battery) and never reads
+  its keys or motion. On every plug, and at once on apply.
+- `autologin` — boolean, true when absent (R42). True: the console
+  (`svc:screen`) opens a shell as `home` without asking. False, with a
+  password set (`oath password`): it asks for that password first.
+  `svc:login` sets it when given the password; `oath password --status`
+  shows it.
 
 ## Example
 
