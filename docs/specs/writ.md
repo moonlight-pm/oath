@@ -178,8 +178,9 @@ that as plain data; `writ apply` is the only thing that takes it to the real tre
   `.envrc`, `.github/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.mcp.json`, `.gitignore`, `.gitattributes`, `.gitmodules`, editor config.
   No harness blocks these, because agents must edit them. So it is a review, not a list.
 - `apply` writes each file atomically with setuid, setgid and sticky stripped. It applies nothing if anything asked for
-  cannot go: a FIFO, socket or device; a path that goes through a real symlink; a real file changed since the session began. The owner commits.
-- `undo` puts back what `apply` changed, from copies kept in the session, and leaves any file changed since, by name.
+  cannot go: a FIFO, socket or device; a path that goes through a real symlink; a real file or link changed since the session began,
+  other than by the session's own `apply` or `undo`, which record what they leave. The owner commits.
+- `undo` puts back what `apply` changed, from copies kept in the session, and leaves any file or link changed since, by name.
 - A lock on the session keeps a box and `apply` from running on it at once.
 
 ## The terminal (is)

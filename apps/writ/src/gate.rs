@@ -524,7 +524,7 @@ fn parents_are_plain(real: &Path, rel: &Path) -> Result<(), String> {
 }
 
 /// What `undo` needs for one path. One line of JSON each, oldest first.
-fn undo_line(path: &Path, backup: Option<&str>, mode: u32, link: Option<&Path>, after: Option<u64>, made_dir: bool) -> Result<String, String> {
+fn undo_line(path: &Path, backup: Option<&str>, mode: u32, link: Option<&Path>, after: Option<&str>, made_dir: bool) -> Result<String, String> {
     let text = |p: &Path| p.to_str().map(str::to_string).ok_or(format!("{} is not UTF-8", name(p)));
     let mut pairs = vec![("path".to_string(), s(&text(path)?)), ("mode".to_string(), n(mode as u64))];
     if let Some(b) = backup {
@@ -534,7 +534,7 @@ fn undo_line(path: &Path, backup: Option<&str>, mode: u32, link: Option<&Path>, 
         pairs.push(("link".to_string(), s(&text(l)?)));
     }
     if let Some(h) = after {
-        pairs.push(("after".to_string(), s(&format!("{h:016x}"))));
+        pairs.push(("after".to_string(), s(h)));
     }
     if made_dir {
         pairs.push(("made_dir".to_string(), Value::Bool(true)));
@@ -551,15 +551,24 @@ fn read_log(dir: &Path, file: &str) -> Result<Vec<Value>, String> {
     }
 }
 
+/// A file's contents, as the logs record them.
+fn file_hash(bytes: &[u8]) -> String {
+    format!("{:016x}", hash_of(bytes))
+}
+
+/// Where a link points, as the logs record it.
+fn link_hash(to: &Path) -> String {
+    format!("link {:016x}", hash_of(to.as_os_str().as_bytes()))
+}
+
 /// What is at a path in the real tree, as the logs record it: a file's contents, or where a link
 /// points, hashed. Nothing for a directory, or where nothing is.
 fn found_at(at: &Path) -> Option<String> {
     let m = fs::symlink_metadata(at).ok()?;
     if m.file_type().is_symlink() {
-        let to = fs::read_link(at).ok()?;
-        Some(format!("link {:016x}", hash_of(to.as_os_str().as_bytes())))
+        fs::read_link(at).ok().map(|to| link_hash(&to))
     } else if m.is_file() {
-        fs::read(at).ok().map(|b| format!("{:016x}", hash_of(&b)))
+        fs::read(at).ok().map(|b| file_hash(&b))
     } else {
         None
     }
@@ -630,12 +639,13 @@ fn apply_one(upper: &Path, real: &Path, undo_dir: &Path, seq: usize, c: &Change)
         }
     }
     let temp = |tag: &str| parent.join(format!(".writ-{tag}-{}-{seq}", std::process::id()));
+    // What this leaves at the path, so a later `apply` or `undo` can tell it from the owner's change.
     let mut after = None;
     match &c.kind {
         Kind::File => {
             let bytes = read_plain(&upper.join(&c.path))?;
             let m = fs::symlink_metadata(upper.join(&c.path)).map_err(|e| e.to_string())?;
-            after = Some(hash_of(&bytes));
+            after = Some(file_hash(&bytes));
             let tmp = temp("new");
             let done = (|| -> std::io::Result<()> {
                 let mut f = fs::OpenOptions::new().write(true).create_new(true).mode(0o600).open(&tmp)?;
@@ -651,6 +661,7 @@ fn apply_one(upper: &Path, real: &Path, undo_dir: &Path, seq: usize, c: &Change)
             }
         }
         Kind::Link(to) => {
+            after = Some(link_hash(to));
             let tmp = temp("link");
             std::os::unix::fs::symlink(to, &tmp).map_err(|e| format!("{}: {e}", name(&c.path)))?;
             fs::rename(&tmp, &at).map_err(|e| format!("{}: {e}", name(&c.path)))?;
@@ -677,7 +688,7 @@ fn apply_one(upper: &Path, real: &Path, undo_dir: &Path, seq: usize, c: &Change)
         let path = c.path.to_str().ok_or("not UTF-8")?;
         undo.push(Value::Obj(vec![("path".to_string(), s(path)), ("mode".to_string(), n(mode as u64)), ("was_dir".to_string(), Value::Bool(true))]).text());
     } else {
-        undo.push(undo_line(&c.path, had_backup, mode, old_link.as_deref(), after, c.kind == Kind::MakeDir && old.is_none())?);
+        undo.push(undo_line(&c.path, had_backup, mode, old_link.as_deref(), after.as_deref(), c.kind == Kind::MakeDir && old.is_none())?);
     }
     Ok(undo)
 }
@@ -765,8 +776,8 @@ pub fn undo_main(args: &[OsString]) -> Result<i32, String> {
     undo(&session.dir, &meta.project, &mut std::io::stdout())
 }
 
-/// Take back what `apply` did, newest first. A file changed since it was applied stays, and is named.
-/// What is put back is recorded, so a later `apply` can tell it from the owner's change.
+/// Take back what `apply` did, newest first. A file or link changed since it was applied stays, and
+/// is named. What is put back is recorded, so a later `apply` can tell it from the owner's change.
 pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String> {
     let entries = read_log(dir, "undo.jsonl")?;
     if entries.is_empty() {
@@ -884,6 +895,12 @@ mod tests {
             fs::create_dir_all(self.dir()).unwrap();
             let named: Vec<PathBuf> = named.iter().map(PathBuf::from).collect();
             apply(&self.upper, &self.dir(), &self.meta(), all, &named, &mut std::io::sink())
+        }
+        /// Run `undo`: its code, and the paths it says stay.
+        fn undo(&self) -> (i32, Vec<String>) {
+            let mut said = Vec::new();
+            let code = undo(&self.dir(), &self.real, &mut said).unwrap();
+            (code, String::from_utf8(said).unwrap().lines().filter(|l| l.ends_with(", and stays")).map(str::to_string).collect())
         }
         fn list(&self) -> Vec<(String, Kind)> {
             changes(&self.upper, &self.real).unwrap().into_iter().map(|c| (c.path.to_string_lossy().into_owned(), c.kind)).collect()
@@ -1103,6 +1120,29 @@ mod tests {
     }
 
     #[test]
+    fn a_second_apply_over_a_link_the_session_wrote_is_not_mistaken_for_the_owner() {
+        let t = T::new("relink");
+        let point = |dir: &Path, to: &str| {
+            let _ = fs::remove_file(dir.join("l"));
+            std::os::unix::fs::symlink(to, dir.join("l")).unwrap();
+        };
+        point(&t.upper, "one");
+        fs::create_dir_all(t.dir()).unwrap();
+        let meta = Meta { project: t.real.clone(), started: 0 };
+        let apply_all = || apply(&t.upper, &t.dir(), &meta, true, &[], &mut std::io::sink());
+        apply_all().unwrap();
+        point(&t.upper, "two");
+        apply_all().unwrap();
+        assert_eq!(fs::read_link(t.real.join("l")).unwrap(), Path::new("two"));
+        // The owner points it elsewhere now: the session's next change must stop.
+        point(&t.real, "owner's");
+        point(&t.upper, "three");
+        let e = apply_all().unwrap_err();
+        assert!(e.contains("l changed in your tree"), "{e}");
+        assert_eq!(fs::read_link(t.real.join("l")).unwrap(), Path::new("owner's"));
+    }
+
+    #[test]
     fn undo_puts_back_what_apply_changed_and_leaves_what_the_owner_changed() {
         let t = T::new("undo");
         t.real("a", "was a");
@@ -1120,6 +1160,32 @@ mod tests {
         assert_eq!(t.text("b"), "owner's b");
         assert!(!t.real.join("new").exists());
         assert_eq!(undo(&t.dir(), &t.real, &mut std::io::sink()).unwrap(), 0);
+    }
+
+    #[test]
+    fn undo_leaves_a_link_or_file_the_owner_replaced_after_apply_and_puts_back_the_rest() {
+        let t = T::new("unlink");
+        t.real("a", "was a");
+        t.real("b", "was b");
+        std::os::unix::fs::symlink("a", t.real.join("l")).unwrap();
+        std::os::unix::fs::symlink("b", t.real.join("m")).unwrap();
+        t.upper("a", "now a");
+        t.upper("b", "now b");
+        std::os::unix::fs::symlink("b", t.upper.join("l")).unwrap();
+        std::os::unix::fs::symlink("a", t.upper.join("m")).unwrap();
+        t.apply(true, &[]).unwrap();
+        // The owner points the session's link elsewhere, and puts a link where its file was.
+        fs::remove_file(t.real.join("l")).unwrap();
+        std::os::unix::fs::symlink("owner's", t.real.join("l")).unwrap();
+        fs::remove_file(t.real.join("a")).unwrap();
+        std::os::unix::fs::symlink("owner's", t.real.join("a")).unwrap();
+        let (code, stays) = t.undo();
+        assert_eq!(code, 1);
+        assert_eq!(stays, ["l changed after it was applied, and stays", "a changed after it was applied, and stays"]);
+        assert_eq!(fs::read_link(t.real.join("l")).unwrap(), Path::new("owner's"));
+        assert_eq!(fs::read_link(t.real.join("a")).unwrap(), Path::new("owner's"));
+        assert_eq!(t.text("b"), "was b");
+        assert_eq!(fs::read_link(t.real.join("m")).unwrap(), Path::new("b"));
     }
 
     #[test]
