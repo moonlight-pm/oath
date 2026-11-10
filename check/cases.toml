@@ -552,11 +552,11 @@ steps = [
 
 [[case]]
 name = "store-damage-is-caught"
-about = "A package tree changed behind the catalog's back is reported damaged, shown in INDEX, and not linked again."
+about = "A package tree changed behind the catalog's back is reported damaged and shown in INDEX; linking it again fetches a tree that hashes right in its place."
 steps = [
   { run = "sudo sh -c 'echo x > /oath/store/pkg/dosfstools/live/bin/extra'; sudo oath verify; echo exit=$?", expect = ["pkg:dosfstools DAMAGED", "exit=1"] },
   { run = "oath | grep -A4 'Store damage'; oath get pkg:dosfstools", expect = ["pkg:dosfstools", "status=error"] },
-  { run = "sudo oath set pkg:dosfstools present=false && sudo oath apply pkg:dosfstools && sudo oath set pkg:dosfstools present=true && sudo oath apply pkg:dosfstools", fails = true, expect = ["store is damaged"] },
+  { run = "sudo oath set pkg:dosfstools present=false && sudo oath apply pkg:dosfstools && sudo oath set pkg:dosfstools present=true && sudo oath apply pkg:dosfstools && test ! -e /oath/store/pkg/dosfstools/live/bin/extra && sudo oath verify pkg:dosfstools; echo exit=$?", expect = ["did not hash to its name; replaced it", "exit=0"], reject = ["DAMAGED"] },
 ]
 
 [[case]]
