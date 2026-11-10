@@ -6,7 +6,9 @@
 //! moves. A need it holds at another pin is re-pointed if the package loses
 //! no library; if it would, nothing is made and the update comes first.
 //! What it takes is recorded in `/oath/heads.json`, as an update records
-//! the heads it took. Run by a user who cannot change the catalog, `oath
+//! the heads it took: by `oath new` when it makes the objects, by `oath
+//! add` once its apply has linked them. An add whose apply stops part way
+//! is undone whole. Run by a user who cannot change the catalog, `oath
 //! add` says what `sudo oath add` would make and the size of each pack.
 //!
 //! The list is `index.json`, which is not signed. Nothing is installed from
@@ -20,7 +22,9 @@ use std::path::Path;
 
 use oath_core::head::{self, Offer};
 use oath_core::update::{short, Move};
-use oath_core::{Actor, ApplyHooks, Catalog, Error, ObjectId, Result, KIND_PKG};
+use oath_core::{
+    Actor, ApplyHooks, ApplyReport, Catalog, Error, ObjectId, Result, KIND_PKG, KIND_SNAP,
+};
 use serde_json::{json, Map, Value};
 
 use crate::publish::read_url;
@@ -172,6 +176,90 @@ fn forget(cat: &Catalog, ids: &[ObjectId]) {
     }
 }
 
+/// `oath new`'s objects, made, or none of them, with the heads they take
+/// recorded as an update records them: none older comes after. The pins
+/// wait for `oath apply`, which reads no head and cannot tell one from any
+/// other pin, so the heads are taken here, when the pins are set.
+fn make(
+    root: &Path,
+    cat: &Catalog,
+    made: &[Made],
+    offers: &BTreeMap<String, Offer>,
+) -> Result<Vec<ObjectId>> {
+    let ids = create(cat, made)?;
+    if let Err(e) = record_heads(root, cat, offers) {
+        forget(cat, &ids);
+        return Err(e);
+    }
+    Ok(ids)
+}
+
+/// `oath add`'s objects, made and applied, or none of them, with the heads
+/// they take recorded once the apply has linked them.
+fn take(
+    root: &Path,
+    cat: &Catalog,
+    made: &[Made],
+    offers: &BTreeMap<String, Offer>,
+    confirm: bool,
+    actor: &Actor,
+    hooks: &dyn ApplyHooks,
+) -> Result<ApplyReport> {
+    let ids = create(cat, made)?;
+    let report = apply_made(cat, &ids, confirm, actor, hooks)?;
+    record_heads(root, cat, offers)?;
+    Ok(report)
+}
+
+/// The generation this catalog is at (`snap:current`).
+fn generation(cat: &Catalog) -> u64 {
+    let current = cat.get(&ObjectId::new(KIND_SNAP, "current"));
+    current.ok().and_then(|o| o.actual["generation"].as_u64()).unwrap_or(0)
+}
+
+/// Apply what [`create`] made, each or none. An apply that stops part way
+/// has linked some, which need what it did not link: its generation is
+/// undone, as `oath undo` would, which unlinks and deletes each object it
+/// made, and then what no apply reached is forgotten. An apply refused
+/// before it took a generation changed nothing, and the newest generation
+/// is not its to undo, though it may be of these very ids (a package
+/// removed, now added again).
+fn apply_made(
+    cat: &Catalog,
+    ids: &[ObjectId],
+    confirm: bool,
+    actor: &Actor,
+    hooks: &dyn ApplyHooks,
+) -> Result<ApplyReport> {
+    let before = generation(cat);
+    let secs = oath_core::probation::DEFAULT_SECS;
+    let e = match cat.apply_with(Some(ids.to_vec()), confirm, secs, actor, hooks) {
+        Ok(r) => return Ok(r),
+        Err(e) => e,
+    };
+    let undone = generation(cat) == before
+        || match cat.undo_if_newest(ids, actor, hooks) {
+            Ok(Some(r)) => {
+                eprintln!("undone: back to generation {}", r.generation);
+                true
+            }
+            Ok(None) => {
+                eprintln!("another apply came after this one: `oath log`, then `sudo oath undo`");
+                false
+            }
+            Err(u) => {
+                eprintln!("could not undo the failed apply: {u}; `sudo oath undo` takes it back");
+                false
+            }
+        };
+    // Left whole when not undone: what was linked keeps what it needs, and
+    // `oath undo` takes back each one.
+    if undone {
+        forget(cat, ids);
+    }
+    Err(e)
+}
+
 fn need_root(root: &Path, verb: &str, what: &str) -> Result<()> {
     if can_write(root) {
         return Ok(());
@@ -199,7 +287,7 @@ pub fn new(root: &Path, cat: &Catalog, id: &ObjectId, as_json: bool) -> Result<O
     }
     need_root(root, "new", &id.to_string())?;
     let made = plan(root, cat, &names, &offers, true)?;
-    let ids = create(cat, &made)?;
+    let ids = make(root, cat, &made, &offers)?;
     let list: Vec<String> = ids.iter().map(ObjectId::to_string).collect();
     if as_json {
         let v: Vec<Value> = made.iter().map(Made::json).collect();
@@ -211,12 +299,12 @@ pub fn new(root: &Path, cat: &Catalog, id: &ObjectId, as_json: bool) -> Result<O
                 println!("  runs with this machine's {r}");
             }
         }
-        println!("`oath apply {}` starts {}", list.join(" "), starts(list.len()));
+        println!("`oath apply {}` links {}", list.join(" "), them(list.len()));
     }
     Ok(Some(0))
 }
 
-fn starts(n: usize) -> &'static str {
+fn them(n: usize) -> &'static str {
     if n == 1 {
         "it"
     } else {
@@ -276,29 +364,7 @@ pub fn add(
         return preview(root, cat, &wanted, &offers, here_json, as_json);
     }
     let made = plan(root, cat, &wanted, &offers, true)?;
-    let ids = create(cat, &made)?;
-    let report = cat.apply_with(
-        Some(ids.clone()),
-        confirm,
-        oath_core::probation::DEFAULT_SECS,
-        actor,
-        hooks,
-    );
-    let report = match report {
-        Ok(r) => r,
-        Err(e) => {
-            // Each or none: an apply that stopped part way linked some.
-            match cat.undo_if_newest(&ids, actor, hooks) {
-                Ok(Some(r)) => eprintln!("undone: back to generation {}", r.generation),
-                Ok(None) => {}
-                Err(u) => eprintln!("could not undo the failed apply: {u}; `sudo oath undo`"),
-            }
-            forget(cat, &ids);
-            return Err(e);
-        }
-    };
-    // The heads it took, as an update records them: none older comes after.
-    record_heads(root, cat, &offers)?;
+    let report = take(root, cat, &made, &offers, confirm, actor, hooks)?;
     if as_json {
         let v: Vec<Value> = made.iter().map(Made::json).collect();
         println!("{}", json!({ "added": v, "here": here_json, "generation": report.generation }));
@@ -372,7 +438,7 @@ fn preview(
             "{}{more} to fetch; `{run}` adds {} and checks every library and link once the packs \
              are here",
             mb(fetch),
-            starts(made.len()),
+            them(made.len()),
         );
     }
     Ok(0)
@@ -563,6 +629,163 @@ mod tests {
         let hooks = oath_core::NullHooks;
         let e = add(d.path(), &cat, &a, &hooks, vec!["svc:sshd".into()], false, false).unwrap_err();
         assert!(e.to_string().contains("is not a package"), "{e}");
+    }
+
+    /// Snapshots are copies of `objects/`, packages link under the root,
+    /// and a snapshot can be refused, as a full disk refuses one.
+    struct Hooks {
+        root: std::path::PathBuf,
+        snaps: tempfile::TempDir,
+        refuse: std::cell::Cell<bool>,
+    }
+
+    impl Hooks {
+        fn new(root: &Path) -> Self {
+            let snaps = tempfile::tempdir().unwrap();
+            Self { root: root.to_path_buf(), snaps, refuse: Default::default() }
+        }
+    }
+
+    impl ApplyHooks for Hooks {
+        fn snapshot(&self, generation: u64) -> Result<()> {
+            if self.refuse.get() {
+                return Err(Error::Msg("no room for a snapshot".into()));
+            }
+            oath_core::copy_objects(&self.root, &self.snaps.path().join(generation.to_string()))
+        }
+        fn snapshot_catalog(&self, generation: u64) -> Result<std::path::PathBuf> {
+            Ok(self.snaps.path().join(generation.to_string()))
+        }
+        fn converge_host(
+            &self,
+            desired: &oath_core::Host,
+            previous: Option<&oath_core::Host>,
+        ) -> Result<oath_core::Host> {
+            oath_core::NullHooks.converge_host(desired, previous)
+        }
+        fn notify_init(&self) -> Result<()> {
+            Ok(())
+        }
+        fn reboot(&self) -> Result<()> {
+            Ok(())
+        }
+        fn halt(&self) -> Result<()> {
+            Ok(())
+        }
+        fn converge_pkg(&self, id: &ObjectId, d: &oath_core::Pkg) -> Result<oath_core::PkgActual> {
+            let bin = self.root.join("bin");
+            oath_core::converge_pkg(&self.root, &bin, &id.name, d.present, &d.hash)
+        }
+    }
+
+    /// A pack in the store as `name` that ships `bin/tool`: its hash.
+    fn pack(root: &Path, name: &str) -> String {
+        let src = root.join(format!("src-{name}"));
+        fs::create_dir_all(src.join("bin")).unwrap();
+        fs::write(src.join("bin/tool"), format!("{name}\n")).unwrap();
+        oath_core::install_tree(root, name, &src, None, "").unwrap()
+    }
+
+    fn made(name: &str, hash: &str, needs: Value) -> Made {
+        let doc = json!({ "present": true, "hash": hash, "needs": needs });
+        Made {
+            id: ObjectId::new(KIND_PKG, name),
+            doc: doc.as_object().unwrap().clone(),
+            version: "1".into(),
+            signer: "maker".into(),
+            repointed: Vec::new(),
+        }
+    }
+
+    fn offer(name: &str, hash: &str) -> (String, Offer) {
+        let head = head::Head {
+            name: name.into(),
+            hash: hash.into(),
+            needs: Vec::new(),
+            published: "2026-11-10T00:00:00Z".into(),
+            committed: None,
+            source: None,
+            version: "1".into(),
+            description: String::new(),
+            home: String::new(),
+            category: String::new(),
+        };
+        let o = Offer { head, signer: "maker".into(), origin: "https://origin.example".into() };
+        (name.to_string(), o)
+    }
+
+    fn taken(root: &Path) -> head::Record {
+        oath_core::read_json(&root.join(head::RECORD)).unwrap_or_default()
+    }
+
+    #[test]
+    fn new_records_the_heads_it_takes() {
+        let (d, cat) = seeded();
+        let a = pack(d.path(), "tool-a");
+        let other = format!("sha256-{}", "c".repeat(64));
+        // pkg:oath is here at another pin: its head is not taken.
+        let offers = BTreeMap::from([offer("tool-a", &a), offer("oath", &other)]);
+        let ids = make(d.path(), &cat, &[made("tool-a", &a, json!([]))], &offers).unwrap();
+        assert_eq!(cat.get(&ids[0]).unwrap().meta.status, "new", "waits for an apply");
+        let record = taken(d.path());
+        assert_eq!(record["tool-a"].hash, a);
+        assert_eq!(record["tool-a"].signer, "maker");
+        assert!(!record.contains_key("oath"), "{record:?}");
+    }
+
+    #[test]
+    fn an_add_records_the_heads_once_applied() {
+        let (d, cat) = seeded();
+        let hooks = Hooks::new(d.path());
+        let a = pack(d.path(), "tool-a");
+        let offers = BTreeMap::from([offer("tool-a", &a)]);
+        let actor = Actor::unknown();
+        take(d.path(), &cat, &[made("tool-a", &a, json!([]))], &offers, false, &actor, &hooks)
+            .unwrap();
+        assert!(d.path().join("bin/tool").symlink_metadata().is_ok(), "linked");
+        assert_eq!(taken(d.path())["tool-a"].hash, a);
+    }
+
+    /// A base VM, `oath add postgis`: what it linked needed what it failed
+    /// to link, and stayed.
+    #[test]
+    fn a_failed_add_leaves_the_machine_as_it_was() {
+        let (d, cat) = seeded();
+        let hooks = Hooks::new(d.path());
+        let (a, b) = (pack(d.path(), "tool-a"), pack(d.path(), "tool-b"));
+        let offers = BTreeMap::from([offer("tool-a", &a), offer("tool-b", &b)]);
+        let needs = json!([{ "id": "pkg:tool-b", "hash": b }]);
+        let both = [made("tool-a", &a, needs), made("tool-b", &b, json!([]))];
+        let actor = Actor::unknown();
+        let e = take(d.path(), &cat, &both, &offers, false, &actor, &hooks).unwrap_err();
+        assert!(e.to_string().contains("/bin/tool exists and is not pkg:tool-b"), "{e}");
+        for m in &both {
+            assert!(cat.get(&m.id).is_err(), "{} is gone", m.id);
+        }
+        assert!(d.path().join("bin/tool").symlink_metadata().is_err(), "unlinked");
+        assert!(cat.diff(None).unwrap().is_empty());
+        assert!(taken(d.path()).is_empty(), "no head was taken");
+    }
+
+    /// A package removed and added again, the add refused before it took a
+    /// generation: the removal is not undone.
+    #[test]
+    fn a_refused_add_undoes_no_older_apply() {
+        let (d, cat) = seeded();
+        let hooks = Hooks::new(d.path());
+        let a = pack(d.path(), "tool-a");
+        let offers = BTreeMap::from([offer("tool-a", &a)]);
+        let one = [made("tool-a", &a, json!([]))];
+        let actor = Actor::unknown();
+        take(d.path(), &cat, &one, &offers, false, &actor, &hooks).unwrap();
+        cat.remove_object(&one[0].id).unwrap();
+        cat.apply(Some(vec![one[0].id.clone()]), false, &actor, &hooks).unwrap();
+        hooks.refuse.set(true);
+        let e = take(d.path(), &cat, &one, &offers, false, &actor, &hooks).unwrap_err();
+        assert!(e.to_string().contains("no room for a snapshot"), "{e}");
+        assert!(cat.get(&one[0].id).is_err(), "the removal is not undone");
+        assert!(d.path().join("bin/tool").symlink_metadata().is_err());
+        assert!(cat.diff(None).unwrap().is_empty());
     }
 
     #[test]
