@@ -20,7 +20,6 @@
 //! a disk with anything mounted.
 
 use std::fs;
-use std::io::Write as _;
 use std::os::unix::fs::{chown, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
