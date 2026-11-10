@@ -9,12 +9,26 @@ Do not edit `/etc` or hunt random files.
 oath                 the INDEX (generated, live; also /oath/INDEX.md)
 ```
 
-`--json` prints the same facts as JSON. Failures include a **hint**
+`--json` prints the same facts as JSON. Most failures include a **hint**
 pointing at the next step (`oath ls`, `oath schema <kind>`, INDEX
-safety).
+safety); `set`, `new`, `rm`, `apply` and `undo` without root print
+`io Permission denied (os error 13)` and no hint. The exit status is 0,
+1 for a failure, 2 for a command line `oath` cannot parse, 3 for an
+apply that needs `--confirm`, and 4 for a refusal printed as
+`security: …`: a tree, download or signature that is not what it should
+be.
 
 The catalog root is `/oath`. `--root` / `OATH_ROOT` is for tests and
 for build and install tooling on the build host.
+
+Each `oath` command also prints telemetry on stderr: lines that start
+`oath-tel `, one JSON object each ([Telemetry](build.md#telemetry)).
+Stdout never carries it and nothing turns it off. `2>/dev/null` drops
+it, and a failure's message with it unless `--json`. `oath` run as root
+appends the same objects to `/oath/log/oath.jsonl`; PID 1 appends its
+own (boot steps, each service's start and exit, hotplug, shutdown) to
+`/oath/log/init.jsonl`. Neither file rotates. Nothing sends them off
+the machine.
 
 ## Verbs
 
@@ -24,26 +38,35 @@ for build and install tooling on the build host.
 | `oath schema [kind]` | List kinds, or one kind's prose + JSON Schema |
 | `oath get <id>` | Desired + actual + status. `--desired` / `--actual` to clip |
 | `oath set <id> k=v` | Write **desired** only. Does not converge. `--from-json '<obj>'` sets several fields. The result must fit the kind's type. `oath set plan:<name> --from-file <path>` files a plan (canonical, `oath fmt -w`); `--from-file -` files the canonical form of a plan read from stdin |
-| `oath new <id> k=v` | Create a `svc` or `pkg` (`--from-json` too). Runs after `apply` |
-| `oath rm <id>` | Mark a `svc` or `pkg` for removal. Removed at `apply` |
-| `oath diff [id]` | Drift between desired and actual (or last applied, for `svc`) |
-| `oath apply [id...]` | Check, snapshot, then converge the listed ids or all drift |
+| `oath new <id> k=v` | Create a `svc`, `pkg` or `cell` (`--from-json` too). Runs after `apply` |
+| `oath rm <id>` | Mark a `svc`, `pkg` or `cell` for removal. Removed at `apply`; one that was never applied is deleted at once |
+| `oath diff [id]` | Drift: desired against the spec last applied, for every kind (`field: old -> new`, or `in-sync`). A live state that differs is not drift: a mount waiting for its disk is in sync |
+| `oath apply [id...]` | Check, snapshot, then converge the listed ids or all drift. `--confirm` and `--probation <secs>`: [Safety](#safety). `--keep-seat`: a running service with a `seat` keeps its program when its package moves, and takes the new one when it next starts |
 | `oath keep` | Keep an apply that is on probation. Run it from a new SSH session |
 | `oath undo` | Put back what the last apply changed (repeat to go further back) |
-| `oath verify [pkg:…]` | Hash linked package trees again against their pins; exit 1 if one changed on disk (`-q`: only damaged ones and the count) |
-| `oath audit [pkg:…]` | The daily security audit's findings for what is here, when a key this machine trusts signed them; `--json` is the report. From the next release |
-| `oath reap` | What holds each version in the store and what would go; `sudo oath reap --confirm` removes it, and each boot does. From the next release |
+| `oath verify [id...]` | Hash linked `pkg` and `cell` trees again (all of them, or the ids given) against the hash each is linked as; exit 1 if one changed on disk (`-q`: only damaged ones and the count) |
+| `oath audit [pkg:<name>]` | The daily security audit's findings for what is here, when a key this machine trusts signed them; `--json` is the report ([Security audit](packages.md#security-audit)) |
+| `oath reap` | What would go: versions in the store that nothing holds, filed plans nothing pins, and generations past the newest five and those since boot (`--json`: every version and what holds it). A version stays while it is live, or a pin, a need, the release, a current plan or a kept generation names it; a tree younger than a day stays too (`--arriving <secs>`). `sudo oath reap --confirm` removes the rest, and each boot does |
 | `oath log` | Apply log (JSON lines): `ok`, `error`, `refused`, `undo:N`, `keep:N`. `-n N` for the last N |
 | `oath logs [id]` | A service's output (`svc:<name>`), the DHCP client's (`net:net0`), the last build of a plan (`plan:<name>`), or PID 1's (no id). `-n N` lines, default 50; `--json` gives `{id, path, lines}` |
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
-| `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin`. Creates the product's `pkg` object if it is missing; `--no-pkg` does not, for a product that is only a build input to other plans |
+| `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin`. Creates the product's `pkg` or `cell` object if it is missing; `--no-pkg` does not, for a product that is only a build input to other plans |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
+| `oath store <id> <path>` | Put a tree built elsewhere (a directory, or a tar of one) into the store as `pkg:<name>` or `cell:<name>` and print its hash. Changes no object ([Packages](packages.md#a-tree-built-here)) |
+| `oath update` | What the newest output published for this machine would change; `sudo oath update --confirm [--reboot]` moves to it; `--keep pkg:<name>`, `--output <id>` ([Install](install.md#update-an-installed-machine)) |
+| `oath publish pkg:<name>` | What it would publish: this machine's pin of the package, as its head on an origin; `--confirm` publishes it, without `sudo` ([Packages](packages.md#publishing-a-package-on-its-own-r72)) |
+| `oath install [disk]` | The disks; `sudo oath install <disk>` says what it would erase and write; with `--confirm` it wipes that disk and installs this system ([Install](install.md#from-a-stick-on-the-machine-oath-install)) |
+| `oath password` | Set, change or remove `home`'s password; `--status` says whether one is set, with auto-login and the seat ([below](#the-password-and-the-seat)) |
+| `oath desk [stop]` | Give the seat (tty1) back to the desk, or with `stop` end the desk and give it to the console ([below](#the-password-and-the-seat)) |
 | `oath mcp` | These verbs as an MCP server on stdin/stdout, for an agent ([Agents](#agents)) |
 
 `set`, `new` and `rm` are staging. Nothing is live until `apply`, and
 PID 1 never runs a spec that was not applied. `set` refuses a key the
 kind does not have, or a value of the wrong type
 (`oath set svc:time restart=sometimes` names the field and fails).
+A `k=v` value that parses as JSON is that JSON (`enabled=false`;
+`hostname=123` is a number, and refused); anything else is a string.
+With `--from-json`, a `k=v` on the same key wins.
 
 Writes to the catalog need root: over SSH, use `sudo oath set`,
 `sudo oath apply`, and so on. Reads (`ls`, `get`, `diff`, `log`) do
@@ -51,9 +74,9 @@ not. Writers take a lock on `/oath/.lock`, so two `oath` commands never
 interleave; the second waits up to 30 s.
 
 Ids are `kind:name` — `host:local`, `svc:sshd`, `snap:current`,
-`pkg:curl`, `net:net0`, `ssh:local`, `dev:net0`, `plan:hello`. Names
-are letters, digits, `.`, `_` and `-` (at most 64, not starting with
-`.`).
+`pkg:curl`, `net:net0`, `ssh:local`, `dev:net0`, `plan:hello`,
+`cell:hamlet`. Names are letters, digits, `.`, `_` and `-` (at most 64,
+not starting with `.`).
 
 ## Safety
 
@@ -66,19 +89,20 @@ takes a filesystem snapshot and converges.
   go.
 - **confirm** — halt, reboot, picking an old boot generation (not
   `undo`), and anything that can cut this machine off from SSH:
-  disabling, removing or changing `svc:sshd`, dropping a key from
-  `ssh:local`, changing `net:net0`. `oath apply` without `--confirm` exits **3** and
-  explains. Do not pass `--confirm` unless the owner asked for that
-  class of change.
+  disabling or removing `svc:sshd`, changing its `exec`, `user` or
+  `env`, moving the package it runs from (`pkg:openssh`'s `hash`),
+  dropping a key from `ssh:local`, changing `net:net0`. `oath apply`
+  without `--confirm` exits **3** and explains. Do not pass `--confirm`
+  unless the owner asked for that class of change.
 
 ```
-oath set host:local hostname=atlas
+sudo oath set host:local hostname=atlas
 oath diff
-oath apply
+sudo oath apply
 
-oath set host:local power=reboot
-oath apply              # refused (exit 3)
-oath apply --confirm    # reboots
+sudo oath set host:local power=reboot
+sudo oath apply              # refused (exit 3)
+sudo oath apply --confirm    # reboots
 ```
 
 After a reboot apply, desired `power` is set back to `run` so the box
@@ -100,17 +124,35 @@ If no new session runs `sudo oath keep` in time (`--probation <secs>`,
 `probation`. A reboot before `keep` undoes it too. The session you
 applied from cannot keep it: only a login made after the apply proves
 the machine is still reachable. While a probation is open nothing else
-applies; `sudo oath undo` takes it back at once.
+applies, and `oath` shows it under **Probation** with its deadline;
+`sudo oath undo` takes it back at once.
 
 `oath undo` puts back the spec of the objects the newest apply changed
 (an apply that failed counts), converges them, and logs `undo:N`. Run
 it again to undo the apply before that. It never rewinds the log, the
 package store, or the SSH host keys.
 
+## Time zone
+
+`host:local.timezone` is a POSIX `TZ` string:
+
+```
+sudo oath set host:local timezone=MST7MDT,M3.2.0,M11.1.0
+sudo oath apply host:local
+```
+
+Empty is UTC. There is no zoneinfo database, so a zone name such as
+`America/Denver` gives UTC, and neither `set` nor `apply` refuses one.
+Every service and every login gets `TZ` from it, unless `host:local.env`
+sets `TZ`. The system clock and the logs stay UTC. A running service
+keeps its old `TZ` until it restarts.
+
 ## Disks
 
 Another disk mounts through `host:local.mounts`: a path under `/mnt` or
-`/home`, the filesystem by label or UUID, and mount options.
+`/home`, its `source` (`LABEL=`, `UUID=`, `PARTLABEL=` or `PARTUUID=`),
+and `options` for mount(8) `-o`, empty for the filesystem's defaults;
+`bind`, `rbind`, `move` and `remount` are refused.
 
 ```
 sudo oath set host:local mounts='{"/mnt/warehouse": {"source": "LABEL=warehouse", "options": "noatime,compress=zstd:1"}}'
@@ -141,7 +183,8 @@ in place of the install's `@home`, and writes sshd's keys onto it. Copy
 what /home holds into the new place first (`cp -a`): the old home stays
 where it was, not mounted. If the disk is missing at boot, the machine
 comes up on the old home, keys written, and logs it (`oath logs | grep
-'mount: /home'`).
+'mount: /home'`). Changing or removing the entry also waits for the next
+boot: an apply leaves `/home` as it is.
 
 ## Kernel module options
 
@@ -161,6 +204,26 @@ on the kernel command line, so a later one wins. Like mounts, they
 belong in the machine's overlay, never in a profile: another machine
 with the same driver gets none of them.
 
+`sudo modprobe <name or alias>` loads a module and what it needs, with
+these parameters; `sudo modprobe -r <name>` unloads one. `/proc/modules`
+lists what is loaded. There is no `lsmod`, `insmod` or `rmmod`.
+
+Any other kernel option goes on the kernel command line, the `options`
+line of `loader/entries/oath.conf` on the ESP (partition 1 of the root
+disk):
+
+```
+sudo mkdir -p /mnt/esp
+sudo mount <esp partition> /mnt/esp
+sudo vi /mnt/esp/loader/entries/oath.conf   # add to the end of the options line
+sudo umount /mnt/esp
+```
+
+It takes effect at the next boot. `oath update` and `oath install` keep
+what you added and write the rest of the line themselves: `console=`,
+`panic=10` (a kernel panic reboots after 10 s), `amdgpu.si_support=1`,
+`radeon.si_support=0`, `oath.root=` and `oath.subvol=`.
+
 ## A device's own protocol
 
 A program on the desk (as `home`) may need to talk to a device in its
@@ -177,8 +240,10 @@ sudo oath apply host:local
 PID 1 makes the device's vendor interfaces (`/dev/hidraw*`) root:home
 0660, at once and whenever it is plugged in, whatever number it gets.
 An interface that carries a keyboard, a mouse or touch stays root's, so
-no program reads keys or motion; `oath apply` prints the nodes it gave.
-The list belongs to the machine, never a profile.
+no program reads keys or motion; `oath apply` prints the nodes it gave,
+or that the list names no vendor interface plugged in now. `set` refuses
+an entry that is not `vendor:product`. The list belongs to the machine,
+never a profile.
 
 ## Who you are
 
@@ -199,8 +264,25 @@ generation or boot snapshot holds its data.
 `void` (uid 65534, home `/var/empty`) is the fourth account: nobody logs
 in as it; sshd, dhcpcd and chronyd drop to it.
 
-A program can trace or read the memory of its own descendants only (Yama, R64, from the next
-release), so `strace -p` or `gdb -p` on a program already running takes `sudo`.
+`sudo` is Oath's own (`/lib/oath/sudo`, setuid), for `home` and root
+only: `sudo [-n] [-u root|work] [--] <command>`. `-n` changes nothing,
+`-u` takes only `root` or `work`, and any other option is refused, `-i`,
+`-s` and `-E` among them. The command starts in a clean environment:
+`PATH=/bin`, `HOME`, `USER`, `LOGNAME`, `SHELL=/bin/sh`, and the
+caller's `TERM` and `TZ`, so `host:local.env` does not reach it;
+`sudo env NAME=value <command>` passes one. `-u work` runs it in
+`/work`, with `XDG_RUNTIME_DIR` set too.
+
+The four accounts are fixed. There is no `su`, `passwd` or `useradd`,
+and `oath update` writes `/etc/passwd`, `/etc/group` and `/etc/shadow`
+again.
+
+A program can trace or read the memory of its own descendants only
+(Yama, R64), so attaching a debugger to a program already running takes
+`sudo`. Landlock is on too, for a program that fences itself in with
+it. The kernel's link protections are on: `fs.protected_symlinks`,
+`protected_hardlinks`, `protected_fifos` and `protected_regular` are
+all 1.
 
 ### The password and the seat
 
@@ -215,8 +297,9 @@ printf 'old\nnew\n' | oath password   # off a terminal: the current one (if set)
 An empty new password removes it. `svc:login` keeps it, hashed, in
 `/oath/login/password` (root's alone); a wrong one is answered after a
 delay that doubles each time, up to 30 s. It is asked at the console
-when `host:local.autologin` is false, and by the desk's lock screen
-(Sola's); SSH (keys only) and `sudo` never ask, so it guards the screen
+when `host:local.autologin` is false and a password is set (with none,
+the console opens the shell and asks nothing), and by the desk's lock
+screen (Sola's); SSH (keys only) and `sudo` never ask, so it guards the screen
 and keyboard, not the account: [login.md](../specs/login.md) says
 exactly what it does and does not protect. Auto-login is on by default;
 Sola's Settings turn it off with the password, and root can with `sudo
@@ -227,7 +310,9 @@ desk or the console has it. Exit Sola ends the desk on purpose
 (`oath desk stop` does the same): its services are held (`state:
 "held"`) and the console, a shell as `home` (or the password prompt), takes
 tty1. `oath desk`, from that shell or over SSH, gives the seat back and
-the desk's services start again. Every boot starts with the desk.
+the desk's services start again. A reboot keeps the seat:
+`/oath/run/seat` is on disk, so after `oath desk stop` the next boot
+starts with the console, until `oath desk`.
 
 A machine installed before R42 gets the programs with `oath update`
 (its `pkg:oath` moved first, [install.md](install.md)) but not the objects. Reboot into the update first: an older PID 1 knows no
@@ -275,10 +360,11 @@ ssh -T home@<host> oath mcp --read-only    # only the tools that look
 ```
 
 Each tool runs one `oath --json` command and returns its JSON: `index`,
-`ls`, `schema`, `get`, `diff`, `log`, `logs` and `verify` look;
-`set_host`, `set_svc`, `set_pkg`, `set_net`, `set_ssh`, `new_svc`,
-`new_pkg`, `rm`, `apply`, `undo`, `keep`, `update` (what the newest
-output would move, or with `confirm` move to it), `file_plan` (a plan
+`ls`, `schema`, `get`, `diff`, `log`, `logs`, `verify` and `audit` look;
+`set_host`, `set_svc`, `set_pkg`, `set_cell`, `set_net`, `set_ssh`,
+`new_svc`, `new_pkg`, `new_cell`, `rm`, `apply`, `undo`, `keep`, `update`
+(what the newest output would move, or with `confirm` move to it),
+`reap` (what would go, or with `confirm` remove it), `file_plan` (a plan
 from its text) and `build` run through `sudo`, as the owner's would. The same
 reads are resources too: `oath://index`, `oath://schema/<kind>` and
 `oath://object/<kind>/<name>`. A client that sends a `progressToken`
