@@ -43,7 +43,8 @@ pub struct Opts {
 pub struct EspOpts {
     pub esp: String,
     pub confirm: bool,
-    pub root_dev: String,
+    /// What `oath.root=` names (default: the running kernel's).
+    pub root_dev: Option<String>,
     pub output: Option<String>,
     pub unchecked: bool,
 }
@@ -822,11 +823,20 @@ pub fn update_esp(out: &Path, opts: EspOpts) -> Result<()> {
     if !opts.esp.starts_with("/dev/") {
         bail!("--esp must be a /dev/ node (got {:?})", opts.esp);
     }
+    // The root this machine booted, as `oath update` keeps it: the UUID an
+    // install wrote. A node's letter is only the order its disk was found in.
+    let root_dev = match opts.root_dev {
+        Some(r) => r,
+        None => crate::boot::booted_root(&fs::read_to_string("/proc/cmdline")?).context(
+            "the running kernel has no oath.root= (not booted from an Oath ESP): pass --root",
+        )?,
+    };
     let o = output::pick(out, opts.output.as_deref(), !opts.unchecked)?;
     if !opts.unchecked {
         crate::check::require_checked(&o.dir).context("pass --unchecked to write it anyway")?;
     }
     eprintln!("output {}", o.dir.display());
+    eprintln!("oath.root={root_dev}");
     let efi = o.file("BOOTX64.EFI");
     let mnt = out.join("esp-mnt");
     let _ = fs::create_dir_all(&mnt);
@@ -836,13 +846,17 @@ pub fn update_esp(out: &Path, opts: EspOpts) -> Result<()> {
     let mnt_opts = format!("rw,uid={uid},gid={gid},umask=022");
     sudo(&["mount", "-t", "vfat", "-o", &mnt_opts, &opts.esp, mnt.to_str().unwrap()])?;
     let result = (|| -> Result<u64> {
+        // The options the current entry added (a driver's, `quiet`) stay.
+        let current =
+            fs::read_to_string(mnt.join("loader/entries/oath.conf")).unwrap_or_default();
+        let extra = crate::boot::extra_options(&crate::boot::parse_bls(&current).options);
         let (id, prune) = crate::boot::apply_rotate_files(
             &mnt,
             &o.file("bzImage"),
             &o.file("initrd.gz"),
             efi.is_file().then_some(efi.as_path()),
-            &opts.root_dev,
-            "",
+            &root_dev,
+            &extra,
             crate::boot::LOADER_CONF_METAL,
         )?;
         snapshot_boot(id);

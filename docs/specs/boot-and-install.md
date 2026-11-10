@@ -119,7 +119,10 @@ of T24, and D3 (seed as data).
 - **Last five boots.** `cargo make esp --esp <part> --confirm`, run on
   the Oath machine, archives the current kernel and initrd under
   `/oath/boot/<id>/`, snapshots `@` as `@boot-<id>`, writes the new
-  files and BLS entries, and keeps five archives. Ids are never reused.
+  files and BLS entries, and keeps five archives. The entries name the
+  root the running kernel booted (its `oath.root=`, or `--root`) and keep
+  the options the current entry added, as `oath update` does. Ids are
+  never reused.
   Catalog generations (`@gen-N`) are separate and belong to apply and
   undo.
 

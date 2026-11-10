@@ -272,9 +272,10 @@ enum Cmd {
         /// Required. Writes firmware.
         #[arg(long)]
         confirm: bool,
-        /// Root device the BLS `oath.root=` option should name (`/dev/sda2`).
-        #[arg(long, default_value = "/dev/sda2")]
-        root: String,
+        /// What the BLS `oath.root=` option should name (`UUID=…`; default:
+        /// the running kernel's `oath.root=`, as `oath update` keeps it).
+        #[arg(long)]
+        root: Option<String>,
         /// Build output to write (default: the newest one `check` passed).
         #[arg(long)]
         output: Option<String>,
