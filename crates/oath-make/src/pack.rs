@@ -261,7 +261,7 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     }
     fs::write(stage.join("etc/passwd"), oath_core::seat::passwd_file())?;
     fs::write(stage.join("etc/group"), oath_core::seat::group_file())?;
-    fs::write(stage.join("etc/shadow"), oath_core::seat::shadow_file())?;
+    write_shadow(&stage)?;
     fs::write(stage.join("etc/shells"), oath_core::seat::shells_file())?;
     fs::write(
         stage.join("etc/nsswitch.conf"),
@@ -374,6 +374,15 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
     eprintln!("output {}", o.dir.display());
     eprintln!("next: cargo make check, then cargo make install");
     Ok(o)
+}
+
+/// `/etc/shadow`, root's alone (0600): mkfs keeps the stage's modes in the
+/// image, and an install's tar and an update's copy keep them too.
+fn write_shadow(stage: &Path) -> Result<()> {
+    let path = stage.join("etc/shadow");
+    fs::write(&path, oath_core::seat::shadow_file())?;
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
+    Ok(())
 }
 
 /// `oath-efi` inside pkg:oath's tree.
@@ -1411,5 +1420,14 @@ mod tests {
         assert_eq!(ko_path("kernel/foo.ko.zst"), "kernel/foo.ko");
         assert_eq!(ko_path("kernel/foo.ko.xz"), "kernel/foo.ko");
         assert_eq!(ko_path("kernel/foo.ko"), "kernel/foo.ko");
+    }
+
+    #[test]
+    fn shadow_is_roots_alone() {
+        let d = tempfile::tempdir().unwrap();
+        fs::create_dir_all(d.path().join("etc")).unwrap();
+        write_shadow(d.path()).unwrap();
+        let mode = fs::metadata(d.path().join("etc/shadow")).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o600);
     }
 }
