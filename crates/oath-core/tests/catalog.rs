@@ -19,6 +19,8 @@ struct MemHooks {
     no_start: Mutex<bool>,
     /// How many times apply converged a package (fetch, hash, link).
     pkg_converges: Mutex<u32>,
+    /// Packages are fetched as on a machine (the pkg's `url`) before they link.
+    fetches: bool,
 }
 
 impl MemHooks {
@@ -30,6 +32,7 @@ impl MemHooks {
             reboots: Mutex::new(0),
             no_start: Mutex::new(false),
             pkg_converges: Mutex::new(0),
+            fetches: false,
         }
     }
 }
@@ -83,6 +86,10 @@ impl ApplyHooks for MemHooks {
     }
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
         *self.pkg_converges.lock().unwrap() += 1;
+        if self.fetches && desired.present {
+            let (url, file) = (&desired.url, &desired.file);
+            oath_core::fetch_pkg_any(&self.root, &id.name, url, file, &desired.hash)?;
+        }
         let store = self.root.join("store/pkg").join(&id.name).join("bin");
         if !store.is_dir() {
             return Ok(PkgActual {
@@ -1293,6 +1300,54 @@ fn a_damaged_store_tree_is_not_linked_and_verify_says_so() {
     set(&cat, "pkg:hello", "present", json!(true)).unwrap();
     let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
     assert!(err.to_string().contains("store is damaged"), "{err}");
+}
+
+/// A VM, 2026-11-10: with /oath/store/pkg/less/<hash> deleted, /bin/less
+/// dangled while verify found nothing and apply had nothing to do.
+#[test]
+fn a_tree_gone_from_the_store_is_damage_and_apply_fetches_it_again() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks { fetches: true, ..MemHooks::new(d.path().to_path_buf()) };
+    let stage = d.path().join("stage-hello");
+    std::fs::create_dir_all(stage.join("bin")).unwrap();
+    std::fs::write(stage.join("bin/hello"), "hello\n").unwrap();
+    let pin = hash_tree(&stage).unwrap();
+    let tar = d.path().join("hello.tar");
+    let st = std::process::Command::new("tar")
+        .args(["-C", stage.to_str().unwrap(), "-cf", tar.to_str().unwrap(), "."])
+        .status()
+        .unwrap();
+    assert!(st.success());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let url = format!("file://{}", tar.display());
+    let doc = json!({ "present": true, "hash": pin, "url": url });
+    cat.set_fields(&id, doc.as_object().unwrap().clone()).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert!(cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+
+    std::fs::remove_dir_all(d.path().join("store/pkg/hello").join(&pin)).unwrap();
+    // Still so after a boot, which observes the package absent.
+    for boot in [false, true] {
+        if boot {
+            let lock = cat.lock().unwrap();
+            cat.observe(&lock, &d.path().join("bin")).unwrap();
+        }
+        let r = cat.verify(Some(vec![id.clone()])).unwrap();
+        assert_eq!(r.len(), 1, "boot {boot}");
+        assert!(!r[0].verified.ok && r[0].verified.got == "missing", "{r:?}");
+        assert_eq!(r[0].hash, pin);
+        assert_eq!(cat.get(&id).unwrap().meta.status, "error", "boot {boot}");
+        let drift = cat.diff(Some(&id)).unwrap();
+        assert_eq!(drift[0].fields, [("tree".to_string(), json!(pin), json!("missing"))]);
+    }
+    assert!(cat.verify(None).unwrap().iter().any(|v| v.id == id && !v.verified.ok));
+
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert!(d.path().join("store/pkg/hello").join(&pin).join("bin/hello").is_file());
+    assert_eq!(std::fs::read_to_string(d.path().join("bin/hello")).unwrap(), "hello\n");
+    assert!(cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+    assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync");
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
 }
 
 #[test]

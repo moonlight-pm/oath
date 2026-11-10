@@ -528,6 +528,13 @@ fn pkg_actual(
     }
 }
 
+/// Realization `hash` of `name` is gone from the store. A slot from before
+/// T32 (`store/pkg/<name>/bin` a directory) is its own tree, not missing.
+pub(crate) fn tree_missing(catalog_root: &Path, name: &str, hash: &str) -> bool {
+    !realization_dir(catalog_root, name, hash).is_dir()
+        && !is_old_layout(&slot_dir(catalog_root, name))
+}
+
 fn is_old_layout(slot: &Path) -> bool {
     let bin = slot.join("bin");
     match fs::symlink_metadata(&bin) {

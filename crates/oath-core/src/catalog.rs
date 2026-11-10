@@ -28,6 +28,9 @@ const APPLIED: &str = "applied.json";
 /// Where status (`actual`) lives, under the catalog root: a tmpfs on the
 /// machine, so no snapshot holds it and every boot observes afresh (R14).
 pub const STATUS_DIR: &str = "status";
+/// What a tree gone from the store hashes to (`verified.got`), and the
+/// `tree` drift of a package whose pinned tree is gone.
+const MISSING: &str = "missing";
 
 /// `<root>/status/<kind>/<name>.json`: what the machine observed of `id`.
 pub fn status_path(root: &Path, id: &ObjectId) -> PathBuf {
@@ -865,10 +868,12 @@ impl Catalog {
     }
 
     /// Hash every linked package tree (all, or `ids`) again against the
-    /// hash it is linked as. With the lock (root), the outcome goes into
-    /// each actual as `verified` (a damaged package's status is `error`)
-    /// and INDEX lists the damage; without it, this only reports.
-    /// Returns each package with what its tree hashes to now.
+    /// hash it is linked as. A tree gone from the store is damage too: it
+    /// hashes to `missing`, and what links into it dangles. With the lock
+    /// (root), the outcome goes into each actual as `verified` (a damaged
+    /// package's status is `error`) and INDEX lists the damage; without
+    /// it, this only reports. Returns each package with what its tree
+    /// hashes to now.
     pub fn verify(&self, ids: Option<Vec<ObjectId>>) -> Result<Vec<Verified>> {
         let ids = match ids {
             Some(ids) => ids,
@@ -887,31 +892,33 @@ impl Catalog {
                 ));
             }
             let obj = self.get(&id)?;
-            let hash = obj.actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
+            let Some(hash) = self.linked_hash(&obj)? else { continue };
             let tree = if id.kind == KIND_CELL {
-                crate::cell::tree_dir(&self.root, &id.name, hash)
+                crate::cell::tree_dir(&self.root, &id.name, &hash)
             } else {
-                crate::realization_dir(&self.root, &id.name, hash)
+                crate::realization_dir(&self.root, &id.name, &hash)
             };
-            if obj.actual.get("present") != Some(&json!(true))
-                || !crate::is_realization_id(hash)
-                || !tree.is_dir()
+            let v = if tree.is_dir() && id.kind == KIND_CELL {
+                crate::cell::verify_tree(&self.root, &id.name, &hash)?
+            } else if tree.is_dir() {
+                crate::verify_tree(&self.root, &id.name, &hash)?
+            } else if id.kind == KIND_CELL || crate::pkg::tree_missing(&self.root, &id.name, &hash)
             {
-                continue;
-            }
-            let v = if id.kind == KIND_CELL {
-                crate::cell::verify_tree(&self.root, &id.name, hash)?
+                crate::PkgVerified { ok: false, at: now_rfc3339(), got: MISSING.into() }
             } else {
-                crate::verify_tree(&self.root, &id.name, hash)?
+                // A slot from before T32 is not hashed here.
+                continue;
             };
-            out.push(Verified { id, hash: hash.to_string(), verified: v });
+            out.push(Verified { id, hash, verified: v });
         }
         let Ok(_lock) = self.lock() else { return Ok(out) };
         for r in &out {
             let p = status_path(&self.root, &r.id);
             let Ok(mut actual) = read_json::<Value>(&p) else { continue };
-            // Linked as something else since it was hashed: leave it.
-            if actual.get("hash").and_then(|h| h.as_str()) != Some(r.hash.as_str()) {
+            // Linked as something else since it was hashed: leave it. A cell
+            // whose tree was gone at boot has no hash in its actual.
+            let now = actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
+            if !now.is_empty() && now != r.hash {
                 continue;
             }
             actual["verified"] = serde_json::to_value(&r.verified)?;
@@ -919,6 +926,37 @@ impl Catalog {
         }
         self.write_index()?;
         Ok(out)
+    }
+
+    /// The hash a package or cell is linked as, if it is meant to be linked:
+    /// what its actual observed, else its applied pin (after a boot, a
+    /// package whose tree is gone observes absent and a cell no hash).
+    fn linked_hash(&self, obj: &Object) -> Result<Option<String>> {
+        let applied = self.applied(&obj.id)?;
+        let present = match &applied {
+            Some(spec) => spec.get("present") != Some(&json!(false)),
+            None => obj.actual.get("present") == Some(&json!(true)),
+        };
+        let pin = |v: &Value| {
+            let h = v.get("hash").and_then(|h| h.as_str()).unwrap_or("");
+            crate::is_realization_id(h).then(|| h.to_string())
+        };
+        let hash = pin(&obj.actual).or_else(|| applied.as_ref().and_then(pin));
+        Ok(hash.filter(|_| present))
+    }
+
+    /// A package applied present at a pin whose tree is gone from the store,
+    /// and still wanted there: apply fetches it again. Its pin, if so.
+    fn missing_tree(&self, obj: &Object, applied: &Value) -> Option<String> {
+        let wanted = |v: &Value| v.get("present") != Some(&json!(false));
+        let hash = applied.get("hash").and_then(|h| h.as_str())?;
+        let missing = obj.id.kind == KIND_PKG
+            && wanted(applied)
+            && wanted(&obj.desired)
+            && obj.desired.get("hash").and_then(|h| h.as_str()) == Some(hash)
+            && crate::is_realization_id(hash)
+            && crate::pkg::tree_missing(&self.root, &obj.id.name, hash);
+        missing.then(|| hash.to_string())
     }
 
     /// Say in `id`'s status which versions the store holds now (R62).
@@ -1551,6 +1589,9 @@ impl Catalog {
         };
         let pin = applied["hash"].as_str().unwrap_or("");
         let present = obj.desired["present"] != json!(false);
+        if self.missing_tree(obj, &applied).is_some() {
+            return Ok(None);
+        }
         Ok((!pin.is_empty() && live.hash == pin && live.present == present).then_some(live))
     }
 
@@ -1646,9 +1687,14 @@ impl Catalog {
     }
 
     /// Desired against the spec last applied. Never applied: everything.
+    /// A package whose pinned tree is gone from the store drifts in `tree`.
     fn drift_fields(&self, obj: &Object) -> Result<Vec<(String, Value, Value)>> {
         if let Some(applied) = self.applied(&obj.id)? {
-            return Ok(diff_values(&obj.desired, &applied));
+            let mut fields = diff_values(&obj.desired, &applied);
+            if let Some(hash) = self.missing_tree(obj, &applied) {
+                fields.push(("tree".into(), json!(hash), json!(MISSING)));
+            }
+            return Ok(fields);
         }
         if obj.id.kind == KIND_SVC || self.is_new(&obj.id) {
             return Ok(diff_values(&obj.desired, &Value::Null));
