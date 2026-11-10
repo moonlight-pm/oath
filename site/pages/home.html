@@ -17,7 +17,7 @@
 
 <section id="catalog" class="catalog">
 <h2>The catalog</h2>
-<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are nine kinds. The counts are from a fresh QEMU machine running the <code>desk</code> output <code>f4e271a5e318</code> on 9 November 2026, before the session below.</p>
+<p>A machine is a set of objects. Each has an id, <code>kind:name</code>, a desired state that you write and an actual state that the machine reports. There are nine kinds. The counts are from a fresh QEMU machine running the <code>desk</code> release <code>76a4e1692f38</code> on 9 November 2026, before the session below.</p>
 <div class="table-wrap">
 <table class="kinds">
 <thead><tr><th scope="col">Kind</th><th scope="col">One object is</th><th scope="col" class="count">Count</th></tr></thead>
@@ -40,10 +40,10 @@
 <h2>What works today</h2>
 <dl class="features">
 <div><dt>PID 1</dt><dd>Runs only applied <code>svc</code> specs, each in its own cgroup with its own log. Restarts a failing service with backoff, then marks it <code>failed</code> with a reason. Restarts a service when an apply moves the package its program comes from. Stops services in reverse order at shutdown, loads kernel modules by modalias, and survives its own panic.</dd></div>
-<div><dt><code>oath</code></dt><dd><code>ls schema get set new rm diff apply keep undo update verify reap audit log logs fmt build store publish install password desk mcp</code>, each with <code>--json</code> except <code>fmt</code> and <code>mcp</code>. A failure names the next step to take.</dd></div>
+<div><dt><code>oath</code></dt><dd><code>ls schema get set new add rm diff apply keep undo update verify reap audit log logs fmt build store publish install password desk mcp</code>, each with <code>--json</code> except <code>fmt</code> and <code>mcp</code>. A failure names the next step to take.</dd></div>
 <div><dt>Agents</dt><dd><code>oath mcp</code> over SSH: the verbs as tools, <code>set</code> and <code>new</code> split by kind, none for <code>fmt</code>, <code>store</code>, <code>publish</code>, <code>install</code>, <code>password</code> or <code>desk</code>; the INDEX as instructions; <code>--read-only</code> for an agent that only looks. The apply log records which agent made each change.</dd></div>
 <div><dt>Generations</dt><dd>A btrfs snapshot before every apply that changes configuration. <code>oath undo</code> repeats to go further back. The boot menu keeps the last five boots.</dd></div>
-<div><dt>Packages</dt><dd>A store addressed by hash, <code>/bin</code> and <code>/lib</code> link farms, a <code>needs</code> graph, origins tried in order, <code>oath store</code> for a tree built outside a plan, and <code>oath verify</code> at every boot. A package whose licence forbids redistribution ships as a recipe that the machine builds itself.</dd></div>
+<div><dt>Packages</dt><dd>A store addressed by hash, <code>/bin</code> and <code>/lib</code> link farms, a <code>needs</code> graph, origins tried in order, <code>oath store</code> for a tree built outside a plan, and <code>oath verify</code> at every boot. <code>sudo oath add &lt;name&gt;</code> installs a package by name at its newest signed head, with each package it needs that the machine lacks; <code>oath ls --origin</code> lists what the origins hold. A package whose licence forbids redistribution ships as a recipe that the machine builds itself.</dd></div>
 <div><dt>Cells</dt><dd><code>cell:&lt;name&gt;</code> holds one project's own software: stored apart, never linked into <code>/bin</code> or <code>/lib</code>, from no origin and never published. <code>cell run</code>, from <code>pkg:cell</code>, which is in no profile, starts it in a box that sees only the packages it runs with.</dd></div>
 <div><dt>Plans</dt><dd>Builds in a sandbox with no network and its own PID namespace, cached by plan and inputs. Every package Oath builds is a plan product: the kernel, the toolchain and Oath's own binaries. The desk adds Sola's packages, which Sola builds and the profile pins by hash.</dd></div>
 <div><dt>Toolchain</dt><dd>GCC, binutils and glibc built from source, bootstrapped once by the build host and then rebuilt by themselves. bash and the GNU userland; zsh is the login shell.</dd></div>
@@ -67,10 +67,10 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha. There are no install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 9 November 2026 the current release passes all 70 test cases in QEMU (75 with the desk); no installed machine runs it, so the hardware cases have not run on it. Not there yet:</p>
+<p>Oath is pre-alpha. There are no install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 9 November 2026 the current releases, <code>base</code> <code>c74badbab478</code> and <code>desk</code> <code>76a4e1692f38</code>, pass every test case that runs in QEMU: 71 on <code>base</code>, 76 on <code>desk</code>. No installed machine runs them, so the hardware cases have not run on them. Not there yet:</p>
 <ul>
 <li>Install images to download. x86-64 with UEFI is the only platform.</li>
-<li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures where the package names one, and <code>oath update</code> takes only builds a key the machine trusts signed (a release by the build host, a package by a key it trusts for its name), but the index of the pack origin is not signed.</li>
+<li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures where the package names one, and <code>oath add</code> and <code>oath update</code> take only builds a key the machine trusts signed (a release by the build host, a package's head by a key it trusts for its name), but the origin's indexes, <code>INDEX.md</code> and <code>index.json</code>, are not signed.</li>
 <li>More than one network interface. One is chosen at boot.</li>
 <li>Device node ownership as a catalog field, beyond <code>host:local.seat_hid</code> for a listed HID device's vendor interfaces.</li>
 <li>Desktop applications beyond Sola's, Steam and Minecraft. Steam is a recipe in the <code>desk</code> profile (<code>plan:steam</code>): Valve's launcher, which installs its 64-bit client. For Minecraft, Prism Launcher (<code>pkg:prismlauncher</code>) is on the origin and in no profile.</li>
@@ -80,7 +80,7 @@
 
 <section id="building">
 <h2>Building</h2>
-<p>You need an x86-64 Linux build host with Rust, <code>curl</code>, <code>mkfs.btrfs</code>, <code>unshare</code>, the compilers that build stage 0 of the toolchain, and QEMU with its UEFI firmware. Where Nix is installed, <code>cargo make</code> takes the compilers from <code>pkgs/bootstrap.nix</code> and QEMU from <code>image/host.nix</code>. An Oath machine on the <code>desk</code> profile has the compilers in <code>/bin</code> and needs <code>pkg:qemu</code> and <code>pkg:libslirp</code> added. <code>sudo</code> is needed only to write a disk on the build host (<code>install --usb</code>, <code>install --local</code>, <code>cargo make esp</code>). The first toolchain build takes an hour or more.</p>
+<p>You need an x86-64 Linux build host with Rust, <code>curl</code>, <code>mkfs.btrfs</code>, <code>unshare</code>, the compilers that build stage 0 of the toolchain, and QEMU with its UEFI firmware. Where Nix is installed, <code>cargo make</code> takes the compilers from <code>pkgs/bootstrap.nix</code> and QEMU from <code>image/host.nix</code>. An Oath machine on the <code>desk</code> profile has the compilers in <code>/bin</code>; <code>sudo oath add qemu</code> adds QEMU with <code>pkg:libslirp</code>, which it needs. Past that, <code>cargo make</code> needs <code>sudo</code> only to write a disk on the build host (<code>install --usb</code>, <code>install --local</code>, <code>cargo make esp</code>). The first toolchain build takes an hour or more.</p>
 <pre><code>git clone https://github.com/moonlight-pm/oath
 cd oath
 cargo make bootstrap    <span class="comment"># the toolchain, once</span>
