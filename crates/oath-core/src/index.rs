@@ -87,9 +87,9 @@ screen; SSH (keys only) and `sudo` never do. The catalog lives at `/oath`. `/hom
 `oath new` makes a `svc`, `pkg` or `cell`; `oath rm` removes one. Both, like
 `set`, only change the spec: nothing happens until `oath apply`, and
 `oath undo` takes back the last apply. Changes that can cut off SSH
-(sshd, `ssh:local` keys, `net:net0`, a new `pkg:openssh` hash) need
-`--confirm`. A service restarts when an apply moves the package its
-program comes from.
+(sshd, `ssh:local` keys, `net:net0`'s `up`, `ipv4` or `gateway` but not
+`dns`, a new `pkg:openssh` hash) need `--confirm`. A service restarts
+when an apply moves the package its program comes from.
 
 Updates come from the origins (`host:local.origins`): a build host
 publishes each output it checked, signed, and `oath update` takes the

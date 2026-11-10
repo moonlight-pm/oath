@@ -954,10 +954,11 @@ fn tools() -> Vec<Tool> {
         "apply",
         "Check, snapshot, then converge all drift (or only `ids`). If a check fails nothing \
          changes. Halt, reboot and changes that can cut off SSH (`svc:sshd`, `ssh:local` keys, \
-         `net:net0`, a new `pkg:openssh` hash) need `confirm: true`: do not pass it unless \
-         the owner asked for that class of change. A change that can cut off SSH then goes on \
-         probation: PID 1 undoes it after `probation_secs` unless `keep` runs from a connection \
-         opened after the apply. A reboot or halt ends this connection; the server exits."
+         `net:net0`'s `up`, `ipv4` or `gateway` but not `dns`, a new `pkg:openssh` hash) need \
+         `confirm: true`: do not pass it unless the owner asked for that class of change. A \
+         change that can cut off SSH then goes on probation: PID 1 undoes it after \
+         `probation_secs` unless `keep` runs from a connection opened after the apply. A reboot \
+         or halt ends this connection; the server exits."
             .into(),
         vec![
             p("ids", Ty::Ids, false, "Only these objects; all drift when left out."),
