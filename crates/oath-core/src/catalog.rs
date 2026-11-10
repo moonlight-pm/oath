@@ -1157,6 +1157,18 @@ impl Catalog {
                         hint(),
                     ));
                 }
+                if !n.gateway.is_empty() && n.gateway.parse::<std::net::Ipv4Addr>().is_err() {
+                    return Err(Error::hint(
+                        format!("{id}: gateway is an IPv4 address a.b.c.d, not `{}`", n.gateway),
+                        hint(),
+                    ));
+                }
+                if let Some(s) = n.dns.iter().find(|s| s.parse::<std::net::IpAddr>().is_err()) {
+                    return Err(Error::hint(
+                        format!("{id}: dns: `{s}` is not an IPv4 or IPv6 address"),
+                        hint(),
+                    ));
+                }
             }
             KIND_SSH => {
                 let s: Ssh = serde_json::from_value(doc.clone()).map_err(bad)?;

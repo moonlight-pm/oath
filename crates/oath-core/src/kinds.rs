@@ -533,6 +533,11 @@ pub struct Net {
     /// IPv4 default gateway. Ignored when ipv4 is dhcp.
     #[serde(default)]
     pub gateway: String,
+    /// DNS servers (IP addresses) for a static ipv4: converge writes each
+    /// to /etc/resolv.conf as a nameserver; empty leaves that file as it
+    /// is. Ignored when ipv4 is dhcp: the lease names them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dns: Vec<String>,
     /// Runtime lease when `ipv4` is `dhcp`. Not a desired field.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(skip)]

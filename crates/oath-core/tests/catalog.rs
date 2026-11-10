@@ -822,6 +822,28 @@ fn set_refuses_a_value_of_the_wrong_type() {
 }
 
 #[test]
+fn net_refuses_a_gateway_or_dns_that_is_no_address() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let e = set(&cat, "net:net0", "gateway", json!("notanaddr")).unwrap_err().to_string();
+    assert!(e.contains("gateway is an IPv4 address"), "{e}");
+    assert!(set(&cat, "net:net0", "gateway", json!("fd00::1")).is_err());
+    let e = set(&cat, "net:net0", "dns", json!(["10.0.0.1", "dns.example"])).unwrap_err();
+    assert!(e.to_string().contains("`dns.example` is not an IPv4 or IPv6 address"), "{e}");
+    assert!(set(&cat, "net:net0", "dns", json!("10.0.0.1")).is_err(), "a list");
+    assert!(cat.diff(None).unwrap().is_empty(), "refused sets change nothing");
+    set(&cat, "net:net0", "dns", json!(["10.0.0.1", "fd00::53"])).unwrap();
+    // Not a lockout: no --confirm, no probation.
+    let r = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(r.probation, None);
+    let net = cat.get(&"net:net0".parse().unwrap()).unwrap();
+    assert_eq!(net.actual["dns"], json!(["10.0.0.1", "fd00::53"]));
+    set(&cat, "net:net0", "gateway", json!("10.0.0.1")).unwrap();
+    set(&cat, "net:net0", "ipv4", json!("10.0.0.3/24")).unwrap();
+    assert!(cat.apply(None, false, &Actor::unknown(), &hooks).is_err(), "ipv4 needs --confirm");
+}
+
+#[test]
 fn host_names_other_machines() {
     let (d, cat) = tmp();
     let hooks = MemHooks::new(d.path().to_path_buf());

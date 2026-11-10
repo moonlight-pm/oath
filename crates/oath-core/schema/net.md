@@ -19,7 +19,12 @@ static address.
 - `ipv4` — `dhcp` (the default) or a static CIDR (`192.168.1.20/24`);
   `set` refuses anything else.
 - `gateway` — IPv4 default gateway for a static address. Ignored for
-  `dhcp`.
+  `dhcp`. `set` refuses anything but an IPv4 address.
+- `dns` — DNS servers for a static address, a list of IPv4 or IPv6
+  addresses (`dns='["192.168.1.1"]'`). Converge writes `/etc/resolv.conf`
+  with a `nameserver` line for each, at apply and at every boot; empty
+  (the default) leaves that file as it is. Ignored for `dhcp`: the lease
+  names them. Not a change that can cut off SSH.
 
 Actual may carry `lease` (the address DHCP gave) and `dhcp` (`address`,
 `router`, `dns`, `seconds`, `server`, `event` `bound` or `renew`, and
