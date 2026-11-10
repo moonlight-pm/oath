@@ -88,7 +88,7 @@ pub use svc_order::{
     stop_layers as svc_stop_layers, stuck_reasons as svc_stuck_reasons,
 };
 pub use svc_run::{apply_svc_cred, svc_env_pairs, svc_spawn, SvcCred, SvcSpawn};
-pub use tel::tel;
+pub use tel::{append_rotated, tel};
 
 pub const DEFAULT_ROOT: &str = "/oath";
 pub const EXIT_CONFIRM: i32 = 3;
