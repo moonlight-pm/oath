@@ -1,8 +1,8 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source expat-2.10.0.tar.xz c624ba2998fc65df1163a49641ff3f9ab73138b11641d92c86bee0fb01b1bc7f
-tag R_2_10_0 commit a70841d9ffa64ddde29ab824ed6305035ebe4c47 tree 97adbd0d8de6af95c21059b78e495176c1ad2069
+source expat-2.9.0.tar.xz 1e6371862cc31999b368c3b89b49994f0677e1bab5f1b2b85ae3741f5d803051
+tag R_2_9_0 commit a76b1174c1ea52abb639a4c69d52b630a8a106a2 tree 8fd271f17a188db29ef96f32bca2dd442bf772f8
 signed pgp CB8DE70A90CFBF6C3BF5CC5696262ACFFBD3AEC6
-same 155
+same 152
 only-in-tag 24
 from automake 2
 from gettext 1
