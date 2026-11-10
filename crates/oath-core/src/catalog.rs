@@ -924,7 +924,9 @@ impl Catalog {
             let p = status_path(&self.root, &r.id);
             let Ok(mut actual) = read_json::<Value>(&p) else { continue };
             // Linked as something else since it was hashed: leave it. A cell
-            // whose tree was gone at boot has no hash in its actual.
+            // whose tree was gone at boot has no hash in its actual; a tree
+            // that hashes right leaves it drift, not in-sync, until apply
+            // links it.
             let now = actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
             if !now.is_empty() && now != r.hash {
                 continue;
@@ -956,7 +958,10 @@ impl Catalog {
     /// A package or cell applied present at a pin whose tree is gone from
     /// the store, or was found damaged (`verified`), and still wanted there:
     /// apply fetches a package again, and refuses a cell, which comes from
-    /// no origin. Its pin and what its tree hashes to, if so.
+    /// no origin. A cell is so too while it is not linked at its pin (its
+    /// tree was gone at boot), since `cell run` refuses it; apply links it
+    /// once its tree is back. Its pin and what its tree hashes to (null for
+    /// a cell not linked), if so.
     fn damaged_tree(&self, obj: &Object, applied: &Value) -> Option<(String, Value)> {
         let wanted = |v: &Value| v.get("present") != Some(&json!(false));
         let hash = applied.get("hash").and_then(|h| h.as_str())?;
@@ -982,8 +987,12 @@ impl Catalog {
         let at = obj.actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
         let found = (at == hash || (cell && at.is_empty()))
             && obj.actual.pointer("/verified/ok") == Some(&json!(false));
-        let got = obj.actual.pointer("/verified/got").and_then(|g| g.as_str()).unwrap_or("");
-        found.then(|| (hash.to_string(), json!(got)))
+        if found {
+            let got = obj.actual.pointer("/verified/got").and_then(|g| g.as_str()).unwrap_or("");
+            return Some((hash.to_string(), json!(got)));
+        }
+        let unlinked = cell && obj.actual.get("present") == Some(&json!(false));
+        unlinked.then(|| (hash.to_string(), Value::Null))
     }
 
     /// Say in `id`'s status which versions the store holds now (R62).
@@ -1752,7 +1761,7 @@ impl Catalog {
 
     /// Desired against the spec last applied. Never applied: everything.
     /// A package or cell whose pinned tree is gone from the store, or
-    /// damaged, drifts in `tree`.
+    /// damaged, drifts in `tree`, as does a cell not linked at its pin.
     fn drift_fields(&self, obj: &Object) -> Result<Vec<(String, Value, Value)>> {
         if let Some(applied) = self.applied(&obj.id)? {
             let mut fields = diff_values(&obj.desired, &applied);

@@ -1911,6 +1911,30 @@ fn a_cell_whose_tree_is_gone_drifts_and_apply_refuses_it() {
     }
 }
 
+/// A VM, 2026-11-10: a cell whose tree was gone at boot, stored again and
+/// verified, was in-sync while `cell run` refused it as not installed.
+#[test]
+fn a_cell_not_linked_after_a_boot_is_not_in_sync() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    std::fs::remove_dir_all(d.path().join("store/cell/hamlet").join(&hash)).unwrap();
+    let lock = cat.lock().unwrap();
+    cat.observe(&lock, &d.path().join("bin")).unwrap();
+    drop(lock);
+    oath_core::cell::store(d.path(), "hamlet", &d.path().join("src-hamlet")).unwrap();
+    assert!(cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["present"], json!(false));
+    assert_eq!(obj.meta.status, "drift");
+    let drift = cat.diff(Some(&id)).unwrap();
+    assert_eq!(drift[0].fields, [("tree".to_string(), json!(hash), serde_json::Value::Null)]);
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["present"], json!(true));
+    assert_eq!(obj.actual["hash"], json!(hash));
+    assert_eq!(obj.meta.status, "in-sync");
+}
+
 #[test]
 fn the_kind_explains_itself() {
     let (_d, cat) = seeded();
