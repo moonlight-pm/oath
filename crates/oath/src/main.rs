@@ -161,9 +161,10 @@ enum Cmd {
         /// The ESP's node (default: partition 1 of the root disk).
         #[arg(long)]
         esp: Option<String>,
-        /// Keep this machine's pin of a package (an overlay the update
-        /// would replace); repeat for more.
-        #[arg(long, value_name = "pkg:NAME")]
+        /// Hold a package at this machine's pin (`pkg:<name>` or `<name>`),
+        /// whatever the update would move it to, or keep a service the
+        /// release dropped (`svc:<name>`); repeat for more.
+        #[arg(long, value_name = "ID")]
         keep: Vec<String>,
         /// Move nothing: list the head of each package here, and record each
         /// one this machine runs as the head it took (/oath/heads.json), as

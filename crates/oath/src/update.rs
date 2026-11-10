@@ -212,7 +212,7 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         output.packs.get(n).map(String::as_str) == Some(h) || oath_core::store_present(root, n, h)
     };
     let ran = up::Ran::of(current.as_ref());
-    let keep = keep_names(&machine, &opts.keep)?;
+    let keep = keep_names(&machine, &svc_names(cat)?, &opts.keep)?;
     let held = held_by_cells(cat, &keep, |n| output.pin(n).is_some())?;
     let moves = up::plan(&machine, &output, &ran, &held, have);
     // A head wins over the release's pin of its package (R72).
@@ -1211,7 +1211,7 @@ fn heads_only(
     for r in &refused {
         eprintln!("  {r}");
     }
-    let keep = keep_names(&machine, &opts.keep)?;
+    let keep = keep_names(&machine, &svc_names(cat)?, &opts.keep)?;
     let taken = read_taken(root);
     let unsettled =
         head::plan(&machine, &offers, &taken, &keep, |n, pin| ran.overlay(n, pin).is_some());
@@ -1417,8 +1417,6 @@ fn prefetch(root: &Path, cat: &Catalog, moves: &[Move]) -> Result<()> {
     Ok(())
 }
 
-/// The names `--keep` gives (`pkg:<name>` or `<name>`), each a package
-/// this machine has.
 /// `keep`, and what a present cell needs that this release no longer pins
 /// (R78): an update does not take a package from under a cell. A package
 /// the release does pin is not held, since a cell runs with what is linked.
@@ -1440,10 +1438,32 @@ fn held_by_cells(
     Ok(held)
 }
 
-fn keep_names(machine: &BTreeMap<String, Value>, keep: &[String]) -> Result<BTreeSet<String>> {
+/// The names of the packages `--keep` gives (`pkg:<name>` or `<name>`),
+/// each one this machine has. A `svc:<name>` it gives keeps a service the
+/// release dropped, and must be one of `svcs`, this machine's.
+fn keep_names(
+    machine: &BTreeMap<String, Value>,
+    svcs: &BTreeSet<String>,
+    keep: &[String],
+) -> Result<BTreeSet<String>> {
     let mut out = BTreeSet::new();
-    for k in keep.iter().filter(|k| !k.starts_with("svc:")) {
+    for k in keep {
+        if let Some(name) = k.strip_prefix("svc:") {
+            if !svcs.contains(name) {
+                return Err(Error::hint(
+                    format!("--keep {k}: this machine has no {k}"),
+                    "oath ls --kind svc",
+                ));
+            }
+            continue;
+        }
         let name = k.strip_prefix("pkg:").unwrap_or(k);
+        if name.contains(':') {
+            return Err(Error::hint(
+                format!("--keep {k}: it keeps a package or a service"),
+                "--keep pkg:<name> or --keep svc:<name>",
+            ));
+        }
         if !machine.contains_key(name) {
             return Err(Error::hint(
                 format!("--keep {k}: this machine has no pkg:{name}"),
@@ -1453,6 +1473,11 @@ fn keep_names(machine: &BTreeMap<String, Value>, keep: &[String]) -> Result<BTre
         out.insert(name.to_string());
     }
     Ok(out)
+}
+
+/// The names of this machine's services.
+fn svc_names(cat: &Catalog) -> Result<BTreeSet<String>> {
+    Ok(cat.ls(Some(oath_core::KIND_SVC))?.into_iter().map(|id| id.name).collect())
 }
 
 /// The packages as the moves leave them, by id, a discovered pin filled in
@@ -1765,6 +1790,26 @@ mod tests {
         let keep = BTreeSet::from(["kept".to_string()]);
         let held = held_by_cells(&cat, &keep, |n| n == "pinned").unwrap();
         assert_eq!(held, BTreeSet::from(["gone".to_string(), "kept".to_string()]));
+    }
+
+    #[test]
+    fn keep_takes_only_what_this_machine_has() {
+        let machine = BTreeMap::from([("bash".to_string(), json!({}))]);
+        let svcs = BTreeSet::from(["sshd".to_string()]);
+        let keep = |k: &[&str]| {
+            let k: Vec<String> = k.iter().map(|s| s.to_string()).collect();
+            keep_names(&machine, &svcs, &k)
+        };
+        let names = keep(&["bash", "pkg:bash", "svc:sshd"]).unwrap();
+        assert_eq!(names, BTreeSet::from(["bash".to_string()]), "a service is not a package");
+        for (k, says) in [
+            ("svc:shd", "this machine has no svc:shd"),
+            ("bsh", "this machine has no pkg:bsh"),
+            ("cell:hamlet", "it keeps a package or a service"),
+        ] {
+            let e = keep(&[k]).unwrap_err().to_string();
+            assert!(e.contains(says), "{k}: {e}");
+        }
     }
 
     #[test]
