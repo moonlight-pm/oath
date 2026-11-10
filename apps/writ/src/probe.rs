@@ -570,34 +570,67 @@ pub fn one(what: Option<&str>) -> ! {
         Some("forks") => {
             // Above the limit the box sets, so a fork that keeps working shows it did not hold.
             const ENOUGH: usize = 6000;
-            let parent = unsafe { sys::getpid() };
-            let mut made = 0;
-            while made < ENOUGH {
-                match unsafe { sys::fork() } {
-                    0 => unsafe {
-                        sys::prctl(sys::PR_SET_PDEATHSIG, sys::SIGKILL as i64, 0i64, 0i64, 0i64);
-                        // The parent may be gone already, and then the signal never comes.
-                        if sys::getppid() != parent {
-                            sys::_exit(0);
-                        }
-                        // Holding the pipe the report is read from would hang whoever reads it.
-                        sys::close(1);
-                        sys::close(2);
-                        sys::pause();
-                        sys::_exit(0)
-                    },
-                    -1 => {
-                        let e = sys::errno();
-                        let what = if e == sys::EAGAIN { "EAGAIN".to_string() } else { format!("errno {e}") };
-                        println!("stopped at {made} processes by {what}");
-                        std::process::exit(0);
-                    }
-                    _ => made += 1,
-                }
+            match forks(ENOUGH) {
+                (made, Some(e)) if e == sys::EAGAIN => println!("stopped at {} processes by EAGAIN", made.len()),
+                (made, Some(e)) => println!("stopped at {} processes by errno {e}", made.len()),
+                (made, None) => println!("made {} processes", made.len()),
             }
-            println!("made {made} processes");
         }
         _ => println!("unknown attack"),
     }
     std::process::exit(0);
+}
+
+/// Fork until the kernel refuses or `enough` are made, then kill and reap every child before
+/// returning. A child left to die on its own still counts against the box's limit until the box's
+/// init reaps it, and a probe after this one would find no room for a process or a thread. Gives
+/// the children it made and the errno that stopped it.
+fn forks(enough: usize) -> (Vec<c_int>, Option<c_int>) {
+    let parent = unsafe { sys::getpid() };
+    let mut made = Vec::with_capacity(enough);
+    let mut stopped = None;
+    while made.len() < enough {
+        match unsafe { sys::fork() } {
+            0 => unsafe {
+                // If the parent dies before it can reap this one, this one dies too.
+                sys::prctl(sys::PR_SET_PDEATHSIG, sys::SIGKILL as i64, 0i64, 0i64, 0i64);
+                // The parent may be gone already, and then the signal never comes.
+                if sys::getppid() != parent {
+                    sys::_exit(0);
+                }
+                // Holding the pipe the report is read from would hang whoever reads it.
+                sys::close(1);
+                sys::close(2);
+                sys::pause();
+                sys::_exit(0)
+            },
+            -1 => {
+                stopped = Some(sys::errno());
+                break;
+            }
+            pid => made.push(pid),
+        }
+    }
+    for pid in &made {
+        unsafe { sys::kill(*pid, sys::SIGKILL) };
+    }
+    for pid in &made {
+        unsafe { sys::waitpid(*pid, std::ptr::null_mut(), 0) };
+    }
+    (made, stopped)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_fork_attack_leaves_no_process_behind() {
+        let (made, stopped) = forks(32);
+        assert_eq!((made.len(), stopped), (32, None));
+        for pid in made {
+            let r = unsafe { sys::kill(pid, 0) };
+            assert!(r < 0 && sys::errno() == sys::ESRCH, "{pid} is still there");
+        }
+    }
 }
