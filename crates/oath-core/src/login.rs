@@ -21,7 +21,7 @@
 //! every boot): PID 1 runs a service whose `seat` is the other one's
 //! held, and `svc:screen` is the console's on a desk.
 
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 use std::os::unix::net::UnixStream;
 use std::time::Duration;
 
@@ -84,7 +84,7 @@ pub fn call(req: &Value) -> Result<Value> {
     s.set_read_timeout(Some(Duration::from_secs(60)))?;
     let mut line = serde_json::to_vec(req)?;
     line.push(b'\n');
-    s.write_all(&line)?;
+    crate::write_to_peer(&mut s, &line)?;
     let mut answer = String::new();
     BufReader::new(&s).read_line(&mut answer)?;
     let v: Value = serde_json::from_str(answer.trim())

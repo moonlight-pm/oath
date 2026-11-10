@@ -544,7 +544,7 @@ fn install(root: &Path, cat: &Catalog, d: &Disk, src_esp: &str) -> Result<Instal
         .stdin(Stdio::piped())
         .spawn()
         .map_err(|e| Error::Msg(format!("sfdisk: {e}")))?;
-    sf.stdin.take().expect("piped").write_all(script.as_bytes())?;
+    oath_core::write_to_peer(&mut sf.stdin.take().expect("piped"), script.as_bytes())?;
     let st = sf.wait()?;
     if !st.success() {
         return Err(Error::Msg(format!("sfdisk {}: {st}", d.path)));

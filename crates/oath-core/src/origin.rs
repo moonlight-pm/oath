@@ -8,7 +8,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -128,11 +127,10 @@ impl Origin {
             .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| Error::Msg(format!("spawn curl: {e}")))?;
-        child
-            .stdin
-            .take()
-            .ok_or_else(|| Error::Msg("curl stdin".into()))?
-            .write_all(format!("user = \"{}:{}\"\n", self.id, self.secret).as_bytes())?;
+        let mut stdin = child.stdin.take().ok_or_else(|| Error::Msg("curl stdin".into()))?;
+        let key = format!("user = \"{}:{}\"\n", self.id, self.secret);
+        crate::write_to_peer(&mut stdin, key.as_bytes())?;
+        drop(stdin);
         let out = child.wait_with_output()?;
         if !out.status.success() {
             return Err(Error::Msg(format!(

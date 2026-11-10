@@ -148,7 +148,33 @@ pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> Result<()> {
     result
 }
 
+/// Write all of `bytes` to a child's stdin or a socket, where a reader that
+/// has gone is an error and not the end of `oath`, which leaves SIGPIPE at
+/// its default so that `oath … | head` ends quietly.
+pub fn write_to_peer(w: &mut impl std::io::Write, bytes: &[u8]) -> std::io::Result<()> {
+    let old = unsafe { libc::signal(libc::SIGPIPE, libc::SIG_IGN) };
+    let r = w.write_all(bytes);
+    unsafe { libc::signal(libc::SIGPIPE, old) };
+    r
+}
+
 pub fn read_json<T: serde::de::DeserializeOwned>(path: &std::path::Path) -> Result<T> {
     let s = std::fs::read_to_string(path)?;
     Ok(serde_json::from_str(&s)?)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_reader_that_went_is_an_error_and_sigpipe_stays_as_it_was() {
+        let mut fds = [0; 2];
+        assert_eq!(unsafe { libc::pipe(fds.as_mut_ptr()) }, 0);
+        unsafe { libc::close(fds[0]) };
+        let mut w = unsafe { <std::fs::File as std::os::fd::FromRawFd>::from_raw_fd(fds[1]) };
+        let before = unsafe { libc::signal(libc::SIGPIPE, libc::SIG_DFL) };
+        let r = super::write_to_peer(&mut w, b"x");
+        let after = unsafe { libc::signal(libc::SIGPIPE, before) };
+        assert_eq!(r.unwrap_err().kind(), std::io::ErrorKind::BrokenPipe);
+        assert_eq!(after, libc::SIG_DFL);
+    }
 }
