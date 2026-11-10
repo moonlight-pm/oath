@@ -1,10 +1,13 @@
 # Cells
 
 A cell is one program in a box of its own: namespaces through `crun`, a
-network through `pasta`, one uid, no daemon. `cell run` stays in the
+network through `pasta`, one uid, no daemon. `cell` is Oath's own program,
+in `apps/cell`, on Go's standard library alone. `cell run` stays in the
 foreground, so whatever started it supervises it. Its output is the
 program's, and so is its exit status (128 plus the signal, if a signal
-ended it).
+ended it). Without `-t` that output goes through pipes `cell` makes, so a
+program can open `/dev/stderr` by its path even when `cell`'s own output
+is root's pipe, as a service's is.
 
 | `cell run` of | Runs |
 |---------------|------|
@@ -17,24 +20,32 @@ what others published; software built on Oath is a `pkg:` or a `cell:`.
 
 ## Getting it
 
-`pkg:cell` is on the origin and in no profile, so a machine adds it by
-hash. It needs `pkg:certs`, `pkg:crun`, `pkg:passt` and `pkg:zstd`, and
-`pkg:crun` needs `pkg:json-c`, `pkg:libcap` and `pkg:libseccomp`. `base`
-and `desk` hold `certs`, `libcap` and `zstd`, so five are new. The origin's
-index gives each pack's hash and its plan's; a plan's `run_needs` gives the
-hash of each need, which must be the one the machine runs
-([Packages](packages.md)).
+`pkg:cell` is on the origin and in no profile. `sudo oath add cell` takes it
+at its newest signed head, with each package it needs that the machine
+lacks, and applies them at once. It needs `pkg:certs`, `pkg:crun`,
+`pkg:passt` and `pkg:zstd`, and `pkg:crun` needs `pkg:json-c`, `pkg:libcap`
+and `pkg:libseccomp`. `base` and `desk` hold `certs`, `libcap` and `zstd`, so
+five are new:
 
 ```
-curl -fsS https://store.oath.moonlight.pm/INDEX.md | grep '^| `cell` '
-curl -fsS https://store.oath.moonlight.pm/plan/cell/sha256-….plan
-sudo oath new pkg:json-c --from-json '{"present":true,"hash":"sha256-…"}'
-sudo oath new pkg:libseccomp --from-json '{"present":true,"hash":"sha256-…"}'
-sudo oath new pkg:crun --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:json-c","hash":"sha256-…"},{"id":"pkg:libcap","hash":"sha256-…"},{"id":"pkg:libseccomp","hash":"sha256-…"}]}'
-sudo oath new pkg:passt --from-json '{"present":true,"hash":"sha256-…"}'
-sudo oath new pkg:cell --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:certs","hash":"sha256-…"},{"id":"pkg:crun","hash":"sha256-…"},{"id":"pkg:passt","hash":"sha256-…"},{"id":"pkg:zstd","hash":"sha256-…"}]}'
-sudo oath apply
+$ oath ls --origin cell
+  cell  0.1.0  machines  cell: run a container image over crun and pasta, with one uid and no daemon.
+* is on this machine; `sudo oath add <name>` installs one with what it needs
+$ sudo oath add cell
+Create readonly snapshot of '/oath/run/fs/@' in '/oath/run/fs/@gen-1'
+pkg:cell sha256-… (0.1.0), signed by oath@buccina
+pkg:crun sha256-… (1.30.1), signed by oath@buccina
+pkg:json-c sha256-… (0.19-20260627), signed by oath@buccina
+pkg:libseccomp sha256-… (2.6.1), signed by oath@buccina
+pkg:passt sha256-… (2026_10_02.cba3570), signed by oath@buccina
+added in generation 1
 ```
+
+Run a second time, it says ``pkg:cell is here at sha256-…; `oath update`
+moves it to its head`` and changes nothing. `sudo oath update --confirm`
+moves each to its newest head ([Packages](packages.md)). The examples below
+run `pkg:python`, which `desk` has and `sudo oath add python` brings to
+`base`.
 
 ## Commands
 
@@ -103,13 +114,14 @@ bash   coreutils  glibc  libffi   openssl  xz	 zstd
 bzip2  curl	  gmp	 mbedtls  python   zlib
 ```
 
-- **The packs.** The package, what it needs, each `--with`, and a floor of
-  `glibc`, `bash`, `coreutils` and `curl`. Each is at the hash this machine
-  links, read from `oath --json get`. Each is bound read-only, `nosuid`
-  and `nodev`, at `/oath/store/pkg/<name>/<hash>`, with a `live` link
-  beside it. `curl` is on the floor because `pkg:openssl`'s default CA path
-  (`ssl/cert.pem`) is a link to `pkg:curl`'s bundle and its plan does not
-  name `pkg:curl`.
+- **The packs.** The package, each `--with`, a floor of `glibc`, `bash`,
+  `coreutils` and `curl`, and what each of those needs, all the way down
+  (`curl` brings `mbedtls` and `zlib`, `coreutils` brings `gmp`). Each is at
+  the hash this machine links, read from `oath --json get`. Each is bound
+  read-only, `nosuid` and `nodev`, at `/oath/store/pkg/<name>/<hash>`, with
+  a `live` link beside it. `curl` is on the floor because `pkg:openssl`'s
+  default CA path (`ssl/cert.pem`) is a link to `pkg:curl`'s bundle and its
+  plan does not name `pkg:curl`.
 - **What the floor leaves out.** `grep` and the rest of a machine's tools: a
   script that calls one fails (`/bin/sh: line 1: grep: command not found`)
   until its package needs it or `--with pkg:grep` brings it.
@@ -188,7 +200,9 @@ included, and not this machine's loopback: `--reach 9000` opens the machine's
 `127.0.0.1:9000` at the cell's own, and `--reach 9100:9000` at the cell's
 `9100`. One cell talks to another through a published port and `--reach`;
 there is no bridge between cells. Names resolve through `169.254.1.1`,
-where `pasta` answers from the host's.
+where `pasta` answers from the host's. `pasta` makes that network through
+`/dev/net/tun`: PID 1 loads `tun` at boot and opens the node to every
+account. A `--no-net` cell does not use it.
 
 **Limits.** The first process has `no_new_privs`, and uid 0 inside keeps
 only the default capability set; any other number has none. seccomp refuses
@@ -237,7 +251,11 @@ every package's. It is not linked into `/bin` or `/lib`, it comes from no
 origin, and `oath publish` refuses it: `cell:hamlet is a cell, and a cell
 never goes to an origin (R78)`. Its name does not clash with a package's:
 `cell:python` and `pkg:python` stand side by side. Fields are in `oath
-schema cell`: `present`, `hash`, `needs`, `description`, `home`, `source`.
+schema cell`: `present` (default `true`), `hash` (`sha256-` plus 64
+lowercase hex, required while present), `needs`, and `description`, `home`
+and `source`, which are as for a `pkg` and in no hash. An apply starts
+nothing, whatever `oath new` prints: a `svc`, or whatever runs the project,
+runs `cell run` ([Under a service](#under-a-service)).
 
 ```
 $ sudo oath store cell:hamlet ./hamlet
@@ -272,16 +290,20 @@ takes. `--with` adds a package, never a `cell:`.
 
 `needs` are package ids with no hash: a cell starts with each at the hash
 this machine links, so an update that moves a package leaves nothing to
-re-point. `oath update` holds a package a present cell needs when the
-release does not pin it.
+re-point. `sudo oath add <name>` brings a need this machine lacks.
+`oath update` moves a package a present cell needs as it moves any other,
+and never takes one off the machine.
 
 `sudo oath set cell:hamlet hash=sha256-…` and `oath apply` move the pin.
 `present=false` keeps the tree and takes `live` away, and `cell run` then
 refuses it. `oath rm` and `oath apply` delete the object and leave the
 trees for reap; `oath undo` brings the object back.
 
-`oath verify cell:hamlet` hashes the tree again. `cell run` starts what the
-last apply linked, without hashing it.
+`oath verify cell:hamlet` hashes the tree again, and PID 1's check once a
+boot (`oath verify --quiet`) hashes every present cell's tree beside the
+packages'. A tree that differs prints `cell:hamlet DAMAGED: sha256-… hashes
+to sha256-…`, and `oath verify` exits 1. `cell run` starts what the last
+apply linked, without hashing it.
 
 ### Refusals
 
@@ -295,6 +317,7 @@ last apply linked, without hashing it.
 | | a need this machine lacks | `cell:x needs pkg:nosuch, which this machine would not have`, hint `oath new pkg:nosuch, or take it out of cell:x's needs` |
 | | a package a present cell needs is being removed | The same, naming the cell, on any apply that has something to change, until the cell does not need it |
 | `oath publish` | always | `cell:x is a cell, and a cell never goes to an origin (R78)` |
+| `oath add` | a `cell:` id | `cell:x is not a package`, hint `oath add <name>` |
 | `cell run` | `present: false`, or no such object | `cell:x is not installed on this machine`, or `no object cell:x` |
 
 ### From a plan
@@ -383,8 +406,13 @@ never fetched. Layers are gzip, zstd or plain tar. Setuid bits, devices and
 xattrs in an image do not land. A registry that is not this machine is
 HTTPS.
 
-A program that changes uid fails, because the cell has one uid. An image's
-`USER` and `STOPSIGNAL` apply.
+A program that changes uid fails, because the cell has one uid: stock
+`nginx:alpine` hands its cache to its `nginx` user (101) and stops at
+`nginx: [emerg] chown("/var/cache/nginx/client_temp", 101) failed (22: Invalid argument)`,
+which is why the server above is `nginx-unprivileged`. An image whose start
+script drops to its own account when started as root runs when `--user`
+names that account (`redis:alpine` with `--user redis`). An image's `USER`
+and `STOPSIGNAL` apply.
 
 ## Known defects
 

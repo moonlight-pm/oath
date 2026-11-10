@@ -3,7 +3,9 @@
 `writ` is Oath's coding agent. A model works on one project from inside
 a box with no network, no home and no way to `sudo`, and what it writes
 is held in a session until you apply it. The model is a local one served
-by `llama-server`, or one on OpenRouter. `writ` runs as `home`.
+by `llama-server`, or one on OpenRouter that `writ use openrouter` names;
+until then it is the local one, as no OpenRouter model is built in.
+`writ` runs as `home`.
 
 ```
 cd ~/hamlet
@@ -14,30 +16,25 @@ writ                # type, watch it work, /diff, /apply
 
 `pkg:writ` is on the origin and in no profile. It needs `pkg:bubblewrap`
 (which needs `pkg:libcap`) and `pkg:curl`. The `desk` profile has all
-three. `base` has `pkg:curl` and `pkg:libcap`, so a `base` machine adds
-`pkg:bubblewrap`. Each hash comes from the origin, and each need is
-pinned at the hash the plan names, as in [Packages](packages.md):
+three. `base` has `pkg:curl` and `pkg:libcap`, so on a `base` machine
+`oath add` takes `pkg:bubblewrap` too:
 
 ```
-curl -fsS https://store.oath.moonlight.pm/INDEX.md | grep -E '^\| `(writ|bubblewrap|llama-cpp)` '
-
-# desk
-sudo oath new pkg:writ --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:bubblewrap","hash":"sha256-…"},{"id":"pkg:curl","hash":"sha256-…"}]}'
-sudo oath apply pkg:writ
-
-# base: pkg:bubblewrap first, then the same pkg:writ
-sudo oath new pkg:bubblewrap --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:libcap","hash":"sha256-…"}]}'
-sudo oath new pkg:writ --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:bubblewrap","hash":"sha256-…"},{"id":"pkg:curl","hash":"sha256-…"}]}'
-sudo oath apply pkg:bubblewrap pkg:writ
+oath ls --origin writ   # writ, and llama-cpp for a local model
+sudo oath add writ      # pkg:writ, with pkg:bubblewrap where it is missing
 ```
 
-`writ --help` lists the verbs. A model is one more step: see Local
-models or OpenRouter below.
+Each comes at the newest head a key in `host:local.publishers` may sign
+for it, and is applied at once; `oath update` moves each to its newest
+head ([Packages](packages.md)). `writ --help` lists the verbs and their
+options. A model is one more step: see Local models or OpenRouter below.
 
 ## A session
 
 `writ` with no verb, on a terminal, is a session on the current
-directory. Off a terminal it prints its usage.
+directory, in the terminal's own scrollback: a finished line stays
+there, for the terminal's search and copying, and only the rows at the
+bottom are redrawn. Off a terminal it prints its usage.
 
 | Flag | Default | |
 |------|---------|---|
@@ -298,13 +295,13 @@ lock keeps a box and `apply` from running on one session at once.
 
 `pkg:llama-cpp` is on the origin and in no profile. It needs a CPU with
 AVX2, FMA, F16C and BMI2, and `pkg:gcc` and `pkg:vulkan-loader`, which
-`desk` has. A `base` machine adds those two, with `pkg:mpc`, each at the
-hash the plan names. A model is a `.gguf` file you fetch yourself, and
-it must let others read it and must not let them write it.
+`desk` has. `sudo oath add llama-cpp` takes it at its head with each of
+those the machine lacks; on `base` that is both, with `pkg:mpc`. A model
+is a `.gguf` file you fetch yourself, and it must let others read it and
+must not let them write it.
 
 ```
-sudo oath new pkg:llama-cpp --from-json '{"present":true,"hash":"sha256-…","needs":[{"id":"pkg:gcc","hash":"sha256-…"},{"id":"pkg:vulkan-loader","hash":"sha256-…"}]}'
-sudo oath apply pkg:llama-cpp
+sudo oath add llama-cpp
 mkdir -p ~/.local/share/writ/models
 cp model.gguf ~/.local/share/writ/models/
 writ use local             # switch to it, and load it
@@ -338,7 +335,9 @@ The server is `/bin/llama-server`. `home` starts it through `sudo -u
 work`, and it runs as `work`, in a box of its own: `/bin`, `/lib` and
 `/oath/store` read-only, a 256 MiB `/tmp`, the socket's directory, and
 no `/etc`, home, `/work` or network. The model comes in through one
-read-only descriptor. `--gpu` adds `/dev/nvidiactl` and `/dev/nvidia<N>`.
+read-only descriptor. `--gpu` adds `/dev/nvidiactl` and `/dev/nvidia<N>`,
+and no other GPU node: not `/dev/dri`, `/dev/nvidia-modeset`,
+`/dev/nvidia-caps` or `/dev/nvidia-uvm`.
 No port is open: `home` reaches it through a socket in
 `~/.local/share/writ/llama`, a directory only `home` can enter, where
 its log also is.
