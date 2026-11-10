@@ -776,8 +776,9 @@ pub fn undo_main(args: &[OsString]) -> Result<i32, String> {
     undo(&session.dir, &meta.project, &mut std::io::stdout())
 }
 
-/// Take back what `apply` did, newest first. A file or link changed since it was applied stays, and
-/// is named. What is put back is recorded, so a later `apply` can tell it from the owner's change.
+/// Take back what `apply` did, newest first. A path that no longer holds what `apply` left there,
+/// or that something now stands in the way of, is the owner's since: it stays, and is named.
+/// What is put back is recorded, so a later `apply` can tell it from the owner's change.
 pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String> {
     let entries = read_log(dir, "undo.jsonl")?;
     if entries.is_empty() {
@@ -791,13 +792,15 @@ pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String>
     for v in entries.iter().rev() {
         let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
         let rel = PathBuf::from(path);
-        parents_are_plain(real, &rel)?;
+        if let Err(e) = parents_are_plain(real, &rel) {
+            left.push(format!("{e}, and stays"));
+            continue;
+        }
         let at = real.join(&rel);
-        if let Some(want) = v.get("after").and_then(|h| h.str()) {
-            if found_at(&at).as_deref() != Some(want) {
-                left.push(format!("{} changed after it was applied, and stays", name(&rel)));
-                continue;
-            }
+        // An entry with no hash left no file or link: one there now is the owner's.
+        if found_at(&at).as_deref() != v.get("after").and_then(|h| h.str()) {
+            left.push(format!("{} changed after it was applied, and stays", name(&rel)));
+            continue;
         }
         let is_true = |k: &str| v.get(k) == Some(&Value::Bool(true));
         if is_true("made_dir") {
@@ -1186,6 +1189,33 @@ mod tests {
         assert_eq!(fs::read_link(t.real.join("a")).unwrap(), Path::new("owner's"));
         assert_eq!(t.text("b"), "was b");
         assert_eq!(fs::read_link(t.real.join("m")).unwrap(), Path::new("b"));
+    }
+
+    #[test]
+    fn undo_leaves_what_the_owner_put_where_apply_deleted() {
+        let t = T::new("undelete");
+        t.real("d/x", "was x");
+        t.real("f", "was f");
+        t.real("g", "was g");
+        std::os::unix::fs::symlink("f", t.real.join("l")).unwrap();
+        if !t.whiteout("d") || !t.whiteout("f") || !t.whiteout("g") || !t.whiteout("l") {
+            return;
+        }
+        t.apply(true, &[]).unwrap();
+        // The owner writes a file where the session deleted one, and one where it deleted a
+        // directory, and a link where it deleted a link.
+        t.real("f", "owner's f");
+        t.real("d", "owner's d");
+        std::os::unix::fs::symlink("owner's", t.real.join("l")).unwrap();
+        let (code, stays) = t.undo();
+        assert_eq!(code, 1);
+        assert_eq!(stays.len(), 4, "{stays:?}");
+        assert_eq!(stays[..3], ["l changed after it was applied, and stays", "f changed after it was applied, and stays", "d changed after it was applied, and stays"]);
+        assert!(stays[3].starts_with("d/x goes through") && stays[3].ends_with("which is not a directory, and stays"), "{}", stays[3]);
+        assert_eq!(t.text("f"), "owner's f");
+        assert_eq!(t.text("d"), "owner's d");
+        assert_eq!(fs::read_link(t.real.join("l")).unwrap(), Path::new("owner's"));
+        assert_eq!(t.text("g"), "was g");
     }
 
     #[test]
