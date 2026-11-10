@@ -29,9 +29,33 @@ pub fn store(root: &Path, name: &str, src: &Path) -> Result<String> {
     store_in(root, "cell", name, src)
 }
 
+/// Refuse a present `cell` whose tree is not in the store or does not hash
+/// to its pin. A cell comes from no origin, so `oath store` is the repair.
+pub fn check(root: &Path, name: &str, cell: &Cell) -> Result<()> {
+    if !cell.present {
+        return Ok(());
+    }
+    let tree = tree_dir(root, name, &cell.hash);
+    if !tree.is_dir() {
+        return Err(Error::hint(
+            format!("cell:{name} {} is not in the store", cell.hash),
+            format!("a cell comes from no origin: sudo oath store cell:{name} <dir|file.tar>"),
+        ));
+    }
+    let got = hash_tree(&tree)?;
+    if got != cell.hash {
+        return Err(Error::security(
+            format!("cell:{name} hashes to {got}, not its pin {}", cell.hash),
+            format!("sudo oath store cell:{name} <dir|file.tar> puts it back"),
+        ));
+    }
+    Ok(())
+}
+
 /// Make `cell` what this machine starts: its tree is hashed against the
-/// pin, and `live` names it. Nothing else on the machine changes.
-pub fn converge(root: &Path, name: &str, cell: &Cell) -> Result<CellActual> {
+/// pin ([`check`]), unless `checked` says that was just done, and `live`
+/// names it. Nothing else on the machine changes.
+pub fn converge(root: &Path, name: &str, cell: &Cell, checked: bool) -> Result<CellActual> {
     let live = slot_dir(root, name).join(LIVE_NAME);
     if !cell.present {
         match fs::remove_file(&live) {
@@ -40,19 +64,8 @@ pub fn converge(root: &Path, name: &str, cell: &Cell) -> Result<CellActual> {
         }
         return Ok(actual(cell, false, None));
     }
-    let tree = tree_dir(root, name, &cell.hash);
-    if !tree.is_dir() {
-        return Err(Error::hint(
-            format!("cell:{name} {} is not in the store", cell.hash),
-            format!("a cell comes from no origin: oath store cell:{name} <dir|file.tar>"),
-        ));
-    }
-    let got = hash_tree(&tree)?;
-    if got != cell.hash {
-        return Err(Error::security(
-            format!("cell:{name} hashes to {got}, not its pin {}", cell.hash),
-            format!("oath store cell:{name} <dir|file.tar> puts it back"),
-        ));
+    if !checked {
+        check(root, name, cell)?;
     }
     replace_symlink(&live, &cell.hash)?;
     let verified = PkgVerified { ok: true, at: crate::now_rfc3339(), got: String::new() };

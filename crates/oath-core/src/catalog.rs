@@ -853,7 +853,7 @@ impl Catalog {
         let mut report = ApplyReport::default();
         for id in &back {
             self.stop_dhcp_client_first(id, hooks)?;
-            let applied = self.converge_spec(id, hooks, &mut report)?;
+            let applied = self.converge_spec(id, hooks, &mut report, false)?;
             if id.kind == KIND_SVC {
                 svcs.push((id.clone(), applied["enabled"] == json!(true)));
             }
@@ -1244,6 +1244,7 @@ impl Catalog {
         self.check_svc_wants()?;
         self.check_pkg_needs()?;
         self.check_cell_needs()?;
+        self.check_cell_trees(selected)?;
         Ok(())
     }
 
@@ -1276,7 +1277,7 @@ impl Catalog {
     /// Converge `id` and wait for PID 1 when it is a service. Once its spec
     /// is applied the object is no longer new, even if the service then
     /// fails to come up: that is an error in its status, not a pending
-    /// creation.
+    /// creation. Preflight has checked a cell's tree.
     fn converge_one(
         &self,
         id: &ObjectId,
@@ -1284,7 +1285,7 @@ impl Catalog {
         report: &mut ApplyReport,
     ) -> Result<()> {
         self.stop_dhcp_client_first(id, hooks)?;
-        let applied = self.converge_spec(id, hooks, report)?;
+        let applied = self.converge_spec(id, hooks, report, true)?;
         let _ = fs::remove_file(self.obj_dir(id).join(NEW_MARK));
         if id.kind == KIND_SVC {
             let enabled = applied.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
@@ -1314,13 +1315,15 @@ impl Catalog {
 
     /// Converge `id` to its desired spec, record what that observed as its
     /// actual, and keep the spec as applied (`applied.json`). A service only
-    /// gets its applied spec here: PID 1 runs it once notified. Returns the
-    /// applied spec.
+    /// gets its applied spec here: PID 1 runs it once notified. With
+    /// `checked`, preflight has hashed a cell's tree against its pin (apply;
+    /// undo has not). Returns the applied spec.
     fn converge_spec(
         &self,
         id: &ObjectId,
         hooks: &dyn ApplyHooks,
         report: &mut ApplyReport,
+        checked: bool,
     ) -> Result<Value> {
         let dir = self.obj_dir(id);
         let obj = self.get(id)?;
@@ -1350,7 +1353,7 @@ impl Catalog {
             KIND_PKG => self.converge_one_pkg(id, hooks)?,
             KIND_CELL => {
                 let cell: Cell = serde_json::from_value(desired.clone())?;
-                let actual = crate::cell::converge(&self.root, &id.name, &cell)?;
+                let actual = crate::cell::converge(&self.root, &id.name, &cell, checked)?;
                 self.write_actual(id, &actual)?;
                 desired
             }
@@ -1650,7 +1653,7 @@ impl Catalog {
     fn unlive_cell(&self, id: &ObjectId, desired: Value) -> Result<()> {
         let mut cell: Cell = serde_json::from_value(desired)?;
         cell.present = false;
-        crate::cell::converge(&self.root, &id.name, &cell)?;
+        crate::cell::converge(&self.root, &id.name, &cell, false)?;
         Ok(())
     }
 
@@ -1678,6 +1681,20 @@ impl Catalog {
                     ));
                 }
             }
+        }
+        Ok(())
+    }
+
+    /// Each selected cell that stays present has its tree in the store, and
+    /// that tree hashes to its pin. A cell comes from no origin, so apply
+    /// cannot repair one; it refuses before it takes a generation.
+    fn check_cell_trees(&self, selected: &[Drift]) -> Result<()> {
+        for d in selected {
+            if d.id.kind != KIND_CELL || self.removing(&d.id) {
+                continue;
+            }
+            let cell: Cell = serde_json::from_value(self.get(&d.id)?.desired)?;
+            crate::cell::check(&self.root, &d.id.name, &cell)?;
         }
         Ok(())
     }

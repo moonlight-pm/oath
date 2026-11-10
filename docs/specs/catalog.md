@@ -194,8 +194,10 @@ was never applied is deleted at once. Base packages, and `host`, `net`,
 1. Compute drift for the selected ids (or all). Nothing to do: exit 0.
 2. Check before touching anything: every selected document parses as
    its type; confirm-class changes have `--confirm`; the `svc` wants
-   graph has no cycle; the `pkg` needs graph holds. A refusal takes no
-   generation, changes nothing, and is logged `refused` with
+   graph has no cycle; the `pkg` needs graph holds; each selected `cell`
+   that stays present has its tree in the store, hashing to its pin (a
+   cell comes from no origin, so apply cannot repair one). A refusal
+   takes no generation, changes nothing, and is logged `refused` with
    `generation: null`.
 3. If the only change is `host:local` `power`, take no generation:
    converge it, log `ok` with `generation: null`, and reboot or halt.

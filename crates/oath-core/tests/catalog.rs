@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use oath_core::{
     apply_overlay, converge_pkg, copy_objects, fetch_and_converge_pkg, hash_tree, ingest_file,
     install_tree, is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host,
-    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
+    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM, EXIT_SECURITY,
 };
 use serde_json::{json, Map};
 
@@ -1832,6 +1832,27 @@ fn a_damaged_cell_is_found() {
     assert_eq!(oath_core::cell::store(d.path(), "hamlet", &src).unwrap(), hash);
     assert!(cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
     assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync");
+}
+
+/// A VM, 2026-11-10: an apply refused for a cell's hash (exit 4) took a
+/// generation first, and undo then took back that generation.
+#[test]
+fn a_cell_that_does_not_hash_to_its_pin_is_refused_before_a_generation() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    let cur: ObjectId = "snap:current".parse().unwrap();
+    let before = cat.get(&cur).unwrap().desired["generation"].clone();
+    std::fs::write(d.path().join("store/cell/hamlet").join(&hash).join("bin/hamlet"), "x").unwrap();
+    cat.set_fields(&id, cell_fields(json!({ "description": "To be." }))).unwrap();
+    let err = cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_SECURITY, "{err}");
+    assert_eq!(results(&cat).last().unwrap(), &("refused".to_string(), None));
+    assert_eq!(cat.get(&cur).unwrap().desired["generation"], before);
+    assert_eq!(std::fs::read_dir(hooks.snaps.path()).unwrap().count(), 1, "a snapshot was taken");
+    assert!(cat.applied(&id).unwrap().unwrap().get("description").is_none());
+    // Undo takes back the apply that made the cell.
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert!(cat.get(&id).is_err());
 }
 
 #[test]
