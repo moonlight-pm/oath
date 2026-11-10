@@ -182,6 +182,21 @@ impl Meta {
         let v = obj([("project", s(project)), ("started", n(self.started))]);
         fs::write(Self::path(dir), v.text()).map_err(|e| format!("{}: {e}", Self::path(dir).display()))
     }
+
+    /// Written before the first box runs on a session, so its writes can be reviewed, applied and
+    /// undone. A session that goes on keeps its start, and stays on its project.
+    pub fn begin(dir: &Path, project: &Path) -> Result<Meta, String> {
+        if let Ok(m) = Meta::load(dir) {
+            if m.project != project {
+                let id = dir.file_name().unwrap_or_default().to_string_lossy();
+                return Err(format!("session {id} is on {}", m.project.display()));
+            }
+            return Ok(m);
+        }
+        let m = Meta { project: project.to_path_buf(), started: now() };
+        m.save(dir)?;
+        Ok(m)
+    }
 }
 
 pub fn now() -> u64 {
@@ -697,9 +712,7 @@ impl Conversation {
             Choice::OpenRouter(_) => openrouter::check_key_file(&self.home)?,
         }
         let plan = Plan::new(&self.project, &self.session, &self.home)?;
-        if Meta::load(&self.session.dir).is_err() {
-            Meta { project: plan.project.clone(), started: now() }.save(&self.session.dir)?;
-        }
+        Meta::begin(&self.session.dir, &plan.project)?;
         report.phase("starting the box");
         let mut tools = ToolBox::start(&plan)?.watching(cancel);
         if self.messages.is_empty() {
@@ -1122,6 +1135,21 @@ mod tests {
         let end = run(&mut messages, &mut script, &mut Recorder::default(), &mut Quiet::default(), &Limits::of(5));
         assert!(matches!(end, End::Stopped(ref w) if w.contains("context is full")), "{end:?}");
         assert!(script.seen.is_empty(), "nothing was sent");
+    }
+
+    #[test]
+    fn a_session_begins_once_and_stays_on_its_project() {
+        let d = std::env::temp_dir().join(format!("writ-meta-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&d);
+        fs::create_dir_all(&d).unwrap();
+        let first = Meta::begin(&d, Path::new("/tmp/project")).unwrap();
+        assert_eq!((first.project.as_path(), first.started), (Path::new("/tmp/project"), Meta::load(&d).unwrap().started));
+        Meta { project: PathBuf::from("/tmp/project"), started: 5 }.save(&d).unwrap();
+        assert_eq!(Meta::begin(&d, Path::new("/tmp/project")).unwrap().started, 5);
+        let Err(e) = Meta::begin(&d, Path::new("/tmp/other")) else { panic!("a session moved to another project") };
+        assert!(e.contains("is on /tmp/project"), "{e}");
+        assert_eq!(Meta::load(&d).unwrap().started, 5);
+        fs::remove_dir_all(&d).unwrap();
     }
 
     #[test]

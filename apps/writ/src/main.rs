@@ -147,6 +147,8 @@ fn run(args: &[OsString]) -> Result<i32, String> {
     let keep = name.is_some();
     let id = name.unwrap_or_else(|| format!("run-{}", std::process::id()));
     let session = Session::open(&id, &home)?;
+    // Held until the box ends, so no `apply` reads the session while the box writes it.
+    let _running = session.lock()?;
     let plan = match Plan::new(&project, &session, &home) {
         Ok(p) => p,
         Err(e) => {
@@ -156,6 +158,10 @@ fn run(args: &[OsString]) -> Result<i32, String> {
             return Err(e);
         }
     };
+    // A session kept is one `diff`, `apply` and `undo` can find, and `writ sessions` lists.
+    if keep {
+        agent::Meta::begin(&session.dir, &plan.project)?;
+    }
     if landlock::abi() == 0 {
         eprintln!("writ: this kernel has no Landlock; the box rests on namespaces and seccomp");
     }
