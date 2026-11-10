@@ -140,7 +140,8 @@ installer's sshd and the installed system's both listen on 22, so a
 a NAT's), and every stage, the pinned key included, is reached there.
 
 1. Refuse without `--confirm` and a `/dev/` node. Read and test the
-   overlay before anything is wiped. Refuse a `--target` that is the
+   overlay before anything is wiped, on a catalog of the output's own
+   profile (its manifest's), the one step 5 patches. Refuse a `--target` that is the
    build host itself: its `/proc/sys/kernel/random/boot_id` matches
    ours (built 2026-10-16). (`esp` already refuses to run on a machine
    that is not Oath.)

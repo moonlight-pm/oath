@@ -58,6 +58,9 @@ pub(crate) struct Payload {
     efi: PathBuf,
     /// `/oath/output.json` for the new machine ([`install_record`]).
     record: String,
+    /// The seed profile the output was packed from: the catalog an
+    /// overlay patches.
+    profile: String,
 }
 
 impl Payload {
@@ -113,8 +116,9 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
                 .context("pass --unchecked to install anyway")?;
         }
     }
+    let profile = crate::check::output_profile(&o.dir)?;
     if let Some(p) = &opts.overlay {
-        read_overlay(p)?;
+        read_overlay(p, &profile)?;
     }
     let keys =
         qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
@@ -137,6 +141,7 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
         stage: o.file("stage"),
         efi: o.file("BOOTX64.EFI"),
         record: install_record(&o)?,
+        profile,
     };
     if opts.usb {
         write_usb_installer(out, &tools, &p, &opts)?;
@@ -647,7 +652,7 @@ fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
         ),
     )?;
 
-    write_catalog_overlay(opts, &hostname, r)?;
+    write_catalog_overlay(opts, &p.profile, &hostname, r)?;
     put_text(r, &format!("/mnt/oath/{}", oath_core::update::RECORD), &p.record)?;
     let host_key = make_host_key(r, stage)?;
 
@@ -753,13 +758,14 @@ mount --bind /esp /mnt/boot
     )
 }
 
-/// Read and check `--overlay` before anything is wiped.
-fn read_overlay(path: &Path) -> Result<serde_json::Value> {
+/// Read and check `--overlay` before anything is wiped, against a catalog
+/// of the output's own `profile`, the one the installer patches.
+fn read_overlay(path: &Path, profile: &str) -> Result<serde_json::Value> {
     let text = fs::read_to_string(path).with_context(|| format!("overlay {}", path.display()))?;
     let v: serde_json::Value =
         serde_json::from_str(&text).with_context(|| format!("overlay {}", path.display()))?;
     let scratch = tempfile::tempdir()?;
-    oath_core::seed(scratch.path()).map_err(|e| anyhow::anyhow!("{e}"))?;
+    oath_core::seed_profile(scratch.path(), profile).map_err(|e| anyhow::anyhow!("{e}"))?;
     oath_core::apply_overlay(scratch.path(), &v)
         .map_err(|e| anyhow::anyhow!("overlay {}: {e}", path.display()))?;
     Ok(v)
@@ -787,10 +793,10 @@ fn catalog_overlay(
     }
 }
 
-fn write_catalog_overlay(opts: &Opts, hostname: &str, r: &Remote) -> Result<()> {
+fn write_catalog_overlay(opts: &Opts, profile: &str, hostname: &str, r: &Remote) -> Result<()> {
     let keys = qemu::host_pubkeys_body().unwrap_or_default();
     let user = match &opts.overlay {
-        Some(p) => Some(read_overlay(p)?),
+        Some(p) => Some(read_overlay(p, profile)?),
         None => None,
     };
     let overlay = catalog_overlay(hostname, &keys, user.as_ref());
@@ -1295,6 +1301,16 @@ mod tests {
         assert!(script.contains("mkfs.btrfs -f -L oath -U 3f1e9c1e-5b7a \"$P2\""));
         assert!(script.contains("btrfs subvolume create /mnt/@\n"));
         assert!(!script.contains("preserve"));
+    }
+
+    #[test]
+    fn overlay_is_checked_against_the_outputs_profile() {
+        // svc:rivulet is desk's: a base catalog has none to patch.
+        let d = tempfile::tempdir().unwrap();
+        let f = d.path().join("overlay.json");
+        fs::write(&f, r#"{"objects": {"svc:rivulet": {"enabled": false}}}"#).unwrap();
+        assert!(read_overlay(&f, "desk").is_ok());
+        assert!(read_overlay(&f, oath_core::DEFAULT_PROFILE).is_err());
     }
 
     #[test]

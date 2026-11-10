@@ -326,7 +326,7 @@ fn yes() -> bool {
 }
 
 /// The seed profile a build output was packed from (its manifest).
-fn output_profile(dir: &Path) -> Result<String> {
+pub(crate) fn output_profile(dir: &Path) -> Result<String> {
     let m: serde_json::Value = serde_json::from_slice(
         &fs::read(dir.join("manifest.json")).context("the output's manifest.json")?,
     )?;
