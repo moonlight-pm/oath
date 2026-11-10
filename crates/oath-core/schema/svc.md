@@ -20,6 +20,8 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
 - `restart` — `never` | `always` | `on-failure`. `never` is a oneshot:
   PID 1 starts it when enabled and does not start it again after it
   exits, until `enabled` goes false then true (or the next boot).
+  `on-failure` restarts it after a failed exit; after exit code 0 it stays
+  down as a `never` one does.
 - `enabled` — if false, the process is not running.
 - `user` — `root`, `home`, `work` or `void`. Oath has those four Unix
   accounts and no others (`home` is uid 1, gid 1; `work` is uid 2, home
