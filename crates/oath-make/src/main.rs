@@ -108,7 +108,9 @@ enum Cmd {
     },
     /// Wipe `--disk` on `--target` (or `--qemu` OVMF rehearsal). Requires `--confirm`.
     Install {
-        /// `user@host` or `user@host:port`. Ignored with `--qemu`.
+        /// `user@host` or `user@host:port`, where the port reaches the
+        /// machine's port 22 (a forward): the installer's sshd and the
+        /// installed system's listen there. Ignored with `--qemu`.
         #[arg(long)]
         target: Option<String>,
         /// Whole-disk node to GPT-wipe (`/dev/sda`, `/dev/vda`, …).

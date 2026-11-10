@@ -909,6 +909,21 @@ fn same_machine(here: &str, there: &str) -> bool {
     !here.is_empty() && here == there
 }
 
+/// The installer ramdisk on the machine `r` reaches. Its sshd and the
+/// installed system's (`svc:sshd`) both listen on 22, so the address that
+/// reaches the machine's port 22, a forward by QEMU or a NAT included,
+/// reaches every stage: one port for the old system, the installer, the
+/// pinned key and the new system.
+fn installer_at(r: &Remote) -> Remote {
+    Remote {
+        user: "root".into(),
+        host: r.host.clone(),
+        port: r.port,
+        sudo: false,
+        known_hosts: None,
+    }
+}
+
 fn install_remote(out: &Path, tools: &Tools, p: &Payload, opts: &Opts, r: &Remote) -> Result<()> {
     refuse_build_host(r)?;
     if !already_installer(r) {
@@ -916,14 +931,19 @@ fn install_remote(out: &Path, tools: &Tools, p: &Payload, opts: &Opts, r: &Remot
     } else {
         eprintln!("already in installer ramdisk");
     }
-    let inst = Remote {
-        user: "root".into(),
-        host: r.host.clone(),
-        port: 22,
-        sudo: false,
-        known_hosts: None,
-    };
-    wait_ssh(&inst, Duration::from_secs(300))?;
+    let inst = installer_at(r);
+    if let Err(e) = wait_ssh(&inst, Duration::from_secs(300)) {
+        if r.port == 22 {
+            return Err(e);
+        }
+        // An old system whose own sshd listened on this port leaves the
+        // installer answering on 22, where nothing has been wiped yet.
+        return Err(e.context(format!(
+            "the installer's sshd listens on port 22, so {}:{} must reach the machine's port 22 \
+             (a forward); if it is in the installer now, run install again with --target root@{}",
+            r.host, r.port, r.host
+        )));
+    }
     let key = format_and_copy(p, opts, &inst)?;
     let pins = known_hosts(out);
     pin_host_key(&pins, &r.host, r.port, &key)?;
@@ -1246,6 +1266,18 @@ mod tests {
         assert_eq!(r.host, "canto");
         assert_eq!(r.port, 22);
         assert!(r.sudo);
+    }
+
+    #[test]
+    fn the_installer_is_reached_at_the_targets_port() {
+        // A forward to the machine's 22 reaches the old system, the
+        // installer and the installed system alike.
+        let r = parse_target("home@127.0.0.1:2222").unwrap();
+        assert_eq!(r.port, 2222);
+        let inst = installer_at(&r);
+        assert_eq!((inst.user.as_str(), inst.port), ("root", 2222));
+        assert_eq!(inst.host, "127.0.0.1");
+        assert!(!inst.sudo && inst.known_hosts.is_none());
     }
 
     #[test]

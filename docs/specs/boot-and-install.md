@@ -134,7 +134,10 @@ installer to a removable stick, which the tool checks is removable).
 Optional `--hostname` and `--overlay <file.json>`. Every command on the
 target is a script fed to its `/bin/sh` on stdin (under `sudo -n` for a
 non-root user) and files go over with `dd of=`, so the login shell does
-not matter (canto's September image logged `home` into Thoxa).
+not matter (canto's September image logged `home` into Thoxa). The
+installer's sshd and the installed system's both listen on 22, so a
+`--target host:port` names a forward to the machine's port 22 (QEMU's,
+a NAT's), and every stage, the pinned key included, is reached there.
 
 1. Refuse without `--confirm` and a `/dev/` node. Read and test the
    overlay before anything is wiped. Refuse a `--target` that is the
