@@ -181,7 +181,9 @@ that as plain data; `writ apply` is the only thing that takes it to the real tre
   cannot go: a FIFO, socket or device; a path that goes through a real symlink; a real file or link changed since the session began,
   other than by the session's own `apply` or `undo`, which record what they leave. The owner commits.
 - `undo` puts back what `apply` changed, from copies kept in the session. It leaves, by name, any file or link changed
-  since, and anything, a directory too, put where `apply` left nothing, and puts back the rest.
+  since, and anything, a directory too, put where `apply` left nothing, and puts back the rest. It does each path whole
+  or not at all, then takes it out of the session's log, so an `undo` that stops part way goes on from there next time,
+  and a later `apply` takes what it left as the owner's.
 - A lock on the session keeps a box and `apply` from running on it at once.
 
 ## The terminal (is)

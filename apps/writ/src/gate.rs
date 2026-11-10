@@ -575,8 +575,9 @@ fn found_at(at: &Path) -> Option<String> {
 }
 
 /// What this session last left at each path, by `apply`, whose entries are given, or by `undo`.
-/// `undo` empties undo.jsonl, so what it put back is older than anything in there. An entry with no
-/// hash left nothing of its own, and forgets what was left there before.
+/// `undo` takes each entry out of undo.jsonl as it is done, so what it put back or left to the owner
+/// is older than anything still in there. An entry with no hash left nothing of its own, and forgets
+/// what was left there before.
 fn left_by_session(dir: &Path, applied: &[Value]) -> Result<HashMap<String, String>, String> {
     let mut left = HashMap::new();
     for v in read_log(dir, "restored.jsonl")?.iter().chain(applied) {
@@ -776,76 +777,115 @@ pub fn undo_main(args: &[OsString]) -> Result<i32, String> {
     undo(&session.dir, &meta.project, &mut std::io::stdout())
 }
 
+/// Take back one entry of undo.jsonl, whole or not at all: nothing if its path is put back, or why
+/// the path stays the owner's.
+fn undo_one(dir: &Path, real: &Path, seq: usize, v: &Value) -> Result<Option<String>, String> {
+    let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
+    let rel = PathBuf::from(path);
+    if let Err(e) = parents_are_plain(real, &rel) {
+        return Ok(Some(format!("{e}, and stays")));
+    }
+    let at = real.join(&rel);
+    let parent = at.parent().ok_or("a path with no parent")?;
+    let is_true = |k: &str| v.get(k) == Some(&Value::Bool(true));
+    // An entry with no hash left no file or link, and only one that made a directory left a
+    // directory: anything else there now is the owner's.
+    let there = fs::symlink_metadata(&at).ok();
+    let as_applied = match v.get("after").and_then(|h| h.str()) {
+        Some(h) => found_at(&at).as_deref() == Some(h),
+        None if is_true("made_dir") => there.as_ref().is_none_or(|m| m.is_dir()),
+        None => there.is_none(),
+    };
+    if !as_applied {
+        return Ok(Some(format!("{} changed after it was applied, and stays", name(&rel))));
+    }
+    let (backup, link) = (v.get("backup").and_then(|b| b.str()), v.get("link").and_then(|l| l.str()));
+    if is_true("made_dir") {
+        let _ = fs::remove_dir(&at);
+    } else if is_true("was_dir") {
+        let mode = v.get("mode").and_then(|m| m.u64()).unwrap_or(0o755) as u32;
+        fs::create_dir_all(&at).map_err(|e| format!("{}: {e}", name(&rel)))?;
+        let _ = fs::set_permissions(&at, fs::Permissions::from_mode(mode));
+    } else if backup.is_some() || link.is_some() {
+        // Made beside the path and renamed over what `apply` left, so a failure leaves that as it was.
+        let tmp = parent.join(format!(".writ-back-{}-{seq}", std::process::id()));
+        let done = (|| -> std::io::Result<()> {
+            fs::create_dir_all(parent)?;
+            if let Some(b) = backup {
+                // The backup is ours, and a plain copy: the mode comes from the entry.
+                let mode = v.get("mode").and_then(|m| m.u64()).unwrap_or(0o644) as u32;
+                let mut from = fs::File::open(dir.join("undo").join(b))?;
+                let mut f = fs::OpenOptions::new().write(true).create_new(true).mode(0o600).open(&tmp)?;
+                std::io::copy(&mut from, &mut f)?;
+                f.sync_all()?;
+                f.set_permissions(fs::Permissions::from_mode(mode))?;
+            } else if let Some(l) = link {
+                std::os::unix::fs::symlink(l, &tmp)?;
+            }
+            fs::rename(&tmp, &at)
+        })();
+        if let Err(e) = done {
+            let _ = fs::remove_file(&tmp);
+            return Err(format!("{}: {e}", name(&rel)));
+        }
+    } else if there.is_some() {
+        fs::remove_file(&at).map_err(|e| format!("{}: {e}", name(&rel)))?;
+    }
+    Ok(None)
+}
+
 /// Take back what `apply` did, newest first. A path that no longer holds what `apply` left there,
 /// or that something now stands in the way of, is the owner's since: it stays, and is named.
-/// What is put back is recorded, so a later `apply` can tell it from the owner's change.
+/// What is put back is recorded, so a later `apply` can tell it from the owner's change. Each entry
+/// leaves undo.jsonl once it is done, so an undo that stops part way goes on from there next time.
 pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String> {
-    let entries = read_log(dir, "undo.jsonl")?;
+    let todo = dir.join("undo.jsonl");
+    let text = fs::read_to_string(&todo).unwrap_or_default();
+    // Each entry, and where its line starts, so the log can be cut back to what is still to do.
+    let mut entries = Vec::new();
+    let mut start = 0;
+    for l in text.split_inclusive('\n') {
+        entries.push((start, json::parse(l).map_err(|e| format!("{}: {e}", todo.display()))?));
+        start += l.len() as u64;
+    }
     if entries.is_empty() {
         let _ = writeln!(out, "nothing to undo");
         return Ok(0);
     }
-    // What is put back has a new mtime, so a build sees it changed. This log says it is the session's.
+    let cut = fs::OpenOptions::new().write(true).open(&todo).map_err(|e| format!("{}: {e}", todo.display()))?;
+    // What is put back has a new mtime, so a build sees it changed. This log says it is the session's,
+    // and says a path that stays is the owner's.
     let restored = dir.join("restored.jsonl");
     let mut log = fs::OpenOptions::new().create(true).append(true).open(&restored).map_err(|e| format!("{}: {e}", restored.display()))?;
     let mut left = Vec::new();
-    for v in entries.iter().rev() {
-        let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
-        let rel = PathBuf::from(path);
-        if let Err(e) = parents_are_plain(real, &rel) {
-            left.push(format!("{e}, and stays"));
-            continue;
-        }
-        let at = real.join(&rel);
-        let is_true = |k: &str| v.get(k) == Some(&Value::Bool(true));
-        // An entry with no hash left no file or link, and only one that made a directory left a
-        // directory: anything else there now is the owner's.
-        let there = fs::symlink_metadata(&at).ok();
-        let as_applied = match v.get("after").and_then(|h| h.str()) {
-            Some(h) => found_at(&at).as_deref() == Some(h),
-            None if is_true("made_dir") => there.is_none_or(|m| m.is_dir()),
-            None => there.is_none(),
-        };
-        if !as_applied {
-            left.push(format!("{} changed after it was applied, and stays", name(&rel)));
-            continue;
-        }
-        if is_true("made_dir") {
-            let _ = fs::remove_dir(&at);
-        } else if is_true("was_dir") {
-            let mode = v.get("mode").and_then(|m| m.u64()).unwrap_or(0o755) as u32;
-            fs::create_dir_all(&at).map_err(|e| format!("{}: {e}", name(&rel)))?;
-            let _ = fs::set_permissions(&at, fs::Permissions::from_mode(mode));
-        } else if let Some(b) = v.get("backup").and_then(|b| b.str()) {
-            if let Some(p) = at.parent() {
-                fs::create_dir_all(p).map_err(|e| e.to_string())?;
+    let stopped = (|| -> Result<(), String> {
+        for (i, (start, v)) in entries.iter().enumerate().rev() {
+            let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
+            let rel = Path::new(path);
+            let stays = undo_one(dir, real, i, v)
+                .map_err(|e| format!("stopped at {}: {e}. What was applied after it is taken back; `writ undo` again goes on from there", name(rel)))?;
+            // A path put back is recorded with what is there now, and one that stays with nothing.
+            let mut pairs = vec![("path".to_string(), s(path))];
+            if let Some(h) = if stays.is_none() { found_at(&real.join(rel)) } else { None } {
+                pairs.push(("after".to_string(), s(&h)));
             }
-            // The backup is ours, and a plain copy: the mode comes from the entry.
-            let mode = v.get("mode").and_then(|m| m.u64()).unwrap_or(0o644) as u32;
-            let _ = fs::remove_file(&at);
-            fs::copy(dir.join("undo").join(b), &at).map_err(|e| format!("{}: {e}", name(&rel)))?;
-            let _ = fs::set_permissions(&at, fs::Permissions::from_mode(mode));
-        } else if let Some(l) = v.get("link").and_then(|l| l.str()) {
-            let _ = fs::remove_file(&at);
-            if let Some(p) = at.parent() {
-                fs::create_dir_all(p).map_err(|e| e.to_string())?;
+            writeln!(log, "{}", Value::Obj(pairs).text()).map_err(|e| format!("{}: {e}", restored.display()))?;
+            cut.set_len(*start).map_err(|e| format!("{}: {e}", todo.display()))?;
+            match stays {
+                Some(why) => left.push(why),
+                None => {
+                    let _ = writeln!(out, "restored {}", name(rel));
+                }
             }
-            std::os::unix::fs::symlink(l, &at).map_err(|e| format!("{}: {e}", name(&rel)))?;
-        } else {
-            let _ = fs::remove_file(&at);
         }
-        let mut pairs = vec![("path".to_string(), s(path))];
-        if let Some(h) = found_at(&at) {
-            pairs.push(("after".to_string(), s(&h)));
-        }
-        writeln!(log, "{}", Value::Obj(pairs).text()).map_err(|e| format!("{}: {e}", restored.display()))?;
-        let _ = writeln!(out, "restored {}", name(&rel));
-    }
-    let _ = fs::remove_file(dir.join("undo.jsonl"));
-    let _ = fs::remove_dir_all(dir.join("undo"));
+        Ok(())
+    })();
     for l in &left {
         let _ = writeln!(out, "{l}");
     }
+    stopped?;
+    let _ = fs::remove_file(&todo);
+    let _ = fs::remove_dir_all(dir.join("undo"));
     Ok(if left.is_empty() { 0 } else { 1 })
 }
 
@@ -1251,6 +1291,38 @@ mod tests {
         assert_eq!(t.text("g"), "was g");
         assert_eq!(t.text("d/x"), "was x");
         assert_eq!(t.undo(), (0, vec![]));
+    }
+
+    #[test]
+    fn an_undo_that_stops_part_way_goes_on_from_there_and_its_records_hold() {
+        let t = T::new("partway");
+        for p in ["a", "b", "c"] {
+            t.real(p, &format!("was {p}"));
+            t.upper(p, &format!("now {p}"));
+        }
+        t.apply(true, &[]).unwrap();
+        t.real("c", "owner's c");
+        // With a's copy gone, undo stops at a, after c and b, which were applied after it.
+        let entry = read_log(&t.dir(), "undo.jsonl").unwrap().into_iter().find(|v| v.get("path").and_then(|p| p.str()) == Some("a")).unwrap();
+        let copy = t.dir().join("undo").join(entry.get("backup").and_then(|b| b.str()).unwrap());
+        let aside = t.root.join("aside");
+        fs::rename(&copy, &aside).unwrap();
+        let mut said = Vec::new();
+        let e = undo(&t.dir(), &t.real, &mut said).unwrap_err();
+        assert!(e.starts_with("stopped at a: "), "{e}");
+        assert_eq!(String::from_utf8(said).unwrap(), "restored b\nc changed after it was applied, and stays\n");
+        assert_eq!(t.text("a"), "now a");
+        assert_eq!(t.text("b"), "was b");
+        // To the next apply, what undo put back is the session's, and what it left is the owner's.
+        let meta = Meta { project: t.real.clone(), started: 0 };
+        let e = apply(&t.upper, &t.dir(), &meta, true, &[], &mut std::io::sink()).unwrap_err();
+        assert!(e.contains("c changed in your tree") && !e.contains("b changed"), "{e}");
+        // The next undo goes on from a, and does not offer again what the first one did.
+        fs::rename(&aside, &copy).unwrap();
+        assert_eq!(t.undo(), (0, vec![]));
+        assert_eq!(t.text("a"), "was a");
+        assert_eq!(t.text("b"), "was b");
+        assert_eq!(t.text("c"), "owner's c");
     }
 
     #[test]
