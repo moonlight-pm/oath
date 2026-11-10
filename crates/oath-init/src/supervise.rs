@@ -303,7 +303,7 @@ impl Supervisor {
     /// program when its package moves, and takes the new one when it next
     /// starts: restarting the desk ends a person's session.
     pub fn converge_keeping(&mut self, keep_seat: bool) {
-        let (mut wanted, unreadable) = wanted();
+        let (mut wanted, unreadable) = wanted(Path::new(DEFAULT_ROOT));
         // A spec PID 1 cannot read leaves that service as it is.
         for id in unreadable {
             if let Some(k) = self.kids.values().find(|k| k.id == id) {
@@ -830,8 +830,6 @@ fn program(spec: &Svc) -> Program {
     oath_core::program_realization(Path::new(DEFAULT_ROOT), Path::new(exe))
 }
 
-/// Applied service specs, plus the DHCP client when `net:net0` is dhcp,
-/// and the ids whose spec could not be read.
 /// Where a scheduled service's last run is kept, beside its log: it
 /// outlives the status tmpfs, so a run owed across a reboot is known.
 fn schedule_file(id: &str) -> Option<PathBuf> {
@@ -863,14 +861,18 @@ fn set_tz() {
     }
 }
 
-fn wanted() -> (HashMap<String, Svc>, Vec<String>) {
+/// Applied service specs, plus the DHCP client when `net:net0` is dhcp,
+/// and the ids whose spec could not be read. A service with no
+/// `applied.json` was never applied (`oath new` made it): it does not run.
+fn wanted(root: &Path) -> (HashMap<String, Svc>, Vec<String>) {
     let mut out = HashMap::new();
     let mut unreadable = Vec::new();
-    let Ok(cat) = Catalog::open(DEFAULT_ROOT) else { return (out, unreadable) };
+    let Ok(cat) = Catalog::open(root) else { return (out, unreadable) };
     for id in cat.ls(Some("svc")).unwrap_or_default() {
-        let dir = Path::new(DEFAULT_ROOT).join("objects/svc").join(&id.name);
-        let applied_p = dir.join("applied.json");
-        let path = if applied_p.is_file() { applied_p } else { dir.join("desired.json") };
+        let path = root.join("objects/svc").join(&id.name).join("applied.json");
+        if !path.is_file() {
+            continue;
+        }
         match oath_core::read_json::<Svc>(&path) {
             Ok(spec) => {
                 out.insert(id.to_string(), spec);
@@ -1178,6 +1180,25 @@ mod tests {
         drop(write);
         sup.pump_logs();
         assert!(sup.survivors.is_empty(), "gone with the last child");
+    }
+
+    #[test]
+    fn only_an_applied_service_runs() {
+        let d = tempfile::tempdir().unwrap();
+        oath_core::write_schemas(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        // `oath new` and no `oath apply`.
+        let spec = json!({"exec": ["/bin/sleep", "900001"]}).as_object().unwrap().clone();
+        cat.new_object(&"svc:t1".parse().unwrap(), spec).unwrap();
+        // Applied, as a seeded or applied object is.
+        let t2 = d.path().join("objects/svc/t2");
+        fs::create_dir_all(&t2).unwrap();
+        for f in ["desired.json", "applied.json"] {
+            oath_core::write_json(&t2.join(f), &json!({"exec": ["/bin/sleep", "9"]})).unwrap();
+        }
+        let (wanted, unreadable) = wanted(d.path());
+        assert!(unreadable.is_empty());
+        assert_eq!(wanted.keys().collect::<Vec<_>>(), ["svc:t2"]);
     }
 
     #[test]

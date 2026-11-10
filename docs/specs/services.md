@@ -159,9 +159,10 @@ update's apply, or `--keep-seat`, `converge keep-seat`) and waits for
 the reply, which PID 1 sends after converging, so apply returns after
 the change has happened.
 
-On converge, PID 1 reads each `applied.json` (falling back to desired
-only when there is none). A running service whose applied spec changed,
-or that is disabled or gone, is stopped and replaced. A spec PID 1
+On converge, PID 1 reads each `applied.json`; a service with none
+(`oath new` made it, and no apply has taken it) does not run. A running
+service whose applied spec changed, or that is disabled or gone, is
+stopped and replaced. A spec PID 1
 cannot read leaves the running process alone and is logged. Services in
 a `wants` cycle, and services waiting on one, are skipped and recorded
 `failed` with the reason (`wants cycle with svc:b`, `waits on a wants
