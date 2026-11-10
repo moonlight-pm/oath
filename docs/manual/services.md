@@ -43,7 +43,9 @@ at install time with an overlay (see [Catalog](catalog.md)).
 ## Boot and converge
 
 At boot PID 1 mounts the floor, switch_roots into the root subvolume
-`@`, mounts the btrfs top level at `/oath/run/fs`, `@home` at `/home` when the
+`@`, writes `/etc/machine-id` from `/oath/machine-id` (which it makes at
+the first boot that lacks one, so each machine has its own), mounts the
+btrfs top level at `/oath/run/fs`, `@home` at `/home` when the
 install made one, `@work` at `/work` and a tmpfs at `/oath/status`, sets the
 hostname from `host:local`, loads the drivers its devices ask for, brings up
 `net:net0`, refreshes `dev:*`, mounts `host:local.mounts`, writes `ssh:local`
@@ -56,13 +58,15 @@ and sound load after that, so `svc:sshd` is up before them.
 
 After `ready`, in the background, PID 1 runs `oath verify --quiet` and
 `oath --confirm reap --boot`. What they print goes to `init.log`
-(`… verified, … damaged`, `reaped …`). A damaged package's status is `error`
-and `/oath/INDEX.md` lists it under `Store damage`; the boot goes on and
-nothing repairs it ([`oath verify`](using.md#verbs)).
+(`… verified, … damaged`, `reaped …`). A package whose tree is damaged or
+gone has status `error` and `/oath/INDEX.md` lists it under `Store damage`;
+the boot goes on and does not repair it. `sudo oath apply pkg:<name>`
+fetches it again ([`oath verify`](using.md#verbs)).
 
 PID 1 runs only what was applied: each service's `applied.json`, which
-`oath apply` writes after the spec passes its checks. A `set` without
-`apply` never reaches a running service, even across a reboot. A spec
+`oath apply` writes after the spec passes its checks. A service `oath new`
+made does not run until an apply takes it, and a `set` without `apply`
+never reaches a running service, even across a reboot. A spec
 PID 1 cannot read (a torn file) leaves the running process alone.
 
 PID 1 reaps children and restarts them per `restart`: `always` after
@@ -86,8 +90,9 @@ they write still reaches the service's log. Applying `keep_children` or
 `oath apply` on a `svc` writes `applied.json`, notifies PID 1 on
 `/oath/run/init.sock`, waits for PID 1 to answer that it has
 converged, then waits up to 4 s for actual `state`: `running` for an
-enabled service, or `held`, `scheduled` or the `stopped` of a finished
-`restart=never` run; `stopped` for a disabled one. If it never comes,
+enabled service, or `held`, `scheduled`, or the `stopped` of a finished
+run (`restart=never` however it ended, `restart=on-failure` with exit 0);
+`stopped` for a disabled one. If it never comes,
 apply exits non-zero (`did not become running`), and its generation
 stays for `oath undo`.
 `oath undo` puts back the previous `applied.json` and does the same.
@@ -122,10 +127,11 @@ while it runs from a package, `pkg` (that package and hash).
 - `running` — the process is up.
 - `restarting` — it exited and waits for its backoff.
 - `stopped` — disabled, a finished `restart=never` run, or a
-  `restart=on-failure` run that exited 0.
-  PID 1 starts a `restart=on-failure` service that exited 0 again the next
-  time it converges (an `oath apply` or `oath undo` of a service, a package
-  or `net:net0`, a seat change).
+  `restart=on-failure` run that exited 0. A finished run stays down
+  through every later converge (a changed `exec` included) until the next
+  boot, an apply of `enabled=false` and then `enabled=true`, its `seat`
+  going to the other owner and back, or an applied `restart` that starts
+  it after that exit, such as `always`.
 - `scheduled` — it has a `schedule` and waits for its next match; actual has
   `next` and `last_run` ([Scheduled services](#scheduled-services)).
 - `held` — it is enabled and has a `seat` (the desk's, the console's), and
@@ -142,6 +148,8 @@ A service's stdout and stderr go to `/oath/log/svc/<name>.log`, one
 line each with a UTC time in front, rotated to `<name>.log.1` past
 256 KiB. PID 1 writes its own messages to `/oath/log/init.log`; the
 DHCP client writes to `/oath/log/net/net0.log` (`oath logs net:net0`).
+PID 1's events (`/oath/log/init.jsonl`) and those of each `oath` command
+run as root (`oath.jsonl`) rotate the same way, to `.1`.
 The kernel's own messages are in `dmesg`, for this boot only. No log
 keeps them across a reboot.
 
@@ -169,7 +177,8 @@ directory (os error 2)`) and, with an absolute `exec[0]`, starts once
 what will run. Until `oath apply`, a new service has status `new` and
 does not run; once applied it is not new, and if it cannot start (a
 wrong `exec`, say) its status is `error` and its actual has the
-`reason`. While its status is `new`, `oath rm` deletes it at once.
+`reason`. While its status is `new`, `oath rm` deletes it at once and
+says so (`svc:tick removed: no apply had taken it`).
 
 `svc:sshd` changes that can cut off SSH (disabling or removing it, or
 changing its `exec`, `user` or `env`) need `oath apply --confirm` and
@@ -190,8 +199,9 @@ sudo oath apply svc:sysctl
 
 There is no restart verb. `sudo kill <pid>` (`pid` is in
 `oath get svc:<name> --actual`) ends it, and PID 1 starts it again per
-`restart`. A `failed` service, or a finished `restart=never` one, runs
-again after an apply of `enabled=false` and an apply of `enabled=true`;
+`restart`. A `failed` service, or a finished one (`restart=never`, or
+`restart=on-failure` after exit 0), runs again after an apply of
+`enabled=false` and an apply of `enabled=true`;
 each takes a generation.
 
 ## Account, environment, low ports
@@ -241,8 +251,9 @@ goes on probation.
 `seat` is `desk` or `console`: whose turn on the seat (tty1, its screen
 and keyboard) the service runs in. PID 1 runs it only in that owner's
 turn and holds it for the other's (`state: "held"`). Absent, it runs
-either way. `oath desk stop` gives the seat to the console and
-`oath desk` gives it back
+either way. `oath desk stop` gives the seat to the console until
+`oath desk` gives it back or the machine boots: every boot starts in the
+desk's turn
 ([The password and the seat](using.md#the-password-and-the-seat)).
 
 An update does not restart a service with a `seat` (the desk's, the
@@ -304,9 +315,10 @@ Without them the copy is crash-consistent (`sync` plus btrfs CoW).
 A `schedule` (R48) makes a oneshot start at times, as cron would: a
 pattern (five fields, or six with seconds; `@daily`; croner's `L`, `W`
 and `#`) in the machine's time zone, `host:local.timezone`, so 04:00 stays
-04:00 across daylight saving. Give a zone with daylight saving its rules
-(`MST7MDT,M3.2.0,M11.1.0`): `MST7MDT` alone, or a zone name such as
-`America/Denver`, schedules in UTC.
+04:00 across daylight saving. The zone is a POSIX TZ string: `oath set`
+refuses a zone name such as `America/Denver` (R83). Give a zone with
+daylight saving its rules (`MST7MDT,M3.2.0,M11.1.0`): `MST7MDT` alone
+schedules in UTC.
 A `next` already planned keeps its time when `host:local.timezone`
 changes. PID 1 takes the new zone at its next converge, but a `next`
 planned in that same converge is usually still in the old zone. Each
