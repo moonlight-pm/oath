@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 use nix::sys::reboot::{reboot, RebootMode};
 use nix::unistd::{sethostname, sync};
 use oath_core::{
-    converge_dev, converge_net, converge_pkg, converge_ssh, fetch_adv, fetch_pkg_any,
+    converge_dev, converge_net, converge_ssh, fetch_adv, fetch_and_converge_pkg,
     gen_subvol_name, parse_gen_subvol, tel, ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg,
     PkgActual, Result, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
 };
@@ -466,13 +466,9 @@ impl ApplyHooks for Live {
         } else {
             self.catalog_root.join("bin")
         };
-        let from = if desired.present {
-            fetch_pkg_any(&self.catalog_root, &id.name, &desired.url, &desired.file, &desired.hash)?
-        } else {
-            None
-        };
-        let mut actual =
-            converge_pkg(&self.catalog_root, &bin, &id.name, desired.present, &desired.hash)?;
+        // The tree is hashed once: the fetch's hash of it serves the link.
+        let (mut actual, from) =
+            fetch_and_converge_pkg(&self.catalog_root, &bin, &id.name, desired)?;
         // Advisories come from the pkg's own url on every apply, and from an
         // origin when it has just served the pack. A vendor's file (`file`)
         // is not an origin: no advisories there.

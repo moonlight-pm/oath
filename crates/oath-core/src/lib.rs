@@ -63,7 +63,8 @@ pub use packhash::{
 };
 pub use pkg::{
     check_needs as check_pkg_needs, converge as converge_pkg, converge_with_link_root, fetch_adv,
-    fetch_pkg, fetch_pkg_any, find_bin, host_origins, ingest_file, install_tree, link_clashes,
+    fetch_and_converge as fetch_and_converge_pkg, fetch_pkg, fetch_pkg_any, find_bin, host_origins,
+    ingest_file, install_tree, link_clashes,
     list_realization_ids, list_realizations, normalize_need as normalize_pkg_need,
     pin_desired_hash, prefetch_pkg_any, program_realization, promote_slot, promote_store, put_tree,
     own_version, read_advisories, read_advisories_store, read_components, resolve_tree, store_pkg,

@@ -1,9 +1,9 @@
 use std::sync::Mutex;
 
 use oath_core::{
-    apply_overlay, converge_pkg, copy_objects, hash_tree, ingest_file, install_tree,
-    is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host, HostPower,
-    NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
+    apply_overlay, converge_pkg, copy_objects, fetch_and_converge_pkg, hash_tree, ingest_file,
+    install_tree, is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host,
+    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM,
 };
 use serde_json::{json, Map};
 
@@ -87,8 +87,9 @@ impl ApplyHooks for MemHooks {
     fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
         *self.pkg_converges.lock().unwrap() += 1;
         if self.fetches && desired.present {
-            let (url, file) = (&desired.url, &desired.file);
-            oath_core::fetch_pkg_any(&self.root, &id.name, url, file, &desired.hash)?;
+            let bin = self.root.join("bin");
+            let (actual, _) = fetch_and_converge_pkg(&self.root, &bin, &id.name, desired)?;
+            return Ok(actual);
         }
         let store = self.root.join("store/pkg").join(&id.name).join("bin");
         if !store.is_dir() {

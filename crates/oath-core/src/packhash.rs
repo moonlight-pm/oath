@@ -48,8 +48,17 @@ pub fn is_realization_id(s: &str) -> bool {
     hex.len() == 64 && hex.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Every tree this thread has hashed, in order: a test counts the reads.
+    pub(crate) static HASHED: std::cell::RefCell<Vec<PathBuf>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
 /// SHA-256 realization id of the directory `root`.
 pub fn hash_tree(root: &Path) -> Result<String> {
+    #[cfg(test)]
+    HASHED.with(|h| h.borrow_mut().push(root.to_path_buf()));
     if !root.is_dir() {
         return Err(Error::hint(
             format!("not a pack directory: {}", root.display()),

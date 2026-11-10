@@ -39,6 +39,21 @@ pub fn converge_with_link_root(
     present: bool,
     hash: &str,
 ) -> Result<PkgActual> {
+    converge_checked(store_root, bin_dir, link_root, name, present, hash, false)
+}
+
+/// [`converge_with_link_root`]. With `checked`, the fetch has just hashed
+/// realization `hash` against its name (or put a checked copy there), so
+/// it is linked without being hashed again.
+fn converge_checked(
+    store_root: &Path,
+    bin_dir: &Path,
+    link_root: &Path,
+    name: &str,
+    present: bool,
+    hash: &str,
+    checked: bool,
+) -> Result<PkgActual> {
     let resolved = if present { Some(resolve_tree(store_root, name, hash)?) } else { None };
     let tree = match &resolved {
         Some(p) => p.clone(),
@@ -61,7 +76,11 @@ pub fn converge_with_link_root(
         && realization_dir(store_root, name, &live_hash).is_dir()
     {
         // Never link a tree that no longer is what its name says.
-        verified = Some(verify_tree(store_root, name, &live_hash)?);
+        verified = Some(if checked && live_hash == hash {
+            PkgVerified { ok: true, at: crate::now_rfc3339(), got: String::new() }
+        } else {
+            verify_tree(store_root, name, &live_hash)?
+        });
         if let Some(v) = verified.as_ref().filter(|v| !v.ok) {
             return Err(Error::hint(
                 format!(
@@ -1342,12 +1361,16 @@ pub fn fetch_adv(catalog_root: &Path, name: &str, url: &str, hash: &str) -> Resu
 /// With `file` (R23), `url` is one file and the tree is that file alone at
 /// the path `file` names.
 pub fn fetch_pkg(catalog_root: &Path, name: &str, url: &str, file: &str, hash: &str) -> Result<()> {
+    if store_intact(catalog_root, name, hash) {
+        return Ok(());
+    }
     fetch_tree(catalog_root, name, url, file, hash, true)
 }
 
-/// `fetch_pkg`; with `link` false the pack only goes in the store, and
-/// neither `live` nor the object's pin moves. A tree the store has that
-/// hashes to `hash` is not fetched again; a damaged one is.
+/// `fetch_pkg` of a pack the store does not have intact: a tree there that
+/// does not hash to `hash` is replaced by the one fetched. With `link`
+/// false the pack only goes in the store, and neither `live` nor the
+/// object's pin moves.
 fn fetch_tree(
     catalog_root: &Path,
     name: &str,
@@ -1356,9 +1379,6 @@ fn fetch_tree(
     hash: &str,
     link: bool,
 ) -> Result<()> {
-    if store_intact(catalog_root, name, hash) {
-        return Ok(());
-    }
     if !file.is_empty() && !is_tree_path(file) {
         return Err(Error::hint(
             format!("pkg:{name} file {file:?} is not a relative path in the tree"),
@@ -1479,6 +1499,29 @@ pub fn prefetch_pkg_any(
     fetch_any(catalog_root, name, url, file, hash, false)
 }
 
+/// What apply does with a package: [`fetch_pkg_any`], then [`converge`],
+/// with its tree hashed once. The fetch hashes a tree the store has, or
+/// the copy it puts in the store, and linking that tree does not hash it
+/// again. Returns what is linked, and where the pack came from.
+pub fn fetch_and_converge(
+    catalog_root: &Path,
+    bin_dir: &Path,
+    name: &str,
+    desired: &Pkg,
+) -> Result<(PkgActual, Option<String>)> {
+    let (url, file, hash) = (&desired.url, &desired.file, &desired.hash);
+    let intact = desired.present && store_intact(catalog_root, name, hash);
+    let from = if desired.present && !intact {
+        fetch_lacking(catalog_root, name, url, file, hash, true)?
+    } else {
+        None
+    };
+    let checked = intact || from.is_some();
+    let actual =
+        converge_checked(catalog_root, bin_dir, catalog_root, name, desired.present, hash, checked)?;
+    Ok((actual, from))
+}
+
 fn fetch_any(
     catalog_root: &Path,
     name: &str,
@@ -1490,6 +1533,18 @@ fn fetch_any(
     if store_intact(catalog_root, name, hash) {
         return Ok(None);
     }
+    fetch_lacking(catalog_root, name, url, file, hash, link)
+}
+
+/// [`fetch_any`] of a pack the store does not have intact.
+fn fetch_lacking(
+    catalog_root: &Path,
+    name: &str,
+    url: &str,
+    file: &str,
+    hash: &str,
+    link: bool,
+) -> Result<Option<String>> {
     if !url.trim().is_empty() {
         fetch_tree(catalog_root, name, url, file, hash, link)?;
         return Ok(Some(url.trim().to_string()));
@@ -1609,7 +1664,9 @@ pub fn ingest_file(
 #[cfg(test)]
 mod needs_tests {
     use super::*;
-    use crate::kinds::Pkg;
+    use crate::kinds::{Host, Pkg};
+    use crate::packhash::HASHED;
+    use crate::{Actor, ApplyHooks, Catalog, NullHooks, ObjectId};
 
     const H: &str = "sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const H2: &str = "sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -2034,6 +2091,84 @@ mod needs_tests {
         damage();
         put_tree(&slot_dir(&cat, "hello"), &pin, &tree).unwrap();
         assert_eq!(fs::read(stored.join("bin/hello")).unwrap(), b"tampered\n");
+    }
+
+    /// Hooks that fetch and link a package as `oath` does on a machine.
+    struct Fetching(PathBuf);
+
+    impl ApplyHooks for Fetching {
+        fn snapshot(&self, generation: u64) -> Result<()> {
+            NullHooks.snapshot(generation)
+        }
+        fn snapshot_catalog(&self, generation: u64) -> Result<PathBuf> {
+            NullHooks.snapshot_catalog(generation)
+        }
+        fn converge_host(&self, desired: &Host, previous: Option<&Host>) -> Result<Host> {
+            NullHooks.converge_host(desired, previous)
+        }
+        fn notify_init(&self) -> Result<()> {
+            Ok(())
+        }
+        fn reboot(&self) -> Result<()> {
+            Ok(())
+        }
+        fn halt(&self) -> Result<()> {
+            Ok(())
+        }
+        fn converge_pkg(&self, id: &ObjectId, desired: &Pkg) -> Result<PkgActual> {
+            fetch_and_converge(&self.0, &self.0.join("bin"), &id.name, desired).map(|(a, _)| a)
+        }
+    }
+
+    #[test]
+    fn apply_hashes_a_tree_the_store_has_once_and_one_it_fetches_not_again() {
+        let d = tempfile::tempdir().unwrap();
+        let tree = d.path().join("tree");
+        fs::create_dir_all(tree.join("bin")).unwrap();
+        fs::write(tree.join("bin/hello"), b"hello\n").unwrap();
+        let tar = d.path().join("hello.tar");
+        let st = Command::new("tar")
+            .args(["-C", tree.to_str().unwrap(), "-cf", tar.to_str().unwrap(), "."])
+            .status()
+            .unwrap();
+        assert!(st.success());
+        let cat = d.path().join("cat");
+        crate::seed(&cat).unwrap();
+        let catalog = Catalog::open(&cat).unwrap();
+        let id: ObjectId = "pkg:hello".parse().unwrap();
+        // In the store already, as `oath store` or an update's prefetch leaves it.
+        let pin = store_pkg(&cat, "hello", &tree).unwrap();
+        let url = format!("file://{}", tar.display());
+        let spec = serde_json::json!({ "present": true, "hash": pin, "url": url });
+        catalog.new_object(&id, spec.as_object().unwrap().clone()).unwrap();
+        let stored = realization_dir(&cat, "hello", &pin);
+        let hashes = || {
+            let all = HASHED.with(|h| std::mem::take(&mut *h.borrow_mut()));
+            all.iter().filter(|p| **p == stored).count()
+        };
+        let apply = || {
+            hashes();
+            let hooks = Fetching(cat.clone());
+            catalog.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+            hashes()
+        };
+        let linked = || fs::read(cat.join("bin/hello")).unwrap();
+
+        // The fetch hashes it, and linking it takes that hash.
+        assert_eq!(apply(), 1);
+        assert_eq!(linked(), b"hello\n");
+        // Damaged, as verify finds it: the fetch hashes it and the put that
+        // replaces it once more, and the checked copy links without another.
+        fs::write(stored.join("bin/hello"), b"tampered\n").unwrap();
+        assert!(!catalog.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+        assert_eq!(apply(), 2);
+        assert_eq!(linked(), b"hello\n");
+        // Gone: the fetched copy is hashed as it goes in, not again to link it.
+        fs::remove_dir_all(&stored).unwrap();
+        assert_eq!(apply(), 0);
+        assert_eq!(linked(), b"hello\n");
+        assert!(catalog.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+        assert_eq!(catalog.get(&id).unwrap().meta.status, "in-sync");
     }
 
     #[test]
