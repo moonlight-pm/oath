@@ -237,6 +237,12 @@ still starts. PID
   and every service as they were; it is not a resume and counts toward
   no panic limit. Boot-only work (mounts, modules, sysctls, device
   modes, `/etc`, sshd's keys) does not run again: it waits for a boot.
+  `/etc/machine-id` is the exception: an image that takes over (an
+  upgrade or a panic's resume) writes it from `/oath/machine-id`, and
+  makes that when it is missing, as boot does, before it writes
+  `/run/oath/init.json`; so a machine a PID 1 from before booted with
+  the one fixed id has its own as soon as it is updated. Where both are
+  there and agree it writes nothing.
   Each PID 1 writes `/run/oath/init.json` at boot and when it takes over
   (`upgrade: 1`, `format`, `exe`: its binary's hash, `how`: `boot`,
   `panic` or `upgrade`, `since`); `oath` asks only a PID 1 that wrote

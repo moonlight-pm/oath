@@ -104,12 +104,26 @@ fn write_schemas() {
     }
 }
 
+/// Each machine has its own id, in /etc before any service starts. A PID 1
+/// from before that wrote one fixed id for every machine, so an image that
+/// takes over by re-exec (R73) writes this one too, before it says it took
+/// over: an updated machine has its own id at once, not at its next boot.
+/// Where the id is there and /etc has it, nothing is written.
+fn write_machine_id() {
+    match machine_id(Path::new(oath_core::MACHINE_ID), Path::new(ETC_MACHINE_ID)) {
+        Ok(true) => log(&format!("made this machine's id ({})", oath_core::MACHINE_ID)),
+        Ok(false) => {}
+        Err(e) => log(&format!("machine id: {e}")),
+    }
+}
+
 fn real_main() -> Result<(), String> {
     if resume::resuming() {
         // A binary PID 1 re-executed into that cannot take the state goes
         // back to the one that handed it over (R73).
         let why = match std::panic::catch_unwind(resume::take) {
             Ok(Ok(r)) => {
+                write_machine_id();
                 resume::announce(&r.why);
                 write_schemas();
                 run(r.sup, r.listener, hotplug::Hotplug::from_socket(r.uevents), r.resumes);
@@ -180,12 +194,7 @@ fn real_main() -> Result<(), String> {
     if let Err(e) = oath_core::login::Seat::reset(seat) {
         log(&format!("{}: {e}; the seat stays as it was", seat.display()));
     }
-    // Each machine has its own id, in /etc before any service starts.
-    match machine_id(Path::new(oath_core::MACHINE_ID), Path::new(ETC_MACHINE_ID)) {
-        Ok(true) => log(&format!("made this machine's id ({})", oath_core::MACHINE_ID)),
-        Ok(false) => {}
-        Err(e) => log(&format!("machine id: {e}")),
-    }
+    write_machine_id();
     mount_toplevel();
     mount_home();
     mount_work();
@@ -1013,9 +1022,9 @@ fn unix_floor() {
 
 const ETC_MACHINE_ID: &str = "/etc/machine-id";
 
-/// This machine's id (`oath_core::MACHINE_ID`), made at the first boot that
-/// lacks one, or has one that is not an id, and copied to `etc` when that
-/// differs. True when it was made now.
+/// This machine's id (`oath_core::MACHINE_ID`), made by the first PID 1 that
+/// lacks one, or has one that is not an id, at boot or as it takes over, and
+/// copied to `etc` when that differs. True when it was made now.
 fn machine_id(kept: &Path, etc: &Path) -> Result<bool, String> {
     let have = fs::read_to_string(kept).ok().filter(|s| is_machine_id(s.trim()));
     let made = have.is_none();
@@ -1425,6 +1434,30 @@ mod tests {
         fs::write(&kept, "not an id\n").unwrap();
         assert_eq!(machine_id(&kept, &etc), Ok(true));
         assert_ne!(fs::read_to_string(&kept).unwrap(), id);
+    }
+
+    #[test]
+    fn a_machine_id_in_place_is_left_alone() {
+        use std::os::unix::fs::MetadataExt;
+        let d = tempfile::tempdir().unwrap();
+        let (kept, etc) = (d.path().join("oath/machine-id"), d.path().join("etc/machine-id"));
+        assert_eq!(machine_id(&kept, &etc), Ok(true));
+        let id = fs::read_to_string(&kept).unwrap();
+        let ino = |p: &Path| fs::metadata(p).unwrap().ino();
+        let (kept_ino, etc_ino) = (ino(&kept), ino(&etc));
+        // Every PID 1 that takes over after that one, by boot, re-exec or a
+        // panic's resume, writes neither file.
+        for _ in 0..3 {
+            assert_eq!(machine_id(&kept, &etc), Ok(false));
+        }
+        assert_eq!((ino(&kept), ino(&etc)), (kept_ino, etc_ino));
+        assert_eq!(fs::read_to_string(&kept).unwrap(), id);
+        assert_eq!(fs::read_to_string(&etc).unwrap(), id);
+        // An /etc/machine-id that is not this machine's is written again.
+        fs::write(&etc, "00000000000000000000000000000001\n").unwrap();
+        assert_eq!(machine_id(&kept, &etc), Ok(false));
+        assert_eq!(fs::read_to_string(&etc).unwrap(), id);
+        assert_eq!(ino(&kept), kept_ino);
     }
 
     #[test]

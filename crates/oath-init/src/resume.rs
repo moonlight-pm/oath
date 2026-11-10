@@ -13,6 +13,9 @@
 //! hashed. A new image that cannot take the state execs the one that handed
 //! over (`previous=<fd>`), which can. Boot-only work (mounts, modules,
 //! sysctls, device modes, `/etc`) does not run again: it waits for a boot.
+//! `/etc/machine-id` is the exception: an image that takes over writes it
+//! from this machine's id, as boot does, so a machine a PID 1 from before
+//! booted with the fixed id has its own at once.
 
 use std::ffi::CString;
 use std::fs;
