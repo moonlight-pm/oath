@@ -797,12 +797,19 @@ pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String>
             continue;
         }
         let at = real.join(&rel);
-        // An entry with no hash left no file or link: one there now is the owner's.
-        if found_at(&at).as_deref() != v.get("after").and_then(|h| h.str()) {
+        let is_true = |k: &str| v.get(k) == Some(&Value::Bool(true));
+        // An entry with no hash left no file or link, and only one that made a directory left a
+        // directory: anything else there now is the owner's.
+        let there = fs::symlink_metadata(&at).ok();
+        let as_applied = match v.get("after").and_then(|h| h.str()) {
+            Some(h) => found_at(&at).as_deref() == Some(h),
+            None if is_true("made_dir") => there.is_none_or(|m| m.is_dir()),
+            None => there.is_none(),
+        };
+        if !as_applied {
             left.push(format!("{} changed after it was applied, and stays", name(&rel)));
             continue;
         }
-        let is_true = |k: &str| v.get(k) == Some(&Value::Bool(true));
         if is_true("made_dir") {
             let _ = fs::remove_dir(&at);
         } else if is_true("was_dir") {
@@ -1216,6 +1223,34 @@ mod tests {
         assert_eq!(t.text("d"), "owner's d");
         assert_eq!(fs::read_link(t.real.join("l")).unwrap(), Path::new("owner's"));
         assert_eq!(t.text("g"), "was g");
+    }
+
+    #[test]
+    fn undo_leaves_a_directory_the_owner_put_where_apply_left_nothing_and_goes_on() {
+        let t = T::new("redir");
+        t.real("d/x", "was x");
+        t.real("f", "was f");
+        t.real("g", "was g");
+        std::os::unix::fs::symlink("g", t.real.join("l")).unwrap();
+        if !t.whiteout("d") || !t.whiteout("f") || !t.whiteout("g") || !t.whiteout("l") {
+            return;
+        }
+        t.apply(true, &[]).unwrap();
+        // The owner makes a directory where the session deleted a file, a link and a directory.
+        t.real("f/mine", "owner's");
+        fs::create_dir(t.real.join("l")).unwrap();
+        fs::create_dir(t.real.join("d")).unwrap();
+        fs::set_permissions(t.real.join("d"), fs::Permissions::from_mode(0o700)).unwrap();
+        let (code, stays) = t.undo();
+        assert_eq!(code, 1);
+        assert_eq!(stays, ["l changed after it was applied, and stays", "f changed after it was applied, and stays", "d changed after it was applied, and stays"]);
+        assert!(fs::symlink_metadata(t.real.join("l")).unwrap().is_dir());
+        assert_eq!(t.text("f/mine"), "owner's");
+        assert_eq!(fs::metadata(t.real.join("d")).unwrap().mode() & 0o777, 0o700);
+        // What is older than the owner's directories is put back, and nothing is left to undo.
+        assert_eq!(t.text("g"), "was g");
+        assert_eq!(t.text("d/x"), "was x");
+        assert_eq!(t.undo(), (0, vec![]));
     }
 
     #[test]
