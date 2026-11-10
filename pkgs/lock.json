@@ -1998,8 +1998,8 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-161b80dc4d08ab4f92523543d0a653c4cb793bacc8f1f6b6e60b2d9e727afc20",
-    "product": "sha256-0fcb55acfa023271f96f090c2c144897ef3f4eceb92b6e68ddee3522416a16a7",
+    "plan": "sha256-0b4c886886ec320350266b8965f3030a68dd2d0e35633e4318049d71d9f5f06e",
+    "product": "sha256-b07626b923ba5fc555a232716e130905182bf663b6efd56274142cc585fbd31b",
     "run": [
       "bubblewrap",
       "curl"
