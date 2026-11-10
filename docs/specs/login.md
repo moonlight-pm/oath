@@ -28,7 +28,7 @@ password, the desk starts signed in, nothing locks.
 | Wire | one JSON object a line; each request gets one line back; a connection may carry several |
 | Password | `home`'s, Argon2id (64 MiB, 3 passes, a 16-byte salt from `/dev/urandom`) in `/oath/login/password`, mode 0600 in a 0700 directory, root's; none at first |
 | Auto-login | `host:local.autologin`, a typed catalog field, `true` when absent |
-| Seat | `/oath/run/seat`: `desk` or `console`; the desk's when absent, so at every boot |
+| Seat | `/oath/run/seat`: `desk` or `console`; the desk's when absent. PID 1 removes it at every boot, before any service starts |
 | Commands | `oath password` (`--status`), `oath desk`, `oath desk stop` |
 
 The calls:

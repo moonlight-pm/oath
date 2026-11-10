@@ -17,9 +17,9 @@
 //!   purpose, and the seat is the console's; `"up":true` gives it back
 //!
 //! A refusal is `{"ok":false,"error":"…"}`. The seat is [`SEAT_FILE`]
-//! (`desk` or `console`; the desk's when absent, so every boot): PID 1
-//! runs a service whose `seat` is the other one's held, and `svc:screen`
-//! is the console's on a desk.
+//! (`desk` or `console`; the desk's when absent, and PID 1 removes it at
+//! every boot): PID 1 runs a service whose `seat` is the other one's
+//! held, and `svc:screen` is the console's on a desk.
 
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
@@ -60,6 +60,16 @@ impl Seat {
         match std::fs::read_to_string(path) {
             Ok(s) if s.trim() == "console" => Self::Console,
             _ => Self::Desk,
+        }
+    }
+
+    /// Give the seat back to the desk: remove the record. PID 1 does it at
+    /// every boot, before any service starts, because `/oath/run` is on the
+    /// root, not a tmpfs, and the record would outlive the boot.
+    pub fn reset(path: &std::path::Path) -> std::io::Result<()> {
+        match std::fs::remove_file(path) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e),
+            _ => Ok(()),
         }
     }
 }
@@ -103,6 +113,17 @@ mod tests {
         assert_eq!(Seat::read(&f), Seat::Desk);
         std::fs::write(&f, "anything else").unwrap();
         assert_eq!(Seat::read(&f), Seat::Desk);
+    }
+
+    #[test]
+    fn a_boot_gives_the_seat_back_to_the_desk() {
+        let dir = tempfile::tempdir().unwrap();
+        let f = dir.path().join("seat");
+        std::fs::write(&f, "console\n").unwrap();
+        Seat::reset(&f).unwrap();
+        assert_eq!(Seat::read(&f), Seat::Desk);
+        assert!(!f.exists());
+        Seat::reset(&f).expect("no record is the desk's already");
     }
 
     #[test]

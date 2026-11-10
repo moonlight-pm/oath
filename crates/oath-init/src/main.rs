@@ -174,6 +174,12 @@ fn real_main() -> Result<(), String> {
     let _ = fs::create_dir_all("/oath/log");
     let _ = fs::create_dir_all("/tmp");
     let _ = fs::create_dir_all("/root");
+    // Every boot starts with the desk (R42): a turn of the console ends with
+    // the boot it was taken in.
+    let seat = Path::new(oath_core::login::SEAT_FILE);
+    if let Err(e) = oath_core::login::Seat::reset(seat) {
+        log(&format!("{}: {e}; the seat stays as it was", seat.display()));
+    }
     mount_toplevel();
     mount_home();
     mount_work();

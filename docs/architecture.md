@@ -34,6 +34,7 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     find <root> (waits up to 30 s, coldplugging again: a USB disk is late)
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot
+    remove /oath/run/seat: every boot starts with the desk (R42)
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
     mount subvol=@home at /home when the root has one (R43), unless
       host:local.mounts names /home (R45: mounted with the disks below)
