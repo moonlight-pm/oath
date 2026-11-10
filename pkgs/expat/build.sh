@@ -1,8 +1,6 @@
 # libexpat, shared, with headers and pkg-config; no xmlwf. patches/:
-# upstream's fixes for 2.10.0, which no release has yet, in the order master
-# took them: CVE-2026-115506 (amplification found late), CVE-2026-113351
-# (XML_ParserReset accounting), CVE-2026-118370 (storeAtts overflow),
-# CVE-2026-117610 (empty subparser parse).
+# upstream's fix for 2.11.0, which no release has yet: CVE-2026-124317 (an
+# unknown encoding's converter read past the input).
 tar -xf "$SRC/$SOURCES"
 cd "expat-$VERSION"
 for p in "$FILES"/patches/*.patch; do
