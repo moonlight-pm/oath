@@ -42,15 +42,18 @@ parts of T24 and T35.
 
 ## Integrity (built)
 
-- Before linking a present package, apply hashes its realization again
-  and refuses one that no longer hashes to its name ("the store is
-  damaged"); actual `verified` (`ok`, `at`, and `got` on a mismatch)
-  records the check.
-- `oath verify [pkg:…]` hashes every linked tree (or the ones named)
-  again. As root it writes `verified` into each actual and regenerates
-  INDEX, which lists damaged packages under `## Store damage`; a
-  damaged package's status is `error`. It exits 1 if any is damaged.
-  Without the lock it only reports.
+- Before linking a present package, apply hashes its realization once.
+  A tree that is missing or no longer hashes to its name is fetched again
+  from `url` or `host:local.origins` and put in place only once the new
+  copy hashes to it; with nothing serving one that does, apply fails and
+  leaves the damaged tree. Actual `verified` (`ok`, `at`, and `got` on a
+  mismatch, `missing` for a tree gone) records the check.
+- `oath verify [pkg:… cell:…]` hashes every linked tree (or the ones
+  named) again. As root it writes `verified` into each actual and
+  regenerates INDEX, which lists damaged trees under `## Store damage`,
+  each with its repair; a damaged package or cell's status is `error`,
+  and it drifts in `tree`. It exits 1 if any is damaged. Without the
+  lock it only reports.
 - PID 1 runs `oath verify --quiet` once per boot, after `ready`, as a
   task: the hashing never delays boot, and its report (damaged packages
   and the count) goes to `init.log`.

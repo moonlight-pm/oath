@@ -7,10 +7,11 @@ pub const BTRFS_TOP: &str = "/oath/run/fs";
 pub const LIVE_SUBVOL: &str = "@";
 
 /// This machine's id (machine-id(5)): 32 lowercase hex digits, made by PID 1
-/// at the first boot that lacks it. It lives in `@` beside the catalog, as
-/// the SSH host key does, so it outlives reboots and every generation and
-/// boot snapshot has the same one. PID 1 writes `/etc/machine-id` from it at
-/// every boot. `oath install` leaves it out: a new install makes its own.
+/// at the first boot, or the first take-over by re-exec, that lacks it. It
+/// lives in `@` beside the catalog, as the SSH host key does, so it outlives
+/// reboots and every generation and boot snapshot has the same one. PID 1
+/// writes `/etc/machine-id` from it at every boot and take-over. `oath
+/// install` leaves it out: a new install makes its own.
 pub const MACHINE_ID: &str = "/oath/machine-id";
 
 /// Archived ESP boots kept besides current. Firmware menu shows these
