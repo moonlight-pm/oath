@@ -180,7 +180,11 @@ still starts. PID
   restarts at once; quick failures wait 1, 2, 4 then 8 s. After five
   quick failures in a row the service is `failed` and stays down until
   its applied spec or its program's package changes, which starts a
-  fresh count. A spawn error is also `failed`.
+  fresh count. A spawn error is also `failed`. A run `restart` does not
+  follow (`never`, or `on-failure` after exit 0) is finished, as a
+  oneshot's is: it stays `stopped` through every later converge until
+  the next boot, an apply of `enabled=false` and then `enabled=true`, or
+  an applied `restart` that starts it after that exit.
 - **Cgroups.** One cgroup per service under `/sys/fs/cgroup/oath/`.
   Stop sends SIGTERM to every process in it, waits up to 5 s, then
   `cgroup.kill`s the rest; an exit cleans up leftover children the same

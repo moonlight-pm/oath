@@ -424,7 +424,8 @@ impl Supervisor {
                 self.write_actual_why(id, "failed", None, why.as_deref());
                 continue;
             }
-            if spec.restart == SvcRestart::Never && self.oneshot_done.contains(id) {
+            let last = self.history.get(id.as_str()).and_then(|h| h.last_exit);
+            if finished(spec, self.oneshot_done.contains(id), last) {
                 continue;
             }
             self.start(id, spec);
@@ -476,12 +477,10 @@ impl Supervisor {
                 "svc_exit",
                 json!({ "id": kid.id, "exit": exit.json(), "ran_ms": ran.as_millis() as u64 }),
             );
-            let again = match kid.spec.restart {
-                SvcRestart::Never => false,
-                SvcRestart::Always => true,
-                SvcRestart::OnFailure => exit.failed(),
-            };
-            if kid.spec.restart == SvcRestart::Never {
+            let again = starts_again(kid.spec.restart, exit);
+            // A run its `restart` does not follow (`never`, or `on-failure`
+            // after exit 0) is finished: converge leaves it down.
+            if !again {
                 self.oneshot_done.insert(kid.id.clone());
             }
             if !kid.spec.keep_children {
@@ -698,8 +697,12 @@ impl Supervisor {
             Ok(kid) => {
                 let pid = kid.0;
                 tel("init", "svc_start", json!({ "id": id, "pid": pid }));
+                // A oneshot runs once a boot; any other run that starts is no
+                // longer finished.
                 if spec.restart == SvcRestart::Never {
                     self.oneshot_done.insert(id.to_string());
+                } else {
+                    self.oneshot_done.remove(id);
                 }
                 self.kids.insert(
                     pid,
@@ -828,6 +831,28 @@ impl Supervisor {
 fn program(spec: &Svc) -> Program {
     let exe = spec.exec.first()?;
     oath_core::program_realization(Path::new(DEFAULT_ROOT), Path::new(exe))
+}
+
+/// Whether a service that ended with `exit` starts again, by its `restart`.
+fn starts_again(restart: SvcRestart, exit: Exit) -> bool {
+    match restart {
+        SvcRestart::Never => false,
+        SvcRestart::Always => true,
+        SvcRestart::OnFailure => exit.failed(),
+    }
+}
+
+/// Whether converge leaves a service down. `done` is a oneshot that started
+/// this boot, or a run its `restart` did not follow; `last` is how its last
+/// run ended. It stays down until the next boot, an apply of
+/// `enabled=false` and then `enabled=true`, or a `restart` that would have
+/// started it again.
+fn finished(spec: &Svc, done: bool, last: Option<Exit>) -> bool {
+    done && match spec.restart {
+        SvcRestart::Never => true,
+        SvcRestart::Always => false,
+        SvcRestart::OnFailure => last.is_some_and(|e| !e.failed()),
+    }
 }
 
 /// Where a scheduled service's last run is kept, beside its log: it
@@ -1199,6 +1224,30 @@ mod tests {
         let (wanted, unreadable) = wanted(d.path());
         assert!(unreadable.is_empty());
         assert_eq!(wanted.keys().collect::<Vec<_>>(), ["svc:t2"]);
+    }
+
+    #[test]
+    fn a_run_its_restart_does_not_follow_stays_down() {
+        let svc = |restart: &str| -> Svc {
+            serde_json::from_value(json!({"exec": ["/bin/true"], "restart": restart})).unwrap()
+        };
+        let (ok, bad) = (Exit::Code(0), Exit::Signal(15));
+        // on-failure: exit 0 is finished, and an unrelated converge leaves it
+        // down; a failure restarts it.
+        assert!(!starts_again(SvcRestart::OnFailure, ok));
+        assert!(finished(&svc("on-failure"), true, Some(ok)));
+        assert!(starts_again(SvcRestart::OnFailure, bad));
+        assert!(!finished(&svc("on-failure"), false, Some(bad)));
+        // A oneshot that started this boot stays down, however it ended.
+        assert!(!starts_again(SvcRestart::Never, ok) && !starts_again(SvcRestart::Never, bad));
+        assert!(finished(&svc("never"), true, None));
+        assert!(finished(&svc("never"), true, Some(bad)));
+        // A new boot, or an apply of enabled=false, clears `done`.
+        assert!(!finished(&svc("on-failure"), false, Some(ok)));
+        assert!(!finished(&svc("never"), false, Some(ok)));
+        // A `restart` that would have started it again does.
+        assert!(!finished(&svc("always"), true, Some(ok)));
+        assert!(!finished(&svc("on-failure"), true, Some(bad)));
     }
 
     #[test]
