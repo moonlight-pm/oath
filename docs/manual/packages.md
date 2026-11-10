@@ -120,9 +120,15 @@ pkg:<b>)`) before anything changes, and an apply that stops part way is undone w
 (`pkg:<name> has no head on any origin`): a recipe has none ([Recipes](#recipes)), and
 neither do `linux`, `oath` and `firmware`, which move with a release.
 `sudo oath new pkg:<name>` with no fields makes the same objects without applying them
-and prints the `oath apply` that starts them. For a name no origin has a head of, with one
+and prints the `oath apply` that links them. For a name no origin has a head of, with one
 tree of it in the store (`oath store`), it makes the object with no `hash`, and apply
-links that tree. `oath add` records each head it took in `/oath/heads.json`, as an update does.
+links that tree. `oath add` and `oath new pkg:<name>` record each head they take in
+`/oath/heads.json`, as an update does: `oath new` when it makes the objects, `oath add`
+once its apply has linked them. Both refuse a head older than one this machine took, of
+the package or of a need, and of a package it removed too (`pkg:<name>: the head on the
+origins, sha256-…, is older than the one this machine took, sha256-… (signed by …,
+published …)`); nothing changes, and the hint names the `sudo oath new pkg:<name>
+hash=sha256-…` that pins the one taken.
 
 Run by a user who cannot change the catalog, `oath add` fetches no pack and changes
 nothing: it prints `would add` and each package with its pack's size on its origin (or
@@ -152,23 +158,26 @@ package is refused (not `--confirm`), and so is `oath rm`. `oath get` shows
 `removable` under actual.
 
 `sudo oath rm pkg:foo` marks the object for removal. `sudo oath apply` unlinks
-it and deletes the object, and `sudo oath undo` brings it back. Its store tree
-stays until `oath reap` finds nothing holding it.
+it and deletes the object, and `sudo oath undo` brings it back. One no apply has
+taken (made by `oath new`) goes at once: `pkg:foo removed: no apply had taken it`.
+Its store tree stays until `oath reap` finds nothing holding it.
 
 ## Fields in practice
 
-- `hash` is the pin. Apply hashes the tree again before linking it and
-  refuses one that changed on disk. Empty hash is
-  discovery (`actual.hash` reports what is live). Switch with
+- `hash` is the pin. Apply hashes the tree before linking it; one that
+  changed on disk is fetched again and replaced, and with nowhere to fetch
+  it from apply refuses it ([A damaged package](#a-damaged-package)).
+  Empty hash is discovery (`actual.hash` reports what is live). Switch with
   `oath set pkg:foo hash=sha256-…`, then apply. Other hashes stay on
   disk while a pin, a need, the release, a current plan or a kept
   generation holds them, and for a day after they arrive; `oath reap`,
   which PID 1 runs once a boot, removes the rest.
-- `url`: if `present` and the store is missing, apply fetches it, then
-  links. A `.tar`, `.tar.gz` or `.tgz` is a pack tree. An origin prefix plus `hash` fetches
+- `url`: if `present` and the store lacks the tree or holds it damaged,
+  apply fetches it, then links. A `.tar`, `.tar.gz` or `.tgz` is a pack
+  tree. An origin prefix plus `hash` fetches
   `{url}/pkg/{name}/{hash}.tar`. A single file becomes `bin/<name>`.
-  With no `url`, a pinned pack the store lacks comes from the machine's
-  origins (below).
+  With no `url`, apply fetches a pinned pack from the machine's origins
+  (below).
 - `file`: with `url`, the URL is one file, a vendor's release, and the
   tree is that file alone at this path, not executable (a recipe's
   source; see Recipes).
@@ -193,40 +202,50 @@ Actual has what the machine sees: `links` (its names in `/bin`),
 never fetched), `realizations` (the trees of this name on disk, each
 with `hash`, `linked`, `bins` and `components`; `oath reap` says what
 holds each), `verified` (`ok`, `at`, and `got` when the tree hashes to
-something else: [A damaged package](#a-damaged-package)), and the applied
-`url`, `needs`, `description`, `home`, `category` and `source`.
+something else or is `missing`: [A damaged package](#a-damaged-package)), and
+the applied `url`, `needs`, `description`, `home`, `category` and `source`.
 
 ## A damaged package
 
-A tree that no longer hashes to its pin is damaged. PID 1 hashes every
-linked package and cell tree again once a boot, after the services start
-(`oath verify --quiet`; `oath logs` shows a line like
-`39 verified, 0 damaged`). `oath verify` prints `pkg:<name> DAMAGED: …` and
-exits 1. `oath get pkg:<name> --actual` has the outcome in `verified`: `at`,
-`ok`, and `got` for a tree that differs. A damaged tree has status `error`,
-`oath` (INDEX.md) lists it under **Store damage**, and `oath apply` refuses
-to link it. Apply, `sudo oath verify` and the boot's check write
-`verified`; `oath verify` as `home` only reports. No check repairs
-anything. An apply with no change says `in-sync`, and one that changes
-only `description`, `home`, `category` or `source` records it; neither
-looks at the tree. To take the tree again from the origins, delete it
-and set its `url` to an origin, so apply fetches it:
+A tree that no longer hashes to its pin, or is gone from the store, is
+damaged. PID 1 hashes every linked package and cell tree again once a boot,
+after the services start (`oath verify --quiet`; `oath logs` shows a line like
+`39 verified, 0 damaged`). `oath verify` prints `pkg:<name> DAMAGED: sha256-…
+hashes to sha256-…` (`hashes to missing` for a tree that is gone) and exits 1.
+`oath get pkg:<name> --actual` has the outcome in `verified`: `at`, `ok`, and
+`got` for a tree that differs. A damaged tree has status `error`, and `oath`
+(INDEX.md) lists it under **Store damage**. Apply, `sudo oath verify` and the
+boot's check write `verified`; `oath verify` as `home` only reports. No check
+repairs anything.
+
+A package whose tree is gone, or that a check found damaged, drifts in `tree`,
+and `sudo oath apply` is the repair: it fetches the tree again from the
+package's `url` or the origins, and puts the new copy in place, over a
+damaged one, once it hashes to the pin. With nowhere to fetch it from, apply
+refuses to link it (`… the store is damaged`, or `no store for pkg:<name> hash
+sha256-…` for a tree that is gone).
 
 ```
-sudo rm -rf /oath/store/pkg/less/sha256-…
-sudo oath set pkg:less url=https://store.oath.moonlight.pm
-sudo oath apply pkg:less
+sudo oath verify                 # pkg:less DAMAGED: sha256-… hashes to sha256-…
+oath diff                        # tree: "sha256-…" -> "sha256-…"
+sudo oath apply pkg:less         # … did not hash to its name; replaced it
 ```
 
-The fetch runs `curl` and `tar`, so `pkg:curl` and `pkg:tar` cannot come
-back this way.
+`sudo oath store pkg:<name> <dir|file.tar>` of the right tree replaces a
+damaged one too, and `sudo oath store cell:<name> <dir|file.tar>` is the repair
+for a cell, which comes from no origin ([Cells](cells.md)). An apply with no
+change says `in-sync`, and one that changes only `description`, `home`,
+`category` or `source` records it; neither hashes the tree, so a tree changed
+on disk that no check has found yet stays as it is. The fetch runs `curl` and `tar`, so `pkg:curl` and
+`pkg:tar` cannot count on it; `oath store` of a directory needs neither.
 
 ## What stays in the store
 
 A tree stays while something holds it, and PID 1 runs `oath reap` once a
-boot and removes the rest. `oath reap` says what this machine holds
-beyond what its packages prescribe: the versions of each package and cell
-that would go and their size, store slots with no object, filed plans
+boot and removes the rest. `oath reap` names what holds each version that
+stays (`pkg:less sha256-… stays: live, pin`), then says what this machine
+holds beyond what its packages prescribe: the versions of each package and
+cell that would go and their size, store slots with no object, filed plans
 nothing pins, and generations ([Generations](generations.md)).
 `sudo oath reap --confirm` removes them at once. `oath undo` cannot reach a
 generation that went. A build underway stops `--confirm`, and the preview
@@ -341,8 +360,9 @@ Each line is an `ssh-ed25519` public key; a person adds one, an agent does not.
 those heads need) from each origin and moves each package to the newest
 head a key may sign for it; `oath update` alone says what would move.
 It records each head it took in `/oath/heads.json` and refuses an older
-one after; `oath add` and `oath update --record` record theirs the same
-way, and the record never goes back to an older head. A head wins over a release's pin of the same package, so
+one after; `oath add`, `oath new pkg:<name>` and `oath update --record`
+record theirs the same way ([Install / remove](#install--remove)), and the
+record never goes back to an older head. A head wins over a release's pin of the same package, so
 `oath update --output <older>` leaves each package with a head at its head
 (`oath undo` puts back what an update moved), and a package with a head
 stays when a release drops it. With
@@ -458,7 +478,7 @@ These are built from source here and are in no profile:
 `pkg:blocky`, `pkg:cloudflared`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell`,
 `pkg:mysql`, `pkg:postgresql` and `pkg:postgis`
 (with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`).
-`sudo oath add <name>` takes each with what it needs, except PostGIS (below).
+`sudo oath add <name>` takes each with what it needs.
 `pkg:go` is what builds the Go ones; a machine needs
 it only to build. `cloudflared` does not update itself: `cloudflared update` says so,
 and a newer one is a new pin in `pkgs/cloudflared`.
@@ -479,30 +499,18 @@ NSS's `certdata.txt`, less any with a distrust-after date and what
 Mozilla's bundle from curl.se, at `/oath/store/pkg/curl/live/ssl/cert.pem`
 (OpenSSL's `cert.pem` links to it). It keeps the roots `pkg:certs` leaves out.
 
-PostgreSQL finds PostGIS, a separate pack, through one line in
-`postgresql.conf`:
+`sudo oath add postgis` takes PostGIS with PostgreSQL and its other needs. Its
+modules are in its own `lib/postgis/`, beside PostgreSQL's `lib/postgresql/` in
+`/lib`. PostgreSQL finds PostGIS, a separate pack, through one line in
+`postgresql.conf`, and then `CREATE EXTENSION postgis` works:
 
 ```
 extension_control_path = '$system:/oath/store/pkg/postgis/live/share'
 ```
 
-`pkg:postgresql` and `pkg:postgis` both carry `lib/postgresql/`, which `/lib`
-links for one package only, so the second to apply is refused:
-`/lib/postgresql exists and is not pkg:postgis`. `sudo oath add postgis` fails either
-way: with PostgreSQL here it leaves PostGIS out, and without it applies PostGIS first,
-is refused (`/lib/postgresql exists and is not pkg:postgresql`) and leaves PostGIS
-without PostgreSQL or PROJ, which `sudo oath undo` takes back. Add PostgreSQL and
-PostGIS's other needs first, then make PostGIS's object and apply it:
-
-```
-sudo oath add postgresql geos json-c proj
-sudo oath new pkg:postgis
-sudo oath apply pkg:postgis       # refused: /lib/postgresql exists and is not pkg:postgis
-```
-
-The refused apply still leaves PostGIS's `live` link in the store, which is all
-the `extension_control_path` line needs, so `CREATE EXTENSION postgis` works.
-`pkg:postgis` stays `status=new`, and every `oath apply` with no id stops at it.
+PostGIS's tools are `shp2pgsql`, `pgsql2shp`, `pgtopo_export` and
+`pgtopo_import`; `postgis` and `postgis_restore`, Perl scripts that start
+`#!/usr/bin/perl` and `#!/usr/bin/env perl`, are left out.
 
 The server refuses to run as root, so its `svc` names a `user`. A new major
 version changes the data directory's format, so moving across one is
@@ -590,7 +598,7 @@ first two lines are `#!/bin/sh` and `set -eu` and which writes `/out`.
 `oath build` runs it in a sandbox with only
 the pinned needs mounted and no network. The script is PID 1 of its own
 PID namespace, with its own `/proc`, `PATH=/bin` and `HOME=/tmp`; on a
-machine (`sudo oath build`) it runs as `home`, uid 1. The sandbox's `/bin` and `/lib` are link
+machine (`sudo oath build`) it runs as `home`, uid 1, and owns `/out`. The sandbox's `/bin` and `/lib` are link
 farms of those packs, as on a machine, so a plan pins every pack its
 tools load: `apps/hello.plan` pins bash, coreutils, gcc and glibc, and
 gmp, mpfr and mpc, which they run with.
@@ -612,8 +620,13 @@ at once with no `oath apply`. Empty is unpinned, and `oath build plan:<name>`
 refuses it. Actual adds the last build's `product` and `inputs` hashes;
 neither is a proof.
 
-A `build_needs` pack the store lacks is fetched first, from its `pkg`
-object's `url` or else from `host:local.origins`; it needs no `pkg` object.
+A `build_needs` pack the store lacks is fetched first,
+from its `pkg` object's `url` or else from `host:local.origins`, into the
+store alone: it needs no `pkg` object, and the machine's pin, `live` link,
+`/bin` and `/lib` stay as they are, so a plan may pin another version of a
+package than the machine runs. One the store holds damaged stops the build
+(`pkg:<name> tree hash is sha256-…, plan wants sha256-…`) until it is
+repaired ([A damaged package](#a-damaged-package)).
 A second `oath build plan:<name>` of an unchanged input set is a no-op; `--file`
 always builds. A build with no `pkg:<name>` object makes one, absent, at the
 product's hash, with the plan's `run_needs` as its `needs`
@@ -628,13 +641,10 @@ The build cache is keyed on the plan hash and the input set, so an
 edited script always rebuilds.
 
 `apps/hello.plan` pins `pkg:hello-src`, which no origin carries, so a machine
-stores it first (`sudo oath store pkg:hello-src apps/hello-src`); its other needs
-come from the origins, so it builds on a machine with no compiler in `/bin`. Its
-`pkg:gcc` and `pkg:glibc` pins are older than a release's, and a build that
-fetches a need moves that package's pin and `live` to the need's hash: where a
-present package needs one at the release's pin, as on a desk, the next apply
-refuses until `oath set` puts it back. The plans in `pkgs/` are the larger
-examples.
+stores it first (`sudo oath store pkg:hello-src apps/hello-src`). Its other needs
+are the packs a desk links; on a machine that lacks one (a `base` one has no
+`pkg:gcc`) the build fetches it, so it builds with no compiler in `/bin`. The plans in
+`pkgs/` are the larger examples.
 
 ## Cells
 
