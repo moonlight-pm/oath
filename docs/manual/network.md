@@ -82,9 +82,9 @@ names (or that `/etc/resolv.conf` has): `/etc/nsswitch.conf` says
 hostname:
 
 ```
-sudo oath set host:local hosts='{"novus": "10.0.0.5", "nas": "10.0.0.12"}'
+sudo oath set host:local hosts='{"printer": "10.0.0.20", "nas": "10.0.0.12"}'
 sudo oath apply host:local
-getent hosts novus
+getent hosts nas
 ```
 
 A name in the map is letters, digits, `-` and `.`, at most 253, not
@@ -137,10 +137,11 @@ is denied and passwords are off. `sudo` has no password. Serial is
 root when `svc:serial` is enabled. There is **no private key in the
 image**.
 
-The host key lives under `/oath/ssh/`. `cargo make install` and `oath
-install` write it; a machine that has none makes one at boot. Login
-keys are `ssh:local` `authorized` (OpenSSH public key lines); apply
-writes `/home/.ssh/authorized_keys`.
+The host key is `/oath/ssh/ssh_host_ed25519_key`. `cargo make install`
+and `oath install` write it. A machine that lacks it at boot converts
+`/oath/ssh/host_ed25519`, a dropbear key, into it, or else makes a new
+one. Login keys are `ssh:local` `authorized` (OpenSSH public key lines);
+apply writes `/home/.ssh/authorized_keys`.
 
 ```
 oath get ssh:local
@@ -169,16 +170,12 @@ Where the first keys come from:
   boot. `cargo make check` passes its own throwaway key the same way.
 
 `svc:sshd` is OpenSSH's sshd (`pkg:openssh`, not removable, with
-OpenSSL: RSA, ECDSA and ed25519 keys log in), which also gives `/bin/ssh`, `/bin/scp`,
-`/bin/sftp`, `/bin/ssh-keygen` and `/bin/sftp-server`. Logins are
-`home`'s, by key; passwords and root are refused. Before a login, sshd
-reads the network as `void`, chrooted in `/var/empty`. oath writes
-`/etc/ssh/sshd_config` from `host:local` with `/etc/profile`, so a
-command over SSH (`ssh host 'cmd'`, no login shell) gets `host:local`
-env and `TZ` too, as of sshd's last start. The host key is
-`/oath/ssh/ssh_host_ed25519_key`. When that file is missing, oath converts
-`/oath/ssh/host_ed25519`, a dropbear key, into it; with neither file, oath
-generates a new key. Guest `/etc/ssh/ssh_config` is
+OpenSSL: RSA, ECDSA and ed25519 keys log in), which also gives `/bin/ssh`,
+`/bin/scp`, `/bin/sftp`, `/bin/ssh-keygen` and `/bin/sftp-server`. Before a
+login, sshd reads the network as `void`, chrooted in `/var/empty`. oath
+writes `/etc/ssh/sshd_config` from `host:local` with `/etc/profile`, so a
+command over SSH (`ssh host 'cmd'`, no login shell) gets `host:local` env
+and `TZ` too, as of sshd's last start. The image's `/etc/ssh/ssh_config` is
 `StrictHostKeyChecking accept-new`. `scp` and `sftp` as `home` work:
 
 ```

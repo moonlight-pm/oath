@@ -13,7 +13,7 @@ The optional `desk` profile adds one ([desk spec](../specs/desk.md)).
 | [Using `oath`](using.md) | Verbs, safety, disks, kernel module options, device protocols, accounts, agents (`oath mcp`) |
 | [Catalog](catalog.md) | Objects, kinds, seed profiles, overlays, devices |
 | [Services](services.md) | PID 1 and `svc:*` |
-| [Packages](packages.md) | Store, `/bin` and `/lib` links, publishing, origins, plans, recipes, the security audit, the host store cache |
+| [Packages](packages.md) | Store, `/bin` and `/lib` links, installing by name (`oath add`, `oath ls --origin`), publishing, origins, plans, recipes, the security audit, the host store cache |
 | [Cells](cells.md) | `pkg:cell` and `cell run`: a package, a `cell:<name>` or an image in a box; the `cell` kind |
 | [writ](writ.md) | `pkg:writ`, the coding agent: its box, models, sessions, `writ diff`, `apply`, `undo` |
 | [Network and SSH](network.md) | `net:net0`, names, time, `ssh:local`, sshd |
@@ -28,8 +28,8 @@ arguments). That file is generated from the live catalog.
 
 - `net:net0` is the only link. `oath new` makes no `net` object; a
   second NIC is listed as `dev:net1` and is not configured.
-- The `base` image does not carry `pkg:gcc`
-  ([Plans](packages.md#plans)).
+- The `base` image does not carry `pkg:gcc`; `sudo oath add gcc` installs
+  it with `pkg:mpc` ([Packages](packages.md#what-ships)).
 - Mesa drives AMD GPUs (radeonsi, RADV) and softpipe, and no Intel
   GPU. Under QEMU `svc:sola-shell` gets no graphics context and ends
   `failed`.

@@ -71,9 +71,10 @@ says `ok`, or `error` if converging failed after the snapshot.
 `oath undo` works like a stack. It takes the newest apply, `ok` or
 `error`, that has not been undone yet, and puts back the spec of the
 objects that apply touched from its `@gen-N`. An object that apply
-created (`oath new`) is removed; one it removed (`oath rm`) comes back.
-Then it converges those objects (hostname, `pkg:*` and `cell:*` links,
-`net:net0`, `ssh:local`, `dev:*`, and `svc:*` through PID 1), sets
+created (`oath new`, or `oath add` and each need it brought) is removed;
+one it removed (`oath rm`) comes back. Then it converges those objects
+(hostname, `pkg:*` and `cell:*` links, `net:net0`, `ssh:local`,
+`dev:*`, and `svc:*` through PID 1), sets
 `snap:current` back, and logs `undo:N`. Run it again to step back one
 more apply.
 
@@ -113,7 +114,7 @@ while it works. A machine that stops booting shows where:
 
 - `Reading the kernel` or `Reading the initrd`, with the bar still: the
   firmware cannot read the disk; try another port.
-- `Starting Linux 7.3.1` and nothing more: the kernel stopped before
+- `Starting Linux <version>` and nothing more: the kernel stopped before
   Oath's PID 1 ran.
 - `Loading drivers: <name>` with the bar still: that driver hung.
 - `Waiting for the root disk … Disks: …`: the disk Oath runs from has
@@ -135,7 +136,7 @@ writes, a node or `UUID=…`; default `/dev/sda2`) takes the kernel,
 initrd and `oath-efi` of a build output (default: the newest one
 `cargo make check` passed; `--unchecked` for another), archives the
 live ESP kernel as a new boot, keeps five, snapshots `@` to
-`@boot-<id>`, and copies the new bits. It does not format anything. It
+`@boot-N`, and copies the new bits. It does not format anything. It
 mounts the node you name **on the machine where you run it**, so it
 refuses to run on a machine that is not Oath (no `/oath/INDEX.md`),
 such as a NixOS build host.

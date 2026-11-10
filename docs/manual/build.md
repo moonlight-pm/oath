@@ -19,24 +19,18 @@ toolchain. Without them these come from `PATH`, with OVMF from QEMU's
 
 An Oath machine can be the build host too (R32): its own gcc builds
 stage 0, its `pkg:rust` builds `oath-make` (a `desk` machine has both;
-`base` has neither), and `pkg:qemu` (in no profile; add it to the
-machine) runs images, with the edk2 firmware from QEMU's release as
-OVMF. `home` has `/dev/kvm` there (R33); without it QEMU runs without
-KVM. Without `qemu-system-x86_64` or `qemu-img` on `PATH` (`pkg:qemu`),
-`build`, the `check` cases in QEMU and the QEMU rehearsals stop and say
-so. QEMU loads `libslirp`, which no profile has either, and a pack's
-`needs` must name the machine's packs at the hashes it runs with: those
-are `run_needs` in its plan on the origin (`INDEX.md` gives each pack's
-hash and plan). A `desk` machine has the other packs `pkg:qemu` needs;
-`base` has no `pkg:gcc`, `pkg:glib` or `pkg:pixman`, and `oath apply`
-refuses it there.
+`base` has neither), and `pkg:qemu` runs images, with the edk2 firmware
+from QEMU's release as OVMF. `home` has `/dev/kvm` there (R33); without
+it QEMU runs without KVM. Without `qemu-system-x86_64` or `qemu-img` on
+`PATH`, `build`, the `check` cases in QEMU and the QEMU rehearsals stop
+and say so. No profile has `pkg:qemu` or the `pkg:libslirp` it loads.
+`oath add` takes `pkg:qemu` at its head, with each package it needs that
+the machine lacks, and applies them ([Packages](packages.md)): on a
+`desk` machine that is `pkg:libslirp`; `base` also takes `pkg:gcc`,
+`pkg:glib`, `pkg:pixman` and what they need.
 
 ```sh
-curl -fsS https://store.oath.moonlight.pm/INDEX.md | grep -E '`(qemu|libslirp)`'
-sudo oath new pkg:libslirp --from-json '{"present":true,"hash":"sha256-…"}'
-curl -fsS https://store.oath.moonlight.pm/plan/qemu/sha256-….plan   # its run_needs
-sudo oath new pkg:qemu --from-json '{"present":true,"hash":"sha256-…","needs":[…]}'
-sudo oath apply pkg:libslirp pkg:qemu
+sudo oath add qemu
 ```
 
 ## The toolchain and packages

@@ -67,14 +67,15 @@ PID 1 cannot read (a torn file) leaves the running process alone.
 
 PID 1 reaps children and restarts them per `restart`: `always` after
 any exit, `on-failure` after a non-zero exit or a signal, `never` not
-at all. A `never` service without a `schedule` is a oneshot: it starts
-once a boot. A new `exec`, `user`, `env`, `bind_low_ports` or `rtprio`
-stops it if it still runs and does not start it again; an apply of
-`enabled=false`, then one of `enabled=true`, does.
+at all. PID 1 stops services that are disabled or removed, or whose
+`exec`, `user`, `env`, `bind_low_ports` or `rtprio` changed. A `never`
+service without a `schedule` is a oneshot: it starts once a boot. A
+change to one of those five fields stops it if it still runs and does not
+start it again; an apply of `enabled=false`, then one of `enabled=true`,
+does.
 A new spec that stops a oneshot with no exit yet this boot makes that
 apply, and its `oath undo`, exit non-zero (`did not become running`):
 a stopped run records no `last_exit`.
-PID 1 stops services that are disabled or whose applied spec changed.
 Each service runs in its own cgroup (`/sys/fs/cgroup/oath/svc-<name>`):
 stopping it sends SIGTERM to every process in it, waits up to 5 s, then kills what is left. With
 `keep_children` (as on `svc:sshd`, and `svc:sola-session` on a desk) only
@@ -157,7 +158,13 @@ sudo oath undo                  # brings it back
 `exec` is the argv; it may be empty only while `enabled` is false. Give
 `exec[0]` as an absolute path: a bare name is found on `PATH=/bin` and
 runs, but actual has no `pkg` and the service does not follow its
-package. `oath new` needs only `exec`; it writes the defaults into the object
+package. A program the machine lacks comes in its package from the
+origin: `oath ls --origin <word>` finds the package, and
+`sudo oath add <name>` installs it. A service applied before its program
+is here is `failed` (`cannot start <exec[0]>: No such file or
+directory (os error 2)`) and, with an absolute `exec[0]`, starts once
+`oath add` applies the package.
+`oath new` needs only `exec`; it writes the defaults into the object
 (`restart: always`, `enabled: true`, `wants: []`), so `oath get` shows
 what will run. Until `oath apply`, a new service has status `new` and
 does not run; once applied it is not new, and if it cannot start (a
@@ -283,7 +290,7 @@ To run it daily, add a service in the machine's install overlay:
 
 ```json
 {"objects": {"svc:backup": {
-  "exec": ["/lib/oath/backup-daily", "nas:/export/backup/canto"],
+  "exec": ["/lib/oath/backup-daily", "nas:/export/backup"],
   "wants": [], "restart": "always", "enabled": true}}}
 ```
 
@@ -308,7 +315,7 @@ at a boot) is in the new one. Clearing the zone reaches PID 1 only at
 a boot.
 
 ```sh
-sudo oath new svc:backup --from-json '{"exec":["/lib/oath/backup-send","nas:/export/backup/canto"],"wants":[],"restart":"never","enabled":true,"schedule":"0 4 * * *"}'
+sudo oath new svc:backup --from-json '{"exec":["/lib/oath/backup-send","nas:/export/backup"],"wants":[],"restart":"never","enabled":true,"schedule":"0 4 * * *"}'
 sudo oath apply svc:backup
 oath get svc:backup     # state: "scheduled", next: "…04:00:00-06:00", last_run
 ```
