@@ -6,16 +6,15 @@ no generation). `oath undo` puts back, from the newest not-undone
 apply's snapshot, the spec of the objects that apply changed, and
 converges them. Repeat to step further back.
 
-**When to use:** look at generations; undo the last apply. Do not pick
-an old generation as the boot default unless the owner asked
-(`--confirm`).
+**When to use:** look at generations; undo the last apply.
 
 **When not:** QEMU/qcow2 snapshots on the hypervisor are not this kind.
 
 ## Objects
 
-- `snap:current` — `{ "generation": N }`, the last snapshot id.
-  Changing it except via `oath undo` is **confirm**.
+- `snap:current` — `{ "generation": N }`: the generation the last apply
+  took, or the one `oath undo` went back to. Apply and undo write it; do
+  not `set` it.
 - `snap:N` — read-only record of generation N (`generation`, `parent`,
   `time`, `reason`). Do not `set` these.
 

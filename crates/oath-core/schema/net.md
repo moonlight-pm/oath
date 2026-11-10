@@ -1,8 +1,12 @@
 # net
 
-A network link. There is one object: `net:net0`. PID 1 renames the
-machine's only non-loopback NIC to `net0`. Do not hunt `eth0` or
-`ens3`. There is no `ifcfg`, NetworkManager, or `dhclient`.
+A network link. There is one object: `net:net0`. PID 1 names one wired
+NIC `net0`: it brings up every link but loopback, Wi-Fi (`wl*`),
+`wwan*` and virtual ones (`docker*`, `br-*`, `virbr*`, `veth*`), waits
+up to 15 s for a carrier, and renames the one that has it (the first by
+name when several do). With no carrier, converging `net:net0` fails.
+Oath gives the other NICs no address. Do not hunt `eth0` or `ens3`.
+There is no `ifcfg`, NetworkManager, or `dhclient`.
 
 **When to use:** bring the link up or down; switch between DHCP and a
 static address.
