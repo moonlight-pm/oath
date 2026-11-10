@@ -245,7 +245,8 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   otherwise nothing is made and `oath update` comes first. Two packages
   that would link one name in `/bin` or `/lib` refuse it before anything
   changes, and an apply that stops part way is undone whole. It records the
-  heads it took, as an update does; run by a user who cannot change the
+  heads it took, as an update does, and refuses a head older than one this
+  machine took, for the package or a need; run by a user who cannot change the
   catalog, it says what it would add and each pack's size, and changes
   nothing. A recipe has no
   pack, so no head: it is listed and built on the machine. A head beats a

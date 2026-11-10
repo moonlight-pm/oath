@@ -6,13 +6,13 @@ What exists and what is missing. Design: [specs/](specs/); priority:
 **Status:** `shipped` works and is tested · `partial` works with
 gaps · `target` designed, not built.
 
-**As of:** 2026-11-07
+**As of:** 2026-11-10
 
 ## Core
 
 | Capability | Status | Works | Main gaps |
 |---|---|---|---|
-| Catalog | shipped | `kind:name` objects: spec on disk, status on a tmpfs rebuilt each boot (R14); generated schemas and `INDEX.md`; typed `set`; `oath new` / `oath rm` | — |
+| Catalog | shipped | `kind:name` objects: spec on disk, status on a tmpfs rebuilt each boot (R14); generated schemas and `INDEX.md`; typed `set`; `oath new`/`oath rm` | — |
 | `oath` CLI | shipped | `ls get set new rm add diff apply keep undo update verify audit reap log logs schema fmt build store publish install password desk mcp`, `--json`; bare `oath` prints the INDEX | — |
 | Agent surface | shipped | `oath mcp` over SSH: a tool per verb (writes via `sudo`), `--read-only`; `check --agent` passes five tasks | — |
 | Generations | shipped | undo restores the touched objects' spec; lockout-class changes stay on probation until `oath keep`; the newest five and those since boot kept (R62) | — |
@@ -20,7 +20,7 @@ gaps · `target` designed, not built.
 | Packages | shipped | hash-in-path store, `/bin`, `/lib` farms (R17, R29), pins, `needs`; origins (R25); recipes (R23, R35); npm programs (R46); publish with licence, plan, source; `oath verify`; `source`, overlays (R47); CVE audit (R48, R61); `oath reap` (R62); `category` (R63); heads, `publish`, `update --record`, scoped keys, library-checked needs (R72); `oath add`, `ls --origin` (R81) | packaged services (R72); npm, GitHub signatures unchecked |
 | Plans (builds) | shipped | `plan` kind, `oath fmt`, `oath build`; netless sandbox, own PID namespace; cache keyed on plan and inputs; logs in `/oath/log/plan/` | — |
 | Toolchain and native packages | partial | `cargo make bootstrap` (R32): GCC 16.2, binutils 2.47, glibc 2.44 (R17); `cargo make pkgs`: 208 products, i386 (R29); GNU userland (R18); bit-identical; CEF (R40); Go, servers, MySQL, `aws` (R49, R82), `route`, `cell` (R59, R76/R78); roots (R50); tags (R54); intake (R57) | Perl unsigned; Python multiprocessing lacks semaphores |
-| Network | partial | `net:net0` dhcp or static; supervised dhcpcd; LAN names in `host:local.hosts`; `dig`; chrony | One NIC, chosen at boot |
+| Network | partial | `net:net0` dhcp or static (`dns`, R83); supervised dhcpcd; LAN names (`host:local.hosts`); `dig`; chrony | One NIC, chosen at boot |
 | SSH | shipped | OpenSSH's sshd (R36) as `home` (zsh, R27), keys from `ssh:local`, root denied, `host:local` env; `sftp-server`; daemons drop to `void`; `sudo` | — |
 | Login and seat | partial | `svc:login` (R42): `home`'s password, Argon2id; `oath password`; `host:local.autologin`; the seat's turns (`oath desk`); on canto | No password on metal yet; `sudo` asks none |
 | Devices | partial | modules by modalias, static nodes, package firmware; `dev:*` from sysfs; `host:local.mounts`, `/home` (R45); sound, pads, `/dev/kvm`, `seat_hid` `home`'s (R22, R30, R33, R71) | Node ownership: HID only |
