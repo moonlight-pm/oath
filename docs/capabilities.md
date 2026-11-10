@@ -13,7 +13,7 @@ gaps · `target` designed, not built.
 | Capability | Status | Works | Main gaps |
 |---|---|---|---|
 | Catalog | shipped | `kind:name` objects: spec on disk, status on a tmpfs rebuilt each boot (R14); generated schemas and `INDEX.md`; typed `set`; `oath new` / `oath rm` | — |
-| `oath` CLI | shipped | `ls get set new rm diff apply keep undo verify audit reap log logs schema fmt build store publish mcp`, `--json`; bare `oath` prints the INDEX; apply waits for PID 1 | — |
+| `oath` CLI | shipped | `ls get set new rm add diff apply keep undo update verify audit reap log logs schema fmt build store publish install password desk mcp`, `--json`; bare `oath` prints the INDEX | — |
 | Agent surface | shipped | `oath mcp` over SSH: a tool per verb (writes via `sudo`), `--read-only`; `check --agent` passes five tasks | — |
 | Generations | shipped | undo restores the touched objects' spec; lockout-class changes stay on probation until `oath keep`; the newest five and those since boot kept (R62) | — |
 | Services (PID 1) | shipped | runs applied specs; logs; backoff, `failed` with a `reason`; a cgroup each; survives a panic; re-execs on update (R73); restarts a service its package moves; cron `schedule` (R48) | — |
