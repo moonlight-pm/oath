@@ -21,7 +21,9 @@ publishes it, and it has no directory here (Sola's, in `desk`).
 `build = ["go"]`, and `run = ["certs"]` for the CA roots. `pkgs/go-modules.sh
 [--cgo] [--tags '…'] <name> <go package>...` pins the go.mod and zip files the go command reads, from
 proxy.golang.org, after the line `# Modules, from pkgs/go-modules.sh:` in
-`pkg.toml`; run it again after a new release's pin. The build reads them through
+`pkg.toml`; run it again after a new release's pin. Where a package has other
+sources, the Go release is the last before that line and its patches are in
+`patches/go/`; a release with no `go.mod` builds from `<name>/go.mod`. The build reads them through
 `GOPROXY=file://$SRC/gomod`, and `go-components` writes `components.json` from
 the binary, so advisories cover each linked module. A `replace` by version is pinned
 like any other module, and one by path stops the script. A module pinned behind its
@@ -168,7 +170,8 @@ generated script starts with `SRC` (the tarballs), `FILES`, `SOURCES`,
 `VERSION`, `JOBS`, `LIVE` (the slot path the pack is used at,
 `/oath/store/pkg/<name>/live`), `CC=cc` and friends, and `CPPFLAGS`,
 `LDFLAGS` and `PKG_CONFIG_PATH` covering every library pack it builds
-with. Libraries build shared and install under `$LIVE` so their `.pc`
+with, ahead of whatever a project bundles: one that carries its own copy of a
+library Oath ships clears them first (`aws`, `mysql`). Libraries build shared and install under `$LIVE` so their `.pc`
 files work in the next sandbox; a package that loads one names it under
 `run`, so machines get it too. After each build, every library the
 product's programs load (`DT_NEEDED`) must be in its own `lib/`,

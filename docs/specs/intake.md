@@ -82,4 +82,4 @@ So containment matters as much as intake: a server runs as `work` (R55), with no
 - **Age limits for `go` and `cargo` in a project.** Neither has a stable setting yet;
   pins in `pkgs/` have the gate regardless.
 - **Shared audits.** Importing Mozilla's and Google's `cargo-vet` records for crates.
-- **Fewer trees.** See "The trees" in `pkgs/README.md`.
+- **Fewer trees.** See [dependencies.md](dependencies.md).

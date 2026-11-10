@@ -1,0 +1,24 @@
+# MySQL, the newest long-term line (9.7): the server, its clients and its
+# library, on pkg:openssl, ICU, zlib and zstd. No router, cluster, Group
+# Replication (it needs rpcgen; binlog replication stays), FIDO, LDAP or
+# Kerberos. What it bundles and Oath does not ship (Boost, protobuf, Abseil, lz4,
+# libedit, xxHash) is in Oracle's signed tarball and named in components.json.
+# MariaDB's client was the smaller route; it lost because it speaks to a MySQL
+# server as a fork, without MySQL's collations or its dump's options.
+# 9.x servers have no mysql_native_password, so an account from 8.x moves to
+# caching_sha2_password; the client's plugin stays (patches/0003), to log in to
+# older servers. The FIDO, Kerberos, LDAP, OCI and OpenID client plugins do not.
+version = "9.7.4"
+license = "GPL-2.0-only WITH Universal-FOSS-exception-1.0"
+description = "MySQL: the relational database server, its clients and its library."
+home = "https://www.mysql.com/"
+category = "server"
+purl = "pkg:generic/mysql@9.7.4"
+build = ["bison", "cmake", "icu", "ncurses", "openssl", "pkgconf", "zlib", "zstd"]
+run = ["gcc", "icu", "ncurses", "openssl", "zlib", "zstd"]
+
+[[source]]
+url = "https://cdn.mysql.com/Downloads/MySQL-9.7/mysql-9.7.4.tar.gz"
+sha256 = "9188eb1abec42b8ab8bb69948492f06258dd27e6aabd13e2d4c6197dbcde75b2"
+sig = "https://cdn.mysql.com/Downloads/MySQL-9.7/mysql-9.7.4.tar.gz.asc"
+key = "mysql"

@@ -25,6 +25,7 @@ Update a row when its status moves, and move it to "Done" when it lands.
 |---------|------|-----------------------|--------------|------|--------|
 | `pkg:gh` | 160 Go modules; 39 MB | `curl` on GitHub's API, or nothing | All 160 | Agents lose its conveniences | Open: who needs it? |
 | `pkg:cf` | 32 npm packages; 203 MB, on `pkg:node` (205 MB, an hour to build) | `curl` on Cloudflare's API | All 32, and Node with them: nothing else runs on it | `cf dev` and Workers' local runtime go | Open: who needs it? |
+| `pkg:aws` | 11 PyPI packages and 24 Go modules; 204 MB, with AWS-LC inside `awscrt` | `awslim` (642 MB, no `s3`, `login` or `ssm` sessions) | Nothing | It covers less, and is larger | Kept (R82) |
 | `pkg:blocky` | 80 Go modules; AGPL (parcour); unsigned | Unbound (signed C, needs OpenSSL and expat) with a generated blocklist | All 80 | Packaging, and a small list generator | Open: ask Wicket's session |
 | `pkg:restic` | 37 modules, after the patch (86 before) | Drop S3 too | 12 more | S3 repositories go through rclone | Open: does anyone use S3? |
 | `pkg:oath`'s crates | `oath` 64, `oath-init` 58 | See below | Up to half | Our own code | Later |

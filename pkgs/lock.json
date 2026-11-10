@@ -18,6 +18,18 @@
       "dbus"
     ]
   },
+  "aws": {
+    "version": "2.39.3",
+    "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND ISC AND OpenSSL AND PSF-2.0 AND blessing",
+    "by": "plan",
+    "plan": "sha256-0110ba1828a0c054001bbc3b6bfbb73a015cba07fe957398cc49d26e70516279",
+    "product": "sha256-df1507709e80e4740abcca37d1ae666cc11ab3053059b98c788c3410b6318966",
+    "run": [
+      "python",
+      "certs",
+      "less"
+    ]
+  },
   "bash": {
     "version": "5.3",
     "license": "GPL-3.0-or-later",
@@ -1299,6 +1311,21 @@
     "product": "sha256-494241b048adac84186882cbd4d973464df07a671aaeebcfdaec9d460976e5e7",
     "run": [
       "gmp"
+    ]
+  },
+  "mysql": {
+    "version": "9.7.4",
+    "license": "GPL-2.0-only WITH Universal-FOSS-exception-1.0",
+    "by": "plan",
+    "plan": "sha256-9947eeb468922a4ad129b6ba1b85b0f6c5b9606b15fc140428f73a4da6135a71",
+    "product": "sha256-bd37c1e35e2cb1d8036fd63c9b80d62fd1b90c7c873badae3b232f6904b0126a",
+    "run": [
+      "gcc",
+      "icu",
+      "ncurses",
+      "openssl",
+      "zlib",
+      "zstd"
     ]
   },
   "ncurses": {

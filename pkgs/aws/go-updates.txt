@@ -1,0 +1,20 @@
+# AWS's vendor/ tree at 1.2.896.0 records no versions, so these are what its
+# files match, module by module, less what is listed as a fix.
+github.com/aws/aws-sdk-go-v2 v1.41.3
+github.com/aws/aws-sdk-go-v2/config v1.32.11
+github.com/aws/aws-sdk-go-v2/service/kms v1.50.2
+github.com/aws/aws-sdk-go-v2/service/ssm v1.68.2
+github.com/aws/smithy-go v1.24.2
+github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
+github.com/fsnotify/fsnotify v1.4.7
+github.com/xtaci/smux v1.5.16
+golang.org/x/sync v0.5.0
+golang.org/x/term v0.15.0
+# AWS holds 1.4.2, which OSV lists under GHSA-w67g-5rqw-f597 with 1.5.3 as its fix.
+# newMaskKey is math/rand in both: this takes the version, not a change of code.
+github.com/gorilla/websocket v1.5.3
+# AWS holds 0.15.0: GO-2026-5024, in x/sys/windows, which Linux does not build.
+golang.org/x/sys v0.44.0
+# AWS's copy is an unpublished commit of a repository since deleted; v1.0.0 is
+# the newest the proxy holds, adapted to in patches/go/0002.
+github.com/twinj/uuid v1.0.0

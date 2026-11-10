@@ -1,0 +1,23 @@
+x/crypto's ssh/terminal only forwards to x/term; this was its one use, and
+without it the package needs nothing else from that module.
+
+--- a/src/sessionmanagerplugin/session/shellsession/shellsession.go
++++ b/src/sessionmanagerplugin/session/shellsession/shellsession.go
+@@ -28,7 +28,7 @@
+ 	"github.com/aws/session-manager-plugin/src/message"
+ 	"github.com/aws/session-manager-plugin/src/sessionmanagerplugin/session"
+ 	"github.com/aws/session-manager-plugin/src/sessionmanagerplugin/session/sessionutil"
+-	"golang.org/x/crypto/ssh/terminal"
++	"golang.org/x/term"
+ )
+ 
+ const (
+@@ -46,7 +46,7 @@
+ }
+ 
+ var GetTerminalSizeCall = func(fd int) (width int, height int, err error) {
+-	return terminal.GetSize(fd)
++	return term.GetSize(fd)
+ }
+ 
+ func init() {

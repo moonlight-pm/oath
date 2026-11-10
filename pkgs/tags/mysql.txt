@@ -1,0 +1,12 @@
+# Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
+source mysql-9.7.4.tar.gz 9188eb1abec42b8ab8bb69948492f06258dd27e6aabd13e2d4c6197dbcde75b2
+tag mysql-9.7.4 commit 780b506e8296a61f2a7067bf2087d32c78e0bb76 tree 0c75e21d4a93b1b6ba8e0e09cca7fe726ce08fff
+signed no
+same 59180
+only-in-tag 20
+differs packaging/rpm-sles/mysql.spec.in
+adds Docs/INFO_SRC
+adds sql/sql_hints.yy.cc
+adds sql/sql_hints.yy.h
+adds sql/sql_yacc.cc
+adds sql/sql_yacc.h

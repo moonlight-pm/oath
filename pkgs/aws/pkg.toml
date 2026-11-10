@@ -1,0 +1,349 @@
+# AWS CLI v2 from AWS's signed source tarball, on pkg:python: no second
+# interpreter, and Python's ssl is pkg:openssl's. Its code and the Python
+# libraries it needs stay in libexec/aws-cli, so nothing reaches /lib or
+# Python's own site-packages. Each sdist is pinned by sha256; build.sh copies
+# them into place with no pip and no setup.py, and components.json names each.
+#
+# urllib3 is 2.8.0, past AWS's `<=2.6.3`: 2.6.3 has CVE-2026-44431, 44432,
+# 97687, 97688 and 97689. AWS's unit tests pass against it (2026-11-09).
+# ruamel.yaml's C extension is left out; it falls back to its pure Python
+# parser and emitter. Python's source is here only for its _sqlite3 module,
+# which pkg:python does not build: it must be pkg:python's version.
+# awscrt keeps its own AWS-LC, because s2n does not build on OpenSSL 4.
+# A new aws-cli is a new set of pins: requirements/download-deps in its tarball
+# names them.
+#
+# session-manager-plugin is here too: AWS's Go program that `aws ssm
+# start-session` runs for a shell or a forwarded port. From AWS's source tag; only
+# its .deb and .rpm are signed. Its vendor/ tree is the whole AWS SDK, 417
+# services, with no record of which versions, so it is not unpacked:
+# go-updates.txt names what it holds and two versions OSV lists, and each module is pinned
+# from Go's proxy. Nothing else speaks its protocol, and writing it would be a
+# second implementation of KMS-encrypted sessions. Re-pin with:
+#   pkgs/go-modules.sh aws ./src/sessionmanagerplugin-main
+version = "2.39.3"
+license = "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND ISC AND OpenSSL AND PSF-2.0 AND blessing"
+description = "AWS CLI v2 and its Session Manager plugin: Amazon Web Services from the terminal."
+home = "https://aws.amazon.com/cli/"
+category = "toolchain"
+purl = "pkg:github/aws/aws-cli@2.39.3"
+build = ["python", "cmake", "sqlite", "go"]
+run = ["python", "certs", "less"]
+unsigned = "PyPI publishes no signature for these sdists; AWS signs the plugin's .deb and .rpm but not its source tag; go.sum names each Go module, checked against Go's checksum database when pinned"
+
+[[source]]
+url = "https://awscli.amazonaws.com/awscli-2.39.3.tar.gz"
+sha256 = "448881cf10ad6349531da03a42084c23193a30350079e32ac15adf1550d3000c"
+sig = "https://awscli.amazonaws.com/awscli-2.39.3.tar.gz.sig"
+key = "aws"
+file = "awscli-2.39.3.tar.gz"
+
+[[source]]
+url = "https://www.python.org/ftp/python/3.15.2/Python-3.15.2.tar.xz"
+sha256 = "8b5536d280142ecf6cdfe15d12a21ba1c65e300bbf7b28a8d0cdb849575797de"
+sigstore = "https://www.python.org/ftp/python/3.15.2/Python-3.15.2.tar.xz.sigstore"
+identity = "hugo@python.org"
+issuer = "https://github.com/login/oauth"
+file = "Python-3.15.2.tar.xz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/0c/c4/1f7c4161aa665b06ddb9c34acbe6b5ea8fc8bf72b78de474d65e6f494ca4/awscrt-0.38.0.tar.gz"
+sha256 = "4a8423c4a76390c6e5c4f386e3e367dccdcf67d6d1a0bc1c59776bb14cdc2ad9"
+file = "pypi/awscrt-0.38.0.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz"
+sha256 = "08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"
+file = "pypi/colorama-0.4.6.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/4b/89/eaa3a3587ebf8bed93e45aa79be8c2af77d50790d15b53f6dfc85b57f398/distro-1.8.0.tar.gz"
+sha256 = "02e111d1dc6a50abb8eed6bf31c3e48ed8b0830d1ea2a1b78c61765c2513fdd8"
+file = "pypi/distro-1.8.0.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/6b/5c/330ea8d383eb2ce973df34d1239b3b21e91cd8c865d21ff82902d952f91f/docutils-0.19.tar.gz"
+sha256 = "33995a6753c30b7f577febfc2c50411fec6aac7f7ffeb7c4cfe5991072dcf9e6"
+file = "pypi/docutils-0.19.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/00/2a/e867e8531cf3e36b41201936b7fa7ba7b5702dbef42922193f05c8976cd6/jmespath-1.0.1.tar.gz"
+sha256 = "90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe"
+file = "pypi/jmespath-1.0.1.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/bb/6e/9d084c929dfe9e3bfe0c6a47e31f78a25c54627d64a66e884a8bf5474f1c/prompt_toolkit-3.0.51.tar.gz"
+sha256 = "931a162e3b27fc90c86f1b48bb1fb2c528c2761475e57c9c06de13311c7b54ed"
+file = "pypi/prompt_toolkit-3.0.51.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/d9/77/bd458a2e387e98f71de86dcc2ca2cab64489736004c80bc12b70da8b5488/python-dateutil-2.9.0.tar.gz"
+sha256 = "78e73e19c63f5b20ffa567001531680d939dc042bf7850431877645523c66709"
+file = "pypi/python-dateutil-2.9.0.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/c7/3b/ebda527b56beb90cb7652cb1c7e4f91f48649fbcd8d2eb2fb6e77cd3329b/ruamel_yaml-0.19.1.tar.gz"
+sha256 = "53eb66cd27849eff968ebf8f0bf61f46cdac2da1d1f3576dd4ccee9b25c31993"
+file = "pypi/ruamel_yaml-0.19.1.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz"
+sha256 = "ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"
+file = "pypi/six-1.17.0.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/e3/05/b17359e1cefb4f909b5e40b1b90a496d987258916dbbf88e842c729f510e/urllib3-2.8.0.tar.gz"
+sha256 = "63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63"
+file = "pypi/urllib3-2.8.0.tar.gz"
+
+[[source]]
+url = "https://files.pythonhosted.org/packages/24/30/6b0809f4510673dc723187aeaf24c7f5459922d01e2f794277a3dfb90345/wcwidth-0.2.14.tar.gz"
+sha256 = "4d478375d31bc5395a3c55c40ccdf3354688364cd61c4f6adacaa9215d0b3605"
+file = "pypi/wcwidth-0.2.14.tar.gz"
+
+[[source]]
+url = "https://github.com/aws/session-manager-plugin/archive/refs/tags/1.2.896.0.tar.gz"
+sha256 = "c44bcbd15736a63d513cc1c1d967f67641bd43bd9bc59f22f4c0e4af222b2afa"
+file = "session-manager-plugin-1.2.896.0.tar.gz"
+
+# Modules, from pkgs/go-modules.sh:
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/@v/v1.41.3.mod"
+sha256 = "fe0d0245a7d2ad8d8b3b5f2653e9b938cb12799a2a533f7fda2effa7a56c3b58"
+file = "gomod/github.com/aws/aws-sdk-go-v2/@v/v1.41.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/@v/v1.41.3.zip"
+sha256 = "a7549978a6b8b99de790bf1b55040c7f6b00879b5ed4858b8e48c1e20178a7db"
+file = "gomod/github.com/aws/aws-sdk-go-v2/@v/v1.41.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/config/@v/v1.32.11.mod"
+sha256 = "ffe6ed240b1a2c4e5ee3f189ebe42281a1c22ac3c6c2ebb5f319f3e159cdbe69"
+file = "gomod/github.com/aws/aws-sdk-go-v2/config/@v/v1.32.11.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/config/@v/v1.32.11.zip"
+sha256 = "65785841621afb5d789b88bca98ce6550ed72da42dacf754f35ee32fbf5c1c16"
+file = "gomod/github.com/aws/aws-sdk-go-v2/config/@v/v1.32.11.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/credentials/@v/v1.19.11.mod"
+sha256 = "4ce18b1a53e712abba6f6d61bb53ac53fd33364dff75eb8ec958b981b858378a"
+file = "gomod/github.com/aws/aws-sdk-go-v2/credentials/@v/v1.19.11.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/credentials/@v/v1.19.11.zip"
+sha256 = "ba57b0e6703be11b90c52dd0de4a371e85f83893330303eb343761181e4033e6"
+file = "gomod/github.com/aws/aws-sdk-go-v2/credentials/@v/v1.19.11.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/feature/ec2/imds/@v/v1.18.19.mod"
+sha256 = "bf62e955a29f1c4401a01c0fd5dc6200543d38a73b66ac7b171571cafa2c9a9c"
+file = "gomod/github.com/aws/aws-sdk-go-v2/feature/ec2/imds/@v/v1.18.19.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/feature/ec2/imds/@v/v1.18.19.zip"
+sha256 = "c2271d5f6aba574d14d42bba38e21ef31b421c595105cea5fce2dde8fbe96f6c"
+file = "gomod/github.com/aws/aws-sdk-go-v2/feature/ec2/imds/@v/v1.18.19.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/internal/configsources/@v/v1.4.19.mod"
+sha256 = "4dfca6bf60b9b6046060d29f8cdcdb813f152a267ea6c3893600a892195a4305"
+file = "gomod/github.com/aws/aws-sdk-go-v2/internal/configsources/@v/v1.4.19.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/internal/configsources/@v/v1.4.19.zip"
+sha256 = "4a688ce06cbd30deec2b57c446febcc1ef8ace18010e0093178d569e04771331"
+file = "gomod/github.com/aws/aws-sdk-go-v2/internal/configsources/@v/v1.4.19.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2/@v/v2.7.19.mod"
+sha256 = "2900cf736ea12beea768502e344915f6fb0a47281e1d831391c4dc26d73dd207"
+file = "gomod/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2/@v/v2.7.19.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2/@v/v2.7.19.zip"
+sha256 = "27f854d9cb4d6ed103f1b4a5404c7e9af2364c967818967aaa2aef17b2d68593"
+file = "gomod/github.com/aws/aws-sdk-go-v2/internal/endpoints/v2/@v/v2.7.19.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/internal/ini/@v/v1.8.5.mod"
+sha256 = "ea1d0d041f5549e7502d93a43e96ed9e24feeb50a49477729ba95402153ff69c"
+file = "gomod/github.com/aws/aws-sdk-go-v2/internal/ini/@v/v1.8.5.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/internal/ini/@v/v1.8.5.zip"
+sha256 = "3e0467b6c9a58d0961bf44e46c85306ed6b2a122eabf88655f0f4a413577f5f0"
+file = "gomod/github.com/aws/aws-sdk-go-v2/internal/ini/@v/v1.8.5.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding/@v/v1.13.6.mod"
+sha256 = "47454b2b3644f363fcaec95fc1fd8949ca0663e7e6825b0f1bd2d03014aa8d5e"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding/@v/v1.13.6.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding/@v/v1.13.6.zip"
+sha256 = "bfa61253ab229dee321be25cfb6fd272d1cfa9231fd86c809602e2cefa72270c"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding/@v/v1.13.6.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url/@v/v1.13.19.mod"
+sha256 = "466fb18372b484b93862d21f98af703381d1d314a03e060526242f490705c4f4"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url/@v/v1.13.19.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url/@v/v1.13.19.zip"
+sha256 = "b1225de463987314208477abcc947b40ea8f30aac490789fb2510662a9a8f9c7"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/internal/presigned-url/@v/v1.13.19.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/kms/@v/v1.50.2.mod"
+sha256 = "6f73856a069a7fc6ee60b39a9cc049c73176262f754a2f8602cefd0e6bde16f1"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/kms/@v/v1.50.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/kms/@v/v1.50.2.zip"
+sha256 = "c97b14a840a018b43dd03d67590914169f9699e6e720c2dd9585f5734565c988"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/kms/@v/v1.50.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/signin/@v/v1.0.7.mod"
+sha256 = "da5809b20104a36d273632f76dc6309c21c704983b6f407ee97f5434404a2808"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/signin/@v/v1.0.7.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/signin/@v/v1.0.7.zip"
+sha256 = "08d66c81817d63c383ba950f9b521a2a4488344ed7d4d754d4803feedcd973b8"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/signin/@v/v1.0.7.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/ssm/@v/v1.68.2.mod"
+sha256 = "b00f70facd957777d62b7cd028895e6f90d7383fa13f1abe96a3cce669699d96"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/ssm/@v/v1.68.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/ssm/@v/v1.68.2.zip"
+sha256 = "b2fff750e135863ce509fd8a31848593c1d2923c667ad5c8791fb9cee2e4c0c6"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/ssm/@v/v1.68.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/sso/@v/v1.30.12.mod"
+sha256 = "08ee4ab3a2a93c00161c5e0db4982c8ac8373b04140b0a6b82cc6f51e482348a"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/sso/@v/v1.30.12.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/sso/@v/v1.30.12.zip"
+sha256 = "c5e64c9b8875a28155ca7c8c776bd28f62c116a70b88604d6c1e77282e93457b"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/sso/@v/v1.30.12.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/ssooidc/@v/v1.35.16.mod"
+sha256 = "35f000af72d7214b5db81d997b3074ea80fa0e9f9919f693373a668b32c5cda5"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/ssooidc/@v/v1.35.16.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/ssooidc/@v/v1.35.16.zip"
+sha256 = "b0a040edc257b057325897ae7664ae0d367168035e0a627d60451ab81a39e53f"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/ssooidc/@v/v1.35.16.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/sts/@v/v1.41.8.mod"
+sha256 = "ab97ca6caaa1a0cb6754ea3f444d2f32c3deb8d8ad3a1c720da1021ed7077d88"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/sts/@v/v1.41.8.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/aws-sdk-go-v2/service/sts/@v/v1.41.8.zip"
+sha256 = "518fd5cc00b6c1b96b817c535df4c48bac511060511589b1b0da6f520ea12cc0"
+file = "gomod/github.com/aws/aws-sdk-go-v2/service/sts/@v/v1.41.8.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/smithy-go/@v/v1.24.2.mod"
+sha256 = "77bb1f126ec520dade5c97d14a05deb9696fc29a853520b943aecd3849219e81"
+file = "gomod/github.com/aws/smithy-go/@v/v1.24.2.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/aws/smithy-go/@v/v1.24.2.zip"
+sha256 = "24861720feaa5169b5d3d2e1911386255b991ac6dca8972205f0d824edb8a51c"
+file = "gomod/github.com/aws/smithy-go/@v/v1.24.2.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cihub/seelog/@v/v0.0.0-20170130134532-f561c5e57575.mod"
+sha256 = "96cda2cc26b1ca501fcd4e6e3022a159e65bf3e0b9c92724ea7f5422b1daf593"
+file = "gomod/github.com/cihub/seelog/@v/v0.0.0-20170130134532-f561c5e57575.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/cihub/seelog/@v/v0.0.0-20170130134532-f561c5e57575.zip"
+sha256 = "fc279208e6094fb22c8ea651c6e9794844069693c9b916c225276c54f7e76bfe"
+file = "gomod/github.com/cihub/seelog/@v/v0.0.0-20170130134532-f561c5e57575.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/fsnotify/fsnotify/@v/v1.4.7.mod"
+sha256 = "ea2d0a6a0e84f5d39d0c05711a55dafb1d56a974a1a9187fb24e8657196c5454"
+file = "gomod/github.com/fsnotify/fsnotify/@v/v1.4.7.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/fsnotify/fsnotify/@v/v1.4.7.zip"
+sha256 = "1d09ad8f3dc41cb6e0288023b47272c1c9393ca411e48f4b5009bca6662dc3ad"
+file = "gomod/github.com/fsnotify/fsnotify/@v/v1.4.7.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gorilla/websocket/@v/v1.5.3.mod"
+sha256 = "09dc8a9227a54c1069ea065d610a5f2ca195f1f5fba6e7dbb2d7eb0fd6e01df6"
+file = "gomod/github.com/gorilla/websocket/@v/v1.5.3.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/gorilla/websocket/@v/v1.5.3.zip"
+sha256 = "dbbd31dd0f08548c5dc43e4c2f12bbba66abff5252b224b1cd06afbb72783a76"
+file = "gomod/github.com/gorilla/websocket/@v/v1.5.3.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/twinj/uuid/@v/v1.0.0.mod"
+sha256 = "b484690ff8fb5a8b3ece47336d7c86f0f36c4ef3f586f0301fdc363246a0cb87"
+file = "gomod/github.com/twinj/uuid/@v/v1.0.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/twinj/uuid/@v/v1.0.0.zip"
+sha256 = "842c314d6d2ef9cb95b0f3f1b4cf998715680e836cfab8c2a7f75e351765a345"
+file = "gomod/github.com/twinj/uuid/@v/v1.0.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/xtaci/smux/@v/v1.5.16.mod"
+sha256 = "036356671f2c247777819e579043cae6424fc6fde99dd0b5c93afd33299f3a32"
+file = "gomod/github.com/xtaci/smux/@v/v1.5.16.mod"
+
+[[source]]
+url = "https://proxy.golang.org/github.com/xtaci/smux/@v/v1.5.16.zip"
+sha256 = "9576a856d054d31f53140a6ce1db6995951ef3ab70009b6a84a428e8fe22b011"
+file = "gomod/github.com/xtaci/smux/@v/v1.5.16.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sync/@v/v0.5.0.mod"
+sha256 = "700e5db00dd26aa19a17dce5fc552436d60f68c5606c85b821f24c3d6072a151"
+file = "gomod/golang.org/x/sync/@v/v0.5.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sync/@v/v0.5.0.zip"
+sha256 = "9e094c65b153881437ce230b2d2492719d063c8924009631c9025add13056922"
+file = "gomod/golang.org/x/sync/@v/v0.5.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sys/@v/v0.44.0.mod"
+sha256 = "57f4393ea18d5446a12363b35c23a616d843fa1669c7121a70a2bc3a9677d665"
+file = "gomod/golang.org/x/sys/@v/v0.44.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/sys/@v/v0.44.0.zip"
+sha256 = "f1fa1052808e6bd6eb9c5372c053b2370a582532fac5d6a4600e7a6fab190ff3"
+file = "gomod/golang.org/x/sys/@v/v0.44.0.zip"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/term/@v/v0.15.0.mod"
+sha256 = "4b86976f8c4efb87bbcbec283cbfb395a28177b4b8b83420b49d95728eb7a2f8"
+file = "gomod/golang.org/x/term/@v/v0.15.0.mod"
+
+[[source]]
+url = "https://proxy.golang.org/golang.org/x/term/@v/v0.15.0.zip"
+sha256 = "cb7fff77d2925dc0e4f5ac0ced38d10683824de81aae3728c633a9f7382d2052"
+file = "gomod/golang.org/x/term/@v/v0.15.0.zip"

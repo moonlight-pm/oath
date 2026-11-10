@@ -806,7 +806,7 @@ const NO_VENDOR: &[&str] = &["", "na", "unknown", "unspecified", "notavailable"]
 /// Product names too common to trust without the vendor.
 const GENERIC: &[&str] = &[
     "bc", "make", "less", "tar", "sed", "grep", "flex", "patch", "m4", "gzip", "git", "glib",
-    "mesa", "node", "rust", "python", "perl", "steam", "linux", "cli", "codex", "chrome",
+    "mesa", "node", "rust", "python", "perl", "steam", "linux", "cli", "codex", "chrome", "aws",
 ];
 
 struct Matcher {

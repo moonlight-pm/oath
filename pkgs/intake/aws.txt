@@ -1,0 +1,39 @@
+# Written by `cargo make pkgs --fetch` (R57): when each package was published.
+pin 2ca455f2cdc0a246de97479d4b2299c0429f43d175ac1bde7331c550580a3562
+checked 2026-11-10
+source 2026-10-30T18:05:04Z
+module go github.com/aws/aws-sdk-go-v2 v1.41.3 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/config v1.32.11 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/credentials v1.19.11 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.19 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.19 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.19 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/internal/ini v1.8.5 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.6 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.19 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/kms v1.50.2 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/signin v1.0.7 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/ssm v1.68.2 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/sso v1.30.12 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.16 2026-03-03T21:26:28Z new
+module go github.com/aws/aws-sdk-go-v2/service/sts v1.41.8 2026-03-03T21:26:28Z new
+module go github.com/aws/smithy-go v1.24.2 2026-02-27T22:13:56Z new
+module go github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 2017-01-30T13:45:32Z new
+module go github.com/fsnotify/fsnotify v1.4.7 2018-01-10T05:33:47Z new
+module go github.com/gorilla/websocket v1.5.3 2024-06-14T03:18:03Z new
+module go github.com/twinj/uuid v1.0.0 2017-05-27T12:27:27Z new
+module go github.com/xtaci/smux v1.5.16 2021-09-22T13:38:58Z new
+module go golang.org/x/sync v0.5.0 2023-10-11T14:04:17Z new
+module go golang.org/x/sys v0.44.0 2026-04-23T15:37:02Z new
+module go golang.org/x/term v0.15.0 2023-11-27T15:36:23Z new
+module pypi awscrt 0.38.0 2026-10-16T19:13:04.164116Z new
+module pypi colorama 0.4.6 2022-10-25T02:36:20.889702Z new
+module pypi distro 1.8.0 2022-10-10T15:30:26.903480Z new
+module pypi docutils 0.19 2022-07-05T20:17:26.388513Z new
+module pypi jmespath 1.0.1 2022-06-17T18:00:10.251235Z new
+module pypi prompt-toolkit 3.0.51 2025-04-15T09:18:44.753096Z new
+module pypi python-dateutil 2.9.0 2024-03-01T03:52:51.479771Z new
+module pypi ruamel-yaml 0.19.1 2026-01-02T16:50:29.201949Z new
+module pypi six 1.17.0 2024-12-04T17:35:26.475808Z new
+module pypi urllib3 2.8.0 2026-09-15T19:29:34.577402Z new
+module pypi wcwidth 0.2.14 2025-09-22T16:29:51.641375Z new

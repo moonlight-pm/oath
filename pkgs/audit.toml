@@ -34,6 +34,16 @@ repo = "https://gitlab.gnome.org/GNOME/at-spi2-core"
 tag = "{version}"
 dev_odd = true
 
+# By name, with no CPE: AWS's CVE records say vendor "AWS", product "AWS CLI",
+# and a CPE's vendor would hold them to "amazon". No `osv` either: OSV's PyPI
+# package `awscli` is v1, and a v2 version there finds nothing. Its Python
+# and Go libraries go to OSV by the purls in components.json. `names` because the
+# package is called aws, which says nothing of either program.
+[aws]
+names = ["aws-cli", "session-manager-plugin", "aws-session-manager-plugin"]
+repo = "https://github.com/aws/aws-cli"
+tag = "{version}"
+
 [bash]
 cpe = "cpe:2.3:a:gnu:bash"
 compare_repo = "https://git.savannah.gnu.org/git/bash.git"
@@ -809,6 +819,12 @@ compare_tag = "{version}"
 cpe = "cpe:2.3:a:mpfr:gnu_mpfr"
 compare_repo = "https://gitlab.inria.fr/mpfr/mpfr"
 compare_tag = "{version}"
+
+[mysql]
+cpe = "cpe:2.3:a:oracle:mysql"
+repo = "https://github.com/mysql/mysql-server"
+tag = "mysql-{version}"
+differs_because = "packaging/rpm-sles/mysql.spec.in: the tag adds SLES 16 Provides lines for the mysql and mysqlrouter users, in an RPM spec this build does not read (read 2026-11-09)"
 
 [ncurses]
 cpe = "cpe:2.3:a:gnu:ncurses"

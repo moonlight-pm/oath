@@ -98,6 +98,10 @@ pub fn modules(pkg: &PkgToml) -> Vec<Module> {
     let go = regex::Regex::new(r"^https://proxy\.golang\.org/(.+)/@v/(.+)\.zip$").expect("regex");
     let npm = regex::Regex::new(r"^https://registry\.npmjs\.org/((?:@[^/]+/)?[^/]+)/-/.+\.tgz$")
         .expect("regex");
+    let pypi =
+        regex::Regex::new(r"^https://files\.pythonhosted\.org/packages/.+/([^/]+)-([^-/]+)\.tar\.gz$")
+            .expect("regex");
+    let separators = regex::Regex::new(r"[-_.]+").expect("regex");
     let mut out = BTreeSet::new();
     for s in &pkg.source {
         if let Some(c) = go.captures(&s.url) {
@@ -109,6 +113,10 @@ pub fn modules(pkg: &PkgToml) -> Vec<Module> {
             if let Some(v) = v.and_then(|v| v.strip_suffix(".tgz")) {
                 out.insert(Module::new("npm", &c[1], v));
             }
+        } else if let Some(c) = pypi.captures(&s.url) {
+            // PyPI's own form of a name: an sdist's file may spell it otherwise.
+            let name = separators.replace_all(&c[1].to_lowercase(), "-").into_owned();
+            out.insert(Module::new("pypi", &name, &c[2]));
         }
     }
     if let Some((name, version)) = pkg.purl.strip_prefix("pkg:pypi/").and_then(|p| p.split_once('@'))
@@ -714,6 +722,17 @@ mod tests {
                 .collect(),
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn a_python_sdist_among_the_sources_is_a_module() {
+        let pkg: PkgToml = toml::from_str(
+            "purl = \"pkg:github/aws/aws-cli@2.39.3\"\n[[source]]\nurl = \
+             \"https://files.pythonhosted.org/packages/aa/bb/cc/ruamel.yaml-0.19.1.tar.gz\"\nsha256 \
+             = \"0\"\n",
+        )
+        .unwrap();
+        assert_eq!(modules(&pkg), [Module::new("pypi", "ruamel-yaml", "0.19.1")]);
     }
 
     #[test]

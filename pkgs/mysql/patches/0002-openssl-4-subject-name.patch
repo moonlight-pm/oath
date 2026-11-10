@@ -1,0 +1,32 @@
+OpenSSL 4 returns a certificate's subject const, so a self-signed certificate's
+name is built apart and set, as its documentation says.
+
+--- a/sql/auth/sql_authentication.cc
++++ b/sql/auth/sql_authentication.cc
+@@ -5365,13 +5365,14 @@
+     if (!X509_set_pubkey(x509, pkey)) goto err;
+ 
+     /** Set CN value in subject */
+-    name = X509_get_subject_name(x509);
++    name = X509_NAME_new();
+     if (!name) goto err;
+ 
+     if (!X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
+                                     (const unsigned char *)cn.c_str(), -1, -1,
+                                     0))
+       goto err;
++    if (!X509_set_subject_name(x509, name)) goto err;
+ 
+     /** Set Issuer */
+     if (!X509_set_issuer_name(
+@@ -5394,8 +5395,10 @@
+     /** Sign using SHA256 */
+     if (!X509_sign(x509, self_sign ? pkey : ca_pkey, EVP_sha256())) goto err;
+ 
++    X509_NAME_free(name);
+     return x509;
+   err:
++    X509_NAME_free(name);
+     if (x509) X509_free(x509);
+     return nullptr;
+   }

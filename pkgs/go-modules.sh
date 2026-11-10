@@ -37,18 +37,27 @@ export PATH="$store/go/$(product go)/bin:$PATH"
 export SSL_CERT_FILE="${SSL_CERT_FILE:-$store/certs/$(product certs)/ssl/cert.pem}"
 marker='# Modules, from pkgs/go-modules.sh:'
 grep -qx "$marker" "$toml"
-# The release is the one source before the marker.
+# The release is the source just before the marker.
 head=$(awk -v m="$marker" '{ print } $0 == m { exit }' "$toml")
-file=$(printf '%s\n' "$head" | sed -n 's/^file = "\(.*\)"$/\1/p')
-[ -n "$file" ] || file=$(printf '%s\n' "$head" | sed -n 's/^url = ".*\/\([^/"]*\)"$/\1/p')
+file=$(printf '%s\n' "$head" | sed -n 's/^file = "\(.*\)"$/\1/p' | tail -n 1)
+[ -n "$file" ] || file=$(printf '%s\n' "$head" | sed -n 's/^url = ".*\/\([^/"]*\)"$/\1/p' | tail -n 1)
 
 tmp=$(mktemp -d)
 trap 'chmod -R u+w "$tmp"; rm -rf "$tmp"' EXIT
 mkdir "$tmp/src"
 tar -xf "$repo/build/fetch/$file" -C "$tmp/src"
+# A release with no go.mod of its own builds from the one kept here.
+if [ -z "$(find "$tmp/src" -maxdepth 2 -name go.mod)" ]; then
+	for f in go.mod go.sum; do
+		[ ! -f "$repo/pkgs/$name/$f" ] || cp "$repo/pkgs/$name/$f" "$tmp/src"/*/
+	done
+fi
 cd "$tmp/src/$(cd "$tmp/src" && dirname "$(find . -maxdepth 2 -name go.mod | sort | head -n 1)")"
-# The package's patches can change what the build reads.
-for p in "$repo/pkgs/$name"/patches/*.patch; do
+# The package's patches can change what the build reads. One with more than a
+# Go program in it keeps that program's in patches/go.
+patches=$repo/pkgs/$name/patches
+[ ! -d "$patches/go" ] || patches=$patches/go
+for p in "$patches"/*.patch; do
 	[ ! -f "$p" ] || git apply -p1 "$p"
 done
 # A replace by version comes through the proxy and go.sum like any other module.

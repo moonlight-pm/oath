@@ -242,16 +242,23 @@ gh --version                             # gh version 2.103.3 (2026-10-26)
 cf --version                             # 1.0.0-beta.26
 ```
 
-### Servers: Blocky, restic, route, cell, PostgreSQL (R49)
+### Servers: Blocky, restic, route, cell, PostgreSQL, MySQL (R49)
 
 These are built from source here and are in no profile:
 `pkg:blocky`, `pkg:cloudflared`, `pkg:restic`, `pkg:rsync`, `pkg:route`, `pkg:cell` (with `pkg:crun`,
-`pkg:passt`), `pkg:postgresql` and `pkg:postgis`
+`pkg:passt`), `pkg:mysql`, `pkg:postgresql` and `pkg:postgis`
 (with `pkg:geos`, `pkg:proj`, `pkg:libxml2`, `pkg:json-c`, `pkg:icu`). A machine
 takes them from the origin as above, with each need the plan names, once a
 release has published them. `pkg:go` is what builds the Go ones; a machine needs
 it only to build. `cloudflared` does not update itself: `cloudflared update` says so,
 and a newer one is a new pin in `pkgs/cloudflared`.
+
+`pkg:mysql` is MySQL 9.7, its server and clients in one package (R82). Nothing runs until a
+`svc` starts `mysqld` with a `--datadir`. `LOAD DATA` and `INTO OUTFILE` are off until
+`secure_file_priv` names a directory. Not built: Group Replication, NDB, Router, and LDAP,
+Kerberos, FIDO, OCI and OpenID logins. A 9.x server has no `mysql_native_password`, so an
+account from 8.x moves to `caching_sha2_password`; the client keeps that plugin, to log in
+to older servers.
 
 Go programs read their CA roots from `pkg:certs` (R50), through Go's own
 `crypto/x509`, unless `SSL_CERT_FILE` names others:
@@ -370,6 +377,21 @@ sudo oath apply host:local
 An empty list fetches nothing without a `url`. A failed origin is
 skipped; apply fails only when none serves the pin, and says what each
 answered.
+
+### AWS CLI (R82)
+
+`pkg:aws` is AWS CLI v2 on `pkg:python`, with its completer and AWS's
+`session-manager-plugin`, built from AWS's source and in no profile. It takes roots from
+`pkg:certs`. API calls go through `pkg:openssl`; S3's CRT transfers through the AWS-LC inside
+`awscrt`. Its libraries stay in `libexec/aws`, out of `/lib` and Python's own
+site-packages. `aws help` is AWS's plain text, as Oath has no groff, and `aws update`
+refuses: a new version is a new pin.
+
+```
+sudo oath add aws
+aws login --remote                        # a sign-in URL for any browser
+aws ssm start-session --target i-0123…    # runs session-manager-plugin
+```
 
 ### Minecraft: Prism Launcher (R74)
 
