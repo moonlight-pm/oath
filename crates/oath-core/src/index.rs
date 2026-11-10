@@ -35,12 +35,14 @@ Do **not** edit `/etc` or random files. Use `oath`.
     oath apply [id...]   check, snapshot, then converge
     oath keep            keep an apply on probation (from a new SSH session)
     oath undo            put back the spec the last apply changed, and converge
-    oath verify          hash linked package trees again against their pins
+    oath verify          hash present package and cell trees again against
+                         their pins
     oath audit [pkg:x]   the daily security audit's findings for what is here
     oath reap            what is on disk that no package prescribes;
                          `sudo oath reap --confirm` removes it (each boot does)
-    oath update          what the newest output for this machine would change;
-                         `sudo oath update --confirm [--reboot]` moves to it
+    oath update          what the newest output for this machine, and each
+                         package's newest signed head (R81), would change;
+                         `sudo oath update --confirm [--reboot]` moves to them
     oath log             apply log
     oath logs [id]       output of svc:<name>, net:net0, a plan's last build
                          (plan:<name>), or PID 1 (no id)
@@ -65,9 +67,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
 ## Safety
 
 `oath apply` checks everything first (a refusal changes nothing), then
-takes a filesystem snapshot. Halt, reboot, boot generation changes
-(other than `oath undo`) and changes that can cut off SSH need
-`--confirm`. Do **not** pass `--confirm` unless the owner asked for that
+takes a filesystem snapshot. Halt, reboot and changes that can cut off
+SSH need `--confirm`. Do **not** pass `--confirm` unless the owner asked for that
 class of change. A change that can cut off SSH then goes on probation:
 PID 1 undoes it after 180 s (`--probation <secs>`), or at the next
 boot, unless `sudo oath keep` runs in an SSH session opened after the
@@ -83,7 +84,7 @@ screen; SSH (keys only) and `sudo` never do. The catalog lives at `/oath`. `/hom
 `home` account's directory. There is no `/usr`; helpers are
 `/lib/oath`.
 
-`oath new` makes a `svc` or `pkg`; `oath rm` removes one. Both, like
+`oath new` makes a `svc`, `pkg` or `cell`; `oath rm` removes one. Both, like
 `set`, only change the spec: nothing happens until `oath apply`, and
 `oath undo` takes back the last apply. Changes that can cut off SSH
 (sshd, `ssh:local` keys, `net:net0`, a new `pkg:openssh` hash) need
@@ -93,8 +94,10 @@ program comes from.
 Updates come from the origins (`host:local.origins`): a build host
 publishes each output it checked, signed, and `oath update` takes the
 newest for `host:local.profile` when a key in `host:local.publishers`
-signed it. It moves every package in one generation, then the kernel,
-initrd and PID 1 for the next boot; the boot before stays in the menu.
+signed it. It moves every package in one generation and writes the
+kernel and initrd for the next boot; the boot before stays in the menu.
+PID 1 re-executes into the output's at once, every service running
+(R73), unless `--reboot` boots it.
 A package published on its own has a head on the origins
 (`pkg/<name>.json`, R72): `oath update` moves each package to the newest
 head a key may sign for that name (a `names="…"` list before a key scopes
@@ -164,7 +167,7 @@ fn probation_block(cat: &Catalog) -> String {
     )
 }
 
-/// Packages whose store tree no longer hashes to its pin.
+/// Packages and cells whose store tree no longer hashes to its pin.
 fn damage_block(cat: &Catalog) -> String {
     let mut bad = Vec::new();
     let cells = cat.ls(Some("cell")).unwrap_or_default();
@@ -180,7 +183,7 @@ fn damage_block(cat: &Catalog) -> String {
     }
     format!(
         "\n## Store damage\n\n\
-         These package trees changed on disk since they were stored. Do not trust \
+         These package and cell trees changed on disk since they were stored. Do not trust \
          what they run. Fetch them again (`url`) or reinstall; `oath verify` checks \
          again.\n\n{}",
         bad.concat()

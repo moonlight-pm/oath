@@ -876,9 +876,14 @@ fn tools() -> Vec<Tool> {
         ),
         read(
             "verify",
-            "Hash linked package trees again against the hash each is linked as. Changes only \
-             status; a damaged tree is an error and shows in the INDEX.",
-            vec![p("ids", Ty::Ids, false, "`pkg:<name>` ids; all packages when left out.")],
+            "Hash the tree of each present package and cell again against the hash it is live \
+             at. Changes only status; a damaged tree is an error and shows in the INDEX.",
+            vec![p(
+                "ids",
+                Ty::Ids,
+                false,
+                "`pkg:<name>` and `cell:<name>` ids; every package and cell when left out.",
+            )],
         ),
         read(
             "audit",
@@ -948,9 +953,8 @@ fn tools() -> Vec<Tool> {
     t.push(write(
         "apply",
         "Check, snapshot, then converge all drift (or only `ids`). If a check fails nothing \
-         changes. Halt, reboot, boot generation changes and changes that can cut off SSH \
-         (`svc:sshd`, `ssh:local` keys, `net:net0`, a new `pkg:openssh` hash) need \
-         `confirm: true`: do not pass it unless \
+         changes. Halt, reboot and changes that can cut off SSH (`svc:sshd`, `ssh:local` keys, \
+         `net:net0`, a new `pkg:openssh` hash) need `confirm: true`: do not pass it unless \
          the owner asked for that class of change. A change that can cut off SSH then goes on \
          probation: PID 1 undoes it after `probation_secs` unless `keep` runs from a connection \
          opened after the apply. A reboot or halt ends this connection; the server exits."
@@ -1006,17 +1010,19 @@ fn tools() -> Vec<Tool> {
     ));
     t.push(write(
         "update",
-        "Without `confirm`: what the newest output published for this machine's profile \
-         (`host:local.profile`, signed by a key in `host:local.publishers`) would move. With \
-         `confirm: true`: move to it. Every pack is fetched first, so a failed fetch changes \
-         nothing; then the packages move in one generation, the image's own files and the ESP \
-         are written, and the boot it replaced stays in the firmware menu. Without `reboot`, \
-         PID 1 re-executes into the output's binary first, every service running (R73); its \
-         kernel, and what PID 1 does only at boot, run after a reboot (`reboot: true`, which \
-         ends this connection). On a machine \
-         still running dropbear, a `confirm` after that reboot moves sshd to OpenSSH on \
-         probation: `keep` from a new connection. Do not pass `confirm` unless the owner \
-         asked for an update."
+        "Without `confirm`: what would move. That is this machine to the newest output \
+         published for its profile (`host:local.profile`; none when it is empty), and each \
+         package to its newest head (R72, R81), each signed by a key in \
+         `host:local.publishers` that may sign it. A head wins over the output's pin of its \
+         package, and a package never goes back to a head older than the one it took. With \
+         `confirm: true`: move. Every pack is fetched first, so a failed fetch changes \
+         nothing; then the packages move in one generation. A new output also writes the \
+         image's own files and the ESP, and the boot it replaced stays in the firmware menu. \
+         Without `reboot`, PID 1 re-executes into the output's binary first, every service \
+         running (R73); its kernel, and what PID 1 does only at boot, run after a reboot \
+         (`reboot: true`, which ends this connection). On a machine still running dropbear, \
+         a `confirm` after that reboot moves sshd to OpenSSH on probation: `keep` from a new \
+         connection. Do not pass `confirm` unless the owner asked for an update."
             .into(),
         vec![
             p("confirm", Ty::Bool, false, "Only when the owner asked for this update."),
@@ -1026,9 +1032,10 @@ fn tools() -> Vec<Tool> {
                 "keep",
                 Ty::Ids,
                 false,
-                "Packages (pkg:NAME) that keep this machine's pin: an overlay, which the update \
-                 otherwise replaces with the release's (the preview names each). Only when the \
-                 owner asked to keep it.",
+                "Packages (pkg:NAME) that keep this machine's pin: neither a head nor the \
+                 release moves them, and an overlay, which the update otherwise replaces, stays \
+                 (the preview names each). A service (svc:NAME) the release no longer has stays \
+                 too. Only when the owner asked to keep it.",
             ),
             p(
                 "record",
@@ -1082,7 +1089,8 @@ fn tools() -> Vec<Tool> {
                 "no_pkg",
                 Ty::Bool,
                 false,
-                "Make no `pkg:<name>` object: the product is only a build input to other plans.",
+                "Make no object for the product (`pkg:<name>`, or `cell:<name>` for a cell's \
+                 plan): it is only a build input to other plans.",
             ),
         ],
         false,
