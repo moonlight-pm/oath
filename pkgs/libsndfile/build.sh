@@ -4,8 +4,7 @@
 # patches/: fixes from upstream's master, which no release has yet: the
 # IMA ADPCM frame-count overflow (3d63704, CVE-2026-37555 by its
 # description), MAT4 channel counts (CVE-2026-88372) and WAV cue names
-# (CVE-2026-109828), the last two ported to 1.2.2, and IRCAM's sample rate
-# (7ff854d, CVE-2025-52194).
+# (CVE-2026-109828), the last two ported to 1.2.2.
 tar -xf "$SRC/$SOURCES"
 cd "libsndfile-$VERSION"
 for p in "$FILES"/patches/*.patch; do
