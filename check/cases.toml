@@ -129,7 +129,7 @@ name = "pkg-add"
 about = "A package by name (R81): oath ls --origin lists what the origins hold, oath add takes the head a key may sign and applies it, and a package already here is left."
 steps = [
   { run = '''k=$(curl -fsS http://10.0.2.2:18765/origin/publisher.pub) && printf '{"profile": "", "origins": ["http://10.0.2.2:18765/origin"], "publishers": ["%s"]}' "$k" >/tmp/h.json && sudo oath set host:local --from-json "$(cat /tmp/h.json)" && sudo oath apply host:local && oath ls --origin canary''', expect = ["fetchme", "The check's fetch canary."] },
-  { run = "oath add fetchme", fails = true, expect = ["sudo oath add fetchme"] },
+  { run = "oath add fetchme", expect = ["would add pkg:fetchme", "signed by check@oath", "sudo oath add fetchme"] },
   { run = "sudo oath add fetchme && fetchme", expect = ["signed by check@oath", "added in generation", "fetched"] },
   { run = "oath ls --origin fetchme", expect = ["* fetchme"] },
   { run = "sudo oath add pkg:fetchme", expect = ["is here at"] },
