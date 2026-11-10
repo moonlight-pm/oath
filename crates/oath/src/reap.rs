@@ -7,6 +7,7 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use oath_core::reap::{self, Policy};
+use oath_core::update::short;
 use oath_core::{Catalog, Error, Result};
 use serde_json::json;
 
@@ -92,8 +93,12 @@ fn leftovers(root: &Path) {
     let _ = fs::remove_dir(root.join("run/update-esp"));
 }
 
+/// What holds each version that stays, then what would go.
 fn preview(r: &reap::Reap) -> Vec<String> {
     let mut out = Vec::new();
+    for v in r.versions.iter().filter(|v| !v.held.is_empty()) {
+        out.push(format!("{} {} stays: {}", v.id, short(&v.hash), v.held.join(", ")));
+    }
     let mut by_pkg: BTreeMap<&str, (usize, u64)> = BTreeMap::new();
     for v in r.going() {
         let e = by_pkg.entry(&v.id).or_default();
@@ -131,4 +136,39 @@ fn preview(r: &reap::Reap) -> Vec<String> {
         ));
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn version(id: &str, hash: &str, held: &[&str]) -> reap::Version {
+        reap::Version {
+            id: id.into(),
+            hash: hash.into(),
+            arrived: String::new(),
+            size: Some(2_000_000_000),
+            held: held.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn a_preview_says_what_holds_each_version_that_stays() {
+        let a = format!("sha256-{}", "a".repeat(64));
+        let b = format!("sha256-{}", "b".repeat(64));
+        let r = reap::Reap {
+            versions: vec![
+                version("pkg:bash", &a, &["live", "pin"]),
+                version("pkg:bash", &b, &[]),
+                version("cell:hamlet", &a, &["generation:7"]),
+            ],
+            generations_kept: vec![7],
+            ..Default::default()
+        };
+        let lines = preview(&r);
+        assert!(lines.contains(&format!("pkg:bash {} stays: live, pin", short(&a))), "{lines:?}");
+        assert!(lines.contains(&format!("cell:hamlet {} stays: generation:7", short(&a))));
+        assert!(lines.contains(&"pkg:bash: 1 versions, 2.00 GB".to_string()), "{lines:?}");
+        assert!(!lines.iter().any(|l| l.contains(short(&b))), "what goes is counted, not held");
+    }
 }
