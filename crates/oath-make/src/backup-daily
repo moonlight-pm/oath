@@ -40,7 +40,7 @@ sleep_until_four() {
 	else
 		wait=$((target - now))
 	fi
-	log "sleep ${wait}s until 04:00 Mountain ($(date))"
+	log "sleep ${wait}s until 04:00 local time ($(date))"
 	sleep "$wait"
 }
 

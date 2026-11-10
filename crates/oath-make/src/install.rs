@@ -101,7 +101,7 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
     let o = match &opts.output {
         Some(id) => output::open(out, id)?,
         None => output::pick(out, None, !(opts.qemu || opts.unchecked))
-            .context("pass --unchecked to install the latest output anyway (Joshua's call)")?,
+            .context("pass --unchecked to install the latest output anyway")?,
     };
     eprintln!("output {}", o.dir.display());
     if !opts.qemu {
@@ -109,7 +109,7 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
             eprintln!("warning: installing an image that `cargo make check` has not passed");
         } else {
             crate::check::require_checked(&o.dir)
-                .context("pass --unchecked to install anyway (Joshua's call)")?;
+                .context("pass --unchecked to install anyway")?;
         }
     }
     if let Some(p) = &opts.overlay {
@@ -255,9 +255,11 @@ options console=ttyS0,115200 console=tty0 nomodeset net.ifnames=0 random.trust_c
     let _ = sudo(&["umount", mnt.to_str().unwrap()]);
     result?;
     eprintln!(
-        "USB installer ready on {}. Plug into canto, hold Option, boot EFI.\n\
-         tty0 should get a shell; DHCP + sshd on the live NIC.\n\
-         Then: cargo make install --target root@canto --disk /dev/sda --confirm --hostname canto",
+        "USB installer ready on {}. Plug it into the machine to install and boot it from \
+         the firmware's boot menu (EFI).\n\
+         tty0 should get a shell; DHCP + sshd on the NIC with a link.\n\
+         Then: cargo make install --target root@<its address> --disk <its disk> --confirm \
+         --hostname <name>",
         opts.disk
     );
     Ok(())
