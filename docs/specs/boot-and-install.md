@@ -192,13 +192,15 @@ overlay and its recipes built (novus's NVIDIA driver).
   lock) is copied with GNU tar (numeric owners, modes, setuid, links,
   xattrs) without `home/*`, `root/*`, `tmp/*`, `oath/log/*`,
   `oath/run/*`, `oath/status/*`, `oath/ssh/*`, `oath/login/*`,
-  `oath/objects/snap/*` and `var/lib/*/*`; then generation 0 (`snap:
-  current`), an empty apply log, `@home` owned by `home` with `.ssh`
-  (PID 1 writes `authorized_keys` at boot from `ssh:local`), a new SSH
-  host key (printed), and a new INDEX. The ESP gets the running ESP's
-  `oath-efi`, kernel and initrd, its `loader.conf`, and one entry naming
-  the new root by UUID with the running entry's extra options. The
-  snapshot is deleted and everything unmounted, also on failure.
+  `oath/objects/snap/*`, `var/lib/*/*`, `oath/machine-id` and
+  `etc/machine-id` (the new system makes its own id at its first boot);
+  then generation 0 (`snap: current`), an empty apply log, `@home` owned
+  by `home` with `.ssh` (PID 1 writes `authorized_keys` at boot from
+  `ssh:local`), a new SSH host key (printed), and a new INDEX. The ESP
+  gets the running ESP's `oath-efi`, kernel and initrd, its
+  `loader.conf`, and one entry naming the new root by UUID with the
+  running entry's extra options. The snapshot is deleted and everything
+  unmounted, also on failure.
 - The firmware (efi.rs): with `/sys/firmware/efi`, `oath install`
   mounts efivarfs (read-only for the preview, read-write for the
   write; Oath leaves it unmounted otherwise, so no stray write can

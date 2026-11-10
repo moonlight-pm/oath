@@ -180,6 +180,12 @@ fn real_main() -> Result<(), String> {
     if let Err(e) = oath_core::login::Seat::reset(seat) {
         log(&format!("{}: {e}; the seat stays as it was", seat.display()));
     }
+    // Each machine has its own id, in /etc before any service starts.
+    match machine_id(Path::new(oath_core::MACHINE_ID), Path::new(ETC_MACHINE_ID)) {
+        Ok(true) => log(&format!("made this machine's id ({})", oath_core::MACHINE_ID)),
+        Ok(false) => {}
+        Err(e) => log(&format!("machine id: {e}")),
+    }
     mount_toplevel();
     mount_home();
     mount_work();
@@ -996,10 +1002,6 @@ fn unix_floor() {
     let _ = std::os::unix::fs::symlink("/proc/self/fd/0", "/dev/stdin");
     let _ = std::os::unix::fs::symlink("/proc/self/fd/1", "/dev/stdout");
     let _ = std::os::unix::fs::symlink("/proc/self/fd/2", "/dev/stderr");
-    if !Path::new("/etc/machine-id").is_file() {
-        let _ = fs::create_dir_all("/etc");
-        let _ = fs::write("/etc/machine-id", "00000000000000000000000000000001\n");
-    }
     let _ = fs::create_dir_all("/sys/fs/cgroup");
     let _ =
         mount(Some("cgroup2"), "/sys/fs/cgroup", Some("cgroup2"), MsFlags::empty(), None::<&str>);
@@ -1007,6 +1009,48 @@ fn unix_floor() {
     let _ = Command::new("/bin/ip").args(["link", "set", "lo", "up"]).status();
     let _ = Command::new("/bin/ip").args(["addr", "add", "127.0.0.1/8", "dev", "lo"]).status();
     let _ = Command::new("/bin/ip").args(["addr", "add", "::1/128", "dev", "lo"]).status();
+}
+
+const ETC_MACHINE_ID: &str = "/etc/machine-id";
+
+/// This machine's id (`oath_core::MACHINE_ID`), made at the first boot that
+/// lacks one, or has one that is not an id, and copied to `etc` when that
+/// differs. True when it was made now.
+fn machine_id(kept: &Path, etc: &Path) -> Result<bool, String> {
+    let have = fs::read_to_string(kept).ok().filter(|s| is_machine_id(s.trim()));
+    let made = have.is_none();
+    let id = match have {
+        Some(s) => s.trim().to_string(),
+        None => {
+            let id = new_machine_id().map_err(|e| format!("/dev/urandom: {e}"))?;
+            oath_core::write_atomic(kept, format!("{id}\n").as_bytes())
+                .map_err(|e| format!("{}: {e}", kept.display()))?;
+            id
+        }
+    };
+    let line = format!("{id}\n");
+    if fs::read_to_string(etc).ok().as_deref() != Some(line.as_str()) {
+        oath_core::write_atomic(etc, line.as_bytes())
+            .map_err(|e| format!("{}: {e}", etc.display()))?;
+    }
+    Ok(made)
+}
+
+/// A random 128-bit id as 32 lowercase hex digits (machine-id(5)), shaped
+/// as a version 4 UUID, as systemd makes one.
+fn new_machine_id() -> std::io::Result<String> {
+    let mut b = [0u8; 16];
+    fs::File::open("/dev/urandom")?.read_exact(&mut b)?;
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    Ok(b.iter().map(|x| format!("{x:02x}")).collect())
+}
+
+/// 32 lowercase hex digits, not all zero (machine-id(5)).
+fn is_machine_id(s: &str) -> bool {
+    s.len() == 32
+        && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        && s.bytes().any(|b| b != b'0')
 }
 
 /// `id`'s status file (on the `/oath/status` tmpfs).
@@ -1355,5 +1399,43 @@ mod tests {
         let devices = "Character devices:\n  1 mem\n195 nvidia\n238 nvidia-uvm\n\nBlock devices:\n238 nvidia-uvm\n";
         assert_eq!(char_major(devices, "nvidia-uvm"), Some(238));
         assert_eq!(char_major(devices, "nvidia-caps"), None);
+    }
+
+    #[test]
+    fn a_machine_id_is_made_once_and_written_to_etc() {
+        let d = tempfile::tempdir().unwrap();
+        let (kept, etc) = (d.path().join("oath/machine-id"), d.path().join("etc/machine-id"));
+        // The fixed id every machine had before.
+        fs::create_dir_all(etc.parent().unwrap()).unwrap();
+        fs::write(&etc, "00000000000000000000000000000001\n").unwrap();
+        assert_eq!(machine_id(&kept, &etc), Ok(true));
+        let id = fs::read_to_string(&kept).unwrap();
+        assert!(is_machine_id(id.trim()) && id.ends_with('\n'));
+        assert_eq!(fs::read_to_string(&etc).unwrap(), id);
+        // Every later boot keeps it, and writes /etc/machine-id from it again.
+        fs::remove_file(&etc).unwrap();
+        assert_eq!(machine_id(&kept, &etc), Ok(false));
+        assert_eq!(fs::read_to_string(&kept).unwrap(), id);
+        assert_eq!(fs::read_to_string(&etc).unwrap(), id);
+        // Another machine, a fresh install, makes its own.
+        let other = d.path().join("other/machine-id");
+        assert_eq!(machine_id(&other, &d.path().join("other/etc")), Ok(true));
+        assert_ne!(fs::read_to_string(&other).unwrap(), id);
+        // One that is not an id is made again.
+        fs::write(&kept, "not an id\n").unwrap();
+        assert_eq!(machine_id(&kept, &etc), Ok(true));
+        assert_ne!(fs::read_to_string(&kept).unwrap(), id);
+    }
+
+    #[test]
+    fn a_machine_id_is_32_lowercase_hex_digits() {
+        assert!(is_machine_id("0123456789abcdef0123456789abcdef"));
+        assert!(!is_machine_id("0123456789ABCDEF0123456789ABCDEF"));
+        assert!(!is_machine_id("00000000000000000000000000000000"));
+        assert!(!is_machine_id("0123456789abcdef0123456789abcde"));
+        assert!(!is_machine_id("0123456789abcdef0123456789abcdeg"));
+        let id = new_machine_id().unwrap();
+        assert!(is_machine_id(&id));
+        assert_eq!(&id[12..13], "4", "a version 4 UUID");
     }
 }

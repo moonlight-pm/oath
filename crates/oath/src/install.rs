@@ -11,13 +11,13 @@
 //!
 //! The copy is this machine's packages, store, links and catalog settings
 //! from a read-only snapshot of `@`, at generation 0: no home, no
-//! generations or logs, no SSH host key (a new one is made), no login
-//! password, no Bluetooth pairings or DHCP leases. The firmware gets one
-//! `Boot####` entry for the new ESP, first in `BootOrder`; the other
-//! systems' entries (those that load a file from a disk) are removed, and
-//! the firmware's own stay (efi.rs). Every other disk is only listed. It
-//! refuses the disk this system runs from and a disk with anything
-//! mounted.
+//! generations or logs, no SSH host key (a new one is made), no machine id
+//! (its first boot makes one), no login password, no Bluetooth pairings or
+//! DHCP leases. The firmware gets one `Boot####` entry for the new ESP,
+//! first in `BootOrder`; the other systems' entries (those that load a file
+//! from a disk) are removed, and the firmware's own stay (efi.rs). Every
+//! other disk is only listed. It refuses the disk this system runs from and
+//! a disk with anything mounted.
 
 use std::fs;
 use std::io::Write as _;
@@ -40,7 +40,9 @@ pub struct Opts {
 }
 
 /// What a fresh install leaves out of the copy, as tar patterns anchored
-/// at `@`'s top: the directory stays, its contents do not.
+/// at `@`'s top: the directory stays, its contents do not. This machine's
+/// id (`oath_core::MACHINE_ID`, and `/etc/machine-id` written from it) is
+/// left out too: the new system makes its own at its first boot.
 const LEFT_OUT: &[&str] = &[
     "./home/*",
     "./root/*",
@@ -52,6 +54,8 @@ const LEFT_OUT: &[&str] = &[
     "./oath/login/*",
     "./oath/objects/snap/*",
     "./var/lib/*/*",
+    "./oath/machine-id",
+    "./etc/machine-id",
 ];
 
 const ESP_SIZE: &str = "512MiB";
@@ -475,8 +479,8 @@ fn preview(d: &Disk, sys: &System, fw: Option<&(BootPlan, Vec<(u16, LoadOption)>
         sys.packages, sys.hostname
     );
     println!(
-        "  and not its home, generations and logs, SSH host key (it gets a new one), \
-         login password, Bluetooth pairings or DHCP leases"
+        "  and not its home, generations and logs, SSH host key and machine id (it gets \
+         new ones), login password, Bluetooth pairings or DHCP leases"
     );
     match fw {
         Some((plan, _)) => {
@@ -828,6 +832,13 @@ mod tests {
         assert_eq!(part_node("/dev/vdb", 2), "/dev/vdb2");
         assert_eq!(part_node("/dev/nvme0n1", 1), "/dev/nvme0n1p1");
         assert_eq!(part_node("/dev/mmcblk0", 2), "/dev/mmcblk0p2");
+    }
+
+    #[test]
+    fn a_fresh_install_does_not_take_this_machines_id() {
+        let kept = format!(".{}", oath_core::MACHINE_ID);
+        assert!(LEFT_OUT.contains(&kept.as_str()), "{kept}");
+        assert!(LEFT_OUT.contains(&"./etc/machine-id"));
     }
 
     #[test]

@@ -185,7 +185,9 @@ is on it.
 Not catalog objects: tmpfs on `/tmp`, `/dev/shm`, `/run`; cgroup2 on
 `/sys/fs/cgroup`; `/dev/pts` with mode 666 so `home` can open a PTY;
 `/dev/tty1` owned by `home` (0600) for `svc:screen`;
-`/dev/fd` and the stdio links; a fixed `/etc/machine-id`.
+`/dev/fd` and the stdio links; `/etc/machine-id`, written at every boot
+from this machine's own id in `/oath/machine-id` (32 random hex digits,
+made at the first boot that lacks it; `oath install` does not copy it).
 
 ## Known defects
 

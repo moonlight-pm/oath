@@ -35,6 +35,8 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     mount <root> subvol=@ at /newroot, bind initrd modules+firmware
     switch_root: move /dev /proc /sys /run into it, move it over /, chroot
     remove /oath/run/seat: every boot starts with the desk (R42)
+    /etc/machine-id from /oath/machine-id (made once, at the first boot
+      that lacks it)
     mount btrfs subvolid=0 at /oath/run/fs (generations are siblings of @)
     mount subvol=@home at /home when the root has one (R43), unless
       host:local.mounts names /home (R45: mounted with the disks below)
@@ -135,6 +137,8 @@ btrfs
   ssh/ssh_host_ed25519_key sshd's host key (+ .pub); host_ed25519 is
                            dropbear's, on machines from before R36
   login/password           home's password, Argon2id; 0600, root's (R42)
+  machine-id               this machine's id (machine-id(5)), made by PID 1 at
+                           its first boot; /etc/machine-id is written from it
   run/                     init.sock, login.sock (svc:login), seat (desk or
                            console), fs/ (btrfs top level); update/ and
                            update-esp/ while `oath update` runs

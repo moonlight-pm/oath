@@ -51,7 +51,7 @@ pub use kinds::{
 };
 pub use layout::{
     boot_subvol, boot_subvol_name, gen_subvol_name, parse_boot_subvol, parse_gen_subvol,
-    rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL,
+    rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL, MACHINE_ID,
 };
 pub use net::{
     appliance_desired as net_appliance_desired, converge as converge_net, dhcpcd_args,
