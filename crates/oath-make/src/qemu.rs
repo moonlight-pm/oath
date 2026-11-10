@@ -240,7 +240,7 @@ fn host_wants_window() -> bool {
 
 /// A gtk window when the host wants one and this QEMU has gtk. pkg:qemu
 /// is built without it, and QEMU refuses to start with a display it lacks.
-fn window(tools: &Tools) -> bool {
+fn opens_window(tools: &Tools) -> bool {
     if !host_wants_window() {
         return false;
     }
@@ -396,7 +396,7 @@ pub fn run_interactive(root: &Path, out: &Path) -> Result<i32> {
     write_meta(&run, &tools, &img, &overlay, "int")?;
     let inject = write_host_authorized(&run.join("host.authorized"));
     let (serial_log, qemu_log) = (run.join("serial.log"), run.join("qemu.log"));
-    let window = window(&tools);
+    let window = opens_window(&tools);
     let args = qemu_args(
         &tools,
         &img,
@@ -490,7 +490,7 @@ fn prepare_run(root: &Path, out: &Path, label: &str) -> Result<(Vec<String>, Pat
     write_meta(&run, &tools, &img, &overlay, label)?;
     let inject = write_host_authorized(&run.join("host.authorized"));
     let (serial_log, qemu_log) = (run.join("serial.log"), run.join("qemu.log"));
-    let window = window(&tools);
+    let window = opens_window(&tools);
     let args = qemu_args(
         &tools,
         &img,
