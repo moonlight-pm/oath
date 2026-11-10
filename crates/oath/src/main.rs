@@ -279,6 +279,10 @@ enum Cmd {
 }
 
 fn main() -> ExitCode {
+    // A reader that stops early (`oath get pkg:certs | head`) ends `oath`
+    // quietly, as it ends any Unix tool. Rust ignores SIGPIPE, which makes
+    // a print to a closed stdout panic.
+    sigpipe(libc::SIG_DFL);
     match run() {
         Ok(code) => ExitCode::from(code as u8),
         Err(e) => {
@@ -286,6 +290,12 @@ fn main() -> ExitCode {
             ExitCode::from(e.exit_code() as u8)
         }
     }
+}
+
+/// What a write to a pipe or socket with no reader does: end `oath`
+/// (`SIG_DFL`), or fail with EPIPE (`SIG_IGN`).
+fn sigpipe(action: libc::sighandler_t) {
+    unsafe { libc::signal(libc::SIGPIPE, action) };
 }
 
 fn emit_err(e: &Error) {
@@ -342,7 +352,12 @@ fn run() -> oath_core::Result<i32> {
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
     match &cli.cmd {
-        Some(Cmd::Mcp { read_only }) => return mcp::serve(&cli.root, *read_only),
+        Some(Cmd::Mcp { read_only }) => {
+            // A server: a client or a child gone is an error it answers,
+            // and it writes a plan's text to a child that may exit unread.
+            sigpipe(libc::SIG_IGN);
+            return mcp::serve(&cli.root, *read_only);
+        }
         Some(Cmd::Password { status }) => return login::password(*status, cli.json),
         Some(Cmd::Desk { action }) => return login::desk(action.is_some(), cli.json),
         _ => {}
@@ -394,7 +409,7 @@ fn run() -> oath_core::Result<i32> {
             use std::io::Read;
             let mut s = std::os::unix::net::UnixStream::connect("/oath/run/init.sock")
                 .map_err(|e| Error::hint(format!("init socket: {e}"), "is this Oath?"))?;
-            s.write_all(b"panic\n")?;
+            live::send(&s, b"panic\n")?;
             let mut reply = String::new();
             let _ = s.read_to_string(&mut reply);
             if reply.starts_with("ok") {

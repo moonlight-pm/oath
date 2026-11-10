@@ -1,5 +1,4 @@
 use std::fs;
-use std::io::Write;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -112,6 +111,27 @@ pub enum Reexec {
     Unsupported,
 }
 
+/// Write all of `buf` to PID 1's socket. A PID 1 that closed it is an
+/// error here: `oath` leaves SIGPIPE at its default, which would end it
+/// part way through an apply.
+pub fn send(s: &UnixStream, mut buf: &[u8]) -> std::io::Result<()> {
+    use std::os::fd::AsRawFd;
+    while !buf.is_empty() {
+        let n = unsafe {
+            libc::send(s.as_raw_fd(), buf.as_ptr().cast(), buf.len(), libc::MSG_NOSIGNAL)
+        };
+        if n < 0 {
+            let e = std::io::Error::last_os_error();
+            if e.kind() == std::io::ErrorKind::Interrupted {
+                continue;
+            }
+            return Err(e);
+        }
+        buf = &buf[n as usize..];
+    }
+    Ok(())
+}
+
 /// Whether PID 1 re-executes into a new binary on request (R73).
 pub fn can_reexec() -> bool {
     oath_core::read_json::<serde_json::Value>(Path::new(INIT_SELF))
@@ -139,7 +159,7 @@ pub fn reexec_init(bin: &Path, hash: &str) -> Result<Reexec> {
     let ino = fs::metadata(me)?.ino();
     let mut s = UnixStream::connect("/oath/run/init.sock")
         .map_err(|e| Error::Msg(format!("init socket: {e}")))?;
-    s.write_all(format!("upgrade {} {hash}\n", bin.display()).as_bytes())?;
+    send(&s, format!("upgrade {} {hash}\n", bin.display()).as_bytes())?;
     // PID 1 closes the connection by executing the new binary, or says why
     // it did not.
     let _ = s.set_read_timeout(Some(std::time::Duration::from_secs(60)));
@@ -322,7 +342,7 @@ impl ApplyHooks for Live {
         }
         let mut s =
             UnixStream::connect(sock).map_err(|e| Error::Msg(format!("init socket: {e}")))?;
-        s.write_all(ask).ok();
+        send(&s, ask).ok();
         // PID 1 answers once it has converged, so apply returns after the
         // change has happened (sshd restarted, a service stopped).
         let _ = s.set_read_timeout(Some(std::time::Duration::from_secs(60)));
