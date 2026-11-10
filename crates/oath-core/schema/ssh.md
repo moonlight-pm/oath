@@ -1,6 +1,6 @@
 # ssh
 
-Owner SSH keys. One object: `ssh:local`. Dropbear is `svc:sshd`.
+Owner SSH keys. One object: `ssh:local`. OpenSSH's sshd is `svc:sshd`.
 SSH login is **home**. There is no login password and no private key in
 the image. Root SSH is denied. Serial stays root.
 

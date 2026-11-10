@@ -30,8 +30,8 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
   process environment after `host:local.env` and `TZ`. The same name
   on this object wins.
 - `bind_low_ports` — boolean, false when absent. When true, a service
-  that runs as `home` keeps `CAP_NET_BIND_SERVICE` and may bind ports
-  below 1024. Root can already bind them.
+  that runs as any account but `root` keeps `CAP_NET_BIND_SERVICE` and
+  may bind ports below 1024. Root can already bind them.
 - `keep_children` — boolean, false when absent. Each service runs in
   its own cgroup, and stopping it stops the whole process tree. When
   true, stop and restart signal only the main process and its children
@@ -42,6 +42,14 @@ editing `/etc`. Create one with `oath new svc:<name> exec=…` (only
 - `rtprio` — 1 to 99, absent by default. The process may give its
   threads realtime priority up to this (`RLIMIT_RTPRIO`) and renice
   itself to -20 (`RLIMIT_NICE`); `desk` gives PipeWire 95.
+- `seat` — `desk` or `console`, absent by default (R42): whose turn on
+  the seat (tty1, its screen and keyboard) it runs in. The desk has the
+  seat until `oath desk stop` gives it to the console; `oath desk` gives
+  it back. While the other owner has it, PID 1 holds
+  the service as if disabled: stopped, `state: "held"`. An `oath update`
+  (or `oath apply --keep-seat`) that moves its package leaves a running
+  one on its old program until it next starts. Absent: it runs either
+  way.
 - `schedule` — absent by default (R48): a cron pattern PID 1 starts it
   by, in the machine's time zone (`host:local.timezone`): `0 4 * * *`
   (04:00 daily), five fields or six with seconds, `@daily`, croner's
@@ -57,10 +65,10 @@ its program comes from (`exec[0]` through `/bin` into
 `/oath/store/pkg/<name>/<hash>/`): a service follows its package.
 
 Actual is runtime: `state` (`running`, `restarting`, `stopped`,
-`scheduled`, or `failed`), `pid`, `restarts` (how many times PID 1 restarted it this
-boot), `last_exit` (`{"code": n}` or `{"signal": n}`), `since`, `pkg`
-(`{id, hash}`: the package realization its program runs from), and
-for `failed` the `reason`.
+`scheduled`, `held`, or `failed`), `pid`, `restarts` (how many times PID
+1 restarted it this boot), `last_exit` (`{"code": n}` or `{"signal":
+n}`), `since`, `pkg` (`{id, hash}`: the package realization its program
+runs from), and for `failed` and `held` the `reason`.
 A process that exits is restarted after 1, 2, 4, 8 s when it keeps
 dying within 10 s of starting; after five quick failures in a row it
 is `failed` and stays down until its applied spec, or its program's
@@ -70,8 +78,9 @@ svc:<name>`. Drift is desired against `applied.json` (the last applied
 desired), not against actual.
 
 Safety: `mutate`, except `svc:sshd`: disabling or removing it,
-changing its `exec`, `user` or `env`, or moving the package it runs
-from (`pkg:dropbear`), needs `--confirm` and goes on probation (a new
+changing its `exec`, `user` or `env`, or moving the package its
+`exec[0]` resolves into (`pkg:openssh`), needs `--confirm` and goes on
+probation (a new
 SSH session runs `sudo oath keep`, or PID 1 undoes it after 180 s).
 Apply checks the document, writes `applied.json`, then notifies PID
 1. PID 1 runs only `applied.json`: a `set` without `apply` never
@@ -95,6 +104,10 @@ oath undo
 
 The `base` profile ships `svc:serial` (root shell on the serial
 console; it idles, and says so in its log, on a machine with no UART),
-`svc:sshd` (dropbear; login as `home`), and `svc:time` (chronyd
-against pool.ntp.org). Do not disable `svc:serial` unless you have
-another way in.
+`svc:screen` (a shell as `home` on tty1; it asks for `home`'s password
+first when `host:local.autologin` is false and one is set),
+`svc:login` (`home`'s password and the seat's owner, R42: `oath
+password`, `oath desk`), `svc:sshd` (OpenSSH, `/bin/sshd` from
+`pkg:openssh`; login as `home`), and `svc:time` (chronyd against
+pool.ntp.org). Do not disable `svc:serial` unless you have another way
+in.
