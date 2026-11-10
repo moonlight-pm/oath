@@ -214,13 +214,13 @@ reaches its provider.
 ### writ run
 
 `writ run [--project DIR] [--session NAME] [--timeout SECS] -- CMD` runs
-one command in a box over the project and exits with its status, or
-125 if the box refused to start. `--timeout` kills the box after that
-many seconds. Writes are dropped
-unless `--session` names where to keep them, in
-`~/.local/share/writ/sessions/NAME/upper`. `writ diff`, `writ apply` and
-`writ sessions` read only a session `writ` or `writ do` made, which
-records its project.
+one command in a box over the project, this directory unless `--project`
+says, and exits with its status, or 125 if the box refused to start.
+`--timeout` kills the box after that many seconds. Writes are dropped
+unless `--session` names a session to keep them in, which `writ
+sessions` lists and `writ diff`, `writ apply` and `writ undo` take like
+any other. A session that goes on keeps its project and when it began,
+and a run on another project is refused.
 
 ### writ check
 
@@ -233,8 +233,8 @@ exist. It exits 1 if an attack got through or work broke. `-v` lists
 every result, and `--json` gives the same facts.
 
 ```
-kernel 7.3.1, Landlock ABI 11, ptrace_scope 1; 29 of 46 sensitive paths exist on this host
-485 attacks refused, 9 writes held, 29 kinds of work fine, 0 skipped; 0 got through, 0 broken
+kernel 7.3.1, Landlock ABI 11, ptrace_scope 1; 26 of 47 sensitive paths exist on this host
+487 attacks refused, 9 writes held, 29 kinds of work fine, 0 skipped; 0 got through, 0 broken
 ```
 
 ## Diff, apply, undo
@@ -280,16 +280,23 @@ A flagged change waits until you name it or say `--all`:
 
 Naming a directory takes what is under it. `apply` writes each file
 atomically and strips setuid, setgid and sticky. It applies nothing if
-anything asked for cannot go: a FIFO, socket or device, a real file
-changed after the session began, or a path that goes through something
-in your tree that is not a directory. You commit.
+anything asked for cannot go: a FIFO, socket or device, a file or link
+in your tree that changed after the session began, other than by this
+session's `apply` or `undo`, or a path that goes through something in
+your tree that is not a directory. You commit.
 
 `undo` puts back what `apply` changed, newest first, from copies kept in
-the session. A file changed after it was applied stays, is named, and
-`undo` exits 1. The session keeps its changes. `apply` can take again
-what `undo` removed, but a file `undo` put back counts as changed after
-the session began, so an `apply` that asks for it applies nothing. A
-lock keeps a box and `apply` from running on one session at once.
+the session. It leaves what you changed after `apply`: a file or link it
+wrote that you edited, re-pointed, replaced or deleted, a file or link
+you put where it deleted a file, link or directory, and anything under a
+directory you replaced with a file or link. It names each, puts back the
+rest, and exits 1. A link an earlier `writ` applied stays too, and is
+named, as that `writ` kept no record of where it pointed it. The session
+keeps its changes, and `apply` can take them again: `undo` records what
+it put back, so that is not taken for a change of yours. A prompt's box,
+`writ run`'s box, `diff`, `apply` and `undo` take one lock, so only one
+of them works on a session at a time, and another says the session is in
+use.
 
 ## Local models
 
@@ -408,7 +415,7 @@ openrouter.ai/settings/keys, is what stops everything.
 
 | Path | Holds |
 |------|-------|
-| `~/.local/share/writ/sessions/<id>/` | `upper`, `transcript.jsonl`, `meta.json`, `undo.jsonl`, `undo/`, `spent`, `stderr` |
+| `~/.local/share/writ/sessions/<id>/` | `upper`, `transcript.jsonl`, `meta.json`, `undo.jsonl`, `undo/`, `restored.jsonl`, `spent`, `stderr` |
 | `~/.local/share/writ/models/` | Local models |
 | `~/.local/share/writ/llama/` | The local server's sockets and log |
 | `~/.config/writ/use.json` | The model in use |

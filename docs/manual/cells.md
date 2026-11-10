@@ -254,14 +254,14 @@ never goes to an origin (R78)`. Its name does not clash with a package's:
 schema cell`: `present` (default `true`), `hash` (`sha256-` plus 64
 lowercase hex, required while present), `needs`, and `description`, `home`
 and `source`, which are as for a `pkg` and in no hash. An apply starts
-nothing, whatever `oath new` prints: a `svc`, or whatever runs the project,
-runs `cell run` ([Under a service](#under-a-service)).
+nothing: a `svc`, or whatever runs the project, runs `cell run`
+([Under a service](#under-a-service)).
 
 ```
 $ sudo oath store cell:hamlet ./hamlet
 cell:hamlet sha256-…
 $ sudo oath new cell:hamlet hash=sha256-… 'needs=["pkg:python"]'
-cell:hamlet created; `oath apply cell:hamlet` starts it
+cell:hamlet created; `oath apply cell:hamlet` checks its tree, and `cell run cell:hamlet` runs it
 $ sudo oath apply cell:hamlet
 Create readonly snapshot of '/oath/run/fs/@' in '/oath/run/fs/@gen-2'
 applied generation 2 (cell:hamlet)
@@ -302,8 +302,15 @@ trees for reap; `oath undo` brings the object back.
 `oath verify cell:hamlet` hashes the tree again, and PID 1's check once a
 boot (`oath verify --quiet`) hashes every present cell's tree beside the
 packages'. A tree that differs prints `cell:hamlet DAMAGED: sha256-… hashes
-to sha256-…`, and `oath verify` exits 1. `cell run` starts what the last
-apply linked, without hashing it.
+to sha256-…`, one gone from the store `… hashes to missing`, and `oath
+verify` exits 1; run as root, it sets the cell's status to `error`. `cell
+run` starts what the last apply linked, without hashing it.
+
+A cell comes from no origin, so `oath apply` does not fetch it again as it
+does a package. `sudo oath store cell:hamlet <dir|file.tar>` of the same
+files puts the tree back, in place of a damaged one
+(`/oath/store/cell/hamlet/sha256-… did not hash to its name; replaced it`),
+and the next `sudo oath verify` sets the status back to `in-sync`.
 
 ### Refusals
 
@@ -313,7 +320,7 @@ apply linked, without hashing it.
 | | a need that is not `pkg:<name>` | ``cell:x: needs: `python` is not pkg:<name>`` |
 | | a need with a hash | `cell:x: invalid type: map, expected a string` |
 | `oath apply` | the hash is not in the store | `cell:x sha256-… is not in the store`, with a hint to `oath store` it |
-| | the tree does not hash to the pin | `security: cell:x hashes to sha256-…, not its pin sha256-…`, exit 4 |
+| | the tree does not hash to the pin | `security: cell:x hashes to sha256-…, not its pin sha256-…`, exit 4, with a hint that `oath store` puts it back |
 | | a need this machine lacks | `cell:x needs pkg:nosuch, which this machine would not have`, hint `oath new pkg:nosuch, or take it out of cell:x's needs` |
 | | a package a present cell needs is being removed | The same, naming the cell, on any apply that has something to change, until the cell does not need it |
 | `oath publish` | always | `cell:x is a cell, and a cell never goes to an origin (R78)` |
@@ -377,6 +384,8 @@ and `oath set` say ``need id must be pkg:<name>, got `cell:hamlet-src` ``.
 `cell:<name>`: it keeps the pin, what a kept generation pins, a tree that
 arrived in the last day (`--arriving` for another span) and `cell:<name>-src`
 while a filed plan pins it; the rest goes with `sudo oath reap --confirm`.
+`oath reap` alone names what holds each version that stays
+(`cell:hamlet sha256-… stays: arrived, generation:2, live, pin`).
 
 ## An image
 
@@ -426,10 +435,12 @@ and `STOPSIGNAL` apply.
   that is shorter, and when it ends `cell` removes its root. At 5 s PID 1
   kills `cell`: a handler still running does not finish, and a `stopped`
   cell is left for `cell prune`.
-- The hint on a damaged tree is wrong: `oath store cell:<name> <dir>` of the
-  same files leaves the damaged tree where it is. Delete
-  `/oath/store/cell/<name>/<hash>` first, then store.
 - `oath rm` of a package a present cell needs stays pending, and every
   `oath apply` with something to change stops at it, whichever object it
   names. `oath undo` leaves the mark in place. Taking the package out of the cell's `needs` lets the
   next apply finish the removal.
+- A cell whose tree was gone at boot stays absent once `oath store` puts
+  the tree back: `sudo oath verify` sets its status to `in-sync`, `oath
+  apply` has nothing to do, and `cell run` refuses it (`cell:hamlet is not
+  installed on this machine`) until the next boot, or until `present=false`
+  and then `present=true` are each applied.
