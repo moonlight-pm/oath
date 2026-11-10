@@ -221,16 +221,18 @@ it adds it once with `oath new` (an update counts it the owner's).
 
 **Sola's packages (R47, Release B).** `pkg:sola` is the desk's core:
 the programs whose restart ends the session (`sola-bus`, `sola-call`,
-`sola-river`, `sola-shell`, `sola-session`, `sola-kvm`, `sola-lock`),
-`solactl`, `sola-oath`, and `share/` (icons, cursors:
-`XCURSOR_PATH` and `SOLA_SHARE_DIR` name `/oath/store/pkg/sola/share`).
-Each app is its own `pkg:sola-<app>` (terminal, projects, paint, editor,
-preview, scope, monitor, calendar, mail, settings, bots, vault, browser,
-design), needing what it loads and not the core, so an app's overlay
-or release moves that app and restarts nothing. The profile pins all
-fifteen with their `source` (Sola master `d6343e8b`). An update from
-the single `pkg:sola` moves its `/bin` names to the app packages in one
-apply.
+`sola-river`, `sola-shell`, `sola-session`, `sola-lock`), `solactl`,
+and `share/` (icons, cursors: `XCURSOR_PATH` and `SOLA_SHARE_DIR` name
+`/oath/store/pkg/sola/share`). Each app is its own `pkg:sola-<app>`
+(terminal, projects, paint, editor, preview, scope, monitor, calendar,
+mail, settings, bots, vault, browser, design, oath), needing what it
+loads and not the core, so an app's overlay or release moves that app
+and restarts nothing. `pkg:sola-kvm` is the KVM (`sola-kvm`, which
+`svc:sola-kvm` runs, and Remote Desktop, `sola-kvm-view`), with
+`pkg:wl-clipboard`; `pkg:sola` needs it, so a machine updating from a
+core that held `sola-kvm` gets it. The profile pins all seventeen with
+their `source` (Sola master `cf0e2d40`). An update from the single
+`pkg:sola` moves its `/bin` names to the app packages in one apply.
 
 The `desk-sola` case (metal only: `qemu = false`) checks the services
 and that the tmux servers and shells are outside `svc:sola-session`'s

@@ -422,6 +422,7 @@ mod tests {
                 "sola-calendar",
                 "sola-design",
                 "sola-editor",
+                "sola-kvm",
                 "sola-mail",
                 "sola-monitor",
                 "sola-oath",
