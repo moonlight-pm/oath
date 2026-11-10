@@ -148,6 +148,18 @@ fn after(a: (Option<&str>, &str), b: (Option<&str>, &str)) -> bool {
     }
 }
 
+/// What ordered `a` and `b` in [`after`], and each one's time by it: when
+/// each commit was made, or when each was published.
+fn ordered_by<'a>(
+    a: (Option<&'a str>, &'a str),
+    b: (Option<&'a str>, &'a str),
+) -> (&'static str, &'a str, &'a str) {
+    match (a.0, b.0) {
+        (Some(x), Some(y)) if x != y => ("committed", x, y),
+        _ => ("published", a.1, b.1),
+    }
+}
+
 /// The heads a machine took, by package name (`/oath/heads.json`).
 pub type Record = BTreeMap<String, Taken>;
 
@@ -190,6 +202,25 @@ impl Offer {
     }
 }
 
+/// The [`Move::Hold`] of `name` at `at`, its pin here, when its offered
+/// head is older than the one this machine took (`taken`).
+pub fn hold_older(name: &str, at: &str, offer: &Offer, taken: &Record) -> Option<Move> {
+    let head = &offer.head;
+    let t = taken.get(name).filter(|t| after(head.order(), t.order()))?;
+    let (when, this, took) = ordered_by(head.order(), t.order());
+    Some(Move::Hold {
+        name: name.to_string(),
+        at: at.to_string(),
+        head: head.hash.clone(),
+        why: format!(
+            "it ({when} {this}) is older than the head this machine took, {} (signed by {}, \
+             {when} {took})",
+            short(&t.hash),
+            t.signer
+        ),
+    })
+}
+
 /// The moves that take `machine` (each package's desired doc, by name) to
 /// the heads `offers` holds. A package whose pin is its head does not
 /// move. One the owner keeps (`keep`), and one whose offered head is older
@@ -219,23 +250,17 @@ pub fn plan(
         if set.as_object().into_iter().flatten().all(|(k, v)| same(k, v)) {
             continue;
         }
-        let hold = |why: String| Move::Hold {
-            name: name.clone(),
-            at: mine.clone(),
-            head: head.hash.clone(),
-            why,
-        };
-        if let Some(t) = taken.get(name).filter(|t| after(head.order(), t.order())) {
-            moves.push(hold(format!(
-                "it is older than the head this machine took, {} (signed by {}, published {})",
-                short(&t.hash),
-                t.signer,
-                t.published
-            )));
+        if let Some(hold) = hold_older(name, &mine, offer, taken) {
+            moves.push(hold);
             continue;
         }
         if keep.contains(name) && mine != head.hash {
-            moves.push(hold("--keep".to_string()));
+            moves.push(Move::Hold {
+                name: name.clone(),
+                at: mine.clone(),
+                head: head.hash.clone(),
+                why: "--keep".to_string(),
+            });
             continue;
         }
         let is_overlay = !mine.is_empty()
@@ -303,13 +328,13 @@ pub fn additions(
             return Err(Error::hint(what, format!("oath ls --origin {name}")));
         };
         if let Some(t) = taken.get(&name).filter(|t| after(offer.head.order(), t.order())) {
+            let (when, this, took) = ordered_by(offer.head.order(), t.order());
             let head = format!(
-                "the head on the origins, {}, is older than the one this machine took, {} \
-                 (signed by {}, published {})",
+                "the head on the origins, {} ({when} {this}), is older than the one this machine \
+                 took, {} (signed by {}, {when} {took})",
                 short(&offer.head.hash),
                 short(&t.hash),
-                t.signer,
-                t.published
+                t.signer
             );
             let what = match by {
                 Some(p) => format!("pkg:{p} needs pkg:{name}, and {head}"),
@@ -715,6 +740,43 @@ mod tests {
         assert_eq!(a.clone().later(b.clone()).head.hash, h('b'));
         b.head.committed = None;
         assert_eq!(a.later(b).head.hash, h('a'));
+    }
+
+    #[test]
+    fn an_older_head_names_the_times_that_ordered_it() {
+        // Published after the head taken, from an older commit.
+        let mut b = head("sola", 'b', &[], "2026-11-08T00:00:00Z");
+        b.head.committed = Some("2026-11-01T00:00:00Z".into());
+        let mut t = Taken {
+            hash: h('c'),
+            published: "2026-11-06T00:00:00Z".into(),
+            committed: Some("2026-11-02T00:00:00Z".into()),
+            signer: "oath@buccina".into(),
+        };
+        let machine = BTreeMap::from([("sola".to_string(), doc('c', &[]))]);
+        let names = ["sola".to_string()];
+        let said = |o: &BTreeMap<String, Offer>, t: &Taken| {
+            let taken = Record::from([("sola".to_string(), t.clone())]);
+            let m = plan(&machine, o, &taken, &BTreeSet::new(), |_, _| false);
+            let e = additions(&BTreeMap::new(), o, &taken, &names).unwrap_err().to_string();
+            (texts(&m)[0].clone(), e)
+        };
+        let (held, refused) = said(&offers(vec![b.clone()]), &t);
+        assert!(held.contains("it (committed 2026-11-01T00:00:00Z) is older"), "{held}");
+        assert!(held.contains("oath@buccina, committed 2026-11-02T00:00:00Z)"), "{held}");
+        assert!(refused.contains("bbbbbbbbbbbb (committed 2026-11-01T00:00:00Z)"), "{refused}");
+        assert!(refused.contains("committed 2026-11-02T00:00:00Z)"), "{refused}");
+        // A rebuild of the commit taken, or a head with no commit: the
+        // publications order them.
+        b.head.published = "2026-11-05T00:00:00Z".into();
+        for committed in [Some("2026-11-01T00:00:00Z"), None] {
+            t.committed = committed.map(str::to_string);
+            let (held, refused) = said(&offers(vec![b.clone()]), &t);
+            assert!(held.contains("it (published 2026-11-05T00:00:00Z) is older"), "{held}");
+            assert!(held.contains("oath@buccina, published 2026-11-06T00:00:00Z)"), "{held}");
+            assert!(refused.contains("(published 2026-11-05T00:00:00Z)"), "{refused}");
+            assert!(!refused.contains("committed"), "{refused}");
+        }
     }
 
     #[test]
