@@ -197,6 +197,26 @@ pub fn reexec_init(bin: &Path, hash: &str) -> Result<Reexec> {
     ))
 }
 
+/// Whether a service whose status PID 1 wrote as `v` is what an apply
+/// waits for, `restart` being its applied policy. A service the other owner
+/// of the seat runs (R42) is held; a scheduled one (R48) waits for its
+/// time. One that need not stay up may have run and exited already: a
+/// `never` one however it exited, an `on-failure` one with exit 0, which
+/// PID 1 keeps down. An `on-failure` one that failed is not running.
+fn converged(v: &serde_json::Value, restart: &serde_json::Value, enabled: bool) -> bool {
+    let state = v["state"].as_str();
+    let finished = match restart.as_str() {
+        Some("never") => !v["last_exit"].is_null(),
+        Some("on-failure") => v["last_exit"] == json!({ "code": 0 }),
+        _ => false,
+    };
+    if !enabled {
+        return state == Some("stopped");
+    }
+    let up = matches!(state, Some("running" | "held" | "scheduled"));
+    up || (state == Some("stopped") && finished)
+}
+
 /// Ask our PID 1 for a clean shutdown (it stops services, syncs and
 /// remounts read-only first). Without it, sync and call the kernel.
 fn power(sig: libc::c_int, fallback: RebootMode) -> Result<()> {
@@ -362,18 +382,12 @@ impl ApplyHooks for Live {
         let want = if enabled { "running" } else { "stopped" };
         let path = oath_core::status_path(&self.catalog_root, id);
         let applied = self.catalog_root.join("objects/svc").join(&id.name).join("applied.json");
-        let oneshot = oath_core::read_json::<serde_json::Value>(&applied)
-            .is_ok_and(|s| s["restart"] == json!("never"));
+        let restart = oath_core::read_json::<serde_json::Value>(&applied)
+            .map(|s| s["restart"].clone())
+            .unwrap_or_default();
         for _ in 0..40 {
             if let Ok(v) = oath_core::read_json::<serde_json::Value>(&path) {
-                let state = v.get("state").and_then(|s| s.as_str());
-                // A service the other owner of the seat runs (R42) is held;
-                // a scheduled one (R48) waits for its time; a oneshot may
-                // have run and exited already.
-                if state == Some(want)
-                    || (enabled && matches!(state, Some("held" | "scheduled")))
-                    || (enabled && oneshot && state == Some("stopped") && !v["last_exit"].is_null())
-                {
+                if converged(&v, &restart, enabled) {
                     return Ok(());
                 }
             }
@@ -481,5 +495,29 @@ impl ApplyHooks for Live {
         }
         tel("oath", "pkg", ev);
         Ok(actual)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_service_that_finished_as_its_policy_allows_has_converged() {
+        let stopped = |exit: serde_json::Value| json!({ "state": "stopped", "last_exit": exit });
+        let (ok, failed) = (json!({ "code": 0 }), json!({ "code": 1 }));
+        let killed = json!({ "signal": 9 });
+        let (never, on_failure, always) = (json!("never"), json!("on-failure"), json!("always"));
+        assert!(converged(&json!({ "state": "running" }), &always, true));
+        assert!(converged(&json!({ "state": "held" }), &always, true));
+        assert!(converged(&stopped(ok.clone()), &never, true));
+        assert!(converged(&stopped(failed.clone()), &never, true));
+        assert!(converged(&stopped(ok.clone()), &on_failure, true));
+        assert!(!converged(&stopped(failed), &on_failure, true), "a failed run is not running");
+        assert!(!converged(&stopped(killed), &on_failure, true));
+        assert!(!converged(&stopped(ok.clone()), &always, true), "PID 1 starts it again");
+        assert!(!converged(&json!({ "state": "stopped" }), &on_failure, true), "it never ran");
+        assert!(converged(&stopped(ok), &on_failure, false));
+        assert!(!converged(&json!({ "state": "running" }), &never, false));
     }
 }
