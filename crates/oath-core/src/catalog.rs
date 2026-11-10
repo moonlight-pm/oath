@@ -432,7 +432,15 @@ impl Catalog {
     /// schema and the result must parse as the kind's type.
     pub fn set_fields(&self, id: &ObjectId, fields: Map<String, Value>) -> Result<()> {
         let _lock = self.lock()?;
-        if id.kind == KIND_SNAP && id.name != "current" {
+        // Each apply sets snap:current to the generation it takes, over
+        // anything set here.
+        if id.kind == KIND_SNAP && id.name == "current" {
+            return Err(Error::hint(
+                format!("{id} is read-only: each apply moves it to the generation it takes"),
+                "an older generation is booted from the boot menu; `oath undo` puts back an apply",
+            ));
+        }
+        if id.kind == KIND_SNAP {
             return Err(Error::hint(format!("{id} is read-only"), "oath schema snap"));
         }
         let mut obj = self.get(id)?;
@@ -1228,8 +1236,8 @@ impl Catalog {
             selected.iter().filter(|d| self.needs_confirm(d)).map(|d| d.id.to_string()).collect();
         if !confirm_needed.is_empty() && !confirm {
             return Err(Error::Confirm(format!(
-                "{} needs --confirm: it powers off, changes the boot generation, or can cut \
-                 this machine off from SSH. See /oath/INDEX.md safety.",
+                "{} needs --confirm: it powers off, or can cut this machine off from SSH. \
+                 See /oath/INDEX.md safety.",
                 confirm_needed.join(", ")
             )));
         }
@@ -1743,12 +1751,11 @@ impl Catalog {
         }
     }
 
-    /// Power, the boot generation, and changes that can cut off SSH.
+    /// Power, and changes that can cut off SSH.
     fn needs_confirm(&self, d: &Drift) -> bool {
         let changed = |k: &str| d.fields.iter().find(|(f, _, _)| f == k).map(|(_, new, _)| new);
-        match (d.id.kind.as_str(), d.id.name.as_str()) {
-            (KIND_HOST, _) => changed("power").is_some_and(|p| p.as_str() != Some("run")),
-            (KIND_SNAP, "current") => true,
+        match d.id.kind.as_str() {
+            KIND_HOST => changed("power").is_some_and(|p| p.as_str() != Some("run")),
             _ => self.lockout(d),
         }
     }

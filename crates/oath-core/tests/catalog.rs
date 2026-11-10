@@ -253,6 +253,7 @@ fn reboot_needs_confirm() {
     cat.set_fields(&id, fields).unwrap();
     let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
     assert_eq!(err.exit_code(), EXIT_CONFIRM);
+    assert!(!err.to_string().contains("boot generation"), "{err}");
     let r = cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
     assert_eq!(*hooks.reboots.lock().unwrap(), 1);
     let obj = cat.get(&id).unwrap();
@@ -293,6 +294,24 @@ fn the_log_names_the_tool_and_what_it_forced() {
     assert_eq!(forced["actor"]["via"], "mcp:claude-code");
     assert!(undo["actor"].get("via").is_none(), "the owner ran undo");
     assert!(undo.get("confirm").is_none());
+}
+
+/// A VM, 2026-11-10: `oath set snap:current generation=1` and `oath apply
+/// --confirm` took a new generation and changed nothing.
+#[test]
+fn snap_current_is_not_set() {
+    let (_d, cat) = tmp();
+    let e = set(&cat, "snap:current", "generation", json!(1)).unwrap_err();
+    match e {
+        Error::Hint { message, hint } => {
+            assert!(message.contains("snap:current is read-only"), "{message}");
+            assert!(hint.contains("boot menu") && hint.contains("oath undo"), "{hint}");
+        }
+        other => panic!("{other:?}"),
+    }
+    let cur = cat.get(&"snap:current".parse().unwrap()).unwrap();
+    assert_eq!(cur.desired["generation"], 0);
+    assert!(cat.diff(None).unwrap().is_empty());
 }
 
 #[test]
