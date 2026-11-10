@@ -844,6 +844,56 @@ fn net_refuses_a_gateway_or_dns_that_is_no_address() {
 }
 
 #[test]
+fn a_timezone_is_a_posix_tz_string_and_no_zone_name() {
+    let (_d, cat) = tmp();
+    let e = set(&cat, "host:local", "timezone", json!("America/Denver")).unwrap_err();
+    match e {
+        Error::Hint { message, hint } => {
+            assert!(message.contains("not a POSIX TZ string"), "{message}");
+            assert!(hint.contains("MST7MDT,M3.2.0,M11.1.0") && hint.contains("UTC0"), "{hint}");
+            assert!(hint.contains("No zoneinfo ships"), "{hint}");
+        }
+        other => panic!("{other:?}"),
+    }
+    for good in ["UTC0", "CET-1CEST,M3.5.0,M10.5.0/3", ""] {
+        set(&cat, "host:local", "timezone", json!(good)).unwrap();
+    }
+    // Every timezone the seed profiles and the machines' overlays name.
+    let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut found = Vec::new();
+    for dir in ["crates/oath-core/seed", "hosts"] {
+        for e in std::fs::read_dir(repo.join(dir)).unwrap() {
+            let p = e.unwrap().path();
+            if p.extension().is_some_and(|x| x == "json") {
+                let doc: serde_json::Value =
+                    serde_json::from_slice(&std::fs::read(&p).unwrap()).unwrap();
+                timezones(&doc, &mut found);
+            }
+        }
+    }
+    assert!(found.len() >= 4, "{found:?}");
+    for tz in found {
+        set(&cat, "host:local", "timezone", tz.clone()).unwrap_or_else(|e| panic!("{tz}: {e}"));
+    }
+}
+
+fn timezones(v: &serde_json::Value, out: &mut Vec<serde_json::Value>) {
+    match v {
+        serde_json::Value::Object(m) => {
+            for (k, x) in m {
+                if k == "timezone" {
+                    out.push(x.clone());
+                } else {
+                    timezones(x, out);
+                }
+            }
+        }
+        serde_json::Value::Array(a) => a.iter().for_each(|x| timezones(x, out)),
+        _ => {}
+    }
+}
+
+#[test]
 fn host_names_other_machines() {
     let (d, cat) = tmp();
     let hooks = MemHooks::new(d.path().to_path_buf());

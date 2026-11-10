@@ -1023,6 +1023,14 @@ impl Catalog {
                         hint(),
                     ));
                 }
+                if !is_posix_tz(&h.timezone) {
+                    return Err(Error::hint(
+                        format!("{id}: timezone `{}` is not a POSIX TZ string", h.timezone),
+                        "a POSIX TZ string: `MST7MDT,M3.2.0,M11.1.0`, `CET-1CEST,M3.5.0,\
+                         M10.5.0/3`, `UTC0`. No zoneinfo ships, so an Area/City name \
+                         (`America/Denver`) does not work",
+                    ));
+                }
                 for (name, addr) in &h.hosts {
                     if !crate::seat::is_host_name(name, 253) {
                         return Err(Error::hint(
@@ -1916,4 +1924,149 @@ fn is_cidr(s: &str) -> bool {
         return false;
     };
     ip.parse::<std::net::Ipv4Addr>().is_ok() && len.parse::<u8>().is_ok_and(|n| n <= 32)
+}
+
+/// A POSIX TZ string, or empty (UTC): a std name and its offset, then
+/// optionally a dst name, its offset, and `,start[/time],end[/time]`. A
+/// name is 3 or more letters, or `<…>`; a date is `Mm.w.d`, `Jn` or `n`.
+/// No zoneinfo ships, so a zone file's name (`America/Denver`) is not one.
+fn is_posix_tz(s: &str) -> bool {
+    let mut rest = s.as_bytes();
+    if rest.is_empty() {
+        return true;
+    }
+    if !tz_name(&mut rest) || !tz_time(&mut rest, 24) {
+        return false;
+    }
+    if rest.is_empty() {
+        return true;
+    }
+    if !tz_name(&mut rest) {
+        return false;
+    }
+    // The dst offset may be left out: an hour ahead of std's.
+    if !rest.is_empty() && rest[0] != b',' && !tz_time(&mut rest, 24) {
+        return false;
+    }
+    if rest.is_empty() {
+        return true;
+    }
+    for _ in 0..2 {
+        if !tz_eat(&mut rest, b',') || !tz_date(&mut rest) {
+            return false;
+        }
+        if tz_eat(&mut rest, b'/') && !tz_time(&mut rest, 167) {
+            return false;
+        }
+    }
+    rest.is_empty()
+}
+
+fn tz_eat(rest: &mut &[u8], c: u8) -> bool {
+    let ate = rest.first() == Some(&c);
+    if ate {
+        *rest = &rest[1..];
+    }
+    ate
+}
+
+/// Up to `max` digits, at least one.
+fn tz_num(rest: &mut &[u8], max: usize) -> Option<u32> {
+    let n = rest.iter().take(max).take_while(|b| b.is_ascii_digit()).count();
+    let v = std::str::from_utf8(&rest[..n]).ok()?.parse().ok()?;
+    *rest = &rest[n..];
+    Some(v)
+}
+
+fn tz_name(rest: &mut &[u8]) -> bool {
+    if tz_eat(rest, b'<') {
+        let quoted = |b: &u8| b.is_ascii_alphanumeric() || *b == b'+' || *b == b'-';
+        let n = rest.iter().take_while(|b| quoted(b)).count();
+        let ok = n >= 3 && rest.get(n) == Some(&b'>');
+        if ok {
+            *rest = &rest[n + 1..];
+        }
+        return ok;
+    }
+    let n = rest.iter().take_while(|b| b.is_ascii_alphabetic()).count();
+    if n >= 3 {
+        *rest = &rest[n..];
+    }
+    n >= 3
+}
+
+/// `[+|-]hh[:mm[:ss]]`, hours at most `max_hours`.
+fn tz_time(rest: &mut &[u8], max_hours: u32) -> bool {
+    let _ = tz_eat(rest, b'+') || tz_eat(rest, b'-');
+    if !tz_num(rest, 3).is_some_and(|h| h <= max_hours) {
+        return false;
+    }
+    for _ in 0..2 {
+        if !tz_eat(rest, b':') {
+            break;
+        }
+        if !tz_num(rest, 2).is_some_and(|m| m <= 59) {
+            return false;
+        }
+    }
+    true
+}
+
+fn tz_date(rest: &mut &[u8]) -> bool {
+    if tz_eat(rest, b'M') {
+        return tz_num(rest, 2).is_some_and(|m| (1..=12).contains(&m))
+            && tz_eat(rest, b'.')
+            && tz_num(rest, 1).is_some_and(|w| (1..=5).contains(&w))
+            && tz_eat(rest, b'.')
+            && tz_num(rest, 1).is_some_and(|d| d <= 6);
+    }
+    if tz_eat(rest, b'J') {
+        return tz_num(rest, 3).is_some_and(|n| (1..=365).contains(&n));
+    }
+    tz_num(rest, 3).is_some_and(|n| n <= 365)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_timezone_is_a_posix_tz_string() {
+        for good in [
+            "",
+            "UTC0",
+            "MST7MDT,M3.2.0,M11.1.0",
+            "EST5EDT",
+            "CET-1CEST,M3.5.0,M10.5.0/3",
+            "IST-5:30",
+            "<+0530>-5:30",
+            "<-03>3",
+            "NZST-12NZDT,M9.5.0,M4.1.0/3",
+            "AAA3BBB,J60/2,300/-1:30",
+            "EST+5EDT4,M3.2.0/2:00:00,M11.1.0/2:00:00",
+        ] {
+            assert!(is_posix_tz(good), "{good}");
+        }
+        for bad in [
+            "America/Denver",
+            ":America/Denver",
+            "UTC",
+            "MST",
+            "M7",
+            "MST7MDT,M3.2.0",
+            "MST7MDT,M13.2.0,M11.1.0",
+            "MST7MDT,M3.6.0,M11.1.0",
+            "MST7MDT,M3.2.7,M11.1.0",
+            "MST7MDT,J0,J365",
+            "MST25",
+            "MST7:60",
+            "<+05>",
+            "<+0>5",
+            " UTC0",
+            "UTC0 ",
+            "MST7MDT,M3.2.0,M11.1.0,",
+        ] {
+            assert!(!is_posix_tz(bad), "{bad}");
+        }
+    }
 }
