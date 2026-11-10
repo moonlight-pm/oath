@@ -72,10 +72,6 @@ Overwrite this file when facts change; do not append a diary.
 - **Overlay:** [novus.json](novus.json): hostname, Mountain time, the
   GPU settings, the fan curve, `/home` on the 2 TB's `@oath-home`
   (`/mnt/nixos-home` is temporary, not in it).
-- **Half an add (2026-11-10):** generation 129, the Oath app's `sudo oath add python-mako`, linked `pkg:python-mako` and `/lib/python`, failed on
-  `pkg:python-markupsafe`, and took that one back but not mako: every apply on novus refuses
-  (`pkg:python-mako needs pkg:python-markupsafe, which is not in the catalog`) until `sudo oath
-  undo`, which takes back 129 whole. It waits on Joshua's word.
 - **Oath on it:** installed 2026-10-30 by `oath install 21385X801116
   --confirm` from the stick: desk output `cf238ebe3360` (never published)
   at generation 0, with no `/oath/output.json` (R45 makes installs write
