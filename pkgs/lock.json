@@ -1518,8 +1518,8 @@
     "version": "3.7.0",
     "license": "GPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-e644c0a392f951d075ffb1c0b3c6a5a9b9d84a68d50f2d4eb78079873761c31a",
-    "product": "sha256-8f66e57f496b489eca38db16f9fd04e77c76c5a7366e3168dce07395b9e1eaf5",
+    "plan": "sha256-01ae86a27a3005c29c6f90f54973e23b4625d3cbd6e73dd6ed9894bef93534dd",
+    "product": "sha256-ebf3748abd6f87a098f9a628b82414dcdb405d6c91c464a8a020cedf8a250019",
     "run": [
       "postgresql",
       "gcc",
