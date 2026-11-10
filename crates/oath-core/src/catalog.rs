@@ -437,7 +437,8 @@ impl Catalog {
         if id.kind == KIND_SNAP && id.name == "current" {
             return Err(Error::hint(
                 format!("{id} is read-only: each apply moves it to the generation it takes"),
-                "an older generation is booted from the boot menu; `oath undo` puts back an apply",
+                "`oath undo` goes back one apply at a time; the boot menu boots an archived \
+                 boot, not a generation",
             ));
         }
         if id.kind == KIND_SNAP {

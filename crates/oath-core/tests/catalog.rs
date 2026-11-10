@@ -315,6 +315,18 @@ fn snap_current_is_not_set() {
     assert!(cat.diff(None).unwrap().is_empty());
 }
 
+/// A VM, 2026-11-10: the refusal said an older generation is booted from
+/// the boot menu, which boots `@` or an archived boot (`@boot-N`), never
+/// an apply's `@gen-N`.
+#[test]
+fn snap_current_names_undo_for_a_generation_and_the_boot_menu_for_a_boot() {
+    let (_d, cat) = tmp();
+    let e = set(&cat, "snap:current", "generation", json!(1)).unwrap_err();
+    let hint = e.hint_str().unwrap();
+    assert!(hint.contains("`oath undo` goes back one apply at a time"), "{hint}");
+    assert!(hint.contains("boot menu boots an archived boot, not a generation"), "{hint}");
+}
+
 #[test]
 fn undo_restores_hostname() {
     let (d, cat) = tmp();

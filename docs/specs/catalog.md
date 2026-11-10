@@ -162,8 +162,10 @@ the machine fetches pinned packs from (packages.md). `mounts` maps a
 path under `/mnt` or `/home` to a filesystem by label or UUID, which
 PID 1 and apply mount (devices.md).
 
-**`snap:current`** — the live generation number. Changing it directly
-needs `--confirm`; `oath undo` is the normal path.
+**`snap:current`** — the live generation number. Only apply and undo
+move it, and `oath set` refuses it: `oath undo` goes back one apply at
+a time, and the boot menu boots `@` or an archived boot (`@boot-N`),
+never a generation.
 
 Other kinds: `svc` in services.md, `pkg` in packages.md, `plan` in
 builds.md, `net` and `ssh` in network-and-ssh.md, `dev` in devices.md.
@@ -174,8 +176,8 @@ builds.md, `net` and `ssh` in network-and-ssh.md, `dev` in devices.md.
 schema, and the merged document must parse as the kind's Rust type and
 pass its checks: a host name; a `svc` that is enabled has an `exec`; a
 `pkg` hash is `sha256-` and 64 hex digits; `net` `ipv4` is `dhcp` or
-`a.b.c.d/n`; `ssh` keys start `ssh-`, `ecdsa-` or `sk-`; `snap:current`
-has a numeric generation. A refusal names the fields being set.
+`a.b.c.d/n`; `ssh` keys start `ssh-`, `ecdsa-` or `sk-`. Every `snap`
+object is read-only. A refusal names the fields being set.
 
 `oath new <id>` creates a `svc` or `pkg` from the given fields (same
 checks). It writes the document as the kind's type reads it, so a
@@ -215,7 +217,7 @@ was never applied is deleted at once. Base packages, and `host`, `net`,
    failed after the snapshot (the generation exists). Regenerate INDEX.
 
 Confirm-class (exit 3 without `--confirm`): `host:local` `power` other
-than `run`; `snap:current`; and changes that can cut this machine off
+than `run`, and changes that can cut this machine off
 from SSH (lockout class) — `svc:sshd` disabled, removed, or its
 `exec`, `user` or `env` changed; `ssh:local` `authorized` losing a key
 (compared by key blob) or becoming empty; any change to `net:net0`
