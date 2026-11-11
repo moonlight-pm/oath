@@ -3,6 +3,9 @@
 # both in their slots. No XDMCP, secure RPC (libtirpc), libdecor or
 # libei. GLX links libGL, pkg:libglvnd's (R34), which sends each client
 # to the vendor this server names: Mesa's, or NVIDIA's on its GBM.
+# No bytecode: python3 would write it into meson's pack wherever the sandbox
+# left that writable (pkg:meson's build.sh).
+export PYTHONDONTWRITEBYTECODE=1
 tar -xf "$SRC/$SOURCES"
 cd "xwayland-$VERSION"
 meson setup build --prefix="$LIVE" --libdir=lib --buildtype=release \
