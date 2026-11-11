@@ -49,8 +49,9 @@ subvolume, which a snapshot leaves out.
 `snap:current` is the generation the machine is at: the newest apply's,
 or after an undo the parent of the apply it took back. Only apply and
 undo move it: `oath set` refuses it (`snap:current is read-only: each
-apply moves it to the generation it takes`). An older system boots from
-the [boot menu](#boot-menu), and `oath undo` puts back an apply.
+apply moves it to the generation it takes`). `oath undo` goes back one
+apply at a time; the [boot menu](#boot-menu) boots an archived boot, not
+a generation.
 `snap:N` is a read-only record (`generation`, `parent`, `time`,
 `reason`) in its desired document, and it stays after `@gen-N` goes;
 `oath set` refuses it too.
@@ -64,9 +65,14 @@ observes its own.
 `oath apply` first checks everything it can without touching the
 machine: nothing is on probation, every selected object parses as its
 kind, confirm-class changes have `--confirm`, there is no `wants`
-cycle, the package `needs` graph holds, and the machine would have what
-each present cell `needs`. A refusal takes no generation, changes
-nothing, and is logged with `"result":"refused"`. Then it snapshots `@` to
+cycle, the package `needs` graph holds, the machine would have what
+each present cell `needs`, and each selected cell that stays present has
+its tree in the store, hashing to its pin. A cell comes from no origin,
+so apply cannot fetch it again: a cell whose tree is gone or found
+damaged drifts in `tree` and stops a plain `sudo oath apply` until
+`sudo oath store cell:<name> <dir|file.tar>` puts it back. A refusal
+takes no generation, changes nothing, and is logged with
+`"result":"refused"`. Then it snapshots `@` to
 `@gen-N` (holding what was applied before, not your pending edits) and
 converges. `N` is never reused (it is `max(existing)+1`). The log line
 says `ok`, or `error` if converging failed after the snapshot.
