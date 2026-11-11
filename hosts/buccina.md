@@ -34,8 +34,14 @@ Overwrite this file when facts change; do not append a diary.
 - **By hand, 2026-11-09, in no profile (R82):** `pkg:aws` `sha256-df1507709e80…` (generation 185), `pkg:mysql` `sha256-bd37c1e35e2c…` (generation 181), `pkg:postgresql` `sha256-1025492e6e7e…` with `pkg:icu` and `pkg:libxml2` (generation 179), each from `aws-cli@d2e61b0` with its uncommitted work, since merged to master. Neither database has a server running.
 - **Heads it took (R72):** `/oath/heads.json` was first written 2026-11-09 by `oath update --record --confirm` (from master's build): the 155 heads it runs; 21 packages run another pin.
 - **Heads it publishes (R72):** generation 175 (2026-11-08) applied the 13 packages Minecraft runs with (`prismlauncher`, `jre-21`, the Qt modules, `certs` and the small libraries), from master `24ca3bb` and `57dc661`, because `oath publish` publishes this machine's pin. buccina runs none of them.
-- **Running now:** output `6c8d38bd54c4` (the 2026-11-07 release, by the 2026-11-08 audit's
-  `oath update --confirm --reboot`; generation 174), in sync; generations 175 (above), 176 (`svc:audit` at midnight, R75) 177 (key `oath@novus` in its publishers) and 187 (that key as `names="*"`, any package's head; Joshua, 2026-11-10) since. Before it, `f612b200206c` (the
+- **Running now:** output `e3ea93e48cf0` (the 2026-11-11 release from `d3fc2c0`), by
+  `sudo oath update --confirm` at Joshua's word on 2026-11-11, no reboot: PID 1 re-executed
+  into the output's binary with every service running, and made this machine's own id
+  (`/oath/machine-id`); 41 packages moved in generation 188 (CEF, git, Go's programs, `writ`
+  `923e124d…`, Sola's `master@b273458c` heads, Claude Code 2.1.311 built here), in sync, boot 21
+  archived. The kernel, and what PID 1 does only at boot, take the next reboot. Before it,
+  `6c8d38bd54c4` (the 2026-11-07 release, by the 2026-11-08 audit's
+  `oath update --confirm --reboot`; generation 174); generations 175 (above), 176 (`svc:audit` at midnight, R75) 177 (key `oath@novus` in its publishers) and 187 (that key as `names="*"`, any package's head; Joshua, 2026-11-10). Before it, `f612b200206c` (the
   2026-11-05 audit's release; generation 173 on 2026-11-06), its overlays kept. Before it, `e73aa522ec58` (master `1678f60`,
   generation 166), from the audit's `oath update --confirm --reboot` on 2026-11-04: Linux 7.3.1 with its 12 io_uring
   patches, TIOCSTI off (R60), Landlock and Yama (R64), Codex 0.165.0, in sync, its overlays
