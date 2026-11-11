@@ -257,7 +257,8 @@ pub enum Move {
     /// The machine lacks it and the output has it: made, because the
     /// output fixes it (the image's own files need it: `/etc/passwd` names
     /// `pkg:zsh`'s shell), it is new to the profile (R47), or a package the
-    /// machine has needs it. `why` says which.
+    /// machine has needs it. `why` says which: [`NEEDED`] or [`NEEDED_HEAD`]
+    /// for one made only for a need.
     New { name: String, doc: Value, why: &'static str },
     /// A recipe (R23) the owner built: the output carries no tree, so the
     /// update builds the output's plan on the machine before anything
@@ -290,7 +291,19 @@ pub enum Move {
     Repoint { name: String, set: Value, moved: Vec<String>, checked: bool },
 }
 
+/// Why a [`Move::New`] is made when a package here needs it, at the
+/// output's pin or at its head: it is made for that need alone.
+pub const NEEDED: &str = "a package here needs it";
+pub const NEEDED_HEAD: &str = "a package here needs it, from its head";
+
 impl Move {
+    /// A package made only because something here needs it: when what
+    /// needs it is held, it is not made. One the output fixes, or one new to
+    /// the profile, is made for itself.
+    pub fn made_for_a_need(&self) -> bool {
+        matches!(self, Self::New { why, .. } if *why == NEEDED || *why == NEEDED_HEAD)
+    }
+
     pub fn name(&self) -> &str {
         let (Self::Pin { name, .. }
         | Self::Keep { name, .. }
@@ -696,7 +709,7 @@ pub fn plan(
         }
         let Some(doc) = doc_of(&need) else { continue };
         todo.extend(needs_of(doc));
-        moves.push(Move::New { name: need, doc: doc.clone(), why: "a package here needs it" });
+        moves.push(Move::New { name: need, doc: doc.clone(), why: NEEDED });
     }
     moves
 }

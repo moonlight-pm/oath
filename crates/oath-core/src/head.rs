@@ -13,7 +13,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::update::{short, source_label, Move};
+use crate::update::{short, source_label, Move, NEEDED_HEAD};
 use crate::{is_realization_id, Error, PkgNeed, Result};
 
 /// The signature namespace of a head (`ssh-keygen -Y sign -n`).
@@ -302,7 +302,7 @@ pub fn plan(
         }
         let doc = offer.head.doc();
         todo.extend(need_names(&doc));
-        moves.push(Move::New { name: n, doc, why: "a package here needs it, from its head" });
+        moves.push(Move::New { name: n, doc, why: NEEDED_HEAD });
     }
     moves
 }
@@ -547,13 +547,15 @@ pub fn settle(
                 }),
             }
         }
-        // A package made only for what is now held is not made.
+        // A package made only for what is now held is not made. One the
+        // release makes for itself (new to the profile, or fixed by the
+        // output) is, though nothing here needs it.
         let wanted: BTreeSet<String> = finals(machine, &moves)
             .iter()
             .filter(|(_, f)| f.present)
             .flat_map(|(_, f)| f.needs.iter().map(|(q, _)| q.clone()).collect::<Vec<_>>())
             .collect();
-        moves.retain(|m| !matches!(m, Move::New { name, .. } if !wanted.contains(name)));
+        moves.retain(|m| !(m.made_for_a_need() && !wanted.contains(m.name())));
         return moves;
     }
 }
@@ -927,6 +929,20 @@ mod tests {
         let provides = trees(&[("mesa", 'm', &["libEGL.so.1"]), ("mesa", 'x', &["libgbm.so.1"])]);
         let m = run(&machine, moves, &loads, &provides);
         assert_eq!(m.iter().map(Move::kind).collect::<Vec<_>>(), ["hold"], "{:?}", texts(&m));
+    }
+
+    #[test]
+    fn a_package_the_release_makes_for_itself_is_made_though_nothing_needs_it() {
+        let machine = BTreeMap::from([("bash".to_string(), doc('b', &[]))]);
+        let new = |name: &str, c, why| Move::New { name: name.into(), doc: doc(c, &[]), why };
+        let moves = vec![
+            new("foot", 'f', "new to the profile"),
+            new("zsh", 'z', "the output fixes it"),
+            new("libx", 'x', crate::update::NEEDED),
+            new("liby", 'y', NEEDED_HEAD),
+        ];
+        let m = settle(&machine, moves, |_, _| None, |_, _| None);
+        assert_eq!(m.iter().map(Move::name).collect::<Vec<_>>(), ["foot", "zsh"]);
     }
 
     #[test]
