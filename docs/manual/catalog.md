@@ -30,7 +30,7 @@ The catalog is the source of truth. It lives at `/oath`.
   store/adv/<name>/<hash>.json  a pin's advisories, when its origin serves them
   heads.json               the head `oath update`, `oath new` or `oath add` took of each package
   output.json              the release this machine runs (an install or `oath update` writes it)
-  machine-id               this machine's id: PID 1 makes it at the first boot
+  machine-id               this machine's id: made by PID 1 at a boot or take-over that lacks one
   login/password           `home`'s password hash, root's alone
   ssh/                     host keys
   run/                     sockets and mounts, not desired state
@@ -71,10 +71,14 @@ plan's name is narrower: lowercase letters, digits and `-`, with no
 
 Drift is desired against `applied.json`, the spec as last applied, for
 every kind; actual (`/oath/status/…`) is only what the machine observed (`svc`
-actual is runtime: `state`, `pid`, `restarts`). A package whose pinned
-tree is gone from the store, or that a check found damaged, drifts in
-`tree` too, and `oath apply` fetches it again
-([Packages](packages.md#a-damaged-package)).
+actual is runtime: `state`, `pid`, `restarts`). A package or cell whose
+pinned tree is gone from the store, or that a check found damaged,
+drifts in `tree` too, as does a cell left unlinked because its tree was
+gone at boot. `oath apply` fetches a package's tree again
+([Packages](packages.md#a-damaged-package)). A cell comes from no
+origin: until `sudo oath store cell:<name> <dir|file.tar>` puts its
+tree back ([Cells](cells.md#cellname-one-projects-own-software)), apply
+refuses it before it takes a generation, and changes nothing.
 
 `oath schema` lists the kinds. `oath schema <kind>` prints the kind's
 prose (its fields and, where the kind has them, when to use it, safety
@@ -222,7 +226,7 @@ lasts until the file's writer next runs.
 | `hostname`, `hosts`, `profile`, `zprofile`, `zshrc`, `shells`, `ssh/sshd_config` | oath, from `host:local` | each boot, and when `host:local` converges |
 | `resolv.conf` | the DHCP client's hook; on a static address, oath from `net:net0.dns` (R83) | each lease and renewal that names DNS servers; on a static address, each boot and when `net:net0` converges, unless `dns` is empty ([Network](network.md#names)) |
 | `passwd`, `group`, `shadow`, `nsswitch.conf`, `ssh/ssh_config` | the image | replaced by `oath update` |
-| `machine-id` | PID 1, from `/oath/machine-id` | each boot; the id is random, made at the machine's first boot, and `oath install` does not copy it |
+| `machine-id` | PID 1, from `/oath/machine-id` | each boot, and each take-over by re-exec ([Services](services.md#a-new-pid-1-without-a-reboot)); the id is random, made at the first of these that lacks one, and `oath install` does not copy it |
 
 There is no `fstab`, `os-release`, `localtime`, `sudoers`,
 `sysctl.conf` or `crontab`. Mounts are `host:local.mounts`, the time

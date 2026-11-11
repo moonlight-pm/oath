@@ -165,9 +165,10 @@ starts something else, move `Oath` first in the firmware's setup.
 
 It checks no backups and reads no other disk past each filesystem's
 type and label: knowing what is on them is yours. It refuses the disk
-the stick runs from, a disk with something mounted, pending changes, an
-apply on probation and an archived boot. Agents run the same over SSH
-(`--json` for each step).
+the stick runs from, a disk with something mounted, pending changes (a
+cell whose tree is missing or damaged among them), an apply on probation
+and an archived boot. Agents run the same over SSH (`--json` for each
+step).
 
 ## USB installer stick
 
@@ -209,9 +210,11 @@ It takes the newest release for `host:local.profile` from the first of
 buccina's), and refuses one older than the release the machine runs
 (`/oath/output.json`, written by the install too), or one it cannot
 order against it, unless `--output <id>` names it. It also refuses
-pending changes and an apply on probation, and a set of moves that would
-leave a package needing another at a hash it will not have (the check
-`oath apply` makes, made first, so the preview says it too).
+pending changes (a cell whose tree is missing or damaged is one:
+[Cells](cells.md#cellname-one-projects-own-software)) and an apply on
+probation, and a set of moves that would leave a package needing
+another at a hash it will not have (the check `oath apply` makes, made
+first, so the preview says it too).
 
 Every package `cargo make publish` publishes has a signed head, except
 `linux`, `oath` and `firmware`, which move with the release; a recipe
@@ -223,7 +226,18 @@ A head wins over the release's pin, and the preview says so:
 head no trusted key may sign is refused, one line each, and its package
 follows the release: `pkg:sola's head on … is refused: security: signed
 by a key this machine does not trust`. A head never goes back: one older
-than the head the machine took (`/oath/heads.json`) waits. `--output
+than the head the machine took (`/oath/heads.json`) waits, of a package
+it has or of one it took and removed since that a head here needs again,
+and what the update would move or make that needs one it lacks waits
+with it: `pkg:libcap sha256-… waits: it (committed …) is older than the
+head this machine took, sha256-… (signed by oath@buccina, committed …)`,
+`pkg:bind sha256-… waits: pkg:bind needs pkg:libcap, which waits`. One
+the machine has reads `stays at sha256-…; sha256-… waits: …`. The times
+are the heads' commits when both name one and they differ, else when
+each was published. One the release makes (new to the profile, or one
+the output fixes) that nothing here needs has no head read: it is made
+at the release's pin, even one older than the head the machine took.
+`--output
 <older>` moves the machine to that release except each package with a
 head the machine trusts, which goes to its head, never to that release's
 pin. `oath undo` takes back the apply that moved a package to its head;
@@ -267,10 +281,13 @@ With `--confirm`, it:
    one ([Packages](packages.md)); makes each package and service new to
    the profile since the release the machine runs (its record lists
    that release's objects, `seed`; a record from before R47 tells only for the
-   packages pinned from elsewhere, `pinned`), each package the output
+   packages pinned from elsewhere, `pinned`) and each package the output
    fixes (the image's files need it: `/etc/passwd` names `pkg:zsh`'s
-   shell) and each one a package it has present needs, down their needs
-   (R41's `pkg:libglvnd`); files each plan whose pin the output moves and
+   shell), though nothing here needs it, and each one a package it has
+   present needs, down their needs (R41's `pkg:libglvnd`), unless what
+   needs it waits; the preview says why it makes each (`pkg:dosfstools
+   sha256-… is made (new to the profile)`, `(the output fixes it)`, `(a
+   package here needs it)`); files each plan whose pin the output moves and
    each new to the profile; and runs
    `oath apply` once (a name in `/bin` or `/lib` that moves from one
    package to another, `libEGL.so.1` there, moves in it whichever
@@ -278,8 +295,9 @@ With `--confirm`, it:
    package. An object the release the machine runs had and the machine
    lacks was its owner's to remove and is not made again; one new to the
    profile that the machine has absent (`oath build` leaves a product it
-   made so) is made present, never the other way; any other the
-   output's seed has is listed, for `oath new`. A package the release
+   made so) is made present, never the other way, unless it has a head
+   the machine trusts: it follows that head and stays absent; any other
+   the output's seed has is listed, for `oath new`. A package the release
    the machine runs had and this one does not is removed, unless `--keep`
    names it, it has a head, or something that stays needs it (R62); one its
    owner added keeps its pin, or moves to its head when it has one. A
@@ -323,8 +341,10 @@ every service keeps its process. The update prints `PID 1 runs …`, and
 `--json` says `"pid1": "re-executed"`. If the update stops after that,
 PID 1 goes back to the binary it ran. A new kernel or new firmware takes a
 reboot, and so does what PID 1 does only at boot (mounts, modules,
-sysctls, device modes, `/etc`). A PID 1 from before R73 is not asked:
-its first update to one takes a reboot.
+sysctls, device modes, `/etc`), except `/etc/machine-id`: the PID 1 that
+takes over writes it from `/oath/machine-id`, and makes that id when the
+machine has none, before the update goes on. A PID 1 from before R73 is
+not asked: its first update to one takes a reboot.
 
 A machine whose `svc:sshd` runs dropbear moves to OpenSSH (R36) after
 it has booted the new PID 1, which writes `/etc/ssh/sshd_config` and

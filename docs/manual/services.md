@@ -59,9 +59,10 @@ and sound load after that, so `svc:sshd` is up before them.
 After `ready`, in the background, PID 1 runs `oath verify --quiet` and
 `oath --confirm reap --boot`. What they print goes to `init.log`
 (`… verified, … damaged`, `reaped …`). A package whose tree is damaged or
-gone has status `error` and `/oath/INDEX.md` lists it under `Store damage`;
-the boot goes on and does not repair it. `sudo oath apply pkg:<name>`
-fetches it again ([`oath verify`](using.md#verbs)).
+gone has status `error`, and `/oath/INDEX.md` lists it under `Store damage`
+with its repair; the boot goes on and does not repair it.
+`sudo oath apply pkg:<name>` fetches it again
+([`oath verify`](using.md#verbs)).
 
 PID 1 runs only what was applied: each service's `applied.json`, which
 `oath apply` writes after the spec passes its checks. A service `oath new`
@@ -356,6 +357,9 @@ the output's binary the same way, every service running (R73,
 [install.md](install.md)). `oath logs` shows `upgrade: … rehearsing`,
 `upgrade: re-executing PID 1 into …` and `upgrade: this binary took
 over`; `/run/oath/init.json` says which binary PID 1 runs (`exe`) and
-how it started (`how`: `boot`, `panic` or `upgrade`). A binary with the
-wrong hash, or one that cannot read PID 1's state, is refused
-(`upgrade: not into …`), and PID 1 goes on as it was.
+how it started (`how`: `boot`, `panic` or `upgrade`). The PID 1 that
+takes over, after an update or a panic, writes `/etc/machine-id` from
+`/oath/machine-id` as boot does, and makes that id when the machine has
+none (`made this machine's id`). A binary with the wrong hash, or one
+that cannot read PID 1's state, is refused (`upgrade: not into …`), and
+PID 1 goes on as it was.
