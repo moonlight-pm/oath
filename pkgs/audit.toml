@@ -121,6 +121,7 @@ source = "Chromium 156.0.8078.93 (tag 2026-11-05) with CEF 8ea0c73 (156.0.26, 20
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
 "CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
 "CVE-2026-121034" = "Views in Chrome on Windows (Google's record); Oath builds CEF for Linux"
+"CVE-2026-121157" = "Chromoting, Chrome Remote Desktop, against a local program (Google's record, Chromium-rated low): its host is remoting/'s own programs, and the build makes and ships libcef.so and its resources only (pkgs/cef/build.sh)"
 "CVE-2026-121037" = "ANGLE in Chrome on Windows (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121045" = "Browser in Chrome on Mac (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121050" = "Mobile in Chrome on iOS (Google's record); Oath builds CEF for Linux"
@@ -377,6 +378,9 @@ cpe = "cpe:2.3:a:git-scm:git"
 repo = "https://github.com/git/git"
 tag = "v{version}"
 
+[git.age_because]
+source = "2.56.1, published 2026-11-10 (its commit is from 2026-10-23, under embargo), is the only 2.56 release with the fixes for CVE-2026-111760 (code execution on a recursive clone), CVE-2026-105437 (high, a heap overflow in the merge code), CVE-2026-113408, CVE-2026-114466, CVE-2026-114467 and CVE-2026-114469 (git's 2.50.2 release notes)"
+
 [glib]
 cpe = "cpe:2.3:a:gnome:glib"
 repo = "https://gitlab.gnome.org/GNOME/glib"
@@ -424,6 +428,9 @@ cpe = "cpe:2.3:a:golang:go"
 repo = "https://github.com/golang/go"
 tag = "go{version}"
 osv = "Go:stdlib"
+
+[go.age_because]
+source = "1.27.4, released 2026-11-10, is the only 1.27 release with Go's fixes for CVE-2026-97054 (net/http: an HTTP/1 server panics on a MaxBytesReader race, GO-2026-6859) and CVE-2026-97033 to 97043 (cmd/go, cgo, the compiler and linker: code run at build time through cgo flags and directives, GO-2026-6848 to 6858)"
 
 [grep]
 cpe = "cpe:2.3:a:gnu:grep"
@@ -748,6 +755,8 @@ compare_tag = "v{version}"
 "CVE-2026-100080" = "Xen netback (xen-netback statistics, 7.3.3): boot/config has CONFIG_XEN unset"
 "CVE-2026-100081" = "Xen netback (xenvif_mcast_addr_list_free, 7.3.3): boot/config has CONFIG_XEN unset"
 "CVE-2026-100082" = "Xen blkback (XSA-528, 7.3.3): boot/config has CONFIG_XEN unset"
+"CVE-2026-99286" = "Xen netback (XenBus connection failure cleanup): boot/config has CONFIG_XEN unset"
+"CVE-2026-99287" = "Xen netback (sring pointers on unmap): boot/config has CONFIG_XEN unset"
 "CVE-2023-46838" = "Xen netback: boot/config has CONFIG_XEN unset"
 "CVE-2026-99271" = "ALSA line6 (submit_audio_out_urb): boot/config sets none of SND_USB_POD, PODHD, TONEPORT or VARIAX, so SND_USB_LINE6 is not built"
 "CVE-2026-99272" = "SMB client (SMB2_read): boot/config has CONFIG_CIFS unset"
@@ -1254,6 +1263,9 @@ cpe = "cpe:2.3:a:x.org:xwayland"
 dev_micro = 90
 compare_repo = "https://gitlab.freedesktop.org/xorg/xserver"
 compare_tag = "xwayland-{version}"
+
+[xwayland.age_because]
+source = "24.1.15, released 2026-11-10, is the only Xwayland release with the fixes in X.Org's advisory of that day: CVE-2026-109092, 109093, 109094, 109095, 109096, 109903 and 109904 (out-of-bounds reads and writes an X client can cause in the server: Xv, XTest, XRes, glamor)"
 
 [xwayland.not_affected]
 "CVE-2024-21886" = "fixed in Xwayland 23.2.4 (X.Org's advisory of 2024-01-16); Oath builds 24.1.14"
