@@ -41,7 +41,7 @@
     },
     {
       "id": "pkg:go",
-      "hash": "sha256-cdc76b7e916484945c5d98461be0b92c711c202531f5657f046d4d716be14f31"
+      "hash": "sha256-8b0304f4425af1bb682339079949f0b15d47d3c2ac4647e05f862be9a7882162"
     },
     {
       "id": "pkg:grep",

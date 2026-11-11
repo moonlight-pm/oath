@@ -6,17 +6,17 @@
 # pkg:certs' list; and GOTOOLCHAIN=local, so go never downloads a toolchain
 # of its own: a newer one is a new pin here. The audit reads the Go
 # ecosystem's advisories for the standard library as stdlib.
-version = "1.27.3"
+version = "1.27.4"
 license = "BSD-3-Clause"
 description = "Go: the compiler, the go command and the standard library."
 home = "https://go.dev/"
 category = "toolchain"
-purl = "pkg:golang/stdlib@1.27.3"
+purl = "pkg:golang/stdlib@1.27.4"
 build = []
 run = []
 
 [[source]]
-url = "https://dl.google.com/go/go1.27.3.linux-amd64.tar.gz"
-sha256 = "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40"
-sig = "https://dl.google.com/go/go1.27.3.linux-amd64.tar.gz.asc"
+url = "https://dl.google.com/go/go1.27.4.linux-amd64.tar.gz"
+sha256 = "7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840"
+sig = "https://dl.google.com/go/go1.27.4.linux-amd64.tar.gz.asc"
 key = "go"

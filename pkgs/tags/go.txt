@@ -1,8 +1,8 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source go1.27.3.linux-amd64.tar.gz 65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40
-tag go1.27.3 commit 2aae1000ea1d4b28923b96db28acf4e3b99d6aff tree 09275a3482ffe831661a72c202c6261e0eb6ae7f
+source go1.27.4.linux-amd64.tar.gz 7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840
+tag go1.27.4 commit 7b2881024c95a11ddb86663a616340aa3a88b67f tree 4b45ea39d42b413ed0790b28882abb96fc2f47e9
 signed no
-same 15636
+same 15638
 only-in-tag 14
 adds bin/go
 adds bin/gofmt
