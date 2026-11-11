@@ -1,8 +1,8 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source git-2.56.0.tar.xz 26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3
-tag v2.56.0 commit a018953688f1b10bddf91bff8747068f5f4746a4 tree 96aa7b9f343426cd28cf6c2da737b9f847a2919d
+source git-2.56.1.tar.xz f0b0bf89264b9bd2e1c640363e7529643989da76281600473c50745cd34a607f
+tag v2.56.1 commit 03b41523c576f26ad34085378717a0c1b287470f tree bc7f15f9a81ecb12d1add196786608b552f6273d
 signed pgp E1F036B1FEE7221FC778ECEFB0B5E88696AFE6CB
-same 4853
+same 4861
 only-in-tag 0
 submodule sha1collisiondetection 0
 adds configure
