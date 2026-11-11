@@ -126,9 +126,11 @@ links that tree. `oath add` and `oath new pkg:<name>` record each head they take
 `/oath/heads.json`, as an update does: `oath new` when it makes the objects, `oath add`
 once its apply has linked them. Both refuse a head older than one this machine took, of
 the package or of a need, and of a package it removed too (`pkg:<name>: the head on the
-origins, sha256-…, is older than the one this machine took, sha256-… (signed by …,
-published …)`); nothing changes, and the hint names the `sudo oath new pkg:<name>
-hash=sha256-…` that pins the one taken.
+origins, sha256-… (committed …), is older than the one this machine took, sha256-…
+(signed by …, committed …)`). The times are what ordered the two heads: their commits'
+when both name one and the two differ, else when each was published (`published …`).
+Nothing changes, and the hint names the `sudo oath new pkg:<name> hash=sha256-…` that
+pins the one taken.
 
 Run by a user who cannot change the catalog, `oath add` fetches no pack and changes
 nothing: it prints `would add` and each package with its pack's size on its origin (or
@@ -214,9 +216,10 @@ after the services start (`oath verify --quiet`; `oath logs` shows a line like
 hashes to sha256-…` (`hashes to missing` for a tree that is gone) and exits 1.
 `oath get pkg:<name> --actual` has the outcome in `verified`: `at`, `ok`, and
 `got` for a tree that differs. A damaged tree has status `error`, and `oath`
-(INDEX.md) lists it under **Store damage**. Apply, `sudo oath verify` and the
-boot's check write `verified`; `oath verify` as `home` only reports. No check
-repairs anything.
+(INDEX.md) lists it under **Store damage** with its repair: `` `pkg:less` hashes to
+`sha256-…`, not its pin: `sudo oath apply pkg:less` `` (`is gone from the store` for a
+tree that is gone). Apply, `sudo oath verify` and the boot's check write `verified`;
+`oath verify` as `home` only reports. No check repairs anything.
 
 A package whose tree is gone, or that a check found damaged, drifts in `tree`,
 and `sudo oath apply` is the repair: it fetches the tree again from the
@@ -359,14 +362,29 @@ Each line is an `ssh-ed25519` public key; a person adds one, an agent does not.
 `oath update` reads the head of every package the machine has (and of what
 those heads need) from each origin and moves each package to the newest
 head a key may sign for it; `oath update` alone says what would move.
-It records each head it took in `/oath/heads.json` and refuses an older
-one after; `oath add`, `oath new pkg:<name>` and `oath update --record`
+It records each head it took in `/oath/heads.json` and takes no older
+one after (below); `oath add`, `oath new pkg:<name>` and `oath update --record`
 record theirs the same way ([Install / remove](#install--remove)), and the
 record never goes back to an older head. A head wins over a release's pin of the same package, so
 `oath update --output <older>` leaves each package with a head at its head
 (`oath undo` puts back what an update moved), and a package with a head
 stays when a release drops it. With
 `host:local.profile` empty a machine takes heads only.
+
+A package the release makes (new to the profile, or one the output fixes) is
+made though nothing here needs it, at the release's pin, even one older than a
+head this machine took of it: `oath update` reads the head of a package the
+machine lacks only when a head here needs it, and then makes it at that head.
+A head older than the one this machine took waits, also of a package the
+machine lacks (one it took and removed since) that a head here needs; then each
+package that would move or be made needing it waits too. The hold of an older
+head names the times that ordered the two, as `oath add` does:
+
+```
+pkg:less stays at sha256-…; sha256-… waits: it (committed …) is older than the head this machine took, sha256-… (signed by …, committed …)
+pkg:libnew sha256-… waits: it (published …) is older than the head this machine took, sha256-… (signed by …, published …)
+pkg:sola stays at sha256-…; sha256-… waits: pkg:sola needs pkg:libnew, which waits
+```
 
 A need is a pin. When the moves leave one at another pin (a new
 `pkg:mesa` under a package built against the old one), the update
@@ -855,7 +873,7 @@ hash>.plan`) and the source pack the plan pins
 package that is not built, has no licence, has no plan matching the
 record, needs a package that is not published, or whose plan builds
 with a pack not published at the hash it pins (the lock's, or one the
-origin already has from an earlier publish, as CEF's earlier build of OpenSSL): an
+origin already has from an earlier publish): an
 origin alone rebuilds every plan on it. `INDEX.md` lists name, hash, licence, plan and
 source, and `index.json`, which `oath ls --origin` reads, the same rows with version,
 category, description and size; `INDEX.md` goes up last. A recipe goes out as its plan

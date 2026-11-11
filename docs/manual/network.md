@@ -33,8 +33,10 @@ down. `ipv4` is `dhcp` or `a.b.c.d/n`; `set` refuses anything else.
 `gateway` is the default route of a static address; empty adds no
 default route, and `dhcp` ignores it. `set` refuses anything but an IPv4
 address; one `ip` refuses, such as a gateway off the address's subnet
-(`Network is unreachable`), fails the apply, which goes on probation
-like one that succeeds. `dns` is a static address's DNS servers
+(`Network is unreachable`), fails the apply, which shows what `ip` said
+and goes on probation like one that succeeds. An `ip` command whose
+failure does not matter, such as deleting a default route that is
+already gone, prints nothing. `dns` is a static address's DNS servers
 ([Names](#names)).
 
 Any change to `up`, `ipv4` or `gateway` can cut your SSH session, so
@@ -114,7 +116,9 @@ cat /etc/resolv.conf
 With a static address, apply and every boot write `/etc/resolv.conf`
 with a `nameserver` line for each, so set `dns` rather than edit the
 file. A change to `dns` cannot cut SSH: it needs no `--confirm` and has
-no probation. With `dhcp`, `dns` is ignored and the DHCP client's hook
+no probation, and while `net0` holds only the static address and the
+gateway's default route, apply leaves them as they are. With `dhcp`,
+`dns` is ignored and the DHCP client's hook
 writes the file from each lease that names servers. An empty `dns` (the
 default) leaves the file as it is, so `oath undo` of the first `dns`
 leaves its servers there; a change to static keeps what the last lease

@@ -287,16 +287,26 @@ your tree that is not a directory. You commit.
 
 `undo` puts back what `apply` changed, newest first, from copies kept in
 the session. It leaves what you changed after `apply`: a file or link it
-wrote that you edited, re-pointed, replaced or deleted, a file or link
-you put where it deleted a file, link or directory, and anything under a
-directory you replaced with a file or link. It names each, puts back the
-rest, and exits 1. A link an earlier `writ` applied stays too, and is
-named, as that `writ` kept no record of where it pointed it. The session
+wrote that you edited, re-pointed, replaced or deleted, anything you put
+where it deleted a file, link or directory, a directory it made that you
+put something in, and anything under a directory you replaced with a
+file or link. It names each once, by its path in the project, puts back
+the rest, and exits 1. A link an earlier `writ` applied stays too, and
+is named, as that `writ` kept no record of where it pointed it.
+
+Each path is put back whole or not at all. One that cannot be, such as
+a file in a directory you made read-only, stops `undo` there with exit
+status 2, and `writ undo` again goes on from that path. A directory it
+made that it cannot remove stays instead, and is named. The session
 keeps its changes, and `apply` can take them again: `undo` records what
-it put back, so that is not taken for a change of yours. A prompt's box,
+it put back as the session's, so that is not taken for a change of
+yours, and what it left as yours. One exception: when an `undo` stops
+before it has taken back an earlier `apply`, a path it left to you that
+holds what that `apply` left there is the session's again, so the next
+`undo` puts it back and `apply` writes over it. A prompt's box,
 `writ run`'s box, `diff`, `apply` and `undo` take one lock, so only one
-of them works on a session at a time, and another says the session is in
-use.
+of them works on a session at a time, and another says the session is
+in use.
 
 ## Local models
 
