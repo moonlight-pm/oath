@@ -217,7 +217,7 @@
     },
     {
       "id": "pkg:xwayland",
-      "hash": "sha256-bf752264b0ddd3f14fd83d9dc101c7aeca85d762fd95dc7284846102b488b109"
+      "hash": "sha256-e3ef32b1c7a1f4db8e5ad1c79eec93d11a35696bd9da56d9e934514a6cb579c5"
     },
     {
       "id": "pkg:xz",
