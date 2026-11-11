@@ -13,8 +13,9 @@
 # Oath's Python has no POSIX semaphores (its configure found no /dev/shm), so
 # the mojom parser and Blink's bindings generator run in one process; fontconfig
 # and ANGLE link libuuid and libXi, which they never call and Oath does not ship;
-# upstream-CVE-*: Chromium's own fixes from main for critical CVEs Chrome fixed
-# only in 157, until CEF 157 has them.
+# upstream-CVE-*: Chromium's own fixes for critical CVEs Chrome fixed only in 157,
+# from main, and for one exploited in the wild (libxslt), from the M156 branch past
+# this tarball, until CEF 157 has them.
 #
 # The layout is the vendor's minimal distribution's: cef/Release (libcef.so,
 # SwiftShader, the V8 snapshot) and cef/Resources, whose files are also linked
@@ -30,6 +31,10 @@ CEF_NUMBER=3671
 CHROMIUM=${VERSION##*chromium-}
 CEF_PATCH=${VERSION%%+*}
 CEF_PATCH=${CEF_PATCH##*.}
+# Python's bytecode goes under /tmp, not beside what it compiles: where the
+# sandbox could not make the packs read-only (pkg:meson's build.sh), python3
+# would write it into pkg:python's.
+export PYTHONPYCACHEPREFIX=/tmp/pycache
 tar -xf "$SRC/chromium-$CHROMIUM.tar.xz" -C /tmp
 mv "/tmp/chromium-$CHROMIUM" /tmp/src
 cd /tmp/src

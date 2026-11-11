@@ -22,8 +22,8 @@
     "version": "2.39.3",
     "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND ISC AND OpenSSL AND PSF-2.0 AND blessing",
     "by": "plan",
-    "plan": "sha256-0110ba1828a0c054001bbc3b6bfbb73a015cba07fe957398cc49d26e70516279",
-    "product": "sha256-df1507709e80e4740abcca37d1ae666cc11ab3053059b98c788c3410b6318966",
+    "plan": "sha256-7f42771af718920a481b876cb796a2be5f48bd45ec6ea705a1c56ee3d5589130",
+    "product": "sha256-2db0c9af38db3e83f7c61d44e929af372b44c0e3aea74af94b0570d0bc2797c4",
     "run": [
       "python",
       "certs",
@@ -73,8 +73,8 @@
     "version": "0.35.0",
     "license": "Apache-2.0 AND AGPL-3.0-only AND MIT AND BSD-3-Clause AND BSD-2-Clause AND MPL-2.0 AND ISC AND CC0-1.0",
     "by": "plan",
-    "plan": "sha256-48bfeb15890863fd03c50461e0608500ca9df6333805f2cb37c947cf6382d8bc",
-    "product": "sha256-29ee9c9e6a960a7774cee03400e21822fe05db36fcd4ec5788aa628733c296a2",
+    "plan": "sha256-6d15ba911545fb6679a97edf7e86f7e5451770ea5014ef724b59ebad5c3358ef",
+    "product": "sha256-e0b72073611c1ea4c57a067d9ca619a5909f9ccac124e239a634ebc6cea50b10",
     "run": [
       "certs"
     ]
@@ -138,8 +138,8 @@
     "version": "156.0.26+g8ea0c73+chromium-156.0.8078.93",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-5cc8e9a9d95aa9afc4a32f457b3acf0ee0dd2ab0ca4627efa416efeaae56b7b1",
-    "product": "sha256-196ea8fa2e4f26fe6e5091faf8a5ca0d3e478cfff17424500d978460ee713cb6",
+    "plan": "sha256-0c453983c42efba0bc6a4581f4278e4aced918453d61e1e4f64b8d944bba95e9",
+    "product": "sha256-2228636f36602a80ef6419618a5b3c7d0a9c6491a31987ac46a55a1247b3abfc",
     "run": [
       "glib",
       "nspr",
@@ -165,8 +165,8 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-baaaea521e5ee6f25bf32261a525da095ad4c8b39ebaebe1c5d0d365857e460f",
-    "product": "sha256-7f3167d89993feba262cdec6bcb43f8f06854df04df0a703260665eada3ff909",
+    "plan": "sha256-0badf161a1c43ec48860c099318afea0c29e6e4ce85160fb4d4288b059cde875",
+    "product": "sha256-bd5e759fa738834dd596429befd6b7d0f0f29a458bd93561fc18b3b124d06fe5",
     "run": [
       "crun",
       "passt",
@@ -214,8 +214,8 @@
     "version": "2026.10.5",
     "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause",
     "by": "plan",
-    "plan": "sha256-1a027580a046bf0564aa083969bb184aa53de9e95e60a283a4a71ae21bacb60e",
-    "product": "sha256-b0e034a2f3475fbf922cddbb0711ca81dd495a5a272f1aa4ec04f7553c1cab6e",
+    "plan": "sha256-816ffc957a91d4a90fa0d5a26b2772e158bf860992627a7200840a461c91b716",
+    "product": "sha256-ad2680702727ecfbf8018632a895114e5dc6d61a202c06ad5a6f57b0d3c128d4",
     "run": [
       "certs"
     ]
@@ -491,18 +491,18 @@
     "version": "2.103.3",
     "license": "MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND MPL-2.0 AND ISC",
     "by": "plan",
-    "plan": "sha256-3b0a3b84f69e1ff4bddc522028cdad8fa364b95418ba01c3c3b5011ef3b253f7",
-    "product": "sha256-d25c369abee3b82790fb2ce2f61565a5ca56a0be54f136d0aef927c572e5b58d",
+    "plan": "sha256-fc80aab8ab0f0ff0b090130f5c3046bd63d55c740bdafae90ab99abd6c3a67a0",
+    "product": "sha256-8562b7ce6cd5d3258f9036971a710dbcf3c6b45de7baf2b66879aa097d361a01",
     "run": [
       "certs"
     ]
   },
   "git": {
-    "version": "2.56.0",
+    "version": "2.56.1",
     "license": "GPL-2.0-only AND LGPL-2.1-or-later AND BSD-3-Clause AND MIT",
     "by": "plan",
-    "plan": "sha256-3c1f0f7f42befe307f642cbd1130ca6bc3ef5ced51579405614101328122871e",
-    "product": "sha256-e8edb96f2a4073be981cde578a89bda0461415fd9bf41c0a6c707419d8cacf77",
+    "plan": "sha256-0ccad7e16d1e6f2838e6a2cb88710ac1cb24ae1f84f49bebcb141bdd49856b3c",
+    "product": "sha256-3aca00650909b61ae84b249ddcb160f46a44eab8edac666de19f0627553d9b73",
     "run": [
       "curl",
       "zlib",
@@ -557,11 +557,11 @@
     "run": []
   },
   "go": {
-    "version": "1.27.3",
+    "version": "1.27.4",
     "license": "BSD-3-Clause",
     "by": "plan",
-    "plan": "sha256-eae14c918f33f9e878f180e7aa7f7e48a6651dbe4a331cf15c6f49883c985e6f",
-    "product": "sha256-cdc76b7e916484945c5d98461be0b92c711c202531f5657f046d4d716be14f31",
+    "plan": "sha256-de96c924bbea95532df13825d7d68533d859bb7584359e18521b62e3b9d1cd7f",
+    "product": "sha256-8b0304f4425af1bb682339079949f0b15d47d3c2ac4647e05f862be9a7882162",
     "run": []
   },
   "gperf": {
@@ -1288,7 +1288,7 @@
     "version": "1.12.1",
     "license": "Apache-2.0",
     "by": "plan",
-    "plan": "sha256-c490c870d7aca18d1f8fb8e903afe7dc58dac130528cd7efd42df26095e6b250",
+    "plan": "sha256-7040f6fcbb613f816b6d470676ac51f4e994cd7ae27da924f0691d6825b158ee",
     "product": "sha256-e681b9f9580b5670fc12fc8da7926b01b2fd4650c5ff09abb4d8d816cfe90dc6",
     "run": []
   },
@@ -1734,8 +1734,8 @@
     "version": "0.19.1",
     "license": "BSD-2-Clause AND MIT AND BSD-3-Clause AND Apache-2.0 AND MPL-2.0",
     "by": "plan",
-    "plan": "sha256-7eaac3538cee17af5df7a9f90b595ee5ef92df3894a64a6d3408af1991bea03f",
-    "product": "sha256-9520130d15a33e28d00ec06b0e77e52fdccf7a60274db6c983dbc18fbcf8861b",
+    "plan": "sha256-29578a96a94f87273bae37a940bc4684e55028c0be4f6afa69fb46da1b066f57",
+    "product": "sha256-9f6a18b1bf3cfa0e6a118abe4a66c8921316c11a0f5ef7a8e807e1dcff13ba7d",
     "run": [
       "certs"
     ]
@@ -1744,7 +1744,7 @@
     "version": "0.1.0",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-c030fdab55982fd10919b9e8eded93ac351e4a6a8602c1b5f8afdaeaea644c4b",
+    "plan": "sha256-ee23255420055864381429abfe6ac5ec7e632508d6d3dabaf1a55719f8958b8a",
     "product": "sha256-be2a874d688dd27c7ef26c74e21ee0cd24cacc968135bac0412ba2e57d3c7876",
     "run": [
       "wlroots",
@@ -1761,8 +1761,8 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-1a7e2089072caad6ebaf4c81deffdcca516a9a32bab7b694975a177dfec85015",
-    "product": "sha256-bf29928dfb9bc58489f0c5300534724a66af076c6964a06af6b61899e387d850",
+    "plan": "sha256-d94e18db0cd5eda3bc8b321c2383bd7826948afbc20d49ecadd6cc88fc911839",
+    "product": "sha256-4678037d8eae4a200533396257bdae79506b484c0b2e69c5091dae554469b6c4",
     "run": []
   },
   "rsync": {
@@ -1975,7 +1975,7 @@
     "version": "0.20.2",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-1596f6aa4510c338a000acb90622448c28c8451986f0ab2adf6a8275e79b8b88",
+    "plan": "sha256-c6b5c7fbb46b95f8aa3cf6beaebfe87b9bea3f7108f763422da77042fac894b5",
     "product": "sha256-1f67a15653ee58882ebf62bf915a9e513147b56d72722767d3e09577a52389fc",
     "run": [
       "wayland",
@@ -2070,11 +2070,11 @@
     "run": []
   },
   "xwayland": {
-    "version": "24.1.14",
+    "version": "24.1.15",
     "license": "MIT AND X11 AND HPND-sell-variant AND BSD-3-Clause",
     "by": "plan",
-    "plan": "sha256-9c0f871c3fe77ba46c635f0244e9e3edefe32c6ca8b11e372be3045c1de54502",
-    "product": "sha256-bf752264b0ddd3f14fd83d9dc101c7aeca85d762fd95dc7284846102b488b109",
+    "plan": "sha256-ba5c701e4b2f764a774480cf73547fb93566e50a48bfb4e65ebc491fbb32967d",
+    "product": "sha256-e3ef32b1c7a1f4db8e5ad1c79eec93d11a35696bd9da56d9e934514a6cb579c5",
     "run": [
       "libxau",
       "libxfont2",
