@@ -215,8 +215,9 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   `names="*"` signs any head and still no release: novus's key, on
   every machine but koeurax since 2026-11-10 (R72 as amended).
 - **Taking heads.** `oath update` reads the head of every package the
-  machine has (and of what those heads need) from its origins, and
-  moves each to the newest head a key may sign for it. It refuses a
+  machine has and every one its release makes (and of what those heads
+  need) from its origins, and moves or makes each at the newest head a
+  key may sign for it. It refuses a
   head older than the one it took, recorded in `/oath/heads.json`, which
   never goes back to an older head. `oath publish` runs as the publisher,
   who cannot write it, so `sudo oath update --record --confirm` records each

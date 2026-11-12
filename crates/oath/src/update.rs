@@ -215,8 +215,10 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
     let keep = keep_names(&machine, &svc_names(cat)?, &opts.keep)?;
     let held = held_by_cells(cat, &keep, |n| output.pin(n).is_some())?;
     let moves = up::plan(&machine, &output, &ran, &held, have);
-    // A head wins over the release's pin of its package (R72).
-    let (offers, refused) = fetch_heads(&origins, &machine, &trusted, &work)?;
+    // A head wins over the release's pin of its package (R72), of one the
+    // release makes too.
+    let wanted = heads_wanted(&machine, &moves);
+    let (offers, refused) = fetch_heads(&origins, &wanted, &trusted, &work)?;
     for r in &refused {
         eprintln!("  {r}");
     }
@@ -1127,11 +1129,24 @@ fn record_only(root: &Path, cat: &Catalog, opts: &Opts, work: &Path) -> Result<i
     Ok(0)
 }
 
+/// The packages whose heads an update reads: each one `machine` has, and
+/// each one the release's `moves` make, so one new to the profile, or one
+/// the output fixes, is made at its head though nothing here needs it.
+fn heads_wanted(machine: &BTreeMap<String, Value>, moves: &[Move]) -> BTreeMap<String, Value> {
+    let mut wanted = machine.clone();
+    for m in moves {
+        if let Move::New { name, doc, .. } = m {
+            wanted.entry(name.clone()).or_insert_with(|| doc.clone());
+        }
+    }
+    wanted
+}
+
 /// The release's moves, with each package that has a head moved by its
 /// head instead (R72): a head wins over the release's pin, a package with
 /// a head is never dropped for leaving the release, and one new to the
-/// profile is made at its head, or held when that head is older than the
-/// one this machine took.
+/// profile is made at its head, with what that head needs, or held when
+/// that head is older than the one this machine took.
 fn with_heads(
     machine: &BTreeMap<String, Value>,
     moves: Vec<Move>,
@@ -1141,6 +1156,9 @@ fn with_heads(
     keep: &BTreeSet<String>,
 ) -> Vec<Move> {
     let mut out = Vec::new();
+    // The machine as head::plan sees it: with each package the release
+    // makes at its head, so what that head needs is made too.
+    let mut after = machine.clone();
     for m in moves {
         let Some(offer) = offers.get(m.name()) else {
             out.push(m);
@@ -1153,6 +1171,7 @@ fn with_heads(
             }
             let mut d = offer.head.doc();
             d["present"] = doc.get("present").cloned().unwrap_or(json!(true));
+            after.insert(name.clone(), d.clone());
             out.push(Move::New { name, doc: d, why });
         }
     }
@@ -1163,7 +1182,7 @@ fn with_heads(
         .filter(|m| matches!(m, Move::New { .. } | Move::Hold { .. }))
         .map(|m| m.name().to_string())
         .collect();
-    let heads = head::plan(machine, offers, taken, keep, |n, pin| ran.overlay(n, pin).is_some());
+    let heads = head::plan(&after, offers, taken, keep, |n, pin| ran.overlay(n, pin).is_some());
     out.extend(heads.into_iter().filter(|m| !made.contains(m.name())));
     out
 }
@@ -1822,20 +1841,58 @@ mod tests {
         }
     }
 
+    fn h(c: char) -> String {
+        format!("sha256-{}", c.to_string().repeat(64))
+    }
+
+    /// The head of `name` at `c`, as an origin served it.
+    fn offer(name: &str, c: char, needs: Value) -> (String, Offer) {
+        let head: Head = serde_json::from_value(json!({
+            "name": name,
+            "hash": h(c),
+            "needs": needs,
+            "published": "2026-11-05T00:00:00Z",
+        }))
+        .unwrap();
+        let o = Offer { head, signer: "oath@novus".into(), origin: "https://o".into() };
+        (name.to_string(), o)
+    }
+
+    #[test]
+    fn the_heads_of_what_the_release_makes_are_read() {
+        let machine = BTreeMap::from([("bash".to_string(), json!({ "hash": h('b') }))]);
+        let new = |name: &str, why| Move::New { name: name.into(), doc: json!({}), why };
+        let release = [
+            new("foot", "new to the profile"),
+            new("zsh", "the output fixes it"),
+            Move::Drop { name: "gone".into() },
+        ];
+        let wanted = heads_wanted(&machine, &release);
+        assert_eq!(wanted.keys().collect::<Vec<_>>(), ["bash", "foot", "zsh"]);
+        assert_eq!(wanted["bash"], machine["bash"]);
+    }
+
+    #[test]
+    fn a_package_the_release_makes_is_made_at_its_head_with_what_that_needs() {
+        // foot is new to the profile and nothing here needs it; its head
+        // needs a package the machine lacks and the release does not make.
+        let machine = BTreeMap::from([("bash".to_string(), json!({ "hash": h('b') }))]);
+        let offers = BTreeMap::from([
+            offer("foot", 'o', json!([{ "id": "pkg:libfoot", "hash": h('l') }])),
+            offer("libfoot", 'l', json!([])),
+        ]);
+        let doc = json!({ "present": true, "hash": h('r') });
+        let release = vec![Move::New { name: "foot".into(), doc, why: "new to the profile" }];
+        let (taken, ran, keep) = (head::Record::new(), up::Ran::default(), BTreeSet::new());
+        let moves = with_heads(&machine, release, &offers, &taken, &ran, &keep);
+        let all = |_: &str, _: &str| Some(BTreeSet::new());
+        let moves = head::settle(&machine, moves, all, all);
+        let made: Vec<(&str, Option<&str>)> = moves.iter().map(|m| (m.name(), m.to())).collect();
+        assert_eq!(made, [("foot", Some(h('o').as_str())), ("libfoot", Some(h('l').as_str()))]);
+    }
+
     #[test]
     fn a_package_new_to_the_profile_never_takes_a_head_older_than_one_taken() {
-        let h = |c: char| format!("sha256-{}", c.to_string().repeat(64));
-        let offer = |name: &str, c: char, needs: Value| {
-            let head: Head = serde_json::from_value(json!({
-                "name": name,
-                "hash": h(c),
-                "needs": needs,
-                "published": "2026-11-05T00:00:00Z",
-            }))
-            .unwrap();
-            let o = Offer { head, signer: "oath@novus".into(), origin: "https://o".into() };
-            (name.to_string(), o)
-        };
         // This machine took foot at 'f' and removed it; the profile has it
         // now, the origins serve an older head of it, and Sola's head needs it.
         let sola = json!({ "present": true, "hash": h('a') });
