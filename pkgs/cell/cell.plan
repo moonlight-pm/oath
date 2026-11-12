@@ -95,7 +95,7 @@
     },
     {
       "id": "pkg:crun",
-      "hash": "sha256-d4526eed1a4d3441327ee5a9d645afa336ceb90f187246c9ddf5edef7bd6276e"
+      "hash": "sha256-2bd4e067f7c432f5833071e21cff06a073161217f24af67f24b451e596b5b258"
     },
     {
       "id": "pkg:passt",

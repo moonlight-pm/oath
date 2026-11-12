@@ -1,0 +1,39 @@
+Oath's patch, not upstream's. crun 1.31 clears ONLCR on the container's pty
+for a foreground terminal ("terminal: do not translate NL to CR-NL", NEWS),
+while libcrun_set_raw still puts a terminal stdin in raw mode, as 1.30.1 did:
+nothing then turns "\n" into "\r\n", and `cell run -t`'s output staircases
+(seen on buccina, 2026-11-12: 1.30.1 sent "a\r\nb\r\n", 1.31 "a\nb\n"). Clear
+ONLCR only when stdout is not a terminal, where unchanged bytes are what
+upstream wants. Drop it when upstream ends lines on a terminal again.
+
+--- a/src/libcrun/container.c	2026-11-12 11:29:11.125248215 -0700
++++ b/src/libcrun/container.c	2026-11-12 11:29:11.230795806 -0700
+@@ -3029,9 +3029,15 @@
+       if (UNLIKELY (*terminal_fd < 0))
+         return -1;
+ 
+-      ret = libcrun_clear_onlcr (*terminal_fd, err);
+-      if (UNLIKELY (ret < 0))
+-        return ret;
++      /* Oath: only when our stdout is not a terminal.  libcrun_set_raw puts
++         a terminal stdout in raw mode, so the pty's "\n" -> "\r\n" is what
++         ends its lines (crun 1.30.1's output).  */
++      if (! isatty (1))
++        {
++          ret = libcrun_clear_onlcr (*terminal_fd, err);
++          if (UNLIKELY (ret < 0))
++            return ret;
++        }
+ 
+       ret = libcrun_set_raw (0, orig_terminal, err);
+       if (UNLIKELY (ret < 0))
+@@ -4594,7 +4600,8 @@
+         }
+       else
+         {
+-          ret = libcrun_clear_onlcr (terminal_fd, err);
++          /* Oath: as in terminal_setup, only when stdout is not a terminal.  */
++          ret = isatty (1) ? 0 : libcrun_clear_onlcr (terminal_fd, err);
+           if (UNLIKELY (ret < 0))
+             {
+               flush_fd_to_err (context, terminal_fd);

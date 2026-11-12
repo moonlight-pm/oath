@@ -1,10 +1,10 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source crun-1.30.1.tar.gz 99d036d95113552b6df66c7c879432835504bf0e525fc0372745071df129527b
-tag 1.30.1 commit 079ff6a7a16d029460af882f9ea44674e6a510b6 tree 104ad5f51d0fb68156b8da699b3ac2fd894870d1
-signed pgp AF60FCA3CDAA6DEAD157EA3A67E38F7A8BA21772
-same 192
-only-in-tag 93
-submodule libocispec 291
+source crun-1.31.tar.gz 17d04ba159fada1f1300a36b8afe869afb38bf1bbda28da052e83bb4bee20108
+tag 1.31 commit a84965e1278d08d6c75d5b8a41a3e72a7a11fa5b tree 39837fa6b96e9e237c846df42c61db273c155f86
+signed pgp C2428CD75720FACDCF76B6EA17DE5ECB75A1100E
+same 197
+only-in-tag 97
+submodule libocispec 293
 from automake 2
 from gettext 1
 from gnulib 5

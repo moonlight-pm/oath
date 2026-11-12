@@ -236,6 +236,9 @@ cpe = "cpe:2.3:a:crun_project:crun"
 repo = "https://github.com/containers/crun"
 tag = "{version}"
 
+[crun.age_because]
+source = "1.31 (tag 2026-11-12) is the only release with the fix for CVE-2026-115521 (GHSA-jj7h-4c3m-j6wf, medium: an image can redirect the read-only remount of its own rootfs and leave it writable; crun 1.31's notes), taken before its week by Joshua's word of 2026-11-12"
+
 [crun.not_affected]
 "CVE-2026-115520" = "CRIU checkpoint and restore only (GHSA-2mxx-58qc-p466, crun 1.31's notes): build.sh configures --disable-criu"
 
