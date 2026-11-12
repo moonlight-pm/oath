@@ -681,6 +681,8 @@ impl Catalog {
                 hooks.reboot()?;
             } else if report.halting {
                 hooks.halt()?;
+            } else if report.sleeping {
+                report.slept = Some(hooks.sleep()?);
             }
             return Ok(report);
         }
@@ -718,10 +720,7 @@ impl Catalog {
         let mut report = ApplyReport {
             generation,
             ids: id_list.clone(),
-            rebooting: false,
-            halting: false,
-            probation: None,
-            power_only: false,
+            ..Default::default()
         };
         // A change that can cut off SSH is undone unless a new session
         // keeps it, failed or not: a half-converged net is just as likely
@@ -756,6 +755,8 @@ impl Catalog {
             hooks.reboot()?;
         } else if report.halting {
             hooks.halt()?;
+        } else if report.sleeping {
+            report.slept = Some(hooks.sleep()?);
         }
         Ok(report)
     }
@@ -1382,7 +1383,8 @@ impl Catalog {
                 let mut host: Host = serde_json::from_value(desired)?;
                 let reboot = host.power == HostPower::Reboot;
                 let halt = host.power == HostPower::Halt;
-                if reboot || halt {
+                let sleep = host.power == HostPower::Sleep;
+                if reboot || halt || sleep {
                     host.power = HostPower::Run;
                     write_json(&dir.join("desired.json"), &host)?;
                 }
@@ -1392,6 +1394,7 @@ impl Catalog {
                 self.write_actual(id, &actual)?;
                 report.rebooting |= reboot;
                 report.halting |= halt;
+                report.sleeping |= sleep;
                 serde_json::to_value(&host)?
             }
             KIND_SVC => desired,

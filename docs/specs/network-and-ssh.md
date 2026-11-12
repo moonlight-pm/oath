@@ -66,6 +66,16 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 - Any change to `up`, `ipv4` or `gateway` is confirm-class: `oath apply`
   exits 3 without `--confirm`, because it can cut the machine off from
   SSH. Serial still works. A change to `dns` is not.
+- `wake` (R84, built) is Wake-on-LAN: true makes `net0` wake the
+  machine on a magic packet and on nothing else, false on nothing. Apply
+  and every boot set it through the ethtool ioctl (`SIOCETHTOOL`, so no
+  ethtool package); the driver keeps it across a sleep. A driver without
+  Wake-on-LAN refuses true and names itself. It is not confirm-class.
+  From `host:local.power=sleep` it always works; from off it takes the
+  firmware's leave (an ASUS board's "Power On By PCI-E", ErP off). Off
+  the catalog, `oath wake <mac>` sends the packet to another machine:
+  a UDP broadcast to port 9, three times, from any user; its MAC is
+  `mac` in its `dev:net0`.
 - PID 1 brings `lo` up itself. Loopback is not a catalog object.
 - The base profile seeds DHCP. QEMU user networking hands out
   10.0.2.15 and forwards host port 2222 (`OATH_SSH_PORT`) to guest 22.

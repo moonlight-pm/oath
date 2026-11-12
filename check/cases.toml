@@ -332,6 +332,27 @@ steps = [
 ]
 
 [[case]]
+name = "sleep-and-wake"
+about = "power=sleep needs --confirm, arms the keyboard and mouse (the VM's PS/2 pair), suspends to RAM until the RTC alarm wakes the VM, says when it slept and woke, and leaves power at run with sshd still up (R84)."
+steps = [
+  { run = "sudo oath set host:local power=sleep && sudo oath apply host:local", fails = true, expect = ["needs --confirm"] },
+  { run = "sudo sh -c 'echo +5 > /sys/class/rtc/rtc0/wakealarm' && sudo oath apply --confirm host:local", expect = ["without a generation", "slept at", "(deep), woke at", "armed to wake it: AT Translated Set 2 keyboard, ImExPS/2 Generic Explorer Mouse, the power button"], timeout = 90 },
+  { run = "cat /sys/devices/platform/i8042/serio0/power/wakeup /sys/devices/platform/i8042/serio1/power/wakeup", expect = ["enabled\nenabled"] },
+  { run = "oath get host:local && oath get svc:sshd && oath diff", expect = ["power: \"run\"", "state: \"running\"", "in-sync"], reject = ["\"sleep\""] },
+]
+
+[[case]]
+name = "net-wake"
+about = "net:net0.wake is refused on a NIC without Wake-on-LAN (the VM's virtio-net), naming its driver; `oath wake` sends a magic packet for a MAC and refuses anything else (R84)."
+steps = [
+  { run = "sudo oath set net:net0 wake=true && sudo oath apply net:net0", fails = true, expect = ["virtio_net", "has no Wake-on-LAN"] },
+  { run = "sudo oath undo && oath diff", expect = ["in-sync"] },
+  { run = "oath get dev:net0", expect = ["mac: \"52:54:00:"] },
+  { run = "oath wake 52:54:00:12:34:56", expect = ["magic packet 3 times"] },
+  { run = "oath wake koeurax", fails = true, expect = ["is not a MAC address"] },
+]
+
+[[case]]
 name = "shutdown-in-wants-order"
 about = "Shutdown stops a service before the one it wants."
 metal = true

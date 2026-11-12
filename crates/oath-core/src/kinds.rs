@@ -46,7 +46,11 @@ pub struct Host {
     /// truth is this object, not /etc/hostname.
     #[schemars(length(min = 1, max = 63), regex(pattern = r"^[A-Za-z0-9.-]+$"))]
     pub hostname: String,
-    /// `run` is steady state. `reboot` and `halt` need --confirm on apply.
+    /// `run` is steady state. `reboot`, `halt` and `sleep` need --confirm
+    /// on apply, which sets power back to `run` as it acts. `sleep`
+    /// suspends to RAM: a key, a mouse or a Wake-on-LAN packet
+    /// (`net:net0.wake`) wakes the machine with everything as it was, and
+    /// the apply returns then.
     pub power: HostPower,
     /// Environment PID 1 puts in every svc spawn. Also written to
     /// root-owned /etc/profile for logins (a side effect; the catalog is
@@ -138,6 +142,7 @@ pub enum HostPower {
     Run,
     Reboot,
     Halt,
+    Sleep,
 }
 
 impl HostPower {
@@ -146,6 +151,7 @@ impl HostPower {
             Self::Run => "run",
             Self::Reboot => "reboot",
             Self::Halt => "halt",
+            Self::Sleep => "sleep",
         }
     }
 }
@@ -538,6 +544,13 @@ pub struct Net {
     /// is. Ignored when ipv4 is dhcp: the lease names them.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dns: Vec<String>,
+    /// Wake-on-LAN: a magic packet to this NIC's MAC address (`mac` in its
+    /// `dev:` object; `oath wake <mac>` sends one) wakes the machine from
+    /// `host:local.power=sleep`, and from off when the firmware allows it.
+    /// Apply and every boot set it; false turns it off. A driver without
+    /// Wake-on-LAN refuses true.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub wake: bool,
     /// Runtime lease when `ipv4` is `dhcp`. Not a desired field.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(skip)]

@@ -52,10 +52,29 @@ pub struct ApplyReport {
     pub ids: Vec<String>,
     pub rebooting: bool,
     pub halting: bool,
+    pub sleeping: bool,
     /// Seconds the apply is on probation (it can cut off SSH), if it is.
     pub probation: Option<u64>,
     /// Only `host:local` power changed: no generation was taken.
     pub power_only: bool,
+    /// `host:local.power=sleep` slept and woke.
+    pub slept: Option<Slept>,
+}
+
+/// One sleep: how the machine slept, what could wake it, and when it woke.
+#[derive(Clone, Debug, Default, serde::Serialize)]
+pub struct Slept {
+    /// `/sys/power/mem_sleep`'s choice: `deep` (S3) or `s2idle`.
+    pub state: String,
+    /// RFC 3339, as it went to sleep and as it woke.
+    pub at: String,
+    pub woke: String,
+    /// What was armed to wake it: each keyboard and mouse, and `net0`
+    /// when `net:net0.wake` is on.
+    pub wake: Vec<String>,
+    /// The devices that counted a wake event while it slept. Often none:
+    /// not every platform says.
+    pub woken_by: Vec<String>,
 }
 
 pub trait ApplyHooks {
@@ -70,6 +89,10 @@ pub trait ApplyHooks {
     fn notify_init(&self) -> Result<()>;
     fn reboot(&self) -> Result<()>;
     fn halt(&self) -> Result<()>;
+    /// Suspend to RAM and return on wake.
+    fn sleep(&self) -> Result<Slept> {
+        Ok(Slept::default())
+    }
     /// After notify, wait until svc actual matches `enabled`. Default: no-op.
     fn wait_converge(&self, _id: &ObjectId, _enabled: bool) -> Result<()> {
         Ok(())

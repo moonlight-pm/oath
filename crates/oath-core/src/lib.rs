@@ -41,7 +41,7 @@ pub use catalog::{
 };
 pub use dev::{converge as converge_dev, discover as discover_devices};
 pub use error::{Error, Result};
-pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks};
+pub use hooks::{Actor, ApplyHooks, ApplyReport, NullHooks, Slept};
 pub use id::ObjectId;
 pub use kinds::{
     Cell, CellActual, Dev, DevActual, DhcpLease, Host, HostPower, Meta, Mount, Net, Pkg, PkgActual,

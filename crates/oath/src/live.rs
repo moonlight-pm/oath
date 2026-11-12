@@ -8,7 +8,7 @@ use nix::unistd::{sethostname, sync};
 use oath_core::{
     converge_dev, converge_net, converge_ssh, fetch_adv, fetch_and_converge_pkg,
     gen_subvol_name, parse_gen_subvol, tel, ApplyHooks, Dev, DevActual, Error, Host, HostPower, Net, ObjectId, Pkg,
-    PkgActual, Result, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
+    PkgActual, Result, Slept, Ssh, SshActual, BTRFS_TOP, LIVE_SUBVOL,
 };
 use serde_json::json;
 
@@ -405,6 +405,16 @@ impl ApplyHooks for Live {
         tel("oath", "halt", json!({}));
         // Power off, not halt: halt leaves QEMU (and a machine) sitting there.
         power(libc::SIGUSR2, RebootMode::RB_POWER_OFF)
+    }
+
+    /// No PID 1 step: the kernel freezes every process, PID 1 too, and
+    /// thaws them on wake. A catalog other than /oath does not sleep the
+    /// machine.
+    fn sleep(&self) -> Result<Slept> {
+        if self.catalog_root.as_path() != Path::new("/oath") {
+            return Ok(Slept::default());
+        }
+        crate::sleep::sleep()
     }
 
     fn converge_dev(&self, id: &ObjectId, desired: &Dev) -> Result<DevActual> {

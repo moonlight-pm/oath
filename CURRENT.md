@@ -4,9 +4,9 @@ The only session handoff. Keep it under 80 lines: at most five Now
 items, each ending in the next concrete step. Replace text; do not
 append history (git has it).
 
-**As of:** 2026-11-10 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
+**As of:** 2026-11-11 · **Review:** [briefing](https://claude.ai/artifact/PoPUy1UxBpQdcuPBkDonTL)
 · **novus:** [tracker](https://claude.ai/artifact/LSm9uH7rrfsWJiEN8p1Egi)
-· decisions R1–R83 in [docs/decisions.md](docs/decisions.md)
+· decisions R1–R84 in [docs/decisions.md](docs/decisions.md)
 
 ## Now
 
@@ -30,7 +30,8 @@ append history (git has it).
    core `pkg:sola`, `pkg:sola-kvm` (the KVM and Remote Desktop, split from the core, which needs it), fifteen `pkg:sola-<app>`, `svc:sola-vault`;
    until a machine runs R72, a pin moves PID 1's hash and takes a reboot. R71: `host:local.seat_hid` gives the desk a listed HID device's vendor interface (Sola's mouse battery); novus has `["3554:f510"]` (generation 99). Novus runs exactly these heads, applied by Sola's publish of 2026-11-10 01:44Z. Sola's publish builds `plan:sola-build` with `--no-pkg`; the object is gone from novus and canto. Each machine reboots into it,
    then sets `keep_children` on `svc:sola-session` by hand. Canto: `sola-lock`, Settings →
-   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs; on koeurax Joshua played Terraria and Noita on 2026-11-08, and it sees an Xbox pad over Bluetooth LE. Minecraft (R74, [docs/specs/minecraft.md](docs/specs/minecraft.md)): on koeurax since 2026-11-08 (heads on the origin, in Sola's launcher); Joshua ran it that day, the restored 1.21.5 Fabric world's instance on the RTX 4060. Next: Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
+   Login, Exit Sola. Steam (R29, [docs/specs/steam.md](docs/specs/steam.md)): the 64-bit client runs; on koeurax Joshua played Terraria and Noita on 2026-11-08, and it sees an Xbox pad over Bluetooth LE. Minecraft (R74, [docs/specs/minecraft.md](docs/specs/minecraft.md)): on koeurax since 2026-11-08 (heads on the origin, in Sola's launcher); Joshua ran it that day, the restored 1.21.5 Fabric world's instance on the RTX 4060.
+   Sleep (R84, 2026-11-11, Sola's request for koeurax): `host:local.power=sleep` on the desk's reboot path, woken by a key, a mouse, the power button or, with `net:net0.wake`, a magic packet (`oath wake <mac>`); NVIDIA's `PreserveVideoMemoryAllocations=1` is PID 1's default. On master and checked in QEMU, not released or tried on metal; Sola wires it on its branch `quick-launch-sleep`. Next: a release (Joshua's word), koeurax's update with a reboot, `wake=true` there, then a sleep woken from novus; Steam's smoke on novus (Vulkan, Floating Point, Proton, a pad).
 3. **Servers from source (R49–R59).** Blocky, `cloudflared`, restic, rsync, PostgreSQL with
    PostGIS, MySQL 9.7, our own `route` and `cell`, on `pkg:go`, with `pkg:certs` for roots; in no
    profile (R52), on the origin since `c9735fc14e50` (`cloudflared` since 2026-11-03). They run as `work`, which has no `sudo`. Bias against

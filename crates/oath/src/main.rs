@@ -19,7 +19,9 @@ mod audit;
 mod overlay;
 mod publish;
 mod reap;
+mod sleep;
 mod update;
+mod wake;
 
 #[derive(Parser)]
 #[command(name = "oath", about = "Oath catalog — the only admin surface.")]
@@ -249,6 +251,12 @@ enum Cmd {
         #[arg(value_parser = ["stop"])]
         action: Option<String>,
     },
+    /// Wake another machine on this network whose `net:net0.wake` is on
+    /// (R84): a Wake-on-LAN magic packet for its MAC, broadcast. Its MAC is
+    /// `mac` in its `dev:net0`.
+    Wake {
+        mac: String,
+    },
     /// The verbs as an MCP server on stdin/stdout, one `oath --json`
     /// command per tool call: `ssh -T home@<host> oath mcp`.
     Mcp {
@@ -353,6 +361,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Mcp { .. }) => "mcp",
         Some(Cmd::Password { .. }) => "password",
         Some(Cmd::Desk { .. }) => "desk",
+        Some(Cmd::Wake { .. }) => "wake",
         Some(Cmd::Seed { .. }) => "seed",
         Some(Cmd::PanicInit) => "panic-init",
         Some(Cmd::ReexecInit { .. }) => "reexec-init",
@@ -367,6 +376,19 @@ fn run() -> oath_core::Result<i32> {
         }
         Some(Cmd::Password { status }) => return login::password(*status, cli.json),
         Some(Cmd::Desk { action }) => return login::desk(action.is_some(), cli.json),
+        Some(Cmd::Wake { mac }) => {
+            wake::wake(mac)?;
+            if cli.json {
+                println!("{}", json!({ "mac": mac, "sent": wake::SENDS }));
+            } else {
+                println!(
+                    "sent {mac}'s magic packet {} times to 255.255.255.255:9; a machine that \
+                     can wake on it does within seconds",
+                    wake::SENDS
+                );
+            }
+            return Ok(0);
+        }
         _ => {}
     }
     let actor = Actor { via: cli.via.clone(), ..Actor::current() };
@@ -388,7 +410,7 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Mcp { .. } | Cmd::Password { .. } | Cmd::Desk { .. }) => {
+        Some(Cmd::Mcp { .. } | Cmd::Password { .. } | Cmd::Desk { .. } | Cmd::Wake { .. }) => {
             unreachable!("served above")
         }
         Some(Cmd::Seed { profile, overlay }) => {
@@ -702,6 +724,7 @@ fn run() -> oath_core::Result<i32> {
                         "generation": r.generation,
                         "ids": r.ids,
                         "probation": r.probation,
+                        "slept": r.slept,
                     }))?
                 );
             } else if r.ids.is_empty() {
@@ -716,6 +739,15 @@ fn run() -> oath_core::Result<i32> {
                          `sudo oath keep` there, or PID 1 undoes generation {}",
                         r.generation
                     );
+                }
+            }
+            if let (Some(s), false) = (&r.slept, cli.json) {
+                println!("slept at {} ({}), woke at {}", s.at, s.state, s.woke);
+                let mut by = s.wake.clone();
+                by.push("the power button".into());
+                println!("armed to wake it: {}", by.join(", "));
+                if !s.woken_by.is_empty() {
+                    println!("woken by: {}", s.woken_by.join(", "));
                 }
             }
             Ok(0)

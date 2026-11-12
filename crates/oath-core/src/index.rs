@@ -67,8 +67,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
 ## Safety
 
 `oath apply` checks everything first (a refusal changes nothing), then
-takes a filesystem snapshot. Halt, reboot and changes that can cut off
-SSH need `--confirm`. Do **not** pass `--confirm` unless the owner asked for that
+takes a filesystem snapshot. Halt, reboot, sleep and changes that can
+cut off SSH need `--confirm`. Do **not** pass `--confirm` unless the owner asked for that
 class of change. A change that can cut off SSH then goes on probation:
 PID 1 undoes it after 180 s (`--probation <secs>`), or at the next
 boot, unless `sudo oath keep` runs in an SSH session opened after the

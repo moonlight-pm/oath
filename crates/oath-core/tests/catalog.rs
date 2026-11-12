@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use oath_core::{
     apply_overlay, converge_pkg, copy_objects, fetch_and_converge_pkg, hash_tree, ingest_file,
     install_tree, is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host,
-    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, EXIT_CONFIRM, EXIT_SECURITY,
+    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, Slept, EXIT_CONFIRM, EXIT_SECURITY,
 };
 use serde_json::{json, Map};
 
@@ -14,6 +14,7 @@ struct MemHooks {
     root: std::path::PathBuf,
     snaps: tempfile::TempDir,
     reboots: Mutex<u32>,
+    sleeps: Mutex<u32>,
     /// Services do not come up: PID 1 records them failed, and apply's
     /// wait for them is an error.
     no_start: Mutex<bool>,
@@ -30,6 +31,7 @@ impl MemHooks {
             root,
             snaps: tempfile::tempdir().unwrap(),
             reboots: Mutex::new(0),
+            sleeps: Mutex::new(0),
             no_start: Mutex::new(false),
             pkg_converges: Mutex::new(0),
             fetches: false,
@@ -75,6 +77,10 @@ impl ApplyHooks for MemHooks {
     }
     fn halt(&self) -> Result<()> {
         Ok(())
+    }
+    fn sleep(&self) -> Result<Slept> {
+        *self.sleeps.lock().unwrap() += 1;
+        Ok(Slept { state: "deep".into(), ..Default::default() })
     }
     fn wait_converge(&self, id: &ObjectId, _enabled: bool) -> Result<()> {
         if !*self.no_start.lock().unwrap() {
@@ -269,6 +275,40 @@ fn reboot_needs_confirm() {
     set(&cat, "host:local", "power", json!("reboot")).unwrap();
     let r = cat.apply(None, true, &Actor::unknown(), &hooks).unwrap();
     assert!(!r.power_only && r.generation == 1);
+}
+
+#[test]
+fn sleep_needs_confirm_and_comes_back_to_run() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "host:local".parse().unwrap();
+    set(&cat, "host:local", "power", json!("sleep")).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert_eq!(err.exit_code(), EXIT_CONFIRM);
+    assert_eq!(*hooks.sleeps.lock().unwrap(), 0);
+    let r = cat.apply(Some(vec![id.clone()]), true, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(*hooks.sleeps.lock().unwrap(), 1);
+    assert_eq!(*hooks.reboots.lock().unwrap(), 0);
+    assert!(r.power_only && r.slept.as_ref().is_some_and(|s| s.state == "deep"));
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.desired["power"], "run");
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+    assert_eq!(cat.get(&"snap:current".parse().unwrap()).unwrap().desired["generation"], 0);
+    // Again, as the desk asks it each time.
+    set(&cat, "host:local", "power", json!("sleep")).unwrap();
+    cat.apply(Some(vec![id]), true, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(*hooks.sleeps.lock().unwrap(), 2);
+}
+
+#[test]
+fn net_wake_is_neither_confirm_class_nor_on_probation() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    set(&cat, "net:net0", "wake", json!(true)).unwrap();
+    let r = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap();
+    assert!(r.probation.is_none() && r.generation == 1);
+    assert_eq!(cat.get(&"net:net0".parse().unwrap()).unwrap().desired["wake"], true);
+    set(&cat, "net:net0", "wake", json!("yes")).unwrap_err();
 }
 
 #[test]

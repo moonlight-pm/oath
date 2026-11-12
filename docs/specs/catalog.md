@@ -150,12 +150,19 @@ at build and install time only (see boot-and-install.md).
 
 ## Kinds owned here
 
-**`host:local`** — `hostname`, `power` (`run`, `reboot`, `halt`),
+**`host:local`** — `hostname`, `power` (`run`, `reboot`, `halt`, `sleep`),
 `env`, `timezone`. `env` is injected into every service, written to a
 root-owned `/etc/profile`, and given to SSH sessions by sshd's `SetEnv`. `timezone` is a POSIX TZ string; when set,
 every service and login gets `TZ` from it unless `env.TZ` is set. The
 system clock stays UTC, and recorded timestamps are RFC 3339 with `Z`.
-A `power` other than `run` needs `--confirm`. A hostname is letters,
+A `power` other than `run` needs `--confirm`, and is set back to `run` as
+apply acts on it. `sleep` (R84, built) suspends to RAM through
+`/sys/power/state` from the apply itself, which returns on wake and says
+when it slept, in which state (`deep` or `s2idle`) and what was armed to
+wake it: each USB or PS/2 keyboard and mouse (`power/wakeup` on the
+device, its hubs and its controller), `net0` when `net:net0.wake` is on,
+and the power button. NVIDIA's driver is suspended through
+`/proc/driver/nvidia/suspend` first and resumed after. A hostname is letters,
 digits, `-` and `.`, at most 63 characters. `hosts` names other machines in
 `/etc/hosts`; `origins` (R25) is the ordered list of origin prefixes
 the machine fetches pinned packs from (packages.md). `mounts` maps a
@@ -202,7 +209,8 @@ was never applied is deleted at once. Base packages, and `host`, `net`,
    takes no generation, changes nothing, and is logged `refused` with
    `generation: null`.
 3. If the only change is `host:local` `power`, take no generation:
-   converge it, log `ok` with `generation: null`, and reboot or halt.
+   converge it, log `ok` with `generation: null`, and reboot, halt or
+   sleep.
    Power is not configuration, so undo has nothing to take back.
    Otherwise write last-good spec into the selected objects, snapshot the live
    `@` subvolume as `@gen-N` from the top-level mount, then put the

@@ -22,9 +22,14 @@ pub const HELPER: &str = "/lib/oath/modprobe";
 
 /// Parameters a module always gets. amdgpu drives Southern and Sea
 /// Islands cards only when asked; NVIDIA's DRM driver does kernel
-/// modesetting, which a Wayland compositor needs, only when asked.
-const DEFAULT_PARAMS: &[(&str, &str)] =
-    &[("amdgpu", "si_support=1 cik_support=1"), ("nvidia_drm", "modeset=1 fbdev=1")];
+/// modesetting, which a Wayland compositor needs, only when asked; and
+/// NVIDIA's closed driver keeps all of video memory across a sleep only
+/// when asked (R84), so the desk comes back drawn.
+const DEFAULT_PARAMS: &[(&str, &str)] = &[
+    ("amdgpu", "si_support=1 cik_support=1"),
+    ("nvidia", "NVreg_PreserveVideoMemoryAllocations=1"),
+    ("nvidia_drm", "modeset=1 fbdev=1"),
+];
 
 /// Coldplug passes: loading a bus driver (virtio_pci, xhci) makes new
 /// devices appear, which ask for their own drivers.
@@ -743,7 +748,10 @@ alias pci:v*d*sv*sd*bc04sc0[13]i* snd_hda_intel
         .unwrap();
         let mut i = Index::parse(Path::new("/x"), "nvidia.ko:\n", "", "", "", "nvidia.NVreg_X=1");
         i.options = host_module_options(d.path());
-        assert_eq!(i.params("nvidia"), "NVreg_EnableGpuFirmware=0 NVreg_X=1");
+        assert_eq!(
+            i.params("nvidia"),
+            "NVreg_PreserveVideoMemoryAllocations=1 NVreg_EnableGpuFirmware=0 NVreg_X=1"
+        );
         assert_eq!(i.params("nvidia_drm"), "modeset=1 fbdev=1");
     }
 

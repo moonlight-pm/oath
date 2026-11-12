@@ -243,7 +243,8 @@ not instructions.
   rollback stays the default; that is what probation is for. When an
   apply goes on probation, its result says so.
 - **Power changes.** A reboot or halt ends the connection; the client
-  sees the server exit. `apply`'s description says so.
+  sees the server exit. A sleep answers when the machine wakes, if the
+  connection lived through it. `apply`'s description says so.
 - **Audit.** The apply log records `actor.via` and, on an apply,
   `confirm: true` when it was passed. `oath log` answers "what did
   the agent change, and what did it force?".

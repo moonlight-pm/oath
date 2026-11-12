@@ -184,11 +184,21 @@ then `cgroup.kill`s the rest.
 
 ## Shutdown
 
-`reboot`, `halt`, `poweroff`, Ctrl-Alt-Del and `oath` `power=` all
-signal PID 1. It stops the services in reverse `wants` order, a layer
+`reboot`, `halt`, `poweroff`, Ctrl-Alt-Del and `oath` `power=reboot` or
+`halt` all signal PID 1. It stops the services in reverse `wants` order, a layer
 at a time (TERM, 5 s, KILL), signals
 everything else, syncs, unmounts `host:local.mounts`, lazily unmounts
 `/oath/run/fs`, remounts `/` read-only, then calls `reboot(2)`.
+
+## Sleep
+
+`oath` `power=sleep` (R84) does not involve PID 1: the apply arms each
+keyboard and mouse (`power/wakeup` up to its controller), writes
+`suspend` to `/proc/driver/nvidia/suspend` when NVIDIA's driver is in,
+then `mem` to `/sys/power/state`, which returns on wake; the kernel
+froze every other process, PID 1 too. Then `resume` to NVIDIA's file.
+`net:net0.wake` is the NIC's Wake-on-LAN, set by `SIOCETHTOOL` at apply
+and in PID 1's boot converge.
 
 ## Host side (novus)
 

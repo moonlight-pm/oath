@@ -59,6 +59,7 @@ pub fn appliance_desired() -> Net {
         ipv4: APPLIANCE_IPV4.into(),
         gateway: APPLIANCE_GATEWAY.into(),
         dns: Vec::new(),
+        wake: false,
         lease: None,
         dhcp: None,
     }
@@ -141,6 +142,7 @@ pub fn converge(desired: &Net) -> Result<Net> {
             return Ok(desired.clone());
         }
     };
+    let wake = set_wake(&dev, desired.wake)?;
     if desired.up {
         ip(&["link", "set", &dev, "up"])?;
         for (args, must) in ipv4_steps(desired, &dev, &Link::read(&dev)) {
@@ -166,6 +168,7 @@ pub fn converge(desired: &Net) -> Result<Net> {
                 return Err(Error::hint("dhcpcd got no lease", "oath logs net:net0"));
             }
             let mut out = desired.clone();
+            out.wake = wake;
             out.lease = read_lease(&dev);
             out.dhcp = read_recorded_lease();
             return Ok(out);
@@ -180,7 +183,88 @@ pub fn converge(desired: &Net) -> Result<Net> {
         quietly(IP, &["addr", "flush", "dev", &dev]);
         ip(&["link", "set", &dev, "down"])?;
     }
-    Ok(desired.clone())
+    Ok(Net { wake, ..desired.clone() })
+}
+
+/// `ethtool_wolinfo` (linux/ethtool.h).
+#[repr(C)]
+#[derive(Default)]
+struct WolInfo {
+    cmd: u32,
+    supported: u32,
+    wolopts: u32,
+    sopass: [u8; 6],
+}
+
+/// `struct ifreq` with `ifr_data`, padded to the kernel's 40 bytes.
+#[repr(C)]
+struct IfReq {
+    name: [libc::c_char; libc::IFNAMSIZ],
+    data: *mut WolInfo,
+    _pad: [u8; 16],
+}
+
+const SIOCETHTOOL: libc::c_ulong = 0x8946;
+const ETHTOOL_GWOL: u32 = 0x5;
+const ETHTOOL_SWOL: u32 = 0x6;
+/// Wake on a magic packet (ethtool's `g`).
+const WAKE_MAGIC: u32 = 1 << 5;
+
+/// One `SIOCETHTOOL` call on `nic` with `wol`.
+fn ethtool_wol(nic: &str, wol: &mut WolInfo) -> std::io::Result<()> {
+    use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+    let mut req = IfReq { name: [0; libc::IFNAMSIZ], data: wol, _pad: [0; 16] };
+    for (d, b) in req.name.iter_mut().zip(nic.bytes().take(libc::IFNAMSIZ - 1)) {
+        *d = b as libc::c_char;
+    }
+    let fd = unsafe { libc::socket(libc::AF_INET, libc::SOCK_DGRAM | libc::SOCK_CLOEXEC, 0) };
+    if fd < 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    let sock = unsafe { OwnedFd::from_raw_fd(fd) };
+    if unsafe { libc::ioctl(sock.as_raw_fd(), SIOCETHTOOL, &mut req) } < 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+/// Make `nic` wake the machine on a magic packet and on nothing else, or
+/// on nothing (the ethtool ioctl, so no ethtool package; the driver also
+/// sets its PCI device's `power/wakeup`). Returns what it is now. A driver
+/// without Wake-on-LAN has nothing to turn off, and refuses on.
+pub fn set_wake(nic: &str, on: bool) -> Result<bool> {
+    let mut wol = WolInfo { cmd: ETHTOOL_GWOL, ..Default::default() };
+    match ethtool_wol(nic, &mut wol) {
+        Ok(()) => {}
+        Err(e) if e.raw_os_error() == Some(libc::EOPNOTSUPP) && !on => return Ok(false),
+        Err(e) if e.raw_os_error() == Some(libc::EOPNOTSUPP) => {
+            return Err(Error::hint(
+                format!("{nic}'s driver ({}) has no Wake-on-LAN", nic_driver(nic)),
+                "oath set net:net0 wake=false",
+            ))
+        }
+        Err(e) => return Err(Error::Msg(format!("{nic}: reading Wake-on-LAN: {e}"))),
+    }
+    if on && wol.supported & WAKE_MAGIC == 0 {
+        return Err(Error::hint(
+            format!("{nic}'s driver ({}) cannot wake on a magic packet", nic_driver(nic)),
+            "oath set net:net0 wake=false",
+        ));
+    }
+    let want = if on { WAKE_MAGIC } else { 0 };
+    if wol.wolopts != want {
+        let mut set = WolInfo { cmd: ETHTOOL_SWOL, wolopts: want, ..Default::default() };
+        ethtool_wol(nic, &mut set)
+            .map_err(|e| Error::Msg(format!("{nic}: setting Wake-on-LAN: {e}")))?;
+    }
+    Ok(on)
+}
+
+fn nic_driver(nic: &str) -> String {
+    fs::read_link(format!("/sys/class/net/{nic}/device/driver"))
+        .ok()
+        .and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
+        .unwrap_or_else(|| "unknown".into())
 }
 
 /// The `ip` commands that give `dev` the IPv4 address `desired` names, run
@@ -459,6 +543,7 @@ mod tests {
             ipv4: ipv4.into(),
             gateway: gateway.into(),
             dns: dns.iter().map(|s| s.to_string()).collect(),
+            wake: false,
             lease: None,
             dhcp: None,
         }
