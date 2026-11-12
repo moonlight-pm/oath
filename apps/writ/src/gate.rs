@@ -744,6 +744,9 @@ pub fn apply(upper: &Path, dir: &Path, meta: &Meta, all: bool, named: &[PathBuf]
             problems.push(format!("{} is not UTF-8", name(&c.path)));
         }
     }
+    // A path deleted to make way for a directory comes twice in the list, and is named once.
+    let mut seen = HashSet::new();
+    problems.retain(|p| seen.insert(p.clone()));
     if !problems.is_empty() {
         return Err(format!("nothing was applied:\n  {}", problems.join("\n  ")));
     }
@@ -1387,6 +1390,24 @@ mod tests {
         let (code, stays) = t.undo();
         assert_eq!(code, 1);
         assert_eq!(stays, ["d/x goes through d, which is not a directory, and stays", "d changed after it was applied, and stays"]);
+    }
+
+    #[test]
+    fn what_the_owner_put_where_the_session_made_a_directory_is_named_once() {
+        // A link or a file there is deleted and then made a directory: two changes, one path.
+        for (tag, link) in [("made-dir-link", true), ("made-dir-file", false)] {
+            let t = T::new(tag);
+            t.upper("a/x", "x");
+            if link {
+                std::os::unix::fs::symlink("elsewhere", t.real.join("a")).unwrap();
+            } else {
+                t.real("a", "owner's");
+            }
+            fs::create_dir_all(t.dir()).unwrap();
+            let meta = Meta { project: t.real.clone(), started: 0 };
+            let e = apply(&t.upper, &t.dir(), &meta, true, &[], &mut std::io::sink()).unwrap_err();
+            assert_eq!(e, "nothing was applied:\n  a changed in your tree since this session began\n  a/x goes through a, which is not a directory");
+        }
     }
 
     #[test]
