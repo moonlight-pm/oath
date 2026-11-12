@@ -218,8 +218,9 @@ hashes to sha256-…` (`hashes to missing` for a tree that is gone) and exits 1.
 `got` for a tree that differs. A damaged tree has status `error`, and `oath`
 (INDEX.md) lists it under **Store damage** with its repair: `` `pkg:less` hashes to
 `sha256-…`, not its pin: `sudo oath apply pkg:less` `` (`is gone from the store` for a
-tree that is gone). Apply, `sudo oath verify` and the boot's check write `verified`;
-`oath verify` as `home` only reports. No check repairs anything.
+tree that is gone). Apply, `sudo oath verify`, the boot's check and `oath store` of
+the pinned tree write `verified`; `oath verify` as `home` only reports. No check
+repairs anything.
 
 A package whose tree is gone, or that a check found damaged, drifts in `tree`,
 and `sudo oath apply` is the repair: it fetches the tree again from the
@@ -234,9 +235,11 @@ oath diff                        # tree: "sha256-…" -> "sha256-…"
 sudo oath apply pkg:less         # … did not hash to its name; replaced it
 ```
 
-`sudo oath store pkg:<name> <dir|file.tar>` of the right tree replaces a
-damaged one too, and `sudo oath store cell:<name> <dir|file.tar>` is the repair
-for a cell, which comes from no origin ([Cells](cells.md)). An apply with no
+`sudo oath store pkg:<name> <dir|file.tar>` of the right tree puts back a
+damaged or gone one too, and records the check as `sudo oath verify` would: the
+`tree` drift, the `error` and the **Store damage** line clear with no apply.
+`sudo oath store cell:<name> <dir|file.tar>` is the repair for a cell, which
+comes from no origin ([Cells](cells.md)). An apply with no
 change says `in-sync`, and one that changes only `description`, `home`,
 `category` or `source` records it; neither hashes the tree, so a tree changed
 on disk that no check has found yet stays as it is. The fetch runs `curl` and `tar`, so `pkg:curl` and
@@ -271,7 +274,7 @@ with nothing there goes.
 
 `oath store` puts a tree built on the machine (a directory, or a `.tar`
 or `.tar.gz` of one) into the store and prints its hash. It changes no
-object and no link; pinning the hash and applying does:
+spec and no link; pinning the hash and applying does:
 
 ```
 sudo oath store pkg:hello ./out            # pkg:hello sha256-…
@@ -359,11 +362,13 @@ audit's report, so it cannot ship PID 1 or the kernel. A list that covers
 and so sshd. A key with no list signs heads, releases and the audit's report.
 Each line is an `ssh-ed25519` public key; a person adds one, an agent does not.
 
-`oath update` reads the head of every package the machine has (and of what
-those heads need) from each origin and moves each package to the newest
-head a key may sign for it; `oath update` alone says what would move.
-It records each head it took in `/oath/heads.json` and takes no older
-one after (below); `oath add`, `oath new pkg:<name>` and `oath update --record`
+`oath update` reads the head of every package the machine has and every one
+its release makes (and of what those heads need) from each origin, and moves or
+makes each package at the newest head a key may sign for it; `oath update` alone
+says what would move. A head of the pack the machine runs moves only the fields
+that differ, such as its needs (`pkg:<name> sha256-… (its head, signed by …; its
+needs move)`). `oath update` records each head it took in `/oath/heads.json` and
+takes no older one after (below); `oath add`, `oath new pkg:<name>` and `oath update --record`
 record theirs the same way ([Install / remove](#install--remove)), and the
 record never goes back to an older head. A head wins over a release's pin of the same package, so
 `oath update --output <older>` leaves each package with a head at its head
@@ -372,13 +377,14 @@ stays when a release drops it. With
 `host:local.profile` empty a machine takes heads only.
 
 A package the release makes (new to the profile, or one the output fixes) is
-made though nothing here needs it, at the release's pin, even one older than a
-head this machine took of it: `oath update` reads the head of a package the
-machine lacks only when a head here needs it, and then makes it at that head.
+made though nothing here needs it: at its head, with what that head needs, or at
+the release's pin when it has none. One new to the profile that the release ships
+present and the machine has absent, as `oath build` leaves its product, is made
+present, at its head when it has one (`pkg:<name> … (its head, signed by …; made present: new to the profile)`).
 A head older than the one this machine took waits, also of a package the
-machine lacks (one it took and removed since) that a head here needs; then each
-package that would move or be made needing it waits too. The hold of an older
-head names the times that ordered the two, as `oath add` does:
+machine lacks (one it took and removed since) that the release makes or a head
+here needs; then each package that would move or be made needing it waits too.
+The hold of an older head names the times that ordered the two, as `oath add` does:
 
 ```
 pkg:less stays at sha256-…; sha256-… waits: it (committed …) is older than the head this machine took, sha256-… (signed by …, committed …)
@@ -397,7 +403,8 @@ pkg:mesa stays at sha256-…; sha256-… waits: pkg:sola needs pkg:mesa at sha25
 pkg:sola keeps its pin; its needs move: pkg:mesa sha256-… -> sha256-… (every library it loads is still in /lib)
 ```
 
-A preview, whose packs are not fetched yet, says it checks the
+A head of the pack the machine runs, whose needs the check re-points back
+to the machine's, moves nothing. A preview, whose packs are not fetched yet, says it checks the
 libraries once they are; `--confirm` fetches them and checks before
 anything changes. A library loaded with `dlopen` is not seen.
 
@@ -613,8 +620,9 @@ product tree for the `pkg:<name>` or `cell:<name>` that `produces` names:
 the line `#!oath-plan`, a JSON head (`name`, `produces`, `build_needs`,
 `run_needs`, each need pinned by hash), the line `---`, and a script whose
 first two lines are `#!/bin/sh` and `set -eu` and which writes `/out`.
-`oath build` runs it in a sandbox with only
-the pinned needs mounted and no network. The script is PID 1 of its own
+`oath build` runs it in a sandbox with no
+network and only the pinned needs mounted, read-only: a write into one fails
+(`Read-only file system`). The script is PID 1 of its own
 PID namespace, with its own `/proc`, `PATH=/bin` and `HOME=/tmp`; on a
 machine (`sudo oath build`) it runs as `home`, uid 1, and owns `/out`. The sandbox's `/bin` and `/lib` are link
 farms of those packs, as on a machine, so a plan pins every pack its
@@ -780,7 +788,10 @@ too) find it, and its 32-bit libraries serve Steam. Its DLSS DLLs are
 in `/lib/nvidia/wine`, beside `libGLX_nvidia`, where Proton finds them;
 a game also needs `PROTON_ENABLE_NVAPI=1 %command%` unless Proton turns
 NVAPI on for it. The closed driver runs on the GSP firmware in its
-package, which PID 1 puts where the kernel looks. A card's own settings (GSP off,
+package, which PID 1 puts where the kernel looks. It keeps video memory
+across a sleep (R84): PID 1 loads it with
+`NVreg_PreserveVideoMemoryAllocations=1`, and the apply that sleeps suspends
+it through `/proc/driver/nvidia/suspend` and resumes it on wake. A card's own settings (GSP off,
 power caps) belong in the machine's overlay ([Kernel module
 options](using.md#kernel-module-options)).
 

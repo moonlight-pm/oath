@@ -87,6 +87,13 @@ one it removed (`oath rm`) comes back. Then it converges those objects
 `snap:current` back, and logs `undo:N`. Run it again to step back one
 more apply.
 
+Before it changes anything, undo checks the tree of each cell it would
+put back present, as apply does; a cell that apply created is removed
+unchecked. A tree gone from the store, or not hashing to its pin,
+refuses the undo with the same hint, `sudo oath store cell:<name>
+<dir|file.tar>`. A refused undo changes nothing and logs nothing; once
+the tree is back, it goes through.
+
 Undo does not touch the apply log, the package store, the SSH host
 keys, or objects the apply did not touch. It keeps a package that the
 image fixes even when that apply created it (`oath update` makes one a
@@ -98,11 +105,13 @@ until a new session runs `oath keep`. If its time runs out, or the
 machine boots again first, PID 1 runs the same undo itself (logged
 with tty `probation`).
 
-A reboot or halt through the catalog (`power=reboot`) on its own takes
-no generation: power is not configuration, so there is nothing for undo
-to take back. It is logged `ok` without a generation, and PID 1 shuts
-down cleanly. Applied together with other changes, it is part of their
-generation. Plain `sudo reboot` reboots the same way.
+A reboot, halt or sleep through the catalog (`power=reboot`, `halt` or
+`sleep`, R84) on its own takes no generation: power is not
+configuration, so there is nothing for undo to take back. It is logged
+`ok` without a generation. Then PID 1 shuts down cleanly for a reboot
+or halt; a sleep suspends to RAM, and the apply returns on wake.
+Applied together with other changes, it is part of their generation.
+Plain `sudo reboot` reboots the same way.
 
 ## Boot menu
 
