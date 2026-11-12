@@ -576,8 +576,8 @@ fn found_at(at: &Path) -> Option<String> {
 
 /// What this session last left at each path, by `apply`, whose entries are given, or by `undo`.
 /// `undo` takes each entry out of undo.jsonl as it is done, so what it put back or left to the owner
-/// is older than anything still in there. An entry with no hash left nothing of its own, and forgets
-/// what was left there before.
+/// is older than anything still in there, and one that stops puts what it left to the owner back in,
+/// newest. An entry with no hash left nothing of its own, and forgets what was left there before.
 fn left_by_session(dir: &Path, applied: &[Value]) -> Result<HashMap<String, String>, String> {
     let mut left = HashMap::new();
     for v in read_log(dir, "restored.jsonl")?.iter().chain(applied) {
@@ -845,7 +845,8 @@ fn undo_one(dir: &Path, real: &Path, seq: usize, v: &Value) -> Result<Option<Str
 /// Take back what `apply` did, newest first. A path that no longer holds what `apply` left there,
 /// or that something now stands in the way of, is the owner's since: it stays, and is named.
 /// What is put back is recorded, so a later `apply` can tell it from the owner's change. Each entry
-/// leaves undo.jsonl once it is done, so an undo that stops part way goes on from there next time.
+/// leaves undo.jsonl once it is done, so an undo that stops part way goes on from there next time,
+/// and what it left to the owner goes back in after what is still to do, so it stays theirs.
 pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String> {
     let todo = dir.join("undo.jsonl");
     let text = fs::read_to_string(&todo).unwrap_or_default();
@@ -860,7 +861,7 @@ pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String>
         let _ = writeln!(out, "nothing to undo");
         return Ok(0);
     }
-    let cut = fs::OpenOptions::new().write(true).open(&todo).map_err(|e| format!("{}: {e}", todo.display()))?;
+    let mut cut = fs::OpenOptions::new().append(true).open(&todo).map_err(|e| format!("{}: {e}", todo.display()))?;
     // What is put back has a new mtime, so a build sees it changed. This log says it is the session's,
     // and says a path that stays is the owner's.
     let restored = dir.join("restored.jsonl");
@@ -870,8 +871,11 @@ pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String>
     let stopped = (|| -> Result<(), String> {
         for (i, (start, v)) in entries.iter().enumerate().rev() {
             let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
-            // An older entry for a path that stays has nothing to put back over the owner's change.
-            if !theirs.contains(path) {
+            // An older entry for a path that stays, in this undo or in one that stopped, has nothing to
+            // put back over the owner's change.
+            if v.get("theirs") == Some(&Value::Bool(true)) {
+                theirs.insert(path);
+            } else if !theirs.contains(path) {
                 let rel = Path::new(path);
                 let stays = undo_one(dir, real, i, v)
                     .map_err(|e| format!("stopped at {}: {e}. What was applied after it is taken back; `writ undo` again goes on from there", name(rel)))?;
@@ -898,7 +902,17 @@ pub fn undo(dir: &Path, real: &Path, out: &mut dyn Write) -> Result<i32, String>
     for l in &left {
         let _ = writeln!(out, "{l}");
     }
-    stopped?;
+    if let Err(e) = stopped {
+        // What stays goes back in as the newest entries, so the next undo passes over the older ones
+        // for it, and a later `apply` forgets what they left there.
+        let mut paths: Vec<&str> = theirs.into_iter().collect();
+        paths.sort();
+        for p in paths {
+            let kept = Value::Obj(vec![("path".to_string(), s(p)), ("theirs".to_string(), Value::Bool(true))]);
+            writeln!(cut, "{}", kept.text()).map_err(|w| format!("{e}, but {}: {w}", todo.display()))?;
+        }
+        return Err(e);
+    }
     let _ = fs::remove_file(&todo);
     let _ = fs::remove_dir_all(dir.join("undo"));
     Ok(if left.is_empty() { 0 } else { 1 })
@@ -1340,6 +1354,48 @@ mod tests {
         assert_eq!(t.text("a"), "was a");
         assert_eq!(t.text("b"), "was b");
         assert_eq!(t.text("c"), "was c");
+    }
+
+    #[test]
+    fn what_a_stopped_undo_left_to_the_owner_stays_theirs_when_it_goes_on() {
+        let t = T::new("kept-across");
+        t.real("a", "was a");
+        for p in ["p", "q"] {
+            t.real(p, &format!("was {p}"));
+            t.upper(p, "one");
+        }
+        t.apply(true, &[]).unwrap();
+        t.upper("a", "now a");
+        t.upper("p", "two");
+        t.upper("q", "two");
+        t.apply(true, &[]).unwrap();
+        // The owner puts p back as the first apply left it, and edits q.
+        t.real("p", "one");
+        t.real("q", "owner's q");
+        // With a's copy gone, undo leaves q and p and stops at a, before the first apply's entries.
+        let entry = read_log(&t.dir(), "undo.jsonl").unwrap().into_iter().find(|v| v.get("path").and_then(|p| p.str()) == Some("a")).unwrap();
+        let copy = t.dir().join("undo").join(entry.get("backup").and_then(|b| b.str()).unwrap());
+        let aside = t.root.join("aside");
+        fs::rename(&copy, &aside).unwrap();
+        let mut said = Vec::new();
+        let e = undo(&t.dir(), &t.real, &mut said).unwrap_err();
+        assert!(e.starts_with("stopped at a: "), "{e}");
+        assert_eq!(String::from_utf8(said).unwrap(), "q changed after it was applied, and stays\np changed after it was applied, and stays\n");
+        // To the next apply, what the first apply left at p is not the session's now.
+        let meta = Meta { project: t.real.clone(), started: 0 };
+        let e = apply(&t.upper, &t.dir(), &meta, true, &[], &mut std::io::sink()).unwrap_err();
+        assert!(e.contains("p changed in your tree") && e.contains("q changed in your tree"), "{e}");
+        // An apply from here is newer than what undo left, and is taken back with the rest.
+        t.apply(false, &["p"]).unwrap();
+        assert_eq!(t.text("p"), "two");
+        // The next undo goes on from a, and passes over the first apply's entries for p and q.
+        fs::rename(&aside, &copy).unwrap();
+        let mut said = Vec::new();
+        assert_eq!(undo(&t.dir(), &t.real, &mut said).unwrap(), 0);
+        assert_eq!(String::from_utf8(said).unwrap(), "restored p\nrestored a\n");
+        assert_eq!(t.text("a"), "was a");
+        assert_eq!(t.text("p"), "one");
+        assert_eq!(t.text("q"), "owner's q");
     }
 
     #[test]

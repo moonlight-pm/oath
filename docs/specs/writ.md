@@ -184,7 +184,7 @@ that as plain data; `writ apply` is the only thing that takes it to the real tre
   a file or link that is not what `apply` left, anything, a directory too, where `apply` left nothing, and a directory
   `apply` made that is not empty. It does each path whole or not at all, then takes it out of the session's log. A path
   it cannot put back, a directory `apply` made that it cannot remove among them, stops it there, and the next `undo`
-  goes on from there; a later `apply` takes what it left as the owner's.
+  goes on from there. What it left stays the owner's, to that `undo` and to a later `apply`.
 - A lock on the session keeps a box and `apply` from running on it at once.
 
 ## The terminal (is)
