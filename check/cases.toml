@@ -725,6 +725,15 @@ steps = [
 ]
 
 [[case]]
+name = "clock-keeps-the-rtc"
+about = "svc:time keeps the hardware clock in UTC (chrony's `rtcsync`, R12): an RTC set to 2001 under a system clock an hour fast holds the system's time again once a restarted chronyd steps the clock."
+steps = [
+  { run = "oath get svc:time", expect = ["\"rtcsync\""] },
+  { run = "sudo hwclock --set --utc --date '2001-01-01 00:00:00' && sudo date -s '+1 hour' >/dev/null && sudo kill $(pidof chronyd) && cat /sys/class/rtc/rtc0/date", expect = ["2001-01-01"] },
+  { run = "for i in $(seq 1 60); do d=$(( $(date +%s) - $(cat /sys/class/rtc/rtc0/since_epoch) )); [ ${d#-} -le 2 ] && break; sleep 1; done; [ ${d#-} -le 2 ] && echo 'the RTC holds the system time' || echo \"the RTC is off by ${d} s\"; oath logs svc:time | grep 'System clock was stepped' | tail -n 1", expect = ["the RTC holds the system time", "System clock was stepped"], timeout = 120 },
+]
+
+[[case]]
 name = "devices-discovered"
 about = "PID 1 lists the machine's disk and NIC as dev objects, named by stable rules, with real nodes."
 metal = true

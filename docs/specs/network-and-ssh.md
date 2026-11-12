@@ -127,14 +127,18 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 ## Time (built)
 
 - `svc:time` in the `base` seed runs `/bin/chronyd -d 'server
-  0.pool.ntp.org iburst' … 'makestep 1 3'` (R12, R18): its
+  0.pool.ntp.org iburst' … 'makestep 1 3' rtcsync` (R12, R18): its
   directives are arguments, there is no config file, and it is built
   without a command socket (no `chronyc`) or NTS. It starts as root and
   drops to `void` (R36, built `--with-user=void`), keeping only
   `CAP_SYS_TIME` and `CAP_NET_BIND_SERVICE` through libcap. It steps an offset
   over one second in its first three updates and slews after that; its
   own log lines are the service log.
-- The RTC is not written; every boot steps the clock again.
+- The hardware clock (RTC) holds UTC, and `rtcsync` keeps it so
+  (2026-11-12): once chronyd is synchronised the kernel copies the system
+  time to `rtc0` (`CONFIG_RTC_SYSTOHC`), at once after a step and every 11
+  minutes after. A clock that firmware or Windows left on local time is
+  right from the next boot, which reads the RTC as UTC.
 
 ## Accounts (built)
 
