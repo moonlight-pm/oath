@@ -740,6 +740,8 @@ fn chmod(path: &Path, mode: u32) -> Result<()> {
     Ok(())
 }
 
+/// Bind `src` at `dest`; with `ro`, read-only or not at all: a build never
+/// runs with a pack it could change for the builds after it.
 fn bind(src: &Path, dest: &Path, ro: bool) -> Result<()> {
     let s = cstr(src)?;
     let d = cstr(dest)?;
@@ -756,17 +758,51 @@ fn bind(src: &Path, dest: &Path, ro: bool) -> Result<()> {
         return Err(Error::Msg(format!("bind {} -> {} failed", src.display(), dest.display())));
     }
     if ro {
-        let _ = unsafe {
+        // A bind remount sets all of a mount's flags at once. In the
+        // namespaces a build makes without host root, the kernel has locked
+        // the nosuid, nodev and noexec of every mount, and a bind keeps them:
+        // a remount that clears one fails with EPERM. The audit's box (R77)
+        // binds the store cache nosuid,nodev, as bwrap binds everything, so
+        // the remount keeps the bind's own. Atime flags left out stay as
+        // they are.
+        let keep = mount_flags(dest)?;
+        if unsafe {
             libc::mount(
                 std::ptr::null(),
                 d.as_ptr(),
                 std::ptr::null(),
-                libc::MS_BIND | libc::MS_REMOUNT | libc::MS_RDONLY | libc::MS_REC,
+                libc::MS_BIND | libc::MS_REMOUNT | libc::MS_RDONLY | keep,
                 std::ptr::null(),
             )
-        };
+        } != 0
+        {
+            let e = std::io::Error::last_os_error();
+            return Err(Error::Msg(format!("read-only bind of {} failed: {e}", src.display())));
+        }
     }
     Ok(())
+}
+
+/// The nosuid, nodev and noexec flags of the mount `path` is on, as
+/// mount(2) flags.
+fn mount_flags(path: &Path) -> Result<libc::c_ulong> {
+    let p = cstr(path)?;
+    let mut st: libc::statvfs = unsafe { std::mem::zeroed() };
+    if unsafe { libc::statvfs(p.as_ptr(), &mut st) } != 0 {
+        let e = std::io::Error::last_os_error();
+        return Err(Error::Msg(format!("statvfs {} failed: {e}", path.display())));
+    }
+    let mut flags = 0;
+    for (st_flag, ms_flag) in [
+        (libc::ST_NOSUID, libc::MS_NOSUID),
+        (libc::ST_NODEV, libc::MS_NODEV),
+        (libc::ST_NOEXEC, libc::MS_NOEXEC),
+    ] {
+        if st.f_flag & st_flag != 0 {
+            flags |= ms_flag;
+        }
+    }
+    Ok(flags)
 }
 
 fn cstr(p: &Path) -> Result<std::ffi::CString> {

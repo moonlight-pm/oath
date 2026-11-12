@@ -360,6 +360,74 @@ fn sandbox_host_name_is_build() {
     assert_eq!(std::fs::read_to_string(tree.join("host")).unwrap(), "build\n");
 }
 
+/// A plan that writes into a pack it builds with fails on the write, and
+/// the pack still hashes to its name. The meson builds of the audit's
+/// 2026-11-10 run wrote bytecode into meson's pack, and the builds after
+/// them refused it. /dev/null, bound read-only too, still takes writes.
+fn a_pack_refuses_a_write(root: &Path) {
+    seed(root).unwrap();
+    let bb = pack_shell(root);
+    let src = pack_src(root, b"hello-from-src\n");
+    let pack = format!("/oath/store/pkg/hello-src/{src}");
+    let p = PlanFile {
+        name: "tamper".into(),
+        produces: "pkg:tamper".into(),
+        build_needs: vec![
+            PkgNeed { id: "pkg:bash".into(), hash: bb },
+            PkgNeed { id: "pkg:hello-src".into(), hash: src.clone() },
+        ],
+        run_needs: vec![],
+        script: format!(
+            "printf x >/dev/null\nprintf tampered >{pack}/bin/hello || true\n\
+             mkdir {pack}/__pycache__\nmkdir -p /out/bin\n"
+        ),
+    };
+    let path = root.join("tamper.plan");
+    std::fs::write(&path, fmt_plan(&p)).unwrap();
+    let err = build_file(root, &path).unwrap_err().to_string();
+    assert!(err.contains("Read-only file system"), "{err}");
+    let tree = root.join("store/pkg/hello-src").join(&src);
+    assert_eq!(hash_tree(&tree).unwrap(), src, "the pack is unchanged");
+    assert!(!tree.join("__pycache__").exists());
+}
+
+#[test]
+fn a_build_cannot_write_into_its_packs() {
+    let d = tmp();
+    a_pack_refuses_a_write(d.path());
+}
+
+#[test]
+fn a_build_in_bwrap_cannot_write_into_its_packs() {
+    // The audit's box (check/audit/box) is bwrap, which binds the store
+    // cache nosuid,nodev, and the sandbox's own user namespace locks those
+    // flags. This runs the build above with its catalog bound the same way,
+    // wherever the temporary directory is.
+    if let Some(root) = std::env::var_os("OATH_TEST_IN_BWRAP") {
+        return a_pack_refuses_a_write(Path::new(&root));
+    }
+    let Some(bwrap) = which("bwrap") else {
+        eprintln!("no bwrap on PATH: skipped");
+        return;
+    };
+    let d = tmp();
+    let out = std::process::Command::new(bwrap)
+        .args(["--dev-bind", "/", "/", "--bind"])
+        .args([d.path(), d.path()])
+        .arg("--")
+        .arg(std::env::current_exe().unwrap())
+        .args(["--exact", "a_build_in_bwrap_cannot_write_into_its_packs", "--nocapture"])
+        .env("OATH_TEST_IN_BWRAP", d.path())
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+}
+
 #[test]
 fn a_build_logs_its_output_and_rotates() {
     let d = tmp();
