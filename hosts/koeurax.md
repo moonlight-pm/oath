@@ -9,8 +9,9 @@ Overwrite this file when facts change; do not append a diary.
   SN7100 1 TB (`nvme0n1`, serial `24493B803192`; 512 MiB ESP + btrfs).
   A 3440-wide display. UEFI. No driver for its Intel Wi-Fi (`8086:7a70`).
   Sleeps in `deep` (S3; `/sys/power/mem_sleep` offers `s2idle [deep]`). Its
-  hardware clock keeps local time, Windows' habit, so each boot starts 7 h
-  behind until chrony steps it.
+  hardware clock kept local time, Windows' habit, so each boot started 7 h
+  behind until chrony stepped it; set to UTC on 2026-11-12 (`hwclock
+  --systohc --utc --noadjfile`, no `/etc/adjtime`).
   Its Bluetooth is the AX211's (USB `8087:0033`, firmware
   `ibt-1040-0041`): controller up since 2026-11-08. An Xbox Series pad
   (`045E:0B13`, `A8:8C:3E:64:E6:B5`) is paired and trusted over Bluetooth
