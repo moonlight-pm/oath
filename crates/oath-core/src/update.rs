@@ -417,16 +417,27 @@ impl Move {
                 short(to),
                 source_label(set).map(|l| format!(" ({l})")).unwrap_or_default()
             ),
-            Self::Head { from, to, set, signer, repointed, .. } if from == to => format!(
-                "{id} {} (its head, signed by {signer}; {}){}",
-                short(to),
-                records_moved(set),
-                needs_moved(repointed)
-            ),
+            Self::Head { from, to, set, signer, repointed, .. } if from == to => {
+                let what = if set["present"] == json!(true) {
+                    "made present: new to the profile".to_string()
+                } else {
+                    records_moved(set)
+                };
+                format!(
+                    "{id} {} (its head, signed by {signer}; {what}){}",
+                    short(to),
+                    needs_moved(repointed)
+                )
+            }
             Self::Head { from, to, set, signer, repointed, .. } => {
                 let from = if from.is_empty() { "unpinned" } else { short(from) };
+                let present = if set["present"] == json!(true) {
+                    "; made present: new to the profile"
+                } else {
+                    ""
+                };
                 format!(
-                    "{id} {from} -> {} (its head{}, signed by {signer}){}",
+                    "{id} {from} -> {} (its head{}, signed by {signer}{present}){}",
                     short(to),
                     source_label(set).map(|l| format!(", {l}")).unwrap_or_default(),
                     needs_moved(repointed)

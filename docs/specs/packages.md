@@ -224,7 +224,10 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   head the machine runs and moves nothing (is, 2026-11-09). A
   pin that is not its head is an overlay, replaced unless `--keep`
   (R47). A head wins over a release's pin of the same name, and a
-  package with a head is never dropped for leaving a release.
+  package with a head is never dropped for leaving a release. One new
+  to the profile that the machine has absent (`oath build` leaves its
+  products so) is made present at its head, as the release would make
+  it present at its pin.
 - **Needs.** A head's needs are pins. When the moves leave a need at
   another pin (buccina's mesa moved, Sola's head did not), the update
   re-points it if every `DT_NEEDED` name of the package's ELF files is

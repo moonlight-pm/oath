@@ -1146,7 +1146,9 @@ fn heads_wanted(machine: &BTreeMap<String, Value>, moves: &[Move]) -> BTreeMap<S
 /// head instead (R72): a head wins over the release's pin, a package with
 /// a head is never dropped for leaving the release, and one new to the
 /// profile is made at its head, with what that head needs, or held when
-/// that head is older than the one this machine took.
+/// that head is older than the one this machine took. One new to the
+/// profile that the machine has absent (`oath build` leaves its products
+/// so) is made present at its head, as the release makes it present (R47).
 fn with_heads(
     machine: &BTreeMap<String, Value>,
     moves: Vec<Move>,
@@ -1157,22 +1159,33 @@ fn with_heads(
 ) -> Vec<Move> {
     let mut out = Vec::new();
     // The machine as head::plan sees it: with each package the release
-    // makes at its head, so what that head needs is made too.
+    // makes at its head, and each it makes present, so what those need is
+    // made too.
     let mut after = machine.clone();
+    let mut present = BTreeSet::new();
     for m in moves {
         let Some(offer) = offers.get(m.name()) else {
             out.push(m);
             continue;
         };
-        if let Move::New { name, doc, why } = m {
-            if let Some(hold) = head::hold_older(&name, "", offer, taken) {
-                out.push(hold);
-                continue;
+        match m {
+            Move::New { name, doc, why } => {
+                if let Some(hold) = head::hold_older(&name, "", offer, taken) {
+                    out.push(hold);
+                    continue;
+                }
+                let mut d = offer.head.doc();
+                d["present"] = doc.get("present").cloned().unwrap_or(json!(true));
+                after.insert(name.clone(), d.clone());
+                out.push(Move::New { name, doc: d, why });
             }
-            let mut d = offer.head.doc();
-            d["present"] = doc.get("present").cloned().unwrap_or(json!(true));
-            after.insert(name.clone(), d.clone());
-            out.push(Move::New { name, doc: d, why });
+            Move::Pin { name, set, .. } if set["present"] == json!(true) => {
+                if let Some(d) = after.get_mut(&name) {
+                    d["present"] = json!(true);
+                }
+                present.insert(name);
+            }
+            _ => {}
         }
     }
     // Each package the release makes is made or held above, not again by
@@ -1182,7 +1195,25 @@ fn with_heads(
         .filter(|m| matches!(m, Move::New { .. } | Move::Hold { .. }))
         .map(|m| m.name().to_string())
         .collect();
-    let heads = head::plan(&after, offers, taken, keep, |n, pin| ran.overlay(n, pin).is_some());
+    let mut heads = head::plan(&after, offers, taken, keep, |n, pin| ran.overlay(n, pin).is_some());
+    for name in present {
+        let offer = &offers[&name];
+        match heads.iter_mut().find(|m| m.name() == name) {
+            Some(Move::Head { set, .. }) => set["present"] = json!(true),
+            // Held: it stays as it is.
+            Some(_) => {}
+            // It runs its head: only `present` moves.
+            None => heads.push(Move::Head {
+                name,
+                from: offer.head.hash.clone(),
+                to: offer.head.hash.clone(),
+                set: json!({ "hash": offer.head.hash, "present": true }),
+                overlay: None,
+                signer: offer.signer.clone(),
+                repointed: Vec::new(),
+            }),
+        }
+    }
     out.extend(heads.into_iter().filter(|m| !made.contains(m.name())));
     out
 }
@@ -1889,6 +1920,53 @@ mod tests {
         let moves = head::settle(&machine, moves, all, all);
         let made: Vec<(&str, Option<&str>)> = moves.iter().map(|m| (m.name(), m.to())).collect();
         assert_eq!(made, [("foot", Some(h('o').as_str())), ("libfoot", Some(h('l').as_str()))]);
+    }
+
+    #[test]
+    fn a_package_new_to_the_profile_that_is_here_absent_is_made_present_at_its_head() {
+        // `oath build` left foot absent at 'f', and its head was published
+        // from it; the release has foot new to the profile, at 'r'.
+        let absent = json!({ "present": false, "hash": h('f'), "needs": [] });
+        let machine = BTreeMap::from([("foot".to_string(), absent)]);
+        let pin = Move::Pin {
+            name: "foot".into(),
+            from: h('f'),
+            to: h('r'),
+            set: json!({ "hash": h('r'), "needs": [], "present": true }),
+            overlay: None,
+        };
+        let (ran, keep) = (up::Ran::default(), BTreeSet::new());
+        let all = |_: &str, _: &str| Some(BTreeSet::new());
+        let took_at = |at: char, taken: &head::Record| {
+            let offers = BTreeMap::from([offer("foot", at, json!([]))]);
+            let moves = with_heads(&machine, vec![pin.clone()], &offers, taken, &ran, &keep);
+            head::settle(&machine, moves, all, all)
+        };
+        let took = |at: char| took_at(at, &head::Record::new());
+        // The machine runs its head: only `present` moves.
+        let moves = took('f');
+        assert_eq!(moves.len(), 1, "{moves:?}");
+        assert_eq!(moves[0].to(), Some(h('f').as_str()));
+        assert_eq!(moves[0].fields().unwrap()["present"], json!(true));
+        assert_eq!(
+            moves[0].describe(),
+            "pkg:foot sha256-ffffffffffff (its head, signed by oath@novus; made present: new to \
+             the profile)"
+        );
+        // A newer head: it moves there, present.
+        let moves = took('g');
+        assert_eq!(moves.len(), 1, "{moves:?}");
+        assert_eq!(moves[0].to(), Some(h('g').as_str()));
+        assert_eq!(moves[0].fields().unwrap()["present"], json!(true));
+        assert!(moves[0].describe().contains("made present: new to the profile"));
+        // A head older than the one this machine took: it waits, as it is.
+        let t = head::Taken {
+            hash: h('f'),
+            published: "2026-11-06T00:00:00Z".into(),
+            ..Default::default()
+        };
+        let moves = took_at('g', &head::Record::from([("foot".to_string(), t)]));
+        assert_eq!(moves.iter().map(Move::kind).collect::<Vec<_>>(), ["hold"], "{moves:?}");
     }
 
     #[test]
