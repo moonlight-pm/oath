@@ -34,7 +34,7 @@ Overwrite this file when facts change; do not append a diary.
 - **By hand, 2026-11-09, in no profile (R82):** `pkg:aws` `sha256-df1507709e80…` (generation 185), `pkg:mysql` `sha256-bd37c1e35e2c…` (generation 181), `pkg:postgresql` `sha256-1025492e6e7e…` with `pkg:icu` and `pkg:libxml2` (generation 179), each from `aws-cli@d2e61b0` with its uncommitted work, since merged to master. Neither database has a server running.
 - **Heads it took (R72):** `/oath/heads.json` was first written 2026-11-09 by `oath update --record --confirm` (from master's build): the 155 heads it runs; 21 packages run another pin.
 - **Heads it publishes (R72):** generation 175 (2026-11-08) applied the 13 packages Minecraft runs with (`prismlauncher`, `jre-21`, the Qt modules, `certs` and the small libraries), from master `24ca3bb` and `57dc661`, because `oath publish` publishes this machine's pin. buccina runs none of them.
-- **Running now:** output `e3ea93e48cf0` (the 2026-11-11 release from `d3fc2c0`), by
+- **Running now:** output `d4a898a5f53f` (the 2026-11-12 release: R84 and the third round of the manual audit's fixes), by `sudo oath update --confirm` at Joshua's word on 2026-11-12, no reboot: 2 packages moved (`pkg:oath`, `pkg:writ` `6e55e9ba…`) in generation 189, PID 1 re-executed, in sync, boot 22 archived. Before it, output `e3ea93e48cf0` (the 2026-11-11 release from `d3fc2c0`), by
   `sudo oath update --confirm` at Joshua's word on 2026-11-11, no reboot: PID 1 re-executed
   into the output's binary with every service running, and made this machine's own id
   (`/oath/machine-id`); 41 packages moved in generation 188 (CEF, git, Go's programs, `writ`

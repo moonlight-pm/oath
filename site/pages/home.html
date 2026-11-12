@@ -67,7 +67,7 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha. There are no install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 11 November 2026 the current releases, <code>base</code> <code>7d287d027a91</code> and <code>desk</code> <code>e3ea93e48cf0</code>, pass every test case that runs in QEMU: 71 on <code>base</code>, 76 on <code>desk</code>. No installed machine runs them, so the hardware cases have not run on them. Not there yet:</p>
+<p>Oath is pre-alpha. There are no install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 12 November 2026 the current releases, <code>base</code> <code>cb30e2a0bf93</code> and <code>desk</code> <code>d4a898a5f53f</code>, pass every test case that runs in QEMU: 73 on <code>base</code>, 78 on <code>desk</code>. No installed machine runs them, so the hardware cases have not run on them. Not there yet:</p>
 <ul>
 <li>Install images to download. x86-64 with UEFI is the only platform.</li>
 <li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures where the package names one, and <code>oath add</code> and <code>oath update</code> take only builds a key the machine trusts signed (a release by the build host, a package's head by a key it trusts for its name). <code>oath add</code> refuses a head older than one the machine took, and <code>oath update</code> moves no package the machine has to one. But the origin's indexes, <code>INDEX.md</code> and <code>index.json</code>, are not signed.</li>
