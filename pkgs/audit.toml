@@ -236,6 +236,9 @@ cpe = "cpe:2.3:a:crun_project:crun"
 repo = "https://github.com/containers/crun"
 tag = "{version}"
 
+[crun.not_affected]
+"CVE-2026-115520" = "CRIU checkpoint and restore only (GHSA-2mxx-58qc-p466, crun 1.31's notes): build.sh configures --disable-criu"
+
 [cups]
 cpe = "cpe:2.3:a:openprinting:cups"
 repo = "https://github.com/OpenPrinting/cups"
