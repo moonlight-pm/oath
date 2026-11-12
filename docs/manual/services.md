@@ -313,7 +313,9 @@ Before it sleeps, the apply arms each keyboard and mouse on USB or PS/2,
 with its hubs and its controller, so a key or the mouse wakes the
 machine, as do the power button and, with `net:net0.wake`, a magic
 packet from `oath wake <mac>` ([Network](network.md)). A pad, a pen or a
-Bluetooth device does not.
+Bluetooth device does not. On wake, the apply puts back each device's
+`power/wakeup` it changed, so a mouse cannot power the machine on after
+a later halt.
 
 PID 1 loads NVIDIA's `nvidia` module with
 `NVreg_PreserveVideoMemoryAllocations=1`
@@ -337,11 +339,9 @@ The image ships two helpers, not a service:
   copy is not a second undo; `oath undo` never reads it.
 - `/lib/oath/backup-daily host:/export/path` — sleep until 04:00 local
   time (`TZ`, from `host:local.timezone`; UTC when unset), run
-  `backup-send`, repeat. Its wait does not count time the machine
-  [sleeps](#sleep): each hour asleep moves the run an hour past 04:00.
-  On a machine that sleeps, give `backup-send` a `schedule` instead
-  ([Scheduled services](#scheduled-services)), which runs on wake for a
-  04:00 it slept through.
+  `backup-send`, repeat. It waits a minute at a time against the clock,
+  so after a [sleep](#sleep) through 04:00 it runs within a minute of
+  waking.
 
 To run it daily, add a service in the machine's install overlay:
 

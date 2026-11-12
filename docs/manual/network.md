@@ -85,9 +85,11 @@ sudo oath set net:net0 wake=true
 sudo oath apply net:net0
 ```
 
-A driver without Wake-on-LAN fails the apply and names itself
-(`net0's driver (virtio_net) has no Wake-on-LAN` on QEMU's virtio
-NIC); `sudo oath undo` takes it back. With `wake` on, a sleep's apply
+On a driver without Wake-on-LAN, or one that cannot wake on a magic
+packet, the apply refuses `wake=true` before it changes anything and
+names the driver (`net0's driver (virtio_net) has no Wake-on-LAN` on
+QEMU's virtio NIC); `sudo oath set net:net0 wake=false` takes the
+change back. With `wake` on, a sleep's apply
 lists `net0` in `armed to wake it:`. An armed NIC draws a little power
 while the machine sleeps or is off.
 
@@ -100,11 +102,10 @@ oath wake 60:cf:84:bc:ff:3e
 
 It goes three times as a UDP broadcast to `255.255.255.255:9`, and
 nothing answers it, so `oath wake` cannot say whether the machine woke:
-`ping` or `ssh` it a few seconds later. A MAC is six hex bytes with `:`
-or `-` between them. `oath wake` keeps each part that is two hex digits
-and skips any other, so `host-60-cf-84-bc-ff-3e` sends to
-`60:cf:84:bc:ff:3e`; it refuses a word that does not leave exactly six,
-such as a host name or `60cf84bcff3e`.
+`ping` or `ssh` it a few seconds later. A MAC is six bytes of two hex
+digits each, with `:` or `-` between them, the same one throughout;
+`oath wake` refuses anything else, such as a host name, `60cf84bcff3e`
+or `host-60-cf-84-bc-ff-3e`.
 
 ## What listens
 
@@ -174,7 +175,11 @@ R12, R18), configured on its command line, with no config file; after
 start-up it runs as `void`, keeping only the rights to set the clock
 and bind a low port (`CAP_SYS_TIME`, `CAP_NET_BIND_SERVICE`). In its
 first three updates it steps a clock that is off by more than a second
-(`makestep 1 3`), then slews. Its log is chrony's own:
+(`makestep 1 3`), then slews. It keeps the hardware clock (RTC) in UTC
+(`rtcsync`): once chronyd is synchronised, the kernel copies the system
+time to the RTC, at once after a step and every 11 minutes after, so a
+clock the firmware or Windows left on local time is right from the next
+boot. Its log is chrony's own:
 
 ```
 oath logs svc:time
