@@ -1332,10 +1332,11 @@ fn epss(ids: &BTreeSet<String>) -> Result<BTreeMap<String, f64>> {
 // ---------- HTTP ----------
 
 /// GET, or POST `body` as JSON; `header` goes to curl on stdin (an API
-/// key never reaches argv).
+/// key never reaches argv). `--compressed`: Valve's archive sends its
+/// listing gzipped whatever the request asks.
 pub(crate) fn http(url: &str, body: Option<&str>, header: Option<&str>) -> Result<String> {
     let mut cmd = Command::new("curl");
-    cmd.args(["-sS", "-f", "-L", "--retry", "2", "--max-time", "180", "-K", "-"]);
+    cmd.args(["-sS", "-f", "-L", "--compressed", "--retry", "2", "--max-time", "180", "-K", "-"]);
     let mut config = format!("url = \"{url}\"\nuser-agent = \"oath-audit\"\n");
     if let Some(h) = header {
         config.push_str(&format!("header = \"{h}\"\n"));
