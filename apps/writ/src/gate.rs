@@ -804,10 +804,10 @@ fn undo_one(dir: &Path, real: &Path, seq: usize, v: &Value) -> Result<Option<Str
     }
     let (backup, link) = (v.get("backup").and_then(|b| b.str()), v.get("link").and_then(|l| l.str()));
     if is_true("made_dir") {
-        // Anything still in it is the owner's, and keeps it.
+        // Anything still in it is the owner's, and keeps it. Any other failure is undo's, and stops it.
         match fs::remove_dir(&at) {
             Err(e) if e.kind() == ErrorKind::DirectoryNotEmpty => return Ok(Some(format!("{} is not empty, and stays", name(&rel)))),
-            Err(e) if e.kind() != ErrorKind::NotFound => return Ok(Some(format!("{}: {e}, and stays", name(&rel)))),
+            Err(e) if e.kind() != ErrorKind::NotFound => return Err(e.to_string()),
             _ => {}
         }
     } else if is_true("was_dir") {
@@ -1385,6 +1385,30 @@ mod tests {
         fs::remove_dir_all(t.dir().join("undo")).unwrap();
         let e = undo(&t.dir(), &t.real, &mut std::io::sink()).unwrap_err();
         assert_eq!(e, "stopped at d/a: No such file or directory (os error 2). What was applied after it is taken back; `writ undo` again goes on from there");
+    }
+
+    #[test]
+    fn a_directory_undo_cannot_remove_stops_it_and_is_not_the_owners() {
+        let t = T::new("locked-dir");
+        t.upper("new/dir/c", "c");
+        t.apply(true, &[]).unwrap();
+        // The owner makes new read-only, so new/dir cannot be taken out of it.
+        let mode = |m| fs::set_permissions(t.real.join("new"), fs::Permissions::from_mode(m)).unwrap();
+        mode(0o555);
+        if fs::create_dir(t.real.join("new/probe")).is_ok() {
+            eprintln!("a read-only directory is not read-only here");
+            return;
+        }
+        let mut said = Vec::new();
+        let stopped = undo(&t.dir(), &t.real, &mut said);
+        mode(0o755);
+        assert_eq!(stopped.unwrap_err(), "stopped at new/dir: Permission denied (os error 13). What was applied after it is taken back; `writ undo` again goes on from there");
+        assert_eq!(String::from_utf8(said).unwrap(), "restored new/dir/c\n");
+        // The next undo goes on from new/dir.
+        let mut said = Vec::new();
+        assert_eq!(undo(&t.dir(), &t.real, &mut said).unwrap(), 0);
+        assert_eq!(String::from_utf8(said).unwrap(), "restored new/dir\nrestored new\n");
+        assert!(!t.real.join("new").exists());
     }
 
     #[test]
