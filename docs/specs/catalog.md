@@ -248,7 +248,10 @@ section.
   logged in `init.log`.
 
 `oath undo` is a stack. It takes the newest log line with a generation
-and result `ok` or `error` that no `undo:N` line has undone yet. From
+and result `ok` or `error` that no `undo:N` line has undone yet. It
+first checks that each `cell` it would put back present has its tree
+in the store, hashing to its pin, and otherwise refuses with the
+`oath store` repair, changing nothing and logging nothing. From
 that generation's snapshot it puts back the spec of the objects that
 apply touched: `desired` and `applied`. An object the apply
 created is stopped or unlinked and removed; an object it removed comes

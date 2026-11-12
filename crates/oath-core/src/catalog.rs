@@ -762,7 +762,9 @@ impl Catalog {
 
     /// Undo the newest apply not already undone (`ok` or `error`): put back
     /// the spec of the objects it touched, from its snapshot, and converge
-    /// them. Status, the log, the store and host keys stay as they are.
+    /// them. Status, the log, the store and host keys stay as they are. A
+    /// cell it would put back present whose tree is not in the store, or
+    /// does not hash to its pin, refuses it before anything changes.
     pub fn undo(&self, actor: &Actor, hooks: &dyn ApplyHooks) -> Result<ApplyReport> {
         let _lock = self.lock()?;
         let target =
@@ -844,6 +846,7 @@ impl Catalog {
         hooks: &dyn ApplyHooks,
     ) -> Result<ApplyReport> {
         let snap = hooks.snapshot_catalog(generation)?;
+        self.check_undo_cell_trees(&ids, &snap)?;
         let mut back = Vec::new();
         for id in &ids {
             if self.restore_spec(id, &snap, hooks)? {
@@ -854,7 +857,7 @@ impl Catalog {
         let mut report = ApplyReport::default();
         for id in &back {
             self.stop_dhcp_client_first(id, hooks)?;
-            let applied = self.converge_spec(id, hooks, &mut report, false)?;
+            let applied = self.converge_spec(id, hooks, &mut report)?;
             if id.kind == KIND_SVC {
                 svcs.push((id.clone(), applied["enabled"] == json!(true)));
             }
@@ -1332,7 +1335,7 @@ impl Catalog {
         report: &mut ApplyReport,
     ) -> Result<()> {
         self.stop_dhcp_client_first(id, hooks)?;
-        let applied = self.converge_spec(id, hooks, report, true)?;
+        let applied = self.converge_spec(id, hooks, report)?;
         let _ = fs::remove_file(self.obj_dir(id).join(NEW_MARK));
         if id.kind == KIND_SVC {
             let enabled = applied.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
@@ -1362,15 +1365,14 @@ impl Catalog {
 
     /// Converge `id` to its desired spec, record what that observed as its
     /// actual, and keep the spec as applied (`applied.json`). A service only
-    /// gets its applied spec here: PID 1 runs it once notified. With
-    /// `checked`, preflight has hashed a cell's tree against its pin (apply;
-    /// undo has not). Returns the applied spec.
+    /// gets its applied spec here: PID 1 runs it once notified. Apply's
+    /// preflight, or undo's, has hashed a cell's tree against its pin.
+    /// Returns the applied spec.
     fn converge_spec(
         &self,
         id: &ObjectId,
         hooks: &dyn ApplyHooks,
         report: &mut ApplyReport,
-        checked: bool,
     ) -> Result<Value> {
         let dir = self.obj_dir(id);
         let obj = self.get(id)?;
@@ -1400,7 +1402,7 @@ impl Catalog {
             KIND_PKG => self.converge_one_pkg(id, hooks)?,
             KIND_CELL => {
                 let cell: Cell = serde_json::from_value(desired.clone())?;
-                let actual = crate::cell::converge(&self.root, &id.name, &cell, checked)?;
+                let actual = crate::cell::converge(&self.root, &id.name, &cell, true)?;
                 self.write_actual(id, &actual)?;
                 desired
             }
@@ -1742,6 +1744,22 @@ impl Catalog {
             }
             let cell: Cell = serde_json::from_value(self.get(&d.id)?.desired)?;
             crate::cell::check(&self.root, &d.id.name, &cell)?;
+        }
+        Ok(())
+    }
+
+    /// [`Self::check_cell_trees`] for an undo: each of `ids` that is a cell
+    /// in snapshot catalog `snap`, which undo puts back and converges, has
+    /// its tree in the store, hashing to its pin there. One the apply made
+    /// is unlinked, not checked. Undo refuses before it changes anything.
+    fn check_undo_cell_trees(&self, ids: &[ObjectId], snap: &Path) -> Result<()> {
+        for id in ids.iter().filter(|id| id.kind == KIND_CELL) {
+            let from = snap.join("objects").join(&id.kind).join(&id.name);
+            if !from.join("desired.json").is_file() || from.join(NEW_MARK).exists() {
+                continue;
+            }
+            let cell: Cell = serde_json::from_value(read_json(&from.join("desired.json"))?)?;
+            crate::cell::check(&self.root, &id.name, &cell)?;
         }
         Ok(())
     }

@@ -2016,6 +2016,46 @@ fn storing_a_packages_tree_again_records_the_check() {
     assert!(!cat.index_text().unwrap().contains("## Store damage"));
 }
 
+/// A VM, 2026-11-11: `sudo oath undo` with a cell's tree damaged put the
+/// cell's spec back, then failed at its hash, with snap:current where it
+/// was and no `undo:N` logged.
+#[test]
+fn undo_refuses_a_cell_whose_tree_is_damaged_or_gone_and_changes_nothing() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    cat.set_fields(&id, cell_fields(json!({ "description": "To be." }))).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    let cur: ObjectId = "snap:current".parse().unwrap();
+    let generation = cat.get(&cur).unwrap().desired["generation"].clone();
+    let tree = d.path().join("store/cell/hamlet").join(&hash);
+    for gone in [false, true] {
+        if gone {
+            std::fs::remove_dir_all(&tree).unwrap();
+        } else {
+            std::fs::write(tree.join("bin/hamlet"), "x").unwrap();
+        }
+        let logged = results(&cat).len();
+        let err = cat.undo(&Actor::unknown(), &hooks).unwrap_err();
+        if gone {
+            assert!(err.to_string().contains("is not in the store"), "{err}");
+        } else {
+            assert_eq!(err.exit_code(), EXIT_SECURITY, "{err}");
+        }
+        let hint = err.hint_str().unwrap();
+        assert!(hint.contains("sudo oath store cell:hamlet <dir|file.tar>"), "{hint}");
+        assert_eq!(results(&cat).len(), logged, "gone {gone}: an undo was logged");
+        assert_eq!(cat.get(&cur).unwrap().desired["generation"], generation);
+        assert_eq!(cat.get(&id).unwrap().desired["description"], json!("To be."), "gone {gone}");
+        assert_eq!(cat.applied(&id).unwrap().unwrap()["description"], json!("To be."));
+        oath_core::cell::store(d.path(), "hamlet", &d.path().join("src-hamlet")).unwrap();
+    }
+    // Stored again, the undo goes through.
+    cat.undo(&Actor::unknown(), &hooks).unwrap();
+    assert!(cat.applied(&id).unwrap().unwrap().get("description").is_none());
+    assert_ne!(cat.get(&cur).unwrap().desired["generation"], generation);
+    assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync");
+}
+
 #[test]
 fn the_kind_explains_itself() {
     let (_d, cat) = seeded();
