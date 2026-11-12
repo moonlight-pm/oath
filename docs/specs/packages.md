@@ -227,7 +227,8 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   package with a head is never dropped for leaving a release. One new
   to the profile that the machine has absent (`oath build` leaves its
   products so) is made present at its head, as the release would make
-  it present at its pin.
+  it present at its pin. A head older than the one it took leaves it
+  absent, even when its pin is that head's, and what needs it waits.
 - **Needs.** A head's needs are pins. When the moves leave a need at
   another pin (buccina's mesa moved, Sola's head did not), the update
   re-points it if every `DT_NEEDED` name of the package's ELF files is

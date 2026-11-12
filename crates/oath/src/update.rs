@@ -1156,7 +1156,8 @@ fn heads_wanted(machine: &BTreeMap<String, Value>, moves: &[Move]) -> BTreeMap<S
 /// profile is made at its head, with what that head needs, or held when
 /// that head is older than the one this machine took. One new to the
 /// profile that the machine has absent (`oath build` leaves its products
-/// so) is made present at its head, as the release makes it present (R47).
+/// so) is made present at its head, as the release makes it present (R47),
+/// or held as it is when that head is older than the one this machine took.
 fn with_heads(
     machine: &BTreeMap<String, Value>,
     moves: Vec<Move>,
@@ -1167,8 +1168,8 @@ fn with_heads(
 ) -> Vec<Move> {
     let mut out = Vec::new();
     // The machine as head::plan sees it: with each package the release
-    // makes at its head, and each it makes present, so what those need is
-    // made too.
+    // makes at its head, so what that head needs is made too. What the
+    // release makes present, head::plan makes present at its head.
     let mut after = machine.clone();
     let mut present = BTreeSet::new();
     for m in moves {
@@ -1188,9 +1189,6 @@ fn with_heads(
                 out.push(Move::New { name, doc: d, why });
             }
             Move::Pin { name, set, .. } if set["present"] == json!(true) => {
-                if let Some(d) = after.get_mut(&name) {
-                    d["present"] = json!(true);
-                }
                 present.insert(name);
             }
             _ => {}
@@ -1203,25 +1201,8 @@ fn with_heads(
         .filter(|m| matches!(m, Move::New { .. } | Move::Hold { .. }))
         .map(|m| m.name().to_string())
         .collect();
-    let mut heads = head::plan(&after, offers, taken, keep, |n, pin| ran.overlay(n, pin).is_some());
-    for name in present {
-        let offer = &offers[&name];
-        match heads.iter_mut().find(|m| m.name() == name) {
-            Some(Move::Head { set, .. }) => set["present"] = json!(true),
-            // Held: it stays as it is.
-            Some(_) => {}
-            // It runs its head: only `present` moves.
-            None => heads.push(Move::Head {
-                name,
-                from: offer.head.hash.clone(),
-                to: offer.head.hash.clone(),
-                set: json!({ "hash": offer.head.hash, "present": true }),
-                overlay: None,
-                signer: offer.signer.clone(),
-                repointed: Vec::new(),
-            }),
-        }
-    }
+    let heads =
+        head::plan(&after, offers, taken, keep, &present, |n, pin| ran.overlay(n, pin).is_some());
     out.extend(heads.into_iter().filter(|m| !made.contains(m.name())));
     out
 }
@@ -1281,8 +1262,10 @@ fn heads_only(
     }
     let keep = keep_names(&machine, &svc_names(cat)?, &opts.keep)?;
     let taken = read_taken(root);
-    let unsettled =
-        head::plan(&machine, &offers, &taken, &keep, |n, pin| ran.overlay(n, pin).is_some());
+    // No release moves: nothing is new to the profile, or made present.
+    let present = BTreeSet::new();
+    let overlay = |n: &str, pin: &str| ran.overlay(n, pin).is_some();
+    let unsettled = head::plan(&machine, &offers, &taken, &keep, &present, overlay);
     let moves = settle(root, &machine, unsettled.clone());
     for m in &moves {
         eprintln!("  {}", m.describe());
@@ -1993,6 +1976,55 @@ mod tests {
         };
         let moves = took_at('g', &head::Record::from([("foot".to_string(), t)]));
         assert_eq!(moves.iter().map(Move::kind).collect::<Vec<_>>(), ["hold"], "{moves:?}");
+    }
+
+    #[test]
+    fn a_package_here_absent_is_never_made_present_at_a_head_older_than_one_taken() {
+        // This machine took foot at 'g', and `oath build` left it absent at
+        // 'f' since; the origins serve 'f', older, and the release has foot
+        // new to the profile.
+        let absent = json!({ "present": false, "hash": h('f'), "needs": [] });
+        let sola = json!({ "present": true, "hash": h('a') });
+        let pin = Move::Pin {
+            name: "foot".into(),
+            from: h('f'),
+            to: h('r'),
+            set: json!({ "hash": h('r'), "needs": [], "present": true }),
+            overlay: None,
+        };
+        let t = head::Taken {
+            hash: h('g'),
+            published: "2026-11-06T00:00:00Z".into(),
+            signer: "oath@buccina".into(),
+            ..Default::default()
+        };
+        let taken = head::Record::from([("foot".to_string(), t)]);
+        let (ran, keep) = (up::Ran::default(), BTreeSet::new());
+        let all = |_: &str, _: &str| Some(BTreeSet::new());
+        let kinds = |m: &[Move]| m.iter().map(Move::kind).collect::<Vec<_>>();
+        // Its pin here is that head's: it stays absent, as it is.
+        let machine = BTreeMap::from([("foot".to_string(), absent.clone())]);
+        let offers = BTreeMap::from([offer("foot", 'f', json!([]))]);
+        let moves = with_heads(&machine, vec![pin.clone()], &offers, &taken, &ran, &keep);
+        let said: Vec<String> = moves.iter().map(Move::describe).collect();
+        assert_eq!(kinds(&moves), ["hold"], "{said:?}");
+        assert_eq!(
+            said[0],
+            "pkg:foot stays at sha256-ffffffffffff; sha256-ffffffffffff waits: it (published \
+             2026-11-05T00:00:00Z) is older than the head this machine took, sha256-gggggggggggg \
+             (signed by oath@buccina, published 2026-11-06T00:00:00Z)"
+        );
+        // Sola's head needs it: Sola waits too, as for one the machine lacks.
+        let machine = BTreeMap::from([("foot".to_string(), absent), ("sola".to_string(), sola)]);
+        let offers = BTreeMap::from([
+            offer("foot", 'f', json!([])),
+            offer("sola", 'b', json!([{ "id": "pkg:foot", "hash": h('f') }])),
+        ]);
+        let moves = with_heads(&machine, vec![pin], &offers, &taken, &ran, &keep);
+        let settled = head::settle(&machine, moves, all, all);
+        let said: Vec<String> = settled.iter().map(Move::describe).collect();
+        assert_eq!(kinds(&settled), ["hold", "hold"], "{said:?}");
+        assert!(said[1].contains("pkg:sola needs pkg:foot, which waits"), "{said:?}");
     }
 
     #[test]

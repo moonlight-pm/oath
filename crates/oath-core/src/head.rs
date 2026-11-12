@@ -202,13 +202,19 @@ impl Offer {
     }
 }
 
+/// The head this machine took of `name` (`taken`), when `offer` is older:
+/// taking `offer`, or making the package present at it, would go back.
+fn took_newer<'a>(name: &str, offer: &Offer, taken: &'a Record) -> Option<&'a Taken> {
+    taken.get(name).filter(|t| after(offer.head.order(), t.order()))
+}
+
 /// The [`Move::Hold`] of `name` at `at`, its pin here (none when the
 /// machine lacks it), when its offered head is older than the one this
 /// machine took (`taken`). A package removed since does not come back at
-/// an older head either.
+/// an older head either, nor is one here absent made present at it.
 pub fn hold_older(name: &str, at: &str, offer: &Offer, taken: &Record) -> Option<Move> {
     let head = &offer.head;
-    let t = taken.get(name).filter(|t| after(head.order(), t.order()))?;
+    let t = took_newer(name, offer, taken)?;
     let (when, this, took) = ordered_by(head.order(), t.order());
     Some(Move::Hold {
         name: name.to_string(),
@@ -225,19 +231,22 @@ pub fn hold_older(name: &str, at: &str, offer: &Offer, taken: &Record) -> Option
 
 /// The moves that take `machine` (each package's desired doc, by name) to
 /// the heads `offers` holds. A package whose pin and needs are its head's
-/// does not move; one whose pin is, but not its needs, moves them. One the
-/// owner keeps (`keep`), and one whose offered head is older than the one
-/// this machine took (`taken`), is held. A pin that is not the head the
-/// machine took is an overlay and is replaced (R47); with no record,
-/// `overlay(name, pin)` says (the release's view). A package the machine
-/// lacks is made when something present here, or a head taken, needs it
-/// and it has a head, and held when that head is older than the one this
-/// machine took. Needs are not settled here: see [`settle`].
+/// does not move; one whose pin is, but not its needs, moves them. One in
+/// `present` (new to the profile, and absent here) is made present at its
+/// head, even when its pin is that head's. One the owner keeps (`keep`),
+/// and one whose offered head is older than the one this machine took
+/// (`taken`), is held. A pin that is not the head the machine took is an
+/// overlay and is replaced (R47); with no record, `overlay(name, pin)` says
+/// (the release's view). A package the machine lacks is made when something
+/// present here, or a head taken, needs it and it has a head, and held when
+/// that head is older than the one this machine took. Needs are not settled
+/// here: see [`settle`].
 pub fn plan(
     machine: &BTreeMap<String, Value>,
     offers: &BTreeMap<String, Offer>,
     taken: &Record,
     keep: &BTreeSet<String>,
+    present: &BTreeSet<String>,
     overlay: impl Fn(&str, &str) -> bool,
 ) -> Vec<Move> {
     let mut moves = Vec::new();
@@ -246,6 +255,11 @@ pub fn plan(
         let head = &offer.head;
         let mine = cur["hash"].as_str().unwrap_or("").to_string();
         let mut set = head.fields();
+        // Making it present is a move, though its pin and needs are its
+        // head's: a head older than the one taken holds it, as any move.
+        if present.contains(name) {
+            set["present"] = json!(true);
+        }
         if says(cur, &set) {
             continue;
         }
@@ -288,7 +302,7 @@ pub fn plan(
     // What the heads and the machine need that the machine lacks.
     let mut todo: Vec<String> = machine
         .iter()
-        .filter(|(_, d)| d["present"] != json!(false))
+        .filter(|(n, d)| d["present"] != json!(false) || present.contains(*n))
         .flat_map(|(_, d)| need_names(d))
         .chain(moves.iter().filter_map(Move::fields).flat_map(need_names))
         .collect();
@@ -336,7 +350,7 @@ pub fn additions(
             };
             return Err(Error::hint(what, format!("oath ls --origin {name}")));
         };
-        if let Some(t) = taken.get(&name).filter(|t| after(offer.head.order(), t.order())) {
+        if let Some(t) = took_newer(&name, offer, taken) {
             let (when, this, took) = ordered_by(offer.head.order(), t.order());
             let head = format!(
                 "the head on the origins, {} ({when} {this}), is older than the one this machine \
@@ -382,12 +396,13 @@ struct Final {
 /// (`provides`) now is still provided after the moves. Otherwise the
 /// dependency is held at the machine's pin (or, when that does not help,
 /// the package itself), whether a head or a release moved it, and the rest
-/// is settled again. A package that needs one the machine lacks and the
-/// moves hold (its head is older than the one this machine took) is held
-/// too, whether the moves would move it or make it. A head of the pack the
-/// machine runs whose needs are re-pointed back to the machine's moves
-/// nothing. `loads` and `provides` return None when the tree is not in the
-/// store yet: a preview re-points such a need unchecked, and says so.
+/// is settled again. A package that needs one the machine lacks, or has
+/// absent, and the moves hold (its head is older than the one this machine
+/// took) is held too, whether the moves would move it or make it. A head of
+/// the pack the machine runs whose needs are re-pointed back to the
+/// machine's moves nothing. `loads` and `provides` return None when the
+/// tree is not in the store yet: a preview re-points such a need unchecked,
+/// and says so.
 pub fn settle(
     machine: &BTreeMap<String, Value>,
     mut moves: Vec<Move>,
@@ -423,9 +438,10 @@ pub fn settle(
         let mut hold: Option<(String, String)> = None;
         'pkgs: for (p, f) in after.iter().filter(|(_, f)| f.present) {
             for (q, h) in &f.needs {
-                let Some(qf) = after.get(q) else {
-                    // One the machine lacks and the moves hold: what needs
-                    // it is not moved or made either.
+                let qf = after.get(q);
+                if qf.is_none_or(|qf| !qf.present) {
+                    // One the machine lacks, or has absent, and the moves
+                    // hold: what needs it is not moved or made either.
                     let waits =
                         moves.iter().any(|m| m.name() == q && matches!(m, Move::Hold { .. }));
                     let takes = moves.iter().any(|m| {
@@ -442,8 +458,8 @@ pub fn settle(
                         hold = Some((p.clone(), format!("pkg:{p} needs pkg:{q}, which waits")));
                         break 'pkgs;
                     }
-                    continue;
-                };
+                }
+                let Some(qf) = qf else { continue };
                 if qf.hash == *h || qf.hash.is_empty() {
                     continue;
                 }
@@ -734,6 +750,7 @@ mod tests {
             &offers(vec![head("sola", 'b', &[], "2026-11-06T00:00:00Z")]),
             &Record::new(),
             &BTreeSet::new(),
+            &BTreeSet::new(),
             |_, _| false,
         );
         assert_eq!(moves.len(), 1);
@@ -742,7 +759,9 @@ mod tests {
         // At its head already: nothing moves.
         let machine = BTreeMap::from([("sola".to_string(), doc('b', &[]))]);
         let o = offers(vec![head("sola", 'b', &[], "2026-11-06T00:00:00Z")]);
-        assert!(plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false).is_empty());
+        let m =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
+        assert!(m.is_empty(), "{:?}", texts(&m));
     }
 
     #[test]
@@ -769,7 +788,8 @@ mod tests {
             head("sola", 's', &[("mesa", 'M')], "t"),
             head("mesa", 'M', &[], "t"),
         ]);
-        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let moves =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert_eq!(addition_names(&moves), ["mesa", "sola"], "{:?}", texts(&moves));
         let Move::Head { from, to, set, .. } = &moves[1] else { panic!("{:?}", texts(&moves)) };
         assert_eq!((from, to), (&h('s'), &h('s')));
@@ -788,7 +808,9 @@ mod tests {
         same.head.needs[0].id = "gtk".into();
         let machine =
             BTreeMap::from([("sola".to_string(), doc('s', &[("mesa", 'm'), ("gtk", 'g')]))]);
-        let m = plan(&machine, &offers(vec![same]), &Record::new(), &BTreeSet::new(), |_, _| false);
+        let o = offers(vec![same]);
+        let m =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert!(m.is_empty(), "{:?}", texts(&m));
     }
 
@@ -801,7 +823,8 @@ mod tests {
             ("sola".to_string(), doc('s', &[("mesa", 'm')])),
         ]);
         let o = offers(vec![head("sola", 's', &[("mesa", 'x')], "t")]);
-        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let moves =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert_eq!(moves.iter().map(Move::kind).collect::<Vec<_>>(), ["head"]);
         let loads = trees(&[("sola", 's', &["libEGL.so.1"])]);
         let m = run(&machine, moves, &loads, &trees(&[("mesa", 'm', &["libEGL.so.1"])]));
@@ -819,7 +842,8 @@ mod tests {
         let mut sola = head("sola", 's', &[("mesa", 'm')], "t");
         sola.head.description = "new".into();
         let o = offers(vec![sola, head("mesa", 'M', &[], "t")]);
-        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let moves =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert_eq!(
             texts(&moves)[1],
             "pkg:sola sha256-ssssssssssss (its head, signed by oath@novus; its description moves)"
@@ -840,19 +864,54 @@ mod tests {
             "sola".to_string(),
             Taken { hash: h('c'), published: "2026-11-06T00:00:00Z".into(), ..Taken::default() },
         )]);
-        let m = plan(&machine, &o, &taken, &BTreeSet::new(), |_, _| false);
+        let m = plan(&machine, &o, &taken, &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert!(texts(&m)[0].contains("older than the head this machine took"), "{:?}", texts(&m));
         let keep = BTreeSet::from(["sola".to_string()]);
-        let m = plan(&machine, &o, &Record::new(), &keep, |_, _| false);
+        let m = plan(&machine, &o, &Record::new(), &keep, &BTreeSet::new(), |_, _| false);
         assert!(texts(&m)[0].contains("waits: --keep"));
         // The machine runs a pin that is not the head it took: an overlay.
         let taken = Record::from([(
             "sola".to_string(),
             Taken { hash: h('d'), published: "2026-11-01T00:00:00Z".into(), ..Taken::default() },
         )]);
-        let m = plan(&machine, &o, &taken, &BTreeSet::new(), |_, _| false);
+        let m = plan(&machine, &o, &taken, &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert!(m[0].replaces_overlay(), "{:?}", texts(&m));
         assert!(texts(&m)[0].contains("not its head"), "{:?}", texts(&m));
+    }
+
+    #[test]
+    fn a_package_made_present_never_takes_a_head_older_than_one_taken() {
+        // `oath build` left foot absent at the head the origins serve, and
+        // the release makes it present; its head needs what the machine lacks.
+        let mut absent = doc('f', &[("libfoot", 'l')]);
+        absent["present"] = json!(false);
+        let machine = BTreeMap::from([("foot".to_string(), absent)]);
+        let o = offers(vec![
+            head("foot", 'f', &[("libfoot", 'l')], "2026-11-05T00:00:00Z"),
+            head("libfoot", 'l', &[], "2026-11-05T00:00:00Z"),
+        ]);
+        let present = BTreeSet::from(["foot".to_string()]);
+        let none = trees(&[]);
+        let kinds = |m: &[Move]| m.iter().map(Move::kind).collect::<Vec<_>>();
+        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), &present, |_, _| false);
+        assert_eq!(kinds(&moves), ["head", "new"], "{:?}", texts(&moves));
+        assert_eq!(moves[0].fields().unwrap(), &json!({ "hash": h('f'), "present": true }));
+        assert!(texts(&moves)[0].contains("made present: new to the profile"));
+        // Not made present, it does not move.
+        let m =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
+        assert!(m.is_empty(), "{:?}", texts(&m));
+        // This machine took a newer head: foot stays absent, and what only
+        // it needs is not made.
+        let taken = Record::from([(
+            "foot".to_string(),
+            Taken { hash: h('g'), published: "2026-11-06T00:00:00Z".into(), ..Taken::default() },
+        )]);
+        let moves = plan(&machine, &o, &taken, &BTreeSet::new(), &present, |_, _| false);
+        assert_eq!(kinds(&moves), ["hold", "new"], "{:?}", texts(&moves));
+        assert!(texts(&moves)[0].contains("older than the head this machine took"));
+        let m = run(&machine, moves, &none, &none);
+        assert_eq!(kinds(&m), ["hold"], "{:?}", texts(&m));
     }
 
     #[test]
@@ -906,7 +965,7 @@ mod tests {
         let names = ["sola".to_string()];
         let said = |o: &BTreeMap<String, Offer>, t: &Taken| {
             let taken = Record::from([("sola".to_string(), t.clone())]);
-            let m = plan(&machine, o, &taken, &BTreeSet::new(), |_, _| false);
+            let m = plan(&machine, o, &taken, &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
             let e = additions(&BTreeMap::new(), o, &taken, &names).unwrap_err().to_string();
             (texts(&m)[0].clone(), e)
         };
@@ -936,7 +995,8 @@ mod tests {
             head("libnew", 'n', &[], "t"),
             head("unrelated", 'u', &[], "t"),
         ]);
-        let m = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let m =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert_eq!(m.iter().map(Move::kind).collect::<Vec<_>>(), ["head", "new"]);
         assert_eq!(m[1].name(), "libnew");
     }
@@ -954,7 +1014,7 @@ mod tests {
             head("sola", 'b', &[("libnew", 'n')], "2026-11-07T00:00:00Z"),
             head("libnew", 'n', &[], "2026-11-05T00:00:00Z"),
         ]);
-        let moves = plan(&machine, &o, &taken, &BTreeSet::new(), |_, _| false);
+        let moves = plan(&machine, &o, &taken, &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         let kinds = |m: &[Move]| m.iter().map(Move::kind).collect::<Vec<_>>();
         assert_eq!(kinds(&moves), ["head", "hold"], "{:?}", texts(&moves));
         let said = texts(&moves)[1].clone();
@@ -972,7 +1032,7 @@ mod tests {
             head("gtk", 'g', &[("libnew", 'n')], "2026-11-07T00:00:00Z"),
             head("libnew", 'n', &[], "2026-11-05T00:00:00Z"),
         ]);
-        let moves = plan(&machine, &o, &taken, &BTreeSet::new(), |_, _| false);
+        let moves = plan(&machine, &o, &taken, &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         assert_eq!(kinds(&moves), ["head", "new", "hold"], "{:?}", texts(&moves));
         let m = run(&machine, moves, &none, &none);
         assert_eq!(kinds(&m), ["hold", "hold", "hold"], "{:?}", texts(&m));
@@ -989,7 +1049,8 @@ mod tests {
             ("sola".to_string(), doc('s', &[("mesa", 'm')])),
         ]);
         let o = offers(vec![head("mesa", 'M', &[], "t")]);
-        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let moves =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         let loads = trees(&[("sola", 's', &["libEGL.so.1", "libc.so.6"])]);
         let provides = trees(&[("mesa", 'm', &["libEGL.so.1"]), ("mesa", 'M', &["libEGL.so.1"])]);
         let m = run(&machine, moves.clone(), &loads, &provides);
@@ -1014,7 +1075,8 @@ mod tests {
             ("sola".to_string(), doc('s', &[("mesa", 'm')])),
         ]);
         let o = offers(vec![head("mesa", 'M', &[], "t")]);
-        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let moves =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         let loads = trees(&[("sola", 's', &["libEGL.so.1", "libgone.so"])]);
         let provides = trees(&[("mesa", 'm', &["libEGL.so.1"]), ("mesa", 'M', &["libEGL.so.1"])]);
         let m = run(&machine, moves, &loads, &provides);
@@ -1030,7 +1092,8 @@ mod tests {
             ("sola".to_string(), doc('s', &[("mesa", 'm')])),
         ]);
         let o = offers(vec![head("sola", 'S', &[("mesa", 'x')], "t")]);
-        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let moves =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         let loads = trees(&[("sola", 'S', &["libEGL.so.1"]), ("sola", 's', &["libEGL.so.1"])]);
         let provides = trees(&[("mesa", 'm', &["libEGL.so.1"])]);
         let m = run(&machine, moves.clone(), &loads, &provides);
@@ -1068,7 +1131,8 @@ mod tests {
             ("sola".to_string(), doc('s', &[("mesa", 'm')])),
         ]);
         let o = offers(vec![head("mesa", 'M', &[], "t")]);
-        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        let moves =
+            plan(&machine, &o, &Record::new(), &BTreeSet::new(), &BTreeSet::new(), |_, _| false);
         let m = settle(&machine, moves, |_, _| None, |_, _| None);
         assert_eq!(m.iter().map(Move::kind).collect::<Vec<_>>(), ["head", "repoint"]);
         assert!(texts(&m)[1].contains("checks its libraries once the packs are here"));
