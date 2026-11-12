@@ -1,7 +1,7 @@
 # Written by `cargo make pkgs --fetch` (R57): when each package was published.
-pin 2ca455f2cdc0a246de97479d4b2299c0429f43d175ac1bde7331c550580a3562
-checked 2026-11-10
-source 2026-10-30T18:05:04Z
+pin 1dfca4fa3dee6daa02fa85d9bbe679c13824b31081e66976596dc5d7abcc6668
+checked 2026-11-12
+source 2026-11-04T20:12:23Z
 module go github.com/aws/aws-sdk-go-v2 v1.41.3 2026-03-03T21:26:28Z new
 module go github.com/aws/aws-sdk-go-v2/config v1.32.11 2026-03-03T21:26:28Z new
 module go github.com/aws/aws-sdk-go-v2/credentials v1.19.11 2026-03-03T21:26:28Z new
