@@ -381,11 +381,9 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         sh(&mut Command::new(find_bin("reboot")))?;
     } else {
         let mut text = msg;
-        if pid1 == "re-executed" {
-            text.push_str(
-                "; PID 1 re-executed into its binary (what it does only at boot: mounts, \
-                 modules, sysctls, device modes, /etc, waits for the next boot)",
-            );
+        if let Some(said) = reexecuted(pid1) {
+            text.push_str("; ");
+            text.push_str(said);
         }
         if let Some(wait) = next_boot(kernel, firmware, pid1) {
             text.push_str("; ");
@@ -404,6 +402,16 @@ pub fn run(root: &Path, cat: &Catalog, actor: &Actor, opts: Opts) -> Result<i32>
         );
     }
     Ok(0)
+}
+
+/// What an update that re-executed PID 1 (R73) says of it, as a person
+/// reads it. The PID 1 that takes over writes /etc/machine-id; the rest of
+/// /etc waits for a boot.
+fn reexecuted(pid1: &str) -> Option<&'static str> {
+    (pid1 == "re-executed").then_some(
+        "PID 1 re-executed into its binary (what it does only at boot: mounts, modules, \
+         sysctls, device modes, /etc but its machine-id, waits for the next boot)",
+    )
 }
 
 /// What an update left for the next boot, as a person reads it. A new
@@ -2015,6 +2023,14 @@ mod tests {
         assert_eq!(next_boot(w, w, r), Some("reboot to run its kernel and initrd"));
         assert_eq!(next_boot(w, r, w), Some("reboot to run its kernel, initrd and PID 1"));
         assert_eq!(next_boot(r, r, w), Some("reboot to run its PID 1"));
+    }
+
+    #[test]
+    fn a_reexec_says_its_machine_id_does_not_wait_for_a_boot() {
+        let said = reexecuted("re-executed").unwrap();
+        assert!(said.contains("device modes, /etc but its machine-id, waits for the next boot"));
+        assert_eq!(reexecuted("runs"), None);
+        assert_eq!(reexecuted("next-boot"), None);
     }
 
     #[test]
