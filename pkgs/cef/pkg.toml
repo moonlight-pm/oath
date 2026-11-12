@@ -1,18 +1,18 @@
 # CEF, the Chromium Embedded Framework that Sola's browser is built
 # against, built from Chromium's and CEF's source with Chrome's codecs
 # (H.264 and AAC in MP4; Joshua, 2026-10-28), which the vendor's binary
-# leaves out. The same commit as the vendor's 156.0.26, so a program
+# leaves out. The same commit as the vendor's 156.0.28, so a program
 # built against its headers loads this libcef.so. The vendor builds it on
 # Chromium 156.0.8078.88, for which Google published no tarball; .93 is the
 # same branch 46 commits on, with the same DEPS toolchain. Chromium builds only
 # with its own Clang and Rust (R40): the toolchain packages its DEPS
 # pins, build inputs here and never on a machine.
-version = "156.0.26+g8ea0c73+chromium-156.0.8078.93"
+version = "156.0.28+g57389f0+chromium-156.0.8078.93"
 license = "BSD-3-Clause AND LicenseRef-Chromium-Credits"
 description = "CEF, the Chromium Embedded Framework, with H.264 and AAC, for sola-browser."
 home = "https://github.com/chromiumembedded/cef"
 category = "browser"
-purl = "pkg:generic/cef@156.0.26+g8ea0c73+chromium-156.0.8078.93"
+purl = "pkg:generic/cef@156.0.28+g57389f0+chromium-156.0.8078.93"
 build = [
 	"python", "ninja", "pkgconf", "patchelf", "libdrm", "libpulse", "harfbuzz", "fribidi",
 	"freetype", "fontconfig", "pixman", "xorgproto", "gperf",
@@ -35,11 +35,11 @@ url = "https://commondatastorage.googleapis.com/chromium-browser-official/chromi
 sha256 = "669e57f8bb2fe58199d1aef73b94837b7ebd79d0b5831ca1f7eceb501e876f54"
 unsigned = "Google publishes Chromium's release tarballs with an unsigned .hashes file only"
 
-# CEF's tree at the commit of its 156.0.26 (branch 8078).
+# CEF's tree at the commit of its 156.0.28 (branch 8078).
 [[source]]
-url = "https://github.com/chromiumembedded/cef/archive/8ea0c73b5dbed1389c8dafb911a98c41246bb8cb.tar.gz"
-sha256 = "1bb0bad0f471a05a641c09da25d69afb8b8293dcb32d863e99a436dca6acfdcb"
-file = "cef-8ea0c73b5dbed1389c8dafb911a98c41246bb8cb.tar.gz"
+url = "https://github.com/chromiumembedded/cef/archive/57389f04a61ab0e9603d9f96602843d0e08bb11c.tar.gz"
+sha256 = "7cbc4c633e1ba6cf614a8de27d904a8de31e76930a50e377b69053e48fc4ee74"
+file = "cef-57389f04a61ab0e9603d9f96602843d0e08bb11c.tar.gz"
 unsigned = "a GitHub commit archive; CEF signs neither its commits nor its tags"
 
 # What Chromium's DEPS fetches from Google's storage for a Linux build,

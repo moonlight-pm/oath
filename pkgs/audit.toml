@@ -115,7 +115,7 @@ compare_tag = "{version}"
 differs_because = "tools/gn/README.md: the release replaces the tree's pointer with GN's own README (read 2026-11-01)"
 
 [cef.age_because]
-source = "Chromium 156.0.8078.93 (tag 2026-11-05) with CEF 8ea0c73 (156.0.26, 2026-11-06): Chrome's Extended Stable 156.0.8078.88 (2026-11-03) fixes 23 high CVEs this audit matched against .80, among them CVE-2026-121057, CVE-2026-121086, CVE-2026-121127 and CVE-2026-121129 (Google's post), and Google published no tarball for .88; .93 is the same branch's next tarball"
+source = "CEF 57389f0 (156.0.28, 2026-11-10) on Chromium 156.0.8078.93 (tag 2026-11-05), by Joshua's word of 2026-11-12: CEF's fix for issue 4313 (off-screen frames on Linux sent before the GPU had drawn them, seen with NVIDIA) for Sola's browser on novus and koeurax; it names no CVE. .93 stands for Chrome's Extended Stable .88 (23 high CVEs), for which Google published no tarball"
 
 [cef.not_affected]
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
