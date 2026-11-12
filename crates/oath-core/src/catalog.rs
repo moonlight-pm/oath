@@ -967,10 +967,6 @@ impl Catalog {
         id: &ObjectId,
         hash: &str,
     ) -> Result<()> {
-        let Ok(obj) = self.get(id) else { return Ok(()) };
-        if self.linked_hash(&obj)?.as_deref() != Some(hash) {
-            return Ok(());
-        }
         // From here on the slot holds the tree `oath store` checked: a verify
         // whose hash began before may have hashed the one it replaced.
         let began = crate::since_boot_ns();
@@ -982,18 +978,18 @@ impl Catalog {
     }
 
     /// Write `v`, a check of realization `hash`, into `id`'s actual as
-    /// `verified`. Whether it did: one linked as something else since it
-    /// was hashed is left as it is, and so is one whose actual holds a check
-    /// that began later. A cell whose tree was gone at boot has no hash in
-    /// its actual; a tree that hashes right leaves it drift, not in-sync,
-    /// until apply links it.
+    /// `verified`. Whether it did: one no longer linked as `hash` since it
+    /// was hashed (linked as something else, or made absent) is left as it
+    /// is, and so is one whose actual holds a check that began later. A
+    /// cell whose tree was gone at boot has no hash in its actual; a tree
+    /// that hashes right leaves it drift, not in-sync, until apply links it.
     fn write_verified(&self, id: &ObjectId, hash: &str, v: &crate::PkgVerified) -> Result<bool> {
-        let p = status_path(&self.root, id);
-        let Ok(mut actual) = read_json::<Value>(&p) else { return Ok(false) };
-        let now = actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
-        if !now.is_empty() && now != hash {
+        let Ok(obj) = self.get(id) else { return Ok(false) };
+        if self.linked_hash(&obj)?.as_deref() != Some(hash) {
             return Ok(false);
         }
+        let p = status_path(&self.root, id);
+        let Ok(mut actual) = read_json::<Value>(&p) else { return Ok(false) };
         let held = actual.pointer("/verified/began").and_then(Value::as_u64).unwrap_or(0);
         if held > v.began {
             return Ok(false);

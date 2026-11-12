@@ -62,7 +62,9 @@ parts of T24 and T35.
   newer finding, whichever finishes last. The boot clock orders them,
   and setting the time of day (PID 1 at boot, chrony) does not move it;
   status does not outlive a boot (R14), so every `began` it holds is on
-  one clock.
+  one clock. Nor is a check written into a package or cell no longer
+  linked at the hash it checked: one an apply made absent, or moved, while
+  the verify ran.
 - `oath store pkg:<name>|cell:<name>` hashes the tree it puts in place,
   and records that check as `verified` in the actual of the object
   applied at that hash, so a damaged or missing tree it puts back is no

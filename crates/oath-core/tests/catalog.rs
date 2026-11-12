@@ -2140,6 +2140,29 @@ fn a_verify_that_began_first_and_finished_last_leaves_the_newer_finding() {
     assert!(!cat.index_text().unwrap().contains("## Store damage"));
 }
 
+/// A verify that began before an apply made a package absent wrote its
+/// finding into the absent package's actual, which still held the hash.
+#[test]
+fn a_verify_across_an_apply_that_makes_a_package_absent_writes_nothing() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let pin = store_files(d.path(), "hello", &["bin/hello"]);
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    cat.set_fields(&id, cell_fields(json!({ "present": true, "hash": pin }))).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+
+    std::fs::write(d.path().join("store/pkg/hello").join(&pin).join("bin/hello"), "x").unwrap();
+    let stale = cat.hash_trees(Some(vec![id.clone()])).unwrap();
+    assert!(!stale[0].verified.ok);
+    set(&cat, "pkg:hello", "present", json!(false)).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    cat.record_verified(&stale).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert!(obj.actual.get("verified").is_none(), "{}", obj.actual);
+    assert_ne!(obj.meta.status, "error");
+    assert!(!cat.index_text().unwrap().contains("## Store damage"));
+}
+
 /// A VM, 2026-11-11: `sudo oath undo` with a cell's tree damaged put the
 /// cell's spec back, then failed at its hash, with snap:current where it
 /// was and no `undo:N` logged.
