@@ -132,6 +132,11 @@ descriptive fields and `source`.
   tree matches it. There is no global "right" hash for a name; the
   first pin is a trust act by the owner. After that, a mismatch is an
   error, never a silent upgrade.
+- **Off (is, 2026-11-12).** A `present=false` package fetches and links
+  nothing, and its `live` stays on the tree it last named: an update moves
+  its pin, and apply records that pin with no tree of it on disk, so it
+  leaves no drift. Before, apply recorded a hash of the slot directory, and
+  every later `oath update` refused ("changes not applied").
 - **Removable.** The seed profile lists fixed packages (`glibc`,
   `bash`, `coreutils`, `util-linux`, `iproute2`, `dhcpcd`, `btrfs`,
   `oath`, `openssh`, `zsh`), recorded as `fixed` in their

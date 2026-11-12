@@ -777,6 +777,27 @@ fn pack_second_tree_stays_unlinked() {
     assert!(d.path().join("store/pkg/hello").join(&h1).join("bin/hello").is_file());
 }
 
+/// An update moves an off package's pin to a tree it never fetches: apply
+/// records the pin, not a hash of the slot directory, so nothing stays in
+/// drift, and `live` stays on the tree it named.
+#[test]
+fn pack_off_with_an_unfetched_pin_is_in_sync() {
+    let (d, cat) = tmp();
+    write_hello_store(d.path());
+    let h1 = promote_slot(d.path(), "hello", None).unwrap();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let unfetched = format!("sha256-{}", "4b".repeat(32));
+    set(&cat, "pkg:hello", "hash", json!(unfetched)).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    assert_eq!(cat.applied(&id).unwrap().unwrap()["hash"], json!(unfetched));
+    let drift = cat.diff(Some(&id)).unwrap();
+    assert!(drift.is_empty(), "{:?}", drift.iter().map(|d| &d.fields).collect::<Vec<_>>());
+    let live = std::fs::read_link(d.path().join("store/pkg/hello/live")).unwrap();
+    assert!(live.to_string_lossy().contains(&h1), "{live:?}");
+    assert!(!d.path().join("bin/hello").exists());
+}
+
 #[test]
 fn pack_hash_mismatch_refuses() {
     let (d, _cat) = tmp();

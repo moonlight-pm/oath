@@ -674,8 +674,11 @@ fn tree_hash_id(store_root: &Path, name: &str, tree: &Path) -> Result<String> {
         if is_realization_id(&rel) {
             return Ok(rel.into_owned());
         }
-        if rel.is_empty() && is_old_layout(&slot) {
-            return hash_tree(tree);
+        if rel.is_empty() {
+            // The slot is a tree only in the old layout. Else it stands in
+            // for an off package whose pin was never fetched: no tree of it
+            // is here, and apply records the pin.
+            return if is_old_layout(&slot) { hash_tree(tree) } else { Ok(String::new()) };
         }
     }
     if tree.is_dir() {
