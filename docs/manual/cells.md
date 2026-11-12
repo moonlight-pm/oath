@@ -148,7 +148,7 @@ bzip2  curl	  gmp	 mbedtls  python   zlib
 | `--name <name>` | The cell's name, `[a-z0-9][a-z0-9_.-]*`; two cannot share one. Without it, `run-<pid>`. |
 | `-p [addr:]host:port[/udp]` | Publish the cell's `port` on this machine's `host`. On `127.0.0.1` unless `addr` says else; TCP unless `/udp`. |
 | `--reach port[:hostport]` | The cell's `127.0.0.1:port` reaches this machine's loopback `hostport`, TCP. Default `hostport` is `port`. |
-| `-v /host/path:/path[:ro]` | Bind a file or directory. `/host/path` must exist. Read-write unless `:ro`. |
+| `-v /host/path:/path[:ro]` | Bind a file or directory. `/host/path` must exist. Read-write unless `:ro`; a `-v` or `--tmpfs` inside a `:ro` one needs its target to exist there. |
 | `--tmpfs /path` | A memory file system, mode 1777. |
 | `-e NAME=value` | Set the environment. Every process listing shows it. |
 | `--env-file <file>` | `NAME=value` lines; blank and `#` lines are left out; a value is taken as it stands, quotes and all. `-e` wins over it. |
