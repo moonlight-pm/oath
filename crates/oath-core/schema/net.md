@@ -9,7 +9,7 @@ Oath gives the other NICs no address. Do not hunt `eth0` or `ens3`.
 There is no `ifcfg`, NetworkManager, or `dhclient`.
 
 **When to use:** bring the link up or down; switch between DHCP and a
-static address.
+static address; let a magic packet wake the machine.
 
 **When not:** do not run `ip` / `ifconfig` by hand as admin.
 
@@ -25,6 +25,13 @@ static address.
   with a `nameserver` line for each, at apply and at every boot; empty
   (the default) leaves that file as it is. Ignored for `dhcp`: the lease
   names them. Not a change that can cut off SSH.
+- `wake` — Wake-on-LAN (R84): `true` makes a magic packet to this NIC's
+  MAC (`mac` in `dev:net0`) wake the machine from `host:local`
+  `power=sleep`, and from off where the firmware allows; on nothing
+  else. `false` (the default) turns it off. Apply and every boot set it;
+  a driver without Wake-on-LAN refuses `true` before any generation.
+  Not a change that can cut off SSH. `oath wake <mac>` sends the packet
+  to another machine.
 
 Actual may carry `lease` (the address DHCP gave) and `dhcp` (`address`,
 `router`, `dns`, `seconds`, `server`, `event` `bound` or `renew`, and

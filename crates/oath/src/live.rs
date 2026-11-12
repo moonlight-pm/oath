@@ -417,6 +417,14 @@ impl ApplyHooks for Live {
         crate::sleep::sleep()
     }
 
+    fn check_net(&self, desired: &Net) -> Result<()> {
+        let nic = Path::new("/sys/class/net").join(oath_core::NET0);
+        if !desired.wake || self.catalog_root.as_path() != Path::new("/oath") || !nic.exists() {
+            return Ok(());
+        }
+        oath_core::check_wake(oath_core::NET0)
+    }
+
     fn converge_dev(&self, id: &ObjectId, desired: &Dev) -> Result<DevActual> {
         if self.catalog_root.as_path() != Path::new("/oath") {
             return Ok(DevActual { present: desired.present, ..Default::default() });

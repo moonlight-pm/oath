@@ -23,14 +23,19 @@ pub fn wake(mac: &str) -> Result<()> {
     send().map_err(|e| Error::hint(format!("sending the magic packet: {e}"), "oath get net:net0"))
 }
 
-/// `60:cf:84:bc:ff:3e`, or with `-` between the bytes.
+/// `60:cf:84:bc:ff:3e`, or with `-` between the bytes: six of two hex
+/// digits each, one separator throughout, and nothing else.
 fn parse_mac(mac: &str) -> Result<[u8; 6]> {
-    let bytes: Vec<u8> = mac
-        .split([':', '-'])
-        .filter(|b| b.len() == 2)
+    let sep = if mac.contains(':') { ':' } else { '-' };
+    let parts: Vec<&str> = mac.split(sep).collect();
+    let bytes: Vec<u8> = parts
+        .iter()
+        .filter(|b| b.len() == 2 && b.bytes().all(|c| c.is_ascii_hexdigit()))
         .filter_map(|b| u8::from_str_radix(b, 16).ok())
         .collect();
-    bytes.try_into().map_err(|_| {
+    let whole = parts.len() == 6 && bytes.len() == 6;
+    let bytes: Option<[u8; 6]> = whole.then(|| bytes.try_into().ok()).flatten();
+    bytes.ok_or_else(|| {
         Error::hint(
             format!("{mac:?} is not a MAC address (six hex bytes, 60:cf:84:bc:ff:3e)"),
             "the machine's own `oath get dev:net0` gives its `mac`",
@@ -63,7 +68,18 @@ mod tests {
 
     #[test]
     fn anything_else_is_refused() {
-        for bad in ["", "koeurax", "60:cf:84:bc:ff", "60:cf:84:bc:ff:3e:00", "60:cf:84:bc:ff:zz", "60cf84bcff3e"] {
+        for bad in [
+            "",
+            "koeurax",
+            "60:cf:84:bc:ff",
+            "60:cf:84:bc:ff:3e:00",
+            "60:cf:84:bc:ff:zz",
+            "60cf84bcff3e",
+            "52:54:00:12:34:56:zz",
+            "host-52-54-00-12-34-56",
+            "52:54-00:12:34:56",
+            "+2:54:00:12:34:56",
+        ] {
             assert!(parse_mac(bad).is_err(), "{bad}");
         }
     }

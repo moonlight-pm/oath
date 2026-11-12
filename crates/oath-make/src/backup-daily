@@ -16,32 +16,21 @@ export TZ="${TZ:-UTC0}"
 
 log() { echo "backup-daily: $*" >&2; }
 
-unpad() {
-	n=$1
-	while [ -n "$n" ] && [ "$n" != "${n#0}" ] && [ ${#n} -gt 1 ]; do
-		n=${n#0}
-	done
-	[ -n "$n" ] || n=0
-	echo "$n"
+# The next 04:00, local time, as seconds since the epoch.
+next_four() {
+	t=$(date -d 'today 04:00' +%s)
+	[ "$(date +%s)" -lt "$t" ] || t=$(date -d 'tomorrow 04:00' +%s)
+	echo "$t"
 }
 
-seconds_since_midnight() {
-	h=$(unpad "$(date +%H)")
-	m=$(unpad "$(date +%M)")
-	s=$(unpad "$(date +%S)")
-	echo $((h * 3600 + m * 60 + s))
-}
-
+# A minute at a time against the clock: sleep(1) counts no time the
+# machine spends asleep (R84), so one long sleep would run late.
 sleep_until_four() {
-	now=$(seconds_since_midnight)
-	target=$((4 * 3600))
-	if [ "$now" -ge "$target" ]; then
-		wait=$((86400 - now + target))
-	else
-		wait=$((target - now))
-	fi
-	log "sleep ${wait}s until 04:00 local time ($(date))"
-	sleep "$wait"
+	target=$(next_four)
+	log "sleep until 04:00 local time ($(date -d "@$target"))"
+	while [ "$(date +%s)" -lt "$target" ]; do
+		sleep 60
+	done
 }
 
 log "start dest=$spec tz=$TZ now=$(date)"

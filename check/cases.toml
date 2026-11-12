@@ -343,13 +343,15 @@ steps = [
 
 [[case]]
 name = "net-wake"
-about = "net:net0.wake is refused on a NIC without Wake-on-LAN (the VM's virtio-net), naming its driver; `oath wake` sends a magic packet for a MAC and refuses anything else (R84)."
+about = "net:net0.wake is refused before any generation on a NIC without Wake-on-LAN (the VM's virtio-net), naming its driver, and off asks nothing of it; `oath wake` sends a magic packet for a MAC and refuses anything else (R84)."
 steps = [
-  { run = "sudo oath set net:net0 wake=true && sudo oath apply net:net0", fails = true, expect = ["virtio_net", "has no Wake-on-LAN"] },
-  { run = "sudo oath undo && oath diff", expect = ["in-sync"] },
+  { run = "sudo oath set net:net0 wake=true && sudo oath apply net:net0", fails = true, expect = ["virtio_net", "has no Wake-on-LAN"], reject = ["snapshot"] },
+  { run = "oath log | tail -n 1", expect = ["\"result\":\"refused\""] },
+  { run = "sudo oath set net:net0 wake=false && sudo oath apply net:net0 && oath diff", expect = ["applied generation 1", "in-sync"] },
   { run = "oath get dev:net0", expect = ["mac: \"52:54:00:"] },
   { run = "oath wake 52:54:00:12:34:56", expect = ["magic packet 3 times"] },
   { run = "oath wake koeurax", fails = true, expect = ["is not a MAC address"] },
+  { run = "oath wake 52:54:00:12:34:56:zz", fails = true, expect = ["is not a MAC address"] },
 ]
 
 [[case]]

@@ -2,7 +2,7 @@
 
 The machine itself. There is exactly one object: `host:local`.
 
-**When to use:** change the hostname; reboot or halt; set the
+**When to use:** change the hostname; reboot, halt or sleep; set the
 environment every service gets; set the local timezone; name other
 machines the network's DNS does not; say where packs come from; mount
 disks; give a kernel module this machine's options; turn auto-login on
@@ -17,13 +17,20 @@ not this kind. Do not add a Unix user kind — the accounts are always
 
 - `hostname` — Linux hostname. `mutate`. Catalog is truth;
   `/etc/hostname` and `/etc/hosts` are side effects.
-- `power` — `run` (steady), `reboot`, or `halt`. Changing away from
-  `run` is **confirm** (`oath apply --confirm`). The apply asks PID 1
-  to shut down cleanly (stop services, sync, remount `/` read-only),
-  then reboot or power off. After a reboot apply, desired is set back
-  to `run` so the box does not loop. A power change on its own takes no
-  generation (nothing for undo); plain `reboot` / `poweroff` take the
-  same path.
+- `power` — `run` (steady), `reboot`, `halt` or `sleep`. Changing away
+  from `run` is **confirm** (`oath apply --confirm`), and the apply sets
+  it back to `run` as it acts, so the box does not loop. For `reboot`
+  and `halt` it asks PID 1 to shut down cleanly (stop services, sync,
+  remount `/` read-only), then reboot or power off; plain `reboot` /
+  `poweroff` take the same path. `sleep` (R84) suspends to RAM and the
+  apply returns when the machine wakes, saying when it slept, in which
+  state (`deep` or `s2idle`), what was armed to wake it and, when the
+  platform says, what woke it; nothing is stopped, and the desk is as it
+  was. A key or a mouse (USB or PS/2), the power button and, with
+  `net:net0.wake`, a magic packet (`oath wake <mac>` from another
+  machine) wake it; pads and Bluetooth devices do not. A sleep that does
+  not happen exits non-zero and is logged `error`. A power change on its
+  own takes no generation (nothing for undo).
 - `env` — `NAME=value` map. PID 1 puts these in every `svc` spawn.
   Root-owned `/etc/profile` exports them for logins. Do not write
   `$HOME/.profile`. Empty in the `base` profile.

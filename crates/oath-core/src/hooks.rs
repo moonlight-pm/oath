@@ -93,6 +93,11 @@ pub trait ApplyHooks {
     fn sleep(&self) -> Result<Slept> {
         Ok(Slept::default())
     }
+    /// Refuse, before any generation, a `net` spec this machine's NIC
+    /// cannot take: `wake` on a driver without Wake-on-LAN.
+    fn check_net(&self, _desired: &Net) -> Result<()> {
+        Ok(())
+    }
     /// After notify, wait until svc actual matches `enabled`. Default: no-op.
     fn wait_converge(&self, _id: &ObjectId, _enabled: bool) -> Result<()> {
         Ok(())

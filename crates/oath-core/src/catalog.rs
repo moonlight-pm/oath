@@ -639,7 +639,7 @@ impl Catalog {
             )?;
             return Err(e);
         }
-        if let Err(e) = self.preflight(&selected, confirm) {
+        if let Err(e) = self.preflight(&selected, confirm, hooks) {
             self.append_log(
                 actor,
                 confirm,
@@ -663,7 +663,10 @@ impl Catalog {
                 power_only: true,
                 ..Default::default()
             };
-            if let Err(e) = self.converge_selected(&selected, hooks, &mut report) {
+            let done = self
+                .converge_selected(&selected, hooks, &mut report)
+                .and_then(|()| self.sleep_if_asked(hooks, &mut report));
+            if let Err(e) = done {
                 self.append_log(
                     actor,
                     confirm,
@@ -681,8 +684,6 @@ impl Catalog {
                 hooks.reboot()?;
             } else if report.halting {
                 hooks.halt()?;
-            } else if report.sleeping {
-                report.slept = Some(hooks.sleep()?);
             }
             return Ok(report);
         }
@@ -735,7 +736,7 @@ impl Catalog {
             )?;
             report.probation = Some(probation_secs);
         }
-        if let Err(e) = converged {
+        if let Err(e) = converged.and_then(|()| self.sleep_if_asked(hooks, &mut report)) {
             self.append_log(
                 actor,
                 confirm,
@@ -755,10 +756,17 @@ impl Catalog {
             hooks.reboot()?;
         } else if report.halting {
             hooks.halt()?;
-        } else if report.sleeping {
-            report.slept = Some(hooks.sleep()?);
         }
         Ok(report)
+    }
+
+    /// `power=sleep`: sleep now, before the log, so a sleep that did not
+    /// happen is logged an `error` (power is `run` again either way).
+    fn sleep_if_asked(&self, hooks: &dyn ApplyHooks, report: &mut ApplyReport) -> Result<()> {
+        if report.sleeping {
+            report.slept = Some(hooks.sleep()?);
+        }
+        Ok(())
     }
 
     /// Undo the newest apply not already undone (`ok` or `error`): put back
@@ -1276,18 +1284,26 @@ impl Catalog {
     }
 
     /// Everything that can be refused without touching the machine.
-    fn preflight(&self, selected: &[Drift], confirm: bool) -> Result<()> {
+    fn preflight(&self, selected: &[Drift], confirm: bool, hooks: &dyn ApplyHooks) -> Result<()> {
         for d in selected {
             if self.removing(&d.id) {
                 continue;
             }
-            self.validate(&d.id, &self.get(&d.id)?.desired)?;
+            let desired = self.get(&d.id)?.desired;
+            self.validate(&d.id, &desired)?;
+            if d.id.kind == KIND_NET && d.fields.iter().any(|(f, _, _)| f == "wake") {
+                let net: Net = serde_json::from_value(desired)?;
+                if net.wake {
+                    hooks.check_net(&net)?;
+                }
+            }
         }
         let confirm_needed: Vec<String> =
             selected.iter().filter(|d| self.needs_confirm(d)).map(|d| d.id.to_string()).collect();
         if !confirm_needed.is_empty() && !confirm {
             return Err(Error::Confirm(format!(
-                "{} needs --confirm: it powers off, or can cut this machine off from SSH. \
+                "{} needs --confirm: it reboots, halts or sleeps this machine, or can cut it off \
+                 from SSH. \
                  See /oath/INDEX.md safety.",
                 confirm_needed.join(", ")
             )));

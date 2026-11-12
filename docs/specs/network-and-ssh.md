@@ -69,8 +69,10 @@ Replaces: T9 (net), T15 (SSH and DHCP), the account parts of T31.
 - `wake` (R84, built) is Wake-on-LAN: true makes `net0` wake the
   machine on a magic packet and on nothing else, false on nothing. Apply
   and every boot set it through the ethtool ioctl (`SIOCETHTOOL`, so no
-  ethtool package); the driver keeps it across a sleep. A driver without
-  Wake-on-LAN refuses true and names itself. It is not confirm-class.
+  ethtool package), after the address, so it never keeps a machine off
+  the network; the driver keeps it across a sleep. A driver without
+  Wake-on-LAN refuses true before any generation (the apply's checks ask
+  the NIC) and names itself; false never fails. It is not confirm-class.
   From `host:local.power=sleep` it always works; from off it takes the
   firmware's leave (an ASUS board's "Power On By PCI-E", ErP off). Off
   the catalog, `oath wake <mac>` sends the packet to another machine:

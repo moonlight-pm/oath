@@ -160,9 +160,11 @@ apply acts on it. `sleep` (R84, built) suspends to RAM through
 `/sys/power/state` from the apply itself, which returns on wake and says
 when it slept, in which state (`deep` or `s2idle`) and what was armed to
 wake it: each USB or PS/2 keyboard and mouse (`power/wakeup` on the
-device, its hubs and its controller), `net0` when `net:net0.wake` is on,
-and the power button. NVIDIA's driver is suspended through
-`/proc/driver/nvidia/suspend` first and resumed after. A hostname is letters,
+device, its hubs and its controller, put back as they were after the
+wake), `net0` when `net:net0.wake` is on, and the power button. NVIDIA's
+driver is suspended through `/proc/driver/nvidia/suspend` first and
+resumed after. The sleep comes before the log line, so one that does not
+happen exits non-zero and is logged `error`. A hostname is letters,
 digits, `-` and `.`, at most 63 characters. `hosts` names other machines in
 `/etc/hosts`; `origins` (R25) is the ordered list of origin prefixes
 the machine fetches pinned packs from (packages.md). `mounts` maps a

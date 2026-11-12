@@ -54,8 +54,8 @@ pub use layout::{
     rotate_boot_ids, BOOT_ARCHIVES, BTRFS_TOP, LIVE_SUBVOL, MACHINE_ID,
 };
 pub use net::{
-    appliance_desired as net_appliance_desired, converge as converge_net, dhcpcd_args,
-    dhcpcd_oneshot, record_lease, DHCP_DIRS, DHCP_HOOK, LEASE_FILE,
+    appliance_desired as net_appliance_desired, check_wake, converge as converge_net, dhcpcd_args,
+    dhcpcd_oneshot, record_lease, DHCP_DIRS, DHCP_HOOK, LEASE_FILE, NET0,
 };
 pub use packhash::{
     fetch_adv_url, fetch_url, hash_tree, is_origin, is_realization_id, realization_dir, slot_dir,

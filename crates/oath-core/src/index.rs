@@ -57,6 +57,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          (`--status`: is one set, auto-login, the seat)
     oath desk [stop]     give the seat (tty1) back to the desk, or end the
                          desk and give it to the console (a shell as home)
+    oath wake <mac>      wake another machine whose net:net0.wake is on
+                         (Wake-on-LAN's magic packet, broadcast)
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
 {probation}{damage}{recipes}

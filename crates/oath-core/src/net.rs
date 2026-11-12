@@ -142,7 +142,6 @@ pub fn converge(desired: &Net) -> Result<Net> {
             return Ok(desired.clone());
         }
     };
-    let wake = set_wake(&dev, desired.wake)?;
     if desired.up {
         ip(&["link", "set", &dev, "up"])?;
         for (args, must) in ipv4_steps(desired, &dev, &Link::read(&dev)) {
@@ -168,7 +167,7 @@ pub fn converge(desired: &Net) -> Result<Net> {
                 return Err(Error::hint("dhcpcd got no lease", "oath logs net:net0"));
             }
             let mut out = desired.clone();
-            out.wake = wake;
+            out.wake = set_wake(&dev, desired.wake)?;
             out.lease = read_lease(&dev);
             out.dhcp = read_recorded_lease();
             return Ok(out);
@@ -183,7 +182,8 @@ pub fn converge(desired: &Net) -> Result<Net> {
         quietly(IP, &["addr", "flush", "dev", &dev]);
         ip(&["link", "set", &dev, "down"])?;
     }
-    Ok(Net { wake, ..desired.clone() })
+    // After the address: Wake-on-LAN never keeps a machine off the network.
+    Ok(Net { wake: set_wake(&dev, desired.wake)?, ..desired.clone() })
 }
 
 /// `ethtool_wolinfo` (linux/ethtool.h).
@@ -230,34 +230,47 @@ fn ethtool_wol(nic: &str, wol: &mut WolInfo) -> std::io::Result<()> {
 
 /// Make `nic` wake the machine on a magic packet and on nothing else, or
 /// on nothing (the ethtool ioctl, so no ethtool package; the driver also
-/// sets its PCI device's `power/wakeup`). Returns what it is now. A driver
-/// without Wake-on-LAN has nothing to turn off, and refuses on.
+/// sets its PCI device's `power/wakeup`). Returns what it is now. On
+/// refuses a driver without it ([`check_wake`]); off never fails, since
+/// there is nothing to turn off on a driver that cannot say, and one that
+/// will not change is reported as it is.
 pub fn set_wake(nic: &str, on: bool) -> Result<bool> {
-    let mut wol = WolInfo { cmd: ETHTOOL_GWOL, ..Default::default() };
-    match ethtool_wol(nic, &mut wol) {
-        Ok(()) => {}
-        Err(e) if e.raw_os_error() == Some(libc::EOPNOTSUPP) && !on => return Ok(false),
-        Err(e) if e.raw_os_error() == Some(libc::EOPNOTSUPP) => {
-            return Err(Error::hint(
-                format!("{nic}'s driver ({}) has no Wake-on-LAN", nic_driver(nic)),
-                "oath set net:net0 wake=false",
-            ))
-        }
-        Err(e) => return Err(Error::Msg(format!("{nic}: reading Wake-on-LAN: {e}"))),
+    if on {
+        check_wake(nic)?;
     }
-    if on && wol.supported & WAKE_MAGIC == 0 {
-        return Err(Error::hint(
-            format!("{nic}'s driver ({}) cannot wake on a magic packet", nic_driver(nic)),
-            "oath set net:net0 wake=false",
-        ));
+    let mut wol = WolInfo { cmd: ETHTOOL_GWOL, ..Default::default() };
+    if ethtool_wol(nic, &mut wol).is_err() {
+        return Ok(false);
     }
     let want = if on { WAKE_MAGIC } else { 0 };
     if wol.wolopts != want {
         let mut set = WolInfo { cmd: ETHTOOL_SWOL, wolopts: want, ..Default::default() };
-        ethtool_wol(nic, &mut set)
-            .map_err(|e| Error::Msg(format!("{nic}: setting Wake-on-LAN: {e}")))?;
+        if let Err(e) = ethtool_wol(nic, &mut set) {
+            if on {
+                return Err(Error::Msg(format!("{nic}: setting Wake-on-LAN: {e}")));
+            }
+            return Ok(wol.wolopts & WAKE_MAGIC != 0);
+        }
     }
     Ok(on)
+}
+
+/// Whether `nic` can wake the machine on a magic packet: apply asks before
+/// it takes a generation that turns `wake` on.
+pub fn check_wake(nic: &str) -> Result<()> {
+    let mut wol = WolInfo { cmd: ETHTOOL_GWOL, ..Default::default() };
+    match ethtool_wol(nic, &mut wol) {
+        Ok(()) if wol.supported & WAKE_MAGIC != 0 => Ok(()),
+        Ok(()) => Err(Error::hint(
+            format!("{nic}'s driver ({}) cannot wake on a magic packet", nic_driver(nic)),
+            "oath set net:net0 wake=false",
+        )),
+        Err(e) if e.raw_os_error() == Some(libc::EOPNOTSUPP) => Err(Error::hint(
+            format!("{nic}'s driver ({}) has no Wake-on-LAN", nic_driver(nic)),
+            "oath set net:net0 wake=false",
+        )),
+        Err(e) => Err(Error::Msg(format!("{nic}: reading Wake-on-LAN: {e}"))),
+    }
 }
 
 fn nic_driver(nic: &str) -> String {

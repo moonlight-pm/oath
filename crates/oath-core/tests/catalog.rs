@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use oath_core::{
     apply_overlay, converge_pkg, copy_objects, fetch_and_converge_pkg, hash_tree, ingest_file,
     install_tree, is_realization_id, promote_slot, seed, Actor, ApplyHooks, Catalog, Error, Host,
-    HostPower, NullHooks, ObjectId, Pkg, PkgActual, Result, Slept, EXIT_CONFIRM, EXIT_SECURITY,
+    HostPower, Net, NullHooks, ObjectId, Pkg, PkgActual, Result, Slept, EXIT_CONFIRM, EXIT_SECURITY,
 };
 use serde_json::{json, Map};
 
@@ -15,6 +15,10 @@ struct MemHooks {
     snaps: tempfile::TempDir,
     reboots: Mutex<u32>,
     sleeps: Mutex<u32>,
+    /// The machine will not sleep (a device refuses).
+    no_sleep: Mutex<bool>,
+    /// net0's driver has no Wake-on-LAN.
+    no_wol: Mutex<bool>,
     /// Services do not come up: PID 1 records them failed, and apply's
     /// wait for them is an error.
     no_start: Mutex<bool>,
@@ -32,6 +36,8 @@ impl MemHooks {
             snaps: tempfile::tempdir().unwrap(),
             reboots: Mutex::new(0),
             sleeps: Mutex::new(0),
+            no_sleep: Mutex::new(false),
+            no_wol: Mutex::new(false),
             no_start: Mutex::new(false),
             pkg_converges: Mutex::new(0),
             fetches: false,
@@ -79,8 +85,17 @@ impl ApplyHooks for MemHooks {
         Ok(())
     }
     fn sleep(&self) -> Result<Slept> {
+        if *self.no_sleep.lock().unwrap() {
+            return Err(Error::Msg("could not sleep: the kernel refused".into()));
+        }
         *self.sleeps.lock().unwrap() += 1;
         Ok(Slept { state: "deep".into(), ..Default::default() })
+    }
+    fn check_net(&self, desired: &Net) -> Result<()> {
+        if desired.wake && *self.no_wol.lock().unwrap() {
+            return Err(Error::hint("net0's driver (virtio_net) has no Wake-on-LAN", "x"));
+        }
+        Ok(())
     }
     fn wait_converge(&self, id: &ObjectId, _enabled: bool) -> Result<()> {
         if !*self.no_start.lock().unwrap() {
@@ -296,8 +311,16 @@ fn sleep_needs_confirm_and_comes_back_to_run() {
     assert_eq!(cat.get(&"snap:current".parse().unwrap()).unwrap().desired["generation"], 0);
     // Again, as the desk asks it each time.
     set(&cat, "host:local", "power", json!("sleep")).unwrap();
-    cat.apply(Some(vec![id]), true, &Actor::unknown(), &hooks).unwrap();
+    cat.apply(Some(vec![id.clone()]), true, &Actor::unknown(), &hooks).unwrap();
     assert_eq!(*hooks.sleeps.lock().unwrap(), 2);
+    // A sleep that does not happen is an error in the log, and power is
+    // run again.
+    *hooks.no_sleep.lock().unwrap() = true;
+    set(&cat, "host:local", "power", json!("sleep")).unwrap();
+    assert!(cat.apply(Some(vec![id.clone()]), true, &Actor::unknown(), &hooks).is_err());
+    assert_eq!(results(&cat).last().unwrap().0, "error");
+    assert_eq!(cat.get(&id).unwrap().desired["power"], "run");
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
 }
 
 #[test]
@@ -309,6 +332,21 @@ fn net_wake_is_neither_confirm_class_nor_on_probation() {
     assert!(r.probation.is_none() && r.generation == 1);
     assert_eq!(cat.get(&"net:net0".parse().unwrap()).unwrap().desired["wake"], true);
     set(&cat, "net:net0", "wake", json!("yes")).unwrap_err();
+}
+
+#[test]
+fn net_wake_without_wake_on_lan_is_refused_before_a_generation() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    *hooks.no_wol.lock().unwrap() = true;
+    set(&cat, "net:net0", "wake", json!(true)).unwrap();
+    let err = cat.apply(None, false, &Actor::unknown(), &hooks).unwrap_err();
+    assert!(err.to_string().contains("has no Wake-on-LAN"), "{err}");
+    assert_eq!(results(&cat).last().unwrap().0, "refused");
+    assert_eq!(cat.get(&"snap:current".parse().unwrap()).unwrap().desired["generation"], 0);
+    // Off asks nothing of the driver.
+    set(&cat, "net:net0", "wake", json!(false)).unwrap();
+    assert_eq!(cat.apply(None, false, &Actor::unknown(), &hooks).unwrap().generation, 1);
 }
 
 #[test]

@@ -1,6 +1,7 @@
 //! `host:local.power=sleep` (R84): suspend to RAM and return on wake.
-//! Before it sleeps, each keyboard and mouse is armed to wake the machine
-//! (`net:net0.wake` arms the NIC, and the power button always wakes it),
+//! Before it sleeps, each keyboard and mouse is armed to wake the machine,
+//! and put back as it was after (`net:net0.wake` arms the NIC, and the
+//! power button always wakes it),
 //! and NVIDIA's driver is suspended through its own interface, the only
 //! way it keeps video memory (`NVreg_PreserveVideoMemoryAllocations=1`,
 //! PID 1's default). After the wake, or when the kernel refuses, the
@@ -29,7 +30,7 @@ pub fn sleep() -> Result<Slept> {
         ));
     }
     let state = chosen(&fs::read_to_string(MEM_SLEEP).unwrap_or_default());
-    let armed = arm_inputs(sys);
+    let (armed, was) = arm_inputs(sys);
     let mut wake: Vec<String> = Vec::new();
     for (_, label) in &armed {
         if !wake.contains(label) {
@@ -45,6 +46,7 @@ pub fn sleep() -> Result<Slept> {
     if nvidia {
         if let Err(e) = fs::write(NVIDIA, "suspend") {
             let _ = fs::write(NVIDIA, "resume");
+            disarm(&was);
             return Err(Error::hint(
                 format!("could not sleep: NVIDIA's driver would not suspend ({e})"),
                 "sudo dmesg | tail -n 30",
@@ -57,6 +59,9 @@ pub fn sleep() -> Result<Slept> {
     let slept = fs::write(STATE, "mem");
     let woke = now_rfc3339();
     let resumed = if nvidia { fs::write(NVIDIA, "resume") } else { Ok(()) };
+    // Armed only for this sleep: left on, a USB controller can let a mouse
+    // power the machine on after a later halt.
+    disarm(&was);
     let mut woken_by: Vec<String> = Vec::new();
     for (dev, name, n) in wake_counts(sys) {
         let was = before.iter().find(|(d, w, _)| *d == dev && *w == name).map_or(0, |b| b.2);
@@ -104,14 +109,19 @@ fn chosen(mem_sleep: &str) -> String {
         .to_string()
 }
 
+/// Each `power/wakeup` [`arm_inputs`] changed, with what it held before.
+type Was = Vec<(PathBuf, String)>;
+
 /// Arm each keyboard and mouse on USB or a PS/2 port to wake the machine,
 /// as Windows does: `power/wakeup` on the device and on each one above it
 /// (hubs, the controller), up to and including the first PCI device. A
 /// pad, a pen or a Bluetooth device is left as it is. Returns each armed
-/// device with its name (the USB product, else the input's).
-fn arm_inputs(sys: &Path) -> Vec<(PathBuf, String)> {
+/// device with its name (the USB product, else the input's), and what
+/// [`disarm`] puts back.
+fn arm_inputs(sys: &Path) -> (Vec<(PathBuf, String)>, Was) {
     let mut armed: Vec<(PathBuf, String)> = Vec::new();
-    let Ok(entries) = fs::read_dir(sys.join("class/input")) else { return armed };
+    let mut was: Was = Vec::new();
+    let Ok(entries) = fs::read_dir(sys.join("class/input")) else { return (armed, was) };
     let mut inputs: Vec<PathBuf> = entries
         .flatten()
         .filter(|e| e.file_name().to_string_lossy().starts_with("input"))
@@ -140,8 +150,12 @@ fn arm_inputs(sys: &Path) -> Vec<(PathBuf, String)> {
                     label = p.trim().to_string();
                 }
             }
-            if up.join("power/wakeup").exists() {
-                let _ = fs::write(up.join("power/wakeup"), "enabled");
+            let file = up.join("power/wakeup");
+            if let Ok(old) = fs::read_to_string(&file) {
+                let old = old.trim().to_string();
+                if old != "enabled" && fs::write(&file, "enabled").is_ok() {
+                    was.push((file, old));
+                }
                 wakes.get_or_insert_with(|| up.to_path_buf());
             }
             let pci = fs::read_link(up.join("subsystem"))
@@ -156,7 +170,14 @@ fn arm_inputs(sys: &Path) -> Vec<(PathBuf, String)> {
             }
         }
     }
-    armed
+    (armed, was)
+}
+
+/// Put back what [`arm_inputs`] changed.
+fn disarm(was: &Was) {
+    for (file, old) in was {
+        let _ = fs::write(file, old);
+    }
 }
 
 /// Bit `n` of a sysfs capability bitmap: hex words, the highest first.
@@ -245,7 +266,7 @@ mod tests {
         fs::create_dir_all(sys.join("class/input")).unwrap();
         std::os::unix::fs::symlink(&input, sys.join("class/input/input7")).unwrap();
 
-        let armed = arm_inputs(&sys);
+        let (armed, was) = arm_inputs(&sys);
         assert_eq!(armed, [(fs::canonicalize(&usb).unwrap(), "Lamzu 4K Receiver".to_string())]);
         let state = |d: &Path| fs::read_to_string(d.join("power/wakeup")).unwrap();
         for d in [&usb, &ctl.join("usb1"), &ctl] {
@@ -254,6 +275,12 @@ mod tests {
         // The input node itself has no wake of its own to arm here, and
         // nothing above the controller is touched.
         assert_eq!(state(&root_port), "disabled\n");
+        // After the sleep each is as it was.
+        assert_eq!(was.len(), 3);
+        disarm(&was);
+        for d in [&usb, &ctl.join("usb1"), &ctl] {
+            assert_eq!(state(d), "disabled", "{}", d.display());
+        }
         let _ = fs::remove_dir_all(&t);
     }
 }

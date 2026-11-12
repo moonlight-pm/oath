@@ -193,7 +193,8 @@ everything else, syncs, unmounts `host:local.mounts`, lazily unmounts
 ## Sleep
 
 `oath` `power=sleep` (R84) does not involve PID 1: the apply arms each
-keyboard and mouse (`power/wakeup` up to its controller), writes
+keyboard and mouse (`power/wakeup` up to its controller, put back after),
+writes
 `suspend` to `/proc/driver/nvidia/suspend` when NVIDIA's driver is in,
 then `mem` to `/sys/power/state`, which returns on wake; the kernel
 froze every other process, PID 1 too. Then `resume` to NVIDIA's file.
