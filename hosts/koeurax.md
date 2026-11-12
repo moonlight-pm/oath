@@ -35,10 +35,11 @@ Overwrite this file when facts change; do not append a diary.
   that update, 4 and 5 Minecraft's packages (below). A sleep at 01:35:28Z
   through `host:local.power=sleep` armed its 2.4G receiver, `net0` and the
   power button, and the desk kept running across it.
-  `host:local.publishers` is buccina's key alone, so it refuses Sola's own
-  heads (novus's key) and takes Sola with releases (`pkg:sola` `90ca782c…`).
-  Joshua said yes to novus's key on 2026-11-12; the agent's permissions
-  stop at granting it, so it waits for his hand. No time zone (UTC).
+  `host:local.publishers` holds buccina's key and, since generation 8
+  (2026-11-12, Joshua's hand), `oath@novus` for any package (`names="*"`),
+  as on the other four machines, so Sola's own heads reach it at its next
+  `oath update` (now `pkg:sola` `90ca782c…`, the release's). Agents may not
+  grant a key there. No time zone (UTC).
   Steam runs: Joshua played Terraria and Noita on 2026-11-08, on the GSP
   firmware, with no GPU errors.
 - **Minecraft (R74), generations 4 and 5, 2026-11-08:** from master
