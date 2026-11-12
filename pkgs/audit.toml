@@ -731,6 +731,9 @@ series = "7.3"
 compare_repo = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
 compare_tag = "v{version}"
 
+[linux.age_because]
+source = "7.3.4 (2026-11-10) is the only 7.3 release with the fix for CVE-2026-99288 (inet: unhashed sockets rejected in established lookups), and it carries 7.3.3's (2026-11-07) for CVE-2026-99281 (high: attaching to an ownerless tun device without CAP_NET_ADMIN) and CVE-2026-99255 (io_uring/io-wq: a link hidden from cancellation); taken before its week by Joshua's word of 2026-11-12"
+
 [linux.not_affected]
 "CVE-2021-47645" = "the zoran staging driver, fixed in mainline by 20811bbe685c (v5.18); the record lists only the stable branches"
 "CVE-2026-98938" = "Rust kernel code (rust: irq): Oath's kernel has no Rust (boot/config CONFIG_RUSTC_VERSION=0; pkgs/linux builds without rust)"
@@ -778,6 +781,9 @@ compare_tag = "v{version}"
 skip = "pkg:linux's own tree, for outside modules: its CVEs are pkg:linux's"
 compare_repo = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
 compare_tag = "v{version}"
+
+[linux-build.age_because]
+source = "pkg:linux 7.3.4's tree, which moves with it: linux.age_because"
 
 [llama-cpp]
 cpe = "cpe:2.3:a:ggml:llama.cpp"

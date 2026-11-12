@@ -3,20 +3,20 @@
 # and the initrd, not installed as a package. Bump the version and the
 # pin together. pkgs/glibc pins a tarball of its own (7.3) for the UAPI
 # headers; moving that one rebuilds glibc and everything built with it.
-version = "7.3.1"
+version = "7.3.4"
 license = "GPL-2.0-only WITH Linux-syscall-note"
 description = "The Linux kernel: boot/vmlinuz and lib/modules/<release>/."
 home = "https://www.kernel.org/"
 category = "kernel"
-purl = "pkg:generic/linux@7.3.1"
+purl = "pkg:generic/linux@7.3.4"
 build = ["m4", "flex", "bison", "perl", "pkgconf", "zlib", "elfutils", "bc"]
 
 # kernel.org's release tarball (an rc is only Linus's git.kernel.org
 # snapshot, unsigned).
 [[source]]
-url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.1.tar.xz"
-sha256 = "fa595aad93734f829c963c2a90ef7c3673224fd7fdae7b49406e397cde2de231"
+url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.4.tar.xz"
+sha256 = "b11b6df8295e8e991ff040b71aaa4994a8b55caa23b6b092907f195b5840fd1f"
 # kernel.org signs the uncompressed tar.
-sig = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.1.tar.sign"
+sig = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.4.tar.sign"
 key = "linux"
 decompress = "xz"
