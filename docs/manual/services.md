@@ -283,6 +283,47 @@ reboots the same way.
 not ask PID 1, only syncs and calls the kernel, so no service stops and
 `/` is not remounted.
 
+## Sleep
+
+`power=sleep` suspends the machine to RAM (R84):
+
+```
+sudo oath set host:local power=sleep
+sudo oath apply --confirm host:local
+```
+
+Like a reboot, it needs `--confirm`, sets `power` back to `run` and, on
+its own, takes no generation. PID 1 takes no part: the kernel freezes
+every process, PID 1 and each service included, and thaws them on wake,
+so no service stops or restarts and each keeps its `pid`. The apply
+returns on wake and prints `slept at … (deep), woke at …`, `armed to
+wake it: …, the power button` and, when the platform says what woke it,
+`woken by: …`. `oath logs` shows nothing of it; `/oath/log/oath.jsonl`
+records each `sleep` and `woke`.
+
+The state is the kernel's choice, the bracketed one in
+`/sys/power/mem_sleep`: `deep` (S3), or `s2idle` where the firmware
+offers no S3 or asks for low-power idle instead. There is no
+hibernation. Without `mem` in `/sys/power/state` the apply exits non-zero
+(`this machine offers no sleep`), as it does when the kernel refuses (a
+device would not suspend, or a wake came first: `could not sleep`);
+either way `power` is back at `run`.
+
+Before it sleeps, the apply arms each keyboard and mouse on USB or PS/2,
+with its hubs and its controller, so a key or the mouse wakes the
+machine, as do the power button and, with `net:net0.wake`, a magic
+packet from `oath wake <mac>` ([Network](network.md)). A pad, a pen or a
+Bluetooth device does not.
+
+PID 1 loads NVIDIA's `nvidia` module with
+`NVreg_PreserveVideoMemoryAllocations=1`
+([Kernel module options](using.md#kernel-module-options)), so the desk
+keeps its video memory across a sleep. The driver then needs
+`/proc/driver/nvidia/suspend` written around each sleep: the apply
+writes `suspend` there before and `resume` after, so sleep an NVIDIA
+machine through the apply. While it sleeps, the driver keeps the video
+memory in use in `/tmp`, a tmpfs, so in RAM.
+
 ## Off-box backup
 
 The image ships two helpers, not a service:
@@ -296,7 +337,11 @@ The image ships two helpers, not a service:
   copy is not a second undo; `oath undo` never reads it.
 - `/lib/oath/backup-daily host:/export/path` — sleep until 04:00 local
   time (`TZ`, from `host:local.timezone`; UTC when unset), run
-  `backup-send`, repeat.
+  `backup-send`, repeat. Its wait does not count time the machine
+  [sleeps](#sleep): each hour asleep moves the run an hour past 04:00.
+  On a machine that sleeps, give `backup-send` a `schedule` instead
+  ([Scheduled services](#scheduled-services)), which runs on wake for a
+  04:00 it slept through.
 
 To run it daily, add a service in the machine's install overlay:
 
@@ -339,7 +384,8 @@ starts it at each match; at boot, or when an apply enables it or changes
 its pattern, once, when a match passed since the last run (kept in
 `/oath/log/svc/<name>.schedule.json`; with no last run, it waits for its
 first match); and never twice at once: a match while the last run still
-goes is skipped, and `init.log` says so.
+goes is skipped, and `init.log` says so. Matches that pass while the
+machine sleeps start it once, on wake.
 Its output goes to `oath logs svc:<name>` as any service's.
 
 ## If PID 1 panics

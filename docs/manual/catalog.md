@@ -53,11 +53,11 @@ half of one. Logs are appended to. Past 256 KiB a log moves to
 
 | Kind | Ids in the `base` profile | Role |
 |------|---------------------------|------|
-| `host` | `host:local` | Hostname, power, `env`, `timezone`, `hosts`, `origins`, `profile`, `publishers`, `mounts`, `module_options`, `seat_hid`, `autologin` |
+| `host` | `host:local` | Hostname, power (`run`, `reboot`, `halt`; `sleep` suspends to RAM, R84), `env`, `timezone`, `hosts`, `origins`, `profile`, `publishers`, `mounts`, `module_options`, `seat_hid`, `autologin` |
 | `svc` | `svc:login`, `svc:screen`, `svc:serial`, `svc:sshd`, `svc:time` | PID 1's only config |
 | `snap` | `snap:current`, then `snap:N` | Generations: apply and `oath undo` write them, and `oath set` refuses them |
 | `pkg` | `pkg:glibc`, `pkg:bash`, `pkg:zsh`, `pkg:coreutils`, `pkg:btrfs`, `pkg:oath`, `pkg:openssh`, `pkg:curl`, … (45 in `base`, 39 present; the rest are recipes and their sources) | Store + `/bin` and `/lib` symlink farms |
-| `net` | `net:net0` | The link: `dhcp`, or a static address with its `gateway` and `dns` servers |
+| `net` | `net:net0` | The link: `dhcp`, or a static address with its `gateway` and `dns` servers; `wake`, Wake-on-LAN by magic packet (R84) |
 | `ssh` | `ssh:local` | Keys that may log in as `home` |
 | `dev` | `dev:net0`, `dev:disk-pci-…` (discovered) | Hardware inventory |
 | `plan` | `plan:claude-code`, `plan:codex`, `plan:grok-build` | Hashed `plan.plan`; `oath build` writes a `pkg` or `cell` tree |
@@ -78,11 +78,18 @@ gone at boot. `oath apply` fetches a package's tree again
 ([Packages](packages.md#a-damaged-package)). A cell comes from no
 origin: until `sudo oath store cell:<name> <dir|file.tar>` puts its
 tree back ([Cells](cells.md#cellname-one-projects-own-software)), apply
-refuses it before it takes a generation, and changes nothing.
+refuses it before it takes a generation, as does an `oath undo` that
+would put it back, and neither changes anything. `oath store` of a tree
+that hashes to the pin a package or cell is applied at records that
+check, so its `tree` drift, its `error` status and its Store damage in
+`INDEX.md` clear with no apply or `oath verify`; a cell left unlinked
+drifts until apply links it.
 
-`oath schema` lists the kinds. `oath schema <kind>` prints the kind's
-prose (its fields and, where the kind has them, when to use it, safety
-and examples), `---`, then its JSON Schema: the two files under
+`oath schema` lists the kinds, and `oath ls <kind>` (or `--kind <kind>`)
+the ids of one; a word that is no kind is refused, with the kinds named
+and `oath ls --origin <word>` as the hint. `oath schema <kind>` prints
+the kind's prose (its fields and, where the kind has them, when to use
+it, safety and examples), `---`, then its JSON Schema: the two files under
 `/oath/schema/`. The prose is `crates/oath-core/schema/<kind>.md` in
 the repo. The JSON Schema is generated from the kind's type in
 `crates/oath-core/src/kinds.rs`, and `oath set` refuses a key it does
@@ -187,7 +194,8 @@ UART or USB serial port keeps its kernel name (`dev:ttyS0`,
 refuses to make it false. Actual has `present`, `class` (`block`, `net`
 or `tty`), the `node`, bus `path`, `driver`, for a disk its `size` in
 bytes and, where it has them, `model` and `removable`, and for a NIC
-its `mac`. A device that goes away loses its object. `/dev` is nodes
+its `mac`, which another machine's `oath wake <mac>` sends a magic
+packet for. A device that goes away loses its object. `/dev` is nodes
 from devtmpfs, not the admin UI. There is no udevd; PID 1 loads the
 driver a hot-plugged device asks for
 ([devices spec](../specs/devices.md)).

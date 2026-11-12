@@ -37,7 +37,7 @@ address; one `ip` refuses, such as a gateway off the address's subnet
 and goes on probation like one that succeeds. An `ip` command whose
 failure does not matter, such as deleting a default route that is
 already gone, prints nothing. `dns` is a static address's DNS servers
-([Names](#names)).
+([Names](#names)); `wake` is Wake-on-LAN ([below](#wake-on-lan)).
 
 Any change to `up`, `ipv4` or `gateway` can cut your SSH session, so
 `oath apply` refuses it (exit 3) without `--confirm`, and once applied
@@ -68,6 +68,43 @@ again starts it. Each lease and renewal the client gets shows
 in actual: `lease` is the address and `dhcp` has the router, DNS
 servers, lease length and when it was renewed
 (`oath get net:net0 --actual`).
+
+## Wake-on-LAN
+
+`net:net0.wake` (R84) makes `net0` wake the machine on a magic packet
+to its MAC address, and on nothing else: from sleep
+(`host:local.power=sleep`, [Safety](using.md#safety)), and from off when
+the firmware allows it (ErP off, power-on by PCIe enabled). Apply and
+every boot set it; `false`, the default, turns off any wake the driver
+had on. It cannot cut SSH, so it needs no `--confirm` and has no
+probation.
+
+```
+oath get dev:net0                 # mac: "60:cf:84:bc:ff:3e"
+sudo oath set net:net0 wake=true
+sudo oath apply net:net0
+```
+
+A driver without Wake-on-LAN fails the apply and names itself
+(`net0's driver (virtio_net) has no Wake-on-LAN` on QEMU's virtio
+NIC); `sudo oath undo` takes it back. With `wake` on, a sleep's apply
+lists `net0` in `armed to wake it:`. An armed NIC draws a little power
+while the machine sleeps or is off.
+
+`oath wake` sends the packet from another Oath machine on the same LAN,
+as any user:
+
+```
+oath wake 60:cf:84:bc:ff:3e
+```
+
+It goes three times as a UDP broadcast to `255.255.255.255:9`, and
+nothing answers it, so `oath wake` cannot say whether the machine woke:
+`ping` or `ssh` it a few seconds later. A MAC is six hex bytes with `:`
+or `-` between them. `oath wake` keeps each part that is two hex digits
+and skips any other, so `host-60-cf-84-bc-ff-3e` sends to
+`60:cf:84:bc:ff:3e`; it refuses a word that does not leave exactly six,
+such as a host name or `60cf84bcff3e`.
 
 ## What listens
 

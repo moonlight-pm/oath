@@ -38,7 +38,7 @@ keeping one old file. Nothing sends them off the machine.
 
 | Verb | Does |
 |------|------|
-| `oath ls` | List object ids. `--kind host` (etc.) to filter. `oath ls --origin [word]` lists what the origins hold instead (their `index.json`): each package's name, version, category and description, with `*` on those this machine has and recipes marked. A word keeps those with it in their name, category or description |
+| `oath ls [kind]` | List object ids: all, or one kind (`oath ls svc`, or `--kind svc`). A word that is no kind is refused, in either form, with the kinds named and `oath ls --origin <word>` as the hint. `oath ls --origin [word]` lists what the origins hold instead (their `index.json`): each package's name, version, category and description, with `*` on those this machine has and recipes marked. A word keeps those with it in their name, category or description |
 | `oath schema [kind]` | List kinds, or one kind's prose + JSON Schema |
 | `oath get <id>` | Desired + actual + status. `--desired` / `--actual` to clip |
 | `oath set <id> k=v` | Write **desired** only. Does not converge. `--from-json '<obj>'` sets several fields. The result must fit the kind's type. `oath set plan:<name> --from-file <path>` files a plan (canonical, `oath fmt -w`); `--from-file -` files the canonical form of a plan read from stdin |
@@ -57,12 +57,13 @@ keeping one old file. Nothing sends them off the machine.
 | `oath fmt <path>` | Canonical `plan.plan` to stdout (`-w` in place) |
 | `oath build plan:<name>` | Isolated, netless build of a pinned plan. Does not link `/bin`. Creates the product's `pkg` or `cell` object if it is missing; `--no-pkg` does not, for a product that is only a build input to other plans |
 | `oath build --file <path>` | Same, ad-hoc (does not store the plan) |
-| `oath store <id> <path>` | Put a tree built elsewhere (a directory, or a tar of one) into the store as `pkg:<name>` or `cell:<name>` and print its hash. Changes no object ([Packages](packages.md#a-tree-built-here)) |
-| `oath update` | What the newest output published for this machine, and the newest head a key it trusts signed for each package here, would change; `sudo oath update --confirm [--reboot]` moves to them; `--keep pkg:<name>` or `svc:<name>` (one this machine has), `--output <id>`; `--record` moves nothing and lists each package's head, and `sudo oath update --record --confirm` records each one this machine runs as the head it took (after `oath publish`). A head wins over a release's pin, so `--output` of an older output sets each package that has a head to its head, not to that output's pin. A head never goes back: one older than the head this machine took waits, and for a package the machine lacks, so does what needs it. `oath undo` puts back the pins an update moved ([Install](install.md#update-an-installed-machine)) |
+| `oath store <id> <path>` | Put a tree built elsewhere (a directory, or a tar of one) into the store as `pkg:<name>` or `cell:<name>` and print its hash. Changes no spec; when that `pkg` or `cell` is linked or applied at the hash, it records the check as `sudo oath verify` would, so damage found in its tree clears with no apply ([Packages](packages.md#a-tree-built-here)) |
+| `oath update` | What the newest output published for this machine, and the newest head a key it trusts signed for each package here and each the output adds, would change; `sudo oath update --confirm [--reboot]` moves to them; `--keep pkg:<name>` or `svc:<name>` (one this machine has), `--output <id>`; `--record` moves nothing and lists each package's head, and `sudo oath update --record --confirm` records each one this machine runs as the head it took (after `oath publish`). A head wins over a release's pin, so `--output` of an older output sets each package that has a head to its head, not to that output's pin. A head never goes back: one older than the head this machine took waits, and for a package the machine lacks, so does what needs it. `oath undo` puts back the pins an update moved ([Install](install.md#update-an-installed-machine)) |
 | `oath publish pkg:<name>` | What it would publish: this machine's pin of the package, as its head on an origin; `--confirm` publishes it, without `sudo` ([Packages](packages.md#publishing-a-package-on-its-own-r72)) |
 | `oath install [disk]` | The disks; `sudo oath install <disk>` says what it would erase and write; with `--confirm` it wipes that disk and installs this system ([Install](install.md#from-a-stick-on-the-machine-oath-install)) |
 | `oath password` | Set, change or remove `home`'s password; `--status` says whether one is set, with auto-login and the seat ([below](#the-password-and-the-seat)) |
 | `oath desk [stop]` | Give the seat (tty1) back to the desk, or with `stop` end the desk and give it to the console ([below](#the-password-and-the-seat)) |
+| `oath wake <mac>` | Wake another machine on this LAN whose `net:net0.wake` is on (R84): Wake-on-LAN's magic packet for its MAC (`mac` in its `dev:net0`), broadcast three times. Any user may send it, and nothing answers it ([Wake-on-LAN](network.md#wake-on-lan)) |
 | `oath mcp` | These verbs as an MCP server on stdin/stdout, for an agent ([Agents](#agents)) |
 
 `set`, `new` and `rm` are staging. Nothing is live until `apply`, and
@@ -92,13 +93,18 @@ changes nothing and takes no generation. Then it takes a filesystem
 snapshot and converges. A cell comes from no origin: its refusal names
 the repair, `sudo oath store cell:<name> <dir|file.tar>`. Until the tree
 is back, a plain `sudo oath apply` refuses; `sudo oath apply <id>` of
-anything else goes on. `oath update` and `oath install` refuse changes
-not applied, so they wait for the `sudo oath apply` after the store.
+anything else goes on. `oath undo` checks first too: it refuses, changing
+nothing, to put back a cell whose tree at that pin is damaged (exit 4)
+or gone, and names the same store. The store of a tree that hashes to
+the pin records the check, so the damage clears with no apply; a cell
+whose tree was gone at boot waits for the apply that links it. `oath update` and `oath
+install` refuse changes not applied, and name the store for a cell whose
+tree is damaged or gone.
 
 - **mutate** — hostname, service enable, package present. Snapshot and
   go.
-- **confirm** — halt, reboot, and anything that can cut this machine
-  off from SSH:
+- **confirm** — halt, reboot, sleep, and anything that can cut this
+  machine off from SSH:
   disabling or removing `svc:sshd`, changing its `exec`, `user` or
   `env`, moving the package it runs from (`pkg:openssh`'s `hash`),
   dropping a key from `ssh:local`, changing `net:net0`'s `up`, `ipv4`
@@ -115,11 +121,38 @@ sudo oath apply              # refused (exit 3)
 sudo oath apply --confirm    # reboots
 ```
 
-After a reboot apply, desired `power` is set back to `run` so the box
-does not loop. The apply asks PID 1 for the reboot; PID 1 stops the
-services, syncs and remounts `/` read-only first. A power change on its
-own takes no generation (power is not configuration); plain
-`sudo reboot` and `sudo poweroff` do the same.
+After a reboot, halt or sleep apply, desired `power` is set back to
+`run` so the box does not loop. The apply asks PID 1 for the reboot;
+PID 1 stops the services, syncs and remounts `/` read-only first. A
+power change on its own takes no generation (power is not
+configuration); plain `sudo reboot` and `sudo poweroff` do the same.
+
+`power=sleep` (R84) suspends to RAM, in the state the kernel chose,
+the bracketed one in `/sys/power/mem_sleep` (`deep`, S3, or `s2idle`);
+there is no hibernation.
+PID 1 takes no part: the apply sleeps the machine itself and returns
+when it wakes, saying how it went (`--json` gives it as `slept`):
+
+```
+sudo oath set host:local power=sleep
+sudo oath apply --confirm host:local   # sleeps; on wake it prints:
+# power change applied without a generation (power is not configuration)
+# slept at 2026-…Z (deep), woke at 2026-…Z
+# armed to wake it: <each keyboard and mouse>, the power button
+# woken by: …   (only when the platform says what woke it)
+```
+
+Each USB or PS/2 keyboard and mouse wakes it (the apply arms the device,
+its hubs and its controller), as does the power button; a pad, a pen or
+a Bluetooth device does not. With `net:net0.wake` on, a magic packet
+from `oath wake` wakes it too, and `net0` is in the armed list
+([Wake-on-LAN](network.md#wake-on-lan)). With NVIDIA's driver loaded,
+the apply suspends it through `/proc/driver/nvidia/suspend` first and
+resumes it after, which keeps video memory (PID 1 gives `nvidia`
+`NVreg_PreserveVideoMemoryAllocations=1`). On a machine that offers no
+sleep the apply exits 1 with `this machine offers no sleep`; when the
+kernel refuses (a device would not suspend), the hint is
+`sudo dmesg | tail -n 30`.
 
 A change that can cut off SSH goes on **probation** once applied:
 
@@ -213,10 +246,12 @@ sudo oath apply host:local
 ```
 
 They come after the parameters Oath always gives a module (amdgpu's
-`si_support=1 cik_support=1`, `nvidia_drm`'s `modeset=1 fbdev=1`) and
-before `module.key=value` on the kernel command line, so a later one
-wins. Like mounts, they belong in the machine's overlay, never in a
-profile: another machine with the same driver gets none of them.
+`si_support=1 cik_support=1`, `nvidia`'s
+`NVreg_PreserveVideoMemoryAllocations=1` for sleep, `nvidia_drm`'s
+`modeset=1 fbdev=1`) and before `module.key=value` on the kernel
+command line, so a later one wins. Like mounts, they belong in the
+machine's overlay, never in a profile: another machine with the same
+driver gets none of them.
 
 `sudo modprobe <name or alias>` loads a module and what it needs, with
 these parameters; `sudo modprobe -r <name>` unloads one. `/proc/modules`
@@ -390,7 +425,8 @@ would move, or with `confirm` move them), `reap` (what would go, or with
 through `sudo`, as the owner's would. The same reads are resources too:
 `oath://index`, `oath://schema/<kind>` and `oath://object/<kind>/<name>`.
 A client that sends a `progressToken` hears every 5 s that a long
-`build` or `apply` is still running. A tool's `fields` are the kind's
+`build` or `apply` is still running; an `apply` that sleeps the machine
+answers when it wakes. A tool's `fields` are the kind's
 schema, so a field added to a kind reaches the tools with nothing else
 to do.
 A failed command is a tool error carrying the CLI's hint; exit 3 says
