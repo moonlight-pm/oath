@@ -22,7 +22,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
 ## Verbs
 
     oath                 this INDEX (the file is {index})
-    oath ls              list objects  (optional --kind)
+    oath ls [kind]       list objects, or one kind's (`oath ls svc`)
     oath ls --origin [word]  what the origins hold; `*` is here
     oath add <name>...   install by name, with what it needs (`oath new pkg:<name>`
                          with no fields makes them without applying)

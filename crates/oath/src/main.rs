@@ -105,7 +105,9 @@ enum Cmd {
     },
     /// Put a tree built elsewhere (a directory, or a tar of one) into the
     /// store as a realization of `pkg:<name>` or `cell:<name>`, and print its
-    /// hash. Changes no object: `oath set <id> hash=…` and `oath apply` do.
+    /// hash. Changes no spec: `oath set <id> hash=…` and `oath apply` do. An
+    /// object linked or applied at that hash records the check, as `oath
+    /// verify` would, so a tree put back is no longer damage.
     Store {
         id: String,
         src: PathBuf,
