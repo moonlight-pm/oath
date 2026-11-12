@@ -35,7 +35,8 @@ Overwrite this file when facts change; do not append a diary.
   `f997e9baf436` (2026-11-08): 1 built `plan:steam`, 2 set `host:local`, 3
   that update, 4 and 5 Minecraft's packages (below). A sleep at 01:35:28Z
   through `host:local.power=sleep` armed its 2.4G receiver, `net0` and the
-  power button, and the desk kept running across it.
+  power button, and the desk kept running across it. A key wakes it and
+  the desk redraws (Joshua, 2026-11-12).
   `host:local.publishers` holds buccina's key and, since generation 8
   (2026-11-12, Joshua's hand), `oath@novus` for any package (`names="*"`),
   as on the other four machines, so Sola's own heads reach it at its next
