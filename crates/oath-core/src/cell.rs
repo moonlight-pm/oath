@@ -66,11 +66,12 @@ pub fn converge(root: &Path, name: &str, cell: &Cell, checked: bool) -> Result<C
         }
         return Ok(actual(cell, false, None));
     }
+    let began = crate::since_boot_ns();
     if !checked {
         check(root, name, cell)?;
     }
     replace_symlink(&live, &cell.hash)?;
-    let verified = PkgVerified { ok: true, at: crate::now_rfc3339(), got: String::new() };
+    let verified = PkgVerified { ok: true, at: crate::now_rfc3339(), got: String::new(), began };
     Ok(actual(cell, true, Some(verified)))
 }
 
@@ -84,9 +85,11 @@ pub fn observe(root: &Path, name: &str, cell: &Cell) -> CellActual {
 
 /// Hash realization `hash` of a cell again.
 pub fn verify_tree(root: &Path, name: &str, hash: &str) -> Result<PkgVerified> {
+    let began = crate::since_boot_ns();
     let got = hash_tree(&tree_dir(root, name, hash))?;
     let ok = got == hash;
-    Ok(PkgVerified { ok, at: crate::now_rfc3339(), got: if ok { String::new() } else { got } })
+    let got = if ok { String::new() } else { got };
+    Ok(PkgVerified { ok, at: crate::now_rfc3339(), got, began })
 }
 
 fn actual(cell: &Cell, present: bool, verified: Option<PkgVerified>) -> CellActual {

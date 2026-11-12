@@ -47,13 +47,22 @@ parts of T24 and T35.
   from `url` or `host:local.origins` and put in place only once the new
   copy hashes to it; with nothing serving one that does, apply fails and
   leaves the damaged tree. Actual `verified` (`ok`, `at`, and `got` on a
-  mismatch, `missing` for a tree gone) records the check.
+  mismatch, `missing` for a tree gone) records the check, and `began`
+  when its hash began, in nanoseconds since boot (`CLOCK_BOOTTIME`).
 - `oath verify [pkg:… cell:…]` hashes every linked tree (or the ones
   named) again. As root it writes `verified` into each actual and
   regenerates INDEX, which lists damaged trees under `## Store damage`,
   each with its repair; a damaged package or cell's status is `error`,
   and it drifts in `tree`. It exits 1 if any is damaged. Without the
   lock it only reports.
+- A check is as new as the moment its hash began, not when it is
+  written: under the lock, a verify leaves out a tree whose actual holds
+  a check that began later. Two verifies at once (the boot's and an
+  owner's), or a verify across an `oath store` or an apply, leave the
+  newer finding, whichever finishes last. The boot clock orders them,
+  and setting the time of day (PID 1 at boot, chrony) does not move it;
+  status does not outlive a boot (R14), so every `began` it holds is on
+  one clock.
 - `oath store pkg:<name>|cell:<name>` hashes the tree it puts in place,
   and records that check as `verified` in the actual of the object
   applied at that hash, so a damaged or missing tree it puts back is no

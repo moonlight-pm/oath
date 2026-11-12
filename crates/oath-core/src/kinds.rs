@@ -693,6 +693,13 @@ pub struct PkgVerified {
     /// What the tree hashes to now, when that is not `hash`.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub got: String,
+    /// When the hash began, in nanoseconds since boot (`CLOCK_BOOTTIME`).
+    /// Of two checks of one tree, the one that began later stands,
+    /// whichever is written last; a clock step moves neither. Status does
+    /// not outlive a boot (R14), so every `began` it holds is on one clock.
+    /// A record an older `oath` wrote has none, and is older than any.
+    #[serde(default)]
+    pub began: u64,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

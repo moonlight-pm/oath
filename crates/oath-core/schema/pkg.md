@@ -99,8 +99,10 @@ Actual also has `links` (basenames in `/bin`), `removable`, live
 `hash`, `components`, optional `advisories`, `realizations` (the trees
 for this name; `oath reap` says what holds each, and removes one nothing
 holds), `verified` (`ok`, `at`; `got` when the tree no longer hashes to
-`hash`, `missing` when it is gone from the store), and the applied
-`url`, `needs`, `description`, `home`, `category` and `source`.
+`hash`, `missing` when it is gone from the store; `began`, when its hash
+began in nanoseconds since boot, so that of two checks the later stands),
+and the applied `url`, `needs`, `description`, `home`, `category` and
+`source`.
 
 An **overlay** is a present package whose live hash is not the head
 this machine took of it (`/oath/heads.json`, R72) or, with none taken,

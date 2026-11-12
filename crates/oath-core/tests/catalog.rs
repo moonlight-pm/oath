@@ -1538,7 +1538,10 @@ fn a_tree_gone_from_the_store_is_damage_and_apply_fetches_it_again() {
     assert!(is_realization_id(&got) && got != pin, "{got}");
     let drift = cat.diff(Some(&id)).unwrap();
     assert_eq!(drift[0].fields, [("tree".to_string(), json!(pin), json!(got))]);
+    // A verify that began before the fetch does not write over its check.
+    let stale = cat.hash_trees(Some(vec![id.clone()])).unwrap();
     cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    cat.record_verified(&stale).unwrap();
     assert_eq!(std::fs::read_to_string(&file).unwrap(), "hello\n");
     assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync");
 }
@@ -2091,6 +2094,49 @@ fn storing_a_packages_tree_again_records_the_check() {
     assert_eq!(obj.actual["verified"]["ok"], json!(true));
     assert_eq!(obj.meta.status, "in-sync");
     assert!(cat.diff(Some(&id)).unwrap().is_empty());
+    assert!(!cat.index_text().unwrap().contains("## Store damage"));
+}
+
+/// A VM, 2026-11-12 (`store-damage-is-caught`): the boot's verify hashed
+/// pkg:dosfstools before the case damaged it, finished after the case's own
+/// verify had found the damage, and wrote `ok` over it.
+#[test]
+fn a_verify_that_began_first_and_finished_last_leaves_the_newer_finding() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let pin = store_files(d.path(), "hello", &["bin/hello"]);
+    let other_pin = store_files(d.path(), "other", &["bin/other"]);
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    let other: ObjectId = "pkg:other".parse().unwrap();
+    cat.set_fields(&id, cell_fields(json!({ "present": true, "hash": pin }))).unwrap();
+    cat.new_object(&other, cell_fields(json!({ "present": true, "hash": other_pin }))).unwrap();
+    let both = vec![id.clone(), other.clone()];
+    cat.apply(Some(both.clone()), false, &Actor::unknown(), &hooks).unwrap();
+
+    // The boot's verify hashes both trees intact; then one is damaged, and
+    // an owner's verify of it finds that and finishes first.
+    let boot = cat.hash_trees(Some(both)).unwrap();
+    assert!(boot.len() == 2 && boot.iter().all(|v| v.verified.ok), "{boot:?}");
+    std::fs::write(d.path().join("store/pkg/hello").join(&pin).join("bin/hello"), "x").unwrap();
+    assert!(!cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+    cat.record_verified(&boot).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["verified"]["ok"], json!(false));
+    assert_eq!(obj.meta.status, "error");
+    assert!(cat.index_text().unwrap().contains("## Store damage"));
+    // Each tree is its own: the other one takes the boot's check.
+    let mine = boot.iter().find(|v| v.id == other).unwrap();
+    assert_eq!(cat.get(&other).unwrap().actual["verified"]["began"], json!(mine.verified.began));
+
+    // A verify that began before `oath store` put the tree back leaves the
+    // store's check.
+    let stale = cat.hash_trees(Some(vec![id.clone()])).unwrap();
+    assert!(!stale[0].verified.ok);
+    assert_eq!(oath_core::store_pkg(d.path(), "hello", &d.path().join("src-hello")).unwrap(), pin);
+    cat.record_verified(&stale).unwrap();
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["verified"]["ok"], json!(true));
+    assert_eq!(obj.meta.status, "in-sync");
     assert!(!cat.index_text().unwrap().contains("## Store damage"));
 }
 

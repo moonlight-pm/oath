@@ -109,6 +109,15 @@ pub fn now_rfc3339() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
+/// Nanoseconds since boot (`CLOCK_BOOTTIME`), one clock for every process
+/// on the machine. Setting the time of day (PID 1 at boot, chrony) does not
+/// move it.
+pub(crate) fn since_boot_ns() -> u64 {
+    let mut t = libc::timespec { tv_sec: 0, tv_nsec: 0 };
+    unsafe { libc::clock_gettime(libc::CLOCK_BOOTTIME, &mut t) };
+    t.tv_sec as u64 * 1_000_000_000 + t.tv_nsec as u64
+}
+
 /// `s`, an RFC 3339 time, in UTC to the second (`2026-11-06T12:00:00Z`), as
 /// [`now_rfc3339`] writes it: such times order as text. `None` if it is not one.
 pub fn rfc3339_utc(s: &str) -> Option<String> {

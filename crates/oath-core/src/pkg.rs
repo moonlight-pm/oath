@@ -77,7 +77,8 @@ fn converge_checked(
     {
         // Never link a tree that no longer is what its name says.
         verified = Some(if checked && live_hash == hash {
-            PkgVerified { ok: true, at: crate::now_rfc3339(), got: String::new() }
+            let began = crate::since_boot_ns();
+            PkgVerified { ok: true, at: crate::now_rfc3339(), got: String::new(), began }
         } else {
             verify_tree(store_root, name, &live_hash)?
         });
@@ -647,9 +648,11 @@ fn index_blurb(path: &Path) -> String {
 
 /// Hash realization `hash` of `name` again.
 pub fn verify_tree(store_root: &Path, name: &str, hash: &str) -> Result<PkgVerified> {
+    let began = crate::since_boot_ns();
     let got = hash_tree(&realization_dir(store_root, name, hash))?;
     let ok = got == hash;
-    Ok(PkgVerified { ok, at: crate::now_rfc3339(), got: if ok { String::new() } else { got } })
+    let got = if ok { String::new() } else { got };
+    Ok(PkgVerified { ok, at: crate::now_rfc3339(), got, began })
 }
 
 fn live_hash(catalog_root: &Path, name: &str) -> Result<Option<String>> {

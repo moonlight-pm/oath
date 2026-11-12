@@ -893,9 +893,17 @@ impl Catalog {
     /// hashes to `missing`, and what links into it dangles. With the lock
     /// (root), the outcome goes into each actual as `verified` (a damaged
     /// package's status is `error`) and INDEX lists the damage; without
-    /// it, this only reports. Returns each package with what its tree
-    /// hashes to now.
+    /// it, this only reports. A check that began before the one an actual
+    /// holds is not written ([`Catalog::record_verified`]). Returns each
+    /// package with what its tree hashes to now.
     pub fn verify(&self, ids: Option<Vec<ObjectId>>) -> Result<Vec<Verified>> {
+        let out = self.hash_trees(ids)?;
+        self.record_verified(&out)?;
+        Ok(out)
+    }
+
+    /// The hashing half of [`Catalog::verify`], which writes nothing.
+    pub fn hash_trees(&self, ids: Option<Vec<ObjectId>>) -> Result<Vec<Verified>> {
         let ids = match ids {
             Some(ids) => ids,
             None => {
@@ -919,25 +927,34 @@ impl Catalog {
             } else {
                 crate::realization_dir(&self.root, &id.name, &hash)
             };
+            let began = crate::since_boot_ns();
             let v = if tree.is_dir() && id.kind == KIND_CELL {
                 crate::cell::verify_tree(&self.root, &id.name, &hash)?
             } else if tree.is_dir() {
                 crate::verify_tree(&self.root, &id.name, &hash)?
             } else if id.kind == KIND_CELL || crate::pkg::tree_missing(&self.root, &id.name, &hash)
             {
-                crate::PkgVerified { ok: false, at: now_rfc3339(), got: MISSING.into() }
+                crate::PkgVerified { ok: false, at: now_rfc3339(), got: MISSING.into(), began }
             } else {
                 // A slot from before T32 is not hashed here.
                 continue;
             };
             out.push(Verified { id, hash, verified: v });
         }
-        let Ok(_lock) = self.lock() else { return Ok(out) };
-        for r in &out {
+        Ok(out)
+    }
+
+    /// The recording half of [`Catalog::verify`]. A check is as new as the
+    /// moment its hash began, not when it is written: one that began before
+    /// the check an actual holds is left out, so two verifies at once (the
+    /// boot's and an owner's), or a verify across an `oath store` or an
+    /// apply, leave the newer finding, whichever finishes last.
+    pub fn record_verified(&self, found: &[Verified]) -> Result<()> {
+        let Ok(_lock) = self.lock() else { return Ok(()) };
+        for r in found {
             self.write_verified(&r.id, &r.hash, &r.verified)?;
         }
-        self.write_index()?;
-        Ok(out)
+        self.write_index()
     }
 
     /// `oath store` has put a tree that hashes to `hash` in `id`'s slot of
@@ -954,7 +971,10 @@ impl Catalog {
         if self.linked_hash(&obj)?.as_deref() != Some(hash) {
             return Ok(());
         }
-        let v = crate::PkgVerified { ok: true, at: now_rfc3339(), got: String::new() };
+        // From here on the slot holds the tree `oath store` checked: a verify
+        // whose hash began before may have hashed the one it replaced.
+        let began = crate::since_boot_ns();
+        let v = crate::PkgVerified { ok: true, at: now_rfc3339(), got: String::new(), began };
         if self.write_verified(id, hash, &v)? {
             self.write_index()?;
         }
@@ -963,14 +983,19 @@ impl Catalog {
 
     /// Write `v`, a check of realization `hash`, into `id`'s actual as
     /// `verified`. Whether it did: one linked as something else since it
-    /// was hashed is left as it is. A cell whose tree was gone at boot has
-    /// no hash in its actual; a tree that hashes right leaves it drift, not
-    /// in-sync, until apply links it.
+    /// was hashed is left as it is, and so is one whose actual holds a check
+    /// that began later. A cell whose tree was gone at boot has no hash in
+    /// its actual; a tree that hashes right leaves it drift, not in-sync,
+    /// until apply links it.
     fn write_verified(&self, id: &ObjectId, hash: &str, v: &crate::PkgVerified) -> Result<bool> {
         let p = status_path(&self.root, id);
         let Ok(mut actual) = read_json::<Value>(&p) else { return Ok(false) };
         let now = actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
         if !now.is_empty() && now != hash {
+            return Ok(false);
+        }
+        let held = actual.pointer("/verified/began").and_then(Value::as_u64).unwrap_or(0);
+        if held > v.began {
             return Ok(false);
         }
         actual["verified"] = serde_json::to_value(v)?;
