@@ -280,10 +280,11 @@ A flagged change waits until you name it or say `--all`:
 
 Naming a directory takes what is under it. `apply` writes each file
 atomically and strips setuid, setgid and sticky. It applies nothing if
-anything asked for cannot go: a FIFO, socket or device, a file or link
-in your tree that changed after the session began, other than by this
-session's `apply` or `undo`, or a path that goes through something in
-your tree that is not a directory. You commit.
+anything asked for cannot go, and says why for each: a FIFO, socket or
+device, a file or link in your tree that changed after the session
+began, other than by this session's `apply` or `undo`, or a path that
+goes through something in your tree that is not a directory. You
+commit.
 
 `undo` puts back what `apply` changed, newest first, from copies kept in
 the session. It leaves what you changed after `apply`: a file or link it
@@ -295,18 +296,15 @@ the rest, and exits 1. A link an earlier `writ` applied stays too, and
 is named, as that `writ` kept no record of where it pointed it.
 
 Each path is put back whole or not at all. One that cannot be, such as
-a file in a directory you made read-only, stops `undo` there with exit
-status 2, and `writ undo` again goes on from that path. A directory it
-made that it cannot remove stays instead, and is named. The session
-keeps its changes, and `apply` can take them again: `undo` records what
-it put back as the session's, so that is not taken for a change of
-yours, and what it left as yours. One exception: when an `undo` stops
-before it has taken back an earlier `apply`, a path it left to you that
-holds what that `apply` left there is the session's again, so the next
-`undo` puts it back and `apply` writes over it. A prompt's box,
-`writ run`'s box, `diff`, `apply` and `undo` take one lock, so only one
-of them works on a session at a time, and another says the session is
-in use.
+a file, or a directory it made, in a directory you made read-only, stops
+`undo` there with exit status 2, and `writ undo` again goes on from that
+path. The session keeps its changes, and `apply` can take them again:
+`undo` records what it put back as the session's, so that is not taken
+for a change of yours, and what it left as yours. What an `undo` that
+stops left to you stays yours: the next `undo` passes over it without
+naming it again. A prompt's box, `writ run`'s box, `diff`, `apply` and
+`undo` take one lock, so only one of them works on a session at a time,
+and another says the session is in use.
 
 ## Local models
 

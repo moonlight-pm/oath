@@ -280,7 +280,7 @@ $ sudo -u work cell run --name hamlet -p 8080:8080 -v /work/hamlet:/data cell:ha
 ```
 
 `oath store` takes a directory or a tar of one, prints the hash and changes
-no object. `--json` gives `{"hash":"sha256-…","id":"cell:hamlet"}`.
+no spec. `--json` gives `{"hash":"sha256-…","id":"cell:hamlet"}`.
 
 `cell run cell:<name>` is the same box as a package's, with the tree bound
 read-only at `/oath/store/cell/<name>/<hash>` and a `live` link beside it.
@@ -313,34 +313,39 @@ drifts in `tree` (`oath diff`: `tree: "missing" -> "sha256-…"`, or what the
 tree hashes to). A cell comes from no origin, so `oath apply` does not fetch
 it again as it does a package: an apply that takes the cell, a plain `sudo
 oath apply` too, refuses before it takes a generation and changes nothing
-([Refusals](#refusals)). `oath update` and `oath install` refuse while it
-drifts (`this machine has changes not applied: cell:hamlet`). `sudo oath
-apply <id>` of another object goes ahead, and `present=false` or `oath rm`,
-applied, takes the cell out of the way.
+([Refusals](#refusals)). `oath undo` checks the tree of each cell it would
+put back present, and refuses with the same hint before it changes
+anything. `oath update` and `oath install` refuse while it drifts (`this
+machine has changes not applied: cell:hamlet`), and their hint names the
+repair (`oath diff; a cell comes from no origin: sudo oath store cell:hamlet
+<dir|file.tar>`). `sudo oath apply <id>` of another object goes ahead, and
+`present=false` or `oath rm`, applied, takes the cell out of the way.
 
 `sudo oath store cell:hamlet <dir|file.tar>` of the same files puts the
 tree back, in place of a damaged one (`/oath/store/cell/hamlet/sha256-… did
-not hash to its name; replaced it`), and the next `sudo oath apply
-cell:hamlet` links it: its status is `in-sync`. For a cell still linked, the
-next `sudo oath verify` sets it back to `in-sync` too.
+not hash to its name; replaced it`), and records the check as `oath verify`
+does, so the drift, the `error` status and the **Store damage** entry clear
+with no apply: its status is `in-sync`.
 
 ```
 sudo oath verify cell:hamlet          # cell:hamlet DAMAGED: sha256-… hashes to sha256-…
 oath diff                             # tree: "sha256-…" -> "sha256-…"
 sudo oath apply cell:hamlet           # security: cell:hamlet hashes to sha256-…, not its pin sha256-…
 sudo oath store cell:hamlet ./hamlet  # … did not hash to its name; replaced it
-sudo oath apply cell:hamlet           # applied generation … (cell:hamlet)
+oath diff                             # in-sync
 ```
 
 A cell whose tree was gone at boot is not linked, so `cell run` refuses it
 (`cell:hamlet is not installed on this machine`). It drifts in `tree` until
-an apply links it, also once its tree is back and `sudo oath verify` has
-found it whole (`tree: null -> "sha256-…"`).
+an apply links it, also once `sudo oath store` has put its tree back
+(`tree: null -> "sha256-…"`, status `drift`); the hint of `oath update`
+and `oath install` is then `oath diff; apply or undo them first`.
 
 ### Refusals
 
 `oath apply` refuses before it takes a generation, so a refused apply
-changes nothing, and `oath log` records it as `refused`.
+changes nothing, and `oath log` records it as `refused`. A refused `oath
+undo` changes nothing and logs nothing.
 
 | When | Condition | Says |
 |------|-----------|------|
@@ -351,7 +356,8 @@ changes nothing, and `oath log` records it as `refused`.
 | | the tree does not hash to the pin | `security: cell:x hashes to sha256-…, not its pin sha256-…`, exit 4, hint `sudo oath store cell:x <dir\|file.tar> puts it back` |
 | | a need this machine lacks | `cell:x needs pkg:nosuch, which this machine would not have`, hint `oath new pkg:nosuch, or take it out of cell:x's needs` |
 | | a package a present cell needs is being removed | The same, naming the cell, on any apply that has something to change, until the cell does not need it |
-| `oath update`, `oath install` | a cell drifts in `tree`, as for any change not applied | `this machine has changes not applied: cell:x`, hint `oath diff; apply or undo them first` |
+| `oath undo` | a cell it would put back present: its tree not in the store, or not hashing to its pin | As `oath apply` says, with the same hint |
+| `oath update`, `oath install` | a cell's tree is damaged or gone | `this machine has changes not applied: cell:x`, hint `oath diff; a cell comes from no origin: sudo oath store cell:x <dir\|file.tar>`, and `; apply or undo the rest first` when other changes are not applied |
 | `oath publish` | always | `cell:x is a cell, and a cell never goes to an origin (R78)` |
 | `oath add` | a `cell:` id | `cell:x is not a package`, hint `oath add <name>` |
 | `cell run` | `present: false`, or no such object | `cell:x is not installed on this machine`, or `no object cell:x` |
