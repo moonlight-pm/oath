@@ -781,7 +781,7 @@ pub fn undo_main(args: &[OsString]) -> Result<i32, String> {
 }
 
 /// Take back one entry of undo.jsonl, whole or not at all: nothing if its path is put back, or why
-/// the path stays the owner's.
+/// the path stays the owner's. An error says what went wrong, and the caller names the path.
 fn undo_one(dir: &Path, real: &Path, seq: usize, v: &Value) -> Result<Option<String>, String> {
     let path = v.get("path").and_then(|p| p.str()).ok_or("undo.jsonl: an entry with no path")?;
     let rel = PathBuf::from(path);
@@ -812,7 +812,7 @@ fn undo_one(dir: &Path, real: &Path, seq: usize, v: &Value) -> Result<Option<Str
         }
     } else if is_true("was_dir") {
         let mode = v.get("mode").and_then(|m| m.u64()).unwrap_or(0o755) as u32;
-        fs::create_dir_all(&at).map_err(|e| format!("{}: {e}", name(&rel)))?;
+        fs::create_dir_all(&at).map_err(|e| e.to_string())?;
         let _ = fs::set_permissions(&at, fs::Permissions::from_mode(mode));
     } else if backup.is_some() || link.is_some() {
         // Made beside the path and renamed over what `apply` left, so a failure leaves that as it was.
@@ -834,10 +834,10 @@ fn undo_one(dir: &Path, real: &Path, seq: usize, v: &Value) -> Result<Option<Str
         })();
         if let Err(e) = done {
             let _ = fs::remove_file(&tmp);
-            return Err(format!("{}: {e}", name(&rel)));
+            return Err(e.to_string());
         }
     } else if there.is_some() {
-        fs::remove_file(&at).map_err(|e| format!("{}: {e}", name(&rel)))?;
+        fs::remove_file(&at).map_err(|e| e.to_string())?;
     }
     Ok(None)
 }
@@ -1373,6 +1373,18 @@ mod tests {
         assert_eq!(undo(&t.dir(), &t.real, &mut said).unwrap(), 1);
         assert_eq!(String::from_utf8(said).unwrap(), "restored new/dir/c\nrestored new/dir\nnew is not empty, and stays\n");
         assert_eq!(t.text("new/mine"), "owner's");
+    }
+
+    #[test]
+    fn where_undo_stops_is_named_once() {
+        let t = T::new("stop-named");
+        t.real("d/a", "was a");
+        t.upper("d/a", "now a");
+        t.apply(true, &[]).unwrap();
+        // With the session's copy gone, d/a cannot be put back.
+        fs::remove_dir_all(t.dir().join("undo")).unwrap();
+        let e = undo(&t.dir(), &t.real, &mut std::io::sink()).unwrap_err();
+        assert_eq!(e, "stopped at d/a: No such file or directory (os error 2). What was applied after it is taken back; `writ undo` again goes on from there");
     }
 
     #[test]
