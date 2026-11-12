@@ -48,9 +48,9 @@ enum Cmd {
         /// package's version and what it is, `*` on those here.
         #[arg(long, conflicts_with = "kind")]
         origin: bool,
-        /// With --origin: only packages with this in their name, category
-        /// or description.
-        #[arg(requires = "origin")]
+        /// A kind, as --kind takes it (`oath ls svc`). With --origin: only
+        /// packages with this in their name, category or description.
+        #[arg(value_name = "KIND|WORD", conflicts_with = "kind")]
         word: Option<String>,
     },
     Schema {
@@ -441,8 +441,8 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Ls { origin: true, word, .. }) => {
             add::list(&cli.root, &cat, word.as_deref(), cli.json)
         }
-        Some(Cmd::Ls { kind, .. }) => {
-            let ids = cat.ls(kind.as_deref())?;
+        Some(Cmd::Ls { kind, word, .. }) => {
+            let ids = ls(&cat, kind.or(word))?;
             if cli.json {
                 let v: Vec<String> = ids.iter().map(|i| i.to_string()).collect();
                 println!("{}", serde_json::to_string_pretty(&v)?);
@@ -923,6 +923,22 @@ fn on_apply(id: &ObjectId, doc: &Value) -> String {
     }
 }
 
+/// `oath ls` without --origin: the ids of one kind, or of every kind. A
+/// kind the catalog lacks is refused with the kinds it has: the word may
+/// be a search for `oath ls --origin` that left out --origin.
+fn ls(cat: &Catalog, kind: Option<String>) -> oath_core::Result<Vec<ObjectId>> {
+    if let Some(k) = &kind {
+        let kinds = cat.kinds()?;
+        if !kinds.contains(k) {
+            return Err(Error::hint(
+                format!("no kind `{k}`: the kinds are {}", kinds.join(", ")),
+                format!("oath ls --origin {k}   (what the origins hold)"),
+            ));
+        }
+    }
+    cat.ls(kind.as_deref())
+}
+
 /// `oath rm`. True when the object is gone already: one no apply has taken
 /// is deleted at once, and there is nothing left to apply.
 fn remove(cat: &Catalog, id: &ObjectId) -> oath_core::Result<bool> {
@@ -1026,5 +1042,53 @@ mod tests {
         let sshd: ObjectId = "svc:sshd".parse().unwrap();
         assert!(!remove(&cat, &sshd).unwrap(), "applied: an apply removes it");
         assert_eq!(cat.get(&sshd).unwrap().meta.status, "removing");
+    }
+
+    /// `oath ls`'s arguments as clap parses them: --kind, --origin and the
+    /// word.
+    fn ls_args(args: &[&str]) -> (Option<String>, bool, Option<String>) {
+        match Cli::try_parse_from(args).unwrap().cmd {
+            Some(Cmd::Ls { kind, origin, word }) => (kind, origin, word),
+            _ => panic!("not ls: {args:?}"),
+        }
+    }
+
+    #[test]
+    fn ls_takes_a_kind_as_its_word_or_by_kind() {
+        let d = tempfile::tempdir().unwrap();
+        oath_core::seed(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        let of = |args: &[&str]| {
+            let (kind, origin, word) = ls_args(args);
+            assert!(!origin);
+            ls(&cat, kind.or(word)).unwrap()
+        };
+        let by_word = of(&["oath", "ls", "svc"]);
+        assert_eq!(by_word, of(&["oath", "ls", "--kind", "svc"]));
+        assert!(by_word.iter().any(|i| i.to_string() == "svc:sshd"), "{by_word:?}");
+        assert!(by_word.iter().all(|i| i.kind == KIND_SVC), "{by_word:?}");
+        assert!(Cli::try_parse_from(["oath", "ls", "--kind", "svc", "pkg"]).is_err());
+    }
+
+    #[test]
+    fn ls_origin_takes_a_word_or_none() {
+        assert_eq!(ls_args(&["oath", "ls", "--origin", "word"]), (None, true, Some("word".into())));
+        assert_eq!(ls_args(&["oath", "ls", "--origin"]), (None, true, None));
+        assert!(Cli::try_parse_from(["oath", "ls", "--origin", "--kind", "svc"]).is_err());
+    }
+
+    #[test]
+    fn ls_refuses_a_word_that_is_no_kind_and_names_the_kinds() {
+        let d = tempfile::tempdir().unwrap();
+        oath_core::seed(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        let (kind, origin, word) = ls_args(&["oath", "ls", "nginx"]);
+        assert!(!origin);
+        let e = ls(&cat, kind.or(word)).unwrap_err();
+        let msg = e.to_string();
+        let kinds = cat.kinds().unwrap();
+        assert!(kinds.iter().any(|k| k == KIND_SVC) && kinds.iter().any(|k| k == KIND_PKG));
+        assert_eq!(msg, format!("no kind `nginx`: the kinds are {}", kinds.join(", ")));
+        assert_eq!(e.hint_str(), Some("oath ls --origin nginx   (what the origins hold)"));
     }
 }
