@@ -534,7 +534,10 @@ fn preview(
                     to,
                     version_to,
                     doc_to.and_then(|d| d.get("source")).or_else(|| match m {
-                        Move::Head { set, .. } => set.get("source"),
+                        // A head of the pack it runs writes only what moves.
+                        Move::Head { set, .. } => {
+                            set.get("source").or_else(|| doc.and_then(|d| d.get("source")))
+                        }
                         _ => None,
                     }),
                 ),

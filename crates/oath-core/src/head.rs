@@ -224,14 +224,15 @@ pub fn hold_older(name: &str, at: &str, offer: &Offer, taken: &Record) -> Option
 }
 
 /// The moves that take `machine` (each package's desired doc, by name) to
-/// the heads `offers` holds. A package whose pin is its head does not
-/// move. One the owner keeps (`keep`), and one whose offered head is older
-/// than the one this machine took (`taken`), is held. A pin that is not
-/// the head the machine took is an overlay and is replaced (R47); with no
-/// record, `overlay(name, pin)` says (the release's view). A package the
-/// machine lacks is made when something present here, or a head taken,
-/// needs it and it has a head, and held when that head is older than the
-/// one this machine took. Needs are not settled here: see [`settle`].
+/// the heads `offers` holds. A package whose pin and needs are its head's
+/// does not move; one whose pin is, but not its needs, moves them. One the
+/// owner keeps (`keep`), and one whose offered head is older than the one
+/// this machine took (`taken`), is held. A pin that is not the head the
+/// machine took is an overlay and is replaced (R47); with no record,
+/// `overlay(name, pin)` says (the release's view). A package the machine
+/// lacks is made when something present here, or a head taken, needs it
+/// and it has a head, and held when that head is older than the one this
+/// machine took. Needs are not settled here: see [`settle`].
 pub fn plan(
     machine: &BTreeMap<String, Value>,
     offers: &BTreeMap<String, Offer>,
@@ -244,13 +245,8 @@ pub fn plan(
         let Some(cur) = machine.get(name) else { continue };
         let head = &offer.head;
         let mine = cur["hash"].as_str().unwrap_or("").to_string();
-        let set = head.fields();
-        let none = json!([]);
-        let same = |k: &str, v: &Value| {
-            let c = cur.get(k).unwrap_or(if k == "needs" { &none } else { &Value::Null });
-            c == v || (k == "needs" && needs_eq(c, v))
-        };
-        if set.as_object().into_iter().flatten().all(|(k, v)| same(k, v)) {
+        let mut set = head.fields();
+        if says(cur, &set) {
             continue;
         }
         if let Some(hold) = hold_older(name, &mine, offer, taken) {
@@ -272,6 +268,12 @@ pub fn plan(
                 Some(t) => t.hash != mine,
                 None => overlay(name, &mine),
             };
+        if mine == head.hash {
+            // Only its record moves (its needs, as a rule): say which part.
+            if let Some(m) = set.as_object_mut() {
+                m.retain(|k, v| k == "hash" || !has(cur, k, v));
+            }
+        }
         moves.push(Move::Head {
             name: name.clone(),
             from: mine.clone(),
@@ -382,9 +384,10 @@ struct Final {
 /// the package itself), whether a head or a release moved it, and the rest
 /// is settled again. A package that needs one the machine lacks and the
 /// moves hold (its head is older than the one this machine took) is held
-/// too, whether the moves would move it or make it. `loads` and
-/// `provides` return None when the tree is not in the store yet: a preview
-/// re-points such a need unchecked, and says so.
+/// too, whether the moves would move it or make it. A head of the pack the
+/// machine runs whose needs are re-pointed back to the machine's moves
+/// nothing. `loads` and `provides` return None when the tree is not in the
+/// store yet: a preview re-points such a need unchecked, and says so.
 pub fn settle(
     machine: &BTreeMap<String, Value>,
     mut moves: Vec<Move>,
@@ -510,10 +513,12 @@ pub fn settle(
         }
         for (p, (to, checked)) in repoint {
             let i = moves.iter().position(|m| m.name() == p && m.fields().is_some());
-            let cur_needs = match i {
-                Some(i) => moves[i].fields().unwrap()["needs"].clone(),
-                None => machine.get(&p).map(|d| d["needs"].clone()).unwrap_or(Value::Null),
-            };
+            // A move that leaves the needs as they are does not write them.
+            let cur_needs = i
+                .and_then(|i| moves[i].fields()?.get("needs").filter(|n| !n.is_null()))
+                .or_else(|| machine.get(&p).map(|d| &d["needs"]))
+                .cloned()
+                .unwrap_or(Value::Null);
             let mut needs = cur_needs.as_array().cloned().unwrap_or_default();
             let mut moved = Vec::new();
             for n in needs.iter_mut() {
@@ -547,6 +552,12 @@ pub fn settle(
                 }),
             }
         }
+        // A head of the pack the machine runs, whose needs settled back to
+        // the machine's, moves nothing.
+        moves.retain(|m| {
+            !matches!(m, Move::Head { name, from, to, set, .. }
+                if from == to && machine.get(name).is_some_and(|cur| says(cur, set)))
+        });
         // A package made only for what is now held is not made. One the
         // release makes for itself (new to the profile, or fixed by the
         // output) is, though nothing here needs it.
@@ -594,7 +605,12 @@ fn finals(machine: &BTreeMap<String, Value>, moves: &[Move]) -> BTreeMap<String,
 }
 
 fn need_pins(doc: &Value) -> Vec<(String, String)> {
-    doc["needs"]
+    pins(&doc["needs"])
+}
+
+/// Each need in a `needs` list, by name and pin.
+fn pins(needs: &Value) -> Vec<(String, String)> {
+    needs
         .as_array()
         .into_iter()
         .flatten()
@@ -609,13 +625,26 @@ fn need_names(doc: &Value) -> Vec<String> {
     need_pins(doc).into_iter().map(|(n, _)| n).collect()
 }
 
-/// Two needs lists with the same pins, `pkg:` or not.
+/// Two needs lists with the same pins, in any order, `pkg:` or not.
 fn needs_eq(a: &Value, b: &Value) -> bool {
-    let mut x = need_pins(a);
-    let mut y = need_pins(b);
+    let mut x = pins(a);
+    let mut y = pins(b);
     x.sort();
     y.sort();
     x == y
+}
+
+/// `cur`, a package's doc, has `v` at `k`. A doc with no `needs` needs
+/// nothing.
+fn has(cur: &Value, k: &str, v: &Value) -> bool {
+    let none = json!([]);
+    let c = cur.get(k).unwrap_or(if k == "needs" { &none } else { &Value::Null });
+    c == v || (k == "needs" && needs_eq(c, v))
+}
+
+/// `cur` already has each field `set` writes.
+fn says(cur: &Value, set: &Value) -> bool {
+    set.as_object().into_iter().flatten().all(|(k, v)| has(cur, k, v))
 }
 
 #[cfg(test)]
@@ -714,6 +743,93 @@ mod tests {
         let machine = BTreeMap::from([("sola".to_string(), doc('b', &[]))]);
         let o = offers(vec![head("sola", 'b', &[], "2026-11-06T00:00:00Z")]);
         assert!(plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false).is_empty());
+    }
+
+    #[test]
+    fn needs_are_the_same_in_any_order_with_pkg_or_not() {
+        let list = |n: &[(&str, char)]| {
+            json!(n.iter().map(|(id, c)| json!({ "id": id, "hash": h(*c) })).collect::<Vec<_>>())
+        };
+        let a = list(&[("pkg:mesa", 'm'), ("pkg:gtk", 'g')]);
+        assert!(needs_eq(&a, &list(&[("gtk", 'g'), ("mesa", 'm')])));
+        assert!(!needs_eq(&a, &list(&[("pkg:mesa", 'M'), ("pkg:gtk", 'g')])), "another pin");
+        assert!(!needs_eq(&a, &list(&[("pkg:mesa", 'm')])), "one fewer");
+        assert!(!needs_eq(&a, &json!([])));
+        assert!(needs_eq(&json!([]), &json!([])));
+    }
+
+    #[test]
+    fn a_head_that_moves_only_its_needs_is_taken() {
+        // Sola's pack is the machine's; its head was built against a newer mesa.
+        let machine = BTreeMap::from([
+            ("mesa".to_string(), doc('m', &[])),
+            ("sola".to_string(), doc('s', &[("mesa", 'm')])),
+        ]);
+        let o = offers(vec![
+            head("sola", 's', &[("mesa", 'M')], "t"),
+            head("mesa", 'M', &[], "t"),
+        ]);
+        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        assert_eq!(addition_names(&moves), ["mesa", "sola"], "{:?}", texts(&moves));
+        let Move::Head { from, to, set, .. } = &moves[1] else { panic!("{:?}", texts(&moves)) };
+        assert_eq!((from, to), (&h('s'), &h('s')));
+        let needs = json!([{ "id": "pkg:mesa", "hash": h('M') }]);
+        assert_eq!(set, &json!({ "hash": h('s'), "needs": needs }));
+        assert_eq!(
+            texts(&moves)[1],
+            "pkg:sola sha256-ssssssssssss (its head, signed by oath@novus; its needs move)"
+        );
+        let libs = trees(&[("mesa", 'm', &["libEGL.so.1"]), ("mesa", 'M', &["libEGL.so.1"])]);
+        let m = run(&machine, moves, &trees(&[("sola", 's', &["libEGL.so.1"])]), &libs);
+        assert_eq!(m.iter().map(Move::kind).collect::<Vec<_>>(), ["head", "head"]);
+        // The same needs in another order, `pkg:` or not, move nothing.
+        let mut same = head("sola", 's', &[("mesa", 'm'), ("gtk", 'g')], "t");
+        same.head.needs.reverse();
+        same.head.needs[0].id = "gtk".into();
+        let machine =
+            BTreeMap::from([("sola".to_string(), doc('s', &[("mesa", 'm'), ("gtk", 'g')]))]);
+        let m = plan(&machine, &offers(vec![same]), &Record::new(), &BTreeSet::new(), |_, _| false);
+        assert!(m.is_empty(), "{:?}", texts(&m));
+    }
+
+    #[test]
+    fn a_head_whose_needs_settle_back_to_the_machines_moves_nothing() {
+        // Sola's head needs a mesa no head offers; the update before
+        // re-pointed it to the machine's, which still has every library.
+        let machine = BTreeMap::from([
+            ("mesa".to_string(), doc('m', &[])),
+            ("sola".to_string(), doc('s', &[("mesa", 'm')])),
+        ]);
+        let o = offers(vec![head("sola", 's', &[("mesa", 'x')], "t")]);
+        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        assert_eq!(moves.iter().map(Move::kind).collect::<Vec<_>>(), ["head"]);
+        let loads = trees(&[("sola", 's', &["libEGL.so.1"])]);
+        let m = run(&machine, moves, &loads, &trees(&[("mesa", 'm', &["libEGL.so.1"])]));
+        assert!(m.is_empty(), "{:?}", texts(&m));
+    }
+
+    #[test]
+    fn a_head_that_moves_only_its_description_keeps_its_needs() {
+        // Only Sola's description moves; mesa moves to its head.
+        let mut machine = BTreeMap::from([
+            ("mesa".to_string(), doc('m', &[])),
+            ("sola".to_string(), doc('s', &[("mesa", 'm')])),
+        ]);
+        machine.get_mut("sola").unwrap()["description"] = json!("old");
+        let mut sola = head("sola", 's', &[("mesa", 'm')], "t");
+        sola.head.description = "new".into();
+        let o = offers(vec![sola, head("mesa", 'M', &[], "t")]);
+        let moves = plan(&machine, &o, &Record::new(), &BTreeSet::new(), |_, _| false);
+        assert_eq!(
+            texts(&moves)[1],
+            "pkg:sola sha256-ssssssssssss (its head, signed by oath@novus; its description moves)"
+        );
+        let libs = trees(&[("mesa", 'm', &["libEGL.so.1"]), ("mesa", 'M', &["libEGL.so.1"])]);
+        let m = run(&machine, moves, &trees(&[("sola", 's', &["libEGL.so.1"])]), &libs);
+        let Move::Head { set, repointed, .. } = &m[1] else { panic!("{:?}", texts(&m)) };
+        assert_eq!(set["needs"], json!([{ "id": "pkg:mesa", "hash": h('M') }]), "{set}");
+        assert_eq!(set["description"], json!("new"));
+        assert_eq!(repointed.len(), 1, "{repointed:?}");
     }
 
     #[test]

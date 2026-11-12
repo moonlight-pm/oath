@@ -268,9 +268,10 @@ pub enum Move {
     /// that stays needs it: it leaves with the update (R62).
     Drop { name: String },
     /// To its head (R72), which `signer` signed: `set` is its hash, needs,
-    /// `source` and description. `overlay` names what the machine ran when
-    /// that was not the head it took (R47); `repointed`, the needs the
-    /// library check moved.
+    /// `source` and description, or, when the machine runs its pack, its
+    /// hash and what moves. `overlay` names what the machine ran when that
+    /// was not the head it took (R47); `repointed`, the needs the library
+    /// check moved.
     Head {
         name: String,
         from: String,
@@ -415,6 +416,12 @@ impl Move {
                  {signer}); `--keep {id}` keeps it",
                 short(to),
                 source_label(set).map(|l| format!(" ({l})")).unwrap_or_default()
+            ),
+            Self::Head { from, to, set, signer, repointed, .. } if from == to => format!(
+                "{id} {} (its head, signed by {signer}; {}){}",
+                short(to),
+                records_moved(set),
+                needs_moved(repointed)
             ),
             Self::Head { from, to, set, signer, repointed, .. } => {
                 let from = if from.is_empty() { "unpinned" } else { short(from) };
