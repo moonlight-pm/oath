@@ -803,36 +803,43 @@ pub fn program_realization(catalog_root: &Path, path: &Path) -> Option<(String, 
 
 /// `oath store`: put a tree made elsewhere (a directory, or a tar of one)
 /// into the store as a realization of `pkg:<name>`, with the refusals a
-/// fetch has, and return its hash. No object and no link changes: the
-/// caller pins the hash (`oath set pkg:<name> hash=…`) and applies.
+/// fetch has, and return its hash. No spec and no link changes: the caller
+/// pins the hash (`oath set pkg:<name> hash=…`) and applies. A package
+/// applied at that hash records the check in its actual, so a damaged or
+/// missing tree put back is no longer damage.
 pub fn store_pkg(catalog_root: &Path, name: &str, src: &Path) -> Result<String> {
     store_in(catalog_root, "pkg", name, src)
 }
 
 /// [`store_pkg`], into `store/<area>/<name>`: `pkg`, or `cell` (R78).
 pub(crate) fn store_in(catalog_root: &Path, area: &str, name: &str, src: &Path) -> Result<String> {
-    let _lock = crate::Catalog::open(catalog_root)?.lock()?;
+    let cat = crate::Catalog::open(catalog_root)?;
+    let lock = cat.lock()?;
     let slot = catalog_root.join("store").join(area).join(name);
-    if src.is_dir() {
+    let hash = if src.is_dir() {
         let hash = hash_tree(src)?;
         put_tree_intact(&slot, &hash, src)?;
-        return Ok(hash);
-    }
-    if !src.is_file() || !looks_like_tar(src) {
-        return Err(Error::hint(
-            format!("not a directory or a tar: {}", src.display()),
-            format!("oath store {area}:<name> <dir|file.tar>"),
-        ));
-    }
-    let tmp = catalog_root.join("store").join(area).join(format!(".{name}.store"));
-    let _ = fs::remove_dir_all(&tmp);
-    let tree = tmp.join("tree");
-    fs::create_dir_all(&tree)?;
-    let got = extract_tar(src, &tree)
-        .and_then(|()| hash_tree(&tree))
-        .and_then(|hash| put_tree_intact(&slot, &hash, &tree).map(|_| hash));
-    let _ = fs::remove_dir_all(&tmp);
-    got
+        hash
+    } else {
+        if !src.is_file() || !looks_like_tar(src) {
+            return Err(Error::hint(
+                format!("not a directory or a tar: {}", src.display()),
+                format!("oath store {area}:<name> <dir|file.tar>"),
+            ));
+        }
+        let tmp = catalog_root.join("store").join(area).join(format!(".{name}.store"));
+        let _ = fs::remove_dir_all(&tmp);
+        let tree = tmp.join("tree");
+        fs::create_dir_all(&tree)?;
+        let got = extract_tar(src, &tree)
+            .and_then(|()| hash_tree(&tree))
+            .and_then(|hash| put_tree_intact(&slot, &hash, &tree).map(|_| hash));
+        let _ = fs::remove_dir_all(&tmp);
+        got?
+    };
+    // The tree at `<slot>/<hash>` was just hashed, intact or put in place.
+    cat.record_stored(&lock, &crate::ObjectId::new(area, name), &hash)?;
+    Ok(hash)
 }
 
 /// Copy `src` (a pack directory) into the hashed store. Also writes

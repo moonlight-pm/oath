@@ -54,6 +54,10 @@ parts of T24 and T35.
   each with its repair; a damaged package or cell's status is `error`,
   and it drifts in `tree`. It exits 1 if any is damaged. Without the
   lock it only reports.
+- `oath store pkg:<name>|cell:<name>` hashes the tree it puts in place,
+  and records that check as `verified` in the actual of the object
+  applied at that hash, so a damaged or missing tree it puts back is no
+  longer damage. It changes no spec.
 - PID 1 runs `oath verify --quiet` once per boot, after `ready`, as a
   task: the hashing never delays boot, and its report (damaged packages
   and the count) goes to `init.log`.

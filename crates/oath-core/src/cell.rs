@@ -24,7 +24,9 @@ pub fn tree_dir(root: &Path, name: &str, hash: &str) -> PathBuf {
 }
 
 /// `oath store cell:<name>`: put a tree made elsewhere into the store and
-/// return its hash. No object changes: the caller pins it and applies.
+/// return its hash. No spec changes: the caller pins it and applies. A
+/// cell applied at that hash records the check in its actual, so a damaged
+/// or missing tree put back is no longer damage.
 pub fn store(root: &Path, name: &str, src: &Path) -> Result<String> {
     store_in(root, "cell", name, src)
 }

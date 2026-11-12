@@ -55,9 +55,11 @@ run cell:<name>` is the same box as a package's, with the tree bound read-only a
 - **Damage.** A tree gone from the store, or one `oath verify` found no longer hashes
   to its pin, drifts in `tree`. A cell comes from no origin, so apply refuses it before
   it takes a generation, and `sudo oath store cell:<name> <dir|tar>` of the same files
-  is the repair: the next apply links it. A cell whose tree was gone at boot is not
-  linked, so `cell run` refuses it, and it drifts in `tree` until an apply links it,
-  whatever verify says of the tree once it is back.
+  is the repair: it records the check in the cell's actual as verify would, so the
+  drift, the `error` status and INDEX's store damage clear with no apply. A cell whose
+  tree was gone at boot is not linked, so `cell run` refuses it, and it drifts in
+  `tree` until an apply links it, whatever verify or the store says of the tree once
+  it is back.
 - **What goes.** Reap keeps the pin and lets a cell's other versions go, as for a package.
 
 ### An image (R59)

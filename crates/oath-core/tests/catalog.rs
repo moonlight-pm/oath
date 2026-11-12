@@ -1947,6 +1947,75 @@ fn a_cell_not_linked_after_a_boot_is_not_in_sync() {
     assert_eq!(obj.meta.status, "in-sync");
 }
 
+/// A VM, 2026-11-11: `sudo oath store cell:<name>` put back the tree verify
+/// found damaged ("replaced it"), but the cell kept `verified.ok: false`, so
+/// it stayed `error`, drifted in `tree` and was in INDEX's store damage
+/// until `oath verify` or an apply ran.
+#[test]
+fn storing_a_cells_tree_again_records_the_check() {
+    let (d, cat) = seeded();
+    let (id, hash, hooks) = applied_cell(&d, &cat, json!([]));
+    let tree = d.path().join("store/cell/hamlet").join(&hash);
+    let src = d.path().join("src-hamlet");
+    let desired = cat.get(&id).unwrap().desired;
+    for case in ["damaged", "gone", "gone at boot"] {
+        if case == "damaged" {
+            std::fs::write(tree.join("bin/hamlet"), "x").unwrap();
+        } else {
+            std::fs::remove_dir_all(&tree).unwrap();
+        }
+        if case == "gone at boot" {
+            let lock = cat.lock().unwrap();
+            cat.observe(&lock, &d.path().join("bin")).unwrap();
+            drop(lock);
+        }
+        assert!(!cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok, "{case}");
+        assert_eq!(cat.get(&id).unwrap().meta.status, "error", "{case}");
+        assert!(cat.index_text().unwrap().contains("## Store damage"), "{case}");
+
+        assert_eq!(oath_core::cell::store(d.path(), "hamlet", &src).unwrap(), hash);
+        let obj = cat.get(&id).unwrap();
+        assert_eq!(obj.actual["verified"]["ok"], json!(true), "{case}");
+        assert_eq!(obj.desired, desired, "{case}: the store changed the spec");
+        assert!(!cat.index_text().unwrap().contains("## Store damage"), "{case}");
+        if case == "gone at boot" {
+            // Not linked since the boot: drift, not error, until apply links it.
+            assert_eq!(obj.meta.status, "drift");
+            let drift = cat.diff(Some(&id)).unwrap();
+            assert_eq!(
+                drift[0].fields,
+                [("tree".to_string(), json!(hash), serde_json::Value::Null)]
+            );
+            cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+        }
+        assert_eq!(cat.get(&id).unwrap().meta.status, "in-sync", "{case}");
+        assert!(cat.diff(Some(&id)).unwrap().is_empty(), "{case}");
+    }
+}
+
+/// `oath store pkg:<name>` of the same files records the check as a cell's
+/// store does.
+#[test]
+fn storing_a_packages_tree_again_records_the_check() {
+    let (d, cat) = tmp();
+    let hooks = MemHooks::new(d.path().to_path_buf());
+    let pin = store_files(d.path(), "hello", &["bin/hello"]);
+    let id: ObjectId = "pkg:hello".parse().unwrap();
+    cat.set_fields(&id, cell_fields(json!({ "present": true, "hash": pin }))).unwrap();
+    cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &hooks).unwrap();
+    std::fs::write(d.path().join("store/pkg/hello").join(&pin).join("bin/hello"), "x").unwrap();
+    assert!(!cat.verify(Some(vec![id.clone()])).unwrap()[0].verified.ok);
+    assert_eq!(cat.get(&id).unwrap().meta.status, "error");
+
+    let src = d.path().join("src-hello");
+    assert_eq!(oath_core::store_pkg(d.path(), "hello", &src).unwrap(), pin);
+    let obj = cat.get(&id).unwrap();
+    assert_eq!(obj.actual["verified"]["ok"], json!(true));
+    assert_eq!(obj.meta.status, "in-sync");
+    assert!(cat.diff(Some(&id)).unwrap().is_empty());
+    assert!(!cat.index_text().unwrap().contains("## Store damage"));
+}
+
 #[test]
 fn the_kind_explains_itself() {
     let (_d, cat) = seeded();

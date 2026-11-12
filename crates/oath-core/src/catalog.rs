@@ -922,21 +922,48 @@ impl Catalog {
         }
         let Ok(_lock) = self.lock() else { return Ok(out) };
         for r in &out {
-            let p = status_path(&self.root, &r.id);
-            let Ok(mut actual) = read_json::<Value>(&p) else { continue };
-            // Linked as something else since it was hashed: leave it. A cell
-            // whose tree was gone at boot has no hash in its actual; a tree
-            // that hashes right leaves it drift, not in-sync, until apply
-            // links it.
-            let now = actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
-            if !now.is_empty() && now != r.hash {
-                continue;
-            }
-            actual["verified"] = serde_json::to_value(&r.verified)?;
-            write_json(&p, &actual)?;
+            self.write_verified(&r.id, &r.hash, &r.verified)?;
         }
         self.write_index()?;
         Ok(out)
+    }
+
+    /// `oath store` has put a tree that hashes to `hash` in `id`'s slot of
+    /// the store: when `id` is linked as `hash`, or applied at it, its
+    /// actual records that check as `oath verify` would, so a tree put back
+    /// is no longer damage (status, drift, INDEX). No spec changes.
+    pub(crate) fn record_stored(
+        &self,
+        _lock: &CatalogLock,
+        id: &ObjectId,
+        hash: &str,
+    ) -> Result<()> {
+        let Ok(obj) = self.get(id) else { return Ok(()) };
+        if self.linked_hash(&obj)?.as_deref() != Some(hash) {
+            return Ok(());
+        }
+        let v = crate::PkgVerified { ok: true, at: now_rfc3339(), got: String::new() };
+        if self.write_verified(id, hash, &v)? {
+            self.write_index()?;
+        }
+        Ok(())
+    }
+
+    /// Write `v`, a check of realization `hash`, into `id`'s actual as
+    /// `verified`. Whether it did: one linked as something else since it
+    /// was hashed is left as it is. A cell whose tree was gone at boot has
+    /// no hash in its actual; a tree that hashes right leaves it drift, not
+    /// in-sync, until apply links it.
+    fn write_verified(&self, id: &ObjectId, hash: &str, v: &crate::PkgVerified) -> Result<bool> {
+        let p = status_path(&self.root, id);
+        let Ok(mut actual) = read_json::<Value>(&p) else { return Ok(false) };
+        let now = actual.get("hash").and_then(|h| h.as_str()).unwrap_or("");
+        if !now.is_empty() && now != hash {
+            return Ok(false);
+        }
+        actual["verified"] = serde_json::to_value(v)?;
+        write_json(&p, &actual)?;
+        Ok(true)
     }
 
     /// The hash a package or cell is linked as, if it is meant to be linked:
