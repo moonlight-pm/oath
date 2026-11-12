@@ -1437,13 +1437,31 @@ pub(crate) fn preflight(root: &Path, cat: &Catalog) -> Result<()> {
         let ids: Vec<String> = drift.iter().map(|d| d.id.to_string()).collect();
         return Err(Error::hint(
             format!("this machine has changes not applied: {}", ids.join(" ")),
-            "oath diff; apply or undo them first",
+            not_applied(&drift),
         ));
     }
     if oath_core::probation::read(root).is_some() {
         return Err(Error::hint("an apply is on probation", "keep or undo it first (oath log)"));
     }
     Ok(())
+}
+
+/// What puts `drift` right: apply, or undo. Neither repairs a cell whose
+/// tree is damaged or gone (it drifts in `tree`): a cell comes from no
+/// origin, so `oath store` puts its tree back, as apply says when it
+/// refuses one. A cell whose tree is there but not linked, apply links.
+fn not_applied(drift: &[oath_core::Drift]) -> String {
+    let (cells, rest): (Vec<_>, Vec<_>) = drift.iter().partition(|d| {
+        d.id.kind == oath_core::KIND_CELL
+            && d.fields.iter().any(|(k, _, got)| k == "tree" && !got.is_null())
+    });
+    if cells.is_empty() {
+        return "oath diff; apply or undo them first".to_string();
+    }
+    let store: Vec<String> =
+        cells.iter().map(|d| format!("sudo oath store {} <dir|file.tar>", d.id)).collect();
+    let rest = if rest.is_empty() { "" } else { "; apply or undo the rest first" };
+    format!("oath diff; a cell comes from no origin: {}{rest}", store.join(", "))
 }
 
 /// Every pack the moves pin that the store lacks, fetched before this
@@ -2023,6 +2041,49 @@ mod tests {
         assert_eq!(next_boot(w, w, r), Some("reboot to run its kernel and initrd"));
         assert_eq!(next_boot(w, r, w), Some("reboot to run its kernel, initrd and PID 1"));
         assert_eq!(next_boot(r, r, w), Some("reboot to run its PID 1"));
+    }
+
+    #[test]
+    fn a_cell_whose_tree_is_damaged_or_gone_is_stored_again() {
+        let drift = |id: &str, fields: Vec<(&str, Value, Value)>| oath_core::Drift {
+            id: id.parse().unwrap(),
+            fields: fields.into_iter().map(|(k, a, b)| (k.to_string(), a, b)).collect(),
+        };
+        let tree = |got: Value| vec![("tree", json!(h('c')), got)];
+        let damaged = drift("cell:hamlet", tree(json!(h('x'))));
+        let gone = drift("cell:yorick", tree(json!("missing")));
+        // Not linked: apply links it.
+        let unlinked = drift("cell:ophelia", tree(Value::Null));
+        let svc = drift("svc:sshd", vec![("enabled", json!(true), json!(false))]);
+        let store = "a cell comes from no origin: sudo oath store cell:hamlet <dir|file.tar>";
+        assert_eq!(not_applied(&[damaged.clone()]), format!("oath diff; {store}"));
+        let said = not_applied(&[damaged, gone, svc.clone()]);
+        assert!(said.starts_with(&format!("oath diff; {store}")), "{said}");
+        assert!(said.contains("sudo oath store cell:yorick <dir|file.tar>"), "{said}");
+        assert!(said.ends_with("; apply or undo the rest first"), "{said}");
+        let apply = "oath diff; apply or undo them first";
+        assert_eq!(not_applied(&[unlinked, svc]), apply);
+    }
+
+    #[test]
+    fn an_update_names_the_store_for_a_damaged_cell() {
+        let d = tempfile::tempdir().unwrap();
+        oath_core::seed(d.path()).unwrap();
+        let cat = Catalog::open(d.path()).unwrap();
+        let src = d.path().join("src-hamlet");
+        fs::create_dir_all(src.join("bin")).unwrap();
+        fs::write(src.join("bin/hamlet"), "#!/bin/sh\n").unwrap();
+        let hash = oath_core::cell::store(d.path(), "hamlet", &src).unwrap();
+        let id: ObjectId = "cell:hamlet".parse().unwrap();
+        let doc = json!({ "hash": hash, "needs": [] }).as_object().unwrap().clone();
+        cat.new_object(&id, doc).unwrap();
+        cat.apply(Some(vec![id.clone()]), false, &Actor::unknown(), &oath_core::NullHooks).unwrap();
+        preflight(d.path(), &cat).unwrap();
+        fs::remove_dir_all(oath_core::cell::tree_dir(d.path(), "hamlet", &hash)).unwrap();
+        let e = preflight(d.path(), &cat).unwrap_err();
+        assert!(e.to_string().contains("changes not applied: cell:hamlet"), "{e}");
+        let hint = e.hint_str().unwrap();
+        assert!(hint.contains("sudo oath store cell:hamlet <dir|file.tar>"), "{hint}");
     }
 
     #[test]
