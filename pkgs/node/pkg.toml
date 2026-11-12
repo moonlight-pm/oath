@@ -5,18 +5,18 @@
 # The full notice, every bundled project's licence, is share/doc/node/LICENSE.
 # It runs the programs Oath packs from npm, each with its own tree (pkg:cf), so
 # no machine keeps a global node_modules.
-version = "26.13.0"
+version = "26.13.1"
 license = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Artistic-2.0 AND Unicode-3.0 AND Zlib"
 description = "Node.js: the JavaScript runtime, with npm and npx."
 home = "https://nodejs.org/"
 category = "toolchain"
-purl = "pkg:generic/node@26.13.0"
+purl = "pkg:generic/node@26.13.1"
 build = ["python"]
 run = ["gcc"]
 
 [[source]]
-url = "https://nodejs.org/dist/v26.13.0/node-v26.13.0.tar.xz"
-sha256 = "263f639ecfa7a17b49438d76cdbf9aff73179e3c7cb789da69b900718427fa2e"
-sig = "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt.sig"
-sums = "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt"
+url = "https://nodejs.org/dist/v26.13.1/node-v26.13.1.tar.xz"
+sha256 = "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6"
+sig = "https://nodejs.org/dist/v26.13.1/SHASUMS256.txt.sig"
+sums = "https://nodejs.org/dist/v26.13.1/SHASUMS256.txt"
 key = "node"

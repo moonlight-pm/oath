@@ -1,8 +1,8 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source node-v26.13.0.tar.xz 263f639ecfa7a17b49438d76cdbf9aff73179e3c7cb789da69b900718427fa2e
-tag v26.13.0 commit 18b32a3b1552e199a01f1a8d9fd64aa756d3b75b tree 48b8ff59875b66f70dd9edee17d12ef5792324e3
-signed pgp C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C
-same 38266
+source node-v26.13.1.tar.xz a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6
+tag v26.13.1 commit e9c277643b0249c50f6e6de5413be8a88ea11b6a tree 2e7c8500c8c2ff9377e36e6f3b03e1690e6dcc81
+signed pgp 5BE8A3F6C8A5C01D106C0AD820B1A390B168D356
+same 38282
 only-in-tag 14020
 differs tools/nix/v8.nix
 adds doc/api/addons.html

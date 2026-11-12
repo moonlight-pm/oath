@@ -865,6 +865,9 @@ tag = "v{version}"
 series = "26"
 differs_because = "tools/nix/v8.nix: the release drops a fileset.gitTracked filter, which only works in a git checkout; only Nix reads the file (read 2026-11-01)"
 
+[node.age_because]
+source = "26.13.1 (2026-11-10) is the 26.x line's only release with the fixes of Node.js's November 2026 security releases (nodejs.org/en/blog/vulnerability/november-2026-security-releases, 2026-11-11): seven high, CVE-2026-123863, 123864, 123865, 123866, 123872, 123874 and 126051, and nine medium or low"
+
 [node.not_affected]
 "CVE-2021-43803" = "Next.js, not Node.js (the record; NVD names Node.js only as its platform)"
 "CVE-2022-36046" = "Next.js, not Node.js (the record; NVD names Node.js only as its platform)"

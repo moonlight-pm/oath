@@ -19,11 +19,11 @@
     ]
   },
   "aws": {
-    "version": "2.39.3",
+    "version": "2.39.4",
     "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND ISC AND OpenSSL AND PSF-2.0 AND blessing",
     "by": "plan",
-    "plan": "sha256-7f42771af718920a481b876cb796a2be5f48bd45ec6ea705a1c56ee3d5589130",
-    "product": "sha256-2db0c9af38db3e83f7c61d44e929af372b44c0e3aea74af94b0570d0bc2797c4",
+    "plan": "sha256-b8939e0f1f1bc44dd7e2dd45b9efd0b1a2090ed5497a25064a5a962f168bad82",
+    "product": "sha256-778d7a5aca225672011ab19ed6790690f82f79a99ab59a4a4182150b86a034af",
     "run": [
       "python",
       "certs",
@@ -186,7 +186,7 @@
     "version": "1.0.0-beta.26",
     "license": "(MIT OR Apache-2.0) AND MIT AND Apache-2.0 AND ISC AND CC0-1.0 AND LGPL-3.0-or-later AND BSD-2-Clause AND BSD-3-Clause AND MPL-1.1 AND Zlib AND IJG AND libpng-2.0 AND libtiff AND FTL",
     "by": "plan",
-    "plan": "sha256-9eaeac383e7f3521daa8ccc31e87e0685fbf3088bfb93b2e88410498999f65ff",
+    "plan": "sha256-8f54a931e777c5ca10a8305441b99f821fc83e681c4e16839cc43edae7f4345e",
     "product": "sha256-5f6bb6f0b4bfdf6dc11ea2a9f5cf1a304e40875a778956006a57061b4629644f",
     "run": [
       "node"
@@ -1355,11 +1355,11 @@
     ]
   },
   "node": {
-    "version": "26.13.0",
+    "version": "26.13.1",
     "license": "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Artistic-2.0 AND Unicode-3.0 AND Zlib",
     "by": "plan",
-    "plan": "sha256-42e98564f3d2c51fee02ebbb3b1547e697cd41f4253837776b4ae444428c4846",
-    "product": "sha256-9cff513e5c9f9573dce5b3d41aa9268a27985a996046c6dfb55b2d9d0d7ce1d7",
+    "plan": "sha256-689584b686b8346475c2045819aa6dc20d4bd5beca0a99dd46999705230e2caa",
+    "product": "sha256-c5f0b8cc6bdcdd41170b389c5b08b99aa18ee1aa7b4d7c105304179b33239eb2",
     "run": [
       "gcc"
     ]
