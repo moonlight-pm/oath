@@ -370,7 +370,7 @@ ninja, perl, m4, flex, bison, bc, elfutils, pkgconf, patchelf).
 `pkg:certs`, Oath's CA roots (R50), is in `base`, from the release after 2026-11-09 (R77).
 In no profile: servers built from
 source (R49): Blocky, restic, rsync, `route`, `cell` with `crun` and
-`passt`, PostgreSQL and PostGIS with theirs, MySQL. Also in no profile: `aws` (R82).
+`passt`, PostgreSQL and PostGIS with theirs, MySQL. Also in no profile: `aws` (R82) and `bun`.
 `pkg:oath` follows this tree and is not locked. Nothing in the image
 comes from nixpkgs.
 

@@ -32,7 +32,7 @@ are recorded in `pkgs/intake/<name>.txt`, `pkg:oath`'s from `Cargo.lock`.
 | Review | `pkgs/reviews.txt`, and a test | Every version that moved or is new has a verdict. `cargo make pkgs --review <name>` writes the diff, and what in it looks like new reach. |
 | Stop the line | `cargo make audit`, `cargo make publish` | An OSV `MAL-` record fails the audit and refuses a release. Nothing waves it through. |
 | Tag | `pkgs/tags/<name>.txt` (R54) | The tarball against upstream's git tree. |
-| Defaults | `pkg:node`'s npm | `min-release-age=7`, `ignore-scripts=true`. Python ships no `pip`. |
+| Defaults | `pkg:node`'s npm | `min-release-age=7`, `ignore-scripts=true`. Python ships no `pip`. `pkg:bun` sets none: Bun reads only a user's and a project's settings, so `~/.bunfig.toml` does. |
 
 What was already here on 2026-11-01 is the baseline: recorded, not reviewed. Nobody
 reads 537 packages at once. Gates apply to what moves after that, and nothing else

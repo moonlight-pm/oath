@@ -1,0 +1,27 @@
+# Bun, the JavaScript runtime, bundler, test runner and package manager: the
+# vendor's Linux build (R7), the x64 baseline one, which needs no AVX2 (canto)
+# and is what Bun's own Docker images take. Its build needs LLVM 23 and a
+# nightly Rust (R17), and a Bun. Checked against the SHASUMS256.txt.asc that
+# Bun's release bot clearsigns (pkgs/keys/bun.asc). The binary loads only
+# glibc: JavaScriptCore, BoringSSL with its own roots, and the rest that
+# share/doc/bun/LICENSE.md lists are linked in.
+version = "1.4.4"
+license = "MIT AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Zlib AND Unicode-3.0"
+description = "Bun: a JavaScript runtime, bundler, test runner and package manager, with bunx."
+home = "https://bun.sh/"
+category = "toolchain"
+purl = "pkg:github/oven-sh/bun@bun-v1.4.4"
+build = ["python"]
+run = []
+
+[[source]]
+url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.4/bun-linux-x64-baseline.zip"
+sha256 = "e0446eb55995772eb9894bebae9a6be368d985a8b9271ee124486f9946eedd76"
+sig = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.4/SHASUMS256.txt.asc"
+key = "bun"
+
+[[source]]
+url = "https://raw.githubusercontent.com/oven-sh/bun/bun-v1.4.4/LICENSE.md"
+sha256 = "362fe32c954ec829240bd7429c53d705eef08c6bfa45ffc2d02005f857cba4dd"
+file = "bun-LICENSE.md"
+unsigned = "a file of the bun-v1.4.4 tag, which is not signed"

@@ -471,6 +471,26 @@ week and runs no package's install scripts (`min-release-age=7`,
 `ignore-scripts=true`); a project that needs a script says so in its own
 `.npmrc`.
 
+`pkg:bun` is Bun, the vendor's build, with `bunx`; it needs nothing a machine lacks.
+Until a release lists it, `oath ls --origin` does not show it, and `sudo oath add bun`
+takes it from its head. `bun upgrade` cannot write the store: a newer Bun is a new pin in
+`pkgs/bun`. Nothing sets npm's defaults for it, since Bun reads only a user's and a
+project's settings: it runs no dependency's install scripts but those on its own list of
+trusted packages, and takes a version the day it is published. A `~/.bunfig.toml` holds it
+to npm's:
+
+```
+[install]
+minimumReleaseAge = 604800   # a week, in seconds
+ignoreScripts = true
+```
+
+`bun build --compile` makes a program that names `/lib`'s loader, so it runs on Oath; one
+built with `--target=bun-linux-x64-baseline` runs on other Linux systems and not here. A
+program an npm package installs with `#!/usr/bin/env node` does not run (there is no
+`/usr`): `bunx` exits 1 and prints nothing, `bun run` says `bad interpreter`, and `bun
+node_modules/<package>/<file>.js` runs it.
+
 `pkg:python` puts no `pip` in `/bin`, and `python3 -m pip` fails until pip is
 installed. The pack carries pip's wheel: `python3 -m venv DIR` installs it in
 `DIR`, and `python3 -m ensurepip --user` installs it under `~/.local`, whose

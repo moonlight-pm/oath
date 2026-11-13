@@ -94,6 +94,13 @@ cpe = "cpe:2.3:a:projectatomic:bubblewrap"
 repo = "https://github.com/containers/bubblewrap"
 tag = "v{version}"
 
+# NVD files Bun under Anthropic; CVE records name it Bun, or no vendor.
+[bun]
+cpe = "cpe:2.3:a:anthropic:bun"
+repo = "https://github.com/oven-sh/bun"
+tag = "bun-v{version}"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
+
 [bzip2]
 cpe = "cpe:2.3:a:bzip:bzip2"
 compare_repo = "https://gitlab.com/bzip2/bzip2"
