@@ -471,25 +471,25 @@ week and runs no package's install scripts (`min-release-age=7`,
 `ignore-scripts=true`); a project that needs a script says so in its own
 `.npmrc`.
 
-`pkg:bun` is Bun, the vendor's build, with `bunx`; it needs nothing a machine lacks.
-Until a release lists it, `oath ls --origin` does not show it, and `sudo oath add bun`
-takes it from its head. `bun upgrade` cannot write the store: a newer Bun is a new pin in
-`pkgs/bun`. Nothing sets npm's defaults for it, since Bun reads only a user's and a
-project's settings: it runs no dependency's install scripts but those on its own list of
-trusted packages, and takes a version the day it is published. A `~/.bunfig.toml` holds it
-to npm's:
+`pkg:bun` is Bun, the vendor's build (R85); it needs nothing a machine lacks. Until a
+release lists it, `oath ls --origin` does not show it, and `sudo oath add bun` takes it
+from its head. Every install takes nothing published less than a week ago and runs no
+lifecycle script, not even the project's own: `bun` puts `--ignore-scripts
+--minimum-release-age=604800` in `BUN_OPTIONS`, which every Bun it starts inherits, and a
+project's `bunfig.toml` or `.npmrc` cannot undo them. `bun pm trust` says scripts are
+disabled. A committed `bun.lock` installs its versions as they are. `bun` refuses a typed
+`--minimum-release-age`, `bun upgrade` (a newer Bun is a new pin in `pkgs/bun`) and `bun x`.
+There is no `bunx`: a program an npm package installs starts `#!/usr/bin/env node`, and
+there is no `/usr`, so `bun run` of one says `bad interpreter`; `bun
+node_modules/<package>/<file>.js` runs it.
 
 ```
-[install]
-minimumReleaseAge = 604800   # a week, in seconds
-ignoreScripts = true
+sudo oath add bun
+bun add vite          # vite@8.3.6, the newest a week old (2026-11-12)
 ```
 
 `bun build --compile` makes a program that names `/lib`'s loader, so it runs on Oath; one
-built with `--target=bun-linux-x64-baseline` runs on other Linux systems and not here. A
-program an npm package installs with `#!/usr/bin/env node` does not run (there is no
-`/usr`): `bunx` exits 1 and prints nothing, `bun run` says `bad interpreter`, and `bun
-node_modules/<package>/<file>.js` runs it.
+built with `--target=bun-linux-x64-baseline` runs on other Linux systems and not here.
 
 `pkg:python` puts no `pip` in `/bin`, and `python3 -m pip` fails until pip is
 installed. The pack carries pip's wheel: `python3 -m venv DIR` installs it in

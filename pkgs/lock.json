@@ -118,8 +118,8 @@
     "version": "1.4.4",
     "license": "MIT AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Zlib AND Unicode-3.0",
     "by": "plan",
-    "plan": "sha256-e3f2c0091b08311061b36363fb426266f42ca7a1b6e6a417795eb19659d61803",
-    "product": "sha256-a86152a25964307a78d27bd1a29f3ddc8a156abb49c8fbace393f2370b6105b3",
+    "plan": "sha256-95bddddb342c494abc4f7c462c84959b7c712cb1df681052bca191fded45fb0d",
+    "product": "sha256-d025b72fd50db088f0ef6a9f639fa40de61b631e80dc7f278f4af1a09528f6b2",
     "run": []
   },
   "bzip2": {

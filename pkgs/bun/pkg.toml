@@ -4,10 +4,11 @@
 # nightly Rust (R17), and a Bun. Checked against the SHASUMS256.txt.asc that
 # Bun's release bot clearsigns (pkgs/keys/bun.asc). The binary loads only
 # glibc: JavaScriptCore, BoringSSL with its own roots, and the rest that
-# share/doc/bun/LICENSE.md lists are linked in.
+# share/doc/bun/LICENSE.md lists are linked in. bin/bun holds every install
+# to a week and no lifecycle script (R57, R85); there is no bunx.
 version = "1.4.4"
 license = "MIT AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Zlib AND Unicode-3.0"
-description = "Bun: a JavaScript runtime, bundler, test runner and package manager, with bunx."
+description = "Bun: a JavaScript runtime, bundler, test runner and package manager."
 home = "https://bun.sh/"
 category = "toolchain"
 purl = "pkg:github/oven-sh/bun@bun-v1.4.4"
