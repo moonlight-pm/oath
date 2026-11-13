@@ -216,6 +216,26 @@ labels and UUIDs). A device name such as `/dev/sdb1` is refused: it
 changes with the port and the boot. A machine's mounts belong in its
 install overlay (`hosts/<name>.json`).
 
+An NFS export mounts the same way, its `source` the server and path
+(`host:/path`). No package is needed: Oath resolves the name, checks
+that the server answers on port 2049, and mounts it with the kernel's
+own client, as NFS 4.1 unless `options` name a `vers=` (`vers=3,nolock`
+for a server with no NFSv4):
+
+```
+sudo oath set host:local mounts='{"/mnt/alpha": {"source": "nas:/mnt/alpha", "options": "noatime"}}'
+sudo oath apply host:local
+```
+
+A server that does not answer waits; PID 1 mounts the export after boot,
+once the network is up, and tries again while it is not mounted, a
+minute apart and less often the longer it waits. The mount is `hard`, so
+a program that reads it while the server is away waits for it, and
+`soft` in `options` makes it fail instead. A server that maps every
+client user to one (TrueNAS's mapall) gives every user on the machine
+that one's rights: under `/home`, which only `home` and root can enter,
+`work` and `void` cannot reach it; under `/mnt` they can.
+
 Home itself can live on another volume, a btrfs subvolume of another
 disk, say:
 

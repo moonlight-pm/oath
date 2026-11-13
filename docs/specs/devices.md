@@ -153,7 +153,8 @@ after i915) was never taken.
 `host:local.mounts` maps a path under `/mnt` or `/home`, or `/home`
 itself (R45), to a `source`
 (`LABEL=`, `UUID=`, `PARTLABEL=` or `PARTUUID=`; never `/dev/sdX`,
-which moves between ports and boots) and mount(8) `options`. util-linux
+which moves between ports and boots; or an NFS export, below) and
+mount(8) `options`. util-linux
 does the work: `findfs` says whether the source is plugged in, `mount`
 and `umount` act. A mount is outside `@`, so no generation holds what
 is on it.
@@ -180,6 +181,48 @@ is on it.
   `@`'s /home), logs `mount: /home is not <source> this boot`, and
   writes the keys there. Shutdown unmounts it after what is under it.
   Check case `home-mount`.
+
+### NFS exports (built 2026-11-12, R90)
+
+A `source` of `host:/path` (`nas:/mnt/alpha`; the host a name or an
+IPv4 address) is an NFS export. No package mounts it: the kernel's
+client (`nfs`, `nfsv4`, `sunrpc`, all in `pkg:linux`) takes `mount -i
+-t nfs`, with no mount.nfs, nfs-utils, libtirpc, rpcbind or idmapd
+(R57). The kernel resolves no name, so Oath does: `getent ahostsv4`,
+then a TCP connect to port 2049 within 2 s. A name that does not
+resolve, or a server that does not answer, waits, as an unplugged disk
+does. Then it loads `nfsv4` and mounts with the entry's options plus
+`addr=<the address>` and, unless they name `vers=`, `vers=4.1`, so the
+kernel's defaults hold: `hard`, TCP, `sec=sys` with numeric ids.
+
+- An export cannot be `/home` itself.
+- `oath apply` mounts it in its own process, and mounts it again
+  (unmount, mount) when its options change: NFS takes few options on
+  a remount.
+- PID 1 never mounts one in its own loop, since a server can keep
+  `mount` waiting. It runs `oath mount-nas` (hidden, root) as a task on
+  its first pass after boot, once the services have started, and again
+  while an export is not mounted: a minute apart, doubling to 16
+  minutes, and at once after an `oath apply`. The task takes the
+  catalog's lock, so it never mounts beside an apply; when the lock is
+  taken it leaves the export to the next try. When the task ends, PID 1
+  writes what is mounted into status. At boot it logs an export as
+  waiting until then.
+- Shutdown unmounts exports before its `sync`, which would wait on a
+  hard mount's server for as long as that takes. One whose server does
+  not answer three tries (2 s each, a second apart) is shut down first
+  (`/sys/fs/nfs/<dev>/shutdown`, logged `shutdown: <path>: its server
+  … does not answer`): its unwritten pages fail and the unmount goes
+  on. dhcpcd runs with `-p`, so the address and routes stay up through
+  all of this. Tried on buccina 2026-11-12: a reboot with the NAS
+  answering, and one with its address pointed at a MAC that is not
+  there, which went on 13 s after the services stopped.
+- Ids: the kernel sends the caller's uid and gid. A server that maps
+  every client user to one (TrueNAS's mapall; the NAS's `alpha` maps
+  them to root) gives every local user that one's rights, so the mount
+  point's path is the only guard: under `/home` (0700, `home`'s) only
+  `home` and root reach it; under `/mnt` every user does, `work` and
+  `void` too.
 
 ## Unix floor (built)
 

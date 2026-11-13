@@ -330,6 +330,7 @@ fn step(
     sup.start_due();
     probation.tick(sup);
     hot.tick();
+    mount_exports(sup);
     let Ok((mut s, _)) = listener.accept() else { return None };
     let mut buf = [0u8; 4096];
     let n = s.read(&mut buf).unwrap_or(0);
@@ -352,6 +353,8 @@ fn step(
     tel("init", "converge", json!({ "bytes": n }));
     // An update's apply leaves the seat's services running (R42).
     sup.converge_keeping(buf[..n].starts_with(b"converge keep-seat"));
+    // An apply may have named an export: look again now.
+    *EXPORTS.lock().unwrap_or_else(|e| e.into_inner()) = None;
     let _ = s.write_all(b"ok\n");
     None
 }
@@ -1253,7 +1256,7 @@ pub(crate) fn mount_host(boot: bool) {
     if host.mounts.is_empty() {
         return;
     }
-    let m = oath_core::mounts::converge(&host.mounts, &host.mounts, boot);
+    let m = oath_core::mounts::converge(&host.mounts, &host.mounts, boot, false);
     let mut actual = serde_json::from_value::<Host>(obj.actual)
         .unwrap_or_else(|_| Host { mounts: Default::default(), ..host.clone() });
     for (path, mount) in &m.mounted {
@@ -1282,6 +1285,44 @@ pub(crate) fn mount_host(boot: bool) {
     if actual.mounts != m.mounted {
         actual.mounts = m.mounted;
         let _ = oath_core::write_json(&status(&id), &actual);
+    }
+}
+
+/// When PID 1 next looks for an NFS export that is not mounted, and how
+/// long it waited last.
+static EXPORTS: std::sync::Mutex<Option<(Instant, Duration)>> = std::sync::Mutex::new(None);
+const EXPORTS_FIRST: Duration = Duration::from_secs(60);
+const EXPORTS_MOST: Duration = Duration::from_secs(16 * 60);
+
+/// The NFS exports in `host:local.mounts` are mounted by `oath mount-nas`,
+/// a task off this loop, since a server can keep `mount` waiting: on the
+/// first pass after boot, then while one is not mounted, a minute apart,
+/// doubling to 16. When the task ends, status says what is mounted.
+fn mount_exports(sup: &mut supervise::Supervisor) {
+    const TASK: &str = "mount-nas";
+    if sup.task_exit(TASK).is_some() {
+        if let Ok(Ok(Some(_lock))) = Catalog::open(DEFAULT_ROOT).map(|c| c.try_lock()) {
+            mount_host(false);
+        }
+    }
+    if sup.task_running(TASK) {
+        return;
+    }
+    let mut due = EXPORTS.lock().unwrap_or_else(|e| e.into_inner());
+    let now = Instant::now();
+    if due.is_some_and(|(at, _)| now < at) {
+        return;
+    }
+    let waiting = oath_core::mounts::applied(Path::new(DEFAULT_ROOT)).iter().any(|(path, m)| {
+        oath_core::mounts::nas(&m.source).is_some() && !oath_core::mounts::is_mounted(path)
+    });
+    let wait = match *due {
+        Some((_, last)) if waiting => (last * 2).min(EXPORTS_MOST),
+        _ => EXPORTS_FIRST,
+    };
+    *due = Some((now + wait, wait));
+    if waiting {
+        sup.run_task(TASK, &["/bin/oath", "mount-nas"]);
     }
 }
 

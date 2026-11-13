@@ -57,7 +57,8 @@ and sound load after that, so `svc:sshd` is up before them.
 `oath logs` lists the modules each pass loaded, then says `ready`.
 
 After `ready`, in the background, PID 1 runs `oath verify --quiet` and
-`oath --confirm reap --boot`. What they print goes to `init.log`
+`oath --confirm reap --boot`, and `oath mount-nas` when an NFS export
+in `host:local.mounts` is not mounted (then again while one is not). What they print goes to `init.log`
 (`… verified, … damaged`, `reaped …`). A package whose tree is damaged or
 gone has status `error`, and `/oath/INDEX.md` lists it under `Store damage`
 with its repair; the boot goes on and does not repair it.
@@ -274,6 +275,7 @@ powers off) with `sudo oath apply --confirm`. PID 1 stops the services
 in reverse `wants` order, each before what it wants, one layer at a
 time (SIGTERM, up to 5 s, then SIGKILL; `oath logs` shows
 `shutdown: stopping …` for each layer). Then it stops everything else,
+unmounts NFS exports (shutting one down whose server does not answer),
 syncs, unmounts `host:local.mounts`, `/home`, `/work` and the btrfs top
 level, remounts `/` read-only, and reboots or powers off; `sudo halt`
 alone halts and leaves the power on. Ctrl-Alt-Del on the console

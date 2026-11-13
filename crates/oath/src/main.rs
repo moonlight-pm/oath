@@ -280,6 +280,11 @@ enum Cmd {
         #[arg(long)]
         hash: Option<String>,
     },
+    /// Mount the NFS exports `host:local.mounts` names that are not
+    /// mounted and whose server answers. PID 1 runs it off its own loop,
+    /// since a server can keep `mount` waiting. Root only.
+    #[command(hide = true)]
+    MountNas,
     /// Write a fresh catalog from a seed profile, which is data
     /// (`/lib/oath/seed`, or `$OATH_SEED_DIR`), or merge overlays into an
     /// existing one. Build and install time only.
@@ -367,6 +372,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Seed { .. }) => "seed",
         Some(Cmd::PanicInit) => "panic-init",
         Some(Cmd::ReexecInit { .. }) => "reexec-init",
+        Some(Cmd::MountNas) => "mount-nas",
     };
     tel("oath", "cmd", json!({ "verb": verb, "root": cli.root.display().to_string() }));
     match &cli.cmd {
@@ -461,6 +467,21 @@ fn run() -> oath_core::Result<i32> {
                 ),
             }
             Ok(0)
+        }
+        Some(Cmd::MountNas) => {
+            use oath_core::mounts;
+            // An apply mounts them too: one at a time, and PID 1 tries again.
+            let Some(_lock) = cat.try_lock()? else { return Ok(0) };
+            let exports: std::collections::BTreeMap<_, _> = mounts::applied(&cli.root)
+                .into_iter()
+                .filter(|(_, m)| mounts::nas(&m.source).is_some())
+                .collect();
+            // PID 1 logged what waits at boot; a retry says only what failed.
+            let m = mounts::converge(&exports, &exports, false, true);
+            for e in &m.errors {
+                eprintln!("mount-nas: {e}");
+            }
+            Ok(if m.errors.is_empty() { 0 } else { 1 })
         }
         Some(Cmd::Ls { origin: true, word, .. }) => {
             add::list(&cli.root, &cat, word.as_deref(), cli.json)
