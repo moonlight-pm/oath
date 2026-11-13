@@ -34,7 +34,7 @@ $ oath ls --origin cell
 $ sudo oath add cell
 Create readonly snapshot of '/oath/run/fs/@' in '/oath/run/fs/@gen-1'
 pkg:cell sha256-… (0.1.0), signed by oath@buccina
-pkg:crun sha256-… (1.30.1), signed by oath@buccina
+pkg:crun sha256-… (1.31), signed by oath@buccina
 pkg:json-c sha256-… (0.19-20260627), signed by oath@buccina
 pkg:libseccomp sha256-… (2.6.1), signed by oath@buccina
 pkg:passt sha256-… (2026_10_02.cba3570), signed by oath@buccina
