@@ -63,7 +63,8 @@ Overwrite this file when facts change; do not append a diary.
   every update and now counted as the owner's to add: `svc:login`,
   `svc:dbus-system`, `svc:bluetooth`, `svc:sola-sessions`,
   `pkg:libglvnd-i386`. `pkg:bun` 1.4.4 (`sha256-d025b72fd50d`, from master@a8d910a, built here) since
-  generation 191 (2026-11-13), published from here as its head and recorded (R85). `pkg:llama-cpp` b11960 (`0908155920628b60`, from master@d3a4d4b) and `pkg:writ` 0.1.0 (`ed345dd80d3a`, from
+  generation 191 (2026-11-13), published from here as its head and recorded (R85). `pkg:ffmpeg` 9.0.2
+  (`sha256-d1094b92bf86`, from master@4a4c51f, built here) since generation 192, the same (R88). `pkg:llama-cpp` b11960 (`0908155920628b60`, from master@d3a4d4b) and `pkg:writ` 0.1.0 (`ed345dd80d3a`, from
   master@b4f6043), overlays no release sets, since generation 173 (2026-11-05). An OpenRouter key from Joshua, limited to $50, is in
   `~/.config/writ/openrouter.key`; the model in use is local until someone runs `writ use openrouter`. No `svc:llama`: `writ`
   loads a test model, Qwen3 1.7B Q4, from `~/.local/share/writ/models`, as `work` (R68). It is headless and runs no desk (Joshua, 2026-11-03; generation 161,
