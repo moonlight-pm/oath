@@ -2,7 +2,10 @@
   "objects": {
     "host:local": {
       "hostname": "dulcia",
-      "timezone": "MST7MDT,M3.2.0,M11.1.0"
+      "timezone": "MST7MDT,M3.2.0,M11.1.0",
+      "mounts": {
+        "/mnt/alpha": { "source": "nas:/mnt/alpha", "options": "" }
+      }
     }
   }
 }
