@@ -28,7 +28,7 @@ gaps · `target` designed, not built.
 | Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables; TIOCSTI off, R60; Landlock, Yama, R64); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | — |
 | Boot | shipped | initrd: PID 1, bash, firmware; switch_root into `@`; `oath-efi` loader; the mark's boot steps, then `efidrm` (R89); 5 boots kept; `oath update` takes the newest signed output (R38), builds recipes, replaces overlays, follows the profile (R47, R62) | Kernels, PID 1's boot work need a reboot; a hung kernel shows `Starting Linux` |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, locked and pinned packs (R28); published only from a clean master (R47) | — |
-| Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` (R43), `@home` apart (R45); `cargo make image` (R86) | No image published; Intel, newer AMD; AMI `UEFI OS` |
+| Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs; `oath install` (R43), `@home` apart (R45); `cargo make image` (R86) | Image untried on metal; Intel, newer AMD; AMI `UEFI OS` |
 | Test harness | shipped | `cargo make check`: a QEMU per case, `check-pass` per output; `--target`: `metal` cases on a machine | — |
 
 ## Payload (outside core)
