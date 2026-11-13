@@ -1204,16 +1204,16 @@
     "version": "7.3.4",
     "license": "GPL-2.0-only WITH Linux-syscall-note",
     "by": "plan",
-    "plan": "sha256-4b0fd7ce1ff2b49338e14562f338dc0b1b3ea08240c03d24491ee21c8222d46b",
-    "product": "sha256-8fe13ec171f2936a39e601d77f847b9db4d5f877c251ae9aee9aee2e51897c71",
+    "plan": "sha256-eb3b39ce9a3f3f5481530e90a6e8558e323610274e5a7d1b3ad6b31db8a901ee",
+    "product": "sha256-8503ad7f37c31d3f31d8f5d84ee114451c570d7eb7130d1814c625e660790a79",
     "run": []
   },
   "linux-build": {
     "version": "7.3.4",
     "license": "GPL-2.0-only WITH Linux-syscall-note",
     "by": "plan",
-    "plan": "sha256-d3b32dbd7add6f03800ea2cb7c9f818fb6877b9aea01723233bd06d53ffee3b5",
-    "product": "sha256-937214f1b44ea6aafaac9d77cceb618b91c2d81c4ddb158f98041c86406b746f",
+    "plan": "sha256-3e00f6a821c68f58b1cd56267987959e84d9aa6c4a9c9dd85bea10eed75b6044",
+    "product": "sha256-3ab07f1cec36b792df53cca7057edb41231edbb2ff5ade2fdb25327eb59bc105",
     "run": [
       "elfutils"
     ]
@@ -1418,8 +1418,8 @@
     "version": "595.104.02",
     "license": "LicenseRef-NVIDIA-Driver",
     "by": "plan",
-    "plan": "sha256-529ce41b1d8ba3ee1a1d8417528393bd96e3d3788874e62bf23da1366b64898f",
-    "product": "sha256-7fa8d40f664be9af68a5edc9c2b014e60a5f348ce53abbe23b49cf2b748a9980",
+    "plan": "sha256-408039c2246a72e06cc145121e9fc470c57ca49ee3425c1dd78a2673c7a5a2c2",
+    "product": "sha256-7ea7f62a52dc2170bc6b141bd85c06481bf6043f88e9625f453c73b8877c8b5a",
     "run": [
       "gcc",
       "libdrm",
