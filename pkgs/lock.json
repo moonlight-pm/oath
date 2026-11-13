@@ -11,7 +11,7 @@
     "version": "2.62.1",
     "license": "LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-0a1f2a1cb9c9c266cd5d0aff55251aab77d04827b536e013ca4eb6987a21e166",
+    "plan": "sha256-091627bd2bf46bbc459d1910cfb879873efcce788e03447f1faf40e94982de42",
     "product": "sha256-da9d824eed12dd5d31093b59b67c6cf9e757db938128e332639495137f80906d",
     "run": [
       "glib",
@@ -19,11 +19,11 @@
     ]
   },
   "aws": {
-    "version": "2.39.4",
+    "version": "2.39.5",
     "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND ISC AND OpenSSL AND PSF-2.0 AND blessing",
     "by": "plan",
-    "plan": "sha256-b8939e0f1f1bc44dd7e2dd45b9efd0b1a2090ed5497a25064a5a962f168bad82",
-    "product": "sha256-778d7a5aca225672011ab19ed6790690f82f79a99ab59a4a4182150b86a034af",
+    "plan": "sha256-903d9ad973e1b60caeff881c7c4a975f7b2ed29f4286b32d52b97696afa6c3a7",
+    "product": "sha256-fb7fc2cd3465869efdbbcd60748de322241348e740beb91704f098d03a3d78a5",
     "run": [
       "python",
       "certs",
@@ -80,11 +80,11 @@
     ]
   },
   "bluez": {
-    "version": "5.87",
+    "version": "5.88",
     "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-5ae697d3ec729c4c5cfa21a5100dc7b62e9936bf1d40bf337e4c29b9d706c284",
-    "product": "sha256-128c66ed2fe2d6634f5ce4abb0214cf1bf96f4cd868c3d9a5459cadeffa18cb0",
+    "plan": "sha256-1989c799b7d602b62ddf629a5a6e9c83e3b7ef876bf6f30542026f3805771fc1",
+    "product": "sha256-a2ce9760ac0b18838e535656c25d89f7431db8ed0cdd4e5521560d9597eb3e7f",
     "run": [
       "glib",
       "dbus",
@@ -134,7 +134,7 @@
     "version": "1.18.6",
     "license": "LGPL-2.1-only OR MPL-1.1",
     "by": "plan",
-    "plan": "sha256-aa31f8ca502274da988c3341e59d39b1f2d512dfa4bd079dedb4a9e3f674ad14",
+    "plan": "sha256-6180962e1db3b96aad6422435131d788b4bddbbf8c002f936c2ebee5d683c48c",
     "product": "sha256-4c6511f9ad09fed016040c4c4c052e19bf42c3cfae356d51ce5f97e36274cf2e",
     "run": [
       "pixman",
@@ -146,8 +146,8 @@
     "version": "156.0.28+g57389f0+chromium-156.0.8078.93",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-13c42c79b0043e9ac4009f4fbf6337f1b6fcbfe9c502a706cd4462524f8b2e1c",
-    "product": "sha256-d5e1f26407508aecf60a67021d2d6c12b651dce0ae8be7a88e0cd4950f899a43",
+    "plan": "sha256-927345ef4c309c930c2335c311d2f6712d927f43839891711cf1ef9c9269bb3d",
+    "product": "sha256-312adf5367a76b513eadaaf578d00790bedc4fd1ba200ceef72eb78f932975cb",
     "run": [
       "glib",
       "nspr",
@@ -301,7 +301,7 @@
     "version": "1.16.2",
     "license": "(AFL-2.1 OR GPL-2.0-or-later) AND GPL-2.0-or-later AND MIT",
     "by": "plan",
-    "plan": "sha256-8fce8363cd1b538deebcbec638aa825f96e39300951eb65409abaaebb22b0ae3",
+    "plan": "sha256-65fc6c1ddc0fdc6ae4639ac44f64da8c36479bec993d5264a728962aa2dbb86c",
     "product": "sha256-1dadfcfc6d418c31be891adba815f2a1a4a639217943742fe7beb6da0ab58ea3",
     "run": [
       "expat"
@@ -352,19 +352,19 @@
     ]
   },
   "expat": {
-    "version": "2.9.0",
+    "version": "2.10.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-8a80286922a39d7c4807f28b7eeedd0f9b04225779864ae04606795367352504",
-    "product": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1",
+    "plan": "sha256-ffb6ba750b0f4a07fd9aaeffc82ecfc3bc2690e81e137983f03fd591c2cb133c",
+    "product": "sha256-d88f1edfc278ca9947f5dd64a4816758d6a8f468857d1af6c46b1fc2df6a9ebf",
     "run": []
   },
   "expat-i386": {
-    "version": "2.9.0",
+    "version": "2.10.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-1a6bb6d9b6105e9326026262b803fb07609887b6abcc5d1525067d6c15027510",
-    "product": "sha256-2e1dbcc6dc5386268a05093540516e54fcd829b06c0e7d003983dc58ddd6cf7b",
+    "plan": "sha256-1d4d86b806337930aeccd098485ee8526adb506b66fad9a3bce150912a647cc2",
+    "product": "sha256-c6e6ee949b2e3ac99b5e1384f967eff987a80937cacf4c2f4e5a4f7d6b94a228",
     "run": []
   },
   "extra-cmake-modules": {
@@ -450,7 +450,7 @@
     "version": "2.18.3",
     "license": "HPND-sell-variant AND MIT AND MIT-Modern-Variant AND Unicode-DFS-2016",
     "by": "plan",
-    "plan": "sha256-190c8e7de3158925bd93fbebe2f15970f19af0284b2cd28820a7deda2485cb02",
+    "plan": "sha256-aeedf2b32b7ea1e268865268c912fe746d87bbe4bbb3a8886c688c66d3f85042",
     "product": "sha256-cf413d4b057ff8e03bb9d6f547d0d582500e7f23aac2e3d857ceb6d57abddb9b",
     "run": [
       "freetype",
@@ -522,7 +522,7 @@
     "version": "2.56.1",
     "license": "GPL-2.0-only AND LGPL-2.1-or-later AND BSD-3-Clause AND MIT",
     "by": "plan",
-    "plan": "sha256-0ccad7e16d1e6f2838e6a2cb88710ac1cb24ae1f84f49bebcb141bdd49856b3c",
+    "plan": "sha256-c056f64979221834ab29e66a50d943b4315a59bc53cfda7e04ad541a39ef7d64",
     "product": "sha256-3aca00650909b61ae84b249ddcb160f46a44eab8edac666de19f0627553d9b73",
     "run": [
       "curl",
@@ -620,11 +620,11 @@
     "run": []
   },
   "harfbuzz": {
-    "version": "15.0.0",
+    "version": "15.1.0",
     "license": "MIT-Modern-Variant AND MIT",
     "by": "plan",
-    "plan": "sha256-7077d138305cdc7b6e43b9126eac72384bad7d697062f6f860a38437ae39303e",
-    "product": "sha256-dc4300bcf7313d059e65bd61bb89d91d50b181c95845145b9af0331a9bcbc237",
+    "plan": "sha256-38d27dcd9b86f7bd24dfb02c55e2cb6a3dd8c3d9d4ddbaaa1b6af8983b33e256",
+    "product": "sha256-3a7b917454e7c57031c82f3ce1c00e30251328093278dbff305ccc186291956a",
     "run": [
       "freetype",
       "glib",
@@ -855,7 +855,7 @@
     "version": "17.0",
     "license": "LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-8690822a67834ded931967d5de766cc11645a37c644fac19a03f777d80095a68",
+    "plan": "sha256-cfc106bb4d191b34d8ad1918e2637be268cfce57afb23d40c23004b40d03a394",
     "product": "sha256-96f7ad27aac38c621cfa13ede1028b37695eba4a008fd13acc88b55eedd7fd63",
     "run": [
       "glib",
@@ -892,8 +892,8 @@
     "version": "1.2.2",
     "license": "LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-fcc6ee4ac419ed4e247c29a8c4a15dc2c4f81334444b1120ea75cdef565dcc3c",
-    "product": "sha256-40325b4c813ff82227b349a17684f3e6a9c47dce4d0b5114a7bedb01731951b3",
+    "plan": "sha256-66a29434219f9a300a2934e72c9f542302ff7355942a240ee15bbd774deaf2ac",
+    "product": "sha256-371a3cbde64d57377d6735e4f1701054ac0748326f8868c9285def0e929dc80c",
     "run": []
   },
   "libudev-zero": {
@@ -1222,8 +1222,8 @@
     "version": "b11960",
     "license": "MIT AND BSD-2-Clause AND (MIT OR Unlicense) AND (Unlicense OR MIT-0)",
     "by": "plan",
-    "plan": "sha256-b086a01fa76202a703d90c8318126e8db92faa84b86af7032645e5d4e5b5e09a",
-    "product": "sha256-0908155920628b60077d64a2e01d2ba5c29a28c238382906b89b93010b1eb946",
+    "plan": "sha256-90c8b7bd365677d4ad5a6520e0e44f300ddbfa571f0c7c33b454b811c302d34d",
+    "product": "sha256-8404bd24dc01ba0090f735caba75fc89bcf6b51b545c15382655eb829f30ed97",
     "run": [
       "gcc",
       "vulkan-loader"
@@ -1265,7 +1265,7 @@
     "version": "26.2.5",
     "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-680a3b464e7e8b395504261d6dcda8391ead79239c118bbcd1b03006a56d57a9",
+    "plan": "sha256-e4daaf5fad87a0ffb31fd8ee6245ea779735c99c56a8f6d8787e663153d4f867",
     "product": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
     "run": [
       "gcc",
@@ -1287,7 +1287,7 @@
     "version": "26.2.5",
     "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-4fbdca02afee73cd78301fb902acb97261676bccff4115bdee881d13264f5da8",
+    "plan": "sha256-e38e891a74c5caa36779926be64f1fefa811f1adc6599440868fcc38705bc88a",
     "product": "sha256-bff1d8ecf721ec7724746d1e44990cc41178e5b4345fd7a803de4245bf5edee1",
     "run": [
       "gcc",
@@ -1458,7 +1458,7 @@
     "version": "1.58.2",
     "license": "LGPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-2b1693d4c96344d1a79f6bc5939117b469c2924b205266f79a3591e9bc27fd06",
+    "plan": "sha256-8bdba4b6a6089d4971daaedfde56ab68a99753b8df35cb15d329df1935120830",
     "product": "sha256-f32334c125dda044b0bf0f3d53e7e1c750ba0f87225c6469b474aaaa0e27f26e",
     "run": [
       "glib",
@@ -1516,7 +1516,7 @@
     "version": "1.6.11",
     "license": "MIT AND LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-0b3bc091d520d8ea84ed3b05a923497586207aa5e7ce26e8a572b215f5d7fe3c",
+    "plan": "sha256-81c37b6e2efccee09aba28a2de79b06d254047000155ea9c0acd8754183c92c7",
     "product": "sha256-a038882c27fc8cc58c7c2e45307f44293f78636d4d2011f620e962aa4fda4bbd",
     "run": [
       "alsa-lib",
@@ -1549,8 +1549,8 @@
     "version": "3.7.0",
     "license": "GPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-8d1370447c6a545700746c8a7227b54c6aa8427815dc176d8fff60564ce2ff8a",
-    "product": "sha256-4b8640afb52632d1d54b500375d75c756cced876bf7d1f8737b78f62943deb89",
+    "plan": "sha256-b13955c94a8a4a8bbbf90bf7c9d85ae9bb5bacc78fce9fc9e654dae4aec6ebe8",
+    "product": "sha256-540c20033a19c4b0c77db3c0030628f6f2082d1986e187081b1b7d7671228082",
     "run": [
       "postgresql",
       "gcc",
@@ -1561,11 +1561,11 @@
     ]
   },
   "postgresql": {
-    "version": "18.6",
+    "version": "18.7",
     "license": "PostgreSQL",
     "by": "plan",
-    "plan": "sha256-ee3cf138f76b0ea9bef973875723c97978ed8512bdf06a00fd9b4b4a751d29a3",
-    "product": "sha256-1025492e6e7ec7c45faed13fb595bc7d6e9d43fd14e2c2a15726e8e82a59c697",
+    "plan": "sha256-a30d143800c4ada5ad368fa7ce7bcbf988bc23376eb98f4139595b72bd0fe1ce",
+    "product": "sha256-6b01dd961f0536763b46493d72657ef70d0f57228ccc23b48e0703ec743090a1",
     "run": [
       "gcc",
       "icu",
@@ -1582,7 +1582,7 @@
     "version": "11.1.1",
     "license": "GPL-3.0-only AND Apache-2.0 AND LGPL-3.0-or-later AND MIT",
     "by": "plan",
-    "plan": "sha256-042977cd764f05062b0fa83bb39d14ddacf8dc6dee2b4a40b186813b9ea52843",
+    "plan": "sha256-12e625d60f94a3480b53928e3f389ac0a88a7d652b55484b4b67e3f425094778",
     "product": "sha256-0b9923835fdb2ebebaccc053b39ce93b10350a4a99fa84b7d1706bcefb39041e",
     "run": [
       "gcc",
@@ -1701,8 +1701,8 @@
     "version": "6.11.3",
     "license": "(LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND BSD-3-Clause AND MIT AND Zlib AND Libpng AND IJG AND CC0-1.0 AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-a58f0877b018ec2ba5ada7400fd2e5d8a5c0564559f74b6860934ee00690e2ee",
-    "product": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428",
+    "plan": "sha256-ee82fd561da91eeaff510ad4036ff1729e004284e87067e972cf82f17034454f",
+    "product": "sha256-cce27ca5a3fb2534e561f93f3d5a2d682f704faeb79486550de642a55077c432",
     "run": [
       "gcc",
       "zlib",
@@ -1721,8 +1721,8 @@
     "version": "6.11.3",
     "license": "(LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND BSD-3-Clause",
     "by": "plan",
-    "plan": "sha256-ef8d2f5bc1aaedaa0a6821925806d43fbd1fee40803818ae3a401c8d7beb4b79",
-    "product": "sha256-5eda5f8cdfd771ee9bb4e7ac12250f23aba48b1f1af51f0e12f37503f4028e6a",
+    "plan": "sha256-2b92c6d4408693f18c10725bfa7ce4d3ba94826e88d131866228d41463b5918c",
+    "product": "sha256-bb15c16dfc7453d66c6a51018f797af3788ad0e999981c55985d92cc98dbf0e9",
     "run": [
       "qtbase",
       "gcc"
@@ -1732,8 +1732,8 @@
     "version": "6.11.3",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-bd8a13bfd2e08c0140e20dc2554a23dccd631877c2677e5d17a07e1e484368a8",
-    "product": "sha256-c95b729c0151719fd28b49ef06146a00581ed604a4eae8fe65e5b08ef08e52f9",
+    "plan": "sha256-eed3451b06b05e0150ffc938075db6daebfb0b92adfa05583803e66bb2cbe464",
+    "product": "sha256-e3d6faa9cbc1e7bbee392bbc601e2e564bed01a81a340f4c9f0d0072b129879e",
     "run": [
       "qtbase",
       "gcc"
@@ -1743,8 +1743,8 @@
     "version": "6.11.3",
     "license": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-42590bf2fede17f123783c99f13445dd87b2317ee3e943ae31264fb3d5f11f2e",
-    "product": "sha256-7d92d10d4f3b1d082cfeb8ab381783dbed201fe1ef4a40315f8d711077257f7a",
+    "plan": "sha256-226e8660ffcd81535ed4d629efaaa0f69b4dc7bb9de6009c928ada91625d1c94",
+    "product": "sha256-64b9a3fc69cf04adcdcae93c194c452084cf74e1b3e29f44171cf79ab7395677",
     "run": [
       "qtbase",
       "gcc",
@@ -1775,7 +1775,7 @@
     "version": "0.1.0",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-ee23255420055864381429abfe6ac5ec7e632508d6d3dabaf1a55719f8958b8a",
+    "plan": "sha256-6be63996f18c27955657e62d08dfc3f22f796a55d97dfb797da8de32dbe64873",
     "product": "sha256-be2a874d688dd27c7ef26c74e21ee0cd24cacc968135bac0412ba2e57d3c7876",
     "run": [
       "wlroots",
@@ -1922,27 +1922,27 @@
     ]
   },
   "vulkan-headers": {
-    "version": "1.4.367",
+    "version": "1.4.368",
     "license": "Apache-2.0 OR MIT",
     "by": "plan",
-    "plan": "sha256-08a91b3c220ed77b20f6f315aa0eb536b6ec9415770b4b5d6bec09d014f2299a",
-    "product": "sha256-1736a9cc1c73fed5e226146713e2052b139f28e581082ccee0881ae8655a2f2a",
+    "plan": "sha256-65dd6a787853f76529483d9461018013c5f07bd030212acb0f135cb87f4c9a5f",
+    "product": "sha256-6b7eb174b7e4d209064d845b70fd08af777dee303608e20e89d1bf40186363fb",
     "run": []
   },
   "vulkan-loader": {
-    "version": "1.4.367",
+    "version": "1.4.368",
     "license": "Apache-2.0 AND MIT",
     "by": "plan",
-    "plan": "sha256-d4bd0b9b5889f6998aef5a127d2a95cfe4fec308c37527dc954cd4269193f5a5",
-    "product": "sha256-b8cb758d5e134cc1e01851d85166a2118a6edb95af9ab2b7a25a927f1503350a",
+    "plan": "sha256-49ed8a5118276ce1c9edba3eb6907ff5f718779f00a38c0a8863813d6c48df89",
+    "product": "sha256-80d83e1d5b681ee44559b7d45710577cc850167b7282f95e3b42a44148c35cfd",
     "run": []
   },
   "vulkan-tools": {
-    "version": "1.4.367",
+    "version": "1.4.368",
     "license": "Apache-2.0",
     "by": "plan",
-    "plan": "sha256-e1b93066bbe90d34659885b63ccfa4a40dbbf4278d67c0693643acb6a1ef6a15",
-    "product": "sha256-5b00dcb8bedb61590abc8969e9be38c8c22ada4c43545906e5eb1ee8cff9e658",
+    "plan": "sha256-33bef0e5a3fcc72a1cb6525315eb35d2adcf8c0f4b2e73124020cf1327c462db",
+    "product": "sha256-56644a75b88016c9fc5a856725e899413c3f89c3810a10bc1fbbb4b486026cbd",
     "run": [
       "vulkan-loader",
       "libx11",
@@ -1955,7 +1955,7 @@
     "version": "1.26.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-aea823fbc98947251589f58898a6d814d95087b49a4118953e1b7dfa7a8d17eb",
+    "plan": "sha256-f7309061db19e81bbda96d39142dfc14b66936c77e591345d59bfd4586264967",
     "product": "sha256-09989245df34e07781698ed024c4a037c95feac5ab0b76b1083fb130b9b1acac",
     "run": [
       "libffi",
@@ -1966,7 +1966,7 @@
     "version": "1.26.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-0b9759a64155128e1640b140cd273fe1c6d774a4ad87b5473e94c6ce3a5afb2d",
+    "plan": "sha256-b9450c7c52a40c67664dc58291a1e23a0fbfff1b0751e5360635726a1953fd60",
     "product": "sha256-9827cf2216029a12fdd44496f2add786347d14023fcb7bd56905dee41dc7c538",
     "run": [
       "libffi-i386",
@@ -1977,7 +1977,7 @@
     "version": "1.49",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-6fddb3e77c5337c0ea24fd480cf436590d79d4800d13b0aaae26363b96bac32e",
+    "plan": "sha256-b9666704f014db081eb02914ca8fc02600618af7581f25b797c91297b18ab7c4",
     "product": "sha256-7a8a358cf0f3325b4d5821273f7ecc9d1530602b24d102c4b140625a539de924",
     "run": []
   },
@@ -1985,7 +1985,7 @@
     "version": "0.5.18",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-47ea84ce4b50581fb76ef34b3837d272cb3eef88d77701d4546c3ae56d7d337e",
+    "plan": "sha256-c599e84ed70d15c4d84af9d557475cc85f46c990e50937b458af7f000b908d2c",
     "product": "sha256-43434cb0815fc79886c4897c86c98221e9b2c881483ab587ee65feb875b554cf",
     "run": [
       "glib",
@@ -1996,7 +1996,7 @@
     "version": "2.3.0",
     "license": "GPL-3.0-or-later",
     "by": "plan",
-    "plan": "sha256-d9277a58b50ee7a16c01953f934c50c7a8653617ffef6f370d0c5c580e46b8e1",
+    "plan": "sha256-594f73703da22fff2ec7dda6af2d8b12716f5ebde6618d6fddd4f7c7f55965b2",
     "product": "sha256-41f03fdfe098cbf5c83355ba45503116ccb58df38ee9154fc03cf40d88c70662",
     "run": [
       "wayland"
@@ -2006,7 +2006,7 @@
     "version": "0.20.2",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-c6b5c7fbb46b95f8aa3cf6beaebfe87b9bea3f7108f763422da77042fac894b5",
+    "plan": "sha256-443dc9d1a6ebd924363d72683ea1f3cbd05b3ea712d6664232eeb2d8a0e80f1b",
     "product": "sha256-1f67a15653ee58882ebf62bf915a9e513147b56d72722767d3e09577a52389fc",
     "run": [
       "wayland",
@@ -2104,7 +2104,7 @@
     "version": "24.1.15",
     "license": "MIT AND X11 AND HPND-sell-variant AND BSD-3-Clause",
     "by": "plan",
-    "plan": "sha256-ba5c701e4b2f764a774480cf73547fb93566e50a48bfb4e65ebc491fbb32967d",
+    "plan": "sha256-55658889d5bb4264c8c21b0a7861ca6cebbb6c3835f64ed284c4f16bf0731dee",
     "product": "sha256-e3ef32b1c7a1f4db8e5ad1c79eec93d11a35696bd9da56d9e934514a6cb579c5",
     "run": [
       "libxau",

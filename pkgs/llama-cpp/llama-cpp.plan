@@ -89,11 +89,11 @@
     },
     {
       "id": "pkg:vulkan-headers",
-      "hash": "sha256-1736a9cc1c73fed5e226146713e2052b139f28e581082ccee0881ae8655a2f2a"
+      "hash": "sha256-6b7eb174b7e4d209064d845b70fd08af777dee303608e20e89d1bf40186363fb"
     },
     {
       "id": "pkg:vulkan-loader",
-      "hash": "sha256-b8cb758d5e134cc1e01851d85166a2118a6edb95af9ab2b7a25a927f1503350a"
+      "hash": "sha256-80d83e1d5b681ee44559b7d45710577cc850167b7282f95e3b42a44148c35cfd"
     },
     {
       "id": "pkg:xz",
@@ -107,7 +107,7 @@
     },
     {
       "id": "pkg:vulkan-loader",
-      "hash": "sha256-b8cb758d5e134cc1e01851d85166a2118a6edb95af9ab2b7a25a927f1503350a"
+      "hash": "sha256-80d83e1d5b681ee44559b7d45710577cc850167b7282f95e3b42a44148c35cfd"
     }
   ]
 }

@@ -13,7 +13,7 @@
     },
     {
       "id": "pkg:bluez",
-      "hash": "sha256-128c66ed2fe2d6634f5ce4abb0214cf1bf96f4cd868c3d9a5459cadeffa18cb0"
+      "hash": "sha256-a2ce9760ac0b18838e535656c25d89f7431db8ed0cdd4e5521560d9597eb3e7f"
     },
     {
       "id": "pkg:bzip2",
@@ -33,7 +33,7 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1"
+      "hash": "sha256-d88f1edfc278ca9947f5dd64a4816758d6a8f468857d1af6c46b1fc2df6a9ebf"
     },
     {
       "id": "pkg:findutils",
@@ -73,7 +73,7 @@
     },
     {
       "id": "pkg:libsndfile",
-      "hash": "sha256-40325b4c813ff82227b349a17684f3e6a9c47dce4d0b5114a7bedb01731951b3"
+      "hash": "sha256-371a3cbde64d57377d6735e4f1701054ac0748326f8868c9285def0e929dc80c"
     },
     {
       "id": "pkg:libudev-zero",
@@ -163,7 +163,7 @@
     },
     {
       "id": "pkg:bluez",
-      "hash": "sha256-128c66ed2fe2d6634f5ce4abb0214cf1bf96f4cd868c3d9a5459cadeffa18cb0"
+      "hash": "sha256-a2ce9760ac0b18838e535656c25d89f7431db8ed0cdd4e5521560d9597eb3e7f"
     },
     {
       "id": "pkg:dbus",
@@ -175,7 +175,7 @@
     },
     {
       "id": "pkg:libsndfile",
-      "hash": "sha256-40325b4c813ff82227b349a17684f3e6a9c47dce4d0b5114a7bedb01731951b3"
+      "hash": "sha256-371a3cbde64d57377d6735e4f1701054ac0748326f8868c9285def0e929dc80c"
     },
     {
       "id": "pkg:libudev-zero",

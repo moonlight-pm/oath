@@ -29,7 +29,7 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1"
+      "hash": "sha256-d88f1edfc278ca9947f5dd64a4816758d6a8f468857d1af6c46b1fc2df6a9ebf"
     },
     {
       "id": "pkg:findutils",
@@ -203,7 +203,7 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1"
+      "hash": "sha256-d88f1edfc278ca9947f5dd64a4816758d6a8f468857d1af6c46b1fc2df6a9ebf"
     },
     {
       "id": "pkg:gcc",

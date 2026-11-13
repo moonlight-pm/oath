@@ -37,7 +37,7 @@
     },
     {
       "id": "pkg:expat",
-      "hash": "sha256-e6f13b71895bd1106f80e071154b2b5f300f4eaa70559e8768dfb46c15d273f1"
+      "hash": "sha256-d88f1edfc278ca9947f5dd64a4816758d6a8f468857d1af6c46b1fc2df6a9ebf"
     },
     {
       "id": "pkg:extra-cmake-modules",
@@ -85,7 +85,7 @@
     },
     {
       "id": "pkg:harfbuzz",
-      "hash": "sha256-dc4300bcf7313d059e65bd61bb89d91d50b181c95845145b9af0331a9bcbc237"
+      "hash": "sha256-3a7b917454e7c57031c82f3ce1c00e30251328093278dbff305ccc186291956a"
     },
     {
       "id": "pkg:jdk-21",
@@ -181,15 +181,15 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
+      "hash": "sha256-cce27ca5a3fb2534e561f93f3d5a2d682f704faeb79486550de642a55077c432"
     },
     {
       "id": "pkg:qtnetworkauth",
-      "hash": "sha256-c95b729c0151719fd28b49ef06146a00581ed604a4eae8fe65e5b08ef08e52f9"
+      "hash": "sha256-e3d6faa9cbc1e7bbee392bbc601e2e564bed01a81a340f4c9f0d0072b129879e"
     },
     {
       "id": "pkg:qtsvg",
-      "hash": "sha256-7d92d10d4f3b1d082cfeb8ab381783dbed201fe1ef4a40315f8d711077257f7a"
+      "hash": "sha256-64b9a3fc69cf04adcdcae93c194c452084cf74e1b3e29f44171cf79ab7395677"
     },
     {
       "id": "pkg:sed",
@@ -299,23 +299,23 @@
     },
     {
       "id": "pkg:qtbase",
-      "hash": "sha256-2d829e0fd5066491b636299570bd49b78a5173ada11c5acac779ea9641ea3428"
+      "hash": "sha256-cce27ca5a3fb2534e561f93f3d5a2d682f704faeb79486550de642a55077c432"
     },
     {
       "id": "pkg:qtimageformats",
-      "hash": "sha256-5eda5f8cdfd771ee9bb4e7ac12250f23aba48b1f1af51f0e12f37503f4028e6a"
+      "hash": "sha256-bb15c16dfc7453d66c6a51018f797af3788ad0e999981c55985d92cc98dbf0e9"
     },
     {
       "id": "pkg:qtnetworkauth",
-      "hash": "sha256-c95b729c0151719fd28b49ef06146a00581ed604a4eae8fe65e5b08ef08e52f9"
+      "hash": "sha256-e3d6faa9cbc1e7bbee392bbc601e2e564bed01a81a340f4c9f0d0072b129879e"
     },
     {
       "id": "pkg:qtsvg",
-      "hash": "sha256-7d92d10d4f3b1d082cfeb8ab381783dbed201fe1ef4a40315f8d711077257f7a"
+      "hash": "sha256-64b9a3fc69cf04adcdcae93c194c452084cf74e1b3e29f44171cf79ab7395677"
     },
     {
       "id": "pkg:vulkan-loader",
-      "hash": "sha256-b8cb758d5e134cc1e01851d85166a2118a6edb95af9ab2b7a25a927f1503350a"
+      "hash": "sha256-80d83e1d5b681ee44559b7d45710577cc850167b7282f95e3b42a44148c35cfd"
     },
     {
       "id": "pkg:wayland",

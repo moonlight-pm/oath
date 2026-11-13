@@ -61,7 +61,7 @@
     },
     {
       "id": "pkg:libsndfile",
-      "hash": "sha256-40325b4c813ff82227b349a17684f3e6a9c47dce4d0b5114a7bedb01731951b3"
+      "hash": "sha256-371a3cbde64d57377d6735e4f1701054ac0748326f8868c9285def0e929dc80c"
     },
     {
       "id": "pkg:m4",
@@ -135,7 +135,7 @@
     },
     {
       "id": "pkg:libsndfile",
-      "hash": "sha256-40325b4c813ff82227b349a17684f3e6a9c47dce4d0b5114a7bedb01731951b3"
+      "hash": "sha256-371a3cbde64d57377d6735e4f1701054ac0748326f8868c9285def0e929dc80c"
     }
   ]
 }
