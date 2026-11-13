@@ -27,7 +27,7 @@ Each needs the one before. Membership, consent and the bus serve all three.
 
 | Word | Is |
 |---|---|
-| consort | the set of peers admitted by one consort key |
+| consort | the peers on one signed membership log |
 | peer | one member; `peer:<name>` in each machine's catalog (a tenth kind, R87) |
 | `oath-bus` | the daemon on each peer, `svc:oath-bus`: its local hub and its links to the other peers |
 | `oath call` | the verb that sends a request to a peer |
@@ -60,26 +60,54 @@ part.
   Three peers (aulos, buccina, dulcia) can agree safely; two cannot without a
   third as tiebreaker.
 
-## Admission: the consort key (will be)
+## Admission: a signed membership log (will be)
 
-- One consort to start. Its key is held by the owner, and signs a certificate
-  for each member: its name, its bus key, and how long the certificate holds.
-  Keys and certificates use SSH's formats and are signed with `ssh-keygen`, as
-  publisher keys are (R72). No sshd is involved.
-- A machine joins by trusting the consort key and receiving its certificate:
-  one step on the owner's machine and one on the new peer, however many peers
-  there are. A revocation list, signed with the same key, removes a member.
-- The key is needed to admit, not to run. A consort keeps working with the key
-  offline.
+No consort key and no authority: membership is a log every member keeps
+and checks, as Tailscale's Tailnet Lock and Keybase's device chains do.
+
+- **Each peer has its own key,** made on `oath-bus`'s first start, which never
+  leaves the machine. Keys use SSH's formats, as publisher keys do (R72).
+- **Every machine starts as a consort of one.** Its first log entry names
+  itself; the consort's id is that entry's hash.
+- **The log** is a chain of entries, each an admission or a removal, signed
+  by the member that made it. It travels as bus records, and every peer checks
+  it back to the first entry, so any member can be lost and none is the
+  authority.
+- **Joining.** A lone machine hears a consort's beacon and asks to join. Any
+  member admits it once the owner approves, in the desk's view or with `oath
+  consort admit <name>` on whichever member he is at. Both sides show a short
+  code derived from both keys, which the owner compares, as Bluetooth pairing
+  does. The newcomer adopts the consort's log and leaves its own.
+- **Invitations.** A member mints a one-time invitation that expires. Put in an
+  install overlay, it lets the machine join on its first boot with no further
+  approval.
+- **Removal.** Any member may remove another. A removal beats the admissions
+  before it, and a removed key's signatures stop counting from that entry, so it
+  cannot let itself back in. A later admission, made with the owner's approval,
+  brings a key back.
+- Two lone machines that start together are two consorts of one; the owner
+  joins one to the other.
 - Being admitted grants nothing by itself. Each peer applies its own policy on
   top: which methods it advertises and to whom.
+
+**Hardening, later** (Joshua, 2026-11-12: "right now this is just me and maybe
+my brother up the street"). Today a compromised member can admit a rogue or
+remove the others; it could already sign packages every machine takes
+(`oath@novus` with `names="*"`), so the log is no weaker than that. When more
+people join:
+
+- only members the owner marks may admit;
+- an admission or a removal takes two members' signatures;
+- the desk's view alerts on every admission and removal;
+- an invitation names the machine it is for (its host key), not just a secret;
+- entries expire unless renewed, so a lost machine falls out on its own.
 
 ## Links and discovery (will be)
 
 - **Link.** Peers connect directly to each other, each to every other, which is
   enough for well under fifty machines. The link is a Noise handshake (as
-  WireGuard uses) on `oath-bus`'s own port, authenticated by the bus keys the
-  consort key certified. `oath-bus` runs unprivileged, and a link can never
+  WireGuard uses) on `oath-bus`'s own port, authenticated by each peer's own key, as
+  the log names it. `oath-bus` runs unprivileged, and a link can never
   become a shell. SSH stays the way a person or agent logs in.
 - **Discovery.** Each peer sends a small signed UDP beacon on its LAN every few
   seconds: its name, key fingerprint and address. Peers that hear a member
@@ -105,9 +133,9 @@ part.
 
 ## Guests: another person's consort (later)
 
-A colleague who will not give SSH access keeps his own consort. His consort key
-signs a guest certificate for yours, scoped to the topics you may read and the
-calls you may make, and yours does the same for him. Only the peers on each side
+A colleague who will not give SSH access keeps his own consort. A member of each
+consort signs a guest entry naming the other, scoped to the topics it may read
+and the calls it may make, each with its owner's approval. Only the peers on each side
 that opt in carry the link, and each still applies its own policy. His side opens
 one port or one tunnel to your peer, and nothing else.
 
@@ -135,15 +163,15 @@ one port or one tunnel to your peer, and nothing else.
 ## Catalog (sketch, will be)
 
 - `peer:<name>`: one per member this machine knows. Actual: its key
-  fingerprint, address, certificate expiry, last seen, its newest records.
+  fingerprint, address, who admitted it and when, last seen, its newest records.
   Desired: what this machine allows that peer, defaulting to the consort policy.
-- On `host:local`: the consort key this machine trusts (none: in no consort),
-  and its update settings. Field names wait for the build.
+- On `host:local`: its update settings. The log lives in `oath-bus`'s state,
+  not the catalog. Field names wait for the build.
 
 ## What it changes
 
 - [agent.md](agent.md)'s "no new daemon, port or credential": the bus adds a
-  daemon per peer, a port for links and beacons, and the consort key. SSH stays
+  daemon per peer, a port for links and beacons, and a key per peer. SSH stays
   the transport for logins and `oath mcp`.
 - A tenth kind, `peer`.
 - R72 stands: packages still meet only at the origin.
@@ -151,7 +179,7 @@ one port or one tunnel to your peer, and nothing else.
 ## Order of work
 
 1. aulos on Oath (done 2026-11-12, [../../hosts/aulos.md](../../hosts/aulos.md)).
-2. Facts, read-only: the consort key and certificates, the beacon, the links,
+2. Facts, read-only: peer keys and the membership log, the beacon, the links,
    each peer's records, `oath ls peer`; a desk app watches.
 3. Updates on the bus: the doorbell, each peer's settings, pending and approval,
    rings.
