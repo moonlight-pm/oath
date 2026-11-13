@@ -222,8 +222,8 @@
     "version": "2026.10.5",
     "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause",
     "by": "plan",
-    "plan": "sha256-816ffc957a91d4a90fa0d5a26b2772e158bf860992627a7200840a461c91b716",
-    "product": "sha256-ad2680702727ecfbf8018632a895114e5dc6d61a202c06ad5a6f57b0d3c128d4",
+    "plan": "sha256-59c6c6dbe3f7c549116cef6bc41d8884b158295ca17ca47ccf9352d4911aacfb",
+    "product": "sha256-78ee60cc14a017e3d5b806fe060bfbbfbb51cc28f7ec2cbd0ee0b66a639cc731",
     "run": [
       "certs"
     ]
