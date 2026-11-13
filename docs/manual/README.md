@@ -16,6 +16,7 @@ The optional `desk` profile adds one ([desk spec](../specs/desk.md)).
 | [Packages](packages.md) | Store, `/bin` and `/lib` links, installing by name (`oath add`, `oath ls --origin`), publishing, origins, plans, recipes, the security audit, the host store cache |
 | [Cells](cells.md) | `pkg:cell` and `cell run`: a package, a `cell:<name>` or an image in a box; the `cell` kind |
 | [writ](writ.md) | `pkg:writ`, the coding agent: its box, models, sessions, `writ diff`, `apply`, `undo` |
+| [Consort](consort.md) | Oath machines that know each other: `oath consort`, `peer:*`, joining, the facts each publishes, `/oath/run/bus.sock` |
 | [Network and SSH](network.md) | `net:net0`, names, time, `ssh:local`, sshd |
 | [Generations](generations.md) | Apply, undo, btrfs `@gen-N`, boot menu |
 | [Build and QEMU](build.md) | Toolchain, kernel, image, profiles, `cargo make check`, running it, telemetry |

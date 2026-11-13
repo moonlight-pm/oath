@@ -142,7 +142,10 @@ btrfs
   machine-id               this machine's id (machine-id(5)), made by the
                            first PID 1 that lacks it (a boot, or an update's
                            re-exec); /etc/machine-id is written from it
-  run/                     init.sock, login.sock (svc:login), seat (desk or
+  bus/                     oath-bus's key, link key and membership log (R87);
+                           0700, root's, outside every generation
+  run/                     init.sock, login.sock (svc:login), bus.sock
+                           (svc:oath-bus), seat (desk or
                            console), fs/ (btrfs top level); update/ and
                            update-esp/ while `oath update` runs
 ```
@@ -157,6 +160,7 @@ btrfs
 | `svc:screen` | `/lib/oath/screen-login` on tty1, then `zsh -l`; asks for the password first when `host:local.autologin` is off and one is set | `home` |
 | `svc:login` | `/lib/oath/login`: `home`'s password and the seat, on `/oath/run/login.sock` for `home` and root (R42, [login.md](specs/login.md)) | root |
 | `svc:time` | `/bin/chronyd -d` against `0`–`3.pool.ntp.org` | root, then `void` with `CAP_SYS_TIME` |
+| `svc:oath-bus` | `/bin/oath-bus` (`pkg:oath`): the consort (R87, [consort.md](specs/consort.md)); a signed UDP beacon and Noise links on 6284, facts read from the catalog and `/proc`, `peer:*` objects, `/oath/run/bus.sock` | root |
 | DHCP client | `dhcpcd -B … net0` with `/lib/oath/dhcpcd.hook`, supervised by PID 1 as `net:net0` | root (address, hook); its network processes `void` in `/var/empty`; renews the lease |
 | `oath mcp` | one per SSH connection that asks for it (`ssh -T home@<host> oath mcp`); not supervised, no port | `home`; each write tool runs `sudo -n oath --json …` |
 

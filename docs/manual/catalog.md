@@ -54,12 +54,13 @@ half of one. Logs are appended to. Past 256 KiB a log moves to
 | Kind | Ids in the `base` profile | Role |
 |------|---------------------------|------|
 | `host` | `host:local` | Hostname, power (`run`, `reboot`, `halt`; `sleep` suspends to RAM, R84), `env`, `timezone`, `hosts`, `origins`, `profile`, `publishers`, `mounts`, `module_options`, `seat_hid`, `autologin` |
-| `svc` | `svc:login`, `svc:screen`, `svc:serial`, `svc:sshd`, `svc:time` | PID 1's only config |
+| `svc` | `svc:login`, `svc:screen`, `svc:serial`, `svc:sshd`, `svc:time`, `svc:oath-bus` | PID 1's only config |
 | `snap` | `snap:current`, then `snap:N` | Generations: apply and `oath undo` write them, and `oath set` refuses them |
 | `pkg` | `pkg:glibc`, `pkg:bash`, `pkg:zsh`, `pkg:coreutils`, `pkg:btrfs`, `pkg:oath`, `pkg:openssh`, `pkg:curl`, … (45 in `base`, 39 present; the rest are recipes and their sources) | Store + `/bin` and `/lib` symlink farms |
 | `net` | `net:net0` | The link: `dhcp`, or a static address with its `gateway` and `dns` servers; `wake`, Wake-on-LAN by magic packet (R84) |
 | `ssh` | `ssh:local` | Keys that may log in as `home` |
 | `dev` | `dev:net0`, `dev:disk-pci-…` (discovered) | Hardware inventory |
+| `peer` | `peer:<hostname>` (this machine), then each member (`oath-bus`) | The consort's members (R87, [Consort](consort.md)) |
 | `plan` | `plan:claude-code`, `plan:codex`, `plan:grok-build` | Hashed `plan.plan`; `oath build` writes a `pkg` or `cell` tree |
 | `cell` | none; a profile or overlay cannot name one | One project's own software: a tree in `/oath/store/cell/`, not linked into `/bin` or `/lib`, started only by `cell run cell:<name>` (`pkg:cell`), from no origin and never published |
 

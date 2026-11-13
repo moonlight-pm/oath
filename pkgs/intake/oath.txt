@@ -1,7 +1,8 @@
 # Written by `cargo make pkgs --fetch` (R57): when each package was published.
-pin 7afc14142a25e6e991f33d3c2001ec19cad031a4d320659b1bcfd7ed1c84fbf7
-checked 2026-11-02
+pin 47b4617ef9cf7e0491f15c59b5517a09df0bef39e43dd1328325de9b2cc24d30
+checked 2026-11-13
 module crate adler2 2.0.1 2025-06-09T22:31:53.608434Z baseline by=oyvindln
+module crate aead 0.5.2 2023-04-02T15:42:58.294718Z new by=tarcieri
 module crate aho-corasick 1.1.5 2026-08-03T11:44:11.111398Z baseline by=BurntSushi
 module crate android_system_properties 0.1.6 2026-08-05T13:44:27.717073Z baseline by=nical
 module crate anstream 1.0.0 2026-02-11T13:23:11.167553Z baseline by=epage
@@ -23,7 +24,10 @@ module crate bumpalo 3.20.3 2026-05-22T14:59:11.132139Z baseline by=fitzgen
 module crate cc 1.4.4 2026-08-21T08:20:10.205770Z baseline
 module crate cfg-if 1.0.4 2025-10-15T08:12:46.455816Z baseline by=rust-lang-owner
 module crate cfg_aliases 0.2.2 2026-07-16T14:57:16.699789Z baseline by=zicklag
+module crate chacha20 0.9.1 2023-04-01T20:12:19.932795Z new by=tarcieri
+module crate chacha20poly1305 0.10.1 2022-08-10T03:37:43.851637Z new by=tarcieri
 module crate chrono 0.4.45 2026-06-04T12:16:42.063037Z baseline by=djc
+module crate cipher 0.4.4 2023-03-09T00:11:40.449460Z new by=newpavlov
 module crate clap 4.6.6 2026-08-06T14:03:25.998957Z baseline by=epage
 module crate clap_builder 4.6.6 2026-08-06T14:03:23.670959Z baseline by=epage
 module crate clap_derive 4.6.4 2026-07-21T21:59:21.295220Z baseline by=epage
@@ -77,6 +81,7 @@ module crate iana-time-zone 0.1.65 2026-01-28T08:40:52.528531Z baseline
 module crate iana-time-zone-haiku 0.1.2 2023-05-12T08:43:45.406909Z baseline by=astraw
 module crate ident_case 1.0.1 2019-03-18T20:07:20.426691Z baseline by=TedDriggs
 module crate indexmap 2.14.2 2026-09-05T01:53:48.019655Z baseline by=cuviper
+module crate inout 0.1.4 2025-02-21T09:30:09.032605Z new by=newpavlov
 module crate is_terminal_polyfill 1.70.2 2025-10-21T17:00:14.577881Z baseline by=epage
 module crate itoa 1.0.18 2026-03-20T00:12:37.043881Z baseline by=dtolnay
 module crate js-sys 0.3.104 2026-08-08T00:57:01.489848Z baseline
@@ -94,6 +99,7 @@ module crate num-iter 0.1.46 2026-07-07T19:51:46.163752Z baseline by=cuviper
 module crate num-traits 0.2.19 2024-05-03T21:27:39.856244Z baseline by=cuviper
 module crate once_cell 1.21.4 2026-03-12T10:59:52.512992Z baseline by=matklad
 module crate once_cell_polyfill 1.70.2 2025-10-21T16:41:12.320992Z baseline by=epage
+module crate opaque-debug 0.3.1 2024-03-01T12:08:32.543535Z new by=newpavlov
 module crate p256 0.13.2 2023-04-15T20:53:22.070799Z baseline by=tarcieri
 module crate p384 0.13.1 2025-02-07T01:25:30.110736Z baseline by=tarcieri
 module crate password-hash 0.5.0 2023-03-04T23:21:39.806293Z baseline by=tarcieri
@@ -101,6 +107,7 @@ module crate pin-project-lite 0.2.17 2026-02-27T15:19:08.132543Z baseline
 module crate pkcs1 0.7.5 2023-04-24T19:00:40.063744Z baseline by=tarcieri
 module crate pkcs8 0.10.2 2023-04-05T00:01:55.909808Z baseline by=tarcieri
 module crate png 0.17.16 2024-12-20T07:54:34.188924Z baseline by=fintelia
+module crate poly1305 0.8.0 2022-07-31T18:21:15.565372Z new by=tarcieri
 module crate ppv-lite86 0.2.21 2025-03-09T20:01:40.419162Z baseline by=kazcw
 module crate primeorder 0.13.6 2023-11-16T02:38:26.379230Z baseline by=tarcieri
 module crate proc-macro2 1.0.107 2026-07-19T00:18:25.189787Z baseline by=dtolnay
@@ -138,6 +145,7 @@ module crate signature 2.2.0 2023-11-12T20:49:39.435224Z baseline by=tarcieri
 module crate simd-adler32 0.3.10 2026-07-14T17:42:45.047242Z baseline by=mcountryman
 module crate slab 0.4.12 2026-01-31T12:59:22.609198Z baseline by=Darksonn
 module crate smallvec 1.16.3 2026-10-10T02:25:27.052021Z baseline by=jdm
+module crate snow 0.10.0 2025-07-19T17:00:59.455626Z new by=mcginty
 module crate spin 0.9.9 2026-07-13T19:44:05.786736Z baseline by=zesterer
 module crate spki 0.7.3 2023-11-28T19:35:46.555229Z baseline by=baloo
 module crate strsim 0.11.1 2024-04-02T22:18:09.406790Z baseline by=maxbachmann
@@ -162,6 +170,7 @@ module crate uefi-macros 0.18.1 2025-05-04T20:14:24.051135Z baseline by=nicholas
 module crate uefi-raw 0.11.0 2025-05-04T20:14:17.520737Z baseline by=nicholasbishop
 module crate uguid 2.2.0 2023-11-28T01:11:54.762688Z baseline by=nicholasbishop
 module crate unicode-ident 1.0.24 2026-02-16T02:46:44.304053Z baseline by=dtolnay
+module crate universal-hash 0.5.1 2023-05-19T15:25:05.990069Z new by=tarcieri
 module crate utf8parse 0.2.2 2024-06-08T07:07:41.813419Z baseline by=chrisduerr
 module crate version_check 0.9.5 2024-07-25T23:38:14.142737Z baseline by=SergioBenitez
 module crate wasi 0.11.1+wasi-snapshot-preview1 2025-06-10T14:23:45.376914Z baseline by=alexcrichton
