@@ -275,6 +275,13 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
          Host *\n\
          \tStrictHostKeyChecking accept-new\n",
     )?;
+    // NVIDIA's EGL, as it ships, looks for its external platforms
+    // (Wayland, GBM, X) in /etc/egl and /usr/share/egl (R89): /etc's is
+    // its package's, and an update puts it there (`ROOT_FILES`).
+    if wanted.iter().any(|n| n == "nvidia") {
+        fs::create_dir_all(stage.join("etc/egl"))?;
+        symlink(NVIDIA_EGL_PLATFORMS, stage.join("etc/egl/egl_external_platform.d"))?;
+    }
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("var/lib/dhcpcd"))?;
     // void's home (R36): empty, the chroot of sshd's and dhcpcd's
@@ -620,6 +627,9 @@ fn pin_run_needs(oath_root: &Path, needs: &BTreeSet<(String, String)>) -> Result
     }
     Ok(())
 }
+
+/// Where `pkg:nvidia` keeps EGL's external platforms (R89).
+const NVIDIA_EGL_PLATFORMS: &str = "/oath/store/pkg/nvidia/live/share/egl/egl_external_platform.d";
 
 /// R23: a recipe the profile names goes in as its plan, not its pack. The
 /// plan is filed in the image's store and pinned (`plan:<name>`);

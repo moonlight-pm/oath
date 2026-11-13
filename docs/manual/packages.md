@@ -76,7 +76,8 @@ data they load; `oath ls --kind pkg` lists every one on a machine.
 | `cef` | the browser engine |
 | `font-noto`, `font-noto-cjk`, `font-noto-emoji`, `font-iosevka-term-slab` | typefaces |
 | `sola`, `sola-*` | Sola's packs, from Sola's own repository, pinned by hash |
-| `steam`, `nvidia` | recipes, `present=false` ([Recipes](#recipes)) |
+| `steam` | a recipe, `present=false` ([Recipes](#recipes)) |
+| `nvidia` | NVIDIA's driver, as NVIDIA ships it ([NVIDIA](#nvidia)) |
 | `*-i386` | 32-bit libraries for Steam's games |
 
 Every pack but Sola's is made on the build host from pinned sources: the Oath
@@ -801,19 +802,43 @@ Steam updates itself; Oath pins only the launcher. Its logs are
 
 `oath update` builds a recipe the owner built again, from the output's
 plan, before it changes anything, and moves it in the same apply: Steam
-when its plan or its needs move (the 32-bit Mesa), NVIDIA's driver when
-`pkg:linux` moves.
+when its plan or its needs move (the 32-bit Mesa).
 
-NVIDIA's driver is another, in `desk` (R34), for a machine with an
-NVIDIA card. Its build compiles the kernel modules against
-`pkg:linux-build`, so an update that moves `pkg:linux` builds it
-again, to the new kernel:
+## NVIDIA
+
+NVIDIA's driver is a package in `desk` (R34, R89), present on a machine
+installed from the image, so a stick shows the desk on an NVIDIA card.
+NVIDIA's licence lets a distribution for Linux pass the driver on with
+its files unchanged and the licence beside them, so the package has
+every file of NVIDIA's as it ships, and the licence in
+`share/licenses/nvidia/`. The build host compiles its kernel modules
+against `pkg:linux-build`, and each release carries the package built
+for its kernel. Its modules load only for an NVIDIA card. Driver 595
+runs GeForce GTX 16 and RTX 20 cards and newer; an older card gets no
+driver, and the screen is the firmware's ([Boot](using.md)). A machine
+that has it absent:
 
 ```
-sudo oath build plan:nvidia              # fetches NVIDIA's 420 MB .run from download.nvidia.com
 sudo oath set pkg:nvidia present=true
 sudo oath apply pkg:nvidia
 nvidia-smi                               # once its modules load (the pass after services, or the next boot)
+```
+
+Two of its files assume a layout Oath has not, and stay as they ship.
+`libEGL_nvidia` looks for its external platforms (Wayland, GBM, X) in
+`/etc/egl/egl_external_platform.d`, then `/usr/share/egl`'s: the `desk`
+image links the first to the package's `share/egl/egl_external_platform.d`,
+and an update puts the link there, as it does `/etc/passwd`; Steam's box
+has the second. `nvidia-smi` names `/lib64`'s loader, so `bin/nvidia-smi`
+runs it with `/lib`'s. An update is run by the machine's own `oath`, and
+one from before R89 does not make the link, so a machine that ran the
+recipe moves `pkg:oath` to the release's pin first (`oath update` names
+it), or its desk has no display until its next update:
+
+```
+sudo oath set pkg:oath hash=sha256-…     # the release's, as `oath update` says
+sudo oath apply pkg:oath
+sudo oath update --confirm --reboot
 ```
 
 libglvnd sends GL and EGL to it, the Vulkan loader and libgbm (32-bit

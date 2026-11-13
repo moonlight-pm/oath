@@ -172,11 +172,13 @@ tries NVIDIA's first; a GLX client gets the vendor the X server names
 (Xwayland names NVIDIA's on its GBM). Mesa's libgbm loads a GPU's own
 backend from its `lib/gbm` or, on x86_64, `pkg:nvidia`'s
 `lib/nvidia/gbm` (`nvidia-drm_gbm.so`), so wlroots and Xwayland's
-glamor allocate on the card. `pkg:nvidia` is a recipe a machine builds
-with `oath build plan:nvidia` and then makes present: the kernel
-modules, its 64-bit userspace in `lib/` and its 32-bit in `lib32/`
-(Steam), Vulkan's manifest, EGL's external platforms (Wayland, GBM, X)
-in `/lib/nvidia`. A machine without it finds only Mesa's.
+glamor allocate on the card. `pkg:nvidia` is a pack in `desk`, as
+NVIDIA ships it (R89; a recipe each machine built before): the kernel
+modules, built by the build host for the release's kernel, its 64-bit
+userspace in `lib/` and its 32-bit in `lib32/` (Steam), Vulkan's
+manifest, and EGL's external platforms (Wayland, GBM, X) in
+`share/egl/egl_external_platform.d`, which `/etc/egl` links to. A
+machine without it present finds only Mesa's.
 
 **The session comes back.** The two tmux servers that hold every
 shell, the terminal's (socket `sola`) and Projects' (`sola-ws`), are

@@ -305,7 +305,7 @@ any other is refused: `--keep svc:bogus: this machine has no svc:bogus`.
 With `--confirm`, it:
 
 1. fetches every pack it will pin that the store lacks, and builds each
-   recipe the owner built (Steam, NVIDIA's driver) from the output's
+   recipe the owner built (Steam) from the output's
    plan, before it changes anything: a fetch or build that fails (a
    network error is tried twice more), or a build that is not the
    output's pin, leaves the machine as it was, and running it again

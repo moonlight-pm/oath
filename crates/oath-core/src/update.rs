@@ -41,6 +41,7 @@ pub const ROOT_FILES: &[&str] = &[
     "etc/shells",
     "etc/nsswitch.conf",
     "etc/ssh/ssh_config",
+    "etc/egl",
     "sbin/init",
     "bin/sudo",
 ];

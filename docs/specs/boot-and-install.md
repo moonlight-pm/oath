@@ -90,9 +90,14 @@ of T24, and D3 (seed as data).
   while PID 1 lives, so a still bar is a hang and the line says where; a
   hang in the kernel leaves `Starting Linux`. A fatal error is amber and
   stays; a panic says so before `panic=10` reboots. PID 1 lets go before
-  any DRM, fbdev or NVIDIA module loads. When the boot ends and no DRM
-  device exists, the line says the display has no driver (its PCI id)
-  and gives `ssh home@<address>`, refreshed every 2 s.
+  any DRM, fbdev or NVIDIA module loads. When every display driver has
+  loaded and no DRM device exists, PID 1 loads `efidrm`, which takes the
+  firmware's framebuffer, so the console and the desk have a screen on a
+  card Oath has no driver for (R89; `simpledrm`'s place on EFI since
+  Linux 7.3). It has no alias, and loaded sooner it would end the boot
+  screen. With no framebuffer for it either, the line says the display
+  has no driver (its PCI id) and gives `ssh home@<address>`, refreshed
+  every 2 s.
 - The kernel command line names the root (`oath.root=`) and subvolume
   (`oath.subvol=`): `@`, `@boot-N` or `@gen-N`. Anything else falls back
   to `@`. `install` names the root `UUID=<fsid>`, a UUID it gives the
@@ -171,7 +176,7 @@ The installer a person runs: boot an Oath stick on the machine, open a
 terminal, `oath install`. It is in `oath` (`crates/oath/src/install.rs`),
 so an agent runs the same over SSH; the stick is any Oath install on a
 removable disk (`cargo make install --local`), with the machine's
-overlay and its recipes built (novus's NVIDIA driver).
+overlay and its recipes built, or the image `cargo make image` writes (R86).
 
 - `oath install` lists the disks from `lsblk`: node, size (decimal, as
   the drive's label says), port, model, serial; as root, each

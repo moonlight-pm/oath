@@ -582,7 +582,7 @@ fn load_modules(defer_kms: bool) {
 
 /// No driver took the screen (a card Oath has no driver for): efidrm
 /// takes the firmware's framebuffer, so the console and the desk have a
-/// DRM device (R87). Nothing loads it by alias, and it waits for every
+/// DRM device (R89). Nothing loads it by alias, and it waits for every
 /// display driver: loaded sooner, it would end the boot screen.
 fn fallback_display() {
     if !gpu::wants_firmware_fb() {

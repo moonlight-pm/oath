@@ -105,10 +105,11 @@ Old trees stay under `$XDG_RUNTIME_DIR` (a tmpfs) until the next boot.
   now looks; without it 32-bit GBM on the card fell to Mesa's software
   path (`kmsro: driver missing`, then `DRM_IOCTL_MODE_CREATE_DUMB`
   refused).
-- **Will be checked:** EGL inside Steam's containers. NVIDIA's external
-  platforms (Wayland, GBM, X11) are in `/lib/nvidia/egl_external_platform.d`,
-  not `/usr/share/egl/egl_external_platform.d`, where pressure-vessel
-  imports them from.
+- **Will be checked:** EGL inside Steam's containers. Since R89 NVIDIA's
+  external platforms (Wayland, GBM, X11) are in the package's
+  `share/egl/egl_external_platform.d`, so the box has them at
+  `/usr/share/egl/egl_external_platform.d`, where pressure-vessel imports
+  them from; no game has tried it yet.
 - **Gap:** NVIDIA's application profiles (per-program driver settings)
   are not shipped.
 

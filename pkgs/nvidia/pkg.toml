@@ -2,9 +2,9 @@
 # build host against pkg:linux-build, and its userspace (GLX, EGL, GLES and
 # Vulkan through libglvnd, GBM, CUDA, NVENC, nvidia-smi) and GSP firmware.
 # A pack in the desk profile, so a stick shows the desk on an NVIDIA card
-# (R87): NVIDIA's licence (1.1.d) lets a distribution for Linux pass it on
+# (R89): NVIDIA's licence (1.1.d) lets a distribution for Linux pass it on
 # with its binaries unchanged and the licence beside them, which build.sh
-# keeps. Before R87 it was a recipe each machine built. No machine's
+# keeps. Before R89 it was a recipe each machine built. No machine's
 # settings live here: GSP off and power caps are one machine's overlay.
 version = "595.104.02"
 license = "LicenseRef-NVIDIA-Driver"

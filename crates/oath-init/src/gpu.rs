@@ -9,7 +9,7 @@ use std::fs;
 use std::path::Path;
 
 /// Where sysfb leaves the firmware's framebuffer for efidrm, until a
-/// card's driver takes it (R87).
+/// card's driver takes it (R89).
 pub const FIRMWARE_FB: &str = "/sys/bus/platform/devices/efi-framebuffer.0";
 
 /// A DRM device is there: a driver has the screen.

@@ -78,7 +78,8 @@ Replaces: T13 (devices), the module and firmware parts of T27 and T38.
   from its applied spec and the store, so it loads by modalias like the
   kernel's. pkg:linux's own tree is the base. The initrd has no catalog,
   so such modules load in the pass after services start, as display
-  drivers do. `pkg:nvidia` is the first: built on the machine against
+  drivers do. `pkg:nvidia` is the first: built by the build host (on the
+  machine, as a recipe, before R89) against
   `pkg:linux-build`, the kernel's prepared tree, at pkg:linux's config,
   compiler and `Module.symvers`, so its vermagic is pkg:linux's.
   NVIDIA's driver makes no device nodes, so once `/proc/driver/nvidia`

@@ -1,7 +1,7 @@
 # NVIDIA's driver from its .run, without its installer: the payload is a
 # zstd tar after the stub's `skip` lines. Every file of NVIDIA's is copied
 # as it ships, none changed, and its licence with them (share/licenses/):
-# NVIDIA's licence lets a distribution pass the driver on only so (R87).
+# NVIDIA's licence lets a distribution pass the driver on only so (R89).
 # - The closed kernel modules (nvidia, nvidia-modeset, nvidia-drm,
 #   nvidia-uvm), built by pkg:gcc against pkg:linux-build, in
 #   lib/modules/<release>/ with Oath's index (modules.dep names each
@@ -14,10 +14,10 @@
 #   every pack's lib32/ at /lib32; pkg:libglvnd-i386 dispatches to them).
 # - The manifests in share/: Vulkan's ICD and layers, glvnd's EGL vendor.
 # - EGL's external platforms (Wayland, GBM, X) in
-#   share/egl/egl_external_platform.d. libEGL_nvidia looks in /etc's and
-#   /usr/share's, which Oath has not: the desk profile names this one in
-#   host:local.env (__EGL_EXTERNAL_PLATFORM_CONFIG_DIRS), and Steam's box,
-#   whose /usr/share is the packs' share/, finds it where it looks.
+#   share/egl/egl_external_platform.d. libEGL_nvidia looks in
+#   /etc/egl/egl_external_platform.d, which an image with this package
+#   links here, then /usr/share/egl's, which Steam's box, whose /usr/share
+#   is the packs' share/, has.
 # - GBM's backend under lib/nvidia/ (linked as /lib/nvidia),
 #   nvidia-drm_gbm.so, which libgbm finds there. Mesa has lib/gbm.
 #   The 32-bit backend is lib32/nvidia/gbm, where pkg:mesa-i386 looks.
@@ -102,7 +102,7 @@ mkdir -p /out/libexec/nvidia
 cp nvidia-smi /out/libexec/nvidia/
 cat >/out/bin/nvidia-smi <<EOF
 #!/bin/sh
-# NVIDIA's nvidia-smi $VERSION, as it ships, through /lib's loader (R87).
+# NVIDIA's nvidia-smi $VERSION, as it ships, through /lib's loader (R89).
 exec /lib/ld-linux-x86-64.so.2 $LIVE/libexec/nvidia/nvidia-smi "\$@"
 EOF
 chmod 755 /out/bin/nvidia-smi
