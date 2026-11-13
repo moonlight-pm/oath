@@ -224,6 +224,12 @@ xzcat oath-desk-<id>.img.xz | sudo dd of=/dev/sdX bs=4M oflag=direct status=prog
 Then boots it from the firmware's boot menu (Secure Boot off) and runs
 `oath install` ([above](#from-a-stick-on-the-machine-oath-install)).
 The installed machine has hostname `oath`, no password and no SSH key.
+Published images are at `https://store.oath.moonlight.pm/image/`, and
+oath.moonlight.pm links the newest. A `desk` image carries NVIDIA's
+driver (R89, [NVIDIA](packages.md#nvidia)). On a card no driver here
+takes, PID 1 gives the firmware's framebuffer to `efidrm` once the boot
+ends and the compositor starts on it, but Sola's apps need a GPU of
+their own: the screen is black but for the pointer.
 
 ## Update an installed machine
 

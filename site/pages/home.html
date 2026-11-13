@@ -2,7 +2,7 @@
 <header class="intro">
 <div class="title">{{seal}}<h1>Oath</h1></div>
 <p class="lede">A Linux distribution: the Linux kernel and its own userspace, PID 1 included. The machine is a catalog of typed objects at <code>/oath</code>, and one command, <code>oath</code>, reads and changes it. People and AI agents use it the same way, and <code>oath undo</code> puts back what an apply changed.</p>
-<p class="facts"><span>Pre-alpha</span><span>x86-64, UEFI</span><span>No install images to download</span><a href="/manual">Manual</a><a href="{{repository}}">Source</a></p>
+<p class="facts"><span>Pre-alpha</span><span>x86-64, UEFI</span><a href="#install">Download</a><a href="/manual">Manual</a><a href="{{repository}}">Source</a></p>
 </header>
 
 <section id="goals">
@@ -13,6 +13,29 @@
 <p><strong>Independent, and built from source.</strong> Oath is not a remix of Debian, Arch, NixOS, Alpine or Ubuntu. PID 1, the catalog, <code>oath</code>, the boot loader and the installer are written for Oath, in Rust. Every other package, the kernel, GCC and glibc among them, is built from pinned source by an Oath plan or is the vendor's own release pinned by sha256. No package comes from another distribution, and rebuilds are bit-identical.</p>
 <p><strong>Open to inspection.</strong> The current pack of every package Oath publishes is listed at <a href="https://store.oath.moonlight.pm/INDEX.md">store.oath.moonlight.pm</a> with its licence, the plan that built it and the source that plan pins, so the origin alone can rebuild any of them. A recipe is published as its plan alone. A package from another project, such as Sola's, is a pack there, with its source in that project. Sources are checked against their upstream signatures where the package names one.</p>
 <p><strong>Small on purpose.</strong> Oath ships one C compiler, one C library and one GNU tool for each job. Four accounts, <code>root</code>, <code>home</code>, <code>work</code> for servers and <code>void</code> for daemons, and no <code>/usr</code>. The machine belongs to one person.</p>
+</section>
+
+<section id="install">
+<h2>Install</h2>
+<p>The <code>desk</code> release <code>de2f84abd128</code> of 12 November 2026, as a disk image for a USB stick: <a href="https://store.oath.moonlight.pm/image/oath-desk-de2f84abd128.img.xz">oath-desk-de2f84abd128.img.xz</a> (1.3 GB), with its <a href="https://store.oath.moonlight.pm/image/oath-desk-de2f84abd128.img.xz.sha256">SHA-256</a> and its <a href="https://store.oath.moonlight.pm/image/oath-desk-de2f84abd128.img.xz.sig">signature</a>. It is the system the stick runs and the system <code>oath install</code> copies onto the disk you name, which it erases.</p>
+<p>It needs an x86-64 PC with UEFI and Secure Boot off, a USB stick of 16 GB or more, and wired Ethernet: no Wi-Fi client ships. The desk runs on NVIDIA GeForce GTX 16 and RTX 20 cards and newer, with NVIDIA's driver, and on AMD's Pitcairn cards (Radeon HD 7850 and 7870, R9 270, R7 370), the one AMD chip Oath carries firmware for. Intel graphics, newer AMD cards and older NVIDIA cards are not supported yet.</p>
+<p>Check it and write it to the stick, on Linux (on macOS or Windows, a tool that writes disk images, such as balenaEtcher, takes the <code>.xz</code> as it is):</p>
+<pre><code>sha256sum -c oath-desk-de2f84abd128.img.xz.sha256
+echo 'oath@buccina ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+YKD3yXYsGJMxwpBIWSYP7VuQvjhzGG+LWvYhKTESD' &gt; allowed_signers
+ssh-keygen -Y verify -f allowed_signers -I oath@buccina -n oath-image \
+  -s oath-desk-de2f84abd128.img.xz.sig &lt; oath-desk-de2f84abd128.img.xz
+xzcat oath-desk-de2f84abd128.img.xz | sudo dd of=/dev/sdX bs=4M oflag=direct status=progress   <span class="comment"># sdX: the stick</span></code></pre>
+<p>Start the PC from the stick: its firmware's boot menu (F12, F11 or Esc; hold Option on a Mac), then the stick's UEFI entry. The desk starts signed in as <code>home</code>, with no password. Open the terminal from Sola's launcher and install:</p>
+<pre><code>oath install                              <span class="comment"># the disks: node, size, model, serial</span>
+sudo oath install /dev/nvme0n1            <span class="comment"># what it would erase and write; writes nothing</span>
+sudo oath install /dev/nvme0n1 --confirm  <span class="comment"># erase that disk and install</span>
+sudo poweroff                             <span class="comment"># then remove the stick and start the PC</span></code></pre>
+<p>The installed machine is named <code>oath</code>, has no password and takes no SSH logins until you add a key. <code>oath password</code> sets one. Then get Claude Code, which each machine builds from Anthropic's signed release, and let it read the machine:</p>
+<pre><code>sudo oath build plan:claude-code          <span class="comment"># fetches ~240 MB from downloads.claude.ai</span>
+sudo oath set pkg:claude-code present=true
+sudo oath apply pkg:claude-code
+claude                                    <span class="comment"># sign in, then ask it to run `oath` and read the index</span></code></pre>
+<p>The machine updates itself: <code>oath update</code> says what the newest release would change, and <code>sudo oath update --confirm --reboot</code> moves to it. The <a href="/manual#install">manual</a> has the rest.</p>
 </section>
 
 <section id="catalog" class="catalog">
@@ -49,9 +72,9 @@
 <div><dt>Toolchain</dt><dd>GCC, binutils and glibc built from source, bootstrapped once by the build host and then rebuilt by themselves. bash and the GNU userland; zsh is the login shell.</dd></div>
 <div><dt>Kernel and boot</dt><dd>Linux from kernel.org, pinned by sha256 and built as a plan. <code>oath-efi</code> is the only boot loader, and the initrd runs Oath's PID 1.</dd></div>
 <div><dt>Network and SSH</dt><dd><code>net0</code> by DHCP or a static address with its DNS servers, time from pool.ntp.org, OpenSSH for SSH as <code>home</code> with root login refused, the network daemons dropped to the unprivileged <code>void</code>, and <code>dig</code>. An apply of <code>host:local power=sleep</code> suspends the machine to RAM and returns when it wakes: on a USB or PS/2 keyboard or mouse, the power button or, with <code>net:net0.wake</code>, a Wake-on-LAN magic packet, which <code>oath wake &lt;mac&gt;</code> sends from another Oath machine.</dd></div>
-<div><dt>Install</dt><dd><code>cargo make install</code> over SSH to a named disk, or to a USB stick; from a stick booted on the machine, <code>oath install</code> lists the disks and copies the system onto the one you name, with home in its own subvolume. Each machine updates itself: <code>oath update</code> takes the newest output its build host signed, without wiping it.</dd></div>
+<div><dt>Install</dt><dd>A disk image of the <code>desk</code> release to write to a USB stick, signed by the build host; <code>cargo make install</code> over SSH to a named disk, or to a USB stick; from a stick booted on the machine, <code>oath install</code> lists the disks and copies the system onto the one you name, with home in its own subvolume. Each machine updates itself: <code>oath update</code> takes the newest output its build host signed, without wiping it.</dd></div>
 <div><dt>Testing</dt><dd><code>cargo make check</code> boots one QEMU machine per case and reboots for real. <code>--target</code> runs the hardware cases on an installed machine and undoes each one. <code>--agent</code> gives a real model five administration tasks.</dd></div>
-<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV or NVIDIA's driver (a recipe) for Vulkan and PipeWire for sound. The <code>desk</code> profile pins Sola's other apps as well.</dd></div>
+<div><dt>Desk</dt><dd>Optional: a desktop. rivulet, a C port of the River compositor on wlroots, runs the shell, terminal, Projects, browser and Design of <a href="https://sola.moonlight.pm">Sola</a>, with Mesa's RADV or NVIDIA's driver for Vulkan and PipeWire for sound. The <code>desk</code> profile pins Sola's other apps as well.</dd></div>
 </dl>
 <p class="more">The <a href="/manual">manual</a> covers each of these in detail.</p>
 </section>
@@ -67,9 +90,9 @@
 
 <section id="status">
 <h2>Status</h2>
-<p>Oath is pre-alpha. There are no install images to download: you build it from source and install it over SSH, or from an Oath stick with <code>oath install</code>. As of 12 November 2026 the current releases, <code>base</code> <code>c1d413829997</code> and <code>desk</code> <code>42a8028ae7bf</code>, pass every test case that runs in QEMU: 74 on <code>base</code>, 79 on <code>desk</code>. No installed machine runs them yet, and the hardware cases have not run on either release. Not there yet:</p>
+<p>Oath is pre-alpha. You can install the <code>desk</code> release from its <a href="#install">disk image</a>, or build it from source and install it over SSH. As of 12 November 2026 the current releases, <code>base</code> <code>5e5545e361d2</code> and <code>desk</code> <code>de2f84abd128</code>, pass every test case that runs in QEMU: 74 on <code>base</code>, 79 on <code>desk</code>. No installed machine runs them yet, and the hardware cases have not run on either release; the image has not yet started a desk on a real NVIDIA card. Not there yet:</p>
 <ul>
-<li>Install images to download. x86-64 with UEFI is the only platform.</li>
+<li>Intel graphics, AMD cards newer than Pitcairn, NVIDIA cards older than the GTX 16 series, and Wi-Fi. x86-64 with UEFI is the only platform.</li>
 <li>A signed package index. Packages are pinned by hash, their sources are checked against upstream signatures where the package names one, and <code>oath add</code> and <code>oath update</code> take only builds a key the machine trusts signed (a release by the build host, a package's head by a key it trusts for its name). <code>oath add</code> refuses a head older than one the machine took, and <code>oath update</code> moves no package the machine has to one. But the origin's indexes, <code>INDEX.md</code> and <code>index.json</code>, are not signed.</li>
 <li>More than one network interface. One is chosen at boot.</li>
 <li>Device node ownership as a catalog field, beyond <code>host:local.seat_hid</code> for a listed HID device's vendor interfaces.</li>
