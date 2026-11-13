@@ -300,6 +300,9 @@ repo = "https://github.com/libexpat/libexpat"
 tag = "R_{version_}"
 tag_dir = "expat"
 
+[expat.not_affected]
+"CVE-2026-128241" = "xmlwf alone, whose -d output mode follows symlinks (cve.org's record): pkgs/expat/build.sh configures --without-xmlwf, for expat and expat-i386"
+
 [extra-cmake-modules]
 skip = "CMake modules, no compiled code"
 compare_repo = "https://invent.kde.org/frameworks/extra-cmake-modules"
@@ -871,6 +874,10 @@ repo = "https://github.com/netwide-assembler/nasm"
 tag = "nasm-{version}"
 differs_because = "Makefile.in, Mkfiles/msvc.mak and Mkfiles/openwcom.mak: the release inlines Makefile.dep (537 lines in Makefile.in, each only an object and its headers) and sets EXTERNAL_DEPENDENCIES = 0; editors/builtin.mac: two %define lines that dumpbuiltin.sh reads from nasm, for editors, not built. Of the 41 files only in the tarball, the 29 its Perl writes from the tag's sources were made again on buccina: 26 byte for byte, insns.xda and insnsa.c with the same flags in another hash order, macros.c's blob another deflate of the same 5,500 bytes. configure, aclocal.m4 and config.h.in are autoconf's, not checked (read 2026-11-12)"
 
+[nasm.not_affected]
+"CVE-2026-6068" = "fixed before 3.02: the record names 3.02rc5, and its fix, 7bc82e7 (nasm issue #222, closed 2026-06-27), is in tag nasm-3.02 (GitHub's compare: 3.02 is 12 ahead of it and 0 behind); NVD's CPE range is wider than the record"
+"CVE-2026-6069" = "no overflow, by upstream: nasm issue #217 (closed 2026-06-27), where the maintainer calls it not a problem yet and the reporter agrees it is a code defect, not an exploitable overflow; disasm()'s one caller, ndisasm, passes a 256-byte buffer, past the worst case of about 247"
+
 [ncurses]
 cpe = "cpe:2.3:a:gnu:ncurses"
 compare_repo = "https://github.com/ThomasDickey/ncurses-snapshots"
@@ -1077,6 +1084,9 @@ repo = "https://github.com/qt/qtbase"
 tag = "v{version}"
 differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), the release the tag's commit; .release-timestamp, only in the release, is QT_PACKAGEDATE_STR=2026-10-21 (read 2026-11-07)"
 
+[qtbase.not_affected]
+"CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
+
 [qtimageformats]
 cpe = "cpe:2.3:a:qt:qt"
 names = ["qt", "qtimageformats"]
@@ -1087,6 +1097,7 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 [qtimageformats.not_affected]
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
 "CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module carries no Qt Network code"
+"CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
 
 [qtnetworkauth]
 cpe = "cpe:2.3:a:qt:qt"
@@ -1098,6 +1109,7 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 [qtnetworkauth.not_affected]
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
 "CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module calls Qt Network but carries none of its code; qtbase keeps the hit"
+"CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
 
 [qtsvg]
 cpe = "cpe:2.3:a:qt:qt"
@@ -1109,6 +1121,7 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 [qtsvg.not_affected]
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
 "CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module carries no Qt Network code"
+"CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
 
 [readline]
 cpe = "cpe:2.3:a:gnu:readline"
