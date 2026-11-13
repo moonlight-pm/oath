@@ -551,10 +551,10 @@ steps = [
 
 [[case]]
 name = "store-verified-at-boot"
-about = "PID 1 hashes every linked package tree again after boot and records it."
+about = "PID 1 hashes every linked package tree again after boot and records it. The desk's 159 packs (NVIDIA's 1.5 GB since R89) take more than 30 s with four VMs at once."
 metal = true
 steps = [
-  { run = "for i in $(seq 1 30); do oath logs -n 1000 | grep -q 'verify: exit' && break; sleep 1; done; oath logs -n 1000 | grep -E 'damaged|verify: exit'", expect = [", 0 damaged", "verify: exit Code(0)"] },
+  { run = "for i in $(seq 1 120); do oath logs -n 1000 | grep -q 'verify: exit' && break; sleep 1; done; oath logs -n 1000 | grep -E 'damaged|verify: exit'", expect = [", 0 damaged", "verify: exit Code(0)"] },
   { run = "oath get pkg:bash --actual", expect = ["\"verified\"", "\"ok\": true"] },
 ]
 
