@@ -193,7 +193,7 @@ pub fn release() {
 
 /// Boot is done. If no display driver took the screen, say so there.
 pub fn done() {
-    if has_display_driver() {
+    if crate::gpu::has_drm_card() {
         release();
         return;
     }
@@ -238,15 +238,6 @@ fn run(gen: u64) {
         frame = frame.wrapping_add(1);
         std::thread::sleep(FRAME);
     }
-}
-
-/// A DRM device is there: a driver has the screen.
-fn has_display_driver() -> bool {
-    fs::read_dir("/sys/class/drm").into_iter().flatten().flatten().any(|e| {
-        let n = e.file_name();
-        let n = n.to_string_lossy();
-        n.starts_with("card") && !n.contains('-')
-    })
 }
 
 fn idle_text() -> String {

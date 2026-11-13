@@ -1,5 +1,7 @@
 # NVIDIA's driver from its .run, without its installer: the payload is a
-# zstd tar after the stub's `skip` lines.
+# zstd tar after the stub's `skip` lines. Every file of NVIDIA's is copied
+# as it ships, none changed, and its licence with them (share/licenses/):
+# NVIDIA's licence lets a distribution pass the driver on only so (R87).
 # - The closed kernel modules (nvidia, nvidia-modeset, nvidia-drm,
 #   nvidia-uvm), built by pkg:gcc against pkg:linux-build, in
 #   lib/modules/<release>/ with Oath's index (modules.dep names each
@@ -11,15 +13,18 @@
 # - Its 32-bit libraries in lib32/, likewise (R29: Steam's sandbox puts
 #   every pack's lib32/ at /lib32; pkg:libglvnd-i386 dispatches to them).
 # - The manifests in share/: Vulkan's ICD and layers, glvnd's EGL vendor.
-# - NVIDIA's own lookups under lib/nvidia/ (linked as /lib/nvidia): EGL's
-#   external platforms (Wayland, GBM, X), whose second directory
-#   libEGL_nvidia names as /usr/share/egl/egl_external_platform.d and is
-#   rewritten in place to /lib/nvidia's, and GBM's backend
-#   (nvidia-drm_gbm.so), which libgbm finds there. Mesa has lib/gbm.
+# - EGL's external platforms (Wayland, GBM, X) in
+#   share/egl/egl_external_platform.d. libEGL_nvidia looks in /etc's and
+#   /usr/share's, which Oath has not: the desk profile names this one in
+#   host:local.env (__EGL_EXTERNAL_PLATFORM_CONFIG_DIRS), and Steam's box,
+#   whose /usr/share is the packs' share/, finds it where it looks.
+# - GBM's backend under lib/nvidia/ (linked as /lib/nvidia),
+#   nvidia-drm_gbm.so, which libgbm finds there. Mesa has lib/gbm.
 #   The 32-bit backend is lib32/nvidia/gbm, where pkg:mesa-i386 looks.
 # - DLSS for Proton: NVIDIA's NGX DLLs in lib/nvidia/wine/, beside
 #   libGLX_nvidia, where NVIDIA's installer puts them and Proton looks.
-# - bin/nvidia-smi, its loader name rewritten to /lib's (R17).
+# - nvidia-smi in libexec/nvidia/, and bin/nvidia-smi, which runs it with
+#   /lib's loader: it names /lib64's, which Oath has not (R17).
 # - GSP firmware in lib/firmware/nvidia/<version>/.
 run=$SRC/NVIDIA-Linux-x86_64-$VERSION.run
 skip=$(sed -n '1,20s/^skip=//p' "$run")
@@ -34,7 +39,7 @@ make -C kernel -j"$JOBS" SYSSRC="$K" SYSOUT="$K" modules
 m=/out/lib/modules/$rel
 mkdir -p "$m"
 for k in nvidia nvidia-modeset nvidia-drm nvidia-uvm; do
-	strip --strip-debug -o "$m/$k.ko" "kernel/$k.ko"
+	cp "kernel/$k.ko" "$m/$k.ko"
 done
 cd "$m"
 : >modules.dep
@@ -55,7 +60,7 @@ done
 echo "softdep nvidia post: nvidia_modeset nvidia_uvm nvidia_drm" >>modules.softdep
 cd /tmp/nv
 
-mkdir -p /out/lib/nvidia/gbm /out/lib/nvidia/egl_external_platform.d /out/bin
+mkdir -p /out/lib/nvidia/gbm /out/share/egl/egl_external_platform.d /out/bin
 for f in lib*.so.*; do
 	case $f in
 	libGL.so.* | libEGL.so.* | libGLX.so.* | libOpenGL.so.* | libGLdispatch.so.* | \
@@ -69,7 +74,7 @@ for f in lib*.so.*; do
 done
 ln -s libcuda.so.1 /out/lib/libcuda.so
 ln -s ../../libnvidia-allocator.so.1 /out/lib/nvidia/gbm/nvidia-drm_gbm.so
-cp [0-9][0-9]_nvidia_*.json /out/lib/nvidia/egl_external_platform.d/
+cp [0-9][0-9]_nvidia_*.json /out/share/egl/egl_external_platform.d/
 mkdir -p /out/lib/nvidia/wine
 cp nvngx.dll _nvngx.dll nvngx_dlssg.dll /out/lib/nvidia/wine/
 mkdir -p /out/lib32
@@ -86,19 +91,6 @@ done
 mkdir -p /out/lib32/nvidia/gbm
 [ -e /out/lib32/libnvidia-allocator.so.1 ]
 ln -s ../../libnvidia-allocator.so.1 /out/lib32/nvidia/gbm/nvidia-drm_gbm.so
-# The new list is shorter; NUL pads it, and nothing in the file moves.
-old=/etc/egl/egl_external_platform.d:/usr/share/egl/egl_external_platform.d
-new=/etc/egl/egl_external_platform.d:/lib/nvidia/egl_external_platform.d
-for e in /out/lib/libEGL_nvidia.so.$VERSION /out/lib32/libEGL_nvidia.so.$VERSION; do
-	off=$(grep -obUaF "$old" "$e" | head -n 1 | cut -d: -f1)
-	[ -n "$off" ]
-	{
-		printf '%s' "$new"
-		i=${#new}
-		while [ "$i" -lt "${#old}" ]; do printf '\0'; i=$((i + 1)); done
-	} | dd of="$e" bs=1 seek="$off" conv=notrunc status=none
-	grep -qaF "$new" "$e"
-done
 
 s=/out/share
 mkdir -p "$s/vulkan/icd.d" "$s/vulkan/implicit_layer.d" "$s/glvnd/egl_vendor.d"
@@ -106,10 +98,17 @@ cp nvidia_icd.json "$s/vulkan/icd.d/"
 cp nvidia_layers.json "$s/vulkan/implicit_layer.d/"
 cp 10_nvidia.json "$s/glvnd/egl_vendor.d/"
 
-cp nvidia-smi /out/bin/
-off=$(grep -obUaF /lib64/ld-linux-x86-64.so.2 /out/bin/nvidia-smi | head -n 1 | cut -d: -f1)
-[ "$off" -lt 4096 ]
-printf '/lib/ld-linux-x86-64.so.2\0\0\0' | dd of=/out/bin/nvidia-smi bs=1 seek="$off" conv=notrunc status=none
+mkdir -p /out/libexec/nvidia
+cp nvidia-smi /out/libexec/nvidia/
+cat >/out/bin/nvidia-smi <<EOF
+#!/bin/sh
+# NVIDIA's nvidia-smi $VERSION, as it ships, through /lib's loader (R87).
+exec /lib/ld-linux-x86-64.so.2 $LIVE/libexec/nvidia/nvidia-smi "\$@"
+EOF
+chmod 755 /out/bin/nvidia-smi
 
 mkdir -p "/out/lib/firmware/nvidia/$VERSION"
 cp firmware/*.bin "/out/lib/firmware/nvidia/$VERSION/"
+
+mkdir -p /out/share/licenses/nvidia
+cp LICENSE /out/share/licenses/nvidia/

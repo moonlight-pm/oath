@@ -163,6 +163,12 @@ CONFIG_DRM_AMD_DC=y
 CONFIG_DRM_AMD_DC_SI=y
 CONFIG_DRM_RADEON=n
 CONFIG_DRM_FBDEV_EMULATION=y
+# The firmware's framebuffer as a DRM device, for a card with no driver
+# here (R87): what simpledrm was before 7.3 deprecated SYSFB_SIMPLEFB on
+# EFI. It has no alias. PID 1 loads it only when no DRM device exists
+# once every display driver has loaded: built in, or loaded with the rest,
+# it would end the boot screen on every machine.
+CONFIG_DRM_EFIDRM=m
 CONFIG_FRAMEBUFFER_CONSOLE=y
 CONFIG_VT=y
 CONFIG_VGA_CONSOLE=y

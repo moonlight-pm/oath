@@ -1,16 +1,30 @@
 //! Firmware-framebuffer hold vs KMS takeover.
 //!
-//! Not every machine has EFI GOP, simpledrm, or amdgpu. If a firmware
-//! framebuffer is already scanning out (the boot mark), defer KMS
-//! drivers that would kick it until just before the compositor.
-//! virtio-gpu is the QEMU display — never defer it.
+//! Not every machine has EFI GOP or a driver for its card. While the
+//! firmware's framebuffer shows the boot mark, defer KMS drivers that
+//! would kick it until just before the compositor. virtio-gpu is the QEMU
+//! display — never defer it. When none takes the screen, efidrm does.
 
+use std::fs;
 use std::path::Path;
 
-#[allow(dead_code)]
-pub fn firmware_fb_live() -> bool {
-    Path::new("/sys/module/simpledrm").is_dir()
-        || Path::new("/sys/devices/platform/simple-framebuffer.0").exists()
+/// Where sysfb leaves the firmware's framebuffer for efidrm, until a
+/// card's driver takes it (R87).
+pub const FIRMWARE_FB: &str = "/sys/bus/platform/devices/efi-framebuffer.0";
+
+/// A DRM device is there: a driver has the screen.
+pub fn has_drm_card() -> bool {
+    fs::read_dir("/sys/class/drm").into_iter().flatten().flatten().any(|e| {
+        let n = e.file_name();
+        let n = n.to_string_lossy();
+        n.starts_with("card") && !n.contains('-')
+    })
+}
+
+/// Whether efidrm should take the firmware's framebuffer: no driver has
+/// the screen, and the firmware left one.
+pub fn wants_firmware_fb() -> bool {
+    !has_drm_card() && Path::new(FIRMWARE_FB).exists()
 }
 
 /// Module paths (under `kernel/drivers/...`) that replace the firmware fb,
@@ -56,6 +70,9 @@ mod tests {
         assert!(drives_display("kernel/drivers/gpu/drm/drm.ko"));
         assert!(drives_display("kernel/drivers/video/fbdev/core/fb.ko"));
         assert!(drives_display("/oath/store/pkg/nvidia/sha256-0/lib/modules/7/nvidia.ko"));
+        // The fallback ends the splash too, and never waits as a card's does.
+        assert!(drives_display("kernel/drivers/gpu/drm/sysfb/efidrm.ko"));
+        assert!(!takes_over_firmware_fb("kernel/drivers/gpu/drm/sysfb/efidrm.ko"));
         assert!(!drives_display("kernel/drivers/usb/host/xhci-hcd.ko"));
     }
 }

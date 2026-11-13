@@ -272,6 +272,7 @@ fn real_main() -> Result<(), String> {
     sup.converge();
     splash::say("Loading display and sound drivers");
     load_modules(false);
+    fallback_display();
     splash::done();
 
     log("ready");
@@ -577,6 +578,22 @@ fn load_modules(defer_kms: bool) {
         None => log(&format!("no module index in {}", modules::base().display())),
     }
     open_dev_nodes();
+}
+
+/// No driver took the screen (a card Oath has no driver for): efidrm
+/// takes the firmware's framebuffer, so the console and the desk have a
+/// DRM device (R87). Nothing loads it by alias, and it waits for every
+/// display driver: loaded sooner, it would end the boot screen.
+fn fallback_display() {
+    if !gpu::wants_firmware_fb() {
+        return;
+    }
+    let Some(idx) = modules::Index::open(&modules::base()) else { return };
+    match idx.load("efidrm", &mut std::collections::HashSet::new()) {
+        Ok(true) => log("display: no driver took the screen; efidrm has the firmware's"),
+        Ok(false) => {}
+        Err(e) => log(&format!("module {e}")),
+    }
 }
 
 fn cmdline() -> String {
