@@ -1,7 +1,7 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source awscli-2.39.4.tar.gz d3b6be066b62486bf10d0da7f98b15aaf71becd43fe988c15cb448c35b8b28d0
-tag 2.39.4 commit d71d496a02aa28c4798f95820984e690badc352b tree 643332058b485f95b61125c6503a697e4450ab88
+source awscli-2.39.5.tar.gz 53b9cc3eba23b03b18135bd1f7c28f95b5c7750968d815090a532e40e55efc6e
+tag 2.39.5 commit 3876551e34dc63cf1e671c8409d3762e2e0ff111 tree fbb108e2793653feb4a9955b4ba936dca3ce2093
 signed no
-same 10277
-only-in-tag 1140
+same 10282
+only-in-tag 1141
 adds PKG-INFO

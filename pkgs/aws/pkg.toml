@@ -21,22 +21,22 @@
 # from Go's proxy. Nothing else speaks its protocol, and writing it would be a
 # second implementation of KMS-encrypted sessions. Re-pin with:
 #   pkgs/go-modules.sh aws ./src/sessionmanagerplugin-main
-version = "2.39.4"
+version = "2.39.5"
 license = "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause AND ISC AND OpenSSL AND PSF-2.0 AND blessing"
 description = "AWS CLI v2 and its Session Manager plugin: Amazon Web Services from the terminal."
 home = "https://aws.amazon.com/cli/"
 category = "toolchain"
-purl = "pkg:github/aws/aws-cli@2.39.4"
+purl = "pkg:github/aws/aws-cli@2.39.5"
 build = ["python", "cmake", "sqlite", "go"]
 run = ["python", "certs", "less"]
 unsigned = "PyPI publishes no signature for these sdists; AWS signs the plugin's .deb and .rpm but not its source tag; go.sum names each Go module, checked against Go's checksum database when pinned"
 
 [[source]]
-url = "https://awscli.amazonaws.com/awscli-2.39.4.tar.gz"
-sha256 = "d3b6be066b62486bf10d0da7f98b15aaf71becd43fe988c15cb448c35b8b28d0"
-sig = "https://awscli.amazonaws.com/awscli-2.39.4.tar.gz.sig"
+url = "https://awscli.amazonaws.com/awscli-2.39.5.tar.gz"
+sha256 = "53b9cc3eba23b03b18135bd1f7c28f95b5c7750968d815090a532e40e55efc6e"
+sig = "https://awscli.amazonaws.com/awscli-2.39.5.tar.gz.sig"
 key = "aws"
-file = "awscli-2.39.4.tar.gz"
+file = "awscli-2.39.5.tar.gz"
 
 [[source]]
 url = "https://www.python.org/ftp/python/3.15.2/Python-3.15.2.tar.xz"
