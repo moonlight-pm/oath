@@ -198,10 +198,13 @@ impl Origin {
 }
 
 /// Keys named by a hash never change: packs and sources
-/// (`pkg/<name>/<hash>.tar`) and plans. A head (`pkg/<name>.json`, R72),
-/// `adv/` and `INDEX.md` do.
+/// (`pkg/<name>/<hash>.tar`) and plans, and an image named by its output,
+/// which is published once (R86). A head (`pkg/<name>.json`, R72), `adv/`
+/// and `INDEX.md` do.
 pub fn is_immutable(key: &str) -> bool {
-    (key.starts_with("pkg/") && !is_head(key)) || key.starts_with("plan/")
+    (key.starts_with("pkg/") && !is_head(key))
+        || key.starts_with("plan/")
+        || key.starts_with("image/")
 }
 
 /// `pkg/<name>.json` or its `.sig`: a package's head (R72).
@@ -214,6 +217,7 @@ pub fn is_head(key: &str) -> bool {
 fn content_type(key: &str) -> &'static str {
     match key.rsplit('.').next() {
         Some("tar") => "application/x-tar",
+        Some("xz") => "application/x-xz",
         Some("json") => "application/json",
         Some("md") => "text/markdown; charset=utf-8",
         _ => "text/plain; charset=utf-8",
@@ -288,6 +292,10 @@ mod tests {
         assert!(!is_immutable("INDEX.md") && !is_immutable("adv/curl/sha256-0.json"));
         assert_eq!(content_type("INDEX.md"), "text/markdown; charset=utf-8");
         assert_eq!(content_type("plan/bash/sha256-0.plan"), "text/plain; charset=utf-8");
+        assert!(is_immutable("image/oath-desk-42a8028ae7bf.img.xz"));
+        assert_eq!(content_type("image/oath-desk-42a8028ae7bf.img.xz"), "application/x-xz");
+        let sum = "image/oath-desk-42a8028ae7bf.img.xz.sha256";
+        assert_eq!(content_type(sum), "text/plain; charset=utf-8");
     }
 
     #[test]

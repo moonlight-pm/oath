@@ -192,6 +192,39 @@ the NIC and runs no DHCP. A ramdisk left with no address writes
 `/dev/sdb1` that mounts as FAT, if any, then tries the network once
 more and starts `sshd` anyway.
 
+## A disk image to download
+
+```sh
+cargo make image                      # the newest checked output
+cargo make image --output <id> --publish
+```
+
+Writes a checked output as a disk image anyone can write to a USB stick
+(R86): `build/out/<id>/oath-<profile>-<id>.img.xz`, with its `.sha256`
+and its `.sig`, signed by the build host's key in the namespace
+`oath-image`. It is the system `--local` writes to a stick, on an 8 GiB
+disk, with no SSH key in `ssh:local` and no host key: each machine that
+boots it makes its own. A copy of the image boots once in QEMU through
+OVMF, and its serial console must answer `oath ls`; the image itself is
+never booted. An image already made is reused. `--publish` puts the
+three files on the default origin under `image/`, once per output, and
+only after that output's release is there, so a machine installed from
+the image can update.
+
+A person writes it to a stick of 16 GB or more and checks it first:
+
+```sh
+sha256sum -c oath-desk-<id>.img.xz.sha256
+echo 'oath@buccina ssh-ed25519 AAAA…' > allowed_signers   # the release key
+ssh-keygen -Y verify -f allowed_signers -I oath@buccina -n oath-image \
+  -s oath-desk-<id>.img.xz.sig < oath-desk-<id>.img.xz
+xzcat oath-desk-<id>.img.xz | sudo dd of=/dev/sdX bs=4M oflag=direct status=progress
+```
+
+Then boots it from the firmware's boot menu (Secure Boot off) and runs
+`oath install` ([above](#from-a-stick-on-the-machine-oath-install)).
+The installed machine has hostname `oath`, no password and no SSH key.
+
 ## Update an installed machine
 
 Each machine updates itself from its origins (R38). The build host

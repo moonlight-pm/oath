@@ -5,6 +5,7 @@ mod boot;
 mod check;
 mod cpio;
 mod elf;
+mod image;
 mod install;
 mod intake;
 mod kernel;
@@ -151,6 +152,19 @@ enum Cmd {
         /// firmware's first entry. --disk is ignored.
         #[arg(long, requires = "qemu")]
         oath_install: bool,
+    },
+    /// Write a checked output as a disk image to download and write to a
+    /// USB stick (`build/out/<id>/oath-<profile>-<id>.img.xz`, its `.sha256`
+    /// and `.sig`): no SSH key and no host key in it, a copy booted once in
+    /// QEMU first. An image already made is reused.
+    Image {
+        /// Build output to write (default: the newest one `check` passed).
+        #[arg(long)]
+        output: Option<String>,
+        /// Also put the image on the default origin (`image/`), once its
+        /// release is there.
+        #[arg(long)]
+        publish: bool,
     },
     /// Build the toolchain from source on this host (stage 0 and 1) and
     /// store the base packs (pkg:gcc, pkg:glibc and the GNU tools). Hours, not minutes.
@@ -371,8 +385,12 @@ fn real() -> Result<()> {
                     unchecked,
                     output,
                     oath_install,
+                    image: false,
                 },
             )?;
+        }
+        Cmd::Image { output, publish } => {
+            image::run_image(&root, &out, image::Opts { output, publish })?
         }
         Cmd::Bootstrap { jobs } => {
             let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2);

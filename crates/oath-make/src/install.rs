@@ -38,6 +38,9 @@ pub struct Opts {
     /// With `--qemu`: rehearse `oath install` from the installed stick
     /// onto a second disk (oath_install.rs).
     pub oath_install: bool,
+    /// A public image (`cargo make image`, image.rs): no SSH keys and no
+    /// host key, so each machine that boots it makes its own.
+    pub image: bool,
 }
 
 pub struct EspOpts {
@@ -120,29 +123,8 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
     if let Some(p) = &opts.overlay {
         read_overlay(p, &profile)?;
     }
-    let keys =
-        qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
-    // Two installs in the same second (parallel rehearsals) get a
-    // directory each.
-    let stamp = utc_stamp();
-    fs::create_dir_all(out.join("runs"))?;
-    let mut run_dir = out.join("runs").join(format!("{stamp}-install"));
-    let mut n = 1;
-    while let Err(e) = fs::create_dir(&run_dir) {
-        if e.kind() != std::io::ErrorKind::AlreadyExists {
-            return Err(e.into());
-        }
-        n += 1;
-        run_dir = out.join("runs").join(format!("{stamp}-{n}-install"));
-    }
-    let p = Payload {
-        kernel: o.file("bzImage"),
-        initrd_install: pack::bake_install_keys(&o, &run_dir, &keys)?,
-        stage: o.file("stage"),
-        efi: o.file("BOOTX64.EFI"),
-        record: install_record(&o)?,
-        profile,
-    };
+    let run_dir = new_run_dir(out, "install")?;
+    let p = payload(&o, &run_dir)?;
     if opts.usb {
         write_usb_installer(out, &tools, &p, &opts)?;
     } else if opts.qemu && opts.oath_install {
@@ -157,6 +139,38 @@ pub fn run_install(root: &Path, out: &Path, opts: Opts) -> Result<PathBuf> {
         install_remote(out, &tools, &p, &opts, &remote)?;
     }
     Ok(run_dir)
+}
+
+/// A new `runs/<time>-<what>` under `out`. Two runs in the same second
+/// (parallel rehearsals) get a directory each.
+pub(crate) fn new_run_dir(out: &Path, what: &str) -> Result<PathBuf> {
+    let stamp = utc_stamp();
+    fs::create_dir_all(out.join("runs"))?;
+    let mut run_dir = out.join("runs").join(format!("{stamp}-{what}"));
+    let mut n = 1;
+    while let Err(e) = fs::create_dir(&run_dir) {
+        if e.kind() != std::io::ErrorKind::AlreadyExists {
+            return Err(e.into());
+        }
+        n += 1;
+        run_dir = out.join("runs").join(format!("{stamp}-{n}-{what}"));
+    }
+    Ok(run_dir)
+}
+
+/// What an install of output `o` writes, with this host's SSH keys baked
+/// into a copy of its installer ramdisk in `run_dir`.
+pub(crate) fn payload(o: &output::Output, run_dir: &Path) -> Result<Payload> {
+    let keys =
+        qemu::host_pubkeys_body().context("need host SSH public keys to log into the installer")?;
+    Ok(Payload {
+        kernel: o.file("bzImage"),
+        initrd_install: pack::bake_install_keys(o, run_dir, &keys)?,
+        stage: o.file("stage"),
+        efi: o.file("BOOTX64.EFI"),
+        record: install_record(o)?,
+        profile: crate::check::output_profile(&o.dir)?,
+    })
 }
 
 pub fn parse_target(s: &str) -> Result<Remote> {
@@ -654,7 +668,9 @@ fn format_and_copy(p: &Payload, opts: &Opts, r: &Remote) -> Result<String> {
 
     write_catalog_overlay(opts, &p.profile, &hostname, r)?;
     put_text(r, &format!("/mnt/oath/{}", oath_core::update::RECORD), &p.record)?;
-    let host_key = make_host_key(r, stage)?;
+    // An image's machines would share a key made here: PID 1 makes each
+    // its own at first boot.
+    let host_key = if opts.image { String::new() } else { make_host_key(r, stage)? };
 
     ssh_run(r, "mkdir -p /esp/EFI/BOOT /esp/loader/entries")?;
     ssh_run(
@@ -794,7 +810,8 @@ fn catalog_overlay(
 }
 
 fn write_catalog_overlay(opts: &Opts, profile: &str, hostname: &str, r: &Remote) -> Result<()> {
-    let keys = qemu::host_pubkeys_body().unwrap_or_default();
+    let keys =
+        if opts.image { String::new() } else { qemu::host_pubkeys_body().unwrap_or_default() };
     let user = match &opts.overlay {
         Some(p) => Some(read_overlay(p, profile)?),
         None => None,
@@ -1000,23 +1017,17 @@ fn install_local(run_dir: &Path, tools: &Tools, p: &Payload, opts: &Opts) -> Res
     Ok(())
 }
 
-/// Install through the installer ramdisk in QEMU onto `drive` (the guest's
-/// `disk`), then boot it through OVMF and check it. `metal`: the disk is
-/// real and boots a machine next, so it gets the metal loader menu and
-/// is powered off cleanly.
-pub(crate) fn install_in_qemu(
+/// Boot the installer ramdisk in QEMU with `drive` as its disk, write
+/// `opts.disk` through it (the guest's node), and stop QEMU so the disk is
+/// written out. Returns the installed system's host key (none for an image).
+pub(crate) fn write_through_ramdisk(
     run_dir: &Path,
     tools: &Tools,
     p: &Payload,
     opts: &Opts,
     drive: &str,
-    disk: &str,
-    metal: bool,
-) -> Result<()> {
-    tools.require_qemu()?;
-    let ovmf_code = tools.ovmf_code.as_ref().context("OVMF_CODE.fd missing")?;
-    let ovmf_vars_src = tools.ovmf_vars.as_ref().context("OVMF_VARS.fd missing")?;
-    let port = qemu::ssh_port();
+    port: u16,
+) -> Result<String> {
     let serial = run_dir.join("serial.log");
     let netdev = format!("user,id=n0,hostfwd=tcp:127.0.0.1:{port}-:22");
     let mut qemu_cmd = Command::new(&tools.qemu);
@@ -1046,6 +1057,36 @@ pub(crate) fn install_in_qemu(
         dump_serial(&serial);
         return Err(e);
     }
+    let key = match format_and_copy(p, opts, &inst) {
+        Ok(k) => k,
+        Err(e) => {
+            let _ = child.kill();
+            dump_serial(&serial);
+            return Err(e);
+        }
+    };
+    stop_qemu(&mut child);
+    Ok(key)
+}
+
+/// Install through the installer ramdisk in QEMU onto `drive` (the guest's
+/// `disk`), then boot it through OVMF and check it. `metal`: the disk is
+/// real and boots a machine next, so it gets the metal loader menu and
+/// is powered off cleanly.
+pub(crate) fn install_in_qemu(
+    run_dir: &Path,
+    tools: &Tools,
+    p: &Payload,
+    opts: &Opts,
+    drive: &str,
+    disk: &str,
+    metal: bool,
+) -> Result<()> {
+    tools.require_qemu()?;
+    let ovmf_code = tools.ovmf_code.as_ref().context("OVMF_CODE.fd missing")?;
+    let ovmf_vars_src = tools.ovmf_vars.as_ref().context("OVMF_VARS.fd missing")?;
+    let port = qemu::ssh_port();
+    let netdev = format!("user,id=n0,hostfwd=tcp:127.0.0.1:{port}-:22");
     let qopts = Opts {
         target: None,
         disk: disk.to_string(),
@@ -1058,19 +1099,12 @@ pub(crate) fn install_in_qemu(
         unchecked: true,
         output: opts.output.clone(),
         oath_install: false,
+        image: false,
     };
-    let key = match format_and_copy(p, &qopts, &inst) {
-        Ok(k) => k,
-        Err(e) => {
-            let _ = child.kill();
-            dump_serial(&serial);
-            return Err(e);
-        }
-    };
+    let key = write_through_ramdisk(run_dir, tools, p, &qopts, drive, port)?;
     // The rehearsal pins too, so the first login proves the key it wrote.
     let pins = run_dir.join("known_hosts");
     pin_host_key(&pins, "127.0.0.1", port, &key)?;
-    stop_qemu(&mut child);
 
     let vars = run_dir.join("OVMF_VARS.fd");
     copy_file(ovmf_vars_src, &vars)?;
