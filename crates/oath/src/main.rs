@@ -11,6 +11,7 @@ use oath_core::{
 use serde_json::{json, Map, Value};
 
 mod add;
+mod consort;
 mod install;
 mod live;
 mod login;
@@ -259,6 +260,14 @@ enum Cmd {
     Wake {
         mac: String,
     },
+    /// This machine's consort (R87): the machines it knows (each a
+    /// `peer:<name>`), machines nearby that are not members, and machines
+    /// asking to join. `join`, `admit`, `remove` and `leave` change who is
+    /// in it, and need root.
+    Consort {
+        #[command(subcommand)]
+        action: Option<ConsortCmd>,
+    },
     /// The verbs as an MCP server on stdin/stdout, one `oath --json`
     /// command per tool call: `ssh -T home@<host> oath mcp`.
     Mcp {
@@ -293,6 +302,24 @@ enum Cmd {
         #[arg(long)]
         overlay: Vec<PathBuf>,
     },
+}
+
+#[derive(Subcommand)]
+enum ConsortCmd {
+    /// Ask another machine's consort to admit this one, a consort of one:
+    /// by its name as `oath consort` lists it nearby, or its address. Prints
+    /// the code the owner types on a member to admit it.
+    Join { peer: String },
+    /// Admit a machine that asks to join, with the code it printed.
+    Admit {
+        name: String,
+        #[arg(long)]
+        code: String,
+    },
+    /// Remove a member, for every member at once.
+    Remove { name: String },
+    /// Leave this machine's consort; it becomes a consort of one.
+    Leave,
 }
 
 fn main() -> ExitCode {
@@ -364,6 +391,7 @@ fn run() -> oath_core::Result<i32> {
         Some(Cmd::Password { .. }) => "password",
         Some(Cmd::Desk { .. }) => "desk",
         Some(Cmd::Wake { .. }) => "wake",
+        Some(Cmd::Consort { .. }) => "consort",
         Some(Cmd::Seed { .. }) => "seed",
         Some(Cmd::PanicInit) => "panic-init",
         Some(Cmd::ReexecInit { .. }) => "reexec-init",
@@ -378,6 +406,16 @@ fn run() -> oath_core::Result<i32> {
         }
         Some(Cmd::Password { status }) => return login::password(*status, cli.json),
         Some(Cmd::Desk { action }) => return login::desk(action.is_some(), cli.json),
+        Some(Cmd::Consort { action }) => {
+            let a = match action {
+                None => consort::Action::Show,
+                Some(ConsortCmd::Join { peer }) => consort::Action::Join(peer),
+                Some(ConsortCmd::Admit { name, code }) => consort::Action::Admit(name, code),
+                Some(ConsortCmd::Remove { name }) => consort::Action::Remove(name),
+                Some(ConsortCmd::Leave) => consort::Action::Leave,
+            };
+            return consort::run(&cli.root, a, cli.json);
+        }
         Some(Cmd::Wake { mac }) => {
             wake::wake(mac)?;
             if cli.json {
@@ -412,7 +450,9 @@ fn run() -> oath_core::Result<i32> {
             }
             Ok(0)
         }
-        Some(Cmd::Mcp { .. } | Cmd::Password { .. } | Cmd::Desk { .. } | Cmd::Wake { .. }) => {
+        Some(
+            Cmd::Mcp { .. } | Cmd::Password { .. } | Cmd::Desk { .. } | Cmd::Wake { .. } | Cmd::Consort { .. },
+        ) => {
             unreachable!("served above")
         }
         Some(Cmd::Seed { profile, overlay }) => {

@@ -585,6 +585,7 @@ impl Server {
                 v.push("audit".into());
                 rest.extend(s("id"));
             }
+            "consort" => v.push("consort".into()),
             "rm" => {
                 v.push("rm".into());
                 rest.extend(s("id"));
@@ -884,6 +885,14 @@ fn tools() -> Vec<Tool> {
                 false,
                 "`pkg:<name>` and `cell:<name>` ids; every package and cell when left out.",
             )],
+        ),
+        read(
+            "consort",
+            "This machine's consort (R87): the other Oath machines it knows, each a \
+             `peer:<name>` with its status (online, profile, output, generation, drift, failed \
+             services), the machines nearby that are not members, and machines asking to join. \
+             Joining and admitting are the owner's: `sudo oath consort join|admit`.",
+            vec![],
         ),
         read(
             "audit",
@@ -1356,6 +1365,7 @@ mod tests {
                 "log",
                 "logs",
                 "verify",
+                "consort",
                 "audit",
                 "set_host",
                 "set_svc",
@@ -1397,7 +1407,7 @@ mod tests {
         assert_eq!(m.last()[4], "mcp:claudecode", "the label keeps A-Za-z0-9._/-");
 
         let r = modern(&mut s, &m, "tools/list", json!({}));
-        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 28);
+        assert_eq!(r["result"]["tools"].as_array().unwrap().len(), 29);
         assert_eq!(r["result"]["ttlMs"], TTL_MS);
         let r = modern(&mut s, &m, "tools/call", json!({ "name": "ls", "arguments": {} }));
         assert_eq!(r["result"]["resultType"], "complete");
@@ -1486,6 +1496,7 @@ mod tests {
             ),
             ("verify", json!({ "ids": ["pkg:curl"] }), true, vec!["verify", "--", "pkg:curl"]),
             ("audit", json!({ "id": "pkg:curl" }), false, vec!["audit", "--", "pkg:curl"]),
+            ("consort", json!({}), false, vec!["consort"]),
             (
                 "set_host",
                 json!({ "name": "local", "fields": { "hostname": "atlas" } }),
@@ -1710,7 +1721,7 @@ mod tests {
         assert!(r["result"]["instructions"].as_str().unwrap().contains("read-only"));
         let r = send(&mut s, &m, json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }));
         let tools = r["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 10);
+        assert_eq!(tools.len(), 11);
         assert!(!tools.iter().any(|t| t["name"] == "file_plan"));
         assert!(tools.iter().all(|t| t["annotations"]["readOnlyHint"] == true));
         for (tool, args) in

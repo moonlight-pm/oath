@@ -35,3 +35,12 @@ go github.com/xtaci/smux Joshua, 2026-11-09
 go golang.org/x/sync Joshua, 2026-11-09
 go golang.org/x/sys Joshua, 2026-11-09
 go golang.org/x/term Joshua, 2026-11-09
+crate snow Joshua, 2026-11-12
+crate chacha20poly1305 Joshua, 2026-11-12
+crate chacha20 Joshua, 2026-11-12
+crate poly1305 Joshua, 2026-11-12
+crate aead Joshua, 2026-11-12
+crate universal-hash Joshua, 2026-11-12
+crate cipher Joshua, 2026-11-12
+crate inout Joshua, 2026-11-12
+crate opaque-debug Joshua, 2026-11-12

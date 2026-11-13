@@ -10,12 +10,12 @@ use crate::error::{Error, Result};
 use crate::hooks::{Actor, ApplyHooks, ApplyReport};
 use crate::id::ObjectId;
 use crate::kinds::{
-    Cell, Dev, Host, HostPower, Meta, Net, Pkg, PkgActual, Plan, Snap, Ssh, Svc, SvcRestart,
+    Cell, Dev, Host, HostPower, Meta, Net, Peer, Pkg, PkgActual, Plan, Snap, Ssh, Svc, SvcRestart,
 };
 use crate::probation;
 use crate::{
     now_rfc3339, parse_gen_subvol, read_json, write_atomic, write_json, BTRFS_TOP, KIND_CELL,
-    KIND_DEV, KIND_HOST, KIND_NET, KIND_PKG, KIND_PLAN, KIND_SNAP, KIND_SSH, KIND_SVC,
+    KIND_DEV, KIND_HOST, KIND_NET, KIND_PEER, KIND_PKG, KIND_PLAN, KIND_SNAP, KIND_SSH, KIND_SVC,
 };
 
 /// In an object directory: created by `oath new`, not applied yet.
@@ -210,6 +210,50 @@ impl Catalog {
             self.write_index()?;
         }
         Ok(changes)
+    }
+
+    /// Make the `peer:*` objects the members `oath-bus` knows (R87), as
+    /// [`Catalog::write_devices`] does for hardware. The caller holds the
+    /// lock. Returns the changes (`+peer:x`, `-peer:y`).
+    pub fn write_peers(
+        &self,
+        _lock: &CatalogLock,
+        found: &[(String, crate::PeerActual)],
+    ) -> Result<Vec<String>> {
+        let mut changes = Vec::new();
+        for id in self.ls(Some(KIND_PEER))? {
+            if !found.iter().any(|(n, _)| *n == id.name) {
+                fs::remove_dir_all(self.obj_dir(&id))?;
+                self.drop_actual(&id);
+                changes.push(format!("-{id}"));
+            }
+        }
+        for (name, actual) in found {
+            let id = ObjectId::new(KIND_PEER, name);
+            let dir = self.obj_dir(&id);
+            if !dir.join("desired.json").is_file() {
+                fs::create_dir_all(&dir)?;
+                write_json(&dir.join("meta.json"), &Meta::new(KIND_PEER, name, "mutate"))?;
+                write_json(&dir.join("desired.json"), &json!({ "present": true }))?;
+                write_json(&dir.join(APPLIED), &json!({ "present": true }))?;
+                changes.push(format!("+{id}"));
+            }
+            self.write_peer_actual(name, actual)?;
+        }
+        if !changes.is_empty() {
+            self.write_index()?;
+        }
+        Ok(changes)
+    }
+
+    /// A member's actual, when it changed. Status is a tmpfs of its own and
+    /// takes no lock; only the objects do.
+    pub fn write_peer_actual(&self, name: &str, actual: &crate::PeerActual) -> Result<()> {
+        let path = status_path(&self.root, &ObjectId::new(KIND_PEER, name));
+        if read_json::<crate::PeerActual>(&path).ok().as_ref() != Some(actual) {
+            write_json(&path, actual)?;
+        }
+        Ok(())
     }
 
     /// Bring a catalog from before R14 to the split. Each object that
@@ -454,6 +498,12 @@ impl Catalog {
         }
         if id.kind == KIND_DEV && fields.get("present") == Some(&Value::Bool(false)) {
             return Err(Error::hint(format!("{id} is not removable"), "oath schema dev"));
+        }
+        if id.kind == KIND_PEER && fields.get("present") == Some(&Value::Bool(false)) {
+            return Err(Error::hint(
+                format!("{id} leaves through its membership, not its object"),
+                "sudo oath consort remove <name>",
+            ));
         }
         self.check_keys(id, &fields)?;
         let keys: Vec<String> = fields.keys().cloned().collect();
@@ -1278,6 +1328,9 @@ impl Catalog {
             KIND_DEV => {
                 let _: Dev = serde_json::from_value(doc.clone()).map_err(bad)?;
             }
+            KIND_PEER => {
+                let _: Peer = serde_json::from_value(doc.clone()).map_err(bad)?;
+            }
             KIND_PLAN => {
                 let _: Plan = serde_json::from_value(doc.clone()).map_err(bad)?;
             }
@@ -1475,6 +1528,11 @@ impl Catalog {
                 self.write_actual(id, &actual)?;
                 desired
             }
+            // oath-bus writes what it observes; apply has nothing to do.
+            KIND_PEER => {
+                let _: Peer = serde_json::from_value(desired.clone())?;
+                desired
+            }
             other => {
                 return Err(Error::hint(
                     format!("no handler for {other}"),
@@ -1655,7 +1713,7 @@ impl Catalog {
             KIND_SSH => json!({
                 "authorized": obj.actual.get("authorized").cloned().unwrap_or(json!([]))
             }),
-            KIND_DEV => json!({
+            KIND_DEV | KIND_PEER => json!({
                 "present": obj.actual.get("present").cloned().unwrap_or(json!(true))
             }),
             KIND_HOST => {

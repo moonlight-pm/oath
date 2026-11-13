@@ -59,6 +59,9 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          desk and give it to the console (a shell as home)
     oath wake <mac>      wake another machine whose net:net0.wake is on
                          (Wake-on-LAN's magic packet, broadcast)
+    oath consort         this machine's consort (R87): the Oath machines it
+                         knows (`peer:*`), nearby ones, asks to join;
+                         `sudo oath consort join|admit|remove|leave`
 
 `--json` prints the same facts as JSON. `oath --help` for flags.
 {probation}{damage}{recipes}
@@ -217,6 +220,7 @@ fn kind_line(kind: &str) -> &'static str {
         "net" => "a network link (net0, dhcp or static)",
         "ssh" => "owner SSH public keys (login as home)",
         "dev" => "a hardware device (inventory)",
+        "peer" => "a member of this machine's consort (inventory; `oath consort`)",
         "plan" => "a build plan (hash-pinned file; oath build)",
         "cell" => "one project's software, run only in a cell (never linked or published)",
         _ => "see schema",

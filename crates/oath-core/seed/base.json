@@ -73,6 +73,14 @@
       "restart": "always",
       "enabled": true
     },
+    "svc:oath-bus": {
+      "exec": [
+        "/bin/oath-bus"
+      ],
+      "wants": [],
+      "restart": "always",
+      "enabled": true
+    },
     "pkg:glibc": {
       "present": true,
       "description": "The C library and its loader, /lib/ld-linux-x86-64.so.2: every program loads it.",

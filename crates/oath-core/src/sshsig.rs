@@ -212,7 +212,7 @@ impl<'a> Reader<'a> {
 }
 
 /// Standard base64 with padding.
-fn base64(s: &str) -> Option<Vec<u8>> {
+pub(crate) fn base64(s: &str) -> Option<Vec<u8>> {
     let s = s.trim_end_matches('=');
     let mut out = Vec::with_capacity(s.len() * 3 / 4);
     let (mut acc, mut bits) = (0u32, 0);

@@ -6,7 +6,7 @@ use schemars::generate::SchemaSettings;
 use schemars::JsonSchema;
 use serde_json::{json, Value};
 
-use crate::kinds::{Cell, Dev, Host, Net, Pkg, Plan, Snap, Ssh, Svc};
+use crate::kinds::{Cell, Dev, Host, Net, Peer, Pkg, Plan, Snap, Ssh, Svc};
 
 /// Every kind, with its prose.
 pub const KINDS: &[(&str, &str)] = &[
@@ -17,6 +17,7 @@ pub const KINDS: &[(&str, &str)] = &[
     ("net", include_str!("../schema/net.md")),
     ("ssh", include_str!("../schema/ssh.md")),
     ("dev", include_str!("../schema/dev.md")),
+    ("peer", include_str!("../schema/peer.md")),
     ("plan", include_str!("../schema/plan.md")),
     ("cell", include_str!("../schema/cell.md")),
 ];
@@ -31,6 +32,7 @@ pub fn schema(kind: &str) -> Option<Value> {
         "net" => of::<Net>(),
         "ssh" => of::<Ssh>(),
         "dev" => of::<Dev>(),
+        "peer" => of::<Peer>(),
         "plan" => of::<Plan>(),
         "cell" => of::<Cell>(),
         _ => return None,

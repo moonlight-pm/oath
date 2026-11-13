@@ -1,0 +1,23 @@
+[package]
+name = "oath-bus"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+oath-core = { path = "../oath-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2"
+# The links' Noise handshake (R87): X25519, ChaCha20-Poly1305 and BLAKE2s
+# only. Not snow's `std`, which turns on `ring`, nor its `use-getrandom`,
+# whose getrandom 0.3 brings wasm crates: link.rs asks the kernel.
+snow = { version = "0.10", default-features = false, features = [
+    "use-curve25519",
+    "use-chacha20poly1305",
+    "use-blake2",
+] }
+
+[dev-dependencies]
+tempfile = "3"

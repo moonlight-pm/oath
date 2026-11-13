@@ -633,6 +633,43 @@ fn is_zero(n: &u64) -> bool {
     *n == 0
 }
 
+/// A member of this machine's consort (R87), itself included (inventory).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct Peer {
+    /// Whether it is a member. `oath-bus` makes the object when the
+    /// membership log admits the peer and removes it when the log removes
+    /// it; `oath set` refuses false. `oath consort` changes membership.
+    pub present: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct PeerActual {
+    pub present: bool,
+    /// This machine.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub me: bool,
+    /// Its signing key, an `.pub` line.
+    pub key: String,
+    pub fingerprint: String,
+    /// Where its link comes from (`10.0.0.169`).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub address: String,
+    /// A link to it is up (always, for this machine).
+    pub online: bool,
+    /// When its link last went down (RFC 3339).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub seen: String,
+    /// The member that admitted it, and when.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub admitted_by: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub admitted: String,
+    /// Its newest `status` record: profile, output, generation, drift,
+    /// failed services, boot time, kernel.
+    #[serde(default, skip_serializing_if = "serde_json::Value::is_null")]
+    pub status: serde_json::Value,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SshActual {
     #[serde(default)]

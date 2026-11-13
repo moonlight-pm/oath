@@ -165,6 +165,7 @@ fn seed_lists_host() {
         "svc:serial",
         "svc:sshd",
         "svc:time",
+        "svc:oath-bus",
         "svc:login",
         "pkg:bash",
         "pkg:glibc",
@@ -193,11 +194,11 @@ fn seed_lists_host() {
     ] {
         assert!(ids.iter().any(|i| i == want), "missing {want}");
     }
-    // Devices are discovered on the machine, not seeded.
-    assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 6 svc and host, 38 packages, three recipes (two packages and a plan
+    // Devices and peers are found on the machine, not seeded.
+    assert!(!ids.iter().any(|i| i.starts_with("dev:") || i.starts_with("peer:")), "{ids:?}");
+    // 7 svc and host, 38 packages, three recipes (two packages and a plan
     // each), net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 57, "{ids:?}");
+    assert_eq!(ids.len(), 58, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));

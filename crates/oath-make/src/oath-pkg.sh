@@ -23,7 +23,7 @@ EOF
 export RUSTFLAGS="-C target-feature=+crt-static"
 cp -R "$FILES/tree" /tmp/oath
 cd /tmp/oath
-gnu="--frozen --target x86_64-unknown-linux-gnu -p oath -p oath-init"
+gnu="--frozen --target x86_64-unknown-linux-gnu -p oath -p oath-init -p oath-bus"
 efi="--frozen --target x86_64-unknown-uefi -p oath-efi --features uefi-app"
 cargo build --release $gnu
 # Unset, not empty: cargo takes an empty RUSTFLAGS over the config's
@@ -33,10 +33,11 @@ env -u RUSTFLAGS cargo build --release $efi
 r=target/x86_64-unknown-linux-gnu/release
 mkdir -p /out/bin /out/lib/oath /out/boot
 cp $r/oath /out/bin/oath
+cp $r/oath-bus /out/bin/oath-bus
 cp $r/oath-init /out/lib/oath/init
 cp $r/serial-login $r/screen-login $r/sudo $r/login /out/lib/oath/
 cp target/x86_64-unknown-uefi/release/oath-efi.efi /out/boot/BOOTX64.EFI
-for f in /out/bin/oath /out/lib/oath/*; do
+for f in /out/bin/oath /out/bin/oath-bus /out/lib/oath/*; do
 	if readelf -lW "$f" | grep -q INTERP; then
 		echo "$f is dynamically linked; Oath's binaries are static" >&2
 		exit 1

@@ -550,7 +550,7 @@ pub fn seed_ids(bundle: &Path) -> Result<Vec<String>> {
     for kind in fs::read_dir(bundle.join("stage/oath/objects"))? {
         let kind = kind?;
         let k = kind.file_name().to_string_lossy().into_owned();
-        if !kind.path().is_dir() || k == "snap" || k == "dev" {
+        if !kind.path().is_dir() || k == "snap" || k == "dev" || k == "peer" {
             continue;
         }
         for e in fs::read_dir(kind.path())? {
@@ -810,6 +810,32 @@ pub fn keep_machine_pin(
         }
     }
     (!moved.is_empty()).then(|| (json!({ "needs": needs }), moved))
+}
+
+/// An overlay (R47): `{head, signer, live, source?}` when `obj` is a
+/// present package whose live pin is not the head it took
+/// (`/oath/heads.json`, R72); else `{output, release, live, source?}` when
+/// it is not the pin of the release this machine runs. `oath get`, `oath
+/// diff` and the consort's `packages` facts say it.
+pub fn overlay_of(root: &Path, obj: &crate::Object) -> Option<Value> {
+    if obj.id.kind != "pkg" || obj.actual["present"] != json!(true) {
+        return None;
+    }
+    let live = obj.actual["hash"].as_str()?;
+    let heads: crate::head::Record = crate::read_json(&root.join(crate::head::RECORD)).unwrap_or_default();
+    let mut v = match heads.get(&obj.id.name) {
+        Some(t) if t.hash == live => return None,
+        Some(t) => json!({ "head": t.hash, "signer": t.signer, "live": live }),
+        None => {
+            let record: Release = crate::read_json(&root.join(RECORD)).ok()?;
+            let pin = Ran::of(Some(&record)).overlay(&obj.id.name, live)?.to_string();
+            json!({ "output": record.output, "release": pin, "live": live })
+        }
+    };
+    if let Some(src) = obj.actual.get("source").filter(|s| !s.is_null()) {
+        v["source"] = src.clone();
+    }
+    Some(v)
 }
 
 #[cfg(test)]

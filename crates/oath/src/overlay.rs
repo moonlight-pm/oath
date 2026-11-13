@@ -6,33 +6,15 @@
 
 use std::path::Path;
 
-use oath_core::head;
-use oath_core::update::{self as up, Ran, Release};
+use oath_core::update as up;
 use oath_core::{Catalog, Object, ObjectId, Result};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 /// `{head, signer, live, source?}` when `obj` is a present package whose
 /// live pin is not the head it took; else `{output, release, live,
 /// source?}` when it is not the release's pin.
 pub fn of(root: &Path, obj: &Object) -> Option<Value> {
-    if obj.id.kind != "pkg" || obj.actual["present"] != json!(true) {
-        return None;
-    }
-    let live = obj.actual["hash"].as_str()?;
-    let heads: head::Record = oath_core::read_json(&root.join(head::RECORD)).unwrap_or_default();
-    let mut v = match heads.get(&obj.id.name) {
-        Some(t) if t.hash == live => return None,
-        Some(t) => json!({ "head": t.hash, "signer": t.signer, "live": live }),
-        None => {
-            let record: Release = oath_core::read_json(&root.join(up::RECORD)).ok()?;
-            let pin = Ran::of(Some(&record)).overlay(&obj.id.name, live)?.to_string();
-            json!({ "output": record.output, "release": pin, "live": live })
-        }
-    };
-    if let Some(src) = obj.actual.get("source").filter(|s| !s.is_null()) {
-        v["source"] = src.clone();
-    }
-    Some(v)
+    up::overlay_of(root, obj)
 }
 
 /// One line for a person: what runs, and what the head or release has.
