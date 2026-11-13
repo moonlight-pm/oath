@@ -128,6 +128,8 @@ source = "CEF 57389f0 (156.0.28, 2026-11-10) on Chromium 156.0.8078.93 (tag 2026
 "CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
 "CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
 "CVE-2026-121034" = "Views in Chrome on Windows (Google's record); Oath builds CEF for Linux"
+"CVE-2026-126879" = "fixed on Chromium's 156 branch by 7083f40f8a15 (8078@{#2064}, cherry-pick of main's 7155a0008561, issue 576736463), which 156.0.8078.93 (8078@{#2089}) holds: Chromium's log of the branch; Google's Extended Stable post of 2026-11-11 names it among 156.0.8078.100's fixes"
+"CVE-2026-126846" = "Skia's Vulkan backend on ARM's proprietary Mali driver, versions 42 to 55: its fix (Skia c215948793b4 on chrome/m157, issue 580857377) sleeps after device loss only when the vendor is ARM; Oath is x86-64 and ships no Mali driver, and Google did not take it to 156's Extended Stable"
 "CVE-2026-121157" = "Chromoting, Chrome Remote Desktop, against a local program (Google's record, Chromium-rated low): its host is remoting/'s own programs, and the build makes and ships libcef.so and its resources only (pkgs/cef/build.sh)"
 "CVE-2026-121037" = "ANGLE in Chrome on Windows (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121045" = "Browser in Chrome on Mac (Google's record); Oath builds CEF for Linux"
@@ -1002,6 +1004,9 @@ tag = "{version}"
 cpe = "cpe:2.3:a:postgresql:postgresql"
 repo = "https://github.com/postgres/postgres"
 tag = "REL_{version_}"
+
+[postgresql.age_because]
+source = "18.7 (tag 2026-11-09, released 2026-11-12) is the 18.x line's only release with the fixes of PostgreSQL's security release of 2026-11-12 (postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/, and its security page): 52 CVEs, among them CVE-2026-120142, 120143, 120144, 120145, 120149, 120150, 120151, 116314, 116329, 116330 and 116336 (CVSS 8.8: code run by an authenticated user, or by a crafted dump through pg_restore and psql)"
 
 [prismlauncher]
 cpe = "cpe:2.3:a:prismlauncher:prism_launcher"
