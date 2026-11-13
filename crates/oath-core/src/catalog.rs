@@ -1183,10 +1183,7 @@ impl Catalog {
                     }
                 }
                 for (path, m) in &h.mounts {
-                    let why = crate::mounts::check_path(path)
-                        .or_else(|| crate::mounts::check_source(&m.source))
-                        .or_else(|| crate::mounts::check_options(&m.options));
-                    if let Some(why) = why {
+                    if let Some(why) = crate::mounts::check(path, m) {
                         return Err(Error::hint(format!("{id}: mounts: {why}"), hint()));
                     }
                 }

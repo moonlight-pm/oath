@@ -89,8 +89,10 @@ pub struct Host {
     #[serde(default)]
     pub publishers: Vec<String>,
     /// Filesystems to mount: a path under /mnt or /home, or /home itself
-    /// (home on another volume, R45), to its source. PID 1 mounts each at
-    /// boot and when its disk appears; apply mounts, remounts and unmounts.
+    /// (home on another volume, R45), to its source, a disk or an NFS
+    /// export. PID 1 mounts each at boot and when its disk appears, and an
+    /// export once the network is up and while its server does not answer;
+    /// apply mounts, remounts and unmounts.
     /// /home itself only at boot, before sshd and the desk, in place of
     /// `@home`: an apply says it waits for the next boot, and a missing
     /// source leaves `@home` (or `@`'s /home) with sshd's keys written. A
@@ -127,11 +129,13 @@ pub struct Host {
 /// One filesystem in `host:local.mounts`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct Mount {
-    /// `LABEL=…`, `UUID=…`, `PARTLABEL=…` or `PARTUUID=…`. Device names
-    /// (`/dev/sdb1`) move between boots and ports, so they are refused.
+    /// `LABEL=…`, `UUID=…`, `PARTLABEL=…` or `PARTUUID=…`, or an NFS
+    /// export, `host:/path` (`nas:/mnt/alpha`). Device names (`/dev/sdb1`)
+    /// move between boots and ports, so they are refused.
     pub source: String,
     /// mount(8) `-o` options (`noatime,compress=zstd:1`); empty is the
-    /// filesystem's defaults.
+    /// filesystem's defaults. An export adds the server's address and,
+    /// unless the options name a `vers=`, NFS 4.1.
     #[serde(default)]
     pub options: String,
 }

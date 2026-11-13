@@ -292,7 +292,7 @@ impl ApplyHooks for Live {
         let mut mounts = Default::default();
         if self.catalog_root == Path::new("/oath") {
             let was = previous.map(|p| p.mounts.clone()).unwrap_or_default();
-            let m = oath_core::mounts::converge(&desired.mounts, &was, false);
+            let m = oath_core::mounts::converge(&desired.mounts, &was, false, true);
             for path in &m.waiting {
                 eprintln!("host:local: {path} waits for {}", desired.mounts[path].source);
             }

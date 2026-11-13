@@ -46,7 +46,9 @@ firmware ── ESP: EFI/BOOT/BOOTX64.EFI = oath-efi (menu, mark; the only loade
     under /oath/.lock: apply host, net (one-shot dhcpcd for dhcp), ssh
       from their applied specs (applied.json); discover dev:* from sysfs;
       mount the host:local.mounts whose disk is there (/home itself only
-      here, else @home as the fallback); write sshd's keys into /home;
+      here, else @home as the fallback; an NFS export waits for the task
+      `oath mount-nas`, run after the services start and while one is
+      not mounted); write sshd's keys into /home;
       observe pkg:*, plan:* and snap:current into status/
     listen on /oath/run/init.sock; start svc:* from applied.json in
       `wants` order (a cycle skips only its members) and the DHCP client;
@@ -187,7 +189,7 @@ then `cgroup.kill`s the rest.
 `reboot`, `halt`, `poweroff`, Ctrl-Alt-Del and `oath` `power=reboot` or
 `halt` all signal PID 1. It stops the services in reverse `wants` order, a layer
 at a time (TERM, 5 s, KILL), signals
-everything else, syncs, unmounts `host:local.mounts`, lazily unmounts
+everything else, unmounts NFS exports, syncs, unmounts `host:local.mounts`, lazily unmounts
 `/oath/run/fs`, remounts `/` read-only, then calls `reboot(2)`.
 
 ## Sleep

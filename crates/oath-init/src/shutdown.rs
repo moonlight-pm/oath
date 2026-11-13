@@ -96,6 +96,27 @@ pub fn finish(sup: &mut Supervisor, mode: Mode) -> ! {
         libc::kill(-1, libc::SIGKILL);
     }
     reap_for(Duration::from_millis(200));
+    // NFS exports before sync, which waits on a hard mount's server for as
+    // long as it takes: one whose server is gone (three tries) is shut down
+    // first, and its unwritten pages fail.
+    for path in crate::host_mounts().iter().rev() {
+        let Some((dev, addr)) = oath_core::mounts::nfs_mounted(path) else { continue };
+        let mut answer = oath_core::mounts::answers(&addr);
+        for _ in 1..3 {
+            if answer.is_ok() {
+                break;
+            }
+            std::thread::sleep(Duration::from_secs(1));
+            answer = oath_core::mounts::answers(&addr);
+        }
+        if let Err(e) = answer {
+            log(&format!("shutdown: {path}: its server {addr} does not answer: {e}"));
+            let _ = std::fs::write(format!("/sys/fs/nfs/{dev}/shutdown"), "1");
+        }
+        if umount2(path.as_str(), MntFlags::empty()).is_err() {
+            let _ = umount2(path.as_str(), MntFlags::MNT_DETACH);
+        }
+    }
     unsafe {
         libc::sync();
     }
