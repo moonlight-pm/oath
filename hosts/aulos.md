@@ -36,5 +36,6 @@ Overwrite this file when facts change; do not append a diary.
   `svc:oath-bus` made by hand (generations 1 and 2), then PID 1 re-executed
   into that pack's `init` (`sudo oath reexec-init`) so `/oath/schema` knows
   `peer`. In consort `fb51071498a5` with canto, which it admitted (code
-  compared) on 2026-11-13. `oath update` replaces the overlay until a release
-  carries it. 6 services, in sync.
+  compared) on 2026-11-13. It runs the newest `base`, so `oath update` moves
+  nothing now; the next `base` release would replace the overlay unless it
+  carries the consort (`--keep pkg:oath` until then). 6 services, in sync.

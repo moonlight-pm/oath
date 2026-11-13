@@ -61,7 +61,10 @@ Overwrite this file when facts change; do not append a diary.
   `consort@43ad5e5` as an overlay, applied with `--keep-seat` with
   `svc:oath-bus` made by hand (generation 466), and PID 1 re-executed into its
   `init`; the desk ran across. It joined aulos's consort `fb51071498a5`.
-  `/oath/output.json` names output `e3ea93e48cf0` (read 2026-11-13).
+  `/oath/output.json` names output `e3ea93e48cf0` (read 2026-11-13), older
+  than the newest `desk`, so `oath update` here would put the released
+  `pkg:oath` back, without `oath-bus`: `--keep pkg:oath` until a release
+  carries the consort.
 - **Running now:** output `06e0194eb4f3` (master `fc74baa`, the boot screen's status line;
   never published), from `sudo oath update --confirm --reboot` on 2026-11-07 at Joshua's word,
   pulled from a local origin on buccina (`http://10.0.0.149:8743`, the release `cargo make
