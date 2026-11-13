@@ -1,9 +1,9 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source bluez-5.87.tar.xz 26bdcf2cebd7310c6f598850606b037ef0c515fe6608ebc54d22c50c4c32b35f
-tag 5.87 commit 65d11edee469c24dcc8d075b8be9c040cebaaf98 tree e87954670fd82e2ec4361e41a6fd0ae7412750f4
+source bluez-5.88.tar.xz 6952c39eb5f8b0ee712cc50ab3bcff03be17c410dd97ca640f4849d9a1653ba3
+tag 5.88 commit 34b6f8e0e998728ce9e8e64e280d9d390c511804 tree c84e1e27ab9c1e4571f3902eacc011ccaf5c98a8
 signed no
-same 862
-only-in-tag 135
+same 906
+only-in-tag 185
 from automake 2
 from gnulib 6
 adds Makefile.in
@@ -14,6 +14,7 @@ adds doc/bdaddr.1
 adds doc/bluetoothctl-admin.1
 adds doc/bluetoothctl-advertise.1
 adds doc/bluetoothctl-assistant.1
+adds doc/bluetoothctl-cs.1
 adds doc/bluetoothctl-endpoint.1
 adds doc/bluetoothctl-gatt.1
 adds doc/bluetoothctl-hci.1
@@ -54,6 +55,7 @@ adds doc/org.bluez.BatteryProviderManager.5
 adds doc/org.bluez.Bearer.BREDR.5
 adds doc/org.bluez.Bearer.LE.5
 adds doc/org.bluez.Call.5
+adds doc/org.bluez.ChannelSounding1.5
 adds doc/org.bluez.Device.5
 adds doc/org.bluez.DeviceSet.5
 adds doc/org.bluez.GattCharacteristic.5
@@ -76,6 +78,9 @@ adds doc/org.bluez.Network.5
 adds doc/org.bluez.NetworkServer.5
 adds doc/org.bluez.Profile.5
 adds doc/org.bluez.ProfileManager.5
+adds doc/org.bluez.Ranging1.5
+adds doc/org.bluez.RangingProvider1.5
+adds doc/org.bluez.RangingProviderManager1.5
 adds doc/org.bluez.Telephony.5
 adds doc/org.bluez.Thermometer.5
 adds doc/org.bluez.ThermometerManager.5
