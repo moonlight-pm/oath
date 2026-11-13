@@ -26,13 +26,12 @@ Overwrite this file when facts change; do not append a diary.
   cell started by `/bin/wicket`, from images in a registry cell on
   127.0.0.1:5000. `svc:wl-b6703b0fa806-web`, the retired `oath`
   workload (R79), is stopped until `wicketctl services install` removes it.
-- **Running now:** `base` release `ee3e239caa32` (master `7597cc1`,
-  R72 and R73), generation 64, in sync: 5 from `sudo oath update --confirm
-  --reboot` on 2026-11-07 (only `pkg:oath` moved), 6 put novus's key in
-  `host:local.publishers` beside buccina's (Joshua 2026-11-07), 7–63
-  (2026-11-08 and 09) are mostly Wicket's services and workloads (above),
-  and 64 made that key `names="*" … oath@novus`, any package's head
-  (Joshua, 2026-11-10). The `base` release `4f32ebdf39cd` (2026-11-10)
-  is not taken yet. Mountain time
-  (`MST7MDT,M3.2.0,M11.1.0`), over SSH too. `@boot-2` holds the boot
-  before it (`57192b33e6ab`).
+- **Running now** (read 2026-11-13): `base` release `c1d413829997`
+  (2026-11-12), generation 78, in sync. Generation 77 (2026-11-12) moved
+  `pkg:cell`, `crun`, `node`, `oath` and `postgis` by `sudo oath update
+  --confirm`; 78 applied `pkg:postgis` at 01:08Z on 2026-11-13, and it
+  rebooted at 01:09Z. Generations 6 and 64 put novus's key in
+  `host:local.publishers` beside buccina's, as `names="*" … oath@novus`
+  (Joshua, 2026-11-07 and 2026-11-10); most generations since are Wicket's
+  services and workloads. Mountain time (`MST7MDT,M3.2.0,M11.1.0`), over
+  SSH too.

@@ -22,6 +22,7 @@ in [../decisions.md](../decisions.md).
 | [agent.md](agent.md) | `oath mcp`: the verbs as MCP tools over SSH; the real-model acceptance check | partly built (phase 7) |
 | [writ.md](writ.md) | `writ`, Oath's coding agent: the box, the gate, the key, OpenRouter | box built, no model yet (R64) |
 | [cells.md](cells.md) | `cell`: an installed package or `cell:` object in a box, images, one uid | released 2026-11-09 (R76, R78) |
+| [consort.md](consort.md) | Machines that work together: `peer`, `oath-bus`, the consort key, updates on the bus | will be (R87) |
 
 Each spec has a **Status** line, then sections labelled *built*, *known
 defects* and *target*. "Is" and "will be" never share a paragraph.

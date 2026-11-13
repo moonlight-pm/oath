@@ -115,9 +115,10 @@ Overwrite this file when facts change; do not append a diary.
   2026-11-10 01:44Z applied its heads here: all 17 Sola packages from master@cf0e2d40 (`pkg:sola`
   `90ca782c6acc`, the new `pkg:sola-kvm` `0e0a8d721a46`, `pkg:sola-browser` `58281b23ab33`), which the
   `desk` profile pins, so `pkg:sola-browser` is no longer an overlay.
-  **Running now:** desk `84cbc1a7ff81` (the 2026-11-10 release, from `a7ceeae`), taken by
-  `oath update` at 17:14Z (generation 133) with no reboot: PID 1 moved in place, booted
-  2026-11-09 20:15 local. Generations 134 and 135 that day are its Sola session's own apply and `oath add`.
+  **Running now** (read 2026-11-13): desk `42a8028ae7bf`, the newest `desk` release (2026-11-12),
+  generation 159; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
+  `pkg:sola-terminal`. Oath's agent sessions run in its checkout since 2026-11-12 (R39 as
+  amended); builds and publishing stay on buccina.
   `host:local.seat_hid` (R71) is `["3554:f510"]`, the LAMZU 4K receiver, at Joshua's word (generation 99, 2026-11-07): its vendor channel `/dev/hidraw5` is `root:home 0660`, its mouse and keyboard channels (`hidraw3`, `hidraw6`) stay root's. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile. `pkg:llama-cpp` b11960 (`sha256-0908155920628b60`, from master@cf2448e) and `pkg:writ` 0.1.0 (`sha256-0fcb55acfa02`, from master@5c4bce3, fetched from the origin, generation 88, 2026-11-05), overlays in no profile, added at Joshua's word; testing may use up to half the GPU (R66). No `svc:llama` and no server left running: `writ` is the session on a terminal (R69), which loads ISTA's Qwen3.8 27B `IQ3_XXS-mtp` with MTP drafting on (`--mtp`; Joshua's choice, 2026-11-05; sha256 `63f29a2189a6` as Hugging Face lists it), from `~/.local/share/writ/models`, the only model there, as `work` at a 40% share when a prompt needs it (R68; `~/.config/writ/local.json`), and `/llama stop` frees it. It holds 12.5 GiB; the first prompt after a load waits about 80–100 s, and then it answers at 20–25 tokens/s. The other trial files and Qwen3.5 9B, 65 GB, were deleted at Joshua's word the same day. No OpenRouter key yet (`writ key`).
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
@@ -141,19 +142,11 @@ Overwrite this file when facts change; do not append a diary.
   host key the install printed, ending `Suecii`. canto's
   `~/.ssh/novus-oath.known_hosts` still has the old stick's key.
 - **The stick:** Joshua's Samsung Type-C 128 GB (`090c:1000`, serial
-  `0354422110003481`), rewritten 2026-11-07 by `cargo make install
-  --local` from buccina for a desk with an NVIDIA card: desk output
-  `06e0194eb4f3` (master `fc74baa`, 74/74 in QEMU, never published; canto
-  runs it), hostname `oath`, no overlay, root
-  `UUID=9a3600aa-1495-42be-8a9a-544f40879739`; booted in QEMU on buccina,
-  it built `plan:nvidia` (`pkg:nvidia` `44c0c5e1…`, NVIDIA 595.104.02,
-  vermagic 7.3.1) and turned it on (generation 1). It is for a machine
-  at 10.0.0.156 that Joshua is moving from Windows (ASUS ROG Strix
-  B760-I, i5-13400 with its own graphics off in setup, 32 GB, a GeForce
-  RTX 4060 `10de:2882`, wired `igc`; no driver for its Intel Wi-Fi
-  `8086:7a70`). Its base
-  write of earlier that day booted the machine to `Oath is running, with
-  no driver for this NVIDIA display (10de:2882)`. Its host key is not
-  pinned. Boot it from the firmware's boot menu (F8), from a back-panel
-  port: behind the keyboard's USB 2.0 hub it resets four times and never
-  becomes a disk.
+  `0354422110003481`), rewritten 2026-11-12 by `cargo make install --local`
+  from buccina with `base` release `c1d413829997` and
+  [aulos.json](aulos.json): hostname `aulos`, Mountain time, buccina's and
+  novus's SSH keys. It installed aulos ([aulos.md](aulos.md)) and boots as
+  `aulos` on any machine. Before it, it held desk output `06e0194eb4f3`,
+  which installed koeurax; on koeurax's ASUS board it boots from the
+  firmware's menu (F8) from a back-panel port, since behind the keyboard's
+  USB 2.0 hub it resets four times and never becomes a disk.

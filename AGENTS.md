@@ -63,7 +63,9 @@ images this repo built. **Anything on canto**, the test machine
 (Joshua, 2026-10-18): `cargo make install --target home@10.0.0.3
 --disk /dev/sda … --confirm`, `sudo oath update --confirm` there,
 reboots, `sudo`, wiping its disk. **Anything on buccina**, where Oath
-work happens (R39, Joshua 2026-10-28; canto is for Sola R&D, so keep
+builds, checks and publishes (R39, Joshua 2026-10-28; since 2026-11-12
+sessions run on novus and reach it by `ssh buccina`, and its checkout
+stays at `origin/master` for the audit; canto is for Sola R&D, so keep
 long Oath builds off it): installs, updates, reboots, `sudo`, wiping
 its disk. **Installing Oath on aulos** (Joshua, 2026-11-12: "aulos is
 yours to wipe"), from the Samsung stick in buccina: writing that stick,
