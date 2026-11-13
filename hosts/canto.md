@@ -57,6 +57,11 @@ Overwrite this file when facts change; do not append a diary.
   `d8817f9`; cargo's target on `/mnt/warehouse/Oath`) goes once the
   Steam session in it closes (Sola restored it after the reboot); the
   novus trial stick's host key moved to `~/.ssh/novus-oath.known_hosts`.
+- **Consort (R87), since 2026-11-13:** `pkg:oath` `sha256-862f35dd…` from
+  `consort@43ad5e5` as an overlay, applied with `--keep-seat` with
+  `svc:oath-bus` made by hand (generation 466), and PID 1 re-executed into its
+  `init`; the desk ran across. It joined aulos's consort `fb51071498a5`.
+  `/oath/output.json` names output `e3ea93e48cf0` (read 2026-11-13).
 - **Running now:** output `06e0194eb4f3` (master `fc74baa`, the boot screen's status line;
   never published), from `sudo oath update --confirm --reboot` on 2026-11-07 at Joshua's word,
   pulled from a local origin on buccina (`http://10.0.0.149:8743`, the release `cargo make

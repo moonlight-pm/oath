@@ -6,7 +6,7 @@ finds the others on the LAN, links to the members, and keeps their
 facts. No machine leads: any member admits another, at the owner's
 word, and any member can be lost.
 
-On `master` since 2026-11-13, in no release yet.
+Built 2026-11-13 (`pkg:oath` with `/bin/oath-bus`); in no release yet.
 
 ## What each machine has
 

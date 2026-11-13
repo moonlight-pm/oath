@@ -29,8 +29,12 @@ Overwrite this file when facts change; do not append a diary.
   before Wicket moved to dulcia). Joshua said wipe it as is, without a copy. buccina's
   root key set `BootNext` to the stick from that NixOS. From the stick,
   `sudo oath install AMD9N000414509H6N --confirm` wrote the NVMe.
-- **Running now:** `base` release `c1d413829997`, generation 0, in sync, 5
-  services (`login`, `screen`, `serial`, `sshd`, `time`). The release record
-  came from a build output without its publish stamp, so `oath update` says
-  the record lacks its commit, pins and seed until `sudo oath update
-  --confirm` writes it. That update moves nothing, and has not been run.
+- **Running now:** `base` release `c1d413829997`, its record written by
+  `sudo oath update --confirm` (2026-11-12, moved nothing), with the consort
+  (R87) as an overlay since 2026-11-13: `pkg:oath` `sha256-862f35dd…` from
+  `consort@43ad5e5` (built on buccina by `cargo make pkgs oath`) and
+  `svc:oath-bus` made by hand (generations 1 and 2), then PID 1 re-executed
+  into that pack's `init` (`sudo oath reexec-init`) so `/oath/schema` knows
+  `peer`. In consort `fb51071498a5` with canto, which it admitted (code
+  compared) on 2026-11-13. `oath update` replaces the overlay until a release
+  carries it. 6 services, in sync.
