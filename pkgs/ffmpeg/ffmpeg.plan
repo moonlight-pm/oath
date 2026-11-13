@@ -65,7 +65,7 @@
     },
     {
       "id": "pkg:nasm",
-      "hash": "sha256-f018f1eb4ee666b62ffab6503a241d0d47ad6fff903945c92a9581ba0cbf35b9"
+      "hash": "sha256-159f141a5dbc4e1be1a2298f7ef1cfbb687fe67b4f044bee347cd9397280b511"
     },
     {
       "id": "pkg:openssl",
