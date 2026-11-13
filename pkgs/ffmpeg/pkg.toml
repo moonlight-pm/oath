@@ -1,0 +1,19 @@
+# FFmpeg with its own codecs, formats and filters and no one else's (Joshua,
+# 2026-11-12, offered NVIDIA's encoders and x264, dav1d, Opus, libvpx and
+# LAME: "Built-ins only"). It decodes nearly every format, and encodes AAC,
+# Opus, FLAC, MJPEG, PNG, FFV1 and ProRes, but not H.264, HEVC, VP9 or AV1.
+# OpenSSL for https; zlib, bzip2, xz and glibc's iconv. LGPL: no --enable-gpl.
+version = "9.0.2"
+license = "LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND ISC"
+description = "FFmpeg: ffmpeg and ffprobe, and its libraries, with FFmpeg's own codecs."
+home = "https://ffmpeg.org/"
+category = "graphics"
+purl = "pkg:generic/ffmpeg@9.0.2"
+build = ["pkgconf", "nasm", "openssl", "zlib"]
+run = ["openssl", "zlib", "bzip2", "xz"]
+
+[[source]]
+url = "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz"
+sha256 = "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e"
+sig = "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
+key = "ffmpeg"

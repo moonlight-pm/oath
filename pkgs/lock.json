@@ -375,6 +375,19 @@
     "product": "sha256-b1d9d05b41a16983cfe3e1c34c6617806510406cef747fad6df791dccdf1895a",
     "run": []
   },
+  "ffmpeg": {
+    "version": "9.0.2",
+    "license": "LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND ISC",
+    "by": "plan",
+    "plan": "sha256-32adef937e3f505e35321e3c1e472dc5cafa362a2c9d3fff3b7c73dc034a0c2f",
+    "product": "sha256-d1094b92bf862a3e53b22d0b9a418aab350b90692b427ccff5b54fb27aaf4d22",
+    "run": [
+      "openssl",
+      "zlib",
+      "bzip2",
+      "xz"
+    ]
+  },
   "findutils": {
     "version": "4.11.0",
     "license": "GPL-3.0-or-later",
@@ -1334,6 +1347,16 @@
       "openssl",
       "zlib",
       "zstd"
+    ]
+  },
+  "nasm": {
+    "version": "3.02",
+    "license": "BSD-2-Clause",
+    "by": "plan",
+    "plan": "sha256-bcab843833f8bdd8e0651909c8337bd8d438c1589547c1c9a04c9263f2f0e837",
+    "product": "sha256-f018f1eb4ee666b62ffab6503a241d0d47ad6fff903945c92a9581ba0cbf35b9",
+    "run": [
+      "zlib"
     ]
   },
   "ncurses": {

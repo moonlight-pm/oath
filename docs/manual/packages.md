@@ -491,6 +491,19 @@ bun add vite          # vite@8.3.6, the newest a week old (2026-11-12)
 `bun build --compile` makes a program that names `/lib`'s loader, so it runs on Oath; one
 built with `--target=bun-linux-x64-baseline` runs on other Linux systems and not here.
 
+`pkg:ffmpeg` is FFmpeg with its own codecs only (R88): `ffmpeg`, `ffprobe` and the
+`libav*` libraries, LGPL, with https through `pkg:openssl`. It decodes nearly every
+format and encodes AAC, Opus, FLAC, MJPEG, PNG, FFV1 and ProRes, but not H.264, HEVC, VP9
+or AV1, and has no `ffplay` and no hardware encoders. FFmpeg calls its Opus encoder
+experimental, so it takes `-strict -2`. It needs nothing a machine lacks.
+
+```
+sudo oath add ffmpeg
+ffmpeg -i talk.mkv -vn -c:a opus -strict -2 talk.opus
+ffmpeg -i talk.mkv -ss 1 -frames:v 1 thumb.png
+ffprobe https://example.com/clip.mp4
+```
+
 `pkg:python` puts no `pip` in `/bin`, and `python3 -m pip` fails until pip is
 installed. The pack carries pip's wheel: `python3 -m venv DIR` installs it in
 `DIR`, and `python3 -m ensurepip --user` installs it under `~/.local`, whose

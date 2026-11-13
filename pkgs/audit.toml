@@ -303,6 +303,11 @@ skip = "CMake modules, no compiled code"
 compare_repo = "https://invent.kde.org/frameworks/extra-cmake-modules"
 compare_tag = "v{version}"
 
+[ffmpeg]
+cpe = "cpe:2.3:a:ffmpeg:ffmpeg"
+repo = "https://github.com/FFmpeg/FFmpeg"
+tag = "n{version}"
+
 [findutils]
 cpe = "cpe:2.3:a:gnu:findutils"
 compare_repo = "https://git.savannah.gnu.org/git/findutils.git"
@@ -857,6 +862,12 @@ tag = "mysql-{version}"
 # Innovation releases (MySQL's manual; read 2026-11-10).
 series = "9.7"
 differs_because = "packaging/rpm-sles/mysql.spec.in: the tag adds SLES 16 Provides lines for the mysql and mysqlrouter users, in an RPM spec this build does not read (read 2026-11-09)"
+
+[nasm]
+cpe = "cpe:2.3:a:nasm:netwide_assembler"
+repo = "https://github.com/netwide-assembler/nasm"
+tag = "nasm-{version}"
+differs_because = "Makefile.in, Mkfiles/msvc.mak and Mkfiles/openwcom.mak: the release inlines Makefile.dep (537 lines in Makefile.in, each only an object and its headers) and sets EXTERNAL_DEPENDENCIES = 0; editors/builtin.mac: two %define lines that dumpbuiltin.sh reads from nasm, for editors, not built. Of the 41 files only in the tarball, the 29 its Perl writes from the tag's sources were made again on buccina: 26 byte for byte, insns.xda and insnsa.c with the same flags in another hash order, macros.c's blob another deflate of the same 5,500 bytes. configure, aclocal.m4 and config.h.in are autoconf's, not checked (read 2026-11-12)"
 
 [ncurses]
 cpe = "cpe:2.3:a:gnu:ncurses"

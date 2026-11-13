@@ -1,0 +1,18 @@
+# NASM, the x86 assembler, a build pack for FFmpeg's SIMD (R57: the cheaper
+# route was FFmpeg's --disable-x86asm, which lost because its decoders and
+# scalers then run several times slower). No machine needs it. nasm.us signs
+# nothing, so the tarball is set against its tag (R54). Its own copy of zlib
+# is left out for pkg:zlib.
+version = "3.02"
+license = "BSD-2-Clause"
+description = "NASM: the Netwide Assembler, for x86 and x86-64 (FFmpeg's SIMD)."
+home = "https://www.nasm.us/"
+category = "toolchain"
+purl = "pkg:github/netwide-assembler/nasm@nasm-3.02"
+build = ["zlib"]
+run = ["zlib"]
+
+[[source]]
+url = "https://www.nasm.us/pub/nasm/releasebuilds/3.02/nasm-3.02.tar.xz"
+sha256 = "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d"
+unsigned = "nasm.us publishes no signature, and the nasm-3.02 tag is not signed"
