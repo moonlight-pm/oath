@@ -26,16 +26,16 @@ gaps · `target` designed, not built.
 | Devices | partial | modules by modalias, static nodes, package firmware; `dev:*` from sysfs; `host:local.mounts`, `/home` (R45); sound, pads, `/dev/kvm`, `seat_hid` (R22, R30, R33, R71); `power=sleep` (R84) | Node ownership: HID only; sleep: koeurax only |
 | Seed and overlays | shipped | profiles as data in `/lib/oath/seed` (R72); `oath seed --overlay`; `install --overlay` | — |
 | Kernel | shipped | `pkg:linux`, built by `pkg:gcc` (7.3; novus's drivers, KVM, nftables; TIOCSTI off, R60; Landlock, Yama, R64); vermagic checked; `pkg:linux-build` for outside modules (NVIDIA's, R34) | — |
-| Boot | shipped | initrd: PID 1, bash, firmware; switch_root into `@`; `oath-efi` loader; boot steps under the mark; 5 boots kept; `oath update` takes the newest signed output (R38), builds recipes, replaces overlays, follows the profile (R47, R62) | Kernels, PID 1's boot work need a reboot; a hung kernel shows `Starting Linux` |
+| Boot | shipped | initrd: PID 1, bash, firmware; switch_root into `@`; `oath-efi` loader; the mark's boot steps, then `efidrm` (R89); 5 boots kept; `oath update` takes the newest signed output (R38), builds recipes, replaces overlays, follows the profile (R47, R62) | Kernels, PID 1's boot work need a reboot; a hung kernel shows `Starting Linux` |
 | Image build | shipped | `cargo make build` packs `pkg:oath`, locked and pinned packs (R28); published only from a clean master (R47) | — |
-| Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` (R43), `@home` apart (R45); `cargo make image` (R86) | No image published; it shows nothing on NVIDIA, newer AMD; AMI `UEFI OS` |
+| Install | shipped | installer ramdisk; GPT, ESP, `@` by UUID; `--overlay`; pins the host key; `--qemu`, `--usb`, `--local`; checked outputs only; `oath install` (R43), `@home` apart (R45); `cargo make image` (R86) | No image published; Intel, newer AMD; AMI `UEFI OS` |
 | Test harness | shipped | `cargo make check`: a QEMU per case, `check-pass` per output; `--target`: `metal` cases on a machine | — |
 
 ## Payload (outside core)
 
 | Payload | Status | Notes |
 |---|---|---|
-| Desk (rivulet, Sola) | partial | Sola's apps; PipeWire, realtime, BlueZ; Noto; libglvnd, RADV or NVIDIA (R34); H.264, AAC (R40); shortcut inhibiting (R44). Gaps: other apps; Intel GPUs; the KVM's capture, pairing (R44) |
+| Desk (rivulet, Sola) | partial | Sola's apps; PipeWire, realtime, BlueZ; Noto; libglvnd, RADV or NVIDIA, a pack (R89); H.264, AAC (R40); shortcut inhibiting (R44). Gaps: other apps; Intel GPUs; the KVM's capture, pairing (R44) |
 | Wicket host | target | Left core (R1). |
 | `writ`, coding agent | partial | R64–R70: boxed agent; local model (CPU/GPU) or OpenRouter (`writ`, `check`, `use`, `apply`); buccina, novus. Gaps: long OpenRouter use, `oath` tool |
 | Steam + Minecraft desk | partial | Steam (R29), sandboxed: canto, novus, koeurax (games, a pad). Minecraft (R74): Prism, runs on koeurax |
