@@ -1,15 +1,15 @@
 # Mesa carries its own copy; the loader and vulkaninfo build against
 # these, found through their CMake package.
-version = "1.4.367"
+version = "1.4.368"
 license = "Apache-2.0 OR MIT"
 description = "Vulkan-Headers: the Vulkan API headers and their CMake package. A build pack; not in an image."
 home = "https://github.com/KhronosGroup/Vulkan-Headers"
 category = "graphics"
-purl = "pkg:github/KhronosGroup/Vulkan-Headers@v1.4.367"
+purl = "pkg:github/KhronosGroup/Vulkan-Headers@v1.4.368"
 build = ["cmake"]
 
 [[source]]
-url = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.367.tar.gz"
-sha256 = "0df7d58b5df617e0a6a17dec521af459206719f9c7cb12d05d09275597c16f70"
-file = "Vulkan-Headers-1.4.367.tar.gz"
+url = "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.368.tar.gz"
+sha256 = "5c5c6f64fcce28a24cc934143a048707af036a858e4ed11d7f71fe016006ecda"
+file = "Vulkan-Headers-1.4.368.tar.gz"
 unsigned = "a GitHub tag archive; Khronos publishes no tarball or signature, and its tags are unsigned"
