@@ -1,6 +1,6 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source harfbuzz-15.0.0.tar.xz 968536e9abd782f07f7954044c0c4020199fcdd39b41d221ec42d2a3be4a44df
-tag 15.0.0 commit 35f656a1a2bab548ea7f54a6dd3fba2b09680d14 tree fc2a44c7c50e67dd952bcd19c5476fc6508cdfe3
+source harfbuzz-15.1.0.tar.xz 0fc7c565443a5f4be7da65ac5ee5bd737d9b158dc908708b7689a0a5796b0c8d
+tag 15.1.0 commit 3df40d9b98d6b32f0e4288d4ecfbb158ddb3a372 tree 9d84c6e09762a714deca7830179caa66a9751612
 signed pgp 053D20F17CCCA9651B2C6FCB9AB24930C0B997A2
-same 3979
+same 4054
 only-in-tag 0
