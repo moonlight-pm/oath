@@ -4,16 +4,16 @@
 # upgrading across one is pg_upgrade, not a new pin alone. An extension in
 # another pack (pkg:postgis) is found through extension_control_path. The
 # project publishes hashes, no signature.
-version = "18.6"
+version = "18.7"
 license = "PostgreSQL"
 description = "PostgreSQL: the relational database server, its clients and contrib's extensions."
 home = "https://www.postgresql.org/"
 category = "server"
-purl = "pkg:generic/postgresql@18.6"
+purl = "pkg:generic/postgresql@18.7"
 build = ["bison", "flex", "icu", "libxml2", "openssl", "perl", "pkgconf", "readline", "ncurses", "util-linux", "zlib", "zstd"]
 run = ["gcc", "icu", "libxml2", "openssl", "readline", "ncurses", "util-linux", "zlib", "zstd"]
 
 [[source]]
-url = "https://ftp.postgresql.org/pub/source/v18.6/postgresql-18.6.tar.bz2"
-sha256 = "555610c24d53e4316da5b7d3fc25c279d96856d5e0e23ee308c328c5fa881d9f"
+url = "https://ftp.postgresql.org/pub/source/v18.7/postgresql-18.7.tar.bz2"
+sha256 = "441dfae4280cae3e0425e5f876f80559fb0731c140f1aae22b3e5a54d0411bfd"
 unsigned = "PostgreSQL publishes its tarballs with a sha256, not a signature"

@@ -101,7 +101,7 @@
     },
     {
       "id": "pkg:postgresql",
-      "hash": "sha256-1025492e6e7ec7c45faed13fb595bc7d6e9d43fd14e2c2a15726e8e82a59c697"
+      "hash": "sha256-6b01dd961f0536763b46493d72657ef70d0f57228ccc23b48e0703ec743090a1"
     },
     {
       "id": "pkg:proj",
@@ -155,7 +155,7 @@
     },
     {
       "id": "pkg:postgresql",
-      "hash": "sha256-1025492e6e7ec7c45faed13fb595bc7d6e9d43fd14e2c2a15726e8e82a59c697"
+      "hash": "sha256-6b01dd961f0536763b46493d72657ef70d0f57228ccc23b48e0703ec743090a1"
     },
     {
       "id": "pkg:proj",
