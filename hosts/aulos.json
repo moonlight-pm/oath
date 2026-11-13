@@ -1,0 +1,19 @@
+{
+  "objects": {
+    "host:local": {
+      "hostname": "aulos",
+      "timezone": "MST7MDT,M3.2.0,M11.1.0",
+      "publishers": [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+YKD3yXYsGJMxwpBIWSYP7VuQvjhzGG+LWvYhKTESD oath@buccina",
+        "names=\"*\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPSsnOLrq4TAWTsTa9pDEPx5sT9K/PmzvfkXoQStQi46 oath@novus"
+      ]
+    },
+    "ssh:local": {
+      "authorized": [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIG/tRnTkE2A09FW82nO0e5VksXetWS22VWiXMMOjKsb home@buccina",
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIoiXGhIkNqOr7/4WNoxJUPKcWIY5YHB+l+rEuDw6Z0u home@buccina (github)",
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFIh+0Tju/n8nZ5CcYPnQD6OsfkQfxzkSASNRzf1yxuT home@novus"
+      ]
+    }
+  }
+}

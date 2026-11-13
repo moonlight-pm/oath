@@ -65,7 +65,9 @@ images this repo built. **Anything on canto**, the test machine
 reboots, `sudo`, wiping its disk. **Anything on buccina**, where Oath
 work happens (R39, Joshua 2026-10-28; canto is for Sola R&D, so keep
 long Oath builds off it): installs, updates, reboots, `sudo`, wiping
-its disk. **The daily security audit** (R48, Joshua 2026-10-31):
+its disk. **Installing Oath on aulos** (Joshua, 2026-11-12: "aulos is
+yours to wipe"), from the Samsung stick in buccina: writing that stick,
+wiping aulos's NixOS. **The daily security audit** (R48, Joshua 2026-10-31):
 `svc:audit` may fix, check, publish and move buccina to its release on
 its own, pin a signing key its upstream names, and rebuild CEF (R67); it
 never touches novus or canto.
