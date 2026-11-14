@@ -1,8 +1,13 @@
 # ffmpeg and ffprobe, and libavcodec and the rest, shared, with headers and
 # pkg-config. --disable-autodetect keeps out whatever else the sandbox has:
 # no ffplay (SDL), no VA-API, VDPAU, NVENC or Vulkan, no outside codec.
+# patches/: fixes from FFmpeg's master, which no release has yet, one file to
+# an upstream pull request (or to a file they share), named for the CVEs.
 tar -xf "$SRC/$SOURCES"
 cd "ffmpeg-$VERSION"
+for p in "$FILES"/patches/*.patch; do
+	patch -p1 -i "$p"
+done
 ./configure --prefix="$LIVE" --libdir="$LIVE/$LIBDIR" --shlibdir="$LIVE/$LIBDIR" \
 	--enable-shared --disable-static --disable-autodetect --disable-doc --disable-debug \
 	--enable-openssl --enable-zlib --enable-bzlib --enable-lzma --enable-iconv

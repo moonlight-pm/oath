@@ -379,8 +379,8 @@
     "version": "9.0.2",
     "license": "LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND ISC",
     "by": "plan",
-    "plan": "sha256-415285efe6ac0b354b1547f8eb50757619436940ab2f7c498cfadab3dd3d932d",
-    "product": "sha256-d1094b92bf862a3e53b22d0b9a418aab350b90692b427ccff5b54fb27aaf4d22",
+    "plan": "sha256-c1aa0408e6bedafe03a111af4ff2109fbc2996deecfdf970550a9bd9470e48fa",
+    "product": "sha256-7d21f40154b4c09a71631df24027b9fb6b31e99c32e38a5dc8f690ce0bb7f4bc",
     "run": [
       "openssl",
       "zlib",
