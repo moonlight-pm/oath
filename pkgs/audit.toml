@@ -217,6 +217,7 @@ osv = "Go:github.com/cloudflare/cloudflared"
 
 [cloudflared.not_affected]
 "GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
+"CVE-2026-128085" = "OpenTelemetry's attribute value length limit miscounts U+FFFD (GHSA-q7gw-24fr-5p69), but the limit is off unless set: cloudflared 2026.10.5 sets no span limits (no AttributeValueLengthLimit, SpanLimits or WithSpanLimits in its source), and otel/sdk v1.45.0's DefaultAttributeValueLengthLimit is -1, unlimited, moved only by OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT; trace/auto.go builds spans only under OpenTelemetry's eBPF auto-instrumentation; sdk/log is not linked. Fixed in otel v1.47.0 (2026-10-02)"
 
 [cmake]
 cpe = "cpe:2.3:a:cmake_project:cmake"
@@ -438,6 +439,7 @@ osv = "Go:github.com/cli/cli/v2"
 
 [gh.not_affected]
 "GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
+"CVE-2026-128085" = "OpenTelemetry's attribute value length limit miscounts U+FFFD (GHSA-q7gw-24fr-5p69): gh links only otel, otel/metric and otel/trace v1.44.0, indirectly, and no otel SDK (sdk or sdk/log); the record's path in otel/trace is trace/auto.go, which builds spans only under OpenTelemetry's eBPF auto-instrumentation, with a limit that is unlimited unless OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT is set"
 
 [git]
 cpe = "cpe:2.3:a:git-scm:git"
