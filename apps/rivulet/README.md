@@ -20,6 +20,7 @@ versions, so `sola-river` drives it unchanged. GPL-3.0-only
 | `test/headless.sh` | a headless run driven by `sola-river`, and a comparison of two runs |
 | `test/sandbox.sh` | the built `pkg:rivulet` in the build sandbox: headless, with an X client through Xwayland |
 | `test/inhibit.sh`, `test/inhibit.c` | keyboard-shortcuts-inhibit end to end on an Oath build host: a window manager's chords against a client that captures input |
+| `test/fullscreen.sh`, `test/fullscreen.c` | a window the window manager places above a fullscreen window stays above it, on an Oath build host |
 
 Names follow the Zig: type `Foo` is `struct rv_foo`, method `Foo.bar` is
 `rv_foo_bar()`, fields keep their Zig names, a nested type takes its
@@ -83,6 +84,13 @@ build sandbox: rivulet headless on pixman, and as its init an X client
   pointer bindings. An inhibitor is active only while its surface has
   focus; sandboxed clients (security-context) do not see the global.
   `test/inhibit.sh` checks it against a window manager's chords.
+- A window after the top fullscreen window in render order is drawn
+  above it, as a shell surface is, and takes the pointer there; in River
+  it stays under the fullscreen window. A window manager can drop a
+  terminal over a fullscreen game without the game leaving fullscreen.
+  Like shell surfaces, such a window joins the fullscreen layer on every
+  output, above that output's `top` layer surfaces. `test/fullscreen.sh`
+  checks it.
 - Log lines go to stderr through stdio. Zig's River writes stderr at its
   own offset, so in a file shared with Xwayland it overwrote lines.
 

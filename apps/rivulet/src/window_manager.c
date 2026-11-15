@@ -605,7 +605,9 @@ static void render_finish(struct rv_window_manager *wm) {
 					continue;
 				}
 				wlr_scene_node_reparent(&window->popup_tree->node, server.scene.layers.popups);
-				if (window->wm_requested.fullscreen != NULL) {
+				// Oath: a window after a fullscreen window in render order stays
+				// above it, as a shell surface does (a drop-down over a game).
+				if (window->wm_requested.fullscreen != NULL || found_fullscreen) {
 					wlr_scene_node_reparent(&window->tree->node, server.scene.layers.fullscreen);
 					wlr_scene_node_raise_to_top(&window->tree->node);
 					found_fullscreen = true;
