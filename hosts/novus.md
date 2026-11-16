@@ -116,7 +116,7 @@ Overwrite this file when facts change; do not append a diary.
   `90ca782c6acc`, the new `pkg:sola-kvm` `0e0a8d721a46`, `pkg:sola-browser` `58281b23ab33`), which the
   `desk` profile pins, so `pkg:sola-browser` is no longer an overlay.
   **Running now** (read 2026-11-16): desk `42a8028ae7bf` (2026-11-12; it has not taken the newer
-  `85e4dd430b4d`), generation 164; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
+  `85e4dd430b4d`), generation 165; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
   `pkg:sola-terminal`. Oath's agent sessions run in its checkout since 2026-11-12 (R39 as
   amended); builds and publishing stay on buccina. On 2026-11-15, at Joshua's word, two overlays
   for the drop-down terminal over a fullscreen game: `pkg:sola` `726866d18ddf` from
@@ -124,7 +124,9 @@ Overwrite this file when facts change; do not append a diary.
   (generation 164, a plain apply that restarted the desk). rivulet's pack is its head since
   2026-11-16 (published from buccina), so `oath get` calls it an overlay only until `sudo oath
   update --record --confirm` here, which waits on Joshua's word (R32); `pkg:sola` has no head, and
-  `oath update` replaces it.
+  `oath update` replaces it. On 2026-11-16, at Joshua's word (R91), `pkg:libclang` `f81b2c945f17`
+  from master@ae1190c9 (built on buccina), by `oath store`, `oath new` and a plain apply
+  (generation 165): a build pack for Sola's Signal spike, in no profile and with no head yet.
   `host:local.seat_hid` (R71) is `["3554:f510"]`, the LAMZU 4K receiver, at Joshua's word (generation 99, 2026-11-07): its vendor channel `/dev/hidraw5` is `root:home 0660`, its mouse and keyboard channels (`hidraw3`, `hidraw6`) stay root's. `pkg:lzo` removed by hand at Joshua's word (generation 67). `pkg:certs` `sha256-eea759cd350d` and `pkg:cloudflared` `sha256-b0e034a2f347`, from master@b099589, added by hand at Joshua's word (generation 68, 2026-11-03); neither is in the profile. `pkg:llama-cpp` b11960 (`sha256-0908155920628b60`, from master@cf2448e) and `pkg:writ` 0.1.0 (`sha256-0fcb55acfa02`, from master@5c4bce3, fetched from the origin, generation 88, 2026-11-05), overlays in no profile, added at Joshua's word; testing may use up to half the GPU (R66). No `svc:llama` and no server left running: `writ` is the session on a terminal (R69), which loads ISTA's Qwen3.8 27B `IQ3_XXS-mtp` with MTP drafting on (`--mtp`; Joshua's choice, 2026-11-05; sha256 `63f29a2189a6` as Hugging Face lists it), from `~/.local/share/writ/models`, the only model there, as `work` at a 40% share when a prompt needs it (R68; `~/.config/writ/local.json`), and `/llama stop` frees it. It holds 12.5 GiB; the first prompt after a load waits about 80–100 s, and then it answers at 20–25 tokens/s. The other trial files and Qwen3.5 9B, 65 GB, were deleted at Joshua's word the same day. No OpenRouter key yet (`writ key`).
 - **Steam (R29):** Valve's 64-bit client (publicbeta, steamrt64) since
   2026-10-31, its webhelper on ANGLE over NVIDIA's GL 4.5; Joshua signs
