@@ -742,6 +742,17 @@
     "product": "sha256-d2ee87194174ccf3902e5f105e08b6155ee2f7d5930da918c7db8bf4ad03ad53",
     "run": []
   },
+  "libclang": {
+    "version": "23.1.5",
+    "license": "Apache-2.0 WITH LLVM-exception",
+    "by": "plan",
+    "plan": "sha256-22c10cfd6da32d478bc6a7ff7e84b482412b4785955e3c132222c2d7964834cd",
+    "product": "sha256-f81b2c945f17d90c183d80d347ce96c8b175ac4d9509f7b2debc64c17516ad75",
+    "run": [
+      "gcc",
+      "zlib"
+    ]
+  },
   "libdisplay-info": {
     "version": "0.4.0",
     "license": "MIT",
