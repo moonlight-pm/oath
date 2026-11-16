@@ -1,0 +1,27 @@
+# libclang, for bindgen (R91): LLVM's own Linux release (R7), signed by its
+# release manager, cut to libclang.so and clang's built-in headers. A build
+# pack: Rust crates that make C bindings at build time load it (Signal's
+# boring-sys, for Sola's Signal client). GCC stays the only compiler (R17):
+# no clang, no llvm-config, no LLVM libraries. R57's cheaper routes lost:
+# Chromium's libclang that pkg:cef pins is unsigned and moves with CEF, and
+# building it from source is the slowest build there is, why R17 dropped LLVM.
+version = "23.1.5"
+license = "Apache-2.0 WITH LLVM-exception"
+description = "libclang: Clang's C API, for bindgen; no compiler."
+home = "https://clang.llvm.org/"
+category = "toolchain"
+purl = "pkg:github/llvm/llvm-project@llvmorg-23.1.5"
+build = ["patchelf", "zlib", "zstd"]
+run = ["gcc", "zlib"]
+
+[[source]]
+url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-Linux-X64.tar.zst"
+sha256 = "c3107384835f788768f614db610e87fba7077f125ca950eb02a78bab0a308065"
+sig = "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-Linux-X64.tar.zst.sig"
+key = "yung"
+
+[[source]]
+url = "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-23.1.5/LICENSE.TXT"
+sha256 = "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee"
+file = "LLVM-LICENSE.TXT"
+unsigned = "a file of the llvmorg-23.1.5 tag, which Douglas Yung signed (GitHub verifies it); the release has no copy"

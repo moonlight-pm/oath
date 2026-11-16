@@ -584,6 +584,13 @@ cpe = "cpe:2.3:a:libcap_project:libcap"
 compare_repo = "https://git.kernel.org/pub/scm/libs/libcap/libcap.git"
 compare_tag = "libcap-{version}"
 
+[libclang]
+cpe = "cpe:2.3:a:llvm:llvm"
+names = ["clang", "libclang", "llvm"]
+repo = "https://github.com/llvm/llvm-project"
+tag = "llvmorg-{version}"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
+
 [libdisplay-info]
 names = ["libdisplay-info"]
 repo = "https://gitlab.freedesktop.org/emersion/libdisplay-info"
