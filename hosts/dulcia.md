@@ -33,16 +33,15 @@ Overwrite this file when facts change; do not append a diary.
   cell started by `/bin/wicket`, from images in a registry cell on
   127.0.0.1:5000. `svc:wl-b6703b0fa806-web`, the retired `oath`
   workload (R79), is stopped until `wicketctl services install` removes it.
-- **Running now** (read 2026-11-13): `base` release `985cfbd7490f`
-  (2026-11-13), generation 84, in sync. Generation 83 took it by `sudo
+- **Running now** (read 2026-11-16): `base` release `985cfbd7490f`
+  (2026-11-13), generation 106, in sync. Generation 83 took it by `sudo
   oath update --confirm --keep pkg:postgresql --keep pkg:postgis --keep
   pkg:cloudflared`, no reboot: `pkg:oath`, `expat` and `git`'s needs
   moved, and PID 1 re-executed into the output's with every service
   running; the kernel and initrd on the ESP are the output's from the
-  next boot. The three kept packages wait at their old heads, since
-  taking them restarts Wicket's PostgreSQL (to 18.7, 52 CVEs) and
-  cloudflared (VULN-170057, an Access bypass): `sudo oath update
-  --confirm` takes them. Generation 84 mounted the NAS (above).
+  next boot. The three kept packages followed the same day: since
+  2026-11-13 17:23Z Wicket's PostgreSQL runs 18.7 (fixes of 52 CVEs) with
+  PostGIS 3.7.0, and cloudflared 2026.10.5 (VULN-170057's fix). Generation 84 mounted the NAS (above).
   Generations 6 and 64 put novus's key in `host:local.publishers`
   beside buccina's, as `names="*" … oath@novus` (Joshua, 2026-11-07 and
   2026-11-10); most generations since are Wicket's services and

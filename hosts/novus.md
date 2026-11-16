@@ -115,8 +115,8 @@ Overwrite this file when facts change; do not append a diary.
   2026-11-10 01:44Z applied its heads here: all 17 Sola packages from master@cf0e2d40 (`pkg:sola`
   `90ca782c6acc`, the new `pkg:sola-kvm` `0e0a8d721a46`, `pkg:sola-browser` `58281b23ab33`), which the
   `desk` profile pins, so `pkg:sola-browser` is no longer an overlay.
-  **Running now** (read 2026-11-13): desk `42a8028ae7bf`, the newest `desk` release (2026-11-12),
-  generation 159; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
+  **Running now** (read 2026-11-16): desk `42a8028ae7bf` (2026-11-12; it has not taken the newer
+  `85e4dd430b4d`), generation 164; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
   `pkg:sola-terminal`. Oath's agent sessions run in its checkout since 2026-11-12 (R39 as
   amended); builds and publishing stay on buccina. On 2026-11-15, at Joshua's word, two overlays
   for the drop-down terminal over a fullscreen game: `pkg:sola` `726866d18ddf` from
