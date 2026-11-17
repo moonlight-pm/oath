@@ -57,7 +57,7 @@
     },
     {
       "id": "pkg:mbedtls",
-      "hash": "sha256-ad12da9cb2e267f449a4c5fc680679c14ed56ddeec29b6e61a0f55b97b3d708a"
+      "hash": "sha256-5e6cfae745b4c1f83741730c7c2aa73798b0bd4639fea4dcc98d03ce688a05bd"
     },
     {
       "id": "pkg:mpc",

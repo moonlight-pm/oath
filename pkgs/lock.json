@@ -290,7 +290,7 @@
     "version": "8.23.0",
     "license": "curl AND MPL-2.0",
     "by": "plan",
-    "plan": "sha256-733ce1eb2d4270e06bdf6e74d4fe995d89b628dbd1e1c1e93a94a959df9a6800",
+    "plan": "sha256-e4d5106aaf971ded9900f910238fb044c9aab949b72c7b9bdabe954814efc27d",
     "product": "sha256-cae892668dcd4fb9afae6d31cb8545ebe3dc044429170c049f2264343264d38f",
     "run": [
       "mbedtls",
@@ -522,7 +522,7 @@
     "version": "2.56.1",
     "license": "GPL-2.0-only AND LGPL-2.1-or-later AND BSD-3-Clause AND MIT",
     "by": "plan",
-    "plan": "sha256-c056f64979221834ab29e66a50d943b4315a59bc53cfda7e04ad541a39ef7d64",
+    "plan": "sha256-7db7905e06bd679f8873a7b64df2ced603214a4e765b06dd05df0634504663da",
     "product": "sha256-3aca00650909b61ae84b249ddcb160f46a44eab8edac666de19f0627553d9b73",
     "run": [
       "curl",
@@ -1265,11 +1265,11 @@
     "run": []
   },
   "mbedtls": {
-    "version": "3.6.7",
+    "version": "3.6.8",
     "license": "Apache-2.0 OR GPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-bd84b761aa1b6c8f52a1ae90698241a6bcf1e03ab2abb14cce3b220911ecd4f5",
-    "product": "sha256-ad12da9cb2e267f449a4c5fc680679c14ed56ddeec29b6e61a0f55b97b3d708a",
+    "plan": "sha256-1c71d70294c681a40e23178511d10ff6a8590fde1467ff8be5d38973bf65c537",
+    "product": "sha256-5e6cfae745b4c1f83741730c7c2aa73798b0bd4639fea4dcc98d03ce688a05bd",
     "run": []
   },
   "mesa": {
@@ -2040,7 +2040,7 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-6ecff4b654db734f8f0fc064053a5f91d23217f81f6f2f5deddb222174b5dd68",
+    "plan": "sha256-612da917719258fe89f1c2ede5ded28688a85a06a626d77a94089db9c77f39d1",
     "product": "sha256-6e55e9baa2269c4eef730c421ac63a112f56c3930abcaca9794f502725dcec5c",
     "run": [
       "bubblewrap",

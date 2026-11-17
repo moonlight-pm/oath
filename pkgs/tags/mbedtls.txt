@@ -1,7 +1,7 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source mbedtls-3.6.7.tar.bz2 a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6
-tag mbedtls-3.6.7 commit 068ff080b369adfac81509f9b57b2afabaf82dc5 tree 3a13c7bc778b6cb79a839bab2dfe5b01883f32ca
+source mbedtls-3.6.8.tar.bz2 bc54b818e87f49c0b3281dd85d24adaede0e63b4e822e3fbd49c005a38b9595b
+tag mbedtls-3.6.8 commit 82e69999f91126589a28b70dd75b69fbcabe2711 tree 45d31237686d34d10392998d5706f5e6dc9bd9e1
 signed no
-same 948
+same 956
 only-in-tag 0
-submodule framework 1091
+submodule framework 1094

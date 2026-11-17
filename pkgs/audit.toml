@@ -887,6 +887,9 @@ repo = "https://github.com/Mbed-TLS/mbedtls"
 tag = "mbedtls-{version}"
 series = "3.6"
 
+[mbedtls.age_because]
+source = "3.6.8, published 2026-11-16 (its tag's commit is from 2026-11-09, under embargo), is the 3.6 line's only release with the fixes of its 21 advisories (its ChangeLog and release notes), among them CVE-2026-115490: a TLS 1.2 ServerHello carrying TLS 1.3's version made the client skip key establishment and finish a handshake that neither the PSK nor an ephemeral secret keys, which compromises the connection and, in some client configurations, lets a server be impersonated; curl, git and oath fetch through it"
+
 [mbedtls.not_affected]
 "CVE-2025-66442" = "a timing channel that only LLVM's select-optimize introduces (the record); build.sh compiles Mbed TLS with GCC"
 
