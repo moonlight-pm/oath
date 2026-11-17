@@ -1926,8 +1926,8 @@
     "version": "9.2.1250",
     "license": "Vim",
     "by": "plan",
-    "plan": "sha256-c9a15537d906de2186c52b300a0968e9cc12597fc0371749f7644f3af2160d7d",
-    "product": "sha256-09ad86196066e22d1ad9eea1cb7700b1fddcbf16f98164100100741e23217f94",
+    "plan": "sha256-ac6d4d5f4542865a13675575e064974a86a632e92e0db2134071b3296b1a4aa4",
+    "product": "sha256-2c2475ca5016c05326e638d93b07e43e0b3e9f7c90a4ff276ef1337ede1ab021",
     "run": [
       "ncurses"
     ]

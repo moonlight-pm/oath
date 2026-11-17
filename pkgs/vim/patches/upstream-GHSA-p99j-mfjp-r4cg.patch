@@ -1,0 +1,165 @@
+Upstream: https://github.com/vim/vim/commit/a448e0c6bc459d7dbeab581bcb76a0d51695fb51
+GHSA-p99j-mfjp-r4cg (Moderate, CVSS 6.7; a CVE is requested, none assigned), patch
+9.2.1308: the socket server reused an existing socket directory ($TMPDIR/vim-<uid>, or
+/tmp/vim-<uid>, when $XDG_RUNTIME_DIR is not set) without checking its owner or mode, and
+bound the socket under the umask, so another local user who made that directory first
+could reach a `vim --servername` and run commands as its user. The directory must now be
+a real directory owned by the user, made 0700, and the socket is bound under umask 077.
+Upstream's commit, its code as it is: channel.c and socketserver.c apply to 9.2.1250
+unchanged, and errors.h's four lines go at 9.2.1250's end of the file, where E1588
+(9.2.1287) is not yet; its help text, test, message catalogue and version.c are left out.
+Not a pin of 9.2.1308: every tag from 9.2.1255 on has runtime/syntax/shared/
+debversions.vim run debian-distro-info and ubuntu-distro-info, a new process this fix
+does not need (R57), which waits for Joshua.
+Drop this when pkg:vim moves to 9.2.1308 or later.
+
+From a448e0c6bc459d7dbeab581bcb76a0d51695fb51 Mon Sep 17 00:00:00 2001
+From: Christian Brabandt <cb@256bit.org>
+Date: Sun, 8 Nov 2026 19:40:09 +0000
+Subject: [PATCH] patch 9.2.1308: [security]: socketserver does not verify
+ permissions
+
+Problem:  [security]: an existing socket directory is used without
+          checking permissions, and the socket is created with the
+          umask, so another local user can pre-create
+          "/tmp/vim-<uid>" and connect to or replace the server socket
+          (360AlphaLab)
+Solution: Only use the socket directory if it is a real directory owned
+          by the user and not accessible by others.
+
+Github Security Advisory:
+https://github.com/vim/vim/security/advisories/GHSA-p99j-mfjp-r4cg
+
+Assisted-by: Claude
+Signed-off-by: Christian Brabandt <cb@256bit.org>
+---
+ src/channel.c          | 15 +++++++++++++--
+ src/errors.h           |  4 ++++
+ src/socketserver.c     | 38 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 55 insertions(+), 2 deletions(-)
+
+diff --git a/src/channel.c b/src/channel.c
+index ce5cd53..e49c0e5 100644
+--- a/src/channel.c
++++ b/src/channel.c
+@@ -1756,6 +1756,10 @@ channel_listen_unix(
+     channel_T		*channel;
+     size_t		path_len;
+     size_t		server_len;
++    int			ret;
++#ifndef MSWIN
++    mode_t		old_umask;
++#endif
+
+     if (path == NULL || *path == NUL)
+     {
+@@ -1799,9 +1803,16 @@ channel_listen_unix(
+ 	// Unlink the socket in case it already exists
+ 	unlink(server.sun_path);
+
+-    // Bind the socket to the path
++    // Bind the socket to the path.  Do not let other users connect to it.
+     server_len = offsetof(struct sockaddr_un, sun_path) + path_len + 1;
+-    if (bind(sd, (struct sockaddr *)&server, (int)server_len) < 0)
++#ifndef MSWIN
++    old_umask = umask(077);
++#endif
++    ret = bind(sd, (struct sockaddr *)&server, (int)server_len);
++#ifndef MSWIN
++    umask(old_umask);
++#endif
++    if (ret < 0)
+     {
+ 	SOCK_ERRNO;
+ 	ch_error(channel, "in bind() in channel_listen_unix().");
+diff --git a/src/errors.h b/src/errors.h
+--- a/src/errors.h
++++ b/src/errors.h
+@@ -3846,3 +3846,7 @@ EXTERN char e_changing_image_backend_failed[]
+ EXTERN char e_image_id_nr_does_not_exist[]
+ 	INIT(= N_("E1587: Image ID %d does not exist"));
+ #endif
++#if defined(FEAT_SOCKETSERVER) && !defined(MSWIN)
++EXTERN char e_unsafe_socket_directory_str[]
++	INIT(= N_("E1589: Socket directory is not safe to use: %s"));
++#endif
+diff --git a/src/socketserver.c b/src/socketserver.c
+index 99ba2e3..c600fe0 100644
+--- a/src/socketserver.c
++++ b/src/socketserver.c
+@@ -223,6 +223,29 @@ socketserver_cleanup(void)
+     ga_clear(&server_replies);
+ }
+
++# ifndef MSWIN
++/*
++ * Check that the socket directory "dir" is a real directory owned by the
++ * user.  Otherwise another user could have created it beforehand and control
++ * the sockets inside it.  Remove access for others if needed.
++ * Returns OK or FAIL.
++ */
++    static int
++socketserver_check_dir(char_u *dir, bool quiet)
++{
++    stat_T st;
++
++    if (mch_lstat((char *)dir, &st) == 0
++	    && S_ISDIR(st.st_mode)
++	    && st.st_uid == getuid()
++	    && ((st.st_mode & 077) == 0 || mch_setperm(dir, 0700) == OK))
++	return OK;
++    if (!quiet)
++	semsg(_(e_unsafe_socket_directory_str), dir);
++    return FAIL;
++}
++# endif
++
+ /*
+  * List available sockets that can be connected to, only in common directories
+  * that Vim knows about. Vim instances with custom socket paths will not be
+@@ -279,6 +302,11 @@ socketserver_list(void)
+ 	dirp = opendir((char *)path.string);
+ 	if (dirp == NULL)
+ 	    continue;
++	if (socketserver_check_dir(path.string, true) == FAIL)
++	{
++	    closedir(dirp);
++	    break;
++	}
+
+ 	// Loop through directory
+ 	while ((dp = readdir(dirp)) != NULL)
+@@ -468,6 +496,8 @@ socketserver_get_path(
+ 		    (unsigned long int)getuid());
+ 	    if (vim_mkdir(buf, 0700) == -1 && errno != EEXIST)
+ 		continue;
++	    if (socketserver_check_dir(buf, quiet) == FAIL)
++		goto unsafe;
+
+ 	    vim_snprintf((char *)buf, MAXPATHL, "%s/vim-%lu/%s", dir,
+ 		    (unsigned long int)getuid(), name);
+@@ -477,6 +507,8 @@ socketserver_get_path(
+ 	    vim_snprintf((char *)buf, MAXPATHL, "%s/vim", dir);
+ 	    if (vim_mkdir(buf, 0700) == -1 && errno != EEXIST)
+ 		continue;
++	    if (socketserver_check_dir(buf, quiet) == FAIL)
++		goto unsafe;
+
+ 	    vim_snprintf((char *)buf, MAXPATHL, "%s/vim/%s", dir, name);
+ 	}
+@@ -526,6 +558,12 @@ socketserver_get_path(
+
+     vim_free(buf);
+     return NULL;
++
++unsafe:
++    if (fatal != NULL)
++	*fatal = true;
++    vim_free(buf);
++    return NULL;
+ # endif
+ }
+
+--
+2.56.1
+
