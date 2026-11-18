@@ -1066,6 +1066,10 @@ tag = "{version}"
 cpe = "cpe:2.3:a:postgresql:postgresql"
 repo = "https://github.com/postgres/postgres"
 tag = "REL_{version_}"
+# A major version changes the data directory's format, so a cluster moves to it
+# by pg_upgrade or a dump, not by a pin; 18 has minor releases until 2030
+# (postgresql.org's versioning policy; read 2026-11-18, the day REL_19_0 appeared).
+series = "18"
 
 [postgresql.age_because]
 source = "18.7 (tag 2026-11-09, released 2026-11-12) is the 18.x line's only release with the fixes of PostgreSQL's security release of 2026-11-12 (postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/, and its security page): 52 CVEs, among them CVE-2026-120142, 120143, 120144, 120145, 120149, 120150, 120151, 116314, 116329, 116330 and 116336 (CVSS 8.8: code run by an authenticated user, or by a crafted dump through pg_restore and psql)"
