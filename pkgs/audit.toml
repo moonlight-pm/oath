@@ -17,6 +17,11 @@
 #           from repo and tag, or the directory its source comes from
 # not_affected   CVE id = why it does not apply, after triage; the audit
 #           drops it until the version moves
+# listed_and_earlier  a record's listed version is the newest affected one
+#           of its line, and every earlier one is affected too (Oracle's)
+#
+# A GitHub repo (or compare_repo) is also read for its own published
+# advisories, which can come long before a CVE record does.
 #
 # An `-i386` package is its sibling's: the same sources.
 
@@ -544,7 +549,8 @@ tag = "{version}"
 
 [jdk-21]
 cpe = "cpe:2.3:a:oracle:openjdk"
-names = ["openjdk", "temurin"]
+names = ["openjdk", "temurin", "Oracle Java SE"]
+listed_and_earlier = true
 repo = "https://github.com/adoptium/temurin21-binaries"
 tag = "jdk-{version}"
 series = "21"
@@ -552,7 +558,8 @@ no_compare = "the vendor's build, not its source: there is no tree to set it aga
 
 [jre-21]
 cpe = "cpe:2.3:a:oracle:openjdk"
-names = ["openjdk", "temurin"]
+names = ["openjdk", "temurin", "Oracle Java SE"]
+listed_and_earlier = true
 repo = "https://github.com/adoptium/temurin21-binaries"
 tag = "jdk-{version}"
 series = "21"
@@ -989,6 +996,11 @@ names = ["gpu display driver"]
 unchecked = "the driver branch is a choice (R34): NVIDIA's bulletins name fixed versions, its CPE their CVEs"
 no_compare = "the vendor's build, not its source: there is no tree to set it against"
 
+# pkg:oath's crates, which the scan reads from Cargo.lock: only what is
+# recorded of them.
+[oath.not_affected]
+"RUSTSEC-2026-0543" = "informational, not a vulnerability: RustSec marks chrono 0.4 unmaintained (OSV, 2026-11-17); oath-core, oath-init and croner use it for dates"
+
 [openssh]
 cpe = "cpe:2.3:a:openbsd:openssh"
 compare_repo = "https://github.com/openssh/openssh-portable"
@@ -1284,7 +1296,7 @@ differs_because = "ChangeLog's link, every po file's POT-Creation-Date and the p
 cpe = "cpe:2.3:a:vim:vim"
 repo = "https://github.com/vim/vim"
 tag = "v{version}"
-unchecked = "a tag for every patch, so it is always behind; Vim's advisories reach CVE records with the fixed patch"
+unchecked = "a tag for every patch, so it is always behind; its advisories are read from GitHub, with the patch that fixes each"
 
 [vim.not_affected]
 "CVE-2022-3705" = "fixed in 9.0.0805 (the record); Oath builds 9.2.1250"

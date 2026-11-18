@@ -72,6 +72,13 @@ a root in the pin with a `Distrust for TLS After Date` goes in
 [Chrome Root Store](https://chromium.googlesource.com/chromium/src/+/main/net/data/ssl/chrome_root_store/root_store.md)
 or a browser vendor has distrusted over an incident. A root that Chrome merely
 never listed is not an incident: 21 of Mozilla's are like that today.
+GitHub's repository advisories are a source too: a project's GHSA can come weeks
+before its CVE record (vim's GHSA-p99j did, 2026-11-08). The scan reads 50
+repositories a run, unkeyed, and matches the rest as last read; its line in
+`sources` says since when. One that names only commits is `unknown`: read it once
+and record it under `not_affected`. A vim GHSA is fixed by a
+`pkgs/vim/patches/upstream-GHSA-….patch` as a CVE is by its patch.
+
 A source that failed says so in `sources`: the report says it too, and
 the run goes on with the others. A package with no entry in
 `pkgs/audit.toml` stops the scan: add its entry (its NVD CPE, the names
@@ -236,6 +243,20 @@ Act on these, and do not ask them again:
 - **A root Mozilla stops trusting for TLS with no date and no incident** (Buypass
   Class 2 and 3 removed; Certigna, DigiCert Trusted Root G4 and QuoVadis 1 G3 and 3
   G3 now Email only): leave it for the NSS release that drops it.
+
+## Joshua's answers (2026-11-18)
+
+- **vim:** it may move past 9.2.1255, whose `runtime/syntax/shared/debversions.vim`
+  runs `debian-distro-info` and `ubuntu-distro-info` when they are on `PATH` (fixed
+  arguments, nothing from the file; Oath ships neither). That process does not stop
+  vim's pin: the next fix pins the lowest week-old tag that has it and drops
+  `pkgs/vim/patches/`, and its review's verdict names this answer.
+- **Java 21 (CVE-2026-114938):** no mitigation in Prism ahead of Temurin's fix, since
+  no machine in `hosts/` has AVX-512 VBMI. jdk-21 and jre-21 move on the first run
+  after Adoptium ships 21.0.13.1 GA, with an `age_because` naming the CVE.
+- **OpenSSL's Low CVEs:** no backport in CEF 158's batch. They wait for 4.0.4 (due
+  12-01), which goes out with the first CEF rebuild after its week, not with a
+  rebuild of its own, unless a later OpenSSL advisory is above Low.
 
 ## Never
 

@@ -868,8 +868,20 @@ mirror directory. The scan waits 6.5 s after each NVD query, or 0.7 s with
 `pkgs/audit.toml`: its NVD CPE, the names CVE records use, its upstream
 repo and release tag (OSV's commit query), an OSV ecosystem name, or why
 there is nothing to match; no plan reads that file, so an edit there
-moves no hash. A CVE listed under `[<name>.not_affected]`, or one a
-`pkgs/<name>/patches/*CVE-….patch` fixes, is listed apart.
+moves no hash. A CVE listed under `[<name>.not_affected]` (`[oath]` for
+`pkg:oath`'s crates), or one a `pkgs/<name>/patches/*CVE-….patch` or
+`*GHSA-….patch` fixes, is listed apart. `listed_and_earlier` reads a record's
+listed version as the newest affected one of its line, as Oracle writes Java
+SE's.
+
+A project can publish an advisory on GitHub weeks before it has a CVE record,
+so the scan also reads each GitHub `repo` (or `compare_repo`) for its published
+advisories, matched by their version ranges and fixed versions; one that names
+only commits is `unknown`. GitHub answers 60 unkeyed requests an hour, so a run
+reads the 50 repositories read longest ago, keeps every repository's last read
+in `~/.local/share/oath/ghsa.json` and matches each as last read: its line in
+`sources` says how many were read and since when. `--offline` reads none.
+NVD's line names each CPE that failed.
 
 A CVE record can come days after the release that fixes it, so the scan
 also reads each pin against upstream's newest stable release: from its

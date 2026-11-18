@@ -307,8 +307,10 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
 - **The audit (is, 2026-10-31, R48).** `cargo make audit` matches
   every package by `pkgs/audit.toml` (CPE, product names, repo and tag,
   OSV name; outside every plan, so no hash moves) against CVE List V5,
-  OSV (ecosystem purls, PyPI/Go/Linux names, release-tag commits), NVD
-  by CPE, KEV and EPSS. NVD alone sees little since 2026-04-15 (it
+  OSV (ecosystem purls, PyPI/Go/Linux names, release-tag commits), each
+  GitHub repository's published advisories (since 2026-11-18: vim's came
+  weeks before their CVE records; 50 read a run, unkeyed, the rest as last
+  read), NVD by CPE, KEV and EPSS. NVD alone sees little since 2026-04-15 (it
   enriches 15–20% of new CVEs), and OSV's purl lookup none of the
   `pkg:generic` upstreams, so CVE List V5's own records carry most of
   it. Their ranges are read as their issuers mean them: the CNA's entry

@@ -1,9 +1,10 @@
 //! The daily security audit's scan (R48): every package this tree ships,
 //! matched by `pkgs/audit.toml` against cve.org's CVE List V5 (a local
 //! mirror of `CVEProject/cvelistV5`), OSV (ecosystem packages, and the
-//! commit of an upstream's release tag), NVD (by CPE) and CISA's Known
-//! Exploited Vulnerabilities, with FIRST's EPSS beside each, and each pin
-//! against upstream's newest stable release, for fixes no record names yet.
+//! commit of an upstream's release tag), each GitHub repository's own
+//! published advisories, NVD (by CPE) and CISA's Known Exploited
+//! Vulnerabilities, with FIRST's EPSS beside each, and each pin against
+//! upstream's newest stable release, for fixes no record names yet.
 //! It writes `build/audit/<day>.json` and `build/audit/latest.json` for the
 //! `oath-audit` skill to triage and changes nothing it scans. A source
 //! that cannot be reached is recorded as such, and the rest still run.
@@ -27,6 +28,10 @@ const NVD: &str = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 const KEV: &str =
     "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 const EPSS: &str = "https://api.first.org/data/v1/epss";
+const GITHUB: &str = "https://api.github.com";
+/// GitHub answers 60 unkeyed requests an hour: a run reads this many, and
+/// leaves the rest of the hour to whoever runs it.
+const GHSA_READS: usize = 50;
 /// Purl types OSV knows (an upstream's `pkg:generic` and `pkg:github` it
 /// does not; those go by CPE, product and commit).
 const ECOSYSTEMS: &[&str] = &["cargo", "npm", "pypi", "golang", "gem", "maven", "nuget", "hex"];
@@ -96,6 +101,10 @@ pub struct Entry {
     pub tar_dir: Option<String>,
     #[serde(default)]
     pub not_affected: BTreeMap<String, String>,
+    /// A record's listed version is the newest affected one of its line, and
+    /// every earlier one is affected too (Oracle's records of Java SE).
+    #[serde(default)]
+    pub listed_and_earlier: bool,
 }
 
 /// A package as the audit matches it.
@@ -226,12 +235,17 @@ pub fn run(repo: &Path, opts: &Opts) -> Result<()> {
             report.sources.insert("OSV".into(), format!("error: {e:#}"));
         }
     }
+    let (status, found) = ghsa(&targets, opts.offline);
+    report.sources.insert("GitHub advisories".into(), status);
+    for (pkg, h) in found {
+        add(&pkg, h);
+    }
     if opts.offline {
         report.sources.insert("NVD".into(), "skipped (--offline)".into());
     } else {
         match nvd(&targets) {
-            Ok((n, found)) => {
-                report.sources.insert("NVD".into(), format!("ok, {n} CPEs"));
+            Ok((status, found)) => {
+                report.sources.insert("NVD".into(), status);
                 for (pkg, h) in found {
                     add(&pkg, h);
                 }
@@ -499,7 +513,8 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
             ),
         });
     }
-    // pkg:oath, which cargo builds from this tree: its crates.
+    // pkg:oath, which cargo builds from this tree: its crates, and what
+    // `[oath]` says of them.
     if only.as_deref().is_none_or(|o| o == "oath") {
         let product = fs::read_to_string(repo.join("build/pkgs/oath.json"))
             .ok()
@@ -508,15 +523,14 @@ fn targets(repo: &Path, only: Option<&str>) -> Result<Vec<Target>> {
             .unwrap_or_default();
         let tree = cache.join("pkg/oath").join(&product);
         let version = own_version(&tree, "oath").unwrap_or_else(|| "this tree".into());
+        let mut entry = entries.get("oath").cloned().unwrap_or_default();
+        entry.skip.get_or_insert_with(|| "Oath's own: its crates go to OSV".into());
         out.push(Target {
             name: "oath".into(),
             pin: version.clone(),
             version,
             hash: product,
-            entry: Entry {
-                skip: Some("Oath's own: its crates go to OSV".into()),
-                ..Default::default()
-            },
+            entry,
             purls: ecosystem_purls(&tree),
             patched: BTreeMap::new(),
             listing: None,
@@ -571,9 +585,10 @@ fn ecosystem_purls(tree: &Path) -> Vec<String> {
         .collect()
 }
 
-/// CVE id: patch file, for each `*CVE-YYYY-N*.patch` in `dir`.
+/// CVE or GitHub advisory id: patch file, for each `*CVE-YYYY-N*.patch` or
+/// `*GHSA-xxxx-xxxx-xxxx*.patch` in `dir`.
 fn patched(dir: &Path) -> BTreeMap<String, String> {
-    let re = regex::Regex::new(r"CVE-\d{4}-\d{4,}").expect("regex");
+    let re = regex::Regex::new(r"CVE-\d{4}-\d{4,}|GHSA(?:-[0-9a-z]{4}){3}").expect("regex");
     let mut out = BTreeMap::new();
     for e in fs::read_dir(dir).into_iter().flatten().flatten() {
         let f = e.file_name().to_string_lossy().into_owned();
@@ -589,9 +604,16 @@ fn tag_of(pattern: &str, version: &str) -> String {
     pattern.replace("{version_}", &version.replace('.', "_")).replace("{version}", version)
 }
 
+/// A version without its build (Temurin's `21.0.13+9`): records name the
+/// release.
+fn release_of(v: &str) -> &str {
+    v.split('+').next().unwrap_or(v)
+}
+
 /// The CPE NVD matches for this version: OpenSSH's `10.6p1` is version
 /// `10.6`, update `p1`.
 fn cpe_with_version(cpe: &str, version: &str) -> String {
+    let version = release_of(version);
     let re = regex::Regex::new(r"^(\d+(?:\.\d+)*)(p\d+)$").expect("regex");
     match re.captures(version) {
         Some(c) => format!("{cpe}:{}:{}", &c[1], &c[2]),
@@ -764,6 +786,31 @@ pub fn status_of(entry: &Value, version: &str) -> Says {
     }
 }
 
+/// What an entry whose listed versions mean "this and earlier" says of
+/// `version` (`listed_and_earlier`): affected at or below the version listed
+/// for its line (its first number). A listed version may carry its product
+/// (`Oracle Java SE:21.0.5`), and another product's are not this one's.
+pub fn status_through(entry: &Value, version: &str) -> Says {
+    let product = norm(entry["product"].as_str().unwrap_or(""));
+    let line = |v: &str| toks(v).into_iter().next();
+    let mine = line(version);
+    for v in entry["versions"].as_array().into_iter().flatten() {
+        if v["status"].as_str() != Some("affected") {
+            continue;
+        }
+        let raw = v["version"].as_str().unwrap_or("");
+        let listed = match raw.rsplit_once(':') {
+            Some((p, x)) if norm(p) == product => x,
+            Some(_) => continue,
+            None => raw,
+        };
+        if line(listed) == mine && cmp_versions(version, listed) != Ordering::Greater {
+            return Says::Range("affected");
+        }
+    }
+    Says::Default("unaffected")
+}
+
 /// A git commit id, whole or abbreviated (`c460495ee072`), not a version.
 fn commit_like(s: &str) -> bool {
     (7..=40).contains(&s.len())
@@ -790,11 +837,14 @@ fn verdict(says: &[Says]) -> Option<&'static str> {
 
 // ---------- CVE List V5 ----------
 
+/// What the scan keeps between runs: the CVE List's mirror, GitHub's reads.
+fn data_dir() -> PathBuf {
+    let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| "/home".into());
+    home.join(".local/share/oath")
+}
+
 fn cvelist_dir() -> PathBuf {
-    std::env::var_os("OATH_CVELIST").map(PathBuf::from).unwrap_or_else(|| {
-        let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| "/home".into());
-        home.join(".local/share/oath/cvelist")
-    })
+    std::env::var_os("OATH_CVELIST").map(PathBuf::from).unwrap_or_else(|| data_dir().join("cvelist"))
 }
 
 fn norm(s: &str) -> String {
@@ -802,6 +852,14 @@ fn norm(s: &str) -> String {
 }
 
 const NO_VENDOR: &[&str] = &["", "na", "unknown", "unspecified", "notavailable"];
+
+/// A vendor as its CPE names it: "Oracle Corporation" is `oracle`.
+fn bare_vendor(v: &str) -> &str {
+    ["corporation", "inc", "llc", "ltd", "limited", "gmbh"]
+        .iter()
+        .find_map(|s| v.strip_suffix(s).filter(|b| !b.is_empty()))
+        .unwrap_or(v)
+}
 
 /// Product names too common to trust without the vendor.
 const GENERIC: &[&str] = &[
@@ -860,6 +918,7 @@ impl Matcher {
         // With no CPE there is no vendor to hold a record to: its name decides.
         let unheld = NO_VENDOR.contains(&vendor.as_str()) || self.vendors.is_empty();
         self.vendors.contains(&vendor)
+            || self.vendors.contains(bare_vendor(&vendor))
             || self.products.contains(&vendor)
             || unheld && !GENERIC.contains(&product.as_str())
     }
@@ -943,8 +1002,16 @@ fn cve5(dir: &Path, targets: &[Target], offline: bool) -> Result<(usize, Vec<(St
             let adp: Vec<Value> = adp.flat_map(entries).collect();
             for (i, m) in &matchers {
                 let t = &targets[*i];
+                let version = release_of(&t.version);
+                let says_of = |a: &Value| {
+                    if t.entry.listed_and_earlier {
+                        status_through(a, version)
+                    } else {
+                        status_of(a, version)
+                    }
+                };
                 let judge = |list: &[Value]| -> Vec<Says> {
-                    list.iter().filter(|a| m.matches(a)).map(|a| status_of(a, &t.version)).collect()
+                    list.iter().filter(|a| m.matches(a)).map(says_of).collect()
                 };
                 // The CNA speaks for its product; CISA's added entries (which
                 // sometimes mark the kernel's fixed ranges affected) count
@@ -1102,6 +1169,286 @@ fn tag_commit(repo: &str, tag: &str) -> Option<String> {
     best
 }
 
+// ---------- GitHub's repository advisories ----------
+
+/// A repository's published advisories, as last read.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+struct Advisories {
+    read: String,
+    advisories: Vec<Value>,
+}
+
+/// `owner/name` of a GitHub repository's URL.
+fn github_repo(url: &str) -> Option<String> {
+    let rest = url.strip_prefix("https://github.com/")?.trim_end_matches('/');
+    let mut parts = rest.trim_end_matches(".git").split('/');
+    let (owner, name) = (parts.next()?, parts.next()?);
+    (!owner.is_empty() && !name.is_empty()).then(|| format!("{owner}/{name}"))
+}
+
+/// A project's advisory on GitHub reaches no CVE record until one is
+/// assigned, days or weeks later (vim's GHSA-p99j, 2026-11-08), so the scan
+/// reads each GitHub repository's own: `repo`, or `compare_repo`. GitHub
+/// answers 60 unkeyed requests an hour, so a run reads the `GHSA_READS` read
+/// longest ago (`--offline`: none) and keeps every repository's last read in
+/// `ghsa.json`; each is matched as last read, at most a run or two old.
+/// Returns the source's status and its hits.
+fn ghsa(targets: &[Target], offline: bool) -> (String, Vec<(String, Hit)>) {
+    let mut repos: BTreeMap<String, Vec<&Target>> = BTreeMap::new();
+    for t in targets.iter().filter(|t| t.entry.skip.is_none()) {
+        let url = t.entry.repo.as_deref().or(t.entry.compare_repo.as_deref());
+        if let Some(r) = url.and_then(github_repo) {
+            repos.entry(r).or_default().push(t);
+        }
+    }
+    let file = data_dir().join("ghsa.json");
+    let mut cache: BTreeMap<String, Advisories> = fs::read_to_string(&file)
+        .ok()
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_default();
+    let mut due: Vec<&String> = repos.keys().collect();
+    due.sort_by_key(|r| cache.get(*r).map(|a| a.read.clone()).unwrap_or_default());
+    let (mut read, mut failed) = (0, Vec::new());
+    let mut left = if offline { 0 } else { GHSA_READS };
+    for r in due {
+        match advisories_of(r, &mut left) {
+            Ok(Some(list)) => {
+                read += 1;
+                let now = oath_core::now_rfc3339();
+                cache.insert(r.clone(), Advisories { read: now, advisories: list });
+            }
+            Ok(None) => break,
+            Err(e) => {
+                let e = format!("{e:#}");
+                // Out of requests for the hour: the rest wait for the next run.
+                let limited = e.contains("error: 403") || e.contains("error: 429");
+                failed.push(if limited { format!("{r}: rate limited") } else { format!("{r}: {e}") });
+                if limited {
+                    break;
+                }
+            }
+        }
+    }
+    if read > 0 {
+        if let Err(e) = crate::util::write_pretty(&file, &cache) {
+            failed.push(format!("{}: {e:#}", file.display()));
+        }
+    }
+    let mut out = Vec::new();
+    for (r, ts) in &repos {
+        let Some(c) = cache.get(r) else { continue };
+        for a in c.advisories.iter().filter(|a| a["withdrawn_at"].is_null()) {
+            for t in ts {
+                let tag = t.entry.tag.as_deref();
+                if let Some(s) = ghsa_status(a, release_of(&t.version), tag) {
+                    out.push((t.name.clone(), ghsa_hit(a, s)));
+                }
+            }
+        }
+    }
+    let unread = repos.keys().filter(|r| !cache.contains_key(*r)).count();
+    let oldest = repos.keys().filter_map(|r| cache.get(r)).map(|a| a.read.clone()).min();
+    let mut status = format!("{} repositories, {read} read now", repos.len());
+    if let Some(o) = oldest.filter(|_| read + unread < repos.len()) {
+        status += &format!(", the rest as read since {}", o.get(..10).unwrap_or(&o));
+    }
+    if unread > 0 {
+        status += &format!(", {unread} never read");
+    }
+    if !failed.is_empty() {
+        status += &format!("; failed: {}", failed.join("; "));
+    }
+    let none = !offline && read == 0 && !repos.is_empty();
+    (format!("{}{status}", if none { "error: " } else { "ok, " }), out)
+}
+
+/// One repository's published advisories, trimmed to what the scan reads;
+/// `None` when this run's requests ran out first.
+fn advisories_of(repo: &str, left: &mut usize) -> Result<Option<Vec<Value>>> {
+    let mut out = Vec::new();
+    for page in 1.. {
+        if *left == 0 {
+            return Ok(None);
+        }
+        *left -= 1;
+        let url = format!(
+            "{GITHUB}/repos/{repo}/security-advisories?state=published&per_page=100&page={page}"
+        );
+        let raw = http(&url, None, Some("Accept: application/vnd.github+json"))?;
+        let list: Vec<Value> = serde_json::from_str(&raw).context("advisories JSON")?;
+        let full = list.len() == 100;
+        out.extend(list.into_iter().map(|a| {
+            let vulns: Vec<Value> = a["vulnerabilities"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .map(|v| {
+                    json!({
+                        "vulnerable_version_range": v["vulnerable_version_range"],
+                        "patched_versions": v["patched_versions"],
+                    })
+                })
+                .collect();
+            json!({
+                "ghsa_id": a["ghsa_id"], "cve_id": a["cve_id"], "severity": a["severity"],
+                "summary": a["summary"], "html_url": a["html_url"],
+                "withdrawn_at": a["withdrawn_at"], "vulnerabilities": vulns,
+            })
+        }));
+        if !full {
+            break;
+        }
+    }
+    Ok(Some(out))
+}
+
+/// A version as an advisory writes it, as the pin's: `v9.2.1352`, a tag
+/// (`mbedtls-3.6.8`), or the pin's own form (llama.cpp's `b7437`); not a
+/// commit, and not words.
+fn bare_version(v: &str, tag: Option<&str>, pin: &str) -> Option<String> {
+    let v = v.trim();
+    if v.is_empty() || v.contains(char::is_whitespace) || commit_like(v) {
+        return None;
+    }
+    if v.trim_start_matches(['v', 'V']).starts_with(|c: char| c.is_ascii_digit()) {
+        return Some(v.to_string());
+    }
+    if let Some(t) = tag.and_then(|t| tag_versions(t, &[v.to_string()]).into_iter().next()) {
+        return Some(t);
+    }
+    let lead = |s: &str| toks(s).into_iter().next();
+    (matches!(lead(v), Some(Tok::Word(_))) && lead(v) == lead(pin)).then(|| v.to_string())
+}
+
+const OPS: [&str; 5] = ["<=", ">=", "<", ">", "="];
+
+/// One part of a range: `< v9.2.1352`, `>=3.0`, or a span bounded on both
+/// sides (`0.2.0 <= 0.38.0`, crun's `0.12.2 <= VERSION <= 1.29.1`).
+fn constraints(part: &str) -> Option<Vec<(&'static str, &str)>> {
+    if let Some(c) = OPS.iter().find_map(|o| part.strip_prefix(o).map(|v| (*o, v.trim()))) {
+        return Some(vec![c]);
+    }
+    let op = |s: &str| OPS.iter().find(|o| **o == s).copied();
+    let flip = |s: &str| match s {
+        "<=" => Some(">="),
+        "<" => Some(">"),
+        _ => None,
+    };
+    match part.split_whitespace().collect::<Vec<_>>().as_slice() {
+        [lo, o, hi] => Some(vec![(flip(o)?, *lo), (op(o)?, *hi)]),
+        [lo, o1, _, o2, hi] => Some(vec![(flip(o1)?, *lo), (op(o2)?, *hi)]),
+        _ => None,
+    }
+}
+
+/// Whether GitHub's range (`>= 9.0, < v9.2.1352`, or with `&&`) holds
+/// `version`; `None` when any part of it cannot be read (git's lists of
+/// each line's newest affected release).
+fn in_range(version: &str, range: &str, tag: Option<&str>) -> Option<bool> {
+    let parts: Vec<&str> = range
+        .split(',')
+        .flat_map(|p| p.split("&&"))
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .collect();
+    if parts.is_empty() {
+        return None;
+    }
+    let mut holds = true;
+    for part in &parts {
+        let cs = match constraints(part) {
+            Some(c) => c,
+            // One version alone is that version (GitHub's `= 1.0`).
+            None if parts.len() == 1 => vec![("=", *part)],
+            None => return None,
+        };
+        for (op, v) in cs {
+            let o = cmp_versions(version, &bare_version(v, tag, version)?);
+            holds &= match op {
+                "<=" => o != Ordering::Greater,
+                ">=" => o != Ordering::Less,
+                "<" => o == Ordering::Less,
+                ">" => o == Ordering::Greater,
+                _ => o == Ordering::Equal,
+            };
+        }
+    }
+    Some(holds)
+}
+
+/// Whether `version` is below its line's fixed version in an advisory's
+/// list (`3.5.0`, `>= 3.4.3`, git's `2.50.2, 2.51.3 … and 2.56.1` or
+/// `v2.45.1 v2.44.1`): past every one is fixed, and between lines is not
+/// read.
+fn below_fix(version: &str, patched: &str, tag: Option<&str>) -> Option<bool> {
+    let fixes: Vec<String> = patched
+        .split(|c: char| c == ',' || c.is_whitespace())
+        .map(|p| p.trim_start_matches(['>', '=']))
+        .filter(|p| !p.is_empty() && *p != "and")
+        .map(|p| bare_version(p, tag, version))
+        .collect::<Option<_>>()?;
+    let line = |v: &str| toks(v).into_iter().take(2).collect::<Vec<_>>();
+    let fix = match fixes.as_slice() {
+        [] => return None,
+        [one] => one,
+        many => match many.iter().find(|f| line(f) == line(version)) {
+            Some(f) => f,
+            None => {
+                let past = many.iter().all(|f| cmp_versions(version, f) == Ordering::Greater);
+                return past.then_some(false);
+            }
+        },
+    };
+    Some(cmp_versions(version, fix) == Ordering::Less)
+}
+
+/// What a repository advisory says of `version`: `affected` when its range
+/// holds it and it is below the fixed version, `unknown` when neither can
+/// be read (a commit), and nothing when what can be read leaves it out. A
+/// fixed version bounds a range left open (vim's `>v9.1.1231`, fixed in
+/// v9.1.1406).
+fn ghsa_status(a: &Value, version: &str, tag: Option<&str>) -> Option<&'static str> {
+    let vulns = a["vulnerabilities"].as_array().map(Vec::as_slice).unwrap_or_default();
+    let mut unread = vulns.is_empty();
+    for v in vulns {
+        let range = v["vulnerable_version_range"].as_str().unwrap_or("");
+        let fixed = v["patched_versions"].as_str().unwrap_or("");
+        let held = match (in_range(version, range, tag), below_fix(version, fixed, tag)) {
+            (Some(r), Some(b)) => Some(r && b),
+            (r, b) => r.or(b),
+        };
+        match held {
+            Some(true) => return Some("affected"),
+            Some(false) => {}
+            None => unread = true,
+        }
+    }
+    unread.then_some("unknown")
+}
+
+fn ghsa_hit(a: &Value, status: &str) -> Hit {
+    let fixed = a["vulnerabilities"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|v| v["patched_versions"].as_str())
+        .flat_map(|p| p.split(','))
+        .map(|p| p.trim().to_string())
+        .filter(|p| !p.is_empty())
+        .collect();
+    Hit {
+        id: a["ghsa_id"].as_str().unwrap_or("").to_string(),
+        aliases: a["cve_id"].as_str().map(str::to_string).into_iter().collect(),
+        sources: BTreeSet::from(["GitHub".to_string()]),
+        status: status.into(),
+        severity: a["severity"].as_str().unwrap_or("").to_ascii_uppercase(),
+        summary: short(a["summary"].as_str().unwrap_or("")),
+        fixed,
+        url: a["html_url"].as_str().unwrap_or("").to_string(),
+        ..Default::default()
+    }
+}
+
 // ---------- upstream's releases ----------
 
 /// A package against its upstream's newest stable release.
@@ -1239,7 +1586,8 @@ fn newer_than(pin: &str, versions: &[String], e: &Entry) -> Option<String> {
 
 // ---------- NVD ----------
 
-fn nvd(targets: &[Target]) -> Result<(usize, Vec<(String, Hit)>)> {
+/// NVD's status (each CPE that failed named) and its hits.
+fn nvd(targets: &[Target]) -> Result<(String, Vec<(String, Hit)>)> {
     let key = std::env::var("NVD_API_KEY").ok().or_else(|| env_file("nvd.env", "NVD_API_KEY"));
     let pause = std::time::Duration::from_millis(if key.is_some() { 700 } else { 6500 });
     let mut out = Vec::new();
@@ -1289,10 +1637,14 @@ fn nvd(targets: &[Target]) -> Result<(usize, Vec<(String, Hit)>)> {
             ));
         }
     }
-    if !errors.is_empty() && out.is_empty() && n > 0 {
-        bail!("{} CPEs failed: {}", errors.len(), errors.join("; "));
+    if n > 0 && errors.len() == n {
+        bail!("{n} CPEs failed: {}", errors.join("; "));
     }
-    Ok((n, out))
+    let status = match errors.len() {
+        0 => format!("ok, {n} CPEs"),
+        e => format!("ok, {} of {n} CPEs; failed: {}", n - e, errors.join("; ")),
+    };
+    Ok((status, out))
 }
 
 /// `NAME=value` from `~/.config/oath/<file>` (never committed).
@@ -1432,6 +1784,38 @@ mod tests {
     }
 
     #[test]
+    fn oracle_lists_the_newest_affected_update_of_each_line() {
+        use Says::*;
+        // CVE-2026-114938: Temurin's 21.0.13 is at or below Oracle's 21.0.13.0.3.
+        let now = json!({ "vendor": "Oracle Corporation", "product": "Oracle Java SE", "versions": [
+            { "version": "8u511b33-perf", "status": "affected" },
+            { "version": "21.0.13.0.3", "status": "affected" },
+            { "version": "25.0.5.0.3", "status": "affected" } ] });
+        assert_eq!(status_through(&now, "21.0.13"), Range("affected"));
+        assert_eq!(status_through(&now, "21.0.13.1"), Default("unaffected"));
+        assert_eq!(status_through(&now, "17.0.20"), Default("unaffected"));
+        // Older records name the product in each version, GraalVM's too.
+        let then = json!({ "product": "Oracle Java SE", "versions": [
+            { "version": "Oracle Java SE:21.0.5", "status": "affected" },
+            { "version": "Oracle GraalVM for JDK:21.0.13", "status": "affected" } ] });
+        assert_eq!(status_through(&then, "21.0.4"), Range("affected"));
+        assert_eq!(status_through(&then, "21.0.13"), Default("unaffected"));
+        assert_eq!(release_of("21.0.13+9"), "21.0.13");
+        let jdk = Matcher::of(&Target {
+            name: "jdk-21".into(),
+            entry: Entry {
+                cpe: Some("cpe:2.3:a:oracle:openjdk".into()),
+                names: vec!["openjdk".into(), "Oracle Java SE".into()],
+                ..Entry::default()
+            },
+            ..Target::default()
+        });
+        assert!(jdk.matches(&now));
+        assert!(!jdk.matches(&json!({ "vendor": "Oracle Corporation", "product": "Oracle GraalVM for JDK" })));
+        assert!(!jdk.matches(&json!({ "vendor": "Someone Inc.", "product": "Oracle Java SE" })));
+    }
+
+    #[test]
     fn records_match_by_cpe_product_and_repo() {
         let t = |name: &str, cpe: &str, names: &[&str]| Target {
             name: name.into(),
@@ -1467,12 +1851,65 @@ mod tests {
         assert_eq!(tag_of("v{version}", "1.3.2"), "v1.3.2");
         assert_eq!(cpe_with_version("cpe:2.3:a:openbsd:openssh", "10.6p1"), "cpe:2.3:a:openbsd:openssh:10.6:p1");
         assert_eq!(cpe_with_version("cpe:2.3:a:haxx:curl", "8.23.0"), "cpe:2.3:a:haxx:curl:8.23.0");
+        assert_eq!(cpe_with_version("cpe:2.3:a:oracle:openjdk", "21.0.13+9"), "cpe:2.3:a:oracle:openjdk:21.0.13");
         let d = tempfile::tempdir().unwrap();
         fs::write(d.path().join("oath-backport-CVE-2026-12345.patch"), "").unwrap();
         fs::write(d.path().join("upstream-CVE-2026-99999-fix.patch"), "").unwrap();
+        fs::write(d.path().join("upstream-GHSA-p99j-mfjp-r4cg.patch"), "").unwrap();
         let p = patched(d.path());
         assert_eq!(p["CVE-2026-12345"], "oath-backport-CVE-2026-12345.patch");
         assert!(p.contains_key("CVE-2026-99999"));
+        assert_eq!(p["GHSA-p99j-mfjp-r4cg"], "upstream-GHSA-p99j-mfjp-r4cg.patch");
+    }
+
+    #[test]
+    fn a_repository_advisory_says_whether_a_version_is_affected() {
+        assert_eq!(github_repo("https://github.com/vim/vim.git").as_deref(), Some("vim/vim"));
+        assert_eq!(github_repo("https://github.com/Mbed-TLS/mbedtls/").as_deref(), Some("Mbed-TLS/mbedtls"));
+        assert_eq!(github_repo("https://gitlab.com/x/y"), None);
+        let adv = |range: &str, fixed: &str| {
+            json!({ "ghsa_id": "GHSA-j6wv-2276-36jq", "cve_id": null, "severity": "low",
+                "vulnerabilities": [{ "vulnerable_version_range": range, "patched_versions": fixed }] })
+        };
+        let vim = adv("< v9.2.1352", "v9.2.1352");
+        assert_eq!(ghsa_status(&vim, "9.2.1250", Some("v{version}")), Some("affected"));
+        assert_eq!(ghsa_status(&vim, "9.2.1352", Some("v{version}")), None);
+        let both = adv(">= 3.0.0, <= mbedtls-3.6.7", "");
+        assert_eq!(ghsa_status(&both, "3.6.7", Some("mbedtls-{version}")), Some("affected"));
+        assert_eq!(ghsa_status(&both, "3.6.8", Some("mbedtls-{version}")), None);
+        assert_eq!(ghsa_status(&both, "2.28.9", Some("mbedtls-{version}")), None);
+        // `&&`, and an open range the fixed version bounds (vim's).
+        let and = adv("> v9.1.1390 && < v9.2.0172", "v9.2.0172");
+        assert_eq!(ghsa_status(&and, "9.2.0100", Some("v{version}")), Some("affected"));
+        assert_eq!(ghsa_status(&and, "9.2.1250", Some("v{version}")), None);
+        assert_eq!(ghsa_status(&adv(">v9.1.1231", "v9.1.1406"), "9.2.1250", Some("v{version}")), None);
+        assert_eq!(ghsa_status(&adv(">v9.1.1231", "v9.1.1406"), "9.1.1300", Some("v{version}")), Some("affected"));
+        // git lists each line's newest affected release, and its fixes.
+        let git = adv("<= 2.50.1, 2.51.0-2.51.2, 2.52.0, 2.56.0", "2.50.2, 2.51.3, 2.52.1 and 2.56.1");
+        assert_eq!(ghsa_status(&git, "2.56.0", Some("v{version}")), Some("affected"));
+        assert_eq!(ghsa_status(&git, "2.56.1", Some("v{version}")), None);
+        assert_eq!(ghsa_status(&git, "2.57.0", Some("v{version}")), None);
+        assert_eq!(ghsa_status(&git, "2.53.0", Some("v{version}")), Some("unknown"));
+        let spaced = adv("v2.45.0 v2.44.0 <=v2.43.3", ">= v2.44.1, v2.45.1, and v2.43.4");
+        assert_eq!(ghsa_status(&spaced, "2.45.0", Some("v{version}")), Some("affected"));
+        assert_eq!(ghsa_status(&spaced, "2.56.1", Some("v{version}")), None);
+        assert_eq!(ghsa_status(&adv("<=v2.48.1 <=v2.47.1", "(Git for Windows v2.47.1(2))"), "2.56.1", None), Some("unknown"));
+        // Spans, `>=` before a fix, a pin's own form, and commits.
+        let crun = adv("0.12.2 <= VERSION <= 1.29.1", "");
+        assert_eq!(ghsa_status(&crun, "1.29.0", Some("{version}")), Some("affected"));
+        assert_eq!(ghsa_status(&crun, "1.31", Some("{version}")), None);
+        assert_eq!(ghsa_status(&adv("0.2.0 <= 0.38.0", "0.39.0"), "0.169.0", None), None);
+        assert_eq!(ghsa_status(&adv("< 3.4.3", ">= 3.4.3"), "3.4.2", None), Some("affected"));
+        assert_eq!(ghsa_status(&adv("< b7437", "b7824"), "b11960", Some("{version}")), None);
+        assert_eq!(ghsa_status(&adv("< b7437", "b7824"), "b7000", Some("{version}")), Some("affected"));
+        assert_eq!(ghsa_status(&adv("<26a48ad", "26a48ad"), "b11960", Some("{version}")), Some("unknown"));
+        // No range: below the fixed version; neither: unknown.
+        assert_eq!(ghsa_status(&adv("", "1.2.0"), "1.1.9", None), Some("affected"));
+        assert_eq!(ghsa_status(&adv("", "1.2.0"), "1.2.0", None), None);
+        assert_eq!(ghsa_status(&adv("", ""), "1.0", None), Some("unknown"));
+        assert_eq!(ghsa_status(&json!({ "vulnerabilities": [] }), "1.0", None), Some("unknown"));
+        let h = ghsa_hit(&vim, "affected");
+        assert_eq!((h.id.as_str(), h.severity.as_str(), h.fixed.clone()), ("GHSA-j6wv-2276-36jq", "LOW", vec!["v9.2.1352".to_string()]));
     }
 
     #[test]

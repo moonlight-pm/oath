@@ -275,7 +275,8 @@ cargo make publish [--dest <dir>] [--output <id>]
   made in build/release/<id>/
 cargo make audit [--offline] [--name <pkg>] [--upstream]
   every package by pkgs/audit.toml against CVE List V5 (mirror in
-  ~/.local/share/oath/cvelist), OSV, NVD, CISA KEV and EPSS, and each pin
+  ~/.local/share/oath/cvelist), OSV, GitHub's repository advisories (last
+  reads in ~/.local/share/oath/ghsa.json), NVD, CISA KEV and EPSS, and each pin
   against upstream's newest stable release; writes
   build/audit/latest.json (R48). svc:audit (buccina, schedule 0 0 * * *)
   runs check/audit/run: claude -p with the oath-audit skill and
