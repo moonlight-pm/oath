@@ -146,8 +146,8 @@
     "version": "156.0.28+g57389f0+chromium-156.0.8078.93",
     "license": "BSD-3-Clause AND LicenseRef-Chromium-Credits",
     "by": "plan",
-    "plan": "sha256-927345ef4c309c930c2335c311d2f6712d927f43839891711cf1ef9c9269bb3d",
-    "product": "sha256-312adf5367a76b513eadaaf578d00790bedc4fd1ba200ceef72eb78f932975cb",
+    "plan": "sha256-46328a9c3fc26f9546c4db9f2ee37c52e8233a2df3fc89659947a29befa17026",
+    "product": "sha256-387d1921988435517c6a44c8cae668990deace98bb68ef54952f177b66791f9d",
     "run": [
       "glib",
       "nspr",
@@ -379,8 +379,8 @@
     "version": "9.0.2",
     "license": "LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND ISC",
     "by": "plan",
-    "plan": "sha256-c1aa0408e6bedafe03a111af4ff2109fbc2996deecfdf970550a9bd9470e48fa",
-    "product": "sha256-7d21f40154b4c09a71631df24027b9fb6b31e99c32e38a5dc8f690ce0bb7f4bc",
+    "plan": "sha256-e8f6ebe07667e9ec03977717c49fb21c640f1cd8540a7504338e5a774311e6d4",
+    "product": "sha256-a4396d0d7b25372e9a3998a474e9c78c7dbad0188cc54b6eb083dec09cdcd69c",
     "run": [
       "openssl",
       "zlib",
@@ -666,11 +666,11 @@
     "run": []
   },
   "jdk-21": {
-    "version": "21.0.13+9",
+    "version": "21.0.13.1+2",
     "license": "GPL-2.0-only WITH Classpath-exception-2.0 AND FTL AND MIT AND IJG AND Libpng AND Zlib AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND MPL-2.0",
     "by": "plan",
-    "plan": "sha256-c683681d8a57d4432b964589f658393ba06a5670cd95c53e4a3d4a6f0e6d9f6b",
-    "product": "sha256-0f19f8f14fd034ff7e386e2f063de8bd6da22deaa37d00d00de65dc68d13f7b7",
+    "plan": "sha256-d82f8bd6f980d50c783fb5301008987a15fb34e5989ef9702b8c5ee7c3a6c4ea",
+    "product": "sha256-b7cf06eaa10184201c0f64bca681cbf827e9279de571df74c1abf2caaf41492c",
     "run": [
       "alsa-lib",
       "libx11",
@@ -681,11 +681,11 @@
     ]
   },
   "jre-21": {
-    "version": "21.0.13+9",
+    "version": "21.0.13.1+2",
     "license": "GPL-2.0-only WITH Classpath-exception-2.0 AND FTL AND MIT AND IJG AND Libpng AND Zlib AND Unicode-3.0 AND Apache-2.0 AND BSD-3-Clause AND MPL-2.0",
     "by": "plan",
-    "plan": "sha256-22f8f6a784a5b66ba96f783a688f9c7adafae0a6607a53c2fe5cb14e8de515f4",
-    "product": "sha256-ab7d19102c6f13e3d5a9a820e175bab1bb23e399eab767d4c6dc7c2e790db535",
+    "plan": "sha256-e31a795cd3b504eac72549f20f30f8be0e18b6a13093bb37b3c0bf94237c9667",
+    "product": "sha256-72767e86f331ca5068662a74273e4dd1e32e2c5ad1075f6d516d0fe71c4c8b34",
     "run": [
       "alsa-lib",
       "libx11",
@@ -1593,8 +1593,8 @@
     "version": "11.1.1",
     "license": "GPL-3.0-only AND Apache-2.0 AND LGPL-3.0-or-later AND MIT",
     "by": "plan",
-    "plan": "sha256-12e625d60f94a3480b53928e3f389ac0a88a7d652b55484b4b67e3f425094778",
-    "product": "sha256-0b9923835fdb2ebebaccc053b39ce93b10350a4a99fa84b7d1706bcefb39041e",
+    "plan": "sha256-837d8c02ff67f32bff18645d6da2edae9f070329a0090ec919aad149b1d17ce7",
+    "product": "sha256-6b7bf94de5a78736b66004f65b9335f2eb438af0476e2e7a2e769ba563569c3d",
     "run": [
       "gcc",
       "qtbase",

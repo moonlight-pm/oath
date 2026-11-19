@@ -89,7 +89,7 @@
     },
     {
       "id": "pkg:jdk-21",
-      "hash": "sha256-0f19f8f14fd034ff7e386e2f063de8bd6da22deaa37d00d00de65dc68d13f7b7"
+      "hash": "sha256-b7cf06eaa10184201c0f64bca681cbf827e9279de571df74c1abf2caaf41492c"
     },
     {
       "id": "pkg:libarchive",
@@ -243,7 +243,7 @@
     },
     {
       "id": "pkg:jre-21",
-      "hash": "sha256-ab7d19102c6f13e3d5a9a820e175bab1bb23e399eab767d4c6dc7c2e790db535"
+      "hash": "sha256-72767e86f331ca5068662a74273e4dd1e32e2c5ad1075f6d516d0fe71c4c8b34"
     },
     {
       "id": "pkg:libarchive",
