@@ -1,0 +1,42 @@
+Upstream: https://github.com/FFmpeg/FFmpeg/commit/0260f625ba51ba9f02b189da757862fd96fb1da0
+FFmpeg's fix of an out-of-array write in the MOV/MP4 demuxer (srZp1wXh4CXQ, found by OpenAI
+Security Research; no CVE record names it yet): mov_read_trun() made room in tts_data for
+nb_index_entries + entries and moved tts_count - index_entry_pos entries into it, past the
+buffer when tts_count is larger than nb_index_entries. Chromium fixed the same memmove in
+its FFmpeg for CVE-2026-131060 (Chrome-rated critical, Chrome 158). FFmpeg master commit of
+2026-10-10, after n9.0.2 and in no release (release/9.0 still has the old memmove); it
+applies to 9.0.2 with offsets. Drop this when pkg:ffmpeg moves to a release that has it.
+
+From 0260f625ba51ba9f02b189da757862fd96fb1da0 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Fri, 2 Oct 2026 17:53:26 +0200
+Subject: [PATCH] avformat/mov: make room in tts_data by the index entry count
+ in mov_read_trun()
+
+Move the same range as for index_entries, tts_count is set to
+nb_index_entries right after.
+
+Fixes: out of array access
+Fixes: crash.mp4 / make-crash.py
+Fixes: srZp1wXh4CXQ
+Found-by: OpenAI Security Research
+Replicated through UnModified FFmpeg
+
+Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+---
+ libavformat/mov.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libavformat/mov.c b/libavformat/mov.c
+index 71c4e38c88592..e3e0100e11613 100644
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -6380,7 +6380,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+                 (sti->nb_index_entries - index_entry_pos));
+         memmove(sc->tts_data + index_entry_pos + entries,
+                 sc->tts_data + index_entry_pos,
+-                sizeof(*sc->tts_data) * (sc->tts_count - index_entry_pos));
++                sizeof(*sc->tts_data) * (sti->nb_index_entries - index_entry_pos));
+         if (index_entry_pos < sc->current_sample) {
+             sc->current_sample += entries;
+         }

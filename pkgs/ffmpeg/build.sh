@@ -2,7 +2,8 @@
 # pkg-config. --disable-autodetect keeps out whatever else the sandbox has:
 # no ffplay (SDL), no VA-API, VDPAU, NVENC or Vulkan, no outside codec.
 # patches/: fixes from FFmpeg's master, which no release has yet, one file to
-# an upstream pull request (or to a file they share), named for the CVEs.
+# an upstream pull request (or to a file they share), named for the CVEs, or
+# for the bug when no CVE names it yet.
 tar -xf "$SRC/$SOURCES"
 cd "ffmpeg-$VERSION"
 for p in "$FILES"/patches/*.patch; do
