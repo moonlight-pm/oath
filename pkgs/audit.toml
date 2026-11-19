@@ -135,6 +135,10 @@ source = "CEF 57389f0 (156.0.28, 2026-11-10) on Chromium 156.0.8078.93 (tag 2026
 "CVE-2026-121034" = "Views in Chrome on Windows (Google's record); Oath builds CEF for Linux"
 "CVE-2026-126879" = "fixed on Chromium's 156 branch by 7083f40f8a15 (8078@{#2064}, cherry-pick of main's 7155a0008561, issue 576736463), which 156.0.8078.93 (8078@{#2089}) holds: Chromium's log of the branch; Google's Extended Stable post of 2026-11-11 names it among 156.0.8078.100's fixes"
 "CVE-2026-126846" = "Skia's Vulkan backend on ARM's proprietary Mali driver, versions 42 to 55: its fix (Skia c215948793b4 on chrome/m157, issue 580857377) sleeps after device loss only when the vendor is ARM; Oath is x86-64 and ships no Mali driver, and Google did not take it to 156's Extended Stable"
+"CVE-2026-130963" = "WebView in Chrome 158 (Google's post of 2026-11-17, issue 562000561): Android's WebView, whose AwPacProcessor its CLs touch (Gerrit, android_webview/); Oath builds CEF for Linux"
+"CVE-2026-131008" = "fixed on Chromium's 156 branch by 239f5a19d2f2 (8078@{#1824}, Gerrit CL 8691945: the M156 cherry-pick of main's 218a524b0ed8, '[gc] Defer CalculationValue handle decrements from ~Length()', issue 574686297), which 156.0.8078.93 (8078@{#2089}) holds"
+"CVE-2026-130975" = "OfflineAudioContext's incremental rendering (issue 577366760: main's f4de8340fbbb guards OnChunkRendered and pending_render_targets_), which Chromium 156 does not have: 156.0.8078.93's offline_audio_context.cc renders once and rejects a second startRendering(), with no chunk code; Google took the fix to M158 only"
+"CVE-2026-131054" = "ANGLE's WrapStructConstructors pass (issue 576812570: ANGLE fb5dacfe0f4c takes its rebuild out of an ASSERT), which runs only under avoidComplexExpressionsInStructConstructor, set by ANGLE's GL backend only on a PowerVR GPU (renderergl_utils.cpp at ANGLE f10470c77e48, 156.0.8078.93's DEPS); Oath is x86-64 and ships no PowerVR driver"
 "CVE-2026-121157" = "Chromoting, Chrome Remote Desktop, against a local program (Google's record, Chromium-rated low): its host is remoting/'s own programs, and the build makes and ships libcef.so and its resources only (pkgs/cef/build.sh)"
 "CVE-2026-121037" = "ANGLE in Chrome on Windows (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121045" = "Browser in Chrome on Mac (Google's record); Oath builds CEF for Linux"
@@ -265,6 +269,18 @@ tag = "v{version}"
 [cups.not_affected]
 "CVE-2024-47850" = "cups-browsed (the record; cups-filters' GHSA-rq86-c7g6-r2h8), not CUPS: build.sh builds libcups alone (--with-components=libcups)"
 "CVE-2026-107885" = "cupsd's cupsdCheckJobs() (GHSA-hhw5-qqmc-p6rg): build.sh builds libcups alone (--with-components=libcups), no scheduler"
+"GHSA-hhw5-qqmc-p6rg" = "CVE-2026-107885's advisory: cupsd's cupsdCheckJobs(); build.sh builds libcups alone (--with-components=libcups), no scheduler"
+"CVE-2026-107655" = "cupsd's job ticket comments, read_job_ticket() in scheduler/ipp.c and cupsdContinueJob() in scheduler/job.c (GHSA-58wv-9ffm-5w78): build.sh builds libcups alone (--with-components=libcups), no scheduler"
+"GHSA-56v5-mj3w-4f59" = "cupsd's ipp_length() and get_options() in scheduler/job.c (the advisory): build.sh builds libcups alone (--with-components=libcups), no scheduler"
+"GHSA-p6cf-j6h3-rcf7" = "cupsd's create_subscriptions() and add_job_subscriptions() in scheduler/ipp.c (the advisory): build.sh builds libcups alone, no scheduler"
+"GHSA-8g82-45xh-j7qh" = "cupsd's save_auth_info() (the advisory: the loop runs inside the scheduler): build.sh builds libcups alone, no scheduler"
+"GHSA-w5p3-jrq8-wx4v" = "cupsd's get_options() in scheduler/job.c feeding cups-filters' beh and foomatic-rip (the advisory): build.sh builds libcups alone, and Oath ships neither cups-filters nor a scheduler"
+"GHSA-5cpc-rwrw-jp83" = "the network backends' backendSNMPSupplies() in backend/snmp-supplies.c (the advisory): build.sh builds libcups alone, no backends"
+"GHSA-g863-fq3c-86jm" = "backend_init_supplies() in backend/snmp-supplies.c, the snmp and socket backends (the advisory): build.sh builds libcups alone, no backends"
+"GHSA-8q78-mrwh-rm85" = "needs cupsd running with its root certificate token StateDir/certs/0 and its create_local_printer (the advisory): build.sh builds libcups alone, so there is no scheduler and no certificate to leak"
+"GHSA-5v9q-84cf-2ww4" = "libcups sends cupsd's root-owned certs/0 to an AF_LOCAL socket, reached through cupsd's CUPS-Create-Local-Printer (the advisory): build.sh builds libcups alone, so there is no scheduler and no certificate to send"
+"GHSA-f33q-qc2j-585m" = "cupsd's local certificates (scheduler/cert.c, scheduler/file.c) and the web interface's session ID (cgi-bin/var.c) (the advisory): build.sh builds libcups alone, no scheduler or CGI"
+"CVE-2023-32324" = "cupsd's format_log_line() in scheduler/log.c, fixed in 2.4.3 (the record; GHSA-cxc6-w2g7-69p7): this is 2.4.20, and build.sh builds libcups alone"
 
 [curl]
 cpe = "cpe:2.3:a:haxx:curl"
@@ -454,6 +470,9 @@ tag = "v{version}"
 [git.age_because]
 source = "2.56.1, published 2026-11-10 (its commit is from 2026-10-23, under embargo), is the only 2.56 release with the fixes for CVE-2026-111760 (code execution on a recursive clone), CVE-2026-105437 (high, a heap overflow in the merge code), CVE-2026-113408, CVE-2026-114466, CVE-2026-114467 and CVE-2026-114469 (git's 2.50.2 release notes)"
 
+[git.not_affected]
+"CVE-2024-52005" = "the sideband passed to the terminal unfiltered: 2.56.1 masks control characters from the sideband by default but ANSI colors, line feeds and tabs (its Documentation/config/sideband.adoc, sideband.allowControlCharacters)"
+
 [glib]
 cpe = "cpe:2.3:a:gnome:glib"
 repo = "https://gitlab.gnome.org/GNOME/glib"
@@ -525,6 +544,9 @@ cpe = "cpe:2.3:a:harfbuzz_project:harfbuzz"
 repo = "https://github.com/harfbuzz/harfbuzz"
 tag = "{version}"
 
+[harfbuzz.not_affected]
+"CVE-2024-56732" = "hb_cairo_glyphs_from_buffer()'s heap overflow in 8.5.0 to 10.0.1, fixed in 10.1.0 (the record and harfbuzz's advisory); this is 15.1.0"
+
 [hwdata]
 skip = "hardware ID lists, data"
 compare_repo = "https://github.com/vcrhonek/hwdata"
@@ -556,6 +578,9 @@ tag = "jdk-{version}"
 series = "21"
 no_compare = "the vendor's build, not its source: there is no tree to set it against"
 
+[jdk-21.age_because]
+source = "Temurin 21.0.13.1+2 (GA 2026-11-18) is the only 21 release with the fix for CVE-2026-114938 (CVSS 8.1, HotSpot's x86-64 Base64 intrinsic, remote code execution through java.util.Base64's decoder on AVX-512 VBMI CPUs; JDK-8393212 in its release notes), taken on the first run after Adoptium shipped it by Joshua's word of 2026-11-18"
+
 [jre-21]
 cpe = "cpe:2.3:a:oracle:openjdk"
 names = ["openjdk", "temurin", "Oracle Java SE"]
@@ -564,6 +589,9 @@ repo = "https://github.com/adoptium/temurin21-binaries"
 tag = "jdk-{version}"
 series = "21"
 no_compare = "the vendor's build, not its source: there is no tree to set it against"
+
+[jre-21.age_because]
+source = "Temurin 21.0.13.1+2, which moves with pkg:jdk-21: jdk-21.age_because"
 
 [json-c]
 cpe = "cpe:2.3:a:json-c:json-c"
@@ -625,6 +653,8 @@ tag = "release-{version}-stable"
 
 [libevent.not_affected]
 "CVE-2026-63380" = "in ws.c (evws, GHSA-3rpf-frgx-xq34), which libevent added in 2.2.1-alpha: release-2.1.13-stable has no ws.c"
+"GHSA-5rgj-2c58-7jrc" = "sample/http-server's strcpy of a Unix socket path (the advisory): a sample program, and build.sh configures --disable-samples"
+"GHSA-f4cg-pcr2-495m" = "a GITHUB_TOKEN in libevent's own CI artifacts (the advisory): no code in the library"
 
 [libffi]
 cpe = "cpe:2.3:a:libffi_project:libffi"
@@ -814,6 +844,11 @@ compare_tag = "v{version}"
 source = "7.3.4 (2026-11-10) is the only 7.3 release with the fix for CVE-2026-99288 (inet: unhashed sockets rejected in established lookups), and it carries 7.3.3's (2026-11-07) for CVE-2026-99281 (high: attaching to an ownerless tun device without CAP_NET_ADMIN) and CVE-2026-99255 (io_uring/io-wq: a link hidden from cancellation); taken before its week by Joshua's word of 2026-11-12"
 
 [linux.not_affected]
+"CVE-2026-99314" = "ALSA's us122l driver (sound/usb/usx2y/us122l.c): CONFIG_SND_USB_US122L is set by neither x86_64_defconfig nor linux.fragment, which has SND_USB_AUDIO only"
+"CVE-2026-99315" = "ALSA's us122l driver: CONFIG_SND_USB_US122L is set by neither x86_64_defconfig nor linux.fragment"
+"CVE-2026-99316" = "ALSA's usx2y driver (usb_stream): CONFIG_SND_USB_USX2Y and SND_USB_US122L are set by neither x86_64_defconfig nor linux.fragment"
+"CVE-2026-99318" = "ALSA's bcd2000 driver: CONFIG_SND_BCD2000 is set by neither x86_64_defconfig nor linux.fragment"
+"CVE-2026-99319" = "ALSA's usx2y driver: CONFIG_SND_USB_USX2Y is set by neither x86_64_defconfig nor linux.fragment"
 "CVE-2021-47645" = "the zoran staging driver, fixed in mainline by 20811bbe685c (v5.18); the record lists only the stable branches"
 "CVE-2026-98938" = "Rust kernel code (rust: irq): Oath's kernel has no Rust (boot/config CONFIG_RUSTC_VERSION=0; pkgs/linux builds without rust)"
 "CVE-2026-68086" = "a stable-only fix: mainline removed the code (044925f9b565) by 7.2 (the kernel CNA's record: no upstream commit, 7.1.4 fixes 7.1.y)"
@@ -873,6 +908,9 @@ unchecked = "a tag for every merge, many a day, and no line to follow: its CVEs 
 
 [llama-cpp.not_affected]
 "CVE-2024-21802" = "the record names only commit 18c2e17 (2024-01), 10,139 commits behind this pin; gguf.cpp now checks each tensor dimension and their product against INT64_MAX before using them"
+"CVE-2026-21869" = "fixed by c78fb90 (the advisory), which b11960 holds: GitHub's compare of c78fb90...b11960 is 3,052 ahead, 0 behind"
+"CVE-2025-53630" = "fixed by 26a48ad (GHSA-vgg9-87g3-85w8), which b11960 holds: GitHub's compare of 26a48ad...b11960 is 6,106 ahead, 0 behind"
+"GHSA-g4cc-763q-h9h6" = "fixed by c33fe8b8 (the advisory), which b11960 holds: GitHub's compare of c33fe8b8...b11960 is 6,311 ahead, 0 behind"
 
 [locales]
 skip = "glibc's locale data: its CVEs are pkg:glibc's"
@@ -1300,6 +1338,7 @@ unchecked = "a tag for every patch, so it is always behind; its advisories are r
 
 [vim.not_affected]
 "CVE-2022-3705" = "fixed in 9.0.0805 (the record); Oath builds 9.2.1250"
+"GHSA-cgcr-vx5v-wf6q" = "K on a PowerShell script runs pwsh with the word under the cursor (the advisory, fixed in 9.2.1346): Oath ships no pwsh"
 
 [vulkan-headers]
 skip = "headers"
