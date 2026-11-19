@@ -669,9 +669,18 @@ fn post(w: &str) -> bool {
 }
 
 /// Upstream version order: numbers by value, `rc`/`beta` before the
-/// release, `p1` after it, `*` above anything.
+/// release, `p1` after it, `*` above anything. A build (Temurin's `+9`)
+/// orders only two builds of one release, so `21.0.13.1+2` is past
+/// `21.0.13+9`.
 pub fn cmp_versions(a: &str, b: &str) -> Ordering {
-    let (a, b) = (toks(a), toks(b));
+    let order = cmp_toks(&toks(release_of(a)), &toks(release_of(b)));
+    match (a.split_once('+'), b.split_once('+')) {
+        (Some((_, x)), Some((_, y))) if order == Ordering::Equal => cmp_toks(&toks(x), &toks(y)),
+        _ => order,
+    }
+}
+
+fn cmp_toks(a: &[Tok], b: &[Tok]) -> Ordering {
     for i in 0..a.len().max(b.len()) {
         match (a.get(i), b.get(i)) {
             (Some(Tok::Any), _) | (_, Some(Tok::Any)) => return Ordering::Equal,
@@ -1724,6 +1733,9 @@ mod tests {
         assert_eq!(cmp_versions("7.3", "7.3.*"), Equal);
         assert_eq!(cmp_versions("v1.2.3", "1.2.3"), Equal);
         assert_eq!(cmp_versions("20250605", "20240905"), Greater);
+        assert_eq!(cmp_versions("21.0.13.1+2", "21.0.13+9"), Greater);
+        assert_eq!(cmp_versions("21.0.13+9", "21.0.13+10"), Less);
+        assert_eq!(cmp_versions("21.0.13", "21.0.13+9"), Equal);
     }
 
     #[test]

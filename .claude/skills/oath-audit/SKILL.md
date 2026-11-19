@@ -251,9 +251,6 @@ Act on these, and do not ask them again:
   arguments, nothing from the file; Oath ships neither). That process does not stop
   vim's pin: the next fix pins the lowest week-old tag that has it and drops
   `pkgs/vim/patches/`, and its review's verdict names this answer.
-- **Java 21 (CVE-2026-114938):** no mitigation in Prism ahead of Temurin's fix, since
-  no machine in `hosts/` has AVX-512 VBMI. jdk-21 and jre-21 move on the first run
-  after Adoptium ships 21.0.13.1 GA, with an `age_because` naming the CVE.
 - **OpenSSL's Low CVEs:** no backport in CEF 158's batch. They wait for 4.0.4 (due
   12-01), which goes out with the first CEF rebuild after its week, not with a
   rebuild of its own, unless a later OpenSSL advisory is above Low.

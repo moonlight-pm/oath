@@ -546,6 +546,7 @@ tag = "{version}"
 
 [harfbuzz.not_affected]
 "CVE-2024-56732" = "hb_cairo_glyphs_from_buffer()'s heap overflow in 8.5.0 to 10.0.1, fixed in 10.1.0 (the record and harfbuzz's advisory); this is 15.1.0"
+"GHSA-f6q6-4vjq-m6j7" = "the advisory names no versions: its stack is FT_Set_Var_Design_Coordinates from _hb_ft_hb_font_changed (hb-ft.cc:205), the call harfbuzz's df111468b038 (2025-05-26) stopped making on non-variable fonts; first in 11.3.0 (GitHub's compare), this is 15.1.0"
 
 [hwdata]
 skip = "hardware ID lists, data"
