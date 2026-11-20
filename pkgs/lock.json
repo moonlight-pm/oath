@@ -219,11 +219,11 @@
     "run": []
   },
   "cloudflared": {
-    "version": "2026.10.5",
+    "version": "2026.11.0",
     "license": "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause",
     "by": "plan",
-    "plan": "sha256-59c6c6dbe3f7c549116cef6bc41d8884b158295ca17ca47ccf9352d4911aacfb",
-    "product": "sha256-78ee60cc14a017e3d5b806fe060bfbbfbb51cc28f7ec2cbd0ee0b66a639cc731",
+    "plan": "sha256-2d5c0b17be62fdb1244dde9b6e51598abf95700161a76ed30657e1bee0919fd3",
+    "product": "sha256-941d1ea05ea448e838907041ec8e491f675f385d536f79815dd5d7eebee3a331",
     "run": [
       "certs"
     ]
@@ -1923,11 +1923,11 @@
     "run": []
   },
   "vim": {
-    "version": "9.2.1250",
+    "version": "9.2.1342",
     "license": "Vim",
     "by": "plan",
-    "plan": "sha256-ac6d4d5f4542865a13675575e064974a86a632e92e0db2134071b3296b1a4aa4",
-    "product": "sha256-2c2475ca5016c05326e638d93b07e43e0b3e9f7c90a4ff276ef1337ede1ab021",
+    "plan": "sha256-01db1853d36baf1257cc5839e23ce9d58aaedee61c4d8997d285201a9263acee",
+    "product": "sha256-23692a586a325d3b666e04989ff55f18f175c3967bee4e2f9dece25f5afe4134",
     "run": [
       "ncurses"
     ]

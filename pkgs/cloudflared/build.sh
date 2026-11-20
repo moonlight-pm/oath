@@ -2,9 +2,8 @@
 # share/doc/cloudflared, and components.json naming each linked module.
 # BuiltForPackageManager is upstream's switch for a packaged build: no
 # self-update, and `cloudflared update` says to use the package manager. A newer
-# cloudflared is a new pin in pkgs/cloudflared. patches/: upstream's fix of
-# VULN-170057 (an Access bypass through matrix parameters), in 2026.11.0, which is
-# under a week old; the last check below is that fix.
+# cloudflared is a new pin in pkgs/cloudflared. The last check below is upstream's
+# fix of VULN-170057 (an Access bypass through matrix parameters), new in 2026.11.0.
 export HOME=/tmp/home GOCACHE=/tmp/gocache GOPATH=/tmp/gopath GOMODCACHE=/tmp/gomod \
 	CGO_ENABLED=0 GOSUMDB=off GOPROXY="file://$SRC/gomod" GOFLAGS='-mod=readonly -trimpath'
 mkdir -p "$HOME" /tmp/cloudflared /out/bin /out/share/doc/cloudflared

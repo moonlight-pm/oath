@@ -11,20 +11,20 @@
 # advisories are read by hand. Its 67 modules came in as a first pin's baseline, by
 # Joshua's word, recorded and not reviewed. Re-pin with:
 #   pkgs/go-modules.sh cloudflared ./cmd/cloudflared
-version = "2026.10.5"
+version = "2026.11.0"
 license = "Apache-2.0 AND MIT AND BSD-3-Clause AND BSD-2-Clause"
 description = "cloudflared: Cloudflare Tunnel's client, which connects a machine's services to Cloudflare without an open port."
 home = "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/"
 category = "network"
-purl = "pkg:golang/github.com/cloudflare/cloudflared@2026.10.5"
+purl = "pkg:golang/github.com/cloudflare/cloudflared@2026.11.0"
 build = ["go"]
 run = ["certs"]
 unsigned = "Cloudflare's tags are annotated and unsigned; its modules come from proxy.golang.org, and the go command checks each against go.sum in the build"
 
 [[source]]
-url = "https://github.com/cloudflare/cloudflared/archive/refs/tags/2026.10.5.tar.gz"
-sha256 = "cca0918e869d6e303ab9d0a31bc1d96ae7dbbbfe6ff2bde9208159ea91f793d6"
-file = "cloudflared-2026.10.5.tar.gz"
+url = "https://github.com/cloudflare/cloudflared/archive/refs/tags/2026.11.0.tar.gz"
+sha256 = "9913452304215e1e7b0ecd75b3e1ca400d5c8b64156e176c5e0aaaca4238c539"
+file = "cloudflared-2026.11.0.tar.gz"
 
 # Modules, from pkgs/go-modules.sh:
 
