@@ -115,8 +115,15 @@ Overwrite this file when facts change; do not append a diary.
   2026-11-10 01:44Z applied its heads here: all 17 Sola packages from master@cf0e2d40 (`pkg:sola`
   `90ca782c6acc`, the new `pkg:sola-kvm` `0e0a8d721a46`, `pkg:sola-browser` `58281b23ab33`), which the
   `desk` profile pins, so `pkg:sola-browser` is no longer an overlay.
-  **Running now** (read 2026-11-16): desk `42a8028ae7bf` (2026-11-12; it has not taken the newer
-  `85e4dd430b4d`), generation 165; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
+  **Running now** (read 2026-11-21): desk `cd27b297c381`, taken 2026-11-21 at Joshua's word by
+  `sudo oath update --confirm` with `--keep` for each of Sola's 18 packages, overlays from
+  `next@301dfd1c` (generation 195, no reboot; codex, cloudflared, llama-cpp and vim moved). It put
+  `/etc/egl` in place: the 2026-11-19 update to `319b03c43be0` ran `42a8028ae7bf`'s `oath`, from
+  before R89, which left it out, so from the 2026-11-21 boot (generation 193) NVIDIA's EGL had no
+  GBM or X platforms and Proton games ran at about 2 fps under Xwayland on Mesa (fixed for later
+  ROOT_FILES in `d5200b9`). Generation 196: `pkg:claude-code` 2.1.323 `a198de245f8b` from
+  master@24ea158, built here (`oath build plan:claude-code`), an overlay until a release pins it.
+  Before it, desk `42a8028ae7bf` (2026-11-12), generation 165; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
   `pkg:sola-terminal`. Oath's agent sessions run in its checkout since 2026-11-12 (R39 as
   amended); builds and publishing stay on buccina. On 2026-11-15, at Joshua's word, two overlays
   for the drop-down terminal over a fullscreen game: `pkg:sola` `726866d18ddf` from
