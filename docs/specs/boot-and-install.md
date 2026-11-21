@@ -386,8 +386,13 @@ publishes each output it checked, and each machine moves itself:
      new SSH session; if PID 1 undoes it, the update stops there.
   4. Replaces the image's files outside the catalog (`/lib/oath`,
      `/etc/passwd`, `group`, `shadow`, `shells`, `nsswitch.conf`,
-     `ssh/ssh_config`, `/sbin/init`, `/bin/sudo`), each written beside
-     itself and renamed over.
+     `ssh/ssh_config`, `/etc/egl`, `/sbin/init`, `/bin/sudo`), each
+     written beside itself and renamed over. The list is the release's:
+     every file its bundle carries outside `/oath` (since 2026-11-21).
+     Before that it was the running `oath`'s own, so an update run by an
+     `oath` from before R89 left out `/etc/egl` (novus and koeurax,
+     2026-11-19), and a machine whose `oath` is older than this change
+     takes a file a later release adds at its next update after that.
   5. Archives the ESP's kernel and initrd as boot `<n>`, prunes beyond
      five (and their `@boot-*`), writes the new kernel, initrd,
      `oath-efi` and entries, keeps the machine's `loader.conf`, and

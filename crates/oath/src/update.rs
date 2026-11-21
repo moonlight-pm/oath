@@ -701,8 +701,9 @@ fn update(
     }
     let generation = apply_moves(root, cat, actor, moves, gone, made, reboot, Some(&snap))?;
 
-    eprintln!(">> {}", up::ROOT_FILES.join(" "));
-    put_root_files(&stage, up::ROOT_FILES)?;
+    let files = bundle_root_files(&stage)?;
+    eprintln!(">> {}", files.join(" "));
+    put_root_files(&stage, &files.iter().map(String::as_str).collect::<Vec<_>>())?;
     eprintln!(">> ESP: archive boot {}, write the new kernel, initrd and oath-efi", rotate.new_id);
     let loader = fs::read_to_string(mnt.join("loader/loader.conf"))
         .unwrap_or_else(|_| esp::LOADER_CONF_METAL.to_string());
@@ -1753,6 +1754,39 @@ fn wait_kept(root: &Path, generation: u64, secs: u64) -> Result<()> {
     Ok(())
 }
 
+/// What the bundle carries outside `/oath`: its release's `ROOT_FILES`, which
+/// can name one this binary's list does not (R89's `etc/egl` reached no
+/// machine whose update ran an `oath` from before it). Those this binary
+/// knows by their entry, any other by its own path.
+fn bundle_root_files(stage: &Path) -> Result<Vec<String>> {
+    let known = |p: &str| up::ROOT_FILES.iter().any(|f| p == *f || p.starts_with(&format!("{f}/")));
+    let mut extra = Vec::new();
+    let mut todo = vec![PathBuf::new()];
+    while let Some(dir) = todo.pop() {
+        for e in fs::read_dir(stage.join(&dir))? {
+            let e = e?;
+            let rel = dir.join(e.file_name());
+            let name = rel.to_string_lossy().into_owned();
+            if name == "oath" || known(&name) {
+                continue;
+            }
+            if e.file_type()?.is_dir() {
+                todo.push(rel);
+            } else {
+                extra.push(name);
+            }
+        }
+    }
+    extra.sort();
+    let mut out: Vec<String> = up::ROOT_FILES
+        .iter()
+        .filter(|f| stage.join(f).symlink_metadata().is_ok())
+        .map(|f| f.to_string())
+        .collect();
+    out.extend(extra);
+    Ok(out)
+}
+
 /// Each file written beside itself and renamed over, so a running program
 /// keeps its old file and nothing is ever half there.
 fn put_root_files(stage: &Path, files: &[&str]) -> Result<()> {
@@ -1842,6 +1876,34 @@ pub(crate) fn extra_options(current: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_update_puts_every_root_file_its_bundle_carries() {
+        let d = tempfile::tempdir().unwrap();
+        let stage = d.path();
+        let files =
+            ["lib/oath/init", "etc/passwd", "etc/ssh/ssh_config", "etc/later/x.conf", "sbin/init"];
+        for f in files {
+            fs::create_dir_all(stage.join(f).parent().unwrap()).unwrap();
+            fs::write(stage.join(f), "").unwrap();
+        }
+        fs::create_dir_all(stage.join("etc/egl")).unwrap();
+        std::os::unix::fs::symlink("/oath/store/pkg/nvidia/live/x", stage.join("etc/egl/p.d"))
+            .unwrap();
+        fs::create_dir_all(stage.join("oath/objects/pkg/vim")).unwrap();
+        fs::write(stage.join("oath/objects/pkg/vim/desired.json"), "{}").unwrap();
+        assert_eq!(
+            bundle_root_files(stage).unwrap(),
+            [
+                "lib/oath",
+                "etc/passwd",
+                "etc/ssh/ssh_config",
+                "etc/egl",
+                "sbin/init",
+                "etc/later/x.conf"
+            ]
+        );
+    }
 
     #[test]
     fn what_a_cell_needs_stays_unless_the_release_pins_it() {
