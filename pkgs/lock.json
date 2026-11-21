@@ -247,11 +247,11 @@
     "run": []
   },
   "codex": {
-    "version": "0.166.0",
+    "version": "0.169.0",
     "license": "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib",
     "by": "plan",
-    "plan": "sha256-60e36abdbe9dbb0844620519d1b5ccd12b395bb31d3c02038a0a1200a8eb3ef4",
-    "product": "sha256-ff8d8faa9779c64f47d22e24913c24677a89e52a661d1006912817af5a840b10",
+    "plan": "sha256-7500e6483c4a8bf61dd1104bc588c8e8f9d8c48496088801838f3e43f33f7513",
+    "product": "sha256-5055934a07196c2579da1a66ea3ad21a06b46a7a797e7ed993dbd35218b7c53b",
     "run": []
   },
   "coreutils": {
@@ -1233,8 +1233,8 @@
     "version": "b11960",
     "license": "MIT AND BSD-2-Clause AND (MIT OR Unlicense) AND (Unlicense OR MIT-0)",
     "by": "plan",
-    "plan": "sha256-90c8b7bd365677d4ad5a6520e0e44f300ddbfa571f0c7c33b454b811c302d34d",
-    "product": "sha256-8404bd24dc01ba0090f735caba75fc89bcf6b51b545c15382655eb829f30ed97",
+    "plan": "sha256-16fdf1fcac7ee1bfc3f14d42ed3f43a85209419c2cb1feb5aa1e485b0eda90a1",
+    "product": "sha256-53211f7166ba546e34b3484906344dd0c7cf8fe8cd3cfae70905b6d98e863680",
     "run": [
       "gcc",
       "vulkan-loader"
