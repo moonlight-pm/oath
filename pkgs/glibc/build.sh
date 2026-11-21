@@ -1,8 +1,9 @@
 # glibc and the Linux UAPI headers, built by pkg:gcc (R17). Headers in
 # include/, libraries and the loader in lib/: slibdir and rtlddir are
 # /lib, and there is no /lib64.
-# patches/: release/2.44/master from sourceware (the 2.44 branch's fixes,
-# GLIBC-SA-2026-0015 to -0024 among them), diffed from the glibc-2.44 tag.
+# patches/: release/2.44/master from sourceware at 049ee6ef (the 2.44 branch's
+# fixes, GLIBC-SA-2026-0015 to -0028 and -0030 among them), diffed from the
+# glibc-2.44 tag.
 T=x86_64-pc-linux-gnu
 tar -xf "$SRC/glibc-$VERSION.tar.xz"
 for p in "$FILES"/patches/*.patch; do
