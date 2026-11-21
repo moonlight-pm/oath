@@ -6,19 +6,19 @@
 # the release's manifest.json lists, and Anthropic signs the manifest. The
 # binary loads only glibc; of its two embedded add-ons, one also loads
 # libasound (voice).
-version = "2.1.311"
+version = "2.1.323"
 license = "LicenseRef-Anthropic-Commercial-Terms"
 description = "Claude Code: Anthropic's agentic coding tool for the terminal."
 home = "https://code.claude.com/docs"
 category = "agents"
-purl = "pkg:generic/claude-code@2.1.311"
+purl = "pkg:generic/claude-code@2.1.323"
 recipe = "Anthropic's terms allow no redistribution; each machine fetches the binary itself"
 build = ["bash", "coreutils", "grep", "glibc"]
 run = []
 
 [[source]]
-url = "https://downloads.claude.ai/claude-code-releases/2.1.311/linux-x64/claude"
-sha256 = "86dc1fcc69498159eaf15f446613e847010f9036bfbbdffd4c49350be8489ada"
-sig = "https://downloads.claude.ai/claude-code-releases/2.1.311/manifest.json.sig"
-sums = "https://downloads.claude.ai/claude-code-releases/2.1.311/manifest.json"
+url = "https://downloads.claude.ai/claude-code-releases/2.1.323/linux-x64/claude"
+sha256 = "604d29a6869409106b6a1110bdadcc8b72e8654a5a865d23258f938a696e348e"
+sig = "https://downloads.claude.ai/claude-code-releases/2.1.323/manifest.json.sig"
+sums = "https://downloads.claude.ai/claude-code-releases/2.1.323/manifest.json"
 key = "anthropic"

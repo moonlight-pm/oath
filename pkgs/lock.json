@@ -211,11 +211,11 @@
     ]
   },
   "claude-code": {
-    "version": "2.1.311",
+    "version": "2.1.323",
     "license": "LicenseRef-Anthropic-Commercial-Terms",
     "by": "plan",
-    "plan": "sha256-83dff709f63e8a64b373d6cc1367007ac69a5e57afd316b49ad75ec4b966389e",
-    "product": "sha256-e744da6b3c0784acf5172a6ed9128b28b8f6b4416ac9e8a01bf5af62ec30d547",
+    "plan": "sha256-a3131933208f44f63e8fb7dd4be345603a3449498af06a52b2a54bda9ce144dd",
+    "product": "sha256-a198de245f8b816e954ab1f8806b82df309389ce78b6d2d1a7826770c4e6627e",
     "run": []
   },
   "cloudflared": {
