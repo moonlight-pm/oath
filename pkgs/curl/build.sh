@@ -1,8 +1,5 @@
 # curl and libcurl, shared (git's https), with headers, libcurl.pc and
-# curl-config; mbedTLS and zlib from their packs. ssl/cert.pem links to
-# pkg:certs' bundle at its live slot, with no pin on it (R50): a distrust is a
-# new pkg:certs pack and no rebuild. OpenSSL, Steam and SSL_CERT_FILE name this
-# path, so they follow it.
+# curl-config; mbedTLS and zlib from their packs and a pinned CA bundle.
 tar -xf "$SRC/curl-$VERSION.tar.xz"
 cd "curl-$VERSION"
 ./configure --prefix="$LIVE" --enable-shared --disable-static \
@@ -18,4 +15,4 @@ make install DESTDIR=/tmp/dest
 cp -a "/tmp/dest$LIVE/bin" "/tmp/dest$LIVE/include" "/tmp/dest$LIVE/lib" /out/
 rm -f /out/lib/*.la
 mkdir -p /out/ssl
-ln -s /oath/store/pkg/certs/live/ssl/cert.pem /out/ssl/cert.pem
+cp "$SRC"/cacert-*.pem /out/ssl/cert.pem

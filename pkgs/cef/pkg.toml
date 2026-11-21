@@ -1,18 +1,18 @@
 # CEF, the Chromium Embedded Framework that Sola's browser is built
 # against, built from Chromium's and CEF's source with Chrome's codecs
 # (H.264 and AAC in MP4; Joshua, 2026-10-28), which the vendor's binary
-# leaves out. The same commit as the vendor's 158.0.3, so a program
+# leaves out. The same commit as the vendor's 156.0.28, so a program
 # built against its headers loads this libcef.so. The vendor builds it on
-# Chromium 158.0.8127.18; .36 is Chrome 158's stable release on the same
-# branch, with its security fixes, and the same DEPS toolchain. Chromium builds
-# only with its own Clang and Rust (R40): the toolchain packages its DEPS
+# Chromium 156.0.8078.88, for which Google published no tarball; .93 is the
+# same branch 46 commits on, with the same DEPS toolchain. Chromium builds only
+# with its own Clang and Rust (R40): the toolchain packages its DEPS
 # pins, build inputs here and never on a machine.
-version = "158.0.3+g8c29be2+chromium-158.0.8127.36"
+version = "156.0.28+g57389f0+chromium-156.0.8078.93"
 license = "BSD-3-Clause AND LicenseRef-Chromium-Credits"
 description = "CEF, the Chromium Embedded Framework, with H.264 and AAC, for sola-browser."
 home = "https://github.com/chromiumembedded/cef"
 category = "browser"
-purl = "pkg:generic/cef@158.0.3+g8c29be2+chromium-158.0.8127.36"
+purl = "pkg:generic/cef@156.0.28+g57389f0+chromium-156.0.8078.93"
 build = [
 	"python", "ninja", "pkgconf", "patchelf", "libdrm", "libpulse", "harfbuzz", "fribidi",
 	"freetype", "fontconfig", "pixman", "xorgproto", "gperf",
@@ -31,15 +31,15 @@ run = [
 
 # Google's release tarball, with every DEPS source a build reads.
 [[source]]
-url = "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-158.0.8127.36.tar.xz"
-sha256 = "000e7ce96ca59f48e278a652189e816c9c9686b80479d13693c2957e349b0cec"
+url = "https://commondatastorage.googleapis.com/chromium-browser-official/chromium-156.0.8078.93.tar.xz"
+sha256 = "669e57f8bb2fe58199d1aef73b94837b7ebd79d0b5831ca1f7eceb501e876f54"
 unsigned = "Google publishes Chromium's release tarballs with an unsigned .hashes file only"
 
-# CEF's tree at the commit of its 158.0.3 (branch 8127).
+# CEF's tree at the commit of its 156.0.28 (branch 8078).
 [[source]]
-url = "https://github.com/chromiumembedded/cef/archive/8c29be240971eebee960ac92114d3efccb5780ff.tar.gz"
-sha256 = "153a8af6ec1a31808f6b2296b74928629a44719c395427abf7a680989c92c958"
-file = "cef-8c29be240971eebee960ac92114d3efccb5780ff.tar.gz"
+url = "https://github.com/chromiumembedded/cef/archive/57389f04a61ab0e9603d9f96602843d0e08bb11c.tar.gz"
+sha256 = "7cbc4c633e1ba6cf614a8de27d904a8de31e76930a50e377b69053e48fc4ee74"
+file = "cef-57389f04a61ab0e9603d9f96602843d0e08bb11c.tar.gz"
 unsigned = "a GitHub commit archive; CEF signs neither its commits nor its tags"
 
 # What Chromium's DEPS fetches from Google's storage for a Linux build,
@@ -47,13 +47,13 @@ unsigned = "a GitHub commit archive; CEF signs neither its commits nor its tags"
 # Rust toolchain (with bindgen and libclang), node, and the test fonts
 # that CEF's test support carries as data.
 [[source]]
-url = "https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64/clang-llvmorg-24-init-14453-ge063be79-1.tar.xz"
-sha256 = "0b76afc1a29b0583f7723e966b9b65a22b15d8fdcd38e7c567ae32343c68944d"
+url = "https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz"
+sha256 = "53c3bfd12b5d01378c6277bbebcacec595ef9d9fc4ec54f155c03a1b2cae4dbf"
 unsigned = "Chromium's toolchain package; the tarball's DEPS pins its sha256, with no signature"
 
 [[source]]
-url = "https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64/rust-toolchain-8a9dd7abdf013ec10cfeaaa3685feba18ef1c90c-1-llvmorg-24-init-14453-ge063be79.tar.xz"
-sha256 = "3f62ea86b027923b1fce17ac2ef002d1788b608245003440b46558a8e735b83d"
+url = "https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz"
+sha256 = "5a56edc35db24efbbe0373c724457c31a1febd75cbef6ac7fc9a1c5bca6fc697"
 unsigned = "Chromium's toolchain package; the tarball's DEPS pins its sha256, with no signature"
 
 [[source]]
