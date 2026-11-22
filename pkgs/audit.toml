@@ -324,6 +324,7 @@ tag_dir = "expat"
 
 [expat.not_affected]
 "CVE-2026-128241" = "xmlwf alone, whose -d output mode follows symlinks (cve.org's record): pkgs/expat/build.sh configures --without-xmlwf, for expat and expat-i386"
+"CVE-2026-134703" = "XML_UNICODE builds alone (VulnCheck's record): xmltok.c's UTF-16-to-UTF-16 converters run only through XmlUtf16Convert, which xmlparse.c uses only #ifdef XML_UNICODE (R_2_10_0, lines 182-194); pkgs/expat/build.sh builds the default UTF-8 library, for expat and expat-i386"
 
 [extra-cmake-modules]
 skip = "CMake modules, no compiled code"
