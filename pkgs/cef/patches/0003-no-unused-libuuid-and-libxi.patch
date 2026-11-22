@@ -1,6 +1,6 @@
 --- a/third_party/fontconfig/BUILD.gn
 +++ b/third_party/fontconfig/BUILD.gn
-@@ -172,10 +172,6 @@
+@@ -163,10 +163,6 @@
          "-Wno-pointer-bool-conversion",
        ]
      }
@@ -9,11 +9,11 @@
 -      libs = [ "uuid" ]
 -    }
    }
-
-   component("fontconfig") {
+ } else {
+   config("fontconfig_config") {
 --- a/third_party/angle/BUILD.gn
 +++ b/third_party/angle/BUILD.gn
-@@ -760,7 +760,6 @@
+@@ -759,7 +759,6 @@
        defines += [ "GPU_INFO_USE_X11" ]
        libs += [
          "X11",

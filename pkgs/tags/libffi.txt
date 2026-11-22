@@ -1,17 +1,16 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source libffi-3.8.1.tar.gz 81e879c094cc5ec3186c48510c6385ac6b3e866192e8bc71a35245703757ee40
-tag v3.8.1 commit de7afe7aa9e8ab7ac36429428a7222caae1e7988 tree b22efa33ec863ffde00b00f3024bf19ebb34688e
-signed pgp 2FE877C62789281A9FFE08DA146B940EEB360EBA
-same 473
-only-in-tag 36
+source libffi-3.8.0.tar.gz 7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4
+tag v3.8.0 commit 12ffd1f9dc56fcea79d2f742f424301ae668d663 tree 7af6129a956e9974dc20c89ae81f44579833752a
+signed no
+same 454
+only-in-tag 34
 from automake 1
 from gettext 1
-from gnulib 4
+from gnulib 5
 from libtool 3
 differs README.md
 differs config.guess
 differs config.sub
-differs doc/version.texi
 adds ChangeLog
 adds Makefile.in
 adds aclocal.m4
@@ -20,7 +19,6 @@ adds doc/Makefile.in
 adds doc/libffi.info
 adds doc/libffi.pdf
 adds doc/stamp-vti
-adds doc/texinfo.tex
 adds fficonfig.h.in
 adds include/Makefile.in
 adds ltmain.sh

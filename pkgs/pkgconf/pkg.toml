@@ -1,4 +1,4 @@
-version = "3.0.11"
+version = "3.0.8"
 license = "ISC"
 description = "pkg-config. A build tool; not in the base image."
 home = "https://github.com/pkgconf/pkgconf"
@@ -6,6 +6,6 @@ category = "toolchain"
 build = []
 
 [[source]]
-url = "https://distfiles.ariadne.space/pkgconf/pkgconf-3.0.11.tar.xz"
-sha256 = "d0cd841bc8e55b9da888106c00dc256d05b7d1d8e5a46f4be4eb4c5125bd2dc4"
+url = "https://distfiles.ariadne.space/pkgconf/pkgconf-3.0.8.tar.xz"
+sha256 = "943f0bc88bcaeceb630b00262e2a8ad5ea4fac3fba72a4267d8b9ec6b35d1194"
 unsigned = "upstream publishes no signature"
