@@ -28,9 +28,15 @@ Overwrite this file when facts change; do not append a diary.
   change it at Joshua's word: AGENTS.md does not list it with canto and
   buccina. Its Windows user's files are on novus, `~/Backups/koeurax`
   (the Modrinth App's profiles under `users/kora/AppData/Roaming/ModrinthApp`).
-- **Running now:** the `desk` release `d4a898a5f53f` (master `e72eaea`,
-  published 2026-11-12 01:32Z), updated and rebooted into it that day at
-  Joshua's word: generation 6 (NVIDIA loads with
+- **Running now** (read 2026-11-22): the `desk` release `cd27b297c381`, by
+  `sudo oath update --confirm --reboot` at Joshua's word on 2026-11-22
+  (generation 14; codex and vim moved). It put `/etc/egl` in place, which
+  its update to `319b03c43be0` had left out (that update ran an `oath` from
+  before R89), so Xwayland had run on Mesa without NVIDIA's GBM and X EGL
+  platforms; after the reboot Xwayland loads `libnvidia-egl-gbm`, `-xcb`
+  and `-xlib`. Before it, `319b03c43be0`; before that, the `desk` release
+  `d4a898a5f53f` (master `e72eaea`, published 2026-11-12 01:32Z), updated
+  and rebooted into it that day at Joshua's word: generation 6 (NVIDIA loads with
   `NVreg_PreserveVideoMemoryAllocations=1`), 7 `net:net0.wake`. Before it,
   `f997e9baf436` (2026-11-08): 1 built `plan:steam`, 2 set `host:local`, 3
   that update, 4 and 5 Minecraft's packages (below). A sleep at 01:35:28Z
