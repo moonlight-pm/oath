@@ -476,6 +476,10 @@ const char *rv_window_get_app_id(struct rv_window *window);
 bool rv_window_map(struct rv_window *window);
 // Called by the impl when the surface will no longer be displayed
 void rv_window_unmap(struct rv_window *window);
+// Not in the Zig: every seat focused on the window lets it go. Unmap does it,
+// and so must a destroy before map (a window manager may focus a window it
+// has configured but the client has not mapped), or destroy() asserts.
+void rv_window_drop_focus(struct rv_window *window);
 void rv_window_notify_title(struct rv_window *window);
 void rv_window_notify_app_id(struct rv_window *window);
 

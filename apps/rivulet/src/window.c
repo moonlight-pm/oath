@@ -1488,12 +1488,14 @@ void rv_window_unmap(struct rv_window *window) {
 		window->wlr_toplevel_handle = NULL;
 	}
 
-	{
-		struct rv_seat *seat;
-		wl_list_for_each(seat, &server.input_manager.seats, link) {
-			if (seat->focused.tag == RV_SEAT_FOCUS_WINDOW && seat->focused.window == window) {
-				rv_seat_focus(seat, (struct rv_seat_focus){ .tag = RV_SEAT_FOCUS_NONE });
-			}
+	rv_window_drop_focus(window);
+}
+
+void rv_window_drop_focus(struct rv_window *window) {
+	struct rv_seat *seat;
+	wl_list_for_each(seat, &server.input_manager.seats, link) {
+		if (seat->focused.tag == RV_SEAT_FOCUS_WINDOW && seat->focused.window == window) {
+			rv_seat_focus(seat, (struct rv_seat_focus){ .tag = RV_SEAT_FOCUS_NONE });
 		}
 	}
 }

@@ -212,6 +212,7 @@ static void handle_destroy(struct wl_listener *listener, void *data) {
 	case RV_WINDOW_STATE_MAPPED:
 		window->state = RV_WINDOW_STATE_CLOSING;
 		rv_window_manager_dirty_windowing(&server.wm);
+		rv_window_drop_focus(window);
 		break;
 	}
 }
