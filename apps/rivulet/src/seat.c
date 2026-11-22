@@ -814,7 +814,10 @@ void rv_seat_manage_finish(struct rv_seat *seat) {
 				break;
 			case RV_SEAT_WM_REQUESTED_FOCUS_WINDOW: {
 				struct rv_window *window = rv_window_ref_get(seat->wm_requested.focus.window);
-				if (window != NULL) {
+				// Not in the Zig: a window whose client went away in this
+				// sequence is still in the slotmap until destroy(), which
+				// asserts that no seat holds it. Treat it as gone.
+				if (window != NULL && window->impl.tag != RV_WINDOW_IMPL_DESTROYING) {
 					rv_seat_focus(seat, (struct rv_seat_focus){
 						.tag = RV_SEAT_FOCUS_WINDOW,
 						.window = window,
