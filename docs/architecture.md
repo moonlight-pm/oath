@@ -126,7 +126,10 @@ btrfs
   heads.json               the head of each package `oath update`, `oath add` or `oath new` took, and who signed it (R72)
   log/init.log             PID 1's messages (`oath logs`)
   log/svc/<name>.log       each service's stdout+stderr, UTC-stamped,
-                           rotated to .1 past 256 KiB (`oath logs svc:<name>`)
+                           rotated to .1 past 256 KiB (`oath logs svc:<name>`);
+                           floods held back, repeats counted (R92)
+  log/svc/<name>.exit.log  the last 64 KiB before each of its last three
+                           failed exits (`oath logs svc:<name> --exits`)
   log/net/net0.log         the DHCP client (`oath logs net:net0`)
   log/plan/<name>.log      the last `oath build` of a plan, .1 the one
                            before (`oath logs plan:<name>`)

@@ -121,7 +121,7 @@ Overwrite this file when facts change; do not append a diary.
   `/etc/egl` in place: the 2026-11-19 update to `319b03c43be0` ran `42a8028ae7bf`'s `oath`, from
   before R89, which left it out, so from the 2026-11-21 boot (generation 193) NVIDIA's EGL had no
   GBM or X platforms and Proton games ran at about 2 fps under Xwayland on Mesa (fixed for later
-  ROOT_FILES in `d5200b9`); rivulet aborted on 2026-11-22 at 17:02Z (SIGABRT, its log rotated away by the restart's flood, no NVIDIA error in the kernel log), and the Xwayland PID 1 restarted with it loads NVIDIA's GBM and X EGL platforms. Generation 196: `pkg:claude-code` 2.1.323 `a198de245f8b` from
+  ROOT_FILES in `d5200b9`); rivulet aborted on 2026-11-22 at 17:02Z (SIGABRT, its log rotated away by the restart's flood, no NVIDIA error in the kernel log), and the Xwayland PID 1 restarted with it loads NVIDIA's GBM and X EGL platforms; at 17:08Z rivulet cut off `sola-river` as unresponsive, which spun on its dead connection (one line at about 270 KiB/s, blocked on its log pipe) until a reboot at 17:18Z, the same generation (R92 is PID 1's side of it, Sola fixes `sola-river`). Generation 196: `pkg:claude-code` 2.1.323 `a198de245f8b` from
   master@24ea158, built here (`oath build plan:claude-code`), an overlay until a release pins it.
   Before it, desk `42a8028ae7bf` (2026-11-12), generation 165; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
   `pkg:sola-terminal`. Oath's agent sessions run in its checkout since 2026-11-12 (R39 as

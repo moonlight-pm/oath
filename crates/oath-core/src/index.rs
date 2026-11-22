@@ -45,7 +45,8 @@ Do **not** edit `/etc` or random files. Use `oath`.
                          `sudo oath update --confirm [--reboot]` moves to them
     oath log             apply log
     oath logs [id]       output of svc:<name>, net:net0, a plan's last build
-                         (plan:<name>), or PID 1 (no id)
+                         (plan:<name>), or PID 1 (no id); --exits: the lines
+                         before a service's last three failed exits
     oath fmt <path>      canonical plan.plan
     oath build           isolated plan build (no /bin link; log in /oath/log/plan/)
     oath store pkg:<name>|cell:<name> <dir|tar>

@@ -182,7 +182,7 @@ name = "svc-keep-children"
 about = "keep_children set on a running service takes effect when applied, with no restart: a child in the main process's group outlives the main's exit and its stop, and what it writes still reaches the log (with no reader, its next write would kill it)."
 metal = true
 steps = [
-  { run = "printf 'echo $$ > /tmp/kc-child\\nwhile :; do echo \"kc-tick $$\"; sleep 1; done\\n' > /tmp/kc.sh; sudo oath new svc:kc --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"sh /tmp/kc.sh & exec sleep 86400\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true,\"user\":\"home\"}' && sudo oath apply svc:kc && sleep 3 && [ -s /tmp/kc-child ] && echo STARTED", expect = ["STARTED"] },
+  { run = "printf 'echo $$ > /tmp/kc-child\\ni=0\\nwhile :; do i=$((i+1)); echo \"kc-tick $$ $i\"; sleep 1; done\\n' > /tmp/kc.sh; sudo oath new svc:kc --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"sh /tmp/kc.sh & exec sleep 86400\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true,\"user\":\"home\"}' && sudo oath apply svc:kc && sleep 3 && [ -s /tmp/kc-child ] && echo STARTED", expect = ["STARTED"] },
   { run = "cp /tmp/kc-child /tmp/kc-old; old=$(cat /tmp/kc-old); main=$(oath get svc:kc | awk '/^  pid:/ {print $2; exit}'); sudo oath set svc:kc keep_children=true && sudo oath apply svc:kc && sleep 1; [ \"$(oath get svc:kc | awk '/^  pid:/ {print $2; exit}')\" = \"$main\" ] && echo NOT-RESTARTED; sudo kill $main; sleep 6; [ -d /proc/$old ] && echo OLD-CHILD-ALIVE", expect = ["NOT-RESTARTED", "OLD-CHILD-ALIVE"] },
   { run = "old=$(cat /tmp/kc-old); a=$(sudo grep -c \"kc-tick $old\" /oath/log/svc/kc.log); sleep 4; b=$(sudo grep -c \"kc-tick $old\" /oath/log/svc/kc.log); [ \"$b\" -gt \"$a\" ] && echo OLD-CHILD-LOGGED; [ -d /proc/$old ] && echo STILL-ALIVE", expect = ["OLD-CHILD-LOGGED", "STILL-ALIVE"] },
   { run = "old=$(cat /tmp/kc-old); sudo oath set svc:kc enabled=false && sudo oath apply svc:kc; sleep 2; [ -d /proc/$old ] && echo KEPT-THROUGH-STOP", expect = ["KEPT-THROUGH-STOP"] },
@@ -383,6 +383,20 @@ metal = true
 steps = [
   { run = "oath logs svc:crash -n 100000 2>/dev/null | grep -c dying > /tmp/crash.before; sudo oath new svc:crash --from-json '{\"exec\":[\"/bin/sh\",\"-c\",\"echo dying; exit 3\"],\"wants\":[],\"restart\":\"always\",\"enabled\":true}'; sudo oath apply svc:crash; sleep 25; oath get svc:crash --actual; oath get svc:crash | head -1", expect = ["\"failed\"", "\"code\": 3", "status=error"], timeout = 60 },
   { run = "echo DIED=$(( $(oath logs svc:crash -n 100000 | grep -c dying) - $(cat /tmp/crash.before) ))", expect = ["DIED=5"] },
+]
+
+[[case]]
+name = "service-log-flood"
+about = "A flood does not bury a log: a line that repeats is counted, not written; past 5,000 lines or 512 KiB in 30 s the rest are held back, and at the exit the newest of them are written with their count, so the last words before a crash stay. A failed exit is marked in the log and its lines are kept apart, where the restart's output cannot rotate them away (`oath logs --exits`)."
+metal = true
+steps = [
+  # Logs outlive runs on metal: this run's start with none.
+  { run = '''sudo rm -f /oath/log/svc/flood.log /oath/log/svc/flood.log.1 /oath/log/svc/flood.exit.log /tmp/flood.done && date +%s%N > /tmp/flood.token && printf '%s\n' 'if [ -e /tmp/flood.done ]; then echo second-run; exec sleep 86400; fi' 'touch /tmp/flood.done' 'i=0; while [ $i -lt 3000 ]; do echo same-line; i=$((i+1)); done' 'seq 1 20000 | sed s/^/flood-/' 'echo last-words $(cat /tmp/flood.token)' 'exit 7' > /tmp/flood.sh && sudo oath new svc:flood --from-json '{"exec":["/bin/sh","/tmp/flood.sh"],"wants":[],"restart":"on-failure","enabled":true}' && sudo oath apply svc:flood && sleep 4 && oath get svc:flood --actual''', expect = ["\"running\"", "\"code\": 7"] },
+  { run = '''t=$(cat /tmp/flood.token); oath logs svc:flood -n 100000 > /tmp/flood.log; echo SAME=$(grep -c same-line /tmp/flood.log) LAST=$(grep -c "last-words $t" /tmp/flood.log) FLOOD=$(grep -c '^[^ ]* flood-' /tmp/flood.log); grep -E 'oath-init: (repeated|held back|exit Code)' /tmp/flood.log''', expect = ["SAME=2 LAST=1", "oath-init: repeated 2999 more times: same-line", "oath-init: held back 15003 lines (", "s; the last ", "of them are above", "oath-init: exit Code(7) after ", "(the lines before it: oath logs svc:flood --exits)"], reject = ["FLOOD=20000"] },
+  { run = '''t=$(cat /tmp/flood.token); oath logs svc:flood --exits -n 3; echo KEPT=$(oath logs svc:flood --exits -n 100000 | grep -c "last-words $t")''', expect = ["last-words", "== 20", " svc:flood exit Code(7) after ", "KEPT=1"] },
+  # The first run spent the window: the second's line waits for its end.
+  { run = "for i in $(seq 1 45); do oath logs svc:flood | grep -q second-run && break; sleep 1; done; oath logs svc:flood -n 3", expect = ["second-run", "oath-init: held back 1 lines (1 KiB)"], timeout = 60 },
+  { run = "sudo oath rm svc:flood && sudo oath apply && sudo rm -f /tmp/flood.done /tmp/flood.sh /tmp/flood.token /tmp/flood.log; oath diff", expect = ["in-sync"] },
 ]
 
 [[case]]

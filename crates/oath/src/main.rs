@@ -236,6 +236,10 @@ enum Cmd {
         /// Last N lines.
         #[arg(short = 'n', long, default_value_t = 50)]
         lines: usize,
+        /// The lines before each of its last three failed exits, kept apart
+        /// (`<name>.exit.log`) so its restart's output cannot rotate them away.
+        #[arg(long)]
+        exits: bool,
     },
     /// Set, change or remove the password of the desk's user, `home`
     /// (`svc:login`, R42): asked for at the console and by the desk's lock
@@ -869,14 +873,29 @@ fn run() -> oath_core::Result<i32> {
             &cat,
             install::Opts { disk, confirm: cli.confirm, json: cli.json },
         ),
-        Some(Cmd::Logs { id, lines }) => {
+        Some(Cmd::Logs { id, lines, exits }) => {
             let path = match &id {
                 Some(id) => {
                     let id: ObjectId = id.parse()?;
-                    cli.root.join("log").join(&id.kind).join(format!("{}.log", id.name))
+                    let file = if exits { "exit.log" } else { "log" };
+                    cli.root.join("log").join(&id.kind).join(format!("{}.{file}", id.name))
+                }
+                None if exits => {
+                    return Err(Error::hint(
+                        "PID 1 keeps the exits of what it runs, not its own",
+                        "oath logs svc:<name> --exits",
+                    ))
                 }
                 None => cli.root.join("log/init.log"),
             };
+            if exits && !path.is_file() {
+                return Err(Error::hint(
+                    format!("no failed exit kept at {}", path.display()),
+                    "PID 1 keeps the lines before a service's last three failed exits \
+                     (an exit code other than 0, or a signal) there; `oath logs <id>` is all \
+                     it wrote",
+                ));
+            }
             let mut text = String::new();
             let mut old = path.clone().into_os_string();
             old.push(".1");

@@ -575,6 +575,9 @@ impl Server {
             "log" => v.extend(["log".into(), "-n".into(), n("lines", 20)]),
             "logs" => {
                 v.extend(["logs".into(), "-n".into(), n("lines", 50)]);
+                if a.get("exits") == Some(&json!(true)) {
+                    v.push("--exits".into());
+                }
                 rest.extend(s("id"));
             }
             "verify" => {
@@ -872,6 +875,13 @@ fn tools() -> Vec<Tool> {
             vec![
                 p("id", Ty::Str, false, "Whose output; none for PID 1."),
                 p("lines", Ty::Int { min: 1, max: 10_000 }, false, "Last N lines (50)."),
+                p(
+                    "exits",
+                    Ty::Bool,
+                    false,
+                    "The lines before each of its last three failed exits, which its \
+                     restart's output cannot rotate away.",
+                ),
             ],
         ),
         read(
@@ -1483,6 +1493,12 @@ mod tests {
                 json!({ "id": "svc:time", "lines": 5 }),
                 false,
                 vec!["logs", "-n", "5", "--", "svc:time"],
+            ),
+            (
+                "logs",
+                json!({ "id": "svc:rivulet", "exits": true }),
+                false,
+                vec!["logs", "-n", "50", "--exits", "--", "svc:rivulet"],
             ),
             ("verify", json!({ "ids": ["pkg:curl"] }), true, vec!["verify", "--", "pkg:curl"]),
             ("audit", json!({ "id": "pkg:curl" }), false, vec!["audit", "--", "pkg:curl"]),

@@ -118,6 +118,7 @@ sudo oath undo
 ```
 oath get svc:time --actual
 oath logs svc:time          # last 50 lines; -n 200 for more
+oath logs svc:time --exits  # the lines before its last three failed exits
 oath logs                   # PID 1's own log
 ```
 
@@ -148,7 +149,18 @@ while it runs from a package, `pkg` (that package and hash).
 
 A service's stdout and stderr go to `/oath/log/svc/<name>.log`, one
 line each with a UTC time in front, rotated to `<name>.log.1` past
-256 KiB. PID 1 writes its own messages to `/oath/log/init.log`; the
+256 KiB. PID 1 holds a flood back (R92), so one service cannot bury
+its own log or wait on it. A line that repeats the one before is
+counted: `oath-init: repeated 3600 more times: …`. Past 5,000 lines or
+512 KiB in 30 s it holds back the rest of the window, then writes the
+newest 32 KiB of what it held, and `oath-init: held back N lines …`,
+when the window ends or the service exits. So the last lines before a
+crash are still there. Each exit is a line,
+`oath-init: exit Signal(6) after 783 s; restart #1 in 0s`. After a
+failed exit (a code other than 0, or a signal), the last 64 KiB before
+it are also kept in `<name>.exit.log`, for its last three. There a
+restart's output cannot rotate them away: `oath logs svc:<name>
+--exits`. PID 1 writes its own messages to `/oath/log/init.log`; the
 DHCP client writes to `/oath/log/net/net0.log` (`oath logs net:net0`).
 PID 1's events (`/oath/log/init.jsonl`) and those of each `oath` command
 run as root (`oath.jsonl`) rotate the same way, to `.1`.

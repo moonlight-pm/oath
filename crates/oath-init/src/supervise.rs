@@ -3,7 +3,7 @@
 //! with backoff, and gives up into `failed` after repeated quick crashes.
 //! It also runs the DHCP client for `net:net0` when that is `dhcp`.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ffi::CString;
 use std::fs;
 use std::io::{ErrorKind, Read, Write};
@@ -26,6 +26,32 @@ use crate::{applied, log};
 /// Service logs: `/oath/log/<kind>/<name>.log`, plus `.1` after rotation.
 pub const LOG_ROOT: &str = "/oath/log";
 const LOG_MAX: u64 = 256 * 1024;
+/// A log's flood guard ([`Gate`]): past this many lines or bytes in one
+/// window, the window's other lines are held back and counted. The busiest
+/// window measured on five machines in normal running was about 1,300 lines
+/// or 270 KB (blocky's start, a kernel log at boot).
+const BURST_LINES: usize = 5_000;
+const BURST_BYTES: usize = 512 * 1024;
+const BURST_WINDOW: Duration = Duration::from_secs(30);
+/// Of the lines a guard held back, the newest this many bytes are written
+/// when the window ends or the service exits: the end of a flood is often
+/// why it ended (an abort's message, a panic's trace).
+const HELD_MOST: usize = 32 * 1024;
+/// A run this long with no newline is a line of its own.
+const LINE_MOST: usize = 16 * 1024;
+/// What one pump takes from a pipe before it writes, so a writer that
+/// never pauses cannot keep PID 1 reading.
+const READ_MOST: usize = 1024 * 1024;
+/// Each log pipe's buffer. PID 1 reads a pipe within [`GATHER`] of a
+/// write, so a writer waits on it only past about 100 MB/s, or while PID 1
+/// is busy (a stop waits up to 5 s).
+const PIPE_SIZE: i32 = 1024 * 1024;
+/// How long a burst of output gathers before PID 1 reads it.
+const GATHER: Duration = Duration::from_millis(10);
+/// `<name>.exit.log` keeps this much of the log before each failed exit,
+/// for the last [`EXITS_KEPT`] of them.
+const EXIT_TAIL: usize = 64 * 1024;
+const EXITS_KEPT: usize = 3;
 const CGROUP_ROOT: &str = "/sys/fs/cgroup/oath";
 /// A run shorter than this is a quick failure.
 const QUICK: Duration = Duration::from_secs(10);
@@ -123,6 +149,9 @@ pub struct Supervisor {
     /// How each helper last ended, by name, until [`Supervisor::task_exit`]
     /// takes it.
     task_exits: HashMap<String, bool>,
+    /// Each log's flood guard, by id. Not handed over: a resumed PID 1
+    /// starts each count afresh.
+    gates: HashMap<String, Gate>,
 }
 
 /// Everything the supervisor knows, for a PID 1 that execs itself after a
@@ -465,7 +494,8 @@ impl Supervisor {
                 continue;
             }
             let Some(mut kid) = self.kids.remove(&pid.as_raw()) else { continue };
-            pump(&mut kid);
+            let g = gate(&mut self.gates, &kid.id);
+            pump(&mut kid, g);
             self.keep_pipe(&mut kid);
             let ran = kid.started.elapsed();
             let h = self.history.entry(kid.id.clone()).or_default();
@@ -487,6 +517,7 @@ impl Supervisor {
                 kill_cgroup(&kid.id);
             }
             if !again {
+                self.note_exit(&kid.id, exit, ran, "not restarted");
                 self.write_actual(&kid.id, "stopped", None);
             } else if quick >= GIVE_UP {
                 log(&format!(
@@ -498,6 +529,7 @@ impl Supervisor {
                     "exited within {} s {quick} times in a row; waits for a new spec or program",
                     QUICK.as_secs()
                 );
+                self.note_exit(&kid.id, exit, ran, &why);
                 self.history.entry(kid.id.clone()).or_default().why = Some(why.clone());
                 self.failed.insert(kid.id.clone(), (kid.spec.clone(), kid.program.clone()));
                 self.write_actual_why(&kid.id, "failed", None, Some(&why));
@@ -508,13 +540,9 @@ impl Supervisor {
                 } else {
                     Duration::from_secs(1 << (quick - 1).min(5))
                 };
-                log(&format!(
-                    "{}: exit {:?}, restart #{} in {}s",
-                    kid.id,
-                    exit,
-                    restarts + 1,
-                    delay.as_secs()
-                ));
+                let then = format!("restart #{} in {}s", restarts + 1, delay.as_secs());
+                log(&format!("{}: exit {exit:?}, {then}", kid.id));
+                self.note_exit(&kid.id, exit, ran, &then);
                 self.pending.push(Pending {
                     id: kid.id.clone(),
                     spec: kid.spec,
@@ -630,12 +658,65 @@ impl Supervisor {
     /// Move child output into the log files.
     pub fn pump_logs(&mut self) {
         for kid in self.kids.values_mut() {
-            pump(kid);
+            pump(kid, gate(&mut self.gates, &kid.id));
         }
         for s in &mut self.survivors {
-            pump_pipe(&s.id, &mut s.out, &mut s.partial);
+            pump_pipe(&s.id, &mut s.out, &mut s.partial, gate(&mut self.gates, &s.id));
         }
         self.survivors.retain(|s| s.out.is_some());
+        // A window that ended in quiet still says what it held back.
+        let (stamp, now) = (now_rfc3339(), Instant::now());
+        for (id, gate) in &mut self.gates {
+            let mut text = Vec::new();
+            gate.roll(&stamp, now, &mut text);
+            append_log(id, &text);
+        }
+    }
+
+    /// Read what services write as it comes, until `until`. A pipe PID 1
+    /// leaves unread fills, and then its writer waits: a compositor or a
+    /// window manager that waits stops drawing.
+    pub fn pump_until(&mut self, until: Instant) {
+        loop {
+            let left = until.saturating_duration_since(Instant::now());
+            if left.is_zero() || !self.wait_output(left) {
+                return;
+            }
+            // A burst gathers into one write.
+            std::thread::sleep(GATHER.min(left));
+            self.pump_logs();
+        }
+    }
+
+    /// Wait up to `most` for a service to write; false when none did.
+    fn wait_output(&self, most: Duration) -> bool {
+        let mut fds: Vec<libc::pollfd> = self
+            .kids
+            .values()
+            .filter_map(|k| k.out.as_ref())
+            .chain(self.survivors.iter().filter_map(|s| s.out.as_ref()))
+            .map(|f| libc::pollfd { fd: f.as_raw_fd(), events: libc::POLLIN, revents: 0 })
+            .collect();
+        let ms = most.as_millis().min(i32::MAX as u128) as i32;
+        unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as libc::nfds_t, ms) > 0 }
+    }
+
+    /// Say in the service's log that it exited, after what its guard held
+    /// back. A failed exit also keeps the lines before it in
+    /// `<name>.exit.log`, where the restart's output cannot rotate them away.
+    fn note_exit(&mut self, id: &str, exit: Exit, ran: Duration, then: &str) {
+        let stamp = now_rfc3339();
+        let mut text = Vec::new();
+        gate(&mut self.gates, id).close(&stamp, &mut text);
+        append_log(id, &text);
+        let what = format!("exit {exit:?} after {} s; {then}", ran.as_secs());
+        let mut line = format!("{stamp} oath-init: {what}");
+        if exit.failed() {
+            keep_exit(&log_path(id), &exit_log_path(id), &format!("== {stamp} {id} {what}"));
+            line.push_str(&format!(" (the lines before it: oath logs {id} --exits)"));
+        }
+        line.push('\n');
+        append_log(id, line.as_bytes());
     }
 
     /// A main process is gone: if its children stay, so does their log.
@@ -681,7 +762,8 @@ impl Supervisor {
             waitpid(Pid::from_raw(-1), Some(WaitPidFlag::WNOHANG))
         {
             if let Some(mut k) = self.kids.remove(&pid.as_raw()) {
-                pump(&mut k);
+                let g = gate(&mut self.gates, &k.id);
+                pump(&mut k, g);
             }
         }
     }
@@ -755,6 +837,8 @@ impl Supervisor {
             for p in &pids {
                 let _ = waitpid(Pid::from_raw(*p), Some(WaitPidFlag::WNOHANG));
             }
+            // The other services go on writing while this one stops.
+            self.pump_logs();
             std::thread::sleep(Duration::from_millis(50));
         }
         if tree {
@@ -766,11 +850,16 @@ impl Supervisor {
         }
         for p in &pids {
             if let Some(mut k) = self.kids.remove(p) {
-                pump(&mut k);
+                let g = gate(&mut self.gates, &k.id);
+                pump(&mut k, g);
                 self.keep_pipe(&mut k);
             }
             let _ = waitpid(Pid::from_raw(*p), Some(WaitPidFlag::WNOHANG));
         }
+        // Its next run's first line is not a repeat of this run's last.
+        let mut text = Vec::new();
+        gate(&mut self.gates, id).close(&now_rfc3339(), &mut text);
+        append_log(id, &text);
         tel("init", "svc_stop", json!({ "id": id }));
         self.write_actual(id, "stopped", None);
     }
@@ -1012,25 +1101,30 @@ fn pipe() -> std::io::Result<(fs::File, OwnedFd)> {
     unsafe {
         let fl = libc::fcntl(read.as_raw_fd(), libc::F_GETFL);
         libc::fcntl(read.as_raw_fd(), libc::F_SETFL, fl | libc::O_NONBLOCK);
+        libc::fcntl(read.as_raw_fd(), libc::F_SETPIPE_SZ, PIPE_SIZE);
     }
     Ok((read, write))
 }
 
 /// Read what the child wrote; whole lines go to its log with a UTC stamp.
-fn pump(kid: &mut Kid) {
-    pump_pipe(&kid.id, &mut kid.out, &mut kid.partial);
+fn pump(kid: &mut Kid, gate: &mut Gate) {
+    pump_pipe(&kid.id, &mut kid.out, &mut kid.partial, gate);
 }
 
-fn pump_pipe(id: &str, pipe: &mut Option<fs::File>, partial: &mut Vec<u8>) {
+fn pump_pipe(id: &str, pipe: &mut Option<fs::File>, partial: &mut Vec<u8>, gate: &mut Gate) {
     let Some(out) = pipe.as_mut() else { return };
-    let mut buf = [0u8; 8192];
-    loop {
+    let mut buf = [0u8; 64 * 1024];
+    let mut took = 0;
+    while took < READ_MOST {
         match out.read(&mut buf) {
             Ok(0) => {
                 *pipe = None;
                 break;
             }
-            Ok(n) => partial.extend_from_slice(&buf[..n]),
+            Ok(n) => {
+                partial.extend_from_slice(&buf[..n]);
+                took += n;
+            }
             Err(e) if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::Interrupted => {
                 break
             }
@@ -1040,25 +1134,188 @@ fn pump_pipe(id: &str, pipe: &mut Option<fs::File>, partial: &mut Vec<u8>) {
             }
         }
     }
-    let ends = partial.iter().rposition(|b| *b == b'\n');
-    let flush_all = pipe.is_none() && !partial.is_empty();
-    let take = match (ends, flush_all) {
-        (Some(i), _) => i + 1,
-        (None, true) => partial.len(),
-        (None, false) => return,
-    };
-    let chunk: Vec<u8> = partial.drain(..take).collect();
-    let stamp = now_rfc3339();
-    let mut out = Vec::with_capacity(chunk.len() + 32);
-    for line in chunk.split_inclusive(|b| *b == b'\n') {
-        out.extend_from_slice(stamp.as_bytes());
-        out.push(b' ');
-        out.extend_from_slice(line);
-        if !line.ends_with(b"\n") {
-            out.push(b'\n');
+    let text = take_lines(partial, pipe.is_none(), gate, &now_rfc3339(), Instant::now());
+    append_log(id, &text);
+}
+
+/// The whole lines in `partial`, through the guard, as log text; all of it
+/// once the pipe is `closed`. A run of [`LINE_MOST`] bytes with no newline
+/// is a line of its own, so PID 1 never holds more of one.
+fn take_lines(
+    partial: &mut Vec<u8>,
+    closed: bool,
+    gate: &mut Gate,
+    stamp: &str,
+    now: Instant,
+) -> Vec<u8> {
+    let mut text = Vec::new();
+    let mut at = 0;
+    while at < partial.len() {
+        let rest = &partial[at..];
+        let (line, used) = match rest.iter().take(LINE_MOST).position(|b| *b == b'\n') {
+            Some(i) => (&rest[..i], i + 1),
+            None if rest.len() >= LINE_MOST => (&rest[..LINE_MOST], LINE_MOST),
+            None if closed => (rest, rest.len()),
+            None => break,
+        };
+        gate.line(line, stamp, now, &mut text);
+        at += used;
+    }
+    partial.drain(..at);
+    text
+}
+
+/// A log's flood guard. A line the same as the one before it is counted,
+/// not written. Past [`BURST_LINES`] lines or [`BURST_BYTES`] in a
+/// [`BURST_WINDOW`], lines are held back: counted, and the newest
+/// [`HELD_MOST`] bytes of them kept. When the window ends or the service
+/// exits, the guard writes the lines it kept and one line of its own for
+/// each count. PID 1 reads every line all the same, so the writer never
+/// waits on a flood.
+#[derive(Default)]
+struct Gate {
+    /// When the window began.
+    since: Option<Instant>,
+    /// Lines and bytes written in it.
+    lines: usize,
+    bytes: usize,
+    /// The last line read, and whether it was written.
+    last: Option<Vec<u8>>,
+    last_written: bool,
+    /// Copies of `last` read since it was written.
+    repeats: u64,
+    /// Lines held back since the last count, from the stamp of the first.
+    held: u64,
+    held_bytes: u64,
+    held_from: String,
+    /// The newest of them, with their stamps.
+    kept: VecDeque<(String, Vec<u8>)>,
+    kept_bytes: usize,
+}
+
+impl Gate {
+    /// One line (no newline) read at `stamp`; what to write goes to `out`.
+    fn line(&mut self, line: &[u8], stamp: &str, now: Instant, out: &mut Vec<u8>) {
+        self.roll(stamp, now, out);
+        if self.last.as_deref() == Some(line) {
+            if self.last_written {
+                self.repeats += 1;
+            } else {
+                self.count(1, line.len(), stamp);
+            }
+            return;
+        }
+        self.say_repeats(stamp, out);
+        self.last_written = self.write(line, stamp, out);
+        if !self.last_written {
+            self.count(1, line.len(), stamp);
+            self.keep(line, stamp);
+        }
+        self.last = Some(line.to_vec());
+    }
+
+    /// Write a line if the window has room for it. Once it has held one
+    /// back, it holds back the rest, so what it writes stays in order.
+    fn write(&mut self, line: &[u8], stamp: &str, out: &mut Vec<u8>) -> bool {
+        if self.held > 0 || self.lines >= BURST_LINES || self.bytes + line.len() + 1 > BURST_BYTES
+        {
+            return false;
+        }
+        self.lines += 1;
+        self.bytes += line.len() + 1;
+        stamp_line(out, stamp, line);
+        true
+    }
+
+    /// Count `n` lines of `len` bytes held back.
+    fn count(&mut self, n: u64, len: usize, stamp: &str) {
+        if self.held == 0 {
+            self.held_from = stamp.to_string();
+        }
+        self.held += n;
+        self.held_bytes += n * (len as u64 + 1);
+    }
+
+    /// Keep a line held back among the newest [`HELD_MOST`] bytes of them.
+    fn keep(&mut self, line: &[u8], stamp: &str) {
+        self.kept.push_back((stamp.to_string(), line.to_vec()));
+        self.kept_bytes += line.len() + 1;
+        while self.kept_bytes > HELD_MOST {
+            let Some((_, l)) = self.kept.pop_front() else { break };
+            self.kept_bytes -= l.len() + 1;
         }
     }
-    append_log(id, &out);
+
+    fn say_repeats(&mut self, stamp: &str, out: &mut Vec<u8>) {
+        if self.repeats == 0 {
+            return;
+        }
+        let last = self.last.take().unwrap_or_default();
+        let shown = String::from_utf8_lossy(&last[..last.len().min(160)]);
+        let more = if last.len() > 160 { "…" } else { "" };
+        let note = format!("oath-init: repeated {} more times: {shown}{more}", self.repeats);
+        if !self.write(note.as_bytes(), stamp, out) {
+            // No room to say it: they are held back, as any line would be.
+            self.count(self.repeats, last.len(), stamp);
+        }
+        self.repeats = 0;
+        self.last = Some(last);
+    }
+
+    /// Past the window, say what it held back and open a new one.
+    fn roll(&mut self, stamp: &str, now: Instant, out: &mut Vec<u8>) {
+        if self.since.is_some_and(|t| now.duration_since(t) < BURST_WINDOW) {
+            return;
+        }
+        self.since = Some(now);
+        self.lines = 0;
+        self.bytes = 0;
+        self.say(stamp, out);
+    }
+
+    /// Write the lines it kept, then its counts.
+    fn say(&mut self, stamp: &str, out: &mut Vec<u8>) {
+        if self.held > 0 {
+            let kept = self.kept.len();
+            for (s, l) in self.kept.drain(..) {
+                stamp_line(out, &s, &l);
+            }
+            let note = format!(
+                "oath-init: held back {} lines ({} KiB) since {}, past {BURST_LINES} lines or \
+                 {} KiB in {} s; the last {kept} of them are above",
+                self.held,
+                self.held_bytes.div_ceil(1024),
+                self.held_from,
+                BURST_BYTES / 1024,
+                BURST_WINDOW.as_secs(),
+            );
+            stamp_line(out, stamp, note.as_bytes());
+            self.held = 0;
+            self.held_bytes = 0;
+            self.kept_bytes = 0;
+        }
+        self.say_repeats(stamp, out);
+    }
+
+    /// The process exited or stopped: say everything, and its next run's
+    /// first line is not a repeat.
+    fn close(&mut self, stamp: &str, out: &mut Vec<u8>) {
+        self.say(stamp, out);
+        self.last = None;
+        self.last_written = false;
+    }
+}
+
+fn stamp_line(out: &mut Vec<u8>, stamp: &str, line: &[u8]) {
+    out.extend_from_slice(stamp.as_bytes());
+    out.push(b' ');
+    out.extend_from_slice(line);
+    out.push(b'\n');
+}
+
+/// The guard for log `id`.
+fn gate<'a>(gates: &'a mut HashMap<String, Gate>, id: &str) -> &'a mut Gate {
+    gates.entry(id.to_string()).or_default()
 }
 
 /// `/oath/log/<kind>/<name>.log` for an id, `/oath/log/init.log` for PID 1.
@@ -1069,8 +1326,27 @@ pub fn log_path(id: &str) -> PathBuf {
     }
 }
 
+/// `/oath/log/<kind>/<name>.exit.log`: the lines before each of a service's
+/// last [`EXITS_KEPT`] failed exits.
+pub fn exit_log_path(id: &str) -> PathBuf {
+    match id.split_once(':') {
+        Some((kind, name)) => Path::new(LOG_ROOT).join(kind).join(format!("{name}.exit.log")),
+        None => Path::new(LOG_ROOT).join(format!("{id}.exit.log")),
+    }
+}
+
+/// `<log>.1`, where a log rotates to.
+fn rotated(path: &Path) -> PathBuf {
+    let mut old = path.as_os_str().to_owned();
+    old.push(".1");
+    PathBuf::from(old)
+}
+
 /// Append to a log, rotating to `.1` past 256 KiB (one old file kept).
 pub fn append_log(id: &str, bytes: &[u8]) {
+    if bytes.is_empty() {
+        return;
+    }
     let path = log_path(id);
     if let Some(d) = path.parent() {
         if !Path::new(LOG_ROOT).is_dir() {
@@ -1079,12 +1355,46 @@ pub fn append_log(id: &str, bytes: &[u8]) {
         let _ = fs::create_dir_all(d);
     }
     if fs::metadata(&path).map(|m| m.len() > LOG_MAX).unwrap_or(false) {
-        let mut old = path.clone().into_os_string();
-        old.push(".1");
-        let _ = fs::rename(&path, old);
+        let _ = fs::rename(&path, rotated(&path));
     }
     if let Ok(mut f) = fs::OpenOptions::new().create(true).append(true).open(&path) {
         let _ = f.write_all(bytes);
+    }
+}
+
+/// Keep the last [`EXIT_TAIL`] of `log` (with its `.1`), whole lines, in
+/// `exits`, ended by the line `end`, after the last [`EXITS_KEPT`] - 1 kept
+/// there before. Each exit there ends with its own line starting `== `; a
+/// log line starts with its stamp.
+fn keep_exit(log: &Path, exits: &Path, end: &str) {
+    let Some(dir) = exits.parent().filter(|d| d.is_dir()) else { return };
+    let mut text = fs::read(rotated(log)).unwrap_or_default();
+    text.extend(fs::read(log).unwrap_or_default());
+    let mut tail = &text[text.len().saturating_sub(EXIT_TAIL)..];
+    if tail.len() < text.len() {
+        let first = tail.iter().position(|b| *b == b'\n').map_or(tail.len(), |i| i + 1);
+        tail = &tail[first..];
+    }
+    let old = fs::read(exits).unwrap_or_default();
+    let mut ends = Vec::new();
+    let mut at = 0;
+    for line in old.split_inclusive(|b| *b == b'\n') {
+        at += line.len();
+        if line.starts_with(b"== ") {
+            ends.push(at);
+        }
+    }
+    let from = if ends.len() >= EXITS_KEPT { ends[ends.len() - EXITS_KEPT] } else { 0 };
+    let mut body = old[from..].to_vec();
+    body.extend_from_slice(tail);
+    if !body.is_empty() && !body.ends_with(b"\n") {
+        body.push(b'\n');
+    }
+    body.extend_from_slice(end.as_bytes());
+    body.push(b'\n');
+    let tmp = dir.join(format!(".{}.tmp", exits.file_name().unwrap_or_default().to_string_lossy()));
+    if fs::write(&tmp, &body).is_ok() {
+        let _ = fs::rename(&tmp, exits);
     }
 }
 
@@ -1248,6 +1558,121 @@ mod tests {
         // A `restart` that would have started it again does.
         assert!(!finished(&svc("always"), true, Some(ok)));
         assert!(!finished(&svc("on-failure"), true, Some(bad)));
+    }
+
+    /// Lines a guard wrote, without their stamps.
+    fn written(out: &[u8]) -> Vec<String> {
+        String::from_utf8_lossy(out)
+            .lines()
+            .map(|l| l.split_once(' ').map_or(l, |(_, rest)| rest).to_string())
+            .collect()
+    }
+
+    #[test]
+    fn a_line_that_repeats_is_counted() {
+        let (mut g, mut out, now) = (Gate::default(), Vec::new(), Instant::now());
+        for _ in 0..4 {
+            g.line(b"Protocol error 2", "T1", now, &mut out);
+        }
+        g.line(b"other", "T2", now, &mut out);
+        g.line(b"other", "T2", now, &mut out);
+        assert_eq!(
+            written(&out),
+            ["Protocol error 2", "oath-init: repeated 3 more times: Protocol error 2", "other"]
+        );
+        // The window's end says a count still open, and a repeat goes on
+        // being counted after it.
+        out.clear();
+        g.line(b"other", "T3", now + BURST_WINDOW, &mut out);
+        assert_eq!(written(&out), ["oath-init: repeated 1 more times: other"]);
+        // An exit says the rest; the next run's first line is its own.
+        out.clear();
+        g.close("T4", &mut out);
+        g.line(b"other", "T5", now + BURST_WINDOW, &mut out);
+        assert_eq!(written(&out), ["oath-init: repeated 1 more times: other", "other"]);
+    }
+
+    #[test]
+    fn past_the_burst_lines_are_held_back_and_the_newest_kept() {
+        let (mut g, mut out, now) = (Gate::default(), Vec::new(), Instant::now());
+        for i in 0..BURST_LINES + 3000 {
+            g.line(format!("flood-{i}").as_bytes(), "T1", now, &mut out);
+        }
+        g.line(b"last words", "T2", now, &mut out);
+        let w = written(&out);
+        assert_eq!(w.len(), BURST_LINES);
+        assert_eq!(w.last().map(String::as_str), Some(format!("flood-{}", BURST_LINES - 1).as_str()));
+        // The window's end writes the newest of them, then the count.
+        out.clear();
+        g.roll("T3", now + BURST_WINDOW, &mut out);
+        let w = written(&out);
+        assert_eq!(w[w.len() - 2], "last words");
+        let note = w.last().unwrap();
+        assert!(note.starts_with("oath-init: held back 3001 lines (") && note.contains("since T1"));
+        let kept: usize = w[..w.len() - 1].iter().map(|l| l.len() + 1).sum();
+        assert!(kept <= HELD_MOST && kept > HELD_MOST - 32, "the newest {kept} bytes are kept");
+        assert!(note.ends_with(&format!("the last {} of them are above", w.len() - 1)));
+        // The new window writes again.
+        out.clear();
+        g.line(b"after", "T4", now + BURST_WINDOW, &mut out);
+        assert_eq!(written(&out), ["after"]);
+    }
+
+    #[test]
+    fn an_exit_writes_what_the_guard_held() {
+        let (mut g, mut out, now) = (Gate::default(), Vec::new(), Instant::now());
+        g.line(&vec![b'x'; BURST_BYTES - 10], "T1", now, &mut out);
+        g.line(b"too long for the window", "T1", now, &mut out);
+        g.line(b"short", "T1", now, &mut out);
+        assert_eq!(written(&out).len(), 1, "once it holds one back it holds the rest");
+        out.clear();
+        g.close("T2", &mut out);
+        let w = written(&out);
+        assert_eq!(w[..2], ["too long for the window", "short"]);
+        assert!(w[2].starts_with("oath-init: held back 2 lines (1 KiB) since T1"));
+    }
+
+    #[test]
+    fn a_run_with_no_newline_is_cut_into_lines() {
+        let (mut g, now) = (Gate::default(), Instant::now());
+        let mut partial = [vec![b'a'; LINE_MOST], vec![b'c'; LINE_MOST], vec![b'a'; 5]].concat();
+        let w = written(&take_lines(&mut partial, false, &mut g, "T", now));
+        assert_eq!(w.len(), 2);
+        assert_eq!(partial.len(), 5, "the rest waits for its newline");
+        partial.extend_from_slice(b"b\ntail");
+        assert_eq!(written(&take_lines(&mut partial, false, &mut g, "T", now)), ["aaaaab"]);
+        assert_eq!(written(&take_lines(&mut partial, true, &mut g, "T", now)), ["tail"]);
+        assert!(partial.is_empty());
+    }
+
+    #[test]
+    fn a_failed_exit_keeps_the_lines_before_it() {
+        let d = tempfile::tempdir().unwrap();
+        let (log, exits) = (d.path().join("a.log"), d.path().join("a.exit.log"));
+        let line = |i: usize| format!("2026-11-22T17:02:13Z line {i:06}\n");
+        // The log just rotated: the lines before the exit span both files.
+        let old: String = (0..3000).map(line).collect();
+        let new: String = (3000..3010).map(line).collect();
+        fs::write(rotated(&log), old).unwrap();
+        fs::write(&log, new).unwrap();
+        for i in 0..EXITS_KEPT + 1 {
+            keep_exit(&log, &exits, &format!("== T{i} svc:a exit Signal(6) after 9 s"));
+        }
+        let kept = fs::read_to_string(&exits).unwrap();
+        let ends: Vec<&str> = kept.lines().filter(|l| l.starts_with("== ")).collect();
+        assert_eq!(ends.len(), EXITS_KEPT, "the last {EXITS_KEPT} exits");
+        assert!(ends[0].starts_with("== T1 ") && ends[EXITS_KEPT - 1].starts_with("== T3 "));
+        let last: Vec<&str> = kept.rsplit("== T2").next().unwrap().lines().skip(1).collect();
+        assert_eq!(last[last.len() - 2], "2026-11-22T17:02:13Z line 003009");
+        assert!(last[0].starts_with("2026-11-22T17:02:13Z line "), "whole lines: {}", last[0]);
+        let bytes: usize = last[..last.len() - 1].iter().map(|l| l.len() + 1).sum();
+        assert!(bytes <= EXIT_TAIL && bytes > EXIT_TAIL - 64);
+    }
+
+    #[test]
+    fn exit_logs_sit_beside_logs() {
+        assert_eq!(exit_log_path("svc:rivulet"), Path::new("/oath/log/svc/rivulet.exit.log"));
+        assert_eq!(exit_log_path("net:net0"), Path::new("/oath/log/net/net0.exit.log"));
     }
 
     #[test]

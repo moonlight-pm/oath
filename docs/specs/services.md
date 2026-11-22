@@ -175,6 +175,21 @@ still starts. PID
   `.1` past 256 KiB (one old file kept). PID 1's own messages go to
   `/oath/log/init.log`. `oath logs svc:<name>` and `oath logs` read
   them (`-n` lines, default 50).
+- **Floods (R92).** PID 1 reads a service's pipe (1 MiB) as output
+  comes, so a writer waits on its log only past about 100 MB/s or while
+  PID 1 is busy. A line that repeats the one before is counted, not
+  written (`oath-init: repeated N more times: …`). Past 5,000 lines or
+  512 KiB in 30 s the rest of the window is held back: counted, and the
+  newest 32 KiB of it kept, which PID 1 writes with the count
+  (`oath-init: held back N lines …`) when the window ends or the service
+  exits. A run of 16 KiB with no newline is a line. The counts start
+  afresh after a panic or a re-exec.
+- **Exits (R92).** Every exit the supervisor sees is a line in the
+  service's log (`oath-init: exit Signal(6) after 783 s; restart #1 in
+  0s`). A failed exit (a code other than 0, or a signal) also keeps the
+  last 64 KiB of the log before it in `<name>.exit.log`, ended by a line
+  `== <time> <id> exit …`, for the last three; `oath logs <id> --exits`
+  reads them. A stop (`oath apply`, shutdown) is not an exit there.
 - **Exit and restart.** Actual records the last exit code or signal.
   `restart` decides whether it runs again. A run of 10 s or more
   restarts at once; quick failures wait 1, 2, 4 then 8 s. After five

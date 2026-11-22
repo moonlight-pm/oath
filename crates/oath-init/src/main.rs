@@ -300,7 +300,12 @@ fn run(
     let mut probation = probation::Watch::default();
     loop {
         let pass = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            step(&mut sup, &listener, &mut probation, &mut hot)
+            let up = step(&mut sup, &listener, &mut probation, &mut hot);
+            // Between passes, services' output is read as it comes.
+            if up.is_none() {
+                sup.pump_until(Instant::now() + Duration::from_millis(100));
+            }
+            up
         }));
         match pass {
             Err(_) => {
@@ -310,7 +315,6 @@ fn run(
             Ok(Some(req)) => resume::upgrade(&mut sup, &listener, &mut hot, &resumes, req),
             Ok(None) => {}
         }
-        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
