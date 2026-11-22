@@ -9,15 +9,14 @@
 # and libgcc, and /lib's loader for what the build runs; libraries come from
 # pkg-config and /lib. libcef.so carries Chromium's libc++, as the vendor's does.
 # patches/: CEF reads its version from git, which a tarball lacks, so git_util
-# answers from CEF_TARBALL_COMMIT (the hash and commit number of CEF's 156.0.28);
+# answers from CEF_TARBALL_COMMIT (the hash and commit number of CEF's 158.0.3);
 # Oath's Python has no POSIX semaphores (its configure found no /dev/shm), so
 # the mojom parser and Blink's bindings generator run in one process; fontconfig
 # and ANGLE link libuuid and libXi, which they never call and Oath does not ship;
-# upstream-CVE-*: Chromium's own fixes for critical CVEs Chrome fixed only in 157
-# or 158, from main and from Chromium's FFmpeg, and, from the M156 branch past this
-# tarball, for one exploited in the wild (libxslt) and three critical ones of
-# Extended Stable 156.0.8078.100, which Google published no tarball of, until CEF
-# moves to a Chromium that has them.
+# CEF's views_widget.patch loses its hunk for Windows' occlusion tracker, which
+# Chromium 158.0.8127.36 rewrote after the .18 CEF patched and which a Linux
+# build does not compile (CEF's patcher fails the build on a hunk that does not
+# apply).
 #
 # The layout is the vendor's minimal distribution's: cef/Release (libcef.so,
 # SwiftShader, the V8 snapshot) and cef/Resources, whose files are also linked
@@ -28,8 +27,8 @@
 # hold no manifests here, and a program with Release in its RUNPATH would load
 # it instead of /lib's (pkg:vulkan-loader), which finds Mesa's; SwiftShader's
 # manifest stays and works through that.
-CEF_COMMIT=57389f04a61ab0e9603d9f96602843d0e08bb11c
-CEF_NUMBER=3673
+CEF_COMMIT=8c29be240971eebee960ac92114d3efccb5780ff
+CEF_NUMBER=3745
 CHROMIUM=${VERSION##*chromium-}
 CEF_PATCH=${VERSION%%+*}
 CEF_PATCH=${CEF_PATCH##*.}
@@ -37,6 +36,10 @@ CEF_PATCH=${CEF_PATCH##*.}
 # sandbox could not make the packs read-only (pkg:meson's build.sh), python3
 # would write it into pkg:python's.
 export PYTHONPYCACHEPREFIX=/tmp/pycache
+# Since 158 grit parses .xtb translations in a multiprocessing pool, which a
+# Python without POSIX semaphores cannot make: its own switch keeps it to one
+# process, as patches/ do for the mojom parser and Blink's bindings generator.
+export GRIT_DISABLE_MULTIPROCESSING=1
 tar -xf "$SRC/chromium-$CHROMIUM.tar.xz" -C /tmp
 mv "/tmp/chromium-$CHROMIUM" /tmp/src
 cd /tmp/src
