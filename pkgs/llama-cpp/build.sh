@@ -7,8 +7,10 @@ mkdir -p /tmp/src /out/bin /out/share/doc/llama-cpp
 cd /tmp/src
 tar -xzf "$SRC/$SOURCES" --no-same-owner --strip-components=1
 patch -p1 <"$FILES/patches/0001-no-plugins-from-a-path.patch"
-# Upstream's fix for CVE-2026-133710, from tag b12556 (the patch's header).
+# Upstream's fixes for CVE-2026-133710, from tag b12556, and CVE-2026-134540, from tag
+# b12405 (the patches' headers).
 patch -p1 <"$FILES/patches/upstream-CVE-2026-133710.patch"
+patch -p1 <"$FILES/patches/upstream-CVE-2026-134540.patch"
 # The shaders compile with glslang, which Oath has. glslc is its front end, and packaging it
 # takes SPIRV-Tools and shaderc for one thing, spirv-opt's -O. Upstream already leaves that off
 # the matrix shaders a driver with cooperative matrices runs. Without it on the rest, the speed
