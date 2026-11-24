@@ -9,15 +9,14 @@
 # and libgcc, and /lib's loader for what the build runs; libraries come from
 # pkg-config and /lib. libcef.so carries Chromium's libc++, as the vendor's does.
 # patches/: CEF reads its version from git, which a tarball lacks, so git_util
-# answers from CEF_TARBALL_COMMIT (the hash and commit number of CEF's 156.0.28);
+# answers from CEF_TARBALL_COMMIT (the hash and commit number of CEF's 158.0.3);
 # Oath's Python has no POSIX semaphores (its configure found no /dev/shm), so
 # the mojom parser and Blink's bindings generator run in one process; fontconfig
 # and ANGLE link libuuid and libXi, which they never call and Oath does not ship;
-# upstream-CVE-*: Chromium's own fixes for critical CVEs Chrome fixed only in 157
-# or 158, from main and from Chromium's FFmpeg, and, from the M156 branch past this
-# tarball, for one exploited in the wild (libxslt) and three critical ones of
-# Extended Stable 156.0.8078.100, which Google published no tarball of, until CEF
-# moves to a Chromium that has them.
+# CEF's views_widget.patch loses its hunk for Windows' occlusion tracker, which
+# Chromium 158.0.8127.36 rewrote after the .18 CEF patched and which a Linux
+# build does not compile (CEF's patcher fails the build on a hunk that does not
+# apply).
 #
 # The layout is the vendor's minimal distribution's: cef/Release (libcef.so,
 # SwiftShader, the V8 snapshot) and cef/Resources, whose files are also linked
@@ -28,8 +27,8 @@
 # hold no manifests here, and a program with Release in its RUNPATH would load
 # it instead of /lib's (pkg:vulkan-loader), which finds Mesa's; SwiftShader's
 # manifest stays and works through that.
-CEF_COMMIT=57389f04a61ab0e9603d9f96602843d0e08bb11c
-CEF_NUMBER=3673
+CEF_COMMIT=8c29be240971eebee960ac92114d3efccb5780ff
+CEF_NUMBER=3745
 CHROMIUM=${VERSION##*chromium-}
 CEF_PATCH=${VERSION%%+*}
 CEF_PATCH=${CEF_PATCH##*.}
@@ -37,6 +36,10 @@ CEF_PATCH=${CEF_PATCH##*.}
 # sandbox could not make the packs read-only (pkg:meson's build.sh), python3
 # would write it into pkg:python's.
 export PYTHONPYCACHEPREFIX=/tmp/pycache
+# Since 158 grit parses .xtb translations in a multiprocessing pool, which a
+# Python without POSIX semaphores cannot make: its own switch keeps it to one
+# process, as patches/ do for the mojom parser and Blink's bindings generator.
+export GRIT_DISABLE_MULTIPROCESSING=1
 tar -xf "$SRC/chromium-$CHROMIUM.tar.xz" -C /tmp
 mv "/tmp/chromium-$CHROMIUM" /tmp/src
 cd /tmp/src
@@ -98,11 +101,12 @@ export BUILD_CFLAGS="$CFLAGS" BUILD_CXXFLAGS="$CXXFLAGS" BUILD_CPPFLAGS= BUILD_L
 export CEF_TARBALL_COMMIT="$CEF_COMMIT $CEF_NUMBER $CEF_PATCH"
 # Oath's libffi, not the static libffi_pic Chromium takes from Debian's sysroot.
 # No WebRTC screen capture of an X11 session (libXtst and libXi, which Oath does
-# not ship): the desk is Wayland. V8's instance types come from Torque, not
-# from metagen, whose libclang reads flags from `gn desc`, without the
-# toolchain's include dirs. Crashpad uploads over its own socket and BoringSSL,
-# as on Android, not libcurl. No OpenXR: there is no XR runtime here for its
-# loader to find.
+# not ship): the desk is Wayland. V8's instance types and object layouts come
+# from Torque, not from metagen (v8_use_metagen since 158; 156 called it
+# v8_use_metagen_instance_types), whose libclang reads its flags from V8's
+# ninja file, without the toolchain's include dirs. Crashpad uploads over its
+# own socket and BoringSSL, as on Android, not libcurl. No OpenXR: there is no
+# XR runtime here for its loader to find.
 export GN_OUT_CONFIGS=Release_GN_x64
 export GN_DEFINES="is_official_build=true proprietary_codecs=true ffmpeg_branding=Chrome \
 chrome_pgo_phase=0 symbol_level=0 blink_symbol_level=0 v8_symbol_level=0 \
@@ -110,7 +114,7 @@ treat_warnings_as_errors=false use_sysroot=false use_siso=false \
 custom_toolchain=\"//build/toolchain/linux/unbundle:default\" \
 host_toolchain=\"//build/toolchain/linux/unbundle:default\" \
 use_vaapi=false use_gtk=false cef_use_gtk=false use_kerberos=false use_libpci=false \
-use_system_libffi=true rtc_use_x11_extensions=false v8_use_metagen_instance_types=false \
+use_system_libffi=true rtc_use_x11_extensions=false v8_use_metagen=false \
 crashpad_http_transport_impl=\"socket\" enable_openxr=false"
 
 # What CEF's gclient hook does, without depot_tools: CEF's generated files,
