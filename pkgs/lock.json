@@ -11,7 +11,7 @@
     "version": "1.5.10",
     "license": "LicenseRef-Google-Antigravity-Terms",
     "by": "plan",
-    "plan": "sha256-53a89c4f457f3a76c8823cbe686b88a6ffc48f63224b322807f8b9e006d2bc22",
+    "plan": "sha256-64615bbd816c6e9cd14e198d544bac60356c4fce21247958a741dd0e1e742238",
     "product": "sha256-2b87d7de93ed92c343fbde81932d07fcf7ad1ab4ca877f32e64d8a8f13dde6e7",
     "run": [
       "certs"
