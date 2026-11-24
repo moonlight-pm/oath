@@ -123,6 +123,9 @@ Overwrite this file when facts change; do not append a diary.
   GBM or X platforms and Proton games ran at about 2 fps under Xwayland on Mesa (fixed for later
   ROOT_FILES in `d5200b9`); rivulet aborted on 2026-11-22 at 17:02Z (SIGABRT, its log rotated away by the restart's flood, no NVIDIA error in the kernel log), and the Xwayland PID 1 restarted with it loads NVIDIA's GBM and X EGL platforms; at 17:08Z rivulet cut off `sola-river` as unresponsive, which spun on its dead connection (one line at about 270 KiB/s, blocked on its log pipe) until a reboot at 17:18Z, the same generation (R92 is PID 1's side of it, Sola fixes `sola-river`). Generation 196: `pkg:claude-code` 2.1.323 `a198de245f8b` from
   master@24ea158, built here (`oath build plan:claude-code`), an overlay until a release pins it.
+  Generation 207 (2026-11-24, Joshua's word, no reboot): `pkg:antigravity-cli` 1.5.10 `2b87d7de93ed`
+  (`agy`) from release `7a277a38da6e`'s documents (master@de9bfd4e), filed by hand (`oath new`,
+  `oath set plan:… --from-file`), built here to the pin; its `pkg:certs` need was already live.
   Before it, desk `42a8028ae7bf` (2026-11-12), generation 165; generations 157–159 that night applied `pkg:sola-projects`, `pkg:bun` and
   `pkg:sola-terminal`. Oath's agent sessions run in its checkout since 2026-11-12 (R39 as
   amended); builds and publishing stay on buccina. On 2026-11-15, at Joshua's word, two overlays

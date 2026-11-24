@@ -760,7 +760,7 @@ grok --version                           # grok 1.0.70 (f50904eaee6c)
 sudo oath build plan:antigravity-cli     # fetches 92 MB from github.com
 sudo oath set pkg:antigravity-cli present=true
 sudo oath apply pkg:antigravity-cli
-agy --version
+agy --version                            # 1.5.10
 ```
 
 `codex` is OpenAI's package as it ships, with its own ripgrep and its
