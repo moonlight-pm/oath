@@ -49,6 +49,9 @@ names = ["aws-cli", "session-manager-plugin", "aws-session-manager-plugin"]
 repo = "https://github.com/aws/aws-cli"
 tag = "{version}"
 
+[aws.not_affected]
+"GO-2026-6278" = "gorilla/websocket v1.5.3's newMaskKey takes math/rand.Uint32 (conn.go line 184), which Go's record calls weak: session-manager-plugin is built with Go 1.27.4 from a go.mod at go 1.25.0 with no godebug line, so math/rand's top-level functions draw from runtime.rand (ChaCha8, seeded by the OS) and Seed is a no-op (randseednop since 1.24; math/rand/rand.go lines 321-337 and 400-403 at go1.27.4)"
+
 [bash]
 cpe = "cpe:2.3:a:gnu:bash"
 compare_repo = "https://git.savannah.gnu.org/git/bash.git"
@@ -126,19 +129,13 @@ compare_repo = "https://chromium.googlesource.com/chromium/src.git"
 compare_tag = "{version}"
 differs_because = "tools/gn/README.md: the release replaces the tree's pointer with GN's own README (read 2026-11-01)"
 
-[cef.age_because]
-source = "CEF 57389f0 (156.0.28, 2026-11-10) on Chromium 156.0.8078.93 (tag 2026-11-05), by Joshua's word of 2026-11-12: CEF's fix for issue 4313 (off-screen frames on Linux sent before the GPU had drawn them, seen with NVIDIA) for Sola's browser on novus and koeurax; it names no CVE. .93 stands for Chrome's Extended Stable .88 (23 high CVEs), for which Google published no tarball"
-
 [cef.not_affected]
-"CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 156"
-"CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 156"
+"CVE-2023-4762" = "fixed in Chrome 116.0.5845.179 (Google's record); this CEF is Chromium 158"
+"CVE-2024-3837" = "fixed in Chrome 124.0.6367.60 (Google's record); this CEF is Chromium 158"
 "CVE-2026-121034" = "Views in Chrome on Windows (Google's record); Oath builds CEF for Linux"
-"CVE-2026-126879" = "fixed on Chromium's 156 branch by 7083f40f8a15 (8078@{#2064}, cherry-pick of main's 7155a0008561, issue 576736463), which 156.0.8078.93 (8078@{#2089}) holds: Chromium's log of the branch; Google's Extended Stable post of 2026-11-11 names it among 156.0.8078.100's fixes"
-"CVE-2026-126846" = "Skia's Vulkan backend on ARM's proprietary Mali driver, versions 42 to 55: its fix (Skia c215948793b4 on chrome/m157, issue 580857377) sleeps after device loss only when the vendor is ARM; Oath is x86-64 and ships no Mali driver, and Google did not take it to 156's Extended Stable"
+"CVE-2026-126846" = "Skia's Vulkan backend on ARM's proprietary Mali driver, versions 42 to 55: its fix (Skia c215948793b4 on chrome/m157, issue 580857377) sleeps after device loss only when the vendor is ARM; Oath is x86-64 and ships no Mali driver"
 "CVE-2026-130963" = "WebView in Chrome 158 (Google's post of 2026-11-17, issue 562000561): Android's WebView, whose AwPacProcessor its CLs touch (Gerrit, android_webview/); Oath builds CEF for Linux"
-"CVE-2026-131008" = "fixed on Chromium's 156 branch by 239f5a19d2f2 (8078@{#1824}, Gerrit CL 8691945: the M156 cherry-pick of main's 218a524b0ed8, '[gc] Defer CalculationValue handle decrements from ~Length()', issue 574686297), which 156.0.8078.93 (8078@{#2089}) holds"
-"CVE-2026-130975" = "OfflineAudioContext's incremental rendering (issue 577366760: main's f4de8340fbbb guards OnChunkRendered and pending_render_targets_), which Chromium 156 does not have: 156.0.8078.93's offline_audio_context.cc renders once and rejects a second startRendering(), with no chunk code; Google took the fix to M158 only"
-"CVE-2026-131054" = "ANGLE's WrapStructConstructors pass (issue 576812570: ANGLE fb5dacfe0f4c takes its rebuild out of an ASSERT), which runs only under avoidComplexExpressionsInStructConstructor, set by ANGLE's GL backend only on a PowerVR GPU (renderergl_utils.cpp at ANGLE f10470c77e48, 156.0.8078.93's DEPS); Oath is x86-64 and ships no PowerVR driver"
+"CVE-2026-134401" = "Variations' seed fetch (Google's post of 2026-11-23, issue 554051967): its fix, 158.0.8127.88's 4338319acf98 ('Disable VariationsService HTTP fallback by default', Bug b:554051967), gates the retry of a failed HTTPS seed fetch over HTTP; a build without Google Chrome branding, as CEF's is, fetches no seed unless --variations-server-url is given (IsFetchingEnabled, components/variations/service/variations_service.cc lines 282-301 at 158.0.8127.36)"
 "CVE-2026-121157" = "Chromoting, Chrome Remote Desktop, against a local program (Google's record, Chromium-rated low): its host is remoting/'s own programs, and the build makes and ships libcef.so and its resources only (pkgs/cef/build.sh)"
 "CVE-2026-121037" = "ANGLE in Chrome on Windows (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121045" = "Browser in Chrome on Mac (Google's record); Oath builds CEF for Linux"
@@ -163,37 +160,6 @@ source = "CEF 57389f0 (156.0.28, 2026-11-10) on Chromium 156.0.8078.93 (tag 2026
 "CVE-2026-121241" = "Navigation in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121246" = "WebGL in Chrome on Android (Google's record); Oath builds CEF for Linux"
 "CVE-2026-121247" = "Dawn in Chrome on Android (Google's record); Oath builds CEF for Linux"
-# Chrome 157's records name 157.0.8103.38; Extended Stable 156.0.8078.88 fixed these, and
-# Chromium 156.0.8078.93, this pin's, is that branch after it.
-"CVE-2026-121032" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121057" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121060" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121061" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121071" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121078" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121079" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121084" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121086" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121094" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121097" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121104" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121119" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121127" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121129" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121135" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121137" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121141" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121143" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121148" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121160" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121182" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121201" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121210" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121211" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121221" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121226" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121227" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
-"CVE-2026-121250" = "fixed in Chrome 156.0.8078.88, Extended Stable (Google's post of 2026-11-03); this CEF is Chromium 156.0.8078.93"
 
 [certs]
 repo = "https://github.com/nss-dev/nss"
@@ -227,6 +193,9 @@ osv = "Go:github.com/cloudflare/cloudflared"
 [cloudflared.not_affected]
 "GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
 "CVE-2026-128085" = "OpenTelemetry's attribute value length limit miscounts U+FFFD (GHSA-q7gw-24fr-5p69), but the limit is off unless set: cloudflared 2026.10.5 and 2026.11.0 set no span limits (no AttributeValueLengthLimit, SpanLimits or WithSpanLimits in its source), and otel/sdk v1.45.0's DefaultAttributeValueLengthLimit is -1, unlimited, moved only by OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT; trace/auto.go builds spans only under OpenTelemetry's eBPF auto-instrumentation; sdk/log is not linked. Fixed in otel v1.47.0 (2026-10-02)"
+"CVE-2026-128086" = "OpenTelemetry's baggage.Parse and propagation.Baggage.Extract over a crafted W3C baggage header (GHSA-rrfc-gjm9-cgrj): cloudflared's only propagator is contrib's Jaeger (tracing/tracing.go line 62, otel.SetTextMapPropagator(Jaeger{})), which at propagators v0.22.0 reads uber-trace-id alone (Fields) and parses no baggage; nothing in its source calls baggage.Parse or propagation.Baggage"
+"GO-2026-6940" = "gobwas/ws allocated a frame's declared payload length before reading it, in ws.ReadFrame and wsutil.ReadMessage (GHSA-4xr6-hc3h-f6jq; fixed in v1.5.0 by internal/saferio): cloudflared's only use, websocket/connection.go, reads with wsutil.ReadClientBinary, whose readData at v1.2.1 reads a data frame with ioutil.ReadAll, which grows only as bytes arrive, and a control frame only after Reader.NextFrame's ws.CheckHeader has capped it at 125 bytes (read 2026-11-24 in v1.2.1's wsutil/helper.go and reader.go)"
+"GO-2026-6278" = "gorilla/websocket v1.5.3's newMaskKey takes math/rand.Uint32 (conn.go line 184), which Go's record calls weak: cloudflared is built with Go 1.27.4 from a go.mod at go 1.27.4 with no godebug line, so math/rand's top-level functions draw from runtime.rand (ChaCha8, seeded by the OS) and Seed is a no-op (math/rand/rand.go lines 321-337 and 400-403 at go1.27.4)"
 
 [cmake]
 cpe = "cpe:2.3:a:cmake_project:cmake"
@@ -351,6 +320,13 @@ tag = "n{version}"
 "CVE-2026-125211" = "the libaribcaption decoder (libavcodec/libaribcaption.c): OBJS-$(CONFIG_LIBARIBCAPTION_DECODER), and build.sh does not enable libaribcaption"
 "CVE-2026-125262" = "libavcodec/lcevcdec.c, which 9.0.2's Makefile builds only with CONFIG_LIBLCEVC_DEC (V-Nova's LCEVCdec), which build.sh does not enable"
 "CVE-2026-125263" = "the LCEVC enhancement in libavcodec/decode.c sits under #if CONFIG_LIBLCEVC_DEC in 9.0.2, and build.sh does not enable liblcevc_dec"
+"CVE-2026-135706" = "the libmodplug demuxer (libavformat/libmodplug.c, the record): 9.0.2's configure has libmodplug_demuxer_deps=\"libmodplug\", which build.sh does not enable"
+"CVE-2026-135718" = "the DVD-Video demuxer (libavformat/dvdvideodec.c, the record): dvdvideo_demuxer_deps=\"libdvdnav libdvdread\" in 9.0.2's configure, GPL libraries build.sh does not enable"
+"CVE-2026-135720" = "the DASH demuxer (libavformat/dashdec.c, the record): dash_demuxer_deps=\"libxml2\" in 9.0.2's configure, and build.sh does not enable libxml2"
+"CVE-2026-135728" = "the DASH demuxer (libavformat/dashdec.c, the record): dash_demuxer_deps=\"libxml2\" in 9.0.2's configure, and build.sh does not enable libxml2"
+"CVE-2026-135723" = "the IMF demuxer's Composition Playlist parser (libavformat/imf_cpl.c, the record): imf_demuxer_deps=\"libxml2\" in 9.0.2's configure, and build.sh does not enable libxml2"
+"CVE-2026-135733" = "the zmq and azmq filters (libavfilter/f_zmq.c, the record): zmq_filter_deps and azmq_filter_deps=\"libzmq\" in 9.0.2's configure, and build.sh does not enable libzmq"
+"CVE-2026-135742" = "recv_msg() of the zmq and azmq filters (libavfilter/f_zmq.c, the record): zmq_filter_deps and azmq_filter_deps=\"libzmq\" in 9.0.2's configure, and build.sh does not enable libzmq"
 "CVE-2026-107675" = "the sftp protocol (libavformat/libssh.c): libssh_protocol_deps=\"libssh\" in 9.0.2's configure, and build.sh does not enable libssh"
 "CVE-2026-120210" = "the IMF demuxer (libavformat/imfdec.c): imf_demuxer_deps=\"libxml2\" in 9.0.2's configure, and build.sh does not enable libxml2"
 "CVE-2026-125191" = "the V4L2 mem2mem decoders (libavcodec/v4l2_*): v4l2_m2m is autodetected, and build.sh configures --disable-autodetect without it"
@@ -463,6 +439,8 @@ osv = "Go:github.com/cli/cli/v2"
 [gh.not_affected]
 "GO-2026-5932" = "the package x/crypto/openpgp, unmaintained; this program does not link it (go list -deps)"
 "CVE-2026-128085" = "OpenTelemetry's attribute value length limit miscounts U+FFFD (GHSA-q7gw-24fr-5p69): gh links only otel, otel/metric and otel/trace v1.44.0, indirectly, and no otel SDK (sdk or sdk/log); the record's path in otel/trace is trace/auto.go, which builds spans only under OpenTelemetry's eBPF auto-instrumentation, with a limit that is unlimited unless OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT is set"
+"CVE-2026-128086" = "OpenTelemetry's baggage.Parse and propagation.Baggage.Extract over a crafted W3C baggage header (GHSA-rrfc-gjm9-cgrj): gh requires otel v1.44.0 only indirectly, its source has no OpenTelemetry import and sets no propagator, and as a client it extracts no incoming headers"
+"GO-2026-6278" = "gorilla/websocket v1.5.3's newMaskKey takes math/rand.Uint32 (conn.go line 184), which Go's record calls weak: gh is built with Go 1.27.4 from a go.mod at go 1.27.0 with no godebug line, so math/rand's top-level functions draw from runtime.rand (ChaCha8, seeded by the OS) and Seed is a no-op (math/rand/rand.go lines 321-337 and 400-403 at go1.27.4)"
 
 [git]
 cpe = "cpe:2.3:a:git-scm:git"
@@ -663,7 +641,7 @@ tag = "release-{version}-stable"
 cpe = "cpe:2.3:a:libffi_project:libffi"
 repo = "https://github.com/libffi/libffi"
 tag = "v{version}"
-differs_because = "README.md drops a heading; config.guess and config.sub are GNU config's own of January 2022, by blob id in its history, where the tree has 2024's (read 2026-11-01)"
+differs_because = "README.md: make dist's dist-hook drops the lines above 'was released on' (Makefile.am); config.guess and config.sub are GNU config's own of 2024-07-27 and 2024-05-27, by blob id in its history, where the tree has 2024-01-01's; doc/version.texi: automake's mdate-sh dates it 14 November 2026, the release workflow's checkout, where the tree has 12 November. doc/texinfo.tex, in the tarball alone, is texinfo's own doc/texinfo.tex at a2c3ba8ca7f8 (2025-10-25.20), byte for byte (sha256 4a2e3fc1…), which the workflow's autoreconf -fi copies in from apt's; build.sh's --disable-docs builds no doc/ (3.8.1, read 2026-11-22)"
 
 [libfontenc]
 cpe = "cpe:2.3:a:x.org:libfontenc"
@@ -843,9 +821,6 @@ series = "7.3"
 compare_repo = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
 compare_tag = "v{version}"
 
-[linux.age_because]
-source = "7.3.4 (2026-11-10) is the only 7.3 release with the fix for CVE-2026-99288 (inet: unhashed sockets rejected in established lookups), and it carries 7.3.3's (2026-11-07) for CVE-2026-99281 (high: attaching to an ownerless tun device without CAP_NET_ADMIN) and CVE-2026-99255 (io_uring/io-wq: a link hidden from cancellation); taken before its week by Joshua's word of 2026-11-12"
-
 [linux.not_affected]
 "CVE-2026-99314" = "ALSA's us122l driver (sound/usb/usx2y/us122l.c): CONFIG_SND_USB_US122L is set by neither x86_64_defconfig nor linux.fragment, which has SND_USB_AUDIO only"
 "CVE-2026-99315" = "ALSA's us122l driver: CONFIG_SND_USB_US122L is set by neither x86_64_defconfig nor linux.fragment"
@@ -898,9 +873,6 @@ source = "7.3.4 (2026-11-10) is the only 7.3 release with the fix for CVE-2026-9
 skip = "pkg:linux's own tree, for outside modules: its CVEs are pkg:linux's"
 compare_repo = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
 compare_tag = "v{version}"
-
-[linux-build.age_because]
-source = "pkg:linux 7.3.4's tree, which moves with it: linux.age_because"
 
 [llama-cpp]
 cpe = "cpe:2.3:a:ggml:llama.cpp"
@@ -1340,8 +1312,7 @@ tag = "v{version}"
 unchecked = "a tag for every patch, so it is always behind; its advisories are read from GitHub, with the patch that fixes each"
 
 [vim.not_affected]
-"CVE-2022-3705" = "fixed in 9.0.0805 (the record); Oath builds 9.2.1342"
-"GHSA-cgcr-vx5v-wf6q" = "K on a PowerShell script runs pwsh with the word under the cursor (the advisory, fixed in 9.2.1346): Oath ships no pwsh"
+"CVE-2022-3705" = "fixed in 9.0.0805 (the record); Oath builds 9.2.1352"
 
 [vulkan-headers]
 skip = "headers"
