@@ -16,6 +16,17 @@ Overwrite this file when facts change; do not append a diary.
   `ibt-1040-0041`): controller up since 2026-11-08. An Xbox Series pad
   (`045E:0B13`, `A8:8C:3E:64:E6:B5`) is paired and trusted over Bluetooth
   LE that day; Steam sees it, and no game has been seen using it.
+  Kora's Logitech POP Icon Keys (`D9:1C:B0:DF:3C:9C`) and POP Mouse
+  (`D9:A5:29:17:BC:0F`) are bonded and trusted over LE (Sola, 2026-11-24),
+  `WakeAllowed` in BlueZ, her 2.4 GHz receiver unplugged. They do not wake
+  it from S3 (2026-11-24, three sleeps with the adapter's USB device `1-14`
+  and its root hub armed by hand): the kernel set the controller to scan
+  passively for its accept list (`Controller Suspended`, state 2), yet no
+  advertising report or connection came during or after the sleep, no wake
+  count moved on `1-14` or the xHCI, and the resume said "non-Bluetooth wake
+  source". The AX211's Bluetooth does not listen or cannot wake the board
+  in S3 here; the power button, a USB keyboard or mouse, and `oath wake`
+  do.
 - **Network:** DHCP, 10.0.0.156 (MAC `60:cf:84:bc:ff:3e`, `net0`, wired
   `igc`). Wake-on-LAN on (`net:net0.wake`, R84, generation 7): on
   2026-11-12 `oath wake 60:cf:84:bc:ff:3e` from buccina woke it from sleep
