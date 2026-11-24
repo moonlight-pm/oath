@@ -1,9 +1,9 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source pkgconf-3.0.8.tar.xz 943f0bc88bcaeceb630b00262e2a8ad5ea4fac3fba72a4267d8b9ec6b35d1194
-tag pkgconf-3.0.8 commit c942f2ec2f7e2b1e4d874d694cd92648a70e5c6e tree 12b33629d0cee674b74054881441348eb1bc26e6
+source pkgconf-3.0.11.tar.xz d0cd841bc8e55b9da888106c00dc256d05b7d1d8e5a46f4be4eb4c5125bd2dc4
+tag pkgconf-3.0.11 commit f4e5305910aed8100c5b51ec4c73fd8fd1cb73a9 tree 662806322eabf771e5125e27f062b2a0aa2fb186
 signed ssh
-same 741
-only-in-tag 14
+same 754
+only-in-tag 13
 from automake 1
 from gettext 2
 from gnulib 5
