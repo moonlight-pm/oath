@@ -1,15 +1,15 @@
-version = "9.2.1342"
+version = "9.2.1352"
 license = "Vim"
 description = "Vim, the editor."
 home = "https://www.vim.org/"
 category = "base"
-purl = "pkg:github/vim/vim@v9.2.1342"
+purl = "pkg:github/vim/vim@v9.2.1352"
 build = ["ncurses"]
 run = ["ncurses"]
 
 [[source]]
-url = "https://github.com/vim/vim/archive/refs/tags/v9.2.1342.tar.gz"
-sha256 = "321d6b7832b9c6def7fb7f533d28266a4a4f80e46506cedeea177e26096b2957"
+url = "https://github.com/vim/vim/archive/refs/tags/v9.2.1352.tar.gz"
+sha256 = "f491db14f8ef04f474e57dd7759347601442843163a57604dacd9132475b34e2"
 git = "https://github.com/vim/vim"
-tag = "v9.2.1342"
+tag = "v9.2.1352"
 key = "brabandt"
