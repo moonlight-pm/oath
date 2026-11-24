@@ -302,6 +302,17 @@
       "home": "https://x.ai/cli"
     },
     "plan:grok-build": {},
+    "pkg:antigravity-cli": {
+      "present": false,
+      "description": "Antigravity CLI: Google's coding agent for the terminal.",
+      "home": "https://antigravity.google/product/antigravity-cli"
+    },
+    "pkg:antigravity-cli-src": {
+      "present": false,
+      "description": "The vendor's Antigravity CLI binary, which plan:antigravity-cli builds from; fetched from github.com when it builds.",
+      "home": "https://antigravity.google/product/antigravity-cli"
+    },
+    "plan:antigravity-cli": {},
     "ssh:local": {
       "authorized": []
     },

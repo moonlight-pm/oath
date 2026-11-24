@@ -93,7 +93,7 @@ Building from the tree instead removes it.
 |------|---------------|
 | GNU bc | No repository, but signed, and only computes one kernel header. The other bc's author marks its latest release untested. |
 | GMP | Mercurial, whose archives refuse automated fetches; signed; GCC needs it. |
-| Rust, Codex, Claude Code, Grok, NVIDIA, Steam | The vendor's build is what they are. |
+| Rust, Codex, Claude Code, Grok, Antigravity CLI, NVIDIA, Steam | The vendor's build is what they are. |
 | Iosevka | Built font files. |
 | CEF | 288,065 files match Chromium's tag; 368,476 come from its submodules. It is what Sola needs. |
 | A smaller Caddy | Only saved 14 of 146 modules. Moot now. |

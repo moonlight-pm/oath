@@ -347,7 +347,8 @@ output, and each machine updates (a reboot, since the seed moved PID 1).
   and builds the pack with `oath build plan:<name>`, fetching any build
   pack it lacks from its origins (R35); no image or origin carries the
   pack. Claude Code (`pkg:claude-code`) is the first;
-  Codex and Grok Build follow it by choice, not licence (R31).
+  Codex and Grok Build follow it by choice, not licence, and
+  Antigravity CLI by both (R31).
 - Never another distribution's packages: no Nix closures, no `.deb`,
   no Arch packages, no third-party rebuilds of an upstream.
 - A build host's compiler may bootstrap the first toolchain. It never

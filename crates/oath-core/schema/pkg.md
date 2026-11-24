@@ -158,8 +158,8 @@ for each job (coreutils, sed, grep, gawk, findutils, diffutils, tar,
 gzip, xz, bzip2, procps-ng, less, vim), ping, chrony, OpenSSH's client
 tools, dosfstools, curl, dig, host and nslookup (`pkg:bind`), openssl,
 the CA certificates (`pkg:certs`), and the libraries they load. It also
-has three recipes, absent (below): `pkg:claude-code`, `pkg:codex` and
-`pkg:grok-build`, each with its `-src`.
+has four recipes, absent (below): `pkg:claude-code`, `pkg:codex`,
+`pkg:grok-build` and `pkg:antigravity-cli`, each with its `-src`.
 A library a present package needs cannot be removed: apply refuses a
 broken `needs` graph. The present ones, all but `pkg:oath` (built by
 cargo), come from plans in `pkgs/`, built from source; the programs and
@@ -176,4 +176,5 @@ own build, is not in the image. The catalog has its plan
 got; INDEX lists it under Recipes. Build it here with `sudo oath build
 plan:<name>`, then `oath set pkg:<name> present=true` and apply: the
 pin refuses a pack that is not the build host's. `pkg:claude-code`
-(`claude`), `pkg:codex` and `pkg:grok-build` are recipes.
+(`claude`), `pkg:codex`, `pkg:grok-build` and `pkg:antigravity-cli`
+(`agy`) are recipes.

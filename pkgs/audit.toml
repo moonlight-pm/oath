@@ -33,6 +33,13 @@ compare_tag = "v{version}"
 [alsa-lib.not_affected]
 "CVE-2026-96674" = "in src/topology/ctl.c (the record's lines): build.sh configures --disable-topology, so libasound has no topology code"
 
+[antigravity-cli]
+names = ["antigravity"]
+repo = "https://github.com/google-antigravity/antigravity-cli"
+tag = "{version}"
+skip = "Google's own binary: no CPE yet; its CVEs come from Google's notes"
+no_compare = "the vendor's build, not its source: there is no tree to set it against"
+
 [at-spi2-core]
 cpe = "cpe:2.3:a:gnome:at-spi2-core"
 repo = "https://gitlab.gnome.org/GNOME/at-spi2-core"

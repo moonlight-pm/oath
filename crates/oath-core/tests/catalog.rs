@@ -187,6 +187,9 @@ fn seed_lists_host() {
         "pkg:grok-build",
         "pkg:grok-build-src",
         "plan:grok-build",
+        "pkg:antigravity-cli",
+        "pkg:antigravity-cli-src",
+        "plan:antigravity-cli",
         "net:net0",
         "ssh:local",
         "snap:current",
@@ -195,15 +198,15 @@ fn seed_lists_host() {
     }
     // Devices are discovered on the machine, not seeded.
     assert!(!ids.iter().any(|i| i.starts_with("dev:")), "{ids:?}");
-    // 6 svc and host, 38 packages, three recipes (two packages and a plan
+    // 6 svc and host, 38 packages, four recipes (two packages and a plan
     // each), net:net0, ssh:local, snap:current.
-    assert_eq!(ids.len(), 57, "{ids:?}");
+    assert_eq!(ids.len(), 60, "{ids:?}");
     let idx = cat.index_text().unwrap();
     assert!(idx.contains("You are on **Oath**"));
     assert!(idx.contains("`pkg`"));
     // The recipe (R23) is where an agent looks first.
     assert!(idx.contains("## Recipes"), "{idx}");
-    for plan in ["claude-code", "codex", "grok-build"] {
+    for plan in ["claude-code", "codex", "grok-build", "antigravity-cli"] {
         assert!(idx.contains(&format!("`sudo oath build plan:{plan}`")), "{idx}");
     }
     let host = cat.get(&"host:local".parse().unwrap()).unwrap();

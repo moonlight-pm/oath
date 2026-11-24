@@ -49,6 +49,7 @@ Do **not** edit `/etc` or random files. Use `oath`.
 
 These packages are not in the image: their licences do not allow redistribution, or (coding agents) the machine takes the vendor's own build. Each is a plan that fetches the vendor's file and builds the package on this machine.
 
+- `pkg:antigravity-cli` Antigravity CLI: Google's coding agent for the terminal. `sudo oath build plan:antigravity-cli`, then `sudo oath set pkg:antigravity-cli present=true` and `sudo oath apply pkg:antigravity-cli`.
 - `pkg:claude-code` Claude Code: Anthropic's agentic coding tool for the terminal. `sudo oath build plan:claude-code`, then `sudo oath set pkg:claude-code present=true` and `sudo oath apply pkg:claude-code`.
 - `pkg:codex` Codex: OpenAI's coding agent for the terminal. `sudo oath build plan:codex`, then `sudo oath set pkg:codex present=true` and `sudo oath apply pkg:codex`.
 - `pkg:grok-build` Grok Build: xAI's coding agent for the terminal. `sudo oath build plan:grok-build`, then `sudo oath set pkg:grok-build present=true` and `sudo oath apply pkg:grok-build`.

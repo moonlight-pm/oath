@@ -110,7 +110,7 @@ fn plant(project: &Path, canary: &Path, home: &Path) -> Result<(), String> {
 /// the report says how many of them are really there.
 fn sensitive(home: &Path) -> Vec<PathBuf> {
     let mut paths: Vec<PathBuf> = [
-        ".ssh", ".gnupg", ".config", ".claude", ".claude.json", ".codex", ".grok", ".agents",
+        ".ssh", ".gnupg", ".config", ".claude", ".claude.json", ".codex", ".grok", ".gemini", ".agents",
         ".gitconfig", ".zsh_history", ".cargo/credentials.toml", ".cargo/config.toml",
         ".local/share/writ", ".local/bin", "Projects",
     ]

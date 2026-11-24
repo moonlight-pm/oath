@@ -60,7 +60,7 @@ A pack's `needs` lists the libraries it loads, so apply refuses removing
 `pkg:mbedtls` while `pkg:curl` is present.
 
 Also in the catalog, with `present=false`: the recipes `pkg:claude-code`,
-`pkg:codex` and `pkg:grok-build` and their `-src` packs. Their plans are there
+`pkg:codex`, `pkg:grok-build` and `pkg:antigravity-cli` and their `-src` packs. Their plans are there
 too; a machine builds each one itself (see Recipes).
 
 The `desk` profile extends `base` with the packages below and the libraries and
@@ -743,8 +743,8 @@ a newer Claude Code is a new pin in `pkgs/claude-code`, and `oath update`
 builds it on a machine where `pkg:claude-code` is present, as for every
 recipe the owner built (below). Its settings, login and history are under `/home/.claude` and `/home/.claude.json`.
 
-Codex (OpenAI) and Grok Build (xAI) are recipes the same way (R31),
-though their licences would allow a pack:
+Codex (OpenAI), Grok Build (xAI) and Antigravity CLI (Google) are recipes
+the same way (R31), though the first two's licences would allow a pack:
 
 ```
 sudo oath build plan:codex               # fetches 144 MB from github.com
@@ -756,6 +756,11 @@ sudo oath build plan:grok-build          # fetches 57 MB from x.ai
 sudo oath set pkg:grok-build present=true
 sudo oath apply pkg:grok-build
 grok --version                           # grok 1.0.70 (f50904eaee6c)
+
+sudo oath build plan:antigravity-cli     # fetches 92 MB from github.com
+sudo oath set pkg:antigravity-cli present=true
+sudo oath apply pkg:antigravity-cli
+agy --version
 ```
 
 `codex` is OpenAI's package as it ships, with its own ripgrep and its
@@ -768,6 +773,15 @@ its updater has. `grok login` signs in; its settings are under
 `/home/.grok`. xAI publishes no checksum or signature, so the pin is
 what the build host downloaded. Grok looks for `bwrap` only under
 `/usr`, so on Oath it runs commands without its sandbox.
+
+`agy` is Google's static build, with its own ripgrep. It starts with
+`AGY_CLI_DISABLE_AUTO_UPDATE=true`, its updater's only switch, and reads
+`pkg:certs`' roots unless `SSL_CERT_FILE` names others. Its settings
+are under `/home/.gemini` (`antigravity-cli/settings.json`). Google signs neither the release nor
+its installer's manifest, so the pin is the sha256 GitHub lists for
+Google's release asset, which is the file Google's own installer
+fetches. By Google's terms, it sends your interactions to Google unless
+you opt out in its settings.
 
 A recipe has no head: `oath add` and `oath new pkg:<name>` with no fields refuse it,
 and `oath ls --origin` ends its line with ``(a recipe: `oath build` makes it here)``.
