@@ -21,7 +21,7 @@
     },
     {
       "id": "pkg:elfutils",
-      "hash": "sha256-1ea5c6282c4bca5122a78116f13c6fc9985ff0c650f45525001f511eeb30a243"
+      "hash": "sha256-354127f05a078b8a09b145188bccb9db413202c4c00972f5a404d6a0e234b145"
     },
     {
       "id": "pkg:findutils",
@@ -37,7 +37,7 @@
     },
     {
       "id": "pkg:glibc",
-      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
+      "hash": "sha256-1ed9796249816174728d25ac7214b9068124eec87cd129272b31073e8b34f31a"
     },
     {
       "id": "pkg:gmp",
@@ -53,7 +53,7 @@
     },
     {
       "id": "pkg:linux-build",
-      "hash": "sha256-3ab07f1cec36b792df53cca7057edb41231edbb2ff5ade2fdb25327eb59bc105"
+      "hash": "sha256-05a766dc0cc0816eee9b526fa9987abd8eb9641b44f14997aa6c3798ff0bb58d"
     },
     {
       "id": "pkg:make",
@@ -89,7 +89,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
+      "hash": "sha256-e4b3a1f3a6fe5a19497e8bb5235818af51a9897607f01baf598b398489cfea93"
     },
     {
       "id": "pkg:zstd",
