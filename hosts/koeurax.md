@@ -16,9 +16,18 @@ Overwrite this file when facts change; do not append a diary.
   `ibt-1040-0041`): controller up since 2026-11-08. An Xbox Series pad
   (`045E:0B13`, `A8:8C:3E:64:E6:B5`) is paired and trusted over Bluetooth
   LE that day; Steam sees it, and no game has been seen using it.
-  Kora's Logitech POP Icon Keys (`D9:1C:B0:DF:3C:9C`) and POP Mouse
-  (`D9:A5:29:17:BC:0F`) are bonded and trusted over LE (Sola, 2026-11-24),
-  `WakeAllowed` in BlueZ, her 2.4 GHz receiver unplugged. They do not wake
+  Kora's Logitech POP Icon Keys and POP Mouse are bonded and trusted over
+  LE, her 2.4 GHz receiver unplugged: first by Sola (`…3C:9C`, `…BC:0F`),
+  then re-paired by Joshua on 2026-11-24 (`D9:1C:B0:DF:3C:9D`,
+  `D9:A5:29:17:BC:11`; a Logitech device takes a new address at each
+  pairing), after they stopped reconnecting after a sleep. The cause was
+  the controller resolving addresses: their directed advertising never
+  reached the host. Since generation 15 (2026-11-24) `svc:bluetooth` runs
+  `bluetoothd -f /run/bluetooth-main.conf`, which its exec writes with
+  `[LE] CentralAddressResolution = 0`, and both reconnect after a sleep
+  (tested that day: a 60 s sleep, a key and the mouse); when a release
+  carries `/etc/bluetooth/main.conf` with the same setting, its exec goes
+  back to the seed's. They do not wake
   it from S3 (2026-11-24, three sleeps with the adapter's USB device `1-14`
   and its root hub armed by hand): the kernel set the controller to scan
   passively for its accept list (`Controller Suspended`, state 2), yet no

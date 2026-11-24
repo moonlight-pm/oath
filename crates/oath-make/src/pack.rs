@@ -282,6 +282,14 @@ pub fn build(root: &Path, out: &Path, tools: &Tools, profile: &str) -> Result<Ou
         fs::create_dir_all(stage.join("etc/egl"))?;
         symlink(NVIDIA_EGL_PLATFORMS, stage.join("etc/egl/egl_external_platform.d"))?;
     }
+    // bluetoothd's defaults but one: with the controller resolving
+    // addresses, a Logitech keyboard's or mouse's directed advertising
+    // after a sleep never reaches the host (BlueZ issue 1138; koeurax's
+    // AX211, 2026-11-24), so it does not reconnect until re-paired.
+    if wanted.iter().any(|n| n == "bluez") {
+        fs::create_dir_all(stage.join("etc/bluetooth"))?;
+        fs::write(stage.join("etc/bluetooth/main.conf"), BLUETOOTH_MAIN_CONF)?;
+    }
     fs::create_dir_all(stage.join("var/run"))?;
     fs::create_dir_all(stage.join("var/lib/dhcpcd"))?;
     // void's home (R36): empty, the chroot of sshd's and dhcpcd's
@@ -630,6 +638,14 @@ fn pin_run_needs(oath_root: &Path, needs: &BTreeSet<(String, String)>) -> Result
 
 /// Where `pkg:nvidia` keeps EGL's external platforms (R89).
 const NVIDIA_EGL_PLATFORMS: &str = "/oath/store/pkg/nvidia/live/share/egl/egl_external_platform.d";
+
+/// `/etc/bluetooth/main.conf`: BlueZ's defaults, with the host resolving
+/// LE addresses rather than the controller (see `pack`).
+const BLUETOOTH_MAIN_CONF: &str = "# Oath's: an update replaces it. BlueZ's defaults but one.\n\
+# With the controller resolving addresses, a Logitech keyboard or mouse\n\
+# does not reconnect after a sleep (BlueZ issue 1138).\n\
+[LE]\n\
+CentralAddressResolution = 0\n";
 
 /// R23: a recipe the profile names goes in as its plan, not its pack. The
 /// plan is filed in the image's store and pinned (`plan:<name>`);

@@ -42,6 +42,7 @@ pub const ROOT_FILES: &[&str] = &[
     "etc/nsswitch.conf",
     "etc/ssh/ssh_config",
     "etc/egl",
+    "etc/bluetooth/main.conf",
     "sbin/init",
     "bin/sudo",
 ];

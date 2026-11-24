@@ -266,7 +266,14 @@ R36; the desk's `host:local.env` names it in `DBUS_SYSTEM_BUS_ADDRESS`,
 since 2026-10-30, for clients that otherwise look under `/var/run`, as
 zbus does) reads its own policy and BlueZ's, from `pkg:bluez`'s slot;
 `svc:bluetooth` runs `bluetoothd` as root (its state in
-`/var/lib/bluetooth`). `bluetoothctl` pairs and connects. PipeWire's
+`/var/lib/bluetooth`). `bluetoothctl` pairs and connects. Its
+`/etc/bluetooth/main.conf` will be the image's, which an update replaces
+(in master since 2026-11-24, not yet released): BlueZ's defaults but
+`[LE] CentralAddressResolution = 0`. With the controller resolving
+addresses, a Logitech keyboard's and mouse's directed advertising after a
+sleep never reached the host on koeurax's AX211, so they did not
+reconnect (BlueZ issue 1138, and Fedora's bug 2494734 on the same
+controller); with the host resolving them, they do. PipeWire's
 Bluetooth plugin plays and records through it (A2DP with SBC; HSP and
 HFP of its own), and WirePlumber, which wants the system bus, makes a
 node for each device; a Bluetooth LE controller or keyboard is an input
