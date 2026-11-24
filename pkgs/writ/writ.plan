@@ -17,7 +17,7 @@
     },
     {
       "id": "pkg:curl",
-      "hash": "sha256-cae892668dcd4fb9afae6d31cb8545ebe3dc044429170c049f2264343264d38f"
+      "hash": "sha256-747442f3322292d2c56f66e9b34007da671fea0ae08d2f4734b9d2a18978f03f"
     },
     {
       "id": "pkg:diffutils",
@@ -37,7 +37,7 @@
     },
     {
       "id": "pkg:glibc",
-      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
+      "hash": "sha256-1ed9796249816174728d25ac7214b9068124eec87cd129272b31073e8b34f31a"
     },
     {
       "id": "pkg:gmp",
@@ -93,7 +93,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
+      "hash": "sha256-e4b3a1f3a6fe5a19497e8bb5235818af51a9897607f01baf598b398489cfea93"
     }
   ],
   "run_needs": [
@@ -103,7 +103,7 @@
     },
     {
       "id": "pkg:curl",
-      "hash": "sha256-cae892668dcd4fb9afae6d31cb8545ebe3dc044429170c049f2264343264d38f"
+      "hash": "sha256-747442f3322292d2c56f66e9b34007da671fea0ae08d2f4734b9d2a18978f03f"
     }
   ]
 }

@@ -25,7 +25,7 @@
     },
     {
       "id": "pkg:elfutils-i386",
-      "hash": "sha256-b8bd4de9f6df35dcec756a28220849e466188db09f664f956f5a8eeeb8d4a2fe"
+      "hash": "sha256-d5f05a697f2181417daf6fce04dc3b5e3800fe1e72ee8290396fc4ae45f315ec"
     },
     {
       "id": "pkg:expat",
@@ -53,11 +53,11 @@
     },
     {
       "id": "pkg:glibc",
-      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
+      "hash": "sha256-1ed9796249816174728d25ac7214b9068124eec87cd129272b31073e8b34f31a"
     },
     {
       "id": "pkg:glibc-i386",
-      "hash": "sha256-ab5d0da78c6ddf71ce2f3190dcf373244b2c53e2e4e0cc097843d8248cd13fc8"
+      "hash": "sha256-286ce3a80e844b093245b77d13ad327ff25971e6b8496810c9c69f660e562066"
     },
     {
       "id": "pkg:glslang",
@@ -81,11 +81,11 @@
     },
     {
       "id": "pkg:libffi",
-      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
+      "hash": "sha256-c3b804c8087d2086a81f36ea16879791e540f87e0eb6b88d59d048d6bdb180ab"
     },
     {
       "id": "pkg:libffi-i386",
-      "hash": "sha256-afaebdcf88387f34371ca89f02f7a1bc066d7260a5d8ca00315711a59af4e7b2"
+      "hash": "sha256-1137e51a96992c12b156fef512d878d15e2a65955eb46ee321f3b4183f13e0c2"
     },
     {
       "id": "pkg:libglvnd-i386",
@@ -157,11 +157,11 @@
     },
     {
       "id": "pkg:pkgconf",
-      "hash": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f"
+      "hash": "sha256-e18e3c73e78e7c5b19215085d665a4963dc92901b34fd1cb4312fac3c3d35918"
     },
     {
       "id": "pkg:python",
-      "hash": "sha256-6de9caef5c674adf4847dd92afa404643b3d17e9964fcfc88593fd1666209d1d"
+      "hash": "sha256-50ed40c4f8df419896048862c55e1907ae686404320ae2462a41ff4836d62745"
     },
     {
       "id": "pkg:python-mako",
@@ -209,11 +209,11 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
+      "hash": "sha256-e4b3a1f3a6fe5a19497e8bb5235818af51a9897607f01baf598b398489cfea93"
     },
     {
       "id": "pkg:zlib-i386",
-      "hash": "sha256-6f542c81b61f71225f3e32e9021db741294178200b1f52c460a337ebdd3ebde1"
+      "hash": "sha256-d5404b751d3e7b744e3a45dc030ced21527d0aee3d742e5544c18cc770af1544"
     },
     {
       "id": "pkg:zstd",
@@ -227,7 +227,7 @@
   "run_needs": [
     {
       "id": "pkg:elfutils-i386",
-      "hash": "sha256-b8bd4de9f6df35dcec756a28220849e466188db09f664f956f5a8eeeb8d4a2fe"
+      "hash": "sha256-d5f05a697f2181417daf6fce04dc3b5e3800fe1e72ee8290396fc4ae45f315ec"
     },
     {
       "id": "pkg:expat-i386",
@@ -271,7 +271,7 @@
     },
     {
       "id": "pkg:zlib-i386",
-      "hash": "sha256-6f542c81b61f71225f3e32e9021db741294178200b1f52c460a337ebdd3ebde1"
+      "hash": "sha256-d5404b751d3e7b744e3a45dc030ced21527d0aee3d742e5544c18cc770af1544"
     },
     {
       "id": "pkg:zstd-i386",

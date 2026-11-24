@@ -37,7 +37,7 @@
     },
     {
       "id": "pkg:freetype",
-      "hash": "sha256-dfd9298125c5457647d50e4f1c9020d3c112fa5d014ded8491b2b21f748fd697"
+      "hash": "sha256-af7808f6db041c3467a5f80968ef343f681def4d65931eb5ce6155443afce78b"
     },
     {
       "id": "pkg:gawk",
@@ -49,11 +49,11 @@
     },
     {
       "id": "pkg:glib",
-      "hash": "sha256-d54a5306276245833ff98fe2b85ed125e1f207e7d56a0f776ddb6f7643d588e7"
+      "hash": "sha256-3ab7c3552ed138bcfef35597707b11f6495390f9b13acbbe4af72d917fec413e"
     },
     {
       "id": "pkg:glibc",
-      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
+      "hash": "sha256-1ed9796249816174728d25ac7214b9068124eec87cd129272b31073e8b34f31a"
     },
     {
       "id": "pkg:gmp",
@@ -73,7 +73,7 @@
     },
     {
       "id": "pkg:libffi",
-      "hash": "sha256-7df9f974146d91fbfecbacfbdf8d1773552e007bc8c0ce2e039dee5746f4aaef"
+      "hash": "sha256-c3b804c8087d2086a81f36ea16879791e540f87e0eb6b88d59d048d6bdb180ab"
     },
     {
       "id": "pkg:libglvnd",
@@ -129,7 +129,7 @@
     },
     {
       "id": "pkg:pkgconf",
-      "hash": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f"
+      "hash": "sha256-e18e3c73e78e7c5b19215085d665a4963dc92901b34fd1cb4312fac3c3d35918"
     },
     {
       "id": "pkg:qtbase-src",
@@ -157,7 +157,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
+      "hash": "sha256-e4b3a1f3a6fe5a19497e8bb5235818af51a9897607f01baf598b398489cfea93"
     },
     {
       "id": "pkg:zstd",
@@ -175,7 +175,7 @@
     },
     {
       "id": "pkg:freetype",
-      "hash": "sha256-dfd9298125c5457647d50e4f1c9020d3c112fa5d014ded8491b2b21f748fd697"
+      "hash": "sha256-af7808f6db041c3467a5f80968ef343f681def4d65931eb5ce6155443afce78b"
     },
     {
       "id": "pkg:gcc",
@@ -203,7 +203,7 @@
     },
     {
       "id": "pkg:zlib",
-      "hash": "sha256-32c79818e429d2bf8eca16c9d94b702d29d6ef3991fc01942636ef450994e8fa"
+      "hash": "sha256-e4b3a1f3a6fe5a19497e8bb5235818af51a9897607f01baf598b398489cfea93"
     },
     {
       "id": "pkg:zstd",

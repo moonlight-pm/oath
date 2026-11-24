@@ -37,7 +37,7 @@
     },
     {
       "id": "pkg:glibc",
-      "hash": "sha256-7eb1564ed48058858efcd82e9786e63dccec1a8e7ad86078ace2a41af797a092"
+      "hash": "sha256-1ed9796249816174728d25ac7214b9068124eec87cd129272b31073e8b34f31a"
     },
     {
       "id": "pkg:gmp",
@@ -81,7 +81,7 @@
     },
     {
       "id": "pkg:pkgconf",
-      "hash": "sha256-a7fad44d0dd604cd9b7da10d2204eee74ad299cb2bf0240e47f2bd21182b9c6f"
+      "hash": "sha256-e18e3c73e78e7c5b19215085d665a4963dc92901b34fd1cb4312fac3c3d35918"
     },
     {
       "id": "pkg:sed",
