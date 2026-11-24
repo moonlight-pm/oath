@@ -7,6 +7,16 @@
     "product": "sha256-28dceee11a3bebc5cb12fa2e70d1bc7448ed2842090887874e47fc192d5c9137",
     "run": []
   },
+  "antigravity-cli": {
+    "version": "1.5.10",
+    "license": "LicenseRef-Google-Antigravity-Terms",
+    "by": "plan",
+    "plan": "sha256-53a89c4f457f3a76c8823cbe686b88a6ffc48f63224b322807f8b9e006d2bc22",
+    "product": "sha256-2b87d7de93ed92c343fbde81932d07fcf7ad1ab4ca877f32e64d8a8f13dde6e7",
+    "run": [
+      "certs"
+    ]
+  },
   "at-spi2-core": {
     "version": "2.62.1",
     "license": "LGPL-2.1-or-later",

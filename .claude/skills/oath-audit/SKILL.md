@@ -144,8 +144,9 @@ backport with the release or upstream's patch, and say so.
 - **Patches** go in `pkgs/<name>/patches/`; check `build.sh` applies them
   (most apply every `patches/*.patch` in order; if not, add the `patch`
   line there).
-- **Recipes** (claude-code, codex, grok-build, nvidia, steam) are vendor
-  binaries checked against the vendor's own signature: upgrade as their
+- **Recipes** (antigravity-cli, claude-code, codex, grok-build, nvidia, steam)
+  are vendor binaries checked against the vendor's own signature where there
+  is one: upgrade as their
   `pkg.toml` does it. **Packs from elsewhere** (Sola's) are not Oath's:
   report them; never edit their pins in `crates/oath-core/seed/`.
 - Then `cargo make pkgs -j 8`: it rebuilds each package whose plan

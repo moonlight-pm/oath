@@ -1,0 +1,21 @@
+# Antigravity CLI (`agy`), Google's coding agent: the vendor's Linux build
+# (R7), a static (musl) Go executable with its own ripgrep, from the
+# releases at github.com/google-antigravity, which carry the same bytes as
+# the bucket Google's installer (antigravity.google/cli/install.sh) reads.
+# A recipe (R31): like pkg:claude-code, each machine fetches the binary from
+# github.com and builds it with `oath build plan:antigravity-cli`. Google's
+# terms grant no right to redistribute it.
+version = "1.5.10"
+license = "LicenseRef-Google-Antigravity-Terms"
+description = "Antigravity CLI: Google's coding agent for the terminal."
+home = "https://antigravity.google/product/antigravity-cli"
+category = "agents"
+purl = "pkg:github/google-antigravity/antigravity-cli@1.5.10"
+recipe = "Google's own build, which each machine fetches, as it does Claude Code's (R31)"
+build = ["bash", "coreutils", "grep", "tar", "gzip", "glibc"]
+run = ["certs"]
+
+[[source]]
+url = "https://github.com/google-antigravity/antigravity-cli/releases/download/1.5.10/agy_cli_linux_x64_musl.tar.gz"
+sha256 = "b061a370dba1083de700c153d4b29df807ff4f537ee2a58de29d5f1b5f33a76f"
+unsigned = "Google signs neither the release nor its installer's manifest, which gives a sha512 over HTTPS only; the pin is the sha256 GitHub lists for the asset"
