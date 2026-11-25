@@ -1,8 +1,8 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source libXfont2-2.0.9.tar.xz f042a370666815e7b941e9b7019024755bd1c6c2954afbfa515af378251799e2
-tag libXfont2-2.0.9 commit 975cc6526e892c6fad8fa49d0fef58565fbaa003 tree 915c01c9491ce4586d9a1b6ccde646e013b68fd9
+source libXfont2-2.0.10.tar.xz cef1f4ad9cd69f439bb1ac484bdc8f9d7f8e70215b92d8ca86b96e31513e5f9c
+tag libXfont2-2.0.10 commit 112d4254f13f2372bdfd1da9ad1eff950cef22b9 tree 586f0791bab0b6b33bccc10bae3d650109b40db3
 signed pgp 3C2C43D9447D5938EF4551EBE23B7E70B467F0BF
-same 103
+same 107
 only-in-tag 4
 from automake 2
 from gettext 1

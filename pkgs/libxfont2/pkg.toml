@@ -1,14 +1,14 @@
-version = "2.0.9"
+version = "2.0.10"
 license = "MIT AND X11 AND HPND-sell-variant AND BSD-2-Clause"
 description = "libXfont2, shared, without FreeType: Xwayland's built-in fonts."
 home = "https://www.x.org/"
 category = "x11"
-purl = "pkg:generic/libXfont2@2.0.9"
+purl = "pkg:generic/libXfont2@2.0.10"
 build = ["pkgconf", "xorgproto", "xtrans", "libfontenc", "zlib"]
 run = ["libfontenc", "zlib"]
 
 [[source]]
-url = "https://xorg.freedesktop.org/archive/individual/lib/libXfont2-2.0.9.tar.xz"
-sha256 = "f042a370666815e7b941e9b7019024755bd1c6c2954afbfa515af378251799e2"
-sig = "https://xorg.freedesktop.org/archive/individual/lib/libXfont2-2.0.9.tar.xz.sig"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libXfont2-2.0.10.tar.xz"
+sha256 = "cef1f4ad9cd69f439bb1ac484bdc8f9d7f8e70215b92d8ca86b96e31513e5f9c"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libXfont2-2.0.10.tar.xz.sig"
 key = "hutterer"

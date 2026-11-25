@@ -768,7 +768,7 @@ compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxfixes"
 compare_tag = "libXfixes-{version}"
 
 [libxfont2]
-cpe = "cpe:2.3:a:x:libxfont"
+cpe = "cpe:2.3:a:x.org:libxfont"
 compare_repo = "https://gitlab.freedesktop.org/xorg/lib/libxfont"
 compare_tag = "libXfont2-{version}"
 
