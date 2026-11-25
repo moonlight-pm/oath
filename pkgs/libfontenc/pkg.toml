@@ -1,14 +1,14 @@
-version = "1.1.9"
+version = "1.1.10"
 license = "MIT"
 description = "libfontenc, shared: font encodings for libXfont2."
 home = "https://www.x.org/"
 category = "x11"
-purl = "pkg:generic/libfontenc@1.1.9"
+purl = "pkg:generic/libfontenc@1.1.10"
 build = ["pkgconf", "xorgproto", "zlib"]
 run = ["zlib"]
 
 [[source]]
-url = "https://xorg.freedesktop.org/archive/individual/lib/libfontenc-1.1.9.tar.xz"
-sha256 = "9d8392705cb10803d5fe1d27d236cbab3f664e26841ce01916bbbe430cf273e2"
-sig = "https://xorg.freedesktop.org/archive/individual/lib/libfontenc-1.1.9.tar.xz.sig"
-key = "coopersmith"
+url = "https://xorg.freedesktop.org/archive/individual/lib/libfontenc-1.1.10.tar.xz"
+sha256 = "daa186a49e3cc2b6fc585ca09971351e6f010f618abc6a164eda82e42e4aa4d6"
+sig = "https://xorg.freedesktop.org/archive/individual/lib/libfontenc-1.1.10.tar.xz.sig"
+key = "hutterer"

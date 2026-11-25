@@ -1,16 +1,20 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source libfontenc-1.1.9.tar.xz 9d8392705cb10803d5fe1d27d236cbab3f664e26841ce01916bbbe430cf273e2
-tag libfontenc-1.1.9 commit 780d1f6f192a331de7b298a96e23ebc44d2a884b tree cc5ccbbab633ffcf7fd1ccad8d026012a675d66c
-signed pgp 3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2
-same 14
+source libfontenc-1.1.10.tar.xz daa186a49e3cc2b6fc585ca09971351e6f010f618abc6a164eda82e42e4aa4d6
+tag libfontenc-1.1.10 commit eb42c925cab00d235b05e649eb4fb4a1858b67b9 tree 7962edb771a8af0c8d4ae4ca3950f74436080949
+signed pgp 3C2C43D9447D5938EF4551EBE23B7E70B467F0BF
+same 17
 only-in-tag 3
 from automake 1
-from gettext 2
-from gnulib 6
-from libtool 4
+from gettext 1
+from gnulib 4
+from libtool 3
 adds ChangeLog
 adds Makefile.in
 adds aclocal.m4
+adds config.guess
 adds config.h.in
+adds config.sub
 adds configure
+adds ltmain.sh
+adds m4/libtool.m4
 adds src/Makefile.in
