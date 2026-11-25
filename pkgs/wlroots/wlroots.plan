@@ -81,7 +81,7 @@
     },
     {
       "id": "pkg:libfontenc",
-      "hash": "sha256-c15e3a6dfb55cab94f5702332c3ff31a0b227a27c39c30d4668dc9a36455a5b4"
+      "hash": "sha256-15762d3f96fb2cf29a636e3638673ecf708dee5b91b9c459db9559c54ba648e6"
     },
     {
       "id": "pkg:libglvnd",
@@ -121,7 +121,7 @@
     },
     {
       "id": "pkg:libxfont2",
-      "hash": "sha256-ef1a10032903be3c24f6056bb1a9a1f4ddb0ac7d01dc02a6c6ab3a31a9ec13a6"
+      "hash": "sha256-0753acd2303ecb02eac9779ea0d7b775006c5aa4f0be2947d0ac7f8b07cf9fa6"
     },
     {
       "id": "pkg:libxkbcommon",

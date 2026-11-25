@@ -257,11 +257,11 @@
     "run": []
   },
   "codex": {
-    "version": "0.169.0",
+    "version": "0.170.0",
     "license": "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib",
     "by": "plan",
-    "plan": "sha256-8ef28750925cc45e1e9eb8f24fdb8bba6aa98ad1e98f6ad09fa943f0ad885871",
-    "product": "sha256-5055934a07196c2579da1a66ea3ad21a06b46a7a797e7ed993dbd35218b7c53b",
+    "plan": "sha256-6019fd1d26c9bc485eea05503ef3ddc22bf6040b80afba6cde851b36ec2d199f",
+    "product": "sha256-45cf08cb8c4edefcf6818d5e060e9052da76cba6dcf6b8bfa9cd087eb5790bce",
     "run": []
   },
   "coreutils": {
@@ -830,11 +830,11 @@
     "run": []
   },
   "libfontenc": {
-    "version": "1.1.9",
+    "version": "1.1.10",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-12c34b4083f004edf48baac65927fc4c6bbb95808acc1bf4d389bac9c65f47f6",
-    "product": "sha256-c15e3a6dfb55cab94f5702332c3ff31a0b227a27c39c30d4668dc9a36455a5b4",
+    "plan": "sha256-46a148c7811cdfec3a3e4346b0a0b23cd762b031c84d2c448e83bbec7c3abb6a",
+    "product": "sha256-15762d3f96fb2cf29a636e3638673ecf708dee5b91b9c459db9559c54ba648e6",
     "run": [
       "zlib"
     ]
@@ -1096,11 +1096,11 @@
     ]
   },
   "libxfont2": {
-    "version": "2.0.9",
+    "version": "2.0.10",
     "license": "MIT AND X11 AND HPND-sell-variant AND BSD-2-Clause",
     "by": "plan",
-    "plan": "sha256-1536090d2bcfc36f22fe0d3ed631e667aec258b041a759ce4f7f0b3836ce38f8",
-    "product": "sha256-ef1a10032903be3c24f6056bb1a9a1f4ddb0ac7d01dc02a6c6ab3a31a9ec13a6",
+    "plan": "sha256-52206be5610a13302d1b52958db5bdd239fa3f7c94598cd16aa844ce67e74b1b",
+    "product": "sha256-0753acd2303ecb02eac9779ea0d7b775006c5aa4f0be2947d0ac7f8b07cf9fa6",
     "run": [
       "libfontenc",
       "zlib"
@@ -1356,11 +1356,11 @@
     ]
   },
   "mysql": {
-    "version": "9.7.4",
+    "version": "9.7.4.1",
     "license": "GPL-2.0-only WITH Universal-FOSS-exception-1.0",
     "by": "plan",
-    "plan": "sha256-a8a1c978c049f9c36ddd05c0474bebd3e78269cf22d3435795e61c1ef75d4d63",
-    "product": "sha256-8b6abccb1c2edb645d86467be8659801d32c212a37c3b5e61a8f59736eb2aa4b",
+    "plan": "sha256-0f1200d1f3a6bf74869fb62c1b7dee49ec07a6b359d57c0719de3fe75cf09a5b",
+    "product": "sha256-4862a18f0ad720f1a719c7d4de67360d6b89984f8d5e790d7403dc366711cbe2",
     "run": [
       "gcc",
       "icu",
@@ -1796,8 +1796,8 @@
     "version": "0.1.0",
     "license": "GPL-3.0-only",
     "by": "plan",
-    "plan": "sha256-a0120831276e1968fc2b053e6e023cf91678306c7fc3c175738c1353d80cada2",
-    "product": "sha256-ae3ea11ce0706f6981632aaf7db65a30f0de365d6d2310414e11d924f8f3af90",
+    "plan": "sha256-1ca3910eacca2e2995622314094c7adfc86978fce82e0883fba59039da43e3fe",
+    "product": "sha256-e3ba1bf143fc28fb8ca6abc1498d3c8bee6986d7dd7e5feccaebef50a172ca12",
     "run": [
       "wlroots",
       "wayland",
@@ -2027,7 +2027,7 @@
     "version": "0.20.2",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-1734d7cbe5186d82a0dae2ee0ce05cd8627f326ea886f0e383aea13c3fdc6be9",
+    "plan": "sha256-f8e901412d4d83f7a969907d0a00a737e117148d9360afeebf8d55c9b440d422",
     "product": "sha256-1f67a15653ee58882ebf62bf915a9e513147b56d72722767d3e09577a52389fc",
     "run": [
       "wayland",
@@ -2050,8 +2050,8 @@
     "version": "0.1.0",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-dadafae92b10cabff243b436268a4f0b98510ce647c2cd3964196d537d84fa99",
-    "product": "sha256-bb4194f91017cd9e0c792a49de4b1cebdaf174d8beec81f0191d41534f618e39",
+    "plan": "sha256-ded87a5204d4a0d9bae25501e828504cd3737f923aadc98f9ecd02e85df30789",
+    "product": "sha256-e25c5c961c225c8c4a4c73c9d00ad9ad93f3767801e680e7890f2ea66df4fadc",
     "run": [
       "bubblewrap",
       "curl"
@@ -2125,7 +2125,7 @@
     "version": "24.1.15",
     "license": "MIT AND X11 AND HPND-sell-variant AND BSD-3-Clause",
     "by": "plan",
-    "plan": "sha256-3fd768b29fbedbb85c813ab076c4e3d178c7658b880431c92ad90b27a8f3c5a0",
+    "plan": "sha256-f4ca55f510f293832b97bf8723547729fb3f9b7cf406c053c700a2916b70a2f5",
     "product": "sha256-e3ef32b1c7a1f4db8e5ad1c79eec93d11a35696bd9da56d9e934514a6cb579c5",
     "run": [
       "libxau",
