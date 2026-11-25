@@ -49,10 +49,13 @@ rm -f /out/bin/mysqld_multi /out/bin/mysqldumpslow
 	printf '\n]\n'
 } >/out/components.json
 
-# It runs: a server of its own in /tmp, reached by its own client.
+# It runs: a server of its own in /tmp, reached by its own client. An update
+# release (9.7.4.1) is named so only in its package: the server reports the
+# release it updates.
 export LD_LIBRARY_PATH="/out/$LIBDIR:/out/$LIBDIR/mysql/private"
-/out/bin/mysqld --version | grep -qF " $VERSION "
-/out/bin/mysql --version | grep -qF " $VERSION "
+server=$(echo "$VERSION" | cut -d. -f1-3)
+/out/bin/mysqld --version | grep -qF " $server "
+/out/bin/mysql --version | grep -qF " $server "
 /out/bin/mysqld --no-defaults --initialize-insecure --user=root --datadir=/tmp/data \
 	--lc-messages-dir=/out/share/mysql
 /out/bin/mysqld --no-defaults --user=root --datadir=/tmp/data --socket=/tmp/s --port=0 \
@@ -62,6 +65,6 @@ for _ in $(seq 60); do
 	/out/bin/mysqladmin --no-defaults -uroot -S /tmp/s ping >/dev/null 2>&1 && break
 	sleep 1
 done
-/out/bin/mysql --no-defaults -uroot -S /tmp/s -Ne 'SELECT VERSION()' | grep -qx "$VERSION"
+/out/bin/mysql --no-defaults -uroot -S /tmp/s -Ne 'SELECT VERSION()' | grep -qx "$server"
 /out/bin/mysqladmin --no-defaults -uroot -S /tmp/s shutdown
 wait

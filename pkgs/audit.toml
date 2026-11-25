@@ -943,12 +943,17 @@ compare_tag = "{version}"
 
 [mysql]
 cpe = "cpe:2.3:a:oracle:mysql"
+# Oracle's records name the product "MySQL Server" and write its versions as
+# one string per range ("9.7.0-9.7.4"), which the scan reads as one version.
+names = ["mysql server"]
 repo = "https://github.com/mysql/mysql-server"
 tag = "mysql-{version}"
 # 9.7 is the LTS line, the last before calendar versioning; 26.7 and 26.10 are
 # Innovation releases (MySQL's manual; read 2026-11-10).
 series = "9.7"
-differs_because = "packaging/rpm-sles/mysql.spec.in: the tag adds SLES 16 Provides lines for the mysql and mysqlrouter users, in an RPM spec this build does not read (read 2026-11-09)"
+
+[mysql.age_because]
+source = "9.7.4.1 (released 2026-11-24) is the 9.7 line's only release with the fixes of Oracle's Critical Security Patch Update of November 2026 (oracle.com/security-alerts/cspunov2026.html, its MySQL appendix): CVE-2026-114952 (CVSS 9.1, the client programs, over the MySQL protocol with no authentication), CVE-2026-114949, 114950 and 114951 (7.2: replication, the optimizer, logging), CVE-2026-127428 (7.1, GIS) and CVE-2026-114953 (6.5, replication), each listed against 9.7.0 to 9.7.4"
 
 [nasm]
 cpe = "cpe:2.3:a:nasm:netwide_assembler"
