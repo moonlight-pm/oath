@@ -4,16 +4,16 @@
 # can hold: its readers would trust everything it ever issues. And what
 # distrust.txt names by fingerprint, which is ours, so a breach needs one line
 # and a new pack, not an upstream release. A newer list is a new NSS pin here.
-version = "3.132"
+version = "3.134"
 license = "MPL-2.0"
 description = "Oath's CA roots: Mozilla's, from NSS, less what it dates and pkgs/certs/distrust.txt names."
 home = "https://wiki.mozilla.org/CA"
 category = "security"
-purl = "pkg:generic/certs@3.132"
+purl = "pkg:generic/certs@3.134"
 build = ["python"]
 run = []
 
 [[source]]
-url = "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_132_RTM/src/nss-3.132.tar.gz"
-sha256 = "ee9cf4837ba801141a804321c4462ad8f452ff4314275c6d5108a6b05af227ff"
+url = "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_134_RTM/src/nss-3.134.tar.gz"
+sha256 = "bb3b300b457f44da9a9486917c3b33bbc5935ae3cdf60aa759a6880889439c50"
 unsigned = "Mozilla publishes NSS with SHA256SUMS files only, no signature"
