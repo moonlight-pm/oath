@@ -57,7 +57,7 @@
     },
     {
       "id": "pkg:icu",
-      "hash": "sha256-626c8f56b2c5ba2e280b66950cb7a3f850e4c042217cefada065ec43bfd8e740"
+      "hash": "sha256-4dbcec67a197925216b338a2ac2676c3832638b9dbd6e8b573affcf3bf5de7f0"
     },
     {
       "id": "pkg:m4",
@@ -123,7 +123,7 @@
     },
     {
       "id": "pkg:icu",
-      "hash": "sha256-626c8f56b2c5ba2e280b66950cb7a3f850e4c042217cefada065ec43bfd8e740"
+      "hash": "sha256-4dbcec67a197925216b338a2ac2676c3832638b9dbd6e8b573affcf3bf5de7f0"
     },
     {
       "id": "pkg:ncurses",

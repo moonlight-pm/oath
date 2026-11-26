@@ -653,8 +653,8 @@
     "version": "79.1",
     "license": "Unicode-3.0",
     "by": "plan",
-    "plan": "sha256-aabd3bbb9ea8efca24787b0970b5cf534a0a914aefa309281fe868c0f9f88f7e",
-    "product": "sha256-626c8f56b2c5ba2e280b66950cb7a3f850e4c042217cefada065ec43bfd8e740",
+    "plan": "sha256-f42c4859c33cefeb77d0531fa9beb1d6de10566482bea069929ad93aa753af23",
+    "product": "sha256-4dbcec67a197925216b338a2ac2676c3832638b9dbd6e8b573affcf3bf5de7f0",
     "run": [
       "gcc"
     ]
@@ -1243,8 +1243,8 @@
     "version": "b11960",
     "license": "MIT AND BSD-2-Clause AND (MIT OR Unlicense) AND (Unlicense OR MIT-0)",
     "by": "plan",
-    "plan": "sha256-9f142fc9f08ee9a08e7168849873de6280b5e140326fdcefeffb306f8953df51",
-    "product": "sha256-d107f63bb1c847ebe8ef924e5ddd57d4da6a6e15b5951f5df8868db1ddc3b5d0",
+    "plan": "sha256-c956b586a358fe1b43d0f777742e229b5eb51a3e1513417d323aeb0d08967f92",
+    "product": "sha256-67ead9928463316748e8621e63255a27de3b81675f41dcd9b4ee084b8dfaecf2",
     "run": [
       "gcc",
       "vulkan-loader"
@@ -1359,7 +1359,7 @@
     "version": "9.7.4.1",
     "license": "GPL-2.0-only WITH Universal-FOSS-exception-1.0",
     "by": "plan",
-    "plan": "sha256-0f1200d1f3a6bf74869fb62c1b7dee49ec07a6b359d57c0719de3fe75cf09a5b",
+    "plan": "sha256-f7aff0efb126441c880d417281a39bb83768cf42d2a7b2497311d93bbdb4510c",
     "product": "sha256-4862a18f0ad720f1a719c7d4de67360d6b89984f8d5e790d7403dc366711cbe2",
     "run": [
       "gcc",
@@ -1570,7 +1570,7 @@
     "version": "3.7.0",
     "license": "GPL-2.0-or-later",
     "by": "plan",
-    "plan": "sha256-c331ab60f97579d8d3a7e124716feecb50f85d7d384333473f8bb2f0f9303422",
+    "plan": "sha256-dccc57f1e874f1d7af7e422b321337c1d54aa0c066df07e3fde73caa64e9db08",
     "product": "sha256-294500ac9dc79a618e47aa306a19e06bc6cd00d8bc84802bfba656590fb8b738",
     "run": [
       "postgresql",
@@ -1585,7 +1585,7 @@
     "version": "18.7",
     "license": "PostgreSQL",
     "by": "plan",
-    "plan": "sha256-666383ac5787834297a9d4aeddb14f23887536461c9289ae41452504ec8eda4f",
+    "plan": "sha256-a4cfc94b282e4cf2aa0898ab12f6371b09959374eda8babf03e4cecb09a90e1b",
     "product": "sha256-5a91156cb03f6b7cb004e41bd5a0a69ea051a4c590d11b49dfec2ae91a7d6596",
     "run": [
       "gcc",
