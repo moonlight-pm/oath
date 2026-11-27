@@ -257,6 +257,11 @@ tag = "v{version}"
 "GHSA-5v9q-84cf-2ww4" = "libcups sends cupsd's root-owned certs/0 to an AF_LOCAL socket, reached through cupsd's CUPS-Create-Local-Printer (the advisory): build.sh builds libcups alone, so there is no scheduler and no certificate to send"
 "GHSA-f33q-qc2j-585m" = "cupsd's local certificates (scheduler/cert.c, scheduler/file.c) and the web interface's session ID (cgi-bin/var.c) (the advisory): build.sh builds libcups alone, no scheduler or CGI"
 "CVE-2023-32324" = "cupsd's format_log_line() in scheduler/log.c, fixed in 2.4.3 (the record; GHSA-cxc6-w2g7-69p7): this is 2.4.20, and build.sh builds libcups alone"
+"GHSA-7p2g-2mq7-49vp" = "cupsd's cancel_all_jobs() in scheduler/ipp.c, crashing in cupsdSetJobState() in scheduler/job.c (the advisory): build.sh builds libcups alone, no scheduler"
+"GHSA-hqv8-7q2h-gr4q" = "cupsd's send_document() and restart_job() in scheduler/ipp.c after cupsdDeleteTemporaryPrinters() in scheduler/printers.c (the advisory): build.sh builds libcups alone, no scheduler"
+"GHSA-prqr-xrqh-456q" = "cupsd's get_document() in scheduler/ipp.c checks DefaultPolicyPtr, not the printer's OpPolicy (the advisory): build.sh builds libcups alone, no scheduler"
+"GHSA-xffw-v7h2-9vcf" = "cupsd's add_job() keeps job->job_sheets, which add_job_subscriptions() frees, read in cupsdContinueJob() (scheduler/ipp.c, scheduler/job.c; the advisory): build.sh builds libcups alone, no scheduler"
+"GHSA-xvwj-4wgx-qjpc" = "cupsd's add_job() keeps the separators ipp_read_io() makes for repeated group tags and retags them as job attributes, so ipp_length() in scheduler/job.c and the saved job's ippWriteIO() take strlen(NULL) (the advisory); libcups' own ippWriteIO() skips a separator, whose group tag is IPP_TAG_ZERO: build.sh builds libcups alone, no scheduler"
 
 [curl]
 cpe = "cpe:2.3:a:haxx:curl"
@@ -896,6 +901,7 @@ unchecked = "a tag for every merge, many a day, and no line to follow: its CVEs 
 "CVE-2026-21869" = "fixed by c78fb90 (the advisory), which b11960 holds: GitHub's compare of c78fb90...b11960 is 3,052 ahead, 0 behind"
 "CVE-2025-53630" = "fixed by 26a48ad (GHSA-vgg9-87g3-85w8), which b11960 holds: GitHub's compare of 26a48ad...b11960 is 6,106 ahead, 0 behind"
 "GHSA-g4cc-763q-h9h6" = "fixed by c33fe8b8 (the advisory), which b11960 holds: GitHub's compare of c33fe8b8...b11960 is 6,311 ahead, 0 behind"
+"CVE-2026-137567" = "ggml's RPC server, RPC_CMD_COPY_TENSOR (the record): build.sh sets -DGGML_RPC=OFF, and b11960's ggml/src/CMakeLists.txt adds ggml-rpc only when GGML_RPC is on; it builds only the llama-server target, not rpc-server"
 
 [locales]
 skip = "glibc's locale data: its CVEs are pkg:glibc's"
