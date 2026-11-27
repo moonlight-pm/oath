@@ -1,7 +1,7 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source ffmpeg-9.0.2.tar.xz 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
-tag n9.0.2 commit 946fcce07b6dcd0331c8cc609192aeff5e1924f8 tree f314f188666de54687c464fc975e5ee43fae26e1
+source ffmpeg-9.1.tar.xz 1a4d394ae63d190a526cd052eb4415c156b5c5e2df37efab41a7de0b8fde2433
+tag n9.1 commit 74e4393595cf2b5857f0da925c4e0dd74ea306e5 tree eed36c7cb77a542a4dcbda4805fafeec0ade05e7
 signed pgp DD1EC9E8DE085C629B3E1846B18E8928B3948D64
-same 10398
-only-in-tag 26
-adds VERSION
+same 11024
+only-in-tag 27
+adds FF_VERSION
