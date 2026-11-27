@@ -125,11 +125,11 @@
     ]
   },
   "bun": {
-    "version": "1.4.4",
+    "version": "1.4.5",
     "license": "MIT AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND Zlib AND Unicode-3.0",
     "by": "plan",
-    "plan": "sha256-1ce6517be28e8aa4ad594692b729a480e15fead349ff6fb1f96c6f9faa591733",
-    "product": "sha256-d025b72fd50db088f0ef6a9f639fa40de61b631e80dc7f278f4af1a09528f6b2",
+    "plan": "sha256-7bf88c2f265626dad54550dee09fb9b30232822894a5697fef86767b5f7b1640",
+    "product": "sha256-535a65f8a0f168a3e42481b1080c0ab45223747fc736b15ede2f85f99578563a",
     "run": []
   },
   "bzip2": {
@@ -257,11 +257,11 @@
     "run": []
   },
   "codex": {
-    "version": "0.170.0",
+    "version": "0.171.0",
     "license": "Apache-2.0 AND (Unlicense OR MIT) AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND BSD-3-Clause WITH PCRE2-exception AND BSD-2-Clause AND Zlib",
     "by": "plan",
-    "plan": "sha256-6019fd1d26c9bc485eea05503ef3ddc22bf6040b80afba6cde851b36ec2d199f",
-    "product": "sha256-45cf08cb8c4edefcf6818d5e060e9052da76cba6dcf6b8bfa9cd087eb5790bce",
+    "plan": "sha256-d19e1d035b783004c8a5eeaea88a516bb75c60fd1097c442b9bc4ae799b246c7",
+    "product": "sha256-ebbd51b70e48c5367ce0adbed4ac9b71af5d88c7bb5b49dad7deb70239d8a022",
     "run": []
   },
   "coreutils": {
@@ -386,11 +386,11 @@
     "run": []
   },
   "ffmpeg": {
-    "version": "9.0.2",
+    "version": "9.1",
     "license": "LGPL-2.1-or-later AND MIT AND BSD-3-Clause AND ISC",
     "by": "plan",
-    "plan": "sha256-149a30f50f9f81ef923a5e2af2bd42e0a26ca5c19bf1d17f0df93fa4816f65c1",
-    "product": "sha256-52858aea5187c1f86cdcc0aff516a35281516fd589393c73fe490e299de9e0af",
+    "plan": "sha256-e775a3f89ff09787ee29b5166dc3ec9deadc8d4aec481ca9bc6cf8c5c72fb246",
+    "product": "sha256-f76f0e57fc43dd9b9f27063849b146b16a4bd9633ac13088c249e22ae008a2fb",
     "run": [
       "openssl",
       "zlib",
