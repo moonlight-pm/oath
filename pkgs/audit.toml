@@ -306,6 +306,7 @@ tag_dir = "expat"
 [expat.not_affected]
 "CVE-2026-128241" = "xmlwf alone, whose -d output mode follows symlinks (cve.org's record): pkgs/expat/build.sh configures --without-xmlwf, for expat and expat-i386"
 "CVE-2026-134703" = "XML_UNICODE builds alone (VulnCheck's record): xmltok.c's UTF-16-to-UTF-16 converters run only through XmlUtf16Convert, which xmlparse.c uses only #ifdef XML_UNICODE (R_2_10_0, lines 182-194); pkgs/expat/build.sh builds the default UTF-8 library, for expat and expat-i386"
+"CVE-2026-137951" = "builds with XML_GE=0 and XML_UNICODE together alone (VulnCheck's record; upstream's fix e263ba02, PR #1534, names that configuration): pkgs/expat/build.sh runs configure, whose configure.ac defines XML_GE as 1 with no option to change it (R_2_10_0, line 410), and XML_UNICODE comes only from CPPFLAGS or CFLAGS, which name neither, for expat and expat-i386"
 
 [extra-cmake-modules]
 skip = "CMake modules, no compiled code"
@@ -1191,6 +1192,8 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 
 [qtbase.not_affected]
 "CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
+"CVE-2026-118968" = "WAV decoding in the Qt Multimedia module alone (Qt's own record; its fix is qt/qtmultimedia review 776979): Oath builds no qtmultimedia"
+"CVE-2026-123706" = "the VectorImage component of Qt Quick, in the module qtdeclarative alone (the record's affected modules, Qt's own record; its fix is qt/qtdeclarative review 778645): Oath builds no qtdeclarative"
 
 [qtimageformats]
 cpe = "cpe:2.3:a:qt:qt"
@@ -1203,6 +1206,8 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
 "CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module carries no Qt Network code"
 "CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
+"CVE-2026-118968" = "WAV decoding in the Qt Multimedia module alone (Qt's own record; its fix is qt/qtmultimedia review 776979): Oath builds no qtmultimedia"
+"CVE-2026-123706" = "the VectorImage component of Qt Quick, in the module qtdeclarative alone (the record's affected modules, Qt's own record; its fix is qt/qtdeclarative review 778645): Oath builds no qtdeclarative"
 
 [qtnetworkauth]
 cpe = "cpe:2.3:a:qt:qt"
@@ -1215,6 +1220,8 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
 "CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module calls Qt Network but carries none of its code; qtbase keeps the hit"
 "CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
+"CVE-2026-118968" = "WAV decoding in the Qt Multimedia module alone (Qt's own record; its fix is qt/qtmultimedia review 776979): Oath builds no qtmultimedia"
+"CVE-2026-123706" = "the VectorImage component of Qt Quick, in the module qtdeclarative alone (the record's affected modules, Qt's own record; its fix is qt/qtdeclarative review 778645): Oath builds no qtdeclarative"
 
 [qtsvg]
 cpe = "cpe:2.3:a:qt:qt"
@@ -1227,6 +1234,8 @@ differs_because = ".tag: the tree has git's export placeholder ($Format:%H$), th
 "CVE-2026-15037" = "QDom in Qt XML, which is qtbase's src/xml/dom (the record's fix is in qt/qtbase): this module's v6.11.3 tree has no QDom sources"
 "CVE-2026-116337" = "HTTP response handling in Qt Network, which is qtbase's src/network (Qt's list of known vulnerabilities; the record's fixes are qt/qtbase reviews 774223 and 774266): this module carries no Qt Network code"
 "CVE-2026-114369" = "the WebSocket handshake of QWebSocket and QWebSocketServer, in the module qtwebsockets alone (the record's affected modules, Qt's own record): Oath builds no qtwebsockets"
+"CVE-2026-118968" = "WAV decoding in the Qt Multimedia module alone (Qt's own record; its fix is qt/qtmultimedia review 776979): Oath builds no qtmultimedia"
+"CVE-2026-123706" = "the VectorImage component of Qt Quick, in the module qtdeclarative alone (the record's affected modules, Qt's own record; its fix is qt/qtdeclarative review 778645): Oath builds no qtdeclarative"
 
 [readline]
 cpe = "cpe:2.3:a:gnu:readline"
