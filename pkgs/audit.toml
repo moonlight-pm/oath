@@ -474,7 +474,7 @@ dev_odd = true
 
 [glibc]
 cpe = "cpe:2.3:a:gnu:glibc"
-names = ["gnu c library"]
+names = ["gnu c library", "the gnu c library"]
 compare_repo = "https://sourceware.org/git/glibc.git"
 compare_tag = "glibc-{version}"
 
@@ -482,10 +482,25 @@ compare_tag = "glibc-{version}"
 "CVE-2013-4412" = "SLiM's NULL dereference on a failed crypt() (the record names slim), not glibc's"
 "CVE-2026-5435" = "fixed by ca44a660 (2026-06-19), before 2.44: 2.44's resolv/ns_print.c is identical to a7b60d23, that series' last commit (sourceware gitweb); the record's range has no end"
 "CVE-2026-6238" = "fixed by a7b60d23 (2026-06-19); 2.44's resolv/ns_print.c is identical to it (sourceware gitweb); GLIBC-SA-2026-0012 names 2.0.1 to 2.43"
+"CVE-2026-5450" = "scanf's %mc with a width over 1024 (BZ 34008): fixed in 2.44 itself, whose NEWS lists BZ 34008 among 2.44's fixes; the record's text says 2.7 to 2.43, though its range has no end"
+"CVE-2026-8674" = "the stub resolver's assertion on a long search domain (BZ 31026, GLIBC-SA-2026-0021): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 31026 in its NEWS for 2.44.1"
+"CVE-2026-18374" = "fopen's ,ccs= overflow (BZ 34574): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34574 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-19499" = "strfmon's padding overflow (BZ 34510): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34510 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-19542" = "tdelete's stack array (BZ 34506): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34506 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-77117" = "SHIFT_JISX0213's hang (BZ 34556): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34556 with this CVE in its NEWS for 2.44.1 and changes iconvdata/shift_jisx0213.c"
+"CVE-2026-80489" = "EUC_JISX0213's hang (BZ 34568): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34568 with this CVE in its NEWS for 2.44.1 and changes iconvdata/euc-jisx0213.c"
+"CVE-2026-84243" = "gettext's LANGUAGE directory traversal (BZ 17142, GLIBC-SA-2026-0025): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 17142 in its NEWS for 2.44.1 and says gettext now refuses '/' and '..' in LANGUAGE for every program"
+"CVE-2026-86805" = "$ORIGIN's TOCTOU in AT_SECURE programs (BZ 34360): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34360 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-89092" = "nscd's unbounded alloca (BZ 34624): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34624 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-95818" = "the loader's stack overflow on $ORIGIN followed by NUL or '/' in AT_SECURE programs (BZ 34360, GLIBC-SA-2026-0023): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34360 in its NEWS for 2.44.1, replaces elf/dl-load.c's is_trusted_path_normalize() with _dl_normalize_path() and path_is_trusted(), and adds tst-origin-secure"
+"CVE-2026-97399" = "Power8's strncasecmp (BZ 34683): Oath builds x86-64 alone, and the pin's patches/release-2.44-master-049ee6ef.patch lists BZ 34683 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-100290" = "regcomp's and regexec's double free (BZ 34991): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34991 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-115819" = "wide scanf's extra NUL (BZ 34989): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34989 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-121758" = "ISO-2022-CN-EXT's over-read (BZ 34774): fixed in the pin, whose patches/release-2.44-master-049ee6ef.patch lists BZ 34774 with this CVE in its NEWS for 2.44.1 and changes iconvdata/iso-2022-cn-ext.c"
 
 [glibc-i386]
 cpe = "cpe:2.3:a:gnu:glibc"
-names = ["gnu c library", "glibc"]
+names = ["gnu c library", "the gnu c library", "glibc"]
 compare_repo = "https://sourceware.org/git/glibc.git"
 compare_tag = "glibc-{version}"
 
@@ -493,6 +508,21 @@ compare_tag = "glibc-{version}"
 "CVE-2013-4412" = "SLiM's NULL dereference on a failed crypt() (the record names slim), not glibc's"
 "CVE-2026-5435" = "fixed by ca44a660 (2026-06-19), before 2.44: 2.44's resolv/ns_print.c is identical to a7b60d23, that series' last commit (sourceware gitweb); the record's range has no end"
 "CVE-2026-6238" = "fixed by a7b60d23 (2026-06-19); 2.44's resolv/ns_print.c is identical to it (sourceware gitweb); GLIBC-SA-2026-0012 names 2.0.1 to 2.43"
+"CVE-2026-5450" = "scanf's %mc with a width over 1024 (BZ 34008): fixed in 2.44 itself, whose NEWS lists BZ 34008 among 2.44's fixes; the record's text says 2.7 to 2.43, though its range has no end"
+"CVE-2026-8674" = "the stub resolver's assertion on a long search domain (BZ 31026, GLIBC-SA-2026-0021): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 31026 in its NEWS for 2.44.1"
+"CVE-2026-18374" = "fopen's ,ccs= overflow (BZ 34574): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34574 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-19499" = "strfmon's padding overflow (BZ 34510): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34510 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-19542" = "tdelete's stack array (BZ 34506): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34506 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-77117" = "SHIFT_JISX0213's hang (BZ 34556): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34556 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-80489" = "EUC_JISX0213's hang (BZ 34568): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34568 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-84243" = "gettext's LANGUAGE directory traversal (BZ 17142, GLIBC-SA-2026-0025): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 17142 in its NEWS for 2.44.1"
+"CVE-2026-86805" = "$ORIGIN's TOCTOU in AT_SECURE programs (BZ 34360): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34360 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-89092" = "nscd's unbounded alloca (BZ 34624): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34624 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-95818" = "the loader's stack overflow on $ORIGIN followed by NUL or '/' (BZ 34360, GLIBC-SA-2026-0023): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, replaces elf/dl-load.c's is_trusted_path_normalize() with _dl_normalize_path() and path_is_trusted()"
+"CVE-2026-97399" = "Power8's strncasecmp (BZ 34683): glibc-i386 is i686 code, and the pin's patch lists BZ 34683 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-100290" = "regcomp's and regexec's double free (BZ 34991): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34991 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-115819" = "wide scanf's extra NUL (BZ 34989): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34989 with this CVE in its NEWS for 2.44.1"
+"CVE-2026-121758" = "ISO-2022-CN-EXT's over-read (BZ 34774): fixed in the pin; patches/release-2.44-master-049ee6ef.patch, pkgs/glibc's, lists BZ 34774 with this CVE in its NEWS for 2.44.1"
 
 [glslang]
 cpe = "cpe:2.3:a:khronos:glslang"
