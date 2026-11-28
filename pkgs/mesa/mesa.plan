@@ -161,7 +161,7 @@
     },
     {
       "id": "pkg:python-pyyaml",
-      "hash": "sha256-a55e5c8ef2cd59ea62acc2282cd0a52ebc564af9417abfd23bcbbac7603b5c29"
+      "hash": "sha256-7b3deb1b4b414c10a94ca08235ac0137fe9999366fb3cac64d725153a50df611"
     },
     {
       "id": "pkg:sed",

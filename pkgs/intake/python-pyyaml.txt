@@ -1,5 +1,5 @@
 # Written by `cargo make pkgs --fetch` (R57): when each package was published.
-pin 1eee0fb34203277fc8771392d47e380638d497f9fc06f62b2fdbd9f045d33908
-checked 2026-11-02
-source 2025-09-25T14:10:45-07:00
-module pypi pyyaml 6.0.3 2025-09-25T21:31:46.040932Z baseline
+pin ec2929ae353f670ad000557be161b261572f461d0a36a0feb09516103f1c976b
+checked 2026-11-28
+source 2026-11-20T15:13:10-08:00
+module pypi pyyaml 6.0.4 2026-11-20T23:34:39.807190Z moved from=6.0.3

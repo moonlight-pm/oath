@@ -278,7 +278,7 @@
     "version": "1.31",
     "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
     "by": "plan",
-    "plan": "sha256-58e6354bc3f3765480c913d41b856668f0f2ab34d82205abe861e569b45ce6db",
+    "plan": "sha256-150bd5fde7579fffd593124061dcf1a19f73ab1808d67d5181da0ea95bc377ec",
     "product": "sha256-2bd4e067f7c432f5833071e21cff06a073161217f24af67f24b451e596b5b258",
     "run": [
       "libcap",
@@ -892,11 +892,11 @@
     "run": []
   },
   "libseccomp": {
-    "version": "2.6.1",
+    "version": "2.6.2",
     "license": "LGPL-2.1-only",
     "by": "plan",
-    "plan": "sha256-e0239372d5fb772e4cce3abf41b7bd046d669fd9b330daf51941633c03dfeb9b",
-    "product": "sha256-42d48b05cada38d44f8190adb53a8411015930d259b91c7ff4688caefefe8aea",
+    "plan": "sha256-467ac6f34206a3caa73d337b65773ac9b9bf06ed157f4eedde39541ac1c10109",
+    "product": "sha256-becc15f56c2710938a624da36d12f1fac1085853cf3eddb0bf2f76fe6d70fb1d",
     "run": []
   },
   "libslirp": {
@@ -1286,7 +1286,7 @@
     "version": "26.2.5",
     "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-db4c82d66006aea9e69d0a140722a17f444643471325daf5b59a953b78868af7",
+    "plan": "sha256-5cd9d04dda1c5cb24973b19031ae54d9251372db00aff4f745e7ad269b90e1a6",
     "product": "sha256-f544ad4fb67765f5b1d92f3d8aed445a2bb1f2ccd0369dccebed868170b35a4f",
     "run": [
       "gcc",
@@ -1308,7 +1308,7 @@
     "version": "26.2.5",
     "license": "MIT AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0",
     "by": "plan",
-    "plan": "sha256-dbac1ec109d865327c2d8d54edb10461507b4ca26250202ca67ecf0ad7dccb94",
+    "plan": "sha256-1afad868df8b0feb34d6bd69c3fbc048c46bbaf9b52bba367bf1f357d7e1eccb",
     "product": "sha256-bff1d8ecf721ec7724746d1e44990cc41178e5b4345fd7a803de4245bf5edee1",
     "run": [
       "gcc",
@@ -1695,11 +1695,11 @@
     "run": []
   },
   "python-pyyaml": {
-    "version": "6.0.3",
+    "version": "6.0.4",
     "license": "MIT",
     "by": "plan",
-    "plan": "sha256-8c9b2af2af337054e0ed6aa50094e0d4ba52af2cb2a3e57d4589d3ea40f88505",
-    "product": "sha256-a55e5c8ef2cd59ea62acc2282cd0a52ebc564af9417abfd23bcbbac7603b5c29",
+    "plan": "sha256-60be4106ca54458e8d03a855de15f076e23055d435cc0572833607ef9a6a0a33",
+    "product": "sha256-7b3deb1b4b414c10a94ca08235ac0137fe9999366fb3cac64d725153a50df611",
     "run": []
   },
   "qemu": {
