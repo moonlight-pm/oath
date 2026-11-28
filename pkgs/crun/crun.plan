@@ -65,7 +65,7 @@
     },
     {
       "id": "pkg:libseccomp",
-      "hash": "sha256-42d48b05cada38d44f8190adb53a8411015930d259b91c7ff4688caefefe8aea"
+      "hash": "sha256-becc15f56c2710938a624da36d12f1fac1085853cf3eddb0bf2f76fe6d70fb1d"
     },
     {
       "id": "pkg:make",
@@ -127,7 +127,7 @@
     },
     {
       "id": "pkg:libseccomp",
-      "hash": "sha256-42d48b05cada38d44f8190adb53a8411015930d259b91c7ff4688caefefe8aea"
+      "hash": "sha256-becc15f56c2710938a624da36d12f1fac1085853cf3eddb0bf2f76fe6d70fb1d"
     }
   ]
 }

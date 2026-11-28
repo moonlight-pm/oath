@@ -1,16 +1,16 @@
 # libseccomp: crun's and Podman's syscall filters. Signed by Tom Hromatka,
 # one of the two maintainers its SECURITY.md names.
-version = "2.6.1"
+version = "2.6.2"
 license = "LGPL-2.1-only"
 description = "libseccomp: the library behind seccomp syscall filters."
 home = "https://github.com/seccomp/libseccomp"
 category = "machines"
-purl = "pkg:github/seccomp/libseccomp@v2.6.1"
+purl = "pkg:github/seccomp/libseccomp@v2.6.2"
 build = ["gperf", "pkgconf"]
 run = []
 
 [[source]]
-url = "https://github.com/seccomp/libseccomp/releases/download/v2.6.1/libseccomp-2.6.1.tar.gz"
-sha256 = "501f66c667225d53791b97e1d7cf85ab764c297d04881f60f38f451c4b0ee1be"
-sig = "https://github.com/seccomp/libseccomp/releases/download/v2.6.1/libseccomp-2.6.1.tar.gz.asc"
+url = "https://github.com/seccomp/libseccomp/releases/download/v2.6.2/libseccomp-2.6.2.tar.gz"
+sha256 = "6b845d352c6d7887d8d134c43d86850d40f5dcee11ad1675c18197ae4d869d42"
+sig = "https://github.com/seccomp/libseccomp/releases/download/v2.6.2/libseccomp-2.6.2.tar.gz.asc"
 key = "libseccomp"

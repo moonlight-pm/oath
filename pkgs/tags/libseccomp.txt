@@ -1,14 +1,13 @@
 # Written by `cargo make pkgs --fetch` (R54): this pin against upstream's tag.
-source libseccomp-2.6.1.tar.gz 501f66c667225d53791b97e1d7cf85ab764c297d04881f60f38f451c4b0ee1be
-tag v2.6.1 commit a81cc2de8ee7a33633defc88bb8a2d986b421613 tree 5634299c899afac334fa2976d1466a1604d8a8f1
+source libseccomp-2.6.2.tar.gz 6b845d352c6d7887d8d134c43d86850d40f5dcee11ad1675c18197ae4d869d42
+tag v2.6.2 commit 72d90906ebcc6a2706868d58404e10a3086ed142 tree 4949d2601aa416ee38d5279f7e9e00bcc24705e9
 signed pgp 47A68FCE37C7D7024FD65E11356CE62C2B524099
-same 321
+same 331
 only-in-tag 16
 from automake 1
 from gettext 1
 from gnulib 3
 from libtool 3
-differs tools/check-syntax
 adds Makefile.in
 adds aclocal.m4
 adds build-aux/config.guess
